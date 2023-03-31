@@ -1004,16 +1004,50 @@ struct CreateTorus : zeno::INode {
             prim->polys[i] = {i * 4, 4};
         }
 
+        for(int i = 0; i < prim->verts.size(); i++){
+            auto p = prim->verts[i];
+            auto position = get_input2<zeno::vec3f>("position");
+            auto rotate = get_input2<zeno::vec3f>("rotate");
+            glm::mat4 transform = glm::mat4 (1.0);
+            transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
+            transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
+            transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
+            transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
+            auto gp = transform * glm::vec4(p[0], p[1], p[2], 1);
+            prim->verts[i] = zeno::vec3f(gp.x, gp.y, gp.z);
+
+            auto n = nrm[i];
+            auto n_transform = glm::transpose(glm::inverse(transform));
+            auto gn = n_transform * glm::vec4 (n[0], n[1], n[2], 0);
+            nrm[i] = zeno::vec3f (gn.x, gn.y, gn.z);
+        }
+
+        if (!get_input2<bool>("hasNormal")){
+            prim->verts.attrs.erase("nrm");
+        }
+
+        if (!get_input2<bool>("hasVertUV")){
+            prim->uvs.clear();
+            prim->loops.erase_attr("uvs");
+        }
+
+        if (!get_input2<bool>("quads")){
+            primTriangulate(prim.get());
+        }
         set_output("prim",std::move(prim));
     }
 };
 
 ZENDEFNODE(CreateTorus, {
 {
-        {"int", "MajorSegment", "48"},
-        {"int", "MinorSegment", "12"},
+        {"vec3f", "position", "0, 0, 0"},
         {"float", "MajorRadius", "1"},
         {"float", "MinorRadius", "0.25"},
+        ROTATE_PARM
+        NORMUV_PARM
+        {"int", "MajorSegment", "48"},
+        {"int", "MinorSegment", "12"},
+        {"bool", "quads", "0"},
     },
     {"prim"},
     {},
