@@ -9,6 +9,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <string.h>
 
 #include "tinyexr.h"
 
@@ -374,9 +375,29 @@ struct WriteCustomVAT : INode {
                 {
                     auto & f = v.front();
                     prim->verts.resize(f.size());
-                    for (auto i = 0; i < prim->verts.size(); i++) {
-                        prim->verts[i] = f[i];
+                    if (get_input2<bool>("UnrealEngine")) {
+                        for (auto i = 0; i < prim->verts.size(); i++) {
+                            int index_tri = i / 3;
+                            int index_vert = i % 3;
+                            float x = float(index_tri % 1024) / 512.0f - 1.f;
+                            float z = float(index_tri / 1024) / 512.0f - 1.f;
+                            vec3f pos = {x, 0, z};
+
+                            if (index_vert == 1) {
+                                pos += vec3f(-1/2048.f, 0, 1/1024.f);
+                            }
+                            else if (index_vert == 2) {
+                                pos += vec3f(1/2048.f, 0, 1/1024.f);
+                            }
+                            prim->verts[i] = pos;
+                        }
                     }
+                    else {
+                        for (auto i = 0; i < prim->verts.size(); i++) {
+                            prim->verts[i] = f[i];
+                        }
+                    }
+
                     prim->tris.resize(f.size() / 3);
                     for (auto i = 0; i < prim->tris.size(); i++) {
                         prim->tris[i][0] = 3 * i + 0;
@@ -419,6 +440,7 @@ ZENDEFNODE(WriteCustomVAT, {
     {
         {"prim"},
         {"frameid"},
+        {"bool", "UnrealEngine", "1"},
     },
     {
         {"prim"},
