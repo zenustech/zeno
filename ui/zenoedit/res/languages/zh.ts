@@ -73,6 +73,14 @@
         <source>Kill</source>
         <translation>终止</translation>
     </message>
+	<message>
+        <source>RunLightCameraMaterial</source>
+        <translation>运行灯光相机材质</translation>
+    </message>
+	<message>
+        <source>This function can only be used in cache mode.</source>
+        <translation>该功能仅支持在缓存模式下运行</translation>
+    </message>
 </context>
 <context>
     <name>DockContent_View</name>

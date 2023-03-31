@@ -263,7 +263,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnLightCamera->setButtonOptions(ZToolButton::Opt_HasText | ZToolButton::Opt_Checkable);
     m_btnLightCamera->setRadius(ZenoStyle::dpiScaled(2));
     m_btnLightCamera->setFont(fnt);
-    m_btnLightCamera->setText(tr("RunLightCamera"));
+    m_btnLightCamera->setText(tr("RunLightCameraMaterial"));
     m_btnLightCamera->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 0, 14, 0)));
     m_btnLightCamera->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
     m_btnLightCamera->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
@@ -397,12 +397,19 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnLightCamera, &ZToolButton::clicked, this, [=]() {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
-        ZASSERT_EXIT(mgr);
-        mgr->cacheSeparately(true);
-        ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(pMainWin);
-        pMainWin->onRunTriggered(true);
+        QSettings settings(zsCompanyName, zsEditor);
+        if (!settings.value("zencache-enable").toBool())
+        {
+            QMessageBox::warning(nullptr, tr("RunLightCamera"), tr("This function can only be used in cache mode."));
+        }
+        else {
+            std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+            ZASSERT_EXIT(mgr);
+            mgr->cacheSeparately(true);
+            ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
+            ZASSERT_EXIT(pMainWin);
+            pMainWin->onRunTriggered(true);
+        }
     });
 
     connect(m_btnRun, &ZToolButton::clicked, this, [=]() {

@@ -7,20 +7,19 @@
 #include <fstream>
 #include <cassert>
 #include <zeno/types/UserData.h>
-#include <zeno/extra/GlobalComm.h>
-#include <zeno/zeno.h>
+#include <unordered_set>
 
 namespace zeno {
 
 std::vector<std::filesystem::path> cachepath{std::filesystem::path(""), std::filesystem::path("")};
+std::unordered_set<std::string> renderNodes({
+    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
+    "LightNode", "BindLight", "ProceduralSky", "HDRSky",
+    "BindMaterial", "ShaderFinalize"});
 
 bool isRenderObj(std::string key, std::shared_ptr<IObject> obj){
-    if (obj->userData().has<int>("isRealTimeObject"))
-    {
-        return true;
-    }
-    std::transform(key.begin(), key.end(), key.begin(), ::tolower);
-    if (key.find("camera") != std::string::npos)
+    int idx = key.find("-") + 1;
+    if (renderNodes.count(key.substr(idx, key.find(":") - idx)))
     {
         return true;
     }
