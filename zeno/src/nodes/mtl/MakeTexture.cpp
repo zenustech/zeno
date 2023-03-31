@@ -1,5 +1,5 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+#include <tinygltf/stb_image_write.h>
 #include <filesystem>
 #include "zeno/zeno.h"
 #include "zeno/types/TextureObject.h"
