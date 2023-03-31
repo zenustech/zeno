@@ -27,7 +27,7 @@ add_dependencies(zenoedit clean_resource_file)
 set_property(TARGET zenoedit PROPERTY AUTOUIC ON)
 set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
 set_property(TARGET zenoedit PROPERTY AUTORCC ON)
-set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
+set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE ON)
 
 
 set(dbg_with_pdb_no_opt false)
