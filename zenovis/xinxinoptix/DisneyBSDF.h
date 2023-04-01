@@ -741,14 +741,17 @@ namespace DisneyBSDF{
         float NoV = wo.z;
 
         vec3 color = baseColor;
-        float pdf;
+        //float pdf;
 
         flag = scatterEvent;
+        float ptotal = 1.0f + subsurface ;
+        float psss = subsurface / ptotal;
+        float prnd = rnd(seed);
         if(wo.z>0) //we are outside
         {
-            if (rnd(seed) <= subsurface && subsurface > 0.001f) {
+            if (prnd <= psss && subsurface > 0.001f) {
                 wi = -wi;
-                pdf = subsurface;
+                //pdf = psss;
                 isSS = true;
                 if (thin) {
                     color = sqrt(transmittanceColor);
@@ -759,15 +762,16 @@ namespace DisneyBSDF{
                     color = transmittanceColor;
                 }
             } else {
-                pdf = 1.0 - subsurface;
+                //pdf = 1.0 - psss;
             }
         }else //we are inside
         {
             //either go out or turn in
-            if (rnd(seed) <= subsurface && subsurface > 0.001f)
+            if (prnd <= psss && subsurface > 0.001f)
             {
                 //go out, flag change
                 wi = -wi;
+                //pdf = psss;
                 isSS = true;
                 if (thin) {
                     color = sqrt(transmittanceColor);
@@ -775,11 +779,12 @@ namespace DisneyBSDF{
                     flag = transmissionEvent;
                     //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
                     extinction = CalculateExtinction(sssColor, scatterDistance);
-                    color = vec3(1.0f);//no attenuation happen
+                    color = transmittanceColor;//no attenuation happen
                 }
             }else
             {
                 color = vec3(1.0f);
+                //pdf = 1.0 - psss;
             }
         }
 
@@ -788,9 +793,9 @@ namespace DisneyBSDF{
         float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
         if(wi.z<0)
             diff = 1.0;
-        reflectance = sheen + color * diff;
-        fPdf = abs(NoL) * pdf;
-        rPdf = abs(NoV) * pdf;
+        reflectance = ( sheen + color * diff ) * ptotal;
+        //fPdf = abs(NoL) * pdf;
+        //rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
         tbn.m_tangent = T;
         tbn.m_binormal = B;
