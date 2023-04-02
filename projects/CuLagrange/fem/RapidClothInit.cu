@@ -1,7 +1,6 @@
 #include "RapidCloth.cuh"
 #include "Structures.hpp"
 #include "TopoUtils.hpp"
-#include "zensim/geometry/Distance.hpp"
 #include <zeno/types/ListObject.h>
 
 #define RETRIEVE_OBJECT_PTRS(T, STR)                                                  \
@@ -432,7 +431,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 2}, 
-            {"dist", 1}
+            {"dist", 1}, 
+            {"hess", 36}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -440,7 +440,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 3}, 
-            {"dist", 1}
+            {"dist", 1}, 
+            {"hess", 81}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -448,7 +449,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            {"dist", 1}
+            {"dist", 1}, 
+            {"hess", 144}
         }, 
         (std::size_t)estNumCps
     }; 
@@ -456,7 +458,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         zsprims[0]->getParticles().get_allocator(), 
         {
             {"inds", 4}, 
-            {"dist", 1}
+            {"dist", 1}, 
+            {"hess", 144}
         }, 
         (std::size_t)estNumCps
     }; 

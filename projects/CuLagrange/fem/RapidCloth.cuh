@@ -4,6 +4,7 @@
 #include "zensim/container/Bcht.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvtt.hpp"
+#include "zensim/geometry/Distance.hpp"
 #include "zensim/container/Vector.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/math/Vec.h"
@@ -17,6 +18,10 @@ struct RapidClothSystem : IObject {
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
     constexpr static auto eps_c = zs::limits<T>::epsilon() * 1.0f; 
     constexpr static auto T_c = zs::float_c; 
+    constexpr static auto enableRepulsion_c = false;
+    // TODO: use avg_mass * repulsionCoef_c as the repulsion weight 
+    // TODO: fix repulsion 
+    constexpr static auto repulsionCoef_c = 1e-2f; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false;
     constexpr static auto enableDegeneratedDist_c = true; 
@@ -177,6 +182,7 @@ struct RapidClothSystem : IObject {
     // dynamics
     void computeInertialAndForceGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
+    void computeRepulsionGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag); 
 
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t maxInd);
