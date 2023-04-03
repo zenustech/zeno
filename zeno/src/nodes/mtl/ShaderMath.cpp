@@ -2,6 +2,7 @@
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
+#include "zeno/utils/format.h"
 
 namespace zeno {
 
@@ -9,8 +10,8 @@ namespace zeno {
 static const char /* see https://docs.gl/sl4/trunc */
     unops[] = "copy neg abs sqrt inversesqrt exp log sin cos tan asin acos atan degrees"
               " radians sinh cosh tanh asinh acosh atanh round roundEven floor"
-              " ceil trunc sign step length normalize",
-    binops[] = "add sub mul div mod pow atan2 min max dot cross distance",
+              " ceil trunc sign step length normalize hsvToRgb rgbToHsv luminance",
+    binops[] = "add sub mul div mod pow atan2 min max dot cross distance safepower",
     ternops[] = "mix clamp smoothstep add3";
 
 
@@ -194,5 +195,31 @@ ZENDEFNODE(ShaderUnaryMath, {
     {"shader"},
 });
 
+struct ShaderHsvAdjust : ShaderNodeClone<ShaderHsvAdjust> {
+    virtual int determineType(EmissionPass *em) override {
+        em->determineType(get_input("color").get());
+        em->determineType(get_input("amount").get());
+        return 3;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto color = em->determineExpr(get_input("color").get());
+        auto amount = em->determineExpr(get_input("amount").get());
+
+        return em->emitCode(zeno::format("{}({}, {})", em->funcName("hsvAdjust"), color, amount));
+    }
+};
+
+ZENDEFNODE(ShaderHsvAdjust, {
+    {
+        {"vec3f", "color"},
+        {"vec3f", "amount", "0,1,1"},
+    },
+    {
+        {"out"},
+    },
+    {},
+    {"shader"},
+});
 
 }
