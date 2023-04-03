@@ -105,7 +105,6 @@ void ZenoMainWindow::init()
 void ZenoMainWindow::initWindowProperty()
 {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    setWindowIcon(QIcon(":/icons/zeno-logo.png"));
     setWindowTitle(UiHelper::nativeWindowTitle(""));
     connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
         QFileInfo info(fn);
