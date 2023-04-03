@@ -4,6 +4,7 @@
 #include "zensim/container/Bcht.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvtt.hpp"
+#include "zensim/geometry/Distance.hpp"
 #include "zensim/container/Vector.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/math/Vec.h"
@@ -18,8 +19,13 @@ struct RapidClothSystem : IObject {
     constexpr static auto eps_c = zs::limits<T>::epsilon() * 1.0f; 
     constexpr static auto T_c = zs::float_c; 
     constexpr static auto enablePE_c = false; 
-    constexpr static auto enablePP_c = false; 
-    constexpr static auto debugVis_c = false; 
+    constexpr static auto enablePP_c = false;
+    constexpr static auto debugVis_c = true; 
+    T tinyDist = 1e-3; 
+    T repulsionCoef = 1.f; 
+    T repulsionRange = 2.f; 
+    bool enableDegeneratedDist = true; 
+    bool enableRepulsion = false; 
 
     using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
@@ -150,7 +156,7 @@ struct RapidClothSystem : IObject {
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness); 
+                    T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, T repulsionRange, T tinyDist); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -176,6 +182,7 @@ struct RapidClothSystem : IObject {
     // dynamics
     void computeInertialAndForceGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
     void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag);
+    void computeRepulsionGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag); 
 
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t maxInd);
@@ -197,12 +204,13 @@ struct RapidClothSystem : IObject {
     }
 
     // sim params
+    bool enableExclEdges = false; 
     int substep = -1;
     std::size_t estNumCps = 100000;
     std::size_t bvhFrontCps = 10000000; 
     T cgRel = 1e-2;
-    int PNCap = 1000;
-    int CGCap = 500;
+    int PNCap = 5;
+    int CGCap = 250;
     T armijoParam = 1e-4;
     bool enableContact = true;
     bool enableContactSelf = true;

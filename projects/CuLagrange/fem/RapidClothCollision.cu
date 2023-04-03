@@ -4,6 +4,7 @@
 #include "zensim/geometry/Friction.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include "zensim/graph/Coloring.hpp"
 #include "zensim/math/matrix/SparseMatrixOperations.hpp"
 #include "RapidClothGradHess.inl"
 
@@ -13,7 +14,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
 {
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
-    
+
     // p -> t
     const auto &stbvh = withBoundary ? bouStBvh : stBvh;
     auto &stfront = withBoundary ? boundaryStFront : selfStFront;
@@ -25,102 +26,185 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
          tempPP = proxy<space>({}, tempPP), tempPE = proxy<space>({}, tempPE), 
          vCons = view<space>({}, vCons, false_c, "vCons"), 
          nPT = view<space>(nPT, false_c, "nPT"), radius, voffset = withBoundary ? coOffset : 0,
-         nPP = proxy<space>(nPP), nPE = proxy<space>(nPE), 
+         nPP = view<space>(nPP, false_c, "nPP"), nPE = view<space>(nPE, false_c, "nPE"), 
          exclTab = proxy<space>(exclTab), 
+         enableExclEdges = enableExclEdges, 
+         enableDegeneratedDist = enableDegeneratedDist, 
          frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto vi = front.prim(i);
             vi = spInds("inds", vi, int_c); 
             const auto dHat2 = zs::sqr(radius);
             auto p = vtemp.pack(dim_c<3>, tag, vi);
             auto bv = bv_t{get_bounding_box(p - radius, p + radius)};
-            auto f = [&](int stI) {
-                auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
-                if (vi == tri[0] || vi == tri[1] || vi == tri[2])
-                    return;
-                for (int k = 0; k < 3; k++)
-                    if (exclTab.query({vi, tri[k]}) >= 0)
-                        return; 
-                // ccd
-                auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
-                auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
-                auto t2 = vtemp.pack(dim_c<3>, tag, tri[2]);
+            if (enableDegeneratedDist)
+            {
+                auto f = [&](int stI) mutable {
+                    auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
+                    if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+                        return;
+                    bool onlyPT = false; 
+                    if (enableExclEdges)
+                        for (int k = 0; k < 3; k++)
+                            if (exclTab.query({vi, tri[k]}) >= 0)
+                            {
+                                onlyPT = true; 
+                                break; 
+                            }
+                    // ccd
+                    auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
+                    auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
+                    auto t2 = vtemp.pack(dim_c<3>, tag, tri[2]);
 
-                switch (pt_distance_type(p, t0, t1, t2)) {
-                    case 0: 
-                    {
-                        if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1); 
-                            tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[0]}; 
-                            tempPP("dist", no) = (float)zs::sqrt(d2); 
+                    switch (pt_distance_type(p, t0, t1, t2)) {
+                        case 0: 
+                        {
+                            if (onlyPT)
+                                break; 
+                            if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPP[0], 1); 
+                                tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[0]}; 
+                                tempPP("dist", no) = (float)zs::sqrt(d2); 
+                            }
+
+                            break; 
                         }
-                        break; 
-                    }
-                    case 1: 
-                    {
-                        if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1); 
-                            tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[1]}; 
-                            tempPP("dist", no) = (float)zs::sqrt(d2); 
+                        case 1: 
+                        {
+                            if (onlyPT)
+                                break; 
+                            if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPP[0], 1); 
+                                tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[1]}; 
+                                tempPP("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
                         }
-                        break; 
-                    }
-                    case 2: 
-                    {
-                        if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1); 
-                            tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[2]}; 
-                            tempPP("dist", no) = (float)zs::sqrt(d2); 
+                        case 2: 
+                        {
+                            if (onlyPT)
+                                break; 
+                            if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPP[0], 1); 
+                                tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{vi, tri[2]}; 
+                                tempPP("dist", no) = (float)zs::sqrt(d2); 
+                            } 
+                            break; 
                         }
-                        break; 
-                    }
-                    case 3: 
-                    {
-                        if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[0], tri[1]}; 
-                            tempPE("dist", no) = (float)zs::sqrt(d2); 
+                        case 3: 
+                        {
+                            if (onlyPT)
+                                break; 
+                            if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[0], tri[1]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
                         }
-                        break; 
-                    }
-                    case 4: 
-                    {
-                        if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[1], tri[2]}; 
-                            tempPE("dist", no) = (float)zs::sqrt(d2); 
+                        case 4: 
+                        {
+                            if (onlyPT)
+                                break; 
+                            if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[1], tri[2]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
                         }
-                        break; 
-                    }
-                    case 5: 
-                    {
-                        if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[2], tri[0]}; 
-                            tempPE("dist", no) = (float)zs::sqrt(d2); 
+                        case 5: 
+                        {                        
+                            if (onlyPT)
+                                break; 
+                            if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{vi, tri[2], tri[0]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
                         }
-                        break; 
+                        case 6: 
+                        {
+                            if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPT[0], 1); 
+                                auto inds = pair4_t{vi, tri[0], tri[1], tri[2]}; 
+                                tempPT.tuple(dim_c<4>, "inds", no, int_c) = inds; 
+                                tempPT("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
+                        }
+                        default: break; 
                     }
-                    case 6: 
-                    {
-                        if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
+                }; 
+
+                if (frontManageRequired)
+                    bvh.iter_neighbors(bv, i, front, f);
+                else
+                    bvh.iter_neighbors(bv, front.node(i), f);
+            } else {
+                    auto f = [&](int stI) mutable {
+                        auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
+                        if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+                            return;
+                        bool onlyPT = false; 
+                        if (enableExclEdges)
+                            for (int k = 0; k < 3; k++)
+                                if (exclTab.query({vi, tri[k]}) >= 0)
+                                {
+                                    onlyPT = true; 
+                                    break; 
+                                }
+                        // ccd
+                        auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
+                        auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
+                        auto t2 = vtemp.pack(dim_c<3>, tag, tri[2]);
+
+                        if (auto d2 = dist2_pt_unclassified(p, t0, t1, t2); d2 < dHat2)
+                        {
                             auto no = atomic_add(exec_cuda, &nPT[0], 1); 
                             auto inds = pair4_t{vi, tri[0], tri[1], tri[2]}; 
                             tempPT.tuple(dim_c<4>, "inds", no, int_c) = inds; 
                             tempPT("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    default: break; 
-                }
-            }; 
+                        }   
+                    }; 
 
-            if (frontManageRequired)
-                bvh.iter_neighbors(bv, i, front, f);
-            else
-                bvh.iter_neighbors(bv, front.node(i), f);
+                    if (frontManageRequired)
+                        bvh.iter_neighbors(bv, i, front, f);
+                    else
+                        bvh.iter_neighbors(bv, front.node(i), f);
+            }
+
         });
     if (frontManageRequired)
-        stfront.reorder(pol);   
+        stfront.reorder(pol); 
+
+#define check_potential_pe(p, e0, e1, pi, e0i, e1i)                                                                                                     \
+{                                                                                                                                                       \
+        switch (pe_distance_type(p, e0, e1)) {                                                                                                          \
+            case 0: {                                                                                                                                   \
+                if (auto d2 = dist2_pp(p, e0); d2 < dHat2) {                                                                                            \
+                    auto no = atomic_add(exec_cuda, &nPP[0], 1);                                                                                        \
+                    tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{pi, e0i};                                                                        \
+                }                                                                                                                                       \
+                break;                                                                                                                                  \
+            }                                                                                                                                           \
+            case 1: {                                                                                                                                   \
+                if (auto d2 = dist2_pp(p, e1); d2 < dHat2) {                                                                                            \
+                    auto no = atomic_add(exec_cuda, &nPP[0], 1);                                                                                        \
+                    tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{pi, e1i};                                                                        \
+                }                                                                                                                                       \
+                break;                                                                                                                                  \
+            }                                                                                                                                           \
+            case 2: {                                                                                                                                   \
+                if (auto d2 = dist2_pe(p, e0, e1); d2 < dHat2) {                                                                                        \
+                    auto no = atomic_add(exec_cuda, &nPE[0], 1);                                                                                        \
+                    tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{pi, e0i, e1i};                                                                  \
+                }                                                                                                                                       \
+                break;                                                                                                                                  \
+            }                                                                                                                                           \
+            default: break;                                                                                                                             \
+        }                                                                                                                                               \
+}
     // e -> e
     const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
     auto &seefront = withBoundary ? boundarySeeFront : selfSeeFront;
@@ -133,6 +217,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
             tempPE = proxy<space>({}, tempPE), nPE = proxy<space>(nPE), 
             radius, voffset = withBoundary ? coOffset : 0,
             exclTab = proxy<space>(exclTab), 
+            enableDegeneratedDist = enableDegeneratedDist, 
             frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto sei = front.prim(i);
             auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
@@ -150,110 +235,100 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 auto v2 = vtemp.pack(dim_c<3>, tag, ejInds[0]);
                 auto v3 = vtemp.pack(dim_c<3>, tag, ejInds[1]);
 
-                for (int i = 0; i < 2; i++)
-                    for (int j = 0; j < 2; j++)
-                        if (exclTab.query({eiInds[i], ejInds[j]}))
-                            return; 
-
-                switch(ee_distance_type(v0, v1, v2, v3)) {
-                    case 0: {
-                        if (auto d2 = dist2_pp(v0, v2); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1); 
-                            tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{eiInds[0], ejInds[0]}; 
-                            tempPP("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    case 1: {
-                        if (auto d2 = dist2_pp(v0, v3); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1); 
-                            tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{eiInds[0], ejInds[1]}; 
-                            tempPP("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    case 2: {
-                        if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], ejInds[0], ejInds[1]}; 
-                            tempPE("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    case 3: {
-                        if (auto d2 = dist2_pp(v1, v2); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1); 
-                            tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{eiInds[1], ejInds[0]}; 
-                            tempPP("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    case 4: {
-                        if (auto d2 = dist2_pp(v1, v3); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPP[0], 1); 
-                            tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{eiInds[1], ejInds[1]}; 
-                            tempPP("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    case 5: {
-                        if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[1], ejInds[0], ejInds[1]}; 
-                            tempPE("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    case 6: {
-                        if (auto d2 = dist2_pe(v2, v0, v1); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{ejInds[0], eiInds[0], eiInds[1]}; 
-                            tempPE("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    case 7: {
-                        if (auto d2 = dist2_pe(v3, v0, v1); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                            tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{ejInds[1], eiInds[0], eiInds[1]}; 
-                            tempPE("dist", no) = (float)zs::sqrt(d2); 
-                        }
-                        break; 
-                    }
-                    case 8: {
-                        if ((v1 - v0).cross(v3 - v2).l2NormSqr() / ((v1 - v0).l2NormSqr() * (v3 - v2).l2NormSqr() + eps_c) < eps_c)
-                        {
-                            if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
-                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[1], ejInds[0], ejInds[1]}; 
-                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                if (enableDegeneratedDist)
+                {
+                    switch(ee_distance_type(v0, v1, v2, v3)) {
+                        case 0: {
+                            if (auto d2 = dist2_pp(v0, v2); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPP[0], 1); 
+                                tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{eiInds[0], ejInds[0]}; 
+                                tempPP("dist", no) = (float)zs::sqrt(d2); 
                             }
+                            break; 
+                        }
+                        case 1: {
+                            if (auto d2 = dist2_pp(v0, v3); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPP[0], 1); 
+                                tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{eiInds[0], ejInds[1]}; 
+                                tempPP("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
+                        }
+                        case 2: {
                             if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
                                 auto no = atomic_add(exec_cuda, &nPE[0], 1); 
                                 tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], ejInds[0], ejInds[1]}; 
                                 tempPE("dist", no) = (float)zs::sqrt(d2); 
                             }
-                            if (auto d2 = dist2_pe(v0, v1, v2); d2 < dHat2) {
-                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], eiInds[1], ejInds[0]}; 
-                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                            break; 
+                        }
+                        case 3: {
+                            if (auto d2 = dist2_pp(v1, v2); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPP[0], 1); 
+                                tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{eiInds[1], ejInds[0]}; 
+                                tempPP("dist", no) = (float)zs::sqrt(d2); 
                             }
-                            if (auto d2 = dist2_pe(v0, v1, v3); d2 < dHat2) {
+                            break; 
+                        }
+                        case 4: {
+                            if (auto d2 = dist2_pp(v1, v3); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPP[0], 1); 
+                                tempPP.tuple(dim_c<2>, "inds", no, int_c) = pair_t{eiInds[1], ejInds[1]}; 
+                                tempPP("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
+                        }
+                        case 5: {
+                            if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
                                 auto no = atomic_add(exec_cuda, &nPE[0], 1); 
-                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[0], eiInds[1], ejInds[1]}; 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{eiInds[1], ejInds[0], ejInds[1]}; 
                                 tempPE("dist", no) = (float)zs::sqrt(d2); 
                             }
                             break; 
                         }
-                        if (auto d2 = safe_dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
-                            auto no = atomic_add(exec_cuda, &nEE[0], 1); 
-                            auto inds = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
-                            tempEE.tuple(dim_c<4>, "inds", no, int_c) = inds; 
-                            tempEE("dist", no) = (float)zs::sqrt(d2); 
+                        case 6: {
+                            if (auto d2 = dist2_pe(v2, v0, v1); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{ejInds[0], eiInds[0], eiInds[1]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
                         }
-                        break; 
+                        case 7: {
+                            if (auto d2 = dist2_pe(v3, v0, v1); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nPE[0], 1); 
+                                tempPE.tuple(dim_c<3>, "inds", no, int_c) = pair3_t{ejInds[1], eiInds[0], eiInds[1]}; 
+                                tempPE("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
+                        }
+                        case 8: {
+                            if ((v1 - v0).cross(v3 - v2).l2NormSqr() / ((v1 - v0).l2NormSqr() * (v3 - v2).l2NormSqr() + eps_c) < eps_c)
+                            {                                                                                                                                                \
+                                check_potential_pe(v0, v2, v3, eiInds[0], ejInds[0], ejInds[1]); 
+                                check_potential_pe(v1, v2, v3, eiInds[1], ejInds[0], ejInds[1]); 
+                                check_potential_pe(v2, v0, v1, ejInds[0], eiInds[0], eiInds[1]); 
+                                check_potential_pe(v3, v0, v1, ejInds[1], eiInds[0], eiInds[1]); 
+                                break; 
+                            }
+                            if (auto d2 = safe_dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
+                                auto no = atomic_add(exec_cuda, &nEE[0], 1); 
+                                auto inds = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                                tempEE.tuple(dim_c<4>, "inds", no, int_c) = inds; 
+                                tempEE("dist", no) = (float)zs::sqrt(d2); 
+                            }
+                            break; 
+                        }
+                        default: break; 
                     }
-                    default: break; 
+                } else {
+                    if (auto d2 = safe_dist2_ee_unclassified(v0, v1, v2, v3); d2 < dHat2)
+                    {
+                        auto no = atomic_add(exec_cuda, &nEE[0], 1); 
+                        auto inds = pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]};
+                        tempEE.tuple(dim_c<4>, "inds", no, int_c) = inds; 
+                        tempEE("dist", no) = (float)zs::sqrt(d2); 
+                    }
                 }
             };
             if (frontManageRequired)
@@ -445,6 +520,8 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
                     continue; 
                 if (colors[j] == color)
                 {
+                    printf("\t\t\t\t[debug] cons-coloring error at i = %d, j = %d, color_i = %d, color_j = %d at %d-th neighbor\n", 
+                        i, j, color, colors[j], k); 
                     correct[0] = 0;  
                     return; 
                 }
@@ -493,7 +570,10 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
     colors.resize(nCons); 
     colors.reset(-1); 
 
-    // bfs
+#if 1
+    auto iter = maximum_independent_sets(pol, lcpTopMat, colorWeights, colors);
+    nConsColor = iter; 
+#else 
     int iter = 0; 
     zs::Vector<int> done{1, memsrc_e::device, 0};
     auto update = 
@@ -520,6 +600,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
             break;
     }
     nConsColor = iter - 1; 
+#endif 
     timer.tock("constraint coloring"); 
     fmt::print("\t\t[graph coloring] Ended with {} colors\n", nConsColor); 
     if (checkConsColoring(pol))
@@ -598,9 +679,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("grad", d + 3, consInd, T_c) = -grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 2; 
+        tempCons("dist", consInd) = dist; 
         for (int k = 0; k < 2; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        tempCons("dist", consInd, T_c) = dist; 
     }); 
     ope = oPP.getVal(); 
 
@@ -632,9 +713,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("grad", d, consInd, T_c) = grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 3; 
+        tempCons("dist", consInd) = dist; 
         for (int k = 0; k < 3; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        tempCons("dist", consInd, T_c) = dist; 
     }); 
     opt = oPE.getVal(); 
 
@@ -643,13 +724,21 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempPT = proxy<space>({}, tempPT), 
                     tempCons = proxy<space>({}, tempCons), 
                     oPT = proxy<space>(oPT), 
-                    delta = delta, tag] __device__ (int i) mutable {
+                    delta = delta, tag, 
+                    enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
         auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
         auto t0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
         auto t1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
         auto t2 = vtemp.pack(dim_c<3>, tag, inds[3]); 
+        auto pt_dist2 = enableDegeneratedDist ? dist2_pt(p, t0, t1, t2) : 
+            dist2_pt_unclassified(p, t0, t1, t2); 
+        auto pt_dist = zs::sqrt(pt_dist2); 
+        for (int k = 0; k < 4; k++)
+            atomic_min(exec_cuda, &vtemp("Di", inds[k]), pt_dist); 
+        if (pt_dist2 >= delta * delta)
+            return; 
         zs::vec<T, 3, 3> mat;
         for (int d = 0; d < 3; d++)
         {
@@ -661,12 +750,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto sgn = vol > 0 ? 1.0f : -1.0f; 
         auto area = (t1 - t0).cross(t2 - t0).norm(); 
         auto coef = sgn * area * delta; 
-        auto dist = zs::abs(vol) / (area + eps_c); 
         if (zs::abs(coef) < eps_c)
             coef = sgn * eps_c; 
         auto val = vol / coef - 1.0f; 
-        for (int k = 0; k < 4; k++)
-            atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
             return; 
         mat = adjoint(mat).transpose();
@@ -684,9 +770,10 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
+        tempCons("dist", consInd) = pt_dist; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        tempCons("dist", consInd, T_c) = dist; 
+        // tempCons("dist", consInd, T_c) = dist; 
     }); 
     oee = oPT.getVal(); 
 
@@ -695,13 +782,21 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempEE = proxy<space>({}, tempEE), 
                     tempCons = proxy<space>({}, tempCons), 
                     oEE = proxy<space>(oEE), 
-                    delta = delta, tag] __device__ (int i) mutable {
+                    delta = delta, tag, 
+                    enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
         auto ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
         auto ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
         auto ej0 = vtemp.pack(dim_c<3>, tag, inds[2]); 
         auto ej1 = vtemp.pack(dim_c<3>, tag, inds[3]);  
+        auto ee_dist2 = enableDegeneratedDist ? safe_dist2_ee(ei0, ei1, ej0, ej1) : 
+            safe_dist2_ee_unclassified(ei0, ei1, ej0, ej1); 
+        auto ee_dist = zs::sqrt(ee_dist2); 
+        for (int k = 0; k < 4; k++)
+            atomic_min(exec_cuda, &vtemp("Di", inds[k]), ee_dist); 
+        if (ee_dist2 >= delta * delta)
+            return; 
         zs::vec<T, 3, 3> mat, rMat;
         for (int d = 0; d < 3; d++)
         {
@@ -728,8 +823,6 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         }
         auto coef = determinant(rMat);
         auto val = vol / coef - 1.0f;
-        for (int k = 0; k < 4; k++)
-            atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
             return; 
         auto consInd = atomic_add(exec_cuda, &oEE[0], 1); 
@@ -747,9 +840,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
+        tempCons("dist", consInd) = dist; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        tempCons("dist", consInd, T_c) = dist; 
     }); 
     nCons = oEE.getVal(); 
     nae = opp, napp = ope - opp, nape = opt - ope, napt = oee - opt, naee = nCons - opt; 
@@ -897,17 +990,16 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
             tempCons("lambda", ci, T_c) = 0.f; 
          }); 
     
-    pol.sync(false); 
     for (int iter = 0; iter < lcpCap; iter++)
     {
-        // lcpConverged.setVal(1); 
+        lcpConverged.setVal(1); 
         for (int color = 0; color < nConsColor; color++)
         {
             pol(range(nCons), 
                 [tempCons = proxy<space>({}, tempCons), 
                 colors = proxy<space>(colors), 
                 lcpMat = proxy<space>(lcpMat), 
-                // lcpConverged = proxy<space>(lcpConverged), 
+                lcpConverged = proxy<space>(lcpConverged), 
                 lcpTol = lcpTol, color] __device__ (int i) mutable {
                     if (tempCons("val", i, T_c) == 0)
                         return; 
@@ -937,14 +1029,13 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
                     }
                     auto newLam = zs::max(rhs / maj, 0.f); 
                     tempCons("lambda", i, T_c) = newLam; 
-                    // if (zs::abs(newLam - oldLam) > lcpTol)
-                    //     lcpConverged[0] = 0; 
+                    if (zs::abs(newLam - oldLam) > lcpTol)
+                        lcpConverged[0] = 0; 
                 }); 
         }
-        // if (lcpConverged.getVal())
-        //     break;         
+        if (lcpConverged.getVal())
+            break;         
     }
-    pol.sync(true);
     timer.tock("solve LCP"); 
 }      
 
@@ -996,8 +1087,7 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     zs::CppTimer timer; 
     timer.tick(); 
     // updated y(l) -> updated x(l)
-    // update Di: atomic_min? 
-    // TODO: calculate an upper-bound of maxDi when doing findConstraints
+#if 0 
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp),
          coOffset = coOffset, 
@@ -1014,12 +1104,69 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
                 ((y - x).norm() + eps_c);
             if (alpha > 1.0f)
                 alpha = 1.0f; 
-            vtemp("sync", vi) = 0.f; 
             vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
                 alpha * (y - x); 
             vtemp("r(l)", vi) *= 1.0f - alpha; 
             vtemp("disp", vi) = alpha * (y - x).norm(); 
         }); 
+#else 
+    // async + sync
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp),
+         coOffset = coOffset, 
+         gamma = gamma] __device__ (int vi) mutable {
+            auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
+            auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
+            if ((y - x).l2NormSqr() < eps_c)
+            {
+                vtemp("disp", vi) = 0.f;
+                vtemp("r(l)", vi) = 0.f; 
+                vtemp("alpha", vi) = 1.f; 
+                return; 
+            }
+            auto alpha = 0.5f * vtemp("Di", vi) * gamma / 
+                ((y - x).norm() + eps_c);
+            if (alpha > 1.0f)
+                alpha = 1.0f; 
+            vtemp("alpha", vi) = alpha; 
+        }); 
+    pol(range(nCons), 
+        [tempCons = proxy<space>({}, tempCons), 
+         vtemp = proxy<space>({}, vtemp), 
+         tinyDist = tinyDist] __device__ (int ci) mutable {
+            auto syncAlpha = limits<T>::max(); 
+            if (tempCons("dist", ci) >= tinyDist)
+                return; 
+            // sync alpha 
+            int vN = tempCons("vN", ci); 
+            for (int k = 0; k < vN; k++)
+            {
+                int vi = tempCons("vi", k, ci); 
+                auto alpha = vtemp("alpha", vi); 
+                syncAlpha = zs::min(syncAlpha, alpha); 
+            }
+            for (int k = 0; k < vN; k++)
+            {
+                int vi = tempCons("vi", k, ci); 
+                atomic_min(exec_cuda, &vtemp("alpha", vi), syncAlpha); 
+            }
+        }); 
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp),
+         coOffset = coOffset, 
+         gamma = gamma] __device__ (int vi) mutable {
+            auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
+            auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
+            if ((y - x).l2NormSqr() < eps_c)
+                return; 
+            auto alpha = vtemp("alpha", vi); 
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
+                alpha * (y - x); 
+            vtemp("r(l)", vi) *= 1.0f - alpha; 
+            vtemp("disp", vi) = alpha * (y - x).norm(); 
+        }); 
+
+#endif 
     timer.tock("forward step"); 
 }
 }

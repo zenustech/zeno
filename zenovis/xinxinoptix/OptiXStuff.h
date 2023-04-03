@@ -26,6 +26,7 @@
 #include "raiicuda.h"
 #include "zeno/utils/string.h"
 #include "tinyexr.h"
+#include <filesystem>
 
 //#include <GLFW/glfw3.h>
 
@@ -488,13 +489,16 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
 
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
+inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
 inline std::optional<std::string> sky_tex;
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
-    if(g_tex.count(path)) {
+    std::filesystem::file_time_type ftime = std::filesystem::last_write_time(path);
+    if(g_tex.count(path) && g_tex_last_write_time[path] == ftime) {
         return;
     }
+    g_tex_last_write_time[path] = ftime;
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
 

@@ -28,6 +28,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
+    float mat_base = 1.0;
     vec3 mat_basecolor = vec3(1.0, 1.0, 1.0);
     float mat_metallic = 0.0;
     float mat_roughness = 0.5;
@@ -54,7 +55,8 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     vec3  mat_sssColor = vec3(0.0f,0.0f,0.0f);
     vec3  mat_sssParam = vec3(0.0f,0.0f,0.0f);
     vec3  mat_normal = vec3(0.0f, 0.0f, 1.0f);
-    vec3 mat_emission = vec3(0.0f, 0.0f,0.0f);
+    float mat_emissionIntensity = float(0);
+    vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
     float mat_displacement = 0.0f;
     //GENERATED_END_MARK
     /** generated code here end **/
@@ -65,7 +67,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         return mats;
     }else {
         /* MODME */
-        mats.basecolor = mat_basecolor;
+        mats.basecolor = mat_base * mat_basecolor;
         mats.metallic = clamp(mat_metallic, 0.0f, 1.0f);
         mats.roughness = clamp(mat_roughness, 0.01, 0.99);
         mats.subsurface = mat_subsurface;
@@ -81,7 +83,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         mats.clearcoatIOR = mat_clearcoatIOR;
         mats.opacity = mat_opacity;
         mats.nrm = mat_normal;
-        mats.emission = mat_emission;
+        mats.emission = mat_emissionIntensity * mat_emission;
         mats.specTrans = clamp(mat_specTrans, 0.0f, 1.0f);
         mats.ior = mat_ior;
         mats.scatterDistance = mat_scatterDistance;

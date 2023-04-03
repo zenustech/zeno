@@ -58,6 +58,7 @@ struct ConstantFold : Visitor<ConstantFold> {
         _PER_OP(log)
         _PER_OP(floor)
         _PER_OP(ceil)
+        _PER_OP(round)
 #undef _PER_OP
 #define _PER_OP(x) } else if (nargs == 2 && stmt->name == #x) { ret.f = std::x(args[0].f, args[1].f);
         _PER_OP(min)
