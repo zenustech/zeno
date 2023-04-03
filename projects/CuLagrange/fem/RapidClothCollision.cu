@@ -679,6 +679,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("grad", d + 3, consInd, T_c) = -grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 2; 
+        tempCons("dist", consInd) = dist; 
         for (int k = 0; k < 2; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -712,6 +713,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("grad", d, consInd, T_c) = grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 3; 
+        tempCons("dist", consInd) = dist; 
         for (int k = 0; k < 3; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -768,6 +770,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
+        tempCons("dist", consInd) = pt_dist; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
         // tempCons("dist", consInd, T_c) = dist; 
@@ -837,6 +840,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
+        tempCons("dist", consInd) = dist; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -1085,6 +1089,7 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     // updated y(l) -> updated x(l)
     // update Di: atomic_min? 
     // TODO: calculate an upper-bound of maxDi when doing findConstraints
+#if 0 
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp),
          coOffset = coOffset, 
@@ -1101,12 +1106,69 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
                 ((y - x).norm() + eps_c);
             if (alpha > 1.0f)
                 alpha = 1.0f; 
-            vtemp("sync", vi) = 0.f; 
             vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
                 alpha * (y - x); 
             vtemp("r(l)", vi) *= 1.0f - alpha; 
             vtemp("disp", vi) = alpha * (y - x).norm(); 
         }); 
+#else 
+    // async + sync
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp),
+         coOffset = coOffset, 
+         gamma = gamma] __device__ (int vi) mutable {
+            auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
+            auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
+            if ((y - x).l2NormSqr() < eps_c)
+            {
+                vtemp("disp", vi) = 0.f;
+                vtemp("r(l)", vi) = 0.f; 
+                vtemp("alpha", vi) = 1.f; 
+                return; 
+            }
+            auto alpha = 0.5f * vtemp("Di", vi) * gamma / 
+                ((y - x).norm() + eps_c);
+            if (alpha > 1.0f)
+                alpha = 1.0f; 
+            vtemp("alpha", vi) = alpha; 
+        }); 
+    pol(range(nCons), 
+        [tempCons = proxy<space>({}, tempCons), 
+         vtemp = proxy<space>({}, vtemp), 
+         tinyDist = tinyDist] __device__ (int ci) mutable {
+            auto syncAlpha = limits<T>::max(); 
+            if (tempCons("dist", ci) >= tinyDist)
+                return; 
+            // sync alpha 
+            int vN = tempCons("vN", ci); 
+            for (int k = 0; k < vN; k++)
+            {
+                int vi = tempCons("vi", k, ci); 
+                auto alpha = vtemp("alpha", vi); 
+                syncAlpha = zs::min(syncAlpha, alpha); 
+            }
+            for (int k = 0; k < vN; k++)
+            {
+                int vi = tempCons("vi", k, ci); 
+                atomic_min(exec_cuda, &vtemp("alpha", vi), syncAlpha); 
+            }
+        }); 
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp),
+         coOffset = coOffset, 
+         gamma = gamma] __device__ (int vi) mutable {
+            auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
+            auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
+            if ((y - x).l2NormSqr() < eps_c)
+                return; 
+            auto alpha = vtemp("alpha", vi); 
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
+                alpha * (y - x); 
+            vtemp("r(l)", vi) *= 1.0f - alpha; 
+            vtemp("disp", vi) = alpha * (y - x).norm(); 
+        }); 
+
+#endif 
     timer.tock("forward step"); 
 }
 }
