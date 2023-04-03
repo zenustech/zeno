@@ -26,6 +26,7 @@ struct ShaderFinalize : INode {
             em.commonCode += get_input<StringObject>("commonCode")->get();
 
         auto code = em.finalizeCode({
+            {1, "mat_base"},
             {3, "mat_basecolor"},
             {1, "mat_metallic"},
             {1, "mat_roughness"},
@@ -53,6 +54,7 @@ struct ShaderFinalize : INode {
             {3, "mat_normal"},
             {1, "mat_displacement"},
             {1, "mat_smoothness"},
+            {1, "mat_emissionIntensity"},
             {3, "mat_emission"},
             {1,"mat_opacity"},
 
@@ -66,6 +68,7 @@ struct ShaderFinalize : INode {
             {3, "vol_sample_albedo"},
 
         }, {
+            get_input<IObject>("base", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
@@ -93,6 +96,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
             get_input<IObject>("displacement", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("emissionIntensity", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             
@@ -185,6 +189,7 @@ struct ShaderFinalize : INode {
 
 ZENDEFNODE(ShaderFinalize, {
     {
+        {"float", "base", "1"},
         {"vec3f", "basecolor", "1,1,1"},
         {"float", "metallic", "0.0"},
         {"float", "roughness", "0.4"},
@@ -212,6 +217,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "normal", "0,0,1"},
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
+        {"float", "emissionIntensity", "1"},
         {"vec3f", "emission", "0,0,0"},
         {"float", "opacity", "0"},
         {"string", "commonCode"},
