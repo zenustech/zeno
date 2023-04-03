@@ -571,7 +571,7 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
     colors.reset(-1); 
 
 #if 1
-    auto iter = fast_independent_sets(pol, lcpTopMat, colorWeights, colors);
+    auto iter = maximum_independent_sets(pol, lcpTopMat, colorWeights, colors);
     nConsColor = iter; 
 #else 
     int iter = 0; 
@@ -1087,8 +1087,6 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     zs::CppTimer timer; 
     timer.tick(); 
     // updated y(l) -> updated x(l)
-    // update Di: atomic_min? 
-    // TODO: calculate an upper-bound of maxDi when doing findConstraints
 #if 0 
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp),

@@ -209,8 +209,8 @@ struct RapidClothSystem : IObject {
     std::size_t estNumCps = 100000;
     std::size_t bvhFrontCps = 10000000; 
     T cgRel = 1e-2;
-    int PNCap = 1000;
-    int CGCap = 500;
+    int PNCap = 5;
+    int CGCap = 250;
     T armijoParam = 1e-4;
     bool enableContact = true;
     bool enableContactSelf = true;

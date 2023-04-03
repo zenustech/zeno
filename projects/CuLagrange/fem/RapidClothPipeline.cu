@@ -440,12 +440,24 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
 void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    newtonDynamicsStep(pol); // TODO: add repulsive force 
+
+    pol(range(vtemp.size()), 
+        [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x[k]", vi); 
+        }); 
+    for (int iters = 0; iters < PNCap; iters++)
+    {
+        if (iters != 0)
+            pol(range(vtemp.size()), 
+                [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
+                    vtemp.tuple(dim_c<3>, "x[k]", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
+                }); 
+        newtonDynamicsStep(pol);  
+    }
     // y(l) = y[k+1]
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
-            vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi); 
-            vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x[k]", vi); 
+            vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi);  
             vtemp("r(l)", vi) = 1.f; 
         }); 
     for (int iters = 0; iters < L; iters++)

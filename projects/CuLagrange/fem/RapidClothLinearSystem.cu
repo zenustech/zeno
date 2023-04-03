@@ -332,6 +332,8 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
         vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
         vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
     });
+    // TODO: line-search 
+    // TODO: calculate energy 
     computeInertialAndForceGradient(pol, "x[k]");
     computeElasticGradientAndHessian(pol, "x[k]");
     if (enableRepulsion)
