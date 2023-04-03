@@ -55,8 +55,9 @@ ZRecordVideoDlg::ZRecordVideoDlg(int frameStart, int frameEnd, QWidget* parent)
 	connect(m_ui->btnGroup, SIGNAL(accepted()), this, SLOT(accept()));
 	connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
 }
-
-bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate, QString& presets, int& width, int& height, QString& path, QString& fn, int &numOptix, int &numMSAA, bool& bRecordWhenRun)
+bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bitrate,
+                              float& width, float& height, QString& path, QString& fn, int &numOptix, int &numMSAA,
+             bool& bRecordWhenRun, bool& bExportVideo)
 {
 	frameStart = m_ui->frameStart->text().toInt();
 	frameEnd = m_ui->frameEnd->text().toInt();
@@ -64,11 +65,11 @@ bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bit
 	bitrate = m_ui->bitrate->text().toInt();
     numMSAA = m_ui->msaaSamplerNumber->text().toInt();
     numOptix = m_ui->optixSamplerNumber->text().toInt();
-	presets = m_ui->cbPresets->currentText();
-	width = m_ui->lineWidth->text().toInt();
-	height = m_ui->lineHeight->text().toInt();
+	width = m_ui->lineWidth->text().toFloat();
+	height = m_ui->lineHeight->text().toFloat();
 	path = m_ui->linePath->text();
 	bRecordWhenRun = m_ui->cbRunRecord->checkState() == Qt::Checked;
+	bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
 	if (path.isEmpty())
 	{
 		QTemporaryDir dir;
@@ -86,7 +87,7 @@ bool ZRecordVideoDlg::getInfo(int& frameStart, int& frameEnd, int& fps, int& bit
 		fn = "capture";
 		const QString& suffix = ".mp4";
 		int idx = 1;
-		while (QFileInfo(path + "/" + fn + suffix).exists())
+		while (QFileInfo::exists(path + "/" + fn + suffix))
 		{
 			fn = "capture_" + QString::number(idx);
 			idx++;

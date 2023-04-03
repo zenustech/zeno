@@ -96,7 +96,8 @@ struct ZSNSPressureProject : INode {
     }
 #endif
 
-    template <int level> void clearInit(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
+    template <int level>
+    void clearInit(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg = NSGrid->getLevel<level>();
@@ -598,7 +599,8 @@ struct ZSNSPressureProject : INode {
         pol.syncCtx();
     }
 
-    template <int level> float residual(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
+    template <int level>
+    float residual(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg = NSGrid->getLevel<level>();
@@ -817,7 +819,8 @@ struct ZSNSPressureProject : INode {
         return max_residual;
     }
 
-    template <int level> void restriction(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
+    template <int level>
+    void restriction(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg_f = NSGrid->getLevel<level>();
@@ -854,7 +857,8 @@ struct ZSNSPressureProject : INode {
         pol.shmem(0);
     }
 
-    template <int level> void prolongation(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
+    template <int level>
+    void prolongation(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg_f = NSGrid->getLevel<level>();
@@ -880,7 +884,8 @@ struct ZSNSPressureProject : INode {
         pol.shmem(0);
     }
 
-    template <int level> void multigrid(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
+    template <int level>
+    void multigrid(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho) {
         if constexpr (level == 3) {
             clearInit<level>(pol, NSGrid);
 
@@ -985,7 +990,7 @@ struct ZSNSPressureProject : INode {
         // velocity divergence (source term)
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
             [spgv = zs::proxy<space>(spg), rhs = zs::proxy<space>(rhs), ts_c = zs::wrapv<bucket_size>{},
-             tpb_c = zs::wrapv<tpb>{}, dxSqOverDt = dx * dx / dt, dt, hasDiv, blockCnt = block_cnt,
+             tpb_c = zs::wrapv<tpb>{}, dxSqOverDt = dx * dx / dt, dx, dt, hasDiv, blockCnt = block_cnt,
              vOffset = spg.getPropertyOffset(src_tag(NSGrid, "v")),
              cutOffset = spg.getPropertyOffset("cut")] __device__(value_type * shmem, int bid, int tid) mutable {
                 // load halo
@@ -1056,6 +1061,8 @@ struct ZSNSPressureProject : INode {
                     cut_x[1] = cutShmem[idx + 1];
 
                     outputShmem[idx] = (u_x[1] * cut_x[1] - u_x[0] * cut_x[0]) * dxSqOverDt;
+
+                    spgv("tmp", 1, blockno, cellno) = cut_x[0] + cut_x[1];
                 }
 
                 //-------------------v-------------------
@@ -1100,6 +1107,8 @@ struct ZSNSPressureProject : INode {
                     cut_y[1] = cutShmem[idx + halo_side_length];
 
                     outputShmem[idx] += (u_y[1] * cut_y[1] - u_y[0] * cut_y[0]) * dxSqOverDt;
+
+                    spgv("tmp", 1, blockno, cellno) += cut_y[0] + cut_y[1];
                 }
 
                 //-------------------w-------------------
@@ -1146,12 +1155,11 @@ struct ZSNSPressureProject : INode {
                     float div_term = outputShmem[idx];
                     div_term += (u_z[1] * cut_z[1] - u_z[0] * cut_z[0]) * dxSqOverDt;
 
-#if 0
-                    if (hasDiv) {
-                        // fix me
-                        div_term -= spgv.value("div", blockno, cellno) / dt;
+                    float cut_sum = spgv("tmp", 1, blockno, cellno) + cut_z[0] + cut_z[1];
+
+                    if (hasDiv && cut_sum > 3.f) {
+                        div_term -= cut_sum / 6.f * spgv.value("div", blockno, cellno) * dx * dxSqOverDt;
                     }
-#endif
 
                     spgv("tmp", blockno, cellno) = div_term;
 
@@ -1291,7 +1299,8 @@ struct ZSNSPressureProject : INode {
         update_cur(NSGrid, "v");
     }
 
-    template <int level> void coarseFaceFrac(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
+    template <int level>
+    void coarseFaceFrac(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg_f = NSGrid->getLevel<level>();
@@ -1369,6 +1378,7 @@ struct ZSNSPressureProject : INode {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
         auto rho = get_input2<float>("Density");
         auto dt = get_input2<float>("dt");
+        auto tolerance = get_input2<float>("Tolerance");
         auto maxIter = get_input2<int>("MaxIterations");
         auto hasDiv = get_input2<bool>("hasDivergence");
 
@@ -1410,8 +1420,9 @@ struct ZSNSPressureProject : INode {
 #endif
 
         // Multi-grid solver with V-Cycle
-        const float tolerence = 1e-5;
         printf("========MultiGrid V-cycle Begin========\n");
+
+        clearInit<0>(pol, NSGrid.get());
 
         coarseFaceFrac<0>(pol, NSGrid.get());
         coarseFaceFrac<1>(pol, NSGrid.get());
@@ -1432,7 +1443,7 @@ struct ZSNSPressureProject : INode {
             float res = residual<0>(pol, NSGrid.get(), rho);
             res /= rhs_max;
             printf("%dth V-cycle residual: %e\n", iter + 1, res);
-            if (res < tolerence)
+            if (res < tolerance)
                 break;
         }
 
@@ -1484,7 +1495,7 @@ struct ZSNSPressureProject : INode {
 ZENDEFNODE(
     ZSNSPressureProject,
     {/* inputs: */
-     {"NSGrid", "dt", {"float", "Density", "1.0"}, {"int", "MaxIterations", "10"}, {"bool", "hasDivergence", "0"}},
+     {"NSGrid", "dt", {"float", "Density", "1.0"}, {"float", "Tolerance", "1e-4"}, {"int", "MaxIterations", "10"}, {"bool", "hasDivergence", "0"}},
      /* outputs: */
      {"NSGrid"},
      /* params: */

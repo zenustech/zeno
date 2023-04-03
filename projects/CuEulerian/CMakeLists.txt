@@ -30,6 +30,7 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   levelset/Grid_creator.cu
   levelset/Reinitialization.cu
+  levelset/Extrapolation.cu
 )
 
 # navier stokes

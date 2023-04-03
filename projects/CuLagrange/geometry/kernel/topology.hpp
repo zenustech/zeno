@@ -44,7 +44,7 @@ namespace zeno {
         using T = typename VTileVec::value_type;
         using bv_t = AABBBox<3,T>;
 
-        if(!tris.hasProperty(neighTag) || (tris.getChannelSize(neighTag) != 3)){
+        if(!tris.hasProperty(neighTag) || (tris.getPropertySize(neighTag) != 3)){
             return false;
         }
 
@@ -115,7 +115,7 @@ namespace zeno {
         using T = typename VTileVec::value_type;
         using bv_t = AABBBox<3,T>;
 
-        if(!tris.hasProperty(neighTag) || tris.getChannelSize(neighTag) != 3) 
+        if(!tris.hasProperty(neighTag) || tris.getPropertySize(neighTag) != 3) 
             return false;
 
         constexpr auto space = zs::execspace_e::cuda;
@@ -153,10 +153,10 @@ namespace zeno {
         using T = typename VTileVec::value_type;
         using bv_t = AABBBox<3,T>;
 
-        if(!edges.hasProperty(neighTag) || edges.getChannelSize(neighTag) != 2)
+        if(!edges.hasProperty(neighTag) || edges.getPropertySize(neighTag) != 2)
             return false;
 
-        if(!tris.hasProperty(neighTag) || tris.getChannelSize(neighTag) != 3)
+        if(!tris.hasProperty(neighTag) || tris.getPropertySize(neighTag) != 3)
             return false;
 
         constexpr auto space = zs::execspace_e::cuda;

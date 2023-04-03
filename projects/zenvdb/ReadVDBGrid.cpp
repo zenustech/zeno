@@ -177,11 +177,11 @@ struct ReadVDB : ImportVDBGrid {
 };
 static int defReadVDB = zeno::defNodeClass<ReadVDB>("ReadVDB",
     { /* inputs: */ {
-    {"writepath", "path"},
+    {"readpath", "path"},
     }, /* outputs: */ {
     "data",
     }, /* params: */ {
-    {"string", "type", ""},
+    {"enum float float3 int int3 points", "type", ""},
     }, /* category: */ {
     "openvdb",
     }});

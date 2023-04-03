@@ -109,8 +109,8 @@ struct FleshQuasiStaticStepping : INode {
               auto ei = reinterpret_bits<int>(bcws("inds",vi));
               if(ei < 0)
                   return;
-              auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-              auto w = bcws.pack<4>("w",vi);
+              auto inds = eles.pack(dim_c<4>, "inds", ei).reinterpret_bits<int>();
+              auto w = bcws.pack(dim_c<4>, "w",vi);
 
               auto tpos = vec3::zeros();
               for(size_t i = 0;i != 4;++i)
@@ -252,11 +252,11 @@ struct FleshQuasiStaticStepping : INode {
                     if(ei < 0)
                         return;
                     auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-                    auto w = bcws.pack<4>("w",vi);
+                    auto w = bcws.pack(dim_c<4>, "w", vi);
                     auto tpos = vec3::zeros();
                     for(size_t i = 0;i != 4;++i)
-                        tpos += w[i] * vtemp.pack<3>(tag,inds[i]);
-                    auto pdiff = tpos - b_verts.pack<3>("x",vi);
+                        tpos += w[i] * vtemp.pack(dim_c<3>, tag, inds[i]);
+                    auto pdiff = tpos - b_verts.pack(dim_c<3>, "x", vi);
 
                     T stiffness = 2.0066 * mu + 1.0122 * lambda;
 
@@ -374,15 +374,15 @@ struct FleshQuasiStaticStepping : INode {
         // throw std::runtime_error("The input flesh should have fiber orientations");
 
     }else {
-      if(eles.getChannelSize("fiber") != 3){
+      if(eles.getPropertySize("fiber") != 3){
           fmt::print("The input fiber  has wrong channel size\n");
           throw std::runtime_error("The input fiber has wrong channel size");
       }
       TILEVEC_OPS::copy<3>(cudaPol,eles,"fiber",etemp,"fiber");
     }
     if(!eles.hasProperty(muscle_id_tag)) {
-      // if((!eles.hasProperty(muscle_id_tag)) || (eles.getChannelSize(muscle_id_tag) != 1)){
-      //     fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getChannelSize(muscle_id_tag));
+      // if((!eles.hasProperty(muscle_id_tag)) || (eles.getPropertySize(muscle_id_tag) != 1)){
+      //     fmt::print("the quadrature has no muscle id tag : {} {}\n",muscle_id_tag,eles.getPropertySize(muscle_id_tag));
       //     throw std::runtime_error("the quadrature has no muscle id tag");
       // }
       // fmt::print("The input flesh have no mosucle_id specified, use the default setting");

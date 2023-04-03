@@ -25,18 +25,18 @@ protected:
 	struct MyParticle {
 
 		openvdb::Vec3R p;//, v;
-		//openvdb::Real  r;
+		openvdb::Real  r;
 		MyParticle()
 		{
 			p = openvdb::Vec3R(0);
 			//v = openvdb::Vec3R(0);
-			//r = 0;
+			r = 0;
 		}
 		MyParticle(const MyParticle &_p)
 		{
 			p = _p.p;
 			//v = _p.v;
-			////r = _p.r;
+			r = _p.r;
 		}
 	};
 	openvdb::Real           mRadius = 1;
@@ -46,23 +46,25 @@ public:
 	typedef openvdb::Vec3R  value_type;
 
 	MyParticleList(size_t size = 0, openvdb::Real radius = 1)
-		: mRadius(radius) {
+	{
 		mParticleList.resize(size);
 	}
 	void free()
 	{
 		mParticleList=std::vector<MyParticle>(0);
 	}
-	void set(int i, const openvdb::Vec3R &p)
+	void set(int i, const openvdb::Vec3R &p, float r)
 	{
 		MyParticle pa;
 		pa.p = p;
+                pa.r = r;
 		mParticleList[i] = pa;
 	}
-	void add(const openvdb::Vec3R &p)
+	void add(const openvdb::Vec3R &p, float r)
 	{
 		MyParticle pa;
 		pa.p = p;
+                pa.r = r;
 		mParticleList.push_back(pa);
 	}
 	/// @return coordinate bbox in the space of the specified transfrom
@@ -105,12 +107,12 @@ public:
 
 	void getPosRad(size_t n, openvdb::Vec3R& pos, openvdb::Real& rad) const {
 		pos = mParticleList[n].p;
-		rad = mRadius;
+		rad = mParticleList[n].r;
 	}
 	void getPosRadVel(size_t n, openvdb::Vec3R& pos, openvdb::Real& rad, openvdb::Vec3R& vel) const {
 		pos = mParticleList[n].p;
-        rad = mRadius;
-        vel = {0, 0, 0};
+                rad = mParticleList[n].r;
+                vel = {0, 0, 0};
 		//rad = mRadiusScale*mParticleList[n].r;
 		//vel = mVelocityScale*mParticleList[n].v;
 	}
@@ -118,13 +120,13 @@ public:
 	void getAtt(size_t n, openvdb::Index32& att) const { att = openvdb::Index32(n); }
 };
 
-static openvdb::FloatGrid::Ptr particleToLevelset(const std::vector<zeno::vec3f>& pos, double radius, double voxelSize)
+static openvdb::FloatGrid::Ptr particleToLevelset(const std::vector<zeno::vec3f>& pos, const std::vector<float>& radius, double voxelSize)
 {
-    MyParticleList pa(pos.size(), radius);
+    MyParticleList pa(pos.size());
     tbb::parallel_for(0, (int)pos.size(), 1, [&](int p)
         {
             auto ppos = pos[p];
-            pa.set(p, openvdb::Vec3R(ppos[0], ppos[1], ppos[2]));
+            pa.set(p, openvdb::Vec3R(ppos[0], ppos[1], ppos[2]), radius[p]);
         });
     openvdb::FloatGrid::Ptr ls = openvdb::createLevelSet<openvdb::FloatGrid>(voxelSize, 4.0);
     openvdb::tools::ParticlesToLevelSet<openvdb::FloatGrid, openvdb::Index32> raster(*ls);
@@ -143,12 +145,30 @@ struct ParticleToLevelSet : zeno::INode{
         float dx = radius/2.0f;
         if(has_input("Dx")) dx = get_input("Dx")->as<zeno::NumericObject>()->get<float>();
         auto result = zeno::IObject::make<VDBFloatGrid>();
-        result->m_grid = particleToLevelset(par->attr<zeno::vec3f>("pos"), radius, dx);
+        std::vector<float> pr;
+        pr.resize(par->attr<zeno::vec3f>("pos").size());
+        if(get_input<StringObject>("rname")->get() != "")
+        {
+            auto rname = get_input<StringObject>("rname")->get();
+#pragma omp parallel for
+            for(size_t p=0; p<pr.size(); p++)
+              {
+                  pr[p] = par->attr<float>(rname)[p];
+              };
+        } else
+        {
+#pragma omp parallel for
+            for(size_t p=0; p<pr.size(); p++)
+              {
+                  pr[p] = radius;
+              };
+        }
+        result->m_grid = particleToLevelset(par->attr<zeno::vec3f>("pos"), pr, dx);
         set_output("SurfaceSDF", result);
     }
 };
 ZENDEFNODE(ParticleToLevelSet, {
-    {"Particles", {"float","Radius"}, {"float","Dx"}},
+    {"Particles", {"float","Radius"}, {"float","Dx"}, {"string", "rname"}},
     {"SurfaceSDF"},
     {},
     {"openvdb"},

@@ -2,6 +2,13 @@
 
 #include <cuda/helpers.h>
 
+__forceinline__ __device__ float to_radians(float degrees) {
+    return degrees * M_PIf / 180.0f;
+}
+__forceinline__ __device__ float to_degrees(float radians) {
+    return radians * M_1_PIf * 180.0f;
+}
+
 struct vec4{
     float x, y, z, w;
     __forceinline__ __device__ vec4(const float4 &_v)
@@ -50,6 +57,15 @@ struct vec3{
     vec3() = default;
     __forceinline__ __device__ operator float3() const {
         return make_float3(x, y, z);
+    }
+    __forceinline__ __device__ vec3 rotX(float a) {
+        return vec3(x, cos(a) * y - sin(a) * z, sin(a) * y + cos(a) * z);
+    }
+    __forceinline__ __device__ vec3 rotY(float a) {
+        return vec3(cos(a) * x - sin(a) * z, y, cos(a) * z + sin(a) * x);
+    }
+    __forceinline__ __device__ vec3 rotZ(float a) {
+        return vec3(cos(a) * x - sin(a) * y, cos(a) * y + sin(a) * x, z);
     }
 };
 
@@ -938,6 +954,12 @@ __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
     float4 res = tex2D<float4>(texObj, uv.x, uv.y);
     return vec4(res.x, res.y, res.z, res.w);
 }
+
+// __forceinline__ __device__ float textureSparse3D(nanovdb *aaa, vec3 pos)
+// {
+
+// }
+
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////

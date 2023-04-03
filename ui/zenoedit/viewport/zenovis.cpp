@@ -1,6 +1,8 @@
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
+#include "../zenomainwindow.h"
 #include "../launch/corelaunch.h"
+#include "../timeline/ztimeline.h"
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/logger.h>
@@ -117,7 +119,12 @@ void Zenovis::doFrameUpdate()
 {
     //if fileio.isIOPathChanged() :
     //    core.clear_graphics()
+
     int frameid = getCurrentFrameId();
+    int ui_frameid = zenoApp->getMainWindow()->getDisplayWidget()->getTimelinePointer()->value();
+
+    zenoApp->getMainWindow()->doFrameUpdate(ui_frameid);
+
     if (m_playing) {
         zeno::log_trace("playing at frame {}", frameid);
     }

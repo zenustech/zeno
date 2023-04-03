@@ -18,7 +18,6 @@ struct MaintainSpatialAccelerator : INode {
 
         using namespace zs;
         using bv_t = typename ZenoParticles::lbvh_t::Box;
-        constexpr auto space = execspace_e::cuda;
 
         auto cudaPol = cuda_exec().device(0);
 

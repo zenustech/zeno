@@ -95,6 +95,12 @@ struct ZSVolumeWrangler : zeno::INode {
                         parnames.emplace_back(key, 1);
                         parnames.emplace_back(key, 2);
                         return 3;
+                    } else if constexpr (std::is_convertible_v<T, vec2f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        return 2;
                     } else if constexpr (std::is_convertible_v<T, float>) {
                         parvals.push_back(v);
                         parnames.emplace_back(key, 0);
@@ -114,21 +120,23 @@ struct ZSVolumeWrangler : zeno::INode {
         currentContext.setContext();
         auto cudaPol = cuda_exec().device(0).sync(true);
 
-        auto transTag = [](std::string str) {
-            if (str == "pos")
-                str = "x";
-            else if (str == "vel")
-                str = "v";
-            return str;
-        };
-
         /// symbols
-        auto def_sym = [&opts](std::string key, int dim) {
+        auto def_sym = [&opts](std::string key, int dim, bool isDoubleBuffer) {
+            if (isDoubleBuffer)
+                key.pop_back();
+
             if (key == "x")
                 opts.define_symbol("@pos", dim);
             else if (key == "v")
                 opts.define_symbol("@vel", dim);
             opts.define_symbol('@' + key, dim);
+            if (isDoubleBuffer) {
+                if (key == "x")
+                    opts.define_symbol("@@pos", dim);
+                else if (key == "v")
+                    opts.define_symbol("@@vel", dim);
+                opts.define_symbol("@@" + key, dim);
+            }
         };
 
         for (auto &&spgPtr : spgPtrs) {
@@ -140,7 +148,7 @@ struct ZSVolumeWrangler : zeno::INode {
             opts.symdims.clear();
             // PropertyTag can be used for structured binding automatically
             for (auto &&[name, nchns] : props)
-                def_sym(name.asString(), nchns);
+                def_sym(name.asString(), nchns, spgPtr->isDoubleBufferAttrib(name.asString()));
 
             auto prog = compiler.compile(code, opts);
             auto jitCode = assembler.assemble(prog->assembly);
@@ -154,14 +162,21 @@ struct ZSVolumeWrangler : zeno::INode {
             };
             std::vector<zs::PropertyTag> newChns{};
             bool hasPositionProperty = false;
+            /// @note only allow non-double-buffer property insertion
             for (auto const &[name, dim] : prog->newsyms) {
                 assert(name[0] == '@');
                 auto key = name.substr(1);
-                if (!checkDuplication(key))
-                    newChns.push_back(PropertyTag{key, dim});
+                if (key[0] != '@') {
+                    if (!checkDuplication(key))
+                        newChns.push_back(PropertyTag{key, dim});
 
-                if (key == "x")
-                    hasPositionProperty = true;
+                    /// @note currently only check position property among newly inserted symbols
+                    if (key == "x" || key == "pos") {
+                        hasPositionProperty = true;
+                    }
+                } else
+                    throw std::runtime_error(
+                        fmt::format("currently forbids inserting a double buffer property [{}]!", key.substr(1)));
             }
             if (newChns.size() > 0)
                 tvPtr->append_channels(cudaPol, newChns);
@@ -207,19 +222,40 @@ struct ZSVolumeWrangler : zeno::INode {
             /// symbols
             for (int i = 0; i < prog->symbols.size(); i++) {
                 auto [name, dimid] = prog->symbols[i];
-#if 0
-        fmt::print("channel {}: {}.{}. chn offset: {} (of {})\n", i,
-                   name.c_str(), dimid, tvPtr->getPropertyOffset(name.substr(1)),
-                   tvPtr->numChannels());
-#endif
-                haccessors[i] =
-                    zs::AccessorAoSoA{zs::aosoa_c,
-                                      (void *)tvPtr->data(),
-                                      (unsigned short)unitBytes,
-                                      (unsigned short)tileSize,
-                                      (unsigned short)tvPtr->numChannels(),
-                                      (unsigned short)(tvPtr->getPropertyOffset(transTag(name.substr(1))) + dimid),
-                                      (unsigned short)0};
+
+                int no = -1;
+                if (name.substr(0, 2) == "@@") {
+                    name = name.substr(2);
+                    no = 1;
+                } else {
+                    name = name.substr(1);
+                    no = 0;
+                }
+
+                ///@note map reserved keywords
+                if (name == "pos")
+                    name = "x";
+                else if (name == "vel")
+                    name = "v";
+
+                ///@note adjust double buffer property name
+                if (spgPtr->isDoubleBufferAttrib(name)) {
+                    if (no == 1)
+                        no = spgPtr->readMeta<int>(name + "_cur") ^ 1;
+                    else
+                        no = spgPtr->readMeta<int>(name + "_cur");
+                } else
+                    no = -1;
+                if (no >= 0)
+                    name += std::to_string(no);
+
+                haccessors[i] = zs::AccessorAoSoA{zs::aosoa_c,
+                                                  (void *)tvPtr->data(),
+                                                  (unsigned short)unitBytes,
+                                                  (unsigned short)tileSize,
+                                                  (unsigned short)tvPtr->numChannels(),
+                                                  (unsigned short)(tvPtr->getPropertyOffset(name) + dimid),
+                                                  (unsigned short)0};
 
 #if 0
         auto t = haccessors[i];
@@ -254,7 +290,7 @@ struct ZSVolumeWrangler : zeno::INode {
             void *args[4] = {(void *)&cnt, (void *)&d_params, (void *)&nchns, (void *)&addr};
 
             cuLaunchKernel((CUfunction)function, (cnt + 127) / 128, 1, 1, 128, 1, 1, 0,
-                           (CUstream)currentContext.streamSpare(0), args, (void **)nullptr);
+                           (CUstream)currentContext.streamSpare(-1), args, (void **)nullptr);
             // end kernel launch
             cuCtxSynchronize();
         }

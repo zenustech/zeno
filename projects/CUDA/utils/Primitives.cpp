@@ -1,7 +1,12 @@
 #include "Structures.hpp"
+#include "zensim/container/Bcht.hpp"
+#include "zensim/container/Bht.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Distance.hpp"
 #include "zensim/geometry/SpatialQuery.hpp"
+#include "zensim/graph/Coloring.hpp"
+#include "zensim/graph/ConnectedComponents.hpp"
+#include "zensim/math/matrix/SparseMatrixOperations.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <cassert>
 #include <cstdlib>
@@ -51,6 +56,394 @@ static zs::Vector<zs::AABBBox<3, float>> retrieve_bounding_volumes(zs::OmpExecut
     });
     return ret;
 }
+
+struct PrimitiveConnectedComponents : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        const auto &lines = prim->lines.values;
+        const auto &tris = prim->tris.values;
+        const auto &quads = prim->quads.values;
+
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
+        std::vector<int> is, js;
+        auto buildTopo = [&](const auto &eles) mutable {
+            pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
+                using eleT = RM_CVREF_T(ele);
+                constexpr int codim = is_same_v<eleT, zeno::vec2i> ? 2 : (is_same_v<eleT, zeno::vec3i> ? 3 : 4);
+                for (int i = 0; i < codim; ++i) {
+                    auto a = ele[i];
+                    auto b = ele[(i + 1) % codim];
+                    if (a > b)
+                        std::swap(a, b);
+                    tab.insert(IV{a, b});
+                    if constexpr (codim == 2)
+                        break;
+                }
+            });
+        };
+        buildTopo(lines);
+        buildTopo(tris);
+        buildTopo(quads);
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<int, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+
+#if 0
+        fmt::print("@@@@@@@@@@@@@@@@@\n");
+        spmat.print();
+        fmt::print("@@@@@@@@@@@@@@@@@\n\n");
+#endif
+
+        /// @note update fathers of each vertex
+        auto &fas = prim->add_attr<int>("fa");
+        union_find(pol, spmat, range(fas));
+
+#if 0
+        fmt::print("$$$$$$$$$$$$$$$$$\n");
+        for (int i = 0; i < pos.size(); ++i) {
+            fmt::print("vert [{}]\'s father {}\n", i, fas[i]);
+        }
+        fmt::print("$$$$$$$$$$$$$$$$$\n\n");
+#endif
+
+        /// @note update ancestors, discretize connected components
+        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+
+#if 0
+        fmt::print("????init??table??\n");
+        for (int i = 0; i != vtab.size(); ++i)
+            fmt::print("[{}]-th set representative: {}\n", i, vtab._activeKeys[i]);
+        fmt::print("?????????????????\n\n");
+#endif
+
+        pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            vtab.insert(fa);
+        });
+
+        auto &setids = prim->add_attr<int>("set");
+        pol(range(pos.size()), [&fas, &setids, vtab = view<space>(vtab)](int vi) mutable {
+            auto ancestor = fas[vi];
+            auto setNo = vtab.query(ancestor);
+            setids[vi] = setNo;
+        });
+        auto numSets = vtab.size();
+        fmt::print("{} disjoint sets in total.\n", numSets);
+
+        auto outPrim = std::make_shared<PrimitiveObject>();
+        outPrim->resize(pos.size());
+        auto id = get_input2<int>("set_index");
+        int setSize = 0;
+        for (int i = 0; i != pos.size(); ++i)
+            if (setids[i] == id)
+                outPrim->attr<zeno::vec3f>("pos")[setSize++] = pos[i];
+        outPrim->resize(setSize);
+
+#if 0
+        fmt::print("?????????????????\n");
+        for (int i = 0; i != numSets; ++i)
+            fmt::print("[{}]-th set representative: {}\n", i, vtab._activeKeys[i]);
+        fmt::print("?????????????????\n\n");
+
+        fmt::print("=================\n");
+        for (int i = 0; i < pos.size(); ++i) {
+            fmt::print("vert [{}] belong to set {}\n", i, setids[i]);
+        }
+        fmt::print("=================\n\n");
+#endif
+
+        set_output("prim", std::move(outPrim));
+    }
+};
+
+ZENDEFNODE(PrimitiveConnectedComponents, {
+                                             {{"PrimitiveObject", "prim"}, {"int", "set_index", "0"}},
+                                             {
+                                                 {"PrimitiveObject", "prim"},
+                                             },
+                                             {},
+                                             {"zs_query"},
+                                         });
+
+struct PrimitiveBFS : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        const auto &lines = prim->lines.values;
+        const auto &tris = prim->tris.values;
+        const auto &quads = prim->quads.values;
+
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
+        std::vector<int> is, js;
+        auto buildTopo = [&](const auto &eles) mutable {
+            pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
+                using eleT = RM_CVREF_T(ele);
+                constexpr int codim = is_same_v<eleT, zeno::vec2i> ? 2 : (is_same_v<eleT, zeno::vec3i> ? 3 : 4);
+                for (int i = 0; i < codim; ++i) {
+                    auto a = ele[i];
+                    auto b = ele[(i + 1) % codim];
+                    if (a > b)
+                        std::swap(a, b);
+                    tab.insert(IV{a, b});
+                    if constexpr (codim == 2)
+                        break;
+                }
+            });
+        };
+        buildTopo(lines);
+        buildTopo(tris);
+        buildTopo(quads);
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<int, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+        spmat._vals.resize(spmat.nnz());
+        /// finalize connectivity graph
+        pol(spmat._vals, [](int &v) { v = 1; });
+        puts("done connectivity graph build");
+
+        auto id = get_input2<int>("vert_index");
+        if (id >= pos.size())
+            id = 0;
+
+        std::vector<int> maskOut(pos.size());
+        std::vector<int> levelQueue(pos.size());
+        std::vector<int> nextLevel(pos.size());
+        auto &bfslevel = prim->add_attr<int>("bfs_level");
+        // initial mask
+        maskOut[id] = 1;
+        levelQueue[id] = 1;
+        pol(bfslevel, [](int &l) { l = -1; });
+        bfslevel[id] = 0;
+
+        puts("done init");
+        // bfs
+        int iter = 0;
+        auto allZerosUpdateQueue = [&nextLevel, &levelQueue, &maskOut, &bfslevel, &pol](int iter) -> bool {
+            bool pred = true;
+            pol(zip(nextLevel, levelQueue, maskOut, bfslevel), [&](int &v, int &vnext, int &mask, int &level) {
+                if (v == 1) {
+                    pred = false;
+                    vnext = 1;
+                    mask = 1;
+                    level = iter;
+                }
+            });
+            return pred;
+        };
+        for (iter++;; ++iter) {
+            spmv_mask(pol, spmat, levelQueue, maskOut, nextLevel, wrapv<semiring_e::boolean>{});
+            if (allZerosUpdateQueue(iter))
+                break;
+        }
+        fmt::print("{} bfs levels in total.\n", iter);
+
+        auto lid = get_input2<int>("level_index");
+        auto outPrim = std::make_shared<PrimitiveObject>();
+        outPrim->resize(pos.size());
+        int setSize = 0;
+        for (int i = 0; i != pos.size(); ++i)
+            if (bfslevel[i] == lid)
+                outPrim->attr<zeno::vec3f>("pos")[setSize++] = pos[i];
+        outPrim->resize(setSize);
+
+        set_output("prim", std::move(outPrim));
+    }
+};
+
+ZENDEFNODE(PrimitiveBFS, {
+                             {{"PrimitiveObject", "prim"}, {"int", "vert_index", "0"}, {"int", "level_index", "0"}},
+                             {
+                                 {"PrimitiveObject", "prim"},
+                             },
+                             {},
+                             {"zs_query"},
+                         });
+
+struct PrimitiveColoring : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        const auto &lines = prim->lines.values;
+        const auto &tris = prim->tris.values;
+        const auto &quads = prim->quads.values;
+
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
+        std::vector<int> is, js;
+        auto buildTopo = [&](const auto &eles) mutable {
+            pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
+                using eleT = RM_CVREF_T(ele);
+                constexpr int codim = is_same_v<eleT, zeno::vec2i> ? 2 : (is_same_v<eleT, zeno::vec3i> ? 3 : 4);
+                for (int i = 0; i < codim; ++i) {
+                    auto a = ele[i];
+                    auto b = ele[(i + 1) % codim];
+                    if (a > b)
+                        std::swap(a, b);
+                    tab.insert(IV{a, b});
+                    if constexpr (codim == 2)
+                        break;
+                }
+            });
+        };
+        buildTopo(lines);
+        buildTopo(tris);
+        buildTopo(quads);
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+        {
+            // test if self connectivity matters
+            auto offset = is.size();
+            is.resize(offset + pos.size());
+            js.resize(offset + pos.size());
+            pol(range(pos.size()), [&is, &js, offset](int i) {
+                is[offset + i] = i;
+                js[offset + i] = i;
+            });
+        }
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<u32, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+        spmat._vals.resize(spmat.nnz());
+        /// finalize connectivity graph
+        pol(spmat._vals, [](u32 &v) { v = 1; });
+        puts("done connectivity graph build");
+
+        auto &colors = prim->add_attr<float>("colors"); // 0 by default
+        // init weights
+        std::vector<u32> minWeights(pos.size());
+        std::vector<u32> weights(pos.size());
+        {
+            bht<int, 1, int> tab{spmat.get_allocator(), pos.size() * 2};
+            tab.reset(pol, true);
+            pol(enumerate(weights), [tab1 = proxy<space>(tab)](int seed, u32 &w) mutable {
+                using tab_t = RM_CVREF_T(tab);
+                std::mt19937 rng;
+                rng.seed(seed);
+                u32 v = rng() % (u32)4294967291u;
+                // prevent weight duplications
+                while (tab1.insert(v) != tab_t::sentinel_v)
+                    v = rng() % (u32)4294967291u;
+                w = v;
+            });
+        }
+        std::vector<int> maskOut(pos.size());
+
+        puts("done init");
+#if 1
+        auto iter = fast_independent_sets(pol, spmat, weights, colors);
+        auto iterRef = maximum_independent_sets(pol, spmat, weights, colors);
+        {
+            fmt::print("{} colors by fast. {} colors by maximum\n", iter, iterRef);
+            using T = typename RM_CVREF_T(colors)::value_type;
+            zs::Vector<int> correct{spmat.get_allocator(), 1};
+            correct.setVal(1);
+            pol(range(spmat.outerSize()),
+                [&colors, spmat = proxy<space>(spmat), correct = proxy<space>(correct)](int i) mutable {
+                    auto color = colors[i];
+                    if (color == limits<T>::max()) {
+                        correct[0] = 0;
+                        return;
+                    }
+                    auto &ap = spmat._ptrs;
+                    auto &aj = spmat._inds;
+                    for (int k = ap[i]; k < ap[i + 1]; k++) {
+                        int j = aj[k];
+                        if (j == i)
+                            continue;
+                        if (colors[j] == color) {
+                            correct[0] = 0;
+                            return;
+                        }
+                    }
+                });
+            if (correct.getVal()) {
+                throw std::runtime_error("coloring is wrong!\n");
+            }
+            puts("all right!");
+        }
+#else
+        // bfs
+        int iter = 0;
+        auto update = [&](int iter) -> bool {
+            bool done = true;
+            pol(zip(weights, minWeights, maskOut, colors), [&](u32 &w, u32 &mw, int &mask, float &color) {
+                //if (w < mw && mask == 0)
+                if (w < mw && mw != limits<u32>::max()) {
+                    done = false;
+                    mask = 1;
+                    color = iter;
+                    w = limits<u32>::max();
+                }
+            });
+            return done;
+        };
+        for (iter++;; ++iter) {
+            // fmt::print("iterating {}-th time\n", iter);
+            spmv_mask(pol, spmat, weights, maskOut, minWeights, wrapv<semiring_e::min_times>{});
+            if (update(iter))
+                break;
+        }
+#endif
+        fmt::print("{} colors in total.\n", iter);
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveColoring, {
+                                  {{"PrimitiveObject", "prim"}},
+                                  {
+                                      {"PrimitiveObject", "prim"},
+                                  },
+                                  {},
+                                  {"zs_query"},
+                              });
 
 struct PrimitiveProject : INode {
     virtual void apply() override {
@@ -305,6 +698,37 @@ ZENDEFNODE(QueryClosestPrimitive, {
                                       {"zs_query"},
                                   });
 #endif
+
+struct FollowUpReferencePrimitive : INode {
+    void apply() override {
+        auto prim = get_input2<PrimitiveObject>("prim");
+        auto idTag = get_input2<std::string>("idTag");
+        auto wsTag = get_input2<std::string>("weightTag");
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &ids = prim->attr<float>(idTag);
+        auto &ws = prim->attr<zeno::vec3f>(wsTag);
+        auto refPrim = get_input2<PrimitiveObject>("ref_surf_prim");
+        auto &refPos = refPrim->attr<vec3f>("pos");
+        auto &refTris = refPrim->tris.values;
+        auto pol = zs::omp_exec();
+        pol(zs::range(prim->size()), [&](int i) {
+            int triNo = ids[i];
+            auto w = ws[i];
+            auto tri = refTris[triNo];
+            pos[i] = w[0] * refPos[tri[0]] + w[1] * refPos[tri[1]] + w[2] * refPos[tri[2]];
+        });
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(FollowUpReferencePrimitive, {
+                                           {{"PrimitiveObject", "prim"},
+                                            {"PrimitiveObject", "ref_surf_prim"},
+                                            {"string", "idTag", "bvh_id"},
+                                            {"string", "weightTag", "bvh_ws"}},
+                                           {{"PrimitiveObject", "prim"}},
+                                           {},
+                                           {"zs_geom"},
+                                       });
 
 struct EmbedPrimitiveBvh : zeno::INode {
     virtual void apply() override {

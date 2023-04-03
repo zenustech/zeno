@@ -46,6 +46,7 @@ static int calcFrameCountByAudio(std::string path, int fps) {
             return ret + 1;
         }
     }
+    return 0;
 }
 
 int record_main(const QCoreApplication& app)

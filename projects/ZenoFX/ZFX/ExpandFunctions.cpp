@@ -31,6 +31,10 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
         return {ir.get(), ir->push_clone_back(stmt)};
     }
 
+    Stm stm_const(float x) {
+        return {ir.get(), ir->emplace_back<LiterialStmt>(x)};
+    }
+
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
 
         if (name.substr(0, 3) == "vec" && name.size() == 4 && isdigit(name[3])) {
@@ -67,6 +71,25 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             auto b = make_stm(args[2]);
             return stm("min", b, stm("max", a, x));
 
+        } else if (name == "fit") {
+            ERROR_IF(args.size() != 5);
+            auto src = make_stm(args[0]);
+            auto omin = make_stm(args[1]);
+            auto omax = make_stm(args[2]);
+            auto nmin = make_stm(args[3]);
+            auto nmax = make_stm(args[4]);
+            src = stm("min", omax, stm("max", src, omin));
+            return (src - omin) / (omax - omin) * (nmax - nmin) + nmin;
+
+        } else if (name == "efit") {
+            ERROR_IF(args.size() != 5);
+            auto src = make_stm(args[0]);
+            auto omin = make_stm(args[1]);
+            auto omax = make_stm(args[2]);
+            auto nmin = make_stm(args[3]);
+            auto nmax = make_stm(args[4]);
+            return (src - omin) / (omax - omin) * (nmax - nmin) + nmin;
+
         } else if (name == "length") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
@@ -77,6 +100,11 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             auto x = make_stm(args[0]);
             return x / stm("sqrt", stm_sqrlength(x));
 
+        } else if (name == "normalizesafe") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            return x / stm("sqrt", stm_sqrlength(x)+stm_const(0.0000001));
+
         } else if (name == "distance") {
             ERROR_IF(args.size() != 2);
             auto a = make_stm(args[0]);
@@ -85,7 +113,9 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
                 error("dimension mismatch for function `%s`: %d != %d",
                     name.c_str(), a->dim, b->dim);
             }
-            return stm("sqrt", stm_sqrlength(a - b));
+            auto c = a - b;
+            c->dim = a->dim;
+            return stm("sqrt", stm_sqrlength(c));
 
         } else if (name == "dot") {
             ERROR_IF(args.size() != 2);
@@ -102,9 +132,12 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             ERROR_IF(args.size() != 2);
             auto x = make_stm(args[0]);
             auto y = make_stm(args[1]);
-            if (x->dim != 3 || y->dim != 3) {
-                error("`cross` requires two 3-D vectors, got %d-D and %d-D",
-                    x->dim, y->dim);
+            //if (x->dim != 3 || y->dim != 3) {
+                //error("`cross` requires two 3-D vectors, got %d-D and %d-D",
+                    //x->dim, y->dim);
+            if (x->dim != y->dim) {
+                error("dimension mismatch for function `%s`: %d != %d",
+                    name.c_str(), x->dim, y->dim);
             }
             //return stm_cross(x, y);
             std::vector<Statement *> retargs;
@@ -141,10 +174,10 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
                 std::vector<int>{0}, stm_dot(rs2,v)+t[2]));
             
             return ir->emplace_back<VectorComposeStmt>(3, retargs);;
+
         } else if (name == "all") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
-            ERROR_IF(!x->dim && "all");
             auto ret = x[0];
             for (int i = 1; i < x->dim; i++) {
                 ret = ret & x[i];
@@ -154,7 +187,6 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
         } else if (name == "any") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
-            ERROR_IF(!x->dim && "all");
             auto ret = x[0];
             for (int i = 1; i < x->dim; i++) {
                 ret = ret | x[i];

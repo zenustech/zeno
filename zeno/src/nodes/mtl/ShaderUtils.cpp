@@ -37,7 +37,7 @@ struct ShaderLinearFit : ShaderNodeClone<ShaderLinearFit> {
         auto exp = "(" + in + " - " + inMin + ") / (" + inMax + " - " + inMin + ")";
         if (get_param<bool>("clamped"))
             exp = "clamp(" + exp + ", 0.0, 1.0)";
-        em->emitCode(exp + " * (" + outMax + " - " + outMin + ") + " + outMax);
+        em->emitCode(exp + " * (" + outMax + " - " + outMin + ") + " + outMin);
     }
 };
 

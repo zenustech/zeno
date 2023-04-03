@@ -15,6 +15,8 @@ struct MatOutput {
     float sheenTint;
     float clearcoat;
     float clearcoatGloss;
+    float clearcoatRoughness;
+    float clearcoatIOR;
     float opacity;
     float ior;
     float flatness;
@@ -38,4 +40,9 @@ struct MatInput {
     vec3 uv;
     vec3 clr;
     vec3 tang;
+    vec3 instPos;
+    vec3 instNrm;
+    vec3 instUv;
+    vec3 instClr;
+    vec3 instTang;
 };

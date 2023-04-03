@@ -36,8 +36,8 @@ struct FastQuasiStaticStepping : INode {
                                     vtemp = proxy<space>({}, vtemp),
                                     res = proxy<space>(res), tag, model = model,volf = volf] 
                                     ZS_LAMBDA (int ei) mutable {
-                auto DmInv = eles.template pack<3, 3>("IB", ei);
-                auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
+                auto DmInv = eles.pack(dim_c<3, 3>, "IB", ei);
+                auto inds = eles.pack(dim_c<4>, "inds", ei, int_c);
                 vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
                             vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
                 mat3 F{};
@@ -71,11 +71,11 @@ struct FastQuasiStaticStepping : INode {
                 b_verts = proxy<space>({},b_verts),
                 bcws = proxy<space>({},b_bcws),lambda,mu,tag,res = proxy<space>(res),bone_driven_weight = bone_driven_weight]
                 ZS_LAMBDA(int vi) mutable {
-                    auto ei = reinterpret_bits<int>(bcws("inds",vi));
+                    auto ei = bcws("inds",vi, int_c);
                     if(ei < 0)
                         return;
-                    auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-                    auto w = bcws.pack<4>("w",vi);
+                    auto inds = eles.pack(dim_c<4>, "inds",ei, int_c);
+                    auto w = bcws.pack(dim_c<4>, "w",vi);
 
                     auto tpos = vec3::zeros();
                     for(size_t i = 0;i != 4;++i)
@@ -104,11 +104,11 @@ struct FastQuasiStaticStepping : INode {
                                         b_verts = proxy<space>({},b_verts),
                                         verts = proxy<space>({}, verts),
                                         eles = proxy<space>({}, eles),tag, model, volf = volf] ZS_LAMBDA (int ei) mutable {
-                auto DmInv = eles.template pack<3, 3>("IB", ei);
+                auto DmInv = eles.pack(dim_c<3, 3>,"IB", ei);
                 auto dFdX = dFdXMatrix(DmInv);
-                auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
-                vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
-                                vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
+                auto inds = eles.pack(dim_c<4>,"inds", ei, int_c);
+                vec3 xs[4] = {vtemp.pack(dim_c<3>, tag, inds[0]), vtemp.pack(dim_c<3>, tag, inds[1]),
+                                vtemp.pack(dim_c<3>, tag, inds[2]), vtemp.pack(dim_c<3>, tag, inds[3])};
                 mat3 F{};
                 {
                     auto x1x0 = xs[1] - xs[0];
@@ -142,10 +142,10 @@ struct FastQuasiStaticStepping : INode {
             cudaPol(zs::range(nmEmbedVerts),
                 [bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
                             eles = proxy<space>({},eles),stiffness,tag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
-                auto ei = reinterpret_bits<int>(bcws("inds",vi));
+                auto ei = bcws("inds",vi, int_c);
                 if(ei < 0)
                     return;
-                auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+                auto inds = eles.pack(dim_c<4>, "inds",ei, int_c);
                 auto w = bcws.pack<4>("w",vi);
                 auto tpos = vec3::zeros();
                 for(size_t i = 0;i != 4;++i)
@@ -186,10 +186,10 @@ struct FastQuasiStaticStepping : INode {
             cudaPol(zs::range(b_bcws.size()),
                     [bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
                     eles = proxy<space>({},eles),stiffness,tag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
-                auto ei = reinterpret_bits<int>(bcws("inds",vi));
+                auto ei = bcws("inds",vi, int_c);
                 if(ei < 0)
                     return;
-                auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
+                auto inds = eles.pack(dim_c<4>, "inds",ei, int_c);
                 auto w = bcws.pack<4>("w",vi);
 
                 for(int i = 0;i != 4;++i)
@@ -219,11 +219,11 @@ struct FastQuasiStaticStepping : INode {
                                             b_verts = proxy<space>({},b_verts),
                                             verts = proxy<space>({}, verts),
                                             eles = proxy<space>({}, eles),tag = xTag,HTag, model, volf = volf] ZS_LAMBDA (int ei) mutable {
-                auto DmInv = eles.template pack<3, 3>("IB", ei);
+                auto DmInv = eles.pack(dim_c<3, 3>, "IB", ei);
                 auto dFdX = dFdXMatrix(DmInv);
-                auto inds = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
-                vec3 xs[4] = {vtemp.pack<3>(tag, inds[0]), vtemp.pack<3>(tag, inds[1]),
-                                vtemp.pack<3>(tag, inds[2]), vtemp.pack<3>(tag, inds[3])};
+                auto inds = eles.pack(dim_c<4>, "inds", ei, int_c);
+                vec3 xs[4] = {vtemp.pack(dim_c<3>, tag, inds[0]), vtemp.pack(dim_c<3>, tag, inds[1]),
+                                vtemp.pack(dim_c<3>, tag, inds[2]), vtemp.pack(dim_c<3>, tag, inds[3])};
                 mat3 F{};
                 {
                     auto x1x0 = xs[1] - xs[0];
@@ -246,11 +246,11 @@ struct FastQuasiStaticStepping : INode {
             cudaPol(zs::range(b_bcws.size()),
                     [bcws = proxy<space>({},b_bcws),b_verts = proxy<space>({},b_verts),vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
                     eles = proxy<space>({},eles),stiffness,HTag,bone_driven_weight = bone_driven_weight] ZS_LAMBDA(int vi) mutable {
-                auto ei = reinterpret_bits<int>(bcws("inds",vi));
+                auto ei = bcws("inds",vi, int_c);
                 if(ei < 0)
                     return;
-                auto inds = eles.pack<4>("inds",ei).reinterpret_bits<int>();
-                auto w = bcws.pack<4>("w",vi);
+                auto inds = eles.pack(dim_c<4>,"inds",ei, int_c);
+                auto w = bcws.pack(dim_c<4>,"w",vi);
 
                 for(int i = 0;i != 4;++i)
                     for(int j = 0;j != 4;++j){
@@ -300,7 +300,7 @@ struct FastQuasiStaticStepping : INode {
                                 eles = proxy<space>({}, eles), dxTag, bTag, HTag] ZS_LAMBDA(int ei) mutable {
                 constexpr int dim = 3;
                 constexpr auto dimp1 = dim + 1;
-                auto inds = eles.template pack<dimp1>("inds", ei).template reinterpret_bits<int>();
+                auto inds = eles.template pack<dimp1>("inds", ei, int_c);
                 zs::vec<T, dimp1 * dim> temp{};
                 for (int vi = 0; vi != dimp1; ++vi)
                 for (int d = 0; d != dim; ++d) {
@@ -569,8 +569,7 @@ struct FastQuasiStaticStepping : INode {
                 ZS_LAMBDA (int ei) mutable {
                 constexpr int dim = 3;
                 constexpr auto dimp1 = dim + 1;
-                auto inds = 
-                    eles.template pack<dimp1>("inds",ei).template reinterpret_bits<int>();
+                auto inds = eles.pack(dim_c<dimp1>,"inds",ei, int_c);
                 auto He = etemp.pack<dim * dimp1,dim * dimp1>("L",ei);
 
                 for (int vi = 0; vi != dimp1; ++vi) {

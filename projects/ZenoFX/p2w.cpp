@@ -69,6 +69,17 @@ struct ParticlesTwoWrangle : zeno::INode {
                        prim->size(), prim2->size());
         }
 
+        // BEGIN张心欣快乐自动加@IND
+        if (auto pos = code.find("@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalpha(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalpha(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
+            auto &indatt = prim->verts.add_attr<float>("IND");
+            for (size_t i = 0; i < indatt.size(); i++) indatt[i] = float(i);
+        }
+        if (auto pos = code.find("@@IND"); pos != code.npos && (code.size() <= pos + 4 || !(isalpha(code[pos + 4]) || strchr("_@$", code[pos + 4]))) && (pos == 0 || !(isalpha(code[pos - 1]) || strchr("_@$", code[pos - 1])))) {
+            auto &indatt = prim2->verts.add_attr<float>("IND");
+            for (size_t i = 0; i < indatt.size(); i++) indatt[i] = float(i);
+        }
+        // END张心欣快乐自动加@IND
+
         zfx::Options opts(zfx::Options::for_x64);
         opts.detect_new_symbols = true;
         prim->foreach_attr([&] (auto const &key, auto const &attr) {
@@ -148,6 +159,12 @@ struct ParticlesTwoWrangle : zeno::INode {
                         parvals.push_back(v);
                         parnames.emplace_back(key, 0);
                         return 1;
+                    } else if constexpr (std::is_convertible_v<T, vec2f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        return 2;
                     } else {
                         printf("invalid parameter type encountered: `%s`\n",
                                 typeid(T).name());

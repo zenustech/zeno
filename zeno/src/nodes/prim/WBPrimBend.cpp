@@ -12,8 +12,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <random>
 #include <numeric>
+#include <zeno/utils/orthonormal.h>
 #include <atomic>
-
 #include <zeno/para/parallel_for.h> // enable by -DZENO_PARALLEL_STL:BOOL=ON
 #include <zeno/utils/arrayindex.h>
 #include <zeno/utils/variantswitch.h>
@@ -248,6 +248,38 @@ ZENDEFNODE(MatTranspose,
             "math",
         } });
 
+struct ParameterizeLine : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        if(! prim->lines.has_attr("parameterization")) {
+            prim->lines.add_attr<float>("parameterization");
+            float total = 0;
+            std::vector<float> linesLen(prim->lines.size());
+            for (size_t i = 0; i < prim->lines.size(); i++) {
+                auto const &ind = prim->lines[i];
+                auto a = prim->verts[ind[0]];
+                auto b = prim->verts[ind[1]];
+                auto area = length(b - a);
+                total += area;
+                linesLen[i] = total;
+            }
+            auto inv_total = 1 / total;
+            for (size_t i = 0; i < prim->lines.size(); i++) {
+                prim->lines.attr<float>("parameterization")[i] = linesLen[i] * inv_total;
+            }
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(ParameterizeLine,
+           {  /* inputs: */ {
+                "prim",
+            }, /* outputs: */ {
+                "prim",
+            }, /* params: */ {
+            }, /* category: */ {
+                "primitive",
+            } });
 struct LineResample : INode {
     void apply() override
     {
@@ -255,52 +287,117 @@ struct LineResample : INode {
 
         auto segments = get_input<NumericObject>("segments")->get<int>();
         if (segments < 1) { segments = 1; }
-
-        float total = 0;
         std::vector<float> linesLen(prim->lines.size());
-        for (size_t i = 0; i < prim->lines.size(); i++) {
-            auto const& ind = prim->lines[i];
-            auto a = prim->verts[ind[0]];
-            auto b = prim->verts[ind[1]];
-            auto area = length(b - a);
-            total += area;
-            linesLen[i] = total;
+        if(! prim->lines.has_attr("parameterization")) {
+            prim->lines.add_attr<float>("parameterization");
+            float total = 0;
+            for (size_t i = 0; i < prim->lines.size(); i++) {
+                auto const &ind = prim->lines[i];
+                auto a = prim->verts[ind[0]];
+                auto b = prim->verts[ind[1]];
+                auto area = length(b - a);
+                total += area;
+                linesLen[i] = total;
+            }
+            auto inv_total = 1 / total;
+            for (auto &_linesLen : linesLen) {
+                _linesLen *= inv_total;
+            }
+            for (size_t i=0; i<prim->lines.size();i++) {
+                prim->lines.attr<float>("parameterization")[i] = linesLen[i];
+            }
+        } else {
+#pragma omp parallel for
+            for (size_t i=0; i<prim->lines.size();i++) {
+                linesLen[i] = prim->lines.attr<float>("parameterization")[i];
+            }
         }
-        auto inv_total = 1 / total;
-        for (auto& _linesLen : linesLen) { _linesLen *= inv_total; }
 
         auto retprim = std::make_shared<PrimitiveObject>();
-        retprim->resize(segments + size_t(1));
-
-        auto& cu = retprim->add_attr<float>("curveU");
-        for (int idx = 0; idx <= segments; idx++)
-        {
-            float delta = 1.0f / float(segments);
-            float insertU = float(idx) * delta;
-            if (idx == segments)
-            {
-                insertU = 1;
+        if(has_input("PrimSampler")) {
+            retprim = get_input<PrimitiveObject>("PrimSampler");
+            auto sampleByAttr = get_input2<std::string>("SampleBy");
+            auto& sampleBy = retprim->attr<float>(sampleByAttr);
+            retprim->add_attr<float>("t");
+            auto &t_arr = retprim->attr<float>("t");
+#pragma omp parallel for
+            for(size_t i=0; i<retprim->size();i++) {
+                t_arr[i] = sampleBy[i];
             }
-
+        } else {
+            retprim->resize(segments + size_t(1));
+            retprim->lines.resize(segments);
+            retprim->add_attr<float>("t");
+            auto &t_arr = retprim->attr<float>("t");
+#pragma omp parallel for
+            for (size_t i=0; i<retprim->size(); i++) {
+                t_arr[i] = (float)i / float(segments);
+            }
+#pragma omp parallel for
+            for (size_t i=0; i<segments; i++) {
+                retprim->lines[i] = zeno::vec2i(i, i+1);
+            }
+        }
+        for(auto key:prim->attr_keys())
+        {
+            if(key!="pos")
+                std::visit([&retprim, key](auto &&ref) {
+                    using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                    retprim->add_attr<T>(key);
+                }, prim->attr(key));
+        }
+#pragma omp parallel for
+        for(size_t i=0; i<retprim->size();i++) {
+            float insertU = retprim->attr<float>("t")[i];
             auto it = std::lower_bound(linesLen.begin(), linesLen.end(), insertU);
             size_t index = it - linesLen.begin();
             index = std::min(index, prim->lines.size() - 1);
-
             auto const& ind = prim->lines[index];
             auto a = prim->verts[ind[0]];
             auto b = prim->verts[ind[1]];
-
             auto r1 = (insertU - linesLen[index - 1]) / (linesLen[index] - linesLen[index - 1]);
-            auto p = a + (b - a) * r1;
-
-            retprim->verts[idx] = p;
-            cu[idx] = insertU;
+            retprim->verts[i] = a + (b - a) * r1;
+            for(auto key:prim->attr_keys())
+            {
+                if(key!="pos")
+                    std::visit([&retprim, &prim, &ind, &r1, &i, key](auto &&ref) {
+                        using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                        auto a = prim->attr<T>(key)[ind[0]];
+                        auto b = prim->attr<T>(key)[ind[1]];
+                        retprim->attr<T>(key)[i] = a + (b-a)*r1;
+                    }, prim->attr(key));
+            }
         }
-
-        retprim->lines.reserve(retprim->size());
-        for (int i = 1; i < retprim->size(); i++) {
-            retprim->lines.emplace_back(i - 1, i);
-        }
+//
+//        auto& cu = retprim->add_attr<float>("curveU");
+//        for (int idx = 0; idx <= segments; idx++)
+//        {
+//            float delta = 1.0f / float(segments);
+//            float insertU = float(idx) * delta;
+//            if (idx == segments)
+//            {
+//                insertU = 1;
+//            }
+//
+//            auto it = std::lower_bound(linesLen.begin(), linesLen.end(), insertU);
+//            size_t index = it - linesLen.begin();
+//            index = std::min(index, prim->lines.size() - 1);
+//
+//            auto const& ind = prim->lines[index];
+//            auto a = prim->verts[ind[0]];
+//            auto b = prim->verts[ind[1]];
+//
+//            auto r1 = (insertU - linesLen[index - 1]) / (linesLen[index] - linesLen[index - 1]);
+//            auto p = a + (b - a) * r1;
+//
+//            retprim->verts[idx] = p;
+//            cu[idx] = insertU;
+//        }
+//
+//        retprim->lines.reserve(retprim->size());
+//        for (int i = 1; i < retprim->size(); i++) {
+//            retprim->lines.emplace_back(i - 1, i);
+//        }
 
         set_output("prim", std::move(retprim));
     }
@@ -309,6 +406,8 @@ ZENDEFNODE(LineResample,
     {  /* inputs: */ {
             "prim",
             {"int", "segments", "3"},
+            "PrimSampler",
+            {"string", "SampleBy", "t"},
         }, /* outputs: */ {
             "prim",
         }, /* params: */ {
@@ -316,6 +415,54 @@ ZENDEFNODE(LineResample,
             "primitive",
         } });
 
+struct CurveOrientation  : INode {
+    void apply() override
+    {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto dirName = get_input2<std::string>("dirName");
+        auto tanName = get_input2<std::string>("tanName");
+        auto bitanName = get_input2<std::string>("bitanName");
+        auto &directions = prim->add_attr<zeno::vec3f>(dirName);
+        auto &bidirections = prim->add_attr<zeno::vec3f>(tanName);
+        auto &tridirections = prim->add_attr<zeno::vec3f>(bitanName);
+        size_t n = prim->size();
+#pragma omp parallel for
+        for (intptr_t i = 1; i < n - 1; i++) {
+            auto lastpos = prim->verts[i - 1];
+            auto currpos = prim->verts[i];
+            auto nextpos = prim->verts[i + 1];
+            auto direction = normalize(nextpos - lastpos);
+            directions[i] = direction;
+        }
+        directions[0] = normalize(prim->verts[1] - prim->verts[0]);
+        directions[n - 1] = normalize(prim->verts[n - 1] - prim->verts[n - 2]);
+        orthonormal first_orb(directions[0]);
+        directions[0] = first_orb.tangent;
+        bidirections[0] = first_orb.bitangent;
+        tridirections[0] = normalize(cross(directions[0], bidirections[0]));
+        vec3f last_tangent = directions[0];
+        for (intptr_t i = 1; i < n; i++) {
+            orthonormal orb(directions[i], last_tangent);
+            last_tangent = directions[i] = orb.tangent;
+            bidirections[i] = orb.bitangent;
+            tridirections[i] = normalize(cross(directions[i], bidirections[i]));
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(CurveOrientation,
+           {  /* inputs: */ {
+                "prim",
+                {"string", "dirName", "dir"},
+                {"string", "tanName", "tan"},
+                {"string", "bitanName", "bitan"},
+            }, /* outputs: */ {
+                "prim",
+            }, /* params: */ {
+
+            }, /* category: */ {
+                "primitive",
+            } });
 struct LineCarve : INode {
     void apply() override
     {
@@ -424,6 +571,15 @@ struct VisVec3Attribute : INode {
         auto primVis = std::make_shared<PrimitiveObject>();
         primVis->verts.resize(prim->size() * 2);
         primVis->lines.resize(prim->size());
+        for (auto key : prim->attr_keys()) {
+            if (key != "pos")
+                std::visit(
+                    [&primVis, key](auto &&ref) {
+                        using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                        primVis->add_attr<T>(key);
+                    },
+                    prim->attr(key));
+        }
         auto& visColor = primVis->verts.add_attr<vec3f>("clr");
         auto& visPos = primVis->verts;
 
@@ -433,6 +589,21 @@ struct VisVec3Attribute : INode {
             int i = iPrim * 2;
             visPos[i] = pos[iPrim];
             visColor[i] = color;
+            for (auto key : prim->attr_keys()) {
+                if (key != "pos")
+                    std::visit(
+                        [i, iPrim](auto &&dst, auto &&src) {
+                            using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
+                            using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
+                            if constexpr (std::is_same_v<DstT, SrcT>) {
+                                dst[i] = src[iPrim];
+                                dst[i + 1] = src[iPrim];
+                            } else {
+                                throw std::runtime_error("the same attr of both primitives are of different types.");
+                            }
+                        },
+                        primVis->attr(key), prim->attr(key));
+            }
             ++i;
             auto a = attr[iPrim];
             if (useNormalize) a = normalize(a);

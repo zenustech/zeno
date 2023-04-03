@@ -153,12 +153,12 @@ struct Make2DGridPrimitive : INode {
 #pragma omp parallel for collapse(2)
         for (intptr_t y = 0; y < ny-1; y++) for (intptr_t x = 0; x < nx-1; x++) {
           intptr_t index = y * (nx - 1) + x;
-          prim->tris[index * 2][0] = y * nx + x;
+          prim->tris[index * 2][2] = y * nx + x;
           prim->tris[index * 2][1] = y * nx + x + 1;
-          prim->tris[index * 2][2] = (y + 1) * nx + x + 1;
-          prim->tris[index * 2 + 1][0] = (y + 1) * nx + x + 1;
+          prim->tris[index * 2][0] = (y + 1) * nx + x + 1;
+          prim->tris[index * 2 + 1][2] = (y + 1) * nx + x + 1;
           prim->tris[index * 2 + 1][1] = (y + 1) * nx + x;
-          prim->tris[index * 2 + 1][2] = y * nx + x;
+          prim->tris[index * 2 + 1][0] = y * nx + x;
         }
     }
     prim->userData().set("nx", std::make_shared<NumericObject>((int)nx));//zhxx

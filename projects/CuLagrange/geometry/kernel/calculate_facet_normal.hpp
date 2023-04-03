@@ -11,11 +11,11 @@ namespace zeno {
     template<typename Pol,typename PosTileVec,typename SurfTriTileVec,typename SurfNrmTileVec>
     bool calculate_facet_normal(Pol& pol,const PosTileVec& verts,const zs::SmallString& xTag,SurfTriTileVec& tris,SurfNrmTileVec& tri_nrm_buffer,const zs::SmallString& nrmTag) {
         using namespace zs;
-        if(!tris.hasProperty("inds") || tris.getChannelSize("inds") != 3) {
+        if(!tris.hasProperty("inds") || tris.getPropertySize("inds") != 3) {
             if(!tris.hasProperty("inds"))
                 fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
-            else if(tris.getChannelSize("inds") != 3)
-                fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getChannelSize("inds"));
+            else if(tris.getPropertySize("inds") != 3)
+                fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getPropertySize("inds"));
             return false;
         }
         if(tris.size() != tri_nrm_buffer.size()) {
@@ -52,7 +52,7 @@ namespace zeno {
     // template<typename Pol,typename VTileVec,typename TTileVec>
     // constexpr bool calculate_point_normal(Pol& pol,const VTileVec& verts,const TTileVec& tris,const zs::SmallString& nrmTag) {
     //     using namespace zs;
-    //     if(!tris.hasProperty("inds") || tris.getChannelSize("inds") != 3) 
+    //     if(!tris.hasProperty("inds") || tris.getPropertySize("inds") != 3) 
     //         return false;
 
     //     constexpr auto space = execspace_e::cuda;

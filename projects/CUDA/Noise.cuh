@@ -19,7 +19,13 @@ struct ZSPerlinNoise1 {
 
     static __device__ __host__ float grad(int hash, float x, float y, float z);
 
+    static __device__ __host__ unsigned int hash(unsigned int seed);
+
+    static __device__ __host__ unsigned char permutation(int p);
+
     static __device__ __host__ float perlin(float x, float y, float z);
+
+    static __device__ __host__ float simplex(float x, float y, float z);
 };
 
 } // namespace zeno

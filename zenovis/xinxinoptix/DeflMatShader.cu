@@ -10,48 +10,21 @@
 #include "IOMat.h"
 
 //COMMON_CODE
+
 template<bool isDisplacement>
-static __inline__ __device__ MatOutput evalMat(
-cudaTextureObject_t zenotex0 , 
-cudaTextureObject_t zenotex1 , 
-cudaTextureObject_t zenotex2 , 
-cudaTextureObject_t zenotex3 , 
-cudaTextureObject_t zenotex4 , 
-cudaTextureObject_t zenotex5 , 
-cudaTextureObject_t zenotex6 , 
-cudaTextureObject_t zenotex7 , 
-cudaTextureObject_t zenotex8 , 
-cudaTextureObject_t zenotex9 , 
-cudaTextureObject_t zenotex10, 
-cudaTextureObject_t zenotex11, 
-cudaTextureObject_t zenotex12, 
-cudaTextureObject_t zenotex13, 
-cudaTextureObject_t zenotex14, 
-cudaTextureObject_t zenotex15, 
-cudaTextureObject_t zenotex16, 
-cudaTextureObject_t zenotex17, 
-cudaTextureObject_t zenotex18, 
-cudaTextureObject_t zenotex19, 
-cudaTextureObject_t zenotex20, 
-cudaTextureObject_t zenotex21, 
-cudaTextureObject_t zenotex22, 
-cudaTextureObject_t zenotex23, 
-cudaTextureObject_t zenotex24, 
-cudaTextureObject_t zenotex25, 
-cudaTextureObject_t zenotex26, 
-cudaTextureObject_t zenotex27, 
-cudaTextureObject_t zenotex28, 
-cudaTextureObject_t zenotex29, 
-cudaTextureObject_t zenotex30, 
-cudaTextureObject_t zenotex31,
-float4* uniforms,
-MatInput const &attrs) {
+static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs) {
+
     /* MODMA */
     auto att_pos = attrs.pos;
     auto att_clr = attrs.clr;
     auto att_uv = attrs.uv;
     auto att_nrm = attrs.nrm;
     auto att_tang = attrs.tang;
+    auto att_instPos = attrs.instPos;
+    auto att_instNrm = attrs.instNrm;
+    auto att_instUv = attrs.instUv;
+    auto att_instClr = attrs.instClr;
+    auto att_instTang = attrs.instTang;
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
@@ -67,6 +40,8 @@ MatInput const &attrs) {
     float mat_sheenTint = 0.0;
     float mat_clearcoat = 0.0;
     float mat_clearcoatGloss = 0.0;
+    float mat_clearcoatRoughness = 0.0;
+    float mat_clearcoatIOR = 1.5;
     float mat_opacity = 0.0;
     float mat_specTrans = 0.0;
     float mat_ior = 1.0;
@@ -102,6 +77,8 @@ MatInput const &attrs) {
         mats.sheenTint = mat_sheenTint;
         mats.clearcoat = clamp(mat_clearcoat, 0.0f, 1.0f);
         mats.clearcoatGloss = mat_clearcoatGloss;
+        mats.clearcoatRoughness = clamp(mat_clearcoatRoughness, 0.01, 0.99);
+        mats.clearcoatIOR = mat_clearcoatIOR;
         mats.opacity = mat_opacity;
         mats.nrm = mat_normal;
         mats.emission = mat_emission;
@@ -119,146 +96,14 @@ MatInput const &attrs) {
     }
 }
 
-static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex0 ,
-                                                    cudaTextureObject_t zenotex1 ,
-                                                    cudaTextureObject_t zenotex2 ,
-                                                    cudaTextureObject_t zenotex3 ,
-                                                    cudaTextureObject_t zenotex4 ,
-                                                    cudaTextureObject_t zenotex5 ,
-                                                    cudaTextureObject_t zenotex6 ,
-                                                    cudaTextureObject_t zenotex7 ,
-                                                    cudaTextureObject_t zenotex8 ,
-                                                    cudaTextureObject_t zenotex9 ,
-                                                    cudaTextureObject_t zenotex10,
-                                                    cudaTextureObject_t zenotex11,
-                                                    cudaTextureObject_t zenotex12,
-                                                    cudaTextureObject_t zenotex13,
-                                                    cudaTextureObject_t zenotex14,
-                                                    cudaTextureObject_t zenotex15,
-                                                    cudaTextureObject_t zenotex16,
-                                                    cudaTextureObject_t zenotex17,
-                                                    cudaTextureObject_t zenotex18,
-                                                    cudaTextureObject_t zenotex19,
-                                                    cudaTextureObject_t zenotex20,
-                                                    cudaTextureObject_t zenotex21,
-                                                    cudaTextureObject_t zenotex22,
-                                                    cudaTextureObject_t zenotex23,
-                                                    cudaTextureObject_t zenotex24,
-                                                    cudaTextureObject_t zenotex25,
-                                                    cudaTextureObject_t zenotex26,
-                                                    cudaTextureObject_t zenotex27,
-                                                    cudaTextureObject_t zenotex28,
-                                                    cudaTextureObject_t zenotex29,
-                                                    cudaTextureObject_t zenotex30,
-                                                    cudaTextureObject_t zenotex31,
-                                                    float4* uniforms,
-                                                    MatInput const &attrs)
+static __inline__ __device__ MatOutput evalMaterial(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
 {
-    return evalMat<false>(zenotex0 ,
-                          zenotex1 ,
-                          zenotex2 ,
-                          zenotex3 ,
-                          zenotex4 ,
-                          zenotex5 ,
-                          zenotex6 ,
-                          zenotex7 ,
-                          zenotex8 ,
-                          zenotex9 ,
-                          zenotex10,
-                          zenotex11,
-                          zenotex12,
-                          zenotex13,
-                          zenotex14,
-                          zenotex15,
-                          zenotex16,
-                          zenotex17,
-                          zenotex18,
-                          zenotex19,
-                          zenotex20,
-                          zenotex21,
-                          zenotex22,
-                          zenotex23,
-                          zenotex24,
-                          zenotex25,
-                          zenotex26,
-                          zenotex27,
-                          zenotex28,
-                          zenotex29,
-                          zenotex30,
-                          zenotex31,
-                          uniforms,
-                          attrs);
+    return evalMat<false>(zenotex, uniforms, attrs);
 }
 
-static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex0 ,
-                                                    cudaTextureObject_t zenotex1 ,
-                                                    cudaTextureObject_t zenotex2 ,
-                                                    cudaTextureObject_t zenotex3 ,
-                                                    cudaTextureObject_t zenotex4 ,
-                                                    cudaTextureObject_t zenotex5 ,
-                                                    cudaTextureObject_t zenotex6 ,
-                                                    cudaTextureObject_t zenotex7 ,
-                                                    cudaTextureObject_t zenotex8 ,
-                                                    cudaTextureObject_t zenotex9 ,
-                                                    cudaTextureObject_t zenotex10,
-                                                    cudaTextureObject_t zenotex11,
-                                                    cudaTextureObject_t zenotex12,
-                                                    cudaTextureObject_t zenotex13,
-                                                    cudaTextureObject_t zenotex14,
-                                                    cudaTextureObject_t zenotex15,
-                                                    cudaTextureObject_t zenotex16,
-                                                    cudaTextureObject_t zenotex17,
-                                                    cudaTextureObject_t zenotex18,
-                                                    cudaTextureObject_t zenotex19,
-                                                    cudaTextureObject_t zenotex20,
-                                                    cudaTextureObject_t zenotex21,
-                                                    cudaTextureObject_t zenotex22,
-                                                    cudaTextureObject_t zenotex23,
-                                                    cudaTextureObject_t zenotex24,
-                                                    cudaTextureObject_t zenotex25,
-                                                    cudaTextureObject_t zenotex26,
-                                                    cudaTextureObject_t zenotex27,
-                                                    cudaTextureObject_t zenotex28,
-                                                    cudaTextureObject_t zenotex29,
-                                                    cudaTextureObject_t zenotex30,
-                                                    cudaTextureObject_t zenotex31,
-                                                    float4* uniforms,
-                                                    MatInput const &attrs)
+static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
 {
-    return evalMat<true>(zenotex0 ,
-                          zenotex1 ,
-                          zenotex2 ,
-                          zenotex3 ,
-                          zenotex4 ,
-                          zenotex5 ,
-                          zenotex6 ,
-                          zenotex7 ,
-                          zenotex8 ,
-                          zenotex9 ,
-                          zenotex10,
-                          zenotex11,
-                          zenotex12,
-                          zenotex13,
-                          zenotex14,
-                          zenotex15,
-                          zenotex16,
-                          zenotex17,
-                          zenotex18,
-                          zenotex19,
-                          zenotex20,
-                          zenotex21,
-                          zenotex22,
-                          zenotex23,
-                          zenotex24,
-                          zenotex25,
-                          zenotex26,
-                          zenotex27,
-                          zenotex28,
-                          zenotex29,
-                          zenotex30,
-                          zenotex31,
-                          uniforms,
-                          attrs);
+    return evalMat<true>(zenotex, uniforms, attrs);
 }
 
 
@@ -305,38 +150,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
 
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
-    cudaTextureObject_t zenotex0  = rt_data->textures[0 ];
-    cudaTextureObject_t zenotex1  = rt_data->textures[1 ];
-    cudaTextureObject_t zenotex2  = rt_data->textures[2 ];
-    cudaTextureObject_t zenotex3  = rt_data->textures[3 ];
-    cudaTextureObject_t zenotex4  = rt_data->textures[4 ];
-    cudaTextureObject_t zenotex5  = rt_data->textures[5 ];
-    cudaTextureObject_t zenotex6  = rt_data->textures[6 ];
-    cudaTextureObject_t zenotex7  = rt_data->textures[7 ];
-    cudaTextureObject_t zenotex8  = rt_data->textures[8 ];
-    cudaTextureObject_t zenotex9  = rt_data->textures[9 ];
-    cudaTextureObject_t zenotex10 = rt_data->textures[10];
-    cudaTextureObject_t zenotex11 = rt_data->textures[11];
-    cudaTextureObject_t zenotex12 = rt_data->textures[12];
-    cudaTextureObject_t zenotex13 = rt_data->textures[13];
-    cudaTextureObject_t zenotex14 = rt_data->textures[14];
-    cudaTextureObject_t zenotex15 = rt_data->textures[15];
-    cudaTextureObject_t zenotex16 = rt_data->textures[16];
-    cudaTextureObject_t zenotex17 = rt_data->textures[17];
-    cudaTextureObject_t zenotex18 = rt_data->textures[18];
-    cudaTextureObject_t zenotex19 = rt_data->textures[19];
-    cudaTextureObject_t zenotex20 = rt_data->textures[20];
-    cudaTextureObject_t zenotex21 = rt_data->textures[21];
-    cudaTextureObject_t zenotex22 = rt_data->textures[22];
-    cudaTextureObject_t zenotex23 = rt_data->textures[23];
-    cudaTextureObject_t zenotex24 = rt_data->textures[24];
-    cudaTextureObject_t zenotex25 = rt_data->textures[25];
-    cudaTextureObject_t zenotex26 = rt_data->textures[26];
-    cudaTextureObject_t zenotex27 = rt_data->textures[27];
-    cudaTextureObject_t zenotex28 = rt_data->textures[28];
-    cudaTextureObject_t zenotex29 = rt_data->textures[29];
-    cudaTextureObject_t zenotex30 = rt_data->textures[30];
-    cudaTextureObject_t zenotex31 = rt_data->textures[31];
+    
+    auto zenotex = rt_data->textures;
+
     MatInput attrs;
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
@@ -387,41 +203,13 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = interp(barys, tan0, tan1, tan2);
-    MatOutput mats = evalMaterial(
-                                zenotex0 , 
-                                zenotex1 , 
-                                zenotex2 , 
-                                zenotex3 , 
-                                zenotex4 , 
-                                zenotex5 , 
-                                zenotex6 , 
-                                zenotex7 , 
-                                zenotex8 , 
-                                zenotex9 , 
-                                zenotex10, 
-                                zenotex11, 
-                                zenotex12, 
-                                zenotex13, 
-                                zenotex14, 
-                                zenotex15, 
-                                zenotex16, 
-                                zenotex17, 
-                                zenotex18, 
-                                zenotex19, 
-                                zenotex20, 
-                                zenotex21, 
-                                zenotex22, 
-                                zenotex23, 
-                                zenotex24, 
-                                zenotex25, 
-                                zenotex26, 
-                                zenotex27, 
-                                zenotex28, 
-                                zenotex29, 
-                                zenotex30, 
-                                zenotex31,
-                                rt_data->uniforms,
-                                attrs);
+    attrs.instPos = rt_data->instPos[inst_idx2];
+    attrs.instNrm = rt_data->instNrm[inst_idx2];
+    attrs.instUv = rt_data->instUv[inst_idx2];
+    attrs.instClr = rt_data->instClr[inst_idx2];
+    attrs.instTang = rt_data->instTang[inst_idx2];
+    MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
+
     if(length(attrs.tang)>0)
     {
         vec3 b = cross(attrs.tang, attrs.nrm);
@@ -454,7 +242,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto sssParam = mats.sssParam;
     auto scatterStep = mats.scatterStep;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
-
+    if(params.simpleRender==true)
+        opacity = 0;
+    //opacity = clamp(opacity, 0.0f, 0.99f);
     // Stochastic alpha test to get an alpha blend effect.
     if (opacity >0.99 || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
@@ -482,13 +272,13 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             //optixTerminateRay();
             
             if(specTrans > 0.0f){
-                if(thin == false && ior>1.0f)
+                if(thin == 0.0f && ior>1.0f)
                 {
                     prd->nonThinTransHit++;
                 }
-                if(rnd(prd->seed)<1-specTrans||prd->nonThinTransHit>1)
+                if(rnd(prd->seed)<(1-specTrans)||prd->nonThinTransHit>1)
                 {
-                    prd->shadowAttanuation = vec3(1e-6f,1e-6f,1e-6f);
+                    prd->shadowAttanuation = vec3(0,0,0);
                     optixTerminateRay();
                     return;
                 }
@@ -501,9 +291,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
             }
         }
 
-
-
-        prd->shadowAttanuation = vec3(1e-6f);
+        prd->shadowAttanuation = vec3(0);
         optixTerminateRay();
         return;
     }
@@ -540,9 +328,18 @@ vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
     o.x = 1.0 - o.y - o.z;
     return o;
 }
+
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
+
+    if(prd->test_distance)
+    {
+        prd->vol_t1 = optixGetRayTmax();
+        return;
+    }
+    prd->test_distance = false;
+
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     int    prim_idx        = optixGetPrimitiveIndex();
     float3 ray_dir         = optixGetWorldRayDirection();
@@ -571,41 +368,15 @@ extern "C" __global__ void __closesthit__radiance()
     float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
 
     float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
+        
+        prd->geometryNormal = N_0;
+
     float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
-    cudaTextureObject_t zenotex0  = rt_data->textures[0 ];
-    cudaTextureObject_t zenotex1  = rt_data->textures[1 ];
-    cudaTextureObject_t zenotex2  = rt_data->textures[2 ];
-    cudaTextureObject_t zenotex3  = rt_data->textures[3 ];
-    cudaTextureObject_t zenotex4  = rt_data->textures[4 ];
-    cudaTextureObject_t zenotex5  = rt_data->textures[5 ];
-    cudaTextureObject_t zenotex6  = rt_data->textures[6 ];
-    cudaTextureObject_t zenotex7  = rt_data->textures[7 ];
-    cudaTextureObject_t zenotex8  = rt_data->textures[8 ];
-    cudaTextureObject_t zenotex9  = rt_data->textures[9 ];
-    cudaTextureObject_t zenotex10 = rt_data->textures[10];
-    cudaTextureObject_t zenotex11 = rt_data->textures[11];
-    cudaTextureObject_t zenotex12 = rt_data->textures[12];
-    cudaTextureObject_t zenotex13 = rt_data->textures[13];
-    cudaTextureObject_t zenotex14 = rt_data->textures[14];
-    cudaTextureObject_t zenotex15 = rt_data->textures[15];
-    cudaTextureObject_t zenotex16 = rt_data->textures[16];
-    cudaTextureObject_t zenotex17 = rt_data->textures[17];
-    cudaTextureObject_t zenotex18 = rt_data->textures[18];
-    cudaTextureObject_t zenotex19 = rt_data->textures[19];
-    cudaTextureObject_t zenotex20 = rt_data->textures[20];
-    cudaTextureObject_t zenotex21 = rt_data->textures[21];
-    cudaTextureObject_t zenotex22 = rt_data->textures[22];
-    cudaTextureObject_t zenotex23 = rt_data->textures[23];
-    cudaTextureObject_t zenotex24 = rt_data->textures[24];
-    cudaTextureObject_t zenotex25 = rt_data->textures[25];
-    cudaTextureObject_t zenotex26 = rt_data->textures[26];
-    cudaTextureObject_t zenotex27 = rt_data->textures[27];
-    cudaTextureObject_t zenotex28 = rt_data->textures[28];
-    cudaTextureObject_t zenotex29 = rt_data->textures[29];
-    cudaTextureObject_t zenotex30 = rt_data->textures[30];
-    cudaTextureObject_t zenotex31 = rt_data->textures[31];
+
+    auto zenotex = rt_data->textures;
+
     MatInput attrs;
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
@@ -645,41 +416,14 @@ extern "C" __global__ void __closesthit__radiance()
     //attrs.clr = rt_data->face_attrib_clr[vert_idx_offset];
     attrs.clr = interp(barys, clr0, clr1, clr2);
     attrs.tang = normalize(interp(barys, tan0, tan1, tan2));
-    MatOutput mats = evalMaterial(
-                                zenotex0 , 
-                                zenotex1 , 
-                                zenotex2 , 
-                                zenotex3 , 
-                                zenotex4 , 
-                                zenotex5 , 
-                                zenotex6 , 
-                                zenotex7 , 
-                                zenotex8 , 
-                                zenotex9 , 
-                                zenotex10, 
-                                zenotex11, 
-                                zenotex12, 
-                                zenotex13, 
-                                zenotex14, 
-                                zenotex15, 
-                                zenotex16, 
-                                zenotex17, 
-                                zenotex18, 
-                                zenotex19, 
-                                zenotex20, 
-                                zenotex21, 
-                                zenotex22, 
-                                zenotex23, 
-                                zenotex24, 
-                                zenotex25, 
-                                zenotex26, 
-                                zenotex27, 
-                                zenotex28, 
-                                zenotex29, 
-                                zenotex30, 
-                                zenotex31,
-                                rt_data->uniforms,
-                                attrs);
+    attrs.instPos = rt_data->instPos[inst_idx2];
+    attrs.instNrm = rt_data->instNrm[inst_idx2];
+    attrs.instUv = rt_data->instUv[inst_idx2];
+    attrs.instClr = rt_data->instClr[inst_idx2];
+    attrs.instTang = rt_data->instTang[inst_idx2];
+
+    MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
+    
     float3 an0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
     vec3 bn0(an0);
     bn0 = meshMat3x3 * bn0;
@@ -724,8 +468,7 @@ extern "C" __global__ void __closesthit__radiance()
         roughness = clamp(roughness, 0.3,0.99);
     if(prd->diffDepth>=3)
         roughness = clamp(roughness, 0.5,0.99);
-    if(prd->depth>=2)
-        roughness = clamp(roughness, 0.5,0.99);
+
 
     auto subsurface = mats.subsurface;
     auto specular = mats.specular;
@@ -736,6 +479,8 @@ extern "C" __global__ void __closesthit__radiance()
     auto sheenTint = mats.sheenTint;
     auto clearcoat = mats.clearcoat;
     auto clearcoatGloss = mats.clearcoatGloss;
+    auto ccRough = mats.clearcoatRoughness;
+    auto ccIor = mats.clearcoatIOR;
     auto opacity = mats.opacity;
     auto flatness = mats.flatness;
     auto specTrans = mats.specTrans;
@@ -746,6 +491,7 @@ extern "C" __global__ void __closesthit__radiance()
     auto sssColor = mats.sssParam;
     auto scatterStep = mats.scatterStep;
     //discard fully opacity pixels
+    //opacity = clamp(opacity, 0.0f, 0.99f);
     prd->opacity = opacity;
     if(prd->isSS == true) {
         basecolor = vec3(1.0f);
@@ -756,13 +502,15 @@ extern "C" __global__ void __closesthit__radiance()
         specTrans = 0;
         ior = 1;
     }
+
     if(prd->isSS == true && prd->medium == DisneyBSDF::PhaseFunctions::isotropic && subsurface==0 )
     {
         prd->passed = true;
         prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
         prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
-        prd->origin = P;
-        prd->direction = ray_dir;
+        //prd->origin = P + 1e-5 * ray_dir; 
+        prd->offsetUpdateRay(P, ray_dir); 
+
         return;
     }
 
@@ -779,10 +527,10 @@ extern "C" __global__ void __closesthit__radiance()
 //        float3 lnrm = normalize(cross(normalize(lv1), normalize(lv2)));
 //        float3 L     = normalize(P - optixGetWorldRayOrigin());
 //        float  LnDl  = clamp(-dot( lnrm, L ), 0.0f, 1.0f);
-//        float weight = LnDl * A / (M_PIf * dist * dist);
+//        float weight = LnDl * A / (M_PIf * dist);
 //        prd->radiance = attrs.clr * weight;
-        prd->origin = P;
-        prd->direction = ray_dir;
+        prd->offsetUpdateRay(P, ray_dir); 
+
         return;
     }
     prd->prob2 = prd->prob;
@@ -791,8 +539,8 @@ extern "C" __global__ void __closesthit__radiance()
     {
         prd->passed = true;
         prd->radiance = make_float3(0.0f);
-        prd->origin = P;
-        prd->direction = ray_dir;
+        //prd->origin = P + 1e-5 * ray_dir; 
+        prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
 
@@ -823,6 +571,7 @@ extern "C" __global__ void __closesthit__radiance()
     vec3 reflectance = vec3(0.0f);
     bool isDiff = false;
     bool isSS = false;
+    bool isTrans = false;
     while(DisneyBSDF::SampleDisney(
                 prd->seed,
                 basecolor,
@@ -839,6 +588,8 @@ extern "C" __global__ void __closesthit__radiance()
                 sheenTint,
                 clearcoat,
                 clearcoatGloss,
+                ccRough,
+                ccIor,
                 flatness,
                 specTrans,
                 scatterDistance,
@@ -857,7 +608,8 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->medium,
                 extinction,
                 isDiff,
-                isSS
+                isSS,
+                isTrans
                 )  == false)
         {
             isSS = false;
@@ -882,23 +634,25 @@ extern "C" __global__ void __closesthit__radiance()
             prd->passed = true;
             //you shall pass!
             prd->radiance = make_float3(0.0f);
+
             prd->origin = P;
             prd->direction = ray_dir;
+            prd->offsetUpdateRay(P, ray_dir); 
+
             prd->prob *= 1;
             prd->countEmitted = false;
             prd->attenuation *= 1;
             return;
-
         }
-
     }
+    prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
-    if(flag == DisneyBSDF::transmissionEvent) {
+    if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         prd->is_inside = dot(vec3(N),vec3(wi))<0;
     }
 
-    if(flag == DisneyBSDF::transmissionEvent){
+    if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent){
         if(prd->is_inside){
             outToIn = true;
             inToOut = false;
@@ -912,7 +666,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->transColor = transmittanceColor;
                 prd->scatterStep = scatterStep;
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF);
+                prd->maxDistance = isTrans? 1e16 : DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF) ;
                 //prd->maxDistance = scatterDistance;
                 prd->scatterPDF = tmpPDF;
            //}
@@ -933,7 +687,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
                 float tmpPDF = 1.0f;
-                prd->maxDistance = DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
+                prd->maxDistance = isTrans? 1e16:DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction,tmpPDF);
                 prd->scatterPDF = tmpPDF;
 
 	    }
@@ -944,15 +698,11 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->medium = prd->is_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
 
-
-
-    
-
-    
     //prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
     //prd->prob *= pdf/clamp(dot(wi, vec3(N)),0.0f,1.0f);
     //prd->prob *= pdf;
-    prd->origin = P; prd->direction = wi;
+    prd->offsetUpdateRay(P, wi); 
+
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
     prd->depth++;
@@ -977,11 +727,17 @@ extern "C" __global__ void __closesthit__radiance()
             float nDl = 1.0f;//clamp(dot(N, L), 0.0f, 1.0f);
             float LnDl = clamp(-dot(light.normal, L), 0.000001f, 1.0f);
             float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-            sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist);
+            sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist );
 
     }
     if(prd->depth>=3)
         roughness = clamp(roughness, 0.5,0.99);
+
+    RadiancePRD shadow_prd {};
+    shadow_prd.seed = prd->seed;
+    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
+    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+
     if(rnd(prd->seed)<=0.5) {
         bool computed = false;
         float ppl = 0;
@@ -1009,20 +765,17 @@ extern "C" __global__ void __closesthit__radiance()
                 float weight = 0.0f;
                 if (nDl > 0.0f && LnDl > 0.0f) {
 
-//                    RadiancePRD shadow_prd;
-//                    shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-//                    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
-//                    traceOcclusion(params.handle, P, L,
-//                                   1e-5f,         // tmin
-//                                   Ldist - 1e-5f, // tmax,
-//                                   &shadow_prd);
+                    traceOcclusion(params.handle, P, L,
+                                   1e-5f,         // tmin
+                                   Ldist - 1e-5f, // tmax,
+                                   &shadow_prd);
 
-                    //light_attenuation = shadow_prd.shadowAttanuation;
-                    //if (fmaxf(light_attenuation) > 0.0f) {
+                    light_attenuation = shadow_prd.shadowAttanuation;
+                    if (fmaxf(light_attenuation) > 0.0f) {
 
-                        weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist * Ldist) /
-                                 (length(light.emission)+1e-6f);
-                    //}
+                        weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist  * Ldist) /
+                                 (length(light.emission)+1e-6f) ;
+                    }
                 }
                 prd->LP = P;
                 prd->Ldir = L;
@@ -1031,16 +784,16 @@ extern "C" __global__ void __closesthit__radiance()
 
                 float3 lbrdf = DisneyBSDF::EvaluateDisney(
                     basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
-                    clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
+                    clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
                     dot(N, L));
 
-                prd->radiance = 2.0 * light.emission * lbrdf;
+                prd->radiance = light_attenuation * weight * 2.0 * light.emission * lbrdf;
                 computed = true;
             }
         }
     } else {
-        RadiancePRD shadow_prd2;
+    
         float3 lbrdf;
         vec3 env_dir;
         bool inside = false;
@@ -1053,22 +806,26 @@ extern "C" __global__ void __closesthit__radiance()
         prd->Ldir = sun_dir;
         prd->nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
         prd->Lweight = 1.0;
-//        shadow_prd2.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-//        shadow_prd2.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
-//        traceOcclusion(params.handle, P, sun_dir,
-//                       1e-5f, // tmin
-//                       1e16f, // tmax,
-//                       &shadow_prd2);
+
+        traceOcclusion(params.handle, P, sun_dir,
+                       1e-5f, // tmin
+                       1e16f, // tmax,
+                       &shadow_prd);
         lbrdf = DisneyBSDF::EvaluateDisney(
             basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
-            clearcoat, clearcoatGloss, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
+            clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
             thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->is_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));
-        prd->radiance = params.sunLightIntensity * 2.0 * float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
-                                       10, // be careful
-                                       .45, 15., 1.030725 * 0.3, params.elapsedTime)) * lbrdf;
+        light_attenuation = shadow_prd.shadowAttanuation;
+        //if (fmaxf(light_attenuation) > 0.0f) {
+            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 *
+                            float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+                                          10, // be careful
+                                          .45, 15., 1.030725 * 0.3, params.elapsedTime)) *
+                            lbrdf;
+        //}
     }
-    prd->emission =  float3(mats.emission);
+    prd->radiance +=  float3(mats.emission);
     prd->CH = 1.0;
 }
 

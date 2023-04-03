@@ -1094,7 +1094,9 @@ struct UpdatePrimitiveFromZSParticles : INode {
         using namespace zs;
 
         for (auto &&parObjPtr : parObjPtrs) {
-            auto process = [](const auto &pars, PrimitiveObject &prim) {
+            if (parObjPtr->prim.get() == nullptr)
+                continue;
+            auto process = [](const auto &pars, auto zsprimPtr, PrimitiveObject &prim) {
                 auto ompExec = zs::omp_exec();
                 // const auto category = parObjPtr->category;
                 auto &pos = prim.attr<vec3f>("pos");
@@ -1103,8 +1105,9 @@ struct UpdatePrimitiveFromZSParticles : INode {
                 if (prim.has_attr("vel") && pars.hasProperty("v"))
                     velsPtr = prim.attr<vec3f>("vel").data();
 
+                /// @note legacy ordering mechanism in projects/CUDA/Utils.hpp
                 if (pars.hasProperty("id")) {
-                    ompExec(range(pars.size()), [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
+                    ompExec(range(pars.size()), [&, pars = view<execspace_e::openmp>({}, pars)](auto pi) {
                         auto id = (int)pars("id", pi);
                         if (id >= size)
                             return;
@@ -1113,34 +1116,37 @@ struct UpdatePrimitiveFromZSParticles : INode {
                             velsPtr[id] = pars.template array<3, float>("v", pi);
                     });
                 } else {
+                    /// @note currently IPC solver forces vertex ordering
+                    std::function<int(int)> get_dst_index = [](int i) { return i; };
+                    const auto &dsts = zsprimPtr->refVertexMapping().originalToOrdered.clone({memsrc_e::host, -1});
+                    if (zsprimPtr->hasVertexMapping()) {
+                        get_dst_index = [&dsts](int i) { return (int)dsts[i]; };
+                    }
                     // currently only write back pos and vel (if exists)
-                    ompExec(range(size), [&, pars = proxy<execspace_e::host>({}, pars)](auto pi) {
-                        pos[pi] = pars.template array<3, float>("x", pi);
+                    ompExec(range(size), [&, pars = view<execspace_e::openmp>({}, pars)](auto pi) {
+                        auto dst = get_dst_index(pi);
+                        pos[pi] = pars.template array<3, float>("x", dst);
                         if (velsPtr != nullptr)
-                            velsPtr[pi] = pars.template array<3, float>("v", pi);
+                            velsPtr[pi] = pars.template array<3, float>("v", dst);
                     });
                 }
             };
             if (parObjPtr->hasImage(ZenoParticles::s_particleTag)) {
-                bool requireClone = !(parObjPtr->getParticles<true>().memspace() == memsrc_e::host ||
-                                      parObjPtr->getParticles<true>().memspace() == memsrc_e::um);
-                const auto &pars = requireClone ? parObjPtr->getParticles<true>().clone({memsrc_e::host})
-                                                : parObjPtr->getParticles<true>();
-                if (parObjPtr->prim.get() == nullptr)
-                    continue;
+                bool requireClone = !(parObjPtr->getParticles(true_c).memspace() == memsrc_e::host ||
+                                      parObjPtr->getParticles(true_c).memspace() == memsrc_e::um);
+                const auto &pars = requireClone ? parObjPtr->getParticles(true_c).clone({memsrc_e::host})
+                                                : parObjPtr->getParticles(true_c);
 
                 auto &prim = *parObjPtr->prim;
-                process(pars, prim);
+                process(pars, parObjPtr, prim);
             } else {
                 bool requireClone = !(parObjPtr->getParticles().memspace() == memsrc_e::host ||
                                       parObjPtr->getParticles().memspace() == memsrc_e::um);
                 const auto &pars =
                     requireClone ? parObjPtr->getParticles().clone({memsrc_e::host}) : parObjPtr->getParticles();
-                if (parObjPtr->prim.get() == nullptr)
-                    continue;
 
                 auto &prim = *parObjPtr->prim;
-                process(pars, prim);
+                process(pars, parObjPtr, prim);
             }
         }
 
@@ -1263,7 +1269,7 @@ struct UpdatePrimitiveAttrFromZSParticles : INode {
             const auto &quads = requireClone ? parobjPtr->getQuadraturePoints().clone({memsrc_e::host})
                                              : parobjPtr->getQuadraturePoints();
 
-            int simplex_size = quads.getChannelSize("inds");
+            int simplex_size = quads.getPropertySize("inds");
 
             if (!quads.hasProperty(attrName))
                 throw std::runtime_error("the particles has no specified channel");
@@ -1454,10 +1460,12 @@ struct MakeZSLevelSet : INode {
     }
 };
 ZENDEFNODE(MakeZSLevelSet, {
-                               {{"float", "dx", "0.1"}, "aux"},
-                               {"ZSLevelSet"},
-                               {{"enum unknown apic flip aflip boundary", "transfer", "unknown"},
+                               {{"float", "dx", "0.1"},
+                                "aux",
+                                {"enum unknown apic flip aflip boundary", "transfer", "unknown"},
                                 {"enum cellcentered collocated staggered const_velocity", "category", "cellcentered"}},
+                               {"ZSLevelSet"},
+                               {},
                                {"SOP"},
                            });
 

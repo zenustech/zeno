@@ -2,6 +2,7 @@
 #include "Structures.hpp"
 #include "TopoUtils.hpp"
 #include "zensim/geometry/Distance.hpp"
+#include <fstream>
 #include <zeno/types/ListObject.h>
 
 #define RETRIEVE_OBJECT_PTRS(T, STR)                                                  \
@@ -97,9 +98,9 @@ typename FastClothSystem::T FastClothSystem::PrimitiveHandle::maximumSurfEdgeLen
     auto &edges = getSurfEdges();
     temp.resize(edges.size());
     auto &edgeLengths = temp;
-    pol(Collapse{edges.size()}, [edges = proxy<space>({}, edges), verts = proxy<space>({}, verts),
-                                 edgeLengths = proxy<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
-        auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+    pol(Collapse{edges.size()}, [edges = view<space>({}, edges), verts = view<space>({}, verts),
+                                 edgeLengths = view<space>(edgeLengths)] ZS_LAMBDA(int ei) mutable {
+        auto inds = edges.pack(dim_c<2>, "inds", ei, int_c);
         edgeLengths[ei] = (verts.pack<3>("x0", inds[0]) - verts.pack<3>("xt", inds[1])).norm();
     });
     auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>());
@@ -112,7 +113,7 @@ typename FastClothSystem::T FastClothSystem::PrimitiveHandle::averageNodalMass(z
         return zsprimPtr->readMeta(s_meanMassTag, zs::wrapt<T>{});
     auto &verts = getVerts();
     Vector<T> masses{verts.get_allocator(), verts.size()};
-    pol(Collapse{verts.size()}, [verts = proxy<space>({}, verts), masses = proxy<space>(masses)] ZS_LAMBDA(
+    pol(Collapse{verts.size()}, [verts = view<space>({}, verts), masses = view<space>(masses)] ZS_LAMBDA(
                                     int vi) mutable { masses[vi] = verts("m", vi); });
     auto tmp = reduce(pol, masses) / masses.size();
     zsprimPtr->setMeta(s_meanMassTag, tmp);
@@ -125,7 +126,7 @@ typename FastClothSystem::T FastClothSystem::PrimitiveHandle::totalVolume(zs::Cu
         return zsprimPtr->readMeta(s_totalVolumeTag, zs::wrapt<T>{});
     auto &eles = getEles();
     Vector<T> vols{eles.get_allocator(), eles.size()};
-    pol(Collapse{eles.size()}, [eles = proxy<space>({}, eles), vols = proxy<space>(vols)] ZS_LAMBDA(int ei) mutable {
+    pol(Collapse{eles.size()}, [eles = view<space>({}, eles), vols = view<space>(vols)] ZS_LAMBDA(int ei) mutable {
         vols[ei] = eles("vol", ei);
     });
     auto tmp = reduce(pol, vols);
@@ -151,9 +152,9 @@ typename FastClothSystem::T FastClothSystem::maximumSurfEdgeLength(zs::CudaExecu
         temp.resize(edges.size());
         auto &edgeLengths = temp;
         pol(Collapse{edges.size()},
-            [edges = proxy<space>({}, edges), verts = proxy<space>({}, vtemp), edgeLengths = proxy<space>(edgeLengths),
+            [edges = view<space>({}, edges), verts = view<space>({}, vtemp), edgeLengths = view<space>(edgeLengths),
              coOffset = coOffset] ZS_LAMBDA(int ei) mutable {
-                auto inds = edges.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c) + coOffset;
+                auto inds = edges.pack(dim_c<2>, "inds", ei, int_c) + coOffset;
                 edgeLengths[ei] = (verts.pack<3>("yn", inds[0]) - verts.pack<3>("yn", inds[1])).norm();
             });
         if (auto tmp = reduce(pol, edgeLengths, thrust::maximum<T>()); tmp > maxEdgeLength)
@@ -189,19 +190,7 @@ typename FastClothSystem::T FastClothSystem::totalVolume(zs::CudaExecutionPolicy
 }
 
 void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
-#if 0 // use default params in the paper for current testing 
-    L = maximumSurfEdgeLength(pol, true) * 1.5;
-    B = L / std::sqrt(2);
-    Btight = B / 12;
-    LRef = 2 * L / 3;
-    LAda = B + Btight;
-    D = std::sqrt((B + Btight) * (B + Btight) - B * B) *
-        (T)0.1; // one-tenth of the actual vertex displacement limit, ref Sec.5
-    epsSlack = 9 * B * B / 16;
-    updateHardPhaseFunctionCoefficients(epsSlack);
-    epsCond = epsSlack / 20;
-    // dHat (static), for priximity query
-#endif 
+#if 0 
     dHat = proximityRadius();
     // soft phase coeff
     // auto [mu_, lam_] = largestLameParams();
@@ -209,10 +198,18 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 
     avgNodeMass = averageNodalMass(pol);
     // hard phase coeff
-#if 0
-    rho = avgNodeMass * coOffset / totalVolume(pol);
-#else 
     rho = 0.1;
+#else 
+    // assume L_ref is get from input 
+    B = LRef / 4.2f * 6.f;  
+    L = B * 1.4142f; 
+    Btight = B / 12.f; 
+    LAda = B + Btight; 
+    D = B / 6.f * 0.25f;  
+    epsSlack = 30.f * B * B / 36.f; 
+    rho = 0.1f; // move into input 
+    epsCond = B * B / 36.f * 0.01f; 
+    dHat = proximityRadius();
 #endif 
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
                    D, dHat, rho, mu);
@@ -241,22 +238,12 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     // exclBouSes = Vector<u8>{vtemp.get_allocator(), nBouSes};
     // exclBouSts = Vector<u8>{vtemp.get_allocator(), nBouSts};
 
-    /// @brief bvtt front default initialization for constraint collection
-    auto deduce_node_cnt = [](std::size_t numLeaves) {
-        if (numLeaves <= 2)
-            return numLeaves;
-        return numLeaves * 2 - 1;
-    };
-    selfSvFront = bvfront_t{(int)deduce_node_cnt(svInds.size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    if (hasBoundary()) {
-        boundarySvFront =
-            bvfront_t{(int)deduce_node_cnt(coPoints->size()), (int)estNumCps, zs::memsrc_e::um, vtemp.devid()};
-    }
-
     /// @brief cloth system surface topo construction
     stInds = tiles_t{vtemp.get_allocator(), {{"inds", 3}}, (std::size_t)sfOffset};
-    seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}}, (std::size_t)seOffset};
-    eTab = etab_t{seInds.get_allocator(), (std::size_t)seInds.size() * 25}; 
+    seInds = tiles_t{vtemp.get_allocator(), {{"inds", 2}, {"restLen", 1}}, (std::size_t)seOffset};
+#if !s_debugRemoveHashTable
+    eTab = etab_t{seInds.get_allocator(), (std::size_t)seInds.size() * 25};
+#endif
     svInds = tiles_t{vtemp.get_allocator(), {{"inds", 1}}, (std::size_t)svOffset};
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
@@ -265,72 +252,95 @@ void FastClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
         // record surface (tri) indices
         if (primHandle.category != ZenoParticles::category_e::curve) {
             auto &tris = primHandle.getSurfTris();
-            pol(Collapse(tris.size()), [stInds = proxy<space>({}, stInds), tris = proxy<space>({}, tris),
-                                        voffset = primHandle.vOffset,
-                                        sfoffset = primHandle.sfOffset] __device__(int i) mutable {
-                stInds.tuple(dim_c<3>, "inds", sfoffset + i) =
-                    (tris.pack(dim_c<3>, "inds", i).reinterpret_bits(int_c) + (int)voffset).reinterpret_bits(float_c);
-            });
+            pol(Collapse(tris.size()),
+                [stInds = view<space>({}, stInds), tris = view<space>({}, tris), voffset = primHandle.vOffset,
+                 sfoffset = primHandle.sfOffset] __device__(int i) mutable {
+                    stInds.tuple(dim_c<3>, "inds", sfoffset + i, int_c) =
+                        (tris.pack(dim_c<3>, "inds", i, int_c) + (int)voffset);
+                });
         }
         const auto &edges = primHandle.getSurfEdges();
-        Vector<int> tmpAdjVerts {vtemp.get_allocator(), estNumCps};
+#if !s_debugRemoveHashTable
+        Vector<int> tmpAdjVerts{vtemp.get_allocator(), estNumCps};
         auto adjVerts = tmpAdjVerts;
-        Vector<int> adjVertsOff {vtemp.get_allocator(), vtemp.size()};
-        Vector<int> adjVertsDeg {vtemp.get_allocator(), vtemp.size()};  
-        Vector<int> adjLen {vtemp.get_allocator(), 1};
-        adjLen.setVal(0); 
-        adjVertsDeg.reset(0); 
+        Vector<int> adjVertsOff{vtemp.get_allocator(), vtemp.size()};
+        Vector<int> adjVertsDeg{vtemp.get_allocator(), vtemp.size()};
+        Vector<int> adjLen{vtemp.get_allocator(), 1};
+        adjLen.setVal(0);
+        adjVertsDeg.reset(0);
+#endif
         constexpr int intHalfLen = sizeof(int) * 4;
-        pol(Collapse(edges.size()),
-            [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges), voffset = primHandle.vOffset,
-             seoffset = primHandle.seOffset, eTab = proxy<space>(eTab), tmpAdjVerts = proxy<space>(tmpAdjVerts), 
-             adjLen = proxy<space>(adjLen), adjVertsDeg = proxy<space>(adjVertsDeg), intHalfLen] __device__(int i) mutable {
-                auto edge = (edges.pack(dim_c<2>, "inds", i).reinterpret_bits(int_c) + (int)voffset); 
-                seInds.tuple(dim_c<2>, "inds", seoffset + i) = edge.reinterpret_bits(float_c);
-                auto adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
-                tmpAdjVerts[adjNo] = (edge[0] << intHalfLen) + edge[1]; 
-                atomic_add(exec_cuda, &adjVertsDeg[edge[0]], 1);
-                adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
-                tmpAdjVerts[adjNo] = (edge[1] << intHalfLen) + edge[0]; 
-                atomic_add(exec_cuda, &adjVertsDeg[edge[1]], 1); 
-                if (auto no = eTab.insert(edge); no < 0)
-                {
-                    printf("the same directed edge <%d, %d> has been inserted twice!\n", edge[0], edge[1]); 
+        pol(Collapse(edges.size()), [seInds = view<space>({}, seInds), edges = view<space>({}, edges),
+                                     voffset = primHandle.vOffset, seoffset = primHandle.seOffset,
+#if !s_debugRemoveHashTable
+                                     eTab = view<space>(eTab), tmpAdjVerts = view<space>(tmpAdjVerts),
+                                     adjLen = view<space>(adjLen), adjVertsDeg = view<space>(adjVertsDeg),
+#endif
+                                     verts = view<space>({}, verts), intHalfLen] __device__(int i) mutable {
+            auto inds = edges.pack(dim_c<2>, "inds", i, int_c);
+            auto edge = inds + (int)voffset;
+            seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edge;
+            auto v0 = verts.pack(dim_c<3>, "x", inds[0]);
+            auto v1 = verts.pack(dim_c<3>, "x", inds[1]);
+#if s_useMassSpring
+            seInds("restLen", seoffset + i) = (v0 - v1).norm();
+            printf("restL: %f\n", (v0 - v1).norm());
+#endif
+#if !s_debugRemoveHashTable
+            auto adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
+            tmpAdjVerts[adjNo] = (edge[0] << intHalfLen) + edge[1];
+            atomic_add(exec_cuda, &adjVertsDeg[edge[0]], 1);
+            adjNo = atomic_add(exec_cuda, &adjLen[0], 1);
+            tmpAdjVerts[adjNo] = (edge[1] << intHalfLen) + edge[0];
+            atomic_add(exec_cuda, &adjVertsDeg[edge[1]], 1);
+            if (auto no = eTab.insert(edge); no < 0) {
+                printf("the same directed edge <%d, %d> has been inserted twice!\n", edge[0], edge[1]);
+            }
+#endif
+        });
+#if !s_debugRemoveHashTable
+        auto aN = adjLen.getVal();
+        tmpAdjVerts.resize(aN);
+        adjVerts.resize(aN);
+        radix_sort(pol, tmpAdjVerts.begin(), tmpAdjVerts.end(), adjVerts.begin());
+        exclusive_scan(pol, adjVertsDeg.begin(), adjVertsDeg.end(), adjVertsOff.begin());
+        pol(range(vtemp.size()),
+            [adjVerts = view<space>(adjVerts), adjVertsOff = view<space>(adjVertsOff), eTab = view<space>(eTab),
+             vN = vtemp.size(), aN, intHalfLen] __device__(int vi) mutable {
+                int idxSt = adjVertsOff[vi];
+                int idxEnd = vi < vN - 1 ? adjVertsOff[vi + 1] : aN;
+                for (int j = idxSt; j < idxEnd; j++) {
+                    for (int k = j + 1; k < idxEnd; k++) {
+                        int vj = adjVerts[j] - (vi << intHalfLen);
+                        int vk = adjVerts[k] - (vi << intHalfLen);
+                        auto edge = ivec2{vj, vk};
+                        if (auto no = eTab.single_query(edge); no < 0)
+                            eTab.insert(edge);
+                    }
                 }
             });
-        auto aN = adjLen.getVal(); 
-        tmpAdjVerts.resize(aN); 
-        adjVerts.resize(aN); 
-        radix_sort(pol, tmpAdjVerts.begin(), tmpAdjVerts.end(), adjVerts.begin()); 
-        exclusive_scan(pol, adjVertsDeg.begin(), adjVertsDeg.end(), adjVertsOff.begin());
-        pol(range(vtemp.size()), 
-            [adjVerts = proxy<space>(adjVerts), adjVertsOff = proxy<space>(adjVertsOff), eTab = proxy<space>(eTab), 
-            vN = vtemp.size(), aN, intHalfLen] __device__ (int vi) mutable {
-                int idxSt = adjVertsOff[vi]; 
-                int idxEnd = vi < vN - 1 ? adjVertsOff[vi + 1] : aN;
-                for (int j = idxSt; j < idxEnd; j++)
-                {
-                    for (int k = j + 1; k < idxEnd; k++)
-                    {
-                        int vj = adjVerts[j] - (vi << intHalfLen); 
-                        int vk = adjVerts[k] - (vi << intHalfLen); 
-                        auto edge = ivec2 {vj, vk}; 
-                        if (auto no = eTab.single_query(edge); no < 0)
-                            eTab.insert(edge);                         
-                    }
-                } 
-            }); 
-
+#endif
         const auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
-            [svInds = proxy<space>({}, svInds), points = proxy<space>({}, points), voffset = primHandle.vOffset,
+            [svInds = view<space>({}, svInds), points = view<space>({}, points), voffset = primHandle.vOffset,
              svoffset = primHandle.svOffset] __device__(int i) mutable {
-                svInds("inds", svoffset + i) =
-                    reinterpret_bits<float>(reinterpret_bits<int>(points("inds", i)) + (int)voffset);
+                svInds("inds", svoffset + i, int_c) = points("inds", i, int_c) + (int)voffset;
             });
     }
 
-    /// @brief initialize vtemp & spatial accel
+    /// @brief initialize xt for moving boundaries
+    for (auto &primHandle : prims) {
+        if (primHandle.isAuxiliary())
+            continue;
+        auto &verts = primHandle.getVerts();
+        // initialize BC info
+        // predict pos, initialize augmented lagrangian, constrain weights
+        pol(Collapse(verts.size()), [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts),
+                                     voffset = primHandle.vOffset, dt = dt] __device__(int i) mutable {
+            auto x = verts.pack<3>("x", i);
+            vtemp.tuple<3>("xt", voffset + i) = x;
+        });
+    }
     reinitialize(pol, dt);
 
     /// @brief setup collision solver parameters
@@ -354,6 +364,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auxTime[i] = 0;
             dynamicsTime[i] = 0;
             collisionTime[i] = 0;
+            auxCnt[i] = 0;
             dynamicsCnt[i] = 0;
             collisionCnt[i] = 0;
         }
@@ -363,23 +374,33 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         if (primHandle.isAuxiliary())
             continue;
         auto &verts = primHandle.getVerts();
+        primHandle.hasBC = verts.hasProperty("isBC") && verts.hasProperty("BCtarget"); 
         // initialize BC info
         // predict pos, initialize augmented lagrangian, constrain weights
-        pol(Collapse(verts.size()), [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts),
-                                     voffset = primHandle.vOffset, dt = dt] __device__(int i) mutable {
+        pol(Collapse(verts.size()), [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts),
+                                     voffset = primHandle.vOffset, dt = dt, 
+                                     hasBC = primHandle.hasBC] __device__(int i) mutable {
             auto x = verts.pack<3>("x", i);
             auto v = verts.pack<3>("v", i);
+            auto vi = voffset + i; 
 
-            vtemp("ws", voffset + i) = verts("m", i);
-            vtemp.tuple<3>("yn", voffset + i) = x;
-            vtemp.tuple<3>("xt", voffset + i) = x;
-            vtemp.tuple<3>("vn", voffset + i) = v;
+            vtemp("ws", vi) = verts("m", i);
+            vtemp.tuple<3>("yn", vi) = x;
+            vtemp.tuple<3>("vn", vi) = v;
+
+            if (hasBC)
+            {
+                vtemp.tuple(dim_c<3>, "BCtarget", vi) = verts.pack(dim_c<3>, "BCtarget", i); 
+                vtemp("isBC", vi) = verts("isBC", vi); 
+            } else {
+                vtemp("isBC", vi) = 0; // otherwise the vertex would not be a BC vertex 
+            }
         });
     }
     if (hasBoundary())
         if (auto coSize = coVerts->size(); coSize) {
             pol(Collapse(coSize),
-                [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts), coOffset = coOffset, dt = dt,
+                [vtemp = view<space>({}, vtemp), coverts = view<space>({}, *coVerts), coOffset = coOffset, dt = dt,
                  augLagCoeff = augLagCoeff, avgNodeMass = avgNodeMass] __device__(int i) mutable {
                     auto x = coverts.pack<3>("x", i);
                     auto v = coverts.pack<3>("v", i);
@@ -392,37 +413,18 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
                 });
         }
 
-        /// spatial accel initialization
-#define init_front(sInds, front)                                                                           \
-    {                                                                                                      \
-        auto numNodes = front.numNodes();                                                                  \
-        if (numNodes <= 2) {                                                                               \
-            front.reserve(sInds.size() * numNodes);                                                        \
-            front.setCounter(sInds.size() * numNodes);                                                     \
-            pol(Collapse{sInds.size()}, [front = proxy<space>(front), numNodes] ZS_LAMBDA(int i) mutable { \
-                for (int j = 0; j != numNodes; ++j)                                                        \
-                    front.assign(i *numNodes + j, i, j);                                                   \
-            });                                                                                            \
-        } else {                                                                                           \
-            front.reserve(sInds.size());                                                                   \
-            front.setCounter(sInds.size());                                                                \
-            pol(Collapse{sInds.size()},                                                                    \
-                [front = proxy<space>(front)] ZS_LAMBDA(int i) mutable { front.assign(i, i, 0); });        \
-        }                                                                                                  \
-    }
-
     {
         bvs.resize(svInds.size());
-        retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0, bvs);
+        retrieve_bounding_volumes(pol, vtemp, "yn", svInds, zs::wrapv<1>{}, 0, bvs);
         // auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", svInds, zs::wrapv<1>{}, 0);
         /// bvh
         if constexpr (s_enableProfile)
             timer.tick();
 
         svBvh.build(pol, bvs);
-
         if constexpr (s_enableProfile) {
             timer.tock();
+            auxCnt[0]++;
             auxTime[0] += timer.elapsed();
         }
         if constexpr (s_testSh) {
@@ -435,13 +437,14 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 
             if constexpr (s_enableProfile) {
                 timer.tock();
+                auxCnt[2]++;
                 auxTime[2] += timer.elapsed();
             }
         }
     }
     if (hasBoundary()) {
         bvs.resize(coPoints->size());
-        retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset, bvs);
+        retrieve_bounding_volumes(pol, vtemp, "yn", *coPoints, zs::wrapv<1>{}, coOffset, bvs);
         // auto ptBvs = retrieve_bounding_volumes(pol, vtemp, "xn", *coPoints, zs::wrapv<1>{}, coOffset);
         /// bvh
         if constexpr (s_enableProfile)
@@ -471,13 +474,16 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
     updateWholeBoundingBoxSize(pol);
     /// update grad pn residual tolerance
     targetGRes = pnRel * std::sqrt(boxDiagSize2);
+    zeno::log_info("box diag size: {}, targetGRes: {}\n", std::sqrt(boxDiagSize2), targetGRes);
 }
 
 FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints,
                                  tiles_t *coEdges, tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact,
-                                 T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat_, T gravity)
+                                 T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat_, T gravity, int K,
+                                 int IDyn, T BCStiffness, T mu, T LRef, T rho)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
-      nPP{zsprims[0]->getParticles().get_allocator(), 1},
+      cPP{estNumCps * 20, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles().get_allocator(), 1},
+      ncPP{zsprims[0]->getParticles().get_allocator(), 1},
       tempPP{{{"softG", 6}, {"hardG", 6}}, estNumCps, zs::memsrc_e::um, 0}, E{estNumCps, zs::memsrc_e::um, 0},
       nE{zsprims[0]->getParticles().get_allocator(), 1}, tempE{{{"softG", 6}, {"hardG", 6}},
                                                                estNumCps,
@@ -487,7 +493,8 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
       temp{estNumCps, zs::memsrc_e::um, 0},
       //
       dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
-      pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0} {
+      pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0}, K{K}, IDyn{IDyn}, 
+      BCStiffness{BCStiffness}, mu{mu}, LRef{LRef}, rho{rho} {
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
         if (primPtr->category == ZenoParticles::category_e::curve) {
@@ -512,15 +519,28 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"cons", 3},
                         // cloth dynamics
                         {"yn", 3},
-                        {"yk", 3}, 
-                        {"yn-1", 3}, 
+                        {"xtmp", 3},
+                        {"yn0", 3},
+                        {"yk", 3},
+                        {"ytmp", 3},
+#if s_useChebyshevAcc
+                        {"yn-1", 3},
+                        {"yn-2", 3},
+#endif
                         {"vn", 3},
                         {"ytilde", 3},
                         {"yhat", 3}, // initial pos at the current substep (constraint, extAccel)
+                        {"isBC", 1}, // 0, 1
+                        {"BCtarget", 3},  
                         // linear solver
                         {"dir", 3},
+                        {"gridDir", 3},
                         {"grad", 3},
+#if !s_useGDDiagHess
                         {"P", 9},
+#else
+                        {"P", 3},
+#endif
                         {"r", 3},
                         {"p", 3},
                         {"q", 3},
@@ -528,13 +548,13 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
                         {"temp", 3},
                         // collision dynamics
                         {"xn", 3},
-                        {"xt", 3}, // for boundary objects 
+                        {"xt", 3},   // for boundary objects
                         {"xn0", 3},  // for backtracking during hardphase
                         {"xk", 3},   // backup before collision step
                         {"xinit", 3} // initial trial collision-free step
                     },
                     (std::size_t)numDofs};
-    bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()};    // this size is the upper bound
+    bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
 
     auto cudaPol = zs::cuda_exec();
     // average edge length (for CCD filtering)
@@ -555,7 +575,7 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
     curRatio += ratio;
 
     projectDBC = false;
-    pol(Collapse(coOffset), [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
+    pol(Collapse(coOffset), [vtemp = view<space>({}, vtemp), coOffset = coOffset, dt = dt] __device__(int vi) mutable {
         auto yn = vtemp.pack(dim_c<3>, "yn", vi);
         vtemp.tuple(dim_c<3>, "yhat", vi) = yn;
         auto newX = yn + vtemp.pack(dim_c<3>, "vn", vi) * dt;
@@ -563,7 +583,7 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
     });
     if (hasBoundary())
         if (auto coSize = coVerts->size(); coSize)
-            pol(Collapse(coSize), [vtemp = proxy<space>({}, vtemp), coverts = proxy<space>({}, *coVerts),
+            pol(Collapse(coSize), [vtemp = view<space>({}, vtemp), coverts = view<space>({}, *coVerts),
                                    coOffset = coOffset, dt = dt] __device__(int i) mutable {
                 auto yn = vtemp.pack(dim_c<3>, "yn", coOffset + i);
                 vtemp.tuple(dim_c<3>, "yhat", coOffset + i) = yn;
@@ -576,8 +596,8 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
         if (primHandle.category == ZenoParticles::category_e::tracker) {
             const auto &eles = primHandle.getEles();
             pol(Collapse(eles.size()),
-                [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, eles)] __device__(int ei) mutable {
-                    auto inds = eles.pack(dim_c<2>, "inds", ei).reinterpret_bits(int_c);
+                [vtemp = view<space>({}, vtemp), eles = view<space>({}, eles)] __device__(int ei) mutable {
+                    auto inds = eles.pack(dim_c<2>, "inds", ei, int_c);
                     // retrieve motion from the associated boundary vert
                     auto deltaX = vtemp.pack(dim_c<3>, "ytilde", inds[1]) - vtemp.pack(dim_c<3>, "yhat", inds[1]);
                     auto yn = vtemp.pack(dim_c<3>, "yn", inds[0]);
@@ -590,7 +610,7 @@ void FastClothSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, T ratio) {
 void FastClothSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
-    pol(zs::range(coOffset), [vtemp = proxy<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
+    pol(zs::range(coOffset), [vtemp = view<space>({}, vtemp), dt = dt] __device__(int vi) mutable {
         auto newX = vtemp.pack<3>("yn", vi);
         auto dv = (newX - vtemp.pack<3>("ytilde", vi)) / dt;
         auto vn = vtemp.pack<3>("vn", vi);
@@ -605,10 +625,12 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
     for (auto &primHandle : prims) {
         if (primHandle.isAuxiliary())
             continue;
+        if (primHandle.isBoundary())
+            continue;
         auto &verts = primHandle.getVerts();
         // update velocity and positions
         pol(zs::range(verts.size()),
-            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), dt = dt, vOffset = primHandle.vOffset,
+            [vtemp = view<space>({}, vtemp), verts = view<space>({}, verts), dt = dt, vOffset = primHandle.vOffset,
              asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
                 verts.tuple<3>("x", vi) = vtemp.pack<3>("yn", vOffset + vi);
                 if (!asBoundary)
@@ -617,12 +639,19 @@ void FastClothSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &p
     }
     if (hasBoundary())
         pol(Collapse(coVerts->size()),
-            [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, *const_cast<tiles_t *>(coVerts)),
+            [vtemp = view<space>({}, vtemp), verts = view<space>({}, *const_cast<tiles_t *>(coVerts)),
              coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
                 verts.tuple(dim_c<3>, "x", vi) = vtemp.pack(dim_c<3>, "yn", coOffset + vi);
                 // no need to update v here. positions are moved accordingly
                 // also, boundary velocies are set elsewhere
             });
+}
+
+void FastClothSystem::writeFile(std::string filename, std::string info) {
+    std::ofstream outFile;
+    outFile.open(filename, std::ios::app);
+    outFile << info;
+    outFile.close();
 }
 
 struct MakeClothSystem : INode {
@@ -663,34 +692,45 @@ struct MakeClothSystem : INode {
         auto input_pn_cap = get_input2<int>("pn_iter_cap");
         auto input_cg_cap = get_input2<int>("cg_iter_cap");
         auto input_gravity = get_input2<float>("gravity");
+        auto input_BC_stiffness = get_input2<float>("BC_stiffness"); 
+        auto input_gd_step = get_input2<float>("gd_step"); 
+        auto input_avg_edge_len = get_input2<float>("avg_edge_len"); 
+        auto input_collision_weight = get_input2<float>("collision_weight"); 
         auto dt = get_input2<float>("dt");
+        auto K = get_input2<int>("K");
+        auto IDyn = get_input2<int>("IDyn");
 
         auto A = std::make_shared<FastClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, dt,
                                                    (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
                                                    input_withContact, input_aug_coeff, input_pn_rel, input_cg_rel,
-                                                   input_pn_cap, input_cg_cap, input_dHat, input_gravity);
+                                                   input_pn_cap, input_cg_cap, input_dHat, input_gravity, K, IDyn, input_BC_stiffness, 
+                                                   input_gd_step, input_avg_edge_len, input_collision_weight);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
     }
 };
 
-ZENDEFNODE(MakeClothSystem, {{
-                                 "ZSParticles",
-                                 "ZSBoundaryPrimitives",
-                                 {"int", "est_num_cps", "1000000"},
-                                 {"bool", "with_contact", "1"},
-                                 {"bool", "contact_with_ee", "1"},
-                                 {"bool", "contact_with_self", "1"},
-                                 {"float", "dt", "0.01"},
-                                 {"float", "dHat", "0.001"},
-                                 {"float", "aug_coeff", "1e2"},
-                                 {"float", "pn_rel", "0.01"},
-                                 {"float", "cg_rel", "0.001"},
-                                 {"int", "pn_iter_cap", "1000"},
-                                 {"int", "cg_iter_cap", "1000"},
-                                 {"float", "gravity", "-9.8"},
-                             },
+ZENDEFNODE(MakeClothSystem, {{"ZSParticles",
+                              "ZSBoundaryPrimitives",
+                              {"int", "est_num_cps", "1000000"},
+                              {"bool", "with_contact", "1"},
+                              {"bool", "contact_with_ee", "1"},
+                              {"bool", "contact_with_self", "1"},
+                              {"float", "dt", "0.01"},
+                              {"float", "dHat", "0.001"},
+                              {"float", "aug_coeff", "1e2"},
+                              {"float", "pn_rel", "0.01"},
+                              {"float", "cg_rel", "0.001"},
+                              {"float", "gd_step", "0.2"},
+                              {"float", "collision_weight", "0.1"}, 
+                              {"float", "avg_edge_len", "4.2"},  
+                              {"int", "pn_iter_cap", "1000"},
+                              {"int", "cg_iter_cap", "1000"},
+                              {"float", "gravity", "-9.8"},
+                              {"int", "K", "72"},
+                              {"int", "IDyn", "2"}, 
+                              {"float", "BC_stiffness", "1000"}},
                              {"ZSClothSystem"},
                              {},
                              {"FEM"}});

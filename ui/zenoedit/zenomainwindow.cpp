@@ -1,3 +1,5 @@
+#include "launch/livehttpserver.h"
+#include "launch/livetcpserver.h"
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
 #include <zenomodel/include/graphsmanagment.h>
@@ -29,6 +31,7 @@
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
 #include "viewport/recordvideomgr.h"
+#include "panel/zenoimagepanel.h"
 
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
@@ -38,6 +41,10 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_bInDlgEventloop(false)
     , m_logger(nullptr)
 {
+    liveTcpServer = new LiveTcpServer;
+    liveHttpServer = new LiveHttpServer;
+    liveSignalsBridge = new LiveSignalsBridge;
+
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
     setWindowTitle("Zeno Editor (" + QString::fromStdString(getZenoVersion()) + ")");
@@ -51,6 +58,9 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 
 ZenoMainWindow::~ZenoMainWindow()
 {
+    delete liveTcpServer;
+    delete liveHttpServer;
+    delete liveSignalsBridge;
 }
 
 void ZenoMainWindow::init()
@@ -598,6 +608,7 @@ QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
     case DOCK_EDITOR: return UiHelper::generateUuid("dock_editor_");
     case DOCK_LOG: return UiHelper::generateUuid("dock_log_");
     case DOCK_NODE_DATA: return UiHelper::generateUuid("dock_data_");
+    case DOCK_IMAGE: return UiHelper::generateUuid("dock_image_");
     case DOCK_VIEW: return UiHelper::generateUuid("dock_view_");
     case DOCK_NODE_PARAMS: return UiHelper::generateUuid("dock_parameter_");
     case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
@@ -640,6 +651,11 @@ void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
         }
         case DOCK_LIGHTS: {
             ZenoLights* pPanel = new ZenoLights;
+            pDock->setWidget(type, pPanel);
+            break;
+        }
+        case DOCK_IMAGE: {
+            ZenoImagePanel* pPanel = new ZenoImagePanel;
             pDock->setWidget(type, pPanel);
             break;
         }
@@ -826,5 +842,27 @@ void ZenoMainWindow::updateLightList() {
     auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZenoDockWidget *dock : docks) {
         dock->newFrameUpdate();
+    }
+}
+void ZenoMainWindow::doFrameUpdate(int frame) {
+    if(liveHttpServer->clients.empty())
+        return;
+
+    std::cout << "====== Frame " << frame << "\n";
+    auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
+    std::cout << "====== CameraMoving " << viewport->m_bMovingCamera << "\n";
+
+    // Sync Camera
+    if(viewport->m_bMovingCamera){
+
+    }
+    // Sync Frame
+    else {
+        int count = liveHttpServer->frameMeshDataCount(frame);
+        std::string data = "FRAME " + std::to_string(frame) + " SYNCMESH " + std::to_string(count);
+        for(auto& c: liveHttpServer->clients) {
+            auto r = liveTcpServer->sendData({c.first, c.second, data});
+            std::cout << "\tClient " << c.first << ":" << c.second << " Receive " << r.data << "\n";
+        }
     }
 }
