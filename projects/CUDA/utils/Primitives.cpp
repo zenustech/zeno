@@ -377,9 +377,8 @@ struct PrimitiveColoring : INode {
         puts("done init");
 #if 1
         auto iter = fast_independent_sets(pol, spmat, weights, colors);
-        auto iterRef = maximum_independent_sets(pol, spmat, weights, colors);
         {
-            fmt::print("{} colors by fast. {} colors by maximum\n", iter, iterRef);
+            fmt::print("{} colors by fast.\n", iter);
             using T = typename RM_CVREF_T(colors)::value_type;
             zs::Vector<int> correct{spmat.get_allocator(), 1};
             correct.setVal(1);
@@ -388,6 +387,7 @@ struct PrimitiveColoring : INode {
                     auto color = colors[i];
                     if (color == limits<T>::max()) {
                         correct[0] = 0;
+                        printf("node [%d]: %f. not colored!\n", i, (float)color);
                         return;
                     }
                     auto &ap = spmat._ptrs;
@@ -398,15 +398,49 @@ struct PrimitiveColoring : INode {
                             continue;
                         if (colors[j] == color) {
                             correct[0] = 0;
+                            printf("node [%d]: %f, neighbor node [%d]: %f, conflict!\n", i, (float)color, j,
+                                   (float)colors[j]);
                             return;
                         }
                     }
                 });
-            if (correct.getVal()) {
+            if (correct.getVal() == 0) {
                 throw std::runtime_error("coloring is wrong!\n");
             }
-            puts("all right!");
         }
+        auto iterRef = maximum_independent_sets(pol, spmat, weights, colors);
+        {
+            fmt::print("{} colors by maximum\n", iterRef);
+            using T = typename RM_CVREF_T(colors)::value_type;
+            zs::Vector<int> correct{spmat.get_allocator(), 1};
+            correct.setVal(1);
+            pol(range(spmat.outerSize()),
+                [&colors, spmat = proxy<space>(spmat), correct = proxy<space>(correct)](int i) mutable {
+                    auto color = colors[i];
+                    if (color == limits<T>::max()) {
+                        correct[0] = 0;
+                        printf("node [%d]: %f. not colored!\n", i, (float)color);
+                        return;
+                    }
+                    auto &ap = spmat._ptrs;
+                    auto &aj = spmat._inds;
+                    for (int k = ap[i]; k < ap[i + 1]; k++) {
+                        int j = aj[k];
+                        if (j == i)
+                            continue;
+                        if (colors[j] == color) {
+                            correct[0] = 0;
+                            printf("node [%d]: %f, neighbor node [%d]: %f, conflict!\n", i, (float)color, j,
+                                   (float)colors[j]);
+                            return;
+                        }
+                    }
+                });
+            if (correct.getVal() == 0) {
+                throw std::runtime_error("coloring is wrong!\n");
+            }
+        }
+        puts("all right!");
 #else
         // bfs
         int iter = 0;
