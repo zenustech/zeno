@@ -18,14 +18,13 @@ struct RapidClothSystem : IObject {
     using Ti = zs::conditional_t<zs::is_same_v<T, double>, zs::i64, zs::i32>;
     constexpr static auto eps_c = zs::limits<T>::epsilon() * 1.0f; 
     constexpr static auto T_c = zs::float_c; 
-    constexpr static auto enableRepulsion_c = false;
-    // TODO: use avg_mass * repulsionCoef_c as the repulsion weight 
-    // TODO: fix repulsion 
-    constexpr static auto repulsionCoef_c = 1e-2f; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false;
-    constexpr static auto enableDegeneratedDist_c = true; 
     constexpr static auto debugVis_c = true; 
+    T repulsionCoef = 1.f; 
+    T repulsionRange = 2.f; 
+    bool enableDegeneratedDist = true; 
+    bool enableRepulsion = false; 
 
     using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
@@ -156,7 +155,7 @@ struct RapidClothSystem : IObject {
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, bool enableExclEdges); 
+                    T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, T repulsionRange); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);

@@ -26,33 +26,35 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
          tempPP = proxy<space>({}, tempPP), tempPE = proxy<space>({}, tempPE), 
          vCons = view<space>({}, vCons, false_c, "vCons"), 
          nPT = view<space>(nPT, false_c, "nPT"), radius, voffset = withBoundary ? coOffset : 0,
-         nPP = proxy<space>(nPP), nPE = proxy<space>(nPE), 
+         nPP = view<space>(nPP, false_c, "nPP"), nPE = view<space>(nPE, false_c, "nPE"), 
          exclTab = proxy<space>(exclTab), 
          enableExclEdges = enableExclEdges, 
+         enableDegeneratedDist = enableDegeneratedDist, 
          frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto vi = front.prim(i);
             vi = spInds("inds", vi, int_c); 
             const auto dHat2 = zs::sqr(radius);
             auto p = vtemp.pack(dim_c<3>, tag, vi);
             auto bv = bv_t{get_bounding_box(p - radius, p + radius)};
-            auto f = [&](int stI) {
-                auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
-                if (vi == tri[0] || vi == tri[1] || vi == tri[2])
-                    return;
-                bool onlyPT = false; 
-                if (enableExclEdges)
-                    for (int k = 0; k < 3; k++)
-                        if (exclTab.query({vi, tri[k]}) >= 0)
-                        {
-                            onlyPT = true; 
-                            break; 
-                        }
-                // ccd
-                auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
-                auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
-                auto t2 = vtemp.pack(dim_c<3>, tag, tri[2]);
-                if (enableDegeneratedDist_c)
-                {
+            if (enableDegeneratedDist)
+            {
+                auto f = [&](int stI) mutable {
+                    auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
+                    if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+                        return;
+                    bool onlyPT = false; 
+                    if (enableExclEdges)
+                        for (int k = 0; k < 3; k++)
+                            if (exclTab.query({vi, tri[k]}) >= 0)
+                            {
+                                onlyPT = true; 
+                                break; 
+                            }
+                    // ccd
+                    auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
+                    auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
+                    auto t2 = vtemp.pack(dim_c<3>, tag, tri[2]);
+
                     switch (pt_distance_type(p, t0, t1, t2)) {
                         case 0: 
                         {
@@ -133,21 +135,45 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                         }
                         default: break; 
                     }
-                } else {
-                    if (auto d2 = dist2_pt_unclassified(p, t0, t1, t2); d2 < dHat2)
-                    {
-                        auto no = atomic_add(exec_cuda, &nPT[0], 1); 
-                        auto inds = pair4_t{vi, tri[0], tri[1], tri[2]}; 
-                        tempPT.tuple(dim_c<4>, "inds", no, int_c) = inds; 
-                        tempPT("dist", no) = (float)zs::sqrt(d2); 
-                    }   
-                }
-            }; 
+                }; 
 
-            if (frontManageRequired)
-                bvh.iter_neighbors(bv, i, front, f);
-            else
-                bvh.iter_neighbors(bv, front.node(i), f);
+                if (frontManageRequired)
+                    bvh.iter_neighbors(bv, i, front, f);
+                else
+                    bvh.iter_neighbors(bv, front.node(i), f);
+            } else {
+                    auto f = [&](int stI) mutable {
+                        auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
+                        if (vi == tri[0] || vi == tri[1] || vi == tri[2])
+                            return;
+                        bool onlyPT = false; 
+                        if (enableExclEdges)
+                            for (int k = 0; k < 3; k++)
+                                if (exclTab.query({vi, tri[k]}) >= 0)
+                                {
+                                    onlyPT = true; 
+                                    break; 
+                                }
+                        // ccd
+                        auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
+                        auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
+                        auto t2 = vtemp.pack(dim_c<3>, tag, tri[2]);
+
+                        if (auto d2 = dist2_pt_unclassified(p, t0, t1, t2); d2 < dHat2)
+                        {
+                            auto no = atomic_add(exec_cuda, &nPT[0], 1); 
+                            auto inds = pair4_t{vi, tri[0], tri[1], tri[2]}; 
+                            tempPT.tuple(dim_c<4>, "inds", no, int_c) = inds; 
+                            tempPT("dist", no) = (float)zs::sqrt(d2); 
+                        }   
+                    }; 
+
+                    if (frontManageRequired)
+                        bvh.iter_neighbors(bv, i, front, f);
+                    else
+                        bvh.iter_neighbors(bv, front.node(i), f);
+            }
+
         });
     if (frontManageRequired)
         stfront.reorder(pol); 
@@ -191,6 +217,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
             tempPE = proxy<space>({}, tempPE), nPE = proxy<space>(nPE), 
             radius, voffset = withBoundary ? coOffset : 0,
             exclTab = proxy<space>(exclTab), 
+            enableDegeneratedDist = enableDegeneratedDist, 
             frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
             auto sei = front.prim(i);
             auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
@@ -208,7 +235,7 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 auto v2 = vtemp.pack(dim_c<3>, tag, ejInds[0]);
                 auto v3 = vtemp.pack(dim_c<3>, tag, ejInds[1]);
 
-                if (enableDegeneratedDist_c)
+                if (enableDegeneratedDist)
                 {
                     switch(ee_distance_type(v0, v1, v2, v3)) {
                         case 0: {
@@ -696,14 +723,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempCons = proxy<space>({}, tempCons), 
                     oPT = proxy<space>(oPT), 
                     delta = delta, tag, 
-                    enableDegeneratedDist_c = enableDegeneratedDist_c] __device__ (int i) mutable {
+                    enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
         auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
         auto t0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
         auto t1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
         auto t2 = vtemp.pack(dim_c<3>, tag, inds[3]); 
-        auto pt_dist2 = enableDegeneratedDist_c ? dist2_pt(p, t0, t1, t2) : 
+        auto pt_dist2 = enableDegeneratedDist ? dist2_pt(p, t0, t1, t2) : 
             dist2_pt_unclassified(p, t0, t1, t2); 
         auto pt_dist = zs::sqrt(pt_dist2); 
         for (int k = 0; k < 4; k++)
@@ -753,14 +780,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempCons = proxy<space>({}, tempCons), 
                     oEE = proxy<space>(oEE), 
                     delta = delta, tag, 
-                    enableDegeneratedDist_c = enableDegeneratedDist_c] __device__ (int i) mutable {
+                    enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
         auto ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
         auto ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
         auto ej0 = vtemp.pack(dim_c<3>, tag, inds[2]); 
         auto ej1 = vtemp.pack(dim_c<3>, tag, inds[3]);  
-        auto ee_dist2 = enableDegeneratedDist_c ? safe_dist2_ee(ei0, ei1, ej0, ej1) : 
+        auto ee_dist2 = enableDegeneratedDist ? safe_dist2_ee(ei0, ei1, ej0, ej1) : 
             safe_dist2_ee_unclassified(ei0, ei1, ej0, ej1); 
         auto ee_dist = zs::sqrt(ee_dist2); 
         for (int k = 0; k < 4; k++)

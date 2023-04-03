@@ -186,16 +186,16 @@ void RapidClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
     }
     // repulsion 
     // TODO: use cooperative group to optimize in the future 
-    if (enableRepulsion_c)
+    if (enableRepulsion)
     {
-        if (enableDegeneratedDist_c)
+        if (enableDegeneratedDist)
         {
             pol(range(npp), 
                 [tempPP = proxy<space>({}, tempPP), 
                 vtemp = proxy<space>({}, vtemp), 
                 dxOffset, bOffset] __device__ (int i) mutable {
                     auto inds = tempPP.pack(dim_c<2>, "inds", i, int_c); 
-                    auto hess = tempPP.pack(dim_c<6, 6>, "inds", i); 
+                    auto hess = tempPP.pack(dim_c<6, 6>, "hess", i); 
                     for (int vi = 0; vi < 2; vi++)
                         for (int vj = 0; vj < 2; vj++)
                             for (int di = 0; di < 3; di++)
@@ -208,7 +208,7 @@ void RapidClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
                 vtemp = proxy<space>({}, vtemp), 
                 dxOffset, bOffset] __device__ (int i) mutable {
                     auto inds = tempPE.pack(dim_c<3>, "inds", i, int_c); 
-                    auto hess = tempPE.pack(dim_c<9, 9>, "inds", i); 
+                    auto hess = tempPE.pack(dim_c<9, 9>, "hess", i); 
                     for (int vi = 0; vi < 3; vi++)
                         for (int vj = 0; vj < 3; vj++)
                             for (int di = 0; di < 3; di++)
@@ -222,7 +222,7 @@ void RapidClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
             vtemp = proxy<space>({}, vtemp), 
             dxOffset, bOffset] __device__ (int i) mutable {
                 auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
-                auto hess = tempPT.pack(dim_c<12, 12>, "inds", i); 
+                auto hess = tempPT.pack(dim_c<12, 12>, "hess", i); 
                 for (int vi = 0; vi < 4; vi++)
                     for (int vj = 0; vj < 4; vj++)
                         for (int di = 0; di < 3; di++)
@@ -235,7 +235,7 @@ void RapidClothSystem::multiply(zs::CudaExecutionPolicy &pol, const zs::SmallStr
             vtemp = proxy<space>({}, vtemp), 
             dxOffset, bOffset] __device__ (int i) mutable {
                 auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
-                auto hess = tempEE.pack(dim_c<12, 12>, "inds", i); 
+                auto hess = tempEE.pack(dim_c<12, 12>, "hess", i); 
                 for (int vi = 0; vi < 4; vi++)
                     for (int vj = 0; vj < 4; vj++)
                         for (int di = 0; di < 3; di++)
@@ -334,9 +334,9 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
     });
     computeInertialAndForceGradient(pol, "x[k]");
     computeElasticGradientAndHessian(pol, "x[k]");
-    if (enableRepulsion_c)
+    if (enableRepulsion)
     {
-        findConstraints(pol, delta * 2.f, "x[k]"); 
+        findConstraints(pol, repulsionRange, "x[k]"); 
         D = 0;    
         computeRepulsionGradientAndHessian(pol, "x[k]"); 
     }

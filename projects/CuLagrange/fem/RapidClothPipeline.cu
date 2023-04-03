@@ -282,7 +282,10 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
 
     pol(range(npt), [vtemp = proxy<space>({}, vtemp), 
                     tempPT = proxy<space>({}, tempPT), 
-                    repulsionCoef_c = repulsionCoef_c, 
+                    repulsionCoef = repulsionCoef, 
+                    repulsionRange = repulsionRange, 
+                    coOffset = coOffset, 
+                    delta = delta, 
                     tag] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
@@ -290,14 +293,24 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
         auto t0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
         auto t1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
         auto t2 = vtemp.pack(dim_c<3>, tag, inds[3]); 
-        auto grad = - repulsionCoef_c * dist_grad_pt(p, t0, t1, t2); 
+        T avgMass = 0.f; 
+        int vertCnt = 0; 
+        for (int k = 0; k < 4; k++)
+            if (inds[k] < coOffset)
+            {
+                avgMass += vtemp("ws", inds[k]); 
+                vertCnt++; 
+            }
+        avgMass /= (T)vertCnt; 
+        auto dist = tempPT("dist", i); 
+        auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pt(p, t0, t1, t2); 
         for (int d = 0; d != 3; ++d) {
             atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
             atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), grad(1, d));
             atomic_add(exec_cuda, &vtemp("grad", d, inds[2]), grad(2, d));
             atomic_add(exec_cuda, &vtemp("grad", d, inds[3]), grad(3, d));
         }
-        auto ptHess = dist_hess_pt(p, t0, t1, t2);
+        auto ptHess = repulsionCoef * dist_hess_pt(p, t0, t1, t2);
         // make pd
         make_pd(ptHess);        
         tempPT.tuple(dim_c<144>, "hess", i) = ptHess; 
@@ -309,7 +322,10 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
 
     pol(range(nee), [vtemp = proxy<space>({}, vtemp), 
                     tempEE = proxy<space>({}, tempEE), 
-                    repulsionCoef_c = repulsionCoef_c, 
+                    repulsionCoef = repulsionCoef, 
+                    repulsionRange = repulsionRange, 
+                    coOffset = coOffset, 
+                    delta = delta, 
                     tag] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
@@ -317,14 +333,24 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
         auto ei1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
         auto ej0 = vtemp.pack(dim_c<3>, tag, inds[2]); 
         auto ej1 = vtemp.pack(dim_c<3>, tag, inds[3]); 
-        auto grad = - repulsionCoef_c * dist_grad_ee(ei0, ei1, ej0, ej1); 
+        T avgMass = 0.f; 
+        int vertCnt = 0; 
+        for (int k = 0; k < 4; k++)
+            if (inds[k] < coOffset)
+            {
+                avgMass += vtemp("ws", inds[k]); 
+                vertCnt++; 
+            }
+        avgMass /= (T)vertCnt; 
+        auto dist = tempEE("dist", i); 
+        auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_ee(ei0, ei1, ej0, ej1); 
         for (int d = 0; d != 3; ++d) {
             atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
             atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), grad(1, d));
             atomic_add(exec_cuda, &vtemp("grad", d, inds[2]), grad(2, d));
             atomic_add(exec_cuda, &vtemp("grad", d, inds[3]), grad(3, d));
         }
-        auto eeHess = dist_hess_ee(ei0, ei1, ej0, ej1); 
+        auto eeHess = repulsionCoef * dist_hess_ee(ei0, ei1, ej0, ej1); 
         make_pd(eeHess);
         tempEE.tuple(dim_c<144>, "hess", i) = eeHess;
         for (int vi = 0; vi != 4; ++vi) 
@@ -333,23 +359,35 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
                     atomic_add(exec_cuda, &vtemp("P", i * 3 + j, inds[vi]), eeHess(vi * 3 + i, vi * 3 + j));
     }); 
 
-    if (enableDegeneratedDist_c)
+    if (enableDegeneratedDist)
     {
-        // TODO: pp 
         pol(range(npp), [vtemp = proxy<space>({}, vtemp), 
                         tempPP = proxy<space>({}, tempPP), 
-                        repulsionCoef_c = repulsionCoef_c, 
+                        repulsionCoef = repulsionCoef, 
+                        repulsionRange = repulsionRange, 
+                        coOffset = coOffset, 
+                        delta = delta, 
                         tag] __device__ (int i) mutable {
             // calculate grad 
             auto inds = tempPP.pack(dim_c<2>, "inds", i, int_c); 
             auto x0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
             auto x1 = vtemp.pack(dim_c<3>, tag, inds[1]); 
-            auto grad = - repulsionCoef_c * dist_grad_pp(x0, x1); 
+            T avgMass = 0.f; 
+            int vertCnt = 0; 
+            for (int k = 0; k < 2; k++)
+                if (inds[k] < coOffset)
+                {
+                    avgMass += vtemp("ws", inds[k]); 
+                    vertCnt++; 
+                }
+            avgMass /= (T)vertCnt; 
+            auto dist = tempPP("dist", i); 
+            auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pp(x0, x1); 
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), grad(1, d));
             }
-            auto ppHess = dist_hess_pp(x0, x1);
+            auto ppHess = repulsionCoef * dist_hess_pp(x0, x1);
             // make pd
             make_pd(ppHess);        
             tempPP.tuple(dim_c<36>, "hess", i) = ppHess;
@@ -359,24 +397,35 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
                         atomic_add(exec_cuda, &vtemp("P", i * 3 + j, inds[vi]), ppHess(vi * 3 + i, vi * 3 + j));
         }); 
 
-        // TODO: pe
         pol(range(npe), [vtemp = proxy<space>({}, vtemp), 
                         tempPE = proxy<space>({}, tempPE), 
-                        repulsionCoef_c = repulsionCoef_c, 
+                        repulsionCoef = repulsionCoef, 
+                        repulsionRange = repulsionRange, 
+                        coOffset = coOffset, 
+                        delta = delta, 
                         tag] __device__ (int i) mutable {
             // calculate grad 
             auto inds = tempPE.pack(dim_c<3>, "inds", i, int_c); 
             auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
             auto e0 = vtemp.pack(dim_c<3>, tag, inds[1]); 
             auto e1 = vtemp.pack(dim_c<3>, tag, inds[2]); 
-
-            auto grad = - repulsionCoef_c * dist_grad_pe(p, e0, e1); 
+            T avgMass = 0.f; 
+            int vertCnt = 0; 
+            for (int k = 0; k < 3; k++)
+                if (inds[k] < coOffset)
+                {
+                    avgMass += vtemp("ws", inds[k]); 
+                    vertCnt++; 
+                }
+            avgMass /= (T)vertCnt; 
+            auto dist = tempPE("dist", i);
+            auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pe(p, e0, e1); 
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), grad(1, d));
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[2]), grad(2, d));
             }
-            auto peHess = dist_hess_pe(p, e0, e1);
+            auto peHess = repulsionCoef *  dist_hess_pe(p, e0, e1);
             // make pd
             make_pd(peHess);        
             tempPE.tuple(dim_c<81>, "hess", i) = peHess;

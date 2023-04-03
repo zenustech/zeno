@@ -378,7 +378,7 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, 
                     T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, bool enableExclEdges)
+                    T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, T repulsionRange)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
@@ -389,7 +389,9 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         dt{dt}, framedt{dt}, curRatio{0}, enableContact{withContact}, augLagCoeff{augLagCoeff},
         cgRel{cgRel}, lcpTol{lcpTol}, PNCap{PNCap}, CGCap{CGCap}, lcpCap{lcpCap}, gravAccel{0, gravity, 0}, L{L}, delta{delta}, 
         D_min{delta}, D_max{delta * 4}, sigma{sigma}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
-        consDegree{maxVertCons * 4}, BCStiffness{BCStiffness}, enableExclEdges{enableExclEdges} { 
+        consDegree{maxVertCons * 4}, BCStiffness{BCStiffness}, enableExclEdges{enableExclEdges}, 
+        repulsionCoef{repulsionCoef}, enableDegeneratedDist{enableDegeneratedDist}, enableRepulsion{repulsionCoef != 0.f}, 
+        repulsionRange{repulsionRange} { 
     auto cudaPol = zs::cuda_exec();
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
@@ -643,6 +645,9 @@ struct MakeRapidClothSystem : INode {
         auto input_lcp_tol = get_input2<int>("lcp_tol"); 
         auto input_lcp_cap = get_input2<int>("lcp_cap"); 
         auto input_enable_excl_edges = get_input2<bool>("enable_excl_edges"); 
+        auto input_repulsion_coef = get_input2<float>("repulsion_coef");
+        auto input_enable_degenerated_dist = get_input2<bool>("enable_degenerated_dist"); 
+        auto input_repulsion_range = get_input2<float>("repulsion_range"); 
 
         // T delta, T sigma, T gamma, T eps
         auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt,
@@ -651,7 +656,8 @@ struct MakeRapidClothSystem : INode {
                                                    input_withContact, input_aug_coeff, input_cg_rel, input_lcp_tol,  
                                                    input_pn_cap, input_cg_cap, input_lcp_cap, input_gravity, input_L, 
                                                    input_delta, input_sigma, input_gamma, input_eps, 
-                                                   input_max_vert_cons, input_BC_stiffness, input_enable_excl_edges);
+                                                   input_max_vert_cons, input_BC_stiffness, input_enable_excl_edges, 
+                                                   input_repulsion_coef, input_enable_degenerated_dist, input_repulsion_range);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -680,7 +686,10 @@ ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               {"float", "stepping_limit", "0.9"},  
                               {"float", "term_thresh", "1e-4"}, 
                               {"float", "BC_stiffness", "1000"}, 
-                              {"bool", "enable_excl_edges", "0"}},
+                              {"bool", "enable_excl_edges", "0"}, 
+                              {"float", "repulsion_coef", "0"}, 
+                              {"float", "repulsion_range", "2"}, 
+                              {"bool", "enable_degenerated_dist" , "1"}},
                              {"ZSClothSystem"},
                              {},
                              {"FEM"}});
