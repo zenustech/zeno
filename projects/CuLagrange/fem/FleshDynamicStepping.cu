@@ -38,9 +38,89 @@
 
 #include "collision_energy/evaluate_collision.hpp"
 
+#include "zensim/math/matrix/SparseMatrix.hpp"
+
 namespace zeno {
 
 #define MAX_FP_COLLISION_PAIRS 4
+
+
+template <typename SpmatT, typename VecTM, typename VecTI,
+          zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
+                            VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
+__forceinline__ __device__ void
+update_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, SpmatT &spmat,
+               const VecTI &inds, const VecTM &hess) {
+    using namespace zs;
+    constexpr int codim = VecTI::extent;
+    using mat3 = typename SpmatT::value_type;
+    const auto nnz = spmat.nnz();
+    const int cap = __popc(tile.ballot(1)); // assume active pattern 0...001111 [15, 14, ..., 0]
+    auto laneId = tile.thread_rank();
+#pragma unroll
+    for (int i = 0; i != codim; ++i) {
+        auto subOffsetI = i * 3;
+        auto row = inds[i];
+        // diagonal
+        auto loc = spmat._ptrs[row];
+        auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+
+        for (int d = laneId; d < 9; d += cap) {
+            atomic_add(exec_cuda, &mat(d / 3, d % 3), hess(subOffsetI + d / 3, subOffsetI + d % 3));
+        }
+        // non-diagonal
+        for (int j = i + 1; j < codim; ++j) {
+            auto subOffsetJ = j * 3;
+            auto col = inds[j];
+            if (row < col) {
+                auto loc = spmat.locate(row, col, zs::true_c);
+                auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+                for (int d = laneId; d < 9; d += cap)
+                    atomic_add(exec_cuda, &mat.val(d), hess(subOffsetI + d / 3, subOffsetJ + d % 3));
+            } else {
+                auto loc = spmat.locate(col, row, zs::true_c);
+                auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+                for (int d = laneId; d < 9; d += cap)
+                    atomic_add(exec_cuda, &mat.val(d), hess(subOffsetI + d % 3, subOffsetJ + d / 3));
+            }
+        }
+    }
+}
+template <typename T, zs::enable_if_t<std::is_fundamental_v<T>> = 0>
+__forceinline__ __device__ T tile_shfl(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile,
+                                       T var, int srcLane) {
+    return tile.shfl(var, srcLane);
+}
+template <typename VecT, zs::enable_if_t<zs::is_vec<VecT>::value> = 0>
+__forceinline__ __device__ VecT tile_shfl(
+    cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, const VecT &var, int srcLane) {
+    VecT ret{};
+    for (typename VecT::index_type i = 0; i != VecT::extent; ++i)
+        ret.val(i) = tile_shfl(tile, var.val(i), srcLane);
+    return ret;
+}
+template <typename SpmatT, typename VecTM, typename VecTI,
+          zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
+                            VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
+__forceinline__ __device__ void update_hessian(SpmatT &spmat, const VecTI &inds, const VecTM &hess,
+                                               bool has_work = true) {
+    using namespace zs;
+    // constexpr int codim = VecTI::extent;
+    auto tile = cg::tiled_partition<8>(cg::this_thread_block());
+
+    u32 work_queue = tile.ballot(has_work);
+    while (work_queue) {
+        auto cur_rank = __ffs(work_queue) - 1;
+        auto cur_work = tile_shfl(tile, hess, cur_rank);
+        auto cur_index = tile.shfl(inds, cur_rank); // gather index as well
+        update_hessian(tile, spmat, cur_index, cur_work);
+
+        if (tile.thread_rank() == cur_rank)
+            has_work = false;
+        work_queue = tile.ballot(has_work);
+    }
+    return;
+}
 
 struct FleshDynamicStepping : INode {
 
@@ -59,6 +139,8 @@ struct FleshDynamicStepping : INode {
 
     using pair3_t = zs::vec<Ti,3>;
     using pair4_t = zs::vec<Ti,4>;
+
+    using spmat_t = zs::SparseMatrix<mat3, true>;
 
     // currently only backward euler integrator is supported
     // topology evaluation should be called before applying this node
@@ -1199,7 +1281,9 @@ struct FleshDynamicStepping : INode {
         // std::cout << "sttemp.size() << " << sttemp.size() << std::endl;
         // std::cout << "setemp.size() << " << setemp.size() << std::endl;
 
-        int fp_buffer_size = points.size() * MAX_FP_COLLISION_PAIRS;
+        bool turn_on_self_collision = get_input2<int>("use_self_collision") > 0;
+
+        int fp_buffer_size = turn_on_self_collision ? points.size() * MAX_FP_COLLISION_PAIRS : 0;
         // int fp_buffer_size = 0;
 
         dtiles_t fp_buffer(points.get_allocator(),{
@@ -1239,6 +1323,7 @@ struct FleshDynamicStepping : INode {
         //     {"H",12*12},
         //     {"grad",12}
         // },eles.size() + bbw.size() + fp_buffer.size() + kc_buffer_size);
+
 
         dtiles_t gh_buffer(eles.get_allocator(),{
             {"inds",4},
@@ -1413,7 +1498,69 @@ struct FleshDynamicStepping : INode {
         auto max_cg_iters = get_param<int>("max_cg_iters");
 
         bool use_plane_constraint = get_input2<int>("use_plane_constraint") > 0;
+
         bool use_line_search = get_param<bool>("use_line_search");
+
+        zs::CppTimer timer;
+        timer.tick();
+
+
+        spmat_t spmat{};
+        zs::Vector<int> is{verts.get_allocator(),verts.size()};
+        zs::Vector<int> js{verts.get_allocator(),verts.size()};
+        // init diagonal entries
+        // cudaPol(zs::range(verts.size()),
+        //         [is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(int vi) mutable {
+        //     is[vi] = js[vi] = vi;
+        // });
+        cudaPol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
+        auto reserveStorage = [&is, &js](std::size_t n) {
+            auto size = is.size();
+            is.resize(size + n);
+            js.resize(size + n);
+            return size;
+        };
+
+        // init tet incidents' entries, off-diagonal
+        auto tets_entry_offset = reserveStorage(eles.size() * 6);
+        cudaPol(zs::range(eles.size()),[offset = tets_entry_offset,
+                stride = eles.size(),
+                is = proxy<space>(is),
+                js = proxy<space>(js),
+                eles = proxy<space>({},eles)] ZS_LAMBDA(int ei) mutable {
+            auto inds = eles.pack(dim_c<4>,"inds",ei,int_c);
+            for (int d = 1; d < 4; ++d)
+                for (int k = 0; k < 4 - d; ++k)
+                    if (inds[k] > inds[k + 1]) {
+                        auto t = inds[k];
+                        inds[k] = inds[k + 1];
+                        inds[k + 1] = t;
+                    }
+
+            // <0, 1>, <0, 2>, <0, 3>, <1, 2>, <1, 3>, <2, 3>
+            is[offset + ei] = inds[0];
+            is[offset + stride + ei] = inds[0];
+            is[offset + stride * 2 + ei] = inds[0];
+            is[offset + stride * 3 + ei] = inds[1];
+            is[offset + stride * 4 + ei] = inds[1];
+            is[offset + stride * 5 + ei] = inds[2];
+
+            js[offset + ei] = inds[1];
+            js[offset + stride + ei] = inds[2];
+            js[offset + stride * 2 + ei] = inds[3];
+            js[offset + stride * 3 + ei] = inds[2];
+            js[offset + stride * 4 + ei] = inds[3];
+            js[offset + stride * 5 + ei] = inds[3];
+        });
+
+        spmat = spmat_t{verts.get_allocator(),(int)verts.size(),(int)verts.size()};
+        spmat.build(cudaPol,(int)verts.size(),(int)verts.size(),zs::range(is),zs::range(js),zs::false_c);
+        spmat.localOrdering(cudaPol, zs::false_c);
+        spmat._vals.resize(spmat.nnz());
+        spmat._vals.reset(0);   
+
+        timer.tock("setup spmat");
+
 
         while(nm_iters < max_newton_iterations) {
             // break;
@@ -1435,7 +1582,7 @@ struct FleshDynamicStepping : INode {
             // match([&](auto &elasticModel,auto &anisoModel) -> std::enable_if_t<zs::is_same_v<RM_CVREF_T(anisoModel),zs::AnisotropicArap<float>>> {...},[](...) {
             //     A.computeGradientAndHessian(cudaPol, elasticModel,anisoModel,vtemp,etemp,gh_buffer,kd_alpha,kd_beta);
             // })(models.getElasticModel(),models.getAnisoElasticModel());
- 
+            timer.tick();
             match([&](auto &elasticModel,zs::AnisotropicArap<float> &anisoModel){
                 A.computeGradientAndHessian(cudaPol, elasticModel,anisoModel,vtemp,etemp,gh_buffer,kd_alpha,kd_beta);
             },[](...) {
@@ -1471,24 +1618,54 @@ struct FleshDynamicStepping : INode {
                     verts.hasProperty(planeConsNrmTag) << "\t" << 
                     verts.hasProperty(planeConsIDTag) << "\t" << use_plane_constraint << std::endl;
             }
-            match([&](auto &elasticModel) {
-                A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
-                    vtemp,
-                    etemp,
-                    sttemp,
-                    setemp,
-                    // ee_buffer,
-                    fp_buffer,
-                    kverts,
-                    kc_buffer,
-                    gh_buffer,kd_theta);
-            })(models.getElasticModel());
+            if(turn_on_self_collision) {
+                match([&](auto &elasticModel) {
+                    A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
+                        vtemp,
+                        etemp,
+                        sttemp,
+                        setemp,
+                        // ee_buffer,
+                        fp_buffer,
+                        kverts,
+                        kc_buffer,
+                        gh_buffer,kd_theta);
+                })(models.getElasticModel());
+            }
 
+            timer.tock("eval hessian and gradient");
+            timer.tick();
             // TILEVEC_OPS::fill(cudaPol,vtemp,"grad",(T)0.0); 
             TILEVEC_OPS::assemble(cudaPol,gh_buffer,"grad","inds",vtemp,"grad");
             TILEVEC_OPS::fill(cudaPol,vtemp,"P",(T)0.0);
             PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",gh_buffer,"P",vtemp,false,true);
             PCG::prepare_block_diagonal_preconditioner<1,3>(cudaPol,"H",vtemp,"P",vtemp,true,true);
+            timer.tock("precondition and assemble setup");
+            timer.tick();
+            // eval sparse matrix
+            spmat._vals.reset(0);   
+            cudaPol(zs::range(eles.size()),
+                [gh_buffer = proxy<space>({},gh_buffer),
+                        spmat = view<space>(spmat),
+                        verts = proxy<space>({},verts)] ZS_LAMBDA(int ei) mutable {
+                    auto inds = gh_buffer.pack(dim_c<4>,"inds",ei).reinterpret_bits(int_c);
+                    // for(int i = 0;i != 4;++i)
+                    //     if(inds[i] < 0){
+                    //         printf("invalid inds detected");
+                    //         return;
+                    //     }
+                    auto H = gh_buffer.pack(dim_c<12,12>,"H",ei);
+                    update_hessian(spmat,inds,H,true);
+            });
+
+            cudaPol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp),spmat = proxy<space>(spmat)] ZS_LAMBDA(int vi) mutable {
+                    auto inds = vtemp.pack(dim_c<1>,"inds",vi,int_c);
+                    auto H = vtemp.pack(dim_c<3,3>,"H",vi);
+                    update_hessian(spmat,inds,H,true);
+            });
+
+            timer.tock("spmat evaluation");
             // PCG::precondition<3>(cudaPol,vtemp,"P","grad","q");
             // T res = TILEVEC_OPS::inf_norm<3>(cudaPol, vtemp, "q");
             // if(res < newton_res){
@@ -1500,10 +1677,12 @@ struct FleshDynamicStepping : INode {
             // PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",etemp,"P",vtemp);
             // if the grad is too small, return the result
             // Solve equation using PCG
+            timer.tick();
             TILEVEC_OPS::fill(cudaPol,vtemp,"dir",(T)0.0);
             // std::cout << "solve using pcg" << std::endl;
-            auto nm_CG_iters = PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,gh_buffer,"dir","bou_tag","grad","P","inds","H",(T)cg_res,max_cg_iters,100);
-            // int nm_CG_iters = 0;
+            // auto nm_CG_iters = PCG::pcg_with_fixed_sol_solve<3,4>(cudaPol,vtemp,gh_buffer,"dir","bou_tag","grad","P","inds","H",(T)cg_res,max_cg_iters,100);
+            auto nm_CG_iters = PCG::pcg_with_fixed_sol_solve<3>(cudaPol,vtemp,spmat,"dir","bou_tag","grad","P","inds","H",(T)cg_res,max_cg_iters,100);
+            timer.tock("CG SOLVER");
             fmt::print(fg(fmt::color::cyan),"nm_cg_iters : {}\n",nm_CG_iters);
             // T alpha = 1.;
 
@@ -1603,7 +1782,8 @@ ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","kinematic_boundary",
                                     {"float","aniso_strength","1.0"},
                                     {"float","binderStiffness","1.0"},
                                     {"float","planeConsStiffness","0.01"},
-                                    {"int","use_plane_constraint","0"}
+                                    {"int","use_plane_constraint","0"},
+                                    {"int","use_self_collision","0"}
                                     },
                                   {"ZSParticles"},
                                   {
