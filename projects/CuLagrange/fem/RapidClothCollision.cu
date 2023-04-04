@@ -680,6 +680,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 2; 
         tempCons("dist", consInd) = dist; 
+        tempCons("type", consInd) = 2; 
         for (int k = 0; k < 2; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -714,6 +715,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 3; 
         tempCons("dist", consInd) = dist; 
+        tempCons("type", consInd) = 3; 
         for (int k = 0; k < 3; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -745,7 +747,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         if (enableDistConstraint)
         {
             // TODO: dist constraint 
-            val = zs::sqrt(dist2_pt(p, t0, t1, t2)) / delta - 1.f; 
+            val = zs::sqrt(dist2_pt(p, t0, t1, t2)) - delta; 
             grad = dist_grad_pt(p, t0, t1, t2); 
         } else {
             zs::vec<T, 3, 3> mat;
@@ -782,6 +784,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
         tempCons("dist", consInd) = pt_dist; 
+        tempCons("type", consInd) = 0; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
         // tempCons("dist", consInd, T_c) = dist; 
@@ -815,6 +818,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         if (enableDistConstraint) 
         {
             // TODO: dist constraints
+#if 1 
+            auto gammas = safe_edge_edge_closest_point(ei0, ei1, ej0, ej1); 
+#else 
             auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
             if ((ei1 - ei0).cross(ej1 - ej0).l2NormSqr() / ((ei1 - ei0).l2NormSqr() * (ej1 - ej0).l2NormSqr() + eps_c) < eps_c)
             {
@@ -844,11 +850,12 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     gammas[1] = zs::min(zs::max((gammas[0] * ei2 - ej0Proj) / (ejProj + eps_c), 0.f), 1.f); 
                 }
             }
+#endif 
             auto pi =  gammas[0] * (ei1 - ei0) + ei0; 
             auto pj = gammas[1] * (ej1 - ej0) + ej0;
             auto pji = pi - pj;
             dist = pji.norm();
-            val = dist / delta - 1.f; 
+            val = dist - delta; 
             if (val >= 0)
                 return; 
             dist += eps_c; 
@@ -906,6 +913,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
         tempCons("dist", consInd) = dist; 
+        tempCons("type", consInd) = 1; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -1141,6 +1149,151 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                 }
             }
         }); 
+    
+    if (enableFriction)
+    {
+        // NOTE: for now, only support PT&&EE & distance-based constraints 
+        for (int iter = 0; iter < lcpCap; iter++)
+        {
+            for (int color = 0; color < nConsColor; color++)
+            {
+                pol(range(nCons), 
+                    [tempCons = proxy<space>({}, tempCons), 
+                    vtemp = proxy<space>({}, vtemp), 
+                    colors = proxy<space>(colors), 
+                    coOffset = coOffset, 
+                    fricMu = fricMu, 
+                    color] __device__ (int ci) mutable {
+                        if (tempCons("val", ci, T_c) == 0)
+                            return; 
+                        if (colors[ci] != color + 1)
+                            return; 
+                        auto consType = tempCons("type", ci); 
+                        auto lambda = tempCons("lambda", ci, T_c); 
+                        if (consType == 0)
+                        {
+                            // pt 
+                            T intensity = 0.f; 
+                            auto inds = tempCons.pack(dim_c<4>, "vi", ci);
+                            auto xp =  vtemp.pack(dim_c<3>, "x[k]", inds[0]); 
+                            auto xt0 =  vtemp.pack(dim_c<3>, "x[k]", inds[1]); 
+                            auto xt1 =  vtemp.pack(dim_c<3>, "x[k]", inds[2]); 
+                            auto xt2 =  vtemp.pack(dim_c<3>, "x[k]", inds[3]); 
+                            auto yp =  vtemp.pack(dim_c<3>, "y(l)", inds[0]); 
+                            auto yt0 =  vtemp.pack(dim_c<3>, "y(l)", inds[1]); 
+                            auto yt1 =  vtemp.pack(dim_c<3>, "y(l)", inds[2]); 
+                            auto yt2 =  vtemp.pack(dim_c<3>, "y(l)", inds[3]); 
+                            auto dxp = yp - xp; 
+                            auto dxt0 = yt0 - xt0; 
+                            auto dxt1 = yt1 - xt1; 
+                            auto dxt2 = yt2 - xt2; 
+                            auto xlp =  vtemp.pack(dim_c<3>, "x(l)", inds[0]); 
+                            auto xlt0 =  vtemp.pack(dim_c<3>, "x(l)", inds[1]); 
+                            auto xlt1 =  vtemp.pack(dim_c<3>, "x(l)", inds[2]); 
+                            auto xlt2 =  vtemp.pack(dim_c<3>, "x(l)", inds[3]); 
+                            auto nrm = (xlt1 - xlt0).cross(xlt2 - xlt0);
+                            nrm = nrm / zs::max(nrm.norm(), eps_c); 
+                            dxp = dxp - dxp.dot(nrm) * nrm; 
+                            dxt0 = dxt0 - dxt0.dot(nrm) * nrm; 
+                            dxt1 = dxt1 - dxt1.dot(nrm) * nrm; 
+                            dxt2 = dxt2 - dxt2.dot(nrm) * nrm; 
+                            // TODO: debug y(l) nan
+                            auto betas = point_triangle_closest_point(xlp, xlt0, xlt1, xlt2); 
+                            auto weights = zs::vec<T, 4> {1.f, -(1.f - betas[0] - betas[1]), 
+                                -betas[0], -betas[1]}; 
+                            auto dxRel = dxp + weights[1] * dxt0 + weights[2] * dxt1 + weights[3] * dxt2; 
+                            auto dxRelNorm = dxRel.norm(); 
+                            for (int k = 0; k < 4; k++)
+                            {
+                                if (weights[k] < 0 || weights[k] > 1)
+                                    return; 
+                                if (inds[k] < coOffset)
+                                {
+                                    auto m = vtemp("ws", inds[k]); 
+                                    intensity += 1.f / zs::max(m, eps_c) * zs::sqr(weights[k]); 
+                                }
+                            }
+                            // TODO: clamp intensity
+                            intensity = 1.f / zs::max(intensity, eps_c);  
+                            intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda); 
+                            for (int k = 0; k < 4; k++)
+                            {
+                                if (inds[k] < coOffset)
+                                {
+                                    auto m = vtemp("ws", inds[k]); 
+                                    for (int d = 0; d < 3; d++)
+                                        atomic_add(exec_cuda, &vtemp("y(l)", d, inds[k]), 
+                                            -1.f * intensity / zs::max(m, eps_c) * dxRel(d) * weights[k]); 
+                                }
+                            }
+                        } else if (consType == 1) {
+                            // ee 
+#if 0 
+                            T intensity = 0.f; 
+                            auto inds = tempCons.pack(dim_c<4>, "vi", ci);
+                            auto xei0 =  vtemp.pack(dim_c<3>, "x[k]", inds[0]); 
+                            auto xei1 =  vtemp.pack(dim_c<3>, "x[k]", inds[1]); 
+                            auto xej0 =  vtemp.pack(dim_c<3>, "x[k]", inds[2]); 
+                            auto xej1 =  vtemp.pack(dim_c<3>, "x[k]", inds[3]); 
+                            auto yei0 =  vtemp.pack(dim_c<3>, "y(l)", inds[0]); 
+                            auto yei1 =  vtemp.pack(dim_c<3>, "y(l)", inds[1]); 
+                            auto yej0 =  vtemp.pack(dim_c<3>, "y(l)", inds[2]); 
+                            auto yej1 =  vtemp.pack(dim_c<3>, "y(l)", inds[3]); 
+                            auto dxei0 = yei0 - xei0; 
+                            auto dxei1 = yei1 - xei1; 
+                            auto dxej0 = yej0 - xej0; 
+                            auto dxej1 = yej1 - xej1; 
+                            auto xlei0 =  vtemp.pack(dim_c<3>, "x(l)", inds[0]); 
+                            auto xlei1 =  vtemp.pack(dim_c<3>, "x(l)", inds[1]); 
+                            auto xlej0 =  vtemp.pack(dim_c<3>, "x(l)", inds[2]); 
+                            auto xlej1 =  vtemp.pack(dim_c<3>, "x(l)", inds[3]); 
+
+                            auto gammas = safe_edge_edge_closest_point(xlei0, xlei1, xlej0, xlej1);
+                            auto xlpi =  gammas[0] * (xlei1 - xlei0) + xlei0;
+                            auto xlpj = gammas[1] * (xlej1 - xlej0) + xlej0;
+                            auto xlpji = xlpi - xlpj;
+                            auto nrm = xlpji / zs::max(xlpji.norm(), eps_c); 
+
+                            dxei0 = dxei0 - dxei0.dot(nrm) * nrm; 
+                            dxei1 = dxei1 - dxei1.dot(nrm) * nrm; 
+                            dxej0 = dxej0 - dxej0.dot(nrm) * nrm; 
+                            dxej1 = dxej1 - dxej1.dot(nrm) * nrm; 
+
+                            auto weights = zs::vec<T, 4> {1.f - gammas[0], gammas[0], 
+                                1.f - gammas[1], gammas[1]}; 
+                            auto dxRel = weights[0] * dxei0 + weights[1] * dxei1 + 
+                                weights[2] * dxej0 + weights[3] * dxej1; 
+                            auto dxRelNorm = dxRel.norm(); 
+                            for (int k = 0; k < 4; k++)
+                            {
+                                if (inds[k] < coOffset)
+                                {
+                                    auto m = vtemp("ws", inds[k]); 
+                                    intensity += 1.f / zs::max(m, eps_c) * zs::sqr(weights[k]); 
+                                }
+                            }
+                            // TODO: clamp intensity
+                            intensity = 1.f / zs::max(intensity, eps_c);  
+                            intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda); 
+                            if (ci < 16)
+                                printf("fric ee0 intensity: %f, fricMu: %f, lambda: %f, dxRel: %f, %f, %f, nrm: %f, %f, %f\n", 
+                                    intensity, fricMu, lambda, dxRel(0), dxRel(1), dxRel(2), nrm(0), nrm(1), nrm(2)); 
+                            for (int k = 0; k < 4; k++)
+                            {
+                                if (inds[k] < coOffset)
+                                {
+                                    auto m = vtemp("ws", inds[k]); 
+                                    for (int d = 0; d < 3; d++)
+                                        atomic_add(exec_cuda, &vtemp("y(l)", d, inds[k]), 
+                                            -1.f * intensity / zs::max(m, eps_c) * dxRel(d) * weights[k]); 
+                                }
+                            }
+#endif 
+                        }
+                    }); 
+            }
+        }
+    }
     timer.tock("update y(l)"); 
 }   
 

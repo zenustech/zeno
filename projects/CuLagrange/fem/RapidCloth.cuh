@@ -27,6 +27,8 @@ struct RapidClothSystem : IObject {
     bool enableDegeneratedDist = true; 
     bool enableRepulsion = false; 
     bool enableDistConstraint = true; 
+    bool enableFriction = false;
+    T fricMu = 1e3f;  
 
     using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
@@ -303,48 +305,87 @@ struct RapidClothSystem : IObject {
         return aTb * aTb / b.l2NormSqr();
     }
 
-  template <
-      typename VecTA, typename VecTB,
-      zs::enable_if_all<VecTA::dim == 1, zs::is_same_v<typename VecTA::dims, typename VecTB::dims>> = 0>
-  constexpr auto safe_dist2_ee_unclassified(const zs::VecInterface<VecTA> &ea0,
-                                       const zs::VecInterface<VecTA> &ea1,
-                                       const zs::VecInterface<VecTB> &eb0,
-                                       const zs::VecInterface<VecTB> &eb1) noexcept {
+    template <
+        typename VecTA, typename VecTB,
+        zs::enable_if_all<VecTA::dim == 1, zs::is_same_v<typename VecTA::dims, typename VecTB::dims>> = 0>
+    constexpr auto safe_edge_edge_closest_point(const zs::VecInterface<VecTA> &ei0, const zs::VecInterface<VecTA> &ei1,
+                            const zs::VecInterface<VecTB> &ej0, const zs::VecInterface<VecTB> &ej1) noexcept {
+        using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
+        constexpr auto eps_c = zs::limits<T>::epsilon(); 
+        auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
+        if ((ei1 - ei0).cross(ej1 - ej0).l2NormSqr() / ((ei1 - ei0).l2NormSqr() * (ej1 - ej0).l2NormSqr() + eps_c) < eps_c)
+        {
+            // gammas = zs::vec<T, 2>{0.5f, 0.5f};
+            auto ejProj = (ej1 - ej0).dot(ei1 - ei0); 
+            auto ej0Proj = (ej0 - ei0).dot(ei1 - ei0); 
+            auto ej1Proj = (ej1 - ei0).dot(ei1 - ei0); 
+            auto ei2 = (ei1 - ei0).l2NormSqr(); 
+            if (ej0Proj < 0 && ej1Proj < 0)
+            {
+                gammas[0] = 0; 
+                if (ejProj > 0)
+                    gammas[1] = 1; 
+                else
+                    gammas[1] = 0; 
+            } else if (ej0Proj > ei2 && ej1Proj > ei2)
+            {
+                gammas[0] = 1; 
+                if (ejProj > 0)
+                    gammas[1] = 0;
+                else 
+                    gammas[1] = 1; 
+            } else {
+                auto minProj = zs::max(zs::min(ej0Proj, ej1Proj) / (ei2 + eps_c), 0.f); 
+                auto maxProj = zs::min(zs::max(ej0Proj, ej1Proj) / (ei2 + eps_c), 1.f); 
+                gammas[0] = (minProj + maxProj) * 0.5f; 
+                gammas[1] = zs::min(zs::max((gammas[0] * ei2 - ej0Proj) / (ejProj + eps_c), 0.f), 1.f); 
+            }
+        }
+        return gammas; 
+    }
+
+    template <
+        typename VecTA, typename VecTB,
+        zs::enable_if_all<VecTA::dim == 1, zs::is_same_v<typename VecTA::dims, typename VecTB::dims>> = 0>
+    constexpr auto safe_dist2_ee_unclassified(const zs::VecInterface<VecTA> &ea0,
+                                        const zs::VecInterface<VecTA> &ea1,
+                                        const zs::VecInterface<VecTB> &eb0,
+                                        const zs::VecInterface<VecTB> &eb1) noexcept {
     using T = zs::math::op_result_t<typename VecTA::value_type, typename VecTB::value_type>;
     T dist2{zs::limits<T>::max()};
     switch (ee_distance_type(ea0, ea1, eb0, eb1)) {
-      case 0:
+        case 0:
         dist2 = dist2_pp(ea0, eb0);
         break;
-      case 1:
+        case 1:
         dist2 = dist2_pp(ea0, eb1);
         break;
-      case 2:
+        case 2:
         dist2 = dist2_pe(ea0, eb0, eb1);
         break;
-      case 3:
+        case 3:
         dist2 = dist2_pp(ea1, eb0);
         break;
-      case 4:
+        case 4:
         dist2 = dist2_pp(ea1, eb1);
         break;
-      case 5:
+        case 5:
         dist2 = dist2_pe(ea1, eb0, eb1);
         break;
-      case 6:
+        case 6:
         dist2 = dist2_pe(eb0, ea0, ea1);
         break;
-      case 7:
+        case 7:
         dist2 = dist2_pe(eb1, ea0, ea1);
         break;
-      case 8:
+        case 8:
         dist2 = safe_dist2_ee(ea0, ea1, eb0, eb1);
         break;
-      default:
+        default:
         break;
     }
     return dist2;
-  }
+    }
 
 } // namespace zeno
 

@@ -466,6 +466,7 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
             vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi);  
+            vtemp.tuple(dim_c<3>, "x[k]", vi) = vtemp.pack(dim_c<3>, "x(l)", vi); 
             vtemp("r(l)", vi) = 1.f; 
         }); 
     for (int iters = 0; iters < L; iters++)

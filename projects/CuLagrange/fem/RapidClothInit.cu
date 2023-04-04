@@ -422,6 +422,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"vN", 1}, 
             {"adj", maxVertCons * 4}, 
             // LCP
+            {"type", 1}, 
             {"dist", 1}, 
             {"lambda", 1},  // float, lambda in LCP  
             {"grad", 12},   // float, constraint gradient 
