@@ -62,6 +62,19 @@ struct BulletCollisionShape : zeno::IObject {
     }
 };
 
+struct BulletCompoundShape : BulletCollisionShape {
+	std::vector<std::shared_ptr<BulletCollisionShape>> children;
+
+	using BulletCollisionShape::BulletCollisionShape;
+
+	void addChild(btTransform const &trans,
+	              std::shared_ptr<BulletCollisionShape> child) {
+		auto comShape = static_cast<btCompoundShape *>(shape.get());
+		comShape->addChildShape(trans, child->shape.get());
+		children.push_back(std::move(child));
+	}
+};
+
 struct BulletObject : zeno::IObject {
     // TODO: when btRigidBody get destroyed, should remove ref constraints first.
     std::unique_ptr<btDefaultMotionState> myMotionState;
@@ -83,6 +96,104 @@ struct BulletObject : zeno::IObject {
         btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape->shape.get(), localInertia);
         body = std::make_unique<btRigidBody>(rbInfo);
     }
+};
+
+struct BulletGlueCompoundShape : IObject {
+    struct ChildData {
+        float mass;
+        btTransform trans;
+        std::shared_ptr<BulletCollisionShape> shape;
+    };
+	std::vector<ChildData> children;
+	std::vector<std::shared_ptr<BulletObject>> objs;
+	std::vector<std::pair<int, int>> glues;
+
+    void clearChildren() {
+        children.clear();
+    }
+
+	void addChild(float mass, btTransform trans, std::shared_ptr<BulletCollisionShape> child) {
+		children.push_back({mass, std::move(trans), std::move(child)});
+	}
+
+	void clearGlues() {
+		glues.clear();
+	}
+
+	void addGlue(int src, int dst) {
+		glues.emplace_back(src, dst);
+	}
+
+	void solveGlueToComps() {
+		std::vector<int> found(children.size());
+		for (int i = 0; i < found.size(); i++) {
+			found[i] = i;
+		}
+		auto find = [&] (int i) { // todo: zhxx optimize my djtesla 3q
+			while (i != found[i])
+				i = found[i];
+			return i;
+		};
+		for (auto const &[g1, g2]: glues) {
+			int f1 = find(g1);
+			int f2 = find(g2);
+			found[f2] = f1;
+		}
+		std::vector<int> island(children.size());
+		std::map<int, int> uniq;
+		for (int i = 0; i < found.size(); i++) {
+			auto [it, succ] = uniq.emplace(find(i), (int)uniq.size());
+			island[i] = it->second;
+		}
+        struct CompData {
+            float mass;
+            btVector3 sumOrig;
+            std::shared_ptr<BulletCompoundShape> compShape;
+
+            CompData() {
+                mass = 0;
+                sumOrig = btVector3(0, 0, 0);
+                auto compound = std::make_unique<btCompoundShape>();
+                compShape = std::make_shared<BulletCompoundShape>(std::move(compound));
+            }
+
+            struct TempchDat {
+                btVector3 chOrig;
+                btMatrix3x3 chBasis;
+                std::shared_ptr<BulletCollisionShape> shape;
+            };
+            std::vector<TempchDat> tempchs;
+
+            void addChild(ChildData const &ch) {
+                auto chOrig = ch.trans.getOrigin();
+                auto chBasis = ch.trans.getBasis();
+                sumOrig += chOrig * ch.mass;
+                mass += ch.mass;
+                tempchs.push_back({chOrig, chBasis, ch.shape});
+            }
+
+            std::shared_ptr<BulletObject> finalizeChildren() {
+                auto avgOrig = sumOrig / mass;
+                for (auto const &tch: tempchs) {
+                    btTransform tchtrans(tch.chBasis, tch.chOrig - avgOrig);
+                    compShape->addChild(tchtrans, tch.shape);
+                }
+                btMatrix3x3 identMat;
+                identMat.setIdentity();
+                btTransform avgTrans(identMat, avgOrig);
+                return std::make_shared<BulletObject>(mass, avgTrans, std::move(compShape));
+            }
+        };
+        std::vector<CompData> comps(uniq.size());
+		for (int i = 0; i < children.size(); i++) {
+			comps[island[i]].addChild(children[i]);
+		}
+        objs.clear();
+        objs.resize(comps.size());
+		for (int i = 0; i < comps.size(); i++) {
+            objs[i] = comps[i].finalizeChildren();
+		}
+	}
 };
 
 struct BulletConstraint : zeno::IObject {
