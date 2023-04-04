@@ -26,6 +26,7 @@ struct RapidClothSystem : IObject {
     T repulsionRange = 2.f; 
     bool enableDegeneratedDist = true; 
     bool enableRepulsion = false; 
+    bool enableDistConstraint = true; 
 
     using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
@@ -156,7 +157,8 @@ struct RapidClothSystem : IObject {
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, T repulsionRange, T tinyDist); 
+                    T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, bool enableDistConstraint, 
+                    T repulsionRange, T tinyDist); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);

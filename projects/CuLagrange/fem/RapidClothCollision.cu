@@ -725,6 +725,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempCons = proxy<space>({}, tempCons), 
                     oPT = proxy<space>(oPT), 
                     delta = delta, tag, 
+                    enableDistConstraint = enableDistConstraint, 
                     enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
@@ -739,34 +740,44 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), pt_dist); 
         if (pt_dist2 >= delta * delta)
             return; 
-        zs::vec<T, 3, 3> mat;
-        for (int d = 0; d < 3; d++)
-        {
-            mat(d, 0) = t0(d) - p(d); 
-            mat(d, 1) = t1(d) - p(d); 
-            mat(d, 2) = t2(d) - p(d); 
-        }
-        auto vol = determinant(mat); 
-        auto sgn = vol > 0 ? 1.0f : -1.0f; 
-        auto area = (t1 - t0).cross(t2 - t0).norm(); 
-        auto coef = sgn * area * delta; 
-        if (zs::abs(coef) < eps_c)
-            coef = sgn * eps_c; 
-        auto val = vol / coef - 1.0f; 
-        if (val >= 0)
-            return; 
-        mat = adjoint(mat).transpose();
-        auto consInd = atomic_add(exec_cuda, &oPT[0], 1); 
         zs::vec<T, 4, 3> grad; 
-        for (int d = 0; d < 3; d++)
-            grad(0, d) = 0; 
-        for (int k = 1; k < 4; k++)
+        T val; 
+        if (enableDistConstraint)
+        {
+            // TODO: dist constraint 
+            val = zs::sqrt(dist2_pt(p, t0, t1, t2)) / delta - 1.f; 
+            grad = dist_grad_pt(p, t0, t1, t2); 
+        } else {
+            zs::vec<T, 3, 3> mat;
             for (int d = 0; d < 3; d++)
             {
-                grad(k, d) = mat(d, k - 1); 
-                grad(0, d) -= mat(d, k - 1); 
+                mat(d, 0) = t0(d) - p(d); 
+                mat(d, 1) = t1(d) - p(d); 
+                mat(d, 2) = t2(d) - p(d); 
             }
-        grad /= coef; 
+            auto vol = determinant(mat); 
+            auto sgn = vol > 0 ? 1.0f : -1.0f; 
+            auto area = (t1 - t0).cross(t2 - t0).norm(); 
+            auto coef = sgn * area * delta; 
+            if (zs::abs(coef) < eps_c)
+                coef = sgn * eps_c; 
+            val = vol / coef - 1.0f; 
+            if (val >= 0)
+                return;             
+            mat = adjoint(mat).transpose();
+        
+            for (int d = 0; d < 3; d++)
+                grad(0, d) = 0; 
+            for (int k = 1; k < 4; k++)
+                for (int d = 0; d < 3; d++)
+                {
+                    grad(k, d) = mat(d, k - 1); 
+                    grad(0, d) -= mat(d, k - 1); 
+                }
+            grad /= coef; 
+        }
+
+        auto consInd = atomic_add(exec_cuda, &oPT[0], 1); 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
@@ -783,6 +794,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempCons = proxy<space>({}, tempCons), 
                     oEE = proxy<space>(oEE), 
                     delta = delta, tag, 
+                    enableDistConstraint = enableDistConstraint, 
                     enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
@@ -797,46 +809,99 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), ee_dist); 
         if (ee_dist2 >= delta * delta)
             return; 
-        zs::vec<T, 3, 3> mat, rMat;
-        for (int d = 0; d < 3; d++)
-        {
-            mat(d, 0) = ei1(d) - ei0(d); 
-            mat(d, 1) = ej0(d) - ei0(d); 
-            mat(d, 2) = ej1(d) - ei0(d); 
-        }
-        auto vol = determinant(mat); 
-        auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
-        auto pi =  gammas[0] * (ei1 - ei0) + ei0; 
-        auto pj = gammas[1] * (ej1 - ej0) + ej0; 
-        auto dij = pj - pi; 
-        auto dist = dij.norm(); 
-        auto dijNrm = dij / (dist + eps_c);  
-        auto ri0 = ei0 + (dist - delta) * 0.5f * dijNrm;  
-        auto ri1 = ei1 + (dist - delta) * 0.5f * dijNrm; 
-        auto rj0 = ej0 - (dist - delta) * 0.5f * dijNrm; 
-        auto rj1 = ej1 - (dist - delta) * 0.5f * dijNrm; 
-        for (int d = 0; d < 3; d++)
-        {
-            rMat(d, 0) = ri1(d) - ri0(d); 
-            rMat(d, 1) = rj0(d) - ri0(d); 
-            rMat(d, 2) = rj1(d) - ri0(d); 
-        }
-        auto coef = determinant(rMat);
-        auto val = vol / coef - 1.0f;
-        if (val >= 0)
-            return; 
-        auto consInd = atomic_add(exec_cuda, &oEE[0], 1); 
-        mat = adjoint(mat).transpose();
+        
+        T val, dist; 
         zs::vec<T, 4, 3> grad; 
-        for (int d = 0; d < 3; d++)
-            grad(0, d) = 0; 
-        for (int k = 1; k < 4; k++)
+        if (enableDistConstraint) 
+        {
+            // TODO: dist constraints
+            auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
+            if ((ei1 - ei0).cross(ej1 - ej0).l2NormSqr() / ((ei1 - ei0).l2NormSqr() * (ej1 - ej0).l2NormSqr() + eps_c) < eps_c)
+            {
+                // gammas = zs::vec<T, 2>{0.5f, 0.5f};
+                auto ejProj = (ej1 - ej0).dot(ei1 - ei0); 
+                auto ej0Proj = (ej0 - ei0).dot(ei1 - ei0); 
+                auto ej1Proj = (ej1 - ei0).dot(ei1 - ei0); 
+                auto ei2 = (ei1 - ei0).l2NormSqr(); 
+                if (ej0Proj < 0 && ej1Proj < 0)
+                {
+                    gammas[0] = 0; 
+                    if (ejProj > 0)
+                        gammas[1] = 1; 
+                    else
+                        gammas[1] = 0; 
+                } else if (ej0Proj > ei2 && ej1Proj > ei2)
+                {
+                    gammas[0] = 1; 
+                    if (ejProj > 0)
+                        gammas[1] = 0;
+                    else 
+                        gammas[1] = 1; 
+                } else {
+                    auto minProj = zs::max(zs::min(ej0Proj, ej1Proj) / (ei2 + eps_c), 0.f); 
+                    auto maxProj = zs::min(zs::max(ej0Proj, ej1Proj) / (ei2 + eps_c), 1.f); 
+                    gammas[0] = (minProj + maxProj) * 0.5f; 
+                    gammas[1] = zs::min(zs::max((gammas[0] * ei2 - ej0Proj) / (ejProj + eps_c), 0.f), 1.f); 
+                }
+            }
+            auto pi =  gammas[0] * (ei1 - ei0) + ei0; 
+            auto pj = gammas[1] * (ej1 - ej0) + ej0;
+            auto pji = pi - pj;
+            dist = pji.norm();
+            val = dist / delta - 1.f; 
+            if (val >= 0)
+                return; 
+            dist += eps_c; 
+            auto piGrad = pji / dist; 
             for (int d = 0; d < 3; d++)
             {
-                grad(k, d) = mat(d, k - 1); 
-                grad(0, d) -= mat(d, k - 1); 
+                grad(0, d) = piGrad(d) * (1.f - gammas[0]); 
+                grad(1, d) = piGrad(d) * gammas[0]; 
+                grad(2, d) = -piGrad(d) * (1.f - gammas[1]); 
+                grad(3, d) = -piGrad(d) * gammas[1]; 
             }
-        grad /= coef; 
+        } else {
+            zs::vec<T, 3, 3> mat, rMat;
+            for (int d = 0; d < 3; d++)
+            {
+                mat(d, 0) = ei1(d) - ei0(d); 
+                mat(d, 1) = ej0(d) - ei0(d); 
+                mat(d, 2) = ej1(d) - ei0(d); 
+            }
+            auto vol = determinant(mat); 
+            auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
+            auto pi =  gammas[0] * (ei1 - ei0) + ei0; 
+            auto pj = gammas[1] * (ej1 - ej0) + ej0; 
+            auto dij = pj - pi; 
+            dist = dij.norm(); 
+            auto dijNrm = dij / (dist + eps_c);  
+            auto ri0 = ei0 + (dist - delta) * 0.5f * dijNrm;  
+            auto ri1 = ei1 + (dist - delta) * 0.5f * dijNrm; 
+            auto rj0 = ej0 - (dist - delta) * 0.5f * dijNrm; 
+            auto rj1 = ej1 - (dist - delta) * 0.5f * dijNrm; 
+            for (int d = 0; d < 3; d++)
+            {
+                rMat(d, 0) = ri1(d) - ri0(d); 
+                rMat(d, 1) = rj0(d) - ri0(d); 
+                rMat(d, 2) = rj1(d) - ri0(d); 
+            }
+            auto coef = determinant(rMat);
+            val = vol / coef - 1.0f;
+            if (val >= 0)
+                return;             
+            mat = adjoint(mat).transpose();
+            for (int d = 0; d < 3; d++)
+                grad(0, d) = 0; 
+            for (int k = 1; k < 4; k++)
+                for (int d = 0; d < 3; d++)
+                {
+                    grad(k, d) = mat(d, k - 1); 
+                    grad(0, d) -= mat(d, k - 1); 
+                }
+            grad /= coef; 
+        }
+
+        auto consInd = atomic_add(exec_cuda, &oEE[0], 1); 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
