@@ -12,6 +12,8 @@
 #include <string.h>
 
 #include "tinyexr.h"
+#include <filesystem>
+#include "zeno/utils/fileio.h"
 
 static bool SaveEXR(const float* rgb, int width, int height, const char* outfilename) {
     EXRHeader header;
@@ -195,6 +197,15 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
     std::string exr_path = path;
     exr_path += ".exr";
     SaveEXR(rgb_f32.data(), 8192, height, exr_path.c_str());
+
+    std::string content;
+    content += format("{},{},{}\n", bbox.first[0], bbox.first[1], bbox.first[2]);
+    content += format("{},{},{}\n", bbox.second[0], bbox.second[1], bbox.second[2]);
+    content += format("{}\n", frames);
+    content += format("{}\n", height);
+    content += std::filesystem::path(path.c_str()).filename().string() + ".exr\n";
+    content += std::filesystem::path(path.c_str()).filename().string() + ".png\n";
+    file_put_content(path + ".txt", content);
 }
 
 
