@@ -37,6 +37,7 @@ set(ZENO_EXTENSIONS
     Python
     Parameterization
     UnrealBridge
+    UnrealTool
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
