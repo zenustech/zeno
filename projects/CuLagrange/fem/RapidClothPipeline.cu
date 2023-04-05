@@ -303,6 +303,8 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
             }
         avgMass /= (T)vertCnt; 
         auto dist = tempPT("dist", i); 
+        if (dist > repulsionRange)
+            return; 
         auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pt(p, t0, t1, t2); 
         for (int d = 0; d != 3; ++d) {
             atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
@@ -343,6 +345,8 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
             }
         avgMass /= (T)vertCnt; 
         auto dist = tempEE("dist", i); 
+        if (dist > repulsionRange)
+            return; 
         auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_ee(ei0, ei1, ej0, ej1); 
         for (int d = 0; d != 3; ++d) {
             atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
@@ -382,6 +386,8 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
                 }
             avgMass /= (T)vertCnt; 
             auto dist = tempPP("dist", i); 
+            if (dist > repulsionRange)
+                return; 
             auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pp(x0, x1); 
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
@@ -419,6 +425,8 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
                 }
             avgMass /= (T)vertCnt; 
             auto dist = tempPE("dist", i);
+            if (dist > repulsionRange)
+                return; 
             auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pe(p, e0, e1); 
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
@@ -458,6 +466,7 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
             vtemp.tuple(dim_c<3>, "y(l)", vi) = vtemp.pack(dim_c<3>, "y[k+1]", vi);  
+            vtemp.tuple(dim_c<3>, "x[k]", vi) = vtemp.pack(dim_c<3>, "x(l)", vi); 
             vtemp("r(l)", vi) = 1.f; 
         }); 
     for (int iters = 0; iters < L; iters++)

@@ -680,6 +680,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 2; 
         tempCons("dist", consInd) = dist; 
+        tempCons("type", consInd) = 2; 
         for (int k = 0; k < 2; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -714,6 +715,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 3; 
         tempCons("dist", consInd) = dist; 
+        tempCons("type", consInd) = 3; 
         for (int k = 0; k < 3; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -725,6 +727,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempCons = proxy<space>({}, tempCons), 
                     oPT = proxy<space>(oPT), 
                     delta = delta, tag, 
+                    enableDistConstraint = enableDistConstraint, 
                     enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
@@ -739,38 +742,49 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), pt_dist); 
         if (pt_dist2 >= delta * delta)
             return; 
-        zs::vec<T, 3, 3> mat;
-        for (int d = 0; d < 3; d++)
-        {
-            mat(d, 0) = t0(d) - p(d); 
-            mat(d, 1) = t1(d) - p(d); 
-            mat(d, 2) = t2(d) - p(d); 
-        }
-        auto vol = determinant(mat); 
-        auto sgn = vol > 0 ? 1.0f : -1.0f; 
-        auto area = (t1 - t0).cross(t2 - t0).norm(); 
-        auto coef = sgn * area * delta; 
-        if (zs::abs(coef) < eps_c)
-            coef = sgn * eps_c; 
-        auto val = vol / coef - 1.0f; 
-        if (val >= 0)
-            return; 
-        mat = adjoint(mat).transpose();
-        auto consInd = atomic_add(exec_cuda, &oPT[0], 1); 
         zs::vec<T, 4, 3> grad; 
-        for (int d = 0; d < 3; d++)
-            grad(0, d) = 0; 
-        for (int k = 1; k < 4; k++)
+        T val; 
+        if (enableDistConstraint)
+        {
+            // TODO: dist constraint 
+            val = zs::sqrt(dist2_pt(p, t0, t1, t2)) - delta; 
+            grad = dist_grad_pt(p, t0, t1, t2); 
+        } else {
+            zs::vec<T, 3, 3> mat;
             for (int d = 0; d < 3; d++)
             {
-                grad(k, d) = mat(d, k - 1); 
-                grad(0, d) -= mat(d, k - 1); 
+                mat(d, 0) = t0(d) - p(d); 
+                mat(d, 1) = t1(d) - p(d); 
+                mat(d, 2) = t2(d) - p(d); 
             }
-        grad /= coef; 
+            auto vol = determinant(mat); 
+            auto sgn = vol > 0 ? 1.0f : -1.0f; 
+            auto area = (t1 - t0).cross(t2 - t0).norm(); 
+            auto coef = sgn * area * delta; 
+            if (zs::abs(coef) < eps_c)
+                coef = sgn * eps_c; 
+            val = vol / coef - 1.0f; 
+            if (val >= 0)
+                return;             
+            mat = adjoint(mat).transpose();
+        
+            for (int d = 0; d < 3; d++)
+                grad(0, d) = 0; 
+            for (int k = 1; k < 4; k++)
+                for (int d = 0; d < 3; d++)
+                {
+                    grad(k, d) = mat(d, k - 1); 
+                    grad(0, d) -= mat(d, k - 1); 
+                }
+            grad /= coef; 
+        }
+
+        auto consInd = atomic_add(exec_cuda, &oPT[0], 1); 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
         tempCons("dist", consInd) = pt_dist; 
+        tempCons("type", consInd) = 0; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
         // tempCons("dist", consInd, T_c) = dist; 
@@ -783,6 +797,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempCons = proxy<space>({}, tempCons), 
                     oEE = proxy<space>(oEE), 
                     delta = delta, tag, 
+                    enableDistConstraint = enableDistConstraint, 
                     enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
@@ -797,50 +812,108 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), ee_dist); 
         if (ee_dist2 >= delta * delta)
             return; 
-        zs::vec<T, 3, 3> mat, rMat;
-        for (int d = 0; d < 3; d++)
-        {
-            mat(d, 0) = ei1(d) - ei0(d); 
-            mat(d, 1) = ej0(d) - ei0(d); 
-            mat(d, 2) = ej1(d) - ei0(d); 
-        }
-        auto vol = determinant(mat); 
-        auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
-        auto pi =  gammas[0] * (ei1 - ei0) + ei0; 
-        auto pj = gammas[1] * (ej1 - ej0) + ej0; 
-        auto dij = pj - pi; 
-        auto dist = dij.norm(); 
-        auto dijNrm = dij / (dist + eps_c);  
-        auto ri0 = ei0 + (dist - delta) * 0.5f * dijNrm;  
-        auto ri1 = ei1 + (dist - delta) * 0.5f * dijNrm; 
-        auto rj0 = ej0 - (dist - delta) * 0.5f * dijNrm; 
-        auto rj1 = ej1 - (dist - delta) * 0.5f * dijNrm; 
-        for (int d = 0; d < 3; d++)
-        {
-            rMat(d, 0) = ri1(d) - ri0(d); 
-            rMat(d, 1) = rj0(d) - ri0(d); 
-            rMat(d, 2) = rj1(d) - ri0(d); 
-        }
-        auto coef = determinant(rMat);
-        auto val = vol / coef - 1.0f;
-        if (val >= 0)
-            return; 
-        auto consInd = atomic_add(exec_cuda, &oEE[0], 1); 
-        mat = adjoint(mat).transpose();
+        
+        T val, dist; 
         zs::vec<T, 4, 3> grad; 
-        for (int d = 0; d < 3; d++)
-            grad(0, d) = 0; 
-        for (int k = 1; k < 4; k++)
+        if (enableDistConstraint) 
+        {
+            // TODO: dist constraints
+#if 1 
+            auto gammas = safe_edge_edge_closest_point(ei0, ei1, ej0, ej1); 
+#else 
+            auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
+            if ((ei1 - ei0).cross(ej1 - ej0).l2NormSqr() / ((ei1 - ei0).l2NormSqr() * (ej1 - ej0).l2NormSqr() + eps_c) < eps_c)
+            {
+                // gammas = zs::vec<T, 2>{0.5f, 0.5f};
+                auto ejProj = (ej1 - ej0).dot(ei1 - ei0); 
+                auto ej0Proj = (ej0 - ei0).dot(ei1 - ei0); 
+                auto ej1Proj = (ej1 - ei0).dot(ei1 - ei0); 
+                auto ei2 = (ei1 - ei0).l2NormSqr(); 
+                if (ej0Proj < 0 && ej1Proj < 0)
+                {
+                    gammas[0] = 0; 
+                    if (ejProj > 0)
+                        gammas[1] = 1; 
+                    else
+                        gammas[1] = 0; 
+                } else if (ej0Proj > ei2 && ej1Proj > ei2)
+                {
+                    gammas[0] = 1; 
+                    if (ejProj > 0)
+                        gammas[1] = 0;
+                    else 
+                        gammas[1] = 1; 
+                } else {
+                    auto minProj = zs::max(zs::min(ej0Proj, ej1Proj) / (ei2 + eps_c), 0.f); 
+                    auto maxProj = zs::min(zs::max(ej0Proj, ej1Proj) / (ei2 + eps_c), 1.f); 
+                    gammas[0] = (minProj + maxProj) * 0.5f; 
+                    gammas[1] = zs::min(zs::max((gammas[0] * ei2 - ej0Proj) / (ejProj + eps_c), 0.f), 1.f); 
+                }
+            }
+#endif 
+            auto pi =  gammas[0] * (ei1 - ei0) + ei0; 
+            auto pj = gammas[1] * (ej1 - ej0) + ej0;
+            auto pji = pi - pj;
+            dist = pji.norm();
+            val = dist - delta; 
+            if (val >= 0)
+                return; 
+            dist += eps_c; 
+            auto piGrad = pji / dist; 
             for (int d = 0; d < 3; d++)
             {
-                grad(k, d) = mat(d, k - 1); 
-                grad(0, d) -= mat(d, k - 1); 
+                grad(0, d) = piGrad(d) * (1.f - gammas[0]); 
+                grad(1, d) = piGrad(d) * gammas[0]; 
+                grad(2, d) = -piGrad(d) * (1.f - gammas[1]); 
+                grad(3, d) = -piGrad(d) * gammas[1]; 
             }
-        grad /= coef; 
+        } else {
+            zs::vec<T, 3, 3> mat, rMat;
+            for (int d = 0; d < 3; d++)
+            {
+                mat(d, 0) = ei1(d) - ei0(d); 
+                mat(d, 1) = ej0(d) - ei0(d); 
+                mat(d, 2) = ej1(d) - ei0(d); 
+            }
+            auto vol = determinant(mat); 
+            auto gammas = edge_edge_closest_point(ei0, ei1, ej0, ej1);
+            auto pi =  gammas[0] * (ei1 - ei0) + ei0; 
+            auto pj = gammas[1] * (ej1 - ej0) + ej0; 
+            auto dij = pj - pi; 
+            dist = dij.norm(); 
+            auto dijNrm = dij / (dist + eps_c);  
+            auto ri0 = ei0 + (dist - delta) * 0.5f * dijNrm;  
+            auto ri1 = ei1 + (dist - delta) * 0.5f * dijNrm; 
+            auto rj0 = ej0 - (dist - delta) * 0.5f * dijNrm; 
+            auto rj1 = ej1 - (dist - delta) * 0.5f * dijNrm; 
+            for (int d = 0; d < 3; d++)
+            {
+                rMat(d, 0) = ri1(d) - ri0(d); 
+                rMat(d, 1) = rj0(d) - ri0(d); 
+                rMat(d, 2) = rj1(d) - ri0(d); 
+            }
+            auto coef = determinant(rMat);
+            val = vol / coef - 1.0f;
+            if (val >= 0)
+                return;             
+            mat = adjoint(mat).transpose();
+            for (int d = 0; d < 3; d++)
+                grad(0, d) = 0; 
+            for (int k = 1; k < 4; k++)
+                for (int d = 0; d < 3; d++)
+                {
+                    grad(k, d) = mat(d, k - 1); 
+                    grad(0, d) -= mat(d, k - 1); 
+                }
+            grad /= coef; 
+        }
+
+        auto consInd = atomic_add(exec_cuda, &oEE[0], 1); 
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
         tempCons("dist", consInd) = dist; 
+        tempCons("type", consInd) = 1; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -1076,6 +1149,151 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                 }
             }
         }); 
+    
+    if (enableFriction)
+    {
+        // NOTE: for now, only support PT&&EE & distance-based constraints 
+        for (int iter = 0; iter < lcpCap; iter++)
+        {
+            for (int color = 0; color < nConsColor; color++)
+            {
+                pol(range(nCons), 
+                    [tempCons = proxy<space>({}, tempCons), 
+                    vtemp = proxy<space>({}, vtemp), 
+                    colors = proxy<space>(colors), 
+                    coOffset = coOffset, 
+                    fricMu = fricMu, 
+                    color] __device__ (int ci) mutable {
+                        if (tempCons("val", ci, T_c) == 0)
+                            return; 
+                        if (colors[ci] != color + 1)
+                            return; 
+                        auto consType = tempCons("type", ci); 
+                        auto lambda = tempCons("lambda", ci, T_c); 
+                        if (consType == 0)
+                        {
+                            // pt 
+                            T intensity = 0.f; 
+                            auto inds = tempCons.pack(dim_c<4>, "vi", ci);
+                            auto xp =  vtemp.pack(dim_c<3>, "x[k]", inds[0]); 
+                            auto xt0 =  vtemp.pack(dim_c<3>, "x[k]", inds[1]); 
+                            auto xt1 =  vtemp.pack(dim_c<3>, "x[k]", inds[2]); 
+                            auto xt2 =  vtemp.pack(dim_c<3>, "x[k]", inds[3]); 
+                            auto yp =  vtemp.pack(dim_c<3>, "y(l)", inds[0]); 
+                            auto yt0 =  vtemp.pack(dim_c<3>, "y(l)", inds[1]); 
+                            auto yt1 =  vtemp.pack(dim_c<3>, "y(l)", inds[2]); 
+                            auto yt2 =  vtemp.pack(dim_c<3>, "y(l)", inds[3]); 
+                            auto dxp = yp - xp; 
+                            auto dxt0 = yt0 - xt0; 
+                            auto dxt1 = yt1 - xt1; 
+                            auto dxt2 = yt2 - xt2; 
+                            auto xlp =  vtemp.pack(dim_c<3>, "x(l)", inds[0]); 
+                            auto xlt0 =  vtemp.pack(dim_c<3>, "x(l)", inds[1]); 
+                            auto xlt1 =  vtemp.pack(dim_c<3>, "x(l)", inds[2]); 
+                            auto xlt2 =  vtemp.pack(dim_c<3>, "x(l)", inds[3]); 
+                            auto nrm = (xlt1 - xlt0).cross(xlt2 - xlt0);
+                            nrm = nrm / zs::max(nrm.norm(), eps_c); 
+                            dxp = dxp - dxp.dot(nrm) * nrm; 
+                            dxt0 = dxt0 - dxt0.dot(nrm) * nrm; 
+                            dxt1 = dxt1 - dxt1.dot(nrm) * nrm; 
+                            dxt2 = dxt2 - dxt2.dot(nrm) * nrm; 
+                            // TODO: debug y(l) nan
+                            auto betas = point_triangle_closest_point(xlp, xlt0, xlt1, xlt2); 
+                            auto weights = zs::vec<T, 4> {1.f, -(1.f - betas[0] - betas[1]), 
+                                -betas[0], -betas[1]}; 
+                            auto dxRel = dxp + weights[1] * dxt0 + weights[2] * dxt1 + weights[3] * dxt2; 
+                            auto dxRelNorm = dxRel.norm(); 
+                            for (int k = 0; k < 4; k++)
+                            {
+                                if (weights[k] < 0 || weights[k] > 1)
+                                    return; 
+                                if (inds[k] < coOffset)
+                                {
+                                    auto m = vtemp("ws", inds[k]); 
+                                    intensity += 1.f / zs::max(m, eps_c) * zs::sqr(weights[k]); 
+                                }
+                            }
+                            // TODO: clamp intensity
+                            intensity = 1.f / zs::max(intensity, eps_c);  
+                            intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda); 
+                            for (int k = 0; k < 4; k++)
+                            {
+                                if (inds[k] < coOffset)
+                                {
+                                    auto m = vtemp("ws", inds[k]); 
+                                    for (int d = 0; d < 3; d++)
+                                        atomic_add(exec_cuda, &vtemp("y(l)", d, inds[k]), 
+                                            -1.f * intensity / zs::max(m, eps_c) * dxRel(d) * weights[k]); 
+                                }
+                            }
+                        } else if (consType == 1) {
+                            // ee 
+#if 0 
+                            T intensity = 0.f; 
+                            auto inds = tempCons.pack(dim_c<4>, "vi", ci);
+                            auto xei0 =  vtemp.pack(dim_c<3>, "x[k]", inds[0]); 
+                            auto xei1 =  vtemp.pack(dim_c<3>, "x[k]", inds[1]); 
+                            auto xej0 =  vtemp.pack(dim_c<3>, "x[k]", inds[2]); 
+                            auto xej1 =  vtemp.pack(dim_c<3>, "x[k]", inds[3]); 
+                            auto yei0 =  vtemp.pack(dim_c<3>, "y(l)", inds[0]); 
+                            auto yei1 =  vtemp.pack(dim_c<3>, "y(l)", inds[1]); 
+                            auto yej0 =  vtemp.pack(dim_c<3>, "y(l)", inds[2]); 
+                            auto yej1 =  vtemp.pack(dim_c<3>, "y(l)", inds[3]); 
+                            auto dxei0 = yei0 - xei0; 
+                            auto dxei1 = yei1 - xei1; 
+                            auto dxej0 = yej0 - xej0; 
+                            auto dxej1 = yej1 - xej1; 
+                            auto xlei0 =  vtemp.pack(dim_c<3>, "x(l)", inds[0]); 
+                            auto xlei1 =  vtemp.pack(dim_c<3>, "x(l)", inds[1]); 
+                            auto xlej0 =  vtemp.pack(dim_c<3>, "x(l)", inds[2]); 
+                            auto xlej1 =  vtemp.pack(dim_c<3>, "x(l)", inds[3]); 
+
+                            auto gammas = safe_edge_edge_closest_point(xlei0, xlei1, xlej0, xlej1);
+                            auto xlpi =  gammas[0] * (xlei1 - xlei0) + xlei0;
+                            auto xlpj = gammas[1] * (xlej1 - xlej0) + xlej0;
+                            auto xlpji = xlpi - xlpj;
+                            auto nrm = xlpji / zs::max(xlpji.norm(), eps_c); 
+
+                            dxei0 = dxei0 - dxei0.dot(nrm) * nrm; 
+                            dxei1 = dxei1 - dxei1.dot(nrm) * nrm; 
+                            dxej0 = dxej0 - dxej0.dot(nrm) * nrm; 
+                            dxej1 = dxej1 - dxej1.dot(nrm) * nrm; 
+
+                            auto weights = zs::vec<T, 4> {1.f - gammas[0], gammas[0], 
+                                1.f - gammas[1], gammas[1]}; 
+                            auto dxRel = weights[0] * dxei0 + weights[1] * dxei1 + 
+                                weights[2] * dxej0 + weights[3] * dxej1; 
+                            auto dxRelNorm = dxRel.norm(); 
+                            for (int k = 0; k < 4; k++)
+                            {
+                                if (inds[k] < coOffset)
+                                {
+                                    auto m = vtemp("ws", inds[k]); 
+                                    intensity += 1.f / zs::max(m, eps_c) * zs::sqr(weights[k]); 
+                                }
+                            }
+                            // TODO: clamp intensity
+                            intensity = 1.f / zs::max(intensity, eps_c);  
+                            intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda); 
+                            if (ci < 16)
+                                printf("fric ee0 intensity: %f, fricMu: %f, lambda: %f, dxRel: %f, %f, %f, nrm: %f, %f, %f\n", 
+                                    intensity, fricMu, lambda, dxRel(0), dxRel(1), dxRel(2), nrm(0), nrm(1), nrm(2)); 
+                            for (int k = 0; k < 4; k++)
+                            {
+                                if (inds[k] < coOffset)
+                                {
+                                    auto m = vtemp("ws", inds[k]); 
+                                    for (int d = 0; d < 3; d++)
+                                        atomic_add(exec_cuda, &vtemp("y(l)", d, inds[k]), 
+                                            -1.f * intensity / zs::max(m, eps_c) * dxRel(d) * weights[k]); 
+                                }
+                            }
+#endif 
+                        }
+                    }); 
+            }
+        }
+    }
     timer.tock("update y(l)"); 
 }   
 
