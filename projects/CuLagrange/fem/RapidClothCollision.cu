@@ -648,6 +648,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("grad", d + 3, consInd, T_c) = -grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 2; 
+        tempCons("type", consInd) = 4; 
         for (int k = 0; k < 2; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
@@ -1162,7 +1163,8 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                     vtemp = proxy<space>({}, vtemp), 
                     colors = proxy<space>(colors), 
                     coOffset = coOffset, 
-                    fricMu = fricMu, 
+                    clothFricMu = clothFricMu, 
+                    boundaryFricMu = boundaryFricMu, 
                     color] __device__ (int ci) mutable {
                         if (tempCons("val", ci, T_c) == 0)
                             return; 
@@ -1203,6 +1205,7 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                                 -betas[0], -betas[1]}; 
                             auto dxRel = dxp + weights[1] * dxt0 + weights[2] * dxt1 + weights[3] * dxt2; 
                             auto dxRelNorm = dxRel.norm(); 
+                            bool boundaryInvolved = false; 
                             for (int k = 0; k < 4; k++)
                             {
                                 if (weights[k] < 0 || weights[k] > 1)
@@ -1211,8 +1214,11 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                                 {
                                     auto m = vtemp("ws", inds[k]); 
                                     intensity += 1.f / zs::max(m, eps_c) * zs::sqr(weights[k]); 
+                                } else {
+                                    boundaryInvolved = true; 
                                 }
                             }
+                            auto fricMu = boundaryInvolved ? clothFricMu: boundaryFricMu; 
                             // TODO: clamp intensity
                             intensity = 1.f / zs::max(intensity, eps_c);  
                             intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda); 
@@ -1228,7 +1234,6 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                             }
                         } else if (consType == 1) {
                             // ee 
-#if 0 
                             T intensity = 0.f; 
                             auto inds = tempCons.pack(dim_c<4>, "vi", ci);
                             auto xei0 =  vtemp.pack(dim_c<3>, "x[k]", inds[0]); 
@@ -1264,20 +1269,21 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                             auto dxRel = weights[0] * dxei0 + weights[1] * dxei1 + 
                                 weights[2] * dxej0 + weights[3] * dxej1; 
                             auto dxRelNorm = dxRel.norm(); 
+                            bool boundaryInvolved = false; 
                             for (int k = 0; k < 4; k++)
                             {
                                 if (inds[k] < coOffset)
                                 {
                                     auto m = vtemp("ws", inds[k]); 
                                     intensity += 1.f / zs::max(m, eps_c) * zs::sqr(weights[k]); 
+                                } else {
+                                    boundaryInvolved = true; 
                                 }
                             }
+                            auto fricMu = boundaryInvolved ? clothFricMu: boundaryFricMu; 
                             // TODO: clamp intensity
                             intensity = 1.f / zs::max(intensity, eps_c);  
-                            intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda); 
-                            if (ci < 16)
-                                printf("fric ee0 intensity: %f, fricMu: %f, lambda: %f, dxRel: %f, %f, %f, nrm: %f, %f, %f\n", 
-                                    intensity, fricMu, lambda, dxRel(0), dxRel(1), dxRel(2), nrm(0), nrm(1), nrm(2)); 
+                            intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda);  
                             for (int k = 0; k < 4; k++)
                             {
                                 if (inds[k] < coOffset)
@@ -1288,7 +1294,6 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                                             -1.f * intensity / zs::max(m, eps_c) * dxRel(d) * weights[k]); 
                                 }
                             }
-#endif 
                         }
                     }); 
             }

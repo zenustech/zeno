@@ -379,7 +379,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                     tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, 
                     T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
                     T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, bool enableDistConstraint, 
-                    T repulsionRange, T tinyDist)
+                    T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
@@ -392,7 +392,8 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
         D_min{delta}, D_max{delta * 4}, sigma{sigma}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
         consDegree{maxVertCons * 4}, BCStiffness{BCStiffness}, enableExclEdges{enableExclEdges}, 
         repulsionCoef{repulsionCoef}, enableDegeneratedDist{enableDegeneratedDist}, enableDistConstraint{enableDistConstraint}, 
-        enableRepulsion{repulsionCoef != 0.f}, repulsionRange{repulsionRange}, tinyDist{tinyDist} { 
+        enableRepulsion{repulsionCoef != 0.f}, repulsionRange{repulsionRange}, tinyDist{tinyDist}, enableFriction{enableFric}, 
+        clothFricMu{clothFricMu}, boundaryFricMu{boundaryFricMu} { 
     auto cudaPol = zs::cuda_exec();
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
@@ -653,6 +654,9 @@ struct MakeRapidClothSystem : INode {
         auto input_enable_dist_constraint = get_input2<bool>("enable_dist_constraint"); 
         auto input_repulsion_range = get_input2<float>("repulsion_range"); 
         auto input_sync_dist_thresh = get_input2<float>("sync_dist_thresh"); 
+        auto input_enable_friction = get_input2<bool>("enable_friction"); 
+        auto input_cloth_fric_coef = get_input2<bool>("cloth_fric_coef"); 
+        auto input_boundary_fric_coef = get_input2<bool>("boundary_fric_coef"); 
 
         // T delta, T sigma, T gamma, T eps
         auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt,
@@ -663,7 +667,8 @@ struct MakeRapidClothSystem : INode {
                                                    input_delta, input_sigma, input_gamma, input_eps, 
                                                    input_max_vert_cons, input_BC_stiffness, input_enable_excl_edges, 
                                                    input_repulsion_coef, input_enable_degenerated_dist, input_enable_dist_constraint, 
-                                                   input_repulsion_range, input_sync_dist_thresh);
+                                                   input_repulsion_range, input_sync_dist_thresh, input_enable_friction, 
+                                                   input_cloth_fric_coef, input_boundary_fric_coef);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -697,7 +702,10 @@ ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               {"float", "repulsion_range", "2"}, 
                               {"float", "sync_dist_thresh", "1e-2"}, 
                               {"bool", "enable_degenerated_dist" , "1"} , 
-                              {"bool", "enable_dist_constraint", "1"}},
+                              {"bool", "enable_dist_constraint", "1"}, 
+                              {"bool", "enable_friction", "0"}, 
+                              {"float", "cloth_fric_coef", "0.1"}, 
+                              {"float", "boundary_fric_coef", "10.0"}},
                              {"ZSClothSystem"},
                              {},
                              {"FEM"}});
