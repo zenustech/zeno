@@ -640,6 +640,23 @@ ZENDEFNODE(BulletMakeConvexMeshShape, {
 	{"Bullet"},
 });
 
+struct BulletMakeBvhTriangleMeshShape : zeno::INode {
+	virtual void apply() override {
+		auto triMesh = &get_input<BulletTriangleMesh>("triMesh")->mesh;
+		auto inShape = std::make_unique<btBvhTriangleMeshShape>(triMesh, true, true);
+
+		auto shape = std::make_shared<BulletCollisionShape>(std::move(inShape));
+		set_output("shape", std::move(shape));
+	}
+};
+
+ZENDEFNODE(BulletMakeBvhTriangleMeshShape, {
+	{"triMesh"},
+	{"shape"},
+	{},
+	{"Bullet"},
+});
+
 // it moves mesh to CollisionShape
 struct BulletMakeConvexHullShape : zeno::INode {
 	virtual void apply() override {
