@@ -879,7 +879,9 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
         QRectF rect;
         for (auto item : selectedItems()) 
         {
-            rect = rect.united(QRectF(item->scenePos(), item->boundingRect().size()));
+            if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item)) {
+                rect = rect.united(QRectF(item->scenePos(), item->boundingRect().size()));
+            }
         }
         if (rect.isValid()) 
         {
