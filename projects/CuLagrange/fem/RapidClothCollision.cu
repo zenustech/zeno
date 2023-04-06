@@ -430,7 +430,8 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
     zs::CppTimer timer; 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
 
     nPP.setVal(0);
     nPE.setVal(0);  
@@ -468,9 +469,11 @@ void RapidClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dist, con
 
     updateConstraintCnt(); 
     D = D_max; 
-    fmt::print("[CD] ne: {}, npp: {}, npe: {}, npt: {}, nee: {}\n", 
-        ne, npp, npe, npt, nee); 
-    timer.tock("proximity search"); 
+    if (!silentMode_c)
+        fmt::print("[CD] ne: {}, npp: {}, npe: {}, npt: {}, nee: {}\n", 
+            ne, npp, npe, npt, nee); 
+    if (enableProfile_c)
+        timer.tock("proximity search"); 
 }
 
 template<class T>
@@ -533,7 +536,8 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
 void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
 {
     zs::CppTimer timer; 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
     
@@ -601,11 +605,11 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
     }
     nConsColor = iter - 1; 
 #endif 
-    timer.tock("constraint coloring"); 
-    fmt::print("\t\t[graph coloring] Ended with {} colors\n", nConsColor); 
-    if (checkConsColoring(pol))
-        fmt::print("\t\t[graph coloring] The result is correct.\n");
-    else 
+    if (enableProfile_c)
+        timer.tock("constraint coloring"); 
+    if (!silentMode_c)
+        fmt::print("\t\t[graph coloring] Ended with {} colors\n", nConsColor); 
+    if (!checkConsColoring(pol))
         fmt::print("\t\t[graph coloring] Wrong results!\n"); 
 }
 
@@ -617,7 +621,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     using namespace zs; 
     constexpr auto space = execspace_e::cuda;
     zs::CppTimer timer; 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
 
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp), maxDi = D] __device__ (int vi) mutable {
@@ -680,7 +685,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("grad", d + 3, consInd, T_c) = -grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 2; 
-        tempCons("dist", consInd) = dist; 
+        tempCons("dist", consInd, T_c) = dist; 
         tempCons("type", consInd) = 2; 
         for (int k = 0; k < 2; k++)
             tempCons("vi", k, consInd) = inds[k]; 
@@ -715,7 +720,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             tempCons("grad", d, consInd, T_c) = grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 3; 
-        tempCons("dist", consInd) = dist; 
+        tempCons("dist", consInd, T_c) = dist; 
         tempCons("type", consInd) = 3; 
         for (int k = 0; k < 3; k++)
             tempCons("vi", k, consInd) = inds[k]; 
@@ -784,11 +789,10 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
-        tempCons("dist", consInd) = pt_dist; 
+        tempCons("dist", consInd, T_c) = pt_dist; 
         tempCons("type", consInd) = 0; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
-        // tempCons("dist", consInd, T_c) = dist; 
     }); 
     oee = oPT.getVal(); 
 
@@ -913,15 +917,16 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         tempCons.tuple(dim_c<12>, "grad", consInd, T_c) = grad; 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
-        tempCons("dist", consInd) = dist; 
+        tempCons("dist", consInd, T_c) = dist; 
         tempCons("type", consInd) = 1; 
         for (int k = 0; k < 4; k++)
             tempCons("vi", k, consInd) = inds[k]; 
     }); 
     nCons = oEE.getVal(); 
     nae = opp, napp = ope - opp, nape = opt - ope, napt = oee - opt, naee = nCons - opt; 
-    fmt::print("[CD] Active Constraints: e: {}, pp: {}, pe: {}, pt: {}, ee: {}, nCons: {}\n", 
-        nae, napp, nape, napt, naee, nCons); 
+    if (!silentMode_c)
+        fmt::print("[CD] Active Constraints: e: {}, pp: {}, pe: {}, pt: {}, ee: {}, nCons: {}\n", 
+            nae, napp, nape, napt, naee, nCons); 
 
     // TODO: construct lcp matrix & coloring initialization 
     // init vert cons list 
@@ -947,9 +952,11 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 vCons("ind", n + nE, vi) = k; 
             }
         }); 
-    timer.tock("compute constraints gradients"); 
+    if (enableProfile_c)
+        timer.tock("compute constraints gradients"); 
 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
     lcpMatSize.setVal(0); 
     pol(range(nCons), 
         [vCons = proxy<space>({}, vCons), 
@@ -989,11 +996,11 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     lcpTopMat._ncols = lcpMat.cols();
     lcpTopMat._ptrs = lcpMat._ptrs;
     lcpTopMat._inds = lcpMat._inds;
-    lcpTopMat._vals = zs::Vector<zs::u32>{lcpTopMat._inds.get_allocator(),lcpTopMat._inds.size() };
+    lcpTopMat._vals = zs::Vector<zs::u32>{lcpTopMat._inds.get_allocator(),lcpTopMat._inds.size()};
     //lcpTopMat.build(pol, nCons, nCons, lcpMatIs, lcpMatJs, false_c); 
     //lcpTopMat._vals.resize(lcpTopMat.nnz());     
-    lcpMatIs.resize(estNumCps); 
-    lcpMatJs.resize(estNumCps);  
+    lcpMatIs.resize(spmatCps); 
+    lcpMatJs.resize(spmatCps);  
     // compute lcpMat = J * M^{-1} * J.T
     pol(range(lcpMat.nnz()), 
         [lcpMat = proxy<space>(lcpMat), 
@@ -1035,7 +1042,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 }
             }
         }); 
-    timer.tock("construct lcp matrix"); 
+    if (enableProfile_c)
+        timer.tock("construct lcp matrix"); 
 }
 
 // yl, y[k], (c, J), xl -> lambda_{l+1}, y_{l+1} 
@@ -1045,7 +1053,8 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
     zs::CppTimer timer; 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
     // b = c(x(l)) + J(x(l)) * (y[k+1] - x(l))
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
@@ -1110,7 +1119,8 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
         if (lcpConverged.getVal())
             break;         
     }
-    timer.tock("solve LCP"); 
+    if (enableProfile_c)
+        timer.tock("solve LCP"); 
 }      
 
 // call cons + solveLCP 
@@ -1125,7 +1135,8 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
     solveLCP(pol); 
     // y(l+1) = M^{-1} * (J(l)).T * lambda + y(l)
     zs::CppTimer timer; 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
          vtemp = proxy<space>({}, vtemp), 
@@ -1218,7 +1229,7 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                                     boundaryInvolved = true; 
                                 }
                             }
-                            auto fricMu = boundaryInvolved ? clothFricMu: boundaryFricMu; 
+                            auto fricMu = boundaryInvolved ? boundaryFricMu: clothFricMu; 
                             // TODO: clamp intensity
                             intensity = 1.f / zs::max(intensity, eps_c);  
                             intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda); 
@@ -1280,7 +1291,7 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                                     boundaryInvolved = true; 
                                 }
                             }
-                            auto fricMu = boundaryInvolved ? clothFricMu: boundaryFricMu; 
+                            auto fricMu = boundaryInvolved ? boundaryFricMu: clothFricMu; 
                             // TODO: clamp intensity
                             intensity = 1.f / zs::max(intensity, eps_c);  
                             intensity = zs::max(zs::min(intensity, fricMu * lambda), -fricMu * lambda);  
@@ -1299,7 +1310,8 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
             }
         }
     }
-    timer.tock("update y(l)"); 
+    if (enableProfile_c)
+        timer.tock("update y(l)"); 
 }   
 
 // async stepping  
@@ -1308,7 +1320,8 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     using namespace zs; 
     constexpr auto space = execspace_e::cuda; 
     zs::CppTimer timer; 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
     // updated y(l) -> updated x(l)
 #if 0 
     pol(range(vtemp.size()), 
@@ -1358,7 +1371,7 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
          vtemp = proxy<space>({}, vtemp), 
          tinyDist = tinyDist] __device__ (int ci) mutable {
             auto syncAlpha = limits<T>::max(); 
-            if (tempCons("dist", ci) >= tinyDist)
+            if (tempCons("dist", ci, T_c) >= tinyDist)
                 return; 
             // sync alpha 
             int vN = tempCons("vN", ci); 
@@ -1390,6 +1403,7 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
         }); 
 
 #endif 
-    timer.tock("forward step"); 
+    if (enableProfile_c)
+        timer.tock("forward step"); 
 }
 }

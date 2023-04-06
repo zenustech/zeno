@@ -243,7 +243,6 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     }
     spInds = svInds; 
     spInds.resize((std::size_t)(svInds.size() + coPoints->size())); 
-    fmt::print("spInds.size: {}\n", spInds.size()); 
     pol(range(coPoints->size()), 
         [spInds = proxy<space>({}, spInds), 
          svoffset = svInds.size(), 
@@ -376,11 +375,11 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 }
 
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
-                    tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, 
-                    T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, bool enableDistConstraint, 
-                    T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu)
-    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
+                    tiles_t *coEles, T dt, std::size_t spmatCps, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, 
+                    T augLagCoeff, T cgRel, T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, 
+                    T gamma, T eps, int maxVertCons, T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, 
+                    bool enableDistConstraint, T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu)
+    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, spmatCps{spmatCps}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
         nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0},
@@ -527,7 +526,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     exclTab = i2tab_t{vtemp.get_allocator(), estNumCps}; 
     lcpMat = spmat_t{zs::memsrc_e::device}; 
     lcpTopMat = ispmat_t{zs::memsrc_e::device}; 
-    lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
+    lcpMatIs = lcpMatJs = {vtemp.get_allocator(), spmatCps}; 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
     initialize(cudaPol); 
 
@@ -628,6 +627,7 @@ struct MakeRapidClothSystem : INode {
         }
 
         /// solver parameters
+        auto input_spmat_cps = get_input2<int>("spmat_cps"); 
         auto input_est_num_cps = get_input2<int>("est_num_cps");
         auto input_bvh_front_cps = get_input2<int>("bvh_front_cps"); 
         auto input_withContact = get_input2<bool>("with_contact");
@@ -659,7 +659,8 @@ struct MakeRapidClothSystem : INode {
         auto input_boundary_fric_coef = get_input2<bool>("boundary_fric_coef"); 
 
         // T delta, T sigma, T gamma, T eps
-        auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt,
+        auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt, 
+                                                   (std::size_t)(input_spmat_cps ? input_spmat_cps : 1000000), 
                                                    (std::size_t)(input_est_num_cps ? input_est_num_cps : 100000),
                                                    (std::size_t)(input_bvh_front_cps ? input_bvh_front_cps : 10000000), 
                                                    input_withContact, input_aug_coeff, input_cg_rel, input_lcp_tol,  
@@ -677,6 +678,7 @@ struct MakeRapidClothSystem : INode {
 
 ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               "ZSBoundaryPrimitives",
+                              {"int", "spmat_cps", "1000000"}, 
                               {"int", "est_num_cps", "100000"},
                               {"int", "bvh_front_cps", "10000000"}, 
                               {"int", "max_vert_cons", "32"}, 

@@ -473,8 +473,9 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     {
         if (D < D_min)
         {
-            fmt::print("[proximity] iters: {}, tiny D: {} < D_min: {} < D_max: {} doing proximity search...\n", 
-                iters, D, D_min, D_max); 
+            if (!silentMode_c)
+                fmt::print("[proximity] iters: {}, tiny D: {} < D_min: {} < D_max: {} doing proximity search...\n", 
+                    iters, D, D_min, D_max); 
             findConstraints(pol, D_max); 
             D = D_max; 
         }
@@ -483,8 +484,9 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         auto disp = infNorm(pol, "disp", numDofs, wrapv<1>{}); 
         D -= 2 * disp; 
         auto res = infNorm(pol, "r(l)", numDofs, wrapv<1>{}); 
-        fmt::print("disp: {}, D: {}, res * 1e6: {}\n", 
-            disp, D, res * 1e6f); 
+        if (!silentMode_c)
+            fmt::print("disp: {}, D: {}, res * 1e4: {}\n", 
+                disp, D, res * 1e4f); 
         if (res < eps)
         {
             fmt::print(fg(fmt::color::orange_red), "converged in {} iterations with res: {}\n", 

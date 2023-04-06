@@ -21,6 +21,8 @@ struct RapidClothSystem : IObject {
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false;
     constexpr static auto debugVis_c = true; 
+    constexpr static auto enableProfile_c = false; 
+    constexpr static auto silentMode_c = true; 
     T tinyDist = 1e-3; 
     T repulsionCoef = 1.f; 
     T repulsionRange = 2.f; 
@@ -158,7 +160,7 @@ struct RapidClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     // assume ncps < 6e5, normal choice: ncps = 1e5
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
-                    tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
+                    tiles_t *coEles, T dt, std::size_t spmatCps, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
                     T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, bool enableDistConstraint, 
                     T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu); 
@@ -211,6 +213,7 @@ struct RapidClothSystem : IObject {
     // sim params
     bool enableExclEdges = false; 
     int substep = -1;
+    std::size_t spmatCps = 1000000; 
     std::size_t estNumCps = 100000;
     std::size_t bvhFrontCps = 10000000; 
     T cgRel = 1e-2;
