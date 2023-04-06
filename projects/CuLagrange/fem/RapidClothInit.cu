@@ -382,7 +382,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, spmatCps{spmatCps}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
-        nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0},
+        nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0}, itemp{estNumCps, zs::memsrc_e::um, 0},
         oPP{zsprims[0]->getParticles().get_allocator(), 1}, oPE{zsprims[0]->getParticles().get_allocator(), 1},
         oPT{zsprims[0]->getParticles().get_allocator(), 1}, oEE{zsprims[0]->getParticles().get_allocator(), 1},
         oE{zsprims[0]->getParticles().get_allocator(), 1}, 
@@ -479,7 +479,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     vCons = itiles_t{zsprims[0]->getParticles().get_allocator(), 
                     {
                         {"n", 1}, 
-                        {"nE", 1}, 
                         {"cons", maxVertCons}, 
                         {"ind", maxVertCons}    // its index in each constraint 
                     }, 
@@ -655,8 +654,8 @@ struct MakeRapidClothSystem : INode {
         auto input_repulsion_range = get_input2<float>("repulsion_range"); 
         auto input_sync_dist_thresh = get_input2<float>("sync_dist_thresh"); 
         auto input_enable_friction = get_input2<bool>("enable_friction"); 
-        auto input_cloth_fric_coef = get_input2<bool>("cloth_fric_coef"); 
-        auto input_boundary_fric_coef = get_input2<bool>("boundary_fric_coef"); 
+        auto input_cloth_fric_coef = get_input2<float>("cloth_fric_coef"); 
+        auto input_boundary_fric_coef = get_input2<float>("boundary_fric_coef"); 
 
         // T delta, T sigma, T gamma, T eps
         auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt, 

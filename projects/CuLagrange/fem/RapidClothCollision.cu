@@ -24,7 +24,6 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
          vtemp = view<space>({}, vtemp, false_c, "vtemp"), bvh = view<space>(stbvh, false_c), 
          front = proxy<space>(stfront), tempPT = view<space>({}, tempPT, false_c, "tempPT"),
          tempPP = proxy<space>({}, tempPP), tempPE = proxy<space>({}, tempPE), 
-         vCons = view<space>({}, vCons, false_c, "vCons"), 
          nPT = view<space>(nPT, false_c, "nPT"), radius, voffset = withBoundary ? coOffset : 0,
          nPP = view<space>(nPP, false_c, "nPP"), nPE = view<space>(nPE, false_c, "nPE"), 
          exclTab = proxy<space>(exclTab), 
@@ -211,7 +210,6 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
     pol(Collapse{seefront.size()},
         [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
             vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), front = proxy<space>(seefront),
-            vCons = proxy<space>({}, vCons), 
             tempEE = proxy<space>({}, tempEE), nEE = proxy<space>(nEE), dHat2 = zs::sqr(radius),
             tempPP = proxy<space>({}, tempPP), nPP = proxy<space>(nPP), 
             tempPE = proxy<space>({}, tempPE), nPE = proxy<space>(nPE), 
@@ -390,7 +388,6 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                 [spInds = proxy<space>({}, spInds), svOffset = svOffset, coOffset = coOffset, 
                 bvh = proxy<space>(svbvh), front = proxy<space>(svfront), tempPP = proxy<space>({}, tempPP),
                 eles = proxy<space>({}, svInds), 
-                vCons = proxy<space>({}, vCons), 
                 vtemp = proxy<space>({}, vtemp), 
                 nPP = proxy<space>(nPP), radius, voffset = withBoundary ? coOffset : 0,
                 frontManageRequired = frontManageRequired, tag] __device__(int i) mutable {
@@ -510,7 +507,6 @@ bool RapidClothSystem::checkConsColoring(zs::CudaExecutionPolicy &pol)
     pol(range(nCons), 
         [tempCons = proxy<space>({}, tempCons), 
          colors = proxy<space>(colors), 
-         vCons = proxy<space>({}, vCons), 
          lcpMat = proxy<space>(lcpMat), 
          correct = proxy<space>(correct)] __device__ (int i) mutable {
             int color = colors[i]; 
@@ -934,7 +930,6 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     pol(range(vCons.size()), 
         [vCons = proxy<space>({}, vCons)] __device__ (int i) mutable {
             vCons("n", i) = 0; 
-            vCons("nE", i) = 0; 
         }); 
     pol(range(nCons), 
         [tempCons = view<space>({}, tempCons, false_c, "tempCons"), 
@@ -947,13 +942,19 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 if (vi >= coOffset)
                     continue; 
                 int n = atomic_add(exec_cuda, &vCons("n", vi), 1); 
-                int nE = vCons("nE", vi); 
-                vCons("cons", n + nE, vi) = ci; 
-                vCons("ind", n + nE, vi) = k; 
+                vCons("cons", n, vi) = ci; 
+                vCons("ind", n, vi) = k; 
             }
         }); 
     if (enableProfile_c)
         timer.tock("compute constraints gradients"); 
+    
+    if (showStatistics_c)
+    {
+        auto maxN = tvMax(pol, vCons, "n", coOffset, int_c); 
+        fmt::print(fg(fmt::color::sea_green), "\t[statistics]\tmax_vCons_cache: {}\n", 
+            maxN); 
+    }
 
     if (enableProfile_c)
         timer.tick(); 
@@ -961,7 +962,6 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     pol(range(nCons), 
         [vCons = proxy<space>({}, vCons), 
          tempCons = proxy<space>({}, tempCons), 
-        //  tempColors = proxy<space>(tempColors), 
          lcpMatIs = view<space>(lcpMatIs, false_c, "lcpMatIs"), 
          lcpMatJs = view<space>(lcpMatJs, false_c, "lcpMatJs"), 
          lcpMatSize = view<space>(lcpMatSize, false_c, "lcpMatSize"), 
@@ -973,10 +973,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 int vi = tempCons("vi", k, ci); 
                 if (vi >= coOffset)
                     continue; 
-                int nE = vCons("nE", vi); 
                 int n = vCons("n", vi); 
-                degree += nE + n; 
-                for (int j = 0; j < nE + n; j++)
+                degree += n; 
+                for (int j = 0; j < n; j++)
                 {
                     int aj = vCons("cons", j, vi); 
                     auto no = atomic_add(exec_cuda, &lcpMatSize[0], 1); 
@@ -1023,7 +1022,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                 int vi = tempCons("vi", j, i); 
                 if (vi >= coOffset)
                     continue; 
-                int n = vCons("n", vi) + vCons("nE", vi); 
+                int n = vCons("n", vi);
                 for (int k = 0; k < n; k++)
                 {
                     int neCons = vCons("cons", k, vi); 

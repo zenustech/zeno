@@ -22,6 +22,7 @@ struct RapidClothSystem : IObject {
     constexpr static auto enablePP_c = false;
     constexpr static auto debugVis_c = true; 
     constexpr static auto enableProfile_c = false; 
+    constexpr static auto showStatistics_c = false; 
     constexpr static auto silentMode_c = true; 
     T tinyDist = 1e-3; 
     T repulsionCoef = 1.f; 
@@ -192,10 +193,13 @@ struct RapidClothSystem : IObject {
     void computeRepulsionGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag); 
 
     /// linear solve
-    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t maxInd);
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t n);
+    template<class ValT, class tvT>
+    ValT RapidClothSystem::tvMax(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
+        std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
     template <int codim = 3>
-    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd, zs::wrapv<codim> = {});
-    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd);
+    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t n, zs::wrapv<codim> = {});
+    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t n);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
@@ -248,6 +252,7 @@ struct RapidClothSystem : IObject {
     // buffer
     itiles_t vCons;          // vertex -> constraint indices & constraints num 
     tiles_t vtemp;          // solver data
+    zs::Vector<int> itemp; 
     zs::Vector<T> temp;     // as temporary buffer
     zs::Vector<bv_t> bvs;   // as temporary buffer
 
