@@ -8,9 +8,8 @@
 #include <string>
 
 namespace zeno {
-    ZENO_API std::string CopyToString(const char* data);
-    ZENO_API char* CopyToChar(const std::string& str);
-
-    ZENO_API SimpleList<std::pair<SimpleCharBuffer, zany>> CallTempNode(const std::shared_ptr<Graph>& graph, const char* id, size_t argc = 0, ...);
+    ZENO_API SimpleList<std::pair<SimpleCharBuffer, zany>> CallTempNode(Graph* graph, const char* id, size_t argc = 0, ...);
+    ZENO_API Graph* AddSubnetNode(Graph* graph, const char* id);
+    ZENO_API SimpleList<std::pair<SimpleCharBuffer, zany>> CallSubnetNode(Graph* graph, const char* id, size_t argc = 0, ...);
 }
 
