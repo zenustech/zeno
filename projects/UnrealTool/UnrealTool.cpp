@@ -37,8 +37,9 @@ char* zeno::CopyToChar(const std::string& str) {
     return data;
 }
 
-size_t zeno::CallTempNode(const std::shared_ptr<Graph>& graph, const char *id, size_t argc, ...) {
-    typedef zeno::Pair<const char*, zeno::zany> ZPair ;
+// TODO [darc] : fix memory leak caused by char buffer :
+zeno::SimpleList<std::pair<zeno::SimpleCharBuffer, zeno::zany>> zeno::CallTempNode(const std::shared_ptr<Graph>& graph, const char *id, size_t argc, ...) {
+    typedef std::pair<const char*, zeno::zany> ZPair ;
 
     std::map<std::string, zeno::zany> inputs;
 
@@ -46,9 +47,16 @@ size_t zeno::CallTempNode(const std::shared_ptr<Graph>& graph, const char *id, s
     va_start(vl, argc);
     for (size_t i = 0; i < argc; ++i) {
         const ZPair& pair = va_arg(vl, ZPair);
-        inputs.insert(std::make_pair(std::string(pair.m_key), pair.m_value));
+        inputs.insert(std::make_pair(std::string(pair.first), pair.second));
     }
     va_end(vl);
 
-    return graph->callTempNode(id, inputs).size();
+
+    std::map<std::string, std::shared_ptr<zeno::IObject>> output = graph->callTempNode(id, inputs);
+    zeno::SimpleList<std::pair<zeno::SimpleCharBuffer, zeno::zany>> result(output.size());
+    for (const auto& pair : output) {
+        result.add(std::make_pair(zeno::SimpleCharBuffer{ pair.first.c_str(), pair.first.size() }, pair.second));
+    }
+
+    return result;
 }

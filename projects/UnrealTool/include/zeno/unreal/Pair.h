@@ -1,15 +1,46 @@
 #pragma once
 
 namespace zeno {
-template <typename K, typename V>
-class Pair {
-public:
-    Pair(const K& key, const V& value) {
-        m_key = key;
-        m_value = value;
+
+struct SimpleCharBuffer {
+    SimpleCharBuffer(const char* InChar) {
+        length = std::strlen(InChar);
+        data = new char[length];
+        strncpy(data, InChar, length);
     }
 
-    K m_key;
-    V m_value;
+    SimpleCharBuffer(const char* InChar, size_t Size) {
+        length = Size + 1;
+        data = new char[length];
+        strncpy(data, InChar, length - 1);
+        data[Size] = '\0';
+    }
+
+    SimpleCharBuffer(SimpleCharBuffer&& InBuffer) noexcept {
+        length = InBuffer.length;
+        data = InBuffer.data;
+        InBuffer.data = nullptr;
+        InBuffer.length = 0;
+    }
+
+    SimpleCharBuffer& operator=(SimpleCharBuffer&& InBuffer) noexcept {
+        length = InBuffer.length;
+        data = InBuffer.data;
+        InBuffer.data = nullptr;
+        InBuffer.length = 0;
+        return *this;
+    }
+
+    ~SimpleCharBuffer() {
+        delete []data;
+    }
+
+    char* data;
+    size_t length;
 };
+
+extern "C" {
+    struct SimpleCharBuffer;
+}
+
 }
