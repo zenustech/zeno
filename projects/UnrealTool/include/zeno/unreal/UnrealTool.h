@@ -11,5 +11,6 @@ namespace zeno {
     ZENO_API SimpleList<std::pair<SimpleCharBuffer, zany>> CallTempNode(Graph* graph, const char* id, size_t argc = 0, ...);
     ZENO_API Graph* AddSubnetNode(Graph* graph, const char* id);
     ZENO_API SimpleList<std::pair<SimpleCharBuffer, zany>> CallSubnetNode(Graph* graph, const char* id, size_t argc = 0, ...);
+    ZENO_API bool LoadGraphChecked(Graph* graph, const char* json);
+    ZENO_API bool IsValidZSL(const char* json);
 }
-
