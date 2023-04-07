@@ -454,9 +454,9 @@ namespace DisneyBSDF{
         tbn.m_binormal = B;
         float ax, ay;
         BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
-        float2 r01 = sobolRnd(seed);
-        float r0 = r01.x;//rnd(seed);
-        float r1 = r01.y;//rnd(seed);
+        //float2 r01 = sobolRnd(seed);
+        float r0 = rnd(seed);
+        float r1 = rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
 
         wi = normalize(reflect(-wo, wm)); 
@@ -506,9 +506,9 @@ namespace DisneyBSDF{
     {
         float ax, ay;
         BRDFBasics::CalculateAnisotropicParams(clearCoatRoughness, 0, ax, ay);
-        float2 r01 = sobolRnd(seed);
-        float r0 = r01.x;//rnd(seed);
-        float r1 = r01.y;//rnd(seed);
+        //float2 r01 = sobolRnd(seed);
+        float r0 = rnd(seed);
+        float r1 = rnd(seed);
         vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
         if(dot(wm,wo) < 0.0f){
             wm = -wm;
@@ -601,9 +601,9 @@ namespace DisneyBSDF{
         float tax,tay;
         BRDFBasics::CalculateAnisotropicParams(rscaled,anisotropic,tax,tay);
 
-        float2 r01 = sobolRnd(seed);
-        float r0 = r01.x;//rnd(seed);
-        float r1 = r01.y;//rnd(seed);
+        //float2 r01 = sobolRnd(seed);
+        float r0 = rnd(seed);
+        float r1 = rnd(seed);
         auto wx = wo;
         if(thin == false && wx.z<0)
         {
@@ -837,9 +837,9 @@ namespace DisneyBSDF{
     static __inline__ __device__
     vec3 SampleScatterDirection(unsigned int &seed)
     {
-        float2 r01 = sobolRnd(seed);
-        float r0 = r01.x;//rnd(seed);
-        float r1 = r01.y;//rnd(seed);
+        //float2 r01 = sobolRnd(seed);
+        float r0 = rnd(seed);
+        float r1 = rnd(seed);
 
         float theta = 2.0 * M_PIf * r0;
         float phi = acos(clamp(1 - 2 * r1, -0.9999f, 0.9999f));

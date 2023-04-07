@@ -79,14 +79,20 @@ extern "C" __global__ void __raygen__rg()
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
-        float2 subpixel_jitter = sobolRnd2(seed);
+        float2 subpixel_jitter = {
+            rnd(seed),
+            rnd(seed)
+        };
 
         float2 d = 2.0f * make_float2(
                 ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                 ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
         //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
-        float2 r01 = sobolRnd2(seed);
+        float2 r01 = {
+            rnd(seed),
+            rnd(seed)
+        };
         
         float r0 = r01.x * 2.0f* M_PIf;
         float r1 = r01.y * aperture * aperture;

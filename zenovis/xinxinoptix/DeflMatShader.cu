@@ -367,7 +367,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 v1 = make_float3(bv1.x, bv1.y, bv1.z);
     float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
 
-    float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
+    float3 N_0  = normalize( cross( v1-v0, v2-v1 ) );
         
         prd->geometryNormal = N_0;
 
@@ -743,7 +743,7 @@ extern "C" __global__ void __closesthit__radiance()
         float ppl = 0;
         for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
             ParallelogramLight light = params.lights[lidx];
-            float2 z = sobolRnd2(prd->seed);
+            float2 z = {rnd(prd->seed), rnd(prd->seed)};
             const float z1 = z.x;
             const float z2 = z.y;
             float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
