@@ -73,13 +73,12 @@ struct ShaderFinalize : INode {
             {1,"mat_isVoxelDomain"},
 
             {1, "vol_depth"},
-            {1, "vol_absorption"},
-            {1, "vol_scattering"},
-
+            {1, "vol_extinction"},
+            {3, "vol_sample_albedo"},
             {1, "vol_sample_anisotropy"},
+
             {1, "vol_sample_density"},
             {3, "vol_sample_emission"},
-            {3, "vol_sample_albedo"},
 
         }, {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
@@ -129,26 +128,23 @@ struct ShaderFinalize : INode {
             get_input<IObject>("isVoxelDomain", std::make_shared<NumericObject>(float(0))),
             
             get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(99))),
-            get_input<IObject>("vol_absorption", std::make_shared<NumericObject>(float(1))),
-            get_input<IObject>("vol_scattering", std::make_shared<NumericObject>(float(1))),
-
+            get_input<IObject>("vol_extinction", std::make_shared<NumericObject>(float(1))),
+            get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(0.5))),
             get_input<IObject>("vol_sample_anisotropy", std::make_shared<NumericObject>(float(0))),
-            get_input<IObject>("vol_sample_density", std::make_shared<NumericObject>(float(0))),
 
+            get_input<IObject>("vol_sample_density", std::make_shared<NumericObject>(float(0))),
             get_input<IObject>("vol_sample_emission", std::make_shared<NumericObject>(vec3f(0))),
-            get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(1))),
+            
         });
         auto commonCode = em.getCommonCode();
 
         int   vol_depth = (int)get_input2<float>("vol_depth");
-        float vol_absorption = get_input2<float>("vol_absorption");
-        float vol_scattering = get_input2<float>("vol_scattering");
+        float vol_extinction = get_input2<float>("vol_extinction");
 
         vol_depth = clamp(vol_depth, 9, 99);
 
-        commonCode += "static const int _vol_depth = " + std::to_string(vol_depth) + ";\n";
-        commonCode += "static const float _vol_absorption = " + std::to_string(vol_absorption) + ";\n";
-        commonCode += "static const float _vol_scattering = " + std::to_string(vol_scattering) + ";\n";
+        commonCode += "static const int   _vol_depth = " + std::to_string(vol_depth) + ";\n";
+        commonCode += "static const float _vol_extinction = " + std::to_string(vol_extinction) + ";\n";
 
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
@@ -269,13 +265,13 @@ ZENDEFNODE(ShaderFinalize, {
         {"list", "tex3dList"},
 
         {"float", "vol_depth",     "99"},
-        {"float", "vol_absorption", "1"},
-        {"float", "vol_scattering", "1"},
+        {"float", "vol_extinction", "1"},
+        {"vec3f", "vol_sample_albedo", "0.5,0.5,0.5"},
 
         {"float", "vol_sample_anisotropy", "0"},
+
         {"float", "vol_sample_density", "0"},
-        {"vec3f", "vol_sample_emission", "0,0,0"},
-        {"vec3f", "vol_sample_albedo", "1,1,1"},
+        {"vec3f", "vol_sample_emission", "0,0,0"}
     },
     {
         {"MaterialObject", "mtl"},

@@ -68,9 +68,10 @@ set(FILE_LIST
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl_exception.h
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl_transformations.h
 
+    # ${CUDA_PATH}/include/@nvfunctional 
+    ${CUDA_PATH}/include/@math_constants.h
     ${CUDA_PATH}/include/@vector_types.h
     ${CUDA_PATH}/include/@vector_functions.h
-    ${CUDA_PATH}/include/@math_constants.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/random.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h

@@ -61,14 +61,17 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 
     virtual void emitCode(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
-        auto coord = em->determineExpr(get_input("coord").get());
         auto type = get_input2<std::string>("type");
+        auto coord = em->determineExpr(get_input("coord").get());
+        
+        auto space = get_input2<std::string>("space");
+        auto world_space = (space == "World")? "true":"false";
 
         auto dim = em->determineType(get_input("coord").get());
         auto method = get_input2<std::string>("method");
 
         auto Order = std::to_string( (method == "LINEAR")? 1:0 );
-        em->emitCode(type + "(samplingVDB<"+ Order +">(vdb_grids[" + std::to_string(texId) + "], vec3(" + coord + ")))");
+        em->emitCode(type + "(samplingVDB<"+ Order +","+ world_space +">(vdb_grids[" + std::to_string(texId) + "], vec3(" + coord + ")))");
     }
 };
 
@@ -91,6 +94,7 @@ ZENDEFNODE(ShaderTexture3D, {
     {
         {"int", "texId", "0"},
         {"vec3f", "coord", "0,0,0"},
+        {"enum World Local", "space", "World"},
         {"enum vec2", "type", "vec2"},
         {"enum LINEAR CLOSEST", "method", "LINEAR"} 
     },
