@@ -51,9 +51,47 @@ namespace DisneyBSDF{
     static __inline__ __device__ 
     vec3 CalculateExtinction(vec3 apparantColor, float scatterDistance)
     {
-
         return 1.0/(max(apparantColor * scatterDistance,vec3(0.000001)));
+    }
 
+    static __inline__ __device__
+    float SampleDistance(unsigned int &seed, float scatterDistance, vec3 extinction, float &pdf)
+    {
+        float ps = dot(extinction, vec3(1.0f));
+        // Bigger extinction, smaller probability
+
+        float pr = ps / extinction.x;
+        float pg = ps / extinction.y;
+        float pb = ps / extinction.z;
+
+        ps = pr + pg + pb;
+
+        pr = pr / ps;
+        pg = pg / ps;
+        pb = pb / ps;
+
+        float c;
+        float p;
+
+        float r0 = rnd(seed);
+        if(r0 <= pr) {
+            c = extinction.x;
+            p = pr;
+        }
+        else if( r0 <= (pr + pg) ) {
+            c = extinction.y;
+            p = pg;
+        }
+        else {
+            c = extinction.z;
+            p = pb;
+
+            //printf("pb=%f pg=%f pr=%f ps=%f\n", pb, pg, pr, ps);
+        }
+        float s = -log(max(rnd(seed),0.00001f)) / max(c, 1e-10);
+        //*pdf = Math::Expf(-c * s) / p;
+
+        return s;
     }
 
     static __inline__ __device__
@@ -269,10 +307,11 @@ namespace DisneyBSDF{
 
         float a = roughness * roughness;
         float rr = 0.5f + 2.0f * NoL * NoL * roughness;
-        float fl = BRDFBasics::SchlickWeight(NoL);
-        float fv = BRDFBasics::SchlickWeight(NoV);
+        float fl = clamp(BRDFBasics::SchlickWeight(NoL),0.0f,1.0f);
+        float fv = clamp(BRDFBasics::SchlickWeight(NoV),0.0f,1.0f);
 
-        return rr * (fl + fv + fl * fv * (rr - 1.0f));
+        //return rr * (fl + fv + fl * fv * (rr - 1.0f));
+        return mix(1.0f, rr, fl) * mix(1.0f, rr, fv);
     }
 
     static __inline__ __device__
@@ -305,9 +344,9 @@ namespace DisneyBSDF{
 
         float lambert = 1.0f;
         float retro = EvaluateDisneyRetroDiffuse(roughness, wi, wo);
-        float subsurfaceApprox = mix(lambert, h, thin ? flatness : 0.0f);
+        float subsurfaceApprox = mix(lambert, h, flatness);
 
-        return 1.0f/M_PIf * (retro + subsurfaceApprox * (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
+        return (retro + subsurfaceApprox * (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
     }
 
     static __inline__ __device__
@@ -722,10 +761,6 @@ namespace DisneyBSDF{
 
             )
     {
-
-        // float2 r01 = sobolRnd(seed);
-        // float r0 = r01.x;//rnd(seed);
-        // float r1 = r01.y;//rnd(seed);
         wi =  normalize(BRDFBasics::sampleOnHemisphere(seed, 1.0f));
         vec3 wm = normalize(wi+wo);
         float NoL = wi.z;
@@ -741,11 +776,12 @@ namespace DisneyBSDF{
         float NoV = wo.z;
 
         vec3 color = baseColor;
-        //float pdf;
+
+        vec3 scalerSS = sssColor * transmittanceColor;
 
         flag = scatterEvent;
         float ptotal = 1.0f + subsurface ;
-        float psss = subsurface / ptotal;
+        float psss = subsurface; // /ptotal;
         float prnd = rnd(seed);
         if(wo.z>0) //we are outside
         {
@@ -754,12 +790,12 @@ namespace DisneyBSDF{
                 //pdf = psss;
                 isSS = true;
                 if (thin) {
-                    color = sqrt(transmittanceColor);
+                    color = sqrt(baseColor);
                 } else {
                     flag = transmissionEvent;
                     //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                    extinction = CalculateExtinction(sssColor, scatterDistance);
-                    color = transmittanceColor;
+                    extinction = CalculateExtinction(scalerSS, scatterDistance);
+                    color = baseColor;
                 }
             } else {
                 //pdf = 1.0 - psss;
@@ -770,16 +806,16 @@ namespace DisneyBSDF{
             if (prnd <= psss && subsurface > 0.001f)
             {
                 //go out, flag change
-                wi = -wi;
+                wi = wi;
                 //pdf = psss;
                 isSS = true;
                 if (thin) {
-                    color = sqrt(transmittanceColor);
+                    color = sqrt(baseColor);
                 } else {
                     flag = transmissionEvent;
                     //phaseFuncion = (!is_inside)  ? isotropic : vacuum;
-                    extinction = CalculateExtinction(sssColor, scatterDistance);
-                    color = transmittanceColor;//no attenuation happen
+                    extinction = CalculateExtinction(scalerSS, scatterDistance);
+                    color = baseColor;//no attenuation happen
                 }
             }else
             {
@@ -788,12 +824,15 @@ namespace DisneyBSDF{
             }
         }
 
+        //printf("extinction x=%f y=%f z= %f \n", extinction.x, extinction.y, extinction.z);
+
         float HoL = dot(wm,wo);
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
-        float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
+        float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
         if(wi.z<0)
             diff = 1.0;
-        reflectance = ( sheen + color * diff ) * ptotal;
+        
+        reflectance = ( sheen + color * diff);// * ptotal;
         //fPdf = abs(NoL) * pdf;
         //rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
@@ -802,36 +841,6 @@ namespace DisneyBSDF{
         tbn.inverse_transform(wi);
         wi = normalize(wi);
         return true;
-    }
-    static __inline__ __device__
-    float SampleDistance(unsigned int &seed, float scatterDistance, vec3 extinction, float &pdf)
-    {
-        float ps = dot(extinction, vec3(1.0f));
-
-        float pr = extinction.x / ps;
-        float pg = extinction.y / ps;
-        float pb = extinction.z / ps;
-
-        float c;
-        float p;
-
-        float r0 = rnd(seed);
-        if(r0 < pr) {
-            c = extinction.x;
-            p = pr;
-        }
-        else if(r0 < pr + pg) {
-            c = extinction.y;
-            p = pg;
-        }
-        else {
-            c = extinction.z;
-            p = pb;
-        }
-        float s = -log(max(rnd(seed),0.00001f)) / max(c, 1e-10);
-        //*pdf = Math::Expf(-c * s) / p;
-
-        return s;
     }
 
     static __inline__ __device__

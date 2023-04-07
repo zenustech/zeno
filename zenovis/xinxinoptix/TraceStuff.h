@@ -93,6 +93,8 @@ struct RadiancePRD
     int          curMatIdx;
     float        CH;
 
+    bool bad = false;
+
     // cihou nanovdb
     float vol_t0=0, vol_t1=0;
 
@@ -129,7 +131,9 @@ struct RadiancePRD
     
     void         pushMat(vec3 extinction)
     {
-        if(curMatIdx<7)
+        vec3 d = abs(extinctionQ[curMatIdx] - extinction);
+        float c = dot(d, vec3(1,1,1));
+        if(curMatIdx<7 && c > 1e-6 )
         {
 
             curMatIdx++;

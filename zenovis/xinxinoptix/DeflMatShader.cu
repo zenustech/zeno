@@ -487,8 +487,10 @@ extern "C" __global__ void __closesthit__radiance()
     auto scatterDistance = mats.scatterDistance;
     auto ior = mats.ior;
     auto thin = mats.thin;
-    auto transmittanceColor = mats.sssColor;
-    auto sssColor = mats.sssParam;
+
+    auto sssColor = mats.sssColor;
+    auto transmittanceColor = mats.sssParam;
+
     auto scatterStep = mats.scatterStep;
     //discard fully opacity pixels
     //opacity = clamp(opacity, 0.0f, 0.99f);
@@ -572,6 +574,10 @@ extern "C" __global__ void __closesthit__radiance()
     bool isDiff = false;
     bool isSS = false;
     bool isTrans = false;
+    flag = DisneyBSDF::scatterEvent;
+
+    sssColor = mix(basecolor, sssColor, subsurface);
+
     while(DisneyBSDF::SampleDisney(
                 prd->seed,
                 basecolor,
@@ -648,23 +654,30 @@ extern "C" __global__ void __closesthit__radiance()
     prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
-    if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
-        prd->is_inside = dot(vec3(N),vec3(wi))<0;
-    }
 
-    if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent){
+    bool istransmission = dot(vec3(N), vec3(wi)) * dot(vec3(N), vec3(-normalize(ray_dir)))<0;
+    if(istransmission || flag == DisneyBSDF::diracEvent) {
+    //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
+        prd->is_inside = dot(vec3(N),vec3(wi))<=0;
+    }
+    
+    //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
+    if(istransmission || flag == DisneyBSDF::diracEvent) {
         if(prd->is_inside){
             outToIn = true;
             inToOut = false;
             //if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
                 prd->medium = DisneyBSDF::PhaseFunctions::isotropic;
                 prd->attenuation *= prd->curMatIdx==0? vec3(1) : DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
+
                 prd->pushMat(extinction);
+
                 //prd->attenuation *= transmittanceColor;
                 prd->extinction = extinction;
                 prd->scatterDistance = scatterDistance;
                 prd->transColor = transmittanceColor;
                 prd->scatterStep = scatterStep;
+
                 float tmpPDF = 1.0f;
                 prd->maxDistance = isTrans? 1e16 : DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF) ;
                 //prd->maxDistance = scatterDistance;
@@ -679,6 +692,19 @@ extern "C" __global__ void __closesthit__radiance()
             prd->scatterPDF = 1.0;
             prd->extinction = prd->popMat();
             prd->medium = prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
+
+            if (prd->medium != DisneyBSDF::PhaseFunctions::vacuum) {
+
+                prd->bad = true;
+                
+                printf("%f %f %f %f %f %f %f %f \n matIdx = %d isotropic = %d \n", prd->extinctionQ[0].x, prd->extinctionQ[1].x, prd->extinctionQ[2].x, prd->extinctionQ[3].x, prd->extinctionQ[4].x, prd->extinctionQ[5].x, prd->extinctionQ[6].x, prd->extinctionQ[7].x,
+                    prd->curMatIdx, prd->medium);
+                printf("matIdx = %d isotropic = %d \n\n", prd->curMatIdx, prd->medium);
+
+                //prd->curMatIdx = 0;
+                //prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
+            }
+
             float tmpPDF = 1.0f;
             prd->maxDistance = prd->medium==DisneyBSDF::PhaseFunctions::isotropic ? DisneyBSDF::SampleDistance(prd->seed,prd->scatterStep,prd->extinction, tmpPDF) : 1e16;
         }
@@ -693,6 +719,7 @@ extern "C" __global__ void __closesthit__radiance()
 	    }
             else
             {
+                prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
                 prd->maxDistance = 1e16f;
             }
     }
@@ -701,7 +728,12 @@ extern "C" __global__ void __closesthit__radiance()
     //prd->passed = (flag == DisneyBSDF::transmissionEvent) ;
     //prd->prob *= pdf/clamp(dot(wi, vec3(N)),0.0f,1.0f);
     //prd->prob *= pdf;
-    prd->offsetUpdateRay(P, wi); 
+
+    //prd->offsetUpdateRay(P, normalize(wi));
+
+    P = rtgems::offset_ray(P, (prd->is_inside)? -prd->geometryNormal : prd->geometryNormal);
+    prd->origin = P;
+    prd->direction = normalize(wi);
 
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
@@ -825,6 +857,8 @@ extern "C" __global__ void __closesthit__radiance()
                             lbrdf;
         //}
     }
+    prd->radiance *= (1.0 - subsurface);
+    prd->radiance *= (prd->is_inside && prd->medium == DisneyBSDF::PhaseFunctions::isotropic)? sssColor * transmittanceColor : vec3(1.0f);
     prd->radiance +=  float3(mats.emission);
     prd->CH = 1.0;
 }
