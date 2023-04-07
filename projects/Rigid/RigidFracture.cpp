@@ -188,10 +188,21 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
         auto pol = omp_exec();
 
         // std::vector<std::shared_ptr<BulletObject>>
-        auto cpdBodies = get_input<ListObject>("compoundList")->get<BulletObject>();
+        auto cpdList = get_input<ListObject>("compoundList");
+        auto cpdBodies = cpdList->get<BulletObject>();
         const auto ncpds = cpdBodies.size();
 
-        auto primlist = std::make_shared<ListObject>();
+        bool hasVisualPrimlist = cpdList->userData().has("visualPrimlist");
+        std::shared_ptr<ListObject> primlist;
+        std::vector<std::shared_ptr<PrimitiveObject>> visPrims;
+        if (hasVisualPrimlist) {
+            primlist = cpdList->userData().get<ListObject>("visualPrimlist");
+            visPrims = primlist->get<PrimitiveObject>();
+        } else {
+            primlist = std::make_shared<ListObject>();
+            cpdList->userData().set("visualPrimlist", primlist);
+        }
+        int no = 0;
         for (int cpi = 0; cpi != ncpds; ++cpi) {
             auto &cpdBody = cpdBodies[cpi]; // shared_ptr<BulletObject>
             auto &cpdShape = cpdBody->colShape;
@@ -215,9 +226,14 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                 glm::mat4 matQuat = glm::toMat4(myQuat);
 
                 // clone
-                prim = std::make_shared<PrimitiveObject>(*prim);
+                std::shared_ptr<PrimitiveObject> visPrim;
+                if (hasVisualPrimlist)
+                    visPrim = visPrims[no++];
+                else
+                    visPrim = std::make_shared<PrimitiveObject>(*prim);
                 auto matrix = matTrans * matQuat;
-                auto &pos = prim->attr<zeno::vec3f>("pos");
+                const auto &pos = prim->attr<zeno::vec3f>("pos");
+                auto &dstPos = visPrim->attr<zeno::vec3f>("pos");
 
                 auto mapplypos = [](const glm::mat4 &matrix, const glm::vec3 &vector) {
                     auto vector4 = matrix * glm::vec4(vector, 1.0f);
@@ -227,10 +243,11 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                 for (int i = 0; i < pos.size(); i++) {
                     auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
                     p = mapplypos(matrix, p);
-                    pos[i] = zeno::other_to_vec<3>(p);
+                    dstPos[i] = zeno::other_to_vec<3>(p);
                 }
 
-                primlist->arr.push_back(prim);
+                if (!hasVisualPrimlist)
+                    primlist->arr.push_back(visPrim);
                 continue;
             }
             /// @note true compounds
@@ -260,10 +277,18 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                 glm::mat4 matQuat = glm::toMat4(myQuat);
 
                 auto prim = cpdPrims[rbi];
+
+                std::shared_ptr<PrimitiveObject> visPrim;
+                if (hasVisualPrimlist)
+                    visPrim = visPrims[no++];
+                else
+                    visPrim = std::make_shared<PrimitiveObject>(*prim);
+
                 // clone
                 prim = std::make_shared<PrimitiveObject>(*prim);
                 auto matrix = matTrans * matQuat;
-                auto &pos = prim->attr<zeno::vec3f>("pos");
+                const auto &pos = prim->attr<zeno::vec3f>("pos");
+                auto &dstPos = visPrim->attr<zeno::vec3f>("pos");
 
                 auto mapplypos = [](const glm::mat4 &matrix, const glm::vec3 &vector) {
                     auto vector4 = matrix * glm::vec4(vector, 1.0f);
@@ -273,10 +298,11 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                 for (int i = 0; i < pos.size(); i++) {
                     auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
                     p = mapplypos(matrix, p);
-                    pos[i] = zeno::other_to_vec<3>(p);
+                    dstPos[i] = zeno::other_to_vec<3>(p);
                 }
 
-                primlist->arr.push_back(prim);
+                if (!hasVisualPrimlist)
+                    primlist->arr.push_back(visPrim);
             }
         }
 
