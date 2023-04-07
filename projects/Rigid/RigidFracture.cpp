@@ -59,19 +59,37 @@ struct BulletGlueRigidBodies : zeno::INode {
         spmat.build(pol, (int)nrbs, (int)nrbs, range(is), range(js), true_c);
 
         std::vector<int> fas(nrbs);
+        std::vector<int> isRbCompound(nrbs);
         union_find(pol, spmat, range(fas));
         bht<int, 1, int> tab{spmat.get_allocator(), nrbs};
         tab.reset(pol, true);
-        pol(range(nrbs), [&fas, tab = proxy<space>(tab)](int vi) mutable {
+        pol(range(nrbs), [&fas, &isRbCompound, tab = proxy<space>(tab)](int vi) mutable {
             auto fa = fas[vi];
             while (fa != fas[fa])
                 fa = fas[fa];
             fas[vi] = fa;
-            tab.insert(fa);
+            if (tab.insert(fa) < 0) // already inserted
+                isRbCompound[vi] = true;
         });
 
         auto ncompounds = tab.size();
-        fmt::print("{} rigid bodies, {} compounds.\n", nrbs, ncompounds);
+        /// @note output BulletObject list
+        auto rblist = std::make_shared<ListObject>();
+        rblist->arr.resize(ncompounds);
+        // determine compound or not
+        // pass on rbs that are does not belong in any compound
+        std::vector<int> isCompound(ncompounds);
+        pol(range(nrbs),
+            [&isCompound, &isRbCompound, &fas, &rbs, tab = proxy<space>(tab), &rblist = rblist->arr](int rbi) mutable {
+                auto isRbCpd = isRbCompound[rbi];
+                auto fa = fas[rbi];
+                auto compId = tab.query(fa);
+                if (isRbCpd)
+                    isCompound[compId] = 1;
+                else
+                    rblist[compId] = rbs[rbi];
+            });
+        fmt::print("{} rigid bodies, {} groups (incl compounds).\n", nrbs, ncompounds);
 
         // mass
         std::vector<float> cpdMasses(ncompounds);
@@ -99,7 +117,7 @@ struct BulletGlueRigidBodies : zeno::INode {
             std::unique_ptr<btRigidBody> &bodyPtr = rbs[rbi]->body;
             auto fa = fas[rbi];
             auto compId = tab.query(fa);
-            {
+            if (isCompound[compId]) {
                 std::lock_guard<std::mutex> guard(comLocks[compId]);
                 auto &cpdPtr = btCpdShapes[compId];
                 auto &primList = primLists[compId];
@@ -119,21 +137,20 @@ struct BulletGlueRigidBodies : zeno::INode {
             }
         });
 
-        // assemble compound shapes/rigidbodies
-        auto rblist = std::make_shared<ListObject>();
-        rblist->arr.resize(ncompounds);
+        // assemble true compound shapes/rigidbodies
         auto shapelist = std::make_shared<ListObject>();
         shapelist->arr.resize(ncompounds);
-        pol(zip(cpdMasses, btCpdShapes, primLists, rblist->arr, shapelist->arr),
-            [&](auto mass, auto &btShape, auto primList, auto &cpdBody, auto &cpdShape) {
-                btTransform trans;
-                trans.setIdentity();
+        pol(zip(isCompound, cpdMasses, btCpdShapes, primLists, rblist->arr, shapelist->arr),
+            [&](bool isCpd, auto mass, auto &btShape, auto primList, auto &cpdBody, auto &cpdShape) {
+                if (isCpd) {
+                    btTransform trans;
+                    trans.setIdentity();
 #if 1
-                auto tmp = std::make_shared<BulletCollisionShape>(std::move(btShape));
-                cpdShape = tmp;
-                // list of PrimitiveObject, corresponding with each CompoundShape children
-                tmp->userData().set("prim", primList);
-                cpdBody = std::make_shared<BulletObject>(mass, trans, tmp);
+                    auto tmp = std::make_shared<BulletCollisionShape>(std::move(btShape));
+                    cpdShape = tmp;
+                    // list of PrimitiveObject, corresponding with each CompoundShape children
+                    tmp->userData().set("prim", primList);
+                    cpdBody = std::make_shared<BulletObject>(mass, trans, tmp);
 #else
             btVector3 localInertia;
             shape->calculateLocalInertia(mass, localInertia);
@@ -142,6 +159,7 @@ struct BulletGlueRigidBodies : zeno::INode {
             btRigidBody::btRigidBodyConstructionInfo ci(mass, myMotionState.get(), shape.get(), localInertia);
             cpdBody = std::make_unique<btRigidBody>(ci);
 #endif
+                }
             });
 
         rblist->userData().set("compoundShapes", shapelist);
@@ -178,12 +196,45 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
             auto &cpdBody = cpdBodies[cpi]; // shared_ptr<BulletObject>
             auto &cpdShape = cpdBody->colShape;
             // std::vector<shared_ptr<ListObject>>
-            auto cpdPrimlist = cpdShape->userData().get<ListObject>("prim");
             btCompoundShape *btcpdShape = nullptr;
             if (auto shape = cpdShape->shape.get(); shape->isCompound())
                 btcpdShape = (btCompoundShape *)shape;
-            if (btcpdShape == nullptr)
+            /// @note regular rbs
+            if (btcpdShape == nullptr) {
+                auto prim = cpdBody->userData().get<PrimitiveObject>("prim");
+                btTransform rbTrans;
+                if (cpdBody->body->getMotionState())
+                    cpdBody->body->getMotionState()->getWorldTransform(rbTrans);
+                else
+                    rbTrans = static_cast<btCollisionObject *>(cpdBody->body.get())->getWorldTransform();
+
+                auto translate = vec3f(other_to_vec<3>(rbTrans.getOrigin()));
+                auto rotation = vec4f(other_to_vec<4>(rbTrans.getRotation()));
+                glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
+                glm::quat myQuat(rotation[3], rotation[0], rotation[1], rotation[2]);
+                glm::mat4 matQuat = glm::toMat4(myQuat);
+
+                // clone
+                prim = std::make_shared<PrimitiveObject>(*prim);
+                auto matrix = matTrans * matQuat;
+                auto &pos = prim->attr<zeno::vec3f>("pos");
+
+                auto mapplypos = [](const glm::mat4 &matrix, const glm::vec3 &vector) {
+                    auto vector4 = matrix * glm::vec4(vector, 1.0f);
+                    return glm::vec3(vector4) / vector4.w;
+                };
+#pragma omp parallel for
+                for (int i = 0; i < pos.size(); i++) {
+                    auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
+                    p = mapplypos(matrix, p);
+                    pos[i] = zeno::other_to_vec<3>(p);
+                }
+
+                primlist->arr.push_back(prim);
                 continue;
+            }
+            /// @note true compounds
+            auto cpdPrimlist = cpdShape->userData().get<ListObject>("prim");
             auto cpdPrims = cpdPrimlist->get<PrimitiveObject>();
             if (cpdPrims.size() != btcpdShape->getNumChildShapes())
                 throw std::runtime_error(
