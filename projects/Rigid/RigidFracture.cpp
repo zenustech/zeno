@@ -2,6 +2,11 @@
 #include <mutex>
 #include <vector>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/transform.hpp>
+
 // zeno basics
 #include <zeno/DictObject.h>
 #include <zeno/ListObject.h>
@@ -80,34 +85,54 @@ struct BulletGlueRigidBodies : zeno::INode {
 
         fmt::print("total mass: {}\n", mass[0]);
 
+        // prep PrimList for each compound
+        std::vector<std::shared_ptr<ListObject>> primLists(ncompounds);
+        std::vector<std::unique_ptr<btCompoundShape>> btCpdShapes(ncompounds);
+        pol(zip(primLists, btCpdShapes), [](auto &primPtr, auto &cpdShape) {
+            primPtr = std::make_shared<ListObject>();
+            cpdShape = std::make_unique<btCompoundShape>();
+        });
+
         // assemble shapes
         std::vector<std::mutex> comLocks(ncompounds);
-        std::vector<std::unique_ptr<btCompoundShape>> cpds(ncompounds);
         pol(range(nrbs), [&, tab = proxy<space>(tab)](int rbi) mutable {
             std::unique_ptr<btRigidBody> &bodyPtr = rbs[rbi]->body;
             auto fa = fas[rbi];
             auto compId = tab.query(fa);
             {
                 std::lock_guard<std::mutex> guard(comLocks[compId]);
-                auto &cpdPtr = cpds[compId];
-                if (cpdPtr.get() == nullptr)
-                    cpdPtr = std::make_unique<btCompoundShape>();
-                cpdPtr->addChildShape(bodyPtr->getCenterOfMassTransform(), bodyPtr->getCollisionShape());
+                auto &cpdPtr = btCpdShapes[compId];
+                auto &primList = primLists[compId];
+                btTransform trans;
+                if (bodyPtr && bodyPtr->getMotionState()) {
+                    bodyPtr->getMotionState()->getWorldTransform(trans);
+                } else {
+                    trans = static_cast<btCollisionObject *>(bodyPtr.get())->getWorldTransform();
+                }
+                cpdPtr->addChildShape(trans, bodyPtr->getCollisionShape());
+#if 0
+                auto correspondingPrim = rbs[rbi]->userData().get<PrimitiveObject>("prim");
+                primList->arr.push_back(correspondingPrim);
+#else
+                primList->arr.push_back(rbs[rbi]->userData().get("prim"));
+#endif
             }
         });
 
-        // compound rigidbodies
+        // assemble compound shapes/rigidbodies
         auto rblist = std::make_shared<ListObject>();
         rblist->arr.resize(ncompounds);
         auto shapelist = std::make_shared<ListObject>();
         shapelist->arr.resize(ncompounds);
-        pol(zip(cpdMasses, cpds, rblist->arr, shapelist->arr),
-            [&](auto mass, auto &shape, auto &cpdBody, auto &cpdShape) {
+        pol(zip(cpdMasses, btCpdShapes, primLists, rblist->arr, shapelist->arr),
+            [&](auto mass, auto &btShape, auto primList, auto &cpdBody, auto &cpdShape) {
                 btTransform trans;
                 trans.setIdentity();
 #if 1
-                auto tmp = std::make_shared<BulletCollisionShape>(std::move(shape));
+                auto tmp = std::make_shared<BulletCollisionShape>(std::move(btShape));
                 cpdShape = tmp;
+                // list of PrimitiveObject, corresponding with each CompoundShape children
+                tmp->userData().set("prim", primList);
                 cpdBody = std::make_shared<BulletObject>(mass, trans, tmp);
 #else
             btVector3 localInertia;
@@ -122,6 +147,7 @@ struct BulletGlueRigidBodies : zeno::INode {
         rblist->userData().set("compoundShapes", shapelist);
 
         set_output("compoundList", rblist);
+        // set_output("compoundList", get_input("rbList"));
     }
 };
 
@@ -136,5 +162,86 @@ ZENDEFNODE(BulletGlueRigidBodies, {
                                       {},
                                       {"Bullet"},
                                   });
+
+struct BulletUpdateCpdChildPrimTrans : zeno::INode {
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        // std::vector<std::shared_ptr<BulletObject>>
+        auto cpdBodies = get_input<ListObject>("compoundList")->get<BulletObject>();
+        const auto ncpds = cpdBodies.size();
+
+        auto primlist = std::make_shared<ListObject>();
+        for (int cpi = 0; cpi != ncpds; ++cpi) {
+            auto &cpdBody = cpdBodies[cpi]; // shared_ptr<BulletObject>
+            auto &cpdShape = cpdBody->colShape;
+            // std::vector<shared_ptr<ListObject>>
+            auto cpdPrimlist = cpdShape->userData().get<ListObject>("prim");
+            btCompoundShape *btcpdShape = nullptr;
+            if (auto shape = cpdShape->shape.get(); shape->isCompound())
+                btcpdShape = (btCompoundShape *)shape;
+            if (btcpdShape == nullptr)
+                continue;
+            auto cpdPrims = cpdPrimlist->get<PrimitiveObject>();
+            if (cpdPrims.size() != btcpdShape->getNumChildShapes())
+                throw std::runtime_error(
+                    fmt::format("the number of child shapes [{}] and prim objs [{}] in compound [{}] mismatch!",
+                                btcpdShape->getNumChildShapes(), cpdPrimlist->arr.size(), cpi));
+
+            btTransform cpdTrans;
+            if (cpdBody && cpdBody->body->getMotionState()) {
+                cpdBody->body->getMotionState()->getWorldTransform(cpdTrans);
+            } else {
+                cpdTrans = static_cast<btCollisionObject *>(cpdBody->body.get())->getWorldTransform();
+            }
+            for (int rbi = 0; rbi != btcpdShape->getNumChildShapes(); ++rbi) {
+                auto child = btcpdShape->getChildShape(rbi);
+                auto transform = btcpdShape->getChildTransform(rbi);
+
+                transform.mult(cpdTrans, transform);
+
+                auto translate = vec3f(other_to_vec<3>(transform.getOrigin()));
+                auto rotation = vec4f(other_to_vec<4>(transform.getRotation()));
+                glm::mat4 matTrans = glm::translate(glm::vec3(translate[0], translate[1], translate[2]));
+                glm::quat myQuat(rotation[3], rotation[0], rotation[1], rotation[2]);
+                glm::mat4 matQuat = glm::toMat4(myQuat);
+
+                auto prim = cpdPrims[rbi];
+                // clone
+                prim = std::make_shared<PrimitiveObject>(*prim);
+                auto matrix = matTrans * matQuat;
+                auto &pos = prim->attr<zeno::vec3f>("pos");
+
+                auto mapplypos = [](const glm::mat4 &matrix, const glm::vec3 &vector) {
+                    auto vector4 = matrix * glm::vec4(vector, 1.0f);
+                    return glm::vec3(vector4) / vector4.w;
+                };
+#pragma omp parallel for
+                for (int i = 0; i < pos.size(); i++) {
+                    auto p = zeno::vec_to_other<glm::vec3>(pos[i]);
+                    p = mapplypos(matrix, p);
+                    pos[i] = zeno::other_to_vec<3>(p);
+                }
+
+                primlist->arr.push_back(prim);
+            }
+        }
+
+        set_output("primList", primlist);
+    }
+};
+
+ZENDEFNODE(BulletUpdateCpdChildPrimTrans, {
+                                              {
+                                                  "compoundList",
+                                              },
+                                              {
+                                                  "primList",
+                                              },
+                                              {},
+                                              {"Bullet"},
+                                          });
 
 } // namespace zeno
