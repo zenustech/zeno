@@ -629,7 +629,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempE = proxy<space>({}, tempE), 
                     tempCons = proxy<space>({}, tempCons), 
                     oE = proxy<space>(oE), 
-                    sigma = sigma, tag] __device__ (int i) mutable {
+                    sigma = sigma, tag, 
+                    coOffset = coOffset] __device__ (int i) mutable {
         // if val > 0: tempPP[i] -> tempCons[consInd]
         auto inds = tempE.pack(dim_c<2>, "inds", i, int_c); 
         auto xi = vtemp.pack(dim_c<3>, tag, inds[0]); 
@@ -641,6 +642,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto grad = - (xi - xj) / xij_norm * yij_norm_inv; 
         auto val = sigma - xij_norm * yij_norm_inv; 
         if (val >= 0)
+            return; 
+        if (inds[0] >= coOffset && inds[1] >= coOffset)
             return; 
         auto consInd = atomic_add(exec_cuda, &oE[0], 1); 
         for (int d = 0; d < 3; d++)
@@ -660,7 +663,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempPP = proxy<space>({}, tempPP), 
                     tempCons = proxy<space>({}, tempCons), 
                     oPP = proxy<space>(oPP), 
-                    delta = delta, tag] __device__ (int i) mutable {
+                    delta = delta, tag, 
+                    coOffset = coOffset] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPP.pack(dim_c<2>, "inds", i, int_c); 
         auto xi = vtemp.pack(dim_c<3>, tag, inds[0]); 
@@ -672,6 +676,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         for (int k = 0; k < 2; k++)
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
+            return; 
+        if (inds[0] >= coOffset && inds[1] >= coOffset)
             return; 
         auto grad = (xi - xj) / xij_norm * delta_inv;             
         auto consInd = atomic_add(exec_cuda, &oPP[0], 1); 
@@ -693,7 +699,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempPE = proxy<space>({}, tempPE), 
                     tempCons = proxy<space>({}, tempCons), 
                     oPE = proxy<space>(oPE), 
-                    delta = delta, tag] __device__ (int i) mutable {
+                    delta = delta, tag, 
+                    coOffset = coOffset] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPE.pack(dim_c<3>, "inds", i, int_c); 
         auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
@@ -706,6 +713,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         for (int k = 0; k < 3; k++)
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
+            return; 
+        if (inds[0] >= coOffset && inds[1] >= coOffset && inds[2] >= coOffset)
             return; 
         auto consInd = atomic_add(exec_cuda, &oPE[0], 1); 
         zs::vec<T, 9> grad; 
@@ -730,7 +739,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     oPT = proxy<space>(oPT), 
                     delta = delta, tag, 
                     enableDistConstraint = enableDistConstraint, 
-                    enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
+                    enableDegeneratedDist = enableDegeneratedDist, 
+                    coOffset = coOffset] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempPT.pack(dim_c<4>, "inds", i, int_c); 
         auto p = vtemp.pack(dim_c<3>, tag, inds[0]); 
@@ -743,6 +753,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         for (int k = 0; k < 4; k++)
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), pt_dist); 
         if (pt_dist2 >= delta * delta)
+            return; 
+        if (inds[0] >= coOffset && inds[1] >= coOffset && inds[2] >= coOffset && inds[3] >= coOffset)
             return; 
         zs::vec<T, 4, 3> grad; 
         T val; 
@@ -799,7 +811,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     oEE = proxy<space>(oEE), 
                     delta = delta, tag, 
                     enableDistConstraint = enableDistConstraint, 
-                    enableDegeneratedDist = enableDegeneratedDist] __device__ (int i) mutable {
+                    enableDegeneratedDist = enableDegeneratedDist, 
+                    coOffset = coOffset] __device__ (int i) mutable {
         // calculate grad 
         auto inds = tempEE.pack(dim_c<4>, "inds", i, int_c); 
         auto ei0 = vtemp.pack(dim_c<3>, tag, inds[0]); 
@@ -813,7 +826,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), ee_dist); 
         if (ee_dist2 >= delta * delta)
             return; 
-        
+        if (inds[0] >= coOffset && inds[1] >= coOffset && inds[2] >= coOffset && inds[3] >= coOffset)
+            return; 
         T val, dist; 
         zs::vec<T, 4, 3> grad; 
         if (enableDistConstraint) 
@@ -1062,8 +1076,6 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
             for (int i = 0; i < tempCons("vN", ci); i++)
             {
                 int vi = tempCons("vi", i, ci); 
-                if (vi >= coOffset)
-                    continue; 
                 for (int d = 0; d < 3; d++)
                     val += tempCons("grad", i * 3 + d, ci, T_c) * 
                         (vtemp("y(l)", d, vi) - vtemp("x(l)", d, vi)); 
