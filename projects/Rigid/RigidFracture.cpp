@@ -75,7 +75,11 @@ struct BulletGlueRigidBodies : zeno::INode {
         auto ncompounds = tab.size();
         /// @note output BulletObject list
         auto rblist = std::make_shared<ListObject>();
+#if 1
         rblist->arr.resize(ncompounds);
+#else
+        rblist->arr.resize(nrbs);
+#endif
         // determine compound or not
         // pass on rbs that are does not belong in any compound
         std::vector<int> isCompound(ncompounds);
@@ -84,10 +88,14 @@ struct BulletGlueRigidBodies : zeno::INode {
                 auto isRbCpd = isRbCompound[rbi];
                 auto fa = fas[rbi];
                 auto compId = tab.query(fa);
+#if 1
                 if (isRbCpd)
                     isCompound[compId] = 1;
                 else
                     rblist[compId] = rbs[rbi];
+#else
+                    rblist[rbi] = rbs[rbi];
+#endif
             });
         fmt::print("{} rigid bodies, {} groups (incl compounds).\n", nrbs, ncompounds);
 
@@ -181,11 +189,19 @@ ZENDEFNODE(BulletGlueRigidBodies, {
                                       {"Bullet"},
                                   });
 
+#define DEBUG_CPD 0
+
 struct BulletUpdateCpdChildPrimTrans : zeno::INode {
     virtual void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
         auto pol = omp_exec();
+
+#if DEBUG_CPD
+        auto centerlist = std::make_shared<ListObject>();
+        auto minlist = std::make_shared<ListObject>();
+        auto maxlist = std::make_shared<ListObject>();
+#endif
 
         // std::vector<std::shared_ptr<BulletObject>>
         auto cpdList = get_input<ListObject>("compoundList");
@@ -248,6 +264,16 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
 
                 if (!hasVisualPrimlist)
                     primlist->arr.push_back(visPrim);
+
+#if DEBUG_CPD
+                centerlist->arr.push_back(
+                    std::make_shared<NumericObject>(other_to_vec<3>(cpdBody->body->getCenterOfMassPosition())));
+                btVector3 aabbMin, aabbMax;
+                cpdBody->body->getAabb(aabbMin, aabbMax);
+                minlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMin)));
+                maxlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMax)));
+#endif
+
                 continue;
             }
             /// @note true compounds
@@ -264,6 +290,15 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
             } else {
                 cpdTrans = static_cast<btCollisionObject *>(cpdBody->body.get())->getWorldTransform();
             }
+
+#if DEBUG_CPD
+            btVector3 aabbMin, aabbMax;
+            cpdBody->body->getAabb(aabbMin, aabbMax);
+            minlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMin)));
+            maxlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMax)));
+            centerlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(cpdTrans.getOrigin())));
+#endif
+
             for (int rbi = 0; rbi != btcpdShape->getNumChildShapes(); ++rbi) {
                 auto child = btcpdShape->getChildShape(rbi);
                 auto transform = btcpdShape->getChildTransform(rbi);
@@ -307,6 +342,11 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
         }
 
         set_output("primList", primlist);
+#if DEBUG_CPD
+        set_output("centerList", centerlist);
+        set_output("minList", minlist);
+        set_output("maxList", maxlist);
+#endif
     }
 };
 
@@ -316,6 +356,11 @@ ZENDEFNODE(BulletUpdateCpdChildPrimTrans, {
                                               },
                                               {
                                                   "primList",
+#if DEBUG_CPD
+                                                  "centerList",
+                                                  "minList",
+                                                  "maxList",
+#endif
                                               },
                                               {},
                                               {"Bullet"},
