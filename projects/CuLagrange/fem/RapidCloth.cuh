@@ -197,6 +197,9 @@ struct RapidClothSystem : IObject {
     template<class ValT, class tvT>
     ValT RapidClothSystem::tvMax(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
         std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
+    template<class ValT, class tvT>
+    ValT RapidClothSystem::tvMin(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
+        std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
     template <int codim = 3>
     T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t n, zs::wrapv<codim> = {});
     T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t n);
