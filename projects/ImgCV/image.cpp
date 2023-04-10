@@ -173,19 +173,42 @@ ZENDEFNODE(CompEdgeDetect, {
 //边缘检测
 struct CVCanny : INode {
     void apply() override {
-
+        auto image = get_input<PrimitiveObject>("image");
+        auto low_threshold = get_input2<float>("low_threshold");
+        auto high_threshold = get_input2<float>("high_threshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        cv::Mat imagecvin(h, w, CV_8U);
+        cv::Mat imagecvout(h, w, CV_8U);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
+            }
+        }
+        cv::Canny(imagecvin,imagecvout,low_threshold, high_threshold);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
+                image->verts[i * w + j] = {r, r, r};
+            }
+        }
+        set_output("image", image);
     }
 };
 
 ZENDEFNODE(CVCanny, {
-    {
-        {"CVImageObject", "image"},
+   {
+        {"image"},
+       {"float", "low_threshold", "100"},
+       {"float", "high_threshold", "200"},
     },
     {
-        {"CVImageObject", "resimage"},
+        {"image"}
     },
     {},
-    {"image"},
+    { "comp" },
 });
 
 //RGB2YUV BT.709标准
