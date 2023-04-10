@@ -10,8 +10,11 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <string.h>
 
 #include "tinyexr.h"
+#include <filesystem>
+#include "zeno/utils/fileio.h"
 
 static bool SaveEXR(const float* rgb, int width, int height, const char* outfilename) {
     EXRHeader header;
@@ -195,6 +198,15 @@ static void write_vat(vector<vector<vec3f>> &v, const std::string &path) {
     std::string exr_path = path;
     exr_path += ".exr";
     SaveEXR(rgb_f32.data(), 8192, height, exr_path.c_str());
+
+    std::string content;
+    content += format("{},{},{}\n", bbox.first[0], bbox.first[1], bbox.first[2]);
+    content += format("{},{},{}\n", bbox.second[0], bbox.second[1], bbox.second[2]);
+    content += format("{}\n", frames);
+    content += format("{}\n", height);
+    content += std::filesystem::path(path.c_str()).filename().string() + ".exr\n";
+    content += std::filesystem::path(path.c_str()).filename().string() + ".png\n";
+    file_put_content(path + ".txt", content);
 }
 
 
@@ -375,9 +387,29 @@ struct WriteCustomVAT : INode {
                 {
                     auto & f = v.front();
                     prim->verts.resize(f.size());
-                    for (auto i = 0; i < prim->verts.size(); i++) {
-                        prim->verts[i] = f[i];
+                    if (get_input2<bool>("UnrealEngine")) {
+                        for (auto i = 0; i < prim->verts.size(); i++) {
+                            int index_tri = i / 3;
+                            int index_vert = i % 3;
+                            float x = float(index_tri % 1024) / 512.0f - 1.f;
+                            float z = float(index_tri / 1024) / 512.0f - 1.f;
+                            vec3f pos = {x, 0, z};
+
+                            if (index_vert == 1) {
+                                pos += vec3f(-1/2048.f, 0, 1/1024.f);
+                            }
+                            else if (index_vert == 2) {
+                                pos += vec3f(1/2048.f, 0, 1/1024.f);
+                            }
+                            prim->verts[i] = pos;
+                        }
                     }
+                    else {
+                        for (auto i = 0; i < prim->verts.size(); i++) {
+                            prim->verts[i] = f[i];
+                        }
+                    }
+
                     prim->tris.resize(f.size() / 3);
                     for (auto i = 0; i < prim->tris.size(); i++) {
                         prim->tris[i][0] = 3 * i + 0;
@@ -420,6 +452,7 @@ ZENDEFNODE(WriteCustomVAT, {
     {
         {"prim"},
         {"frameid"},
+        {"bool", "UnrealEngine", "1"},
     },
     {
         {"prim"},

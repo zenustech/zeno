@@ -286,9 +286,10 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
     int iter = 0;
 
     CppTimer timer;
-    timer.tick();
+    if (enableProfile_c)
+        timer.tick();
     for (; iter != CGCap; ++iter) {
-        if (iter % 50 == 0)
+        if (!silentMode_c && iter % 50 == 0)
             fmt::print("cg iter: {}, norm2: {} (zTrk: {})\n", iter, residualPreconditionedNorm2, zTrk);
 
         if (residualPreconditionedNorm2 <= localTol2)
@@ -319,7 +320,8 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
         residualPreconditionedNorm2 = zTrk;
     } // end cg step
     pol.sync(true);
-    timer.tock(fmt::format("{} cgiters", iter));
+    if (enableProfile_c)
+        timer.tock(fmt::format("{} cgiters", iter));
 }
 
 void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
@@ -327,7 +329,8 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     zs::CppTimer timer; 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
     pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
         vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
@@ -358,7 +361,8 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
             vtemp.tuple(dim_c<3>, "y[k+1]", vi) = 
                 vtemp.pack(dim_c<3>, "x[k]", vi) + vtemp.pack(dim_c<3>, "dir", vi);  
         }); 
-    timer.tock("Newton step"); 
+    if (enableProfile_c)
+        timer.tock("Newton step"); 
 }
 
 void RapidClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy &pol) {

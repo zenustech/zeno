@@ -21,6 +21,9 @@ struct RapidClothSystem : IObject {
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false;
     constexpr static auto debugVis_c = true; 
+    constexpr static auto enableProfile_c = false; 
+    constexpr static auto showStatistics_c = false; 
+    constexpr static auto silentMode_c = true; 
     T tinyDist = 1e-3; 
     T repulsionCoef = 1.f; 
     T repulsionRange = 2.f; 
@@ -28,7 +31,8 @@ struct RapidClothSystem : IObject {
     bool enableRepulsion = false; 
     bool enableDistConstraint = true; 
     bool enableFriction = false;
-    T fricMu = 1e3f;  
+    T clothFricMu = 0.1f;
+    T boundaryFricMu = 10.0f;   
 
     using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
@@ -157,10 +161,10 @@ struct RapidClothSystem : IObject {
     void initialize(zs::CudaExecutionPolicy &pol);
     // assume ncps < 6e5, normal choice: ncps = 1e5
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
-                    tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
+                    tiles_t *coEles, T dt, std::size_t spmatCps, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
                     T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, bool enableDistConstraint, 
-                    T repulsionRange, T tinyDist); 
+                    T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -189,10 +193,16 @@ struct RapidClothSystem : IObject {
     void computeRepulsionGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag); 
 
     /// linear solve
-    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t maxInd);
+    T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t n);
+    template<class ValT, class tvT>
+    ValT RapidClothSystem::tvMax(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
+        std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
+    template<class ValT, class tvT>
+    ValT RapidClothSystem::tvMin(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
+        std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
     template <int codim = 3>
-    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd, zs::wrapv<codim> = {});
-    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t maxInd);
+    T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t n, zs::wrapv<codim> = {});
+    T l2Norm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t n);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
@@ -210,6 +220,7 @@ struct RapidClothSystem : IObject {
     // sim params
     bool enableExclEdges = false; 
     int substep = -1;
+    std::size_t spmatCps = 1000000; 
     std::size_t estNumCps = 100000;
     std::size_t bvhFrontCps = 10000000; 
     T cgRel = 1e-2;
@@ -244,6 +255,7 @@ struct RapidClothSystem : IObject {
     // buffer
     itiles_t vCons;          // vertex -> constraint indices & constraints num 
     tiles_t vtemp;          // solver data
+    zs::Vector<int> itemp; 
     zs::Vector<T> temp;     // as temporary buffer
     zs::Vector<bv_t> bvs;   // as temporary buffer
 

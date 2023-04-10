@@ -305,7 +305,8 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
         auto dist = tempPT("dist", i); 
         if (dist > repulsionRange)
             return; 
-        auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pt(p, t0, t1, t2); 
+        // auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pt(p, t0, t1, t2); 
+        auto grad = repulsionCoef * avgMass * dist * dist_grad_pt(p, t0, t1, t2); 
         for (int d = 0; d != 3; ++d) {
             atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
             atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), grad(1, d));
@@ -347,7 +348,8 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
         auto dist = tempEE("dist", i); 
         if (dist > repulsionRange)
             return; 
-        auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_ee(ei0, ei1, ej0, ej1); 
+        // auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_ee(ei0, ei1, ej0, ej1); 
+        auto grad = repulsionCoef * avgMass * dist * dist_grad_ee(ei0, ei1, ej0, ej1); 
         for (int d = 0; d != 3; ++d) {
             atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
             atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), grad(1, d));
@@ -388,7 +390,8 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
             auto dist = tempPP("dist", i); 
             if (dist > repulsionRange)
                 return; 
-            auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pp(x0, x1); 
+            // auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pp(x0, x1); 
+            auto grad = repulsionCoef * avgMass * dist * dist_grad_pp(x0, x1); 
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), grad(1, d));
@@ -427,7 +430,8 @@ void RapidClothSystem::computeRepulsionGradientAndHessian(zs::CudaExecutionPolic
             auto dist = tempPE("dist", i);
             if (dist > repulsionRange)
                 return; 
-            auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pe(p, e0, e1); 
+            // auto grad = repulsionCoef * avgMass * (repulsionRange - dist) * dist_grad_pe(p, e0, e1); 
+            auto grad = repulsionCoef * avgMass * dist * dist_grad_pe(p, e0, e1); 
             for (int d = 0; d != 3; ++d) {
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[0]), grad(0, d));
                 atomic_add(exec_cuda, &vtemp("grad", d, inds[1]), grad(1, d));
@@ -473,8 +477,9 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
     {
         if (D < D_min)
         {
-            fmt::print("[proximity] iters: {}, tiny D: {} < D_min: {} < D_max: {} doing proximity search...\n", 
-                iters, D, D_min, D_max); 
+            if (!silentMode_c)
+                fmt::print("[proximity] iters: {}, tiny D: {} < D_min: {} < D_max: {} doing proximity search...\n", 
+                    iters, D, D_min, D_max); 
             findConstraints(pol, D_max); 
             D = D_max; 
         }
@@ -483,8 +488,9 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
         auto disp = infNorm(pol, "disp", numDofs, wrapv<1>{}); 
         D -= 2 * disp; 
         auto res = infNorm(pol, "r(l)", numDofs, wrapv<1>{}); 
-        fmt::print("disp: {}, D: {}, res * 1e6: {}\n", 
-            disp, D, res * 1e6f); 
+        if (!silentMode_c)
+            fmt::print("disp: {}, D: {}, res * 1e4: {}\n", 
+                disp, D, res * 1e4f); 
         if (res < eps)
         {
             fmt::print(fg(fmt::color::orange_red), "converged in {} iterations with res: {}\n", 
@@ -513,11 +519,21 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 hv_view("x(l)", 2, vi)
             }; 
             visPrim->verts.values[vi + n] = zeno::vec3f {
-                hv_view("y(l)", 0, vi), 
-                hv_view("y(l)", 1, vi), 
-                hv_view("y(l)", 2, vi)
+                hv_view("y[k+1]", 0, vi), 
+                hv_view("y[k+1]", 1, vi), 
+                hv_view("y[k+1]", 2, vi)
             }; 
             visPrim->lines.values[vi] = zeno::vec2i {vi, vi + n}; 
+        }
+
+        auto ht = stInds.clone({memsrc_e::host, -1}); 
+        auto ht_view = proxy<execspace_e::host>({}, ht); 
+        int tn = stInds.size(); 
+        visPrim->tris.resize(tn); 
+        for (int ti = 0; ti < tn; ti++)
+        {
+            visPrim->tris.values[ti] = zeno::vec3i {n + ht_view("inds", 0, ti, int_c), 
+                n + ht_view("inds", 1, ti, int_c), n + ht_view("inds", 2, ti, int_c)}; 
         }
     }
 }
