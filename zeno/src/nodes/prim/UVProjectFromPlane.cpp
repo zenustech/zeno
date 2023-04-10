@@ -294,6 +294,6 @@ ZENDEFNODE(ReadImageFile, {
         {"PrimitiveObject", "image"},
     },
     {},
-    {"primitive"},
+    {"comp"},
 });
 }

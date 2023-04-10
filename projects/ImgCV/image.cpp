@@ -7,120 +7,373 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
-#include <zeno/utils/zeno_p.h>
+
+#include "tinyexr.h"
+#include "zeno/utils/string.h"
+#include <zeno/utils/scope_exit.h>
+#include <stdexcept>
+
 
 namespace zeno {
 
-struct CVImageObject : IObjectClone<CVImageObject> {
-    cv::Mat image;
-
-    CVImageObject() = default;
-    explicit CVImageObject(cv::Mat image) : image(std::move(image)) {}
-
-    CVImageObject(CVImageObject &&) = default;
-    CVImageObject &operator=(CVImageObject &&) = default;
-
-    CVImageObject(CVImageObject const &img) : image(img.image.clone()) {
-    }
-
-    CVImageObject &operator=(CVImageObject const &img) {
-        // notice that cv::Mat is shallow-copy, only .clone() will deep-copy
-        image = img.image.clone();
-        return *this;
-    }
-};
-
 namespace {
 
+struct ImageEdit_RGB : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto RGB = get_input2<std::string>("RGB");
+        auto Average = get_input2<bool>("Average");
+        auto Invert = get_input2<bool>("Invert");
 
-struct CVINode : INode {
-    template <class To = double, class T>
-    static auto tocvscalar(T const &val) {
-        if constexpr (is_vec_n<T> == 4) {
-            return cv::Scalar_<To>(val[3], val[2], val[1], val[0]);
-        } else if constexpr (is_vec_n<T> == 3) {
-            return cv::Scalar_<To>(val[2], val[1], val[0]);
-        } else if constexpr (is_vec_n<T> == 2) {
-            return cv::Scalar_<To>(val[1], val[0]);
-        } else {
-            return To(val);
-        }
-    }
+        float R = get_input2<float>("R");
+        float G = get_input2<float>("G");
+        float B = get_input2<float>("B");
+        float L = get_input2<float>("Luminace");
+        float ContrastRatio = get_input2<float>("ContrastRatio");
 
-    cv::Mat get_input_image(std::string const &name, bool inversed = false) {
-        if (inversed) {
-            cv::Mat newimg;
-            auto img = get_input<CVImageObject>(name)->image;
-            bool is255 = has_input<NumericObject>("is255") && get_input2<bool>("is255");
-            if (is255) {
-                cv::bitwise_not(img, newimg);
-            } else {
-                cv::invert(img, newimg);
+        if(RGB == "RGB") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = R * image->verts[i][0];
+                float G1 = G * image->verts[i][1];
+                float B1 = B * image->verts[i][2];
+                image->verts[i][0] = R1 * L;
+                image->verts[i][1] = G1 * L;
+                image->verts[i][2] = B1 * L;
             }
-            return std::move(newimg);
-        } else {
-            return get_input<CVImageObject>(name)->image;
         }
+        if(RGB == "R") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = R * image->verts[i][0];
+                float G1 = 0;
+                float B1 = 0;
+                image->verts[i][0] = R1 * L;
+                image->verts[i][1] = G1 * L;
+                image->verts[i][2] = B1 * L;
+            }
+        }
+        if(RGB == "G") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = 0;
+                float G1 = G * image->verts[i][1];
+                float B1 = 0;
+                image->verts[i][0] = R1 * L;
+                image->verts[i][1] = G1 * L;
+                image->verts[i][2] = B1 * L;
+            }
+        }
+        if(RGB == "B") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = 0;
+                float G1 = 0;
+                float B1 = B * image->verts[i][2];
+                image->verts[i][0] = R1 * L;
+                image->verts[i][1] = G1 * L;
+                image->verts[i][2] = B1 * L;
+            }
+        }
+        for (auto i = 0; i < image->verts.size(); i++) {
+            image->verts[i] = image->verts[i] + (image->verts[i]-0.5) * (ContrastRatio-1);
+        }
+
+        if(Average){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                float avr = (R + G + B)/3;
+                image->verts[i][0] = avr ;
+                image->verts[i][1] = avr ;
+                image->verts[i][2] = avr ;
+            }
+        }
+
+        if(Invert){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                image->verts[i] = 1 - image->verts[i];
+            }
+        }
+        set_output("image", image);
     }
 };
 
-struct ImageRead : CVINode {
-    void apply() override {
-        auto path = get_input2<std::string>("path");
-        auto mode = get_input2<std::string>("mode");
-
-        cv::ImreadModes flags = array_lookup(
-                {cv::IMREAD_COLOR, cv::IMREAD_GRAYSCALE, cv::IMREAD_UNCHANGED, cv::IMREAD_UNCHANGED},
-                array_index_safe({"RGB", "GRAY", "RGBA", "UNCHANGED"}, mode, "mode"));
-        auto image = std::make_shared<CVImageObject>(cv::imread(path, flags));
-        if (image->image.empty()) {
-            zeno::log_error("opencv failed to read image file: {}", path);
-        }
-        set_output("image", std::move(image));
-    }
-};
-
-ZENDEFNODE(ImageRead, {
+ZENDEFNODE(ImageEdit_RGB, {
     {
-        {"readpath", "path", ""},
-        {"enum RGB GRAY RGBA UNCHANGED", "mode", "RGB"},
+        {"image"},
+        {"enum RGB R G B", "RGB", "RGB"},
+        {"float", "R", "1"},
+        {"float", "G", "1"},
+        {"float", "B", "1"},
+        {"float", "Luminace", "1"},
+        {"float", "ContrastRatio", "1"},
+        {"bool", "Average", "0"},
+        {"bool", "Invert", "0"},
     },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+/* 图像模糊，可以使用不同的卷积核(Gaussian) */
+struct CompBlur : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto blur = get_input2<float>("blur");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        cv::Mat imagecvin(h, w, CV_32FC3);
+        cv::Mat imagecvout(h, w, CV_32FC3);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        cv::blur(imagecvin,imagecvout,cv::Size(blur,blur),cv::Point(-1,-1));
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(CompBlur, {
+    {
+        {"image"},
+        {"float", "blur", "16"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+/*边缘查找*/
+struct CompEdgeDetect : INode {
+    virtual void apply() override {
+
+    }
+};
+
+ZENDEFNODE(CompEdgeDetect, {
+    {
+        {"image"}
+    },
+    {},
+    {},
+    { "" },
+});
+
+//边缘检测
+struct CVCanny : INode {
+    void apply() override {
+
+    }
+};
+
+ZENDEFNODE(CVCanny, {
     {
         {"CVImageObject", "image"},
     },
+    {
+        {"CVImageObject", "resimage"},
+    },
     {},
-    {""},
+    {"image"},
 });
 
-struct ImageShow : CVINode {
-    void apply() override {
-        auto image = get_input_image("image");
-        auto title = get_input2<std::string>("title");
-        cv::imshow(title, image);
-        if (get_input2<bool>("waitKey"))
-            cv::waitKey();
+//RGB2YUV BT.709标准
+struct ImageEdit_YUV : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto RGB = get_input2<std::string>("RGB");
+        auto Gray = get_input2<bool>("Gray_BT.709");
+        auto Average = get_input2<bool>("Average");
+        auto Invert = get_input2<bool>("Invert");
+
+        float R = get_input2<float>("R");
+        float G = get_input2<float>("G");
+        float B = get_input2<float>("B");
+        float L = get_input2<float>("Luminace_BT.709");
+        float ContrastRatio = get_input2<float>("ContrastRatio");
+
+        if(RGB == "RGB") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = R * image->verts[i][0];
+                float G1 = G * image->verts[i][1];
+                float B1 = B * image->verts[i][2];
+                float Y = L * (0.2126 * R1 + 0.7152 * G1 + 0.0722 * B1);
+                float U = -0.1145 * R1 - 0.3855 * G1 + 0.500 * B1;
+                float V = 0.500 * R1 - 0.4543 * G1 - 0.0457 * B1;
+                image->verts[i][0] = Y + 1.5748 * V;
+                image->verts[i][1] = Y - 0.1868 * U - 0.4680 * V;
+                image->verts[i][2] = Y + 1.856 * U;
+            }
+        }
+        if(RGB == "R") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = R * image->verts[i][0];
+                float G1 = 0;
+                float B1 = 0;
+                float Y = L * (0.2126 * R1 + 0.7152 * G1 + 0.0722 * B1);
+                float U = -0.1145 * R1 - 0.3855 * G1 + 0.500 * B1;
+                float V = 0.500 * R1 - 0.4543 * G1 - 0.0457 * B1;
+                image->verts[i][0] = Y + 1.5748 * V;
+                image->verts[i][1] = Y - 0.1868 * U - 0.4680 * V;
+                image->verts[i][2] = Y + 1.856 * U;
+            }
+        }
+        if(RGB == "G") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = 0;
+                float G1 = G * image->verts[i][1];
+                float B1 = 0;
+                float Y = L * (0.2126 * R1 + 0.7152 * G1 + 0.0722 * B1);
+                float U = -0.1145 * R1 - 0.3855 * G1 + 0.500 * B1;
+                float V = 0.500 * R1 - 0.4543 * G1 - 0.0457 * B1;
+                image->verts[i][0] = Y + 1.5748 * V;
+                image->verts[i][1] = Y - 0.1868 * U - 0.4680 * V;
+                image->verts[i][2] = Y + 1.856 * U;
+            }
+        }
+        if(RGB == "B") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = 0;
+                float G1 = 0;
+                float B1 = B * image->verts[i][2];
+                float Y = L * (0.2126 * R1 + 0.7152 * G1 + 0.0722 * B1);
+                float U = -0.1145 * R1 - 0.3855 * G1 + 0.500 * B1;
+                float V = 0.500 * R1 - 0.4543 * G1 - 0.0457 * B1;
+                image->verts[i][0] = Y + 1.5748 * V;
+                image->verts[i][1] = Y - 0.1868 * U - 0.4680 * V;
+                image->verts[i][2] = Y + 1.856 * U;
+            }
+        }
+        for (auto i = 0; i < image->verts.size(); i++) {
+            image->verts[i] =  image->verts[i]+(image->verts[i]-0.5) * ContrastRatio;
+        }
+        if(Gray){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                image->verts[i][0] = 0.2126 * R + 0.7152 * G + 0.0722 * B ;
+                image->verts[i][1] = 0.2126 * R + 0.7152 * G + 0.0722 * B ;
+                image->verts[i][2] = 0.2126 * R + 0.7152 * G + 0.0722 * B ;
+            }
+        }
+        if(Average){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float avr = (R + G + B)/3;
+            }
+        }
+        if(Invert){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                image->verts[i] = 1 - image->verts[i];
+            }
+        }
+        set_output("image", image);
     }
 };
-ZENDEFNODE(ImageShow, {
+
+
+ZENDEFNODE(ImageEdit_YUV, {
     {
-        {"CVImageObject", "image"},
-        {"string", "title", "imshow"},
-        {"bool", "waitKey", "1"},
+        {"image"},
+        {"enum RGB R G B", "RGB", "RGB"},
+        {"float", "R", "1"},
+        {"float", "G", "1"},
+        {"float", "B", "1"},
+        {"float", "Luminace_BT.709", "1"},
+        {"float", "ContrastRatio", "1"},
+        {"bool", "Gray_BT.709", "0"},
+        {"bool", "Average", "0"},
+        {"bool", "Invert", "0"},
     },
     {
+        {"image"}
     },
     {},
-    {""},
+    { "comp" },
 });
 
+struct ImageEdit_HSV : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageEdit_HSV, {
+    {
+        {"image"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+/* 提取RGB */
+struct ExtractRGB : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto RGB = get_input2<std::string>("RGB");
+
+        if(RGB == "RGB") {}
+        if(RGB == "R") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                image->verts[i][0] = R;
+                image->verts[i][1] = R;
+                image->verts[i][2] = R;
+            }
+        }
+        if(RGB == "G") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float G = image->verts[i][1];
+                image->verts[i][0] = G;
+                image->verts[i][1] = G;
+                image->verts[i][2] = G;
+            }
+        }
+        if(RGB == "B") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float B = image->verts[i][2];
+                image->verts[i][0] = B;
+                image->verts[i][1] = B;
+                image->verts[i][2] = B;
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ExtractRGB, {
+    {
+        {"image"},
+        {"enum RGB R G B", "RGB", "RGB"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
 
 /* 导入地形网格的属性，可能会有多个属性。它将地形的属性转换为图
 像，每个属性对应一个图层。
 可能需要的参数：outRemapRange，分辨率，属性名称，属性数据
 类型为float32 */
-struct CompImport : CVINode {
+struct CompImport : INode {
     virtual void apply() override {
-
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
     }
 };
 
@@ -134,7 +387,7 @@ ZENDEFNODE(CompImport, {
 
 /* 删除指定的图层(属性)。需要指定图层的名称（可能会有多个），选
 项：删除选择/未选择图层 */
-struct CompDelete : CVINode {
+struct CompDelete : INode {
     virtual void apply() override {
 
     }
@@ -151,7 +404,7 @@ ZENDEFNODE(CompDelete, {
 });
 
 /* 重命名图层，可能需要的参数：源名称，目标名称 */
-struct CompRename : CVINode {
+struct CompRename : INode {
     virtual void apply() override {
 
     }
@@ -168,7 +421,7 @@ ZENDEFNODE(CompRename, {
 });
 
 /* 创建颜色图层，可能需要的参数：颜色，分辨率，图层名称 */
-struct CompColor : CVINode {
+struct CompColor : INode {
     virtual void apply() override {
 
     }
@@ -185,7 +438,7 @@ ZENDEFNODE(CompColor, {
     { "" },
 });
 
-struct comp_color_ramp : CVINode {
+struct comp_color_ramp : INode {
     virtual void apply() override {
 
     }
@@ -225,7 +478,7 @@ average：取前景和背景的平均值
 xor：异或运算，对两个Alpha平面进行异或运算，以便删除重叠的
 Alpha区域
 图像过滤器（可能在分辨率不统一的时候使用） */
-struct CompComposite : CVINode {
+struct CompComposite : INode {
     virtual void apply() override {
 
     }
@@ -304,65 +557,9 @@ ZENDEFNODE(CompSaturation, {
     { "" },
 });
 
-/*边缘查找*/
-struct comp_edge_detect : CVINode {
-    virtual void apply() override {
-
-    }
-};
-
-ZENDEFNODE(comp_edge_detect, {
-    {
-        {"image"}
-    },
-    {},
-    {},
-    { "" },
-});
-
-struct CompEdgeDetect : CVINode {
-    virtual void apply() override {
-
-    }
-};
-
-ZENDEFNODE(CompEdgeDetect, {
-    {
-        {"image"}
-    },
-    {},
-    {},
-    { "" },
-});
-
-/* 图像模糊，可以使用不同的卷积核(Gaussian) */
-struct CompBlur : CVINode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        float ContrastRatio = get_input2<float>("ContrastRatio");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        for (auto i = 0; i < image->verts.size(); i++) {
-            image->verts[i] =  image->verts[i]+(image->verts[i]-0.5) * ContrastRatio;
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(CompBlur, {
-    {
-        {"image"}
-    },
-    {
-        {"image"}
-        },
-    {},
-    { "" },
-});
 
 /* 对图像应用像素反转，本质上是 Clr_out = 1 - Clr_in */
-struct CompInvert : CVINode{
+struct CompInvert : INode{
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
@@ -387,7 +584,7 @@ ZENDEFNODE(CompInvert, {
 
 
 /* 将灰度图像转换为法线贴图 */
-struct CompNormalMap : CVINode {
+struct CompNormalMap : INode {
     virtual void apply() override {
 
     }
@@ -438,7 +635,7 @@ G、B或Comp 4选项卡逐个通道调整。输入级别用于压缩黑点和白
 Gamma将作为使用输入级别指定的范围的中值调整进行应用。输出级
 别扩展了黑白点范围，降低了对比度。 */
 
-struct CompLevels : CVINode {
+struct CompLevels : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
@@ -462,235 +659,8 @@ ZENDEFNODE(CompLevels, {
     { "" },
 });
 
-//RGB2YUV BT.709标准
-struct ImageEdit_YUV : CVINode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<std::string>("RGB");
-        auto Gray = get_input2<bool>("Gray_BT.709");
-        auto Average = get_input2<bool>("Average");
-        auto Invert = get_input2<bool>("Invert");
-
-        float R = get_input2<float>("R");
-        float G = get_input2<float>("G");
-        float B = get_input2<float>("B");
-        float L = get_input2<float>("Luminace_BT.709");
-        float Si = get_input2<float>("Luminace_HSV");
-        float ContrastRatio = get_input2<float>("ContrastRatio");
-
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if(RGB == "RGB") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = R * image->verts[i][0];
-                float G1 = G * image->verts[i][1];
-                float B1 = B * image->verts[i][2];
-                float Y = L * (0.2126 * R1 + 0.7152 * G1 + 0.0722 * B1);
-                float U = -0.1145 * R1 - 0.3855 * G1 + 0.500 * B1;
-                float V = 0.500 * R1 - 0.4543 * G1 - 0.0457 * B1;
-                image->verts[i][0] = Y + 1.5748 * V;
-                image->verts[i][1] = Y - 0.1868 * U - 0.4680 * V;
-                image->verts[i][2] = Y + 1.856 * U;
-            }
-        }
-        if(RGB == "R") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = R * image->verts[i][0];
-                float G1 = 0;
-                float B1 = 0;
-                float Y = L * (0.2126 * R1 + 0.7152 * G1 + 0.0722 * B1);
-                float U = -0.1145 * R1 - 0.3855 * G1 + 0.500 * B1;
-                float V = 0.500 * R1 - 0.4543 * G1 - 0.0457 * B1;
-                image->verts[i][0] = Y + 1.5748 * V;
-                image->verts[i][1] = Y - 0.1868 * U - 0.4680 * V;
-                image->verts[i][2] = Y + 1.856 * U;
-            }
-        }
-        if(RGB == "G") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = 0;
-                float G1 = G * image->verts[i][1];
-                float B1 = 0;
-                float Y = L * (0.2126 * R1 + 0.7152 * G1 + 0.0722 * B1);
-                float U = -0.1145 * R1 - 0.3855 * G1 + 0.500 * B1;
-                float V = 0.500 * R1 - 0.4543 * G1 - 0.0457 * B1;
-                image->verts[i][0] = Y + 1.5748 * V;
-                image->verts[i][1] = Y - 0.1868 * U - 0.4680 * V;
-                image->verts[i][2] = Y + 1.856 * U;
-            }
-        }
-        if(RGB == "B") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = 0;
-                float G1 = 0;
-                float B1 = B * image->verts[i][2];
-                float Y = L * (0.2126 * R1 + 0.7152 * G1 + 0.0722 * B1);
-                float U = -0.1145 * R1 - 0.3855 * G1 + 0.500 * B1;
-                float V = 0.500 * R1 - 0.4543 * G1 - 0.0457 * B1;
-                image->verts[i][0] = Y + 1.5748 * V;
-                image->verts[i][1] = Y - 0.1868 * U - 0.4680 * V;
-                image->verts[i][2] = Y + 1.856 * U;
-            }
-        }
-        for (auto i = 0; i < image->verts.size(); i++) {
-            float R3 = image->verts[i][0];
-            float G3 = image->verts[i][1];
-            float B3 = image->verts[i][2];
-            image->verts[i] =  image->verts[i]+(image->verts[i]-0.5) * ContrastRatio;
-            image->verts[i][0] = R3 * Si;
-            image->verts[i][1] = G3 * Si;
-            image->verts[i][2] = B3 * Si;
-        }
-        if(Gray){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R = image->verts[i][0];
-                float G = image->verts[i][1];
-                float B = image->verts[i][2];
-                image->verts[i][0] = 0.2126 * R + 0.7152 * G + 0.0722 * B ;
-                image->verts[i][1] = 0.2126 * R + 0.7152 * G + 0.0722 * B ;
-                image->verts[i][2] = 0.2126 * R + 0.7152 * G + 0.0722 * B ;
-            }
-        }
-        if(Average){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float avr = (R + G + B)/3;
-            }
-        }
-        if(Invert){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image->verts[i] = 1 - image->verts[i];
-            }
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(ImageEdit_YUV, {
-    {
-        {"image"},
-        {"enum RGB R G B", "RGB", "RGB"},
-        {"float", "R", "1"},
-        {"float", "G", "1"},
-        {"float", "B", "1"},
-        {"float", "Luminace_BT.709", "1"},
-        {"float", "ContrastRatio", "1"},
-        {"bool", "Gray_BT.709", "0"},
-        {"bool", "Average", "0"},
-        {"bool", "Invert", "0"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-struct ImageEdit_RGB : CVINode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<std::string>("RGB");
-        auto Average = get_input2<bool>("Average");
-        auto Invert = get_input2<bool>("Invert");
-
-        float R = get_input2<float>("R");
-        float G = get_input2<float>("G");
-        float B = get_input2<float>("B");
-        float L = get_input2<float>("Luminace_RGB");
-        float ContrastRatio = get_input2<float>("ContrastRatio");
-
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if(RGB == "RGB") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = R * image->verts[i][0];
-                float G1 = G * image->verts[i][1];
-                float B1 = B * image->verts[i][2];
-                image->verts[i][0] = R1 * L;
-                image->verts[i][1] = G1 * L;
-                image->verts[i][2] = B1 * L;
-            }
-        }
-        if(RGB == "R") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = R * image->verts[i][0];
-                float G1 = 0;
-                float B1 = 0;
-                image->verts[i][0] = R1 * L;
-                image->verts[i][1] = G1 * L;
-                image->verts[i][2] = B1 * L;
-            }
-        }
-        if(RGB == "G") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = 0;
-                float G1 = G * image->verts[i][1];
-                float B1 = 0;
-                image->verts[i][0] = R1 * L;
-                image->verts[i][1] = G1 * L;
-                image->verts[i][2] = B1 * L;
-            }
-        }
-        if(RGB == "B") {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = 0;
-                float G1 = 0;
-                float B1 = B * image->verts[i][2];
-                image->verts[i][0] = R1 * L;
-                image->verts[i][1] = G1 * L;
-                image->verts[i][2] = B1 * L;
-            }
-        }
-        for (auto i = 0; i < image->verts.size(); i++) {
-            image->verts[i] =  image->verts[i]+(image->verts[i]-0.5) * ContrastRatio;
-        }
-
-        if(Average){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R = image->verts[i][0];
-                float G = image->verts[i][1];
-                float B = image->verts[i][2];
-                float avr = (R + G + B)/3;
-                image->verts[i][0] = avr ;
-                image->verts[i][1] = avr ;
-                image->verts[i][2] = avr ;
-            }
-        }
-
-        if(Invert){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image->verts[i] = 1 - image->verts[i];
-            }
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(ImageEdit_RGB, {
-    {
-        {"image"},
-        {"enum RGB R G B", "RGB", "RGB"},
-        {"float", "R", "1"},
-        {"float", "G", "1"},
-        {"float", "B", "1"},
-        {"float", "Luminace_RGB", "1"},
-        {"float", "ContrastRatio", "1"},
-        {"bool", "Average", "0"},
-        {"bool", "Invert", "0"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-
 /* 此操作将输入数据量化为离散的步骤，从而降低图像中的颜色级别。 */
-struct comp_quantize : CVINode {
+struct comp_quantize : INode {
     virtual void apply() override {
 
     }
@@ -701,7 +671,7 @@ ZENDEFNODE(comp_quantize, {
     },
     {},
     {},
-    { "image" },
+    { "" },
 });
 }
 }
