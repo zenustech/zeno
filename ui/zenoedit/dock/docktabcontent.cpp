@@ -306,6 +306,13 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
+        std::function<void()> resetAlways = [=]() {
+            m_btnAlways->setCurrentText(tr("disable"));
+            pMainWin->setAlwaysLightCameraMaterial(false);
+            lastItem = 0;
+        };
+        connect(zenoApp->graphsManagment(), &GraphsManagment::fileOpened, this, resetAlways);
+        connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
         if (text == tr("alwaysAll"))
         {
             mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
