@@ -1072,7 +1072,7 @@ void DisplayWidget::afterRun()
     scene->objectsMan->lightObjects.clear();
 }
 
-void DisplayWidget::onRun(int frameStart, int frameEnd)
+void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly)
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -1088,7 +1088,7 @@ void DisplayWidget::onRun(int frameStart, int frameEnd)
     m_view->clearTransformer();
     m_view->getSession()->get_scene()->selected.clear();
 
-    launchProgram(pModel, frameStart, frameEnd);
+    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly);
 
     m_view->updateLightOnce = true;
     auto scene = m_view->getSession()->get_scene();

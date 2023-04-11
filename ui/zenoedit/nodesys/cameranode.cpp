@@ -70,6 +70,7 @@ void CameraNode::onEditClicked()
         PARAM_UPDATE_INFO info;
 
         pModel->beginTransaction("update camera info");
+        zeno::scope_exit scope([=]() { pModel->endTransaction(); });
 
         INPUT_SOCKET pos = inputs["pos"];
         //vec = {scene->camera->m_lodcenter.x, scene->camera->m_lodcenter.y, scene->camera->m_lodcenter.z};

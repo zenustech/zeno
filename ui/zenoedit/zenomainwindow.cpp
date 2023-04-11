@@ -47,10 +47,12 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_bAlways(false)
+    , m_bAlwaysLightCameraMaterial(false)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
     , m_spCacheMgr(nullptr)
+    , m_bMovingSeparator(false)
 {
     liveTcpServer = new LiveTcpServer;
     liveHttpServer = new LiveHttpServer;
@@ -106,7 +108,6 @@ void ZenoMainWindow::init()
 void ZenoMainWindow::initWindowProperty()
 {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    setWindowIcon(QIcon(":/icons/zeno-logo.png"));
     setWindowTitle(UiHelper::nativeWindowTitle(""));
     connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
         QFileInfo info(fn);
@@ -124,6 +125,7 @@ void ZenoMainWindow::initWindowProperty()
         QString title = UiHelper::nativeWindowTitle(path);
         updateNativeWinTitle(title);
     });
+    connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
 }
 
 void ZenoMainWindow::updateNativeWinTitle(const QString& title)
@@ -610,12 +612,19 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        if (m_bAlways) {
-            m_pTimeline->togglePlayButton(false);
-            int nFrame = m_pTimeline->value();
-            QVector<DisplayWidget *> views = viewports();
-            for (DisplayWidget *view : views) {
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        ZASSERT_EXIT(mgr);
+        m_pTimeline->togglePlayButton(false);
+        int nFrame = m_pTimeline->value();
+        QVector<DisplayWidget *> views = viewports();
+        for (DisplayWidget *view : views) {
+            if (m_bAlways) {
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
                 view->onRun(nFrame, nFrame);
+            }
+            else if (m_bAlwaysLightCameraMaterial) {
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
+                view->onRun(nFrame, nFrame, true);
             }
         }
     });
@@ -854,7 +863,7 @@ void ZenoMainWindow::openFileDialog()
 {
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
     ZASSERT_EXIT(mgr);
-    mgr->setDirCreated(false);
+    mgr->setNewCacheDir(true);
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -869,7 +878,7 @@ void ZenoMainWindow::openFileDialog()
 void ZenoMainWindow::onNewFile() {
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
     ZASSERT_EXIT(mgr);
-    mgr->setDirCreated(false);
+    mgr->setNewCacheDir(true);
     if (saveQuit()) 
     {
         zenoApp->graphsManagment()->newFile();
@@ -940,7 +949,69 @@ bool ZenoMainWindow::event(QEvent* event)
             }
         }
     }
-    return QMainWindow::event(event);
+    bool ret = QMainWindow::event(event);
+    if (ret) {
+        if (event->type() == QEvent::MouseMove && event->isAccepted()) {
+            QMouseEvent* pMouse = static_cast<QMouseEvent*>(event);
+            if (isSeparator(pMouse->pos())) {
+                m_bMovingSeparator = true;
+                emit dockSeparatorMoving(true);
+            }
+        }
+        else if (m_bMovingSeparator && event->type() == QEvent::Timer)
+        {
+            emit dockSeparatorMoving(true);
+        }
+        else if (m_bMovingSeparator && event->type() == QEvent::MouseButtonRelease)
+        {
+            emit dockSeparatorMoving(false);
+        }
+    }
+}
+
+void ZenoMainWindow::mousePressEvent(QMouseEvent* event)
+{
+    QMainWindow::mousePressEvent(event);
+}
+
+void ZenoMainWindow::mouseMoveEvent(QMouseEvent* event)
+{
+    QMainWindow::mouseMoveEvent(event);
+}
+
+void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
+{
+    QMainWindow::mouseReleaseEvent(event);
+}
+
+void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
+{
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget *pDock : docks)
+    {
+        for (int i = 0; i < pDock->count(); i++)
+        {
+            DockContent_View* pView = qobject_cast<DockContent_View*>(pDock->widget(i));
+            if (!pView)
+                continue;
+            QSize sz = pView->viewportSize();
+            QString str = QString("size: %1x%2").arg(QString::number(sz.width())).arg(QString::number(sz.height()));
+            QPoint pt = pView->mapToGlobal(QPoint(0, 10));
+            if (bMoving) {
+                QToolTip::showText(pt, str);
+            }
+            else {
+                QToolTip::hideText();
+            }
+        }
+    }
+
+    QVector<DisplayWidget*> displays = viewports();
+    for (auto wid : displays)
+    {
+        ViewportWidget* pViewport = wid->getViewportWidget();
+        //TODO
+    }
 }
 
 void ZenoMainWindow::importGraph() {
@@ -1367,6 +1438,10 @@ void ZenoMainWindow::setAlways(bool bAlways)
     emit alwaysModeChanged(bAlways);
     if (m_bAlways)
         m_pTimeline->togglePlayButton(false);
+}
+
+void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlways) {
+    m_bAlwaysLightCameraMaterial = bAlways;
 }
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)

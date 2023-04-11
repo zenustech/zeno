@@ -8,27 +8,41 @@ namespace zeno { namespace TILEVEC_OPS {
     using T = float;
 
     template<int width,typename Pol,typename SrcTileVec,typename DstTileVec>
-    void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag) {
+    void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag,int offset = 0) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         // if(src.size() != dst.size())
         //     throw std::runtime_error("copy_ops_error::the size of src and dst not match");
 
         pol(zs::range(src.size()),
-            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) mutable {
-                dst.template tuple<width>(dst_tag,vi) = src.template pack<width>(src_tag,vi);
+            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag,offset] __device__(int vi) mutable {
+                dst.template tuple<width>(dst_tag,vi + offset) = src.template pack<width>(src_tag,vi);
         });
     }
 
     template<typename Pol,typename SrcTileVec,typename DstTileVec>
-    void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag) {
+    void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag,int offset = 0) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         // if(src.size() != dst.size())
         //     throw std::runtime_error("copy_ops_error::the size of src and dst not match");
+        if(!src.hasProperty(src_tag)){
+            fmt::print(fg(fmt::color::red),"copy_ops_error::the src has no specified channel {}\n",src_tag);
+            throw std::runtime_error("copy_ops_error::the src has no specified channel");
+        }
+        if(!dst.hasProperty(dst_tag)){
+            fmt::print(fg(fmt::color::red),"copy_ops_error::the dst has no specified channel {}\n",dst_tag);
+            throw std::runtime_error("copy_ops_error::the dst has no specified channel");
+        }
+        auto space_dim = src.getChannelSize(src_tag);
+        if(dst.getChannelSize(dst_tag) != space_dim){
+            // std::cout << "invalid channel size : " << space_dim << "\t" << dst.getChannelSize(dst_tag) << std::endl;
+            throw std::runtime_error("copy_ops_error::the channel size of src and dst not match");
+        }
         pol(zs::range(src.size()),
-            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag] __device__(int vi) mutable {
-                dst(dst_tag,vi) = src(src_tag,vi);
+            [src = proxy<space>({},src),src_tag,dst = proxy<space>({},dst),dst_tag,offset,space_dim] __device__(int vi) mutable {
+                for(int i = 0;i != space_dim;++i)
+                    dst(dst_tag,i,vi + offset) = src(src_tag,i,vi);
         });
     }
 
@@ -60,49 +74,133 @@ namespace zeno { namespace TILEVEC_OPS {
         constexpr auto space = execspace_e::cuda;
         pol(range(vtemp.size()),
             [vtemp = proxy<space>({},vtemp),tag,value] __device__(int vi) mutable {
-                vtemp.template tuple<space_dim>(tag,vi) = value;
+                vtemp.tuple(dim_c<space_dim>,tag,vi) = value;
         });
     }
+
 
     template<typename T,typename Pol,typename VTileVec>
     void fill(Pol& pol,VTileVec& vtemp,const zs::SmallString& tag,const T& value) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
+        int space_dim = vtemp.getChannelSize(tag);
         pol(range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),tag,value] __device__(int vi) mutable {
-                vtemp(tag,vi) = value;
+            [vtemp = proxy<space>({},vtemp),tag,value,space_dim] __device__(int vi) mutable {
+                for(int i= 0;i != space_dim;++i)
+                    vtemp(tag,i,vi) = value;
         });
     }
 
-    template<int space_dim,int simplex_size,typename Pol,typename SrcTileVec,typename DstTileVec>
+    template<int space_dim,typename Pol,typename VTileVec>
+    void fill_range(Pol& pol,VTileVec& vtemp,const zs::SmallString& tag,const zs::vec<T,space_dim>& value,int start,int length) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        pol(range(length),
+            [vtemp = proxy<space>({},vtemp),tag,value,start] __device__(int vi) mutable {
+                vtemp.template tuple<space_dim>(tag,vi + start) = value;
+        });
+    }
+
+
+    template<typename T,typename Pol,typename VTileVec>
+    void fill_range(Pol& pol,VTileVec& vtemp,const zs::SmallString& tag,const T& value,int start,int length) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        int space_dim = vtemp.getChannelSize(tag);
+        pol(range(length),
+            [vtemp = proxy<space>({},vtemp),tag,value,space_dim,start] __device__(int vi) mutable {
+                for(int i= 0;i != space_dim;++i)
+                    vtemp(tag,i,vi + start) = value;
+        });
+    }
+
+
+
+    template<typename Pol,typename SrcTileVec,typename DstTileVec>
     void assemble(Pol& pol,
         const SrcTileVec& src,const zs::SmallString& srcTag,const zs::SmallString& srcTopoTag,
         DstTileVec& dst,const zs::SmallString& dstTag) {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
 
-            if(!src.hasProperty(srcTopoTag) || src.getPropertySize(srcTopoTag) != simplex_size)
+            if(!src.hasProperty(srcTopoTag))
                 throw std::runtime_error("tiledvec_ops::assemble::invalid src's topo channel");
             if(!src.hasProperty(srcTag))
                 throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
             if(!dst.hasProperty(dstTag))
                 throw std::runtime_error("tiledvec_ops::assemble::dst has no 'dstTag' channel");
 
+            int simplex_size = src.getChannelSize(srcTopoTag);
+            int src_space_dim = src.getChannelSize(srcTag);
+            int dst_space_dim = dst.getChannelSize(dstTag);
+
+            if(dst_space_dim * simplex_size != src_space_dim)
+                throw std::runtime_error("tiledvec_ops::assemble::src_space_dim and dst_space_dim not match");
+
+            // std::cout << "simplex_size : " << simplex_size << std::endl;
+            // std::cout << "space_dim : " << space_dim << std::endl;
+            // std::cout << "src_size : " << src.size() << std::endl;
+            // std::cout << "dst_size : " << dst.size() << std::endl;
+
+
             pol(range(src.size()),
-                [src = proxy<space>({},src),dst = proxy<space>({},dst),srcTag,srcTopoTag,dstTag] __device__(int si) mutable {
-                    auto inds = src.template pack<simplex_size>(srcTopoTag,si).reinterpret_bits(int_c);
-                    for(int i = 0;i != simplex_size;++i)
-                        if(inds[i] < 0)
+                [src = proxy<space>({},src),dst = proxy<space>({},dst),srcTag,srcTopoTag,dstTag,simplex_size,src_space_dim,dst_space_dim] __device__(int si) mutable {
+                    for(int i = 0;i != simplex_size;++i){
+                        auto idx = reinterpret_bits<int>(src(srcTopoTag,i,si));
+                        if(idx < 0)
                             return;
-                    auto data = src.template pack<space_dim * simplex_size>(srcTag,si);
-                    for(int i = 0;i != simplex_size;++i)
-                            for(int d = 0;d != space_dim;++d)
-                                atomic_add(exec_cuda,&dst(dstTag,d,inds[i]),data[i*space_dim + d]);
+                    }
+
+                    for(int i = 0;i != simplex_size;++i){
+                        auto idx = reinterpret_bits<int>(src(srcTopoTag,i,si));
+                        for(int d = 0;d != dst_space_dim;++d){
+                            atomic_add(exec_cuda,&dst(dstTag,d,idx),src(srcTag,i * dst_space_dim + d,si));
+                        }
+                    }
+            });
+    }
+
+    template<typename Pol,typename SrcTileVec,typename DstTileVec>
+    void assemble_range(Pol& pol,
+        const SrcTileVec& src,const zs::SmallString& srcTag,const zs::SmallString& srcTopoTag,
+        DstTileVec& dst,const zs::SmallString& dstTag,int start,int alen) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+
+            if(!src.hasProperty(srcTopoTag))
+                throw std::runtime_error("tiledvec_ops::assemble::invalid src's topo channel");
+            if(!src.hasProperty(srcTag))
+                throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
+            if(!dst.hasProperty(dstTag))
+                throw std::runtime_error("tiledvec_ops::assemble::dst has no 'dstTag' channel");
+
+            int simplex_size = src.getChannelSize(srcTopoTag);
+            int src_space_dim = src.getChannelSize(srcTag);
+            int dst_space_dim = dst.getChannelSize(dstTag);
+
+
+            if(dst_space_dim * simplex_size != src_space_dim)
+                throw std::runtime_error("tiledvec_ops::assemble::src_space_dim and dst_space_dim not match");
+
+            pol(range(alen),
+                [src = proxy<space>({},src),dst = proxy<space>({},dst),srcTag,srcTopoTag,dstTag,start,simplex_size,space_dim = dst_space_dim] __device__(int si) mutable {
+                    for(int i = 0;i != simplex_size;++i){
+                        auto idx = reinterpret_bits<int>(src(srcTopoTag,i,si + start));
+                        if(idx < 0)
+                            return;
+                    }
+                    for(int i = 0;i != simplex_size;++i){
+                            auto idx = reinterpret_bits<int>(src(srcTopoTag,i,si + start));
+                            for(int d = 0;d != space_dim;++d){
+                                atomic_add(exec_cuda,&dst(dstTag,d,idx),src(srcTag,i * space_dim + d,si + start));
+                            }
+                    }
             });
     }
 
 
-    template<int space_dim,int simplex_size,typename Pol,typename SrcTileVec,typename DstTileVec>
+
+    template<typename Pol,typename SrcTileVec,typename DstTileVec>
     void assemble(Pol& pol,
         const SrcTileVec& src,const zs::SmallString& srcTag,
         DstTileVec& dst,const zs::SmallString& dstTag) {
@@ -111,7 +209,7 @@ namespace zeno { namespace TILEVEC_OPS {
 
             // TILEVEC_OPS::fill<space_dim>(pol,dst,"dir",zs::vec<T,space_dim>::uniform((T)0.0));
 
-            // if(!src.hasProperty("inds") || src.getPropertySize("inds") != simplex_size)
+            // if(!src.hasProperty("inds") || src.getChannelSize("inds") != simplex_size)
             //     throw std::runtime_error("tiledvec_ops::assemble::invalid src's topo channel inds");
 
             // pol(range(src.size()),
@@ -126,31 +224,94 @@ namespace zeno { namespace TILEVEC_OPS {
             //                     atomic_add(exec_cuda,&dst(dst_tag,d,inds[i]),data[i*space_dim + d]);
             // });
 
-            assemble<space_dim,simplex_size>(pol,src,srcTag,"inds",dst,dstTag);
+            assemble(pol,src,srcTag,"inds",dst,dstTag);
     }
 
+
+    template<typename Pol,typename SrcTileVec,typename DstTileVec,typename DstTopoTileVec>
+    void assemble_from(Pol& pol,
+        const SrcTileVec& src,const zs::SmallString& srcTag,
+        DstTileVec& dst,const zs::SmallString& dstTag,
+        const DstTopoTileVec& topo,const zs::SmallString& dstTopoTag) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+
+            if(!topo.hasProperty(dstTopoTag))
+                throw std::runtime_error("tiledvec_ops::assemble_from::invalid dst's topo channel");
+            if(!src.hasProperty(srcTag))
+                throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
+            if(!dst.hasProperty(dstTag))
+                throw std::runtime_error("tiledvec_ops::assemble::dst has no 'dstTag' channel");
+            if(dst.size() != topo.size())
+                throw std::runtime_error("tiledvec_ops::assemble::dst and topo size not match");
+
+            int simplex_size = topo.getChannelSize(dstTopoTag);
+            int space_dim = src.getChannelSize(srcTag);
+
+            pol(zs::range(dst.size()),
+                [dst = proxy<space>({},dst),src = proxy<space>({},src),srcTag,dstTag,topo = proxy<space>({},topo),dstTopoTag,simplex_size,space_dim] __device__(int di) mutable {     
+                    for(int i = 0;i != simplex_size;++i){
+                        auto idx = reinterpret_bits<int>(topo(dstTopoTag,i,di));
+                        for(int d = 0;d != space_dim;++d)
+                            dst(dstTag,d,di) += src(srcTag,d,idx);
+                    }
+            });
+
+    }
+
+    template<typename Pol,typename SrcTileVec0,typename SrcTileVec1,typename DstTileVec>
+    void concatenate_two_tiled_vecs(Pol& pol,
+        const SrcTileVec0& src0,
+        const SrcTileVec1& src1,
+        DstTileVec& dst,
+        const std::vector<zs::PropertyTag>& tags) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+
+            for(int i = 0;i != tags.size();++i){
+                auto name = tags[i].name;
+                auto numChannels = tags[i].numChannels;
+
+                if(!src0.hasProperty(name) || src0.getChannelSize() != numChannels)
+                    throw std::runtime_error("concatenate_two_tiled_vecs::src0's channels not aligned with specified tags");
+                if(!src1.hasProperty(name) || src1.getChannelSize() != numChannels)
+                    throw std::runtime_error("concatenate_two_tiled_vecs::src1's channels not aligned with specified tags");
+                if(!dst.hasProperty(name) || dst.getChannelSize() != numChannels)
+                    throw std::runtime_error("concatenate_two_tiled_vecs::dst's channels not aligned with specified tags");
+                if(dst.size() != (src0.size() + src1.size()))
+                    throw std::runtime_error("concatenate_two_tiled_vecs::dst.size() != src0.size() + src1.size()");
+            }
+
+            for(int i = 0;i != tags.size();++i) {
+                auto name = tags[i].name;
+                auto numChannels = tags[i].numChannels;
+                copy(pol,src0,name,dst,name,0);
+                copy(pol,src1,name,dst,name,src0.size());
+            }
+    }
 
 
     template<int space_dim,int simplex_size,typename Pol,typename SrcTileVec,typename DstTileVec>
     void assemble_from(Pol& pol,
         const SrcTileVec& src,const zs::SmallString& srcTag,
         DstTileVec& dst,const zs::SmallString& dstTag,const zs::SmallString& dstTopoTag) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
+            // using namespace zs;
+            // constexpr auto space = execspace_e::cuda;
 
-            if(!dst.hasProperty(dstTopoTag) || dst.getPropertySize(dstTopoTag) != simplex_size)
-                throw std::runtime_error("tiledvec_ops::assemble_from::invalid dst's topo channel");
-            if(!src.hasProperty(srcTag))
-                throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
-            if(!dst.hasProperty(dstTag))
-                throw std::runtime_error("tiledvec_ops::assemble::dst has no 'dstTag' channel");
+            // if(!dst.hasProperty(dstTopoTag) || dst.getChannelSize(dstTopoTag) != simplex_size)
+            //     throw std::runtime_error("tiledvec_ops::assemble_from::invalid dst's topo channel");
+            // if(!src.hasProperty(srcTag))
+            //     throw std::runtime_error("tiledvec_ops::assemble::src has no 'srcTag' channel");
+            // if(!dst.hasProperty(dstTag))
+            //     throw std::runtime_error("tiledvec_ops::assemble::dst has no 'dstTag' channel");
 
-            pol(zs::range(dst.size()),
-                [dst = proxy<space>({},dst),src = proxy<space>({},src),srcTag,dstTag,dstTopoTag] __device__(int di) mutable {
-                    auto inds = dst.template pack<simplex_size>(dstTopoTag,di).reinterpret_bits(int_c);
-                    for(int i = 0;i != simplex_size;++i)
-                        dst.template tuple<space_dim>(dstTag,di) += src.template pack<space_dim>(srcTag,inds[i]);
-            });
+            // pol(zs::range(dst.size()),
+            //     [dst = proxy<space>({},dst),src = proxy<space>({},src),srcTag,dstTag,dstTopoTag] __device__(int di) mutable {
+            //         auto inds = dst.template pack<simplex_size>(dstTopoTag,di).reinterpret_bits(int_c);
+            //         for(int i = 0;i != simplex_size;++i)
+            //             dst.template tuple<space_dim>(dstTag,di) = dst.template pack<space_dim>(dstTag,di) + src.template pack<space_dim>(srcTag,inds[i]);
+            // });
+            assemble_from(pol,src,srcTag,dst,dstTag,dst,dstTopoTag);
 
     }
 
@@ -165,7 +326,7 @@ namespace zeno { namespace TILEVEC_OPS {
             [vtemp = proxy<space>({},vtemp),tag,eps] __device__(int vi) mutable {
                 auto d = vtemp.template pack<space_dim>(tag,vi);
                 auto dn = d.norm();
-                d = dn < eps ? d/dn : zs::vec<T,space_dim>::zeros();
+                d = dn > eps ? d/dn : zs::vec<T,space_dim>::zeros();
                 vtemp.template tuple<space_dim>(tag,vi) = d;
         });
     }
@@ -209,6 +370,24 @@ namespace zeno { namespace TILEVEC_OPS {
         cudaPol.sync(shouldSync);
         return res.getVal();
     }    
+
+
+    template<int space_dim,typename Pol,typename VTileVec>
+    T max_norm(Pol &cudaPol, VTileVec &vtemp,const zs::SmallString tag) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        Vector<T> res{vtemp.get_allocator(), 1};
+        res.setVal(0);
+        bool shouldSync = cudaPol.shouldSync();
+        cudaPol.sync(true);
+        cudaPol(range(vtemp.size()),
+            [data = proxy<space>({}, vtemp), res = proxy<space>(res),tag] __device__(int pi) mutable {
+                auto v = data.template pack<space_dim>(tag, pi);
+                atomic_max(exec_cuda, res.data(), v.norm());
+        });
+        cudaPol.sync(shouldSync);
+        return res.getVal();
+    }        
 
     // template<int simplex_dim,int space_dim,typename Pol,typename VBufTileVec,typename EBufTileVec>
     // void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {

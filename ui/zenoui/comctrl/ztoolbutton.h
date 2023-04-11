@@ -71,6 +71,7 @@ public:
     void setRadius(int radius);
     void setFont(const QFont& font);
     void initAnimation();
+    void setArrowOption(int arrOpt);
 
 public slots:
     void setText(const QString& text);
@@ -135,6 +136,7 @@ private:
     bool m_bPressed;
 
     AnimationInfo animInfo;
+    int m_arrowOption;
 };
 
 #endif

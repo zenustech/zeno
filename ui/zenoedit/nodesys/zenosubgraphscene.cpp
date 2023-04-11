@@ -965,6 +965,8 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 ZASSERT_EXIT(pGraphsModel);
 
                 pGraphsModel->beginTransaction("remove nodes and links");
+                zeno::scope_exit scope([=]() { pGraphsModel->endTransaction(); });
+
                 for (QPersistentModelIndex linkIdx : links)
                 {
                     pGraphsModel->removeLink(linkIdx, true);
@@ -974,7 +976,6 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                     QString id = nodeIdx.data(ROLE_OBJID).toString();
                     pGraphsModel->removeNode(id, m_subgIdx, true);
                 }
-                pGraphsModel->endTransaction();
             }
         }
     }

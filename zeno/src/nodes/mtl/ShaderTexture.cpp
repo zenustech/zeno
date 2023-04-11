@@ -3,6 +3,7 @@
 #include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 #include <algorithm>
+#include "zeno/utils/format.h"
 
 namespace zeno
 {
@@ -10,9 +11,12 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
 {
     virtual int determineType(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
-        auto coord = em->determineType(get_input("coord").get());
-        if (coord < 2)
-            throw zeno::Exception("ShaderTexture2D expect coord to be at least vec2");
+        auto uvtiling = em->determineType(get_input("uvtiling").get());
+        if (has_input("coord")) {
+            auto coord = em->determineType(get_input("coord").get());
+            if (coord < 2)
+                throw zeno::Exception("ShaderTexture2D expect coord to be at least vec2");
+        }
 
         auto type = get_input2<std::string>("type");
         if (type == "float")
@@ -29,10 +33,13 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
 
     virtual void emitCode(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
-        auto coord = em->determineExpr(get_input("coord").get());
         auto type = get_input2<std::string>("type");
-        //em->emitCode(type + "(texture2D(zenotex" + std::to_string(texId) + ", vec2(" + coord + ")))");
-        em->emitCode(type + "(texture2D(zenotex[" + std::to_string(texId) + "], vec2(" + coord + ")))");
+        auto uvtiling = em->determineExpr(get_input("uvtiling").get());
+        std::string coord = "att_uv";
+        if (has_input("coord")) {
+            coord = em->determineExpr(get_input("coord").get());
+        }
+        em->emitCode(zeno::format("{}(texture2D(zenotex[{}], vec2({}) * {}))", type, texId, coord, uvtiling));
     }
 };
 
@@ -75,7 +82,8 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 ZENDEFNODE(ShaderTexture2D, {
     {
         {"int", "texId", "0"},
-        {"vec2f", "coord", "0,0"},
+        {"coord"},
+        {"vec2f", "uvtiling", "1,1"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {

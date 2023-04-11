@@ -1,12 +1,6 @@
 <RCC>
   <qresource prefix="/">
     <file>font/Segoe/SEGOEUI.TTF</file>
-    <file>font/Noto_Sans_SC/NotoSansSC-Black.otf</file>
-    <file>font/Noto_Sans_SC/NotoSansSC-Bold.otf</file>
-    <file>font/Noto_Sans_SC/NotoSansSC-Light.otf</file>
-    <file>font/Noto_Sans_SC/NotoSansSC-Medium.otf</file>
-    <file>font/Noto_Sans_SC/NotoSansSC-Regular.otf</file>
-    <file>font/Noto_Sans_SC/NotoSansSC-Thin.otf</file>
     <file>font/PuHuiTi/Alibaba-PuHuiTi-Bold.ttf</file>
     <file>font/PuHuiTi/Alibaba-PuHuiTi-Heavy.ttf</file>
     <file>font/PuHuiTi/Alibaba-PuHuiTi-Light.ttf</file>
