@@ -96,6 +96,17 @@ struct BulletObject : zeno::IObject {
         btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape->shape.get(), localInertia);
         body = std::make_unique<btRigidBody>(rbInfo);
     }
+
+    BulletObject(btScalar mass_,
+                 btTransform const &trans,
+                 btVector3 const &inertia,
+                 std::shared_ptr<BulletCollisionShape> colShape_)
+        : mass(mass_), colShape(std::move(colShape_))
+    {
+        myMotionState = std::make_unique<btDefaultMotionState>(trans);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape->shape.get(), inertia);
+        body = std::make_unique<btRigidBody>(rbInfo);
+    }
 };
 
 struct BulletGlueCompoundShape : IObject {
