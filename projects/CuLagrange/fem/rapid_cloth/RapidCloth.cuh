@@ -31,6 +31,7 @@ struct RapidClothSystem : IObject {
     bool enableRepulsion = false; 
     bool enableDistConstraint = true; 
     bool enableFriction = false;
+    bool enableSL = false; 
     T clothFricMu = 0.1f;
     T boundaryFricMu = 10.0f;   
 
@@ -164,7 +165,7 @@ struct RapidClothSystem : IObject {
     // assume ncps < 6e5, normal choice: ncps = 1e5
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t spmatCps, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
-                    int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
+                    int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, bool enableSL, T gamma, T eps, int maxVertCons, 
                     T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, bool enableDistConstraint, 
                     T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu); 
 
@@ -197,10 +198,10 @@ struct RapidClothSystem : IObject {
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t n);
     template<class ValT, class tvT>
-    ValT RapidClothSystem::tvMax(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
+    ValT tvMax(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
         std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
     template<class ValT, class tvT>
-    ValT RapidClothSystem::tvMin(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
+    ValT tvMin(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
         std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
     template <int codim = 3>
     T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t n, zs::wrapv<codim> = {});

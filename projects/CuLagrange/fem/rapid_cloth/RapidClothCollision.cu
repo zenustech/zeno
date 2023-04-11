@@ -147,14 +147,6 @@ void RapidClothSystem::findConstraintsImpl(zs::CudaExecutionPolicy &pol,
                         auto tri = eles.pack(dim_c<3>, "inds", stI, int_c) + voffset;
                         if (vi == tri[0] || vi == tri[1] || vi == tri[2])
                             return;
-                        bool onlyPT = false; 
-                        if (enableExclEdges)
-                            for (int k = 0; k < 3; k++)
-                                if (exclTab.query({vi, tri[k]}) >= 0)
-                                {
-                                    onlyPT = true; 
-                                    break; 
-                                }
                         // ccd
                         auto t0 = vtemp.pack(dim_c<3>, tag, tri[0]);
                         auto t1 = vtemp.pack(dim_c<3>, tag, tri[1]);
@@ -631,7 +623,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
                     tempE = proxy<space>({}, tempE), 
                     tempCons = proxy<space>({}, tempCons), 
                     oE = proxy<space>(oE), 
-                    sigma = sigma, tag = zs::SmallString{"y(l)"}, 
+                    sigma = sigma, 
+                    yTag = enableSL ? zs::SmallString{"x0"} : zs::SmallString{"y[k+1]"}, 
                     coOffset = coOffset] __device__ (int i) mutable {
         // if val > 0: tempPP[i] -> tempCons[consInd]
         auto inds = tempE.pack(dim_c<2>, "inds", i, int_c); 
@@ -641,10 +634,10 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             return; 
         auto xli = vtemp.pack(dim_c<3>, "x(l)", inds[0]); 
         auto xlj = vtemp.pack(dim_c<3>, "x(l)", inds[1]); 
-        auto xi = vtemp.pack(dim_c<3>, tag, inds[0]); 
-        auto xj = vtemp.pack(dim_c<3>, tag, inds[1]);
-        auto yi = vtemp.pack(dim_c<3>, "y[k+1]", inds[0]); 
-        auto yj = vtemp.pack(dim_c<3>, "y[k+1]", inds[1]);
+        auto xi = vtemp.pack(dim_c<3>, "y(l)", inds[0]); 
+        auto xj = vtemp.pack(dim_c<3>, "y(l)", inds[1]);
+        auto yi = vtemp.pack(dim_c<3>, yTag, inds[0]); 
+        auto yj = vtemp.pack(dim_c<3>, yTag, inds[1]);
         auto xij_norm = (xi - xj).norm() + eps_c; 
         auto yij_norm_inv = 1.0f / ((yi - yj).norm() + eps_c); 
 #if 0
@@ -693,8 +686,6 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         for (int k = 0; k < 2; k++)
             atomic_min(exec_cuda, &vtemp("Di", inds[k]), dist); 
         if (val >= 0)
-            return; 
-        if (inds[0] >= coOffset && inds[1] >= coOffset)
             return; 
         auto grad = (xi - xj) / xij_norm * delta_inv;             
         auto consInd = atomic_add(exec_cuda, &oPP[0], 1); 
@@ -1401,7 +1392,6 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
                 alpha = 1.0f; 
             vtemp("alpha", vi) = alpha; 
         }); 
-    // TODO: fix async stepping
 #if 1
     temp.resize(1); 
     temp.setVal(1.f); 
