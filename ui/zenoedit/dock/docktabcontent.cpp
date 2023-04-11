@@ -243,7 +243,8 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnRun->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
     m_btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"));
     m_btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
-    m_btnRun->setShortcut(QKeySequence("F2"));
+    ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
+    m_btnRun->setShortcut(settings.getShortCut(ShortCut_Run));
     m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
 
     //kill
@@ -257,7 +258,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnKill->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
     m_btnKill->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
     m_btnKill->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
-    m_btnKill->setShortcut(QKeySequence("Shift+F2"));
+    m_btnKill->setShortcut(settings.getShortCut(ShortCut_Kill));
     m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
 
     m_btnLightCamera->setButtonOptions(ZToolButton::Opt_HasText | ZToolButton::Opt_Checkable);
@@ -278,7 +279,8 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
         m_btnAlways->setChecked(true);
 
     pListView->setChecked(false);
-    pShowGrid->setChecked(true);
+    pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool());
+    pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool());
 
     QStringList items;
     QVector<qreal> factors = UiHelper::scaleFactors();
@@ -444,6 +446,14 @@ void DockContent_Editor::initConnections()
         else if (name == zsSnapGrid) 
         {
             pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
+        }
+    });
+
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString key) {
+        if (key == ShortCut_Run) {
+            m_btnRun->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Run));
+        } else if (key == ShortCut_Kill) {
+            m_btnKill->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Kill));
         }
     });
 }

@@ -26,6 +26,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zenomodel/include/uihelper.h>
 #include <zeno/types/UserData.h>
+#include "settings/zenosettingsmanager.h"
 
 
 #define ENABLE_RECORD_PROGRESS_DIG
@@ -1150,37 +1151,51 @@ void DisplayWidget::runAndRecord(const VideoRecInfo& recInfo)
 void ViewportWidget::keyPressEvent(QKeyEvent* event) {
     _base::keyPressEvent(event);
     //qInfo() << event->key();
-    if (event->key() == Qt::Key_T)
+    ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
+    int key = settings.getShortCut(ShortCut_MovingHandler);
+    if (event->key() == key)
         this->changeTransformOperation(0);
-    if (event->key() == Qt::Key_R)
+    key = settings.getShortCut(ShortCut_RevolvingHandler);
+    if (event->key() == key)
         this->changeTransformOperation(1);
-    if (event->key() == Qt::Key_E)
+    key = settings.getShortCut(ShortCut_ScalingHandler);
+    if (event->key() == key)
         this->changeTransformOperation(2);
-    if (event->key() == Qt::Key_M)
+    key = settings.getShortCut(ShortCut_CoordSys);
+    if (event->key() == key)
         this->changeTransformCoordSys();
 
-    if (event->key() == Qt::Key_1)
+    key = settings.getShortCut(ShortCut_FrontView);
+    if (event->key() == key)
         this->cameraLookTo(0);
-    if (event->key() == Qt::Key_3)
+    key = settings.getShortCut(ShortCut_RightView);
+    if (event->key() == key)
         this->cameraLookTo(1);
-    if (event->key() == Qt::Key_7)
+    key = settings.getShortCut(ShortCut_VerticalView);
+    if (event->key() == key)
         this->cameraLookTo(2);
-    if (event->key() == Qt::Key_0)
+    key = settings.getShortCut(ShortCut_InitViewPos);
+    if (event->key() == key)
         this->cameraLookTo(6);
 
-    bool ctrl_pressed = event->modifiers() & Qt::ControlModifier;
-    if (ctrl_pressed && event->key() == Qt::Key_1)
+    key = settings.getShortCut(ShortCut_BackView);
+    if (event->key() == key)
         this->cameraLookTo(3);
-    if (ctrl_pressed && event->key() == Qt::Key_3)
+    key = settings.getShortCut(ShortCut_LeftView);
+    if (event->key() == key)
         this->cameraLookTo(4);
-    if (ctrl_pressed && event->key() == Qt::Key_7)
+    key = settings.getShortCut(ShortCut_UpwardView);
+    if (event->key() == key)
         this->cameraLookTo(5);
 
-    if (event->key() == Qt::Key_Backspace)
+    key = settings.getShortCut(ShortCut_InitHandler);
+    if (event->key() == key)
         m_camera->resizeTransformHandler(0);
-    if (event->key() == Qt::Key_Plus)
+    key = settings.getShortCut(ShortCut_AmplifyHandler);
+    if (event->key() == key)
         m_camera->resizeTransformHandler(1);
-    if (event->key() == Qt::Key_Minus)
+    key = settings.getShortCut(ShortCut_ReduceHandler);
+    if (event->key() == key)
         m_camera->resizeTransformHandler(2);
 }
 

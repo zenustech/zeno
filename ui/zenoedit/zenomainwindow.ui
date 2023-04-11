@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>809</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -141,6 +141,7 @@
     </property>
     <addaction name="actionSet_NASLOC"/>
     <addaction name="actionSet_ZENCACHE"/>
+    <addaction name="actionSet_ShortCut"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -462,6 +463,11 @@ border-top: 1px solid black;</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+E</string>
+   </property>
+  </action>
+  <action name="actionSet_ShortCut">
+   <property name="text">
+    <string>Set ShortCut</string>
    </property>
   </action>
  </widget>
