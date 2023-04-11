@@ -152,14 +152,27 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             PropertyHeader p = arbattrs.getPropertyHeader(i);
             if (IFloatGeomParam::matches(p)) {
                 IFloatGeomParam param(arbattrs, p.getName());
-                if (!read_done) {
-                    log_info("[alembic] float attr {}.", p.getName());
-                }
+
                 IFloatGeomParam::Sample samp = param.getIndexedValue();
-                if (prim->verts.size() == samp.getVals()->size()) {
+                std::vector<float> data;
+                data.resize(samp.getVals()->size());
+                for (auto i = 0; i < samp.getVals()->size(); i++) {
+                    data[i] = samp.getVals()->get()[i];
+                }
+                if (!read_done) {
+                    log_info("[alembic] float attr {}, len {}.", p.getName(), data.size());
+                }
+
+                if (prim->verts.size() == data.size()) {
                     auto &attr = prim->add_attr<float>(p.getName());
                     for (auto i = 0; i < prim->verts.size(); i++) {
-                        attr[i] = samp.getVals()->get()[i];
+                        attr[i] = data[i];
+                    }
+                }
+                else if (prim->verts.size() * 3 == data.size()) {
+                    auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                    for (auto i = 0; i < prim->verts.size(); i++) {
+                        attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
                     }
                 }
             }
