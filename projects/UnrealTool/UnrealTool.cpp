@@ -1,12 +1,10 @@
 #include "zeno/unreal/UnrealTool.h"
-#include "zeno/unreal/HashMap.h"
-#include "zeno/unreal/Pair.h"
-#include "zeno/unreal/SimpleList.h"
+#include "msgpack/msgpack.h"
 #include <cstdarg>
 #include <map>
-#include <memory.h>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/SubnetNode.h>
+#include <zeno/types/PrimitiveObject.h>
 
 #define PROC_INPUT_ARGS                                                      \
     typedef std::pair<const char *, zeno::zany> ZPair;                       \
@@ -32,6 +30,22 @@
     }                                                                                                           \
                                                                                                                 \
     return result;
+
+zeno::SubnetNode* GetSubnetNodeToCall(zeno::Graph* graph) {
+
+    if (nullptr != graph && !(graph->nodesToExec.empty())) {
+        const std::string& execNodeNameExt = *graph->nodesToExec.begin();
+        const auto splitPos = execNodeNameExt.find(':');
+        const std::string execNodeName = execNodeNameExt.substr(0, splitPos);
+        // Check node is a subnet node
+        if (graph->nodes.find(execNodeName) != graph->nodes.end()) {
+            auto* execNode = dynamic_cast<zeno::SubnetNode*>(graph->nodes[execNodeName].get());
+            return execNode;
+        }
+    }
+
+    return nullptr;
+}
 
 zeno::SimpleList<std::pair<zeno::SimpleCharBuffer, zeno::zany>> zeno::CallTempNode(Graph *graph, const char *id,
                                                                                    size_t argc, ...) {
@@ -75,13 +89,35 @@ bool zeno::IsValidZSL(const char *json) {
     // Check have nodes to exec
     if (graph->nodesToExec.empty()) return false;
 
-    const std::string& execNodeNameExt = *graph->nodesToExec.begin();
-    const auto splitPos = execNodeNameExt.find(':');
-    const std::string execNodeName = execNodeNameExt.substr(0, splitPos);
-    // Check node is a subnet node
-    if (graph->nodes.find(execNodeName) == graph->nodes.end()) return false;
-    const zeno::SubnetNode* execNode = dynamic_cast<zeno::SubnetNode*>(graph->nodes[execNodeName].get());
+    const zeno::SubnetNode* execNode = GetSubnetNodeToCall(graph.get());
     if (nullptr == execNode || !execNode->subgraph) return false;
 
     return true;
+}
+
+zeno::SimpleCharBuffer zeno::CallSubnetNode_Mesh(zeno::Graph *graph, const char *id, size_t argc, ...) {
+    PROC_INPUT_ARGS;
+
+    std::map<std::string, zany> output = graph->callSubnetNode(id, std::move(inputs));
+
+    for (const auto& pair : output) {
+        if (!pair.second) {
+            continue;
+        }
+        zeno::IObject* obj = pair.second.get();
+        auto* primitiveObject = dynamic_cast<zeno::PrimitiveObject*>(obj);
+        if (nullptr == primitiveObject) {
+            continue;
+        }
+
+        zeno::unreal::Mesh mesh { primitiveObject->verts, primitiveObject->tris };
+        auto res = msgpack::pack(mesh);
+        return SimpleCharBuffer { reinterpret_cast<char*>(res.data()), res.size() };
+    }
+
+    return "{}";
+}
+
+zeno::SimpleCharBuffer zeno::GetGraphInputParams(zeno::Graph *graph) {
+    return zeno::SimpleCharBuffer(nullptr);
 }
