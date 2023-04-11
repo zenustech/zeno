@@ -1826,9 +1826,11 @@ std::vector<std::vector<std::string>> &texs) {
     if (OptixUtil::sky_tex.has_value()) {
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
     }
-    if (OptixUtil::noise_tex.has_value()) {
-        // state.params.cloudBaseShapeSampler = 0;
-        state.params.cloudBaseShapeSampler = OptixUtil::n_tex[OptixUtil::noise_tex.value()]->texture;
+    if (OptixUtil::LFnoise_tex.has_value()) {
+        state.params.cloudBaseShapeSampler = OptixUtil::n_tex[OptixUtil::LFnoise_tex.value()]->texture;
+    }
+    if (OptixUtil::HFnoise_tex.has_value()) {
+        state.params.cloudDetailsHighFreqSampler = OptixUtil::n_tex[OptixUtil::HFnoise_tex.value()]->texture;
     }
 }
 

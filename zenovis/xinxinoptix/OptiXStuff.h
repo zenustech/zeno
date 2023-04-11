@@ -398,17 +398,16 @@ inline void addTexture(std::string path)
 }
 
 inline std::map<std::string, std::shared_ptr<cuTexture>> n_tex;
-inline std::optional<std::string> noise_tex;
+inline std::optional<std::string> LFnoise_tex;
+inline std::optional<std::string> HFnoise_tex;
 inline std::shared_ptr<cuTexture> makeCudaNoiseTexture(unsigned char* img, int nx, int ny, int nz, int nc)
 {
     auto texture = std::make_shared<cuTexture>();
     cudaExtent size = make_cudaExtent(nx,ny,nz);
     size_t elements = size.width*size.height*size.depth;
 
-    // tofix: use vector
     std::vector<float4> data;
     data.resize(elements);
-
     for (size_t idx=0; idx<elements; idx++)
     {
         data[idx] = {
@@ -467,20 +466,17 @@ inline std::shared_ptr<cuTexture> makeCudaNoiseTexture(unsigned char* img, int n
     }
     return texture;
 }
-inline void addNoiseTexture(std::string directoryPath)
+inline void addLFNoiseTexture(std::string directoryPath)
 {
-    zeno::log_debug("loading noise texture from directory:{}", directoryPath);
-
     //debug
-    zeno::log_error("map_size: {}", n_tex.size());
-
-    // tofix: hardcode first
+    // zeno::log_debug("loading low frequency noise texture from directory:{}", directoryPath);
+    // zeno::log_error("map_size: {}", n_tex.size());
     if(n_tex.count(directoryPath)) {
         return;
     }
 
     //debug
-    zeno::log_error("still loading? {},{}", n_tex.count(directoryPath), directoryPath);
+    // zeno::log_error("still loading? {},{}", n_tex.count(directoryPath), directoryPath);
 
     // tofix: try hardcode first
     int nx, ny, nz, nc;
@@ -489,23 +485,23 @@ inline void addNoiseTexture(std::string directoryPath)
     nz = 128;
     nc = 4;
 
-    // stbi_set_flip_vertically_on_load(true);
+    // tofix: try hardcode first
     const std::string textureBaseName = "LowFrequency";
     const std::string fileExtension   = ".tga";
     // tofix: collection of 2D img to form 3D img
     int Image3DSize = nx*ny*nz*nc;
     uint8_t* texture3DPixels = new uint8_t[Image3DSize];
 	memset(texture3DPixels, 0, Image3DSize);
-
 // #pragma omp parallel for
 	for (int z=0; z<nz; z++)
 	{
+        // tofix: try hardcode first
 		std::string imageIdentifier = directoryPath + textureBaseName + "(" + std::to_string(z + 1) + ")" + fileExtension;
 		const char* imagePath = imageIdentifier.c_str();
 		unsigned char* img = stbi_load(imagePath, &nx, &ny, &nc, STBI_rgb_alpha);
-		if (!img) {
+		// stbi_set_flip_vertically_on_load(true);
+        if (!img) {
 			zeno::log_error("loading tga noise texture failed:{}", imagePath);
-            // return;
             continue;
 		}
 
@@ -517,13 +513,66 @@ inline void addNoiseTexture(std::string directoryPath)
         memcpy(&texture3DPixels[z * nx * ny * 4], img, static_cast<size_t>(nx * ny * 4));
 		stbi_image_free(img);
 	}
-
     n_tex[directoryPath] = makeCudaNoiseTexture(texture3DPixels, nx, ny, nz, nc);
-
+    delete texture3DPixels;
     for (auto i = n_tex.begin(); i != n_tex.end(); i++) {
         zeno::log_info("-{}", i->first);
     }
 }
+inline void addHFNoiseTexture(std::string directoryPath)
+{
+    //debug
+    // zeno::log_debug("loading high frequency noise texture from directory:{}", directoryPath);
+    // zeno::log_error("map_size: {}", n_tex.size());
+    if(n_tex.count(directoryPath)) {
+        return;
+    }
+
+    //debug
+    // zeno::log_error("still loading? {},{}", n_tex.count(directoryPath), directoryPath);
+
+    // tofix: try hardcode first
+    int nx, ny, nz, nc;
+    nx = 32;
+    ny = 32;
+    nz = 32;
+    nc = 4;
+
+    // tofix: try hardcode first
+    const std::string textureBaseName = "HighFrequency";
+    const std::string fileExtension   = ".tga";
+    // tofix: collection of 2D img to form 3D img
+    int Image3DSize = nx*ny*nz*nc;
+    uint8_t* texture3DPixels = new uint8_t[Image3DSize];
+	memset(texture3DPixels, 0, Image3DSize);
+// #pragma omp parallel for
+	for (int z=0; z<nz; z++)
+	{
+        // tofix: try hardcode first
+		std::string imageIdentifier = directoryPath + textureBaseName + "(" + std::to_string(z + 1) + ")" + fileExtension;
+		const char* imagePath = imageIdentifier.c_str();
+		unsigned char* img = stbi_load(imagePath, &nx, &ny, &nc, STBI_rgb_alpha);
+		// stbi_set_flip_vertically_on_load(true);
+        if (!img) {
+			zeno::log_error("loading tga noise texture failed:{}", imagePath);
+            continue;
+		}
+
+        nx = std::max(nx, 1);
+        ny = std::max(ny, 1);
+        assert(img);
+
+        // tofix: collection of 2D img to form 3D img
+        memcpy(&texture3DPixels[z * nx * ny * 4], img, static_cast<size_t>(nx * ny * 4));
+		stbi_image_free(img);
+	}
+    n_tex[directoryPath] = makeCudaNoiseTexture(texture3DPixels, nx, ny, nz, nc);
+    delete texture3DPixels;
+    for (auto i = n_tex.begin(); i != n_tex.end(); i++) {
+        zeno::log_info("-{}", i->first);
+    }
+}
+
 struct rtMatShader
 {
     raii<OptixModule>                    m_ptx_module             ;

@@ -1113,42 +1113,49 @@ static __inline__ __device__ float sampleLowFrequency(
 
     return base_cloud_with_coverage;
 }
+static __inline__ __device__ float sampleHighFrequency(
+    vec3 pos,
+    float baseDensity,
+    float heightFract
+)
+{
+    vec4 highFrequencyNoise = texture3D(params.cloudDetailsHighFreqSampler, pos);
+    float highFrequencyFBM = (highFrequencyNoise.x * 0.625) + 
+                             (highFrequencyNoise.y * 0.25)  +
+                             (highFrequencyNoise.z * 0.125); 
 
-static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float time, float freq = 1.0f, int layer = 6)
+    float highFrequencyModifier = saturate(mix(highFrequencyFBM, 1.0 - highFrequencyFBM, saturate(heightFract * 2.0)));
+
+    return remap(baseDensity, highFrequencyModifier * 0.005, 1.0, 0.0, 1.0);
+}
+static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float heightFract, float time)
 {
     // try 3Dtexture approach
     // no more real-time calculation of noise and fbm
 
-    // tofix: 
     // access noise sampler succeed
-
     // float relativeHeight = getRelativeHeightInAtmosphere(pos, earthCenter, startPos, ray.direction, ray.origin);
     // vec3 skewedSamplePoint = skewSamplePointWithWind(samplePoint, relativeHeight);
     // vec3 p = mod(pos, 1.0f);
-    float baseDensity = sampleLowFrequency(
-            (pos
+
+    vec3 samplePoint = (pos
             +windDir*time
-            )/(128*128), // ~*0.00006f
+            )/(128*128);
+
+    float baseDensity = sampleLowFrequency(
+            samplePoint, // ~*0.00006f
             // scale causing problem?
             // how to properly sample noise with pos?
             coverage
+            // 0.4*((sin(time*0.01)/2)+1.5) // debug
         );
 
-    return baseDensity;
+    // tofix: add sampleHighFrequency
+    bool cloudDetailTest = (baseDensity > 0. && baseDensity < .3); 
 
-	// signal
-	// vec3 p = 2.0 * pos * .0212242 * freq; // test time
-    // vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
-	// float dens = fbm(p + pertb + windDir * time, layer); //, FBM_FREQ);;
-
-// 	float cov = 1. - coverage;
-// //	dens = smoothstep (cov-0.1, cov + .1, dens);
-// //  dens = softlight(fbm(p*4 + pertb * 4  + windDir * t), dens, 0.8);
-//     dens *= smoothstep (cov, cov + .1, dens);
-
-	// return pow(clamp(dens, 0., 1.), 0.5f);
-}
-// tofix:
+    // return baseDensity; // debug
+    return ((cloudDetailTest) ? sampleHighFrequency(samplePoint, baseDensity, heightFract) : baseDensity);
+}        
 // ----cloud lighting----
 static __inline__ __device__ float HenyeyGreenstein(float costh, float g)
 {
@@ -1159,16 +1166,15 @@ static __inline__ __device__ float light(
     vec3 sunLightDir,
     vec3 windDir,
     float coverage,
-    float absorption,
     float time
 ){
     // tofix: try cone sampling
-	const float maxSteps = 10;
+	const float maxSteps = 6.;
 	const float stepSize = 11.;
 	vec3 dir_step = -sunLightDir * stepSize;
 	float T = 1.; // transmitance
 	for (int i = 0; i < maxSteps; i++) {
-		float dens = density(pos, windDir, coverage, time);
+		float dens = density(pos, windDir, coverage, i/maxSteps, time);
 
 		float T_i = exp(-dens*stepSize);
 		T *= T_i;
@@ -1188,7 +1194,7 @@ static __inline__ __device__ float light(
 #define cloud_top 6000.0f
 static __inline__ __device__ float cloudHeightFract(float p)
 {
-	return (p - cloud_bottom) / (cloud_top - cloud_bottom);
+	return saturate((p - cloud_bottom) / (cloud_top - cloud_bottom));
 }
 static __inline__ __device__ vec4 render_clouds(
     ray r, 
@@ -1244,28 +1250,30 @@ static __inline__ __device__ vec4 render_clouds(
     float sunDot = max(0., dot(r.direction, sunLightDir));
     float hgPhase = mix(HenyeyGreenstein(sunDot, .4),
                         HenyeyGreenstein(sunDot, -.1), .5);
-
     for (int i=0; i < maxSteps; i++)
     {
-        float dens = density(pos, windDir, coverage, time);
-        
         // tofix: move lighting to this part, 
         //        to have a sense of thickness
-        float heightFract = cloudHeightFract(length(pos-hit_in.origin)); 
         // temporal fix of over exposure on the horizon for ambient lighting
+        float heightFract = cloudHeightFract(pos.y-hit_in.origin.y); 
+
+        float dens = density(pos, windDir, coverage, heightFract, time);
         if (dens > 0.)
         {
             // cloud illumination
-            ambient = mix(vec3(.6, .4, .8), vec3(1., 1.2, 1.6), heightFract);
+            ambient = mix(
+                vec3(.6, .4, .8),
+                vec3(1., 1.2, 1.6), 
+                heightFract
+            );
             vec3 luminance = (
                     // direct lighting
                     sun_color * hgPhase
-                    * light(pos, sunLightDir, windDir, coverage, absorption, time)
+                    * light(pos, sunLightDir, windDir, coverage, time)
                     +
                     // ambient lighting 
                     // tofix: not phisically correct (consider the conservation of energy)
-                    ambient
-                    * saturate(pow(sunLightDir.z + .04, 1.4))
+                    ambient * saturate(pow(sunLightDir.z + .04, 1.4))
                     + mix(vec3(.0, .1, .4), vec3(.3, .6, .8), 1.0 - r.direction.y) * .125 
                 ) * dens;
 
@@ -1290,11 +1298,10 @@ static __inline__ __device__ vec4 render_clouds(
 
         pos += stepSize*r.direction;
     }
-
-    // 
+    // tofix: add a fog mask on the horizon to hide patterns
+    //
 
     // if(intScatterTrans.w > 0.99999f) {intScatterTrans.w = 0.f;} // debug
-
     // return vec4(1.,0.,0., 0.0);    //debug
     return vec4(intScatterTrans.x, intScatterTrans.y, intScatterTrans.z, 1.0f-intScatterTrans.w);
 }
