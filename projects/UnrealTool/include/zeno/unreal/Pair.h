@@ -1,9 +1,13 @@
 #pragma once
 
+#include <cstring>
+
 namespace zeno {
 
 struct SimpleCharBuffer {
-    SimpleCharBuffer(const char* InChar) {
+    SimpleCharBuffer(const char* InChar)
+        : length(0)
+    {
         length = std::strlen(InChar);
         data = new char[length];
         strncpy(data, InChar, length);
