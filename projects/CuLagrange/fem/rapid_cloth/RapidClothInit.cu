@@ -295,7 +295,7 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auto vi = voffset + i; 
 
             vtemp("ws", vi) = verts("m", i);
-            vtemp("BCfixed", vi) = 0; //verts("BCfixed", i);
+            vtemp("BCfixed", vi) = (T)(verts("BCorder", i) == 3);
             vtemp.tuple(dim_c<3>, "x[0]", vi) = x;
             vtemp.tuple(dim_c<3>, "x[k]", vi) = x;
             vtemp.tuple(dim_c<3>, "x(l)", vi) = x;
