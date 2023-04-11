@@ -42,6 +42,8 @@ struct RapidClothSystem : IObject {
     using vec3f = zs::vec<float, 3>;
     using ivec3 = zs::vec<int, 3>;
     using ivec2 = zs::vec<int, 2>;
+    using bvec3 = zs::vec<bool, 3>; 
+    using bvec4 = zs::vec<bool, 4>; 
     using mat2 = zs::vec<T, 2, 2>;
     using mat3 = zs::vec<T, 3, 3>;
     using pair_t = zs::vec<int, 2>;
@@ -275,7 +277,7 @@ struct RapidClothSystem : IObject {
     zs::Vector<int> lcpMatSize; 
     zs::Vector<zs::u32> colorMinWeights, colorWeights;
     zs::Vector<int> colorMaskOut, colors;
-    itiles_t tempCons;       // LCP constraint matrix storing
+    itiles_t tempCons;       // LCP constraint storage
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
     zs::Vector<int> oPP, oPE, oPT, oEE, oE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;

@@ -295,9 +295,10 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auto vi = voffset + i; 
 
             vtemp("ws", vi) = verts("m", i);
+            vtemp("BCfixed", vi) = 0; //verts("BCfixed", i);
             vtemp.tuple(dim_c<3>, "x[0]", vi) = x;
             vtemp.tuple(dim_c<3>, "x[k]", vi) = x;
-            vtemp.tuple(dim_c<3>, "x(l)", vi) = x; 
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = x;
             vtemp.tuple(dim_c<3>, "v[0]", vi) = v;
         });
     }
@@ -493,6 +494,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"cons", 3},
                         {"isBC", 1},            // 0 or 1
                         {"BCtarget", 3},  
+                        {"BCfixed", 1}, 
                         // cloth dynamics
                         {"x0", 3},              // rest state 
                         {"x[0]", 3},
@@ -515,6 +517,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"q", 3},
                         // forward step
                         {"Di", 1}, 
+                        {"sync", 1}, 
                         // intermediate
                         {"temp", 3},
                     },
