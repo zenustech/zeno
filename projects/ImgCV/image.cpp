@@ -211,6 +211,578 @@ ZENDEFNODE(CVCanny, {
     { "comp" },
 });
 
+
+/* 合成图层。可能需要的参数：前景图层，前景权重，背景图层，背景
+权重，Mask图层，Mask权重
+用 mask 将前景和背景叠加的操作算法（操作分别作用在前背景和alpha通道上）：
+mask可以被忽略，它只是将操作限制在图像的一个区域。mask可
+以是反转的、变亮的或变暗的。
+mask可以单独指定，或者来自前景的alpha通道。
+算法参考：https://www.deanhan.cn/canvas-blende-mode.html
+over：将前景放置于背景之上
+under：将前景放置在背景的alpha之下
+atop：当背景的alpha存在的时候，才将前景放置于背景之上
+inside：将前景放置在背景的alpha中。
+outside：将前景放置在背景的alpha之外
+screen：作用与饱和度add相同
+add：将前景添加到背景上
+subtract：从背景中减去前景
+diff：获取前景和背景之间的差的绝对值
+myltiply：将背景与前景相乘
+minimum：取前景和背景的最小值
+maximum：取前景和背景的最大值
+average：取前景和背景的平均值
+xor：异或运算，对两个Alpha平面进行异或运算，以便删除重叠的
+Alpha区域
+图像过滤器（可能在分辨率不统一的时候使用） */
+struct Composite3: INode {
+    virtual void apply() override {
+        auto image1 = get_input<PrimitiveObject>("Foreground");
+        auto image2 = get_input<PrimitiveObject>("Background");
+        auto image3 = get_input<PrimitiveObject>("Mask");
+        auto compmode = get_input2<std::string>("compmode");
+        auto &ud1 = image1->userData();
+        int w1 = ud1.get2<int>("w");
+        int h1 = ud1.get2<int>("h");
+
+        if(compmode == "Add"){
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    float r1 = image1->verts[i * w1 + j][0];
+                    float r2 = image2->verts[i * w1 + j][0];
+                    float g1 = image1->verts[i * w1 + j][1];
+                    float g2 = image2->verts[i * w1 + j][1];
+                    float b1 = image1->verts[i * w1 + j][2];
+                    float b2 = image2->verts[i * w1 + j][2];
+                    float l = image3->verts[i * w1 + j][0];
+                    image1->verts[i * w1 + j] = {r1*l+r2*(1-l), g1*l+g2*(1-l), b1*l+b2*(1-l)};
+                }
+            }
+        }
+        if(compmode == "Subtract"){
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    float r1 = image1->verts[i * w1 + j][0];
+                    float r2 = image2->verts[i * w1 + j][0];
+                    float g1 = image1->verts[i * w1 + j][1];
+                    float g2 = image2->verts[i * w1 + j][1];
+                    float b1 = image1->verts[i * w1 + j][2];
+                    float b2 = image2->verts[i * w1 + j][2];
+                    float l = image3->verts[i * w1 + j][0];
+                    image1->verts[i * w1 + j] = {r1*l-r2*(1-l), g1*l-g2*(1-l), b1*l-b2*(1-l)};
+                }
+            }
+        }
+        if(compmode == "Multiply"){
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    float r1 = image1->verts[i * w1 + j][0];
+                    float r2 = image2->verts[i * w1 + j][0];
+                    float g1 = image1->verts[i * w1 + j][1];
+                    float g2 = image2->verts[i * w1 + j][1];
+                    float b1 = image1->verts[i * w1 + j][2];
+                    float b2 = image2->verts[i * w1 + j][2];
+                    float l = image3->verts[i * w1 + j][0];
+                    image1->verts[i * w1 + j] = {r1*l*r2*(1-l), g1*l*g2*(1-l), b1*l*b2*(1-l)};
+                }
+            }
+        }
+        if(compmode == "Diff"){
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    float r1 = image1->verts[i * w1 + j][0];
+                    float r2 = image2->verts[i * w1 + j][0];
+                    float g1 = image1->verts[i * w1 + j][1];
+                    float g2 = image2->verts[i * w1 + j][1];
+                    float b1 = image1->verts[i * w1 + j][2];
+                    float b2 = image2->verts[i * w1 + j][2];
+                    float l = image3->verts[i * w1 + j][0];
+                    image1->verts[i * w1 + j] = {r1*l/(r2*(1-l)), g1*l/(g2*(1-l)), b1*l/(b2*(1-l))};
+                }
+            }
+        }
+        set_output("image", image1);
+    }
+};
+
+ZENDEFNODE(Composite3, {
+    {
+        {"Foreground"},
+        {"Background"},
+        {"Mask"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+struct Composite2: INode {
+    virtual void apply() override {
+        auto image1 = get_input<PrimitiveObject>("Foreground");
+        auto image2 = get_input<PrimitiveObject>("Background");
+        auto compmode = get_input2<std::string>("compmode");
+        auto &ud1 = image1->userData();
+        int w1 = ud1.get2<int>("w");
+        int h1 = ud1.get2<int>("h");
+        auto &ud2 = image2->userData();
+        int w2 = ud2.get2<int>("w");
+        int h2 = ud2.get2<int>("h");
+        if(compmode == "Over"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha = image1->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l = alpha[i * w1 + j];
+                        image1->verts[i * w1 + j] = {r1 * l + r2 * (1 - l), g1 * l + g2 * (1 - l),
+                                                     b1 * l + b2 * (1 - l)};
+                    }
+                }
+            }
+        }
+        if(compmode == "Under"){
+            if (image2->verts.has_attr("alpha")) {
+                auto &alpha = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l = alpha[i * w1 + j];
+                        image1->verts[i * w1 + j] = {r2 * l + r1 * (1 - l), g2 * l + g1 * (1 - l),
+                                                     b2 * l + b1 * (1 - l)};
+                    }
+                }
+            }
+        }
+        if(compmode == "AtopB"){
+            if (image2->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        if(l2==1){
+                            image1->verts[i * w1 + j] = {r1 * l1 + r2 * l2, g1 * l1 + g2 * l2,
+                                                         b1 * l1 + b2 * l2};
+                        }
+                        else{
+                            image1->verts[i * w1 + j] = {0,0,0};
+                        }
+                    }
+                }
+            }
+        }
+        if(compmode == "BtopA"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        if(l1==1){
+                            image1->verts[i * w1 + j] = {r1 * l1 + r2 * l2, g1 * l1 + g2 * l2,
+                                                         b1 * l1 + b2 * l2};
+                        }
+                        else{
+                            image1->verts[i * w1 + j] = {0,0,0};
+                        }
+                    }
+                }
+            }
+        }
+        if(compmode == "Inside"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        if(l1==1 && l2==1){
+                            image1->verts[i * w1 + j] = {r1 * l1, g1 * l1,
+                                                         b1 * l1 };
+                        }
+                        else{
+                            image1->verts[i * w1 + j] = {0,0,0};
+                        }
+                    }
+                }
+            }
+        }
+        if(compmode == "Outside"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        if(l1==1 && l2==0){
+                            image1->verts[i * w1 + j] = {r1 * l1, g1 * l1,
+                                                         b1 * l1 };
+                        }
+                        else{
+                            image1->verts[i * w1 + j] = {0,0,0};
+                        }
+                    }
+                }
+            }
+        }
+        if(compmode == "Screen"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        if(l1==1 && l2==0){
+                            image1->verts[i * w1 + j] = {r1 * l1, g1 * l1,
+                                                         b1 * l1 };
+                        }
+                        else{
+                            image1->verts[i * w1 + j] = {0,0,0};
+                        }
+                    }
+                }
+            }
+        }
+        if(compmode == "Add"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        image1->verts[i * w1 + j] = {r1 * l1 + r2 * l2, g1 * l1 + g2 * l2,
+                                                     b1 * l1 + b2 * l2};
+                    }
+                }
+            }
+        }
+        if(compmode == "Subtract"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        image1->verts[i * w1 + j] = {r1 * l1 - r2 * l2, g1 * l1 - g2 * l2,
+                                                     b1 * l1 - b2 * l2};
+                    }
+                }
+            }
+        }
+        if(compmode == "Multiply"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        image1->verts[i * w1 + j] = {r1 * l1 * r2 * l2, g1 * l1 * g2 * l2,
+                                                     b1 * l1 * b2 * l2};
+                    }
+                }
+            }
+        }
+        if(compmode == "Divide"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        image1->verts[i * w1 + j] = {r1 * l1 / (r2 * l2), g1 * l1 / (g2 * l2),
+                                                     b1 * l1 / (b2 * l2)};
+                    }
+                }
+            }
+        }
+        if(compmode == "Diff"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        image1->verts[i * w1 + j] = {abs(r1 * l1 - r2 * l2), abs(g1 * l1 - g2 * l2),
+                                                     abs(b1 * l1 - b2 * l2)};
+                    }
+                }
+            }
+        }
+        if(compmode == "Minimum"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        image1->verts[i * w1 + j] = {std::min(r1 * l1 , r2 * l2), std::min(g1 * l1 , g2 * l2),
+                                                     std::min(b1 * l1 , b2 * l2)};
+                    }
+                }
+            }
+        }
+        if(compmode == "Maxinum"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        image1->verts[i * w1 + j] = {std::max(r1 * l1 , r2 * l2), std::max(g1 * l1 , g2 * l2),
+                                                     std::max(b1 * l1 , b2 * l2)};
+                    }
+                }
+            }
+        }
+        if(compmode == "Average"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        image1->verts[i * w1 + j] = {(r1 * l1 + r2 * l2)/2,(g1 * l1 + g2 * l2)/2,
+                                                    (b1 * l1 + b2 * l2)/2};
+                    }
+                }
+            }
+        }
+        if(compmode == "Xor"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        if(!(l1==1 && l2==1)){
+                            image1->verts[i * w1 + j] = {r1 * l1 + r2 * l2, g1 * l1 + g2 * l2,
+                                                         b1 * l1 + b2 * l2};
+                        }
+                        else{
+                            image1->verts[i * w1 + j] = {0,0,0};
+                        }
+                    }
+                }
+            }
+        }
+        if(compmode == "Alpha"){
+            if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        float r1 = image1->verts[i * w1 + j][0];
+                        float r2 = image2->verts[i * w1 + j][0];
+                        float g1 = image1->verts[i * w1 + j][1];
+                        float g2 = image2->verts[i * w1 + j][1];
+                        float b1 = image1->verts[i * w1 + j][2];
+                        float b2 = image2->verts[i * w1 + j][2];
+                        float l1 = alpha1[i * w1 + j];
+                        float l2 = alpha2[i * w1 + j];
+                        if(l1==1 || l2==1){
+                            image1->verts[i * w1 + j] = {1,1,1};
+                        }
+                        else{
+                            image1->verts[i * w1 + j] = {0,0,0};
+                        }
+                    }
+                }
+            }
+        }
+        set_output("image", image1);
+    }
+};
+
+ZENDEFNODE(Composite2, {
+    {
+        {"Foreground"},
+        {"Background"},
+        {"enum Over Under AtopB BtopA Inside Outside Screen Add Subtract Multiply Divide Diff Minimum Maxinum Average Xor Alpha ", "compmode", "Over"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+struct Composite1: INode {
+    virtual void apply() override {
+        auto image1 = get_input<PrimitiveObject>("Foreground");
+        auto image2 = get_input<PrimitiveObject>("Background");
+        auto mode = get_input2<std::string>("mode");
+        float ratio = get_input2<float>("ratio");
+        auto &ud1 = image1->userData();
+        int w1 = ud1.get2<int>("w");
+        int h1 = ud1.get2<int>("h");
+        auto &ud2 = image2->userData();
+        int w2 = ud2.get2<int>("w");
+        int h2 = ud2.get2<int>("h");
+        cv::Mat imagecvin1(h1, w1, CV_32FC3);
+        cv::Mat imagecvin2(h2, w2, CV_32FC3);
+        cv::Mat imagecvadd(h1, w1, CV_32FC3);
+        cv::Mat imagecvsub(h1, w1, CV_32FC3);
+        cv::Mat imagecvout(h1, w1, CV_32FC3);
+        for (int i = 0; i < h1; i++) {
+            for (int j = 0; j < w1; j++) {
+                vec3f rgb = image1->verts[i * w1 + j];
+                imagecvin1.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        for (int i = 0; i < h2; i++) {
+            for (int j = 0; j < w2; j++) {
+                vec3f rgb = image2->verts[i * w2 + j];
+                imagecvin2.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        cv::resize(imagecvin2, imagecvin2,imagecvin1.size());
+        if(mode == "Add"){
+            cv::addWeighted(imagecvin1, 1 - ratio, imagecvin2, ratio, 0, imagecvout);
+        }
+        if(mode == "Subtract"){
+            cv::subtract(imagecvin1*ratio, imagecvin2*(1-ratio), imagecvout);
+        }
+        if(mode == "Multiply"){
+            cv::multiply(imagecvin1*ratio, imagecvin2*(1-ratio), imagecvout);
+        }
+        if(mode == "Divide"){
+            cv::absdiff(imagecvin1*ratio, imagecvin2*(1-ratio), imagecvout);
+        }
+
+        for (int i = 0; i < h1; i++) {
+            for (int j = 0; j < w1; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image1->verts[i * w1 + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image1);
+    }
+};
+
+ZENDEFNODE(Composite1, {
+    {
+        {"Foreground"},
+        {"Background"},
+        {"enum Add Subtract Multiply Divide", "mode", "Add"},
+        {"float", "ratio", "0.5"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
 //RGB2YUV BT.709标准
 struct ImageEdit_YUV : INode {
     virtual void apply() override {
@@ -345,13 +917,13 @@ ZENDEFNODE(ImageEdit_HSV, {
 });
 
 /* 提取RGB */
-struct ExtractRGB : INode {
+struct ExtractRGBA : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<std::string>("RGB");
+        auto RGBA = get_input2<std::string>("RGBA");
 
-        if(RGB == "RGB") {}
-        if(RGB == "R") {
+        if(RGBA == "RGBA") {}
+        if(RGBA == "R") {
             for (auto i = 0; i < image->verts.size(); i++) {
                 float R = image->verts[i][0];
                 image->verts[i][0] = R;
@@ -359,7 +931,7 @@ struct ExtractRGB : INode {
                 image->verts[i][2] = R;
             }
         }
-        if(RGB == "G") {
+        if(RGBA == "G") {
             for (auto i = 0; i < image->verts.size(); i++) {
                 float G = image->verts[i][1];
                 image->verts[i][0] = G;
@@ -367,7 +939,7 @@ struct ExtractRGB : INode {
                 image->verts[i][2] = G;
             }
         }
-        if(RGB == "B") {
+        if(RGBA == "B") {
             for (auto i = 0; i < image->verts.size(); i++) {
                 float B = image->verts[i][2];
                 image->verts[i][0] = B;
@@ -375,13 +947,24 @@ struct ExtractRGB : INode {
                 image->verts[i][2] = B;
             }
         }
+        if(RGBA == "A") {
+            if (image->verts.has_attr("alpha")) {
+                auto &Alpha = image->verts.attr<float>("alpha");
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float A = Alpha[i];
+                    image->verts[i][0] = A;
+                    image->verts[i][1] = A;
+                    image->verts[i][2] = A;
+                }
+            }
+        }
         set_output("image", image);
     }
 };
-ZENDEFNODE(ExtractRGB, {
+ZENDEFNODE(ExtractRGBA, {
     {
         {"image"},
-        {"enum RGB R G B", "RGB", "RGB"},
+        {"enum RGBA R G B A", "RGBA", "RGBA"},
     },
     {
         {"image"}
@@ -396,16 +979,47 @@ ZENDEFNODE(ExtractRGB, {
 类型为float32 */
 struct CompImport : INode {
     virtual void apply() override {
-        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &ud = prim->userData();
+        int nx = ud.get2<int>("nx");
+        int ny = ud.get2<int>("ny");
+        auto attrName = get_input2<std::string>("attrName");
+
+        auto image = std::make_shared<PrimitiveObject>();
+        image->resize(nx * ny);
+
+        if (prim->verts.attr_is<float>(attrName)) {
+            auto &attr = prim->attr<float>(attrName);
+            for (auto i = 0; i < nx * ny; i++) {
+                float v = attr[i];
+                image->verts[i] = {v, v, v};
+            }
+        }
+        else if (prim->verts.attr_is<vec3f>(attrName)) {
+            auto &attr = prim->attr<vec3f>(attrName);
+            for (auto i = 0; i < nx * ny; i++) {
+                image->verts[i] = attr[i];
+            }
+        }
+
+        image->userData().set2("isImage", 1);
+        image->userData().set2("w", nx);
+        image->userData().set2("h", ny);
+
+        set_output("image", image);
     }
 };
 
 ZENDEFNODE(CompImport, {
     {
+        {"prim"},
+        {"string", "attrName", ""},
+    },
+    {
+        {"image"},
     },
     {},
-    {},
-    { "" },
+    { "comp" },
 });
 
 /* 删除指定的图层(属性)。需要指定图层的名称（可能会有多个），选
@@ -478,45 +1092,6 @@ ZENDEFNODE(comp_color_ramp, {
     { "" },
 });
 
-/* 合成图层。可能需要的参数：前景图层，前景权重，背景图层，背景
-权重，Mask图层，Mask权重
-用 mask 将前景和背景叠加的操作算法（操作分别作用在前背景和alpha通道上）：
-mask可以被忽略，它只是将操作限制在图像的一个区域。mask可
-以是反转的、变亮的或变暗的。
-mask可以单独指定，或者来自前景的alpha通道。
-算法参考：https://www.deanhan.cn/canvas-blende-mode.html
-over：将前景放置于背景之上
-under：将前景放置在背景的alpha之下
-atop：当背景的alpha存在的时候，才将前景放置于背景之上
-inside：将前景放置在背景的alpha中。
-outside：将前景放置在背景的alpha之外
-screen：作用与饱和度add相同
-add：将前景添加到背景上
-subtract：从背景中减去前景
-diff：获取前景和背景之间的差的绝对值
-myltiply：将背景与前景相乘
-minimum：取前景和背景的最小值
-maximum：取前景和背景的最大值
-average：取前景和背景的平均值
-xor：异或运算，对两个Alpha平面进行异或运算，以便删除重叠的
-Alpha区域
-图像过滤器（可能在分辨率不统一的时候使用） */
-struct CompComposite : INode {
-    virtual void apply() override {
-
-    }
-};
-
-ZENDEFNODE(CompComposite, {
-    {
-        {"image"}
-    },
-    {
-        {"image"}
-        },
-    {},
-    { "" },
-});
 
 /* 图像对比度调节
 此操作可增加或降低图像的对比度。这可以通过两种方式实现：
