@@ -31,6 +31,7 @@ struct RapidClothSystem : IObject {
     bool enableRepulsion = false; 
     bool enableDistConstraint = true; 
     bool enableFriction = false;
+    bool enableSL = false; 
     T clothFricMu = 0.1f;
     T boundaryFricMu = 10.0f;   
 
@@ -42,6 +43,8 @@ struct RapidClothSystem : IObject {
     using vec3f = zs::vec<float, 3>;
     using ivec3 = zs::vec<int, 3>;
     using ivec2 = zs::vec<int, 2>;
+    using bvec3 = zs::vec<bool, 3>; 
+    using bvec4 = zs::vec<bool, 4>; 
     using mat2 = zs::vec<T, 2, 2>;
     using mat3 = zs::vec<T, 3, 3>;
     using pair_t = zs::vec<int, 2>;
@@ -162,7 +165,7 @@ struct RapidClothSystem : IObject {
     // assume ncps < 6e5, normal choice: ncps = 1e5
     RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t spmatCps, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
-                    int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
+                    int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, bool enableSL, T gamma, T eps, int maxVertCons, 
                     T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, bool enableDistConstraint, 
                     T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu); 
 
@@ -195,10 +198,10 @@ struct RapidClothSystem : IObject {
     /// linear solve
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &tag0, const zs::SmallString &tag1, std::size_t n);
     template<class ValT, class tvT>
-    ValT RapidClothSystem::tvMax(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
+    ValT tvMax(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
         std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
     template<class ValT, class tvT>
-    ValT RapidClothSystem::tvMin(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
+    ValT tvMin(zs::CudaExecutionPolicy &cudaPol, const tvT& tv, const zs::SmallString& tag, 
         std::size_t n, zs::wrapt<ValT> valWrapT = {}); 
     template <int codim = 3>
     T infNorm(zs::CudaExecutionPolicy &pol, const zs::SmallString &tag, std::size_t n, zs::wrapv<codim> = {});
@@ -275,7 +278,7 @@ struct RapidClothSystem : IObject {
     zs::Vector<int> lcpMatSize; 
     zs::Vector<zs::u32> colorMinWeights, colorWeights;
     zs::Vector<int> colorMaskOut, colors;
-    itiles_t tempCons;       // LCP constraint matrix storing
+    itiles_t tempCons;       // LCP constraint storage
     tiles_t tempPP, tempPE, tempPT, tempEE, tempE; 
     zs::Vector<int> oPP, oPE, oPT, oEE, oE; 
     zs::Vector<int> nPP, nPE, nPT, nEE, nE;
@@ -401,4 +404,4 @@ struct RapidClothSystem : IObject {
 
 } // namespace zeno
 
-#include "SolverUtils.cuh"
+#include "../SolverUtils.cuh"
