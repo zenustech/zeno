@@ -802,7 +802,7 @@
     </message>
     <message>
         <source>Set ShortCut</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">设置快捷键</translation>
     </message>
 </context>
 <context>
@@ -999,7 +999,7 @@
         <translation type="unfinished">后视图</translation>
     </message>
     <message>
-        <source>LeftView</source>
+        <source>Left View</source>
         <translation type="unfinished">左视图</translation>
     </message>
     <message>

@@ -24,11 +24,14 @@ public:
     const int getShortCut(const QString &key);
     void setShortCut(const QString &key, const QString &value);
 
+    void writeShortCutInfo(const QVector<ShortCutInfo> &infos);
+
   signals:
     void valueChanged(QString zsName);
 
 private:
     void initShortCutInfos();
+    QVector<ShortCutInfo> getDefaultShortCutInfo();
     ShortCutInfo& getShortCutInfo(const QString &key);
 
   private:

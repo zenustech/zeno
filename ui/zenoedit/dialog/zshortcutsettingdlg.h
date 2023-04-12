@@ -20,8 +20,6 @@ protected:
 
   private:
     void initUI();
-    void writeShortCutInfo();
-    QString getShotCutStatus(const QString &shortcut);
 
   private:
     QTableWidget *m_pTableWidget;
