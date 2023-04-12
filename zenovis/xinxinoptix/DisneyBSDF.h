@@ -112,6 +112,8 @@ namespace DisneyBSDF{
     float EvaluateClearcoat(
         float clearcoat, 
         float alpha,
+        float clearCoatRoughness,
+        float clearCoatIOR,
         float NoH,
         float NoL,
         float NoV,
@@ -124,9 +126,9 @@ namespace DisneyBSDF{
             return 0.0f;
         }
         float d  = BRDFBasics::GTR1(NoH, mix(0.1f, 0.001f, alpha));
-        float f  = BRDFBasics::fresnelSchlick(0.04f, HoL);
-        float gl = BRDFBasics::GGX(NoL, 0.25f);
-        float gv = BRDFBasics::GGX(NoV, 0.25f);
+        float f  = BRDFBasics::fresnelDielectric(HoL, 1.0f, clearCoatIOR, false);
+        float gl = BRDFBasics::GGX(NoL, clearCoatRoughness);
+        float gv = BRDFBasics::GGX(NoV, clearCoatRoughness);
 
         fPdfW = d / (4.0f * abs(HoV));
         rPdfW = d / (4.0f * abs(HoL));
@@ -322,7 +324,8 @@ namespace DisneyBSDF{
         float sheenTint,
         float clearCoat,
         float clearcoatGloss,
-
+        float ccRough,
+        float ccIor,
         float specTrans,
         float scatterDistance,
         float ior,
@@ -373,7 +376,7 @@ namespace DisneyBSDF{
         if(upperHemisphere && clearCoat > 0.0f) {
             float forwardClearcoatPdfW;
             float reverseClearcoatPdfW;
-            float clearcoat = EvaluateClearcoat(clearCoat,clearcoatGloss,NoH,NoL,NoV,HoL,HoL,forwardClearcoatPdfW,reverseClearcoatPdfW);
+            float clearcoat = EvaluateClearcoat(clearCoat,clearcoatGloss,ccRough, ccIor, NoH,NoL,NoV,HoL,HoL,forwardClearcoatPdfW,reverseClearcoatPdfW);
             fPdf += pClearcoat * forwardClearcoatPdfW;
             rPdf += pClearcoat * reverseClearcoatPdfW;
             reflectance += make_float3(clearcoat,clearcoat,clearcoat);
@@ -488,6 +491,8 @@ namespace DisneyBSDF{
             unsigned int &seed,
             float clearCoat,
             float clearcoatGloss,
+            float clearCoatRoughness,
+            float clearCoatIOR,
             vec3 T,
             vec3 B,
             vec3 N,
@@ -499,19 +504,12 @@ namespace DisneyBSDF{
             )
 
     {
-        float a2 = 0.0625; //0.25 * 0.25
-
+        float ax, ay;
+        BRDFBasics::CalculateAnisotropicParams(clearCoatRoughness, 0, ax, ay);
         float2 r01 = sobolRnd(seed);
         float r0 = r01.x;//rnd(seed);
         float r1 = r01.y;//rnd(seed);
-
-        float cosTheta = sqrt( max(0.0f, (1.0f - pow(a2, 1.0f - r0) ) / (1.0f -a2) ) );
-        float sinTheta = sqrt( max(0.0f, 1.0f - cosTheta * cosTheta) );
-
-
-        float phi = 2.0f * M_PIf * r1;
-
-        vec3 wm = vec3(sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta);
+        vec3 wm = BRDFBasics::SampleGgxVndfAnisotropic(wo, ax, ay, r0, r1);
         if(dot(wm,wo) < 0.0f){
             wm = -wm;
         }
@@ -528,13 +526,14 @@ namespace DisneyBSDF{
         float NoV = abs(wo.z);
 
         //float d = BRDFBasics::GTR1(abs(NoH),lerp(0.1f, 0.001f, clearcoatGloss));
-        float d = BRDFBasics::GTR1(abs(NoH),(0.1f + clearcoatGloss * (0.001f-0.1f) ));
-        float f = BRDFBasics::fresnelSchlick(LoH,0.04f);
-        float g = BRDFBasics::SeparableSmithGGXG1(wi,  wm, 0.25f, 0.25f);
+        float d = BRDFBasics::GTR1(abs(NoH),mix(0.1f, 0.001f, clearcoatGloss));
+        //previous: float f = BRDFBasics::fresnelSchlick(LoH, 0.04); wrong
+        float f = BRDFBasics::fresnelDielectric(LoH, 1.0f, clearCoatIOR, false);
+        float g = BRDFBasics::SeparableSmithGGXG1(wi,  wm, clearCoatRoughness, clearCoatRoughness);
 
         fPdf = d / (4.0f * dot(wo,wm));
         rPdf = d /(4.0f * LoH);
-        reflectance = vec3(0.25f * clearCoat * g * f *d ) / rPdf;
+        reflectance = vec3(0.25f * clearCoat * g * f *d )/fPdf ;
 
         Onb  tbn = Onb(N);
         tbn.m_tangent = T;
@@ -872,6 +871,8 @@ namespace DisneyBSDF{
         float sheenTint,
         float clearCoat,
         float clearcoatGloss,
+        float ccRough,
+        float ccIor,
         float flatness,
         float specTrans,
         float scatterDistance,
@@ -926,7 +927,7 @@ namespace DisneyBSDF{
             pLobe = pSpecular;
 
         }else if(pClearcoat >0.001f && p <= (pSpecular + pClearcoat)){
-            success = SampleDisneyClearCoat(seed, clearCoat, clearcoatGloss, T, B, N, wo, wi, reflectance, fPdf, rPdf);
+            success = SampleDisneyClearCoat(seed, clearCoat, clearcoatGloss, ccRough, ccIor, T, B, N, wo, wi, reflectance, fPdf, rPdf);
             pLobe = pClearcoat;
             isDiff = true;
         }else if(pSpecTrans > 0.001f && p <= (pSpecular + pClearcoat + pSpecTrans)){
@@ -1341,7 +1342,7 @@ static __inline__ __device__ vec3 hdrSky(
             .rotY(to_radians(params.sky_rot_y))
             .rotX(to_radians(params.sky_rot_x))
             .rotZ(to_radians(params.sky_rot_z));
-    float u = atan2(-dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+    float u = atan2(-dir.z, -dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
     float v = asin(dir.y) / 3.1415926 + 0.5;
     vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v));
     return col * params.sky_strength;

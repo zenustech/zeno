@@ -6,6 +6,9 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/TextureObject.h>
 #include <zeno/utils/string.h>
+#include <zeno/types/UserData.h>
+
+#include <string>
 
 namespace zeno {
 
@@ -23,6 +26,7 @@ struct ShaderFinalize : INode {
             em.commonCode += get_input<StringObject>("commonCode")->get();
 
         auto code = em.finalizeCode({
+            {1, "mat_base"},
             {3, "mat_basecolor"},
             {1, "mat_metallic"},
             {1, "mat_roughness"},
@@ -31,9 +35,6 @@ struct ShaderFinalize : INode {
             {1, "mat_thickness"},
             {3, "mat_sssParam"},
             {3, "mat_sssColor"},
-            {1, "mat_foliage"},
-            {1, "mat_skin"},
-            {1, "mat_curvature"},
             {1, "mat_specularTint"},
             {1, "mat_anisotropic"},
             {1, "mat_anisoRotation"},
@@ -41,6 +42,8 @@ struct ShaderFinalize : INode {
             {1, "mat_sheenTint"},
             {1, "mat_clearcoat"},
             {1, "mat_clearcoatGloss"},
+            {1, "mat_clearcoatRoughness"},
+            {1, "mat_clearcoatIOR"},
             {1, "mat_specTrans"},
             {1, "mat_ior"},
             {1, "mat_flatness"},
@@ -51,22 +54,21 @@ struct ShaderFinalize : INode {
             {3, "mat_normal"},
             {1, "mat_displacement"},
             {1, "mat_smoothness"},
+            {1, "mat_emissionIntensity"},
             {3, "mat_emission"},
-            {1, "mat_zenxposure"},
-            {1, "mat_ao"},
-            {1, "mat_toon"},
-            {1, "mat_stroke"},
-            {3, "mat_shape"},
-            {1, "mat_style"},
-            {1, "mat_strokeNoise"},
-            {3,"mat_shad"},
-            {3,"mat_strokeTint"},
             {1,"mat_opacity"},
-            {1,"mat_reflection"},
-            {1,"mat_reflectID"},
-            {1,"mat_isCamera"},
-            {1,"mat_isVoxelDomain"}
+
+            {1, "vol_depth"},
+            {1, "vol_absorption"},
+            {1, "vol_scattering"},
+
+            {1, "vol_sample_anisotropy"},
+            {1, "vol_sample_density"},
+            {3, "vol_sample_emission"},
+            {3, "vol_sample_albedo"},
+
         }, {
+            get_input<IObject>("base", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
@@ -75,9 +77,6 @@ struct ShaderFinalize : INode {
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("sssParam", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("sssColor", std::make_shared<NumericObject>(vec3f(1.0f))),
-            get_input<IObject>("foliage", std::make_shared<NumericObject>(float(0.0f))),
-            get_input<IObject>("skin", std::make_shared<NumericObject>(float(0.0f))),
-            get_input<IObject>("curvature", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("specularTint", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisotropic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("anisoRotation", std::make_shared<NumericObject>(float(0.0f))),
@@ -85,6 +84,8 @@ struct ShaderFinalize : INode {
             get_input<IObject>("sheenTint", std::make_shared<NumericObject>(float(0.5f))),
             get_input<IObject>("clearcoat", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("clearcoatGloss", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("clearcoatRoughness", std::make_shared<NumericObject>(float(0.0f))),
+            get_input<IObject>("clearcoatIOR", std::make_shared<NumericObject>(float(1.5f))),
             get_input<IObject>("specTrans", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("ior", std::make_shared<NumericObject>(float(1.5f))),
             get_input<IObject>("flatness", std::make_shared<NumericObject>(float(0.0f))),
@@ -95,25 +96,31 @@ struct ShaderFinalize : INode {
             get_input<IObject>("normal", std::make_shared<NumericObject>(vec3f(0, 0, 1))),
             get_input<IObject>("displacement", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
+            get_input<IObject>("emissionIntensity", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
-            get_input<IObject>("exposure", std::make_shared<NumericObject>(float(1.0f))),
-            get_input<IObject>("ao", std::make_shared<NumericObject>(float(1.0f))),
-            get_input<IObject>("toon", std::make_shared<NumericObject>(float(0.0f))),
-            get_input<IObject>("stroke", std::make_shared<NumericObject>(float(1.0f))),
-            get_input<IObject>("shape", std::make_shared<NumericObject>(vec3f(-0.5,0.5,0))),
-            get_input<IObject>("style", std::make_shared<NumericObject>(float(1.0))),
-            get_input<IObject>("strokeNoise", std::make_shared<NumericObject>(float(1))),
-            get_input<IObject>("shad", std::make_shared<NumericObject>(vec3f(0,0,0))),
-            get_input<IObject>("strokeTint", std::make_shared<NumericObject>(vec3f(0,0,0))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
-            get_input<IObject>("reflection", std::make_shared<NumericObject>(float(0.0))),
-            get_input<IObject>("reflectID", std::make_shared<NumericObject>(float(-1))),
-            get_input<IObject>("isCamera", std::make_shared<NumericObject>(float(0))),
-            get_input<IObject>("isVoxelDomain", std::make_shared<NumericObject>(float(0))),
+            
+            get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(99))),
+            get_input<IObject>("vol_absorption", std::make_shared<NumericObject>(float(1))),
+            get_input<IObject>("vol_scattering", std::make_shared<NumericObject>(float(1))),
 
+            get_input<IObject>("vol_sample_anisotropy", std::make_shared<NumericObject>(float(0))),
+            get_input<IObject>("vol_sample_density", std::make_shared<NumericObject>(float(0))),
 
+            get_input<IObject>("vol_sample_emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("vol_sample_albedo", std::make_shared<NumericObject>(vec3f(1))),
         });
         auto commonCode = em.getCommonCode();
+
+        int   vol_depth = (int)get_input2<float>("vol_depth");
+        float vol_absorption = get_input2<float>("vol_absorption");
+        float vol_scattering = get_input2<float>("vol_scattering");
+
+        vol_depth = clamp(vol_depth, 9, 99);
+
+        commonCode += "static const int _vol_depth = " + std::to_string(vol_depth) + ";\n";
+        commonCode += "static const float _vol_absorption = " + std::to_string(vol_absorption) + ";\n";
+        commonCode += "static const float _vol_scattering = " + std::to_string(vol_scattering) + ";\n";
 
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
@@ -124,12 +131,50 @@ struct ShaderFinalize : INode {
         if (has_input("tex2dList"))
         {
             auto tex2dList = get_input<ListObject>("tex2dList")->get<zeno::Texture2DObject>();
-            for (const auto &tex: tex2dList)
+            for (const auto tex: tex2dList)
             {
                 auto texId = mtl->tex2Ds.size();
-                auto texCode = "uniform sampler2D zenotex" + std::to_string(texId) + ";\n";
 			    mtl->tex2Ds.push_back(tex);
-                mtl->common.insert(0, texCode);
+            }
+
+            auto texCode = "uniform sampler2D zenotex[32]; \n";
+            mtl->common.insert(0, texCode);
+        }
+
+        if (has_input("tex3dList"))
+        {
+            auto tex3dList = get_input<ListObject>("tex3dList")->get<zeno::StringObject>();
+
+            for (const auto& ele : tex3dList) {
+
+                auto path = ele->get();
+                auto ud = ele->userData();
+
+                const std::string _key_ = "channel";
+                std::string channel_string = "0";
+
+                if (ud.has(_key_)) {
+
+                    if (ud.isa<zeno::StringObject>(_key_)) {
+                        //auto get = ud.get<zeno::StringObject>("channel");
+                        channel_string = ud.get2<std::string>(_key_);
+
+                    } else if (ud.isa<zeno::NumericObject>(_key_)) {
+                        auto channel_number = ud.get2<int>(_key_);
+                        channel_number = max(0, channel_number);
+
+                        channel_string = std::to_string(channel_number);
+                    } 
+                }
+                mtl->tex3Ds.push_back(std::make_pair(path, channel_string)); 
+            }
+
+            auto ud = get_input<ListObject>("tex3dList")->userData();
+
+            if ( ud.has("transform") ) {
+            
+                auto transformString = ud.get2<std::string>("transform");
+                mtl->transform = transformString;
             }
         }
 
@@ -144,6 +189,7 @@ struct ShaderFinalize : INode {
 
 ZENDEFNODE(ShaderFinalize, {
     {
+        {"float", "base", "1"},
         {"vec3f", "basecolor", "1,1,1"},
         {"float", "metallic", "0.0"},
         {"float", "roughness", "0.4"},
@@ -152,9 +198,6 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "thickness", "0.0"},
         {"vec3f", "sssParam", "1,1,1"},
         {"vec3f", "sssColor", "1.0,1.0,1.0"},
-        {"float", "foliage", "0"},
-        {"float", "skin", "0"},
-        {"float", "curvature", "0"},
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
         {"float", "anisoRotation", "0.0"},
@@ -162,6 +205,8 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "sheenTint", "0.0"},
         {"float", "clearcoat", "0.0"},
         {"float", "clearcoatGloss", "1.0"},
+        {"float", "clearcoatRoughness", "0.0"},
+        {"float", "clearcoatIOR", "1.5"},
         {"float", "specTrans", "0.0"},
         {"float", "ior", "1.5"},
         {"float", "flatness", "0.0"},
@@ -172,25 +217,23 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "normal", "0,0,1"},
         {"float", "displacement", "0"},
         {"float", "smoothness", "1.0"},
+        {"float", "emissionIntensity", "1"},
         {"vec3f", "emission", "0,0,0"},
-        {"float", "exposure", "1.0"},
-        {"float", "ao", "1.0"},
-        {"float", "toon", "0.0"},
-        {"float", "stroke", "1.0"},
-        {"vec3f", "shape", "-0.5,0.5,0"},
-        {"float", "style", "1.0"},
-        {"float", "strokeNoise", "1"},
-        {"vec3f", "shad", "0,0,0"},
-        {"vec3f", "strokeTint", "0,0,0"},
         {"float", "opacity", "0"},
-        {"float", "reflection", "0"},
-        {"float", "reflectID", "-1"},
-        {"float", "isCamera", "0"},
-        {"float", "isVoxelDomain", "0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},
         {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
+        {"list", "tex3dList"},
+
+        {"float", "vol_depth",     "99"},
+        {"float", "vol_absorption", "1"},
+        {"float", "vol_scattering", "1"},
+
+        {"float", "vol_sample_anisotropy", "0"},
+        {"float", "vol_sample_density", "0"},
+        {"vec3f", "vol_sample_emission", "0,0,0"},
+        {"vec3f", "vol_sample_albedo", "1,1,1"},
     },
     {
         {"MaterialObject", "mtl"},

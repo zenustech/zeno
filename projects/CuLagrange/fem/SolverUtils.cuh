@@ -21,9 +21,10 @@ struct CsrMatrix {
     zs::Vector<size_type> nnz{}; // non-zero entries per row
 };
 
-template <int n = 1>
+template <int n = 1, typename T_ = float>
 struct HessianPiece {
-    using HessT = zs::vec<float, n * 3, n * 3>;
+    using T = T_;
+    using HessT = zs::vec<T, n * 3, n * 3>;
     using IndsT = zs::vec<int, n>;
     zs::Vector<HessT> hess;
     zs::Vector<IndsT> inds;
@@ -53,19 +54,20 @@ struct HessianPiece {
 template <typename HessianPieceT>
 struct HessianView {
     static constexpr bool is_const_structure = std::is_const_v<HessianPieceT>;
+    using T = typename HessianPieceT::T;
     using HT = typename HessianPieceT::HessT;
     using IT = typename HessianPieceT::IndsT;
     zs::conditional_t<is_const_structure, const HT *, HT *> hess;
     zs::conditional_t<is_const_structure, const IT *, IT *> inds;
     zs::conditional_t<is_const_structure, const int *, int *> cnt;
 };
-template <zs::execspace_e space, int n>
-inline HessianView<HessianPiece<n>> proxy(HessianPiece<n> &hp) {
-    return HessianView<HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
+template <zs::execspace_e space, int n, typename T>
+inline HessianView<HessianPiece<n, T>> proxy(HessianPiece<n, T> &hp) {
+    return HessianView<HessianPiece<n, T>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
 }
-template <zs::execspace_e space, int n>
-inline HessianView<const HessianPiece<n>> proxy(const HessianPiece<n> &hp) {
-    return HessianView<const HessianPiece<n>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
+template <zs::execspace_e space, int n, typename T>
+inline HessianView<const HessianPiece<n, T>> proxy(const HessianPiece<n, T> &hp) {
+    return HessianView<const HessianPiece<n, T>>{hp.hess.data(), hp.inds.data(), hp.cnt.data()};
 }
 
 /// utilities
@@ -232,6 +234,16 @@ inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, Op o
     bool shouldSync = cudaPol.shouldSync();
     cudaPol.sync(true);
     zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), (T)0, op);
+    cudaPol.sync(shouldSync);
+    return ret.getVal();
+}
+template <typename T, typename Op = std::plus<T>>
+inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, T e, Op op) {
+    using namespace zs;
+    Vector<T> ret{res.get_allocator(), 1};
+    bool shouldSync = cudaPol.shouldSync();
+    cudaPol.sync(true);
+    zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), e, op);
     cudaPol.sync(shouldSync);
     return ret.getVal();
 }

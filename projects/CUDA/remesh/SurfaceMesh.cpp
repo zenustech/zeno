@@ -9,32 +9,40 @@
 namespace zeno {
 namespace pmp {
 
-SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim) {
+SurfaceMesh::SurfaceMesh(std::shared_ptr<zeno::PrimitiveObject> prim,
+                         std::string line_pick_tag)
+                         : line_pick_tag_(line_pick_tag) {
     prim_ = prim;
     vconn_.clear();
     hconn_.clear();
     fconn_.clear();
 
     vertices_size_ = prim_->verts.size();
+    lines_size_ = prim_->lines.size();
     faces_size_ = 0;
-    edges_size_ = 0;
     halfedges_size_ = 0;
 
     vconn_.resize(vertices_size_);
-    hconn_.resize(prim_->tris.size() * 6);
     fconn_.resize(prim_->tris.size());
+    
+    auto& lines = prim_->lines;
+    for (int i = 0; i < lines_size_; ++i) {
+        auto line = std::make_pair(lines[i][0], lines[i][1]);
+        line_map_[line] = i;
+    }
+    halfedges_size_ = lines_size_ * 2;
+    hconn_.resize(halfedges_size_);
 
     auto vdeleted = prim_->verts.add_attr<int>("v_deleted", 0);
-    auto edeleted = prim_->edges.add_attr<int>("e_deleted", 0);
+    auto edeleted = prim_->lines.add_attr<int>("e_deleted", 0);
     auto fdeleted = prim_->tris.add_attr<int>("f_deleted", 0);
 
     for (auto& it : prim_->tris) {
         add_tri(it);
     }
-    hconn_.resize(prim_->edges.size() * 2);
 
     deleted_vertices_ = 0;
-    deleted_edges_ = 0;
+    deleted_lines_ = 0;
     deleted_faces_ = 0;
     has_garbage_ = false;
     
@@ -45,7 +53,7 @@ SurfaceMesh::SurfaceMesh(const SurfaceMesh& rhs) {
 
     vertices_size_ = rhs.vertices_size_;
     halfedges_size_ = rhs.halfedges_size_;
-    edges_size_ = rhs.edges_size_;
+    lines_size_ = rhs.lines_size_;
     faces_size_ = rhs.faces_size_;
 
     vconn_.clear();
@@ -56,7 +64,7 @@ SurfaceMesh::SurfaceMesh(const SurfaceMesh& rhs) {
     fconn_ = rhs.fconn_;
 
     deleted_vertices_ = rhs.deleted_vertices_;
-    deleted_edges_ = rhs.deleted_edges_;
+    deleted_lines_ = rhs.deleted_lines_;
     deleted_faces_ = rhs.deleted_faces_;
     has_garbage_ = rhs.has_garbage_;
 }
@@ -173,7 +181,13 @@ int SurfaceMesh::add_tri(const vec3i& vertices){
     // create missing edges
     for (i = 0, ii = 1; i < 3; ++i, ++ii, ii %= 3) {
         if (isNew[i]) {
-            halfedges[i] = new_edge(vertices[i], vertices[ii]);
+            int line_id;
+            if (line_map_.count(std::make_pair(vertices[i], vertices[ii])) > 0) {
+                line_id = line_map_[std::make_pair(vertices[i], vertices[ii])];
+            } else {
+                line_id = line_map_[std::make_pair(vertices[ii], vertices[i])];
+            }
+            halfedges[i] = new_halfedge(vertices[i], vertices[ii], line_id);
         }
     }
 
@@ -266,7 +280,7 @@ size_t SurfaceMesh::valence(int v) const {
     return count;
 }
 
-int SurfaceMesh::split(int e, int v, int& new_edges) {
+int SurfaceMesh::split(int e, int v, int& new_lines) {
     int h0 = e<<1;
     int o0 = e<<1|1;
 
@@ -274,9 +288,9 @@ int SurfaceMesh::split(int e, int v, int& new_edges) {
     int v4 = to_vertex(h0);
 
     int e1 = new_edge(v, v2);
-    new_edges = 1;
+    new_lines = 1;
     int t1 = e1^1;
-    prim_->edges[e] = vec2i(v, v4);
+    prim_->lines[e] = vec2i(v, v4);
 
     int f0 = hconn_[h0].face_;
     int f3 = hconn_[o0].face_;
@@ -291,7 +305,7 @@ int SurfaceMesh::split(int e, int v, int& new_edges) {
         int v1 = to_vertex(h1);
 
         int e0 = new_edge(v, v1);
-        new_edges += 1;
+        new_lines += 1;
         int t0 = e0 ^ 1;
 
         int f1 = new_face(v, v1, v2);
@@ -328,7 +342,7 @@ int SurfaceMesh::split(int e, int v, int& new_edges) {
         int v3 = to_vertex(o1);
 
         int e2 = new_edge(v, v3);
-        new_edges += 1;
+        new_lines += 1;
         int t2 = e2 ^ 1;
 
         int f2 = new_face(v, v2, v3);
@@ -424,7 +438,7 @@ void SurfaceMesh::flip(int e) {
     fconn_[fa].halfedge_ = a0;
     fconn_[fb].halfedge_ = b0;
 
-    prim_->edges[e] = vec2i(va1, vb1);
+    prim_->lines[e] = vec2i(va1, vb1);
     prim_->tris[fa] = vec3i(va1, vb1, vb0);
     prim_->tris[fb] = vec3i(va1, vb1, va0);
 
@@ -499,7 +513,7 @@ void SurfaceMesh::collapse(int h) {
 
 void SurfaceMesh::remove_edge_helper(int h) {
     auto& vdeleted = prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = prim_->edges.attr<int>("e_deleted");
+    auto& edeleted = prim_->lines.attr<int>("e_deleted");
     
     int hn = next_halfedge(h);
     int hp = prev_halfedge(h);
@@ -518,10 +532,10 @@ void SurfaceMesh::remove_edge_helper(int h) {
     for (const auto hc : halfedges(vo)) {
         hconn_[hc^1].vertex_ = vh;
 
-        if (prim_->edges[hc>>1][0] == vo) {
-            prim_->edges[hc>>1][0] = vh;
+        if (prim_->lines[hc>>1][0] == vo) {
+            prim_->lines[hc>>1][0] = vh;
         } else {
-            prim_->edges[hc>>1][1] = vh;
+            prim_->lines[hc>>1][1] = vh;
         }
         
         int fit = hconn_[hc].face_;
@@ -566,12 +580,12 @@ void SurfaceMesh::remove_edge_helper(int h) {
     vdeleted[vo] = 1;
     ++deleted_vertices_;
     edeleted[h>>1] = 1;
-    ++deleted_edges_;
+    ++deleted_lines_;
     has_garbage_ = true;
 }
 
 void SurfaceMesh::remove_loop_helper(int h) {
-    auto& edeleted = prim_->edges.attr<int>("e_deleted");
+    auto& edeleted = prim_->lines.attr<int>("e_deleted");
     auto& fdeleted = prim_->tris.attr<int>("f_deleted");
 
     int h0 = h;
@@ -612,27 +626,28 @@ void SurfaceMesh::remove_loop_helper(int h) {
         ++deleted_faces_;
     }
     edeleted[h>>1] = 1;
-    ++deleted_edges_;
+    ++deleted_lines_;
     has_garbage_ = true;
 }
 
 void SurfaceMesh::garbage_collection() {
-    int i, i0, i1, nV(vertices_size_), nE(edges_size_), nH(halfedges_size_),
+    int i, i0, i1, nV(vertices_size_), nE(lines_size_), nH(halfedges_size_),
         nF(faces_size_);
 
     auto& pos = prim_->attr<vec3f>("pos");
-    auto& edges = prim_->edges;
+    auto& lines = prim_->lines;
     auto& tris = prim_->tris;
 
     auto& vnormal = prim_->verts.attr<vec3f>("v_normal");
     auto& vdeleted = prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = prim_->edges.attr<int>("e_deleted");
+    auto& edeleted = prim_->lines.attr<int>("e_deleted");
     auto& fdeleted = prim_->tris.attr<int>("f_deleted");
     auto& vfeature = prim_->verts.attr<int>("v_feature");
-    auto& efeature = prim_->edges.attr<int>("e_feature");
+    auto& efeature = prim_->lines.attr<int>("e_feature");
     auto& vlocked = prim_->verts.attr<int>("v_locked");
-    auto& elocked = prim_->edges.attr<int>("e_locked");
+    auto& elocked = prim_->lines.attr<int>(line_pick_tag_);
     auto& vsizing = prim_->verts.attr<float>("v_sizing");
+    auto& vduplicate = prim_->verts.attr<int>("v_duplicate");
 
     // setup handle mapping
     auto& vmap = prim_->verts.add_attr<int>("v_garbage_collection");
@@ -669,6 +684,7 @@ void SurfaceMesh::garbage_collection() {
             std::swap(vfeature[i0], vfeature[i1]);
             std::swap(vlocked[i0], vlocked[i1]);
             std::swap(vsizing[i0], vsizing[i1]);
+            std::swap(vduplicate[i0], vduplicate[i1]);
             std::swap(vconn_[i0], vconn_[i1]);
         };
 
@@ -690,7 +706,7 @@ void SurfaceMesh::garbage_collection() {
                 break;
 
             // swap: e_deleted, e_feature, e_locked
-            std::swap(edges[i0], edges[i1]);
+            std::swap(lines[i0], lines[i1]);
             std::swap(edeleted[i0], edeleted[i1]);
             std::swap(efeature[i0], efeature[i1]);
             std::swap(elocked[i0], elocked[i1]);
@@ -735,6 +751,7 @@ void SurfaceMesh::garbage_collection() {
 
     // update vertex connectivity
     for (int v = 0; v < nV; ++v) {
+        vduplicate[v] = vmap[vduplicate[v]];
         if (!is_isolated(v)) {
             vconn_[v].halfedge_ = hmap[halfedge(v)];
         }
@@ -755,8 +772,8 @@ void SurfaceMesh::garbage_collection() {
 
     // update prim
     for (int e = 0; e < nE; ++e) {
-        vec2i old = prim_->edges[e];
-        prim_->edges[e] = vec2i(vmap[old[0]], vmap[old[1]]);
+        vec2i old = prim_->lines[e];
+        prim_->lines[e] = vec2i(vmap[old[0]], vmap[old[1]]);
     }
     for (int f = 0; f < nF; ++f) {
         vec3i old = prim_->tris[f];
@@ -774,6 +791,7 @@ void SurfaceMesh::garbage_collection() {
     vfeature.resize(nV);
     vlocked.resize(nV);
     vsizing.resize(nV);
+    vduplicate.resize(nV);
     vconn_.resize(nV);
     vertices_size_ = nV;
     
@@ -783,15 +801,15 @@ void SurfaceMesh::garbage_collection() {
     edeleted.resize(nE);
     efeature.resize(nE);
     elocked.resize(nE);
-    edges.resize(nE);
-    edges_size_ = nE;
+    lines.resize(nE);
+    lines_size_ = nE;
     
     fdeleted.resize(nF);
     fconn_.resize(nF);
     tris.resize(nF);
     faces_size_ = nF;
 
-    deleted_vertices_ = deleted_edges_ = deleted_faces_ = 0;
+    deleted_vertices_ = deleted_lines_ = deleted_faces_ = 0;
     has_garbage_ = false;
 }
 

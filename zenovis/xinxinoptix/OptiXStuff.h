@@ -1,9 +1,11 @@
 #pragma once
+
 #include <glad/glad.h>  // Needs to be included before gl_interop
 
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
 
+#include <memory>
 #include <optix.h>
 #include <optix_function_table_definition.h>
 #include <optix_stubs.h>
@@ -20,12 +22,17 @@
 #include <sutil/vec_math.h>
 #include <sutil/PPMLoader.h>
 #include <optix_stack_size.h>
+#include "optixVolume.h"
 #include "raiicuda.h"
 #include "zeno/utils/string.h"
 #include "tinyexr.h"
+#include <filesystem>
 
 //#include <GLFW/glfw3.h>
 
+#include <tbb/task_group.h>
+#include <glm/common.hpp>
+#include <glm/matrix.hpp>
 
 #include <array>
 #include <cstring>
@@ -34,6 +41,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <filesystem>
+
 #include <cudaMemMarco.hpp>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
@@ -66,50 +75,96 @@ inline void createContext()
     options.validationMode            = OPTIX_DEVICE_CONTEXT_VALIDATION_MODE_ALL;
     OPTIX_CHECK( optixDeviceContextCreate( cu_ctx, &options, &context ) );
     pipeline_compile_options = {};
-    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY; //OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING | OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
     pipeline_compile_options.usesMotionBlur        = false;
-//    pipeline_compile_options.traversableGraphFlags = OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_GAS;
     pipeline_compile_options.numPayloadValues      = 2;
     pipeline_compile_options.numAttributeValues    = 2;
-    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_NONE;
+    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_DEBUG;
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
 }
-inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location)
+
+#define COMPILE_WITH_TASKS_CHECK( call ) check( call, #call, __FILE__, __LINE__ )
+
+inline tbb::task_group _compile_group;
+
+inline void executeOptixTask(OptixTask theTask, tbb::task_group& _c_group) {
+     
+    static const auto processor_count = std::thread::hardware_concurrency();
+
+    uint m_maxNumAdditionalTasks = processor_count;
+    uint numAdditionalTasksCreated = 0;
+
+    std::vector<OptixTask> additionalTasks( m_maxNumAdditionalTasks );
+
+    optixTaskExecute( theTask, 
+                      additionalTasks.data(), 
+                      m_maxNumAdditionalTasks, 
+                      &numAdditionalTasksCreated );
+
+    for( unsigned int i = 0; i < numAdditionalTasksCreated; ++i )
+    {
+        // Capture additionalTasks[i] by value since it will go out of scope.
+        OptixTask task = additionalTasks[i];
+
+        _c_group.run([task, &_c_group]() {
+            executeOptixTask(task, _c_group);
+        });
+    }  
+}
+
+inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location, tbb::task_group* _c_group = nullptr)
 {
     //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
+#if defined(NDEBUG)
     module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
     module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
-
-    
+#else
+    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+#endif
 
     char log[2048];
     size_t sizeof_log = sizeof( log );
 
-
     size_t      inputSize = 0;
     //TODO: the file path problem
     bool is_success=false;
-    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success,nullptr, {"-std=c++17", "-default-device"});
+    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success, nullptr, {"-std=c++17", "-default-device"});
     if(is_success==false)
     {
         return false;
     }
-    optixModuleCreateFromPTX(
-        context,
-        &module_compile_options,
-        &pipeline_compile_options,
-        input,
-        inputSize,
-        log,
-        &sizeof_log,
-        &m
-    );
+
+    if (_c_group == nullptr) {
+
+        OPTIX_CHECK(
+            optixModuleCreateFromPTX(context, &module_compile_options, &pipeline_compile_options, input, inputSize, log, &sizeof_log, &m)
+        );
+    } else {
+        
+        OptixTask firstTask;
+        OPTIX_CHECK(
+            optixModuleCreateFromPTXWithTasks( 
+                context, 
+                &module_compile_options, 
+                &pipeline_compile_options,
+                input, 
+                inputSize, 
+                log, &sizeof_log, 
+                &m, 
+                &firstTask)
+        );
+
+        executeOptixTask(firstTask, *_c_group);
+        //COMPILE_WITH_TASKS_CHECK( //);
+        _c_group->wait();  
+    }
     return true;
-    //return m;
 }
+
 inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module)
 {
     OptixProgramGroupOptions  program_group_options = {};
@@ -157,48 +212,50 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
                     &sizeof_log,
                     &occlusion_miss_group
                     ) );
-    }     
+    }
+
+    
 }
-inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, std::string kind, std::string entry, raii<OptixProgramGroup>& oGroup)
+
+inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, 
+                std::string kind, std::string entry, std::string nameIS, 
+                raii<OptixProgramGroup>& oGroup)
 {
     OptixProgramGroupOptions  program_group_options = {};
     char   log[2048];
     size_t sizeof_log = sizeof( log );
     std::cout<<kind<<std::endl;
     std::cout<<entry<<std::endl;
+
+    OptixProgramGroupDesc desc        = {};
+    desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
+
+
     if(kind == "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP")
     {
-        OptixProgramGroupDesc desc        = {};
-        desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         desc.hitgroup.moduleCH            = _module;
         desc.hitgroup.entryFunctionNameCH = entry.c_str();
-        sizeof_log                        = sizeof( log );
-        OPTIX_CHECK_LOG( optixProgramGroupCreate(
-                    context,
-                    &desc,
-                    1,  // num program groups
-                    &program_group_options,
-                    log,
-                    &sizeof_log,
-                    &oGroup.reset()
-                    ) );
-    } else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
+    } 
+    else if(kind == "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP")
     {
-        OptixProgramGroupDesc desc        = {};
-        desc.kind                         = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        desc.hitgroup.moduleAH            = _module;
+        desc.hitgroup.moduleAH           = _module;
         desc.hitgroup.entryFunctionNameAH = entry.c_str();
-        sizeof_log                        = sizeof( log );
-        OPTIX_CHECK_LOG( optixProgramGroupCreate(
-                    context,
-                    &desc,
-                    1,  // num program groups
-                    &program_group_options,
-                    log,
-                    &sizeof_log,
-                    &oGroup.reset()
-                    ) );
     }
+
+    if (!nameIS.empty()) {
+        desc.hitgroup.moduleIS            = _module;
+        desc.hitgroup.entryFunctionNameIS = nameIS.c_str();
+    }
+
+    OPTIX_CHECK_LOG( optixProgramGroupCreate(
+                context,
+                &desc,
+                1,  // num program groups
+                &program_group_options,
+                log,
+                &sizeof_log,
+                &oGroup.reset()
+                ) );
 }
 struct cuTexture{
     cudaArray_t gpuImageArray;
@@ -332,15 +389,116 @@ inline std::shared_ptr<cuTexture> makeCudaTexture(float* img, int nx, int ny, in
     }
     return texture;
 }
+
+inline void logInfoVRAM(std::string info) {
+    size_t free_byte, total_byte ;
+
+    auto cuda_status = cudaMemGetInfo( &free_byte, &total_byte ) ;
+
+        if ( cudaSuccess != cuda_status ){
+            printf("Error: cudaMemGetInfo fails, %s \n", cudaGetErrorString(cuda_status) );
+            exit(1);
+        }
+
+    double free_db = (double)free_byte ;
+    double total_db = (double)total_byte ;
+
+    double used_db = total_db - free_db ;
+
+    std::cout << " <<< " << info << " >>> " << std::endl;
+    printf("GPU memory usage: used = %f, free = %f MB, total = %f MB\n",
+        used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
+}
+
+inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb_cached_map;
+inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
+
+inline std::map<uint, std::vector<std::string> > g_vdb_list_for_each_shader;
+
+inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel, 
+                       uint index_of_shader, uint index_inside_shader,
+                       const glm::f64mat4& transform, 
+                       std::string& combined_key)
+{
+    auto path = path_channel.first;
+    auto channel = path_channel.second;
+
+    std::filesystem::path filePath = path;
+
+    if ( !std::filesystem::exists(filePath) ) {
+        std::cout << filePath.string() << " doesn't exist";
+        return false;
+    }
+
+    auto fileTime = std::filesystem::last_write_time(filePath);
+    // std::filesystem::file_time_type::duration ft = fileTime.time_since_epoch();
+    // if (filePath.extension() != ".vdb")
+    // {
+    //     std::cout << filePath.filename() << " doesn't exist";
+    //     return false;
+    // }
+
+        auto isNumber = [] (const std::string& s)
+        {
+            for (char const &ch : s) {
+                if (std::isdigit(ch) == 0)
+                    return false;
+            }
+            return true;
+        };
+
+    if ( isNumber(channel) ) {
+        auto channel_index = (uint)std::stoi(channel);
+        channel = fetchGridName(path, channel_index);
+    } else {
+        fetchGridName(path, channel);
+    }
+
+    const auto vdb_key = path + "{" + channel + "}";
+    combined_key = vdb_key;
+
+    zeno::log_debug("loading VDB :{}", path);
+
+    if (g_vdb_cached_map.count(vdb_key)) {
+
+        auto& cached = g_vdb_cached_map[vdb_key];
+
+        if (transform == g_vdb_cached_map[vdb_key]->transform && fileTime == cached->file_time) {
+
+            g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
+            return true;
+        } else {
+            cleanupVolume(*g_vdb_cached_map[vdb_key]);
+        }
+    }
+
+    auto volume_ptr = std::make_shared<VolumeWrapper>();
+    volume_ptr->file_time = fileTime;
+    volume_ptr->transform = transform;
+    volume_ptr->selected = {channel};
+    
+    auto succ = loadVolume(*volume_ptr, path); 
+    
+    if (!succ) {return false;}
+
+    g_vdb_cached_map[vdb_key] = volume_ptr;
+    g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
+
+    return true;
+}
+
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
+inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
 inline std::optional<std::string> sky_tex;
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
-    if(g_tex.count(path)) {
+    std::filesystem::file_time_type ftime = std::filesystem::last_write_time(path);
+    if(g_tex.count(path) && g_tex_last_write_time[path] == ftime) {
         return;
     }
+    g_tex_last_write_time[path] = ftime;
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
 
@@ -575,7 +733,7 @@ inline void addHFNoiseTexture(std::string directoryPath)
 
 struct rtMatShader
 {
-    raii<OptixModule>                    m_ptx_module             ;
+    raii<OptixModule>                    m_ptx_module                ; 
     
     //the below two things are just like vertex shader and frag shader in real time rendering
     //the two are linked to codes modeling the rayHit and occlusion test of an particular "Material"
@@ -583,9 +741,12 @@ struct rtMatShader
     raii<OptixProgramGroup>              m_radiance_hit_group        ;
     raii<OptixProgramGroup>              m_occlusion_hit_group       ;
     std::string                          m_shaderFile                ;
+    std::string                          m_hittingEntry              ;
     std::string                          m_shadingEntry              ;
     std::string                          m_occlusionEntry            ;
     std::map<int, std::string>           m_texs;
+    bool                                 has_vdb{};
+
     void clearTextureRecords()
     {
         m_texs.clear();
@@ -614,8 +775,16 @@ struct rtMatShader
         m_occlusionEntry = occlusionEntry;
     }
 
+    rtMatShader(const char *shaderFile, std::string shadingEntry, std::string occlusionEntry, std::string hittingEntry)
+    {
+        m_shaderFile = shaderFile;
+        m_shadingEntry = shadingEntry;
+        m_occlusionEntry = occlusionEntry;
 
-    bool loadProgram()
+        m_hittingEntry = hittingEntry;
+    }
+
+    bool loadProgram(uint idx, tbb::task_group* _c_group = nullptr)
     {
         // try {
         //     createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu");
@@ -629,17 +798,23 @@ struct rtMatShader
         // } catch (sutil::Exception const &e) {
         //     throw std::runtime_error((std::string)"cannot create program group. Log:\n" + e.what() + "\n===BEG===\n" + m_shaderFile + "\n===END===\n");
         // }
+
+        std::string tmp_name = "MatShader.cu";
+        tmp_name = "$" + std::to_string(idx) + tmp_name;
         
-        if(createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), "MatShader.cu"))
+        if(createModule(m_ptx_module.reset(), context, m_shaderFile.c_str(), tmp_name.c_str(), _c_group))
         {
             std::cout<<"module created"<<std::endl;
-            createRTProgramGroups(context, m_ptx_module, 
-            "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
-            m_shadingEntry, m_radiance_hit_group);
 
             createRTProgramGroups(context, m_ptx_module, 
-            "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
-            m_occlusionEntry, m_occlusion_hit_group);
+                "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
+                m_shadingEntry, m_hittingEntry, m_radiance_hit_group);
+
+            createRTProgramGroups(context, m_ptx_module, 
+                "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
+                m_occlusionEntry, m_hittingEntry, m_occlusion_hit_group);
+
+            //_c_group.wait();
             return true;
         }
         return false;
@@ -652,7 +827,11 @@ inline void createPipeline()
 {
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
-    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+#if defined(NDEBUG)
+    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+#else
+    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+#endif
 
     int num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
@@ -709,7 +888,7 @@ inline void createPipeline()
                 &continuation_stack_size
                 ) );
 
-    const uint32_t max_traversal_depth = 2;
+    const uint32_t max_traversal_depth = 3;
     OPTIX_CHECK( optixPipelineSetStackSize(
                 pipeline,
                 direct_callable_stack_size_from_traversal,

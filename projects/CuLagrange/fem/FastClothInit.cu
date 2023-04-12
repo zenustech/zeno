@@ -190,19 +190,7 @@ typename FastClothSystem::T FastClothSystem::totalVolume(zs::CudaExecutionPolicy
 }
 
 void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
-#if 0 // use default params in the paper for current testing 
-    L = maximumSurfEdgeLength(pol, true) * 1.5;
-    B = L / std::sqrt(2);
-    Btight = B / 12;
-    LRef = 2 * L / 3;
-    LAda = B + Btight;
-    D = std::sqrt((B + Btight) * (B + Btight) - B * B) *
-        (T)0.1; // one-tenth of the actual vertex displacement limit, ref Sec.5
-    epsSlack = 9 * B * B / 16;
-    updateHardPhaseFunctionCoefficients(epsSlack);
-    epsCond = epsSlack / 20;
-    // dHat (static), for priximity query
-#endif
+#if 0 
     dHat = proximityRadius();
     // soft phase coeff
     // auto [mu_, lam_] = largestLameParams();
@@ -210,11 +198,19 @@ void FastClothSystem::setupCollisionParams(zs::CudaExecutionPolicy &pol) {
 
     avgNodeMass = averageNodalMass(pol);
     // hard phase coeff
-#if 0
-    rho = avgNodeMass * coOffset / totalVolume(pol);
-#else
     rho = 0.1;
-#endif
+#else 
+    // assume L_ref is get from input 
+    B = LRef / 4.2f * 6.f;  
+    L = B * 1.4142f; 
+    Btight = B / 12.f; 
+    LAda = B + Btight; 
+    D = B / 6.f * 0.25f;  
+    epsSlack = 30.f * B * B / 36.f; 
+    rho = 0.1f; // move into input 
+    epsCond = B * B / 36.f * 0.01f; 
+    dHat = proximityRadius();
+#endif 
     zeno::log_warn("automatically computed params: Btot[{}], L[{}]; D[{}], dHat[{}]; rho[{}], mu[{}]\n", B + Btight, L,
                    D, dHat, rho, mu);
 }
@@ -484,7 +480,7 @@ void FastClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints,
                                  tiles_t *coEdges, tiles_t *coEles, T dt, std::size_t estNumCps, bool withContact,
                                  T augLagCoeff, T pnRel, T cgRel, int PNCap, int CGCap, T dHat_, T gravity, int K,
-                                 int IDyn, T BCStiffness)
+                                 int IDyn, T BCStiffness, T mu, T LRef, T rho)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, PP{estNumCps, zs::memsrc_e::um, 0},
       cPP{estNumCps * 20, zs::memsrc_e::um, 0}, nPP{zsprims[0]->getParticles().get_allocator(), 1},
       ncPP{zsprims[0]->getParticles().get_allocator(), 1},
@@ -498,7 +494,7 @@ FastClothSystem::FastClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *
       //
       dt{dt}, framedt{dt}, curRatio{0}, estNumCps{estNumCps}, enableContact{withContact}, augLagCoeff{augLagCoeff},
       pnRel{pnRel}, cgRel{cgRel}, PNCap{PNCap}, CGCap{CGCap}, dHat{dHat_}, extAccel{0, gravity, 0}, K{K}, IDyn{IDyn}, 
-      BCStiffness{BCStiffness} {
+      BCStiffness{BCStiffness}, mu{mu}, LRef{LRef}, rho{rho} {
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
         if (primPtr->category == ZenoParticles::category_e::curve) {
@@ -697,6 +693,9 @@ struct MakeClothSystem : INode {
         auto input_cg_cap = get_input2<int>("cg_iter_cap");
         auto input_gravity = get_input2<float>("gravity");
         auto input_BC_stiffness = get_input2<float>("BC_stiffness"); 
+        auto input_gd_step = get_input2<float>("gd_step"); 
+        auto input_avg_edge_len = get_input2<float>("avg_edge_len"); 
+        auto input_collision_weight = get_input2<float>("collision_weight"); 
         auto dt = get_input2<float>("dt");
         auto K = get_input2<int>("K");
         auto IDyn = get_input2<int>("IDyn");
@@ -704,7 +703,8 @@ struct MakeClothSystem : INode {
         auto A = std::make_shared<FastClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, dt,
                                                    (std::size_t)(input_est_num_cps ? input_est_num_cps : 1000000),
                                                    input_withContact, input_aug_coeff, input_pn_rel, input_cg_rel,
-                                                   input_pn_cap, input_cg_cap, input_dHat, input_gravity, K, IDyn, input_BC_stiffness);
+                                                   input_pn_cap, input_cg_cap, input_dHat, input_gravity, K, IDyn, input_BC_stiffness, 
+                                                   input_gd_step, input_avg_edge_len, input_collision_weight);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -722,6 +722,9 @@ ZENDEFNODE(MakeClothSystem, {{"ZSParticles",
                               {"float", "aug_coeff", "1e2"},
                               {"float", "pn_rel", "0.01"},
                               {"float", "cg_rel", "0.001"},
+                              {"float", "gd_step", "0.2"},
+                              {"float", "collision_weight", "0.1"}, 
+                              {"float", "avg_edge_len", "4.2"},  
                               {"int", "pn_iter_cap", "1000"},
                               {"int", "cg_iter_cap", "1000"},
                               {"float", "gravity", "-9.8"},

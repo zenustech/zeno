@@ -1,7 +1,11 @@
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <tinygltf/stb_image_write.h>
+#include <filesystem>
 #include "zeno/zeno.h"
 #include "zeno/types/TextureObject.h"
-#include "zeno/types/MaterialObject.h"
+#include "zeno/types/HeatmapObject.h"
 #include "zeno/types/StringObject.h"
+#include "glm/common.hpp"
 
 namespace zeno
 {
@@ -16,8 +20,27 @@ namespace zeno
 		{
 			auto tex = std::make_shared<zeno::Texture2DObject>();
 
-			auto path = get_input<zeno::StringObject>("path")->get();
-			tex->path = path;
+			tex->path = get_input2<std::string>("path");
+            if (has_input("heatmap")) {
+                if (tex->path.empty()) {
+                    std::srand(std::time(0));
+                    tex->path = std::filesystem::temp_directory_path().string() + '/' + "heatmap-" + std::to_string(std::rand()) + ".png";
+                }
+                auto heatmap = get_input<zeno::HeatmapObject>("heatmap");
+                std::vector<uint8_t> col;
+                int width = heatmap->colors.size();
+                int height = width;
+                col.reserve(width * height * 3);
+                for (auto i = 0; i < height; i++) {
+                    for (auto & color : heatmap->colors) {
+                        col.push_back(glm::clamp(int(color[0] * 255.99), 0, 255));
+                        col.push_back(glm::clamp(int(color[1] * 255.99), 0, 255));
+                        col.push_back(glm::clamp(int(color[2] * 255.99), 0, 255));
+                    }
+                }
+                stbi_flip_vertically_on_write(false);
+                stbi_write_png(tex->path.c_str(), width, height, 3, col.data(), 0);
+            }
 
 #define SET_TEX_WRAP(TEX, WRAP)                                    \
 	if (WRAP == "REPEAT")                                          \
@@ -70,6 +93,7 @@ namespace zeno
 		{
 			{
 				{"readpath", "path"},
+				{"heatmap"},
 				{(std::string) "enum " + texWrapping, "wrapS", "REPEAT"},
 				{(std::string) "enum " + texWrapping, "wrapT", "REPEAT"},
 				{(std::string) "enum " + texFiltering, "minFilter", "LINEAR"},
