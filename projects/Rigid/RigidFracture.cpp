@@ -375,8 +375,7 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                     primlist->arr.push_back(visPrim);
 
 #if DEBUG_CPD
-                centerlist->arr.push_back(
-                    std::make_shared<NumericObject>(other_to_vec<3>(cpdBody->body->getCenterOfMassPosition())));
+                centerlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(rbTrans.getOrigin())));
                 btVector3 aabbMin, aabbMax;
                 cpdBody->body->getAabb(aabbMin, aabbMax);
                 minlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMin)));
@@ -402,11 +401,11 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
             }
 
 #if DEBUG_CPD
+            centerlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(cpdTrans.getOrigin())));
             btVector3 aabbMin, aabbMax;
             cpdBody->body->getAabb(aabbMin, aabbMax);
             minlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMin)));
             maxlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMax)));
-            centerlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(cpdTrans.getOrigin())));
 #endif
 
             for (int rbi = 0; rbi != btcpdShape->getNumChildShapes(); ++rbi) {
