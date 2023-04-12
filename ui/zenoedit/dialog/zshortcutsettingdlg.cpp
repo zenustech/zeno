@@ -76,7 +76,7 @@ void ZShortCutSettingDlg::initUI() {
     QHBoxLayout *pHLayout = new QHBoxLayout;
     QPushButton *pOKButton = new QPushButton(tr("OK"), this);
     QPushButton *pCancelButton = new QPushButton(tr("Cancel"), this);
-    qreal width = ZenoStyle::dpiScaled(50);
+    qreal width = ZenoStyle::dpiScaled(80);
     pOKButton->setFixedWidth(width);
     pCancelButton->setFixedWidth(width);
     pHLayout->addWidget(pOKButton);

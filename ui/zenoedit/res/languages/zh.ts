@@ -2,50 +2,81 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN">
 <context>
+    <name>ColorWidget</name>
+    <message>
+        <source>More Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DesignerMainWin</name>
     <message>
         <source>Open</source>
-        <translation type="obsolete">打开</translation>
+        <translation type="unfinished">打开</translation>
     </message>
     <message>
         <source>File</source>
-        <translation type="obsolete">文件</translation>
+        <translation type="unfinished">文件</translation>
     </message>
     <message>
         <source>New</source>
-        <translation type="obsolete">新建</translation>
+        <translation type="unfinished">新建</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation type="obsolete">保存</translation>
+        <translation type="unfinished">保存</translation>
     </message>
     <message>
         <source>Edit</source>
-        <translation type="obsolete">编辑</translation>
+        <translation type="unfinished">编辑</translation>
     </message>
     <message>
         <source>Undo</source>
-        <translation type="obsolete">撤销</translation>
+        <translation type="unfinished">撤销</translation>
     </message>
     <message>
         <source>Redo</source>
-        <translation type="obsolete">重做</translation>
+        <translation type="unfinished">重做</translation>
     </message>
     <message>
         <source>Cut</source>
-        <translation type="obsolete">剪切</translation>
+        <translation type="unfinished">剪切</translation>
     </message>
     <message>
         <source>Copy</source>
-        <translation type="obsolete">复制</translation>
+        <translation type="unfinished">复制</translation>
     </message>
     <message>
         <source>Paste</source>
-        <translation type="obsolete">粘贴</translation>
+        <translation type="unfinished">粘贴</translation>
     </message>
     <message>
         <source>Help</source>
-        <translation type="obsolete">帮助</translation>
+        <translation type="unfinished">帮助</translation>
+    </message>
+    <message>
+        <source>node</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>mdiWin2</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Quit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>View</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -73,36 +104,29 @@
         <source>Kill</source>
         <translation>终止</translation>
     </message>
-	<message>
+    <message>
         <source>RunLightCameraMaterial</source>
         <translation>运行灯光相机材质</translation>
     </message>
-	<message>
+    <message>
         <source>This function can only be used in cache mode.</source>
         <translation>该功能仅支持在缓存模式下运行</translation>
     </message>
-	<message>
+    <message>
         <source>disable</source>
         <translation>禁用实时预览</translation>
     </message>
-	<message>
+    <message>
         <source>alwaysAll</source>
         <translation>实时预览全部</translation>
     </message>
-	<message>
+    <message>
         <source>alwaysLightCameraMaterial</source>
         <translation>仅实时预览灯光相机材质</translation>
     </message>
-</context>
-<context>
-    <name>ZToolMenuButton</name>
     <message>
-        <source>Run</source>
-        <translation>运行</translation>
-    </message>
-	<message>
-        <source>RunLightCameraMaterial</source>
-        <translation>运行灯光相机材质</translation>
+        <source>RunLightCamera</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -217,6 +241,10 @@
     </message>
     <message>
         <source>Scale</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>resize viewport</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -471,14 +499,21 @@
     <name>ImageGroupBox</name>
     <message>
         <source>Select an image</source>
-        <translation type="vanished">选择一张图片</translation>
+        <translation>选择一张图片</translation>
     </message>
 </context>
 <context>
     <name>LayerTreeitemDelegate</name>
     <message>
         <source>Select an image</source>
-        <translation type="vanished">选择一张图片</translation>
+        <translation>选择一张图片</translation>
+    </message>
+</context>
+<context>
+    <name>LayerWidget</name>
+    <message>
+        <source>Layer</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -761,6 +796,10 @@
         <source>Ctrl+E</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Set ShortCut</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>MapCoreparamDlg</name>
@@ -783,12 +822,20 @@
         <source>Please input the title of blackboard</source>
         <translation type="vanished">请输入黑板的标题</translation>
     </message>
+    <message>
+        <source>content</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>title</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>NodesWidget</name>
     <message>
         <source>Save As</source>
-        <translation type="vanished">另存为</translation>
+        <translation>另存为</translation>
     </message>
 </context>
 <context>
@@ -800,6 +847,164 @@
     <message>
         <source>The param name already exists</source>
         <translation>参数名字已存在</translation>
+    </message>
+</context>
+<context>
+    <name>PropertyPane</name>
+    <message>
+        <source>Inspector</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>QObject</name>
+    <message>
+        <source>Save</source>
+        <translation type="unfinished">保存</translation>
+    </message>
+    <message>
+        <source>Save As</source>
+        <translation type="unfinished">另存为</translation>
+    </message>
+    <message>
+        <source>New File</source>
+        <translation type="unfinished">新建文件</translation>
+    </message>
+    <message>
+        <source>Open</source>
+        <translation type="unfinished">打开</translation>
+    </message>
+    <message>
+        <source>Undo</source>
+        <translation type="unfinished">撤销</translation>
+    </message>
+    <message>
+        <source>Redo</source>
+        <translation type="unfinished">重做</translation>
+    </message>
+    <message>
+        <source>New Subgraph</source>
+        <translation type="unfinished">新建子图</translation>
+    </message>
+    <message>
+        <source>Focus</source>
+        <translation type="unfinished">聚焦物体</translation>
+    </message>
+    <message>
+        <source>Run</source>
+        <translation type="unfinished">运行</translation>
+    </message>
+    <message>
+        <source>Kill</source>
+        <translation type="unfinished">终止</translation>
+    </message>
+    <message>
+        <source>Smooth Shading</source>
+        <translation type="unfinished">平滑渲染</translation>
+    </message>
+    <message>
+        <source>Normal Check</source>
+        <translation type="unfinished">法线检查</translation>
+    </message>
+    <message>
+        <source>Wire Frame</source>
+        <translation type="unfinished">线框</translation>
+    </message>
+    <message>
+        <source>Show Grid</source>
+        <translation type="unfinished">显示网格</translation>
+    </message>
+    <message>
+        <source>Solid</source>
+        <translation type="unfinished">实体</translation>
+    </message>
+    <message>
+        <source>Shading</source>
+        <translation type="unfinished">上色</translation>
+    </message>
+    <message>
+        <source>Optix</source>
+        <translation type="unfinished">光线追踪</translation>
+    </message>
+    <message>
+        <source>Screen Shoot</source>
+        <translation type="unfinished">截图</translation>
+    </message>
+    <message>
+        <source>Record Video</source>
+        <translation type="unfinished">录制视频</translation>
+    </message>
+    <message>
+        <source>Import</source>
+        <translation type="unfinished">导入</translation>
+    </message>
+    <message>
+        <source>Export Graph</source>
+        <translation type="unfinished">导出</translation>
+    </message>
+    <message>
+        <source>New Node</source>
+        <translation type="unfinished">新建节点</translation>
+    </message>
+    <message>
+        <source>Translational Handler</source>
+        <translation type="unfinished">呼出平移handler</translation>
+    </message>
+    <message>
+        <source>Rotating Handler</source>
+        <translation type="unfinished">呼出旋转handler</translation>
+    </message>
+    <message>
+        <source>Scaling Handler</source>
+        <translation type="unfinished">呼出缩放handler</translation>
+    </message>
+    <message>
+        <source>CoordSys</source>
+        <translation type="unfinished">坐标系统</translation>
+    </message>
+    <message>
+        <source>Init Handler</source>
+        <translation type="unfinished">初始化handler</translation>
+    </message>
+    <message>
+        <source>Reduce Handler</source>
+        <translation type="unfinished">缩小handler</translation>
+    </message>
+    <message>
+        <source>Amplify Handler</source>
+        <translation type="unfinished">放大handler</translation>
+    </message>
+    <message>
+        <source>Init View Pos</source>
+        <translation type="unfinished">初始化视图位置</translation>
+    </message>
+    <message>
+        <source>Front View</source>
+        <translation type="unfinished">正视图</translation>
+    </message>
+    <message>
+        <source>Right View</source>
+        <translation type="unfinished">右视图</translation>
+    </message>
+    <message>
+        <source>Vertical View</source>
+        <translation type="unfinished">俯视图</translation>
+    </message>
+    <message>
+        <source>Back View</source>
+        <translation type="unfinished">后视图</translation>
+    </message>
+    <message>
+        <source>LeftView</source>
+        <translation type="unfinished">左视图</translation>
+    </message>
+    <message>
+        <source>Upward View</source>
+        <translation type="unfinished">仰视图</translation>
+    </message>
+    <message>
+        <source>Float Panel</source>
+        <translation type="unfinished">弹出属性面板</translation>
     </message>
 </context>
 <context>
@@ -1155,6 +1360,29 @@
     </message>
 </context>
 <context>
+    <name>ZShortCutSettingDlg</name>
+    <message>
+        <source>Description</source>
+        <translation type="unfinished">描述</translation>
+    </message>
+    <message>
+        <source>ShortCut</source>
+        <translation type="unfinished">快捷键</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation type="unfinished">确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation type="unfinished">取消</translation>
+    </message>
+    <message>
+        <source>Shortcut Setting</source>
+        <translation type="unfinished">快捷键设置</translation>
+    </message>
+</context>
+<context>
     <name>ZSubnetListItemDelegate</name>
     <message>
         <source>Copy subnet</source>
@@ -1283,6 +1511,17 @@
     <message>
         <source>Run</source>
         <translation type="vanished">运行</translation>
+    </message>
+</context>
+<context>
+    <name>ZToolMenuButton</name>
+    <message>
+        <source>Run</source>
+        <translation>运行</translation>
+    </message>
+    <message>
+        <source>RunLightCameraMaterial</source>
+        <translation>运行灯光相机材质</translation>
     </message>
 </context>
 <context>
@@ -1450,11 +1689,11 @@
     </message>
     <message>
         <source>Set NASLOC</source>
-        <translation>设置NASLOC</translation>
+        <translation type="vanished">设置NASLOC</translation>
     </message>
     <message>
         <source>NASLOC</source>
-        <translation>NASLOC</translation>
+        <translation type="vanished">NASLOC</translation>
     </message>
     <message>
         <source>Set ZENCACHE</source>
@@ -1483,6 +1722,13 @@
     <message>
         <source>Cannot edit parameters!</source>
         <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ZenoImagePanel</name>
+    <message>
+        <source>Prim: </source>
+        <translation type="unfinished">图元对象： </translation>
     </message>
 </context>
 <context>
@@ -1710,106 +1956,151 @@
     <name>ZenoParamPathEdit</name>
     <message>
         <source>File to Open</source>
-        <translation type="unfinished">要打开的文件</translation>
+        <translation type="obsolete">要打开的文件</translation>
     </message>
     <message>
         <source>All Files(*);;</source>
-        <translation type="unfinished">所有文件(*);;</translation>
+        <translation type="obsolete">所有文件(*);;</translation>
     </message>
     <message>
         <source>Path to Save</source>
-        <translation type="unfinished">文件保存路径</translation>
+        <translation type="obsolete">文件保存路径</translation>
     </message>
 </context>
 <context>
     <name>ZenoPlayer</name>
     <message>
         <source>File</source>
-        <translation type="obsolete">文件</translation>
+        <translation type="unfinished">文件</translation>
     </message>
     <message>
         <source>Open</source>
-        <translation type="obsolete">打开</translation>
+        <translation type="unfinished">打开</translation>
     </message>
     <message>
         <source>Display</source>
-        <translation type="obsolete">显示</translation>
+        <translation type="unfinished">显示</translation>
     </message>
     <message>
         <source>Show Grid</source>
-        <translation type="obsolete">显示网格</translation>
+        <translation type="unfinished">显示网格</translation>
     </message>
     <message>
         <source>Background Color</source>
-        <translation type="obsolete">背景颜色</translation>
+        <translation type="unfinished">背景颜色</translation>
     </message>
     <message>
         <source>Smooth Shading</source>
-        <translation type="obsolete">平滑渲染</translation>
+        <translation type="unfinished">平滑渲染</translation>
     </message>
     <message>
         <source>Normal Check</source>
-        <translation type="obsolete">法线检查</translation>
+        <translation type="unfinished">法线检查</translation>
     </message>
     <message>
         <source>Wireframe</source>
-        <translation type="obsolete">线框</translation>
+        <translation type="unfinished">线框</translation>
     </message>
     <message>
         <source>Solid</source>
-        <translation type="obsolete">实体</translation>
+        <translation type="unfinished">实体</translation>
     </message>
     <message>
         <source>Shading</source>
-        <translation type="obsolete">上色</translation>
+        <translation type="unfinished">上色</translation>
     </message>
     <message>
         <source>VXGI</source>
-        <translation type="obsolete">全局光照</translation>
+        <translation type="unfinished">全局光照</translation>
     </message>
     <message>
         <source>Optix</source>
-        <translation type="obsolete">光线追踪</translation>
+        <translation type="unfinished">光线追踪</translation>
     </message>
     <message>
         <source>Camera Keyframe</source>
-        <translation type="obsolete">摄像机关键帧</translation>
+        <translation type="unfinished">摄像机关键帧</translation>
     </message>
     <message>
         <source>English / Chinese</source>
-        <translation type="obsolete">中英文切换</translation>
+        <translation type="unfinished">中英文切换</translation>
     </message>
     <message>
         <source>Record</source>
-        <translation type="obsolete">导出</translation>
+        <translation type="unfinished">导出</translation>
     </message>
     <message>
         <source>Screenshot</source>
-        <translation type="obsolete">截屏</translation>
+        <translation type="unfinished">截屏</translation>
     </message>
     <message>
         <source>Path to Save</source>
-        <translation type="obsolete">文件保存路径</translation>
+        <translation type="unfinished">文件保存路径</translation>
     </message>
     <message>
         <source>PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;</source>
-        <translation type="obsolete">PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
+        <translation type="unfinished">PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
     </message>
     <message>
         <source>Record Video</source>
-        <translation type="obsolete">录制视频</translation>
+        <translation type="unfinished">录制视频</translation>
     </message>
     <message>
         <source>EnvTex</source>
-        <translation type="obsolete">环境贴图</translation>
+        <translation type="unfinished">环境贴图</translation>
     </message>
     <message>
         <source>Error</source>
-        <translation type="obsolete">错误</translation>
+        <translation type="unfinished">错误</translation>
     </message>
     <message>
         <source>Open %1 error!</source>
-        <translation type="obsolete">打开%1错误！</translation>
+        <translation type="unfinished">打开%1错误！</translation>
+    </message>
+    <message>
+        <source>Ctrl+O</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shift+F12</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>BlackWhite</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Creek</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Daylight</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Default</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Footballfield</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Forest</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lake</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sea</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Zensim Graph File (*.zsg)
+All Files (*)</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1835,6 +2126,17 @@
     </message>
     <message>
         <source>Cannot edit parameters!</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ZenoSettingsManager</name>
+    <message>
+        <source>Normal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unavailable</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
