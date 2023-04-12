@@ -207,6 +207,35 @@ struct BulletGlueCompoundShape : IObject {
 	}
 };
 
+struct BulletConstraintRelationship : zeno::IObject {
+    std::string constraintName{}; // "Glue", "Hard", "Soft"...
+    std::string constraintType{}; // "position", "rotation", "all"
+    BulletObject *rb0{nullptr}, *rb1{nullptr};
+    int solveIterCap{0};
+
+    BulletConstraintRelationship() = default;
+    BulletConstraintRelationship(BulletObject *obj0, BulletObject *obj1, std::string name, int solveIterCap = 0,
+                                 std::string type = "position")
+        : rb0{obj0}, rb1{obj1}, constraintName{name}, constraintType{type}, solveIterCap{solveIterCap} {
+    }
+    BulletConstraintRelationship(BulletObject *obj0, std::string name, int solveIterCap = 0,
+                                 std::string type = "position")
+        : rb0{obj0}, rb1{nullptr}, constraintName{name}, constraintType{type}, solveIterCap{solveIterCap} {
+    }
+    ~BulletConstraintRelationship() = default;
+
+    bool isGlueConstraint() const noexcept {
+        return constraintName == "Glue" || constraintName == "glue";
+    }
+
+    std::string_view name() const {
+        return constraintName;
+    }
+    std::string_view type() const {
+        return constraintType;
+    }
+};
+
 struct BulletConstraint : zeno::IObject {
     std::unique_ptr<btTypedConstraint> constraint;
 

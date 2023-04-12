@@ -37,6 +37,24 @@
 
 namespace zeno {
 
+template <typename T>
+std::shared_ptr<T> get_attrib(std::shared_ptr<IObject> obj, const std::string &key) {
+    return obj->userData().get<T>(key);
+}
+template <typename T>
+void set_attrib(std::shared_ptr<IObject> obj, const std::string &key, std::shared_ptr<T> value) {
+    obj->userData().set(key, std::move(value));
+}
+template <typename T>
+T get_value(std::shared_ptr<IObject> obj, const std::string &key) {
+    return obj->userData().get<NumericObject>(key)->get<T>();
+}
+template <typename T>
+void set_value(std::shared_ptr<IObject> obj, const std::string &key, const T &value) {
+    auto v = std::make_shared<NumericObject>(value);
+    obj->userData().set(key, std::move(v));
+}
+
 #define DEBUG_CPD 1
 
 struct BulletGlueRigidBodies : zeno::INode {
@@ -163,12 +181,7 @@ struct BulletGlueRigidBodies : zeno::INode {
                 cpdChildMasses[compId].push_back(bodyPtr->getMass());
                 // cpdOrigins[compId] += (bodyPtr->getMass() * bodyPtr->getCenterOfMassPosition());
 
-#if 0
-                auto correspondingPrim = rbs[rbi]->userData().get<PrimitiveObject>("prim");
-                primList->arr.push_back(correspondingPrim);
-#else
                 primList->arr.push_back(rbs[rbi]->userData().get("prim"));
-#endif
             }
         });
         //pol(zip(cpdOrigins, cpdMasses), [](auto &weightedOrigin, float weight) { weightedOrigin /= weight; });
@@ -187,13 +200,9 @@ struct BulletGlueRigidBodies : zeno::INode {
                 cpdShape->calculatePrincipalAxisTransform(cpdChildMasses[cpi].data(), principalTrans, inertia);
                 for (int rbi = 0; rbi != cpdShape->getNumChildShapes(); ++rbi) {
                     auto chTrans = cpdShape->getChildTransform(rbi);
-#if 1
+
                     auto loc = std::make_shared<NumericObject>(
                         other_to_vec<3>((principalTrans.inverse() * chTrans).getOrigin()));
-#else
-                    auto loc = std::make_shared<NumericObject>(
-                        other_to_vec<3>((chTrans.getOrigin() - principalTrans.getOrigin())));
-#endif
                     locallist->arr[grbi] = loc;
 
                     auto prim = std::make_shared<PrimitiveObject>();
@@ -484,5 +493,34 @@ ZENDEFNODE(BulletUpdateCpdChildPrimTrans, {
                                               {"Bullet"},
                                           });
 #endif
+
+struct BulletMakeConstraintRelationship : zeno::INode {
+    virtual void apply() override {
+        auto constraintName = get_param<std::string>("constraintName");
+        auto constraintType = get_param<std::string>("constraintType");
+        auto obj1 = get_input<BulletObject>("obj1");
+        auto iter = get_input2<int>("iternum");
+        std::shared_ptr<BulletConstraintRelationship> cons;
+        if (has_input("obj2")) {
+            auto obj2 = get_input<BulletObject>("obj2");
+            cons = std::make_shared<BulletConstraintRelationship>(obj1.get(), obj2.get(), constraintName, iter,
+                                                                  constraintType);
+        } else {
+            cons = std::make_shared<BulletConstraintRelationship>(obj1.get(), constraintName, iter, constraintType);
+        }
+        set_output("constraint_relationship", std::move(cons));
+    }
+};
+
+ZENDEFNODE(BulletMakeConstraintRelationship,
+           {
+               {"obj1", "obj2", {"int", "iternum", "100"}},
+               {"constraint_relationship"},
+               {{"enum Glue Hard Soft Fixed ConeTwist Gear Generic6Dof Generic6DofSpring "
+                 "Generic6DofSpring2 Hinge Hinge2 Point2Point Slider Universal",
+                 "constraintName", "Fixed"},
+                {"enum position rotation all", "constraintType", "position"}},
+               {"Bullet"},
+           });
 
 } // namespace zeno
