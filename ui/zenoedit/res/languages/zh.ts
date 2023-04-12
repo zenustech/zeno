@@ -85,6 +85,10 @@
         <source>Run the graph before recording</source>
         <translation>开始录制前请先点一下“运行”按钮</translation>
     </message>
+	<message>
+        <source>The available frame range is %1 - %2, please rerun first</source>
+        <translation>可用帧范围为%1-%2 ，请先重新运行</translation>
+    </message>
     <message>
         <source>Path to Save</source>
         <translation>截图储存路径</translation>
@@ -557,11 +561,11 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <source>&amp;File</source>
+        <source>File</source>
         <translation type="unfinished">文件</translation>
     </message>
     <message>
-        <source>&amp;Export</source>
+        <source>Export</source>
         <translation type="unfinished">导出</translation>
     </message>
     <message>
@@ -569,15 +573,15 @@
         <translation type="unfinished">最近的文件</translation>
     </message>
     <message>
-        <source>&amp;Edit</source>
+        <source>Edit</source>
         <translation type="unfinished">编辑</translation>
     </message>
     <message>
-        <source>&amp;Render</source>
+        <source>Render</source>
         <translation type="unfinished">渲染</translation>
     </message>
     <message>
-        <source>&amp;View</source>
+        <source>View</source>
         <translation type="unfinished">视图</translation>
     </message>
     <message>
@@ -589,7 +593,7 @@
         <translation type="unfinished">摄像机</translation>
     </message>
     <message>
-        <source>&amp;Window</source>
+        <source>Window</source>
         <translation type="unfinished">窗口</translation>
     </message>
     <message>
@@ -597,7 +601,7 @@
         <translation type="unfinished">自定义布局</translation>
     </message>
     <message>
-        <source>&amp;Help</source>
+        <source>Help</source>
         <translation type="unfinished">帮助</translation>
     </message>
     <message>
@@ -605,11 +609,11 @@
         <translation type="unfinished">选项</translation>
     </message>
     <message>
-        <source>&amp;Undo</source>
+        <source>Undo</source>
         <translation type="unfinished">撤销</translation>
     </message>
     <message>
-        <source>&amp;Redo</source>
+        <source>Redo</source>
         <translation type="unfinished">重做</translation>
     </message>
     <message>
@@ -617,39 +621,39 @@
         <translation type="unfinished">默认布局</translation>
     </message>
     <message>
-        <source>&amp;New</source>
-        <translation type="unfinished">&amp;新建</translation>
+        <source>New</source>
+        <translation type="unfinished">新建</translation>
     </message>
     <message>
-        <source>&amp;Open</source>
+        <source>Open</source>
         <translation type="unfinished">打开</translation>
     </message>
     <message>
-        <source>&amp;Save</source>
+        <source>Save</source>
         <translation type="unfinished">保存</translation>
     </message>
     <message>
-        <source>&amp;Save As</source>
+        <source>Save As</source>
         <translation type="unfinished">另存为</translation>
     </message>
     <message>
-        <source>&amp;Import</source>
+        <source>Import</source>
         <translation type="unfinished">导入</translation>
     </message>
     <message>
-        <source>&amp;Close</source>
+        <source>Close</source>
         <translation type="unfinished">关闭</translation>
     </message>
     <message>
-        <source>&amp;Copy</source>
+        <source>Copy</source>
         <translation type="unfinished">复制</translation>
     </message>
     <message>
-        <source>&amp;Paste</source>
+        <source>Paste</source>
         <translation type="unfinished">粘贴</translation>
     </message>
     <message>
-        <source>Cu&amp;t</source>
+        <source>Cut</source>
         <translation type="unfinished">剪切</translation>
     </message>
     <message>

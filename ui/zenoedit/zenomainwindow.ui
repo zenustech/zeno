@@ -28,11 +28,11 @@
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
-     <string>&amp;File</string>
+     <string>File</string>
     </property>
     <widget class="QMenu" name="menu_Export">
      <property name="title">
-      <string>&amp;Export</string>
+      <string>Export</string>
      </property>
      <addaction name="actionExportGraph"/>
      <addaction name="actionScreen_Shoot"/>
@@ -45,7 +45,7 @@
     </widget>
     <widget class="QMenu" name="menu_New">
      <property name="title">
-      <string>&amp;New</string>
+      <string>New</string>
      </property>
      <addaction name="actionNew_File"/>
      <addaction name="actionNew_Subgraph"/>
@@ -61,7 +61,7 @@
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
-     <string>&amp;Edit</string>
+     <string>Edit</string>
     </property>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
@@ -76,7 +76,7 @@
    </widget>
    <widget class="QMenu" name="menuRender">
     <property name="title">
-     <string>&amp;Render</string>
+     <string>Render</string>
     </property>
     <addaction name="actionSmooth_Shading"/>
     <addaction name="actionNormal_Check"/>
@@ -91,7 +91,7 @@
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
-     <string>&amp;View</string>
+     <string>View</string>
     </property>
     <widget class="QMenu" name="menuEnvTex">
      <property name="title">
@@ -117,7 +117,7 @@
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
-     <string>&amp;Window</string>
+     <string>Window</string>
     </property>
     <widget class="QMenu" name="menuCustom_Layout">
      <property name="title">
@@ -130,7 +130,7 @@
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
-     <string>&amp;Help</string>
+     <string>Help</string>
     </property>
     <addaction name="actionEnglish_Chinese"/>
     <addaction name="actionShortcutList"/>
@@ -160,7 +160,7 @@ border-top: 1px solid black;</string>
   </widget>
   <action name="actionUndo">
    <property name="text">
-    <string>&amp;Undo</string>
+    <string>Undo</string>
    </property>
    <property name="shortcut">
     <string notr="true">Ctrl+Z</string>
@@ -168,7 +168,7 @@ border-top: 1px solid black;</string>
   </action>
   <action name="actionRedo">
    <property name="text">
-    <string>&amp;Redo</string>
+    <string>Redo</string>
    </property>
    <property name="shortcut">
     <string notr="true">Ctrl+Y</string>
@@ -181,7 +181,7 @@ border-top: 1px solid black;</string>
   </action>
   <action name="action_Open">
    <property name="text">
-    <string>&amp;Open</string>
+    <string>Open</string>
    </property>
    <property name="shortcut">
     <string notr="true">Ctrl+O</string>
@@ -189,7 +189,7 @@ border-top: 1px solid black;</string>
   </action>
   <action name="action_Save">
    <property name="text">
-    <string>&amp;Save</string>
+    <string>Save</string>
    </property>
    <property name="shortcut">
     <string notr="true">Ctrl+S</string>
@@ -197,7 +197,7 @@ border-top: 1px solid black;</string>
   </action>
   <action name="action_Save_As">
    <property name="text">
-    <string>&amp;Save As</string>
+    <string>Save As</string>
    </property>
    <property name="shortcut">
     <string notr="true">Ctrl+Shift+S</string>
@@ -205,7 +205,7 @@ border-top: 1px solid black;</string>
   </action>
   <action name="action_Import">
    <property name="text">
-    <string>&amp;Import</string>
+    <string>Import</string>
    </property>
    <property name="shortcut">
     <string notr="true">Ctrl+Shift+O</string>
@@ -213,22 +213,22 @@ border-top: 1px solid black;</string>
   </action>
   <action name="action_Close">
    <property name="text">
-    <string>&amp;Close</string>
+    <string>Close</string>
    </property>
   </action>
   <action name="action_Copy">
    <property name="text">
-    <string>&amp;Copy</string>
+    <string>Copy</string>
    </property>
   </action>
   <action name="action_Paste">
    <property name="text">
-    <string>&amp;Paste</string>
+    <string>Paste</string>
    </property>
   </action>
   <action name="action_Cut">
    <property name="text">
-    <string>Cu&amp;t</string>
+    <string>Cut</string>
    </property>
   </action>
   <action name="actionSmooth_Shading">

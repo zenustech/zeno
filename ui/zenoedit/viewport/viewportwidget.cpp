@@ -1274,6 +1274,12 @@ void DisplayWidget::onRecord()
         int recStartFrame = recInfo.frameRange.first;
         int recEndFrame = recInfo.frameRange.second;
 
+        if (recStartFrame < frameLeft || recEndFrame > frameRight)
+        {
+            QMessageBox::information(nullptr, "Zeno", tr("The available frame range is %1 - %2, please rerun first").arg(frameLeft).arg(frameRight), QMessageBox::Ok);
+            return;
+        }
+
         if (bRun)
         {
             //clear the global Comm first, to avoid play old frames.

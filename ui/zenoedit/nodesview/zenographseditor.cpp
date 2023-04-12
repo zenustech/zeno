@@ -758,7 +758,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         bool bEnableCache = settings.value("zencache-enable").toBool();
         bool bAutoRemove = settings.value("zencache-autoremove", true).toBool();
         QString cacheRootDir = settings.value("zencachedir").toString();
-        int cacheNum = settings.value("zencachenum").toInt();
+        int cacheNum = settings.value("zencachenum").toInt() < 1 ? 1 : settings.value("zencachenum").toInt();
         ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
         pathLineEdit->setFixedWidth(256);
         pathLineEdit->setEnabled(!bAutoRemove && bEnableCache);
@@ -774,6 +774,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         pSpinBox->setRange(0, 10000);
         pSpinBox->setValue(cacheNum);
         pSpinBox->setEnabled(bEnableCache);
+        pSpinBox->setMinimum(1);
 
         QCheckBox *pCheckbox = new QCheckBox;
         pCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);

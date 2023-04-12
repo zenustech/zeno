@@ -56,12 +56,14 @@ target_sources(zeno PRIVATE
 
 # fem-rapid-cloth 
 target_sources(zeno PRIVATE 
-  fem/RapidCloth.cuh 
-  fem/RapidClothInit.cu
-  fem/RapidClothLinearSystem.cu
-  fem/RapidClothCollision.cu
-  fem/RapidClothPrimitives.cu
-  fem/RapidClothPipeline.cu 
+  fem/rapid_cloth/RapidCloth.cuh 
+  fem/rapid_cloth/RapidClothInit.cu
+  fem/rapid_cloth/RapidClothLinearSystem.cu
+  fem/rapid_cloth/RapidClothCollision.cu
+  fem/rapid_cloth/RapidClothPrimitives.cu
+  fem/rapid_cloth/RapidClothPipeline.cu 
+
+  fem/ZSParticlesConstraints.cu
 )
 
 # fem

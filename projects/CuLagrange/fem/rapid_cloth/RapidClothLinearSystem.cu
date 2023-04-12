@@ -21,6 +21,16 @@ void RapidClothSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallStri
         for (int d = 0; d != 3; ++d)
             vtemp(tagOffset + d, vi) = 0;
     });
+    pol(zs::range(coOffset), 
+        [vtemp = view<space>({}, vtemp), 
+         fixedOffset = vtemp.getPropertyOffset("BCfixed"), 
+         tagOffset = vtemp.getPropertyOffset(tag)] ZS_LAMBDA(int vi) mutable {
+        if (vtemp(fixedOffset, vi) < 0.5f)
+            return; 
+#pragma unroll
+        for (int d = 0; d != 3; ++d)
+            vtemp(tagOffset + d, vi) = 0;
+    });
 }
 
 void RapidClothSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag,
@@ -358,8 +368,10 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
     // fix the boundary 
     pol(range(coOffset), 
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
-            vtemp.tuple(dim_c<3>, "y[k+1]", vi) = 
-                vtemp.pack(dim_c<3>, "x[k]", vi) + vtemp.pack(dim_c<3>, "dir", vi);  
+            auto xk = vtemp.pack(dim_c<3>, "x[k]", vi); 
+            if (vtemp("BCfixed", vi) < 0.5f)
+                xk += vtemp.pack(dim_c<3>, "dir", vi); 
+            vtemp.tuple(dim_c<3>, "y[k+1]", vi) = xk; 
         }); 
     if (enableProfile_c)
         timer.tock("Newton step"); 
