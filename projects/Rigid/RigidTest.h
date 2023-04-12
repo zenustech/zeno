@@ -224,6 +224,9 @@ struct BulletConstraintRelationship : zeno::IObject {
     }
     ~BulletConstraintRelationship() = default;
 
+    bool isUnaryConstraint() const noexcept {
+        return rb1 == nullptr;
+    }
     bool isGlueConstraint() const noexcept {
         return constraintName == "Glue" || constraintName == "glue";
     }

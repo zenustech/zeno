@@ -523,4 +523,250 @@ ZENDEFNODE(BulletMakeConstraintRelationship,
                {"Bullet"},
            });
 
+struct BulletMaintainCompoundsAndConstraints : zeno::INode {
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        /// @note simple (non-compound) rigid bodies
+        auto rbs = get_input<ListObject>("rbList")->get<BulletObject>();
+        const auto nrbs = rbs.size();
+
+        /// @note constraint relationships
+        auto relationships = get_input<ListObject>("constraint_relationships")->get<BulletConstraintRelationship>();
+        const auto ncons = relationships.size();
+
+        ///
+        ///
+        /// @brief filter constraints (glue + non-glue)
+        ///
+        ///
+        /// @note does not allow duplicate entries
+        auto comp = [](const std::shared_ptr<BulletObject> &a, const std::shared_ptr<BulletObject> &b) {
+            return (std::uintptr_t)a.get() < (std::uintptr_t)b.get();
+        };
+        std::sort(std::begin(rbs), std::end(rbs), comp);
+        auto find_id = [&rbs, nrbs](const BulletObject *target) {
+            int st = 0, ed = nrbs - 1, mid;
+            while (ed >= st) {
+                mid = st + (ed - st) / 2;
+                if (target == rbs[mid].get())
+                    return mid;
+                if (target < rbs[mid].get())
+                    ed = mid - 1;
+                else
+                    st = mid + 1;
+            }
+            return -1;
+        };
+
+        /// @brief construct compound topo
+        std::vector<int> is, js;
+        is.reserve(ncons);
+        js.reserve(ncons);
+        std::vector<int> consIs(ncons);
+        std::vector<int> consJs(ncons); // might contain -1 when unary constraints exist
+        for (std::size_t k = 0; k != ncons; ++k) {
+            auto &rel = relationships[k];
+            auto i = find_id(rel->rb0);
+            auto j = find_id(rel->rb1);
+            consIs[k] = i;
+            consJs[k] = j;
+            if (rel->isGlueConstraint()) {
+                is.push_back(i);
+                js.push_back(j);
+            }
+        }
+
+        SparseMatrix<int, true> spmat{(int)nrbs, (int)nrbs};
+        spmat.build(pol, (int)nrbs, (int)nrbs, range(is), range(js), true_c);
+
+        std::vector<int> fas(nrbs);
+        // check if the rigid body is with an compound (more than one rigid body)
+        std::vector<int> isRbCompound(nrbs);
+        union_find(pol, spmat, range(fas));
+        bht<int, 1, int> tab{spmat.get_allocator(), nrbs};
+        tab.reset(pol, true);
+        pol(range(nrbs), [&fas, &isRbCompound, tab = proxy<space>(tab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            if (tab.insert(fa) < 0) // already inserted
+                isRbCompound[vi] = true;
+        });
+        // map rigid body indices to target compound indices
+        std::vector<int> rbDstCompId(nrbs);
+        pol(range(nrbs), [&fas, &rbDstCompId, tab = proxy<space>(tab)](int rbi) mutable {
+            auto fa = fas[rbi];
+            auto compId = tab.query(fa);
+            rbDstCompId[rbi] = compId;
+        });
+
+        auto ncompounds = tab.size();
+        /// @note the output BulletObject list
+        auto rblist = std::make_shared<ListObject>();
+        rblist->arr.resize(ncompounds);
+
+        /// @note isolated rigid bodies are delegated to this BulletObject list here!
+        // determine compound or not pass on rbs that are does not belong in any compound
+        std::vector<int> isCompound(ncompounds);
+        pol(range(nrbs), [&isCompound, &isRbCompound, &rbDstCompId, &fas, &rbs, tab = proxy<space>(tab),
+                          &rblist = rblist->arr](int rbi) mutable {
+            auto isRbCpd = isRbCompound[rbi];
+            auto compId = rbDstCompId[rbi];
+            if (isRbCpd)
+                isCompound[compId] = 1;
+            else
+                rblist[compId] = rbs[rbi];
+        });
+        fmt::print("{} rigid bodies, {} groups (incl compounds).\n", nrbs, ncompounds);
+
+        std::vector<int> consMarks(ncons + 1); // 0: discard, 1: preserve
+        pol(range(ncons),
+            [&consMarks, &relationships, &rbDstCompId, &consIs, &consJs, &fas, tab = proxy<space>(tab)](int k) mutable {
+                auto &rel = relationships[k];
+                if (!rel->isGlueConstraint()) {
+                    if (rel->isUnaryConstraint())
+                        consMarks[k] = 1;
+                    else {
+                        auto compI = rbDstCompId[consIs[k]];
+                        auto compJ = rbDstCompId[consJs[k]];
+                        consMarks[k] = compI != compJ;
+                    }
+                } else
+                    consMarks[k] = 0;
+            });
+        std::vector<int> consOffsets(ncons + 1);
+        exclusive_scan(pol, std::begin(consMarks), std::end(consMarks), std::begin(consOffsets));
+        // filter actual constraints in effect
+        auto numPreservedCons = consOffsets[ncons];
+        std::vector<BulletConstraintRelationship *> gatheredCons(numPreservedCons);
+        std::vector<int> gatheredConsIs(numPreservedCons), gatheredConsJs(numPreservedCons);
+        std::vector<int> gatheredConsCompIs(numPreservedCons), gatheredConsCompJs(numPreservedCons);
+        pol(range(ncons), [&](int k) {
+            if (consMarks[k]) {
+                auto dst = consOffsets[k];
+                gatheredCons[dst] = relationships[k].get();
+                gatheredConsIs[dst] = consIs[k];
+                gatheredConsJs[dst] = consJs[k];
+                gatheredConsCompIs[dst] = rbDstCompId[consIs[k]];
+                gatheredConsCompJs[dst] = rbDstCompId[consJs[k]];
+            }
+        });
+
+        ///
+        ///
+        /// @brief compounds
+        ///
+        ///
+        /// @brief construct compounds
+        // mass
+        std::vector<float> cpdMasses(ncompounds);
+        pol(enumerate(rbs), [&cpdMasses, &fas, tab = proxy<space>(tab)](int rbi, const auto &rb) {
+            auto fa = fas[rbi];
+            auto compId = tab.query(fa);
+            atomic_add(exec_omp, &cpdMasses[compId], rb->body->getMass());
+        });
+        std::vector<float> mass(1, 0.f);
+        reduce(pol, std::begin(cpdMasses), std::end(cpdMasses), mass.begin(), 0.f);
+
+        fmt::print("total mass: {}\n", mass[0]);
+
+        // prep PrimList for each compound
+        std::vector<std::shared_ptr<ListObject>> primLists(ncompounds);
+        std::vector<std::unique_ptr<btCompoundShape>> btCpdShapes(ncompounds);
+        pol(zip(primLists, btCpdShapes), [](auto &primPtr, auto &cpdShape) {
+            primPtr = std::make_shared<ListObject>();
+            cpdShape = std::make_unique<btCompoundShape>();
+        });
+
+        /// @note assemble shapes, masses
+        std::vector<std::mutex> comLocks(ncompounds);
+        std::vector<std::vector<btScalar>> cpdChildMasses(ncompounds);
+        pol(range(nrbs), [&, tab = proxy<space>(tab)](int rbi) mutable {
+            std::unique_ptr<btRigidBody> &bodyPtr = rbs[rbi]->body;
+            auto fa = fas[rbi];
+            auto compId = tab.query(fa);
+            if (isCompound[compId]) {
+                std::lock_guard<std::mutex> guard(comLocks[compId]);
+                auto &cpdPtr = btCpdShapes[compId];
+                auto &primList = primLists[compId];
+                btTransform trans;
+                if (bodyPtr && bodyPtr->getMotionState()) {
+                    bodyPtr->getMotionState()->getWorldTransform(trans);
+                } else {
+                    trans = static_cast<btCollisionObject *>(bodyPtr.get())->getWorldTransform();
+                }
+                cpdPtr->addChildShape(trans, bodyPtr->getCollisionShape());
+                cpdChildMasses[compId].push_back(bodyPtr->getMass());
+                // cpdOrigins[compId] += (bodyPtr->getMass() * bodyPtr->getCenterOfMassPosition());
+
+                primList->arr.push_back(rbs[rbi]->userData().get("prim"));
+            }
+        });
+
+        /// @note compute compound principal transforms once all children done inserted
+        std::vector<btTransform> cpdTransforms(ncompounds);
+        std::vector<btVector3> cpdInertia(ncompounds);
+        pol(zip(isCompound, cpdTransforms, cpdInertia, btCpdShapes, cpdChildMasses),
+            [](bool isCpd, btTransform &principalTrans, btVector3 &inertia, auto &cpdShape, auto &cpdMasses) {
+                if (isCpd) {
+                    cpdShape->calculatePrincipalAxisTransform(cpdMasses.data(), principalTrans, inertia);
+                }
+            });
+        /// @note adjust compound children transforms according to the principal compound transforms
+        pol(zip(isCompound, cpdTransforms, btCpdShapes), [](bool isCpd, const auto &principalTrans, auto &cpdShape) {
+            if (isCpd) {
+                for (int rbi = 0; rbi != cpdShape->getNumChildShapes(); ++rbi)
+                    cpdShape->updateChildTransform(rbi, principalTrans.inverse() * cpdShape->getChildTransform(rbi));
+            }
+        });
+
+        // assemble true compound shapes/rigidbodies
+        auto shapelist = std::make_shared<ListObject>();
+        shapelist->arr.resize(ncompounds);
+        pol(zip(isCompound, cpdMasses, cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr, shapelist->arr),
+            [&](bool isCpd, auto cpdMass, const auto &cpdTransform, const auto &inertia, auto &btShape, auto primList,
+                auto &cpdBody, auto &cpdShape) {
+                if (isCpd) {
+                    auto tmp = std::make_shared<BulletCollisionShape>(std::move(btShape));
+                    cpdShape = tmp;
+                    // list of PrimitiveObject, corresponding with each CompoundShape children
+                    tmp->userData().set("prim", primList);
+                    // cpdBody = std::make_shared<BulletObject>(cpdMass, cpdTransform, tmp);
+                    cpdBody = std::make_shared<BulletObject>(cpdMass, cpdTransform, inertia, tmp);
+                }
+            });
+
+        rblist->userData().set("compoundShapes", shapelist);
+
+        ///
+        ///
+        /// @brief constraints
+        ///
+        ///
+        /// @brief generate bulletconstraints
+        /// @note the output BulletConstraint list
+        auto conslist = std::make_shared<ListObject>();
+        conslist->arr.resize(numPreservedCons);
+        // numPreservedCons, gatheredCons, gatheredConsIs, gatheredConsJs, gatheredConsCompIs, gatheredConsCompJs
+
+        set_output("compoundList", rblist);
+    }
+};
+
+ZENDEFNODE(BulletMaintainCompoundsAndConstraints, {
+                                                      {
+                                                          "rbList",
+                                                          "constraint_relationships",
+                                                      },
+                                                      {
+                                                          "compoundList",
+                                                      },
+                                                      {},
+                                                      {"Bullet"},
+                                                  });
+
 } // namespace zeno
