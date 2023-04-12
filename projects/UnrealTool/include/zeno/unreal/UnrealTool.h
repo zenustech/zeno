@@ -25,6 +25,14 @@ namespace zeno {
      * @return graph created
      */
     ZENO_API Graph* AddSubnetNode(Graph* graph, const char* id);
+    /**
+     * @deprecated Use specialized function such as ['GetGraphInputParams']
+     * @param graph graph to call with
+     * @param id node class name
+     * @param argc number of your inputs
+     * @param ... vargs with type std::pair<const char*, zany>
+     * @return list of result
+     */
     ZENO_API SimpleList<std::pair<SimpleCharBuffer, zany>> CallSubnetNode(Graph* graph, const char* id, size_t argc = 0, ...);
     /**
      * Wrapper of Graph::loadGraph()
@@ -45,13 +53,13 @@ namespace zeno {
      * @param id subnet node name
      * @param argc number of your inputs
      * @param ... vargs with type std::pair<const char*, zany>
-     * @return mesh data in json
+     * @return ['Mesh']
      */
     ZENO_API SimpleCharBuffer CallSubnetNode_Mesh(Graph* graph, const char* id, size_t argc = 0, ...);
     /**
      * Get the input params required by node to exec which marked in zeno editor.
      * @param graph graph to call with
-     * @return
+     * @return ['SubnetNodeParamList']
      */
     ZENO_API SimpleCharBuffer GetGraphInputParams(Graph* graph);
 }
