@@ -18,6 +18,11 @@ struct SimpleCharBuffer {
 
     char* data;
     size_t length;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(data, length);
+    }
 };
 
 extern "C" {

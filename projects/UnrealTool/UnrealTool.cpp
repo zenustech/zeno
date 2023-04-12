@@ -115,9 +115,25 @@ zeno::SimpleCharBuffer zeno::CallSubnetNode_Mesh(zeno::Graph *graph, const char 
         return SimpleCharBuffer { reinterpret_cast<char*>(res.data()), res.size() };
     }
 
-    return "{}";
+    return nullptr;
 }
 
 zeno::SimpleCharBuffer zeno::GetGraphInputParams(zeno::Graph *graph) {
-    return zeno::SimpleCharBuffer(nullptr);
+    zeno::unreal::SubnetNodeParamList list;
+
+    if (nullptr != graph) {
+        const zeno::SubnetNode* execNode = GetSubnetNodeToCall(graph);
+        if (execNode != nullptr && execNode->subgraph) {
+            for (const auto& inputNode : execNode->subgraph->subInputNodes) {
+                auto& info = execNode->subgraph->nodes[inputNode.second];
+                zeno::StringObject* typeObj = dynamic_cast<zeno::StringObject*>(info->inputs["type:"].get());
+                if (typeObj) {
+                    list.params.insert(std::make_pair(inputNode.first, (int8_t)zeno::unreal::ConvertStringToEParamType(typeObj->value)));
+                }
+            }
+        }
+    }
+
+    auto data = msgpack::pack(list);
+    return { reinterpret_cast<char*>(data.data()), data.size() };
 }

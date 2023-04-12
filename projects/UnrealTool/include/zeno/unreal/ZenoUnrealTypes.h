@@ -80,8 +80,36 @@ public:
 
 };
 
+enum class EParamType : int8_t {
+    Invalid = -1,
+    Float = 0,
+    Integer,
+    Max,
+};
+
+static EParamType ConvertStringToEParamType(const std::string& str) {
+    if (str == "float") {
+        return EParamType::Float;
+    } else if (str == "int") {
+        return EParamType::Integer;
+    }
+
+    return EParamType::Invalid;
+}
+
+struct SubnetNodeParamList {
+    std::map<std::string, int8_t> params;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(params);
+    }
+
+};
+
 extern "C" {
     class Mesh;
+    struct SubnetNodeParamList;
 }
 
 }
