@@ -258,6 +258,10 @@ int ZSlider::getCellLength(int total) {
             }
             last = len;
         }
+        if (INT_MAX / 10 < times)
+        {
+            return last;
+        }
         times *= 10;
     }
 }
