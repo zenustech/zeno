@@ -42,7 +42,7 @@ ZENDEFNODE(ProceduralSky, {
                 {"float", "colorTemperatureMix", "0"},
                 {"float", "colorTemperature", "6500"},
                 {"vec2f", "windDir", "0,0"},
-                {"float", "timeStart", "0"},
+                {"float", "timeStart", "1"},
                 {"float", "timeSpeed", "0.1"},
         },
         {

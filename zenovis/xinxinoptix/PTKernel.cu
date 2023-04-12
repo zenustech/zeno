@@ -207,7 +207,7 @@ extern "C" __global__ void __miss__radiance()
         prd->radiance = envSky(
             normalize(prd->direction),
             sunLightDir,
-            make_float3(5., 0., 0.), // debug
+            make_float3(10., 0., 0.), // debug
             40, // be careful
             .71,
             15.,

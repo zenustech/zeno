@@ -1241,7 +1241,7 @@ static __inline__ __device__ vec4 render_clouds(
     float proj_dot = dot(r.direction, vec3(0.0f, 1.0f, 0.0f));
     const float maxSteps = 
         // 60.0f; // debug
-        mix(200.0f, 300.0f, 1-proj_dot);
+        mix(100.0f, 200.0f, 1-proj_dot);
     const float stepSize = (hit_out.t - hit_in.t) / maxSteps;
     
     vec4 intScatterTrans = vec4(0., 0., 0., 1.);
