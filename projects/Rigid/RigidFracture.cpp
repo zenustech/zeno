@@ -272,6 +272,7 @@ struct BulletGlueRigidBodies : zeno::INode {
     }
 };
 
+#if DEBUG_CPD
 ZENDEFNODE(BulletGlueRigidBodies, {
                                       {
                                           "rbList",
@@ -279,15 +280,26 @@ ZENDEFNODE(BulletGlueRigidBodies, {
                                       },
                                       {
                                           "compoundList",
-#if DEBUG_CPD
                                           "centerList",
                                           "localList",
                                           "linkList",
-#endif
                                       },
                                       {},
                                       {"Bullet"},
                                   });
+#else
+ZENDEFNODE(BulletGlueRigidBodies, {
+                                      {
+                                          "rbList",
+                                          "glueListVec2i",
+                                      },
+                                      {
+                                          "compoundList",
+                                      },
+                                      {},
+                                      {"Bullet"},
+                                  });
+#endif
 
 struct BulletUpdateCpdChildPrimTrans : zeno::INode {
     virtual void apply() override {
@@ -447,20 +459,31 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
     }
 };
 
+#if DEBUG_CPD
 ZENDEFNODE(BulletUpdateCpdChildPrimTrans, {
                                               {
                                                   "compoundList",
                                               },
                                               {
                                                   "primList",
-#if DEBUG_CPD
                                                   "centerList",
                                                   "minList",
                                                   "maxList",
-#endif
                                               },
                                               {},
                                               {"Bullet"},
                                           });
+#else
+ZENDEFNODE(BulletUpdateCpdChildPrimTrans, {
+                                              {
+                                                  "compoundList",
+                                              },
+                                              {
+                                                  "primList",
+                                              },
+                                              {},
+                                              {"Bullet"},
+                                          });
+#endif
 
 } // namespace zeno
