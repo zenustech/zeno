@@ -73,14 +73,15 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     connect(escape, SIGNAL(triggered()), this, SLOT(esc()));
     addAction(escape);
 
+    ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
     QAction* cameraFocus = new QAction("CameraFocus", this);
-    cameraFocus->setShortcut(QKeySequence(Qt::ALT + Qt::Key_F));
+    cameraFocus->setShortcut(settings.getShortCut(ShortCut_Focus));
     cameraFocus->setShortcutContext(Qt::WidgetShortcut);
     connect(cameraFocus, SIGNAL(triggered()), this, SLOT(cameraFocus()));
     addAction(cameraFocus);
 
     QAction* mActZenoNewNode = new QAction();
-    mActZenoNewNode->setShortcut(QKeySequence(Qt::Key_Tab));
+    mActZenoNewNode->setShortcut(settings.getShortCut(ShortCut_NewNode));
     connect(mActZenoNewNode, &QAction::triggered, [=]() {
         QPoint pos = this->mapFromGlobal(QCursor::pos());
         QContextMenuEvent *e = new QContextMenuEvent(QContextMenuEvent::Reason::Mouse, pos, QCursor::pos());
@@ -91,6 +92,10 @@ _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString name) {
         if (name == zsShowGrid && isVisible()) {
             showGrid(ZenoSettingsManager::GetInstance().getValue(name).toBool());
+        } else if (name == ShortCut_NewNode) {
+            mActZenoNewNode->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_NewNode));
+        } else if (name == ShortCut_Focus) {
+            cameraFocus->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Focus));
         }
     });
 
@@ -723,7 +728,7 @@ void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIn
 }
 
 void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_P) {
+    if (event->key() == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_FloatPanel)) {
         ZenoSubGraphScene *scene = qobject_cast<ZenoSubGraphScene *>(m_view->scene());
         if (scene != NULL)
         {
