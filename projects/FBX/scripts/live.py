@@ -296,8 +296,10 @@ class Helper(QtCore.QObject):
 
     def route_set_frame(self, frame, c):
         if not self.enable_sync:
+            print("sync not enable")
             return
         if self.is_syncying:
+            print("is syncying")
             return
 
         s_sync = time.time()

@@ -55,6 +55,7 @@ CMAKE_OPTIONS = \
     '-Wno-dev ' \
     '-DZENOFX_ENABLE_OPENVDB:BOOL=ON ' \
     '-DZENOFX_ENABLE_LBVH:BOOL=ON ' \
+    '-DZENO_LIVESYNC=ON ' \
     '-DZENO_ENABLE_OPTIX:BOOL=ON ' \
     '-DZENO_SYSTEM_OPENVDB:BOOL=OFF ' \
     '-DZENO_MULTIPROCESS=ON ' \
@@ -327,6 +328,9 @@ def run_cmd(cmd):
 def update_cmd():
     os.system("git -C {zeno_source} reset --hard".format(zeno_source=ZENO_SOURCE))
     os.system("git -C {zeno_source} pull".format(zeno_source=ZENO_SOURCE))
+    os.system("git -C {zeno_source} reset --hard".format(zeno_source=ZENO_SOURCE))
+    os.system("git -C {zeno_source} merge master".format(zeno_source=ZENO_SOURCE))
+    os.system("git -C {zeno_source} reset --hard".format(zeno_source=ZENO_SOURCE))
     os.system("git -C {zeno_source} submodule update --init --recursive".format(zeno_source=ZENO_SOURCE))
 
 
