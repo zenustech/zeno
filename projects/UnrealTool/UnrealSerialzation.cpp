@@ -49,10 +49,18 @@ zeno::SimpleCharBuffer::SimpleCharBuffer(const char *InChar)
     memcpy(data, InChar, length * sizeof(char));
 }
 
+bool IsNearlyZero(float value, float tolerance = 0.00001) {
+    return std::abs(value) < tolerance;
+}
+
 zeno::unreal::Mesh::Mesh(const std::vector<zeno::vec3f> &verts, const std::vector<zeno::vec3i> &trigs) {
     vertices.reserve(verts.size());
     for (const auto &item : verts) {
-        vertices.push_back(item);
+        auto [x, y, z] = item;
+        if (IsNearlyZero(x)) x = .0f;
+        if (IsNearlyZero(y)) y = .0f;
+        if (IsNearlyZero(z)) z = .0f;
+        vertices.push_back( { x, y, z } );
     }
     triangles.reserve(trigs.size());
     for (const auto &item : trigs) {
