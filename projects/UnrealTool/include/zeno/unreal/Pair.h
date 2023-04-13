@@ -6,13 +6,13 @@
 namespace zeno {
 
 struct SimpleCharBuffer {
-    SimpleCharBuffer(const char* InChar);
+    ZENO_API SimpleCharBuffer(const char* InChar);
 
-    SimpleCharBuffer(const char* InChar, size_t Size);
+    ZENO_API SimpleCharBuffer(const char* InChar, size_t Size);
 
-    SimpleCharBuffer(SimpleCharBuffer&& InBuffer) noexcept;
+    ZENO_API SimpleCharBuffer(SimpleCharBuffer&& InBuffer) noexcept;
 
-    SimpleCharBuffer& operator=(SimpleCharBuffer&& InBuffer) noexcept;
+    ZENO_API SimpleCharBuffer& operator=(SimpleCharBuffer&& InBuffer) noexcept;
 
     ZENO_API ~SimpleCharBuffer();
 

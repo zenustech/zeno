@@ -5,6 +5,7 @@
 #include <zeno/core/Graph.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <iostream>
 
 #define PROC_INPUT_ARGS                                                      \
     typedef std::pair<const char *, zeno::zany> ZPair;                       \
@@ -31,7 +32,7 @@
                                                                                                                 \
     return result;
 
-zeno::SubnetNode* GetSubnetNodeToCall(zeno::Graph* graph) {
+zeno::SubnetNode* zeno::GetSubnetNodeToCall(zeno::Graph* graph) {
 
     if (nullptr != graph && !(graph->nodesToExec.empty())) {
         const std::string& execNodeNameExt = *graph->nodesToExec.begin();
@@ -136,4 +137,41 @@ zeno::SimpleCharBuffer zeno::GetGraphInputParams(zeno::Graph *graph) {
 
     auto data = msgpack::pack(list);
     return { reinterpret_cast<char*>(data.data()), data.size() };
+}
+
+zeno::SimpleCharBuffer zeno::GetSubnetNodeIdToCall(zeno::Graph *graph) {
+    const std::string& execNodeNameExt = *graph->nodesToExec.begin();
+    const auto splitPos = execNodeNameExt.find(':');
+    const std::string execNodeName = execNodeNameExt.substr(0, splitPos);
+
+    return execNodeName.c_str();
+}
+
+zeno::SimpleCharBuffer zeno::Run_Mesh(zeno::Graph *graph, SimpleCharBuffer inputs) {
+    SimpleCharBuffer id = GetSubnetNodeIdToCall(graph);
+    std::error_code err;
+    auto data = msgpack::unpack<zeno::unreal::NodeParamInput>(reinterpret_cast<const uint8_t *>(inputs.data), inputs.length - 1, err);
+    std::map<std::string, zeno::zany> realInput;
+    for (const auto& pair : data.data) {
+        realInput.insert_or_assign(pair.first, std::make_shared<zeno::NumericObject>(pair.second.data_));
+        std::cout << pair.first << " " << pair.second.data_ <<std::endl;
+    }
+    auto output = graph->callSubnetNode( { id.data }, std::move(realInput));
+
+    for (const auto& pair : output) {
+        if (!pair.second) {
+            continue;
+        }
+        zeno::IObject* obj = pair.second.get();
+        auto* primitiveObject = dynamic_cast<zeno::PrimitiveObject*>(obj);
+        if (nullptr == primitiveObject) {
+            continue;
+        }
+
+        zeno::unreal::Mesh mesh { primitiveObject->verts, primitiveObject->tris };
+        auto res = msgpack::pack(mesh);
+        return SimpleCharBuffer { reinterpret_cast<char*>(res.data()), res.size() };
+    }
+
+    return nullptr;
 }

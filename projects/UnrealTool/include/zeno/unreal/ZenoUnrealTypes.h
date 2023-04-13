@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Pair.h"
+#include "msgpack/msgpack.h"
 #include "zeno/utils/vec.h"
 #include "zeno/zeno.h"
+#include <cstdint>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
-#include <cstdint>
 #include <vector>
 
 namespace zeno::unreal {
@@ -107,9 +108,37 @@ struct SubnetNodeParamList {
 
 };
 
+struct AnyNumeric {
+    float data_;
+
+    AnyNumeric() = default;
+
+    template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+    AnyNumeric(T&& value) {
+        auto temp = std::to_string(value);
+        data_ = std::stof(temp);
+    }
+
+    template <typename T>
+    void pack(T& pack) {
+        pack(data_);
+    }
+
+};
+
+struct NodeParamInput {
+    std::map<std::string, AnyNumeric> data;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(data);
+    }
+};
+
 extern "C" {
     class Mesh;
     struct SubnetNodeParamList;
+    struct NodeParamInput;
 }
 
 }

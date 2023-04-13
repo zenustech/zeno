@@ -62,4 +62,12 @@ namespace zeno {
      * @return ['SubnetNodeParamList']
      */
     ZENO_API SimpleCharBuffer GetGraphInputParams(Graph* graph);
+    /**
+     * Get node to call
+     * @param graph
+     * @return
+     */
+    ZENO_API class SubnetNode* GetSubnetNodeToCall(Graph* graph);
+    ZENO_API SimpleCharBuffer GetSubnetNodeIdToCall(Graph* graph);
+    ZENO_API SimpleCharBuffer Run_Mesh(Graph* graph, SimpleCharBuffer inputs);
 }

@@ -36,10 +36,16 @@ zeno::SimpleCharBuffer::~SimpleCharBuffer() {
     delete []data;
 }
 
-zeno::SimpleCharBuffer::SimpleCharBuffer(const char *InChar) : length(0)
+zeno::SimpleCharBuffer::SimpleCharBuffer(const char *InChar)
 {
+    if (nullptr == InChar) {
+        length = 0;
+        data = nullptr;
+        return;
+    }
     length = std::strlen(InChar);
-    data = new char[length];
+    data = new char[length+1];
+    data[length++] = '\0';
     memcpy(data, InChar, length * sizeof(char));
 }
 
