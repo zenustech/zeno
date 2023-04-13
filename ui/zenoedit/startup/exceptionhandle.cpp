@@ -5,7 +5,7 @@
 #include <windows.h>
 #include <Dbghelp.h>
 
-QTemporaryDir sTempDir("zenocrash");
+QTemporaryDir sTempDir;
 
 LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS* ExceptionInfo)
 {
