@@ -660,10 +660,21 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
         /// @brief construct compounds
         // mass
         std::vector<float> cpdMasses(ncompounds);
-        pol(enumerate(rbs), [&cpdMasses, &fas, tab = proxy<space>(tab)](int rbi, const auto &rb) {
+        std::vector<float> cpdLinearDampings(ncompounds);
+        std::vector<float> cpdAngularDampings(ncompounds);
+        std::vector<float> cpdFrictions(ncompounds);
+        std::vector<float> cpdRestitutions(ncompounds);
+        pol(enumerate(rbs), [&cpdMasses, &cpdLinearDampings, &cpdAngularDampings, &cpdFrictions, &cpdRestitutions, &fas,
+                             tab = proxy<space>(tab)](int rbi, const auto &rb) {
             auto fa = fas[rbi];
             auto compId = tab.query(fa);
-            atomic_add(exec_omp, &cpdMasses[compId], rb->body->getMass());
+            auto &body = rb->body;
+            auto m = body->getMass();
+            atomic_add(exec_omp, &cpdMasses[compId], m);
+            atomic_add(exec_omp, &cpdLinearDampings[compId], m * body->getLinearDamping());
+            atomic_add(exec_omp, &cpdAngularDampings[compId], m * body->getAngularDamping());
+            atomic_add(exec_omp, &cpdFrictions[compId], m * body->getFriction());
+            atomic_add(exec_omp, &cpdRestitutions[compId], m * body->getRestitution());
         });
         std::vector<float> mass(1, 0.f);
         reduce(pol, std::begin(cpdMasses), std::end(cpdMasses), mass.begin(), 0.f);
@@ -721,15 +732,24 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
         });
 
         // assemble true compound shapes/rigidbodies
-        pol(zip(isCompound, cpdMasses, cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr),
-            [&](bool isCpd, auto cpdMass, const auto &cpdTransform, const auto &inertia, auto &btShape, auto primList,
-                auto &cpdBody) {
+        pol(zip(isCompound, cpdMasses, cpdLinearDampings, cpdAngularDampings, cpdFrictions, cpdRestitutions,
+                cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr),
+            [](bool isCpd, float cpdMass, float cpdLinearDamping, float cpdAngularDamping, float friction,
+               float restitution, const auto &cpdTransform, const auto &inertia, auto &btShape, auto primList,
+               auto &cpdBody) {
                 if (isCpd) {
                     auto tmp = std::make_shared<BulletCollisionShape>(std::move(btShape));
                     // list of PrimitiveObject, corresponding with each CompoundShape children
                     tmp->userData().set("prim", primList);
                     // cpdBody = std::make_shared<BulletObject>(cpdMass, cpdTransform, tmp);
-                    cpdBody = std::make_shared<BulletObject>(cpdMass, cpdTransform, inertia, tmp);
+                    auto rb = std::make_shared<BulletObject>(cpdMass, cpdTransform, inertia, tmp);
+                    cpdBody = rb;
+                    if (cpdMass) {
+                        rb->body->setDamping(cpdLinearDamping / cpdMass, cpdAngularDamping / cpdMass);
+                        rb->body->setRestitution(restitution / cpdMass);
+                        rb->body->setFriction(friction / cpdMass);
+                        rb->body->setRestitution(restitution / cpdMass);
+                    }
                 }
             });
 
