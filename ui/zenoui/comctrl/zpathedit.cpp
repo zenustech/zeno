@@ -22,7 +22,7 @@ void ZPathEdit::initUI()
 {
     setFocusPolicy(Qt::ClickFocus);
     setIcons(":/icons/file-loader.svg", ":/icons/file-loader-on.svg");
-    setProperty("cssClass", "zeno2_2_lineedit");
+    setProperty("cssClass", "path_edit");
 
     CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.

@@ -243,7 +243,6 @@ void RapidClothSystem::initialize(zs::CudaExecutionPolicy &pol) {
     }
     spInds = svInds; 
     spInds.resize((std::size_t)(svInds.size() + coPoints->size())); 
-    fmt::print("spInds.size: {}\n", spInds.size()); 
     pol(range(coPoints->size()), 
         [spInds = proxy<space>({}, spInds), 
          svoffset = svInds.size(), 
@@ -296,9 +295,10 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
             auto vi = voffset + i; 
 
             vtemp("ws", vi) = verts("m", i);
+            vtemp("BCfixed", vi) = (T)(verts("BCorder", i) == 3);
             vtemp.tuple(dim_c<3>, "x[0]", vi) = x;
             vtemp.tuple(dim_c<3>, "x[k]", vi) = x;
-            vtemp.tuple(dim_c<3>, "x(l)", vi) = x; 
+            vtemp.tuple(dim_c<3>, "x(l)", vi) = x;
             vtemp.tuple(dim_c<3>, "v[0]", vi) = v;
         });
     }
@@ -376,22 +376,24 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
 }
 
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
-                    tiles_t *coEles, T dt, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, 
-                    T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, T gamma, T eps, int maxVertCons, 
-                    T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, T repulsionRange, T tinyDist)
-    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
+                    tiles_t *coEles, T dt, std::size_t spmatCps, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, 
+                    T augLagCoeff, T cgRel, T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, bool enableSL, 
+                    T gamma, T eps, int maxVertCons, T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, 
+                    bool enableDistConstraint, T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu)
+    : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, spmatCps{spmatCps}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
-        nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0},
+        nE{zsprims[0]->getParticles().get_allocator(), 1}, temp{estNumCps, zs::memsrc_e::um, 0}, itemp{estNumCps, zs::memsrc_e::um, 0},
         oPP{zsprims[0]->getParticles().get_allocator(), 1}, oPE{zsprims[0]->getParticles().get_allocator(), 1},
         oPT{zsprims[0]->getParticles().get_allocator(), 1}, oEE{zsprims[0]->getParticles().get_allocator(), 1},
         oE{zsprims[0]->getParticles().get_allocator(), 1}, 
         dt{dt}, framedt{dt}, curRatio{0}, enableContact{withContact}, augLagCoeff{augLagCoeff},
         cgRel{cgRel}, lcpTol{lcpTol}, PNCap{PNCap}, CGCap{CGCap}, lcpCap{lcpCap}, gravAccel{0, gravity, 0}, L{L}, delta{delta}, 
-        D_min{delta}, D_max{delta * 4}, sigma{sigma}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
+        D_min{delta}, D_max{delta * 4}, sigma{sigma}, enableSL{enableSL}, gamma{gamma}, eps{eps}, maxVertCons{maxVertCons}, 
         consDegree{maxVertCons * 4}, BCStiffness{BCStiffness}, enableExclEdges{enableExclEdges}, 
-        repulsionCoef{repulsionCoef}, enableDegeneratedDist{enableDegeneratedDist}, enableRepulsion{repulsionCoef != 0.f}, 
-        repulsionRange{repulsionRange}, tinyDist{tinyDist} { 
+        repulsionCoef{repulsionCoef}, enableDegeneratedDist{enableDegeneratedDist}, enableDistConstraint{enableDistConstraint}, 
+        enableRepulsion{repulsionCoef != 0.f}, repulsionRange{repulsionRange}, tinyDist{tinyDist}, enableFriction{enableFric}, 
+        clothFricMu{clothFricMu}, boundaryFricMu{boundaryFricMu} { 
     auto cudaPol = zs::cuda_exec();
     coOffset = sfOffset = seOffset = svOffset = 0;
     for (auto primPtr : zsprims) {
@@ -421,6 +423,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
             {"vN", 1}, 
             {"adj", maxVertCons * 4}, 
             // LCP
+            {"type", 1}, 
             {"dist", 1}, 
             {"lambda", 1},  // float, lambda in LCP  
             {"grad", 12},   // float, constraint gradient 
@@ -477,7 +480,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     vCons = itiles_t{zsprims[0]->getParticles().get_allocator(), 
                     {
                         {"n", 1}, 
-                        {"nE", 1}, 
                         {"cons", maxVertCons}, 
                         {"ind", maxVertCons}    // its index in each constraint 
                     }, 
@@ -492,6 +494,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"cons", 3},
                         {"isBC", 1},            // 0 or 1
                         {"BCtarget", 3},  
+                        {"BCfixed", 1}, 
                         // cloth dynamics
                         {"x0", 3},              // rest state 
                         {"x[0]", 3},
@@ -514,6 +517,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
                         {"q", 3},
                         // forward step
                         {"Di", 1}, 
+                        {"sync", 1}, 
                         // intermediate
                         {"temp", 3},
                     },
@@ -524,7 +528,7 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     exclTab = i2tab_t{vtemp.get_allocator(), estNumCps}; 
     lcpMat = spmat_t{zs::memsrc_e::device}; 
     lcpTopMat = ispmat_t{zs::memsrc_e::device}; 
-    lcpMatIs = lcpMatJs = {vtemp.get_allocator(), estNumCps}; 
+    lcpMatIs = lcpMatJs = {vtemp.get_allocator(), spmatCps}; 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
     initialize(cudaPol); 
 
@@ -625,6 +629,7 @@ struct MakeRapidClothSystem : INode {
         }
 
         /// solver parameters
+        auto input_spmat_cps = get_input2<int>("spmat_cps"); 
         auto input_est_num_cps = get_input2<int>("est_num_cps");
         auto input_bvh_front_cps = get_input2<int>("bvh_front_cps"); 
         auto input_withContact = get_input2<bool>("with_contact");
@@ -640,6 +645,7 @@ struct MakeRapidClothSystem : INode {
         auto input_L = get_input2<int>("collision_iters");
         auto input_delta = get_input2<float>("delta"); 
         auto input_sigma = get_input2<float>("edge_violation_ratio"); 
+        auto input_enable_SL = get_input2<bool>("enable_SL"); 
         auto input_gamma = get_input2<float>("stepping_limit"); 
         auto input_eps = get_input2<float>("term_thresh");
         auto input_max_vert_cons = get_input2<int>("max_vert_cons");  
@@ -648,19 +654,25 @@ struct MakeRapidClothSystem : INode {
         auto input_enable_excl_edges = get_input2<bool>("enable_excl_edges"); 
         auto input_repulsion_coef = get_input2<float>("repulsion_coef");
         auto input_enable_degenerated_dist = get_input2<bool>("enable_degenerated_dist"); 
+        auto input_enable_dist_constraint = get_input2<bool>("enable_dist_constraint"); 
         auto input_repulsion_range = get_input2<float>("repulsion_range"); 
         auto input_sync_dist_thresh = get_input2<float>("sync_dist_thresh"); 
+        auto input_enable_friction = get_input2<bool>("enable_friction"); 
+        auto input_cloth_fric_coef = get_input2<float>("cloth_fric_coef"); 
+        auto input_boundary_fric_coef = get_input2<float>("boundary_fric_coef"); 
 
         // T delta, T sigma, T gamma, T eps
-        auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt,
+        auto A = std::make_shared<RapidClothSystem>(zsprims, coVerts, coPoints, coEdges, coEles, input_dt, 
+                                                   (std::size_t)(input_spmat_cps ? input_spmat_cps : 1000000), 
                                                    (std::size_t)(input_est_num_cps ? input_est_num_cps : 100000),
                                                    (std::size_t)(input_bvh_front_cps ? input_bvh_front_cps : 10000000), 
                                                    input_withContact, input_aug_coeff, input_cg_rel, input_lcp_tol,  
                                                    input_pn_cap, input_cg_cap, input_lcp_cap, input_gravity, input_L, 
-                                                   input_delta, input_sigma, input_gamma, input_eps, 
+                                                   input_delta, input_sigma, input_enable_SL, input_gamma, input_eps, 
                                                    input_max_vert_cons, input_BC_stiffness, input_enable_excl_edges, 
-                                                   input_repulsion_coef, input_enable_degenerated_dist, input_repulsion_range, 
-                                                   input_sync_dist_thresh);
+                                                   input_repulsion_coef, input_enable_degenerated_dist, input_enable_dist_constraint, 
+                                                   input_repulsion_range, input_sync_dist_thresh, input_enable_friction, 
+                                                   input_cloth_fric_coef, input_boundary_fric_coef);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -669,6 +681,7 @@ struct MakeRapidClothSystem : INode {
 
 ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               "ZSBoundaryPrimitives",
+                              {"int", "spmat_cps", "1000000"}, 
                               {"int", "est_num_cps", "100000"},
                               {"int", "bvh_front_cps", "10000000"}, 
                               {"int", "max_vert_cons", "32"}, 
@@ -686,6 +699,7 @@ ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               {"int", "collision_iters", "512"}, 
                               {"float", "delta", "1"}, 
                               {"float", "edge_violation_ratio", "1.1"}, 
+                              {"bool", "enable_SL", "1"}, 
                               {"float", "stepping_limit", "0.9"},  
                               {"float", "term_thresh", "1e-4"}, 
                               {"float", "BC_stiffness", "1000"}, 
@@ -693,7 +707,11 @@ ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               {"float", "repulsion_coef", "0"}, 
                               {"float", "repulsion_range", "2"}, 
                               {"float", "sync_dist_thresh", "1e-2"}, 
-                              {"bool", "enable_degenerated_dist" , "1"}},
+                              {"bool", "enable_degenerated_dist" , "1"} , 
+                              {"bool", "enable_dist_constraint", "1"}, 
+                              {"bool", "enable_friction", "0"}, 
+                              {"float", "cloth_fric_coef", "0.1"}, 
+                              {"float", "boundary_fric_coef", "10.0"}},
                              {"ZSClothSystem"},
                              {},
                              {"FEM"}});

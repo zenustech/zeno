@@ -37,6 +37,8 @@
 #include <QJsonDocument>
 #include "dialog/zdocklayoutmangedlg.h"
 #include "panel/zenoimagepanel.h"
+#include "dialog/zshortcutsettingdlg.h"
+#include "settings/zenosettingsmanager.h"
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -45,6 +47,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_bAlways(false)
+    , m_bAlwaysLightCameraMaterial(false)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
@@ -188,6 +191,7 @@ void ZenoMainWindow::initMenu()
     loadSavedLayout();
     //init recent files
     loadRecentFiles();
+    initShortCut();
 }
 
 void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
@@ -252,6 +256,10 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     }
     case ACTION_SCREEN_SHOOT: {
         screenShoot();
+        break;
+    }
+    case ACTION_SET_SHORTCUT: {
+        shortCutDlg();
         break;
     }
     default: {
@@ -604,12 +612,19 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        if (m_bAlways) {
-            m_pTimeline->togglePlayButton(false);
-            int nFrame = m_pTimeline->value();
-            QVector<DisplayWidget *> views = viewports();
-            for (DisplayWidget *view : views) {
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        ZASSERT_EXIT(mgr);
+        m_pTimeline->togglePlayButton(false);
+        int nFrame = m_pTimeline->value();
+        QVector<DisplayWidget *> views = viewports();
+        for (DisplayWidget *view : views) {
+            if (m_bAlways) {
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
                 view->onRun(nFrame, nFrame);
+            }
+            else if (m_bAlwaysLightCameraMaterial) {
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
+                view->onRun(nFrame, nFrame, true);
             }
         }
     });
@@ -848,7 +863,7 @@ void ZenoMainWindow::openFileDialog()
 {
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
     ZASSERT_EXIT(mgr);
-    mgr->setDirCreated(false);
+    mgr->setNewCacheDir(true);
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
@@ -863,7 +878,7 @@ void ZenoMainWindow::openFileDialog()
 void ZenoMainWindow::onNewFile() {
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
     ZASSERT_EXIT(mgr);
-    mgr->setDirCreated(false);
+    mgr->setNewCacheDir(true);
     if (saveQuit()) 
     {
         zenoApp->graphsManagment()->newFile();
@@ -1097,6 +1112,67 @@ void ZenoMainWindow::loadRecentFiles()
     }
 }
 
+void ZenoMainWindow::initShortCut() 
+{
+    QStringList lst;
+    lst << ShortCut_Open << ShortCut_Save << ShortCut_SaveAs << ShortCut_Import 
+        << ShortCut_Export_Graph << ShortCut_Solid << ShortCut_Optix << ShortCut_NormalCheck
+        << ShortCut_Undo << ShortCut_Redo << ShortCut_SmoothShading << ShortCut_WireFrame
+        << ShortCut_ShowGrid << ShortCut_Shading << ShortCut_ScreenShoot << ShortCut_RecordVideo
+        << ShortCut_NewSubgraph << ShortCut_New_File;
+    updateShortCut(lst);
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString key) {
+        updateShortCut(QStringList(key));
+    });
+}
+
+void ZenoMainWindow::updateShortCut(QStringList keys)
+{
+    ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
+    if (keys.contains(ShortCut_Open))
+        m_ui->action_Open->setShortcut(settings.getShortCut(ShortCut_Open));
+    if (keys.contains(ShortCut_New_File))
+        m_ui->actionNew_File->setShortcut(settings.getShortCut(ShortCut_New_File));
+    if (keys.contains(ShortCut_Save))
+        m_ui->action_Save->setShortcut(settings.getShortCut(ShortCut_Save));
+    if (keys.contains(ShortCut_SaveAs))
+        m_ui->action_Save_As->setShortcut(settings.getShortCut(ShortCut_SaveAs));
+    if (keys.contains(ShortCut_Import))
+        m_ui->action_Import->setShortcut(settings.getShortCut(ShortCut_Import));
+    if (keys.contains(ShortCut_Export_Graph))
+        m_ui->actionExportGraph->setShortcut(settings.getShortCut(ShortCut_Export_Graph));
+    if (keys.contains(ShortCut_Optix))
+        m_ui->actionOptix->setShortcut(settings.getShortCut(ShortCut_Optix));
+    if (keys.contains(ShortCut_Solid))
+        m_ui->actionSolid->setShortcut(settings.getShortCut(ShortCut_Solid));
+     if (keys.contains(ShortCut_Undo))
+        m_ui->actionUndo->setShortcut(settings.getShortCut(ShortCut_Undo));
+    if (keys.contains(ShortCut_Redo))
+        m_ui->actionRedo->setShortcut(settings.getShortCut(ShortCut_Redo));
+    if (keys.contains(ShortCut_SmoothShading))
+        m_ui->actionSmooth_Shading->setShortcut(settings.getShortCut(ShortCut_SmoothShading));
+    if (keys.contains(ShortCut_NormalCheck))
+        m_ui->actionNormal_Check->setShortcut(settings.getShortCut(ShortCut_NormalCheck));
+    if (keys.contains(ShortCut_WireFrame))
+        m_ui->actionWireFrame->setShortcut(settings.getShortCut(ShortCut_WireFrame));
+    if (keys.contains(ShortCut_ShowGrid))
+        m_ui->actionShow_Grid->setShortcut(settings.getShortCut(ShortCut_ShowGrid));
+    if (keys.contains(ShortCut_Shading))
+        m_ui->actionShading->setShortcut(settings.getShortCut(ShortCut_Shading));
+    if (keys.contains(ShortCut_ScreenShoot))
+        m_ui->actionScreen_Shoot->setShortcut(settings.getShortCut(ShortCut_ScreenShoot));
+    if (keys.contains(ShortCut_RecordVideo))
+        m_ui->actionRecord_Video->setShortcut(settings.getShortCut(ShortCut_RecordVideo));
+    if (keys.contains(ShortCut_NewSubgraph))
+        m_ui->actionNew_Subgraph->setShortcut(settings.getShortCut(ShortCut_NewSubgraph));
+}
+
+void ZenoMainWindow::shortCutDlg() 
+{
+    ZShortCutSettingDlg dlg;
+    dlg.exec();
+}
+
 void ZenoMainWindow::sortRecentFile(QStringList &lst) 
 {
     qSort(lst.begin(), lst.end(), [](const QString &s1, const QString &s2) {
@@ -1209,6 +1285,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionShortcutList->setProperty("ActionType", ACTION_SHORTCUTLIST);
     m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
     m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);
+    m_ui->actionSet_ShortCut->setProperty("ActionType", ACTION_SET_SHORTCUT);
 
 }
 
@@ -1361,6 +1438,10 @@ void ZenoMainWindow::setAlways(bool bAlways)
     emit alwaysModeChanged(bAlways);
     if (m_bAlways)
         m_pTimeline->togglePlayButton(false);
+}
+
+void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlways) {
+    m_bAlwaysLightCameraMaterial = bAlways;
 }
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)

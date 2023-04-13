@@ -208,6 +208,7 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
         option->subControls = QStyle::SC_ToolButton;
 
     option->hideText = m_bHideText;
+    option->m_arrowOption = ZStyleOptionToolButton::ArrowOption(m_arrowOption);
 }
 
 QBrush ZToolButton::backgrondColor(QStyle::State state) const
@@ -326,6 +327,10 @@ void ZToolButton::initAnimation() {
         animInfo.mButtonRect.moveTo(value.toPointF());
         update();
     });
+}
+
+void ZToolButton::setArrowOption(int arrOpt ) {
+    m_arrowOption = arrOpt;
 }
 
 void ZToolButton::setIconSize(const QSize& size)

@@ -229,7 +229,7 @@ ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, Li
     setWidget(m_pLineEdit);
 
     //connect slot.
-    connect(m_pLineEdit, &ZPathEdit::editingFinished, this, [=]() {
+    connect(m_pLineEdit, &ZPathEdit::textEditFinished, this, [=]() {
         emit pathValueChanged(m_pLineEdit->text());
     });
 }
