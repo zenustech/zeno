@@ -49,7 +49,7 @@ zeno::SimpleCharBuffer::SimpleCharBuffer(const char *InChar)
     memcpy(data, InChar, length * sizeof(char));
 }
 
-bool IsNearlyZero(float value, float tolerance = 0.00001) {
+bool IsNearlyZero(float value, float tolerance = 0.0001) {
     return std::abs(value) < tolerance;
 }
 
@@ -60,6 +60,9 @@ zeno::unreal::Mesh::Mesh(const std::vector<zeno::vec3f> &verts, const std::vecto
         if (IsNearlyZero(x)) x = .0f;
         if (IsNearlyZero(y)) y = .0f;
         if (IsNearlyZero(z)) z = .0f;
+        if (x == -1.f) x = -1.00001f;
+        if (y == -1.f) y = -1.00001f;
+        if (z == -1.f) z = -1.00001f;
         vertices.push_back( { x, y, z } );
     }
     triangles.reserve(trigs.size());
