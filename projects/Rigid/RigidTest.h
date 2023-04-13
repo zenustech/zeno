@@ -56,6 +56,12 @@ struct BulletMultiBodyLinkCollider : zeno::IObject{
 struct BulletCollisionShape : zeno::IObject {
     std::unique_ptr<btCollisionShape> shape;
 
+    bool isCompound() const noexcept {
+        if (shape)
+            return shape->isCompound();
+        return false;
+    }
+
     BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
         : shape(std::move(shape)){
 
@@ -82,6 +88,14 @@ struct BulletObject : zeno::IObject {
     std::shared_ptr<BulletCollisionShape> colShape;
     btScalar mass = 0.f;
     //btTransform trans;
+
+    bool isCompound() const noexcept {
+        if (colShape)
+            return colShape->isCompound();
+        if (body)
+            return body->getCollisionShape()->isCompound();
+        return false;
+    }
 
     BulletObject(btScalar mass_,
                  btTransform const &trans,

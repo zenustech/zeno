@@ -254,22 +254,17 @@ struct BulletGlueRigidBodies : zeno::INode {
         });
 
         // assemble true compound shapes/rigidbodies
-        auto shapelist = std::make_shared<ListObject>();
-        shapelist->arr.resize(ncompounds);
-        pol(zip(isCompound, cpdMasses, cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr, shapelist->arr),
+        pol(zip(isCompound, cpdMasses, cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr),
             [&](bool isCpd, auto cpdMass, const auto &cpdTransform, const auto &inertia, auto &btShape, auto primList,
-                auto &cpdBody, auto &cpdShape) {
+                auto &cpdBody) {
                 if (isCpd) {
                     auto tmp = std::make_shared<BulletCollisionShape>(std::move(btShape));
-                    cpdShape = tmp;
                     // list of PrimitiveObject, corresponding with each CompoundShape children
                     tmp->userData().set("prim", primList);
                     // cpdBody = std::make_shared<BulletObject>(cpdMass, cpdTransform, tmp);
                     cpdBody = std::make_shared<BulletObject>(cpdMass, cpdTransform, inertia, tmp);
                 }
             });
-
-        rblist->userData().set("compoundShapes", shapelist);
 
         set_output("compoundList", rblist);
 #if DEBUG_CPD
@@ -621,7 +616,6 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
             else
                 rblist[compId] = rbs[rbi];
         });
-        fmt::print("{} rigid bodies, {} groups (incl compounds).\n", nrbs, ncompounds);
 
         std::vector<int> consMarks(ncons + 1); // 0: discard, 1: preserve
         pol(range(ncons),
@@ -655,6 +649,8 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
                 gatheredConsCompJs[dst] = rbDstCompId[consJs[k]];
             }
         });
+        fmt::print("{} rigid bodies, {} groups (incl compounds). {} active constraints left to be processed.\n", nrbs,
+                   ncompounds, numPreservedCons);
 
         ///
         ///
@@ -725,22 +721,17 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
         });
 
         // assemble true compound shapes/rigidbodies
-        auto shapelist = std::make_shared<ListObject>();
-        shapelist->arr.resize(ncompounds);
-        pol(zip(isCompound, cpdMasses, cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr, shapelist->arr),
+        pol(zip(isCompound, cpdMasses, cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr),
             [&](bool isCpd, auto cpdMass, const auto &cpdTransform, const auto &inertia, auto &btShape, auto primList,
-                auto &cpdBody, auto &cpdShape) {
+                auto &cpdBody) {
                 if (isCpd) {
                     auto tmp = std::make_shared<BulletCollisionShape>(std::move(btShape));
-                    cpdShape = tmp;
                     // list of PrimitiveObject, corresponding with each CompoundShape children
                     tmp->userData().set("prim", primList);
                     // cpdBody = std::make_shared<BulletObject>(cpdMass, cpdTransform, tmp);
                     cpdBody = std::make_shared<BulletObject>(cpdMass, cpdTransform, inertia, tmp);
                 }
             });
-
-        rblist->userData().set("compoundShapes", shapelist);
 
         ///
         ///
@@ -754,6 +745,7 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
         // numPreservedCons, gatheredCons, gatheredConsIs, gatheredConsJs, gatheredConsCompIs, gatheredConsCompJs
 
         set_output("compoundList", rblist);
+        set_output("constraintList", conslist);
     }
 };
 
@@ -764,6 +756,7 @@ ZENDEFNODE(BulletMaintainCompoundsAndConstraints, {
                                                       },
                                                       {
                                                           "compoundList",
+                                                          "constraintList",
                                                       },
                                                       {},
                                                       {"Bullet"},
