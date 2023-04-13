@@ -18,6 +18,10 @@ if (ZENO_ENABLE_ZHXXVIS)
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_ZHXXVIS)
 endif()
 
+if (ZENO_DEBUG_MSVC)
+    zeno_dbg_msvc(zenovis)
+endif()
+
 option(ZENO_ENABLE_OPTIX "Enable NVIDIA OptiX in ZENO for path tracing" OFF)
 if (ZENO_ENABLE_OPTIX)
     add_subdirectory(xinxinoptix)  # this in-place modify zenovis

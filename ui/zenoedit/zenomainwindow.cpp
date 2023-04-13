@@ -262,6 +262,10 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
         shortCutDlg();
         break;
     }
+    case ACTION_FEEDBACK: {
+        onFeedBack();
+        break;
+    }
     default: {
         dispatchCommand(pAction, bTriggered);
         break;
@@ -1286,7 +1290,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
     m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);
     m_ui->actionSet_ShortCut->setProperty("ActionType", ACTION_SET_SHORTCUT);
-
+    m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
 }
 
 void ZenoMainWindow::screenShoot() 
@@ -1452,7 +1456,6 @@ void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 
 void ZenoMainWindow::onFeedBack()
 {
-    /*
     ZFeedBackDlg dlg(this);
     if (dlg.exec() == QDialog::Accepted)
     {
@@ -1464,11 +1467,11 @@ void ZenoMainWindow::onFeedBack()
             if (!pModel) {
                 return;
             }
-            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
+            APP_SETTINGS settings;
+            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
             dlg.sendEmail("bug feedback", content, strContent);
         }
     }
-    */
 }
 
 void ZenoMainWindow::clearErrorMark()

@@ -121,6 +121,7 @@ public:
         //Help
         ACTION_LANGUAGE,
         ACTION_SHORTCUTLIST,
+        ACTION_FEEDBACK,
         //options
         ACTION_SET_NASLOC,
         ACTION_ZENCACHE,

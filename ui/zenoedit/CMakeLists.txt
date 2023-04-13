@@ -34,23 +34,9 @@ set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
 set_property(TARGET zenoedit PROPERTY AUTORCC ON)
 set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE ON)
 
-
-set(dbg_with_pdb_no_opt false)
-if (${dbg_with_pdb_no_opt})
-    target_compile_options(zenoedit PRIVATE /Zi)
-
-    # Tell linker to include symbol data
-    set_target_properties(zenoedit PROPERTIES 
-        LINK_FLAGS "/INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF"
-    )
-
-    # Set file name & location
-    set_target_properties(zenoedit PROPERTIES 
-        COMPILE_PDB_NAME zenoedit
-        COMPILE_PDB_OUTPUT_DIR zenoedit
-    )
+if (ZENO_DEBUG_MSVC)
+    zeno_dbg_msvc(zenoedit)
 endif()
-
 
 if (NOT ZENO_MULTIPROCESS OR NOT ZENO_IPC_USE_TCP)
     find_package(Threads REQUIRED)
@@ -58,7 +44,7 @@ if (NOT ZENO_MULTIPROCESS OR NOT ZENO_IPC_USE_TCP)
 endif()
 target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
 
-target_link_libraries(zenoedit PRIVATE zenoui zenoio zenomodel zenovis)
+target_link_libraries(zenoedit PRIVATE zenoui zenoio zenomodel zenovis Dbghelp)
 target_link_libraries(zenoedit PRIVATE zeno)
 target_include_directories(zenoedit PRIVATE . .. ../zenoui ../include)
 target_include_directories(zenoedit PRIVATE ${Qt5Widgets_PRIVATE_INCLUDE_DIRS})
