@@ -173,22 +173,16 @@ namespace zenoui
                     items = properties.toStringList();
                 }
 
-                QComboBox* pComboBox = new QComboBox;
+                ZComboBox *pComboBox = new ZComboBox;
                 pComboBox->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pComboBox->addItems(items);
                 pComboBox->setCurrentText(value.toString());
                 pComboBox->setEditable(true);
                 pComboBox->setItemDelegate(new ZComboBoxItemDelegate2(pComboBox));
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-                QObject::connect(pComboBox, &QComboBox::textActivated, [=](const QString& text) {
+                QObject::connect(pComboBox, &ZComboBox::_textActivated, [=](const QString& text) {
                     cbSet.cbEditFinished(text);
                 });
-#else
-                QObject::connect(pComboBox, static_cast<void (QComboBox::*)(const QString &)>(&QComboBox::activated), [=](const QString &text) {
-                    cbSet.cbEditFinished(text);
-                });
-#endif
                 return pComboBox;
             }
             case CONTROL_CURVE:

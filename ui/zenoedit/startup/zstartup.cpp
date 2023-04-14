@@ -14,7 +14,9 @@
 
 void startUp()
 {
+#ifdef Q_OS_WIN
     registerExceptionFilter();
+#endif
 
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
     zeno::setConfigVariable("EXECFILE", QCoreApplication::applicationFilePath().toStdString());
