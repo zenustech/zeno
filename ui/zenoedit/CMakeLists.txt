@@ -2,11 +2,11 @@ find_package(Qt5 COMPONENTS Widgets OpenGL Network REQUIRED)
 
 message(STATUS "Found Qt5 version ${Qt5_VERSION}: ${Qt5_DIR}")
 
-add_custom_target(
-    clean_resource_file
-    COMMAND ${CMAKE_COMMAND} -E remove -f ${PROJECT_BINARY_DIR}/ui/zenoedit/qrc_font.o
-	COMMAND ${CMAKE_COMMAND} -E remove -f ${PROJECT_BINARY_DIR}/ui/zenoedit/qrc_icons.o
-)
+#add_custom_target(
+#    clean_resource_file
+#    COMMAND ${CMAKE_COMMAND} -E remove -f ${PROJECT_BINARY_DIR}/ui/zenoedit/qrc_font.o
+#    COMMAND ${CMAKE_COMMAND} -E remove -f ${PROJECT_BINARY_DIR}/ui/zenoedit/qrc_icons.o
+#)
 
 file(GLOB_RECURSE source CONFIGURE_DEPENDS *.h *.cpp *.ui)
 file(GLOB_RECURSE resource CONFIGURE_DEPENDS *.qrc)
@@ -27,7 +27,8 @@ endif()
 
 add_executable(zenoedit ${source} ${WIN32_RESOURCES})
 # Add a dependency to ensure that the resource file is deleted before being regenerated
-add_dependencies(zenoedit clean_resource_file)
+
+# add_dependencies(zenoedit clean_resource_file)
 
 set_property(TARGET zenoedit PROPERTY AUTOUIC ON)
 set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
