@@ -10,22 +10,15 @@ class ZenoStyle : public QProxyStyle
     Q_OBJECT
     typedef QProxyStyle base;
 public:
-    //temp: remove these enum later, because it causes chaos and infinite recursive.
     enum ZenoComplexControl
     {
-        CC_ZenoToolButton = CC_MdiControls + 1,
-        CC_ZenoComboBox,        //-268435454
-        CC_ZenoCheckBoxBar,     //-268435453
-    };
-    enum ZenoSubControl
-    {
-        SC_ZenoToolButtonIcon = SC_MdiCloseButton + 1, //-268435455
-        SC_ZenoToolButtonText,  //-268435454
-        SC_ZenoToolButtonArrow
+        CC_ZenoToolButton = CC_CustomBase + 1,
+        CC_ZenoComboBox,
+        CC_ZenoCheckBoxBar,
     };
     enum ZenoPixmetrics
     {
-        PM_ButtonLeftMargin = PM_TitleBarButtonSize + 1,
+        PM_ButtonLeftMargin = PM_CustomBase + 1,
         PM_ButtonTopMargin,
         PM_ButtonRightMargin,
         PM_ButtonBottomMargin,
@@ -33,12 +26,12 @@ public:
     };
     enum ZenoPrimitiveElement
     {
-        PE_ComboBoxDropdownButton = PE_IndicatorTabTearRight + 1,
+        PE_ComboBoxDropdownButton = PE_CustomBase + 1,
         PE_ComboBoxLineEdit,
     };
 
     enum ZenoControlElement {
-        CE_ZenoComboBoxLabel = CE_ShapedFrame + 1,
+        CE_ZenoComboBoxLabel = CE_CustomBase + 1,
         CE_TabBarTabUnderline,
         CE_TabBarTabCloseBtn,
     };
@@ -70,6 +63,9 @@ private:
     void drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const;
     void drawDropdownArrow(QPainter* painter, QRect downArrowRect, bool isDown) const;
     void drawCheckBox(QPainter* painter, QRect rect, bool bHover, Qt::CheckState state) const;
+    QRect rect_ZToolButtonIcon(const QStyleOptionComplex* opt, const QWidget* widget) const;
+    QRect rect_ZToolButtonText(const QStyleOptionComplex* opt, const QWidget* widget) const;
+    QRect rect_ZToolButtonArrow(const QStyleOptionComplex* opt, const QWidget* widget) const;
 };
 
 #endif

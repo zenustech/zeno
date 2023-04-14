@@ -42,6 +42,8 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
     setBackgroundClr(QColor(), bgOn, bgOn, bgOn);
 }
 
+
+#if 0
 ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &iconHover, const QString &iconOn,const QString &iconOnHover, const QString &iconPressed)
     : ZToolButton()
 {
@@ -55,7 +57,8 @@ ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &i
     m_iconOnPressed = QIcon(iconPressed);
 }
 
-void ZToolRecordingButton::paintEvent(QPaintEvent *event) {
+void ZToolRecordingButton::paintEvent(QPaintEvent *event)
+{
     QStylePainter p(this);
     ZStyleOptionToolButton option;
     option.initFrom(this);
@@ -88,8 +91,10 @@ void ZToolRecordingButton::paintEvent(QPaintEvent *event) {
     option.font = zenoApp->font();
     option.bgRadius = ZenoStyle::dpiScaled(2);
     option.palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option.state)));
-    p.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoToolButton), option);
+    p.drawComplexControl(QStyle::CC_ToolButton, option);
 }
+#endif
+
 
 ZToolMenuButton::ZToolMenuButton() {
     setButtonOptions(ZToolButton::Opt_TextRightToIcon);

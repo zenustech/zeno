@@ -17,6 +17,7 @@ public:
     ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn);
 };
 
+#if 0
 class ZToolRecordingButton : public ZToolButton {
     Q_OBJECT
 public:
@@ -27,6 +28,7 @@ protected:
 private:
     QIcon m_iconOnPressed;
 };
+#endif
 
 class ZToolMenuButton : public ZToolButton {
     Q_OBJECT
