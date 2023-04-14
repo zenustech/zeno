@@ -51,7 +51,9 @@ QVariant ZenoSettingsManager::getValue(const QString& zsName) const
 
 const int ZenoSettingsManager::getShortCut(const QString &key) 
 {
-    QKeySequence keySeq = QKeySequence(getShortCutInfo(key).shortcut);
+    ShortCutInfo info;
+    getShortCutInfo(key, info);
+    QKeySequence keySeq = QKeySequence(info.shortcut);
     int ret = 0;
     for (int i = 0; i < keySeq.count(); i++) {
         ret += keySeq[i];
@@ -61,9 +63,14 @@ const int ZenoSettingsManager::getShortCut(const QString &key)
 
 void ZenoSettingsManager::setShortCut(const QString &key, const QString &value) 
 {
-    ShortCutInfo &info = getShortCutInfo(key);
-    info.shortcut = value;
-    emit valueChanged(key);
+    ShortCutInfo info;
+    int index = getShortCutInfo(key, info);
+    if (index >= 0) 
+    {
+        info.shortcut = value;
+        m_shortCutInfos[index] = info;
+        emit valueChanged(key);
+    }
 }
 
 void ZenoSettingsManager::writeShortCutInfo(const QVector<ShortCutInfo> &infos) 
@@ -106,9 +113,11 @@ void ZenoSettingsManager::initShortCutInfos()
         for (int row = 0; row < rowCount; row++) {
             QString key = array[row]["key"].GetString();
             QString shortcut = array[row]["shortcut"].GetString();
-            ShortCutInfo &info = getShortCutInfo(key);
-            if (info.shortcut != shortcut) {
+            ShortCutInfo info;
+            int index = getShortCutInfo(key, info);
+            if (index >= 0 && info.shortcut != shortcut) {
                 info.shortcut = shortcut;
+                m_shortCutInfos[index] = info;
             }
         }
     }
@@ -156,12 +165,14 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo()
     };
     return ret;
 }
-ShortCutInfo& ZenoSettingsManager::getShortCutInfo(const QString &key) 
+int ZenoSettingsManager::getShortCutInfo(const QString &key, ShortCutInfo &info) 
 {
-    for (auto &info : m_shortCutInfos) 
+    for (int i = 0; i < m_shortCutInfos.size(); i++) 
     {
-        if (info.key == key)
-            return info;
+        if (m_shortCutInfos.at(i).key == key) {
+            info = m_shortCutInfos.at(i);
+            return i;
+        }
     }
-    return ShortCutInfo();
+    return -1;
 }

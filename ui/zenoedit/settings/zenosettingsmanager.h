@@ -32,7 +32,7 @@ public:
 private:
     void initShortCutInfos();
     QVector<ShortCutInfo> getDefaultShortCutInfo();
-    ShortCutInfo& getShortCutInfo(const QString &key);
+    int getShortCutInfo(const QString &key, ShortCutInfo &info);
 
   private:
     ZenoSettingsManager(QObject *parent = nullptr);
