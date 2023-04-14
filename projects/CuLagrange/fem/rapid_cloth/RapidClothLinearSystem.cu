@@ -21,6 +21,16 @@ void RapidClothSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallStri
         for (int d = 0; d != 3; ++d)
             vtemp(tagOffset + d, vi) = 0;
     });
+    pol(zs::range(coOffset), 
+        [vtemp = view<space>({}, vtemp), 
+         fixedOffset = vtemp.getPropertyOffset("BCfixed"), 
+         tagOffset = vtemp.getPropertyOffset(tag)] ZS_LAMBDA(int vi) mutable {
+        if (vtemp(fixedOffset, vi) < 0.5f)
+            return; 
+#pragma unroll
+        for (int d = 0; d != 3; ++d)
+            vtemp(tagOffset + d, vi) = 0;
+    });
 }
 
 void RapidClothSystem::precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag,
@@ -286,9 +296,10 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
     int iter = 0;
 
     CppTimer timer;
-    timer.tick();
+    if (enableProfile_c)
+        timer.tick();
     for (; iter != CGCap; ++iter) {
-        if (iter % 50 == 0)
+        if (!silentMode_c && iter % 50 == 0)
             fmt::print("cg iter: {}, norm2: {} (zTrk: {})\n", iter, residualPreconditionedNorm2, zTrk);
 
         if (residualPreconditionedNorm2 <= localTol2)
@@ -319,7 +330,8 @@ void RapidClothSystem::cgsolve(zs::CudaExecutionPolicy &pol) {
         residualPreconditionedNorm2 = zTrk;
     } // end cg step
     pol.sync(true);
-    timer.tock(fmt::format("{} cgiters", iter));
+    if (enableProfile_c)
+        timer.tock(fmt::format("{} cgiters", iter));
 }
 
 void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
@@ -327,7 +339,8 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
     zs::CppTimer timer; 
-    timer.tick(); 
+    if (enableProfile_c)
+        timer.tick(); 
     pol(zs::range(numDofs), [vtemp = view<space>({}, vtemp)] ZS_LAMBDA(int i) mutable {
         vtemp.tuple(dim_c<3, 3>, "P", i) = mat3::zeros();
         vtemp.tuple(dim_c<3>, "grad", i) = vec3::zeros();
@@ -355,10 +368,13 @@ void RapidClothSystem::newtonDynamicsStep(zs::CudaExecutionPolicy &pol) {
     // fix the boundary 
     pol(range(coOffset), 
         [vtemp = proxy<space>({}, vtemp)] __device__ (int vi) mutable {
-            vtemp.tuple(dim_c<3>, "y[k+1]", vi) = 
-                vtemp.pack(dim_c<3>, "x[k]", vi) + vtemp.pack(dim_c<3>, "dir", vi);  
+            auto xk = vtemp.pack(dim_c<3>, "x[k]", vi); 
+            if (vtemp("BCfixed", vi) < 0.5f)
+                xk += vtemp.pack(dim_c<3>, "dir", vi); 
+            vtemp.tuple(dim_c<3>, "y[k+1]", vi) = xk; 
         }); 
-    timer.tock("Newton step"); 
+    if (enableProfile_c)
+        timer.tock("Newton step"); 
 }
 
 void RapidClothSystem::gdDynamicsStep(zs::CudaExecutionPolicy &pol) {

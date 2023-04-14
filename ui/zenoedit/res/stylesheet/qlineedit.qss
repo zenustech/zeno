@@ -91,6 +91,20 @@ QLineEdit[cssClass="zeno2_2_lineedit"]:focus {
     color: #FFFFFF;
 }
 
+QLineEdit[cssClass="path_edit"] {
+    border: 0;
+    background-color: #191D21;
+    selection-background-color: #4B9EF4;
+    color: #C3D2DF;
+	font-size: 9pt;;
+    font-weight: 500;
+	padding: 3px 18px 3px 5px;
+}
+
+QLineEdit[cssClass="path_edit"]:focus {
+    border: 2px solid #4B9EF4;
+    color: #FFFFFF;
+}
 
 QTextEdit {
     background-color: rgb(25, 29, 33);

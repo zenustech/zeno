@@ -51,6 +51,7 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void setAlways(bool bAlways);
+    void setAlwaysLightCameraMaterial(bool bAlways);
     bool isAlways() const;
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
@@ -120,15 +121,18 @@ public:
         //Help
         ACTION_LANGUAGE,
         ACTION_SHORTCUTLIST,
-        //Others
-        ACTION_CUSTOM_UI,
+        //options
         ACTION_SET_NASLOC,
         ACTION_ZENCACHE,
+        ACTION_SET_SHORTCUT,
+        //Others
+        ACTION_CUSTOM_UI,
         ACTION_ZOOM,
         ACTION_SELECT_NODE,
         ACTION_SNAPGRID,
         ACTION_SHOWGRID,
         ACTION_GROUP,
+
     };
 signals:
     void recentFilesChanged(const QObject *sender);
@@ -198,12 +202,16 @@ private:
     void manageCustomLayout();
     void updateLatestLayout(const QString &layout);
     void loadRecentFiles();
+    void initShortCut();
+    void updateShortCut(QStringList keys);
+    void shortCutDlg();
 
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
     bool m_bAlways;
+    bool m_bAlwaysLightCameraMaterial;
     int m_nResizeTimes;
     bool m_bMovingSeparator;    //dock separator.
     Ui::MainWindow* m_ui;

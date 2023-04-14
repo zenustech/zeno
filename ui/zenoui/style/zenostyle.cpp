@@ -304,6 +304,14 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
         case SC_ZenoToolButtonArrow:
         {
             //todo
+            if (opt->m_arrowOption == ZStyleOptionToolButton::DOWNARROW) {
+                QRect rcIcon = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonText), widget);
+                QRect rc;
+                rc.setLeft(rcIcon.right() + ZenoStyle::dpiScaled(12));
+                rc.setTop(rcIcon.top() + rcIcon.height() / 3);
+                rc.setSize(ZenoStyle::dpiScaledSize(QSize(8, 9)));
+                return rc;
+            }
             return QRect();
         }
         }
@@ -517,7 +525,8 @@ void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainte
     {
         if (option->m_arrowOption == ZStyleOptionToolButton::DOWNARROW)
         {
-            //todo
+            QIcon icon = QApplication::style()->standardIcon(QStyle::SP_TitleBarUnshadeButton);
+            icon.paint(painter, rcArrow, Qt::AlignCenter);
         }
         else if (option->m_arrowOption == ZStyleOptionToolButton::RIGHTARROW)
         {

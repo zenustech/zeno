@@ -758,23 +758,37 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         bool bEnableCache = settings.value("zencache-enable").toBool();
         bool bAutoRemove = settings.value("zencache-autoremove", true).toBool();
         QString cacheRootDir = settings.value("zencachedir").toString();
-        int cacheNum = settings.value("zencachenum").toInt();
+        int cacheNum = settings.value("zencachenum").toInt() < 1 ? 1 : settings.value("zencachenum").toInt();
         ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
         pathLineEdit->setFixedWidth(256);
-        pathLineEdit->setEnabled(!bAutoRemove);
+        pathLineEdit->setEnabled(!bAutoRemove && bEnableCache);
         QCheckBox *pAutoDelCache = new QCheckBox;
         pAutoDelCache->setCheckState(bAutoRemove ? Qt::Checked : Qt::Unchecked);
+        pAutoDelCache->setEnabled(bEnableCache);
         connect(pAutoDelCache, &QCheckBox::stateChanged, [=](bool state) {
             pathLineEdit->setText("");
             pathLineEdit->setEnabled(!state);
         });
 
-        QCheckBox* pCheckbox = new QCheckBox;
-        pCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
-
         QSpinBox* pSpinBox = new QSpinBox;
         pSpinBox->setRange(0, 10000);
         pSpinBox->setValue(cacheNum);
+        pSpinBox->setEnabled(bEnableCache);
+        pSpinBox->setMinimum(1);
+
+        QCheckBox *pCheckbox = new QCheckBox;
+        pCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
+        connect(pCheckbox, &QCheckBox::stateChanged, [=](bool state) {
+            if (!state)
+            {
+                pSpinBox->clear();
+                pathLineEdit->clear();
+                pAutoDelCache->setCheckState(Qt::Unchecked);
+            }
+            pSpinBox->setEnabled(state);
+            pathLineEdit->setEnabled(state);
+            pAutoDelCache->setEnabled(state);
+        });
 
         QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
@@ -786,7 +800,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         pLayout->addWidget(pSpinBox, 1, 1);
         pLayout->addWidget(new QLabel("cache root"), 2, 0);
         pLayout->addWidget(pathLineEdit, 2, 1);
-        pLayout->addWidget(new QLabel("auto remove"), 3, 0);
+        pLayout->addWidget(new QLabel("temp cache directory"), 3, 0);
         pLayout->addWidget(pAutoDelCache, 3, 1);
         pLayout->addWidget(pButtonBox, 4, 1);
 

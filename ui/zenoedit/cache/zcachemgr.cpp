@@ -3,32 +3,30 @@
 
 ZCacheMgr::ZCacheMgr()
     : m_bTempDir(true)
-    , m_cacheSeparate(false)
-    , m_dirCreated(false)
+    , m_isNew(true)
+    , m_cacheOpt(Opt_Undefined)
 {
 }
 
 bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
 {
-    if (m_cacheSeparate && m_dirCreated) {
+    if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOnLightCameraMaterial)) {
         return true;
     }
     m_bTempDir = bTempDir;
-    if (m_bTempDir)
-    {
+    if (m_bTempDir) {
         m_spTmpCacheDir.reset(new QTemporaryDir);
         m_spTmpCacheDir->setAutoRemove(true);
-        m_dirCreated = true;
-    }
-    else
-    {
+        m_isNew = false;
+    } else {
         QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
         bool ret = dirCacheRoot.mkdir(tempDirPath);
-        ZASSERT_EXIT(ret, false);
-        m_spCacheDir = dirCacheRoot;
-        ret = m_spCacheDir.cd(tempDirPath);
-        ZASSERT_EXIT(ret, false);
-        m_dirCreated = true;
+        if (ret) {
+            m_spCacheDir = dirCacheRoot;
+            ret = m_spCacheDir.cd(tempDirPath);
+            ZASSERT_EXIT(ret, false);
+            m_isNew = false;
+        }
     }
     return true;
 }
@@ -55,10 +53,15 @@ QDir ZCacheMgr::getPersistenceDir() const
     return m_spCacheDir;
 }
 
-void ZCacheMgr::cacheSeparately(bool separate) {
-    m_cacheSeparate = separate;
+
+void ZCacheMgr::setCacheOpt(cacheOption opt) {
+    m_cacheOpt = opt;
 }
 
-void ZCacheMgr::setDirCreated(bool dirCreated) {
-    m_dirCreated = dirCreated;
+void ZCacheMgr::setNewCacheDir(bool setNew) {
+    m_isNew = setNew;
+}
+
+ZCacheMgr::cacheOption ZCacheMgr::getCacheOption() {
+    return m_cacheOpt;
 }

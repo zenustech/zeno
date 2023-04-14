@@ -28,6 +28,20 @@ private:
     QIcon m_iconOnPressed;
 };
 
+class ZToolMenuButton : public ZToolButton {
+    Q_OBJECT
+public:
+    ZToolMenuButton();
+
+protected:
+    virtual void mouseReleaseEvent(QMouseEvent* e) override;
+    virtual QSize sizeHint() const override;
+private:
+    QMenu *menu;
+    QAction *run;
+    QAction *runLightCameraMaterial;
+};
+
 class DockToolbarWidget : public QWidget
 {
     Q_OBJECT
@@ -90,10 +104,9 @@ private:
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
 
-    ZToolButton* m_btnRun;
+    ZToolMenuButton *m_btnRun;
     ZToolButton* m_btnKill;
-    ZToolButton* m_btnAlways;
-    ZToolButton* m_btnLightCamera;
+    QComboBox* m_btnAlways;
 
     QComboBox* cbZoom;
 };
