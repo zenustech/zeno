@@ -97,6 +97,21 @@ struct BulletObject : zeno::IObject {
         return false;
     }
 
+    btTransform getWorldTransform() const {
+        btTransform trans;
+        if (body && body->getMotionState())
+            body->getMotionState()->getWorldTransform(trans);
+        else 
+            trans = static_cast<btCollisionObject *>(body.get())->getWorldTransform();
+        return trans;
+    }
+    btVector3 getInertia() const {
+        btVector3 localInertia(0, 0, 0);
+        if (mass != 0)
+            colShape->shape->calculateLocalInertia(mass, localInertia);
+        return localInertia;
+    }
+
     BulletObject(btScalar mass_,
                  btTransform const &trans,
                  std::shared_ptr<BulletCollisionShape> colShape_)

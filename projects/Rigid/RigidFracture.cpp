@@ -55,6 +55,96 @@ void set_value(std::shared_ptr<IObject> obj, const std::string &key, const T &va
     obj->userData().set(key, std::move(v));
 }
 
+// moment of inertia
+btMatrix3x3 getMoI(const btMatrix3x3 &rot, const btVector3 &inertia) {
+    btMatrix3x3 S{};
+    S.setIdentity();
+    S[0][0] = inertia[0];
+    S[1][1] = inertia[1];
+    S[2][2] = inertia[2];
+    return rot * S * rot.transpose();
+}
+btMatrix3x3 getMoI(const btMatrix3x3 &rot, const btVector3 &i, btScalar mass, const btVector3 &ci,
+                   const btVector3 &cc) {
+    btMatrix3x3 tensor(0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    btMatrix3x3 j = rot.transpose();
+    j[0] *= i[0];
+    j[1] *= i[1];
+    j[2] *= i[2];
+    j = rot * j;
+
+    //add inertia tensor
+    tensor[0] += j[0];
+    tensor[1] += j[1];
+    tensor[2] += j[2];
+
+    //compute inertia tensor of pointmass at o
+    btVector3 o = ci - cc;
+    btScalar o2 = o.length2();
+    j[0].setValue(o2, 0, 0);
+    j[1].setValue(0, o2, 0);
+    j[2].setValue(0, 0, o2);
+    j[0] += o * -o.x();
+    j[1] += o * -o.y();
+    j[2] += o * -o.z();
+
+    //add inertia tensor of pointmass
+    tensor[0] += mass * j[0];
+    tensor[1] += mass * j[1];
+    tensor[2] += mass * j[2];
+
+    return tensor;
+}
+btMatrix3x3 getMoI(const btMatrix3x3 &rot, const btVector3 &i, btScalar mass, const btVector3 &ci, const btVector3 &cc,
+                   const btVector3 &wi, bool ifprint) {
+    btMatrix3x3 tensor(0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    btMatrix3x3 j = rot.transpose();
+    j[0] *= i[0];
+    j[1] *= i[1];
+    j[2] *= i[2];
+    j = rot * j;
+
+    if (ifprint) {
+        auto tmp = j * wi;
+        fmt::print(fg(fmt::color::orange), "getMoI::Ii wi(ref):: {}, {}, {}\n", tmp[0], tmp[1], tmp[2]);
+    }
+
+    //add inertia tensor
+    tensor[0] += j[0];
+    tensor[1] += j[1];
+    tensor[2] += j[2];
+
+    //compute inertia tensor of pointmass at o
+    btVector3 o = ci - cc;
+    btScalar o2 = o.length2();
+    j[0].setValue(o2, 0, 0);
+    j[1].setValue(0, o2, 0);
+    j[2].setValue(0, 0, o2);
+    j[0] += o * -o.x();
+    j[1] += o * -o.y();
+    j[2] += o * -o.z();
+
+    if (ifprint) {
+        auto tmp = j * wi;
+        fmt::print(fg(fmt::color::orange), "getMoI::cross(ref):: {}, {}, {}\n", mass * tmp[0], mass * tmp[1],
+                   mass * tmp[2]);
+    }
+
+    //add inertia tensor of pointmass
+    tensor[0] += mass * j[0];
+    tensor[1] += mass * j[1];
+    tensor[2] += mass * j[2];
+
+    return tensor;
+}
+btVector3 vecInv(const btVector3 &v) {
+    btVector3 ret(1, 1, 1);
+    ret = ret / v;
+    return ret;
+}
+
 #define DEBUG_CPD 1
 
 struct BulletGlueRigidBodies : zeno::INode {
@@ -518,8 +608,36 @@ ZENDEFNODE(BulletMakeConstraintRelationship,
                {"Bullet"},
            });
 
+struct BulletObjectSetVel : zeno::INode {
+    virtual void apply() override {
+        auto obj = get_input<BulletObject>("object");
+        auto body = obj->body.get();
+
+        if (has_input("linearVel")) {
+            auto v = get_input2<vec3f>("linearVel");
+            body->setLinearVelocity(vec_to_other<btVector3>(v));
+        }
+        if (has_input("angularVel")) {
+            auto v = get_input2<vec3f>("angularVel");
+            body->setAngularVelocity(vec_to_other<btVector3>(v));
+        }
+
+        set_output("object", std::move(obj));
+    }
+};
+
+ZENDEFNODE(BulletObjectSetVel, {
+                                   {"object", "linearVel", "angularVel"},
+                                   {"object"},
+                                   {},
+                                   {"Bullet"},
+                               });
+
 struct BulletMaintainCompoundsAndConstraints : zeno::INode {
     virtual void apply() override {
+#if DEBUG_CPD
+        static int iters = 0;
+#endif
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
         auto pol = omp_exec();
@@ -568,10 +686,31 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
             auto j = find_id(rel->rb1);
             consIs[k] = i;
             consJs[k] = j;
+#if DEBUG_CPD
+            // if (iters < 50)
+            if (false) {
+                if (rel->isGlueConstraint() && (i > 10 && j > 10)) {
+                    if (i < 0 || j < 0)
+                        throw std::runtime_error("negative coords from constraint relationships!");
+                    is.push_back(i);
+                    js.push_back(j);
+                }
+            } else {
+                if (rel->isGlueConstraint()) {
+                    if (i < 0 || j < 0)
+                        throw std::runtime_error("negative coords from constraint relationships!");
+                    is.push_back(i);
+                    js.push_back(j);
+                }
+            }
+#else
             if (rel->isGlueConstraint()) {
+                if (i < 0 || j < 0)
+                    throw std::runtime_error("negative coords from constraint relationships!");
                 is.push_back(i);
                 js.push_back(j);
             }
+#endif
         }
 
         SparseMatrix<int, true> spmat{(int)nrbs, (int)nrbs};
@@ -700,12 +839,7 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
                 std::lock_guard<std::mutex> guard(comLocks[compId]);
                 auto &cpdPtr = btCpdShapes[compId];
                 auto &primList = primLists[compId];
-                btTransform trans;
-                if (bodyPtr && bodyPtr->getMotionState()) {
-                    bodyPtr->getMotionState()->getWorldTransform(trans);
-                } else {
-                    trans = static_cast<btCollisionObject *>(bodyPtr.get())->getWorldTransform();
-                }
+                btTransform trans = rbs[rbi]->getWorldTransform();
                 cpdPtr->addChildShape(trans, bodyPtr->getCollisionShape());
                 cpdChildMasses[compId].push_back(bodyPtr->getMass());
                 // cpdOrigins[compId] += (bodyPtr->getMass() * bodyPtr->getCenterOfMassPosition());
@@ -717,12 +851,141 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
         /// @note compute compound principal transforms once all children done inserted
         std::vector<btTransform> cpdTransforms(ncompounds);
         std::vector<btVector3> cpdInertia(ncompounds);
+
+        void *targetChild;
         pol(zip(isCompound, cpdTransforms, cpdInertia, btCpdShapes, cpdChildMasses),
-            [](bool isCpd, btTransform &principalTrans, btVector3 &inertia, auto &cpdShape, auto &cpdMasses) {
+            [&targetChild](bool isCpd, btTransform &principalTrans, btVector3 &inertia, auto &cpdShape,
+                           auto &cpdMasses) {
                 if (isCpd) {
                     cpdShape->calculatePrincipalAxisTransform(cpdMasses.data(), principalTrans, inertia);
+
+#if DEBUG_CPD
+                    targetChild = (void *)cpdShape->getChildShape(0);
+                    auto Ii_cpd = getMoI(principalTrans.getBasis(), inertia);
+                    fmt::print("cpd I_cpd [{}, {}, {}; {}, {}, {}; {}, {}, {}]\n", Ii_cpd[0][0], Ii_cpd[0][1],
+                               Ii_cpd[0][2], Ii_cpd[1][0], Ii_cpd[1][1], Ii_cpd[1][2], Ii_cpd[2][0], Ii_cpd[2][1],
+                               Ii_cpd[2][2]);
+#endif
                 }
             });
+        std::vector<btVector3> accumCpdMVs(ncompounds);    // linear momentum
+        std::vector<btVector3> accumCpdMWs(ncompounds);    // angular momentum
+        std::vector<btVector3> accumCpdMWRefs(ncompounds); // angular momentum (direct)
+
+        pol(zip(accumCpdMVs, accumCpdMWs, accumCpdMWRefs), [](auto &a, auto &b, auto &c) {
+            a.setZero();
+            b.setZero();
+            c.setZero();
+        });
+        pol(range(nrbs), [&](int rbi) {
+            if (isRbCompound[rbi]) {
+                auto &rb = rbs[rbi];
+                auto &body = rb->body;
+                auto compId = rbDstCompId[rbi];
+
+                const auto rbTrans = rb->getWorldTransform();
+                const auto ci = rbTrans.getOrigin();
+                const auto &cpdTrans = cpdTransforms[compId];
+                const auto cc = cpdTrans.getOrigin();
+
+                auto mi = body->getMass();
+                // add linear momentum
+                auto vi = body->getLinearVelocity();
+                for (int d = 0; d != 3; ++d)
+                    atomic_add(exec_omp, &accumCpdMVs[compId][d], mi * vi[d]);
+
+                // add angular momentum (ref, proven wrong)
+                auto wi = body->getAngularVelocity();
+#if DEBUG_CPD
+                if (rbi < 100)
+                    fmt::print("rb[{}] mass[{}] linear v[{}, {}, {}] w[{}, {}, {}]\n", rbi, mi, vi[0], vi[1], vi[2],
+                               wi[0], wi[1], wi[2]);
+
+                auto Ii_cpd = getMoI(rbTrans.getBasis(), rb->getInertia(), mi, ci, cc, wi,
+                                     (void *)rb->body->getCollisionShape() == targetChild);
+                if ((void *)rb->body->getCollisionShape() == targetChild)
+                    fmt::print(fg(fmt::color::green), "rb [{}], Ii_cpd [{}, {}, {}; {}, {}, {}; {}, {}, {}]\n", rbi,
+                               Ii_cpd[0][0], Ii_cpd[0][1], Ii_cpd[0][2], Ii_cpd[1][0], Ii_cpd[1][1], Ii_cpd[1][2],
+                               Ii_cpd[2][0], Ii_cpd[2][1], Ii_cpd[2][2]);
+#else
+                auto Ii_cpd = getMoI(rbTrans.getBasis(), rb->getInertia(), mi, ci, cc);
+#endif
+                auto tmp = Ii_cpd * wi;
+                for (int d = 0; d != 3; ++d)
+                    atomic_add(exec_omp, &accumCpdMWRefs[compId][d], tmp[d]);
+            }
+        });
+        pol(range(ncompounds), [&](int cpdi) {
+            if (isCompound[cpdi]) {
+                auto mass = cpdMasses[cpdi];
+                auto cpdv = accumCpdMVs[cpdi] / mass;
+#if DEBUG_CPD
+                fmt::print("cpd[{}] mass[{}] linear v[{}, {}, {}] from mv[{}, {}, {}]\n", cpdi, mass, cpdv[0], cpdv[1],
+                           cpdv[2], accumCpdMVs[cpdi][0], accumCpdMVs[cpdi][1], accumCpdMVs[cpdi][2]);
+#endif
+                accumCpdMVs[cpdi] = cpdv;
+            }
+        });
+        pol(range(nrbs), [&](int rbi) {
+            if (isRbCompound[rbi]) {
+                auto &rb = rbs[rbi];
+                auto &body = rb->body;
+                auto compId = rbDstCompId[rbi];
+
+                const auto rbTrans = rb->getWorldTransform();
+                const auto ci = rbTrans.getOrigin();
+                const auto &cpdTrans = cpdTransforms[compId];
+                const auto cc = cpdTrans.getOrigin();
+
+                if (compId >= ncompounds)
+                    throw std::runtime_error("wtf");
+
+                auto mi = body->getMass();
+                auto vi = body->getLinearVelocity();
+                auto vc = accumCpdMVs[compId];
+
+                // add angular momentum
+                auto wi = body->getAngularVelocity();
+
+                auto Ii = getMoI(rbTrans.getBasis(), rb->getInertia());
+                auto tmp = (Ii * wi + mi * (ci - cc).cross(vi - vc));
+#if DEBUG_CPD
+                if ((void *)rb->body->getCollisionShape() == targetChild) {
+                    auto Ii_cpd = getMoI(rbTrans.getBasis(), rb->getInertia(), mi, ci, cc);
+                    fmt::print(fg(fmt::color::pink), "rb [{}], Ii_cpd [{}, {}, {}; {}, {}, {}; {}, {}, {}]\n", rbi,
+                               Ii_cpd[0][0], Ii_cpd[0][1], Ii_cpd[0][2], Ii_cpd[1][0], Ii_cpd[1][1], Ii_cpd[1][2],
+                               Ii_cpd[2][0], Ii_cpd[2][1], Ii_cpd[2][2]);
+                    fmt::print(fg(fmt::color::pink), "rb [{}], Ii [{}, {}, {}; {}, {}, {}; {}, {}, {}]\n", rbi,
+                               Ii[0][0], Ii[0][1], Ii[0][2], Ii[1][0], Ii[1][1], Ii[1][2], Ii[2][0], Ii[2][1],
+                               Ii[2][2]);
+                    auto Ref = Ii_cpd * wi;
+                    fmt::print(fg(fmt::color::yellow), "rb [{}], Ii_cpd wi (ref) [{}, {}, {}]\n", rbi, Ref[0], Ref[1],
+                               Ref[2]);
+                    auto IiWi = Ii * wi;
+                    fmt::print(fg(fmt::color::yellow), "rb [{}], Ii wi [{}, {}, {}]\n", rbi, IiWi[0], IiWi[1], IiWi[2]);
+                    auto ttt = mi * (ci - cc).cross(vi - vc);
+                    fmt::print(fg(fmt::color::yellow), "rb [{}], cross [{}, {}, {}]\n", rbi, ttt[0], ttt[1], ttt[2]);
+                }
+#endif
+                for (int d = 0; d != 3; ++d)
+                    atomic_add(exec_omp, &accumCpdMWs[compId][d], tmp[d]);
+            }
+        });
+        pol(range(ncompounds), [&](int cpdi) {
+            if (isCompound[cpdi]) {
+                auto ICpdInv = getMoI(cpdTransforms[cpdi].getBasis(), vecInv(cpdInertia[cpdi]));
+                auto cpdw = ICpdInv * accumCpdMWs[cpdi];
+                accumCpdMWs[cpdi] = cpdw;
+                auto cpdwref = ICpdInv * accumCpdMWRefs[cpdi];
+                accumCpdMWRefs[cpdi] = cpdwref;
+#if DEBUG_CPD
+                fmt::print(fg(fmt::color::red), "cpd [{}] v<{}, {}, {}>, w<{}, {}, {}>, wref<{}, {}, {}>.\n", cpdi,
+                           accumCpdMVs[cpdi][0], accumCpdMVs[cpdi][1], accumCpdMVs[cpdi][2], cpdw[0], cpdw[1], cpdw[2],
+                           cpdwref[0], cpdwref[1], cpdwref[2]);
+#endif
+            }
+        });
+
         /// @note adjust compound children transforms according to the principal compound transforms
         pol(zip(isCompound, cpdTransforms, btCpdShapes), [](bool isCpd, const auto &principalTrans, auto &cpdShape) {
             if (isCpd) {
@@ -766,6 +1029,10 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
 
         set_output("compoundList", rblist);
         set_output("constraintList", conslist);
+
+#if DEBUG_CPD
+        iters++;
+#endif
     }
 };
 
