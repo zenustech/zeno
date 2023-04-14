@@ -36,7 +36,8 @@ void RecordVideoMgr::cancelRecord()
     //todo:
     //Zenovis::GetInstance().blockSignals(false);
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-    mainWin->toggleTimelinePlay(false);
+    if (mainWin)
+        mainWin->toggleTimelinePlay(false);
 }
 
 void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
