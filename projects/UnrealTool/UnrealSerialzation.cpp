@@ -57,12 +57,6 @@ zeno::unreal::Mesh::Mesh(const std::vector<zeno::vec3f> &verts, const std::vecto
     vertices.reserve(verts.size());
     for (const auto &item : verts) {
         auto [x, y, z] = item;
-        if (IsNearlyZero(x)) x = .0f;
-        if (IsNearlyZero(y)) y = .0f;
-        if (IsNearlyZero(z)) z = .0f;
-        if (x == -1.f) x = -1.00001f;
-        if (y == -1.f) y = -1.00001f;
-        if (z == -1.f) z = -1.00001f;
         vertices.push_back( { x, y, z } );
     }
     triangles.reserve(trigs.size());

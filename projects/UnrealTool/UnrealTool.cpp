@@ -153,7 +153,7 @@ zeno::SimpleCharBuffer zeno::Run_Mesh(zeno::Graph *graph, SimpleCharBuffer input
     auto data = msgpack::unpack<zeno::unreal::NodeParamInput>(reinterpret_cast<const uint8_t *>(inputs.data), inputs.length - 1, err);
     std::map<std::string, zeno::zany> realInput;
     for (const auto& pair : data.data) {
-        realInput.insert_or_assign(pair.first, std::make_shared<zeno::NumericObject>(pair.second.data_));
+        realInput.insert_or_assign(pair.first, std::make_shared<zeno::NumericObject>(pair.second.data()));
         std::cout << pair.first << " " << pair.second.data_ <<std::endl;
     }
     auto output = graph->callSubnetNode( { id.data }, std::move(realInput));

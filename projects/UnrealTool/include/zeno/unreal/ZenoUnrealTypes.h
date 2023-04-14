@@ -65,13 +65,34 @@ public:
     virtual int8_t Deserialize(const char* json) = 0;
 };
 
+struct AnyNumeric {
+    std::string data_;
+
+    AnyNumeric() = default;
+
+    template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+    AnyNumeric(T value) {
+        data_ = std::to_string(value);
+    }
+
+    inline float data() const {
+        return std::stof(data_);
+    }
+
+    template <typename T>
+    void pack(T& pack) {
+        pack(data_);
+    }
+
+};
+
 class ZENO_API Mesh {
 
 public:
     Mesh() = default;
     Mesh(const std::vector<zeno::vec3f>& verts, const std::vector<zeno::vec3i>& trigs);
 
-    std::vector<std::array<float, 3>> vertices;
+    std::vector<std::array<AnyNumeric, 3>> vertices;
     std::vector<std::array<int32_t, 3>> triangles;
 
     template <class T>
@@ -104,24 +125,6 @@ struct SubnetNodeParamList {
     template <class T>
     void pack(T& pack) {
         pack(params);
-    }
-
-};
-
-struct AnyNumeric {
-    float data_;
-
-    AnyNumeric() = default;
-
-    template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
-    AnyNumeric(T&& value) {
-        auto temp = std::to_string(value);
-        data_ = std::stof(temp);
-    }
-
-    template <typename T>
-    void pack(T& pack) {
-        pack(data_);
     }
 
 };
