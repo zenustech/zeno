@@ -94,28 +94,33 @@ void ZShortCutSettingDlg::initUI() {
     });
 
     //init table widget
-    m_shortCutInfos = ZenoSettingsManager::GetInstance().getValue(zsShortCut).value<QVector<ShortCutInfo>>();
-    m_pTableWidget->setRowCount(m_shortCutInfos.size());
+    m_shortCutInfos = new ShortCutInfo();
+    m_shortCutInfos->clone(ZenoSettingsManager::GetInstance().getValue(zsShortCut).value<ShortCutInfo *>());
     int row = 0;
-    for (auto info : m_shortCutInfos) 
+    ShortCutInfo *info = m_shortCutInfos;
+    while (info) 
     {
-        QTableWidgetItem *descItem = new QTableWidgetItem(info.desc);
+        m_pTableWidget->insertRow(row);
+        QTableWidgetItem *descItem = new QTableWidgetItem(info->desc);
         descItem->setFlags(descItem->flags() & (~Qt::ItemFlag::ItemIsEditable));
-        descItem->setData(Qt::DisplayPropertyRole, info.key);
+        descItem->setData(Qt::DisplayPropertyRole, info->key);
         m_pTableWidget->setItem(row, 0, descItem);
-        m_pTableWidget->setItem(row, 1, new QTableWidgetItem(info.shortcut));
+        m_pTableWidget->setItem(row, 1, new QTableWidgetItem(info->shortcut));
         row++;
+        info = info->next;
     }
     connect(m_pTableWidget, &QTableWidget::itemChanged, this, [=](QTableWidgetItem *item) {
         if (item->column() != 1)
             return;
         int row = item->row();
         QString key = m_pTableWidget->item(row, 0)->data(Qt::DisplayPropertyRole).toString();
-        for (auto &shortcutInfo : m_shortCutInfos) {
-            if (shortcutInfo.key == key) {
-                shortcutInfo.shortcut = item->data(Qt::DisplayRole).toString();
+        auto info = m_shortCutInfos;
+        while (info) {
+            if (info->key == key) {
+                info->shortcut = item->data(Qt::DisplayRole).toString();
                 break;
             }
+            info = info->next;
         }
     });
     this->resize(ZenoStyle::dpiScaled(280), ZenoStyle::dpiScaled(500));

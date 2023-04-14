@@ -10,8 +10,22 @@ struct ShortCutInfo {
     QString key;
     QString desc;
     QString shortcut;
+    ShortCutInfo *next = nullptr;
+    ~ShortCutInfo() {
+        delete next;
+        next = nullptr;
+    }
+    void clone(const ShortCutInfo *other) {
+        key = other->key;
+        desc = other->desc;
+        shortcut = other->shortcut;
+        if (other->next) {
+            next = new ShortCutInfo();
+            next->clone(other->next);
+        }
+    }
 };
-Q_DECLARE_METATYPE(ShortCutInfo)
+Q_DECLARE_METATYPE(ShortCutInfo*)
 
 class ZenoSettingsManager : public QObject
 {
@@ -24,19 +38,19 @@ public:
     const int getShortCut(const QString &key);
     void setShortCut(const QString &key, const QString &value);
 
-    void writeShortCutInfo(const QVector<ShortCutInfo> &infos);
+    void writeShortCutInfo(const ShortCutInfo*infos);
 
   signals:
     void valueChanged(QString zsName);
 
 private:
     void initShortCutInfos();
-    QVector<ShortCutInfo> getDefaultShortCutInfo();
-    int getShortCutInfo(const QString &key, ShortCutInfo &info);
+    void getDefaultShortCutInfo(ShortCutInfo **info);
+    ShortCutInfo *getShortCutInfo(const QString &key, ShortCutInfo *info);
 
   private:
     ZenoSettingsManager(QObject *parent = nullptr);
-    QVector<ShortCutInfo> m_shortCutInfos;
+    ShortCutInfo *m_shortCutInfos;
 };
 
 

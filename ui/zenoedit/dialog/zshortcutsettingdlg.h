@@ -20,8 +20,9 @@ protected:
 
   private:
     void initUI();
+    void initShortCutInfos();
 
   private:
     QTableWidget *m_pTableWidget;
-    QVector<ShortCutInfo> m_shortCutInfos;
+    ShortCutInfo *m_shortCutInfos;
 };

@@ -51,9 +51,10 @@ QVariant ZenoSettingsManager::getValue(const QString& zsName) const
 
 const int ZenoSettingsManager::getShortCut(const QString &key) 
 {
-    ShortCutInfo info;
-    getShortCutInfo(key, info);
-    QKeySequence keySeq = QKeySequence(info.shortcut);
+    ShortCutInfo *info = getShortCutInfo(key, m_shortCutInfos);
+    if (!info)
+        return Qt::Key_unknown;
+    QKeySequence keySeq = QKeySequence(info->shortcut);
     int ret = 0;
     for (int i = 0; i < keySeq.count(); i++) {
         ret += keySeq[i];
@@ -63,37 +64,39 @@ const int ZenoSettingsManager::getShortCut(const QString &key)
 
 void ZenoSettingsManager::setShortCut(const QString &key, const QString &value) 
 {
-    ShortCutInfo info;
-    int index = getShortCutInfo(key, info);
-    if (index >= 0) 
+    ShortCutInfo *info = getShortCutInfo(key, m_shortCutInfos);
+    if (info) 
     {
-        info.shortcut = value;
-        m_shortCutInfos[index] = info;
+        info->shortcut = value;
         emit valueChanged(key);
     }
 }
 
-void ZenoSettingsManager::writeShortCutInfo(const QVector<ShortCutInfo> &infos) 
+void ZenoSettingsManager::writeShortCutInfo(const ShortCutInfo *info) 
 {
-    QVector<ShortCutInfo> defaultInfos = getDefaultShortCutInfo();
+    ShortCutInfo *defaultInfos;
+    getDefaultShortCutInfo(&defaultInfos);
     rapidjson::StringBuffer str;
     PRETTY_WRITER writer(str);
     writer.StartArray();
     bool bChanged = false;
-    for (int i = 0; i < infos.count(); i++) {
-        ShortCutInfo info = infos.at(i);
-        if (info.shortcut != m_shortCutInfos.at(i).shortcut) {
-            setShortCut(info.key, info.shortcut);
+    while (info) {
+        ShortCutInfo *value = getShortCutInfo(info->key, m_shortCutInfos);
+        if (info->shortcut != value->shortcut) {
+            setShortCut(info->key, info->shortcut);
         }
-        if (info.shortcut == defaultInfos.at(i).shortcut) {
+        value = getShortCutInfo(info->key, defaultInfos);
+        if (info->shortcut == value->shortcut) {
+            info = info->next;
             continue;
         }
         writer.StartObject();
         writer.Key("key");
-        writer.String(info.key.toUtf8());
+        writer.String(info->key.toUtf8());
         writer.Key("shortcut");
-        writer.String(info.shortcut.toUtf8());
+        writer.String(info->shortcut.toUtf8());
         writer.EndObject();
+        info = info->next;
     }
     writer.EndArray();
     QString strJson = QString::fromUtf8(str.GetString());
@@ -101,7 +104,7 @@ void ZenoSettingsManager::writeShortCutInfo(const QVector<ShortCutInfo> &infos)
 }
 void ZenoSettingsManager::initShortCutInfos() 
 {
-    m_shortCutInfos = getDefaultShortCutInfo();
+    getDefaultShortCutInfo(&m_shortCutInfos);
     QSettings settings(zsCompanyName, zsEditor);
     QVariant value = settings.value(zsShortCut);
     rapidjson::Document doc;
@@ -113,18 +116,17 @@ void ZenoSettingsManager::initShortCutInfos()
         for (int row = 0; row < rowCount; row++) {
             QString key = array[row]["key"].GetString();
             QString shortcut = array[row]["shortcut"].GetString();
-            ShortCutInfo info;
-            int index = getShortCutInfo(key, info);
-            if (index >= 0 && info.shortcut != shortcut) {
-                info.shortcut = shortcut;
-                m_shortCutInfos[index] = info;
+            ShortCutInfo *info = getShortCutInfo(key, m_shortCutInfos);
+            if (info) {
+                info->shortcut = shortcut;
             }
         }
     }
 }
-QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo() 
+void ZenoSettingsManager::getDefaultShortCutInfo(ShortCutInfo **info) 
 {
-    QVector<ShortCutInfo> ret = {
+    QVector<ShortCutInfo> infoVect;
+    infoVect = {
         {ShortCut_Save, QObject::tr("Save"), "Ctrl+S"},
         {ShortCut_SaveAs, QObject::tr("Save As"), "Ctrl+Shift+S"},
         {ShortCut_New_File, QObject::tr("New File"), "Ctrl+N"},
@@ -163,16 +165,28 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo()
         {ShortCut_UpwardView, QObject::tr("Upward View"), "Ctrl+7"},
         {ShortCut_FloatPanel, QObject::tr("Float Panel"), "P"},
     };
-    return ret;
-}
-int ZenoSettingsManager::getShortCutInfo(const QString &key, ShortCutInfo &info) 
-{
-    for (int i = 0; i < m_shortCutInfos.size(); i++) 
+
+    ShortCutInfo *tmp = new ShortCutInfo();
+    *info = tmp;
+    for (auto item : infoVect)
     {
-        if (m_shortCutInfos.at(i).key == key) {
-            info = m_shortCutInfos.at(i);
-            return i;
-        }
+        *tmp = item;
+        tmp->next = new ShortCutInfo();
+        tmp = tmp->next;
     }
-    return -1;
+    tmp = nullptr;
+}
+ShortCutInfo* ZenoSettingsManager::getShortCutInfo(const QString &key, ShortCutInfo *shortCutInfos) 
+{
+    int index = 0;
+    auto info = shortCutInfos;
+    while (info) 
+    {
+        if (info->key == key) {
+            return info;
+        }
+        info = info->next;
+        index++;
+    }
+    return nullptr;
 }
