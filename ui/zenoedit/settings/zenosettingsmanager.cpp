@@ -138,7 +138,7 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo()
         {ShortCut_Import, QObject::tr("Import"), "Ctrl+Shift+O"},
         {ShortCut_Export_Graph, QObject::tr("Export Graph"), "Ctrl+Shift+E"},
         {ShortCut_NewNode, QObject::tr("New Node"), "Tab"},
-        {ShortCut_MovingHandler, QObject::tr("Translational Handler"), "T"},
+        {ShortCut_MovingHandler, QObject::tr("Moving Handler"), "T"},
         {ShortCut_RevolvingHandler, QObject::tr("Rotating Handler"), "R"},
         {ShortCut_ScalingHandler, QObject::tr("Scaling Handler"), "E"},
         {ShortCut_CoordSys, QObject::tr("CoordSys"), "M"},

@@ -16,6 +16,7 @@
 #include "util/log.h"
 #include <zenomodel/include/uihelper.h>
 #include "settings/zenosettingsmanager.h"
+#include "groupnode.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -482,7 +483,8 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
     {
         if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
         {
-            nodeSets.insert(pNode);
+            if (qobject_cast<GroupNode *>(pNode) == nullptr)
+                nodeSets.insert(pNode);
         }
     }
 

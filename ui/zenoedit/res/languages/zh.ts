@@ -951,7 +951,7 @@
         <translation type="unfinished">新建节点</translation>
     </message>
     <message>
-        <source>Translational Handler</source>
+        <source>Moving Handler</source>
         <translation type="unfinished">呼出平移handler</translation>
     </message>
     <message>

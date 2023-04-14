@@ -230,6 +230,7 @@ void ZEditParamLayoutDlg::initUI()
     m_ui->labelPrameter->setProperty("cssClass", "bold");
     m_ui->labelSetting->setProperty("cssClass", "bold");
     m_ui->label_11->setProperty("cssClass", "bold");
+    m_ui->btnChooseCoreParam->setProperty("cssClass", "CoreParam");
     m_ui->listConctrl->setFixedWidth(ZenoStyle::dpiScaled(296));
     m_ui->paramsView->setFixedWidth(ZenoStyle::dpiScaled(296));
     m_ui->labelSetting->setMinimumWidth(ZenoStyle::dpiScaled(296));
