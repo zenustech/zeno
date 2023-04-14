@@ -9,9 +9,13 @@
 #include <QSettings>
 #include <algorithm>
 #include "settings/zsettings.h"
+#include "exceptionhandle.h"
+
 
 void startUp()
 {
+    registerExceptionFilter();
+
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
     zeno::setConfigVariable("EXECFILE", QCoreApplication::applicationFilePath().toStdString());
 

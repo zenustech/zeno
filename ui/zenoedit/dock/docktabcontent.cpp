@@ -42,6 +42,8 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
     setBackgroundClr(QColor(), bgOn, bgOn, bgOn);
 }
 
+
+#if 0
 ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &iconHover, const QString &iconOn,const QString &iconOnHover, const QString &iconPressed)
     : ZToolButton()
 {
@@ -55,7 +57,8 @@ ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &i
     m_iconOnPressed = QIcon(iconPressed);
 }
 
-void ZToolRecordingButton::paintEvent(QPaintEvent *event) {
+void ZToolRecordingButton::paintEvent(QPaintEvent *event)
+{
     QStylePainter p(this);
     ZStyleOptionToolButton option;
     option.initFrom(this);
@@ -88,8 +91,10 @@ void ZToolRecordingButton::paintEvent(QPaintEvent *event) {
     option.font = zenoApp->font();
     option.bgRadius = ZenoStyle::dpiScaled(2);
     option.palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option.state)));
-    p.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoToolButton), option);
+    p.drawComplexControl(QStyle::CC_ToolButton, option);
 }
+#endif
+
 
 ZToolMenuButton::ZToolMenuButton() {
     setButtonOptions(ZToolButton::Opt_TextRightToIcon);
@@ -186,7 +191,6 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     QFont fnt = zenoApp->font();
     m_plblName->setFont(fnt);
     m_plblName->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    m_plblName->setMinimumWidth(ZenoStyle::dpiScaled(128));
     QPalette palette = m_plblName->palette();
     palette.setColor(m_plblName->foregroundRole(), QColor("#A3B1C0"));
     m_plblName->setPalette(palette);
@@ -300,7 +304,10 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnAlways = new QComboBox(this);
     m_btnAlways->addItems(runList);
     m_btnAlways->setEditable(false);
-    m_btnAlways->setFixedSize(ZenoStyle::dpiScaled(170), ZenoStyle::dpiScaled(20));
+    m_btnAlways->setFixedHeight(ZenoStyle::dpiScaled(22));
+    m_btnAlways->setFont(fnt);
+    QFontMetrics fontMetrics(fnt);
+    m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCameraMaterial")));
     QObject::connect(m_btnAlways, &QComboBox::textActivated, [=](const QString &text) {
         static int lastItem = 0;
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
@@ -341,7 +348,9 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
             pMainWin->setAlwaysLightCameraMaterial(false);
             lastItem = 0;
         }
+        m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(text) + ZenoStyle::dpiScaled(26));
     });
+    m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(tr("disable")) + ZenoStyle::dpiScaled(26));
 
     pListView->setChecked(false);
     pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool());
@@ -371,12 +380,13 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     cbSet.cbEditFinished = funcZoomEdited;
     cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
     cbZoom->setEditable(false);
-    cbZoom->setFixedSize(ZenoStyle::dpiScaled(85), ZenoStyle::dpiScaled(20));
+    cbZoom->setFixedSize(ZenoStyle::dpiScaled(60), ZenoStyle::dpiScaled(20));
+    cbZoom->view()->setFixedWidth(ZenoStyle::dpiScaled(85));
 
     pToolLayout->addWidget(pListView);
     pToolLayout->addWidget(pTreeView);
 
-    pToolLayout->addSpacing(ZenoStyle::dpiScaled(120));
+    pToolLayout->addStretch(1);
 
     pToolLayout->addWidget(pSubnetMgr);
     pToolLayout->addWidget(pFold);
@@ -392,7 +402,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_btnRun);
     pToolLayout->addWidget(m_btnKill);
 
-    pToolLayout->addStretch();
+    pToolLayout->addStretch(4);
 
     pToolLayout->addWidget(cbZoom);
     pToolLayout->addWidget(pSearchBtn);
@@ -639,6 +649,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
     QVariant props = items;
 
+    QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {
         if (newValue == items[0]) {
             m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SOLID, true);
@@ -649,12 +660,14 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         else if (newValue == items[2]) {
             m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_OPTIX, true);
         }
+        m_cbRenderWay->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
     };
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcRender;
     m_cbRenderWay = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
     m_cbRenderWay->setEditable(false);
-    m_cbRenderWay->setFixedSize(ZenoStyle::dpiScaled(110), ZenoStyle::dpiScaled(20));
+    m_cbRenderWay->view()->setFixedWidth(ZenoStyle::dpiScaled(110));
+    m_cbRenderWay->setFixedSize(fontMetrics.horizontalAdvance(items[0]) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(22));
 
     pToolLayout->addWidget(pMenuBar);
     pToolLayout->setAlignment(pMenuBar, Qt::AlignVCenter);

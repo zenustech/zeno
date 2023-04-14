@@ -180,6 +180,107 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
     return base::drawControl(element, option, painter, widget);
 }
 
+QRect ZenoStyle::rect_ZToolButtonIcon(const QStyleOptionComplex* option, const QWidget* widget) const
+{
+    const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option);
+    Q_ASSERT(opt);
+    ZToolButton* pToolBtn = qobject_cast<ZToolButton*>(const_cast<QWidget*>(widget));
+
+    if (opt->buttonOpts & ZToolButton::Opt_UpRight)
+    {
+        int xleft = opt->rect.width() / 2 - opt->iconSize.width() / 2;
+        int ytop = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, widget);
+        return QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
+    }
+    else if (opt->buttonOpts & ZToolButton::Opt_TextUnderIcon)
+    {
+        int xleft = opt->rect.width() / 2 - opt->iconSize.width() / 2;
+        int ytop = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, widget);
+        return QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
+    }
+    else if (opt->buttonOpts & ZToolButton::Opt_TextRightToIcon)
+    {
+        QMargins margins = pToolBtn->margins();
+        int xleft = margins.left();
+        int ytop = opt->rect.height() / 2 - opt->iconSize.height() / 2;
+        QRect rcIcon = QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
+        return rcIcon;
+    }
+    else
+    {
+        int xpos = opt->rect.width() / 2 - opt->iconSize.width() / 2;
+        int ypos = opt->rect.height() / 2 - opt->iconSize.height() / 2;
+        return QRect(xpos, ypos, opt->iconSize.width(), opt->iconSize.height());
+    }
+}
+
+QRect ZenoStyle::rect_ZToolButtonText(const QStyleOptionComplex* option, const QWidget* widget) const
+{
+    const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option);
+    Q_ASSERT(opt);
+    ZToolButton* pToolBtn = qobject_cast<ZToolButton*>(const_cast<QWidget*>(widget));
+
+    if (opt->buttonOpts & ZToolButton::Opt_UpRight)
+    {
+        QFontMetrics fontMetrics(opt->font);
+        int textWidth = fontMetrics.height();
+        int textHeight = fontMetrics.horizontalAdvance(opt->text);
+        int xleft = opt->rect.width() / 2 - textWidth / 2;
+        int ypos = opt->rect.height() - textHeight -
+                   pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, widget);
+        QRect rcIcon = rect_ZToolButtonIcon(option, widget);
+        return QRect(rcIcon.right(), rcIcon.center().y(), textWidth, textHeight);
+    } 
+    else if (opt->buttonOpts & ZToolButton::Opt_TextUnderIcon)
+    {
+        QFontMetrics fontMetrics(opt->font);
+        int textWidth = fontMetrics.horizontalAdvance(opt->text);
+        int textHeight = fontMetrics.height();
+        int xleft = opt->rect.width() / 2 - textWidth / 2;
+        int ypos = opt->rect.height() - textHeight -
+                   pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, widget);
+        return QRect(xleft, ypos, textWidth, textHeight);
+    }
+    else if (opt->buttonOpts & ZToolButton::Opt_TextRightToIcon)
+    {
+        QFontMetrics fontMetrics(opt->font);
+        QRect rcIcon = rect_ZToolButtonIcon(option, widget);
+        int iconTextSpacing =
+            pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, widget);
+        int textWidth = fontMetrics.horizontalAdvance(opt->text);
+        int textHeight = fontMetrics.height();
+        int xleft = rcIcon.right() + iconTextSpacing;
+        int ypos = opt->rect.height() / 2 - textHeight / 2;
+        return QRect(xleft, ypos, textWidth, textHeight);
+    }
+    else if (opt->buttonOpts & ZToolButton::Opt_HasText)
+    {
+        QMargins margins = pToolBtn->margins();
+        return opt->rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
+    }
+    else
+    {
+        return QRect();
+    }
+}
+
+QRect ZenoStyle::rect_ZToolButtonArrow(const QStyleOptionComplex* option, const QWidget* widget) const
+{
+    const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option);
+    Q_ASSERT(opt);
+    ZToolButton* pToolBtn = qobject_cast<ZToolButton*>(const_cast<QWidget*>(widget));
+    if (opt->m_arrowOption == ZStyleOptionToolButton::DOWNARROW)
+    {
+        QRect rcIcon = rect_ZToolButtonText(option, widget);
+        QRect rc;
+        rc.setLeft(rcIcon.right() + ZenoStyle::dpiScaled(12));
+        rc.setTop(rcIcon.top() + rcIcon.height() / 3);
+        rc.setSize(ZenoStyle::dpiScaledSize(QSize(8, 9)));
+        return rc;
+    }
+    return QRect();
+}
+
 QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* option, SubControl sc, const QWidget* widget) const
 {
     if (cc == CC_ComboBox && sc == SC_ComboBoxEditField)
@@ -202,118 +303,6 @@ QRect ZenoStyle::subControlRect(ComplexControl cc, const QStyleOptionComplex* op
             const int xpos = cb->rect.x() + cb->rect.width() - cb->rect.height();
             QRect rc(xpos, cb->rect.y(), arrowRcWidth, cb->rect.height());
             return rc;
-        }
-    }
-    else if ((decltype(CC_ZenoToolButton))(std::underlying_type_t<SubControl>)cc == CC_ZenoToolButton)
-    {
-        const ZStyleOptionToolButton* opt = qstyleoption_cast<const ZStyleOptionToolButton*>(option);
-        Q_ASSERT(opt);
-        ZToolButton* pToolBtn = qobject_cast<ZToolButton*>(const_cast<QWidget*>(widget));
-
-        switch (sc)
-        {
-        case SC_ZenoToolButtonIcon:
-        {
-            if (opt->buttonOpts & ZToolButton::Opt_UpRight)
-            {
-                int xleft = opt->rect.width() / 2 - opt->iconSize.width() / 2;
-                int ytop = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, widget);
-                return QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
-            }
-            else if (opt->buttonOpts & ZToolButton::Opt_TextUnderIcon)
-            {
-                int xleft = opt->rect.width() / 2 - opt->iconSize.width() / 2;
-                int ytop = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonTopMargin), 0, widget);
-                return QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
-            }
-            else if (opt->buttonOpts & ZToolButton::Opt_TextRightToIcon)
-            {
-                QMargins margins = pToolBtn->margins();
-                int xleft = margins.left();
-                int ytop = opt->rect.height() / 2 - opt->iconSize.height() / 2;
-                QRect rcIcon = QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
-                return rcIcon;
-            }
-            else if (opt->buttonOpts & ZToolButton::Opt_TextLeftToIcon)
-            {
-                QMargins margins = pToolBtn->margins();
-                QRect rcText = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonText), widget);
-                int iconTextSpacing = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, widget);
-                int xleft = rcText.right() + iconTextSpacing;
-                int ytop = opt->rect.height() / 2 - opt->iconSize.height() / 2;
-                QRect rcIcon = QRect(xleft, ytop, opt->iconSize.width(), opt->iconSize.height());
-                return rcIcon;
-            }
-            else
-            {
-                int xpos = opt->rect.width() / 2 - opt->iconSize.width() / 2;
-                int ypos = opt->rect.height() / 2 - opt->iconSize.height() / 2;
-                return QRect(xpos, ypos, opt->iconSize.width(), opt->iconSize.height());
-            }
-            break;
-        }
-        case SC_ZenoToolButtonText:
-        {
-            if (opt->buttonOpts & ZToolButton::Opt_UpRight)
-            {
-                QFontMetrics fontMetrics(opt->font);
-                int textWidth = fontMetrics.height(); 
-                int textHeight = fontMetrics.horizontalAdvance(opt->text);
-                int xleft = opt->rect.width() / 2 - textWidth / 2;
-                int ypos = opt->rect.height() - textHeight - pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, widget);
-                QRect rcIcon = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonIcon), widget);
-                return QRect(rcIcon.right(), rcIcon.center().y(), textWidth, textHeight);
-            }
-            else if (opt->buttonOpts & ZToolButton::Opt_TextUnderIcon)
-            {
-                QFontMetrics fontMetrics(opt->font);
-                int textWidth = fontMetrics.horizontalAdvance(opt->text);
-                int textHeight = fontMetrics.height();
-                int xleft = opt->rect.width() / 2 - textWidth / 2;
-                int ypos = opt->rect.height() - textHeight - pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_ButtonBottomMargin), 0, widget);
-                return QRect(xleft, ypos, textWidth, textHeight);
-            }
-            else if (opt->buttonOpts & ZToolButton::Opt_TextRightToIcon)
-            {
-                QFontMetrics fontMetrics(opt->font);
-                QRect rcIcon = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonIcon), widget);
-                int iconTextSpacing = pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, widget);
-                int textWidth = fontMetrics.horizontalAdvance(opt->text);
-                int textHeight = fontMetrics.height();
-                int xleft = rcIcon.right() + iconTextSpacing;
-                int ypos = opt->rect.height() / 2 - textHeight / 2;
-                return QRect(xleft, ypos, textWidth, textHeight);
-            }
-            else if (opt->buttonOpts & ZToolButton::Opt_TextLeftToIcon)
-            {
-                QFontMetrics fontMetrics(opt->font);
-                int textWidth = fontMetrics.horizontalAdvance(opt->text);
-                int textHeight = fontMetrics.height();
-                QMargins margins = pToolBtn->margins();
-                int xleft = margins.left();
-                int ytop = opt->rect.height() / 2 - textHeight / 2;
-                QRect rcText = QRect(xleft, ytop, textWidth, textHeight);
-                return rcText;
-            }
-            else if (opt->buttonOpts & ZToolButton::Opt_HasText)
-            {
-                QMargins margins = pToolBtn->margins();
-                return opt->rect.adjusted(margins.left(), margins.top(), -margins.right(), -margins.bottom());
-            }
-        }
-        case SC_ZenoToolButtonArrow:
-        {
-            //todo
-            if (opt->m_arrowOption == ZStyleOptionToolButton::DOWNARROW) {
-                QRect rcIcon = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonText), widget);
-                QRect rc;
-                rc.setLeft(rcIcon.right() + ZenoStyle::dpiScaled(12));
-                rc.setTop(rcIcon.top() + rcIcon.height() / 3);
-                rc.setSize(ZenoStyle::dpiScaledSize(QSize(8, 9)));
-                return rc;
-            }
-            return QRect();
-        }
         }
     }
     return base::subControlRect(cc, option, sc, widget);
@@ -431,10 +420,9 @@ void ZenoStyle::drawCheckBox(QPainter* painter, QRect rect, bool bHover, Qt::Che
 
 void ZenoStyle::drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const
 {
-    QStyle::ComplexControl cc = static_cast<QStyle::ComplexControl>(CC_ZenoToolButton);
-    QRect rcIcon = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonIcon), widget);
-    QRect rcText = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonText), widget);
-    QRect rcArrow = subControlRect(cc, option, static_cast<QStyle::SubControl>(SC_ZenoToolButtonArrow), widget);
+    QRect rcIcon = rect_ZToolButtonIcon(option, widget);
+    QRect rcText = rect_ZToolButtonText(option, widget);
+    QRect rcArrow = rect_ZToolButtonArrow(option, widget);
 
     //draw the background
     if (option->bDrawBackground)

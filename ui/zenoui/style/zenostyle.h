@@ -16,12 +16,6 @@ public:
         CC_ZenoComboBox,
         CC_ZenoCheckBoxBar,
     };
-    enum ZenoSubControl
-    {
-        SC_ZenoToolButtonIcon = SC_CustomBase + 1,
-        SC_ZenoToolButtonText,
-        SC_ZenoToolButtonArrow
-    };
     enum ZenoPixmetrics
     {
         PM_ButtonLeftMargin = PM_CustomBase + 1,
@@ -69,6 +63,9 @@ private:
     void drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const;
     void drawDropdownArrow(QPainter* painter, QRect downArrowRect, bool isDown) const;
     void drawCheckBox(QPainter* painter, QRect rect, bool bHover, Qt::CheckState state) const;
+    QRect rect_ZToolButtonIcon(const QStyleOptionComplex* opt, const QWidget* widget) const;
+    QRect rect_ZToolButtonText(const QStyleOptionComplex* opt, const QWidget* widget) const;
+    QRect rect_ZToolButtonArrow(const QStyleOptionComplex* opt, const QWidget* widget) const;
 };
 
 #endif
