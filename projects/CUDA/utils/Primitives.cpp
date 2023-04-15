@@ -184,6 +184,89 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
                                              {"zs_query"},
                                          });
 
+struct ParticleCluster : zeno::INode {
+    virtual void apply() override {
+        using zsbvh_t = ZenoLinearBvh;
+        using bvh_t = zsbvh_t::lbvh_t;
+        using bv_t = bvh_t::Box;
+
+        auto pars = get_input<zeno::PrimitiveObject>("pars");
+        float dist = get_input2<float>("dist");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = zs::omp_exec();
+
+        zs::Vector<bv_t> bvs;
+        const auto &pos = pars->attr<vec3f>("pos");
+        auto &clusterId = pars->add_attr<float>("tag");
+
+        std::shared_ptr<zsbvh_t> zsbvh;
+        ZenoLinearBvh::element_e et = ZenoLinearBvh::point;
+        bvs = retrieve_bounding_volumes(pol, pars->attr<vec3f>("pos"), 0);
+        et = ZenoLinearBvh::point;
+        zsbvh = std::make_shared<zsbvh_t>();
+        zsbvh->et = et;
+        bvh_t &bvh = zsbvh->get();
+        bvh.build(pol, bvs);
+
+        std::vector<std::vector<int>> neighbors(pos.size());
+        pol(range(pos.size()), [bvh = proxy<space>(bvh), &pos, &neighbors, dist](int vi) mutable {
+            const auto &p = pos[vi];
+            bv_t pb{vec_to_other<zs::vec<float, 3>>(p - dist), vec_to_other<zs::vec<float, 3>>(p + dist)};
+            bvh.iter_neighbors(pb, [&](int vj) { neighbors[vi].push_back(vj); });
+        });
+        std::vector<int> numNeighbors(pos.size() + 1);
+        pol(zip(numNeighbors, neighbors), [](auto &n, const std::vector<int> &neis) { n = neis.size(); });
+
+        SparseMatrix<int, true> spmat(pos.size(), pos.size());
+        spmat._ptrs.resize(pos.size() + 1);
+        exclusive_scan(pol, std::begin(numNeighbors), std::end(numNeighbors), std::begin(spmat._ptrs));
+
+        auto numEntries = spmat._ptrs[pos.size()];
+        spmat._inds.resize(numEntries);
+
+        pol(range(pos.size()),
+            [&neighbors, inds = view<space>(spmat._inds), offsets = view<space>(spmat._ptrs)](int vi) {
+                auto offset = offsets[vi];
+                for (int vj : neighbors[vi])
+                    inds[offset++] = vj;
+            });
+        ///
+        std::vector<int> fas(pos.size());
+        union_find(pol, spmat, range(fas));
+        /// @note update ancestors, discretize connected components
+        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+        pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            vtab.insert(fa);
+        });
+        auto &clusterids = pars->add_attr<float>(get_input2<std::string>("cluster_tag"));
+        pol(range(pos.size()), [&clusterids, &fas, vtab = view<space>(vtab)](int vi) mutable {
+            auto ancestor = fas[vi];
+            auto clusterNo = vtab.query(ancestor);
+            clusterids[vi] = clusterNo;
+        });
+        auto numClusters = vtab.size();
+        fmt::print("{} clusters in total.\n", numClusters);
+
+        set_output("pars", std::move(pars));
+    }
+};
+
+ZENDEFNODE(ParticleCluster, {
+                                {{"PrimitiveObject", "pars"},
+                                 {"float", "dist", "1"},
+                                 {"string", "cluster_tag", "cluster_index"},
+                                 {"enum pos", "proximity_pred", "pos"}},
+                                {{"PrimitiveObject", "pars"}, {"NumericObject", "num_clusters"}},
+                                {},
+                                {"zs_geom"},
+                            });
+
 struct PrimitiveBFS : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
