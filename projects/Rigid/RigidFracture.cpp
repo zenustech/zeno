@@ -79,7 +79,7 @@ btMatrix3x3 getMoI(const btMatrix3x3 &rot, const btVector3 &i, btScalar mass, co
     tensor[1] += j[1];
     tensor[2] += j[2];
 
-    //compute inertia tensor of pointmass at o
+    //compute inertia tensor of pointmass at cc
     btVector3 o = ci - cc;
     btScalar o2 = o.length2();
     j[0].setValue(o2, 0, 0);
@@ -88,49 +88,6 @@ btMatrix3x3 getMoI(const btMatrix3x3 &rot, const btVector3 &i, btScalar mass, co
     j[0] += o * -o.x();
     j[1] += o * -o.y();
     j[2] += o * -o.z();
-
-    //add inertia tensor of pointmass
-    tensor[0] += mass * j[0];
-    tensor[1] += mass * j[1];
-    tensor[2] += mass * j[2];
-
-    return tensor;
-}
-btMatrix3x3 getMoI(const btMatrix3x3 &rot, const btVector3 &i, btScalar mass, const btVector3 &ci, const btVector3 &cc,
-                   const btVector3 &wi, bool ifprint) {
-    btMatrix3x3 tensor(0, 0, 0, 0, 0, 0, 0, 0, 0);
-
-    btMatrix3x3 j = rot.transpose();
-    j[0] *= i[0];
-    j[1] *= i[1];
-    j[2] *= i[2];
-    j = rot * j;
-
-    if (ifprint) {
-        auto tmp = j * wi;
-        fmt::print(fg(fmt::color::orange), "getMoI::Ii wi(ref):: {}, {}, {}\n", tmp[0], tmp[1], tmp[2]);
-    }
-
-    //add inertia tensor
-    tensor[0] += j[0];
-    tensor[1] += j[1];
-    tensor[2] += j[2];
-
-    //compute inertia tensor of pointmass at o
-    btVector3 o = ci - cc;
-    btScalar o2 = o.length2();
-    j[0].setValue(o2, 0, 0);
-    j[1].setValue(0, o2, 0);
-    j[2].setValue(0, 0, o2);
-    j[0] += o * -o.x();
-    j[1] += o * -o.y();
-    j[2] += o * -o.z();
-
-    if (ifprint) {
-        auto tmp = j * wi;
-        fmt::print(fg(fmt::color::orange), "getMoI::cross(ref):: {}, {}, {}\n", mass * tmp[0], mass * tmp[1],
-                   mass * tmp[2]);
-    }
 
     //add inertia tensor of pointmass
     tensor[0] += mass * j[0];
@@ -852,27 +809,17 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
         std::vector<btTransform> cpdTransforms(ncompounds);
         std::vector<btVector3> cpdInertia(ncompounds);
 
-        void *targetChild;
         pol(zip(isCompound, cpdTransforms, cpdInertia, btCpdShapes, cpdChildMasses),
-            [&targetChild](bool isCpd, btTransform &principalTrans, btVector3 &inertia, auto &cpdShape,
-                           auto &cpdMasses) {
+            [](bool isCpd, btTransform &principalTrans, btVector3 &inertia, auto &cpdShape, auto &cpdMasses) {
                 if (isCpd) {
                     cpdShape->calculatePrincipalAxisTransform(cpdMasses.data(), principalTrans, inertia);
-
-#if DEBUG_CPD
-                    targetChild = (void *)cpdShape->getChildShape(0);
-                    auto Ii_cpd = getMoI(principalTrans.getBasis(), inertia);
-                    fmt::print("cpd I_cpd [{}, {}, {}; {}, {}, {}; {}, {}, {}]\n", Ii_cpd[0][0], Ii_cpd[0][1],
-                               Ii_cpd[0][2], Ii_cpd[1][0], Ii_cpd[1][1], Ii_cpd[1][2], Ii_cpd[2][0], Ii_cpd[2][1],
-                               Ii_cpd[2][2]);
-#endif
                 }
             });
-        std::vector<btVector3> accumCpdMVs(ncompounds);    // linear momentum
-        std::vector<btVector3> accumCpdMWs(ncompounds);    // angular momentum
-        std::vector<btVector3> accumCpdMWRefs(ncompounds); // angular momentum (direct)
+        std::vector<btVector3> accumCpdVs(ncompounds);    // linear momentum
+        std::vector<btVector3> accumCpdWs(ncompounds);    // angular momentum (accepted one)
+        std::vector<btVector3> accumCpdWRefs(ncompounds); // angular momentum (direct)
 
-        pol(zip(accumCpdMVs, accumCpdMWs, accumCpdMWRefs), [](auto &a, auto &b, auto &c) {
+        pol(zip(accumCpdVs, accumCpdWs, accumCpdWRefs), [](auto &a, auto &b, auto &c) {
             a.setZero();
             b.setZero();
             c.setZero();
@@ -892,38 +839,21 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
                 // add linear momentum
                 auto vi = body->getLinearVelocity();
                 for (int d = 0; d != 3; ++d)
-                    atomic_add(exec_omp, &accumCpdMVs[compId][d], mi * vi[d]);
+                    atomic_add(exec_omp, &accumCpdVs[compId][d], mi * vi[d]);
 
                 // add angular momentum (ref, proven wrong)
                 auto wi = body->getAngularVelocity();
-#if DEBUG_CPD
-                if (rbi < 100)
-                    fmt::print("rb[{}] mass[{}] linear v[{}, {}, {}] w[{}, {}, {}]\n", rbi, mi, vi[0], vi[1], vi[2],
-                               wi[0], wi[1], wi[2]);
-
-                auto Ii_cpd = getMoI(rbTrans.getBasis(), rb->getInertia(), mi, ci, cc, wi,
-                                     (void *)rb->body->getCollisionShape() == targetChild);
-                if ((void *)rb->body->getCollisionShape() == targetChild)
-                    fmt::print(fg(fmt::color::green), "rb [{}], Ii_cpd [{}, {}, {}; {}, {}, {}; {}, {}, {}]\n", rbi,
-                               Ii_cpd[0][0], Ii_cpd[0][1], Ii_cpd[0][2], Ii_cpd[1][0], Ii_cpd[1][1], Ii_cpd[1][2],
-                               Ii_cpd[2][0], Ii_cpd[2][1], Ii_cpd[2][2]);
-#else
                 auto Ii_cpd = getMoI(rbTrans.getBasis(), rb->getInertia(), mi, ci, cc);
-#endif
                 auto tmp = Ii_cpd * wi;
                 for (int d = 0; d != 3; ++d)
-                    atomic_add(exec_omp, &accumCpdMWRefs[compId][d], tmp[d]);
+                    atomic_add(exec_omp, &accumCpdWRefs[compId][d], tmp[d]);
             }
         });
         pol(range(ncompounds), [&](int cpdi) {
             if (isCompound[cpdi]) {
                 auto mass = cpdMasses[cpdi];
-                auto cpdv = accumCpdMVs[cpdi] / mass;
-#if DEBUG_CPD
-                fmt::print("cpd[{}] mass[{}] linear v[{}, {}, {}] from mv[{}, {}, {}]\n", cpdi, mass, cpdv[0], cpdv[1],
-                           cpdv[2], accumCpdMVs[cpdi][0], accumCpdMVs[cpdi][1], accumCpdMVs[cpdi][2]);
-#endif
-                accumCpdMVs[cpdi] = cpdv;
+                auto cpdv = accumCpdVs[cpdi] / mass;
+                accumCpdVs[cpdi] = cpdv;
             }
         });
         pol(range(nrbs), [&](int rbi) {
@@ -937,50 +867,28 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
                 const auto &cpdTrans = cpdTransforms[compId];
                 const auto cc = cpdTrans.getOrigin();
 
-                if (compId >= ncompounds)
-                    throw std::runtime_error("wtf");
-
                 auto mi = body->getMass();
                 auto vi = body->getLinearVelocity();
-                auto vc = accumCpdMVs[compId];
+                auto vc = accumCpdVs[compId];
 
                 // add angular momentum
                 auto wi = body->getAngularVelocity();
-
                 auto Ii = getMoI(rbTrans.getBasis(), rb->getInertia());
                 auto tmp = (Ii * wi + mi * (ci - cc).cross(vi - vc));
-#if DEBUG_CPD
-                if ((void *)rb->body->getCollisionShape() == targetChild) {
-                    auto Ii_cpd = getMoI(rbTrans.getBasis(), rb->getInertia(), mi, ci, cc);
-                    fmt::print(fg(fmt::color::pink), "rb [{}], Ii_cpd [{}, {}, {}; {}, {}, {}; {}, {}, {}]\n", rbi,
-                               Ii_cpd[0][0], Ii_cpd[0][1], Ii_cpd[0][2], Ii_cpd[1][0], Ii_cpd[1][1], Ii_cpd[1][2],
-                               Ii_cpd[2][0], Ii_cpd[2][1], Ii_cpd[2][2]);
-                    fmt::print(fg(fmt::color::pink), "rb [{}], Ii [{}, {}, {}; {}, {}, {}; {}, {}, {}]\n", rbi,
-                               Ii[0][0], Ii[0][1], Ii[0][2], Ii[1][0], Ii[1][1], Ii[1][2], Ii[2][0], Ii[2][1],
-                               Ii[2][2]);
-                    auto Ref = Ii_cpd * wi;
-                    fmt::print(fg(fmt::color::yellow), "rb [{}], Ii_cpd wi (ref) [{}, {}, {}]\n", rbi, Ref[0], Ref[1],
-                               Ref[2]);
-                    auto IiWi = Ii * wi;
-                    fmt::print(fg(fmt::color::yellow), "rb [{}], Ii wi [{}, {}, {}]\n", rbi, IiWi[0], IiWi[1], IiWi[2]);
-                    auto ttt = mi * (ci - cc).cross(vi - vc);
-                    fmt::print(fg(fmt::color::yellow), "rb [{}], cross [{}, {}, {}]\n", rbi, ttt[0], ttt[1], ttt[2]);
-                }
-#endif
                 for (int d = 0; d != 3; ++d)
-                    atomic_add(exec_omp, &accumCpdMWs[compId][d], tmp[d]);
+                    atomic_add(exec_omp, &accumCpdWs[compId][d], tmp[d]);
             }
         });
         pol(range(ncompounds), [&](int cpdi) {
             if (isCompound[cpdi]) {
                 auto ICpdInv = getMoI(cpdTransforms[cpdi].getBasis(), vecInv(cpdInertia[cpdi]));
-                auto cpdw = ICpdInv * accumCpdMWs[cpdi];
-                accumCpdMWs[cpdi] = cpdw;
-                auto cpdwref = ICpdInv * accumCpdMWRefs[cpdi];
-                accumCpdMWRefs[cpdi] = cpdwref;
+                auto cpdw = ICpdInv * accumCpdWs[cpdi];
+                accumCpdWs[cpdi] = cpdw;
+                auto cpdwref = ICpdInv * accumCpdWRefs[cpdi];
+                accumCpdWRefs[cpdi] = cpdwref;
 #if DEBUG_CPD
                 fmt::print(fg(fmt::color::red), "cpd [{}] v<{}, {}, {}>, w<{}, {}, {}>, wref<{}, {}, {}>.\n", cpdi,
-                           accumCpdMVs[cpdi][0], accumCpdMVs[cpdi][1], accumCpdMVs[cpdi][2], cpdw[0], cpdw[1], cpdw[2],
+                           accumCpdVs[cpdi][0], accumCpdVs[cpdi][1], accumCpdVs[cpdi][2], cpdw[0], cpdw[1], cpdw[2],
                            cpdwref[0], cpdwref[1], cpdwref[2]);
 #endif
             }
@@ -995,11 +903,11 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
         });
 
         // assemble true compound shapes/rigidbodies
-        pol(zip(isCompound, cpdMasses, cpdLinearDampings, cpdAngularDampings, cpdFrictions, cpdRestitutions,
-                cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr),
-            [](bool isCpd, float cpdMass, float cpdLinearDamping, float cpdAngularDamping, float friction,
-               float restitution, const auto &cpdTransform, const auto &inertia, auto &btShape, auto primList,
-               auto &cpdBody) {
+        pol(zip(isCompound, cpdMasses, accumCpdVs, accumCpdWs, cpdLinearDampings, cpdAngularDampings, cpdFrictions,
+                cpdRestitutions, cpdTransforms, cpdInertia, btCpdShapes, primLists, rblist->arr),
+            [](bool isCpd, float cpdMass, const btVector3 &v, const btVector3 &w, float cpdLinearDamping,
+               float cpdAngularDamping, float friction, float restitution, const auto &cpdTransform,
+               const auto &inertia, auto &btShape, auto primList, auto &cpdBody) {
                 if (isCpd) {
                     auto tmp = std::make_shared<BulletCollisionShape>(std::move(btShape));
                     // list of PrimitiveObject, corresponding with each CompoundShape children
@@ -1013,6 +921,8 @@ struct BulletMaintainCompoundsAndConstraints : zeno::INode {
                         rb->body->setFriction(friction / cpdMass);
                         rb->body->setRestitution(restitution / cpdMass);
                     }
+                    rb->body->setLinearVelocity(v);
+                    rb->body->setAngularVelocity(w);
                 }
             });
 
