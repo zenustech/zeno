@@ -192,6 +192,7 @@ struct ParticleCluster : zeno::INode {
 
         auto pars = get_input<zeno::PrimitiveObject>("pars");
         float dist = get_input2<float>("dist");
+        float uvDist = get_input2<float>("uv_dist");
 
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
@@ -216,6 +217,26 @@ struct ParticleCluster : zeno::INode {
             bv_t pb{vec_to_other<zs::vec<float, 3>>(p - dist), vec_to_other<zs::vec<float, 3>>(p + dist)};
             bvh.iter_neighbors(pb, [&](int vj) { neighbors[vi].push_back(vj); });
         });
+
+        /// @brief uv
+        if (pars->has_attr("uv") && uvDist > zs::limits<float>::epsilon() * 10) {
+            const auto &uv = pars->attr<vec2i>("uv");
+            pol(range(pos.size()), [&neighbors, &uv, uvDist2 = uvDist * uvDist](int vi) mutable {
+                int n = neighbors[vi].size();
+                int nExcl = 0;
+                for (int i = 0; i != n - nExcl;) {
+                    auto vj = neighbors[vi][i];
+                    if (lengthSquared(uv[vj] - uv[vi]) < uvDist2) {
+                        i++;
+                    } else {
+                        nExcl++;
+                        std::swap(neighbors[vi][i], neighbors[vi][n - nExcl]);
+                    }
+                }
+                neighbors[vi].resize(n - nExcl);
+            });
+        }
+
         std::vector<int> numNeighbors(pos.size() + 1);
         pol(zip(numNeighbors, neighbors), [](auto &n, const std::vector<int> &neis) { n = neis.size(); });
 
@@ -258,10 +279,12 @@ struct ParticleCluster : zeno::INode {
 };
 
 ZENDEFNODE(ParticleCluster, {
-                                {{"PrimitiveObject", "pars"},
-                                 {"float", "dist", "1"},
-                                 {"string", "cluster_tag", "cluster_index"},
-                                 {"enum pos", "proximity_pred", "pos"}},
+                                {
+                                    {"PrimitiveObject", "pars"},
+                                    {"float", "dist", "1"},
+                                    {"float", "uv_dist", "0"},
+                                    {"string", "cluster_tag", "cluster_index"},
+                                },
                                 {{"PrimitiveObject", "pars"}, {"NumericObject", "num_clusters"}},
                                 {},
                                 {"zs_geom"},
