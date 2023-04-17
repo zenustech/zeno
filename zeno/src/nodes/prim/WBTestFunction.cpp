@@ -59,16 +59,18 @@ struct testPoly1 : INode {
         set_output("prim", std::move(prim));
     }
 };
-ZENDEFNODE(testPoly1, {/* inputs: */ {
-                       },
-                       /* outputs: */
-                       {
-                           "prim",
-                       },
-                       /* params: */ {}, /* category: */
-                       {
-                           "WBTest",
-                       }});
+ZENDEFNODE(testPoly1, {
+    /* inputs: */
+    {
+    },
+    /* outputs: */
+    {
+        "prim",
+    },
+    /* params: */ {}, /* category: */
+    {
+        "WBTest",
+    }});
 
 
 struct testPoly2 : INode {
@@ -87,319 +89,22 @@ struct testPoly2 : INode {
     }
 };
 ZENDEFNODE(testPoly2, {
-                    /* inputs: */ 
-                    {
-                        "prim", 
-                        "list",
-                    },
-                    /* outputs: */
-                    {
-                        "prim",
-                    },
-                    /* params: */ 
-                    {
-                    },
-                    /* category: */
-                    {
-                        "WBTest",
-                    }});
-
-
-/// <summary>
-/// 以下是退役节点，为了跑老图又加回来的 //////////////////////////////
-/// </summary>
-struct AddVertID : INode {
-    void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-
-        auto &id = prim->verts.add_attr<float>("ID");
-        for (int i = 0; i < int(prim->verts.size()); i++) {
-            id[i] = i;
-        }
-
-        set_output("primOut", std::move(prim));
-    }
-};
-ZENDEFNODE(AddVertID, {/* inputs: */ {
-                           "prim",
-                       },
-                       /* outputs: */
-                       {
-                           "primOut",
-                       },
-                       /* params: */ {}, /* category: */
-                       {
-                           "WBTest",
-                       }});
-
-struct PrimAddVec3fAttr : INode {
-    void apply() override {
-        int primOutPutType = 0; // 0 = ref, 1 = copy
-        int originalPrimModified = 1;
-
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_input2<std::string>("name");
-        auto value = get_input<NumericObject>("value")->get<vec3f>();
-        if (!prim->has_attr(name)) {
-            prim->add_attr<vec3f>(name, value);
-        } else {
-            auto &attr_arr = prim->attr<vec3f>(name);
-#pragma omp parallel for
-            for (intptr_t i = 0; i < prim->size(); i++) {
-                attr_arr[i] = value;
-            }
-        }
-
-        set_output("prim", std::move(prim));
-    }
-};
-ZENDEFNODE(PrimAddVec3fAttr, {/* inputs: */ {
-                                  "prim",
-                                  {"string", "name", "pos"},
-                                  {"vec3f", "value", "0,0,0"},
-                              },
-                              /* outputs: */
-                              {
-                                  "prim",
-                              },
-                              /* params: */ {}, /* category: */
-                              {
-                                  "deprecated", // PrimFillAttr
-                              }});
-
-struct PrimAddFloatAttr : INode {
-    void apply() override {
-        int primOutPutType = 0; // 0 = ref, 1 = copy
-        int originalPrimModified = 1;
-
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_input2<std::string>("name");
-        auto value = get_input<NumericObject>("value")->get<float>();
-
-        if (!prim->has_attr(name)) {
-            prim->add_attr<float>(name, value);
-        } else {
-            auto &attr_arr = prim->attr<float>(name);
-#pragma omp parallel for
-            for (intptr_t i = 0; i < prim->size(); i++) {
-                attr_arr[i] = value;
-            }
-        }
-
-        set_output("prim", std::move(prim));
-    }
-};
-ZENDEFNODE(PrimAddFloatAttr, {/* inputs: */ {
-                                  "prim",
-                                  {"string", "name", "pos"},
-                                  {"float", "value", "0"},
-                              },
-                              /* outputs: */
-                              {
-                                  "prim",
-                              },
-                              /* params: */ {}, /* category: */
-                              {
-                                  "deprecated", // PrimFillAttr
-                              }});
-
-// 根据属性名称设置每点属性，name 是 input
-struct PrimSetAttrPerVertByName : INode {
-    void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_input2<std::string>("name");
-        auto type = get_input2<std::string>("type");
-        auto index = get_input<NumericObject>("index")->get<int>();
-
-        if (type == "float") {
-            auto value = get_input<NumericObject>("value")->get<float>();
-            auto &attr_arr = prim->attr<float>(name);
-            if (index < attr_arr.size()) {
-                attr_arr[index] = value;
-            }
-        } else if (type == "float3") {
-            auto value = get_input<NumericObject>("value")->get<vec3f>();
-            auto &attr_arr = prim->attr<vec3f>(name);
-            if (index < attr_arr.size()) {
-                attr_arr[index] = value;
-            }
-        } else {
-            throw Exception("Bad attribute type: " + type);
-        }
-    }
-};
-ZENDEFNODE(PrimSetAttrPerVertByName, {/* inputs: */ {
-                                          "prim",
-                                          {"string", "name", "pos"},
-                                          {"enum float float3", "type", "float3"},
-                                          {"int", "index", "0"},
-                                          "value",
-                                      },
-                                      /* outputs: */ {},
-                                      /* params: */ {}, /* category: */
-                                      {
-                                          "deprecated", // PrimitiveSetAttrValue
-                                      }});
-
-// 根据属性名称获取每点属性，name 是 input
-struct PrimGetAttrPerVertByName : INode {
-    void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_input2<std::string>("name");
-        auto type = get_input2<std::string>("type");
-        auto index = get_input<NumericObject>("index")->get<int>();
-        auto value = std::make_shared<NumericObject>();
-
-        if (type == "float") {
-            value->set<float>(0);
-            auto &attr_arr = prim->attr<float>(name);
-            if (index < attr_arr.size()) {
-                value->set<float>(attr_arr[index]);
-            }
-        } else if (type == "float3") {
-            value->set<vec3f>(vec3f(0, 0, 0));
-            auto &attr_arr = prim->attr<vec3f>(name);
-            if (index < attr_arr.size()) {
-                value->set<vec3f>(attr_arr[index]);
-            }
-        } else {
-            throw Exception("Bad attribute type: " + type);
-        }
-
-        set_output("value", std::move(value));
-    }
-};
-ZENDEFNODE(PrimGetAttrPerVertByName, {/* inputs: */ {
-                                          "prim",
-                                          {"string", "name", "pos"},
-                                          {"enum float float3", "type", "float3"},
-                                          {"int", "index", "0"},
-                                      },
-                                      /* outputs: */
-                                      {
-                                          "value",
-                                      },
-                                      /* params: */ {}, /* category: */
-                                      {
-                                          "deprecated", // PrimitiveGetAttrValue
-                                      }});
-
-///////////////////////////////////////////////////////////////////////////////
-// 2023.01.05 节点图中自撸循环，遍历 prim 获取属性
-///////////////////////////////////////////////////////////////////////////////
-
-// Set Attr
-struct PrimSetAttr : INode {
-    void apply() override {
-
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto value = get_input<NumericObject>("value");
-        auto name = get_input2<std::string>("name");
-        auto type = get_input2<std::string>("type");
-        auto index = get_input<NumericObject>("index")->get<int>();
-        auto method = get_input<StringObject>("method")->get();
-
-        std::visit(
-            [&](auto ty) {
-                using T = decltype(ty);
-
-                if (method == "vert") {
-                    if (!prim->has_attr(name)) {
-                        prim->add_attr<T>(name);
-                    }
-                    auto &attr_arr = prim->attr<T>(name);
-
-                    auto val = value->get<T>();
-                    if (index < attr_arr.size()) {
-                        attr_arr[index] = val;
-                    }
-                } else if (method == "tri") {
-                    if (!prim->tris.has_attr(name)) {
-                        prim->tris.add_attr<T>(name);
-                    }
-                    auto &attr_arr = prim->tris.attr<T>(name);
-                    auto val = value->get<T>();
-                    if (index < attr_arr.size()) {
-                        attr_arr[index] = val;
-                    }
-                } else {
-                    throw Exception("bad type: " + method);
-                }
-            },
-            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
-                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
-
-        set_output("prim", std::move(prim));
-    }
-};
-ZENDEFNODE(PrimSetAttr, {/* inputs: */ {
-                                         "prim",
-                                         {"int", "value", "0"},
-                                         {"string", "name", "index"},
-                                         {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
-                                         {"enum vert tri", "method", "tri"},
-                                         {"int", "index", "0"},
-                                     },
-                                     /* outputs: */
-                                     {
-                                         "prim",
-                                     },
-                                     /* params: */ {}, /* category: */
-                                     {
-                                         "WBTest",
-                                     }});
-
-
-// Get Attr
-struct PrimGetAttr : INode {
-    void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_input2<std::string>("name");
-        auto type = get_input2<std::string>("type");
-        auto index = get_input<NumericObject>("index")->get<int>();
-        auto method = get_input<StringObject>("method")->get();
-
-        auto value = std::make_shared<NumericObject>();
-
-        std::visit(
-            [&](auto ty) {
-                using T = decltype(ty);
-
-                if (method == "vert") {
-                    auto &attr_arr = prim->attr<T>(name);
-                    if (index < attr_arr.size()) {
-                        value->set<T>(attr_arr[index]);
-                    }
-                } else if (method == "tri") {
-                    auto &attr_arr = prim->tris.attr<T>(name);
-                    if (index < attr_arr.size()) {
-                        value->set<T>(attr_arr[index]);
-                    }
-                } else {
-                    throw Exception("bad type: " + method);
-                }
-            },
-            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
-                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
-
-        set_output("value", std::move(value));
-    }
-};
-ZENDEFNODE(PrimGetAttr, {/* inputs: */ {
-                                         "prim",
-                                         {"string", "name", "index"},
-                                         {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
-                                         {"enum vert tri", "method", "tri"},
-                                         {"int", "index", "0"},
-                                     },
-                                     /* outputs: */
-                                     {
-                                         "value",
-                                     },
-                                     /* params: */ {}, /* category: */
-                                     {
-                                         "WBTest",
-                                     }});
+    /* inputs: */
+    {
+        "prim",
+        "list",
+    },
+    /* outputs: */
+    {
+        "prim",
+    },
+    /* params: */
+    {
+    },
+    /* category: */
+    {
+        "WBTest",
+    }});
 
 
 struct PrimMarkTrisIdx : INode {
@@ -414,18 +119,20 @@ struct PrimMarkTrisIdx : INode {
         set_output("prim", std::move(prim));
     }
 };
-ZENDEFNODE(PrimMarkTrisIdx, {/* inputs: */ {
-                           "prim",
-                           {"string", "idxName", "index"},
-                       },
-                       /* outputs: */
-                       {
-                           "prim",
-                       },
-                       /* params: */ {}, /* category: */
-                       {
-                           "WBTest",
-                       }});
+ZENDEFNODE(PrimMarkTrisIdx, {
+    /* inputs: */
+    {
+        "prim",
+        {"string", "idxName", "index"},
+    },
+    /* outputs: */
+    {
+        "prim",
+    },
+    /* params: */ {}, /* category: */
+    {
+        "WBTest",
+    }});
 
 
 struct PrimGetTrisSize : INode {
@@ -436,17 +143,19 @@ struct PrimGetTrisSize : INode {
         set_output("TrisSize", n);
     }
 };
-ZENDEFNODE(PrimGetTrisSize, {/* inputs: */ {
-                                 "prim",
-                             },
-                             /* outputs: */
-                             {
-                                 {"int", "TrisSize", "0"},
-                             },
-                             /* params: */ {}, /* category: */
-                             {
-                                 "WBTest",
-                             }});
+ZENDEFNODE(PrimGetTrisSize, {
+    /* inputs: */
+    {
+        "prim",
+    },
+    /* outputs: */
+    {
+        {"int", "TrisSize", "0"},
+    },
+    /* params: */ {}, /* category: */
+    {
+        "WBTest",
+    }});
 
 
 struct PrimPointTris : INode {
@@ -473,18 +182,20 @@ struct PrimPointTris : INode {
         set_output("list", std::move(list));
     }
 };
-ZENDEFNODE(PrimPointTris, {/* inputs: */ {
-                              "prim",
-                              {"int", "pointID", "0"},
-                          },
-                          /* outputs: */
-                          {
-                              "list",
-                          },
-                          /* params: */ {}, /* category: */
-                          {
-                              "WBTest",
-                          }});
+ZENDEFNODE(PrimPointTris, {
+    /* inputs: */
+    {
+        "prim",
+        {"int", "pointID", "0"},
+    },
+    /* outputs: */
+    {
+        "list",
+    },
+    /* params: */ {}, /* category: */
+    {
+        "WBTest",
+    }});
 
 
 struct PrimTriPoints : INode {
@@ -496,18 +207,23 @@ struct PrimTriPoints : INode {
         set_output("points", std::move(points));
     }
 };
-ZENDEFNODE(PrimTriPoints, {/* inputs: */ {
-                               "prim",
-                               {"int", "trisID", "0"},
-                           },
-                           /* outputs: */
-                           {
-                               "points",
-                           },
-                           /* params: */ {}, /* category: */
-                           {
-                               "WBTest",
-                           }});
+ZENDEFNODE(PrimTriPoints, {
+    /* inputs: */
+    {
+        "prim",
+        {"int", "trisID", "0"},
+    },
+    /* outputs: */
+    {
+        "points",
+    },
+    /* params: */
+    {
+    },
+    /* category: */
+    {
+        "WBTest",
+    }});
 
 
 struct DictEraseItem : zeno::INode {
@@ -519,11 +235,22 @@ struct DictEraseItem : zeno::INode {
     }
 };
 ZENDEFNODE(DictEraseItem, {
-                              {{"DictObject", "dict"}, {"string", "key"}},
-                              {{"DictObject", "dict"}},
-                              {},
-                              {"dict"},
-                          });
+    /* inputs: */
+    {
+        {"DictObject", "dict"},
+        {"string", "key"},
+    },
+    /* outputs: */
+    {
+        {"DictObject", "dict"},
+    },
+    /* params: */
+    {
+    },
+    /* category: */
+    {
+        "WBTest",
+    }});
 
 
 struct str2num : INode {
@@ -560,18 +287,23 @@ struct str2num : INode {
         set_output("num", std::move(obj));
     }
 };
-ZENDEFNODE(str2num, {{ /* inputs: */
-                        {"enum float int", "type", "int"},
-                        {"string", "str", "0"},
-                    }, { /* outputs: */
-                        "num",
-                    }, { /* params: */
-                    }, { /* category: */
-                        "WBTest",
-                    }});
-
-
-
+ZENDEFNODE(str2num, {
+    /* inputs: */
+    {
+        {"enum float int", "type", "int"},
+        {"string", "str", "0"},
+    },
+    /* outputs: */
+    {
+        "num",
+    },
+    /* params: */
+    {
+    },
+    /* category: */
+    {
+        "WBTest",
+    }});
 
 
 template <class T>
@@ -602,39 +334,40 @@ struct VisPrimAttrValue_Modify : INode {
 
         std::vector<PrimitiveObject *> outprim2;
         std::vector<std::shared_ptr<PrimitiveObject>> outprim;
+
         if (textDecoration) {
             prim->verts.attr_visit<AttrAcceptAll>(attrName, [&](auto const &attarr) {
-                outprim.resize(attarr.size());
-                outprim2.resize(attarr.size());
+              outprim.resize(attarr.size());
+              outprim2.resize(attarr.size());
 #pragma omp parallel for
-                for (int i = 0; i < attarr.size(); i++) {
-                    auto value = attarr[i];
-                    auto pos = prim->verts[i];
-                    std::ostringstream ss;
-                    ss << std::setprecision(precision);
-                    number_printer<std::decay_t<decltype(value)>>{}(ss, value);
-                    auto str = ss.str();
+              for (int i = 0; i < attarr.size(); i++) {
+                  auto value = attarr[i];
+                  auto pos = prim->verts[i];
+                  std::ostringstream ss;
+                  ss << std::setprecision(precision);
+                  number_printer<std::decay_t<decltype(value)>>{}(ss, value);
+                  auto str = ss.str();
 
-                    auto numprim = std::static_pointer_cast<PrimitiveObject>(
-                        getThisGraph()
-                            ->callTempNode("LoadStringPrim",
-                                           {
-                                               {"triangulate", std::make_shared<NumericObject>((bool)0)},
-                                               {"decodeUVs", std::make_shared<NumericObject>((bool)0)},
-                                               {"str", objectFromLiterial(str)},
-                                           })
-                            .at("prim"));
-                    //auto numprim = std::make_shared<PrimitiveObject>();
-                    for (int j = 0; j < numprim->verts.size(); j++) {
-                        auto &v = numprim->verts[j];
-                        //                        v = (v + vec3f(dotDecoration ? 0.5f : 0.3f, 0.15f, 0.0f)) * scale + pos;
-                        v = (v + vec3f(dotDecoration ? 0.5f : 0.3f, 0.15f, 0.0f));
-                        v[2] *= 0.1;
-                        v = v * scale + pos;
-                    }
-                    outprim2[i] = numprim.get();
-                    outprim[i] = std::move(numprim);
-                }
+                  auto numprim = std::static_pointer_cast<PrimitiveObject>(
+                      getThisGraph()
+                          ->callTempNode("LoadStringPrim",
+                                         {
+                                             {"triangulate", std::make_shared<NumericObject>((bool)0)},
+                                             {"decodeUVs", std::make_shared<NumericObject>((bool)0)},
+                                             {"str", objectFromLiterial(str)},
+                                         })
+                          .at("prim"));
+                  //auto numprim = std::make_shared<PrimitiveObject>();
+                  for (int j = 0; j < numprim->verts.size(); j++) {
+                      auto &v = numprim->verts[j];
+                      // v = (v + vec3f(dotDecoration ? 0.5f : 0.3f, 0.15f, 0.0f)) * scale + pos;
+                      v = (v + vec3f(dotDecoration ? 0.5f : 0.3f, 0.15f, 0.0f));
+                      v[2] *= 0.1;
+                      v = v * scale + pos;
+                  }
+                  outprim2[i] = numprim.get();
+                  outprim[i] = std::move(numprim);
+              }
             });
         }
         if (dotDecoration) {
@@ -667,25 +400,25 @@ struct VisPrimAttrValue_Modify : INode {
         }
 
         auto retprim = primMerge(outprim2);
+
         set_output("outPrim", std::move(retprim));
     }
 };
-ZENO_DEFNODE(VisPrimAttrValue_Modify)
-({
-    {
-        {"prim"},
-        {"string", "attrName", "pos"},
-        {"float", "scale", "0.05"},
-        {"int", "precision", "3"},
-        {"bool", "includeSelf", "0"},
-        {"bool", "dotDecoration", "0"},
-    },
-    {
-        {"outPrim"},
-    },
-    {},
-    {"WBTest"},
-});
+ZENO_DEFNODE(VisPrimAttrValue_Modify)( {
+     {
+         {"prim"},
+         {"string", "attrName", "pos"},
+         {"float", "scale", "0.05"},
+         {"int", "precision", "3"},
+         {"bool", "includeSelf", "0"},
+         {"bool", "dotDecoration", "0"},
+     },
+     {
+         {"outPrim"},
+     },
+     {},
+     {"WBTest"},
+    });
 
 
 // FDGather.cpp
@@ -739,21 +472,29 @@ struct Grid2DSample_M : zeno::INode {
     }
 };
 ZENDEFNODE(Grid2DSample_M, {
-                               {{"PrimitiveObject", "grid"},
-                                {"PrimitiveObject", "grid2"},
-                                {"int", "nx", "1"},
-                                {"int", "ny", "1"},
-                                {"float", "h", "1"},
-                                {"vec3f", "bmin", "0,0,0"},
-                                {"string", "channel", "pos"},
-                                {"string", "sampleBy", "pos"}},
-                               {{"PrimitiveObject", "prim"}},
-                               {
-                                   {"enum vec3 float", "attrT", "float"},
-                               },
-                               {"zenofx"},
-                           });
-
+    /* inputs: */
+    {
+        {"PrimitiveObject", "grid"},
+        {"PrimitiveObject", "grid2"},
+        {"int", "nx", "1"},
+        {"int", "ny", "1"},
+        {"float", "h", "1"},
+        {"vec3f", "bmin", "0,0,0"},
+        {"string", "channel", "pos"},
+        {"string", "sampleBy", "pos"},
+    },
+    /* outputs: */
+    {
+        {"PrimitiveObject", "prim"},
+    },
+    /* params: */
+    {
+        {"enum vec3 float", "attrT", "float"},
+    },
+    /* category: */
+    {
+        "WBTest",
+    }});
 
 
 } // namespace
