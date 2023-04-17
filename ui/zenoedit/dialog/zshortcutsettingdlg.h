@@ -1,7 +1,6 @@
 #pragma once
 
-#include <QDialog>
-#include <QTableWidget>
+#include <QtWidgets>
 
 struct ShortCutInfo;
 
@@ -18,11 +17,11 @@ signals:
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
 
-  private:
+private:
     void initUI();
     void initShortCutInfos();
 
-  private:
+private:
     QTableWidget *m_pTableWidget;
-    ShortCutInfo *m_shortCutInfos;
+    QVector<ShortCutInfo> m_shortCutInfos;
 };

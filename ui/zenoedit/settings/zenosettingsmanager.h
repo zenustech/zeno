@@ -1,31 +1,16 @@
 #ifndef __ZENOSETTINGS_MANAGR__
 #define __ZENOSETTINGS_MANAGER__
 
-#include <QVariant>
-#include <QObject>
-#include <QSettings>
+#include <QtWidgets>
 #include "settings/zsettings.h"
+
 
 struct ShortCutInfo {
     QString key;
     QString desc;
     QString shortcut;
-    ShortCutInfo *next = nullptr;
-    ~ShortCutInfo() {
-        delete next;
-        next = nullptr;
-    }
-    void clone(const ShortCutInfo *other) {
-        key = other->key;
-        desc = other->desc;
-        shortcut = other->shortcut;
-        if (other->next) {
-            next = new ShortCutInfo();
-            next->clone(other->next);
-        }
-    }
 };
-Q_DECLARE_METATYPE(ShortCutInfo*)
+Q_DECLARE_METATYPE(ShortCutInfo)
 
 class ZenoSettingsManager : public QObject
 {
@@ -37,20 +22,19 @@ public:
 
     const int getShortCut(const QString &key);
     void setShortCut(const QString &key, const QString &value);
+    void writeShortCutInfo(const QVector<ShortCutInfo> &infos);
 
-    void writeShortCutInfo(const ShortCutInfo*infos);
-
-  signals:
+signals:
     void valueChanged(QString zsName);
 
 private:
     void initShortCutInfos();
-    void getDefaultShortCutInfo(ShortCutInfo **info);
-    ShortCutInfo *getShortCutInfo(const QString &key, ShortCutInfo *info);
+    QVector<ShortCutInfo> getDefaultShortCutInfo();
+    int getShortCutInfo(const QString &key, ShortCutInfo &info);
 
-  private:
+private:
     ZenoSettingsManager(QObject *parent = nullptr);
-    ShortCutInfo *m_shortCutInfos;
+    QVector<ShortCutInfo> m_shortCutInfos;
 };
 
 

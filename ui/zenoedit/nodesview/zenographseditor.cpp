@@ -503,7 +503,12 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 const SEARCH_RESULT& res = results[i];
                 const QString &subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
 
-                bool bFocusOnError = ZenoSettingsManager::GetInstance().getValue(zsTraceErrorNode).toBool();
+                QVariant varFocusOnError = ZenoSettingsManager::GetInstance().getValue(zsTraceErrorNode);
+
+                bool bFocusOnError = true;
+                if (varFocusOnError.type() == QVariant::Bool) {
+                    bFocusOnError = varFocusOnError.toBool();
+                }
                 if (bFocusOnError)
                 {
                     activateTab(subgName, "", objId, true);
