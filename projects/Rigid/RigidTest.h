@@ -93,6 +93,20 @@ struct BulletObject : zeno::IObject {
         return false;
     }
 
+    btTransform getChildTransform(btCollisionShape *chShape) const {
+        btCompoundShape *btcpdShape = nullptr;
+        if (auto shape = colShape->shape.get(); shape->isCompound())
+            btcpdShape = (btCompoundShape *)shape;
+        if (btcpdShape == nullptr)
+            throw std::runtime_error("not able to locate child transform within a non-compound shape!");
+
+        for (int ch = 0; ch != btcpdShape->getNumChildShapes(); ++ch) {
+            if (btcpdShape->getChildShape(ch) == chShape) {
+                return btcpdShape->getChildTransform(ch);
+            }
+        }
+        throw std::runtime_error("unable to locate the child transform within this rigid body!");
+    }
     void setTransform(const btTransform &trans) {
         static_cast<btCollisionObject *>(body.get())->getWorldTransform() = trans;
     }

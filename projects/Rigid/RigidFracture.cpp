@@ -1072,10 +1072,11 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                     const auto &cpd = prevGroups[cpdNo];
                     if (cpd->isCompound()) {
                         /// @note trans
+                        auto chTrans = cpd->getChildTransform(rb->body->getCollisionShape());
                         // rb trans = cpd trans * rb trans (either got from cpd child trans or directly from rb)
-                        rb->setTransform(cpd->getWorldTransform() * rb->getWorldTransform());
+                        rb->setTransform(cpd->getWorldTransform() * chTrans);
                         /// @note linear vel
-                        rb->body->setLinearVelocity(cpd->body->getVelocityInLocalPoint(rb->getWorldTransform().getOrigin()));
+                        rb->body->setLinearVelocity(cpd->body->getVelocityInLocalPoint(chTrans.getOrigin()));
                         /// @note angular vel
                         rb->body->setAngularVelocity(cpd->body->getAngularVelocity());
                     }
