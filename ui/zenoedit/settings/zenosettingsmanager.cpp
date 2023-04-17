@@ -101,6 +101,8 @@ void ZenoSettingsManager::writeShortCutInfo(const ShortCutInfo *info)
     writer.EndArray();
     QString strJson = QString::fromUtf8(str.GetString());
     setValue(zsShortCut, strJson);
+    delete defaultInfos;
+    defaultInfos = nullptr;
 }
 void ZenoSettingsManager::initShortCutInfos() 
 {

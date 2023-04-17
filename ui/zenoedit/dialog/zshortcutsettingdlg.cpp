@@ -11,13 +11,16 @@
 
 ZShortCutSettingDlg::ZShortCutSettingDlg(QWidget *parent) :
     QDialog(parent), 
-    m_pTableWidget(nullptr) 
+    m_pTableWidget(nullptr),
+    m_shortCutInfos(nullptr) 
 {
     initUI();
 }
 
 ZShortCutSettingDlg::~ZShortCutSettingDlg()
 {
+    delete m_shortCutInfos;
+    m_shortCutInfos = nullptr;
 }
 
 bool ZShortCutSettingDlg::eventFilter(QObject *obj, QEvent *event) 
