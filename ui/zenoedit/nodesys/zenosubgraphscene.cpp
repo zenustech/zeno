@@ -140,6 +140,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new CameraNode(params, 0);
     }
+    else if (descName == "LightNode")
+    {
+        return new LightNode(params, 0);
+    }
     else if (descName == "MakeCamera")
     {
         return new CameraNode(params, 1);
