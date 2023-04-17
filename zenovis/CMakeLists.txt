@@ -28,6 +28,13 @@ if (ZENO_ENABLE_OPTIX)
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPTIX)
 endif()
 
+# the check of cuda display device fails on some user env, and the 
+# reasons are still unknown, but it seems that we can skip it.
+option(ZENO_SKIP_CUDA_DISPLAY_CHECK "Skip CUDA Device Check" OFF)
+if (ZENO_SKIP_CUDA_DISPLAY_CHECK)
+    target_compile_definitions(zenovis PRIVATE -DZENO_SKIP_CUDA_DISPLAY_CHECK)
+endif()
+
 if (ZENO_ENABLE_OPENMP)
     find_package(OpenMP)
     if (TARGET OpenMP::OpenMP_CXX)

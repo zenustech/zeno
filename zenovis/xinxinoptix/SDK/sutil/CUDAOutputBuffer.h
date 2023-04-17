@@ -120,7 +120,11 @@ CUDAOutputBuffer<PIXEL_FORMAT>::CUDAOutputBuffer( CUDAOutputBufferType type, int
         CUDA_CHECK( cudaDeviceGetAttribute( &is_display_device, cudaDevAttrKernelExecTimeout, current_device ) );
         if( !is_display_device )
         {
+#ifdef ZENO_SKIP_CUDA_DISPLAY_CHECK
+            zeno::log_error("ERROR: NVIDIA card not found!\nGL interop is only available on display device, please use display device for optimal performance.");
+#else
             throw sutil::Exception("ERROR: NVIDIA card not found!\nGL interop is only available on display device, please use display device for optimal performance.");
+#endif
         }
     }
     resize( width, height );
