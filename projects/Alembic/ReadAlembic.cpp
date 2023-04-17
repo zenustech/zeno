@@ -32,6 +32,22 @@ static int clamp(int i, int _min, int _max) {
     }
 }
 
+static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySamplePtr marr, bool read_done) {
+    if (marr == nullptr) {
+        return;
+    }
+    if (marr->size() > 0) {
+        if (!read_done) {
+            log_info("[alembic] totally {} velocities", marr->size());
+        }
+        auto &parr = prim->add_attr<vec3f>("v");
+        for (size_t i = 0; i < marr->size(); i++) {
+            auto const &val = (*marr)[i];
+            parr[i] = {val[0], val[1], val[2]};
+        }
+    }
+}
+
 static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
@@ -54,18 +70,8 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     }
 
-    if (auto marr = mesamp.getVelocities()) {
-        if (marr->size() > 0) {
-            if (!read_done) {
-                log_info("[alembic] totally {} velocities", marr->size());
-            }
-            auto &parr = prim->add_attr<vec3f>("vel");
-            for (size_t i = 0; i < marr->size(); i++) {
-                auto const &val = (*marr)[i];
-                parr[i] = {val[0], val[1], val[2]};
-            }
-        }
-    }
+    read_velocity(prim, mesamp.getVelocities(), read_done);
+
     if (auto marr = mesamp.getFaceIndices()) {
         if (!read_done) {
             log_info("[alembic] totally {} face indices", marr->size());
@@ -146,14 +152,27 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
             PropertyHeader p = arbattrs.getPropertyHeader(i);
             if (IFloatGeomParam::matches(p)) {
                 IFloatGeomParam param(arbattrs, p.getName());
-                if (!read_done) {
-                    log_info("[alembic] float attr {}.", p.getName());
-                }
+
                 IFloatGeomParam::Sample samp = param.getIndexedValue();
-                if (prim->verts.size() == samp.getVals()->size()) {
+                std::vector<float> data;
+                data.resize(samp.getVals()->size());
+                for (auto i = 0; i < samp.getVals()->size(); i++) {
+                    data[i] = samp.getVals()->get()[i];
+                }
+                if (!read_done) {
+                    log_info("[alembic] float attr {}, len {}.", p.getName(), data.size());
+                }
+
+                if (prim->verts.size() == data.size()) {
                     auto &attr = prim->add_attr<float>(p.getName());
                     for (auto i = 0; i < prim->verts.size(); i++) {
-                        attr[i] = samp.getVals()->get()[i];
+                        attr[i] = data[i];
+                    }
+                }
+                else if (prim->verts.size() * 3 == data.size()) {
+                    auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                    for (auto i = 0; i < prim->verts.size(); i++) {
+                        attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
                     }
                 }
             }
@@ -229,18 +248,7 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
             parr.emplace_back(val[0], val[1], val[2]);
         }
     }
-    if (auto marr = mesamp.getVelocities()) {
-        if (marr->size() > 0) {
-            if (!read_done) {
-                log_info("[alembic] totally {} velocities", marr->size());
-            }
-            auto &parr = prim->add_attr<vec3f>("vel");
-            for (size_t i = 0; i < marr->size(); i++) {
-                auto const &val = (*marr)[i];
-                parr[i] = {val[0], val[1], val[2]};
-            }
-        }
-    }
+    read_velocity(prim, mesamp.getVelocities(), read_done);
     return prim;
 }
 
@@ -264,18 +272,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
             parr.emplace_back(val[0], val[1], val[2]);
         }
     }
-    if (auto marr = mesamp.getVelocities()) {
-        if (marr->size() > 0) {
-            if (!read_done) {
-                log_info("[alembic] totally {} velocities", marr->size());
-            }
-            auto &parr = prim->add_attr<vec3f>("vel");
-            for (size_t i = 0; i < marr->size(); i++) {
-                auto const &val = (*marr)[i];
-                parr[i] = {val[0], val[1], val[2]};
-            }
-        }
-    }
+    read_velocity(prim, mesamp.getVelocities(), read_done);
     {
         auto &parr = prim->lines;
         auto numCurves = mesamp.getCurvesNumVertices()->size();

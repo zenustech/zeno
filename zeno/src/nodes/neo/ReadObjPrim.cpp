@@ -102,6 +102,20 @@ std::shared_ptr<PrimitiveObject> parse_obj(std::vector<char> &&bin) {
         it = nnit;
     }
 
+    {
+        int vert_count = prim->verts.size();
+        for (auto &i : prim->loops) {
+            if (i < 0) {
+                i += vert_count + 1;
+            }
+        }
+        for (auto &i : loop_uvs) {
+            if (i < 0) {
+                i += vert_count + 1;
+            }
+        }
+    }
+
     if (loop_uvs.size() == prim->loops.size()) {
         prim->loops.add_attr<int>("uvs") = std::move(loop_uvs);
     }

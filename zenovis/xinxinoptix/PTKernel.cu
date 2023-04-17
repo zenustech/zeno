@@ -1,10 +1,12 @@
 #include <optix.h>
 #include <cuda/random.h>
-#include <sutil/vec_math.h>
 #include <cuda/helpers.h>
+#include <sutil/vec_math.h>
+
 #include "optixPathTracer.h"
 #include "TraceStuff.h"
 #include "DisneyBSDF.h"
+#include "zxxglslvec.h"
 
 extern "C" {
 __constant__ Params params;
@@ -41,7 +43,6 @@ vec3 ACESFitted(vec3 color, float gamma)
     vec3 v2 = vec3(0.07600, 0.90834, 0.01566);
     vec3 v3 = vec3(0.02840, 0.13383, 0.83777);
     color = vec3(dot(color, v1), dot(color, v2), dot(color, v3));
-
     // Apply RRT and ODT
     color = RRTAndODTFit(color);
 
@@ -57,6 +58,7 @@ vec3 ACESFitted(vec3 color, float gamma)
 
     return color;
 }
+
 extern "C" __global__ void __raygen__rg()
 {
     const int    w   = params.width;
@@ -73,6 +75,7 @@ extern "C" __global__ void __raygen__rg()
 
     float3 result = make_float3( 0.0f );
     int i = params.samples_per_launch;
+
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
@@ -88,11 +91,18 @@ extern "C" __global__ void __raygen__rg()
         float r0 = r01.x * 2.0f* M_PIf;
         float r1 = r01.y * aperture * aperture;
         r1 = sqrt(r1);
-        float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
-        float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
 
-        RadiancePRD prd;
-        prd.emitted      = make_float3(0.f);
+        // float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
+        // float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
+   
+        float3 eye_shake     = r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up); // Camera local space
+
+        float3 ray_origin    = cam.eye + eye_shake;
+        float3 ray_direction = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
+               ray_direction = normalize(ray_direction);
+
+        RadiancePRD prd; 
+        prd.emission     = make_float3(0.f);
         prd.radiance     = make_float3(0.f);
         prd.attenuation  = make_float3(1.f);
         prd.attenuation2 = make_float3(1.f);
@@ -112,15 +122,20 @@ extern "C" __global__ void __raygen__rg()
         prd.isSS = false;
         prd.direction = ray_direction;
         prd.curMatIdx = 0;
-        for( ;; )
+        prd.test_distance = false;
+
+        auto tmin = prd.trace_tmin;
+        auto ray_mask = prd._mask_;
+
+        for(;;)
         {
-            traceRadiance(
-                    params.handle,
-                    ray_origin,
-                    ray_direction,
-                    1e-5f,  // tmin       // TODO: smarter offset
-                    prd.maxDistance,  // tmax
-                    &prd );
+            traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
+
+            tmin = prd.trace_tmin;
+            prd.trace_tmin = 0;
+
+            ray_mask = prd._mask_; 
+            prd._mask_ = EverythingMask;
 
 //            vec3 radiance = vec3(prd.radiance);
 //            vec3 oldradiance = radiance;
@@ -137,27 +152,40 @@ extern "C" __global__ void __raygen__rg()
 
 //            prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
 
-            //result += prd.emitted;
-            if(prd.countEmitted==false || prd.depth>0)
+            if(prd.countEmitted==false || prd.depth>0) {
                 result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
+                // fire without smoke requires this line to work.
+            }
+
+            prd.radiance = make_float3(0);
+            prd.emission = make_float3(0);
+
+            if (ray_mask != EverythingMask && ray_mask != NothingMask) {
+                //ray_origin = prd.origin;
+                //ray_direction = prd.direction;
+                continue; // trace again with same parameters but different mask
+            }
+
             if(prd.countEmitted==true && prd.depth>0){
                 prd.done = true;
             }
+
             if( prd.done || params.simpleRender==true){
-                
                 break;
             }
-            if(prd.depth>4){
+
+            if(prd.depth>8){
                 //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
                 float RRprob = clamp(length(prd.attenuation),0.1, 0.95);
                 if(rnd(prd.seed) > RRprob || prd.depth>16){
                     prd.done=true;
-
+                } else {
+                    prd.attenuation = prd.attenuation / (RRprob + 1e-5);
                 }
-                prd.attenuation = prd.attenuation / (RRprob + 1e-5);
             }
             if(prd.countEmitted == true)
                 prd.passed = true;
+
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
             // if(prd.passed == false)
@@ -169,9 +197,9 @@ extern "C" __global__ void __raygen__rg()
     }
     while( --i );
 
+    float3         accum_color  = result / static_cast<float>( params.samples_per_launch );
     const uint3    launch_index = optixGetLaunchIndex();
     const unsigned int image_index  = launch_index.y * params.width + launch_index.x;
-    float3         accum_color  = result / static_cast<float>( params.samples_per_launch );
 
     if( subframe_index > 0 )
     {
@@ -179,16 +207,16 @@ extern "C" __global__ void __raygen__rg()
         const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
         accum_color = lerp( accum_color_prev, accum_color, a );
     }
+
     /*if (launch_index.x == 0) {*/
         /*printf("%p\n", params.accum_buffer);*/
         /*printf("%p\n", params.frame_buffer);*/
     /*}*/
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
-    vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
+    //vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
     float3 out_color = accum_color;
     params.frame_buffer[ image_index ] = make_color ( out_color );
 }
-
 
 extern "C" __global__ void __miss__radiance()
 {
@@ -217,6 +245,7 @@ extern "C" __global__ void __miss__radiance()
         prd->done      = true;
         return;
     }
+
     prd->attenuation *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->attenuation2 *= DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
@@ -229,5 +258,14 @@ extern "C" __global__ void __miss__radiance()
     if(length(prd->attenuation)<1e-7f){
         prd->done = true;
     }
+}
 
+extern "C" __global__ void __miss__occlusion()
+{
+    setPayloadOcclusion( false );
+}
+
+extern "C" __global__ void __closesthit__occlusion()
+{
+    setPayloadOcclusion( true );
 }

@@ -9,8 +9,7 @@ namespace zeno {
 ///
 UnifiedIPCSystem::PrimitiveHandle::PrimitiveHandle(std::shared_ptr<tiles_t> elesPtr_,
                                                    ZenoParticles::category_e category)
-    : zsprimPtr{}, modelsPtr{}, vertsPtr{}, elesPtr{elesPtr_},
-      etemp{elesPtr_->get_allocator(), {{"He", 6 * 6}}, elesPtr_->size()}, surfTrisPtr{}, surfEdgesPtr{},
+    : zsprimPtr{}, modelsPtr{}, vertsPtr{}, elesPtr{elesPtr_}, surfTrisPtr{}, surfEdgesPtr{},
       surfVertsPtr{}, svtemp{}, vOffset{0}, sfOffset{0}, seOffset{0}, svOffset{0}, category{category} {
     ;
 }
@@ -18,7 +17,6 @@ UnifiedIPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::s
                                                    std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<2>)
     : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel(), [](void *) {}},
       vertsPtr{&zsprim.getParticles<true>(), [](void *) {}}, elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}},
-      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 6 * 6}}, zsprim.numElements()},
       surfTrisPtr{&zsprim.getQuadraturePoints(), [](void *) {}},  // this is fake!
       surfEdgesPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, // all elements are surface edges
       surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
@@ -37,7 +35,6 @@ UnifiedIPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::s
                                                    std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<3>)
     : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel(), [](void *) {}},
       vertsPtr{&zsprim.getParticles<true>(), [](void *) {}}, elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}},
-      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 9 * 9}}, zsprim.numElements()},
       surfTrisPtr{&zsprim.getQuadraturePoints(), [](void *) {}}, surfEdgesPtr{&zsprim[ZenoParticles::s_surfEdgeTag],
                                                                               [](void *) {}},
       surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
@@ -55,14 +52,12 @@ UnifiedIPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::s
     if (zsprim.hasAuxData(ZenoParticles::s_bendingEdgeTag)) {
         bendingEdgesPtr =
             std::shared_ptr<ZenoParticles::particles_t>(&zsprim[ZenoParticles::s_bendingEdgeTag], [](void *) {});
-        btemp = typename ZenoParticles::dtiles_t{etemp.get_allocator(), {{"Hb", 12 * 12}}, bendingEdgesPtr->size()};
     }
 }
 UnifiedIPCSystem::PrimitiveHandle::PrimitiveHandle(ZenoParticles &zsprim, std::size_t &vOffset, std::size_t &sfOffset,
                                                    std::size_t &seOffset, std::size_t &svOffset, zs::wrapv<4>)
     : zsprimPtr{&zsprim, [](void *) {}}, modelsPtr{&zsprim.getModel(), [](void *) {}},
       vertsPtr{&zsprim.getParticles<true>(), [](void *) {}}, elesPtr{&zsprim.getQuadraturePoints(), [](void *) {}},
-      etemp{zsprim.getQuadraturePoints().get_allocator(), {{"He", 12 * 12}}, zsprim.numElements()},
       surfTrisPtr{&zsprim[ZenoParticles::s_surfTriTag], [](void *) {}},
       surfEdgesPtr{&zsprim[ZenoParticles::s_surfEdgeTag], [](void *) {}},
       surfVertsPtr{&zsprim[ZenoParticles::s_surfVertTag], [](void *) {}}, vOffset{vOffset},
@@ -335,10 +330,16 @@ void UnifiedIPCSystem::initializeSystemHessian(zs::CudaExecutionPolicy &pol) {
     linsys.spmat.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::false_c);
     linsys.spmat.localOrdering(pol, false_c);
     linsys.spmat._vals.resize(linsys.spmat.nnz());
+    /// @note full neighbor info required for MAS
+    linsys.neighbors = typename RM_CVREF_T(linsys)::spmat_t{vtemp.get_allocator(), (int)numDofs, (int)numDofs};
+    linsys.neighbors.build(pol, (int)numDofs, (int)numDofs, range(is), range(js), zs::true_c);
+    linsys.neighborInds = linsys.neighbors._inds;
     // no need to initialize (resize) linsys.dynHess (DynamicBuffer) here
 
-    /// @note make sure linsys.spmat/hess2/3/4 are all in valid state before calling this api
+#if USE_MAS
     linsys.initializePreconditioner(pol, *this); // 0
+#endif
+
 #if 0
     {
         puts("begin ordering checking");
@@ -390,7 +391,7 @@ void UnifiedIPCSystem::initKappa(zs::CudaExecutionPolicy &pol) {
     });
     // inertial + elasticity
     computeInertialPotentialGradient(pol, "p");
-    computeElasticGradientAndHessian(pol, "p", false);
+    computeElasticGradient(pol, "p");
     // contacts
     findCollisionConstraints(pol, dHat, xi);
     auto prevKappa = kappa;
@@ -519,9 +520,6 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
     // temporary buffers
     bvs = zs::Vector<bv_t>{vtemp.get_allocator(), vtemp.size()}; // this size is the upper bound
 
-    // inertial hessian
-    tempI = dtiles_t{vtemp.get_allocator(), {{"Hi", 9}}, coOffset};
-
 #if 0
     // connect vtemp with "dir", "grad"
     cgtemp = tiles_t{vtemp.get_allocator(),
@@ -558,12 +556,11 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
         }
     }
 
+    // exclusion mark should be done before IPC timestepping
     if (enableContact) {
         // check initial self intersections
         // including proximity pairs
         // do once
-        // markSelfIntersectionPrimitives(cudaPol);
-        markSelfIntersectionPrimitives(cudaPol, zs::true_c);
     }
 
     // output adaptive setups
@@ -585,6 +582,9 @@ void UnifiedIPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
     }
     exclBouSes = Vector<u8>{vtemp.get_allocator(), nBouSes};
     exclBouSts = Vector<u8>{vtemp.get_allocator(), nBouSts};
+
+    exclDofs = Vector<u8>{vtemp.get_allocator(), numDofs};
+    exclDofs.reset(0);
 
     meanEdgeLength = averageSurfEdgeLength(pol);
     meanSurfaceArea = averageSurfArea(pol);
@@ -692,7 +692,8 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
                 if (!asBoundary) {
                     BCorder = verts("BCorder", i);
                     BCtarget = verts.pack(dim_c<3>, "BCtarget", i);
-                    BCfixed = verts("BCfixed", i);
+                    if (verts.hasProperty("BCfixed"))
+                        BCfixed = verts("BCfixed", i);
                 }
                 vtemp("BCorder", voffset + i) = BCorder;
                 vtemp.tuple(dim_c<3>, "BCtarget", voffset + i) = BCtarget;

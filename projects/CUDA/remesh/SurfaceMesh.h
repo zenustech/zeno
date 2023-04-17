@@ -132,10 +132,9 @@ public:
     SurfaceMesh(const SurfaceMesh& rhs);
     ~SurfaceMesh();
 
-    int add_tri(const vec3i& vertices, bool add_lines);
+    int add_tri(const vec3i& vertices);
 
     size_t n_faces() const { return faces_size_ - deleted_faces_; }
-
 
     int halfedge(int v) const { return vconn_[v].halfedge_; }
     bool is_boundary_v(int v) const {
@@ -155,8 +154,12 @@ public:
         return hconn_[h].prev_halfedge_;
     }
     inline void set_next_halfedge(int h, int nh) {
-        hconn_[h].next_halfedge_ = nh;
-        hconn_[nh].prev_halfedge_ = h;
+        if (h != PMP_MAX_INDEX) {
+            hconn_[h].next_halfedge_ = nh;
+        }
+        if (nh != PMP_MAX_INDEX) {
+            hconn_[nh].prev_halfedge_ = h;
+        }
     }
 
     VertexAroundVertexCirculator vertices(int v) const {

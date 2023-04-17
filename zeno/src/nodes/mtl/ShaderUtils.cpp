@@ -37,7 +37,7 @@ struct ShaderLinearFit : ShaderNodeClone<ShaderLinearFit> {
         auto exp = "(" + in + " - " + inMin + ") / (" + inMax + " - " + inMin + ")";
         if (get_param<bool>("clamped"))
             exp = "clamp(" + exp + ", 0.0, 1.0)";
-        em->emitCode(exp + " * (" + outMax + " - " + outMin + ") + " + outMax);
+        em->emitCode(exp + " * (" + outMax + " - " + outMin + ") + " + outMin);
     }
 };
 
@@ -58,5 +58,68 @@ ZENDEFNODE(ShaderLinearFit, {
     {"shader"},
 });
 
+struct ShaderVecConvert : ShaderNodeClone<ShaderVecConvert> {
+    int ty{};
+
+    virtual int determineType(EmissionPass *em) override {
+        auto _type = get_param<std::string>("type");
+        em->determineType(get_input("in").get());
+        if (_type == "vec2") {
+            ty = 2;
+        }
+        else if (_type == "vec3") {
+            ty = 3;
+        }
+        else if (_type == "vec4") {
+            ty = 4;
+        }
+        return ty;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        std::string exp = em->determineExpr(get_input("in").get());
+        em->emitCode(em->funcName("convertTo" + std::to_string(ty)) + "(" + exp + ")");
+    }
+};
+
+ZENDEFNODE(ShaderVecConvert, {
+    {
+        { "float", "in", "0"},
+    },
+    {"out"},
+    {
+        {"enum vec2 vec3 vec4", "type", "vec3"},
+    },
+    {"shader"},
+});
+
+struct ShaderNormalMap : ShaderNodeClone<ShaderNormalMap> {
+    virtual int determineType(EmissionPass *em) override {
+        auto in1 = get_input("normalTexel");
+        auto in2 = get_input("scale");
+        em->determineType(in1.get());
+        em->determineType(in2.get());
+        return 3;
+    }
+
+    virtual void emitCode(EmissionPass *em) override {
+        auto in1 = em->determineExpr(get_input("normalTexel").get());
+        auto in2 = em->determineExpr(get_input("scale").get());
+
+        return em->emitCode(em->funcName("normalmap") + "(" + in1 + ", " + in2 + ")");
+    }
+};
+
+ZENDEFNODE(ShaderNormalMap, {
+    {
+        {"vec3f", "normalTexel", "0.5,0.5,1.0"},
+        {"float", "scale", "1"},
+    },
+    {
+        {"vec3f", "out"},
+    },
+    {},
+    {"shader"},
+});
 
 }

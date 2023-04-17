@@ -237,6 +237,16 @@ inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, Op o
     cudaPol.sync(shouldSync);
     return ret.getVal();
 }
+template <typename T, typename Op = std::plus<T>>
+inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, T e, Op op) {
+    using namespace zs;
+    Vector<T> ret{res.get_allocator(), 1};
+    bool shouldSync = cudaPol.shouldSync();
+    cudaPol.sync(true);
+    zs::reduce(cudaPol, std::begin(res), std::end(res), std::begin(ret), e, op);
+    cudaPol.sync(shouldSync);
+    return ret.getVal();
+}
 template <typename TT, typename T, typename AllocatorT>
 inline TT dot(zs::CudaExecutionPolicy &cudaPol, zs::wrapt<TT>, zs::TileVector<T, 32, AllocatorT> &vertData,
               const zs::SmallString tag0, const zs::SmallString tag1) {

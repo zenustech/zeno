@@ -18,6 +18,8 @@
 #include "../SolverUtils.cuh"
 #endif
 
+#define USE_MAS 0
+
 namespace zeno {
 
 struct UnifiedIPCSystem : IObject {
@@ -121,7 +123,6 @@ struct UnifiedIPCSystem : IObject {
         std::shared_ptr<ZenoParticles::dtiles_t> vertsPtr;
         std::shared_ptr<ZenoParticles::particles_t> elesPtr;
         std::shared_ptr<ZenoParticles::particles_t> bendingEdgesPtr;
-        typename ZenoParticles::dtiles_t etemp, btemp; // elasticity, bending
         std::shared_ptr<ZenoParticles::particles_t> surfTrisPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfEdgesPtr;
         std::shared_ptr<ZenoParticles::particles_t> surfVertsPtr;
@@ -179,9 +180,6 @@ struct UnifiedIPCSystem : IObject {
     auto getCollisionCnts() const {
         return zs::make_tuple(csPT.getCount(), csEE.getCount());
     }
-    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
-    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type);
-    void findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
     void findBoundaryCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi);
@@ -190,14 +188,10 @@ struct UnifiedIPCSystem : IObject {
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
     void findBoundaryCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi);
     // linear system setup
-    void computeInertialAndGravityPotentialGradient(zs::CudaExecutionPolicy &cudaPol);
     void computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPol,
                                           const zs::SmallString &gTag); // for kappaMin
-    void computeElasticGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
-                                          bool includeHessian = true);
-    void computeBendingGradientAndHessian(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag,
-                                          bool includeHessian = true);
-    void computeBoundaryBarrierGradientAndHessian(zs::CudaExecutionPolicy &pol, bool includeHessian = true);
+    void computeElasticGradient(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString &gTag);
+    void computeBoundaryBarrierGradient(zs::CudaExecutionPolicy &pol);
     void computeBarrierGradient(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
     void computeFrictionBarrierGradient(zs::CudaExecutionPolicy &pol, const zs::SmallString &gTag);
 
@@ -223,6 +217,7 @@ struct UnifiedIPCSystem : IObject {
 
     void groundIntersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T &stepSize);
     void intersectionFreeStepsize(zs::CudaExecutionPolicy &pol, T xi, T &stepSize);
+    T collisionEnergy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     T energy(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
@@ -274,7 +269,6 @@ struct UnifiedIPCSystem : IObject {
     const dtiles_t *coVerts;
     const tiles_t *coLowResVerts, *coEdges, *coEles;
     dtiles_t vtemp;
-    dtiles_t tempI;
 
     /// @brief collision
     template <typename ValT>
@@ -382,6 +376,7 @@ struct UnifiedIPCSystem : IObject {
     DynamicBuffer<pair4_t> FEE;
     dtiles_t fricEE;
 
+    zs::Vector<zs::u8> exclDofs;                                 // mark dof collision exclusion
     zs::Vector<zs::u8> exclSes, exclSts, exclBouSes, exclBouSts; // mark exclusion
     // end contacts
 
@@ -429,32 +424,77 @@ struct UnifiedIPCSystem : IObject {
         using spmat_t = zs::SparseMatrix<mat3, true>;
         using dyn_hess_t = zs::tuple<pair_t, mat3>;
 
-        using hess2_t = HessianPiece<2, T>;
-        using hess3_t = HessianPiece<3, T>;
-        using hess4_t = HessianPiece<4, T>;
-
         /// @brief dynamic part, mainly for collision constraints
         bool initialized = false;
+
+        // using hess2_t = HessianPiece<2, T>;
+        // using hess3_t = HessianPiece<3, T>;
+        // using hess4_t = HessianPiece<4, T>;
         /// @note initialization: hess.init(allocator, size)
         /// @note maintain: hess.reset(false, 0)    ->  hess.increaseCount(size)    ->  hess.hess/hess.inds
-        HessianPiece<2, T> hess2;
-        HessianPiece<3, T> hess3;
-        HessianPiece<4, T> hess4;
+        // HessianPiece<2, T> hess2;
+        // HessianPiece<3, T> hess3;
+        // HessianPiece<4, T> hess4;
 
         DynamicBuffer<dyn_hess_t> dynHess;
         /// @brief inherent part
-        spmat_t spmat{}; // _ptrs, _inds, _vals
+        spmat_t spmat{};     // _ptrs, _inds, _vals
+        spmat_t neighbors{}; // _ptrs, _inds, _vals
+        RM_CVREF_T(neighbors._inds) neighborInds;
         /// @brief preconditioner
         int nLevels;
         int nTotalEntries;
-        zs::Vector<zs::vec<T, 96, 96>> Pm;
+        zs::Vector<zs::vec<T, 96, 96>> Pm, inversePm;
         zs::Vector<zs::vec<T, 3>> Rm, Zm;
+
+        int totalNodes;
+        int levelnum;
+        int totalNumberClusters;
+        zs::vec<int, 2> h_clevelSize;
+
+        zs::Vector<zs::vec<int, 2>> d_levelSize;
+        zs::Vector<int> d_coarseSpaceTables;
+        zs::Vector<int> d_prefixOriginal;
+        zs::Vector<int> d_prefixSumOriginal;
+        zs::Vector<int> d_goingNext;
+        zs::Vector<int> d_denseLevel;
+        zs::Vector<zs::vec<int, 4>> d_coarseTable;
+
+        zs::Vector<unsigned int> d_fineConnectMask;
+        zs::Vector<unsigned int> d_nextConnectMask;
+        zs::Vector<unsigned int> d_nextPrefix;
+        zs::Vector<unsigned int> d_nextPrefixSum;
+
         RM_CVREF_T(spmat._ptrs) traversed;
 
         void initializePreconditioner(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem &system);
         int buildPreconditioner(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem &system);
         void precondition(zs::CudaExecutionPolicy &pol, dtiles_t &vtemp, const zs::SmallString srcTag,
                           const zs::SmallString dstTag);
+
+        void computeNumLevels(int vertNum);
+        //void initPreconditioner(int vertNum, int totalNeighborNum, int4* m_collisonPairs);
+
+        void BuildConnectMaskL0();
+        void PreparePrefixSumL0();
+
+        void BuildLevel1();
+        void BuildConnectMaskLx(int level);
+        void NextLevelCluster(int level);
+        void PrefixSumLx(int level);
+        void ComputeNextLevel(int level);
+        void AggregationKernel();
+
+        int ReorderRealtime(zs::CudaExecutionPolicy &pol, int dynNum);
+        void PrepareHessian();
+
+        void BuildCollisionConnection(zs::CudaExecutionPolicy &pol, zs::Vector<unsigned int> &connectionMsk,
+                                      zs::Vector<int> &coarseTableSpace, int level);
+
+        void BuildMultiLevelR(const double3 *R);
+        void SchwarzLocalXSym();
+
+        void CollectFinalZ(double3 *Z);
     };
     template <zs::execspace_e space, typename T_>
     struct SystemHessianView {

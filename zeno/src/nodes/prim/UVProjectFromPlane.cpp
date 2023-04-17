@@ -215,7 +215,7 @@ std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path) {
     }
     scope_exit delData = [=] { stbi_image_free(data); };
     auto img = std::make_shared<PrimitiveObject>();
-    img->verts.resize(w * h * n);
+    img->verts.resize(w * h);
     if (n == 3) {
         std::memcpy(img->verts.data(), data, w * h * n * sizeof(float));
     } else if (n == 4) {
