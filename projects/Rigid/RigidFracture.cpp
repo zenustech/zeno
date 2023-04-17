@@ -50,9 +50,13 @@ T get_value(std::shared_ptr<IObject> obj, const std::string &key) {
     return obj->userData().get<NumericObject>(key)->get<T>();
 }
 template <typename T>
-void set_value(std::shared_ptr<IObject> obj, const std::string &key, const T &value) {
+void set_value(IObject *obj, const std::string &key, const T &value) {
     auto v = std::make_shared<NumericObject>(value);
     obj->userData().set(key, std::move(v));
+}
+template <typename T>
+void set_value(std::shared_ptr<IObject> obj, const std::string &key, const T &value) {
+    set_value(obj.get(), key, value);
 }
 
 // moment of inertia
@@ -1039,6 +1043,7 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
             if (tab.insert(fa) < 0) // already inserted
                 isRbCompound[vi] = true;
         });
+
         // map rigid body indices to target compound indices
         std::vector<int> rbDstCompId(nrbs);
         pol(range(nrbs), [&fas, &rbDstCompId, tab = proxy<space>(tab)](int rbi) mutable {
@@ -1055,18 +1060,35 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         ///
 
         ///
-        /// @note the output BulletObject list
-        ///
-        std::shared_ptr<ListObject> groupList;
+        /// @brief update compound transform to rbs
         if (rblist->userData().has("compounds")) {
-            groupList = get_attrib<ListObject>(rblist, "compounds");
+            // std::vector<std::shared_ptr<BulletObject>>
+            auto prevGroups = rblist->userData().get<ListObject>("compounds")->get<BulletObject>();
             /// TBD: update rigid body transforms if exit the compounds
-            groupList->arr.resize(ncompounds);
-        } else {
-            groupList = std::make_shared<ListObject>();
-            groupList->arr.resize(ncompounds);
-            set_attrib<ListObject>(rblist, "compounds", groupList);
+            pol(range(nrbs), [&](int rbi) {
+                auto rb = rbs[rbi];
+                if (rb->userData().has("cpd_no")) {
+                    auto cpdNo = get_value<int>(rb, "cpd_no");
+                    const auto &cpd = prevGroups[cpdNo];
+                    if (cpd->isCompound()) {
+                        // rb trans = cpd trans * rb trans (either got from cpd child trans or directly from rb)
+                    }
+                }
+            });
         }
+        /// @note the output BulletObject list
+        std::shared_ptr<ListObject> groupList;
+        groupList = std::make_shared<ListObject>();
+        groupList->arr.resize(ncompounds);
+        set_attrib<ListObject>(rblist, "compounds", groupList);
+
+        ///
+        ///
+        /// @brief maintain info
+        ///
+        ///
+        pol(zip(rbs, rbDstCompId),
+            [](std::shared_ptr<BulletObject> rb, int cpdNo) { set_value<int>(rb, "cpd_no", cpdNo); });
 
         /// @note isolated rigid bodies are delegated to this BulletObject list here!
         // determine compound or not pass on rbs that are does not belong in any compound
@@ -1096,6 +1118,7 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 } else
                     consMarks[k] = 0;
             });
+
         std::vector<int> consOffsets(ncons + 1);
         exclusive_scan(pol, std::begin(consMarks), std::end(consMarks), std::begin(consOffsets));
         // filter actual constraints in effect
