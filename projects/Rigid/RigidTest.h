@@ -1,5 +1,5 @@
-#include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
+#include <zeno/zeno.h>
 
 // bullet basics
 #include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
@@ -11,23 +11,22 @@
 #include <btBulletDynamicsCommon.h>
 
 // multibody dynamcis
+#include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
+#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
 #include <BulletDynamics/Featherstone/btMultiBody.h>
-#include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>
-#include <BulletDynamics/Featherstone/btMultiBodyLinkCollider.h>
 #include <BulletDynamics/Featherstone/btMultiBodyConstraint.h>
-#include <BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h>
-#include <BulletDynamics/Featherstone/btMultiBodySphericalJointLimit.h>
-#include <BulletDynamics/Featherstone/btMultiBodySphericalJointMotor.h>
+#include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>
 #include <BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h>
 #include <BulletDynamics/Featherstone/btMultiBodyGearConstraint.h>
+#include <BulletDynamics/Featherstone/btMultiBodyJointFeedback.h>
+#include <BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h>
 #include <BulletDynamics/Featherstone/btMultiBodyJointMotor.h>
+#include <BulletDynamics/Featherstone/btMultiBodyLinkCollider.h>
+#include <BulletDynamics/Featherstone/btMultiBodyMLCPConstraintSolver.h>
 #include <BulletDynamics/Featherstone/btMultiBodyPoint2Point.h>
 #include <BulletDynamics/Featherstone/btMultiBodySliderConstraint.h>
-#include <BulletDynamics/Featherstone/btMultiBodyMLCPConstraintSolver.h>
-#include "BulletDynamics/MLCPSolvers/btSolveProjectedGaussSeidel.h"
-#include "BulletDynamics/MLCPSolvers/btDantzigSolver.h"
-#include <BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h>
-#include <BulletDynamics/Featherstone/btMultiBodyJointFeedback.h>
+#include <BulletDynamics/Featherstone/btMultiBodySphericalJointLimit.h>
+#include <BulletDynamics/Featherstone/btMultiBodySphericalJointMotor.h>
 
 #include <iostream>
 
@@ -44,11 +43,11 @@ struct BulletTriangleMesh : zeno::IObject {
     btTriangleMesh mesh;
 };
 
-struct BulletMultiBodyLinkCollider : zeno::IObject{
+struct BulletMultiBodyLinkCollider : zeno::IObject {
     // it is a child class of btCollisionObject.
     std::unique_ptr<btMultiBodyLinkCollider> linkCollider;
 
-    BulletMultiBodyLinkCollider(btMultiBody *multiBody, int link){
+    BulletMultiBodyLinkCollider(btMultiBody *multiBody, int link) {
         linkCollider = std::make_unique<btMultiBodyLinkCollider>(multiBody, link);
     }
 };
@@ -62,23 +61,20 @@ struct BulletCollisionShape : zeno::IObject {
         return false;
     }
 
-    BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape)
-        : shape(std::move(shape)){
-
+    BulletCollisionShape(std::unique_ptr<btCollisionShape> &&shape) : shape(std::move(shape)) {
     }
 };
 
 struct BulletCompoundShape : BulletCollisionShape {
-	std::vector<std::shared_ptr<BulletCollisionShape>> children;
+    std::vector<std::shared_ptr<BulletCollisionShape>> children;
 
-	using BulletCollisionShape::BulletCollisionShape;
+    using BulletCollisionShape::BulletCollisionShape;
 
-	void addChild(btTransform const &trans,
-	              std::shared_ptr<BulletCollisionShape> child) {
-		auto comShape = static_cast<btCompoundShape *>(shape.get());
-		comShape->addChildShape(trans, child->shape.get());
-		children.push_back(std::move(child));
-	}
+    void addChild(btTransform const &trans, std::shared_ptr<BulletCollisionShape> child) {
+        auto comShape = static_cast<btCompoundShape *>(shape.get());
+        comShape->addChildShape(trans, child->shape.get());
+        children.push_back(std::move(child));
+    }
 };
 
 struct BulletObject : zeno::IObject {
@@ -97,11 +93,14 @@ struct BulletObject : zeno::IObject {
         return false;
     }
 
+    void setTransform(const btTransform &trans) {
+        static_cast<btCollisionObject *>(body.get())->getWorldTransform() = trans;
+    }
     btTransform getWorldTransform() const {
         btTransform trans;
         if (body && body->getMotionState())
             body->getMotionState()->getWorldTransform(trans);
-        else 
+        else
             trans = static_cast<btCollisionObject *>(body.get())->getWorldTransform();
         return trans;
     }
@@ -112,11 +111,8 @@ struct BulletObject : zeno::IObject {
         return localInertia;
     }
 
-    BulletObject(btScalar mass_,
-                 btTransform const &trans,
-                 std::shared_ptr<BulletCollisionShape> colShape_)
-        : mass(mass_), colShape(std::move(colShape_))
-    {
+    BulletObject(btScalar mass_, btTransform const &trans, std::shared_ptr<BulletCollisionShape> colShape_)
+        : mass(mass_), colShape(std::move(colShape_)) {
         btVector3 localInertia(0, 0, 0);
         if (mass != 0)
             colShape->shape->calculateLocalInertia(mass, localInertia);
@@ -126,12 +122,9 @@ struct BulletObject : zeno::IObject {
         body = std::make_unique<btRigidBody>(rbInfo);
     }
 
-    BulletObject(btScalar mass_,
-                 btTransform const &trans,
-                 btVector3 const &inertia,
+    BulletObject(btScalar mass_, btTransform const &trans, btVector3 const &inertia,
                  std::shared_ptr<BulletCollisionShape> colShape_)
-        : mass(mass_), colShape(std::move(colShape_))
-    {
+        : mass(mass_), colShape(std::move(colShape_)) {
         myMotionState = std::make_unique<btDefaultMotionState>(trans);
         btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState.get(), colShape->shape.get(), inertia);
         body = std::make_unique<btRigidBody>(rbInfo);
@@ -144,47 +137,47 @@ struct BulletGlueCompoundShape : IObject {
         btTransform trans;
         std::shared_ptr<BulletCollisionShape> shape;
     };
-	std::vector<ChildData> children;
-	std::vector<std::shared_ptr<BulletObject>> objs;
-	std::vector<std::pair<int, int>> glues;
+    std::vector<ChildData> children;
+    std::vector<std::shared_ptr<BulletObject>> objs;
+    std::vector<std::pair<int, int>> glues;
 
     void clearChildren() {
         children.clear();
     }
 
-	void addChild(float mass, btTransform trans, std::shared_ptr<BulletCollisionShape> child) {
-		children.push_back({mass, std::move(trans), std::move(child)});
-	}
+    void addChild(float mass, btTransform trans, std::shared_ptr<BulletCollisionShape> child) {
+        children.push_back({mass, std::move(trans), std::move(child)});
+    }
 
-	void clearGlues() {
-		glues.clear();
-	}
+    void clearGlues() {
+        glues.clear();
+    }
 
-	void addGlue(int src, int dst) {
-		glues.emplace_back(src, dst);
-	}
+    void addGlue(int src, int dst) {
+        glues.emplace_back(src, dst);
+    }
 
-	void solveGlueToComps() {
-		std::vector<int> found(children.size());
-		for (int i = 0; i < found.size(); i++) {
-			found[i] = i;
-		}
-		auto find = [&] (int i) { // todo: zhxx optimize my djtesla 3q
-			while (i != found[i])
-				i = found[i];
-			return i;
-		};
-		for (auto const &[g1, g2]: glues) {
-			int f1 = find(g1);
-			int f2 = find(g2);
-			found[f2] = f1;
-		}
-		std::vector<int> island(children.size());
-		std::map<int, int> uniq;
-		for (int i = 0; i < found.size(); i++) {
-			auto [it, succ] = uniq.emplace(find(i), (int)uniq.size());
-			island[i] = it->second;
-		}
+    void solveGlueToComps() {
+        std::vector<int> found(children.size());
+        for (int i = 0; i < found.size(); i++) {
+            found[i] = i;
+        }
+        auto find = [&](int i) { // todo: zhxx optimize my djtesla 3q
+            while (i != found[i])
+                i = found[i];
+            return i;
+        };
+        for (auto const &[g1, g2] : glues) {
+            int f1 = find(g1);
+            int f2 = find(g2);
+            found[f2] = f1;
+        }
+        std::vector<int> island(children.size());
+        std::map<int, int> uniq;
+        for (int i = 0; i < found.size(); i++) {
+            auto [it, succ] = uniq.emplace(find(i), (int)uniq.size());
+            island[i] = it->second;
+        }
         struct CompData {
             float mass;
             btVector3 sumOrig;
@@ -214,7 +207,7 @@ struct BulletGlueCompoundShape : IObject {
 
             std::shared_ptr<BulletObject> finalizeChildren() {
                 auto avgOrig = sumOrig / mass;
-                for (auto const &tch: tempchs) {
+                for (auto const &tch : tempchs) {
                     btTransform tchtrans(tch.chBasis, tch.chOrig - avgOrig);
                     compShape->addChild(tchtrans, tch.shape);
                 }
@@ -225,15 +218,15 @@ struct BulletGlueCompoundShape : IObject {
             }
         };
         std::vector<CompData> comps(uniq.size());
-		for (int i = 0; i < children.size(); i++) {
-			comps[island[i]].addChild(children[i]);
-		}
+        for (int i = 0; i < children.size(); i++) {
+            comps[island[i]].addChild(children[i]);
+        }
         objs.clear();
         objs.resize(comps.size());
-		for (int i = 0; i < comps.size(); i++) {
+        for (int i = 0; i < comps.size(); i++) {
             objs[i] = comps[i].finalizeChildren();
-		}
-	}
+        }
+    }
 };
 
 struct BulletConstraintRelationship : zeno::IObject {
@@ -282,8 +275,7 @@ struct BulletConstraint : zeno::IObject {
     btVector3 pivot2;
 
     BulletConstraint(btRigidBody *obj1, btRigidBody *obj2, std::string constraintType)
-        : obj1(obj1), obj2(obj2), constraintType(constraintType)
-    {
+        : obj1(obj1), obj2(obj2), constraintType(constraintType) {
 
         // a bad example
         //constraint = std::make_unique<btTypedConstraint>(D6_CONSTRAINT_TYPE, *obj1->body, *obj2->body);
@@ -292,124 +284,108 @@ struct BulletConstraint : zeno::IObject {
             //frame2.setIdentity();
             frame1 = obj1->getWorldTransform().inverse(); // local identity
             frame2 = obj2->getWorldTransform().inverse();
-            obj1->getWorldTransform().getBasis().setEulerZYX(0,0,0);
-            obj2->getWorldTransform().getBasis().setEulerZYX(0,0,0);
-            frame1.getBasis().setEulerZYX(0,0,SIMD_PI/2);
-            frame2.getBasis().setEulerZYX(0,0,SIMD_PI/2);
+            obj1->getWorldTransform().getBasis().setEulerZYX(0, 0, 0);
+            obj2->getWorldTransform().getBasis().setEulerZYX(0, 0, 0);
+            frame1.getBasis().setEulerZYX(0, 0, SIMD_PI / 2);
+            frame2.getBasis().setEulerZYX(0, 0, SIMD_PI / 2);
             constraint = std::make_unique<btConeTwistConstraint>(*obj1, *obj2, frame1, frame2);
-        }
-        else if (constraintType == "Fixed") {
+        } else if (constraintType == "Fixed") {
             frame1 = obj1->getWorldTransform().inverse();
             frame2 = obj2->getWorldTransform().inverse();
             constraint = std::make_unique<btFixedConstraint>(*obj1, *obj2, frame1, frame2);
-        }
-        else if (constraintType == "Gear") {
+        } else if (constraintType == "Gear") {
             axis1.setValue(0, 1, 0);
             axis2.setValue(0, 1, 0);
             btScalar ratio;
-            ratio = (2-std::tan(SIMD_PI / 4.f)) / std::cos(SIMD_PI /4.f);
+            ratio = (2 - std::tan(SIMD_PI / 4.f)) / std::cos(SIMD_PI / 4.f);
             constraint = std::make_unique<btGearConstraint>(*obj1, *obj2, axis1, axis2, ratio);
-        }
-        else if (constraintType == "Generic6Dof") {
+        } else if (constraintType == "Generic6Dof") {
             frame1 = obj1->getWorldTransform(); // attach to the middle point
             frame2 = obj2->getWorldTransform();
 
-            auto mid_origin = (frame1.getOrigin() + frame2.getOrigin())/2;
+            auto mid_origin = (frame1.getOrigin() + frame2.getOrigin()) / 2;
             auto diff_origin1 = mid_origin - frame1.getOrigin();
             auto diff_origin2 = mid_origin - frame2.getOrigin();
             frame1.setOrigin(diff_origin1);
             frame2.setOrigin(diff_origin2);
             constraint = std::make_unique<btGeneric6DofConstraint>(*obj1, *obj2, frame1, frame2, false);
-        }
-        else if (constraintType == "Generic6DofSpring") {
+        } else if (constraintType == "Generic6DofSpring") {
             frame1 = obj1->getWorldTransform(); // attached to the child object
             frame2 = obj2->getWorldTransform();
             auto diff_origin = frame2.getOrigin() - frame1.getOrigin();
             frame1.setOrigin(diff_origin);
             constraint = std::make_unique<btGeneric6DofSpringConstraint>(*obj1, *obj2, frame1, frame2, false);
-        }
-        else if (constraintType == "Generic6DofSpring2") {
+        } else if (constraintType == "Generic6DofSpring2") {
             frame1 = obj1->getWorldTransform();
             frame2 = obj2->getWorldTransform();
             auto diff_origin = frame2.getOrigin() - frame1.getOrigin();
             frame1.setOrigin(diff_origin);
             frame2 = frame2.inverse();
             constraint = std::make_unique<btGeneric6DofSpring2Constraint>(*obj1, *obj2, frame1, frame2);
-        }
-        else if (constraintType == "Hinge") {
-//            axis1.setValue(0, 1, 0);
-//            axis2.setValue(0, 1, 0);
-//            pivot1.setValue(-5, 0, 0);
-//            pivot2.setValue(5, 0, 0);
+        } else if (constraintType == "Hinge") {
+            //            axis1.setValue(0, 1, 0);
+            //            axis2.setValue(0, 1, 0);
+            //            pivot1.setValue(-5, 0, 0);
+            //            pivot2.setValue(5, 0, 0);
             frame1 = obj1->getWorldTransform();
             frame2 = obj2->getWorldTransform();
-            auto mid_origin = (frame1.getOrigin() + frame2.getOrigin())/2;
+            auto mid_origin = (frame1.getOrigin() + frame2.getOrigin()) / 2;
             auto diff_origin1 = mid_origin - frame1.getOrigin();
             auto diff_origin2 = mid_origin - frame2.getOrigin();
             frame1.setOrigin(diff_origin1);
             frame2.setOrigin(diff_origin2);
             constraint = std::make_unique<btHingeConstraint>(*obj1, *obj2, frame1, frame2, false);
-        }
-        else if (constraintType == "Hinge2") {
+        } else if (constraintType == "Hinge2") {
             axis1.setValue(0, 1, 0);
             axis2.setValue(1, 0, 0);
             btVector3 anchor = obj2->getWorldTransform().getOrigin(); // attach to child
             constraint = std::make_unique<btHinge2Constraint>(*obj1, *obj2, anchor, axis1, axis2);
-        }
-        else if (constraintType == "Point2Point") {
+        } else if (constraintType == "Point2Point") {
             frame1 = obj1->getCenterOfMassTransform();
             frame2 = obj2->getCenterOfMassTransform();
-            auto mid_origin = (frame1.getOrigin() + frame2.getOrigin())/2;
+            auto mid_origin = (frame1.getOrigin() + frame2.getOrigin()) / 2;
             pivot1 = mid_origin - frame1.getOrigin();
             pivot2 = mid_origin - frame2.getOrigin();
 
             constraint = std::make_unique<btPoint2PointConstraint>(*obj1, *obj2, pivot1, pivot2);
-        }
-        else if (constraintType == "Slider") {
+        } else if (constraintType == "Slider") {
             frame1 = obj1->getWorldTransform().inverse();
             frame2 = obj2->getWorldTransform().inverse();
             constraint = std::make_unique<btSliderConstraint>(*obj1, *obj2, frame1, frame2, true);
-        }
-        else if (constraintType == "Universal") {
+        } else if (constraintType == "Universal") {
             axis1.setValue(1, 0, 0);
             axis2.setValue(0, 0, 1);
             frame1 = obj1->getWorldTransform();
             frame2 = obj2->getWorldTransform();
-            btVector3 anchor = (frame1.getOrigin() + frame2.getOrigin())/2;
+            btVector3 anchor = (frame1.getOrigin() + frame2.getOrigin()) / 2;
             constraint = std::make_unique<btUniversalConstraint>(*obj1, *obj2, anchor, axis1, axis2);
         }
     }
 
-    BulletConstraint(btRigidBody *obj1, std::string constraintType): obj1(obj1), constraintType(constraintType){
+    BulletConstraint(btRigidBody *obj1, std::string constraintType) : obj1(obj1), constraintType(constraintType) {
         if (constraintType == "ConeTwist") {
             //frame1.setIdentity();
             //frame2.setIdentity();
             frame1 = obj1->getWorldTransform().inverse(); // local identity
             constraint = std::make_unique<btConeTwistConstraint>(*obj1, frame1);
-        }
-        else if (constraintType == "Generic6Dof") {
+        } else if (constraintType == "Generic6Dof") {
             frame1 = obj1->getWorldTransform().inverse();
             constraint = std::make_unique<btGeneric6DofConstraint>(*obj1, frame1, false);
-        }
-        else if (constraintType == "Generic6DofSpring") {
+        } else if (constraintType == "Generic6DofSpring") {
             frame1 = obj1->getWorldTransform().inverse();
-            constraint = std::make_unique<btGeneric6DofSpringConstraint>(*obj1,  frame1, false);
-        }
-        else if (constraintType == "Generic6DofSpring2") {
+            constraint = std::make_unique<btGeneric6DofSpringConstraint>(*obj1, frame1, false);
+        } else if (constraintType == "Generic6DofSpring2") {
             frame1 = obj1->getWorldTransform().inverse();
             constraint = std::make_unique<btGeneric6DofSpring2Constraint>(*obj1, frame1);
-        }
-        else if (constraintType == "Hinge") {
+        } else if (constraintType == "Hinge") {
             //axis1.setValue(0, 1, 0);
             //pivot1.setValue(-2, 0, 0);
             frame1 = obj1->getCenterOfMassTransform().inverse();
-            constraint = std::make_unique<btHingeConstraint>(*obj1,  frame1, false);
-        }
-        else if (constraintType == "Point2Point") {
+            constraint = std::make_unique<btHingeConstraint>(*obj1, frame1, false);
+        } else if (constraintType == "Point2Point") {
             pivot1.setValue(1, -1, -1);
             constraint = std::make_unique<btPoint2PointConstraint>(*obj1, pivot1);
-        }
-        else if (constraintType == "Slider") {
+        } else if (constraintType == "Slider") {
             frame1 = obj1->getWorldTransform().inverse();
             constraint = std::make_unique<btSliderConstraint>(*obj1, frame1, true);
         }
@@ -453,8 +429,7 @@ struct BulletWorld : zeno::IObject {
         }
         solverPool = std::make_unique<btConstraintSolverPoolMt>(solversPtr.data(), solversPtr.size());
         dynamicsWorld = std::make_unique<btDiscreteDynamicsWorldMt>(
-            dispatcher.get(), broadphase.get(), solverPool.get(), solver.get(),
-            collisionConfiguration.get());
+            dispatcher.get(), broadphase.get(), solverPool.get(), solver.get(), collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
     }
 #else
@@ -479,9 +454,8 @@ struct BulletWorld : zeno::IObject {
         dispatcher = std::make_unique<btCollisionDispatcher>(collisionConfiguration.get());
         broadphase = std::make_unique<btDbvtBroadphase>();
         solver = std::make_unique<btSequentialImpulseConstraintSolver>();
-        dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(
-            dispatcher.get(), broadphase.get(), solver.get(),
-            collisionConfiguration.get());
+        dynamicsWorld = std::make_unique<btDiscreteDynamicsWorld>(dispatcher.get(), broadphase.get(), solver.get(),
+                                                                  collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -10, 0));
         zeno::log_debug("creating bullet world {}", (void *)this);
     }
@@ -503,13 +477,13 @@ struct BulletWorld : zeno::IObject {
         std::set<std::shared_ptr<BulletObject>> objSet;
         zeno::log_debug("setting object list len={}", objList.size());
         zeno::log_debug("existing object list len={}", objects.size());
-        for (auto const &object: objList) {
+        for (auto const &object : objList) {
             objSet.insert(object);
             if (objects.find(object) == objects.end()) {
                 addObject(std::move(object));
             }
         }
-        for (auto const &object: std::set(objects)) {
+        for (auto const &object : std::set(objects)) {
             if (objSet.find(object) == objSet.end()) {
                 removeObject(object);
             }
@@ -532,7 +506,7 @@ struct BulletWorld : zeno::IObject {
         std::set<std::shared_ptr<BulletConstraint>> consSet;
         zeno::log_debug("setting constraint list len={}", consList.size());
         zeno::log_debug("existing constraint list len={}", constraints.size());
-        for (auto const &constraint: consList) {
+        for (auto const &constraint : consList) {
             if (!constraint->constraint->isEnabled())
                 continue;
             consSet.insert(constraint);
@@ -540,7 +514,7 @@ struct BulletWorld : zeno::IObject {
                 addConstraint(std::move(constraint));
             }
         }
-        for (auto const &constraint: std::set(constraints)) {
+        for (auto const &constraint : std::set(constraints)) {
             if (consSet.find(constraint) == consSet.end()) {
                 removeConstraint(constraint);
             }
@@ -574,8 +548,8 @@ struct BulletWorld : zeno::IObject {
     void step(float dt = 1.f / 60.f, int steps = 1) {
         zeno::log_debug("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
-        for(int i=0;i<steps;i++)
-            dynamicsWorld->stepSimulation(dt/(float)steps, 1, dt / (float)steps);
+        for (int i = 0; i < steps; i++)
+            dynamicsWorld->stepSimulation(dt / (float)steps, 1, dt / (float)steps);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
@@ -607,14 +581,14 @@ struct BulletMultiBodyObject : zeno::IObject {
     bool fixedBase;
     bool canSleep;
     std::unique_ptr<btMultiBody> multibody;
-    btAlignedObjectArray<btMultiBodyJointFeedback*> jointFeedbacks;
+    btAlignedObjectArray<btMultiBodyJointFeedback *> jointFeedbacks;
 
-    BulletMultiBodyObject(btMultiBody * mb){
+    BulletMultiBodyObject(btMultiBody *mb) {
         multibody = std::unique_ptr<btMultiBody>(mb);
     }
 
-    BulletMultiBodyObject(int n_links, btScalar mass, btVector3 inertia, bool fixedBase, bool canSleep) : n_links(n_links), mass(mass), inertia(inertia), fixedBase(fixedBase), canSleep(canSleep)
-    {
+    BulletMultiBodyObject(int n_links, btScalar mass, btVector3 inertia, bool fixedBase, bool canSleep)
+        : n_links(n_links), mass(mass), inertia(inertia), fixedBase(fixedBase), canSleep(canSleep) {
         multibody = std::make_unique<btMultiBody>(n_links, mass, inertia, fixedBase, canSleep);
         multibody->setBaseWorldTransform(btTransform::getIdentity());
     }
@@ -638,23 +612,19 @@ struct BulletMultiBodyWorld : zeno::IObject {
 
         if (solverType == "SequentialImpulse") {
             solver = std::make_unique<btMultiBodyConstraintSolver>();
-        }
-        else if (solverType == "ProjectedGaussSeidel") {
+        } else if (solverType == "ProjectedGaussSeidel") {
             auto mlcp = std::make_unique<btSolveProjectedGaussSeidel>();
             solver = std::make_unique<btMultiBodyMLCPConstraintSolver>(mlcp.get());
-        }
-        else { // solverType == "Dantzig"
+        } else { // solverType == "Dantzig"
             auto mlcp = std::make_unique<btDantzigSolver>();
             solver = std::make_unique<btMultiBodyMLCPConstraintSolver>(mlcp.get());
         }
-        dynamicsWorld = std::make_unique<btMultiBodyDynamicsWorld>(
-            dispatcher.get(), broadphase.get(), solver.get(),
-            collisionConfiguration.get());
+        dynamicsWorld = std::make_unique<btMultiBodyDynamicsWorld>(dispatcher.get(), broadphase.get(), solver.get(),
+                                                                   collisionConfiguration.get());
         dynamicsWorld->setGravity(btVector3(0, -9.81, 0));
 
         zeno::log_debug("creating bullet multibody dynamics world {}", (void *)this);
     }
-
 };
 
 struct BulletMultiBodyConstraint : zeno::IObject {
@@ -671,43 +641,43 @@ struct BulletMultiBodyConstraint : zeno::IObject {
     btMatrix3x3 frameA;
     btMatrix3x3 frameB;
 
-    BulletMultiBodyConstraint(btMultiBody * bodyA, btMultiBody * bodyB, int linkA, int linkB, std::string constraintType):
-        bodyA(bodyA), bodyB(bodyB), linkA(linkA), linkB(linkB), constraintType(constraintType){
-        if (constraintType == "Slider"){
-            constraint = std::make_unique<btMultiBodySliderConstraint>(bodyA, linkA, bodyB, linkB, pivotA, pivotB, frameA, frameB, jointAxis);
-        }
-        else if (constraintType == "Point2Point"){
+    BulletMultiBodyConstraint(btMultiBody *bodyA, btMultiBody *bodyB, int linkA, int linkB, std::string constraintType)
+        : bodyA(bodyA), bodyB(bodyB), linkA(linkA), linkB(linkB), constraintType(constraintType) {
+        if (constraintType == "Slider") {
+            constraint = std::make_unique<btMultiBodySliderConstraint>(bodyA, linkA, bodyB, linkB, pivotA, pivotB,
+                                                                       frameA, frameB, jointAxis);
+        } else if (constraintType == "Point2Point") {
             constraint = std::make_unique<btMultiBodyPoint2Point>(bodyA, linkA, bodyB, linkB, pivotA, pivotB);
-        }
-        else if (constraintType == "Gear") {
-            constraint = std::make_unique<btMultiBodyGearConstraint>(bodyA, linkA, bodyB, linkB, pivotA, pivotB, frameA, frameB);
-        }
-        else if (constraintType == "Fixed") {
-            constraint = std::make_unique<btMultiBodyFixedConstraint>(bodyA, linkA, bodyB, linkB, pivotA, pivotB, frameA, frameB);
+        } else if (constraintType == "Gear") {
+            constraint =
+                std::make_unique<btMultiBodyGearConstraint>(bodyA, linkA, bodyB, linkB, pivotA, pivotB, frameA, frameB);
+        } else if (constraintType == "Fixed") {
+            constraint = std::make_unique<btMultiBodyFixedConstraint>(bodyA, linkA, bodyB, linkB, pivotA, pivotB,
+                                                                      frameA, frameB);
         }
     }
 
-    BulletMultiBodyConstraint(btMultiBody * bodyA, int linkA, std::string constraintType, std::map<std::string, btScalar> config):
-        bodyA(bodyA), linkA(linkA), constraintType(constraintType), config(config){
+    BulletMultiBodyConstraint(btMultiBody *bodyA, int linkA, std::string constraintType,
+                              std::map<std::string, btScalar> config)
+        : bodyA(bodyA), linkA(linkA), constraintType(constraintType), config(config) {
         if (constraintType == "Spherical") {
             btScalar swingxRange = config["jointLowerLimit"];
             btScalar swingyRange = config["jointUpperLimit"];
             btScalar twistRange = config["twistLimit"];
             btScalar maxAppliedImpulse = config["jointMaxForce"];
-            constraint = std::make_unique<btMultiBodySphericalJointLimit>(bodyA, linkA, swingxRange, swingyRange, twistRange, maxAppliedImpulse);
-        }
-        else if (constraintType == "Default") {
+            constraint = std::make_unique<btMultiBodySphericalJointLimit>(bodyA, linkA, swingxRange, swingyRange,
+                                                                          twistRange, maxAppliedImpulse);
+        } else if (constraintType == "Default") {
             btScalar lower = config["jointLowerLimit"];
             btScalar upper = config["jointUpperLimit"];
             constraint = std::make_unique<btMultiBodyJointLimitConstraint>(bodyA, linkA, lower, upper);
-        }
-        else if (constraintType == "DefaultMotor") {
+        } else if (constraintType == "DefaultMotor") {
             int linkDof = (int)config["linkDof"];
             btScalar desiredVelocity = config["desiredVelocity"];
             btScalar maxMotorImpulse = config["jointMaxForce"];
-            constraint = std::make_unique<btMultiBodyJointMotor>(bodyA, linkA, linkDof, desiredVelocity, maxMotorImpulse);
-        }
-        else if (constraintType == "SphericalMotor") {
+            constraint =
+                std::make_unique<btMultiBodyJointMotor>(bodyA, linkA, linkDof, desiredVelocity, maxMotorImpulse);
+        } else if (constraintType == "SphericalMotor") {
             btScalar maxMotorImpulse = config["jointMaxForce"];
             constraint = std::make_unique<btMultiBodySphericalJointMotor>(bodyA, linkA, maxMotorImpulse);
         }
@@ -717,10 +687,10 @@ struct BulletMultiBodyConstraint : zeno::IObject {
 struct BulletMultiBodyJointMotor : zeno::IObject {
     std::unique_ptr<btMultiBodyJointMotor> jointMotor;
 
-    BulletMultiBodyJointMotor(btMultiBody* mb, int linkIndex, int linkDof, btScalar desiredVelocity, btScalar maxMotorImpulse){
+    BulletMultiBodyJointMotor(btMultiBody *mb, int linkIndex, int linkDof, btScalar desiredVelocity,
+                              btScalar maxMotorImpulse) {
         jointMotor = std::make_unique<btMultiBodyJointMotor>(mb, linkIndex, linkDof, desiredVelocity, maxMotorImpulse);
     }
 };
-
 
 #endif //ZENO_RIGIDTEST_H
