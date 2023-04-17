@@ -1,11 +1,14 @@
 #include "zeno/unreal/UnrealTool.h"
 #include "msgpack/msgpack.h"
+#include "zeno/types/DummyObject.h"
+#include "zeno/unreal/ZenoObjectExactor.h"
+
 #include <cstdarg>
+#include <iostream>
 #include <map>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/SubnetNode.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <iostream>
 
 #define PROC_INPUT_ARGS                                                      \
     typedef std::pair<const char *, zeno::zany> ZPair;                       \
@@ -175,3 +178,57 @@ zeno::SimpleCharBuffer zeno::Run_Mesh(zeno::Graph *graph, SimpleCharBuffer input
 
     return nullptr;
 }
+
+zeno::unreal::ZenoObjectExactorManager &zeno::unreal::ZenoObjectExactorManager::Get() {
+    static ZenoObjectExactorManager sZenoObjectExactorManager;
+    return sZenoObjectExactorManager;
+}
+
+using EParamType = zeno::unreal::EParamType;
+
+void zeno::unreal::ZenoObjectExactorManager::Register(EParamType type,
+                                                      std::function<std::shared_ptr<IObject>(const std::any&)> provider)
+{
+    dispatchMap.try_emplace(type, provider);
+}
+
+std::shared_ptr<zeno::IObject> zeno::unreal::ZenoObjectExactorManager::Exact(EParamType type, const std::any &data) {
+    return dispatchMap[type](data);
+}
+
+template <EParamType Type>
+struct ZenoObjectExactor {};
+
+#define REGISTER_ZENO_OBJECT_EXACTOR(ParamType) static struct StaticInitForZenoObjectExactorWith##ParamType { \
+        StaticInitForZenoObjectExactorWith##ParamType() {                                                    \
+            zeno::unreal::ZenoObjectExactorManager::Get().Register(EParamType::ParamType, ZenoObjectExactor<EParamType::ParamType>::Exact);\
+        }\
+    } sStaticInitForZenoObjectExactorWith##ParamType;
+
+template <>
+struct ZenoObjectExactor<EParamType::Float> {
+    static std::shared_ptr<zeno::IObject> Exact(const std::any& value) {
+        const float data = std::any_cast<float>(value);
+        return std::make_shared<zeno::NumericObject>(data);
+    }
+};
+REGISTER_ZENO_OBJECT_EXACTOR(Float);
+
+template <>
+struct ZenoObjectExactor<EParamType::Integer> {
+    static std::shared_ptr<zeno::IObject> Exact(const std::any& value) {
+        const int32_t data = std::any_cast<int32_t>(value);
+        return std::make_shared<zeno::NumericObject>(data);
+    }
+};
+REGISTER_ZENO_OBJECT_EXACTOR(Integer);
+
+template <>
+struct ZenoObjectExactor<EParamType::Invalid> {
+    static std::shared_ptr<zeno::IObject> Exact(const std::any& value) {
+        return std::make_shared<zeno::DummyObject>();
+    }
+};
+REGISTER_ZENO_OBJECT_EXACTOR(Invalid);
+
+#undef REGISTER_ZENO_OBJECT_EXACTOR

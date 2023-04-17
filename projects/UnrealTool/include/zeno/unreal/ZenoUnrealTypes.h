@@ -11,60 +11,6 @@
 
 namespace zeno::unreal {
 
-struct GenericFieldVisitor {
-    explicit GenericFieldVisitor(rapidjson::Document::AllocatorType& allocator);
-
-    template <typename T>
-    rapidjson::Value operator()(const std::vector<T>& data) const {
-        rapidjson::Value value(rapidjson::kArrayType);
-
-        for (float i : data) {
-            value.PushBack(i, allocator);
-        }
-
-        return value;
-    }
-
-    template <typename ValueType, size_t Size>
-    rapidjson::Value operator()(const std::vector<vec<Size, ValueType>>& data) const {
-        rapidjson::Value value(rapidjson::kArrayType);
-
-        for (const auto& i : data) {
-            value.PushBack(operator()(i), allocator);
-        }
-
-        return value;
-    }
-
-    template <typename ValueType, size_t Size>
-    rapidjson::Value operator()(const vec<Size, ValueType>& data) const {
-        rapidjson::Value value(rapidjson::kArrayType);
-
-        for (int i = 0; i < Size; ++i) {
-            value.PushBack(data[i], allocator);
-        }
-
-        return value;
-    }
-
-private:
-    rapidjson::Document::AllocatorType& allocator;
-};
-
-
-class Serializable {
-
-protected:
-    template <typename T>
-    rapidjson::Value SerializeField(const T& field, rapidjson::Document::AllocatorType& allocator) const {
-        return GenericFieldVisitor(allocator)(field);
-    }
-
-public:
-    virtual SimpleCharBuffer Serialize() = 0;
-    virtual int8_t Deserialize(const char* json) = 0;
-};
-
 struct AnyNumeric {
     std::string data_;
 

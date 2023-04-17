@@ -1,14 +1,6 @@
 #include "zeno/unreal/ZenoUnrealTypes.h"
-#include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
-#include <rapidjson/prettywriter.h>
 #include <variant>
-
-using namespace rapidjson;
-
-zeno::unreal::GenericFieldVisitor::GenericFieldVisitor(MemoryPoolAllocator<CrtAllocator>& InAllocator)
-    : allocator(InAllocator)
-{}
 
 zeno::SimpleCharBuffer::SimpleCharBuffer(const char *InChar, size_t Size) {
     length = Size + 1;
