@@ -7,6 +7,7 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release \
     -DZENO_WITH_ZenoFX:BOOL=ON \
     -DZENO_ENABLE_OPTIX:BOOL=ON \
     -DZENO_WITH_FBX:BOOL=ON \
+    -DZENO_WITH_MeshSubdiv:BOOL=ON \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
 
 # cmake -B build -DCMAKE_BUILD_TYPE=Release \

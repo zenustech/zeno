@@ -35,6 +35,13 @@ struct vec4{
 
 struct vec3{
     float x, y, z;
+
+    __forceinline__ __device__ float operator[](unsigned int index) const {
+        auto ptr= &this->x;
+        ptr += index;
+        return *ptr;
+    }
+
     __forceinline__ __device__ vec3(const float3 &_v)
     {
         x = _v.x;

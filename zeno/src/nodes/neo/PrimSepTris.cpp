@@ -204,9 +204,16 @@ ZENO_API void primSepTriangles(PrimitiveObject *prim, bool smoothNormal, bool ke
     }
 
     if (keepTriFaces) {
+        auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
+        auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
+        auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+        auto &uv = prim->attr<vec3f>("uv");
         prim->tris.resize(v.size() / 3);
         for (int i = 0; i < prim->tris.size(); i++) {
             prim->tris[i] = {i * 3, i * 3 + 1, i * 3 + 2};
+            uv0[i] = uv[i * 3];
+            uv1[i] = uv[i * 3 + 1];
+            uv2[i] = uv[i * 3 + 2];
         }
     }
 }
