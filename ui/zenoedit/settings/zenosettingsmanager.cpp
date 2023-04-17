@@ -51,7 +51,10 @@ QVariant ZenoSettingsManager::getValue(const QString& zsName) const
 
 const int ZenoSettingsManager::getShortCut(const QString &key) 
 {
-    QKeySequence keySeq = QKeySequence(getShortCutInfo(key).shortcut);
+    ShortCutInfo *info = getShortCutInfo(key, m_shortCutInfos);
+    if (!info)
+        return Qt::Key_unknown;
+    QKeySequence keySeq = QKeySequence(info->shortcut);
     int ret = 0;
     for (int i = 0; i < keySeq.count(); i++) {
         ret += keySeq[i];
@@ -61,13 +64,71 @@ const int ZenoSettingsManager::getShortCut(const QString &key)
 
 void ZenoSettingsManager::setShortCut(const QString &key, const QString &value) 
 {
-    ShortCutInfo &info = getShortCutInfo(key);
-    info.shortcut = value;
-    emit valueChanged(key);
+    ShortCutInfo *info = getShortCutInfo(key, m_shortCutInfos);
+    if (info) 
+    {
+        info->shortcut = value;
+        emit valueChanged(key);
+    }
 }
 
-void ZenoSettingsManager::initShortCutInfos() {
-    m_shortCutInfos = {
+void ZenoSettingsManager::writeShortCutInfo(const ShortCutInfo *info) 
+{
+    ShortCutInfo *defaultInfos;
+    getDefaultShortCutInfo(&defaultInfos);
+    rapidjson::StringBuffer str;
+    PRETTY_WRITER writer(str);
+    writer.StartArray();
+    bool bChanged = false;
+    while (info) {
+        ShortCutInfo *value = getShortCutInfo(info->key, m_shortCutInfos);
+        if (info->shortcut != value->shortcut) {
+            setShortCut(info->key, info->shortcut);
+        }
+        value = getShortCutInfo(info->key, defaultInfos);
+        if (info->shortcut == value->shortcut) {
+            info = info->next;
+            continue;
+        }
+        writer.StartObject();
+        writer.Key("key");
+        writer.String(info->key.toUtf8());
+        writer.Key("shortcut");
+        writer.String(info->shortcut.toUtf8());
+        writer.EndObject();
+        info = info->next;
+    }
+    writer.EndArray();
+    QString strJson = QString::fromUtf8(str.GetString());
+    setValue(zsShortCut, strJson);
+    delete defaultInfos;
+    defaultInfos = nullptr;
+}
+void ZenoSettingsManager::initShortCutInfos() 
+{
+    getDefaultShortCutInfo(&m_shortCutInfos);
+    QSettings settings(zsCompanyName, zsEditor);
+    QVariant value = settings.value(zsShortCut);
+    rapidjson::Document doc;
+    doc.Parse(value.toByteArray());
+
+    if (doc.IsArray()) {
+        auto array = doc.GetArray();
+        int rowCount = array.Size();
+        for (int row = 0; row < rowCount; row++) {
+            QString key = array[row]["key"].GetString();
+            QString shortcut = array[row]["shortcut"].GetString();
+            ShortCutInfo *info = getShortCutInfo(key, m_shortCutInfos);
+            if (info) {
+                info->shortcut = shortcut;
+            }
+        }
+    }
+}
+void ZenoSettingsManager::getDefaultShortCutInfo(ShortCutInfo **info) 
+{
+    QVector<ShortCutInfo> infoVect;
+    infoVect = {
         {ShortCut_Save, QObject::tr("Save"), "Ctrl+S"},
         {ShortCut_SaveAs, QObject::tr("Save As"), "Ctrl+Shift+S"},
         {ShortCut_New_File, QObject::tr("New File"), "Ctrl+N"},
@@ -90,7 +151,7 @@ void ZenoSettingsManager::initShortCutInfos() {
         {ShortCut_Import, QObject::tr("Import"), "Ctrl+Shift+O"},
         {ShortCut_Export_Graph, QObject::tr("Export Graph"), "Ctrl+Shift+E"},
         {ShortCut_NewNode, QObject::tr("New Node"), "Tab"},
-        {ShortCut_MovingHandler, QObject::tr("Translational Handler"), "T"},
+        {ShortCut_MovingHandler, QObject::tr("Moving Handler"), "T"},
         {ShortCut_RevolvingHandler, QObject::tr("Rotating Handler"), "R"},
         {ShortCut_ScalingHandler, QObject::tr("Scaling Handler"), "E"},
         {ShortCut_CoordSys, QObject::tr("CoordSys"), "M"},
@@ -106,31 +167,28 @@ void ZenoSettingsManager::initShortCutInfos() {
         {ShortCut_UpwardView, QObject::tr("Upward View"), "Ctrl+7"},
         {ShortCut_FloatPanel, QObject::tr("Float Panel"), "P"},
     };
-    QSettings settings(zsCompanyName, zsEditor);
-    QVariant value = settings.value(zsShortCut);
-    rapidjson::Document doc;
-    doc.Parse(value.toByteArray());
 
-    if (doc.IsArray()) {
-        auto array = doc.GetArray();
-        int rowCount = array.Size();
-        for (int row = 0; row < rowCount; row++) {
-            QString key = array[row]["key"].GetString();
-            QString shortcut = array[row]["shortcut"].GetString();
-            ShortCutInfo &info = getShortCutInfo(key);
-            if (info.shortcut != shortcut) {
-                info.shortcut = shortcut;
-            }
-        }
-    }
-}
-
-ShortCutInfo& ZenoSettingsManager::getShortCutInfo(const QString &key) 
-{
-    for (auto &info : m_shortCutInfos) 
+    ShortCutInfo *tmp = new ShortCutInfo();
+    *info = tmp;
+    for (auto item : infoVect)
     {
-        if (info.key == key)
-            return info;
+        *tmp = item;
+        tmp->next = new ShortCutInfo();
+        tmp = tmp->next;
     }
-    return ShortCutInfo();
+    tmp = nullptr;
+}
+ShortCutInfo* ZenoSettingsManager::getShortCutInfo(const QString &key, ShortCutInfo *shortCutInfos) 
+{
+    int index = 0;
+    auto info = shortCutInfos;
+    while (info) 
+    {
+        if (info->key == key) {
+            return info;
+        }
+        info = info->next;
+        index++;
+    }
+    return nullptr;
 }

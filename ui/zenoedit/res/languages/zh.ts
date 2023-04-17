@@ -802,7 +802,7 @@
     </message>
     <message>
         <source>Set ShortCut</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">设置快捷键</translation>
     </message>
 </context>
 <context>
@@ -951,7 +951,7 @@
         <translation type="unfinished">新建节点</translation>
     </message>
     <message>
-        <source>Translational Handler</source>
+        <source>Moving Handler</source>
         <translation type="unfinished">呼出平移handler</translation>
     </message>
     <message>
@@ -999,7 +999,7 @@
         <translation type="unfinished">后视图</translation>
     </message>
     <message>
-        <source>LeftView</source>
+        <source>Left View</source>
         <translation type="unfinished">左视图</translation>
     </message>
     <message>

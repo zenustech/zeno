@@ -9,6 +9,7 @@ class ZIconToolButton;
 class ZenoGraphsEditor;
 class ZTextLabel;
 class DisplayWidget;
+class ZComboBox;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -108,7 +109,7 @@ private:
 
     ZToolMenuButton *m_btnRun;
     ZToolButton* m_btnKill;
-    QComboBox* m_btnAlways;
+    ZComboBox *m_btnAlways;
 
     QComboBox* cbZoom;
 };

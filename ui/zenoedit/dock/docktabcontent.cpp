@@ -21,6 +21,7 @@
 #include "launch/corelaunch.h"
 #include "settings/zenosettingsmanager.h"
 #include "settings/zsettings.h"
+#include <zenoui/comctrl/zcombobox.h>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -301,14 +302,14 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
 
     QStringList runList{tr("disable"), tr("alwaysAll"), tr("alwaysLightCameraMaterial")};
-    m_btnAlways = new QComboBox(this);
+    m_btnAlways = new ZComboBox(this);
     m_btnAlways->addItems(runList);
     m_btnAlways->setEditable(false);
     m_btnAlways->setFixedHeight(ZenoStyle::dpiScaled(22));
     m_btnAlways->setFont(fnt);
     QFontMetrics fontMetrics(fnt);
     m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCameraMaterial")));
-    QObject::connect(m_btnAlways, &QComboBox::textActivated, [=](const QString &text) {
+    QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
         static int lastItem = 0;
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
