@@ -60,7 +60,7 @@ struct erode_value2cond : INode {
         auto value = get_input<NumericObject>("value")->get<float>();
         auto seed  = get_input<NumericObject>("seed")->get<float>();
 
-   		// 初始化网格属性
+   	// 初始化网格属性
         if (!terrain->verts.has_attr("cond")) {
             auto &_cond = terrain->verts.add_attr<float>("cond");
             std::fill(_cond.begin(), _cond.end(), 0.0);
