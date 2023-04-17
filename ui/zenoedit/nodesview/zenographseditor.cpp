@@ -824,10 +824,11 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_ZOOM) 
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-        ZASSERT_EXIT(pView);
-        if (!args.isEmpty() && (args[0].type() == QMetaType::Float || args[0].type() == QMetaType::Double))
+        if (pView)
         {
-            pView->setZoom(args[0].toFloat());
+            if (!args.isEmpty() && (args[0].type() == QMetaType::Float || args[0].type() == QMetaType::Double)) {
+                pView->setZoom(args[0].toFloat());
+            }
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_UNDO) 
