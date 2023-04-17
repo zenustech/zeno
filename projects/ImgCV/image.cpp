@@ -19,7 +19,6 @@ namespace zeno {
 namespace {
 
 /*
-算法参考：https://www.deanhan.cn/canvas-blende-mode.html
 功能示例：https://blog.csdn.net/Angelloveyatou/article/details/129960238
 */
 struct CompositeCV: INode {
