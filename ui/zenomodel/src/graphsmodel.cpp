@@ -22,6 +22,7 @@ GraphsModel::GraphsModel(QObject *parent)
     , m_apiLevel(0)
     , m_bIOProcessing(false)
     , m_version(zenoio::VER_2_5)
+    , m_bApiEnableRun(true)
 {
     m_selection = new QItemSelectionModel(this);
 
@@ -874,7 +875,7 @@ void GraphsModel::endTransaction()
 
 void GraphsModel::beginApiLevel()
 {
-    if (IsIOProcessing())
+    if (IsIOProcessing() || !isApiRunningEnable())
         return;
 
     //todo: Thread safety
@@ -883,7 +884,7 @@ void GraphsModel::beginApiLevel()
 
 void GraphsModel::endApiLevel()
 {
-    if (IsIOProcessing())
+    if (IsIOProcessing() || !isApiRunningEnable())
         return;
 
     m_apiLevel--;
@@ -1327,6 +1328,16 @@ void GraphsModel::setIOVersion(zenoio::ZSG_VERSION ver)
 zenoio::ZSG_VERSION GraphsModel::ioVersion() const
 {
     return m_version;
+}
+
+void GraphsModel::setApiRunningEnable(bool bEnable)
+{
+    m_bApiEnableRun = bEnable;
+}
+
+bool GraphsModel::isApiRunningEnable() const
+{
+    return m_bApiEnableRun;
 }
 
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)

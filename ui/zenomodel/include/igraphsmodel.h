@@ -110,6 +110,8 @@ public:
 	virtual bool addExecuteCommand(QUndoCommand* pCommand) = 0;
 	virtual void setIOVersion(zenoio::ZSG_VERSION ver) = 0;
 	virtual zenoio::ZSG_VERSION ioVersion() const = 0;
+    virtual void setApiRunningEnable(bool bEnable) = 0;
+    virtual bool isApiRunningEnable() const = 0;
 
 signals:
 	void clearLayout2();
