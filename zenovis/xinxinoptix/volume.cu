@@ -6,6 +6,7 @@
 #include "DisneyBSDF.h"
 
 // #include <cuda_fp16.h>
+// #include "nvfunctional"
 
 #include <nanovdb/NanoVDB.h>
 #include <nanovdb/util/Ray.h>
@@ -14,8 +15,7 @@
 
 //PLACEHOLDER
 static const int   _vol_depth = 99;
-static const float _vol_absorption = 1.0f;
-static const float _vol_scattering = 1.0f;
+static const float _vol_extinction = 1.0f;
 //PLACEHOLDER
 
 //COMMON_CODE
@@ -62,6 +62,53 @@ inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
 
 struct VolumeIn {
     vec3 pos;
+
+    vec3 _local_pos_ = vec3(CUDART_NAN_F);
+    __inline__ __device__ vec3 localPosLazy() {
+        if ( isnan(_local_pos_.x) ) {
+
+            const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
+
+            const auto grid_ptr = sbt_data->vdb_grids[0];
+            const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
+            //const auto& _acc = _grid->tree().getAccessor();
+            auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(pos);
+            pos_indexed = _grid->worldToIndexF(pos_indexed);
+
+            _local_pos_ = reinterpret_cast<vec3&>(pos_indexed);
+        }
+        return _local_pos_;
+    }
+
+    vec3 _uniform_pos_ = vec3(CUDART_NAN_F);
+    __inline__ __device__ vec3 uniformPosLazy() {
+        if ( isnan(_uniform_pos_.x) ) {
+
+            const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
+
+            const auto grid_ptr = sbt_data->vdb_grids[0];
+            const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
+
+            auto bbox = _grid->indexBBox();
+
+            nanovdb::Coord boundsMin( bbox.min() );
+            nanovdb::Coord boundsMax( bbox.max() + nanovdb::Coord( 1 ) ); // extend by one unit
+
+            vec3 min = { 
+                static_cast<float>( boundsMin[0] ), 
+                static_cast<float>( boundsMin[1] ), 
+                static_cast<float>( boundsMin[2] )};
+            vec3 max = {
+                static_cast<float>( boundsMax[0] ),
+                static_cast<float>( boundsMax[1] ),
+                static_cast<float>( boundsMax[2] )};
+
+            auto local_pos = localPosLazy();
+
+            _uniform_pos_ = (local_pos - min) / (max - min);
+        }
+        return _uniform_pos_;
+    }
 };
 
 struct VolumeOut {
@@ -75,24 +122,27 @@ struct VolumeOut {
 
 #define USING_VDB 1
 
-template <int Order>
+template <int Order, bool WorldSpace>
 static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos) {
 
     const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
     const auto& _acc = _grid->tree().getAccessor();
 
     auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
-    pos_indexed = _grid->worldToIndexF(pos_indexed);
-    //_grid->tree().root().maximum();
+
+    if constexpr(WorldSpace)
+    {
+        pos_indexed = _grid->worldToIndexF(pos_indexed);
+    } //_grid->tree().root().maximum();
 
     return vec2 { linearSampling<decltype(_acc), Order>(_acc, pos_indexed), _grid->tree().root().maximum() };
 }
 
-static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn const &attrs) {
+static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn &attrs) {
 
     auto att_pos = attrs.pos;
     auto att_clr = vec3(0);
-    auto att_uv = vec3(0);;
+    auto att_uv = vec3(0);
     auto att_nrm = vec3(0);
     auto att_tang = vec3(0);
 
@@ -105,20 +155,20 @@ static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn con
         auto vol_sample_anisotropy = 0.0f;
         auto vol_sample_density = 0.0f;
 
-        auto vol_sample_emission = vec3(0.0f);
-        auto vol_sample_albedo = vec3(1.0f);
+        vec3 vol_sample_emission = vec3(0.0f);
+        vec3 vol_sample_albedo = vec3(0.5f);
     //GENERATED_END_MARK
 
 #if USING_VDB
 
     VolumeOut output;
 
-    output.anisotropy = clamp(vol_sample_anisotropy, -0.99, 0.99);;
-    output.density = vol_sample_density;
+    output.albedo = clamp(vol_sample_albedo, 0.0f, 1.0f);
+    output.anisotropy = clamp(vol_sample_anisotropy, -0.99, 0.99);
 
+    output.density = clamp(vol_sample_density, 0.0f, 1.0f);
     output.emission = vol_sample_emission;
-    output.albedo = vol_sample_albedo;
-
+    
     return output;
 #else
     //USING 3D ARRAY
@@ -287,12 +337,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float3 emitting = make_float3(0.0);
     float3 scattering = make_float3(1.0);
    
+    float sigma_t = _vol_extinction;
     float v_density = 0.0;
-
-    float sigma_a = _vol_absorption;
-    float sigma_s = _vol_scattering;
-
-    float sigma_t = sigma_a + sigma_s;
 
     VolumeOut vol_out;
 
@@ -352,29 +398,36 @@ extern "C" __global__ void __closesthit__radiance_volume()
                 test_point = rtgems::offset_ray(test_point, ray_dir);
             }
 
-            // ray_orig = test_point;
-            // prd->origin = ray_orig;
-            // prd->direction = ray_dir;
             v_density = 0;
             break;
         } // over shoot, outside of volume
 
         test_point = ray_orig + (t0+t_ele) * ray_dir;
 
-        VolumeIn vol_in; vol_in.pos = test_point;
+        VolumeIn vol_in { test_point };
+        
         vol_out = evalVolume(nullptr, vol_in);
         v_density = vol_out.density;
 
         //prd->vol_tr *= exp(-sigma_t * t_ele);
         
-        float3 le = vol_out.emission;
+        float s_prob = vol_out.density;
+        float n_prob = 1.0f - s_prob;
+        
+        float3 s_prob_rgb = vol_out.albedo;
+        float3 a_prob_rgb = 1.0f - s_prob_rgb;
 
-        auto emission_prob = make_float3(1.0f);
+        float3 n_prob_rgb = ( n_prob/s_prob ) * s_prob_rgb;
+        float3 _prob_rgb = n_prob_rgb + a_prob_rgb + s_prob_rgb;
+
+        float3 le = vol_out.emission;
 
         if ( length(le) > 0.0f ) {
             //le *= exp(-sigma_t * t_ele);
-            emission_prob *= (sigma_a / sigma_t); // scale by emission prob
-            le *= scattering * emission_prob; 
+        
+            float3 emission_prob = a_prob_rgb / _prob_rgb; // scale by emission prob
+
+            le *= emission_prob; 
             emitting += le;
         }
 
@@ -385,12 +438,10 @@ extern "C" __global__ void __closesthit__radiance_volume()
                 
             float2 uu = {rnd(prd->seed), rnd(prd->seed)};
             auto prob = hg.Sample_p(-ray_dir, new_dir, uu);              
-            //new_dir = make_float3(rnd(prd->seed), rnd(prd->seed), rnd(prd->seed));
+            //auto relative_prob = prob * (CUDART_PI_F * 4);
             new_dir = normalize(new_dir);
-            auto relative_prob = prob * (CUDART_PI_F * 4);
 
-            scattering *= make_float3(sigma_s / sigma_t); // scattering prob
-            scattering *= vol_out.albedo;
+            scattering = s_prob_rgb * (_prob_rgb - a_prob_rgb) / _prob_rgb; // scattering prob
                 
             ray_dir = new_dir;
             break;
@@ -439,7 +490,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
     shadow_prd.nonThinTransHit = 0;
     shadow_prd.shadowAttanuation = make_float3(1.0f);
 
-    scattering = make_float3(sigma_s / sigma_t);
     scattering *= vol_out.albedo;
     
     if(rnd(prd->seed)<=0.5f) {
@@ -447,7 +497,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         float ppl = 0;
         for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
             ParallelogramLight light = params.lights[lidx];
-            float2 z = sobolRnd2(prd->seed);
+            float2 z = {rnd(prd->seed), rnd(prd->seed) };
             const float z1 = z.x;
             const float z2 = z.y;
             float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
@@ -542,9 +592,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     float3 test_point = ray_orig; 
     float3 transmittance = make_float3(1.0f);
 
-    const float sigma_a = _vol_absorption;
-    const float sigma_s = _vol_scattering;
-    const float sigma_t = sigma_a + sigma_s;
+    const float sigma_t = _vol_extinction;
 
 #if (!_DELTA_TRACKING_) 
 
