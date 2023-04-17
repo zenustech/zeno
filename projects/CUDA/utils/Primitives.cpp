@@ -274,6 +274,7 @@ struct ParticleCluster : zeno::INode {
         auto numClusters = vtab.size();
         fmt::print("{} clusters in total.\n", numClusters);
 
+        set_output("num_clusters", std::make_shared<NumericObject>((int)numClusters));
         set_output("pars", std::move(pars));
     }
 };
@@ -289,6 +290,157 @@ ZENDEFNODE(ParticleCluster, {
                                 {},
                                 {"zs_geom"},
                             });
+
+struct ParticleSegmentation : zeno::INode {
+    virtual void apply() override {
+        using zsbvh_t = ZenoLinearBvh;
+        using bvh_t = zsbvh_t::lbvh_t;
+        using bv_t = bvh_t::Box;
+
+        auto pars = get_input<zeno::PrimitiveObject>("pars");
+        float dist = get_input2<float>("dist");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = zs::omp_exec();
+
+        zs::Vector<bv_t> bvs;
+        const auto &pos = pars->attr<vec3f>("pos");
+        auto &clusterId = pars->add_attr<float>("tag");
+
+        std::shared_ptr<zsbvh_t> zsbvh;
+        ZenoLinearBvh::element_e et = ZenoLinearBvh::point;
+        bvs = retrieve_bounding_volumes(pol, pars->attr<vec3f>("pos"), 0);
+        et = ZenoLinearBvh::point;
+        zsbvh = std::make_shared<zsbvh_t>();
+        zsbvh->et = et;
+        bvh_t &bvh = zsbvh->get();
+        bvh.build(pol, bvs);
+
+        // exclusion topo
+        std::vector<std::vector<int>> neighbors(pos.size());
+        std::vector<std::vector<int>> distNeighbors(pos.size()); // for clustering later
+        pol(range(pos.size()), [bvh = proxy<space>(bvh), &pos, &neighbors, &distNeighbors, dist](int vi) mutable {
+            const auto &p = pos[vi];
+            bv_t pb{vec_to_other<zs::vec<float, 3>>(p - 2 * dist), vec_to_other<zs::vec<float, 3>>(p + 2 * dist)};
+            bvh.iter_neighbors(pb, [&](int vj) {
+                if (vi == vj)
+                    return;
+                if (auto d2 = lengthSquared(pos[vi] - pos[vj]); d2 < (dist + dist) * (dist + dist)) {
+                    neighbors[vi].push_back(vj);
+                    if (d2 < dist * dist)
+                        distNeighbors[vi].push_back(vj);
+                }
+            });
+        });
+
+        std::vector<int> numNeighbors(pos.size() + 1);
+        pol(zip(numNeighbors, neighbors), [](auto &n, const std::vector<int> &neis) { n = neis.size(); });
+
+        SparseMatrix<int, true> spmat(pos.size(), pos.size());
+        spmat._ptrs.resize(pos.size() + 1);
+        exclusive_scan(pol, std::begin(numNeighbors), std::end(numNeighbors), std::begin(spmat._ptrs));
+
+        auto numEntries = spmat._ptrs[pos.size()];
+        spmat._inds.resize(numEntries);
+
+        pol(range(pos.size()),
+            [&neighbors, inds = view<space>(spmat._inds), offsets = view<space>(spmat._ptrs)](int vi) {
+                auto offset = offsets[vi];
+                for (int vj : neighbors[vi])
+                    inds[offset++] = vj;
+            });
+
+        /// maximum coloring
+        std::vector<u32> weights(pos.size());
+        {
+            bht<int, 1, int> tab{spmat.get_allocator(), pos.size() * 2};
+            tab.reset(pol, true);
+            pol(enumerate(weights), [tab1 = proxy<space>(tab)](int seed, u32 &w) mutable {
+                using tab_t = RM_CVREF_T(tab);
+                std::mt19937 rng;
+                rng.seed(seed);
+                u32 v = rng() % (u32)4294967291u;
+                // prevent weight duplications
+                while (tab1.insert(v) != tab_t::sentinel_v)
+                    v = rng() % (u32)4294967291u;
+                w = v;
+            });
+        }
+        auto &colors = pars->add_attr<float>("colors"); // 0 by default
+        auto ncolors = maximum_independent_sets(pol, spmat, weights, colors);
+
+        std::vector<int> maskOut(pos.size());
+        int clusterNo = 0;
+        auto &clusterids = pars->add_attr<float>(get_input2<std::string>("segment_tag"));
+        for (int color = 1; color <= ncolors; ++color) {
+            pol(range(pos.size()), [&](int vi) {
+                if (colors[vi] != color)
+                    return;
+                if (atomic_cas(exec_omp, &maskOut[vi], 0, 1) != 0)
+                    return;
+                auto no = atomic_add(exec_omp, &clusterNo, 1);
+                clusterids[vi] = no;
+                for (int vj : distNeighbors[vi]) {
+                    if (vi == vj)
+                        continue;
+#if 0
+                    if (colors[vj] == color)
+                        fmt::print("this cannot be happening! vi [{}] clr {}, while nei vj [{}] clr {}\n", vi,
+                                   colors[vi], vj, colors[vj]);
+#endif
+                    /// use 'cas' in case points at the boundary got inserted into adjacent clusters
+                    if (atomic_cas(exec_omp, &maskOut[vj], 0, 1) == 0) {
+                        clusterids[vj] = no;
+                    }
+                }
+            });
+        }
+        fmt::print("{} colors {} clusters.\n", ncolors, clusterNo);
+
+#if 1
+        if (get_input2<bool>("paint_color")) {
+            auto &clrs = pars->add_attr<vec3f>("clr");
+            pol(range(pos.size()), [&](int vi) {
+                std::mt19937 rng;
+                rng.seed(clusterids[vi]);
+                u32 r = rng() % 256u;
+                u32 g = rng() % 256u;
+                u32 b = rng() % 256u;
+                zeno::vec3f clr{1.f * r / 256.f, 1.f * g / 256.f, 1.f * b / 256.f};
+                clrs[vi] = clr;
+            });
+        }
+#endif
+
+#if 0
+        std::vector<int> nPerCluster(clusterNo);
+        int nTotal = 0;
+        pol(range(pos.size()), [&](int vi) {
+            int clusterNo = (int)clusterids[vi];
+            atomic_add(exec_omp, &nPerCluster[clusterNo], 1);
+            atomic_add(exec_omp, &nTotal, 1);
+        });
+        if (nTotal != pos.size())
+            throw std::runtime_error("some particles might be duplicated!");
+#endif
+
+        set_output("num_segments", std::make_shared<NumericObject>((int)clusterNo));
+        set_output("pars", std::move(pars));
+    }
+};
+
+ZENDEFNODE(ParticleSegmentation, {
+                                     {
+                                         {"PrimitiveObject", "pars"},
+                                         {"float", "dist", "1"},
+                                         {"string", "segment_tag", "segment_index"},
+                                         {"bool", "paint_color", "1"},
+                                     },
+                                     {{"PrimitiveObject", "pars"}, {"NumericObject", "num_segments"}},
+                                     {},
+                                     {"zs_geom"},
+                                 });
 
 struct PrimitiveBFS : INode {
     virtual void apply() override {
