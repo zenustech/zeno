@@ -171,7 +171,13 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     const rapidjson::Value& nameValue = objValue["name"];
     const QString& name = nameValue.GetString();
 
-    bool bSucceed = pAcceptor->addNode(nodeid, name, legacyDescs);
+    QString customName;
+    if (objValue.HasMember("customName")) {
+        const QString &tmp = objValue["customName"].GetString();
+        customName = tmp;
+    }
+
+    bool bSucceed = pAcceptor->addNode(nodeid, name, customName, legacyDescs);
     if (!bSucceed) {
         return false;
     }

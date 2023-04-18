@@ -196,12 +196,16 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     palette.setColor(m_plblName->foregroundRole(), QColor("#A3B1C0"));
     m_plblName->setPalette(palette);
 
+    m_pNameLineEdit = new ZLineEdit;
+    m_pNameLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
+
     ZToolBarButton* pFixBtn = new ZToolBarButton(false, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
     ZToolBarButton* pWikiBtn = new ZToolBarButton(false, ":/icons/wiki.svg", ":/icons/wiki-on.svg");
     m_pSettingBtn = new ZToolBarButton(false, ":/icons/settings.svg", ":/icons/settings-on.svg");
 
     pToolLayout->addWidget(pIcon);
     pToolLayout->addWidget(m_plblName);
+    pToolLayout->addWidget(m_pNameLineEdit);
     pToolLayout->addStretch();
     pToolLayout->addWidget(pFixBtn);
     pToolLayout->addWidget(pWikiBtn);
@@ -218,6 +222,15 @@ void DockContent_Parameter::initConnections()
 {
     ZenoPropPanel* prop = qobject_cast<ZenoPropPanel*>(m_pWidget);
     connect(m_pSettingBtn, &ZToolBarButton::clicked, prop, &ZenoPropPanel::onSettings);
+
+    connect(m_pNameLineEdit, &ZLineEdit::textEditFinished, this, [=]() {
+        QString value = m_pNameLineEdit->text();
+        QString oldValue;
+        if (!prop->updateCustomName(value, oldValue)) 
+        {
+            m_pNameLineEdit->setText(oldValue);
+        }
+    });
 }
 
 void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
@@ -232,9 +245,11 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
             const QModelIndex& idx = nodes[0];
             if (select) {
                 m_plblName->setText(idx.data(ROLE_OBJID).toString());
+                m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
             }
             else {
                 m_plblName->setText("");
+                m_pNameLineEdit->setText("");
             }
         }
     }

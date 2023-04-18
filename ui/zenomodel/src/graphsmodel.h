@@ -133,6 +133,7 @@ public:
     bool addExecuteCommand(QUndoCommand* pCommand) override;
     void setIOVersion(zenoio::ZSG_VERSION ver) override;
     zenoio::ZSG_VERSION ioVersion() const override;
+    bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);

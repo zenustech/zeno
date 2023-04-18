@@ -10,6 +10,7 @@ class ZenoGraphsEditor;
 class ZTextLabel;
 class DisplayWidget;
 class ZComboBox;
+class ZLineEdit;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -78,6 +79,7 @@ protected:
 private:
     QLabel* m_plblName;
     ZToolBarButton* m_pSettingBtn;
+    ZLineEdit *m_pNameLineEdit;
 };
 
 class DockContent_Editor : public DockToolbarWidget
