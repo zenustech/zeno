@@ -19,6 +19,7 @@ enum PANEL_TYPE
     PANEL_NODE_DATA,
     PANEL_LOG,
     PANEL_LIGHT,
+    PANEL_IMAGE,
 };
 
 class ZTabDockWidget : public QDockWidget

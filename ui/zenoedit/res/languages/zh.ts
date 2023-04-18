@@ -1425,6 +1425,10 @@
         <source>Light</source>
         <translation type="unfinished">灯光</translation>
     </message>
+	<message>
+        <source>Image</source>
+        <translation type="unfinished">图片</translation>
+    </message>
     <message>
         <source>Split Left/Right</source>
         <translation type="unfinished">左右拆分</translation>
