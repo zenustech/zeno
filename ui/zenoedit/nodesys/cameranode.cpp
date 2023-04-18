@@ -56,6 +56,8 @@ void CameraNode::onEditClicked()
     ZenoMainWindow *pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
 
+    // it seems no sense when we have multiple viewport but only one node.
+    // which info of viewport will be synced to this node.
     QVector<DisplayWidget*> views = pWin->viewports();
     for (auto pDisplay : views)
     {
@@ -161,8 +163,17 @@ void LightNode::onEditClicked(){
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
 
-    auto &inst = Zenovis::GetInstance();
-    auto sess = inst.getSession();
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+
+    QVector<DisplayWidget *> views = pWin->viewports();
+    if (views.isEmpty())
+        return;
+
+    Zenovis* pZenovis = views[0]->getViewportWidget()->getZenoVis();
+    ZASSERT_EXIT(pZenovis);
+
+    auto sess = pZenovis->getSession();
     ZASSERT_EXIT(sess);
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);
@@ -200,10 +211,15 @@ void LightNode::onEditClicked(){
     pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 }
 
-QGraphicsLinearLayout *LightNode::initCustomParamWidgets() {
-    QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+ZGraphicsLayout* LightNode::initCustomParamWidgets()
+{
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("sync", m_renderParams.paramFont, m_renderParams.paramClr.color());
+    ZSimpleTextItem *pNameItem = new ZSimpleTextItem("sync");
+    pNameItem->setBrush(m_renderParams.socketClr.color());
+    pNameItem->setFont(m_renderParams.socketFont);
+    pNameItem->updateBoundingRect();
+
     pHLayout->addItem(pNameItem);
 
     ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
