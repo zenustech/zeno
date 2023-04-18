@@ -5,6 +5,9 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <viewport/zenovis.h>
 #include "zenovis/Session.h"
 #include <zeno/core/Session.h>
@@ -139,4 +142,73 @@ void CameraNode::onEditClicked()
             // Here
         }
     }
+}
+
+LightNode::LightNode(const NodeUtilParam &params, int pattern, QGraphicsItem *parent)
+    : ZenoNode(params, parent)
+{
+
+}
+
+LightNode::~LightNode() {
+
+}
+
+void LightNode::onEditClicked(){
+    INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+
+    const QString& nodeid = this->nodeId();
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pModel);
+
+    auto &inst = Zenovis::GetInstance();
+    auto sess = inst.getSession();
+    ZASSERT_EXIT(sess);
+    auto scene = sess->get_scene();
+    ZASSERT_EXIT(scene);
+
+    PARAM_UPDATE_INFO info;
+
+    std::vector<float> camProp = scene->getCameraProp();
+    auto original_pos = glm::vec3(camProp[0], camProp[1], camProp[2]);
+    auto pos = glm::normalize(glm::vec3(camProp[0], camProp[1], camProp[2]));
+    auto view = -1.0f * glm::normalize(glm::vec3(camProp[3], camProp[4], camProp[5]));
+    auto up = glm::normalize(glm::vec3(camProp[6], camProp[7], camProp[8]));
+    auto right = glm::normalize(glm::cross(up, view));
+
+    glm::mat3 rotation(right, up, view);
+
+    glm::mat4 correct_matrix = glm::mat4(1.0f);
+    correct_matrix = glm::rotate(correct_matrix, glm::radians(90.0f), right);
+    glm::mat3x3 corrected_matrix = glm::mat3x3(correct_matrix);
+    glm::mat3 matC = corrected_matrix * rotation;
+
+    glm::quat quat = glm::quat_cast(matC);
+
+    INPUT_SOCKET position = inputs["position"];
+    UI_VECTYPE vec({ original_pos[0], original_pos[1], original_pos[2] });
+    info.name = "position";
+    info.oldValue = position.info.defaultValue;
+    info.newValue = QVariant::fromValue(vec);
+    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+
+    INPUT_SOCKET rotate = inputs["quaternion"];
+    vec = {quat.w, quat.x, quat.y, quat.z};
+    info.name = "quaternion";
+    info.oldValue = rotate.info.defaultValue;
+    info.newValue = QVariant::fromValue(vec);
+    pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
+}
+
+QGraphicsLinearLayout *LightNode::initCustomParamWidgets() {
+    QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+
+    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("sync", m_renderParams.paramFont, m_renderParams.paramClr.color());
+    pHLayout->addItem(pNameItem);
+
+    ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
+    pHLayout->addItem(pEditBtn);
+    connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
+
+    return pHLayout;
 }

@@ -22,13 +22,18 @@ struct ShaderInputAttr : ShaderNodeClone<ShaderInputAttr> {
     virtual void emitCode(EmissionPass *em) override {
         auto attr = get_input2<std::string>("attr");
         auto type = get_input2<std::string>("type");
-        return em->emitCode(type + "(att_" + attr + ")");
+
+        if (attr.back() == ')') {
+            return em->emitCode(type + "(" + attr + ")");
+        } else {
+            return em->emitCode(type + "(att_" + attr + ")");
+        }
     }
 };
 
 ZENDEFNODE(ShaderInputAttr, {
     {
-        {"enum pos clr nrm uv tang bitang NoL instPos instNrm instUv instClr instTang", "attr", "pos"},
+        {"enum pos clr nrm uv tang bitang NoL instPos instNrm instUv instClr instTang attrs.localPosLazy() attrs.uniformPosLazy()", "attr", "pos"},
         {"enum float vec2 vec3 vec4", "type", "vec3"},
     },
     {

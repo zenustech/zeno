@@ -30,12 +30,12 @@
 #include <regex>
 
 #define SET_CAMERA_DATA                         \
-    out_pos->set(n->pos);                       \
-    out_up->set(n->up);                         \
-    out_view->set(n->view);                     \
-    out_fov->set(n->fov);                       \
-    out_aperture->set(n->aperture);             \
-    out_focalPlaneDistance->set(n->focalPlaneDistance); \
+    out_pos = (n->pos);                       \
+    out_up = (n->up);                         \
+    out_view = (n->view);                     \
+    out_fov = (n->fov);                       \
+    out_aperture = (n->aperture);             \
+    out_focalPlaneDistance = (n->focalPlaneDistance); \
 
 namespace zeno {
 namespace {
@@ -132,6 +132,20 @@ ZENO_DEFNODE(CameraNode)({
 });
 
 struct CameraEval: zeno::INode {
+
+    glm::quat to_quat(zeno::vec3f up, zeno::vec3f view){
+        auto glm_view = -1.0f * glm::normalize(glm::vec3(view[0], view[1], view[2]));
+        auto _up = glm::normalize(glm::vec3(up[0], up[1], up[2]));
+        auto _view = glm::normalize(glm_view);
+        auto _right = glm::normalize(glm::cross(_up, _view));
+        glm::mat3 _rotate;
+        _rotate[0][0] = _right[0]; _rotate[0][1] = _up[0]; _rotate[0][2] = _view[0];
+        _rotate[1][0] = _right[1]; _rotate[1][1] = _up[1]; _rotate[1][2] = _view[1];
+        _rotate[2][0] = _right[2]; _rotate[2][1] = _up[2]; _rotate[2][2] = _view[2];
+        glm::quat rotation = glm::quat_cast(_rotate);
+        return rotation;
+    }
+
     virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
@@ -142,103 +156,70 @@ struct CameraEval: zeno::INode {
 
         auto nodelist = get_input<zeno::ListObject>("nodelist")->get<zeno::CameraObject>();
 
-        auto out_pos = std::make_unique<zeno::NumericObject>();
-        auto out_up = std::make_unique<zeno::NumericObject>();
-        auto out_view = std::make_unique<zeno::NumericObject>();
-        auto out_fov = std::make_unique<zeno::NumericObject>();
-        auto out_aperture = std::make_unique<zeno::NumericObject>();
-        auto out_focalPlaneDistance = std::make_unique<zeno::NumericObject>();
-        std::string inter_mode;
-        auto inter = get_param<std::string>("inter");
-        if (inter == "Bezier"){
-            inter_mode = "Bezier";
-        }else if(inter == "Linear"){
-            inter_mode = "Linear";
-        }
-
-        //zeno::log_info("CameraEval frame {}", frameid);
-
-        // TODO sort CameraObject by (frameId)
+        zeno::vec3f out_pos;
+        zeno::vec3f out_up;
+        zeno::vec3f out_view;
+        float out_fov;
+        float out_aperture;
+        float out_focalPlaneDistance;
 
         if(nodelist.size() == 1){
             auto n = nodelist[0];
             SET_CAMERA_DATA
-            //zeno::log_info("CameraEval size 1");
         }else{
             int ff = (int)nodelist[0]->userData().get2<float>("frame");
             int lf = (int)nodelist[nodelist.size()-1]->userData().get2<float>("frame");
             if(frameid <= ff){
                 auto n = nodelist[0];
                 SET_CAMERA_DATA
-                //zeno::log_info("CameraEval first frame");
             }else if(frameid >= lf) {
                 auto n = nodelist[nodelist.size()-1];
                 SET_CAMERA_DATA
-                //zeno::log_info("CameraEval last frame");
             }else{
                 for(int i=1;i<nodelist.size();i++){
-                    auto const & n = nodelist[i];
-                    auto const & nm = nodelist[i-1];
-                    int cf = (int)n->userData().get2<float>("frame");
-                    if(frameid < cf){
-                        zeno::vec3f pos;
-                        zeno::vec3f up;
-                        zeno::vec3f view;
-                        float fov;
-                        float aperture;
-                        float focalPlaneDistance;
+                    auto const & next_node = nodelist[i];
+                    auto const & pre_node = nodelist[i-1];
+                    int next_frame = (int)next_node->userData().get2<float>("frame");
+                    int pre_frame = (int)pre_node->userData().get2<float>("frame");
+                    int total_frame = next_frame - pre_frame;
+                    float r = (float)frameid / total_frame;
 
-                        float factor = (float)(frameid - (int)nm->userData().get2<float>("frame"))
-                                       / (float)((int)n->userData().get2<float>("frame")
-                                           - (int)nm->userData().get2<float>("frame"));
+                    if(frameid < next_frame){
+                        auto pos = pre_node->pos + (next_node->pos - pre_node->pos) * r;
+                        auto fov = pre_node->fov + (next_node->fov - pre_node->fov) * r;
+                        auto aperture = pre_node->aperture + (next_node->aperture - pre_node->aperture) * r;
+                        auto focalPlane = pre_node->focalPlaneDistance + (next_node->focalPlaneDistance - pre_node->focalPlaneDistance) * r;
 
-                        // linear interpolation
-                        if(inter_mode == "Linear"){
-                            pos = n->pos * factor + nm->pos*(1.0f-factor);
-                            up = n->up * factor + nm->up*(1.0f-factor);
-                            view = n->view * factor + nm->view*(1.0f-factor);
-                            fov = n->fov * factor + nm->fov*(1.0f-factor);
-                            aperture = n->aperture * factor + nm->aperture*(1.0f-factor);
-                            focalPlaneDistance = n->focalPlaneDistance * factor + nm->focalPlaneDistance*(1.0f-factor);
+                        auto pre_quat = to_quat(pre_node->up, pre_node->view);
+                        auto next_quat = to_quat(next_node->up, next_node->view);
+                        auto quat_lerp = glm::slerp(pre_quat, next_quat, r);
+                        glm::mat3 matrix_lerp = glm::toMat3(quat_lerp); // Convert quaternion to 3x3 matrix
+                        auto right = zeno::vec3f(matrix_lerp[0][0], matrix_lerp[1][0], matrix_lerp[2][0]);
+                        auto up = zeno::vec3f(matrix_lerp[0][1], matrix_lerp[1][1], matrix_lerp[2][1]);
+                        auto view = zeno::vec3f(matrix_lerp[0][2], matrix_lerp[1][2], matrix_lerp[2][2]);
 
-                        }
-                        // Bezier interpolation
-                        else if(inter_mode == "Bezier"){
-                            // TODO The control points consider the front and back frame trends
-
-                            float c1of = 0.4f;
-                            float c2of = 0.6f;
-
-                            pos = BezierCompute::compute(c1of, c2of, factor, n->pos, nm->pos);
-                            up = BezierCompute::compute(c1of, c2of, factor, n->up, nm->up);
-                            view = BezierCompute::compute(c1of, c2of, factor, n->view, nm->view);
-                            fov = BezierCompute::compute(c1of, c2of, factor, n->fov, nm->fov);
-                            aperture = BezierCompute::compute(c1of, c2of, factor, n->aperture, nm->aperture);
-                            focalPlaneDistance = BezierCompute::compute(c1of, c2of, factor, n->focalPlaneDistance, nm->focalPlaneDistance);
-                        }
-
-                        //zeno::log_info("Inter Pos {} {} {}", pos[0], pos[1], pos[2]);
-                        //zeno::log_info("Inter Up {} {} {}", up[0], up[1], up[2]);
-                        //zeno::log_info("Inter View {} {} {}", view[0], view[1], view[2]);
-
-                        out_pos->set(pos);
-                        out_up->set(up);
-                        out_view->set(view);
-                        out_fov->set(fov);
-                        out_aperture->set(aperture);
-                        out_focalPlaneDistance->set(focalPlaneDistance);
+                        out_pos = (pos);
+                        out_up = (up);
+                        out_view = (-view);
+                        out_fov = (fov);
+                        out_aperture = (aperture);
+                        out_focalPlaneDistance = (focalPlane);
                         break;
                     }
                 }
             }
         }
 
-        set_output("pos", std::move(out_pos));
-        set_output("up", std::move(out_up));
-        set_output("view", std::move(out_view));
-        set_output("fov", std::move(out_fov));
-        set_output("aperture", std::move(out_aperture));
-        set_output("focalPlaneDistance", std::move(out_focalPlaneDistance));
+        auto camera = std::make_unique<zeno::CameraObject>();
+
+        camera->pos = out_pos;
+        camera->up = out_up;
+        camera->view = out_view;
+        camera->fov = out_fov;
+        camera->aperture = out_aperture;
+        camera->focalPlaneDistance = out_focalPlaneDistance;
+
+        set_output("camera", std::move(camera));
     }
 };
 
@@ -248,15 +229,9 @@ ZENO_DEFNODE(CameraEval)({
         {"nodelist"}
     },
     {
-        {"vec3f", "pos"},
-        {"vec3f", "up"},
-        {"vec3f", "view"},
-        {"float", "fov"},
-        {"float", "aperture"},
-        {"float", "focalPlaneDistance"},
+        {"CameraObject", "camera"},
     },
     {
-        {"enum Bezier Linear ", "inter", "Bezier"},
     },
     {"FBX"},
 });
@@ -268,47 +243,44 @@ struct LightNode : INode {
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scale");
         auto rotate = get_input2<zeno::vec3f>("rotate");
+        auto quaternion = get_input2<zeno::vec4f>("quaternion");
         auto intensity = get_input2<float>("intensity");
         auto color = get_input2<zeno::vec3f>("color");
-        auto shapeParam = get_param<std::string>("Shape");
-        std::string shape;
-        if (shapeParam == "Disk"){
-            shape = "Disk";
-        }else if(shapeParam == "Plane"){
-            shape = "Plane";
-        }
+        std::string shape = "Plane";
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto &verts = prim->verts;
         auto &tris = prim->tris;
-
-        // Rotate
-        float ax = rotate[0] * (3.14159265358979323846 / 180.0);
-        float ay = rotate[1] * (3.14159265358979323846 / 180.0);
-        float az = rotate[2] * (3.14159265358979323846 / 180.0);
-        glm::mat3 mx = glm::mat3(1, 0, 0, 0, cos(ax), -sin(ax), 0, sin(ax), cos(ax));
-        glm::mat3 my = glm::mat3(cos(ay), 0, sin(ay), 0, 1, 0, -sin(ay), 0, cos(ay));
-        glm::mat3 mz = glm::mat3(cos(az), -sin(az), 0, sin(az), cos(az), 0, 0, 0, 1);
 
         if(shape == "Plane"){
             auto start_point = zeno::vec3f(0.5, 0, 0.5);
             float rm = 1.0f;
             float cm = 1.0f;
 
+            glm::mat4 rotation = glm::mat4(1.0f);
+            glm::vec3 euler = glm::vec3(rotate[0], rotate[1], rotate[2]);
+            rotation = glm::rotate(rotation, euler.z, glm::vec3(0.0f, 0.0f, 1.0f));
+            rotation = glm::rotate(rotation, euler.y, glm::vec3(0.0f, 1.0f, 0.0f));
+            rotation = glm::rotate(rotation, euler.x, glm::vec3(1.0f, 0.0f, 0.0f));
+
             // Plane Verts
             for(int i=0; i<=1; i++){
+
                 auto rp = start_point - zeno::vec3f(i*rm, 0, 0);
                 for(int j=0; j<=1; j++){
                     auto p = rp - zeno::vec3f(0, 0, j*cm);
-                    // S R T
-                    p = p * scale;
+                    // S R Q T
+                    p = p * scale;  // Scale
                     auto gp = glm::vec3(p[0], p[1], p[2]);
-                    gp = mz * my * mx * gp;
+                    glm::vec4 result = rotation * glm::vec4(gp, 1.0f);  // Rotate
+                    gp = glm::vec3(result.x, result.y, result.z);
+                    glm::quat rotation(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+                    gp = glm::rotate(rotation, gp);
                     p = zeno::vec3f(gp.x, gp.y, gp.z);
-                    auto zcp = zeno::vec3f(p[0], p[1], p[2]);
-                    zcp = zcp + position;
+                    auto zp = zeno::vec3f(p[0], p[1], p[2]);
+                    zp = zp + position;  // Translate
 
-                    verts.push_back(zcp);
+                    verts.push_back(zp);
                 }
             }
 
@@ -316,24 +288,6 @@ struct LightNode : INode {
             tris.emplace_back(zeno::vec3i(0, 3, 1));
             tris.emplace_back(zeno::vec3i(3, 0, 2));
 
-        }else if(shape == "Disk"){
-            int divisions = 13;
-            verts.emplace_back(zeno::vec3f(0, 0, 0)+position);
-
-            for (int i = 0; i < divisions; i++) {
-                float rad = 2 * 3.14159265358979323846 * i / divisions;
-                auto p = zeno::vec3f(cos(rad), 0, -sin(rad));
-                // S R T
-                p = p * scale;
-                auto gp = glm::vec3(p[0], p[1], p[2]);
-                gp = mz * my * mx * gp;
-                p = zeno::vec3f(gp.x, gp.y, gp.z);
-                p+= position;
-
-                verts.emplace_back(p);
-                tris.emplace_back(i+1, 0, i+2);
-            }
-            tris[tris.size()-1] = zeno::vec3i(divisions, 0, 1);
         }
 
         auto &clr = prim->verts.add_attr<zeno::vec3f>("clr");
@@ -356,6 +310,7 @@ struct LightNode : INode {
         prim->userData().set2("pos", std::move(position));
         prim->userData().set2("scale", std::move(scale));
         prim->userData().set2("rotate", std::move(rotate));
+        prim->userData().set2("quaternion", std::move(quaternion));
         prim->userData().set2("shape", std::move(shape));
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
@@ -369,6 +324,7 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scale", "1, 1, 1"},
         {"vec3f", "rotate", "0, 0, 0"},
+        {"vec4f", "quaternion", "1, 0, 0, 0"},
         {"vec3f", "color", "1, 1, 1"},
         {"float", "intensity", "1"},
         {"bool", "islight", "1"},
@@ -378,7 +334,7 @@ ZENO_DEFNODE(LightNode)({
         "prim"
     },
     {
-        {"enum Disk Plane", "Shape", "Plane"},
+
     },
     {"shader"},
 });

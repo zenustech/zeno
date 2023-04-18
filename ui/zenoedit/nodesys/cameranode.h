@@ -19,5 +19,19 @@ private slots:
     void onEditClicked();
 };
 
+class LightNode : public ZenoNode
+{
+    Q_OBJECT
+public:
+    LightNode(const NodeUtilParam& params, int pattern = 0, QGraphicsItem* parent = nullptr);
+    ~LightNode();
+
+protected:
+    QGraphicsLinearLayout* initCustomParamWidgets() override;
+
+private slots:
+    void onEditClicked();
+};
+
 
 #endif
