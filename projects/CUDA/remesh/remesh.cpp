@@ -144,11 +144,11 @@ struct UniformRemeshing : INode {
                 lines_map[std::make_pair(it[j], it[(j + 1) % 3])] = line_id;
                 if (flag) {
                     lines.push_back(vec2i(it[j], it[(j + 1) % 3]));
-                }
-                if (new_line[j] || marked[j]) {
-                    elocked.push_back(1);
-                } else {
-                    elocked.push_back(0);
+                    if (new_line[j] || marked[j]) {
+                        elocked.push_back(1);
+                    } else {
+                        elocked.push_back(0);
+                    }
                 }
             }
         }
@@ -295,11 +295,11 @@ struct AdaptiveRemeshing : INode {
                 lines_map[std::make_pair(it[j], it[(j + 1) % 3])] = line_id;
                 if (flag) {
                     lines.push_back(vec2i(it[j], it[(j + 1) % 3]));
-                }
-                if (new_line[j] || marked[j]) {
-                    elocked.push_back(1);
-                } else {
-                    elocked.push_back(0);
+                    if (new_line[j] || marked[j]) {
+                        elocked.push_back(1);
+                    } else {
+                        elocked.push_back(0);
+                    }
                 }
             }
         }
