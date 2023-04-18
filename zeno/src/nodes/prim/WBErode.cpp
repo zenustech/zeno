@@ -98,23 +98,27 @@ struct erode_value2cond : INode {
         set_output("prim_2DGrid", std::move(terrain));
     }
 };
-ZENDEFNODE(erode_value2cond, {/* inputs: */ {
-                                  "prim_2DGrid",
-                                  {"float", "value", "1.0"}, // 0.0 ~ 1.0
-                                  {"float", "seed", "0.0"},
-                              },
-                              /* outputs: */
-                              {
-                                  "prim_2DGrid",
-                              },
-                              /* params: */ {}, /* category: */
-                              {
-                                  "erode",
-                              }});
+ZENDEFNODE(erode_value2cond,
+            {/* inputs: */ {
+                "prim_2DGrid",
+                {"float", "value", "1.0"}, // 0.0 ~ 1.0
+                {"float", "seed", "0.0"},
+            },
+            /* outputs: */
+            {
+                "prim_2DGrid",
+            },
+            /* params: */
+            {
+
+            },
+            /* category: */
+            {
+                "erode",
+            }});
 
 struct erode_rand_color : INode {
     void apply() override {
-
         std::uniform_real_distribution<float> distr(0.0, 1.0);
         auto iterations = get_input<NumericObject>("iterations")->get<int>();
         auto iter       = get_input<NumericObject>("iter")->get<int>();
@@ -147,18 +151,23 @@ struct erode_rand_color : INode {
         set_output("list", std::move(list));
     }
 };
-ZENDEFNODE(erode_rand_color, {/* inputs: */ {
-                                  {"int", "iterations", "0"},
-                                  {"int", "iter", "0"},
-                              },
-                              /* outputs: */
-                              {
-                                  "list",
-                              },
-                              /* params: */ {}, /* category: */
-                              {
-                                  "erode",
-                              }});
+ZENDEFNODE(erode_rand_color,
+            {/* inputs: */ {
+                {"int", "iterations", "0"},
+                {"int", "iter", "0"},
+            },
+            /* outputs: */
+            {
+                "list",
+            },
+            /* params: */
+            {
+
+            },
+            /* category: */
+            {
+                "erode",
+            }});
 
 struct erode_rand_dir : INode {
     void apply() override {
@@ -192,18 +201,19 @@ struct erode_rand_dir : INode {
         set_output("list", std::move(list));
     }
 };
-ZENDEFNODE(erode_rand_dir, {/* inputs: */ {
-                                {"int", "iterations", "0"},
-                                {"int", "iter", "0"},
-                            },
-                            /* outputs: */
-                            {
-                                "list",
-                            },
-                            /* params: */ {}, /* category: */
-                            {
-                                "erode",
-                            }});
+ZENDEFNODE(erode_rand_dir,
+            {/* inputs: */ {
+                {"int", "iterations", "0"},
+                {"int", "iter", "0"},
+            },
+            /* outputs: */
+            {
+                "list",
+            },
+            /* params: */ {}, /* category: */
+            {
+                "erode",
+            }});
 
 // 热侵蚀
 struct erode_tumble_material_v0 : INode {
@@ -444,37 +454,41 @@ struct erode_tumble_material_v0 : INode {
         set_output("prim_2DGrid", std::move(terrain));
     }
 };
-ZENDEFNODE(erode_tumble_material_v0, {/* inputs: */ {
-                                          "prim_2DGrid",
+ZENDEFNODE(erode_tumble_material_v0,
+            {/* inputs: */ {
+                "prim_2DGrid",
 
-                                          {"ListObject", "perm"},
-                                          {"ListObject", "p_dirs"},
-                                          {"ListObject", "x_dirs"},
+                {"ListObject", "perm"},
+                {"ListObject", "p_dirs"},
+                {"ListObject", "x_dirs"},
 
-                                          {"float", "seed", "9676.79"},
-                                          {"int", "iterations", "0"},
-                                          {"int", "iter", "0"},
-                                          {"int", "i", "0"},
+                {"float", "seed", "9676.79"},
+                {"int", "iterations", "0"},
+                {"int", "iter", "0"},
+                {"int", "i", "0"},
 
-                                          {"int", "openborder", "0"},
-                                          {"float", "gridbias", "0.0"},
+                {"int", "openborder", "0"},
+                {"float", "gridbias", "0.0"},
 
-                                          {"float", "cut_angle", "35"},
-                                          {"float", "global_erosionrate", "1.0"},
-                                          {"float", "erosionrate", "0.03"},
-                                          {"float", "erodability", "0.4"},
-                                          {"float", "removalrate", "0.7"},
-                                          {"float", "maxdepth", "5.0"},
+                {"float", "cut_angle", "35"},
+                {"float", "global_erosionrate", "1.0"},
+                {"float", "erosionrate", "0.03"},
+                {"float", "erodability", "0.4"},
+                {"float", "removalrate", "0.7"},
+                {"float", "maxdepth", "5.0"},
+            },
+            /* outputs: */
+            {
+                "prim_2DGrid",
+            },
+            /* params: */
+            {
 
-                                      },
-                                      /* outputs: */
-                                      {
-                                          "prim_2DGrid",
-                                      },
-                                      /* params: */ {}, /* category: */
-                                      {
-                                          "erode",
-                                      }});
+            },
+            /* category: */
+            {
+                "erode",
+            }});
 
 // 崩塌
 struct erode_tumble_material_v2 : INode {
@@ -728,40 +742,40 @@ struct erode_tumble_material_v2 : INode {
         set_output("prim_2DGrid", std::move(terrain));
     }
 };
-ZENDEFNODE(erode_tumble_material_v2, {/* inputs: */ {
-                                          "prim_2DGrid",
+ZENDEFNODE(erode_tumble_material_v2,
+            {/* inputs: */ {
+                "prim_2DGrid",
 
-                                          {"string", "stabilitymask", "_stability"},
-                                          {"ListObject", "perm"},
-                                          {"ListObject", "p_dirs"},
-                                          {"ListObject", "x_dirs"},
+                {"string", "stabilitymask", "_stability"},
+                {"ListObject", "perm"},
+                {"ListObject", "p_dirs"},
+                {"ListObject", "x_dirs"},
 
-                                          {"float", "seed", "15231.3"},
-                                          {"int", "iterations", "0"},
-                                          {"int", "iter", "0"},
-                                          {"int", "i", "0"},
+                {"float", "seed", "15231.3"},
+                {"int", "iterations", "0"},
+                {"int", "iter", "0"},
+                {"int", "i", "0"},
 
-                                          {"int", "openborder", "0"},
-                                          {"float", "gridbias", "0.0"},
+                {"int", "openborder", "0"},
+                {"float", "gridbias", "0.0"},
 
-                                          // 崩塌流淌相关
-                                          {"float", "repose_angle", "15.0"},
-                                          {"float", "quant_amt", "0.25"},
-                                          {"float", "flow_rate", "1.0"},
-
-                                      },
-                                      /* outputs: */
-                                      {
-                                          "prim_2DGrid",
-                                      },
-                                      /* params: */
-                                      {
-                                          //{"string", "stabilitymask", "_stability"},
-                                      },
-                                      /* category: */
-                                      {
-                                          "erode",
-                                      }});
+                // 崩塌流淌相关
+                {"float", "repose_angle", "15.0"},
+                {"float", "quant_amt", "0.25"},
+                {"float", "flow_rate", "1.0"},
+            },
+            /* outputs: */
+            {
+                "prim_2DGrid",
+            },
+            /* params: */
+            {
+                //{"string", "stabilitymask", "_stability"},
+            },
+            /* category: */
+            {
+                "erode",
+            }});
 
 // 崩塌 + flow
 struct erode_tumble_material_v3 : INode {
@@ -1033,40 +1047,40 @@ struct erode_tumble_material_v3 : INode {
         set_output("prim_2DGrid", std::move(terrain));
     }
 };
-ZENDEFNODE(erode_tumble_material_v3, {/* inputs: */ {
-                                          "prim_2DGrid",
+ZENDEFNODE(erode_tumble_material_v3,
+            {/* inputs: */ {
+                "prim_2DGrid",
 
-                                          {"string", "stabilitymask", "_stability"},
-                                          {"ListObject", "perm"},
-                                          {"ListObject", "p_dirs"},
-                                          {"ListObject", "x_dirs"},
+                {"string", "stabilitymask", "_stability"},
+                {"ListObject", "perm"},
+                {"ListObject", "p_dirs"},
+                {"ListObject", "x_dirs"},
 
-                                          {"float", "seed", "15231.3"},
-                                          {"int", "iterations", "0"},
-                                          {"int", "iter", "0"},
-                                          {"int", "i", "0"},
+                {"float", "seed", "15231.3"},
+                {"int", "iterations", "0"},
+                {"int", "iter", "0"},
+                {"int", "i", "0"},
 
-                                          {"int", "openborder", "0"},
-                                          {"float", "gridbias", "0.0"},
+                {"int", "openborder", "0"},
+                {"float", "gridbias", "0.0"},
 
-                                          // 崩塌流淌相关
-                                          {"float", "repose_angle", "0.0"},
-                                          {"float", "quant_amt", "0.0"},
-                                          {"float", "flow_rate", "1.0"},
-
-                                      },
-                                      /* outputs: */
-                                      {
-                                          "prim_2DGrid",
-                                      },
-                                      /* params: */ 
-                                      {
-                                          //{"string", "stabilitymask", "_stability"},
-                                      },
-                                      /* category: */
-                                      {
-                                          "erode",
-                                      }});
+                // 崩塌流淌相关
+                {"float", "repose_angle", "0.0"},
+                {"float", "quant_amt", "0.0"},
+                {"float", "flow_rate", "1.0"},
+            },
+            /* outputs: */
+            {
+                "prim_2DGrid",
+            },
+            /* params: */
+            {
+                //{"string", "stabilitymask", "_stability"},
+            },
+            /* category: */
+            {
+                "erode",
+            }});
 
 struct erode_smooth_flow : INode {
     void apply() override {
@@ -1144,19 +1158,24 @@ struct erode_smooth_flow : INode {
         set_output("prim_2DGrid", std::move(terrain));
     }
 };
-ZENDEFNODE(erode_smooth_flow, {/* inputs: */ {
-                                   "prim_2DGrid",
-                                   {"float", "smoothRate", "1.0"},
-                                   {"string", "flowName", "flow"},
-                               },
-                               /* outputs: */
-                               {
-                                   "prim_2DGrid",
-                               },
-                               /* params: */ {}, /* category: */
-                               {
-                                   "erode",
-                               }});
+ZENDEFNODE(erode_smooth_flow,
+            {/* inputs: */ {
+                "prim_2DGrid",
+                {"float", "smoothRate", "1.0"},
+                {"string", "flowName", "flow"},
+            },
+            /* outputs: */
+            {
+                "prim_2DGrid",
+            },
+            /* params: */
+            {
+
+            },
+            /* category: */
+            {
+                "erode",
+            }});
 
 // 崩塌 + 侵蚀
 struct erode_tumble_material_v4 : INode {
@@ -1593,7 +1612,7 @@ struct erode_tumble_material_v4 : INode {
     }
 };
 ZENDEFNODE(erode_tumble_material_v4,
-           {/* inputs: */ {
+            {/* inputs: */ {
                 "prim_2DGrid",
 
                 {"ListObject", "perm"},
@@ -1621,8 +1640,7 @@ ZENDEFNODE(erode_tumble_material_v4,
                 // 侵蚀能力调整
                 {"int", "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
                 {"float", "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
-                {"float", "slope_contribution_factor",
-                 "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
+                {"float", "slope_contribution_factor", "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
 
                 // 河床参数
                 {"float", "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
@@ -1635,13 +1653,16 @@ ZENDEFNODE(erode_tumble_material_v4,
 
                 // 河网控制
                 {"float", "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
-
             },
             /* outputs: */
             {
                 "prim_2DGrid",
             },
-            /* params: */ {}, /* category: */
+            /* params: */
+            {
+
+            },
+            /* category: */
             {
                 "erode",
             }});
@@ -1698,7 +1719,7 @@ struct erode_terrainHiMeLo : INode {
     }
 };
 ZENDEFNODE(erode_terrainHiMeLo,
-    { /* inputs: */ {
+        { /* inputs: */ {
             "prim_2DGrid",
             { "string", "attrName", "fbm" },
         }, /* outputs: */ {
@@ -1710,6 +1731,190 @@ ZENDEFNODE(erode_terrainHiMeLo,
 
 
 
+float fit(const float data, const float ss, const float se, const float ds, const float de) {
+    float b = std::numeric_limits<float>::epsilon();
+    b = max(abs(se - ss), b);
+    b = se - ss >= 0 ? b : -b;
+    float alpha = (data - ss)/b;
+    return ds + (de - ds) * alpha;
+}
+
+float chramp(const float inputData) {
+    float data = min(max(inputData, 0.0), 1.0);
+    float outputData = 0;
+    if (data <= 0.1) {
+        outputData = fit(data, 0, 0.1, 0, 1);
+    } else if (data >= 0.9) {
+        outputData = fit(data, 0.9, 1.0, 1, 0);
+    } else {
+        outputData = 1;
+    }
+    return outputData;
+}
+
+struct HF_maskByFeature : INode {
+    void apply() override {
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 初始化
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        // 初始化网格
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        int nx, nz;
+        auto &ud = terrain->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+        nx = ud.get2<int>("nx");
+        nz = ud.get2<int>("nz");
+        auto &pos = terrain->verts;
+        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+
+        // 获取面板参数
+        auto heightLayer = get_input2<std::string>("height_layer");
+        auto maskLayer = get_input2<std::string>("mask_layer");
+        auto smoothRadius = get_input2<int>("smooth_radius");
+
+        auto useSlope = get_input2<bool>("use_slope");
+        auto minSlope = get_input2<float>("min_slopeangle");
+        auto maxSlope = get_input2<float>("max_slopeangle");
+
+        auto useDir = get_input2<bool>("use_direction");
+        auto goalAngle = get_input2<float>("goal_angle");
+        auto angleSpread = get_input2<float>("angle_spread");
+
+        auto useHeight = get_input2<bool>("use_height");
+        auto minHeight = get_input2<float>("min_height");
+        auto maxHeight = get_input2<float>("max_height");
+
+        // 初始化网格属性
+        if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
+            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}' or '{}'.",
+                            heightLayer, maskLayer);
+        }
+        auto &height = terrain->verts.attr<float>(heightLayer);
+        auto &mask = terrain->verts.attr<float>(maskLayer);
+
+        auto &_grad = terrain->verts.add_attr<vec3f>("_grad");
+        std::fill(_grad.begin(), _grad.end(), vec3f(0,0,0));
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 计算
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma omp parallel for
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+#pragma omp parallel for
+            for (int id_x = 0; id_x < nx; id_x++)
+            {
+                int idx = Pos2Idx(id_x, id_z, nx);
+                int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
+
+                if (id_x == 0) {
+                    idx_xl = idx;
+                    idx_xr = Pos2Idx(id_x + 1, id_z, nx);
+                    scale = 1;
+                } else if (id_x == nx - 1) {
+                    idx_xl = Pos2Idx(id_x - 1, id_z, nx);
+                    idx_xr = idx;
+                    scale = 1;
+                } else {
+                    idx_xl = Pos2Idx(id_x - 1, id_z, nx);
+                    idx_xr = Pos2Idx(id_x + 1, id_z, nx);
+                    scale = 2;
+                }
+
+                if (id_z == 0) {
+                    idx_zl = idx;
+                    idx_zr = Pos2Idx(id_x, id_z + 1, nx);
+                    scale = 1;
+                } else if (id_x == nz - 1) {
+                    idx_zl = Pos2Idx(id_x, id_z - 1, nx);
+                    idx_zr = idx;
+                    scale = 1;
+                } else {
+                    idx_zl = Pos2Idx(id_x, id_z - 1, nx);
+                    idx_zr = Pos2Idx(id_x, id_z + 1, nx);
+                    scale = 2;
+                }
+
+                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
+                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+
+                vec3f dx = normalizeSafe(vec3f(1, 0, _grad[idx][0]));
+                vec3f dy = normalizeSafe(vec3f(0, 1, _grad[idx][2]));
+                vec3f n = normalizeSafe(cross(dx, dy));
+
+                mask[idx] = 1;
+                if (!useSlope &&
+                    !useDir &&
+                    !useHeight)// &&
+//                    //!useCurvature &&
+//                    //!useOcclusion)
+                {
+                    mask[idx] = 0;
+                }
+
+                if (useSlope) {
+                    float slope = 180 * acos(n[2]) / M_PI;
+                    slope = fit(slope, minSlope, maxSlope, 0, 1);
+                    slope = chramp(slope);
+                    mask[idx] *= slope;
+                }
+
+                if (useDir) {
+                    float direction = 180 * atan2(n[1], n[2]) / M_PI;
+                    direction -= goalAngle;
+                    direction -= 360 * floor(direction / 360);   // Get in range -180 to 180
+                    direction -= 180;
+                    direction = fit(direction, -angleSpread, angleSpread, 0, 1);
+                    direction = chramp(direction);
+                    mask[idx] *= direction;
+                }
+
+                if (useHeight)
+                {
+                    float h = fit(height[idx], minHeight, maxHeight, 0, 1);
+                    mask[idx] *= chramp(h);
+                }
+            }
+        }
+
+        set_output("prim_2DGrid", std::move(terrain));
+    }
+};
+ZENDEFNODE(HF_maskByFeature,
+        {/* inputs: */ {
+            "prim_2DGrid",
+            {"string", "height_layer", "height"},
+            {"string", "mask_layer", "mask"},
+            {"int", "smooth_radius", "1"},
+            {"bool", "use_slope", "0"},
+            {"float", "min_slopeangle", "0"},
+            {"float", "max_slopeangle", "90"},
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            {"bool", "use_direction", "0"},
+            {"float", "goal_angle", "0"},
+            {"float", "angle_spread", "30"},
+            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            {"bool", "use_height", "0"},
+            {"float", "min_height", "0"},
+            {"float", "max_height", "1"},
+        },
+        /* outputs: */
+        {
+            "prim_2DGrid",
+        },
+        /* params: */
+        {
+        },
+        /* category: */
+        {
+            "erode",
+        }});
 
 
 

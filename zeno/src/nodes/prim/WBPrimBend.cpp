@@ -1330,10 +1330,12 @@ struct PrimAttribBlur : INode {
 
             int find_neighbor_count = 0;
             float edgeLengthSum = 0;
+            volatile bool flag = false;
 
             if (prim_type == "line") {
-#pragma omp parallel for
+#pragma omp parallel for shared(flag)
                 for (size_t line_idx = 0; line_idx < prim->lines.size(); line_idx++) {
+                    if(flag) continue;
                     if (prim->lines[line_idx][0] == point_idx) {
                         neighborVertID["neighbor_" + std::to_string(find_neighbor_count)] = prim->lines[line_idx][1];
                         if (useEdgeLength) {
@@ -1352,12 +1354,11 @@ struct PrimAttribBlur : INode {
                         find_neighbor_count++;
                     }
                     if (find_neighbor_count >= 7)
-                        break;
+                        flag = true;
                 }
             } else if (prim_type == "tri") {
                 std::vector<int> pointNeighborSign(prim->verts.size());
                 std::fill(pointNeighborSign.begin(), pointNeighborSign.end(), 0);
-
 #pragma omp parallel for
                 for (size_t tri_idx = 0; tri_idx < prim->tris.size(); tri_idx++) {
                     auto const &ind = prim->tris[tri_idx];
@@ -1373,8 +1374,9 @@ struct PrimAttribBlur : INode {
                     }
                 }
 
-#pragma omp parallel for
+#pragma omp parallel for shared(flag)
                 for (int i = 0; i < prim->verts.size(); i++) {
+                    if(flag) continue;
                     if (pointNeighborSign[i]) {
                         neighborVertID["neighbor_" + std::to_string(find_neighbor_count)] = i;
                         if (useEdgeLength) {
@@ -1385,7 +1387,7 @@ struct PrimAttribBlur : INode {
                         find_neighbor_count ++;
                     }
                     if (find_neighbor_count >= 7)
-                        break;
+                        flag = true;
                 }
             }
 
