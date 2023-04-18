@@ -599,6 +599,7 @@ struct Helper{
     static void printAiMatrix(aiMatrix4x4 m, bool transpose = false){
 
         std::cout.precision(2);
+        std::cout << std::fixed;
         std::cout << " ("<<m[0][0]<<","<<m[0][1]<<","<<m[0][2]<<","<<m[0][3]<<", "
                          <<m[1][0]<<","<<m[1][1]<<","<<m[1][2]<<","<<m[1][3]<<", "
                          <<m[2][0]<<","<<m[2][1]<<","<<m[2][2]<<","<<m[2][3]<<", "
@@ -609,6 +610,7 @@ struct Helper{
         aiQuaterniont<float> rotate;
         aiVector3t<float> scale;
         m.Decompose(scale, rotate, trans);
+        std::cout << std::fixed;
         std::cout << " T ("<<trans.x<<","<<trans.y<<","<<trans.z<<")"
                   << " R ("<<rotate.x<<","<<rotate.y<<","<<rotate.z<<","<<rotate.w<<")"
                   << " S ("<<scale.x<<","<<scale.y<<","<<scale.z<<")"
@@ -617,6 +619,7 @@ struct Helper{
         aiMatrix3x3 r = rotate.GetMatrix();
         if (transpose)
             r = rotate.GetMatrix().Transpose();
+        std::cout << std::fixed;
         std::cout << " ("<<r[0][0]<<","<<r[0][1]<<","<<r[0][2]<<", "
                          <<r[1][0]<<","<<r[1][1]<<","<<r[1][2]<<", "
                          <<r[2][0]<<","<<r[2][1]<<","<<r[2][2]

@@ -901,6 +901,7 @@ std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
 
 void ZenoMainWindow::closeEvent(QCloseEvent *event)
 {
+    killProgram();
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
@@ -971,6 +972,7 @@ bool ZenoMainWindow::event(QEvent* event)
             emit dockSeparatorMoving(false);
         }
     }
+    return ret;
 }
 
 void ZenoMainWindow::mousePressEvent(QMouseEvent* event)

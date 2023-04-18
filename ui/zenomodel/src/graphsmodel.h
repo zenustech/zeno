@@ -133,6 +133,8 @@ public:
     bool addExecuteCommand(QUndoCommand* pCommand) override;
     void setIOVersion(zenoio::ZSG_VERSION ver) override;
     zenoio::ZSG_VERSION ioVersion() const override;
+    void setApiRunningEnable(bool bEnable) override;
+    bool isApiRunningEnable() const override;
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
 
 signals:
@@ -184,6 +186,7 @@ private:
     int m_apiLevel;
     bool m_dirty;
     bool m_bIOProcessing;
+    bool m_bApiEnableRun;
     zenoio::ZSG_VERSION m_version;
 
     friend class ApiLevelScope;

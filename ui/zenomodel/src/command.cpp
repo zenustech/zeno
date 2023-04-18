@@ -180,7 +180,15 @@ void ModelDataCommand::ensureIdxValid()
 void ModelDataCommand::redo()
 {
     ensureIdxValid();
-    //todo: setpos case.
+    if (ROLE_OBJPOS == m_role ||
+        ROLE_COLLASPED == m_role)
+    {
+        QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(m_index.model());
+        if (pModel)
+            pModel->setData(m_index, m_newData, m_role);
+        return;
+    }
+
     ApiLevelScope scope(m_model);
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
     if (pModel)
@@ -190,6 +198,15 @@ void ModelDataCommand::redo()
 void ModelDataCommand::undo()
 {
     ensureIdxValid();
+    if (ROLE_OBJPOS == m_role ||
+        ROLE_COLLASPED == m_role)
+    {
+        QAbstractItemModel *pModel = const_cast<QAbstractItemModel *>(m_index.model());
+        if (pModel)
+            pModel->setData(m_index, m_oldData, m_role);
+        return;
+    }
+
     ApiLevelScope scope(m_model);
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
     if (pModel)

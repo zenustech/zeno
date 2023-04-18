@@ -65,7 +65,7 @@ struct RadiancePRD
     float3       origin;
     float3       direction;
     bool         passed;
-    bool         is_inside;
+    bool         next_ray_is_going_inside;
     float        opacity;
     float        prob;
     float        prob2;
@@ -77,8 +77,6 @@ struct RadiancePRD
     float3       shadowAttanuation;
     int          medium;
     float        scatterDistance;
-    vec3         transColor;
-    vec3         extinction;
     float        scatterPDF;
     float        maxDistance;
     int          depth;
@@ -89,9 +87,25 @@ struct RadiancePRD
     float3       LP;
     float3       Ldir;
     float        Lweight;
-    vec3         extinctionQ[8];
+    vec3         sigma_t_queue[8];
+    vec3         ss_alpha_queue[8];
     int          curMatIdx;
+    vec3 extinction() {
+        auto idx = clamp(curMatIdx, 0, 7);
+        return sigma_t_queue[idx];
+    }
     float        CH;
+
+    //cihou SS
+    vec3 sigma_t;
+    vec3 ss_alpha;
+
+    vec3 sigma_s() {
+        return sigma_t * ss_alpha;
+    }
+    vec3 channelPDF;
+
+    bool bad = false;
 
     // cihou nanovdb
     float vol_t0=0, vol_t1=0;
@@ -127,25 +141,36 @@ struct RadiancePRD
         attenuation *= multiplier;
     }
     
-    void         pushMat(vec3 extinction)
+    int pushMat(vec3 extinction, vec3 ss_alpha = vec3(1.0f))
     {
-        if(curMatIdx<7)
+        vec3 d = abs(sigma_t_queue[curMatIdx] - extinction);
+        float c = dot(d, vec3(1,1,1));
+        if(curMatIdx<7 && c > 1e-6 )
         {
-
             curMatIdx++;
-            extinctionQ[curMatIdx] = extinction;
+            sigma_t_queue[curMatIdx] = extinction;
+            ss_alpha_queue[curMatIdx] = ss_alpha;
         }
+
+        return curMatIdx;
     }
-    vec3        popMat()
+
+    void readMat(vec3& sigma_t, vec3& ss_alpha) {
+
+        auto idx = clamp(curMatIdx-1, 0, 7);
+
+        sigma_t = sigma_t_queue[idx];
+        ss_alpha = ss_alpha_queue[idx];
+    }
+
+    int popMat(vec3& sigma_t, vec3& ss_alpha)
     {
-        if(curMatIdx>0) {
-            curMatIdx--;
-            return extinctionQ[curMatIdx];
-        }
-        else
-        {
-            return extinctionQ[curMatIdx];
-        }
+        curMatIdx = clamp(--curMatIdx, 0, 7);
+
+        sigma_t = sigma_t_queue[curMatIdx];
+        ss_alpha = ss_alpha_queue[curMatIdx];
+
+        return curMatIdx;
     }
     
 };

@@ -230,7 +230,7 @@ std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path) {
         }
     } else if (n == 1) {
         for (int i = 0; i < w * h; i++) {
-            img->verts[i] = vec3f(data[i*2+0]);
+            img->verts[i] = vec3f(data[i]);
         }
     } else {
         throw zeno::Exception("too much number of channels");
