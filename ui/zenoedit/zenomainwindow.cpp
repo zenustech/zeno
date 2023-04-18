@@ -971,6 +971,7 @@ bool ZenoMainWindow::event(QEvent* event)
             emit dockSeparatorMoving(false);
         }
     }
+    return ret;
 }
 
 void ZenoMainWindow::mousePressEvent(QMouseEvent* event)
