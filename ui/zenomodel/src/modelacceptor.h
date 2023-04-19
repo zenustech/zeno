@@ -21,7 +21,7 @@ public:
     void EndGraphs() override;
 	void setFilePath(const QString& fileName) override;
 	void switchSubGraph(const QString& graphName) override;
-	bool addNode(const QString& nodeid, const QString& name, const NODE_DESCS& descriptors) override;
+	bool addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors) override;
 	void setViewRect(const QRectF& rc) override;
 	void setSocketKeys(const QString& id, const QStringList& keys) override;
 	void initSockets(const QString& id, const QString& name, const NODE_DESCS& descs) override;

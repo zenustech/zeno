@@ -78,6 +78,26 @@ QSize ZenoPropPanel::minimumSizeHint() const
     return sz;
 }
 
+bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue) 
+{
+    if (!m_idx.isValid())
+        return false;
+
+    oldValue = m_idx.data(ROLE_CUSTOM_OBJNAME).toString();
+    if (value == oldValue)
+        return true;
+
+    bool isValid = false;
+    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    if (pGraphsModel) {
+        isValid = pGraphsModel->setCustomName(m_subgIdx, m_idx, value);
+        if (!isValid) {
+            QMessageBox::warning(nullptr, tr("Warring"), tr("CustomName invalid!"));
+        }
+    }
+    return isValid;
+}
+
 void ZenoPropPanel::clearLayout()
 {
     setUpdatesEnabled(false);

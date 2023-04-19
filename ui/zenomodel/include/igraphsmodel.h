@@ -112,6 +112,7 @@ public:
 	virtual zenoio::ZSG_VERSION ioVersion() const = 0;
     virtual void setApiRunningEnable(bool bEnable) = 0;
     virtual bool isApiRunningEnable() const = 0;
+    virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) const = 0;
 
 signals:
 	void clearLayout2();

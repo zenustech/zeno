@@ -31,6 +31,7 @@ public:
     void reset(IGraphsModel* pModel, const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     virtual QSize sizeHint() const override;
     virtual QSize minimumSizeHint() const override;
+    bool updateCustomName(const QString &value, QString &oldValue);
 
 public slots:
     void onViewParamDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles);

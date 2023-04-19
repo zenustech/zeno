@@ -5,6 +5,7 @@ enum MODEL_ROLE
 {
 	ROLE_OBJID = Qt::UserRole + 1,	// like "0xgrwe-MakeCurveMap", which is a ident.
 	ROLE_OBJNAME,	// like "MakeCurveMap", which is a node "class" name.
+    ROLE_CUSTOM_OBJNAME,
 	ROLE_NODETYPE,
 	ROLE_OBJPOS,
 	ROLE_OBJRECT,

@@ -135,6 +135,7 @@ public:
     zenoio::ZSG_VERSION ioVersion() const override;
     void setApiRunningEnable(bool bEnable) override;
     bool isApiRunningEnable() const override;
+    bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
