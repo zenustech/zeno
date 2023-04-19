@@ -1866,7 +1866,7 @@ struct HF_maskByFeature : INode {
                 }
 
                 if (useDir) {
-                    float direction = 180 * atan2(n[1], n[2]) / M_PI;
+                    float direction = 180 * atan2(n[0], n[1]) / M_PI;
                     direction -= goalAngle;
                     direction -= 360 * floor(direction / 360);   // Get in range -180 to 180
                     direction -= 180;
