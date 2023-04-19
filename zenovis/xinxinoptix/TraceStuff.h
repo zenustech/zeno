@@ -157,7 +157,7 @@ struct RadiancePRD
 
     void readMat(vec3& sigma_t, vec3& ss_alpha) {
 
-        auto idx = clamp(curMatIdx-1, 0, 7);
+        auto idx = clamp(curMatIdx, 0, 7);
 
         sigma_t = sigma_t_queue[idx];
         ss_alpha = ss_alpha_queue[idx];
