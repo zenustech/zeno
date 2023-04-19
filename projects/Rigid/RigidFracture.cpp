@@ -1106,7 +1106,14 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
 #if DEBUG_CPD
             fmt::print(fg(fmt::color::gold), "read (cpd)grouplist at [{}]\n",
                        (void *)rblist->userData().get<ListObject>("compounds").get());
+
             puts("previous rbs\' and compounds\' states");
+
+            pol(prevGroups, [](auto cpd) {
+                auto w = cpd->body->getAngularVelocity();
+                fmt::print(fg(fmt::color::orange), "cpd to-be-dismembered [{}] w<{}, {}, {}>.\n", (void *)cpd.get(),
+                           w[0], w[1], w[2]);
+            });
 #endif
             /// TBD: update rigid body transforms if exit the compounds
             pol(range(nrbs), [&](int rbi) {
@@ -1286,11 +1293,13 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 }
             });
 
-        std::vector<btVector3> accumCpdVs(ncompounds); // linear momentum
-        std::vector<btVector3> accumCpdWs(ncompounds); // angular momentum (accepted one)
-        pol(zip(accumCpdVs, accumCpdWs), [](auto &a, auto &b) {
+        std::vector<btVector3> accumCpdVs(ncompounds);    // linear momentum
+        std::vector<btVector3> accumCpdWs(ncompounds);    // angular momentum (accepted one)
+        std::vector<btVector3> accumCpdWRefs(ncompounds); // angular momentum (direct)
+        pol(zip(accumCpdVs, accumCpdWs, accumCpdWRefs), [](auto &a, auto &b, auto &c) {
             a.setZero();
             b.setZero();
+            c.setZero();
         });
         pol(range(nrbs), [&](int rbi) {
             if (isRbCompound[rbi]) {
@@ -1303,6 +1312,20 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 auto vi = body->getLinearVelocity();
                 for (int d = 0; d != 3; ++d)
                     atomic_add(exec_omp, &accumCpdVs[compId][d], mi * vi[d]);
+
+                {
+                    const auto rbTrans = rb->getWorldTransform();
+                    const auto ci = rbTrans.getOrigin();
+                    const auto &cpdTrans = cpdTransforms[compId];
+                    const auto cc = cpdTrans.getOrigin();
+
+                    // add angular momentum (ref, proven wrong)
+                    auto wi = body->getAngularVelocity();
+                    auto Ii_cpd = getMoI(rbTrans.getBasis(), rb->getInertia(), mi, ci, cc);
+                    auto tmp = Ii_cpd * wi;
+                    for (int d = 0; d != 3; ++d)
+                        atomic_add(exec_omp, &accumCpdWRefs[compId][d], tmp[d]);
+                }
             }
         });
         pol(range(ncompounds), [&](int cpdi) {
@@ -1344,9 +1367,14 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 auto ICpdInv = getMoI(cpdTransforms[cpdi].getBasis(), vecInv(cpdInertia[cpdi]));
                 auto cpdw = ICpdInv * accumCpdWs[cpdi];
                 accumCpdWs[cpdi] = cpdw;
+
+                auto cpdwref = ICpdInv * accumCpdWRefs[cpdi];
+                accumCpdWRefs[cpdi] = cpdwref;
 #if DEBUG_CPD
-                fmt::print(fg(fmt::color::red), "cpd [{}] v<{}, {}, {}>, w<{}, {}, {}>.\n", cpdi, accumCpdVs[cpdi][0],
-                           accumCpdVs[cpdi][1], accumCpdVs[cpdi][2], cpdw[0], cpdw[1], cpdw[2]);
+                fmt::print(fg(fmt::color::red),
+                           "reassembled cpd [{}] v<{}, {}, {}>, w<{}, {}, {}>, wRef<{}, {}, {}>.\n", cpdi,
+                           accumCpdVs[cpdi][0], accumCpdVs[cpdi][1], accumCpdVs[cpdi][2], cpdw[0], cpdw[1], cpdw[2],
+                           cpdwref[0], cpdwref[1], cpdwref[2]);
 #endif
             }
         });

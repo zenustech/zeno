@@ -125,8 +125,7 @@ struct BulletObject : zeno::IObject {
     void setWorldTransform(const btTransform &trans) {
         if (body && body->getMotionState())
             body->getMotionState()->setWorldTransform(trans);
-        else
-            static_cast<btCollisionObject *>(body.get())->setWorldTransform(trans);
+        static_cast<btCollisionObject *>(body.get())->setWorldTransform(trans);
     }
     btTransform getWorldTransform() const {
         btTransform trans;
@@ -581,7 +580,9 @@ struct BulletWorld : zeno::IObject {
         zeno::log_debug("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
         for (int i = 0; i < steps; i++)
-            dynamicsWorld->stepSimulation(dt / (float)steps, 1, dt / (float)steps);
+            // ref: src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h L108
+            // use 0 to disable motion interpolation
+            dynamicsWorld->stepSimulation(dt / (float)steps, 0, dt / (float)steps);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {
