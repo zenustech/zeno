@@ -5,6 +5,7 @@
 #include <zeno/types/UserData.h>
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
+#include <filesystem>
 #include <cstring>
 #include <zeno/utils/log.h>
 #define STB_IMAGE_IMPLEMENTATION
@@ -240,9 +241,10 @@ ZENDEFNODE(PrimSample2D, {
 std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path) {
     int w, h, n;
     stbi_set_flip_vertically_on_load(true);
-    float* data = stbi_loadf(path.c_str(), &w, &h, &n, 0);
+    std::string native_path = std::filesystem::u8path(path).string();
+    float* data = stbi_loadf(native_path.c_str(), &w, &h, &n, 0);
     if (!data) {
-        throw zeno::Exception("cannot open image file at path: " + path);
+        throw zeno::Exception("cannot open image file at path: " + native_path);
     }
     scope_exit delData = [=] { stbi_image_free(data); };
     auto img = std::make_shared<PrimitiveObject>();
@@ -276,7 +278,8 @@ std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
     int nx, ny, nc = 4;
     float* rgba;
     const char* err;
-    int ret = LoadEXR(&rgba, &nx, &ny, path.c_str(), &err);
+    std::string native_path = std::filesystem::u8path(path).string();
+    int ret = LoadEXR(&rgba, &nx, &ny, native_path.c_str(), &err);
     if (ret != 0) {
         zeno::log_error("load exr: {}", err);
         throw std::runtime_error(zeno::format("load exr: {}", err));

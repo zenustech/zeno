@@ -16,6 +16,7 @@
 #include "ABCTree.h"
 #include <cstring>
 #include <cstdio>
+#include <filesystem>
 
 using namespace Alembic::AbcGeom;
 
@@ -363,11 +364,12 @@ static void traverseABC(
 }
 
 static Alembic::AbcGeom::IArchive readABC(std::string const &path) {
+    std::string native_path = std::filesystem::u8path(path).string();
     std::string hdr;
     {
         char buf[5];
         std::memset(buf, 0, 5);
-        auto fp = std::fopen(path.c_str(), "rb");
+        auto fp = std::fopen(native_path.c_str(), "rb");
         if (!fp)
             throw Exception("[alembic] cannot open file for read: " + path);
         std::fread(buf, 4, 1, fp);
@@ -376,10 +378,10 @@ static Alembic::AbcGeom::IArchive readABC(std::string const &path) {
     }
     if (hdr == "\x89HDF") {
         log_info("[alembic] opening as HDF5 format");
-        return {Alembic::AbcCoreHDF5::ReadArchive(), path};
+        return {Alembic::AbcCoreHDF5::ReadArchive(), native_path};
     } else if (hdr == "Ogaw") {
         log_info("[alembic] opening as Ogawa format");
-        return {Alembic::AbcCoreOgawa::ReadArchive(), path};
+        return {Alembic::AbcCoreOgawa::ReadArchive(), native_path};
     } else {
         throw Exception("[alembic] unrecognized ABC header: [" + hdr + "]");
     }
