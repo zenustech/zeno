@@ -206,7 +206,7 @@ struct PrimSample : zeno::INode {
         auto borderColor = get_input2<vec3f>("borderColor");
         if (has_input<PrimitiveObject>("sampledObject") && get_input<PrimitiveObject>("sampledObject")->userData().has("isImage")) {
             auto image = get_input<PrimitiveObject>("sampledObject");
-            primSampleTexture(prim, srcChannel, dstChannel, image, wrap, borderColor, remapMin, remapMax);
+            primSampleTexture(prim, srcChannel, "vertex", dstChannel, image, wrap, borderColor, remapMin, remapMax);
         }
         else if (has_input<HeatmapObject>("sampledObject")) {
             auto heatmap = get_input<HeatmapObject>("sampledObject");

@@ -1,15 +1,17 @@
-#include <zeno/zeno.h>
+#include <cctype>
+#include <filesystem>
+#include <sstream>
 #include <zeno/core/Graph.h>
 #include <zeno/extra/assetDir.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/utils/log.h>
-#include <filesystem>
-#include <sstream>
-#include <cctype>
-
+#include <zeno/zeno.h>
 
 #include "./SurfaceMesh.h"
 #include "./algorithms/SurfaceRemeshing.h"
+
+#include "zensim/container/Bht.hpp"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
 
 namespace zeno {
 
@@ -25,7 +27,7 @@ struct UniformRemeshing : INode {
         if (!prim->lines.has_attr(line_pick_tag)) {
             prim->lines.add_attr<int>(line_pick_tag, 0);
         }
-        auto& elocked = prim->lines.attr<int>(line_pick_tag);
+        auto &elocked = prim->lines.attr<int>(line_pick_tag);
 
         // init v_duplicate attribute
         auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
@@ -35,8 +37,48 @@ struct UniformRemeshing : INode {
         }
 
         // if there exist marked lines
-        auto &lines = prim->lines;
         std::set<std::pair<int, int>> marked_lines{};
+#if 0
+        if (has_input("marked_lines")) {
+            const auto &markedLines = get_input<PrimitiveObject>("marked_lines")->lines.values;
+            for (vec2i line : markedLines) {
+                marked_lines.insert(std::make_pair(line[0], line[1]));
+            }
+        }
+        auto &lines = prim->lines;
+        lines.clear();
+        elocked.clear();
+#elif 0
+        /// DEBUG, all perimeter lines preserved
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+        bht<int, 2, int> tab{prim->tris.size()};
+        tab.reset(pol, true);
+        pol(prim->tris.values, [tab = proxy<space>(tab)](auto tri) mutable {
+            for (int d = 0; d != 3; ++d) {
+                auto a = tri[d];
+                auto b = tri[(d + 1) % 3];
+                tab.insert(zs::vec<int, 2>{a, b});
+            }
+        });
+        auto ne = tab.size();
+        std::vector<int> marks(ne);
+        pol(zip(range(ne), tab._activeKeys), [&marks, tab = proxy<space>(tab)](int no, auto line) mutable {
+            if (tab.query(zs::vec<int, 2>{line[1], line[0]}) < 0) {
+                marks[no] = 1;
+            }
+        });
+        for (int i = 0; i != ne; ++i)
+            if (marks[i]) {
+                auto line = tab._activeKeys[i];
+                marked_lines.insert(std::make_pair(line[0], line[1]));
+            }
+        auto &lines = prim->lines;
+        lines.clear();
+        elocked.clear();
+#else
+        auto &lines = prim->lines;
         if (lines.size() > 0) {
             int siz = lines.size();
             for (int i = 0; i < siz; ++i) {
@@ -47,6 +89,7 @@ struct UniformRemeshing : INode {
             lines.clear();
             elocked.clear();
         }
+#endif
 
         // handle non-manifold edges
         std::map<std::pair<int, int>, int> lines_map{};
@@ -57,24 +100,21 @@ struct UniformRemeshing : INode {
             std::vector<bool> marked(3, false);
             auto edge = std::make_pair(it[0], it[1]);
             new_line[0] = (lines_map.count(edge) > 0);
-            marked[0] = (marked_lines.count(edge) > 0 ||
-                        marked_lines.count(std::make_pair(it[1], it[0])) > 0);
+            marked[0] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[1], it[0])) > 0);
             if (new_line[0]) {
                 new_vert[0] = new_vert[1] = true;
                 elocked[lines_map[edge]] = 1;
             }
             edge = std::make_pair(it[1], it[2]);
             new_line[1] = (lines_map.count(edge) > 0);
-            marked[1] = (marked_lines.count(edge) > 0 ||
-                        marked_lines.count(std::make_pair(it[2], it[1])) > 0);
+            marked[1] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[2], it[1])) > 0);
             if (new_line[1]) {
                 new_vert[1] = new_vert[2] = true;
                 elocked[lines_map[edge]] = 1;
             }
             edge = std::make_pair(it[2], it[0]);
             new_line[2] = (lines_map.count(edge) > 0);
-            marked[2] = (marked_lines.count(edge) > 0 ||
-                        marked_lines.count(std::make_pair(it[0], it[2])) > 0);
+            marked[2] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[0], it[2])) > 0);
             if (new_line[2]) {
                 new_vert[2] = new_vert[0] = true;
                 elocked[lines_map[edge]] = 1;
@@ -92,30 +132,29 @@ struct UniformRemeshing : INode {
             for (int j = 0; j < 3; ++j) {
                 int line_id;
                 bool flag = false;
-                if (lines_map.count(std::make_pair(it[j], it[(j+1)%3])) > 0) {
-                    line_id = lines_map[std::make_pair(it[j], it[(j+1)%3])];
-                } else if (lines_map.count(std::make_pair(it[(j+1)%3], it[j])) > 0) {
-                    line_id = lines_map[std::make_pair(it[(j+1)%3], it[j])];
+                if (lines_map.count(std::make_pair(it[j], it[(j + 1) % 3])) > 0) {
+                    line_id = lines_map[std::make_pair(it[j], it[(j + 1) % 3])];
+                } else if (lines_map.count(std::make_pair(it[(j + 1) % 3], it[j])) > 0) {
+                    line_id = lines_map[std::make_pair(it[(j + 1) % 3], it[j])];
                 } else {
                     line_id = line_size;
                     flag = true;
                     ++line_size;
                 }
-                lines_map[std::make_pair(it[j], it[(j+1)%3])] = line_id;
+                lines_map[std::make_pair(it[j], it[(j + 1) % 3])] = line_id;
                 if (flag) {
-                    lines.push_back(vec2i(it[j], it[(j+1)%3]));
-                }
-                if (new_line[j] || marked[j]) {
-                    elocked.push_back(1);
-                } else {
-                    elocked.push_back(0);
+                    lines.push_back(vec2i(it[j], it[(j + 1) % 3]));
+                    if (new_line[j] || marked[j]) {
+                        elocked.push_back(1);
+                    } else {
+                        elocked.push_back(0);
+                    }
                 }
             }
         }
 
         auto mesh = new zeno::pmp::SurfaceMesh(prim, line_pick_tag);
 
-    
         if (edge_length < 1e-10) {
             // If no edge length input,
             // take the average of all edges as default.
@@ -125,9 +164,7 @@ struct UniformRemeshing : INode {
             edge_length /= (double)lines.size();
             zeno::log_info("default edge_length: {}", edge_length);
         }
-        zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag).uniform_remeshing(
-            edge_length,
-            iterations);
+        zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag).uniform_remeshing(edge_length, iterations);
 
         // delete duplicate vertices
         int tri_size = prim->tris.size();
@@ -151,18 +188,18 @@ struct UniformRemeshing : INode {
 
         // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
-        
+
         set_output("prim", std::move(prim));
     }
 };
 
-ZENO_DEFNODE(UniformRemeshing)({
-    {
-        {"prim"},
-        {"int", "iterations", "10"},
-        {"float", "edge_length", "0"},
-        {"string", "line_pick_tag", "line_selected"}
-    },
+ZENO_DEFNODE(UniformRemeshing)
+({
+    {{"prim"},
+     {"int", "iterations", "10"},
+     {"float", "edge_length", "0"},
+     {"string", "line_pick_tag", "line_selected"},
+     {"marked_lines"}},
     {"prim"},
     {},
     {"primitive"},
@@ -182,7 +219,7 @@ struct AdaptiveRemeshing : INode {
         if (!prim->lines.has_attr(line_pick_tag)) {
             prim->lines.add_attr<int>(line_pick_tag, 0);
         }
-        auto& elocked = prim->lines.attr<int>(line_pick_tag);
+        auto &elocked = prim->lines.attr<int>(line_pick_tag);
 
         // init v_duplicate attribute
         auto &vduplicate = prim->verts.add_attr<int>("v_duplicate", 0);
@@ -214,24 +251,21 @@ struct AdaptiveRemeshing : INode {
             std::vector<bool> marked(3, false);
             auto edge = std::make_pair(it[0], it[1]);
             new_line[0] = (lines_map.count(edge) > 0);
-            marked[0] = (marked_lines.count(edge) > 0 ||
-                        marked_lines.count(std::make_pair(it[1], it[0])) > 0);
+            marked[0] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[1], it[0])) > 0);
             if (new_line[0]) {
                 new_vert[0] = new_vert[1] = true;
                 elocked[lines_map[edge]] = 1;
             }
             edge = std::make_pair(it[1], it[2]);
             new_line[1] = (lines_map.count(edge) > 0);
-            marked[1] = (marked_lines.count(edge) > 0 ||
-                        marked_lines.count(std::make_pair(it[2], it[1])) > 0);
+            marked[1] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[2], it[1])) > 0);
             if (new_line[1]) {
                 new_vert[1] = new_vert[2] = true;
                 elocked[lines_map[edge]] = 1;
             }
             edge = std::make_pair(it[2], it[0]);
             new_line[2] = (lines_map.count(edge) > 0);
-            marked[2] = (marked_lines.count(edge) > 0 ||
-                        marked_lines.count(std::make_pair(it[0], it[2])) > 0);
+            marked[2] = (marked_lines.count(edge) > 0 || marked_lines.count(std::make_pair(it[0], it[2])) > 0);
             if (new_line[2]) {
                 new_vert[2] = new_vert[0] = true;
                 elocked[lines_map[edge]] = 1;
@@ -249,23 +283,23 @@ struct AdaptiveRemeshing : INode {
             for (int j = 0; j < 3; ++j) {
                 int line_id;
                 bool flag = false;
-                if (lines_map.count(std::make_pair(it[j], it[(j+1)%3])) > 0) {
-                    line_id = lines_map[std::make_pair(it[j], it[(j+1)%3])];
-                } else if (lines_map.count(std::make_pair(it[(j+1)%3], it[j])) > 0) {
-                    line_id = lines_map[std::make_pair(it[(j+1)%3], it[j])];
+                if (lines_map.count(std::make_pair(it[j], it[(j + 1) % 3])) > 0) {
+                    line_id = lines_map[std::make_pair(it[j], it[(j + 1) % 3])];
+                } else if (lines_map.count(std::make_pair(it[(j + 1) % 3], it[j])) > 0) {
+                    line_id = lines_map[std::make_pair(it[(j + 1) % 3], it[j])];
                 } else {
                     line_id = line_size;
                     flag = true;
                     ++line_size;
                 }
-                lines_map[std::make_pair(it[j], it[(j+1)%3])] = line_id;
+                lines_map[std::make_pair(it[j], it[(j + 1) % 3])] = line_id;
                 if (flag) {
-                    lines.push_back(vec2i(it[j], it[(j+1)%3]));
-                }
-                if (new_line[j] || marked[j]) {
-                    elocked.push_back(1);
-                } else {
-                    elocked.push_back(0);
+                    lines.push_back(vec2i(it[j], it[(j + 1) % 3]));
+                    if (new_line[j] || marked[j]) {
+                        elocked.push_back(1);
+                    } else {
+                        elocked.push_back(0);
+                    }
                 }
             }
         }
@@ -284,11 +318,8 @@ struct AdaptiveRemeshing : INode {
             approximation_tolerance = 0.0005 * bb;
             zeno::log_info("default approximation_tolerance: {}", approximation_tolerance);
         }
-        zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag).adaptive_remeshing(
-            min_length,
-            max_length,
-            approximation_tolerance,
-            iterations);
+        zeno::pmp::SurfaceRemeshing(mesh, line_pick_tag)
+            .adaptive_remeshing(min_length, max_length, approximation_tolerance, iterations);
 
         // delete duplicate vertices
         int tri_size = prim->tris.size();
@@ -312,22 +343,21 @@ struct AdaptiveRemeshing : INode {
 
         // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
-        
+
         set_output("prim", std::move(prim));
     }
 };
 
-ZENO_DEFNODE(AdaptiveRemeshing)({
-    {
-        {"prim"},
-        {"int", "iterations", "10"},
-        {"float", "max_length", "0"},
-        {"float", "min_length", "0"},
-        {"float", "approximation_tolerance", "0"},
-        {"string", "line_pick_tag", "line_selected"}
-    },
+ZENO_DEFNODE(AdaptiveRemeshing)
+({
+    {{"prim"},
+     {"int", "iterations", "10"},
+     {"float", "max_length", "0"},
+     {"float", "min_length", "0"},
+     {"float", "approximation_tolerance", "0"},
+     {"string", "line_pick_tag", "line_selected"}},
     {"prim"},
     {},
     {"primitive"},
 });
-}
+} // namespace zeno

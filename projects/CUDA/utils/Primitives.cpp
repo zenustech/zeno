@@ -220,7 +220,7 @@ struct ParticleCluster : zeno::INode {
 
         /// @brief uv
         if (pars->has_attr("uv") && uvDist > zs::limits<float>::epsilon() * 10) {
-            const auto &uv = pars->attr<vec2i>("uv");
+            const auto &uv = pars->attr<vec2f>("uv");
             pol(range(pos.size()), [&neighbors, &uv, uvDist2 = uvDist * uvDist](int vi) mutable {
                 int n = neighbors[vi].size();
                 int nExcl = 0;
@@ -299,6 +299,11 @@ struct ParticleSegmentation : zeno::INode {
 
         auto pars = get_input<zeno::PrimitiveObject>("pars");
         float dist = get_input2<float>("dist");
+        float uvDist2 = zs::sqr(get_input2<float>("uv_dist"));
+        const vec2f *uvPtr = nullptr;
+
+        if (pars->has_attr("uv") && std::sqrt(uvDist2) > zs::limits<float>::epsilon() * 10)
+            uvPtr = pars->attr<vec2f>("uv").data();
 
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
@@ -384,14 +389,17 @@ struct ParticleSegmentation : zeno::INode {
                 auto cnt = 1;
                 clusterids[vi] = no;
                 for (int vj : distNeighbors[vi]) {
-                    if (vi == vj)
-                        continue;
+                    // if (vi == vj)
+                    //    continue;
 #if 0
                     if (colors[vj] == color)
                         fmt::print("this cannot be happening! vi [{}] clr {}, while nei vj [{}] clr {}\n", vi,
                                    colors[vi], vj, colors[vj]);
 #endif
                     /// use 'cas' in case points at the boundary got inserted into adjacent clusters
+                    if (uvPtr)
+                        if (lengthSquared(uvPtr[vi] - uvPtr[vj]) > uvDist2)
+                            continue;
                     if (atomic_cas(exec_omp, &maskOut[vj], 0, 1) == 0) {
                         clusterids[vj] = no;
                         cnt++;
@@ -406,35 +414,52 @@ struct ParticleSegmentation : zeno::INode {
         auto npp = get_input2<int>("post_process_cnt");
         while (npp--) {
             std::vector<vec3f> clusterCenters(clusterNo);
-            pol(clusterCenters, [](vec3f &v) { v[0] = v[1] = v[2] = 0; });
+            std::vector<vec2f> clusterUVCenters(clusterNo);
+
+            std::memset(clusterCenters.data(), 0, sizeof(vec3f) * clusterNo);
+            if (uvPtr)
+                std::memset(clusterUVCenters.data(), 0, sizeof(vec2f) * clusterNo);
+
             pol(range(pos.size()), [&](int vi) {
                 auto cno = clusterids[vi];
                 const auto &p = pos[vi];
                 for (int d = 0; d != 3; ++d)
                     atomic_add(exec_omp, &clusterCenters[cno][d], p[d]);
+                if (uvPtr) {
+                    auto uv = uvPtr[vi];
+                    atomic_add(exec_omp, &clusterUVCenters[cno][0], uv[0]);
+                    atomic_add(exec_omp, &clusterUVCenters[cno][1], uv[1]);
+                }
             });
             pol(range(clusterNo), [&](int cno) { clusterCenters[cno] = clusterCenters[cno] / clusterSize[cno]; });
+            if (uvPtr)
+                pol(range(clusterNo),
+                    [&](int cno) { clusterUVCenters[cno] = clusterUVCenters[cno] / clusterSize[cno]; });
 
             if (npp)
                 std::memset(clusterSize.data(), 0, sizeof(int) * clusterNo);
             bvs = retrieve_bounding_volumes(pol, clusterCenters, 0);
             bvh_t bvh;
             bvh.build(pol, bvs);
-            pol(range(pos.size()),
-                [bvh = proxy<space>(bvh), &pos, &clusterids, &clusterCenters, &clusterSize, dist](int vi) mutable {
-                    const auto &p = pos[vi];
-                    auto cno = clusterids[vi];
-                    float curDist = length(p - clusterCenters[cno]);
-                    bv_t pb{vec_to_other<zs::vec<float, 3>>(p - curDist), vec_to_other<zs::vec<float, 3>>(p + curDist)};
-                    bvh.iter_neighbors(pb, [&](int oCNo) {
-                        if (auto d = length(p - clusterCenters[oCNo]); d < curDist/* && d < dist*/) {
-                            cno = oCNo;
-                            curDist = d;
-                        }
-                    });
-                    clusterids[vi] = cno;
-                    atomic_add(exec_omp, &clusterSize[cno], 1);
+            pol(range(pos.size()), [bvh = proxy<space>(bvh), &pos, &clusterids, &clusterCenters, &clusterUVCenters,
+                                    &clusterSize, uvPtr, dist, uvDist2](int vi) mutable {
+                const auto &p = pos[vi];
+                auto cno = clusterids[vi];
+                float curDist = length(p - clusterCenters[cno]);
+                bv_t pb{vec_to_other<zs::vec<float, 3>>(p - curDist), vec_to_other<zs::vec<float, 3>>(p + curDist)};
+                bvh.iter_neighbors(pb, [&](int oCNo) {
+                    if (uvPtr) {
+                        if (lengthSquared(uvPtr[vi] - clusterUVCenters[oCNo]) > uvDist2)
+                            return;
+                    }
+                    if (auto d = length(p - clusterCenters[oCNo]); d < curDist /* && d < dist*/) {
+                        cno = oCNo;
+                        curDist = d;
+                    }
                 });
+                clusterids[vi] = cno;
+                atomic_add(exec_omp, &clusterSize[cno], 1);
+            });
         }
         fmt::print("{} colors {} clusters.\n", ncolors, clusterNo);
 
@@ -472,6 +497,7 @@ ZENDEFNODE(ParticleSegmentation, {
                                      {
                                          {"PrimitiveObject", "pars"},
                                          {"float", "dist", "1"},
+                                         {"float", "uv_dist", "0"},
                                          {"string", "segment_tag", "segment_index"},
                                          {"int", "post_process_cnt", "0"},
                                          {"bool", "paint_color", "1"},
