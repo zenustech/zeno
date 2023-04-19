@@ -511,13 +511,15 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->isSS == true  && subsurface==0 )
     {
         prd->passed = true;
-
+        prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
+        prd->opacity = 0;
         prd->readMat(prd->sigma_t, prd->ss_alpha);
-        auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+        auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
         prd->attenuation2 *= trans;
         prd->attenuation *= trans;
         //prd->origin = P + 1e-5 * ray_dir; 
-
+        if(prd->maxDistance>optixGetRayTmax())
+            prd->maxDistance-=optixGetRayTmax();
         prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
@@ -678,8 +680,8 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->attenuation *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
                 prd->attenuation2 *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
             } else {
-                prd->attenuation *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
-                prd->attenuation2 *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+                prd->attenuation *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+                prd->attenuation2 *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
             }
         }else {
             prd->attenuation *= 1;
@@ -703,7 +705,7 @@ extern "C" __global__ void __closesthit__radiance()
                         if (isTrans) { // Glass
                             prd->attenuation *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
                         } else {
-                            prd->attenuation *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+                            prd->attenuation *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                         }
                     }
 
