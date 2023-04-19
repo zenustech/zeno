@@ -92,6 +92,7 @@ target_sources(zeno PRIVATE
   fem/collision_energy/evaluate_collision.hpp
   fem/collision_energy/collision_utils.hpp
   fem/TendonDynamicStepping.cu
+  # fem/FEMFleshDynamicFast.cu
   # fem/StrainLimitRepulsion.cu
   # fem/KinematicCollisionRepulsion.cu
 )
@@ -126,4 +127,6 @@ target_sources(zeno PRIVATE
   geometry/MarkSurfaceTag.cu
   geometry/SurfaceBinder.cu
   geometry/MarkInversion.cu
+  geometry/Topology.cu
+  geometry/MarkIntersection.cu
 )

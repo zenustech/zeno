@@ -269,6 +269,7 @@ struct FleshDynamicStepping : INode {
 
                 cudaPol(zs::range(tris.size()),
                     [vtemp = proxy<space>({},vtemp),
+                        verts = proxy<space>({},verts),
                         eles = proxy<space>({},eles),
                         binderTag = zs::SmallString(binderTag),
                         thicknessTag = zs::SmallString(thicknessTag),
@@ -296,6 +297,10 @@ struct FleshDynamicStepping : INode {
                     if(nm_binders == 0)
                         return;
                     auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+                    if(verts.hasProperty("binder_fail"))
+                        for(int i = 0;i != 3;++i)
+                            if(verts("binder_fail",tri[i]) > (T)0.5)
+                                return;
                     auto binder_weakness_param = (T)1.0;
                     // for(int i = 0;i != 3;++i)
                     //     if(vtemp("is_inverted",tri[i]) > (T)0.5)
@@ -486,11 +491,14 @@ struct FleshDynamicStepping : INode {
 
         void computePlaneConstraintGradientAndHessian2(zs::CudaExecutionPolicy& cudaPol,
                             const dtiles_t& vtemp,
+                            const dtiles_t& sttemp,
                             const dtiles_t& kverts,
                             const dtiles_t& ktris,
                             const std::string& planeConsBaryTag,
                             const std::string& planeConsIDTag,
-                            dtiles_t& nodal_gh_buffer) {
+                            dtiles_t& nodal_gh_buffer,
+                            dtiles_t& tris_gh_buffer,
+                            T cnorm) {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
 
@@ -508,14 +516,22 @@ struct FleshDynamicStepping : INode {
                 if(idx < 0)
                     return;      
                 auto ktri = ktris.pack(dim_c<3>,"inds",idx).reinterpret_bits(int_c);
-                auto bary = verts.pack(dim_c<3>,planeConsBaryTag,vi);
-                auto plane_root = vec3::zeros();
-                for(int i = 0;i != 3;++i)
-                    plane_root += kverts.pack(dim_c<3>,"x",ktri[i]) * bary[i];
-                auto plane_nrm = vec3::zeros();
-                for(int i = 0;i != 3;++i)
-                    plane_nrm += kverts.pack(dim_c<3>,"nrm",ktri[i]) * bary[i];
-                plane_nrm /= (plane_nrm.norm() + 1e-6);    
+
+                auto is_inverted_vert = vtemp("is_inverted",vi) > (T)0.5;
+                if(is_inverted_vert)
+                    return;
+                // auto bary = verts.pack(dim_c<3>,planeConsBaryTag,vi);
+                // auto plane_root = vec3::zeros();
+                // for(int i = 0;i != 3;++i)
+                //     plane_root += kverts.pack(dim_c<3>,"x",ktri[i]) * bary[i];
+                // auto plane_nrm = vec3::zeros();
+                // for(int i = 0;i != 3;++i)
+                //     plane_nrm += kverts.pack(dim_c<3>,"nrm",ktri[i]) * bary[i];
+                // plane_nrm /= (plane_nrm.norm() + 1e-6);    
+
+
+                auto plane_root = kverts.pack(dim_c<3>,"x",ktri[0]);
+                auto plane_nrm = ktris.pack(dim_c<3>,"nrm",idx);
 
                 auto mu = verts("mu",vi);
                 auto lam = verts("lam",vi);
@@ -537,6 +553,81 @@ struct FleshDynamicStepping : INode {
                 nodal_gh_buffer.tuple(dim_c<3>,"grad",vi) = fc;
                 nodal_gh_buffer.tuple(dim_c<3,3>,"H",vi) = Hc;
 
+            });
+
+
+            cudaPol(zs::range(tris.size()),[
+                    vtemp = proxy<space>({},vtemp),
+                    sttemp = proxy<space>({},sttemp),
+                    verts = proxy<space>({},verts),
+                    tris = proxy<space>({},tris),
+                    kverts = proxy<space>({},kverts),
+                    ktris = proxy<space>({},ktris),
+                    cnorm = cnorm,
+                    planeConsIDTag = zs::SmallString(planeConsIDTag),
+                    kine_out_collisionEps = kine_out_collisionEps,
+                    kine_in_collisionEps = kine_in_collisionEps,
+                    plane_constraint_stiffness = plane_constraint_stiffness,
+                    tris_gh_buffer = proxy<space>({},tris_gh_buffer)] ZS_LAMBDA(int ti) mutable {
+                auto kp_idx = reinterpret_bits<int>(tris(planeConsIDTag,ti));
+                if(kp_idx < 0)
+                    return;
+                auto kp = kverts.pack(dim_c<3>,"x",kp_idx);
+                auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+                for(int i = 0;i != 3;++i){
+                    auto is_inverted_vert = vtemp("is_inverted",tri[i]) > (T)0.5;
+                    if(is_inverted_vert)
+                        return;
+                }
+            
+                // auto tnrm = sttemp.pack(dim_c<3>,"nrm",ti);
+
+                auto mu = verts("mu",tri[0]);
+                auto lam = verts("lam",tri[0]);
+
+                auto eps = kine_out_collisionEps;
+                vec3 vs[4] = {};
+                vs[0] = kp;
+                for(int i = 0;i != 3;++i)
+                    vs[i + 1] = vtemp.pack(dim_c<3>,"xn",tri[i]);
+                
+                vec3 e[3] = {};
+                e[0] = vs[3] - vs[2];
+                e[1] = vs[0] - vs[2];
+                e[2] = vs[1] - vs[2];
+
+                auto n = e[2].cross(e[0]);
+                if(n.norm() < 1e-4)
+                    return;
+                n = n/(n.norm() + 1e-6);
+
+                T springLength = e[1].dot(n) - eps;
+                auto gvf = zs::vec<T,9>::zeros();
+                if(springLength < (T)0){
+                    auto gvf_v12 = COLLISION_UTILS::springLengthGradient(vs,e,n);
+                    if(isnan(gvf_v12.norm()))
+                        printf("nan gvf detected at %d %f %f\n",ti,gvf_v12.norm(),n.norm());
+                    for(int i = 0;i != 9;++i)
+                        gvf[i] = gvf_v12[i + 3];
+                }
+                cnorm = (T)1.0;
+                auto stiffness = plane_constraint_stiffness * cnorm;
+                // stiffness = (T)0;            
+                auto g = -stiffness * (T)2.0 * mu * springLength * gvf;
+                auto H = stiffness * (T)2.0 * mu * zs::dyadic_prod(gvf, gvf);
+                
+                // if(springLength < (T)0) {
+                //     auto springLengthH_M12 = COLLISION_UTILS::springLengthHessian(vs,e,n);
+                //     auto springLengthH_M9 = mat9::zeros();
+                //     for(int r = 0;r != 9;++r)
+                //         for(int c = 0;c != 9;++c)
+                //             springLengthH_M9(r,c) = springLengthH_M12(r + 3,c+ 3);
+                //     H += springLength * springLengthH_M9 * (T)2.0 * stiffness * mu;
+                //     make_pd(H);
+                // }
+
+                tris_gh_buffer.tuple(dim_c<9>,"grad",ti) = g;
+                tris_gh_buffer.tuple(dim_c<9,9>,"H",ti) = H;           
             });
         }
 
@@ -771,27 +862,27 @@ struct FleshDynamicStepping : INode {
 
 
 
-                if(eles.hasProperty("Muscle_ID") && (int)eles("Muscle_ID",ei) >= 0) {
-                    auto fiber = eles.pack(dim_c<3>,"fiber",ei);
-                    if(zs::abs(fiber.norm() - 1.0) < 1e-3) {
-                        fiber /= fiber.norm();
-                        // if(eles.hasProperty("mu")) {
-                        //     amodel.mu = eles("mu",ei);
-                        //     // amodel.lam = eles("lam",ei);
+                // if(eles.hasProperty("Muscle_ID") && (int)eles("Muscle_ID",ei) >= 0) {
+                //     auto fiber = eles.pack(dim_c<3>,"fiber",ei);
+                //     if(zs::abs(fiber.norm() - 1.0) < 1e-3) {
+                //         fiber /= fiber.norm();
+                //         // if(eles.hasProperty("mu")) {
+                //         //     amodel.mu = eles("mu",ei);
+                //         //     // amodel.lam = eles("lam",ei);
                             
-                        // }
-                        auto aP = amodel.do_first_piola(FAct,fiber);
-                        auto vecAP = flatten(P);
-                        vecAP = dFActdF.transpose() * vecP;
-                        vf -= vole  * dFdXT * vecAP *aniso_strength;
+                //         // }
+                //         auto aP = amodel.do_first_piola(FAct,fiber);
+                //         auto vecAP = flatten(P);
+                //         vecAP = dFActdF.transpose() * vecP;
+                //         vf -= vole  * dFdXT * vecAP *aniso_strength;
 
-                        auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
-                        H += dFdAct_dFdX.transpose() * aHq * dFdAct_dFdX * vole * aniso_strength;
-                        // if((int)eles("Muscle_ID",ei) == 0){
-                        //     printf("fiber : %f %f %f,Fa = %f,aP = %f,aHq = %f,H = %f\n",fiber[0],fiber[1],fiber[2],(float)FAct.norm(),(float)aP.norm(),(float)aHq.norm(),(float)H.norm());
-                        // }
-                    }
-                }
+                //         auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
+                //         H += dFdAct_dFdX.transpose() * aHq * dFdAct_dFdX * vole * aniso_strength;
+                //         // if((int)eles("Muscle_ID",ei) == 0){
+                //         //     printf("fiber : %f %f %f,Fa = %f,aP = %f,aHq = %f,H = %f\n",fiber[0],fiber[1],fiber[2],(float)FAct.norm(),(float)aP.norm(),(float)aHq.norm(),(float)H.norm());
+                //         // }
+                //     }
+                // }
 
 
                 // adding rayleigh damping term
@@ -1079,7 +1170,8 @@ struct FleshDynamicStepping : INode {
         T wolfe = (T)0.9;
         // T cg_res = (T)0.01;
         // T cg_res = (T)0.0001;
-        T cg_res = get_param<float>("cg_res");
+        // T cg_res = get_param<float>("cg_res");
+        T cg_res = get_input2<float>("cg_res");
         T btl_res = (T)0.1;
         auto models = zsparticles->getModel();
         auto& verts = zsparticles->getParticles();
@@ -1269,9 +1361,13 @@ struct FleshDynamicStepping : INode {
                 // {{tags}, cnt, memsrc_e::um, 0}
         dtiles_t sttemp(tris.get_allocator(),
             {
-                {"nrm",3}
+                {"nrm",3},
+                {"inds",3},
+                {"grad",9},
+                {"H",9 * 9}
             },tris.size()
         );
+        TILEVEC_OPS::copy(cudaPol,tris,"inds",sttemp,"inds");
         dtiles_t setemp(lines.get_allocator(),
             {
                 {"nrm",3}
@@ -1330,6 +1426,12 @@ struct FleshDynamicStepping : INode {
             {"H",12*12},
             {"grad",12}
         },eles.size() + fp_buffer.size());
+
+        // dtiles_t tri_gh_buffer(tris.size(),{
+        //     {"inds",3},
+        //     {"H",9 * 9},
+        //     {"grad",9}
+        // },tris.size());
 
 
         // TILEVEC_OPS::fill<4>(cudaPol,etemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>())
@@ -1486,7 +1588,7 @@ struct FleshDynamicStepping : INode {
         else
             TILEVEC_OPS::fill(cudaPol,vtemp,"bou_tag",(T)0.0);
 
-        int max_newton_iterations = get_param<int>("max_newton_iters");
+        int max_newton_iterations = get_input2<int>("max_newton_iters");
         int nm_iters = 0;
         // make sure, at least one baraf simi-implicit step will be taken
         auto res0 = 1e10;
@@ -1561,6 +1663,7 @@ struct FleshDynamicStepping : INode {
 
         timer.tock("setup spmat");
 
+        auto cnorm = compute_average_edge_length(cudaPol,kverts,"x",ktris);
 
         while(nm_iters < max_newton_iterations) {
             // break;
@@ -1578,9 +1681,17 @@ struct FleshDynamicStepping : INode {
             TILEVEC_OPS::fill<4>(cudaPol,gh_buffer,"inds",zs::vec<int,4>::uniform(-1).reinterpret_bits(float_c)); 
             TILEVEC_OPS::fill(cudaPol,vtemp,"grad",(T)0.0);
             TILEVEC_OPS::fill(cudaPol,vtemp,"H",(T)0.0);
-            // A.findInversion(cudaPol,vtemp,etemp);  
+            TILEVEC_OPS::fill(cudaPol,sttemp,"grad",(T)0.0);
+            TILEVEC_OPS::fill(cudaPol,sttemp,"H",(T)0.0);
+
+            // if(!calculate_facet_normal(cudaPol,vtemp,"xn",tris,sttemp,"nrm")){
+            //     throw std::runtime_error("fail updating facet normal");
+            // }  
+
+            A.findInversion(cudaPol,vtemp,etemp);  
+
             // match([&](auto &elasticModel,auto &anisoModel) -> std::enable_if_t<zs::is_same_v<RM_CVREF_T(anisoModel),zs::AnisotropicArap<float>>> {...},[](...) {
-            //     A.computeGradientAndHessian(cudaPol, elasticModel,anisoModel,vtemp,etemp,gh_buffer,kd_alpha,kd_beta);
+            //     A.computeGradientAndHessian(cudaPol, elasticModel,vtemp,etemp,gh_buffer,kd_alpha,kd_beta);
             // })(models.getElasticModel(),models.getAnisoElasticModel());
             timer.tick();
             match([&](auto &elasticModel,zs::AnisotropicArap<float> &anisoModel){
@@ -1599,18 +1710,15 @@ struct FleshDynamicStepping : INode {
             if(verts.hasProperty(planeConsPosTag) && verts.hasProperty(planeConsNrmTag) && verts.hasProperty(planeConsIDTag) && verts.hasProperty(planeConsBaryTag) && use_plane_constraint){
                 std::cout << "apply plane constraint" << std::endl;
                 // A.computePlaneConstraintGradientAndHessian(cudaPol,
-                //     vtemp,
-                //     planeConsPosTag,
-                //     planeConsNrmTag,
-                //     planeConsIDTag,
-                //     vtemp);
                 A.computePlaneConstraintGradientAndHessian2(cudaPol,
                     vtemp,
+                    sttemp,
                     kverts,
                     ktris,
                     planeConsBaryTag,
                     planeConsIDTag,
-                    vtemp);
+                    vtemp,
+                    sttemp,cnorm);
             }
             else{
                 std::cout << "apply no plane constraint : " << 
@@ -1633,17 +1741,33 @@ struct FleshDynamicStepping : INode {
                 })(models.getElasticModel());
             }
 
+
+            // auto gradn = TILEVEC_OPS::dot<12>(cudaPol,gh_buffer,"grad","grad");
+            // auto stHn = TILEVEC_OPS::dot<12*12>(cudaPol,gh_buffer,"H","H");
+            // std::cout << "gh_gradn : " << gradn << "\t" << "gh_Hn : " << stHn << std::endl; 
+            // gradn = TILEVEC_OPS::dot<9>(cudaPol,sttemp,"grad","grad");
+            // stHn = TILEVEC_OPS::dot<9*9>(cudaPol,sttemp,"H","H");
+            // std::cout << "st_gradn : " << gradn << "\t" << "st_Hn : " << stHn << std::endl; 
+            // gradn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"grad","grad");
+            // stHn = TILEVEC_OPS::dot<3*3>(cudaPol,vtemp,"H","H");
+            // std::cout << "vt_gradn : " << gradn << "\t" << "vt_Hn : " << stHn << std::endl; 
+
             timer.tock("eval hessian and gradient");
             timer.tick();
             // TILEVEC_OPS::fill(cudaPol,vtemp,"grad",(T)0.0); 
             TILEVEC_OPS::assemble(cudaPol,gh_buffer,"grad","inds",vtemp,"grad");
+            TILEVEC_OPS::assemble(cudaPol,sttemp,"grad","inds",vtemp,"grad");
             TILEVEC_OPS::fill(cudaPol,vtemp,"P",(T)0.0);
+
             PCG::prepare_block_diagonal_preconditioner<4,3>(cudaPol,"H",gh_buffer,"P",vtemp,false,true);
+            PCG::prepare_block_diagonal_preconditioner<3,3>(cudaPol,"H",sttemp,"P",vtemp,false,true);
             PCG::prepare_block_diagonal_preconditioner<1,3>(cudaPol,"H",vtemp,"P",vtemp,true,true);
             timer.tock("precondition and assemble setup");
             timer.tick();
             // eval sparse matrix
-            spmat._vals.reset(0);   
+            spmat._vals.reset(0);  
+
+
             cudaPol(zs::range(eles.size()),
                 [gh_buffer = proxy<space>({},gh_buffer),
                         spmat = view<space>(spmat),
@@ -1655,6 +1779,13 @@ struct FleshDynamicStepping : INode {
                     //         return;
                     //     }
                     auto H = gh_buffer.pack(dim_c<12,12>,"H",ei);
+                    update_hessian(spmat,inds,H,true);
+            });
+
+             cudaPol(zs::range(sttemp.size()),
+                [sttemp = proxy<space>({},sttemp),spmat = proxy<space>(spmat)] ZS_LAMBDA(int vi) mutable {
+                    auto inds = sttemp.pack(dim_c<3>,"inds",vi,int_c);
+                    auto H = sttemp.pack(dim_c<9,9>,"H",vi);
                     update_hessian(spmat,inds,H,true);
             });
 
@@ -1765,6 +1896,8 @@ struct FleshDynamicStepping : INode {
 ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","kinematic_boundary",
                                     "gravity","Acts",
                                     "driven_boudary",
+                                    {"int","max_newton_iters","5"},
+                                    {"float","cg_res","0.0001"},
                                     {"string","driven_tag","bone_bw"},
                                     {"float","driven_weight","0.02"},
                                     {"string","muscle_id_tag","ms_id_tag"},
@@ -1787,9 +1920,7 @@ ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","kinematic_boundary",
                                     },
                                   {"ZSParticles"},
                                   {
-                                    {"int","max_cg_iters","1000"},
-                                    {"int","max_newton_iters","5"},
-                                    {"float","cg_res","0.0001"},
+                                    {"int","max_cg_iters","1000"}, 
                                     {"string","binderTag","binder_tag"},
                                     {"string","binderThicknessTag","binder_thickness"},
                                     {"string","binderInversionTag","binder_inversion"},
@@ -1860,5 +1991,43 @@ ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","kinematic_boundary",
 // struct VisualizeBoneDrivenForce : zeno::INode {
 
 // };
+
+// struct VisualizePlaneConstraintForce : zeno::INode {
+//     using T = float;
+//     using Ti = int;
+//     using dtiles_t = zs::TileVector<T,32>;
+//     using tiles_t = typename ZenoParticles::particles_t;
+//     using vec2 = zs::vec<T,2>;
+//     using vec3 = zs::vec<T, 3>;
+//     using mat3 = zs::vec<T, 3, 3>;
+//     using mat9 = zs::vec<T,9,9>;
+//     using mat12 = zs::vec<T,12,12>;
+
+//     using bvh_t = zs::LBvh<3,int,T>;
+//     using bv_t = zs::AABBBox<3, T>;
+
+//     using pair3_t = zs::vec<Ti,3>;
+//     using pair4_t = zs::vec<Ti,4>;
+
+//     virtual void apply() override {
+//         using namespace zs;
+//         auto zsparticles = get_input<ZenoParticles>("ZSParticles");
+//         auto& verts = zsparticles->getParticles();
+//         auto& tris  = (*zsparticles)[ZenoParticles::s_surfTriTag];     
+
+//         auto kinematic_boundary = get_input<ZenoParticles>("kinematic_boundary");   
+//         auto& kb_verts = kinematic_boundary->getParticles();
+//         auto& kb_tris = kinematic_boundary->getQuadraturePoints();
+
+//         auto planeConsPosTag = get_param<std::string>("planeConsPosTag");
+//         auto planeConsNrmTag = get_param<std::string>("planeConsNrmTag");
+//         auto planeConsIDTag = get_param<std::string>("planeConsIDTag");
+//         auto planeConsBaryTag = get_param<std::string>("planeConsBaryTag");
+
+//         auto planeConsStiffness = get_input2<float>("planeConsStiffness");        
+
+
+//     }
+// }
 
 };

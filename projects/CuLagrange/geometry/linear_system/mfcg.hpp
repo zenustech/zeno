@@ -727,22 +727,29 @@ if(do_cuda_profile)
         copy<space_dim>(pol,vtemp,"q",vtemp,"p");
 
         T zTrk = dot<space_dim>(pol,vtemp,"r","q");
+        if(zTrk < 0) {
+            std::cout << "negative zTrk detected = " << zTrk << std::endl;
+            fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
+            throw std::runtime_error("negative zTrk detected");
+        }
+        if(std::isnan(zTrk)) {
+            // std::cout << "nan zTrk detected = " << zTrk << std::endl;
+            auto rn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"r","r");
+            auto qn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"q","q");
+            auto Pn = TILEVEC_OPS::dot<9>(cudaPol,vtemp,"P","P");
+            auto bn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"b","b");
+            auto xn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"x","x");
+            auto tempn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"temp","temp");
+            fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected = {} qn = {} rn = {} Pn = {} bn = {} tempn = {} xn = {}\n",zTrk,qn,rn,Pn,bn,tempn,xn);
+            throw std::runtime_error("nan zTrk detected");
+        }
         T residualPreconditionedNorm = std::sqrt(std::abs(zTrk));
         T localTol = rel_accuracy * residualPreconditionedNorm;
         // fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
 
         int iter = 0;
         for(;iter != max_iters;++iter){
-            if(zTrk < 0) {
-                std::cout << "negative zTrk detected = " << zTrk << std::endl;
-                fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
-                throw std::runtime_error("negative zTrk detected");
-            }
-            if(std::isnan(zTrk)) {
-                std::cout << "nan zTrk detected = " << zTrk << std::endl;
-                fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected = {}\n",zTrk);
-                throw std::runtime_error("nan zTrk detected");
-            }
+
             if(residualPreconditionedNorm < localTol)
                 break;
             // H * p -> tmp
@@ -784,6 +791,16 @@ if(do_cuda_profile)
             project<space_dim>(pol,vtemp,"q","btag");
             auto zTrkLast = zTrk;
             zTrk = dot<space_dim>(pol,vtemp,"q","r");
+            if(zTrk < 0) {
+                std::cout << "negative zTrk detected Here = " << zTrk << std::endl;
+                fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
+                throw std::runtime_error("negative zTrk detected");
+            }
+            if(std::isnan(zTrk)) {
+                std::cout << "nan zTrk detected Here = " << zTrk << std::endl;
+                fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected = {}\n",zTrk);
+                throw std::runtime_error("nan zTrk detected");
+            }
             auto beta = zTrk / zTrkLast;
             // q + beta * p -> p
             add<space_dim>(pol,vtemp,"q",(T)(1.0),"p",beta,"p");

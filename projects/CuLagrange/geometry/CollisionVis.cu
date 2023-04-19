@@ -199,207 +199,207 @@ namespace zeno {
         // }
 
 
-        // void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, ZenoParticles::particles_t &sfs,
-        //                             ZenoParticles::particles_t &ses, ZenoParticles::particles_t &svs) {
-        //     using namespace zs;
-        //     constexpr auto space = execspace_e::cuda;
-        //     using vec2i = zs::vec<int, 2>;
-        //     using vec3i = zs::vec<int, 3>;
-        //     sfs.append_channels(pol, {{"ff_inds", 3}, {"fe_inds", 3}, {"fp_inds", 3}});
-        //     ses.append_channels(pol, {{"fe_inds", 2},{"ep_inds",2}});
+        void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, ZenoParticles::particles_t &sfs,
+                                    ZenoParticles::particles_t &ses, ZenoParticles::particles_t &svs) {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+            using vec2i = zs::vec<int, 2>;
+            using vec3i = zs::vec<int, 3>;
+            sfs.append_channels(pol, {{"ff_inds", 3}, {"fe_inds", 3}, {"fp_inds", 3}});
+            ses.append_channels(pol, {{"fe_inds", 2},{"ep_inds",2}});
 
-        //     // fmt::print("sfs size: {}, ses size: {}, svs size: {}\n", sfs.size(), ses.size(), svs.size());
+            // fmt::print("sfs size: {}, ses size: {}, svs size: {}\n", sfs.size(), ses.size(), svs.size());
 
-        //     bcht<vec2i, int, true, universal_hash<vec2i>, 32> etab{sfs.get_allocator(), sfs.size() * 3};
-        //     Vector<int> sfi{sfs.get_allocator(), sfs.size() * 3}; // surftri indices corresponding to edges in the table
-        //     bcht<int,int,true, universal_hash<int>,32> ptab(svs.get_allocator(),svs.size());
-        //     Vector<int> spi{svs.get_allocator(),svs.size()};
+            bcht<vec2i, int, true, universal_hash<vec2i>, 32> etab{sfs.get_allocator(), sfs.size() * 3};
+            Vector<int> sfi{sfs.get_allocator(), sfs.size() * 3}; // surftri indices corresponding to edges in the table
+            bcht<int,int,true, universal_hash<int>,32> ptab(svs.get_allocator(),svs.size());
+            Vector<int> spi{svs.get_allocator(),svs.size()};
 
-        //     pol(range(sfi.size()),
-        //         [sfi = proxy<space>(sfi)] __device__(int i) mutable {
-        //             sfi[i] = -1;
-        //     });
+            pol(range(sfi.size()),
+                [sfi = proxy<space>(sfi)] __device__(int i) mutable {
+                    sfi[i] = -1;
+            });
 
-        //     /// @brief compute space hash
-        //     {
-        //         pol(range(sfs.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs),
-        //                                 sfi = proxy<space>(sfi)] __device__(int ti) mutable {
-        //             auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
-        //             for (int i = 0; i != 3; ++i)
-        //                 if (auto no = etab.insert(vec2i{tri[i], tri[(i + 1) % 3]}); no >= 0) {
-        //                     sfi[no] = ti;
-        //                 } else {
-        //                     int pid = etab.query(vec2i{tri[i], tri[(i + 1) % 3]});
-        //                     int oti = sfi[pid];
-        //                     // auto otri = sfs.pack(dim_c<3>, "inds", oti).reinterpret_bits(int_c);
-        //                     printf("the same directed edge <%d, %d> has been inserted twice! original sfi[%d,%d]= %d, cur "
-        //                         "%d <%d, %d, %d>\n",
-        //                         tri[i], tri[(i + 1) % 3],no , pid, oti, ti, tri[0], tri[1], tri[2]);
-        //                 }
-        //         });
+            /// @brief compute space hash
+            {
+                pol(range(sfs.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs),
+                                        sfi = proxy<space>(sfi)] __device__(int ti) mutable {
+                    auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
+                    for (int i = 0; i != 3; ++i)
+                        if (auto no = etab.insert(vec2i{tri[i], tri[(i + 1) % 3]}); no >= 0) {
+                            sfi[no] = ti;
+                        } else {
+                            int pid = etab.query(vec2i{tri[i], tri[(i + 1) % 3]});
+                            int oti = sfi[pid];
+                            // auto otri = sfs.pack(dim_c<3>, "inds", oti).reinterpret_bits(int_c);
+                            printf("the same directed edge <%d, %d> has been inserted twice! original sfi[%d,%d]= %d, cur "
+                                "%d <%d, %d, %d>\n",
+                                tri[i], tri[(i + 1) % 3],no , pid, oti, ti, tri[0], tri[1], tri[2]);
+                        }
+                });
 
-        //         std::cout << "output svs's channel and channel size :" << std::endl;
-        //         for(auto tag : svs.getPropertyTags()) {
-        //             std::cout << tag.name << "\t:\t" << tag.numChannels << std::endl; 
-        //         }
+                std::cout << "output svs's channel and channel size :" << std::endl;
+                for(auto tag : svs.getPropertyTags()) {
+                    std::cout << tag.name << "\t:\t" << tag.numChannels << std::endl; 
+                }
 
-        //         // if(svs.hasProperty("inds"))
-        //         //     fmt::print(fg(fmt::color::red),"svs has \"inds\" channel\n");
-        //         auto svsIndsOffset = svs.getPropertyOffset("inds");
-        //         // std::cout << "svdIndsOffset : " << svsIndsOffset << std::endl;
-        //         pol(range(spi.size()),
-        //             [spi = proxy<space>(spi)] ZS_LAMBDA(int pi) mutable {
-        //                 spi[pi] = -1;
-        //         });
-        //         pol(range(svs.size()),[ptab = proxy<space>(ptab),svs = proxy<space>({},svs,"filling_in_ptab"),
-        //             spi = proxy<space>(spi),svsIndsOffset] __device__(int pi) mutable {
-        //                 // auto numChannels = svs.propertySize("inds");
-        //                 // if(pi == 0){
-        //                     // printf("svdInds[\"inds\"][%d] : %d %d\n",(int)numChannels,(int)svsIndsOffset,(int)pi);
+                // if(svs.hasProperty("inds"))
+                //     fmt::print(fg(fmt::color::red),"svs has \"inds\" channel\n");
+                auto svsIndsOffset = svs.getPropertyOffset("inds");
+                // std::cout << "svdIndsOffset : " << svsIndsOffset << std::endl;
+                pol(range(spi.size()),
+                    [spi = proxy<space>(spi)] ZS_LAMBDA(int pi) mutable {
+                        spi[pi] = -1;
+                });
+                pol(range(svs.size()),[ptab = proxy<space>(ptab),svs = proxy<space>({},svs,"filling_in_ptab"),
+                    spi = proxy<space>(spi),svsIndsOffset] __device__(int pi) mutable {
+                        // auto numChannels = svs.propertySize("inds");
+                        // if(pi == 0){
+                            // printf("svdInds[\"inds\"][%d] : %d %d\n",(int)numChannels,(int)svsIndsOffset,(int)pi);
 
-        //                 auto pidx = reinterpret_bits<int>(svs("inds",pi));
+                        auto pidx = reinterpret_bits<int>(svs("inds",pi));
 
-        //                 // }
-        //                 // auto no = ptab.insert(pidx);
-        //                 // if(no >=0 && no >= spi.size())
-        //                 //     printf("ptab overflow %d %d %d\n",(int)pidx,(int)no,(int)spi.size());
-        //                 // if(no < 0)
-        //                 //     printf("negative ptab : %d\n",(int)no);
-        //                 // auto no = ptab.insert(pidx);
-        //                 // duplicate of pi and inds
-        //                 if(auto no = ptab.insert(pidx);no >= 0)
-        //                     spi[no] = pi;
-        //                 else {
-        //                     // printf("invalid ptab insertion\n");
-        //                     auto opi = spi[ptab.query(pidx)];
-        //                     auto opidx = reinterpret_bits<int>(svs(svsIndsOffset,opi));
-        //                     printf("the same surface point <%d> has been inserted twice! origin svi %d <%d>, cur "
-        //                         "%d <%d>\n",
-        //                         pidx,opi,opidx,pi,pidx);
-        //                 }
-        //         });
+                        // }
+                        // auto no = ptab.insert(pidx);
+                        // if(no >=0 && no >= spi.size())
+                        //     printf("ptab overflow %d %d %d\n",(int)pidx,(int)no,(int)spi.size());
+                        // if(no < 0)
+                        //     printf("negative ptab : %d\n",(int)no);
+                        // auto no = ptab.insert(pidx);
+                        // duplicate of pi and inds
+                        if(auto no = ptab.insert(pidx);no >= 0)
+                            spi[no] = pi;
+                        else {
+                            // printf("invalid ptab insertion\n");
+                            auto opi = spi[ptab.query(pidx)];
+                            auto opidx = reinterpret_bits<int>(svs(svsIndsOffset,opi));
+                            printf("the same surface point <%d> has been inserted twice! origin svi %d <%d>, cur "
+                                "%d <%d>\n",
+                                pidx,opi,opidx,pi,pidx);
+                        }
+                });
 
-        //         pol(range(spi.size()),
-        //             [spi = proxy<space>(spi)] ZS_LAMBDA(int pi) mutable {
-        //                 if(spi[pi] < 0)
-        //                     printf("invalid spi[%d] = %d\n",pi,spi[pi]);
-        //         });
+                pol(range(spi.size()),
+                    [spi = proxy<space>(spi)] ZS_LAMBDA(int pi) mutable {
+                        if(spi[pi] < 0)
+                            printf("invalid spi[%d] = %d\n",pi,spi[pi]);
+                });
 
 
-        //     }
-        //     /// @brief compute ep neighbors
-        //     {
-        //         if(!ses.hasProperty("inds") || ses.getChannelSize("inds") != 2)
-        //             throw std::runtime_error("ses has no valid inds");
+            }
+            /// @brief compute ep neighbors
+            {
+                if(!ses.hasProperty("inds") || ses.getChannelSize("inds") != 2)
+                    throw std::runtime_error("ses has no valid inds");
 
-        //         if(!ses.hasProperty("ep_inds") || ses.getChannelSize("ep_inds") != 2)
-        //             throw std::runtime_error("ses has no valid ep_inds");
-        //         pol(range(ses.size()),[ptab = proxy<space>(ptab),ses = proxy<space>({},ses,"ses:retrieve_inds_set_ep_inds"),
-        //             svs = proxy<space>({},svs),spi = proxy<space>(spi)] __device__(int ei) mutable {
-        //                 auto neighpIds = vec2i::uniform(-1);
-        //                 auto edge = ses.pack(dim_c<2>,"inds",ei).reinterpret_bits(int_c);
-        //                 for(int i = 0;i != 2;++i){
-        //                     if(auto no = ptab.query(edge[i]);no >= 0) {
-        //                         neighpIds[i] = spi[no];
-        //                     }
-        //                 }
-        //                 ses.tuple(dim_c<2>,"ep_inds",ei) = neighpIds.reinterpret_bits(float_c);
-        //         });
-        //     }
+                if(!ses.hasProperty("ep_inds") || ses.getChannelSize("ep_inds") != 2)
+                    throw std::runtime_error("ses has no valid ep_inds");
+                pol(range(ses.size()),[ptab = proxy<space>(ptab),ses = proxy<space>({},ses,"ses:retrieve_inds_set_ep_inds"),
+                    svs = proxy<space>({},svs),spi = proxy<space>(spi)] __device__(int ei) mutable {
+                        auto neighpIds = vec2i::uniform(-1);
+                        auto edge = ses.pack(dim_c<2>,"inds",ei).reinterpret_bits(int_c);
+                        for(int i = 0;i != 2;++i){
+                            if(auto no = ptab.query(edge[i]);no >= 0) {
+                                neighpIds[i] = spi[no];
+                            }
+                        }
+                        ses.tuple(dim_c<2>,"ep_inds",ei) = neighpIds.reinterpret_bits(float_c);
+                });
+            }
 
-        //     /// @brief compute ff neighbors
-        //     {
+            /// @brief compute ff neighbors
+            {
 
-        //         pol(range(sfs.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs),
-        //                                 sfi = proxy<space>(sfi)] __device__(int ti) mutable {
-        //             auto neighborIds = vec3i::uniform(-1);
-        //             auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
-        //             for (int i = 0; i != 3; ++i)
-        //                 if (auto no = etab.query(vec2i{tri[(i + 1) % 3], tri[i]}); no >= 0) {
-        //                     neighborIds[i] = sfi[no];
-        //                 }
-        //             sfs.tuple(dim_c<3>, "ff_inds", ti) = neighborIds.reinterpret_bits(float_c);
-        //             sfs.tuple(dim_c<3>, "fe_inds", ti) = vec3i::uniform(-1); // default initialization
-        //         });
-        //     }
-        //     /// @brief compute fe neighbors
-        //     {
-        //         auto sfindsOffset = sfs.getPropertyOffset("inds");
-        //         auto sfFeIndsOffset = sfs.getPropertyOffset("fe_inds");
-        //         auto seFeIndsOffset = ses.getPropertyOffset("fe_inds");
-        //         pol(range(ses.size()),
-        //             [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs), ses = proxy<space>({}, ses),
-        //             sfi = proxy<space>(sfi), sfindsOffset, sfFeIndsOffset, seFeIndsOffset] __device__(int li) mutable {
-        //                 auto findLineIdInTri = [](const auto &tri, int v0, int v1) -> int {
-        //                     for (int loc = 0; loc < 3; ++loc)
-        //                         if (tri[loc] == v0 && tri[(loc + 1) % 3] == v1)
-        //                             return loc;
-        //                     return -1;
-        //                 };
-        //                 auto neighborTris = vec2i::uniform(-1);
-        //                 auto line = ses.pack(dim_c<2>, "inds", li).reinterpret_bits(int_c);
+                pol(range(sfs.size()), [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs),
+                                        sfi = proxy<space>(sfi)] __device__(int ti) mutable {
+                    auto neighborIds = vec3i::uniform(-1);
+                    auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
+                    for (int i = 0; i != 3; ++i)
+                        if (auto no = etab.query(vec2i{tri[(i + 1) % 3], tri[i]}); no >= 0) {
+                            neighborIds[i] = sfi[no];
+                        }
+                    sfs.tuple(dim_c<3>, "ff_inds", ti) = neighborIds.reinterpret_bits(float_c);
+                    sfs.tuple(dim_c<3>, "fe_inds", ti) = vec3i::uniform(-1); // default initialization
+                });
+            }
+            /// @brief compute fe neighbors
+            {
+                auto sfindsOffset = sfs.getPropertyOffset("inds");
+                auto sfFeIndsOffset = sfs.getPropertyOffset("fe_inds");
+                auto seFeIndsOffset = ses.getPropertyOffset("fe_inds");
+                pol(range(ses.size()),
+                    [etab = proxy<space>(etab), sfs = proxy<space>({}, sfs), ses = proxy<space>({}, ses),
+                    sfi = proxy<space>(sfi), sfindsOffset, sfFeIndsOffset, seFeIndsOffset] __device__(int li) mutable {
+                        auto findLineIdInTri = [](const auto &tri, int v0, int v1) -> int {
+                            for (int loc = 0; loc < 3; ++loc)
+                                if (tri[loc] == v0 && tri[(loc + 1) % 3] == v1)
+                                    return loc;
+                            return -1;
+                        };
+                        auto neighborTris = vec2i::uniform(-1);
+                        auto line = ses.pack(dim_c<2>, "inds", li).reinterpret_bits(int_c);
 
-        //                 {
-        //                     if (auto no = etab.query(line); no >= 0) {
-        //                         // tri
-        //                         auto triNo = sfi[no];
-        //                         auto tri = sfs.pack(dim_c<3>, sfindsOffset, triNo).reinterpret_bits(int_c);
-        //                         auto loc = findLineIdInTri(tri, line[0], line[1]);
-        //                         if (loc == -1) {
-        //                             printf("ridiculous, this edge <%d, %d> does not belong to tri <%d, %d, %d>\n", line[0],
-        //                                 line[1], tri[0], tri[1], tri[2]);
-        //                         } else {
-        //                             sfs(sfFeIndsOffset + loc, triNo) = reinterpret_bits<float>(li);
-        //                             // edge
-        //                             neighborTris[0] = triNo;
-        //                         }
-        //                     }
-        //                 }
-        //                 vec2i rline{line[1], line[0]};
-        //                 {
-        //                     if (auto no = etab.query(rline); no >= 0) {
-        //                         // tri
-        //                         auto triNo = sfi[no];
-        //                         auto tri = sfs.pack(dim_c<3>, sfindsOffset, triNo).reinterpret_bits(int_c);
-        //                         auto loc = findLineIdInTri(tri, rline[0], rline[1]);
-        //                         if (loc == -1) {
-        //                             printf("ridiculous, this edge <%d, %d> does not belong to tri <%d, %d, %d>\n", rline[0],
-        //                                 rline[1], tri[0], tri[1], tri[2]);
-        //                         } else {
-        //                             sfs(sfFeIndsOffset + loc, triNo) = reinterpret_bits<float>(li);
-        //                             // edge
-        //                             neighborTris[1] = triNo;
-        //                         }
-        //                     }
-        //                 }
-        //                 ses.tuple(dim_c<2>, seFeIndsOffset, li) = neighborTris.reinterpret_bits(float_c);
-        //             });
-        //     }
-        //     /// @brief compute fp neighbors
-        //     /// @note  surface vertex index is not necessarily consecutive, thus hashing
-        //     {
-        //         bcht<int, int, true, universal_hash<int>, 32> vtab{svs.get_allocator(), svs.size()};
-        //         Vector<int> svi{etab.get_allocator(), svs.size()}; // surftri indices corresponding to edges in the table
-        //         // svs
-        //         pol(range(svs.size()), [vtab = proxy<space>(vtab), svs = proxy<space>({}, svs),
-        //                                 svi = proxy<space>(svi)] __device__(int vi) mutable {
-        //             int vert = reinterpret_bits<int>(svs("inds", vi));
-        //             if (auto no = vtab.insert(vert); no >= 0)
-        //                 svi[no] = vi;
-        //         });
-        //         //
-        //         pol(range(sfs.size()), [vtab = proxy<space>(vtab), sfs = proxy<space>({}, sfs),
-        //                                 svi = proxy<space>(svi)] __device__(int ti) mutable {
-        //             auto neighborIds = vec3i::uniform(-1);
-        //             auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
-        //             for (int i = 0; i != 3; ++i)
-        //                 if (auto no = vtab.query(tri[i]); no >= 0) {
-        //                     neighborIds[i] = svi[no];
-        //                 }
-        //             sfs.tuple(dim_c<3>, "fp_inds", ti) = neighborIds.reinterpret_bits(float_c);
-        //         });
-        //     }
-        // }
+                        {
+                            if (auto no = etab.query(line); no >= 0) {
+                                // tri
+                                auto triNo = sfi[no];
+                                auto tri = sfs.pack(dim_c<3>, sfindsOffset, triNo).reinterpret_bits(int_c);
+                                auto loc = findLineIdInTri(tri, line[0], line[1]);
+                                if (loc == -1) {
+                                    printf("ridiculous, this edge <%d, %d> does not belong to tri <%d, %d, %d>\n", line[0],
+                                        line[1], tri[0], tri[1], tri[2]);
+                                } else {
+                                    sfs(sfFeIndsOffset + loc, triNo) = reinterpret_bits<float>(li);
+                                    // edge
+                                    neighborTris[0] = triNo;
+                                }
+                            }
+                        }
+                        vec2i rline{line[1], line[0]};
+                        {
+                            if (auto no = etab.query(rline); no >= 0) {
+                                // tri
+                                auto triNo = sfi[no];
+                                auto tri = sfs.pack(dim_c<3>, sfindsOffset, triNo).reinterpret_bits(int_c);
+                                auto loc = findLineIdInTri(tri, rline[0], rline[1]);
+                                if (loc == -1) {
+                                    printf("ridiculous, this edge <%d, %d> does not belong to tri <%d, %d, %d>\n", rline[0],
+                                        rline[1], tri[0], tri[1], tri[2]);
+                                } else {
+                                    sfs(sfFeIndsOffset + loc, triNo) = reinterpret_bits<float>(li);
+                                    // edge
+                                    neighborTris[1] = triNo;
+                                }
+                            }
+                        }
+                        ses.tuple(dim_c<2>, seFeIndsOffset, li) = neighborTris.reinterpret_bits(float_c);
+                    });
+            }
+            /// @brief compute fp neighbors
+            /// @note  surface vertex index is not necessarily consecutive, thus hashing
+            {
+                bcht<int, int, true, universal_hash<int>, 32> vtab{svs.get_allocator(), svs.size()};
+                Vector<int> svi{etab.get_allocator(), svs.size()}; // surftri indices corresponding to edges in the table
+                // svs
+                pol(range(svs.size()), [vtab = proxy<space>(vtab), svs = proxy<space>({}, svs),
+                                        svi = proxy<space>(svi)] __device__(int vi) mutable {
+                    int vert = reinterpret_bits<int>(svs("inds", vi));
+                    if (auto no = vtab.insert(vert); no >= 0)
+                        svi[no] = vi;
+                });
+                //
+                pol(range(sfs.size()), [vtab = proxy<space>(vtab), sfs = proxy<space>({}, sfs),
+                                        svi = proxy<space>(svi)] __device__(int ti) mutable {
+                    auto neighborIds = vec3i::uniform(-1);
+                    auto tri = sfs.pack(dim_c<3>, "inds", ti).reinterpret_bits(int_c);
+                    for (int i = 0; i != 3; ++i)
+                        if (auto no = vtab.query(tri[i]); no >= 0) {
+                            neighborIds[i] = svi[no];
+                        }
+                    sfs.tuple(dim_c<3>, "fp_inds", ti) = neighborIds.reinterpret_bits(float_c);
+                });
+            }
+        }
 
 
         void apply() override {
@@ -593,7 +593,7 @@ namespace zeno {
             auto ff_topo = typename ZenoParticles::particles_t(tags,nm_tris * 4,zs::memsrc_e::device,0);
             auto fe_topo = typename ZenoParticles::particles_t(tags,nm_tris * 4,zs::memsrc_e::device,0);
             auto fp_topo = typename ZenoParticles::particles_t(tags,nm_tris * 4,zs::memsrc_e::device,0);
-            auto ep_topo = typename ZenoParticles::particles_t(tags,nm_lines * 2,zs::memsrc_e::device,0);
+            // auto ep_topo = typename ZenoParticles::particles_t(tags,nm_lines * 2,zs::memsrc_e::device,0);
             auto ft_topo = typename ZenoParticles::particles_t(tags,nm_tris * 2,zs::memsrc_e::device,0);
 
             // transfer the data from gpu to cpu
@@ -643,29 +643,29 @@ namespace zeno {
 
             });   
 
-            cudaPol(zs::range(nm_lines),
-                [ep_topo = proxy<cuda_space>({},ep_topo),
-                    verts = proxy<cuda_space>({},verts),
-                    points = proxy<cuda_space>({},points),
-                    lines = proxy<cuda_space>({},lines)] ZS_LAMBDA(int li) mutable {
-                        auto ep_inds = lines.template pack<2>("ep_inds",li).reinterpret_bits(int_c);
-                        for(int i = 0;i != 2;++i) {
-                            auto pidx = ep_inds[i];
-                            auto vidx = reinterpret_bits<int>(points("inds",pidx));
-                            ep_topo.template tuple<3>("x",li * 2 + i) = verts.template pack<3>("x",vidx);
-                        }
-            });
+            // cudaPol(zs::range(nm_lines),
+            //     [ep_topo = proxy<cuda_space>({},ep_topo),
+            //         verts = proxy<cuda_space>({},verts),
+            //         points = proxy<cuda_space>({},points),
+            //         lines = proxy<cuda_space>({},lines)] ZS_LAMBDA(int li) mutable {
+            //             auto ep_inds = lines.template pack<2>("ep_inds",li).reinterpret_bits(int_c);
+            //             for(int i = 0;i != 2;++i) {
+            //                 auto pidx = ep_inds[i];
+            //                 auto vidx = reinterpret_bits<int>(points("inds",pidx));
+            //                 ep_topo.template tuple<3>("x",li * 2 + i) = verts.template pack<3>("x",vidx);
+            //             }
+            // });
 
             ff_topo = ff_topo.clone({zs::memsrc_e::host});
             fe_topo = fe_topo.clone({zs::memsrc_e::host});
             fp_topo = fp_topo.clone({zs::memsrc_e::host});
-            ep_topo = ep_topo.clone({zs::memsrc_e::host});
+            // ep_topo = ep_topo.clone({zs::memsrc_e::host});
             ft_topo = ft_topo.clone({zs::memsrc_e::host});
 
             int ff_size = ff_topo.size();
             int fe_size = fe_topo.size();
             int fp_size = fp_topo.size();
-            int ep_size = ep_topo.size();
+            // int ep_size = ep_topo.size();
             int ft_size = ft_topo.size();
 
             constexpr auto omp_space = execspace_e::openmp;
@@ -674,7 +674,7 @@ namespace zeno {
             auto ff_prim = std::make_shared<zeno::PrimitiveObject>();
             auto fe_prim = std::make_shared<zeno::PrimitiveObject>();
             auto fp_prim = std::make_shared<zeno::PrimitiveObject>();
-            auto ep_prim = std::make_shared<zeno::PrimitiveObject>();
+            // auto ep_prim = std::make_shared<zeno::PrimitiveObject>();
             auto ft_prim = std::make_shared<zeno::PrimitiveObject>();
 
             auto& ff_verts = ff_prim->verts;
@@ -686,8 +686,8 @@ namespace zeno {
             auto& fp_verts = fp_prim->verts;
             auto& fp_lines = fp_prim->lines;
 
-            auto& ep_verts = ep_prim->verts;
-            auto& ep_lines = ep_prim->lines;
+            // auto& ep_verts = ep_prim->verts;
+            // auto& ep_lines = ep_prim->lines;
 
             auto& ft_verts = ft_prim->verts;
             auto& ft_lines = ft_prim->lines;
@@ -704,8 +704,8 @@ namespace zeno {
             fe_lines.resize(fe_pair_count);
             fp_verts.resize(fp_size);
             fp_lines.resize(fp_pair_count);
-            ep_verts.resize(ep_size);
-            ep_lines.resize(ep_pair_count);
+            // ep_verts.resize(ep_size);
+            // ep_lines.resize(ep_pair_count);
             ft_verts.resize(ft_size);
             ft_lines.resize(ft_pair_count);
 
@@ -750,12 +750,12 @@ namespace zeno {
                     }
             });
 
-            ompPol(zs::range(nm_lines),
-                [&ep_verts,&ep_lines,ep_topo = proxy<omp_space>({},ep_topo)] (int li) mutable {
-                    for(int i = 0;i != 2;++i)
-                        ep_verts[li * 2 + i] = ep_topo.template pack<3>("x",li * 2 + i).to_array();
-                    ep_lines[li] = zeno::vec2i(li * 2 + 0,li * 2 + 1);
-            });
+            // ompPol(zs::range(nm_lines),
+            //     [&ep_verts,&ep_lines,ep_topo = proxy<omp_space>({},ep_topo)] (int li) mutable {
+            //         for(int i = 0;i != 2;++i)
+            //             ep_verts[li * 2 + i] = ep_topo.template pack<3>("x",li * 2 + i).to_array();
+            //         ep_lines[li] = zeno::vec2i(li * 2 + 0,li * 2 + 1);
+            // });
 
             // for(int i = 0;i < fe_lines.size();++i)
             //     std::cout << "fe_line<" << i << "> : \t" << fe_lines[i][0] << "\t" << fe_lines[i][1] << std::endl;
@@ -763,13 +763,13 @@ namespace zeno {
             set_output("fp_topo",std::move(fp_prim));
             set_output("ff_topo",std::move(ff_prim));
             set_output("fe_topo",std::move(fe_prim));
-            set_output("ep_topo",std::move(ep_prim));
+            // set_output("ep_topo",std::move(ep_prim));
         }
     };
 
 
     ZENDEFNODE(VisualizeTopology, {{{"ZSParticles"}},
-                                {{"ft_topo"},{"ff_topo"},{"fe_topo"},{"fp_topo"},{"ep_topo"}},
+                                {{"ft_topo"},{"ff_topo"},{"fe_topo"},{"fp_topo"}/*,{"ep_topo"}*/},
                                 {},
                                 {"ZSGeometry"}});
 
