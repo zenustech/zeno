@@ -1310,7 +1310,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionSet_ShortCut->setProperty("ActionType", ACTION_SET_SHORTCUT);
     m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
     m_ui->actionAbout->setProperty("ActionType", ACTION_ABOUT);
-    m_ui->actionAbout->setProperty("ActionType", ACTION_CHECKUPDATE);
+    m_ui->actionCheck_Update->setProperty("ActionType", ACTION_CHECKUPDATE);
 }
 
 void ZenoMainWindow::screenShoot() 
