@@ -908,7 +908,7 @@ namespace DisneyBSDF{
         float w = clamp(dot(fr, vec3(1.0f,1.0f,1.0f)) / 3.0f, 0.0f, 1.0f);
         //printf("w: %f\n", w);
         
-        float psss = subsurface>0? w : 0; // /ptotal;
+        float psss = subsurface>1e-5? w : 0; // /ptotal;
         float prnd = rnd(seed);
         //printf("weight: %f, rnd: %f\n", weight,prnd);
         bool trans = false;
@@ -939,7 +939,7 @@ namespace DisneyBSDF{
             {
                 trans = true;
                 //go out, flag change
-                isSS = true;
+                isSS = false;
                 wi = wi;
                 if (thin) {
                     color = sqrt(color);
