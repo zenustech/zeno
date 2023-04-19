@@ -511,11 +511,13 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->isSS == true  && subsurface==0 )
     {
         prd->passed = true;
+
         prd->readMat(prd->sigma_t, prd->ss_alpha);
         auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
         prd->attenuation2 *= trans;
         prd->attenuation *= trans;
         //prd->origin = P + 1e-5 * ray_dir; 
+
         prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
@@ -674,8 +676,10 @@ extern "C" __global__ void __closesthit__radiance()
             prd->readMat(prd->sigma_t, prd->ss_alpha);
             if (isTrans) { // Glass
                 prd->attenuation *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
+                prd->attenuation2 *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
             } else {
                 prd->attenuation *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+                prd->attenuation2 *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
             }
         }else {
             prd->attenuation *= 1;
@@ -705,6 +709,7 @@ extern "C" __global__ void __closesthit__radiance()
 
                     if (isTrans) {
                         prd->maxDistance = 1e16;
+                        //printf("sigma_t: %f, %f, %f\n", extinction.x, extinction.y, extinction.z);
                         prd->pushMat(extinction);
                     } else {
 
@@ -732,6 +737,7 @@ extern "C" __global__ void __closesthit__radiance()
                 float3 trans;
                 prd->readMat(prd->sigma_t, prd->ss_alpha);
                 if (isTrans) { // Glass
+                
                     trans = DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
                 } else {
                     trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);

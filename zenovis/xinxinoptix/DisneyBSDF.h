@@ -908,6 +908,7 @@ namespace DisneyBSDF{
         float w = max(dot(fr, vec3(1.0f,1.0f,1.0f)) , 0.0f);
         float p_in = subsurface * w;
         //printf("w: %f\n", w);
+
         float ptotal = 1.0f + p_in ;
         float psss = subsurface>0? p_in/ptotal : 0; // /ptotal;
         float prnd = rnd(seed);
