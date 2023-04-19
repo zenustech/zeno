@@ -1806,17 +1806,3 @@ static std::string getZenoVersion()
     int year = std::stoi(std::string(date + 7, 4));
     return zeno::format("{:04d}.{:02d}.{:02d}", year, month, day);
 }
-
-QString UiHelper::nativeWindowTitle(const QString& currentFilePath)
-{
-    QString ver = QString::fromStdString(getZenoVersion());
-    if (currentFilePath.isEmpty())
-    {
-        return QString("Zeno Editor (%1)").arg(ver);
-    }
-    else
-    {
-        QString title = QString::fromUtf8("%1 - Zeno Editor (%2)").arg(currentFilePath).arg(ver);
-        return title;
-    }
-}

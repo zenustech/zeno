@@ -4,6 +4,7 @@
 #include "util/log.h"
 #include <zenomodel/include/uihelper.h>
 #include "common_def.h"
+#include "../startup/zstartup.h"
 
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
@@ -90,5 +91,20 @@ void AppHelper::ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outpu
         OUTPUT_SOCKET dstSocket = outputs["DST"];
         outputs.remove("DST");
         outputs.insert("DST", dstSocket);
+    }
+}
+
+QString AppHelper::nativeWindowTitle(const QString& currentFilePath)
+{
+    QString ver = QString::fromStdString(getZenoVersion());
+    if (currentFilePath.isEmpty())
+    {
+        QString title = QString("Zeno Editor (%1)").arg(ver);
+        return title;
+    }
+    else
+    {
+        QString title = QString::fromUtf8("%1 - Zeno Editor (%2)").arg(currentFilePath).arg(ver);
+        return title;
     }
 }

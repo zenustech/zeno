@@ -46,7 +46,7 @@ endif()
 target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
 
 if (WIN32)
-    target_link_libraries(zenoedit PRIVATE Dbghelp)
+    target_link_libraries(zenoedit PRIVATE Dbghelp Version)
 endif()
 target_link_libraries(zenoedit PRIVATE zenoui zenoio zenomodel zenovis)
 target_link_libraries(zenoedit PRIVATE zeno)

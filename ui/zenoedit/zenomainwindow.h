@@ -122,6 +122,8 @@ public:
         ACTION_LANGUAGE,
         ACTION_SHORTCUTLIST,
         ACTION_FEEDBACK,
+        ACTION_ABOUT,
+        ACTION_CHECKUPDATE,
         //options
         ACTION_SET_NASLOC,
         ACTION_ZENCACHE,

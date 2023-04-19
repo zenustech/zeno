@@ -17,6 +17,7 @@
 #include <zenomodel/include/modelrole.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenomodel/include/uihelper.h>
+#include "util/apphelper.h"
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
@@ -434,7 +435,7 @@ void ZTabDockWidget::onFloatTriggered()
         {
             filePath = pCurrentGraph->filePath();
         }
-        QString winTitle = UiHelper::nativeWindowTitle(filePath);
+        QString winTitle = AppHelper::nativeWindowTitle(filePath);
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin)
             mainWin->updateNativeWinTitle(winTitle);

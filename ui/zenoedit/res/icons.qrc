@@ -340,5 +340,8 @@
     <file>icons/welcome_github.svg</file>
     <file>icons/welcome_website.svg</file>
     <file>icons/welcome_Zeno_logo.svg</file>
+    <file>icons/ZENO-logo256.png</file>
+    <file>icons/ZENO-logo128.png</file>
+    <file>icons/ZENO-logo64.png</file>
 </qresource>
 </RCC>
