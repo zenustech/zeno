@@ -202,7 +202,10 @@ void ZenoMainWindow::initMenu()
 void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
 {
     QAction* pAction = qobject_cast<QAction*>(sender());
-    int actionType = pAction->property("ActionType").toInt();
+    QVariant var = pAction->property("ActionType");
+    int actionType = -1;
+    if (var.type() == QVariant::Int)
+        actionType = pAction->property("ActionType").toInt();
     if (actionType == ACTION_SHADING || actionType == ACTION_SOLID || actionType == ACTION_OPTIX) 
     {
         setActionIcon(m_ui->actionShading);
@@ -274,6 +277,9 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     }
     case ACTION_FEEDBACK: {
         onFeedBack();
+        break;
+    }
+    case ACTION_CHECKUPDATE: {
         break;
     }
     default: {
@@ -1304,6 +1310,7 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionSet_ShortCut->setProperty("ActionType", ACTION_SET_SHORTCUT);
     m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
     m_ui->actionAbout->setProperty("ActionType", ACTION_ABOUT);
+    m_ui->actionAbout->setProperty("ActionType", ACTION_CHECKUPDATE);
 }
 
 void ZenoMainWindow::screenShoot() 
