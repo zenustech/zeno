@@ -3039,7 +3039,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	auto lhs_matrix = simd_uaamg::LaplacianWithLevel::
 		createPressurePoissonLaplacian(liquid_sdf, face_weight, dt);
 	auto simd_solver = simd_uaamg::PoissonSolver(lhs_matrix);
-	simd_solver.mRelativeTolerance = 1e-6;
+	simd_solver.mRelativeTolerance = 1e-5;
 	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::ScheduledRelaxedJacobi;
 
   if (enable_tension) {
@@ -3078,7 +3078,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
   else{
     std::cout<<"MGPCG failed, begin pure MG solver\n";
     lhs_matrix->mDofLeafManager->foreach(set_warm_pressure);
-    simd_solver.mMaxIteration = 200;
+    simd_solver.mMaxIteration = 100;
     simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::RedBlackGaussSeidel;
     simd_solver.solvePureMultigrid(pressure, rhsgrid);
     curr_pressure.swap(pressure);
