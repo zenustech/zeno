@@ -2,6 +2,29 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="zh_CN">
 <context>
+    <name>AboutDlg</name>
+    <message>
+        <source>About Zeno</source>
+        <translation>关于 Zeno</translation>
+    </message>
+    <message>
+        <source>Product Name:</source>
+        <translation>产品：</translation>
+    </message>
+    <message>
+        <source>Product Version:</source>
+        <translation>软件版本：</translation>
+    </message>
+    <message>
+        <source>CopyRight</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>System Information</source>
+        <translation>系统信息</translation>
+    </message>
+</context>
+<context>
     <name>DesignerMainWin</name>
     <message>
         <source>Open</source>
@@ -1895,6 +1918,10 @@
         <source>Send this File</source>
         <translation type="vanished">发送当前文件</translation>
     </message>
+    <message>
+        <source>new file</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ZenoNode</name>
@@ -2044,6 +2071,14 @@
     </message>
     <message>
         <source>Cannot edit parameters!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Warring</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>CustomName invalid!</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

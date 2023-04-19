@@ -117,13 +117,16 @@ void ZenoMainWindow::initWindowProperty()
         QString title = AppHelper::nativeWindowTitle(path);
         updateNativeWinTitle(title);
     });
+    connect(pGraphsMgm, &GraphsManagment::modelInited, this, [=]() {
+        //new file
+        QString title = AppHelper::nativeWindowTitle(tr("new file"));
+        updateNativeWinTitle(title);
+    });
     connect(pGraphsMgm, &GraphsManagment::fileClosed, this, [=]() { 
         QString title = AppHelper::nativeWindowTitle("");
         updateNativeWinTitle(title);
     });
-    connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString fn) {
-        QFileInfo info(fn);
-        QString path = info.filePath();
+    connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString path) {
         QString title = AppHelper::nativeWindowTitle(path);
         updateNativeWinTitle(title);
     });
@@ -928,13 +931,13 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
         for (ZTabDockWidget *pDock : docks) {
             pDock->close();
             try {
-                pDock->testCleanupGL();
+                //pDock->testCleanupGL();
             } catch (...) {
                 //QString errMsg = QString::fromLatin1(e.what());
                 int j;
                 j = 0;
             }
-            delete pDock;
+            //delete pDock;
         }
 
         QMainWindow::closeEvent(event);
