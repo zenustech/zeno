@@ -1,3 +1,4 @@
+#include <any>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -34,6 +35,38 @@
 #include <hacdHACD.h>
 #include <hacdICHull.h>
 #include <hacdVector.h>
+
+void BulletObject::printDynamics(std::any clr_) const {
+    fmt::color clr = std::any_cast<fmt::color>(clr_);
+    auto trans = getWorldTransform();
+    auto origin = trans.getOrigin();
+    auto lin = body->getLinearVelocity();
+    auto ang = body->getAngularVelocity();
+    std::string tag = isCompound() ? "cpd" : "rb";
+    fmt::print(fg(clr), "{}[{}]: origin <{}, {}, {}>; linv <{}, {}, {}>; angv <{}, {}, {}>;\n", tag, (void *)this,
+               origin[0], origin[1], origin[2], lin[0], lin[1], lin[2], ang[0], ang[1], ang[2]);
+}
+void BulletObject::printChildDynamics(int rbi, std::any clr_) const {
+    fmt::color clr = std::any_cast<fmt::color>(clr_);
+    auto cpdTrans = getWorldTransform();
+    auto ang = body->getAngularVelocity();
+    if (isCompound()) {
+        btCompoundShape *btcpdShape = (btCompoundShape *)colShape->shape.get();
+        auto chTrans = btcpdShape->getChildTransform(rbi);
+        auto lin = body->getVelocityInLocalPoint(chTrans.getOrigin());
+
+        btTransform trans;
+        trans.mult(cpdTrans, chTrans);
+        auto origin = trans.getOrigin();
+
+        fmt::print(
+            fg(clr),
+            "rbShape[{}]: origin <{}, {}, {}>; (<{}, {}, {}>::<{}, {}, {}>) linv <{}, {}, {}>; angv <{}, {}, {}>;\n",
+            (void *)btcpdShape->getChildShape(rbi), origin[0], origin[1], origin[2], cpdTrans.getOrigin()[0],
+            cpdTrans.getOrigin()[1], cpdTrans.getOrigin()[2], chTrans.getOrigin()[0], chTrans.getOrigin()[1],
+            chTrans.getOrigin()[2], lin[0], lin[1], lin[2], ang[0], ang[1], ang[2]);
+    }
+}
 
 namespace zeno {
 
@@ -222,12 +255,7 @@ struct BulletGlueRigidBodies : zeno::INode {
                 std::lock_guard<std::mutex> guard(comLocks[compId]);
                 auto &cpdPtr = btCpdShapes[compId];
                 auto &primList = primLists[compId];
-                btTransform trans;
-                if (bodyPtr && bodyPtr->getMotionState()) {
-                    bodyPtr->getMotionState()->getWorldTransform(trans);
-                } else {
-                    trans = static_cast<btCollisionObject *>(bodyPtr.get())->getWorldTransform();
-                }
+                btTransform trans = bodyPtr->getWorldTransform();
                 cpdPtr->addChildShape(trans, bodyPtr->getCollisionShape());
                 cpdChildMasses[compId].push_back(bodyPtr->getMass());
                 // cpdOrigins[compId] += (bodyPtr->getMass() * bodyPtr->getCenterOfMassPosition());
@@ -373,7 +401,8 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
         auto cpdBodies = cpdList->get<BulletObject>();
         const auto ncpds = cpdBodies.size();
 
-        bool hasVisualPrimlist = cpdList->userData().has("visualPrimlist");
+        // bool hasVisualPrimlist = cpdList->userData().has("visualPrimlist");
+        bool hasVisualPrimlist = false;
         std::shared_ptr<ListObject> primlist;
         std::vector<std::shared_ptr<PrimitiveObject>> visPrims;
         if (hasVisualPrimlist) {
@@ -394,11 +423,7 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
             /// @note regular rbs
             if (btcpdShape == nullptr) {
                 auto prim = cpdBody->userData().get<PrimitiveObject>("prim");
-                btTransform rbTrans;
-                if (cpdBody->body->getMotionState())
-                    cpdBody->body->getMotionState()->getWorldTransform(rbTrans);
-                else
-                    rbTrans = static_cast<btCollisionObject *>(cpdBody->body.get())->getWorldTransform();
+                btTransform rbTrans = cpdBody->getWorldTransform();
 
                 auto translate = vec3f(other_to_vec<3>(rbTrans.getOrigin()));
                 auto rotation = vec4f(other_to_vec<4>(rbTrans.getRotation()));
@@ -448,12 +473,7 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
                     fmt::format("the number of child shapes [{}] and prim objs [{}] in compound [{}] mismatch!",
                                 btcpdShape->getNumChildShapes(), cpdPrimlist->arr.size(), cpi));
 
-            btTransform cpdTrans;
-            if (cpdBody && cpdBody->body->getMotionState()) {
-                cpdBody->body->getMotionState()->getWorldTransform(cpdTrans);
-            } else {
-                cpdTrans = static_cast<btCollisionObject *>(cpdBody->body.get())->getWorldTransform();
-            }
+            btTransform cpdTrans = cpdBody->getWorldTransform();
 
 #if DEBUG_CPD
             centerlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(cpdTrans.getOrigin())));
@@ -463,9 +483,19 @@ struct BulletUpdateCpdChildPrimTrans : zeno::INode {
             maxlist->arr.push_back(std::make_shared<NumericObject>(other_to_vec<3>(aabbMax)));
 #endif
 
+#if DEBUG_CPD
+            puts("newly updated compounds\' states");
+            cpdBody->printDynamics(fmt::color::violet);
+#endif
+
             for (int rbi = 0; rbi != btcpdShape->getNumChildShapes(); ++rbi) {
                 auto child = btcpdShape->getChildShape(rbi);
                 auto transform = btcpdShape->getChildTransform(rbi);
+
+#if DEBUG_CPD
+                if (rbi < 2)
+                    cpdBody->printChildDynamics(rbi, fmt::color::pink);
+#endif
 
                 transform.mult(cpdTrans, transform);
 
@@ -974,6 +1004,10 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         auto rbs = rblist->get<BulletObject>();
         const auto nrbs = rbs.size();
 
+#if DEBUG_CPD
+        fmt::print(fg(fmt::color::green), "read rblist at [{}]\n", (void *)rblist.get());
+#endif
+
         /// @note constraint relationships
         auto relationships = get_input<ListObject>("constraint_relationships")->get<BulletConstraintRelationship>();
         const auto ncons = relationships.size();
@@ -1059,11 +1093,21 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         ///
         ///
 
+        std::vector<btTransform> rbTransforms(nrbs);
+        pol(zip(rbs, rbTransforms),
+            [](std::shared_ptr<BulletObject> rb, btTransform &trans) { trans = rb->getWorldTransform(); });
         ///
         /// @brief update compound transform to rbs
+        std::shared_ptr<ListObject> groupList;
         if (rblist->userData().has("compounds")) {
             // std::vector<std::shared_ptr<BulletObject>>
-            auto prevGroups = rblist->userData().get<ListObject>("compounds")->get<BulletObject>();
+            groupList = rblist->userData().get<ListObject>("compounds");
+            auto prevGroups = groupList->get<BulletObject>();
+#if DEBUG_CPD
+            fmt::print(fg(fmt::color::gold), "read (cpd)grouplist at [{}]\n",
+                       (void *)rblist->userData().get<ListObject>("compounds").get());
+            puts("previous rbs\' and compounds\' states");
+#endif
             /// TBD: update rigid body transforms if exit the compounds
             pol(range(nrbs), [&](int rbi) {
                 auto rb = rbs[rbi];
@@ -1074,20 +1118,40 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                         /// @note trans
                         auto chTrans = cpd->getChildTransform(rb->body->getCollisionShape());
                         // rb trans = cpd trans * rb trans (either got from cpd child trans or directly from rb)
-                        rb->setTransform(cpd->getWorldTransform() * chTrans);
+                        rb->setWorldTransform(cpd->getWorldTransform() * chTrans);
+                        rbTransforms[rbi] = cpd->getWorldTransform() * chTrans;
+
                         /// @note linear vel
                         rb->body->setLinearVelocity(cpd->body->getVelocityInLocalPoint(chTrans.getOrigin()));
                         /// @note angular vel
                         rb->body->setAngularVelocity(cpd->body->getAngularVelocity());
+
+#if DEBUG_CPD
+                        int rbi = cpd->locateChild(rb->body->getCollisionShape());
+                        if (rbi < 2 && rbi >= 0) {
+                            cpd->printChildDynamics(rbi, fmt::color::pink);
+                        }
+#endif
                     }
                 }
             });
+
+#if DEBUG_CPD
+            pol(range(prevGroups), [&](auto &cpd) {
+                if (cpd->isCompound()) {
+                    cpd->printDynamics(fmt::color::light_green);
+                }
+            });
+#endif
         }
-        /// @note the output BulletObject list
-        std::shared_ptr<ListObject> groupList;
         groupList = std::make_shared<ListObject>();
+        /// @note the output BulletObject list
         groupList->arr.resize(ncompounds);
         set_attrib<ListObject>(rblist, "compounds", groupList);
+
+#if DEBUG_CPD
+        fmt::print(fg(fmt::color::yellow), "write (cpd)grouplist at [{}]\n", (void *)groupList.get());
+#endif
 
         ///
         ///
@@ -1198,8 +1262,12 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 std::lock_guard<std::mutex> guard(comLocks[compId]);
                 auto &cpdPtr = btCpdShapes[compId];
                 auto &primList = primLists[compId];
+#if 1
                 btTransform trans = rbs[rbi]->getWorldTransform();
                 cpdPtr->addChildShape(trans, bodyPtr->getCollisionShape());
+#else
+                cpdPtr->addChildShape(rbTransforms[rbi], bodyPtr->getCollisionShape());
+#endif
                 cpdChildMasses[compId].push_back(bodyPtr->getMass());
                 // cpdOrigins[compId] += (bodyPtr->getMass() * bodyPtr->getCenterOfMassPosition());
 
@@ -1230,11 +1298,6 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 auto &body = rb->body;
                 auto compId = rbDstCompId[rbi];
 
-                const auto rbTrans = rb->getWorldTransform();
-                const auto ci = rbTrans.getOrigin();
-                const auto &cpdTrans = cpdTransforms[compId];
-                const auto cc = cpdTrans.getOrigin();
-
                 auto mi = body->getMass();
                 // add linear momentum
                 auto vi = body->getLinearVelocity();
@@ -1255,7 +1318,11 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 auto &body = rb->body;
                 auto compId = rbDstCompId[rbi];
 
+#if 1
                 const auto rbTrans = rb->getWorldTransform();
+#else
+                const auto rbTrans = rbTransforms[rbi];
+#endif
                 const auto ci = rbTrans.getOrigin();
                 const auto &cpdTrans = cpdTransforms[compId];
                 const auto cc = cpdTrans.getOrigin();
@@ -1287,8 +1354,9 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         /// @note adjust compound children transforms according to the principal compound transforms
         pol(zip(isCompound, cpdTransforms, btCpdShapes), [](bool isCpd, const auto &principalTrans, auto &cpdShape) {
             if (isCpd) {
-                for (int rbi = 0; rbi != cpdShape->getNumChildShapes(); ++rbi)
+                for (int rbi = 0; rbi != cpdShape->getNumChildShapes(); ++rbi) {
                     cpdShape->updateChildTransform(rbi, principalTrans.inverse() * cpdShape->getChildTransform(rbi));
+                }
             }
         });
 
@@ -1315,6 +1383,21 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                     rb->body->setAngularVelocity(w);
                 }
             });
+
+#if DEBUG_CPD
+        puts("newly prepared compounds\' states");
+        {
+            auto cpds = groupList->get<BulletObject>();
+            pol(range(cpds), [&](auto &cpd) {
+                if (cpd->isCompound()) {
+                    cpd->printDynamics(fmt::color::blue);
+
+                    for (int rbi = 0; rbi != 2; ++rbi)
+                        cpd->printChildDynamics(rbi, fmt::color::light_pink);
+                }
+            });
+        }
+#endif
 
         ///
         ///
