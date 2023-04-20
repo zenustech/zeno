@@ -332,7 +332,7 @@ struct PrimitiveConnectedComponents : INode {
                 pol(enumerate(polys), [&](int ei, vec2i poly) {
                     int mark = 1;
                     for (int i = 0; i != poly[1]; ++i)
-                        if (setids[poly[0] + i] != setNo) {
+                        if (setids[loops[poly[0] + i]] != setNo) {
                             mark = 0;
                             break;
                         }
