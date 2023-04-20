@@ -311,6 +311,41 @@ ZENDEFNODE(ZSGridAppendAttribute, {/* inputs: */
                                    /* category: */
                                    {"Eulerian"}});
 
+struct ZSMultiGridAppendAttribute : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+        auto attrTag = get_input2<std::string>("Attribute");
+        auto nchns = get_input2<int>("ChannelNumber");
+
+        auto &spg1 = zs_grid->spg1;
+        auto &spg2 = zs_grid->spg2;
+        auto &spg3 = zs_grid->spg3;
+        auto pol = zs::cuda_exec();
+
+        if (!spg1.hasProperty(attrTag)) {
+            spg1.append_channels(pol, {{attrTag, nchns}});
+            spg2.append_channels(pol, {{attrTag, nchns}});
+            spg3.append_channels(pol, {{attrTag, nchns}});
+        } else {
+            int m_nchns = spg1.getPropertySize(attrTag);
+            if (m_nchns != nchns)
+                throw std::runtime_error(
+                    fmt::format("the SparseGrid already has [{}] with [{}] channels!", attrTag, m_nchns));
+        }
+
+        set_output("SparseGrid", zs_grid);
+    }
+};
+
+ZENDEFNODE(ZSMultiGridAppendAttribute, {/* inputs: */
+                                        {"SparseGrid", {"string", "Attribute", ""}, {"int", "ChannelNumber", "1"}},
+                                        /* outputs: */
+                                        {"SparseGrid"},
+                                        /* params: */
+                                        {},
+                                        /* category: */
+                                        {"Eulerian"}});
+
 struct ZSCombineSparseGrid : INode {
     template <int OpId>
     void CSG(zs::CudaExecutionPolicy &pol, ZenoSparseGrid::spg_t &spgA, ZenoSparseGrid::spg_t &spgB, bool AisBigger,
