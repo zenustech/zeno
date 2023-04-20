@@ -79,7 +79,8 @@ void ZenoImagePanel::clear() {
 }
 
 void ZenoImagePanel::setPrim(std::string primid) {
-    pPrimName->setText(QString(primid.c_str()).split(':')[0]);
+    primid = primid.substr(0, primid.find(":"));
+    pPrimName->setText(primid.c_str());
     zenovis::Scene* scene = nullptr;
     auto mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -95,7 +96,7 @@ void ZenoImagePanel::setPrim(std::string primid) {
 
     bool found = false;
     for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if (key != primid) {
+        if ((key.substr(0, key.find(":"))) != primid) {
             continue;
         }
         auto &ud = ptr->userData();
@@ -184,7 +185,7 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     if (!zenovis)
         return;
 
-    connect(zenovis, &Zenovis::objectsUpdated, this, [&](int frame) {
+    connect(zenovis, &Zenovis::objectsUpdated, this, [=](int frame) {
         std::string prim_name = pPrimName->text().toStdString();
         Zenovis* zenovis = wids[0]->getViewportWidget()->getZenoVis();
         ZASSERT_EXIT(zenovis);

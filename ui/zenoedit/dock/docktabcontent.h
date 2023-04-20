@@ -7,6 +7,7 @@
 
 class ZIconToolButton;
 class ZenoGraphsEditor;
+class ZenoImagePanel;
 class ZTextLabel;
 class DisplayWidget;
 class ZComboBox;
@@ -176,6 +177,19 @@ private:
     ZToolBarButton* m_pBtnPlainLog;
 };
 
+class DockContent_Image : public DockToolbarWidget {
+    Q_OBJECT
+public:
+    explicit DockContent_Image(QWidget *parent = nullptr);
+    ZenoImagePanel *getImagePanel();
 
+protected:
+    QWidget *initWidget() override;
+    void initToolbar(QHBoxLayout *pToolLayout) override{};
+    void initConnections() override{};
+
+private:
+    ZenoImagePanel *m_ImagePanel;
+};
 
 #endif
