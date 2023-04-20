@@ -1374,7 +1374,7 @@ void ZenoMinStatusBtnItem::onZoomed()
 {
     if (1 - editor_factor > 0.00001f) 
     {
-        QSize size = ZenoStyle::dpiScaledSize(QSize(50 / editor_factor, 42 / editor_factor));
+        QSize size = QSize(ZenoStyle::scaleWidth(50), ZenoStyle::scaleWidth(42));
         m_once->resize(size);
         m_mute->resize(size);
         m_view->resize(size);
@@ -1382,9 +1382,10 @@ void ZenoMinStatusBtnItem::onZoomed()
         qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
         QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
         m_once->setPos(base);
-        base += QPointF(ZenoStyle::dpiScaled(38 / editor_factor), 0);
+        qreal offset = ZenoStyle::scaleWidth(38);
+        base += QPointF(offset, 0);
         m_mute->setPos(base);
-        base += QPointF(ZenoStyle::dpiScaled(38 / editor_factor), 0);
+        base += QPointF(offset, 0);
         m_view->setPos(base);
     }
 }

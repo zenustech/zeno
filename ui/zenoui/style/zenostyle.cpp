@@ -76,6 +76,16 @@ QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
     return tempStyle;
 }
 
+qreal ZenoStyle::scaleWidth(qreal value) 
+{
+    qreal dividend = 1;
+    if (1 - editor_factor > 0.7f)
+        dividend = editor_factor / 0.5;
+    else if (1 - editor_factor > 0.00001f)
+        dividend = editor_factor / 0.8;
+    return ZenoStyle::dpiScaled(value / dividend);
+}
+
 QSize ZenoStyle::sizeFromContents(ContentsType type, const QStyleOption* option, const QSize& size, const QWidget* widget) const
 {
     return base::sizeFromContents(type, option, size, widget);
