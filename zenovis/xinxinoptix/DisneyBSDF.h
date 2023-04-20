@@ -1265,18 +1265,53 @@ static __inline__ __device__ float softlight(float base, float blend, float c)
 {
     return (blend < c) ? (2.0 * base * blend + base * base * (1.0 - 2.0 * blend)) : (sqrt(base) * (2.0 * blend - 1.0) + 2.0 * base * (1.0 - blend));
 }
-static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float t, float freq = 1.0f, int layer = 6)
+static __inline__ __device__ float remap(float x, float a, float b, float c, float d)
 {
-	// signal
-	vec3 p = 2.0 *  pos * .0212242 * freq; // test time
-        vec3 pertb = vec3(noise(p*16), noise(vec3(p.x,p.z,p.y)*16), noise(vec3(p.y, p.x, p.z)*16)) * 0.05;
-	float dens = fbm(p + pertb + windDir * t, layer); //, FBM_FREQ);;
+    return (((x - a) / (b - a)) * (d - c)) + c;
+}
+static __inline__ __device__ float sampleLowFrequency(
+    vec3 pos,
+    float coverage
+)
+{
+    vec4 lowFrequencyNoises = texture3D(params.cloudBaseShapeSampler, pos);
+    // x = perlin-worley
+    // y,z,w = worley
+    float lowFrequencyFBM = (lowFrequencyNoises.y * 0.625) + 
+                            (lowFrequencyNoises.z * 0.25)  + 
+                            (lowFrequencyNoises.w * 0.125);
 
-	float cov = 1. - coverage;
-//	dens = smoothstep (cov-0.1, cov + .1, dens);
-//        dens = softlight(fbm(p*4 + pertb * 4  + windDir * t), dens, 0.8);
-        dens *= smoothstep (cov, cov + .1, dens);
-	return pow(clamp(dens, 0., 1.),0.5f);
+    lowFrequencyFBM = saturate(lowFrequencyFBM);
+
+    //debug
+    // return lowFrequencyNoises.x;
+
+    float baseCloud = saturate(remap( 
+            lowFrequencyNoises.x, 
+            (lowFrequencyFBM - 0.9), 1.0, 
+            0.0, 1.0 
+        ));
+
+    float base_cloud_with_coverage = remap( 
+            clamp(baseCloud,coverage,1.0), 
+            coverage, 1.0, 
+            0.0, 1.0
+        );
+
+    base_cloud_with_coverage *= coverage;
+
+    return base_cloud_with_coverage;
+}
+static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float time, float freq = 1.0f, int layer = 6)
+{
+
+    vec3 samplePoint = (pos+windDir*time)/(128.0f);
+
+    float baseDensity = sampleLowFrequency(
+            samplePoint,
+            coverage
+        );
+    return baseDensity;
 }
 static __inline__ __device__ float light(
 	vec3 origin,
@@ -1284,7 +1319,7 @@ static __inline__ __device__ float light(
     vec3 windDir,
     float coverage,
     float absorption,
-    float t,
+    float time,
     float freq = 1.0
 ){
 	const int steps = 4;
@@ -1295,18 +1330,14 @@ static __inline__ __device__ float light(
 	float T = 1.; // transmitance
         float coef = 1.0;
 	for (int i = 0; i < steps; i++) {
-		float dens = density(pos, windDir, coverage, t, freq,6);
+		float dens = density(pos, windDir, coverage, time, freq,6);
 
 		float T_i = exp(-absorption * dens * coef * march_step);
 		T *= T_i;
 		//if (T < .01) break;
 
-		pos = vec3(
-            pos.x + coef * dir_step.x,
-            pos.y + coef * dir_step.y,
-            pos.z + coef * dir_step.z
-        );
-            coef *= 2.0f;
+		pos += coef * dir_step;
+        coef *= 2.0f;
 	}
 
 	return T;
@@ -1322,7 +1353,7 @@ static __inline__ __device__ vec4 render_clouds(
     float coverage, 
     float thickness, 
     float absorption, 
-    float t
+    float time
 ){
     //r.direction.x = r.direction.x * 2.0f;
     vec3 C = vec3(0, 0, 0);
@@ -1351,7 +1382,7 @@ static __inline__ __device__ vec4 render_clouds(
     for (int i =0; i < int(s)/2; i++)
     {
         float freq = mix(0.5f, 1.0f, smoothstep(0.0f, 0.5f, r.direction.y));
-        float dens = density(pos, windDir, coverage, t, freq);
+        float dens = density(pos, windDir, coverage, time, freq);
         dens = mix(0.0f,dens, smoothstep(0.0f, 0.2f, r.direction.y));
         float T_i = exp(-absorption * dens * coef *  2.0* march_step);
         T *= T_i;
@@ -1367,20 +1398,18 @@ static __inline__ __device__ vec4 render_clouds(
         if (length(pos) > 1e3) break;
     }
 
-        //vec3 pos = r.direction * 500.0f;
+    //vec3 pos = r.direction * 500.0f;
     pos = hit.origin;
-        alpha = 0;
-        T = 1.; // transmitance
-        coef = 1.0;
+    alpha = 0;
+    T = 1.; // transmitance
+    coef = 1.0;
     if (talpha > 1e-3) {
         for (int i = 0; i < int(s); i++) {
             float h = float(i) / float(steps);
             float freq = mix(0.5f, 1.0f, smoothstep(0.0f, 0.5f, r.direction.y));
-            float dens = density(pos, windDir, coverage, t, freq);
+            float dens = density(pos, windDir, coverage, time, freq);
             dens = mix(0.0f, dens, smoothstep(0.0f, 0.2f, r.direction.y));
-            float T_i =
-
-                exp(-absorption * dens * coef * march_step);
+            float T_i = exp(-absorption * dens * coef * march_step);
             T *= T_i;
             if (T < .01)
                 break;
@@ -1388,7 +1417,7 @@ static __inline__ __device__ vec4 render_clouds(
 
                 C_i = T *
 #ifdef SIMULATE_LIGHT
-                      light(pos, sunLightDir, windDir, coverage, absorption, t, freq) *
+                      light(pos, sunLightDir, windDir, coverage, absorption, time, freq) *
 #endif
                       // #ifdef FAKE_LIGHT
                       // 			(exp(h) / 1.75) *
@@ -1397,9 +1426,7 @@ static __inline__ __device__ vec4 render_clouds(
 
                 C = vec3(C.x + C_i, C.y + C_i, C.z + C_i);
                 alpha += (1. - T_i) * (1. - alpha);
-                pos = vec3(pos.x + coef * dir_step.x,
-                           pos.y + coef * dir_step.y,
-                           pos.z + coef * dir_step.z);
+                pos += coef * dir_step;
                 coef *= 1.0f;
                 if (length(pos) > 1e3)
                     break;
@@ -1416,7 +1443,7 @@ static __inline__ __device__ vec3 proceduralSky(
     float coverage, 
     float thickness,
     float absorption,
-    float t
+    float time
 ){
     vec3 col = vec3(0,0,0);
 
@@ -1426,7 +1453,7 @@ static __inline__ __device__ vec3 proceduralSky(
     vec3 sky = render_sky_color(r.direction, sunLightDir);
     if(r_dir.y<-0.001) return sky; // just being lazy
 
-    vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, t);
+    vec4 cld = render_clouds(r, sunLightDir, windDir, steps, coverage, thickness, absorption, time);
     col = mix(sky, vec3(cld)/(0.000001+cld.w), cld.w);
     return col;
 }
@@ -1480,7 +1507,7 @@ static __inline__ __device__ vec3 envSky(
     float coverage,
     float thickness,
     float absorption,
-    float t
+    float time
 ){
     vec3 color;
     if (!params.usingHdrSky) {
@@ -1492,7 +1519,7 @@ static __inline__ __device__ vec3 envSky(
             coverage,
             thickness,
             absorption,
-            t
+            time
         );
     }
     else {

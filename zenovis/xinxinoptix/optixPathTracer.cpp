@@ -2053,6 +2053,9 @@ void optixupdatematerial(std::vector<bool> const            &markers,
     if (OptixUtil::sky_tex.has_value()) {
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
     }
+    if (OptixUtil::LFnoise_tex.has_value()) {
+        state.params.cloudBaseShapeSampler = OptixUtil::n_tex[OptixUtil::LFnoise_tex.value()]->texture;
+    }
 }
 
 void optixupdateend() {

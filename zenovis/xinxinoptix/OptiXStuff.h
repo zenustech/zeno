@@ -554,6 +554,127 @@ inline void addTexture(std::string path)
         zeno::log_info("-{}", i->first);
     }
 }
+inline std::map<std::string, std::shared_ptr<cuTexture>> n_tex;
+inline std::optional<std::string> LFnoise_tex;
+inline std::shared_ptr<cuTexture> makeCudaNoiseTexture(unsigned char* img, int nx, int ny, int nz, int nc)
+{
+    auto texture = std::make_shared<cuTexture>();
+    cudaExtent size = make_cudaExtent(nx,ny,nz);
+    size_t elements = size.width*size.height*size.depth;
+
+    std::vector<float4> data;
+    data.resize(elements);
+    for (size_t idx=0; idx<elements; idx++)
+    {
+        data[idx] = {
+            nc>=1?(float)(img[idx*nc + 0])/255.0f:0,
+            nc>=2?(float)(img[idx*nc + 1])/255.0f:0,
+            nc>=3?(float)(img[idx*nc + 2])/255.0f:0,
+            nc>=4?(float)(img[idx*nc + 3])/255.0f:0
+        };
+    }
+    // // debug
+    // zeno::log_error(
+    //     "volumeData[0,1,2,3]:({},{},{},{})", 
+    //     data[0].x,
+    //     data[0].y,
+    //     data[0].z,
+    //     data[0].w
+    // );
+
+    cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<float4>();
+    cudaError_t rc = cudaMalloc3DArray(&texture->gpuImageArray, &channelDesc, size);
+
+    cudaMemcpy3DParms copyParams = { 0 };
+    copyParams.srcPtr   = make_cudaPitchedPtr(data.data(), size.width*sizeof(float4), size.width, size.height);
+    copyParams.dstArray = texture->gpuImageArray;
+    copyParams.extent   = size;
+    copyParams.kind     = cudaMemcpyHostToDevice;
+    rc = cudaMemcpy3D(&copyParams);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture data copy failed\n";
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return 0;
+    }
+
+    cudaResourceDesc            texRes;
+    memset(&texRes,0,sizeof(cudaResourceDesc));
+    texRes.resType            = cudaResourceTypeArray;
+    texRes.res.array.array    = texture->gpuImageArray;
+
+    cudaTextureDesc             texDescr;
+    memset(&texDescr,0,sizeof(cudaTextureDesc));
+    texDescr.normalizedCoords = true;
+    texDescr.filterMode       = cudaFilterModeLinear;
+    texDescr.addressMode[0]   = cudaAddressModeWrap;
+    texDescr.addressMode[1]   = cudaAddressModeWrap;
+    texDescr.addressMode[2]   = cudaAddressModeWrap;
+    texDescr.readMode = cudaReadModeElementType;
+
+    rc = cudaCreateTextureObject(&texture->texture, &texRes, &texDescr, NULL);
+    if (rc != cudaSuccess) {
+        std::cout<<"texture creation failed\n";
+        texture->texture = 0;
+        cudaFreeArray(texture->gpuImageArray);
+        texture->gpuImageArray = nullptr;
+        return 0;
+    }
+    return texture;
+}
+inline void addLFNoiseTexture(std::string directoryPath)
+{
+    //debug
+    // zeno::log_debug("loading low frequency noise texture from directory:{}", directoryPath);
+    // zeno::log_error("map_size: {}", n_tex.size());
+    if(n_tex.count(directoryPath)) {
+        return;
+    }
+
+    //debug
+    // zeno::log_error("still loading? {},{}", n_tex.count(directoryPath), directoryPath);
+
+    // tofix: try hardcode first
+    int nx, ny, nz, nc;
+    nx = 128;
+    ny = 128;
+    nz = 128;
+    nc = 4;
+
+    // tofix: try hardcode first
+    const std::string textureBaseName = "LowFrequency";
+    const std::string fileExtension   = ".tga";
+    // tofix: collection of 2D img to form 3D img
+    int Image3DSize = nx*ny*nz*nc;
+    uint8_t* texture3DPixels = new uint8_t[Image3DSize];
+	memset(texture3DPixels, 0, Image3DSize);
+// #pragma omp parallel for
+	for (int z=0; z<nz; z++)
+	{
+        // tofix: try hardcode first
+		std::string imageIdentifier = directoryPath + textureBaseName + "(" + std::to_string(z + 1) + ")" + fileExtension;
+		const char* imagePath = imageIdentifier.c_str();
+		unsigned char* img = stbi_load(imagePath, &nx, &ny, &nc, STBI_rgb_alpha);
+		// stbi_set_flip_vertically_on_load(true);
+        if (!img) {
+			zeno::log_error("loading tga noise texture failed:{}", imagePath);
+            continue;
+		}
+
+        nx = std::max(nx, 1);
+        ny = std::max(ny, 1);
+        assert(img);
+
+        // tofix: collection of 2D img to form 3D img
+        memcpy(&texture3DPixels[z * nx * ny * 4], img, static_cast<size_t>(nx * ny * 4));
+		stbi_image_free(img);
+	}
+    n_tex[directoryPath] = makeCudaNoiseTexture(texture3DPixels, nx, ny, nz, nc);
+    delete texture3DPixels;
+    for (auto i = n_tex.begin(); i != n_tex.end(); i++) {
+        zeno::log_info("-{}", i->first);
+    }
+}
 struct rtMatShader
 {
     raii<OptixModule>                    m_ptx_module                ; 
