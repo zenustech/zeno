@@ -1,0 +1,33 @@
+curl and libcurl 8.0.1
+
+ Public curl releases:         216
+ Command line options:         250
+ curl_easy_setopt() options:   302
+ Public functions in libcurl:  91
+ Contributors:                 2841
+
+This release includes the following bugfixes:
+
+ o Revert "multi: remove PENDING + MSGSENT handles" [1]
+
+This release includes the following known bugs:
+
+ o see docs/KNOWN_BUGS (https://curl.se/docs/knownbugs.html)
+
+Planned upcoming removals include:
+
+ o gskit
+ o NSS
+ o support for space-separated NOPROXY patterns
+ o support for the original legacy mingw version 1
+
+ See https://curl.se/dev/deprecate.html for details
+
+This release would not have looked like this without help, code, reports and
+advice from friends like these:
+
+ Daniel Stenberg, Kamil Dudka
+
+References to bug reports and discussions on issues:
+
+ [1] = https://curl.se/bug/?i=10795
