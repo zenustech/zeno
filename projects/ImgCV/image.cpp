@@ -196,8 +196,6 @@ struct Composite2: INode {
         auto image1 = get_input<PrimitiveObject>("Foreground");
         auto image2 = get_input<PrimitiveObject>("Background");
         auto compmode = get_input2<std::string>("compmode");
-        auto &alpha1 = image1->verts.attr<float>("alpha");
-        auto &alpha2 = image2->verts.attr<float>("alpha");
         auto &ud1 = image1->userData();
         int w1 = ud1.get2<int>("w");
         int h1 = ud1.get2<int>("h");
@@ -206,6 +204,8 @@ struct Composite2: INode {
         int h2 = ud2.get2<int>("h");
         if(compmode == "Over"){
             if (image1->verts.has_attr("alpha")) {
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
                 for (int i = 0; i < h1; i++) {
                     for (int j = 0; j < w1; j++) {
                         vec3f rgb1 = image1->verts[i * w1 + j];
@@ -216,10 +216,19 @@ struct Composite2: INode {
                     }
                 }
             }
+            else {
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = rgb1;
+                    }
+                }
+            }
         }
         if(compmode == "Under"){
             if (image2->verts.has_attr("alpha")) {
-                auto &alpha = image2->verts.attr<float>("alpha");
+                auto &alpha1 = image1->verts.attr<float>("alpha");
+                auto &alpha2 = image2->verts.attr<float>("alpha");
                 for (int i = 0; i < h1; i++) {
                     for (int j = 0; j < w1; j++) {
                         vec3f rgb1 = image1->verts[i * w1 + j];
@@ -227,6 +236,14 @@ struct Composite2: INode {
                         float l1 = alpha1[i * w1 + j];
                         float l2 = alpha2[i * w1 + j];
                         image1->verts[i * w1 + j] = rgb2 * l2 + rgb1 * (l1 - ((l1 != 0) && (l2 != 0) ? l1 : 0));
+                    }
+                }
+            }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = rgb2;
                     }
                 }
             }
@@ -245,6 +262,14 @@ struct Composite2: INode {
                     }
                 }
             }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = rgb1;
+                    }
+                }
+            }
         }
         if(compmode == "Inside"){
             if (image1->verts.has_attr("alpha")) {
@@ -257,6 +282,15 @@ struct Composite2: INode {
                         float l1 = alpha1[i * w1 + j];
                         float l2 = alpha2[i * w1 + j];
                         image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
+                    }
+                }
+            }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = rgb1;
                     }
                 }
             }
@@ -275,6 +309,14 @@ struct Composite2: INode {
                     }
                 }
             }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb3 = {0, 0, 0};
+                        image1->verts[i * w1 + j] = rgb3;
+                    }
+                }
+            }
         }
         if(compmode == "Add"){
             if (image1->verts.has_attr("alpha")) {
@@ -287,6 +329,15 @@ struct Composite2: INode {
                         float l1 = alpha1[i * w1 + j];
                         float l2 = alpha2[i * w1 + j];
                         image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
+                    }
+                }
+            }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = rgb1 * 0.5 + rgb2 * 0.5;
                     }
                 }
             }
@@ -305,6 +356,15 @@ struct Composite2: INode {
                     }
                 }
             }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = rgb1 - rgb2;
+                    }
+                }
+            }
         }
         if(compmode == "Multiply"){
             if (image1->verts.has_attr("alpha")) {
@@ -317,6 +377,15 @@ struct Composite2: INode {
                         float l1 = alpha1[i * w1 + j];
                         float l2 = alpha2[i * w1 + j];
                         image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
+                    }
+                }
+            }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = rgb1 * rgb2;
                     }
                 }
             }
@@ -335,6 +404,15 @@ struct Composite2: INode {
                     }
                 }
             }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = rgb1/rgb2;
+                    }
+                }
+            }
         }
         if(compmode == "Diff"){
             if (image1->verts.has_attr("alpha")) {
@@ -347,6 +425,15 @@ struct Composite2: INode {
                         float l1 = alpha1[i * w1 + j];
                         float l2 = alpha2[i * w1 + j];
                         image1->verts[i * w1 + j] = abs(rgb1*l1 - rgb2 * l2);
+                    }
+                }
+            }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        image1->verts[i * w1 + j] = abs(rgb1- rgb2);
                     }
                 }
             }
@@ -365,6 +452,17 @@ struct Composite2: INode {
                     }
                 }
             }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        float add1 = image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2];
+                        float add2 = image2->verts[i * w1 + j][0]+image2->verts[i * w1 + j][1]+image2->verts[i * w1 + j][2];
+                        image1->verts[i * w1 + j] = add1 <= add2 ? rgb1 : rgb2;
+                    }
+                }
+            }
         }
         if(compmode == "Max"){
             if (image1->verts.has_attr("alpha")) {
@@ -377,6 +475,17 @@ struct Composite2: INode {
                         float l1 = alpha1[i * w1 + j];
                         float l2 = alpha2[i * w1 + j];
                         image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
+                    }
+                }
+            }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        float add1 = image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2];
+                        float add2 = image2->verts[i * w1 + j][0]+image2->verts[i * w1 + j][1]+image2->verts[i * w1 + j][2];
+                        image1->verts[i * w1 + j] = add1 >= add2 ? rgb1 : rgb2;
                     }
                 }
             }
@@ -396,6 +505,16 @@ struct Composite2: INode {
                     }
                 }
             }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        vec3f rgb3 = (rgb1+rgb2)/2;
+                        image1->verts[i * w1 + j] = rgb3;
+                    }
+                }
+            }
         }
         if(compmode == "Xor"){
             if (image1->verts.has_attr("alpha")) {
@@ -409,6 +528,14 @@ struct Composite2: INode {
                         float l1 = alpha1[i * w1 + j];
                         float l2 = alpha2[i * w1 + j];
                         image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
+                    }
+                }
+            }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb3 = {0, 0, 0};
+                        image1->verts[i * w1 + j] = rgb3;
                     }
                 }
             }
@@ -428,6 +555,14 @@ struct Composite2: INode {
                     }
                 }
             }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb3 = {0, 0, 0};
+                        image1->verts[i * w1 + j] = rgb3;
+                    }
+                }
+            }
         }
         if(compmode == "Screen"){
             if (image1->verts.has_attr("alpha")) {
@@ -441,6 +576,16 @@ struct Composite2: INode {
                         float l1 = alpha1[i * w1 + j];
                         float l2 = alpha2[i * w1 + j];
                         image1->verts[i * w1 + j] = rgb2 * l2 + rgb2 *((l1!=0 && l2!=0)? var: 0);
+                    }
+                }
+            }
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        vec3f rgb1 = image1->verts[i * w1 + j];
+                        vec3f rgb2 = image2->verts[i * w1 + j];
+                        float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
+                        image1->verts[i * w1 + j] = rgb2 + rgb2 * var;
                     }
                 }
             }
@@ -461,6 +606,7 @@ ZENDEFNODE(Composite2, {
     {},
     { "comp" },
 });
+
 //Mask1Mask2赋给两张图片alpha
 struct Composite3: INode {
     virtual void apply() override {
