@@ -2,6 +2,7 @@
 #include <zenoui/comctrl/zdocktabwidget.h>
 #include "zenoapplication.h"
 #include "../panel/zenodatapanel.h"
+#include <zenoedit/panel/zenoimagepanel.h>
 #include "panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
@@ -17,6 +18,7 @@
 #include <zenomodel/include/modelrole.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenomodel/include/uihelper.h>
+#include "util/apphelper.h"
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
@@ -181,6 +183,12 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
             wid->initUI();
             return wid;
         }
+        case PANEL_IMAGE:
+        {
+            DockContent_Image *wid = new DockContent_Image;
+            wid->initUI();
+            return wid;
+        }
     }
     return nullptr;
 }
@@ -221,6 +229,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     else if (title == tr("Light")|| title == "Light") {
         type = PANEL_LIGHT;
     }
+    else if (title == tr("Image")|| title == "Image") {
+        type = PANEL_IMAGE;
+    }
     return type;
 }
 
@@ -233,7 +244,9 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         QWidget* wid = m_tabWidget->widget(i);
         if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
         {
-            prop->onNodesSelected(subgIdx, nodes, select);
+            if (select && nodes.size() == 1) {
+                prop->onNodesSelected(subgIdx, nodes, select);
+            }
         }
         else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
         {
@@ -267,6 +280,18 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             if (select && nodes.size() == 1)
             {
                 editor->getEditor()->showFloatPanel(subgIdx, nodes);
+            }
+        }
+        else if (DockContent_Image *image = qobject_cast<DockContent_Image *>(wid))
+        {
+            if (select && nodes.size() == 1)
+            {
+                const QModelIndex &idx = nodes[0];
+                image->getImagePanel()->setPrim(idx.data(ROLE_OBJID).toString().toStdString());
+            }
+            if (!select)
+            {
+                image->getImagePanel()->clear();
             }
         }
     }
@@ -434,7 +459,7 @@ void ZTabDockWidget::onFloatTriggered()
         {
             filePath = pCurrentGraph->filePath();
         }
-        QString winTitle = UiHelper::nativeWindowTitle(filePath);
+        QString winTitle = AppHelper::nativeWindowTitle(filePath);
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin)
             mainWin->updateNativeWinTitle(winTitle);
@@ -452,7 +477,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger"), tr("Light") };
+    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger"), tr("Light"), tr("Image") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -469,6 +494,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 3: m_debugPanel = PANEL_NODE_DATA; break;
                 case 4: m_debugPanel = PANEL_LOG; break;
                 case 5: m_debugPanel = PANEL_LIGHT; break;
+                case 6: m_debugPanel = PANEL_IMAGE; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }

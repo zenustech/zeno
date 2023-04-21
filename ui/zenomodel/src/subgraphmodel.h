@@ -24,6 +24,7 @@ class SubGraphModel : public QAbstractItemModel
     {
         QString objid;
         QString objCls;
+        QString customName;
         NODE_TYPE type;
         QPointF viewpos;
         int options;
@@ -114,6 +115,7 @@ private:
     bool _removeRow(const QModelIndex &index);
     NODE_DATA item2NodeData(const _NodeItem& item) const;
     void importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret);
+    bool checkCustomName(const QString &name);
 
     QString m_name;
     QMap<QString, int> m_key2Row;

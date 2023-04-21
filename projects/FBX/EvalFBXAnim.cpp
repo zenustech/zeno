@@ -169,7 +169,15 @@ struct EvalAnim{
         std::string nodeName = node->name;
         aiMatrix4x4 nodeTransform = node->transformation;
 
-        //zeno::log_info("***** {}", nodeName);
+        if(m_evalOption.printAnimData) {
+            std::cout << "---------- ---------- ----------\n";
+            std::cout << "FBX: ***** Node Name " << nodeName << std::endl;
+            Helper::printAiMatrix(nodeTransform);
+            std::cout << "++++++++++ ++++++++++ ++++++++++\n";
+            Helper::printAiMatrix(parentTransform);
+            std::cout << "---------- ---------- ----------\n";
+        }
+
         // Any object that just has the key-anim is a bone
         if (m_AnimBones.find(nodeName) != m_AnimBones.end()) {
             auto& bone = m_AnimBones[nodeName];
@@ -188,14 +196,23 @@ struct EvalAnim{
         if (m_BoneOffset.find(nodeName) != m_BoneOffset.end()) {  // found
             std::string boneName = m_BoneOffset[nodeName].name;
             aiMatrix4x4 boneOffset = m_BoneOffset[nodeName].offset;
-            //std::cout << "FBX: Bone Node Name " << nodeName << std::endl;
-            //Helper::printAiMatrix(boneOffset);
+
+            if(m_evalOption.printAnimData) {
+                std::cout << "FBX: Bone Node Name " << nodeName << std::endl;
+                Helper::printAiMatrix(boneOffset);
+            }
 
             m_Transforms[boneName] = globalTransformation * boneOffset;
+            if(m_evalOption.printAnimData) {
+                std::cout << "FBX: Transform " << boneName << "\n";
+                Helper::printAiMatrix(m_Transforms[boneName]);
+            }
         }else{
             // The child is already applied the parent transformation by the tree struct.
             m_LazyTransforms[nodeName] = globalTransformation;
-            //std::cout << "FBX: Lazy Node Name " << nodeName << std::endl;
+            if(m_evalOption.printAnimData) {
+                std::cout << std::fixed << "FBX: Lazy Node Name " << nodeName << std::endl;
+            }
         }
 
         for (int i = 0; i < node->childrenCount; i++)

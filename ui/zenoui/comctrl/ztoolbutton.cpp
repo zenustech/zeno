@@ -151,7 +151,7 @@ QSize ZToolButton::sizeHint() const
             w = qMax(textWidth, m_iconSize.width());
             h = textHeight + m_iconSize.height();
         }
-        else if (m_options & (Opt_TextRightToIcon | Opt_TextLeftToIcon))
+        else if (m_options & Opt_TextRightToIcon)
         {
             w = textWidth + m_iconSize.width();
             w += style()->pixelMetric(static_cast<QStyle::PixelMetric>(ZenoStyle::PM_IconTextSpacing), nullptr, this);

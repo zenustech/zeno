@@ -1153,49 +1153,60 @@ void ViewportWidget::keyPressEvent(QKeyEvent* event) {
     //qInfo() << event->key();
     ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
     int key = settings.getShortCut(ShortCut_MovingHandler);
-    if (event->key() == key)
+    int uKey = event->key();
+    Qt::KeyboardModifiers modifiers = event->modifiers();
+    if (modifiers & Qt::ShiftModifier) {
+        uKey += Qt::SHIFT;
+    }
+    if (modifiers & Qt::ControlModifier) {
+        uKey += Qt::CTRL;
+    }
+    if (modifiers & Qt::AltModifier) {
+        uKey += Qt::ALT;
+    }
+    if (uKey == key)
         this->changeTransformOperation(0);
     key = settings.getShortCut(ShortCut_RevolvingHandler);
-    if (event->key() == key)
+    if (uKey == key)
         this->changeTransformOperation(1);
     key = settings.getShortCut(ShortCut_ScalingHandler);
-    if (event->key() == key)
+    if (uKey == key)
         this->changeTransformOperation(2);
     key = settings.getShortCut(ShortCut_CoordSys);
-    if (event->key() == key)
+    if (uKey == key)
         this->changeTransformCoordSys();
 
     key = settings.getShortCut(ShortCut_FrontView);
-    if (event->key() == key)
+    if (uKey == key)
         this->cameraLookTo(0);
     key = settings.getShortCut(ShortCut_RightView);
-    if (event->key() == key)
+    if (uKey == key)
         this->cameraLookTo(1);
     key = settings.getShortCut(ShortCut_VerticalView);
-    if (event->key() == key)
+    if (uKey == key)
         this->cameraLookTo(2);
     key = settings.getShortCut(ShortCut_InitViewPos);
-    if (event->key() == key)
+    if (uKey == key)
         this->cameraLookTo(6);
 
     key = settings.getShortCut(ShortCut_BackView);
-    if (event->key() == key)
+    if (uKey == key)
         this->cameraLookTo(3);
     key = settings.getShortCut(ShortCut_LeftView);
-    if (event->key() == key)
+    if (uKey == key)
         this->cameraLookTo(4);
     key = settings.getShortCut(ShortCut_UpwardView);
-    if (event->key() == key)
+    if (uKey == key)
         this->cameraLookTo(5);
 
     key = settings.getShortCut(ShortCut_InitHandler);
-    if (event->key() == key)
+    if (uKey == key)
         m_camera->resizeTransformHandler(0);
     key = settings.getShortCut(ShortCut_AmplifyHandler);
-    if (event->key() == key)
+    if (uKey == key)
         m_camera->resizeTransformHandler(1);
     key = settings.getShortCut(ShortCut_ReduceHandler);
-    if (event->key() == key)
+    if (uKey == key)
         m_camera->resizeTransformHandler(2);
 }
 

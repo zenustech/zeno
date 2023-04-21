@@ -16,6 +16,7 @@
 #include "util/log.h"
 #include <zenomodel/include/uihelper.h>
 #include "settings/zenosettingsmanager.h"
+#include "groupnode.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -482,7 +483,8 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
     {
         if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
         {
-            nodeSets.insert(pNode);
+            if (qobject_cast<GroupNode *>(pNode) == nullptr)
+                nodeSets.insert(pNode);
         }
     }
 
@@ -727,8 +729,28 @@ void ZenoSubGraphView::showFloatPanel(const QModelIndex &subgIdx, const QModelIn
     }
 }
 
+void ZenoSubGraphView::selectNodes(const QModelIndexList &indexs) 
+{
+    ZenoSubGraphScene *scene = qobject_cast<ZenoSubGraphScene *>(m_view->scene());
+    if (scene) 
+    {
+        scene->select(indexs);
+    }
+}
+
 void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
-    if (event->key() == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_FloatPanel)) {
+    int uKey = event->key();
+    Qt::KeyboardModifiers modifiers = event->modifiers();
+    if (modifiers & Qt::ShiftModifier) {
+        uKey += Qt::SHIFT;
+    }
+    if (modifiers & Qt::ControlModifier) {
+        uKey += Qt::CTRL;
+    }
+    if (modifiers & Qt::AltModifier) {
+        uKey += Qt::ALT;
+    }
+    if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_FloatPanel)) {
         ZenoSubGraphScene *scene = qobject_cast<ZenoSubGraphScene *>(m_view->scene());
         if (scene != NULL)
         {

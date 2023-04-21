@@ -23,7 +23,7 @@
      <x>0</x>
      <y>0</y>
      <width>809</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -132,8 +132,9 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionEnglish_Chinese"/>
-    <addaction name="actionShortcutList"/>
+    <addaction name="actionFeedback"/>
+    <addaction name="actionCheck_Update"/>
+    <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuOption">
     <property name="title">
@@ -142,14 +143,15 @@
     <addaction name="actionSet_NASLOC"/>
     <addaction name="actionSet_ZENCACHE"/>
     <addaction name="actionSet_ShortCut"/>
+    <addaction name="actionEnglish_Chinese"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuRender"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
-   <addaction name="menuHelp"/>
    <addaction name="menuOption"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
    <property name="styleSheet">
@@ -468,6 +470,21 @@ border-top: 1px solid black;</string>
   <action name="actionSet_ShortCut">
    <property name="text">
     <string>Set ShortCut</string>
+   </property>
+  </action>
+  <action name="actionFeedback">
+   <property name="text">
+    <string>Feedback</string>
+   </property>
+  </action>
+  <action name="actionCheck_Update">
+   <property name="text">
+    <string>Update</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About Zeno</string>
    </property>
   </action>
  </widget>

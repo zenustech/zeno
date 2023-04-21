@@ -31,6 +31,7 @@
 #include "zenomainwindow.h"
 #include <zenovis/ObjectsManager.h>
 #include <viewportinteraction/picker.h>
+#include "settings/zenosettingsmanager.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -214,6 +215,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new CameraNode(params, 0);
     }
+    else if (descName == "LightNode")
+    {
+        return new LightNode(params, 0);
+    }
     else if (descName == "MakeCamera")
     {
         return new CameraNode(params, 1);
@@ -376,6 +381,17 @@ void ZenoSubGraphScene::select(const QString& id)
     clearSelection();
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     m_nodes[id]->setSelected(true);
+}
+
+void ZenoSubGraphScene::select(const QModelIndexList &indexs) 
+{
+    clearSelection();
+    for (auto index : indexs)
+    {
+        const QString &id = index.data(ROLE_OBJID).toString();
+        if (m_nodes.find(id) != m_nodes.end());
+            m_nodes[id]->setSelected(true);
+    }
 }
 
 void ZenoSubGraphScene::markError(const QString& nodeid)
@@ -982,5 +998,22 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     else if (!event->isAccepted() && (event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_G) {
         // FIXME temp function for merge
         selectObjViaNodes();
+    }
+    int uKey = event->key();
+    Qt::KeyboardModifiers modifiers = event->modifiers();
+    if (modifiers & Qt::ShiftModifier) {
+        uKey += Qt::SHIFT;
+    }
+    if (modifiers & Qt::ControlModifier) {
+        uKey += Qt::CTRL;
+    }
+    if (modifiers & Qt::AltModifier) {
+        uKey += Qt::ALT;
+    }
+    if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_SelectAllNodes)) 
+    {
+        for (auto it : m_nodes) {
+            it.second->setSelected(true);
+        }
     }
 }

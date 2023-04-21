@@ -7,8 +7,11 @@
 
 class ZIconToolButton;
 class ZenoGraphsEditor;
+class ZenoImagePanel;
 class ZTextLabel;
 class DisplayWidget;
+class ZComboBox;
+class ZLineEdit;
 
 class ZToolBarButton : public ZToolButton
 {
@@ -17,6 +20,7 @@ public:
     ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn);
 };
 
+#if 0
 class ZToolRecordingButton : public ZToolButton {
     Q_OBJECT
 public:
@@ -27,6 +31,7 @@ protected:
 private:
     QIcon m_iconOnPressed;
 };
+#endif
 
 class ZToolMenuButton : public ZToolButton {
     Q_OBJECT
@@ -75,6 +80,7 @@ protected:
 private:
     QLabel* m_plblName;
     ZToolBarButton* m_pSettingBtn;
+    ZLineEdit *m_pNameLineEdit;
 };
 
 class DockContent_Editor : public DockToolbarWidget
@@ -106,7 +112,7 @@ private:
 
     ZToolMenuButton *m_btnRun;
     ZToolButton* m_btnKill;
-    QComboBox* m_btnAlways;
+    ZComboBox *m_btnAlways;
 
     QComboBox* cbZoom;
 };
@@ -171,6 +177,19 @@ private:
     ZToolBarButton* m_pBtnPlainLog;
 };
 
+class DockContent_Image : public DockToolbarWidget {
+    Q_OBJECT
+public:
+    explicit DockContent_Image(QWidget *parent = nullptr);
+    ZenoImagePanel *getImagePanel();
 
+protected:
+    QWidget *initWidget() override;
+    void initToolbar(QHBoxLayout *pToolLayout) override{};
+    void initConnections() override{};
+
+private:
+    ZenoImagePanel *m_ImagePanel;
+};
 
 #endif

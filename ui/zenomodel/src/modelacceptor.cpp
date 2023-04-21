@@ -142,7 +142,7 @@ void ModelAcceptor::switchSubGraph(const QString& graphName)
     m_pModel->switchSubGraph(graphName);
 }
 
-bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NODE_DESCS& legacyDescs)
+bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& legacyDescs)
 {
     if (!m_currentGraph)
         return false;
@@ -155,6 +155,7 @@ bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const NO
     NODE_DATA data;
     data[ROLE_OBJID] = nodeid;
     data[ROLE_OBJNAME] = name;
+    data[ROLE_CUSTOM_OBJNAME] = customName;
     data[ROLE_COLLASPED] = false;
     data[ROLE_NODETYPE] = UiHelper::nodeType(name);
 

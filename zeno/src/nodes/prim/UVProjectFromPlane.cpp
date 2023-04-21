@@ -119,6 +119,7 @@ static zeno::vec3f queryColorInner(vec2i uv, const float* data, int w, int n) {
 void primSampleTexture(
     std::shared_ptr<PrimitiveObject> prim,
     const std::string &srcChannel,
+    const std::string &uvSource,
     const std::string &dstChannel,
     std::shared_ptr<PrimitiveObject> img,
     const std::string &wrap,
@@ -131,7 +132,6 @@ void primSampleTexture(
     using ColorT = float;
     const ColorT *data = (float *)img->verts.data();
     auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
-    auto &uv = prim->attr<zeno::vec3f>(srcChannel);
     auto w = img->userData().get2<int>("w");
     auto h = img->userData().get2<int>("h");
     std::function<zeno::vec3f(vec3f, const ColorT*, int, int, int, vec3f)> queryColor;
@@ -168,9 +168,38 @@ void primSampleTexture(
     // copy-paste all above wrap ifelses
     // }
 
-    #pragma omp parallel for
-    for (auto i = 0; i < uv.size(); i++) {
-        clr[i] = queryColor(uv[i], data, w, h, 3, borderColor);
+    if (uvSource == "vertex") {
+        auto &uv = prim->attr<zeno::vec3f>(srcChannel);
+        #pragma omp parallel for
+        for (auto i = 0; i < uv.size(); i++) {
+            clr[i] = queryColor(uv[i], data, w, h, 3, borderColor);
+        }
+    }
+    else if (uvSource == "tris") {
+        auto uv0 = prim->tris.attr<vec3f>("uv0");
+        auto uv1 = prim->tris.attr<vec3f>("uv1");
+        auto uv2 = prim->tris.attr<vec3f>("uv2");
+        #pragma omp parallel for
+        for (auto i = 0; i < prim->tris.size(); i++) {
+            auto tri = prim->tris[i];
+            clr[tri[0]] = queryColor(uv0[i], data, w, h, 3, borderColor);
+            clr[tri[1]] = queryColor(uv1[i], data, w, h, 3, borderColor);
+            clr[tri[2]] = queryColor(uv2[i], data, w, h, 3, borderColor);
+        }
+
+    }
+    else if (uvSource == "loopsuv") {
+        auto &loopsuv = prim->loops.attr<int>("uvs");
+        #pragma omp parallel for
+        for (auto i = 0; i < prim->loops.size(); i++) {
+            auto uv = prim->uvs[loopsuv[i]];
+            int index = prim->loops[i];
+            clr[index] = queryColor({uv[0], uv[1], 0}, data, w, h, 3, borderColor);
+        }
+    }
+    else {
+        zeno::log_error("unknown uvSource");
+        throw std::runtime_error("unknown uvSource");
     }
 }
 
@@ -178,13 +207,14 @@ struct PrimSample2D : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto srcChannel = get_input2<std::string>("uvChannel");
+        auto srcSource = get_input2<std::string>("uvSource");
         auto dstChannel = get_input2<std::string>("targetChannel");
         auto image = get_input2<PrimitiveObject>("image");
         auto wrap = get_input2<std::string>("wrap");
         auto borderColor = get_input2<vec3f>("borderColor");
         auto remapMin = get_input2<float>("remapMin");
         auto remapMax = get_input2<float>("remapMax");
-        primSampleTexture(prim, srcChannel, dstChannel, image, wrap, borderColor, remapMin, remapMax);
+        primSampleTexture(prim, srcChannel, srcSource, dstChannel, image, wrap, borderColor, remapMin, remapMax);
 
         set_output("outPrim", std::move(prim));
     }
@@ -194,6 +224,7 @@ ZENDEFNODE(PrimSample2D, {
         {"PrimitiveObject", "prim"},
         {"PrimitiveObject", "image"},
         {"string", "uvChannel", "uv"},
+        {"enum vertex tris loopsuv", "uvSource", "vertex"},
         {"string", "targetChannel", "clr"},
         {"float", "remapMin", "0"},
         {"float", "remapMax", "1"},
@@ -230,7 +261,7 @@ std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path) {
         }
     } else if (n == 1) {
         for (int i = 0; i < w * h; i++) {
-            img->verts[i] = vec3f(data[i*2+0]);
+            img->verts[i] = vec3f(data[i]);
         }
     } else {
         throw zeno::Exception("too much number of channels");

@@ -106,6 +106,7 @@ public:
     void focusOnWithNoSelect(const QString& nodeId);
     void focusOn(const QString& nodeId);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
+    void selectNodes(const QModelIndexList &nodes);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;

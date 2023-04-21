@@ -408,6 +408,16 @@ void FakeTransformer::endTransform(bool moved) {
         }
 
         // sync to node system
+        zeno::scope_exit sp([] {
+            IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
+            if (pGraphs)
+                pGraphs->setApiRunningEnable(true);
+        });
+        //only update nodes.
+        IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphs);
+        pGraphs->setApiRunningEnable(false);
+
         for (auto &[obj_name, obj] : m_objects) {
             auto& node_sync = NodeSyncMgr::GetInstance();
             auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);

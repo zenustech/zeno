@@ -105,7 +105,7 @@ void ZenoGraphsEditor::initSignals()
     connect(m_selection, &QItemSelectionModel::currentChanged, this, &ZenoGraphsEditor::onCurrentChanged);
 
     connect(m_ui->subnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
-    connect(m_ui->subnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onTreeItemActivated(const QModelIndex&)));
+    //connect(m_ui->subnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onTreeItemActivated(const QModelIndex&)));
 
 	connect(m_ui->welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
 	connect(m_ui->welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
@@ -141,6 +141,8 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 
     m_ui->subnetTree->setModel(mgr->treeModel());
     m_ui->subnetList->setModel(pModel);
+    m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
 
     m_ui->subnetList->setItemDelegate(new ZSubnetListItemDelegate(m_model, this));
 
@@ -503,7 +505,12 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 const SEARCH_RESULT& res = results[i];
                 const QString &subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
 
-                bool bFocusOnError = ZenoSettingsManager::GetInstance().getValue(zsTraceErrorNode).toBool();
+                QVariant varFocusOnError = ZenoSettingsManager::GetInstance().getValue(zsTraceErrorNode);
+
+                bool bFocusOnError = true;
+                if (varFocusOnError.type() == QVariant::Bool) {
+                    bFocusOnError = varFocusOnError.toBool();
+                }
                 if (bFocusOnError)
                 {
                     activateTab(subgName, "", objId, true);
@@ -556,7 +563,7 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
                 pModel->appendRow(pItem);
             }
         }
-        else if (res.type == SEARCH_NODECLS || res.type == SEARCH_NODEID || res.type == SEARCH_ARGS)
+        else if (res.type == SEARCH_NODECLS || res.type == SEARCH_NODEID || res.type == SEARCH_ARGS || res.type == SEARCH_CUSTOM_NAME)
         {
             QString subgName = res.subgIdx.data(ROLE_OBJNAME).toString();
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, subgName, 1, Qt::MatchExactly);
@@ -646,6 +653,38 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
 void ZenoGraphsEditor::onCommandDispatched(QAction* pAction, bool bTriggered)
 {
     onAction(pAction);
+}
+
+void ZenoGraphsEditor::onTreeItemSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected) 
+{
+    QModelIndexList lst = m_ui->subnetTree->selectionModel()->selectedIndexes();
+    if (lst.isEmpty())
+        return;
+
+    QModelIndex idx = lst.first();
+    if (lst.size() == 1) 
+    {
+        onTreeItemActivated(idx);
+    } 
+    else 
+    {
+        QModelIndexList indexs;
+        if (!idx.parent().isValid())
+            return;
+        QString parentName = idx.parent().data(ROLE_OBJNAME).toString();
+        indexs << idx;
+        for (auto index : lst) 
+        {
+            if (index == idx)
+                continue;
+            if (index.parent().data(ROLE_OBJNAME).toString() == parentName) {
+                indexs << index;
+            }
+        }
+        ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
+        ZASSERT_EXIT(pView);
+        pView->selectNodes(indexs);
+    }
 }
 
 void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool bChecked)
@@ -819,10 +858,11 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_ZOOM) 
     {
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
-        ZASSERT_EXIT(pView);
-        if (!args.isEmpty() && (args[0].type() == QMetaType::Float || args[0].type() == QMetaType::Double))
+        if (pView)
         {
-            pView->setZoom(args[0].toFloat());
+            if (!args.isEmpty() && (args[0].type() == QMetaType::Float || args[0].type() == QMetaType::Double)) {
+                pView->setZoom(args[0].toFloat());
+            }
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_UNDO) 

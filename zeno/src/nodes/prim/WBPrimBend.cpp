@@ -4,27 +4,30 @@
 
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/StringObject.h>
 #include <zeno/types/MatrixObject.h>
 #include <zeno/types/UserData.h>
+#include <zeno/types/CurveObject.h>
+#include <zeno/types/ListObject.h>
+
+#include <zeno/utils/orthonormal.h>
+#include <zeno/utils/variantswitch.h>
+#include <zeno/utils/arrayindex.h>
 #include <zeno/utils/wangsrng.h>
 #include <zeno/utils/log.h>
+
 #include <glm/gtx/quaternion.hpp>
 #include <random>
 #include <numeric>
-#include <zeno/utils/orthonormal.h>
-#include <atomic>
-#include <zeno/para/parallel_for.h> // enable by -DZENO_PARALLEL_STL:BOOL=ON
-#include <zeno/utils/arrayindex.h>
-#include <zeno/utils/variantswitch.h>
-
+#include <sstream>
 
 namespace zeno
 {
 namespace
 {
+
 struct WBPrimBend : INode {
-    void apply() override {
+    void apply() override
+    {
         auto limitDeformation = get_input<NumericObject>("Limit Deformation")->get<int>();
         auto symmetricDeformation = get_input<NumericObject>("Symmetric Deformation")->get<int>();
         auto angle = get_input<NumericObject>("Bend Angle (degree)")->get<float>();
@@ -95,8 +98,8 @@ struct WBPrimBend : INode {
                 double cb = std::cos(bend);
                 double sb = std::sin(bend);
                 double bendMatEle[9] = { cb, sb, 0,
-                                        -sb, cb, 0,
-                                        0, 0, 1 };
+                                         -sb, cb, 0,
+                                         0, 0, 1 };
                 glm::mat3 bendRotMat = glm::make_mat3x3(bendMatEle);
                 original.x -= d * capLen;
                 original -= center;
@@ -110,21 +113,21 @@ struct WBPrimBend : INode {
     }
 };
 ZENDEFNODE(WBPrimBend,
-    { /* inputs: */ {
-            "prim",
-            {"int", "Limit Deformation", "1"},
-            {"int", "Symmetric Deformation", "0"},
-            {"float", "Bend Angle (degree)", "90"},
-            {"vec3f", "Up Vector", "0,1,0"},
-            {"vec3f", "Capture Origin", "0,0,0"},
-            {"vec3f", "Capture Direction", "0,0,1"},
-            {"float", "Capture Length", "1.0"},
-        }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-        }, /* category: */ {
-            "primitive",
-        } });
+           { /* inputs: */ {
+                   "prim",
+                   {"int", "Limit Deformation", "1"},
+                   {"int", "Symmetric Deformation", "0"},
+                   {"float", "Bend Angle (degree)", "90"},
+                   {"vec3f", "Up Vector", "0,1,0"},
+                   {"vec3f", "Capture Origin", "0,0,0"},
+                   {"vec3f", "Capture Direction", "0,0,1"},
+                   {"float", "Capture Length", "1.0"},
+               }, /* outputs: */ {
+                   "prim",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primitive",
+               }});
 
 struct PrintPrimInfo : INode {
     void apply() override
@@ -153,15 +156,15 @@ struct PrintPrimInfo : INode {
     }
 };
 ZENDEFNODE(PrintPrimInfo,
-    { /* inputs: */ {
-            "prim",
-        }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-            {"int", "printInfo", "1"},
-        }, /* category: */ {
-            "primitive",
-        } });
+           { /* inputs: */ {
+                   "prim",
+               }, /* outputs: */ {
+                   "prim",
+               }, /* params: */ {
+                   {"int", "printInfo", "1"},
+               }, /* category: */ {
+                   "primitive",
+               } });
 
 struct CreateCircle : INode {
     void apply() override
@@ -186,67 +189,15 @@ struct CreateCircle : INode {
     }
 };
 ZENDEFNODE(CreateCircle,
-    {  /* inputs: */ {
-            {"int","segments","32"},
-            {"float","r","1.0"},
-        }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-        }, /* category: */ {
-            "primitive",
-        } });
-
-struct QuatRotBetweenVectors : INode {
-    void apply() override
-    {
-        auto start = get_input<NumericObject>("start")->get<vec3f>();
-        auto dest = get_input<NumericObject>("dest")->get<vec3f>();
-
-        glm::vec3 gl_start(start[0], start[1], start[2]);
-        glm::vec3 gl_dest(dest[0], dest[1], dest[2]);
-
-        vec4f rot;
-        glm::quat quat = glm::rotation(gl_start, gl_dest);
-        rot[0] = quat.x;
-        rot[1] = quat.y;
-        rot[2] = quat.z;
-        rot[3] = quat.w;
-
-        auto rotation = std::make_shared<NumericObject>();
-        rotation->set<vec4f>(rot);
-        set_output("quatRotation", rotation);
-    }
-};
-ZENDEFNODE(QuatRotBetweenVectors,
-    {  /* inputs: */ {
-            {"vec3f", "start", "1,0,0"},
-            {"vec3f", "dest", "1,0,0"},
-        }, /* outputs: */ {
-            {"vec4f", "quatRotation", "0,0,0,1"},
-        }, /* params: */ {
-        }, /* category: */ {
-            "math",
-        } });
-
-struct MatTranspose : INode {
-    void apply() override
-    {
-        glm::mat mat = std::get<glm::mat4>(get_input<MatrixObject>("mat")->m);
-        glm::mat transposeMat = glm::transpose(mat);
-        auto oMat = std::make_shared<MatrixObject>();
-        oMat->m = transposeMat;
-        set_output("transposeMat", oMat);
-    }
-};
-ZENDEFNODE(MatTranspose,
-    { /* inputs: */ {
-            "mat",
-        }, /* outputs: */ {
-            "transposeMat",
-        }, /* params: */ {
-        }, /* category: */ {
-            "math",
-        } });
+           {  /* inputs: */ {
+                   {"int","segments","32"},
+                   {"float","r","1.0"},
+               }, /* outputs: */ {
+                   "prim",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primitive",
+               } });
 
 struct ParameterizeLine : INode {
     void apply() override {
@@ -557,6 +508,10 @@ ZENDEFNODE(LineCarve,
             "primitive",
         } });
 
+
+///////////////////////////////////////////////////////////////////////////////
+// 2022.07 VisVector
+///////////////////////////////////////////////////////////////////////////////
 struct VisVec3Attribute : INode {
     void apply() override
     {
@@ -576,8 +531,8 @@ struct VisVec3Attribute : INode {
             if (key != "pos")
                 std::visit(
                     [&primVis, key](auto &&ref) {
-                        using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
-                        primVis->add_attr<T>(key);
+                      using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                      primVis->add_attr<T>(key);
                     },
                     prim->attr(key));
         }
@@ -594,14 +549,14 @@ struct VisVec3Attribute : INode {
                 if (key != "pos")
                     std::visit(
                         [i, iPrim](auto &&dst, auto &&src) {
-                            using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
-                            using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
-                            if constexpr (std::is_same_v<DstT, SrcT>) {
-                                dst[i] = src[iPrim];
-                                dst[i + 1] = src[iPrim];
-                            } else {
-                                throw std::runtime_error("the same attr of both primitives are of different types.");
-                            }
+                          using DstT = std::remove_cv_t<std::remove_reference_t<decltype(dst)>>;
+                          using SrcT = std::remove_cv_t<std::remove_reference_t<decltype(src)>>;
+                          if constexpr (std::is_same_v<DstT, SrcT>) {
+                              dst[i] = src[iPrim];
+                              dst[i + 1] = src[iPrim];
+                          } else {
+                              throw std::runtime_error("the same attr of both primitives are of different types.");
+                          }
                         },
                         primVis->attr(key), prim->attr(key));
             }
@@ -609,6 +564,7 @@ struct VisVec3Attribute : INode {
             auto a = attr[iPrim];
             if (useNormalize) a = normalize(a);
             visPos[i] = pos[iPrim] + a * lengthScale;
+            visColor[i - 1] = color;
             visColor[i] = color * 0.25;
             primVis->lines[i / 2][0] = i - 1;
             primVis->lines[i / 2][1] = i;
@@ -618,18 +574,18 @@ struct VisVec3Attribute : INode {
     }
 };
 ZENDEFNODE(VisVec3Attribute,
-    {  /* inputs: */ {
-            "prim",
-            {"string", "name", "vel"},
-            {"bool", "normalize", "1"},
-            {"float", "lengthScale", "1.0"},
-            {"vec3f", "color", "1,1,0"},
-        }, /* outputs: */ {
-            "primVis",
-        }, /* params: */ {
-        }, /* category: */ {
-            "visualize",
-        } });
+           {  /* inputs: */ {
+                   "prim",
+                   {"string", "name", "vel"},
+                   {"bool", "normalize", "1"},
+                   {"float", "lengthScale", "1.0"},
+                   {"vec3f", "color", "1,1,0"},
+               }, /* outputs: */ {
+                   "primVis",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "visualize",
+               }});
 
 struct TracePositionOneStep : INode {
     void apply() override
@@ -646,7 +602,7 @@ struct TracePositionOneStep : INode {
 
         auto primVisVertsCount = primVis->verts.size();
         auto primVislinesCount = primVis->lines.size();
-        auto primDataVertsCount = primData->verts.size();;
+        auto primDataVertsCount = primData->verts.size();
 
         auto& attr_idName = primVis->verts.attr<int>(idName);
         if (primVisVertsCount != 0)
@@ -682,16 +638,16 @@ struct TracePositionOneStep : INode {
     }
 };
 ZENDEFNODE(TracePositionOneStep,
-    {  /* inputs: */ {
-            "primData",
-            "primStart",
-            {"string", "lineTag", "lineID"},
-        }, /* outputs: */ {
-            "primVis",
-        }, /* params: */ {
-        }, /* category: */ {
-            "visualize",
-        } });
+           {  /* inputs: */ {
+                   "primData",
+                   "primStart",
+                   {"string", "lineTag", "lineID"},
+               }, /* outputs: */ {
+                   "primVis",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "visualize",
+               }});
 
 struct PrimCopyFloatAttr : INode {
     void apply() override {
@@ -721,16 +677,16 @@ struct PrimCopyFloatAttr : INode {
     }
 };
 ZENDEFNODE(PrimCopyFloatAttr,
-    { /* inputs: */ {
-            "prim",
-            {"string", "sourceName", "s"},
-            {"string", "targetName", "t"},
-        }, /* outputs: */ {
-            "prim",
-        }, /* params: */ {
-        }, /* category: */ {
-            "primitive",
-        } });
+           { /* inputs: */ {
+                   "prim",
+                   {"string", "sourceName", "s"},
+                   {"string", "targetName", "t"},
+               }, /* outputs: */ {
+                   "prim",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primitive",
+               }});
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -753,7 +709,7 @@ struct BVHNearestPos : INode {
             auto p1 = primNei->verts[v1];
             auto p2 = primNei->verts[v2];
             bvh_pos[i] = bvh_ws[i][0] * p0 + bvh_ws[i][1] * p1 + bvh_ws[i][2] * p2;
-        };
+        }
 
         set_output("prim", get_input("prim"));
     }
@@ -770,7 +726,7 @@ ZENDEFNODE(BVHNearestPos,
                }, /* params: */ {
                }, /* category: */ {
                    "primitive"
-               } });
+               }});
 
 struct BVHNearestAttr : INode {
     void apply() override {
@@ -804,809 +760,31 @@ struct BVHNearestAttr : INode {
             auto attr2 = inAttr[id2];
 
             outAttr[i] = bvh_ws[i][0] * attr0 + bvh_ws[i][1] * attr1 + bvh_ws[i][2] * attr2;
-        };
+        }
 
         set_output("prim", get_input("prim"));
     }
 };
 ZENDEFNODE(BVHNearestAttr,
-    { /* inputs: */ {
-        "prim",
-        "primNei",
-        {"string", "bvhIdTag", "bvh_id"},
-        {"string", "bvhWeightTag", "bvh_ws"},
-        {"string", "bvhAttrTag", "bvh_attr"},
-    }, /* outputs: */ {
-        "prim"
-    }, /* params: */ {
-    }, /* category: */ {
-        "erode"
-    } });
-
-
-
-// WXL  =============================================================
-
-#include <zeno/para/parallel_for.h> // enable by -DZENO_PARALLEL_STL:BOOL=ON
-#include <zeno/utils/arrayindex.h>
-#include <zeno/utils/variantswitch.h>
-
-#if defined(_OPENMP)
-#define WXL 1
-#else
-#define WXL 0
-#endif
-#if WXL
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
-#endif
-
-template <class Cond>
-static float tri_intersect(Cond cond, vec3f const& ro, vec3f const& rd, vec3f const& v0, vec3f const& v1, vec3f const& v2)
-{
-    const float eps = 1e-6f;
-    vec3f u = v1 - v0;
-    vec3f v = v2 - v0;
-    vec3f n = cross(u, v);
-    float b = dot(n, rd);
-    if (std::abs(b) > eps) {
-        float a = dot(n, v0 - ro);
-        float r = a / b;
-        if (cond(r)) {
-            vec3f ip = ro + r * rd;
-            float uu = dot(u, u);
-            float uv = dot(u, v);
-            float vv = dot(v, v);
-            vec3f w = ip - v0;
-            float wu = dot(w, u);
-            float wv = dot(w, v);
-            float d = uv * uv - uu * vv;
-            float s = uv * wv - vv * wu;
-            float t = uv * wu - uu * wv;
-            d = 1.0f / d;
-            s *= d;
-            t *= d;
-            if (-eps <= s && s <= 1 + eps && -eps <= t && s + t <= 1 + eps * 2)
-                return r;
-        }
-    }
-    return std::numeric_limits<float>::infinity();
-}
-
-/// ref: An Efficient and Robust Ray-Box Intersection Algorithm, 2005
-static bool ray_box_intersect(vec3f const& ro, vec3f const& rd, std::pair<vec3f, vec3f> const& box) {
-    vec3f invd{ 1 / rd[0], 1 / rd[1], 1 / rd[2] };
-    int sign[3] = { invd[0] < 0, invd[1] < 0, invd[2] < 0 };
-    float tmin, tmax, tymin, tymax, tzmin, tzmax;
-
-    tmin = ((sign[0] ? box.second : box.first)[0] - ro[0]) * invd[0];
-    tmax = ((sign[0] ? box.first : box.second)[0] - ro[0]) * invd[0];
-    tymin = ((sign[1] ? box.second : box.first)[1] - ro[1]) * invd[1];
-    tymax = ((sign[1] ? box.first : box.second)[1] - ro[1]) * invd[1];
-    if (tmin > tymax || tymin > tmax)
-        return false;
-    if (tymin > tmin)
-        tmin = tymin;
-    if (tymax < tmax)
-        tmax = tymax;
-    tzmin = ((sign[2] ? box.second : box.first)[2] - ro[2]) * invd[2];
-    tzmax = ((sign[2] ? box.first : box.second)[2] - ro[2]) * invd[2];
-    if (tmin > tzmax || tzmin > tmax)
-        return false;
-    if (tzmin > tmin)
-        tmin = tzmin;
-    if (tzmax < tmax)
-        tmax = tzmax;
-    return tmax >= 0.f;
-}
-
-struct BVH { // TODO: WXL please complete this to accel up
-    PrimitiveObject const* prim{};
-#if WXL
-    using TV = vec3f;
-    using Box = std::pair<TV, TV>;
-    using Ti = int;
-    static constexpr Ti threshold = 128;
-    using Tu = std::make_unsigned_t<Ti>;
-    std::vector<Box> sortedBvs;
-    std::vector<Ti> auxIndices, levels, parents, leafIndices;
-#endif
-
-    void build(PrimitiveObject const* prim) {
-        this->prim = prim;
-#if WXL
-        const auto& verts = prim->verts;
-        const auto& tris = prim->tris;
-        if (tris.size() >= threshold) {
-            const Ti numLeaves = tris.size();
-            const Ti numTrunk = numLeaves - 1;
-            const Ti numNodes = numLeaves + numTrunk;
-            /// utilities
-            auto getbv = [&verts, &tris](int tid) -> Box {
-                auto ind = tris[tid];
-                Box bv = std::make_pair(verts[ind[0]], verts[ind[0]]);
-                for (int i = 1; i != 3; ++i) {
-                    const auto& v = verts[ind[i]];
-                    for (int d = 0; d != 3; ++d) {
-                        if (v[d] < bv.first[d])
-                            bv.first[d] = v[d];
-                        if (v[d] > bv.second[d])
-                            bv.second[d] = v[d];
-                    }
-                }
-                return bv;
-            };
-            auto getMortonCode = [](const TV& p) -> Tu {
-                auto expand_bits = [](Tu v) -> Tu { // expands lower 10-bits to 30 bits
-                    v = (v * 0x00010001u) & 0xFF0000FFu;
-                    v = (v * 0x00000101u) & 0x0F00F00Fu;
-                    v = (v * 0x00000011u) & 0xC30C30C3u;
-                    v = (v * 0x00000005u) & 0x49249249u;
-                    return v;
-                };
-                return (expand_bits((Tu)(p[0] * 1024.f)) << (Tu)2) | (expand_bits((Tu)(p[1] * 1024.f)) << (Tu)1) |
-                    expand_bits((Tu)(p[2] * 1024.f));
-            };
-            auto clz = [](Tu x) -> Tu {
-                static_assert(std::is_same_v<Tu, unsigned int>, "Tu should be unsigned int");
-#if defined(_MSC_VER) || (defined(_WIN32) && defined(__INTEL_COMPILER))
-                return __lzcnt((unsigned int)x);
-#elif defined(__clang__) || defined(__GNUC__)
-                return __builtin_clz((unsigned int)x);
-#endif
-            };
-
-            /// total box
-            constexpr auto ma = std::numeric_limits<float>::max();
-            constexpr auto mi = std::numeric_limits<float>::lowest();
-            Box wholeBox{ TV{ma, ma, ma}, TV{mi, mi, mi} };
-            TV minVec = { ma, ma, ma };
-            TV maxVec = { mi, mi, mi };
-            for (int d = 0; d != 3; ++d) {
-                float& v = minVec[d];
-#ifndef _MSC_VER
-#if defined(_OPENMP)
-#pragma omp parallel for reduction(min : v)
-#endif
-#endif
-                for (Ti i = 0; i < verts.size(); ++i) {
-                    const auto& p = verts[i];
-                    if (p[d] < v)
-                        v = p[d];
-                }
-            }
-            for (int d = 0; d != 3; ++d) {
-                float& v = maxVec[d];
-#ifndef _MSC_VER
-#if defined(_OPENMP)
-#pragma omp parallel for reduction(max : v)
-#endif
-#endif
-                for (Ti i = 0; i < verts.size(); ++i) {
-                    const auto& p = verts[i];
-                    if (p[d] > v)
-                        v = p[d];
-                }
-            }
-            wholeBox.first = minVec;
-            wholeBox.second = maxVec;
-
-            /// morton codes
-            std::vector<std::pair<Tu, Ti>> records(numLeaves); // <mc, id>
-            {
-                const auto lengths = wholeBox.second - wholeBox.first;
-                auto getUniformCoord = [&wholeBox, &lengths](const TV& p) {
-                    auto offsets = p - wholeBox.first;
-                    for (int d = 0; d != 3; ++d)
-                        offsets[d] = std::clamp(offsets[d], (float)0, lengths[d]) / lengths[d];
-                    return offsets;
-                };
-#if defined(_OPENMP)
-#pragma omp parallel for
-#endif
-                for (Ti i = 0; i < numLeaves; ++i) {
-                    auto tri = tris[i];
-                    auto uc = getUniformCoord((verts[tri[0]] + verts[tri[1]] + verts[tri[2]]) / 3);
-                    records[i] = std::make_pair(getMortonCode(uc), i);
-                }
-            }
-            std::sort(std::begin(records), std::end(records));
-
-            /// precomputations
-            std::vector<Tu> splits(numLeaves);
-            constexpr auto numTotalBits = sizeof(Tu) * 8;
-#if defined(_OPENMP)
-#pragma omp parallel for
-#endif
-            for (Ti i = 0; i < numLeaves; ++i) {
-                if (i != numLeaves - 1)
-                    splits[i] = numTotalBits - clz(records[i].first ^ records[i + 1].first);
-                else
-                    splits[i] = numTotalBits + 1;
-            }
-            ///
-            std::vector<Box> leafBvs(numLeaves);
-            std::vector<Box> trunkBvs(numLeaves - 1);
-            std::vector<Ti> leafLca(numLeaves);
-            std::vector<Ti> leafDepths(numLeaves);
-            std::vector<Ti> trunkR(numLeaves - 1);
-            std::vector<Ti> trunkLc(numLeaves - 1);
-
-            std::vector<std::atomic<Ti>> trunkBuildFlags(numLeaves - 1); // already zero-initialized
-            {
-                std::vector<Ti> trunkL(numLeaves - 1);
-                std::vector<Ti> trunkRc(numLeaves - 1);
-#if defined(_OPENMP)
-#pragma omp parallel for
-#endif
-                for (Ti idx = 0; idx < numLeaves; ++idx) {
-                    leafBvs[idx] = getbv(records[idx].second);
-
-                    leafLca[idx] = -1, leafDepths[idx] = 1;
-                    Ti l = idx - 1, r = idx; ///< (l, r]
-                    bool mark{ false };
-
-                    if (l >= 0)
-                        mark = splits[l] < splits[r]; ///< true when right child, false otherwise
-
-                    int cur = mark ? l : r;
-                    if (mark)
-                        trunkRc[cur] = numTrunk + idx, trunkR[cur] = idx;
-                    else
-                        trunkLc[cur] = numTrunk + idx, trunkL[cur] = idx;
-
-                    while (trunkBuildFlags[cur].fetch_add(1) == 1) {
-                        { // refit
-                            int lc = trunkLc[cur], rc = trunkRc[cur];
-                            const auto& leftBox = lc >= numTrunk ? leafBvs[lc - numTrunk] : trunkBvs[lc];
-                            const auto& rightBox = rc >= numTrunk ? leafBvs[rc - numTrunk] : trunkBvs[rc];
-                            Box bv{};
-                            for (int d = 0; d != 3; ++d) {
-                                bv.first[d] =
-                                    leftBox.first[d] < rightBox.first[d] ? leftBox.first[d] : rightBox.first[d];
-                                bv.second[d] =
-                                    leftBox.second[d] > rightBox.second[d] ? leftBox.second[d] : rightBox.second[d];
-                            }
-                            trunkBvs[cur] = bv;
-                        }
-
-                        l = trunkL[cur] - 1, r = trunkR[cur];
-                        leafLca[l + 1] = cur, leafDepths[l + 1]++;
-                        atomic_thread_fence(std::memory_order_acquire);
-
-                        if (l >= 0)
-                            mark = splits[l] < splits[r]; ///< true when right child, false otherwise
-                        else
-                            mark = false;
-
-                        if (l + 1 == 0 && r == numLeaves - 1) {
-                            // trunkPar(cur) = -1;
-                            break;
-                        }
-
-                        int par = mark ? l : r;
-                        // trunkPar(cur) = par;
-                        if (mark) {
-                            trunkRc[par] = cur, trunkR[par] = r;
-                        }
-                        else {
-                            trunkLc[par] = cur, trunkL[par] = l + 1;
-                        }
-                        cur = par;
-                    }
-                }
-            }
-
-            std::vector<Ti> leafOffsets(numLeaves + 1);
-            leafOffsets[0] = 0;
-            for (Ti i = 0; i != numLeaves; ++i)
-                leafOffsets[i + 1] = leafOffsets[i] + leafDepths[i];
-            std::vector<Ti> trunkDst(numLeaves - 1);
-            /// compute trunk order
-            // [levels], [parents], [trunkDst]
-#if defined(_OPENMP)
-#pragma omp parallel for
-#endif
-            for (Ti i = 0; i < numLeaves; ++i) {
-                auto offset = leafOffsets[i];
-                parents[offset] = -1;
-                for (Ti node = leafLca[i], level = leafDepths[i]; --level; node = trunkLc[node]) {
-                    levels[offset] = level;
-                    parents[offset + 1] = offset;
-                    trunkDst[node] = offset++;
-                }
-            }
-            // only left-branch-node's parents are set so far
-            // levels store the number of node within the left-child-branch from bottom
-            // up starting from 0
-
-            /// reorder trunk
-            // [sortedBvs], [auxIndices], [parents]
-            // auxIndices here is escapeIndex (for trunk nodes)
-#if defined(_OPENMP)
-#pragma omp parallel for
-#endif
-            for (Ti i = 0; i < numLeaves - 1; ++i) {
-                const auto dst = trunkDst[i];
-                const auto& bv = trunkBvs[i];
-                // auto l = trunkL[i];
-                auto r = trunkR[i];
-                sortedBvs[dst] = bv;
-                const auto rb = r + 1;
-                if (rb < numLeaves) {
-                    auto lca = leafLca[rb]; // rb must be in left-branch
-                    auto brother = (lca != -1 ? trunkDst[lca] : leafOffsets[rb]);
-                    auxIndices[dst] = brother;
-                    if (parents[dst] == dst - 1)
-                        parents[brother] = dst - 1; // setup right-branch brother's parent
-                }
-                else
-                    auxIndices[dst] = -1;
-            }
-
-            /// reorder leaf
-            // [sortedBvs], [auxIndices], [levels], [parents], [leafIndices]
-            // auxIndices here is primitiveIndex (for leaf nodes)
-#if defined(_OPENMP)
-#pragma omp parallel for
-#endif
-            for (Ti i = 0; i < numLeaves; ++i) {
-                const auto& bv = leafBvs[i];
-                // const auto leafDepth = leafDepths[i];
-
-                auto dst = leafOffsets[i + 1] - 1;
-                leafIndices[i] = dst;
-                sortedBvs[dst] = bv;
-                auxIndices[dst] = records[i].second;
-                levels[dst] = 0;
-                if (parents[dst] == dst - 1)
-                    parents[dst + 1] = dst - 1; // setup right-branch brother's parent
-                                                // if (leafDepth > 1) parents[dst + 1] = dst - 1;  // setup right-branch
-                                                // brother's parent
-            }
-        }
-
-#endif // WXL
-    }
-
-    template <class Cond> float intersect(Cond cond, vec3f const& ro, vec3f const& rd) const
-    {
-        float ret = std::numeric_limits<float>::infinity();
-#if WXL
-        const auto& tris = prim->tris;
-        if (tris.size() >= threshold) {
-            const auto& verts = prim->verts;
-            const Ti numLeaves = tris.size();
-            const Ti numTrunk = numLeaves - 1;
-            const Ti numNodes = numLeaves + numTrunk;
-            Ti node = 0;
-            while (node != -1 && node != numNodes) {
-                Ti level = levels[node];
-                // level and node are always in sync
-                for (; level; --level, ++node)
-                    if (!ray_box_intersect(ro, rd, sortedBvs[node]))
-                        break;
-                // leaf node check
-                if (level == 0) {
-                    const auto eid = auxIndices[node];
-                    auto ind = tris[eid];
-                    auto a = verts[ind[0]];
-                    auto b = verts[ind[1]];
-                    auto c = verts[ind[2]];
-                    float d = tri_intersect(cond, ro, rd, a, b, c);
-                    if (std::abs(d) < std::abs(ret))
-                        ret = d;
-                    if (d < ret) {
-                        // id = eid;
-                        ret = d;
-                    }
-                    node++;
-                }
-                else // separate at internal nodes
-                    node = auxIndices[node];
-            }
-        }
-        else {
-            for (size_t i = 0; i < prim->tris.size(); i++) {
-                auto ind = prim->tris[i];
-                auto a = prim->verts[ind[0]];
-                auto b = prim->verts[ind[1]];
-                auto c = prim->verts[ind[2]];
-                float d = tri_intersect(cond, ro, rd, a, b, c);
-                if (std::abs(d) < std::abs(ret))
-                    ret = d;
-            }
-        }
-#else
-        for (size_t i = 0; i < prim->tris.size(); i++) {
-            auto ind = prim->tris[i];
-            auto a = prim->verts[ind[0]];
-            auto b = prim->verts[ind[1]];
-            auto c = prim->verts[ind[2]];
-            float d = tri_intersect(cond, ro, rd, a, b, c);
-            if (std::abs(d) < std::abs(ret))
-                ret = d;
-        }
-#endif
-        return ret;
-    }
-};
-
-struct WXL_PrimProject : INode {
-    virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto targetPrim = get_input<PrimitiveObject>("targetPrim");
-        auto offset = get_input2<float>("offset");
-        auto limit = get_input2<float>("limit");
-        auto nrmAttr = get_input2<std::string>("nrmAttr");
-        auto allowDir = get_input2<std::string>("allowDir");
-
-        BVH bvh;
-        bvh.build(targetPrim.get());
-
-        if (limit <= 0)
-            limit = std::numeric_limits<float>::infinity();
-
-        struct allow_front {
-            bool operator()(float x) const {
-                return x >= 0;
-            }
-        };
-
-        struct allow_back {
-            bool operator()(float x) const {
-                return x <= 0;
-            }
-        };
-
-        struct allow_both {
-            bool operator()(float x) const {
-                return true;
-            }
-        };
-
-        auto const& nrm = prim->verts.attr<vec3f>(nrmAttr);
-        auto cond = enum_variant<std::variant<allow_front, allow_back, allow_both>>(
-            array_index({ "front", "back", "both" }, allowDir));
-
-        std::visit(
-            [&](auto cond) {
-                parallel_for((size_t)0, prim->verts.size(), [&](size_t i) {
-                    auto ro = prim->verts[i];
-                    auto rd = normalizeSafe(nrm[i]);
-                    float t = bvh.intersect(cond, ro, rd);
-                    if (std::abs(t) >= limit)
-                        t = 0;
-                    t -= offset;
-                    prim->verts[i] = ro + t * rd;
-                    });
-            },
-            cond);
-
-        set_output("prim", std::move(prim));
-    }
-};
-ZENDEFNODE(WXL_PrimProject, {
-                            {
-                                {"PrimitiveObject", "prim"},
-                                {"PrimitiveObject", "targetPrim"},
-                                {"string", "nrmAttr", "nrm"},
-                                {"float", "offset", "0"},
-                                {"float", "limit", "0"},
-                                {"enum front back both", "allowDir", "both"},
-                            },
-                            {
-                                {"PrimitiveObject", "prim"},
-                            },
-                            {},
-                            {"primitive"},
-    });
-// WXL 
-
-static float erode_random_float(const float min, const float max, int seed)
-{
-    if (seed == -1) seed = std::random_device{}();
-    std::mt19937 gen(seed);
-    std::uniform_real_distribution<float> uni(min, max);
-    float value = uni(gen);
-    return value;
-}
-
-int getintersectdist(float dist, const vec3f start, const vec3f up, const float maxdist, const int hitfarthest, const int twosided)
-{
-    float hitu = 0;
-    float hitv = 0;
-    int hitprim = 0;
-    vec3f hitpos = vec3f(0, 0, 0);
-
-    vec3f raydir = up * maxdist;
-    if (!hitfarthest)
-        raydir *= -1;
-
-//    hitprim = intersect('opinput:1', start, raydir, hitpos, hitu, hitv, "farthest", 1);
-    // If we failed to find in the main direction, try again in opposite direction
-    // but grab the closest.
-    if (hitprim < 0 && twosided)
-    {
-    //    hitprim = intersect('opinput:1', start, raydir * -1, hitpos, hitu, hitv, "farthest", 0);
-    }
-
-    if (hitprim < 0)
-    {
-        return 0;
-    }
-    else
-    {
-        dist = dot(hitpos - start, up);
-        return 1;
-    }
-}
-
-int Pos2Idx(const int x, const int z, const int nx)
-{
-    return z * nx + x;
-}
-
-struct erode_project : INode {
-    void apply() override {
-
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 地面网格标准处理过程
-        //////////////////////////////////////////////////////////////////////////////////////// 
-
-        // 获取地形
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
-
-        // 获取用户数据，里面存有网格精度
-        int nx, nz;
-        auto& ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
-        {
-            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        }
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
-
-        // 获取网格大小，目前只支持方格
-        auto& pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
-
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 初始化数据层
-        ////////////////////////////////////////////////////////////////////////////////////////
-
-        auto heightLayerName = get_input<StringObject>("heightLayerName")->get();
-        if (!terrain->verts.has_attr(heightLayerName))
-        {
-            zeno::log_error("no such data layer named '{}'.", heightLayerName);
-        }
-        auto& height = terrain->verts.attr<float>(heightLayerName);
-
-
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 创建临时属性，将外部数据拷贝到临时属性，我们将使用临时属性进行计算
-        ////////////////////////////////////////////////////////////////////////////////////////
-
-        auto& _height = terrain->verts.add_attr<float>("_height");
-
-#pragma omp parallel for
-        for (int id_z = 0; id_z < nz; id_z++)
-        {
-#pragma omp parallel for
-            for (int id_x = 0; id_x < nx; id_x++)
-            {
-                int idx = Pos2Idx(id_x, id_z, nx);
-                _height[idx] = height[idx];     // 外部数据拷贝到临时属性
-            }
-        }
-
-
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 获取计算所需参数
-        ////////////////////////////////////////////////////////////////////////////////////////
-
-        auto targetPrim = get_input<PrimitiveObject>("targetPrim");
-        BVH bvh;
-        bvh.build(targetPrim.get());
-
-        auto hitFarthest = get_input<NumericObject>("hitFarthest")->get<int>();
-        auto maxDist = get_input<NumericObject>("maxDist")->get<float>();
-
-        auto doJitter = get_input<NumericObject>("doJitter")->get<int>();
-        auto numSamples = get_input<NumericObject>("numSamples")->get<int>();
-        auto jitterScale = get_input<NumericObject>("jitterScale")->get<float>();
-        auto jitterCombine = get_input<NumericObject>("jitterCombine")->get<int>();
-        auto seed = get_input<NumericObject>("seed")->get<int>();
-
-        auto combineMethod = get_input<NumericObject>("combineMethod")->get<int>();
-        auto allowDir = get_input<StringObject>("allowDir")->get();
-
-        vec3f forward = vec3f(1, 0, 0);
-        vec3f up = vec3f(0, 1, 0);
-        vec3f right = vec3f(0, 0, 1);
-        float centerDist = 0;
-        float combinedDist = 0;
-        float dist = 0;
-        int centerIntersected = 0;
-        int combinedIntersected = 0;
-        int intersected = 0;
-
-        struct allow_front {
-            bool operator()(float x) const {
-                return x >= 0;
-            }
-        };
-
-        struct allow_back {
-            bool operator()(float x) const {
-                return x <= 0;
-            }
-        };
-
-        struct allow_both {
-            bool operator()(float x) const {
-                return true;
-            }
-        };
-
-        auto cond = enum_variant<std::variant<allow_front, allow_back, allow_both>>(
-            array_index({ "front", "back", "both" }, allowDir));
-
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 计算
-        ////////////////////////////////////////////////////////////////////////////////////////
-
-        if (!doJitter)
-        {
-            numSamples = 1;
-        }
-
-        std::visit(
-            [&](auto cond) {
-                parallel_for((size_t)0, terrain->verts.size(), [&](size_t idx) {
-
-                    vec3f basepos = pos[idx];
-
-                    //centerIntersected = getintersectdist(centerDist, basepos, up, maxDist, hitFarthest, twosided);
-                    centerDist = bvh.intersect(cond, basepos, up);
-                    if (std::abs(centerDist) >= maxDist)
-                        centerDist = 0;
-                    centerIntersected = centerDist != 0;
-
-                    if (numSamples == 1)
-                    {
-                        combinedDist = centerDist;
-                        combinedIntersected = centerIntersected;
-                        //zeno::log_info("----- combinedDist = {}, combinedIntersected = {}", combinedDist, combinedIntersected);
-                    }
-                    else
-                    {
-                        std::vector<float> dists;
-                        if (centerIntersected)
-                            dists.push_back(centerDist);
-
-                        // Generate random jittered rays and calculate their distances to intersection
-                        for (int i = 1; i < numSamples; ++i)
-                        {
-                            wangsrng rng(basepos[0], basepos[1], basepos[2], (i + seed) * M_PI);
-                            auto mySeed = rng.next_int32();
-                            float u = erode_random_float(0.0f, 1.0f, mySeed);
-                            float v = erode_random_float(0.0f, 1.0f, mySeed + 1);
-                            vec2f dir = vec2f(u, v) * jitterScale;
-                            vec3f offset = u * right + v * forward;
-
-                            //intersected = getintersectdist(dist, basepos + offset, up, maxDist, hitFarthest, twosided);
-                            dist = bvh.intersect(cond, basepos + offset, up);
-                            if (std::abs(dist) >= maxDist)
-                                dist = 0;
-                            intersected = dist != 0;
-
-                            if (intersected)
-                                dists.push_back(dist);
-                        }
-
-                        // Combine sample rays using specified jittercombine operation
-                        combinedIntersected = 1;
-                        if (dists.size() == 0)          // 没有命中点
-                            combinedIntersected = 0;
-                        else if (dists.size() == 1)     // 唯一命中点
-                            combinedDist = dists[0];
-                        // 多个随机命中点
-                        else if (jitterCombine == 0)    // 多个命中点的均值
-                        {
-                            float sum = std::accumulate(std::begin(dists), std::end(dists), 0.0);
-                            combinedDist = sum / dists.size();
-                        }
-                        else if (jitterCombine == 1)    // 排序后的多命中点的中间值
-                        {
-                            std::sort(dists.begin(), dists.end());
-                            combinedDist = dists[(numSamples + 1) / 2];
-                        }
-                        else if (jitterCombine == 2)    // 多命中点的最小值
-                        {
-                            std::vector<float>::iterator minVal = std::min_element(dists.begin(), dists.end());
-                            combinedDist = *minVal;
-                        }
-                        else if (jitterCombine == 3)    // 多命中点的最大值
-                        {
-                            std::vector<float>::iterator maxVal = std::max_element(dists.begin(), dists.end());
-                            combinedDist = *maxVal;
-                        }
-                    }
-
-                    if (combinedIntersected)
-                    {
-                        int method = combineMethod;
-                        if (method == 0)
-                            _height[idx] = combinedDist;
-                        else if (method == 1)
-                            _height[idx] += combinedDist;
-                        else if (method == 2)
-                            _height[idx] *= combinedDist;
-                        else if (method == 3)
-                            _height[idx] = max(combinedDist, _height[idx]);
-                        else if (method == 4)
-                            _height[idx] = min(combinedDist, _height[idx]);
-                    }
-
-                    });
-            },
-            cond);
-
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 将计算结果返回给外部数据，并删除临时属性
-        ////////////////////////////////////////////////////////////////////////////////////////
-
-#pragma omp parallel for
-        for (int id_z = 0; id_z < nz; id_z++)
-        {
-#pragma omp parallel for
-            for (int id_x = 0; id_x < nx; id_x++)
-            {
-                int idx = Pos2Idx(id_x, id_z, nx);
-                height[idx] = _height[idx]; // 计算结果返回给外部数据
-            }
-        }
-
-        terrain->verts.erase_attr("_height");
-
-        set_output("prim_2DGrid", std::move(terrain));
-    }
-};
-ZENDEFNODE(erode_project,
-    { /* inputs: */ {
-            //"prim_2DGrid",
-            //"targetPrim",
-            {"PrimitiveObject", "prim_2DGrid"},
-            {"PrimitiveObject", "targetPrim"},
-            {"string", "heightLayerName", "height"},
-
-            {"int", "hitFarthest", "1"},
-            {"float", "maxDist", "1000.0"},
-
-            {"int", "doJitter", "0"},
-            {"int", "numSamples", "3"},
-            {"float", "jitterScale", "0.25"},
-            {"int", "jitterCombine", "1"},
-            {"int", "seed", "1"},
-            {"int", "combineMethod", "3"},
-            {"enum front back both", "allowDir", "both"},
-        }, /* outputs: */ {
-            "prim_2DGrid"
-        }, /* params: */ {
-        }, /* category: */ {
-            "erode"
-        } });
-
+           { /* inputs: */ {
+                   "prim",
+                   "primNei",
+                   {"string", "bvhIdTag", "bvh_id"},
+                   {"string", "bvhWeightTag", "bvh_ws"},
+                   {"string", "bvhAttrTag", "bvh_attr"},
+               }, /* outputs: */ {
+                   "prim"
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primitive"
+               }});
+
+
+///////////////////////////////////////////////////////////////////////////////
+// 2023 英启恒 Terrain Shape
+///////////////////////////////////////////////////////////////////////////////
 struct HeightStarPattern : zeno::INode {
-    virtual void apply() override {
+    void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto rotate = get_input2<float>("rotate");
         auto anglerandom = get_input2<float>("anglerandom");
@@ -1659,28 +837,859 @@ struct HeightStarPattern : zeno::INode {
         set_output("prim", std::move(prim));
     }
 };
-
-ZENDEFNODE(HeightStarPattern, {/* inputs: */ {
-                                   {"PrimitiveObject", "prim"},
-                                   {"float", "rotate", "0"},
-                                   {"float", "anglerandom", "0"},
-                                   {"float", "shapesize", "0.5"},
-                                   {"float", "posjitter", "0"},
-                                   {"float", "sharpness", "0.5"},
-                                   {"float", "starness", "0.5"},
-                                   {"int", "sides", "5"},
-                               },
-                               /* outputs: */
-                               {
-                                   {"PrimitiveObject", "prim"},
-                               },
-                               /* params: */ {}, /* category: */
-                               {
-                                   "erode",
-                               }});
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ZENDEFNODE(HeightStarPattern,
+           {/* inputs: */ {
+                   {"PrimitiveObject", "prim"},
+                   {"float", "rotate", "0"},
+                   {"float", "anglerandom", "0"},
+                   {"float", "shapesize", "0.5"},
+                   {"float", "posjitter", "0"},
+                   {"float", "sharpness", "0.5"},
+                   {"float", "starness", "0.5"},
+                   {"int", "sides", "5"},
+               }, /* outputs: */ {
+                   {"PrimitiveObject", "prim"},
+               }, /* params: */ {
+               }, /* category: */ {
+                   "erode",
+               }});
 
 
+///////////////////////////////////////////////////////////////////////////////
+// 2023.01.05 节点图中自撸循环，遍历 prim 设置/获取属性
+///////////////////////////////////////////////////////////////////////////////
+// Set Attr
+struct PrimSetAttr : INode {
+    void apply() override {
+
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto value = get_input<NumericObject>("value");
+        auto name = get_input2<std::string>("name");
+        auto type = get_input2<std::string>("type");
+        auto index = get_input<NumericObject>("index")->get<int>();
+        auto method = get_input<StringObject>("method")->get();
+
+        std::visit(
+            [&](auto ty) {
+              using T = decltype(ty);
+
+              if (method == "vert") {
+                  if (!prim->has_attr(name)) {
+                      prim->add_attr<T>(name);
+                  }
+                  auto &attr_arr = prim->attr<T>(name);
+
+                  auto val = value->get<T>();
+                  if (index < attr_arr.size()) {
+                      attr_arr[index] = val;
+                  }
+              } else if (method == "tri") {
+                  if (!prim->tris.has_attr(name)) {
+                      prim->tris.add_attr<T>(name);
+                  }
+                  auto &attr_arr = prim->tris.attr<T>(name);
+                  auto val = value->get<T>();
+                  if (index < attr_arr.size()) {
+                      attr_arr[index] = val;
+                  }
+              } else {
+                  throw Exception("bad type: " + method);
+              }
+            },
+            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(PrimSetAttr,
+           { /* inputs: */ {
+                   "prim",
+                   {"int", "value", "0"},
+                   {"string", "name", "index"},
+                   {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
+                   {"enum vert tri", "method", "tri"},
+                   {"int", "index", "0"},
+               }, /* outputs: */ {
+                   "prim",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primitive",
+               }});
+
+// Get Attr
+struct PrimGetAttr : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto name = get_input2<std::string>("name");
+        auto type = get_input2<std::string>("type");
+        auto index = get_input<NumericObject>("index")->get<int>();
+        auto method = get_input<StringObject>("method")->get();
+
+        auto value = std::make_shared<NumericObject>();
+
+        std::visit(
+            [&](auto ty) {
+              using T = decltype(ty);
+
+              if (method == "vert") {
+                  auto &attr_arr = prim->attr<T>(name);
+                  if (index < attr_arr.size()) {
+                      value->set<T>(attr_arr[index]);
+                  }
+              } else if (method == "tri") {
+                  auto &attr_arr = prim->tris.attr<T>(name);
+                  if (index < attr_arr.size()) {
+                      value->set<T>(attr_arr[index]);
+                  }
+              } else {
+                  throw Exception("bad type: " + method);
+              }
+            },
+            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
+
+        set_output("value", std::move(value));
+    }
+};
+ZENDEFNODE(PrimGetAttr,
+           { /* inputs: */ {
+                   "prim",
+                   {"string", "name", "index"},
+                   {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
+                   {"enum vert tri", "method", "tri"},
+                   {"int", "index", "0"},
+               }, /* outputs: */ {
+                   "value",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primitive",
+               }});
+
+// 删除多个属性
+struct PrimitiveDelAttrs : zeno::INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto name = get_param<std::string>("name");
+
+        std::istringstream sname(name);
+        std::vector<std::string> names;
+        std::string aname;
+        while(sname >> aname) {
+            prim->verts.attrs.erase(aname);
+        }
+
+        set_output("prim", get_input("prim"));
+    }
+};
+ZENDEFNODE(PrimitiveDelAttrs,
+           { /* inputs: */ {
+                   "prim",
+               }, /* outputs: */ {
+                   "prim",
+               }, /* params: */ {
+                   {"string", "name", "nrm"},
+               }, /* category: */ {
+                   "primitive",
+               } });
+
+
+///////////////////////////////////////////////////////////////////////////////
+// 2023.03.28 Quat and Rotation
+///////////////////////////////////////////////////////////////////////////////
+// 起始朝向 and 结束朝向 => 四元数
+struct QuatRotBetweenVectors : INode {
+    void apply() override
+    {
+        auto start = normalize(get_input<NumericObject>("start")->get<vec3f>());
+        auto dest = normalize(get_input<NumericObject>("dest")->get<vec3f>());
+
+        glm::vec3 gl_start(start[0], start[1], start[2]);
+        glm::vec3 gl_dest(dest[0], dest[1], dest[2]);
+        glm::quat gl_quat = glm::rotation(gl_start, gl_dest);
+
+        vec4f rot(gl_quat.x, gl_quat.y, gl_quat.z, gl_quat.w);
+        auto rotation = std::make_shared<NumericObject>();
+        rotation->set<vec4f>(rot);
+        set_output("quat", rotation);
+    }
+};
+ZENDEFNODE(QuatRotBetweenVectors,
+           {  /* inputs: */ {
+                   {"vec3f", "start", "1,0,0"},
+                   {"vec3f", "dest", "1,0,0"},
+               }, /* outputs: */ {
+                   {"vec4f", "quat", "0,0,0,1"},
+               }, /* params: */ {
+               }, /* category: */ {
+                   "quat",
+               }});
+
+// 矢量 * 四元数 => 矢量
+struct QuatRotate : INode {
+    void apply() override {
+        auto quat = get_input<NumericObject>("quat")->get<vec4f>();
+        auto vec3 = get_input<NumericObject>("vec3")->get<vec3f>();
+
+        glm::vec3 gl_vec3(vec3[0], vec3[1], vec3[2]);
+        glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
+        glm::vec3 gl_vec3_out = glm::rotate(gl_quat, gl_vec3);
+
+        vec3f vec3_o(gl_vec3_out.x, gl_vec3_out.y, gl_vec3_out.z);
+        auto vec3_out = std::make_shared<NumericObject>();
+        vec3_out->set<vec3f>(vec3_o);
+        set_output("vec3", vec3_out);
+    }
+};
+ZENDEFNODE(QuatRotate,
+           {/* inputs: */ {
+                   {"vec4f", "quat", "0,0,0,1"},
+                   {"vec3f", "vec3", "1,0,0"},
+               }, /* outputs: */ {
+                   {"vec3f", "vec3", "1,0,0"},
+               }, /* params: */ {
+               }, /* category: */ {
+                   "quat",
+               }});
+
+// 旋转轴 + 旋转角度 => 四元数
+struct QuatAngleAxis : INode {
+    void apply() override
+    {
+        auto angle = get_input<NumericObject>("angle(D)")->get<float>();
+        auto axis = normalize(get_input<NumericObject>("axis")->get<vec3f>());
+
+        float gl_angle = glm::radians(angle);
+        glm::vec3 gl_axis(axis[0], axis[1], axis[2]);
+        glm::quat gl_quat = glm::angleAxis(gl_angle, gl_axis);
+
+        vec4f rot(gl_quat.x, gl_quat.y, gl_quat.z, gl_quat.w);
+        auto rotation = std::make_shared<NumericObject>();
+        rotation->set<vec4f>(rot);
+
+        set_output("quat", rotation);
+    }
+};
+ZENDEFNODE(QuatAngleAxis,
+           {  /* inputs: */ {
+                   {"float", "angle(D)", "0"},
+                   {"vec3f", "axis", "1,0,0"},
+               }, /* outputs: */ {
+                   {"vec4f", "quat", "0,0,0,1"},
+               }, /* params: */ {
+               }, /* category: */ {
+                   "quat",
+               }});
+
+// 四元数 -> 旋转角度
+struct QuatGetAngle : INode {
+    void apply() override {
+        auto quat = get_input<NumericObject>("quat")->get<vec4f>();
+
+        glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
+        float gl_angle = glm::degrees(glm::angle(gl_quat));
+
+        auto angle = std::make_shared<NumericObject>();
+        angle->set<float>(gl_angle);
+
+        set_output("angle(D)", angle);
+    }
+};
+ZENDEFNODE(QuatGetAngle,
+           {/* inputs: */ {
+                   {"vec4f", "quat", "0,0,0,1"},
+               }, /* outputs: */ {
+                   {"float", "angle(D)", "0"},
+               }, /* params: */ {
+               }, /* category: */ {
+                   "quat",
+               }});
+
+// 四元数 -> 旋转轴
+struct QuatGetAxis : INode {
+    void apply() override {
+        auto quat = get_input<NumericObject>("quat")->get<vec4f>();
+
+        glm::quat gl_quat(quat[3], quat[0], quat[1], quat[2]);
+        glm::vec3 gl_axis = glm::axis(gl_quat);
+
+        vec3f axis_o(gl_axis.x, gl_axis.y, gl_axis.z);
+        auto axis = std::make_shared<NumericObject>();
+        axis->set<vec3f>(axis_o);
+        set_output("axis", axis);
+    }
+};
+ZENDEFNODE(QuatGetAxis,
+           { /* inputs: */ {
+                   {"vec4f", "quat", "0,0,0,1"},
+               }, /* outputs: */ {
+                   {"vec3f", "axis", "1,0,0"},
+               }, /* params: */ {
+               }, /* category: */ {
+                   "quat",
+               }});
+
+// 矩阵转置
+struct MatTranspose : INode {
+    void apply() override
+    {
+        glm::mat mat = std::get<glm::mat4>(get_input<MatrixObject>("mat")->m);
+        glm::mat transposeMat = glm::transpose(mat);
+        auto oMat = std::make_shared<MatrixObject>();
+        oMat->m = transposeMat;
+        set_output("transposeMat", oMat);
+    }
+};
+ZENDEFNODE(MatTranspose,
+           { /* inputs: */ {
+                   "mat",
+               }, /* outputs: */ {
+                   "transposeMat",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "math",
+               }});
+
+
+///////////////////////////////////////////////////////////////////////////////
+// 2023.03.31 primCurve
+///////////////////////////////////////////////////////////////////////////////
+// dir为指向末端的切线方向
+struct PrimCurveDir : INode {
+    void apply() override
+    {
+        auto prim = get_input<PrimitiveObject>("prim_curve");
+        auto dirName = get_input2<std::string>("dirName");
+        auto &directions = prim->add_attr<zeno::vec3f>(dirName);
+        size_t n = prim->size();
+#pragma omp parallel for
+        for (intptr_t i = 1; i < n - 1; i++) {
+            auto lastpos = prim->verts[i - 1];
+            auto currpos = prim->verts[i];
+            auto nextpos = prim->verts[i + 1];
+            auto direction = normalize(nextpos - lastpos);
+            directions[i] = direction;
+        }
+        directions[0] = normalize(prim->verts[1] - prim->verts[0]);
+        directions[n - 1] = normalize(prim->verts[n - 1] - prim->verts[n - 2]);
+        set_output("prim_curve", std::move(prim));
+    }
+};
+ZENDEFNODE(PrimCurveDir,
+           {  /* inputs: */ {
+                   "prim_curve",
+                   {"string", "dirName", "nrm"},
+               }, /* outputs: */ {
+                   "prim_curve",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primCurve",
+               }});
+
+template<typename T>
+static void smooth(const std::vector<int> &neighborIdxs,
+                   const std::vector<T> &neighborVals,
+                   const std::vector<float> &neighborEdgeWeights,
+                   const int useEdgeWeight,
+                   const T inData,
+                   const float weight,
+                   const float w,
+                   T &outData)
+{
+    T ndata { 0 };
+    int count = 0;
+
+    if (useEdgeWeight) {
+#pragma omp parallel for
+        for(int i = 0; i < neighborIdxs.size(); i++) {
+            if (neighborIdxs[i] != -1) {
+                ndata += neighborVals[i] * neighborEdgeWeights[i];
+            }
+        }
+        outData = inData + weight * w * (ndata - inData);
+    } else {
+#pragma omp parallel for
+        for(int i = 0; i < neighborIdxs.size(); i++) {
+            if (neighborIdxs[i] != -1) {
+                ndata += neighborVals[i];
+                count++;
+            }
+        }
+        float denom = 1.0f / (float)count;
+        outData = inData + weight * w * (ndata * denom - inData);
+    }
+}
+
+// 平滑属性，非常有用的功能
+struct PrimAttribBlur : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto prim_type = get_input2<std::string>("primType");
+
+//        auto maskName = get_input2<std::string>("group");
+//        if (!prim->verts.has_attr(maskName)) {
+//            auto &_mask = prim->verts.add_attr<float>(maskName);
+//            std::fill(_mask.begin(), _mask.end(), 1.0);
+//        }
+//        auto &mask = prim->verts.attr<float>(maskName);
+
+        auto attr_name = get_input2<std::string>("attributes");
+        auto attr_type = get_input2<std::string>("attributesType");
+
+        auto useEdgeLength = get_input<NumericObject>("useEdgeLengthWeight")->get<int>();
+
+        auto iterations = get_input<NumericObject>("blurringIterations")->get<int>();
+
+        auto mode = get_input2<std::string>("mode");
+        auto mu = get_input<NumericObject>("stepSize")->get<float>();
+        auto lambda = mu;
+        if (mode == "VolumePreserving") {
+            auto passband = get_input<NumericObject>("cutoffFrequency")->get<float>();
+            if (passband < 1e-5) {
+                float sqrt2_5 = 0.6324555320336758664;
+                lambda = sqrt2_5;
+                mu = -sqrt2_5;
+            } else {
+                // See:
+                //   Gabriel Taubin. "A signal processing approach to fair surface design".
+                //   SIGGRAPH 1995
+                //
+                // Let l be lambda, u be mu, and b be the passband frequency.
+                // f(k) = (1-k*l)(1-k*u).  This function has maximum at 1/l + 1/u.
+                // We want the maximum to occur at b, so we have the constraint
+                //          1/l + 1/u = passband
+                // so       u = l/(bl - 1)
+                // We also want f(1) = -f(2).  This gives the constraint:
+                //          u = (2-3l)/(3-5l)
+                // Equating this equations gives:
+                //          (3b-5)l^2 - 2bl + 2 = 0
+                // Solve for l using the quadratic formula.  We want l>0.  Since b>0 and
+                // 6b-10<0, subtract the square root of the discriminant to get a negative
+                // numerator so the quotient is positive.
+                auto discriminant = 4.0 * passband * passband - 24.0 * passband + 40.0;
+                lambda = 2.0 * passband - sqrt(discriminant);
+                lambda /= (6.0 * passband - 10.0);
+
+                // Now solve for u.  Note that u is also the other root of the quadratic.
+                mu = lambda / (passband * lambda - 1.0);
+            }
+        } else if (mode == "custom") {
+            lambda = get_input<NumericObject>("oddStepSize")->get<float>();
+            mu = get_input<NumericObject>("evenStepSize")->get<float>();
+        }
+
+        auto weightName = get_input2<std::string>("weightAttributes");
+        if (!prim->verts.has_attr(weightName)) {
+            auto &_weight = prim->verts.add_attr<float>(weightName);
+            std::fill(_weight.begin(), _weight.end(), 1.0);
+        }
+        auto &weight = prim->verts.attr<float>(weightName);
+
+        // 找临近点，假设最多 8 个临近点
+        auto &neighbor_0 = prim->verts.add_attr<int>("_neighbor_0");
+        auto &neighbor_1 = prim->verts.add_attr<int>("_neighbor_1");
+        auto &neighbor_2 = prim->verts.add_attr<int>("_neighbor_2");
+        auto &neighbor_3 = prim->verts.add_attr<int>("_neighbor_3");
+        auto &neighbor_4 = prim->verts.add_attr<int>("_neighbor_4");
+        auto &neighbor_5 = prim->verts.add_attr<int>("_neighbor_5");
+        auto &neighbor_6 = prim->verts.add_attr<int>("_neighbor_6");
+        auto &neighbor_7 = prim->verts.add_attr<int>("_neighbor_7");
+        std::fill(neighbor_0.begin(), neighbor_0.end(), -1);
+        std::fill(neighbor_1.begin(), neighbor_1.end(), -1);
+        std::fill(neighbor_2.begin(), neighbor_2.end(), -1);
+        std::fill(neighbor_3.begin(), neighbor_3.end(), -1);
+        std::fill(neighbor_4.begin(), neighbor_4.end(), -1);
+        std::fill(neighbor_5.begin(), neighbor_5.end(), -1);
+        std::fill(neighbor_6.begin(), neighbor_6.end(), -1);
+        std::fill(neighbor_7.begin(), neighbor_7.end(), -1);
+        auto &edgeweight_0 = prim->verts.add_attr<float>("_edgeweight_0");
+        auto &edgeweight_1 = prim->verts.add_attr<float>("_edgeweight_1");
+        auto &edgeweight_2 = prim->verts.add_attr<float>("_edgeweight_2");
+        auto &edgeweight_3 = prim->verts.add_attr<float>("_edgeweight_3");
+        auto &edgeweight_4 = prim->verts.add_attr<float>("_edgeweight_4");
+        auto &edgeweight_5 = prim->verts.add_attr<float>("_edgeweight_5");
+        auto &edgeweight_6 = prim->verts.add_attr<float>("_edgeweight_6");
+        auto &edgeweight_7 = prim->verts.add_attr<float>("_edgeweight_7");
+        std::fill(edgeweight_0.begin(), edgeweight_0.end(), 0);
+        std::fill(edgeweight_1.begin(), edgeweight_1.end(), 0);
+        std::fill(edgeweight_2.begin(), edgeweight_2.end(), 0);
+        std::fill(edgeweight_3.begin(), edgeweight_3.end(), 0);
+        std::fill(edgeweight_4.begin(), edgeweight_4.end(), 0);
+        std::fill(edgeweight_5.begin(), edgeweight_5.end(), 0);
+        std::fill(edgeweight_6.begin(), edgeweight_6.end(), 0);
+        std::fill(edgeweight_7.begin(), edgeweight_7.end(), 0);
+
+#pragma omp parallel for
+        for (size_t point_idx = 0; point_idx < prim->verts.size(); point_idx++) {   // 遍历所有点，找它的邻居
+
+            std::map<std::string, int> neighborVertID;
+            std::map<std::string, float> neighborEdgeLength;
+            for(int i = 0; i < 8; i++) {
+                neighborVertID["neighbor_" + std::to_string(i)] = -1;
+                neighborEdgeLength["edgeweight_" + std::to_string(i)] = 0;
+            }
+
+            int find_neighbor_count = 0;
+            float edgeLengthSum = 0;
+            volatile bool flag = false;
+
+            if (prim_type == "line") {
+#pragma omp parallel for shared(flag)
+                for (size_t line_idx = 0; line_idx < prim->lines.size(); line_idx++) {
+                    if(flag) continue;
+                    if (prim->lines[line_idx][0] == point_idx) {
+                        neighborVertID["neighbor_" + std::to_string(find_neighbor_count)] = prim->lines[line_idx][1];
+                        if (useEdgeLength) {
+                            float edgeLength = length(prim->verts[prim->lines[line_idx][1]] - prim->verts[point_idx]);
+                            neighborEdgeLength["edgeweight_" + std::to_string(find_neighbor_count)] = edgeLength;
+                            edgeLengthSum += edgeLength;
+                        }
+                        find_neighbor_count ++;
+                    } else if (prim->lines[line_idx][1] == point_idx) {
+                        neighborVertID["neighbor_" + std::to_string(find_neighbor_count)] = prim->lines[line_idx][0];
+                        if (useEdgeLength) {
+                            float edgeLength = length(prim->verts[prim->lines[line_idx][0]] - prim->verts[point_idx]);
+                            neighborEdgeLength["edgeweight_" + std::to_string(find_neighbor_count)] = edgeLength;
+                            edgeLengthSum += edgeLength;
+                        }
+                        find_neighbor_count++;
+                    }
+                    if (find_neighbor_count >= 7)
+                        flag = true;
+                }
+            } else if (prim_type == "tri") {
+                std::vector<int> pointNeighborSign(prim->verts.size());
+                std::fill(pointNeighborSign.begin(), pointNeighborSign.end(), 0);
+#pragma omp parallel for
+                for (size_t tri_idx = 0; tri_idx < prim->tris.size(); tri_idx++) {
+                    auto const &ind = prim->tris[tri_idx];
+                    if (ind[0] == point_idx) {
+                        pointNeighborSign[ind[1]] = 1;
+                        pointNeighborSign[ind[2]] = 1;
+                    } else if (ind[1] == point_idx) {
+                        pointNeighborSign[ind[0]] = 1;
+                        pointNeighborSign[ind[2]] = 1;
+                    } else if (ind[2] == point_idx) {
+                        pointNeighborSign[ind[0]] = 1;
+                        pointNeighborSign[ind[1]] = 1;
+                    }
+                }
+
+#pragma omp parallel for shared(flag)
+                for (int i = 0; i < prim->verts.size(); i++) {
+                    if(flag) continue;
+                    if (pointNeighborSign[i]) {
+                        neighborVertID["neighbor_" + std::to_string(find_neighbor_count)] = i;
+                        if (useEdgeLength) {
+                            float edgeLength = length(prim->verts[i] - prim->verts[point_idx]);
+                            neighborEdgeLength["edgeweight_" + std::to_string(find_neighbor_count)] = edgeLength;
+                            edgeLengthSum += edgeLength;
+                        }
+                        find_neighbor_count ++;
+                    }
+                    if (find_neighbor_count >= 7)
+                        flag = true;
+                }
+            }
+
+            neighbor_0[point_idx] = neighborVertID["neighbor_0"];
+            neighbor_1[point_idx] = neighborVertID["neighbor_1"];
+            neighbor_2[point_idx] = neighborVertID["neighbor_2"];
+            neighbor_3[point_idx] = neighborVertID["neighbor_3"];
+            neighbor_4[point_idx] = neighborVertID["neighbor_4"];
+            neighbor_5[point_idx] = neighborVertID["neighbor_5"];
+            neighbor_6[point_idx] = neighborVertID["neighbor_6"];
+            neighbor_7[point_idx] = neighborVertID["neighbor_7"];
+
+            if (useEdgeLength) {
+                float min_length = (edgeLengthSum / (float)(find_neighbor_count)) * 0.001f;
+                float sum = 0;
+
+#pragma omp parallel for
+                for (int i = 0; i < find_neighbor_count; i++)
+                {
+                    float length = neighborEdgeLength["edgeweight_" + std::to_string(i)];
+
+                    if ( length > min_length )
+                        neighborEdgeLength["edgeweight_" + std::to_string(i)] = 1.0 / length;
+                    else    // 基本重合的点，不考虑其影响，权重打到 0
+                        neighborEdgeLength["edgeweight_" + std::to_string(i)] = 0;
+
+                    sum += neighborEdgeLength["edgeweight_" + std::to_string(i)];   // 累计总权重
+                }
+                if ( sum > 0 )
+                {
+#pragma omp parallel for
+                    for (int i = 0; i < find_neighbor_count; ++i)
+                    {
+                        neighborEdgeLength["edgeweight_" + std::to_string(i)] /= sum;   // 权重归一化
+                    }
+                }
+
+                edgeweight_0[point_idx] = neighborEdgeLength["edgeweight_0"];
+                edgeweight_1[point_idx] = neighborEdgeLength["edgeweight_1"];
+                edgeweight_2[point_idx] = neighborEdgeLength["edgeweight_2"];
+                edgeweight_3[point_idx] = neighborEdgeLength["edgeweight_3"];
+                edgeweight_4[point_idx] = neighborEdgeLength["edgeweight_4"];
+                edgeweight_5[point_idx] = neighborEdgeLength["edgeweight_5"];
+                edgeweight_6[point_idx] = neighborEdgeLength["edgeweight_6"];
+                edgeweight_7[point_idx] = neighborEdgeLength["edgeweight_7"];
+            }
+        }
+
+        // 平滑属性计算
+        std::visit(
+            [&](auto ty) {
+              using T = decltype(ty);
+
+              auto &data = prim->verts.attr<T>(attr_name);
+              auto &data_temp = prim->verts.add_attr<T>("_data_temp");
+              std::fill(data_temp.begin(), data_temp.end(), T(0));
+
+              for (int loop = 0; loop < iterations; loop++) {
+#pragma omp parallel for
+                  // data => data_temp
+                  for (size_t i = 0; i < prim->verts.size(); i++) {
+                      std::vector<int> neighborIDs(8);
+                      neighborIDs[0] = neighbor_0[i];
+                      neighborIDs[1] = neighbor_1[i];
+                      neighborIDs[2] = neighbor_2[i];
+                      neighborIDs[3] = neighbor_3[i];
+                      neighborIDs[4] = neighbor_4[i];
+                      neighborIDs[5] = neighbor_5[i];
+                      neighborIDs[6] = neighbor_6[i];
+                      neighborIDs[7] = neighbor_7[i];
+                      std::vector<T> neighborValues(8);
+                      for (int i = 0; i < neighborIDs.size(); i++) {
+                          if (neighborIDs[i] != -1)
+                              neighborValues[i] = data[neighborIDs[i]];
+                      }
+                      std::vector<float> neighborEdgeWeights(8);
+                      neighborEdgeWeights[0] = edgeweight_0[i];
+                      neighborEdgeWeights[1] = edgeweight_1[i];
+                      neighborEdgeWeights[2] = edgeweight_2[i];
+                      neighborEdgeWeights[3] = edgeweight_3[i];
+                      neighborEdgeWeights[4] = edgeweight_4[i];
+                      neighborEdgeWeights[5] = edgeweight_5[i];
+                      neighborEdgeWeights[6] = edgeweight_6[i];
+                      neighborEdgeWeights[7] = edgeweight_7[i];
+                      smooth(neighborIDs, neighborValues, neighborEdgeWeights, useEdgeLength, data[i], weight[i], lambda, data_temp[i]);
+                  }
+#pragma omp parallel for
+                  // data_temp => data
+                  for (size_t i = 0; i < prim->verts.size(); i++) {
+                      std::vector<int> neighborIDs(8);
+                      neighborIDs[0] = neighbor_0[i];
+                      neighborIDs[1] = neighbor_1[i];
+                      neighborIDs[2] = neighbor_2[i];
+                      neighborIDs[3] = neighbor_3[i];
+                      neighborIDs[4] = neighbor_4[i];
+                      neighborIDs[5] = neighbor_5[i];
+                      neighborIDs[6] = neighbor_6[i];
+                      neighborIDs[7] = neighbor_7[i];
+                      std::vector<T> neighborValues(8);
+                      for(int i = 0; i < neighborIDs.size(); i++)
+                      {
+                          if (neighborIDs[i] != -1)
+                              neighborValues[i] = data_temp[neighborIDs[i]];
+                      }
+                      std::vector<float> neighborEdgeWeights(8);
+                      neighborEdgeWeights[0] = edgeweight_0[i];
+                      neighborEdgeWeights[1] = edgeweight_1[i];
+                      neighborEdgeWeights[2] = edgeweight_2[i];
+                      neighborEdgeWeights[3] = edgeweight_3[i];
+                      neighborEdgeWeights[4] = edgeweight_4[i];
+                      neighborEdgeWeights[5] = edgeweight_5[i];
+                      neighborEdgeWeights[6] = edgeweight_6[i];
+                      neighborEdgeWeights[7] = edgeweight_7[i];
+                      smooth(neighborIDs, neighborValues, neighborEdgeWeights, useEdgeLength, data_temp[i], weight[i], mu, data[i]);
+                  }
+              }
+              prim->verts.erase_attr("_data_temp");
+
+            },
+            enum_variant<std::variant<float, vec3f>>(
+                array_index({"float", "vec3f"}, attr_type)));
+
+        prim->verts.erase_attr("_neighbor_0");
+        prim->verts.erase_attr("_neighbor_1");
+        prim->verts.erase_attr("_neighbor_2");
+        prim->verts.erase_attr("_neighbor_3");
+        prim->verts.erase_attr("_neighbor_4");
+        prim->verts.erase_attr("_neighbor_5");
+        prim->verts.erase_attr("_neighbor_6");
+        prim->verts.erase_attr("_neighbor_7");
+        prim->verts.erase_attr("_edgeweight_0");
+        prim->verts.erase_attr("_edgeweight_1");
+        prim->verts.erase_attr("_edgeweight_2");
+        prim->verts.erase_attr("_edgeweight_3");
+        prim->verts.erase_attr("_edgeweight_4");
+        prim->verts.erase_attr("_edgeweight_5");
+        prim->verts.erase_attr("_edgeweight_6");
+        prim->verts.erase_attr("_edgeweight_7");
+
+        set_output("prim", std::move(prim));
+    }
+};
+ZENDEFNODE(PrimAttribBlur,
+           {/* inputs: */ {
+                   "prim",
+                   {"enum line tri", "primType", "line"},
+//                   {"string", "group", "mask"},
+                   {"string", "attributes", "ratio"},
+                   {"enum float vec3f ", "attributesType", "float"},
+                   {"int", "useEdgeLengthWeight", "0"},
+                   {"int", "blurringIterations", "0"},
+                   {"enum laplacian VolumePreserving custom", "mode", "laplacian"},
+                   {"float", "stepSize", "0.683"},
+                   {"float", "cutoffFrequency", "0.1"},
+                   {"float", "evenStepSize", "0.5"},
+                   {"float", "oddStepSize", "0.5"},
+                   {"string", "weightAttributes", "weight"},
+               }, /* outputs: */ {
+                   "prim",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primCurve",
+               }});
+
+// 点连成线
+struct PrimCurveFromVerts : INode {
+    virtual void apply() override
+    {
+        auto prim = get_input<PrimitiveObject>("primVerts");
+        size_t lines_count = prim->size() - 1;
+        prim->lines.resize(lines_count);
+        for (int i = 0; i < lines_count; i++) {
+            prim->lines[i] = zeno::vec2i(i, i + 1);
+        }
+
+        set_output("primCurve", get_input("primVerts"));
+    }
+};
+ZENDEFNODE(PrimCurveFromVerts,
+           { /* inputs: */ {
+                   "primVerts",
+               }, /* outputs: */ {
+                   "primCurve",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "primCurve",
+               }});
+
+
+/**
+ * @brief _CreateBezierCurve 生成N阶贝塞尔曲线点
+ * @param src 源贝塞尔控制点
+ * @param dest 目的贝塞尔曲线点
+ * @param precision 生成精度
+ */
+static void _CreateBezierCurve(const std::vector<zeno::vec3f> src, std::vector<zeno::vec3f> &dest, double precision) {
+    int size = src.size();
+    std::vector<double> coff(size, 0);
+
+    std::vector<std::vector<int>> a(size, std::vector<int>(size));
+    {
+        for(int i=0;i<size;++i)
+        {
+            a[i][0]=1;
+            a[i][i]=1;
+        }
+        for(int i=1;i<size;++i)
+            for(int j=1;j<i;++j)
+                a[i][j] = a[i-1][j-1] + a[i-1][j];
+    }
+
+    for (double t1 = 0; t1 < 1; t1 += precision) {
+        double t2  = 1 - t1;
+        int n = size - 1;
+
+        coff[0] = pow(t2, n);
+        coff[n] = pow(t1, n);
+        for (int i = 1; i < size - 1; ++i) {
+            coff[i] = pow(t2, n - i) * pow(t1, i) * a[n][i];
+        }
+
+        zeno::vec3f ret(0, 0, 0);
+        for (int i = 0; i < size; ++i) {
+            zeno::vec3f tmp(src[i][0] * coff[i], src[i][1] * coff[i], src[i][2] * coff[i]);
+            ret[0] = ret[0] + tmp[0];
+            ret[1] = ret[1] + tmp[1];
+            ret[2] = ret[2] + tmp[2];
+        }
+        dest.push_back(ret);
+    }
+}
+
+// 用指定的 verts 生成二阶贝塞尔曲线点
+struct CreatePrimCurve : INode {
+    virtual void apply() override {
+        auto inPrim = get_input<zeno::PrimitiveObject>("inputPoints").get();
+        auto outprim = std::make_shared<zeno::PrimitiveObject>();
+        auto precision = get_input<zeno::NumericObject>("precision")->get<float>();
+
+        auto tmpPos = inPrim->attr<zeno::vec3f>("pos");
+        int subCurveCount = inPrim->verts.size() - 2;
+
+        for(int i = 0; i < subCurveCount; i++)
+        {
+            std::vector<vec3f> subCurveInput(std::vector<vec3f>(3));
+            if (i == 0) {
+                subCurveInput[0] = tmpPos[i];
+            } else {
+                subCurveInput[0] = (tmpPos[i] + tmpPos[i + 1])/2;
+            }
+
+            subCurveInput[1] = tmpPos[i + 1];
+
+            if (i == subCurveCount - 1) {
+                subCurveInput[2] = tmpPos[i + 2];
+            } else {
+                subCurveInput[2] = (tmpPos[i + 1] + tmpPos[i + 2])/2;
+            }
+
+            std::vector<zeno::vec3f> outputPoints;
+            _CreateBezierCurve(subCurveInput, outputPoints, precision);
+
+            int oldVertCount = outprim->verts.size();
+            outprim->verts.resize(oldVertCount + outputPoints.size());
+            for (int i = 0; i < outputPoints.size(); i++) {
+                outprim->verts[oldVertCount + i] = outputPoints[i];
+            }
+
+        }
+
+        vec3f lastInPoint = inPrim->verts[inPrim->verts.size() - 1];
+        vec3f lastOutPoint = outprim->verts[outprim->verts.size() - 1];
+        if (length(lastInPoint - lastOutPoint) > 0.0001)
+        {
+            outprim->verts.resize( outprim->verts.size() + 1);
+            outprim->verts[outprim->verts.size() - 1] = inPrim->verts[inPrim->verts.size() - 1];
+        }
+
+        size_t lines_count = outprim->size() - 1;
+        outprim->lines.resize(lines_count);
+        for (int i = 0; i < lines_count; i++) {
+            outprim->lines[i] = zeno::vec2i(i, i + 1);
+        }
+
+        set_output("prim", std::move(outprim));
+    }
+};
+ZENDEFNODE(CreatePrimCurve,
+           {{
+                   {"prim", "inputPoints"},
+                   {"float", "precision", "0.01"},
+               },
+               {
+                   "prim",
+               },
+               {
+                   {"enum Bezier", "Type", "Bezier"},
+               },
+               {
+                   "primCurve",
+               }});
 
 
 

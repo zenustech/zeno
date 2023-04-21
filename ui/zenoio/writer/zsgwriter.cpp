@@ -226,6 +226,13 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
     const QString& name = data[ROLE_OBJNAME].toString();
     writer.String(name.toUtf8());
 
+    const QString &customName = data[ROLE_CUSTOM_OBJNAME].toString();
+    if (!customName.isEmpty()) 
+    {
+        writer.Key("customName");
+        writer.String(customName.toUtf8());
+    }
+
     const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     const OUTPUT_SOCKETS& outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
     const PARAMS_INFO& params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();

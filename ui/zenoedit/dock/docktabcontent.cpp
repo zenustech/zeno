@@ -7,6 +7,7 @@
 #include "../panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
+#include <zenoedit/panel/zenoimagepanel.h>
 #include "nodesview/zenographseditor.h"
 #include "viewport/viewportwidget.h"
 #include "zenoapplication.h"
@@ -21,6 +22,7 @@
 #include "launch/corelaunch.h"
 #include "settings/zenosettingsmanager.h"
 #include "settings/zsettings.h"
+#include <zenoui/comctrl/zcombobox.h>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -42,6 +44,8 @@ ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QStri
     setBackgroundClr(QColor(), bgOn, bgOn, bgOn);
 }
 
+
+#if 0
 ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &iconHover, const QString &iconOn,const QString &iconOnHover, const QString &iconPressed)
     : ZToolButton()
 {
@@ -55,7 +59,8 @@ ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &i
     m_iconOnPressed = QIcon(iconPressed);
 }
 
-void ZToolRecordingButton::paintEvent(QPaintEvent *event) {
+void ZToolRecordingButton::paintEvent(QPaintEvent *event)
+{
     QStylePainter p(this);
     ZStyleOptionToolButton option;
     option.initFrom(this);
@@ -88,8 +93,10 @@ void ZToolRecordingButton::paintEvent(QPaintEvent *event) {
     option.font = zenoApp->font();
     option.bgRadius = ZenoStyle::dpiScaled(2);
     option.palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option.state)));
-    p.drawComplexControl(static_cast<QStyle::ComplexControl>(ZenoStyle::CC_ZenoToolButton), option);
+    p.drawComplexControl(QStyle::CC_ToolButton, option);
 }
+#endif
+
 
 ZToolMenuButton::ZToolMenuButton() {
     setButtonOptions(ZToolButton::Opt_TextRightToIcon);
@@ -186,10 +193,12 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     QFont fnt = zenoApp->font();
     m_plblName->setFont(fnt);
     m_plblName->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    m_plblName->setMinimumWidth(ZenoStyle::dpiScaled(128));
     QPalette palette = m_plblName->palette();
     palette.setColor(m_plblName->foregroundRole(), QColor("#A3B1C0"));
     m_plblName->setPalette(palette);
+
+    m_pNameLineEdit = new ZLineEdit;
+    m_pNameLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
 
     ZToolBarButton* pFixBtn = new ZToolBarButton(false, ":/icons/fixpanel.svg", ":/icons/fixpanel-on.svg");
     ZToolBarButton* pWikiBtn = new ZToolBarButton(false, ":/icons/wiki.svg", ":/icons/wiki-on.svg");
@@ -197,6 +206,7 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addWidget(pIcon);
     pToolLayout->addWidget(m_plblName);
+    pToolLayout->addWidget(m_pNameLineEdit);
     pToolLayout->addStretch();
     pToolLayout->addWidget(pFixBtn);
     pToolLayout->addWidget(pWikiBtn);
@@ -213,6 +223,15 @@ void DockContent_Parameter::initConnections()
 {
     ZenoPropPanel* prop = qobject_cast<ZenoPropPanel*>(m_pWidget);
     connect(m_pSettingBtn, &ZToolBarButton::clicked, prop, &ZenoPropPanel::onSettings);
+
+    connect(m_pNameLineEdit, &ZLineEdit::textEditFinished, this, [=]() {
+        QString value = m_pNameLineEdit->text();
+        QString oldValue;
+        if (!prop->updateCustomName(value, oldValue)) 
+        {
+            m_pNameLineEdit->setText(oldValue);
+        }
+    });
 }
 
 void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
@@ -227,9 +246,11 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
             const QModelIndex& idx = nodes[0];
             if (select) {
                 m_plblName->setText(idx.data(ROLE_OBJID).toString());
+                m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
             }
             else {
                 m_plblName->setText("");
+                m_pNameLineEdit->setText("");
             }
         }
     }
@@ -297,11 +318,15 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
 
     QStringList runList{tr("disable"), tr("alwaysAll"), tr("alwaysLightCameraMaterial")};
-    m_btnAlways = new QComboBox(this);
+    m_btnAlways = new ZComboBox(this);
     m_btnAlways->addItems(runList);
     m_btnAlways->setEditable(false);
-    m_btnAlways->setFixedSize(ZenoStyle::dpiScaled(170), ZenoStyle::dpiScaled(20));
-    QObject::connect(m_btnAlways, &QComboBox::textActivated, [=](const QString &text) {
+    m_btnAlways->setFixedHeight(ZenoStyle::dpiScaled(22));
+    m_btnAlways->setFont(fnt);
+    m_btnAlways->setProperty("focusBorder", "none");
+    QFontMetrics fontMetrics(fnt);
+    m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCameraMaterial")) + ZenoStyle::dpiScaled(30));
+    QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
         static int lastItem = 0;
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
@@ -341,7 +366,9 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
             pMainWin->setAlwaysLightCameraMaterial(false);
             lastItem = 0;
         }
+        m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(text) + ZenoStyle::dpiScaled(26));
     });
+    m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(tr("disable")) + ZenoStyle::dpiScaled(26));
 
     pListView->setChecked(false);
     pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool());
@@ -370,13 +397,15 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcZoomEdited;
     cbZoom = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
+    cbZoom->setProperty("focusBorder", "none");
     cbZoom->setEditable(false);
-    cbZoom->setFixedSize(ZenoStyle::dpiScaled(85), ZenoStyle::dpiScaled(20));
+    cbZoom->setFixedSize(ZenoStyle::dpiScaled(60), ZenoStyle::dpiScaled(20));
+    cbZoom->view()->setFixedWidth(ZenoStyle::dpiScaled(85));
 
     pToolLayout->addWidget(pListView);
     pToolLayout->addWidget(pTreeView);
 
-    pToolLayout->addSpacing(ZenoStyle::dpiScaled(120));
+    pToolLayout->addStretch(1);
 
     pToolLayout->addWidget(pSubnetMgr);
     pToolLayout->addWidget(pFold);
@@ -392,7 +421,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_btnRun);
     pToolLayout->addWidget(m_btnKill);
 
-    pToolLayout->addStretch();
+    pToolLayout->addStretch(4);
 
     pToolLayout->addWidget(cbZoom);
     pToolLayout->addWidget(pSearchBtn);
@@ -639,6 +668,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
     QVariant props = items;
 
+    QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {
         if (newValue == items[0]) {
             m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SOLID, true);
@@ -649,12 +679,15 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         else if (newValue == items[2]) {
             m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_OPTIX, true);
         }
+        m_cbRenderWay->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
     };
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcRender;
     m_cbRenderWay = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
+    m_cbRenderWay->setProperty("focusBorder", "none");
     m_cbRenderWay->setEditable(false);
-    m_cbRenderWay->setFixedSize(ZenoStyle::dpiScaled(110), ZenoStyle::dpiScaled(20));
+    m_cbRenderWay->view()->setFixedWidth(ZenoStyle::dpiScaled(110));
+    m_cbRenderWay->setFixedSize(fontMetrics.horizontalAdvance(items[0]) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(20));
 
     pToolLayout->addWidget(pMenuBar);
     pToolLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
@@ -829,4 +862,19 @@ void DockContent_Log::initConnections()
         m_pBtnFilterLog->setChecked(false);
         m_stack->setCurrentIndex(1);
     });
+}
+
+DockContent_Image::DockContent_Image(QWidget *parent)
+    : DockToolbarWidget(parent)
+    , m_ImagePanel(nullptr)
+{
+}
+
+QWidget *DockContent_Image::initWidget() {
+    m_ImagePanel = new ZenoImagePanel(this);
+    return m_ImagePanel;
+}
+
+ZenoImagePanel *DockContent_Image::getImagePanel() {
+    return m_ImagePanel;
 }

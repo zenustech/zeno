@@ -46,6 +46,7 @@ public slots:
     void onSubnetListPanel(bool bShow, SideBarItem item);
     void onAction(QAction* pAction, const QVariantList& args = QVariantList(), bool bChecked = false);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
+    void onTreeItemSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 
 signals:
     void zoomed(qreal);

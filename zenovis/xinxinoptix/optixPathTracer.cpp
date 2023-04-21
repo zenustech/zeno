@@ -2930,7 +2930,7 @@ void optixrender(int fbo, int samples, bool simpleRender) {
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
-    state.params.simpleRender = simpleRender;
+    state.params.simpleRender = false;//simpleRender;
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
     updateState( *output_buffer_o, state.params );

@@ -57,6 +57,17 @@ void SubGraphModel::expand()
     }
 }
 
+bool SubGraphModel::checkCustomName(const QString &name) 
+{
+    if (name.isEmpty())
+        return true;
+    for (auto node : m_nodes) {
+        if (node.customName == name)
+            return false;
+    }
+    return true;
+}
+
 void SubGraphModel::clear()
 {
     m_nodes.clear();
@@ -71,6 +82,7 @@ NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const
     NODE_DATA data;
     data[ROLE_OBJID] = item.objid;
     data[ROLE_OBJNAME] = item.objCls;
+    data[ROLE_CUSTOM_OBJNAME] = item.customName;
     data[ROLE_OBJPOS] = item.viewpos;
     data[ROLE_COLLASPED] = item.bCollasped;
     data[ROLE_OPTIONS] = item.options;
@@ -97,6 +109,7 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
 {
     ret.objid = data[ROLE_OBJID].toString();
     ret.objCls = data[ROLE_OBJNAME].toString();
+    ret.customName = data[ROLE_CUSTOM_OBJNAME].toString();
     ret.viewpos = data[ROLE_OBJPOS].toPointF();
     ret.bCollasped = data[ROLE_COLLASPED].toBool();
     ret.options = data[ROLE_OPTIONS].toInt();
@@ -297,6 +310,7 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
     {
         case ROLE_OBJID:    return item.objid;
         case ROLE_OBJNAME:  return item.objCls;
+        case ROLE_CUSTOM_OBJNAME: return item.customName;
         case ROLE_OBJDATA:  return QVariant::fromValue(nodeData(index));
         case ROLE_NODETYPE: return item.type;
         case ROLE_INPUTS:
@@ -398,6 +412,15 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             case ROLE_OBJNAME: 
             {
                 item.objCls = value.toString();
+                break;
+            }
+            case ROLE_CUSTOM_OBJNAME: 
+            {
+                bool isValid = checkCustomName(value.toString());
+                if (isValid)
+                    item.customName = value.toString();
+                else
+                    return isValid;
                 break;
             }
             case ROLE_INPUTS:

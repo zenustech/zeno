@@ -11,7 +11,7 @@
 
 ZShortCutSettingDlg::ZShortCutSettingDlg(QWidget *parent) :
     QDialog(parent), 
-    m_pTableWidget(nullptr) 
+    m_pTableWidget(nullptr)
 {
     initUI();
 }
@@ -62,7 +62,8 @@ bool ZShortCutSettingDlg::eventFilter(QObject *obj, QEvent *event)
     return QDialog::eventFilter(obj, event);
 }
 
-void ZShortCutSettingDlg::initUI() {
+void ZShortCutSettingDlg::initUI()
+{
     QVBoxLayout *pLayout = new QVBoxLayout(this);
     m_pTableWidget = new QTableWidget(this);
     m_pTableWidget->setColumnCount(2);
@@ -85,7 +86,7 @@ void ZShortCutSettingDlg::initUI() {
     pLayout->addLayout(pHLayout);
 
     connect(pOKButton, &QPushButton::clicked, this, [=]() {
-        writeShortCutInfo();
+        ZenoSettingsManager::GetInstance().writeShortCutInfo(m_shortCutInfos);
         accept();
     });
 
@@ -97,8 +98,7 @@ void ZShortCutSettingDlg::initUI() {
     m_shortCutInfos = ZenoSettingsManager::GetInstance().getValue(zsShortCut).value<QVector<ShortCutInfo>>();
     m_pTableWidget->setRowCount(m_shortCutInfos.size());
     int row = 0;
-    for (auto info : m_shortCutInfos) 
-    {
+    for (auto info : m_shortCutInfos) {
         QTableWidgetItem *descItem = new QTableWidgetItem(info.desc);
         descItem->setFlags(descItem->flags() & (~Qt::ItemFlag::ItemIsEditable));
         descItem->setData(Qt::DisplayPropertyRole, info.key);
@@ -116,42 +116,9 @@ void ZShortCutSettingDlg::initUI() {
                 shortcutInfo.shortcut = item->data(Qt::DisplayRole).toString();
                 break;
             }
-        }        
-    });
-
-    connect(m_pTableWidget, &QTableWidget::doubleClicked, this, [=]() {
-        if (QWidget *widget = m_pTableWidget->cellWidget(m_pTableWidget->currentRow(), m_pTableWidget->currentColumn())) {
-            if (QLineEdit *lineEdit = qobject_cast<QLineEdit *>(widget)) {
-                lineEdit->installEventFilter(this);
-            }
         }
     });
+
     this->resize(ZenoStyle::dpiScaled(280), ZenoStyle::dpiScaled(500));
     this->setWindowTitle(tr("Shortcut Setting"));
-
-}
-
-void ZShortCutSettingDlg::writeShortCutInfo() {
-    rapidjson::StringBuffer str;
-    PRETTY_WRITER writer(str);
-    writer.StartArray();
-    bool bChanged = false;
-    for (auto info : m_shortCutInfos) {
-        writer.StartObject();
-        writer.Key("key");
-        writer.String(info.key.toUtf8());
-        writer.Key("shortcut");
-        writer.String(info.shortcut.toUtf8());
-        writer.EndObject();
-        if (ZenoSettingsManager::GetInstance().getShortCut(info.key) != info.shortcut) 
-        {
-            ZenoSettingsManager::GetInstance().setShortCut(info.key, info.shortcut);
-            bChanged = true;
-        }
-    }
-    writer.EndArray();
-    if (bChanged) {
-        QString strJson = QString::fromUtf8(str.GetString());
-        ZenoSettingsManager::GetInstance().setValue(zsShortCut, strJson);
-    }
 }

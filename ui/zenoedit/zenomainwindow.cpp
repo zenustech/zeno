@@ -39,6 +39,8 @@
 #include "panel/zenoimagepanel.h"
 #include "dialog/zshortcutsettingdlg.h"
 #include "settings/zenosettingsmanager.h"
+#include "util/apphelper.h"
+#include "dialog/zaboutdlg.h"
 
 
 const QString g_latest_layout = "LatestLayout";
@@ -108,21 +110,24 @@ void ZenoMainWindow::init()
 void ZenoMainWindow::initWindowProperty()
 {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    setWindowTitle(UiHelper::nativeWindowTitle(""));
+    setWindowTitle(AppHelper::nativeWindowTitle(""));
     connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
         QFileInfo info(fn);
         QString path = info.filePath();
-        QString title = UiHelper::nativeWindowTitle(path);
+        QString title = AppHelper::nativeWindowTitle(path);
+        updateNativeWinTitle(title);
+    });
+    connect(pGraphsMgm, &GraphsManagment::modelInited, this, [=]() {
+        //new file
+        QString title = AppHelper::nativeWindowTitle(tr("new file"));
         updateNativeWinTitle(title);
     });
     connect(pGraphsMgm, &GraphsManagment::fileClosed, this, [=]() { 
-        QString title = UiHelper::nativeWindowTitle("");
+        QString title = AppHelper::nativeWindowTitle("");
         updateNativeWinTitle(title);
     });
-    connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString fn) {
-        QFileInfo info(fn);
-        QString path = info.filePath();
-        QString title = UiHelper::nativeWindowTitle(path);
+    connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString path) {
+        QString title = AppHelper::nativeWindowTitle(path);
         updateNativeWinTitle(title);
     });
     connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
@@ -197,7 +202,10 @@ void ZenoMainWindow::initMenu()
 void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
 {
     QAction* pAction = qobject_cast<QAction*>(sender());
-    int actionType = pAction->property("ActionType").toInt();
+    QVariant var = pAction->property("ActionType");
+    int actionType = -1;
+    if (var.type() == QVariant::Int)
+        actionType = pAction->property("ActionType").toInt();
     if (actionType == ACTION_SHADING || actionType == ACTION_SOLID || actionType == ACTION_OPTIX) 
     {
         setActionIcon(m_ui->actionShading);
@@ -260,6 +268,18 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     }
     case ACTION_SET_SHORTCUT: {
         shortCutDlg();
+        break;
+    }
+    case ACTION_ABOUT: {
+        ZAboutDlg dlg(this);
+        dlg.exec();
+        break;
+    }
+    case ACTION_FEEDBACK: {
+        onFeedBack();
+        break;
+    }
+    case ACTION_CHECKUPDATE: {
         break;
     }
     default: {
@@ -897,6 +917,7 @@ std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
 
 void ZenoMainWindow::closeEvent(QCloseEvent *event)
 {
+    killProgram();
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
@@ -916,13 +937,13 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
         for (ZTabDockWidget *pDock : docks) {
             pDock->close();
             try {
-                pDock->testCleanupGL();
+                //pDock->testCleanupGL();
             } catch (...) {
                 //QString errMsg = QString::fromLatin1(e.what());
                 int j;
                 j = 0;
             }
-            delete pDock;
+            //delete pDock;
         }
 
         QMainWindow::closeEvent(event);
@@ -967,6 +988,7 @@ bool ZenoMainWindow::event(QEvent* event)
             emit dockSeparatorMoving(false);
         }
     }
+    return ret;
 }
 
 void ZenoMainWindow::mousePressEvent(QMouseEvent* event)
@@ -1286,7 +1308,9 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
     m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);
     m_ui->actionSet_ShortCut->setProperty("ActionType", ACTION_SET_SHORTCUT);
-
+    m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
+    m_ui->actionAbout->setProperty("ActionType", ACTION_ABOUT);
+    m_ui->actionCheck_Update->setProperty("ActionType", ACTION_CHECKUPDATE);
 }
 
 void ZenoMainWindow::screenShoot() 
@@ -1452,7 +1476,6 @@ void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 
 void ZenoMainWindow::onFeedBack()
 {
-    /*
     ZFeedBackDlg dlg(this);
     if (dlg.exec() == QDialog::Accepted)
     {
@@ -1464,11 +1487,11 @@ void ZenoMainWindow::onFeedBack()
             if (!pModel) {
                 return;
             }
-            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
+            APP_SETTINGS settings;
+            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
             dlg.sendEmail("bug feedback", content, strContent);
         }
     }
-    */
 }
 
 void ZenoMainWindow::clearErrorMark()

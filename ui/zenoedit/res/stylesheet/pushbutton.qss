@@ -325,3 +325,10 @@ QPushButton[cssClass="color_button"]
 	font-weight: 500;
 	color: #8A8A8C;
 }
+
+QPushButton[cssClass="CoreParam"]
+{
+	background-color: #5A616D;
+	color: #FFFFFF;
+	padding:3px 3px;
+}
