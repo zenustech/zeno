@@ -47,5 +47,6 @@ const char *const ShortCut_LeftView = "LeftView";
 const char *const ShortCut_UpwardView = "Upward View";
 const char *const ShortCut_CoordSys = "CoordSys";
 const char *const ShortCut_FloatPanel = "Float Panel";
+const char *const ShortCut_SelectAllNodes = "Select All Nodes";
 
 #endif

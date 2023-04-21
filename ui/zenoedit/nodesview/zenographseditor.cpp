@@ -105,7 +105,7 @@ void ZenoGraphsEditor::initSignals()
     connect(m_selection, &QItemSelectionModel::currentChanged, this, &ZenoGraphsEditor::onCurrentChanged);
 
     connect(m_ui->subnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
-    connect(m_ui->subnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onTreeItemActivated(const QModelIndex&)));
+    //connect(m_ui->subnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onTreeItemActivated(const QModelIndex&)));
 
 	connect(m_ui->welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
 	connect(m_ui->welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
@@ -141,6 +141,8 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 
     m_ui->subnetTree->setModel(mgr->treeModel());
     m_ui->subnetList->setModel(pModel);
+    m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
 
     m_ui->subnetList->setItemDelegate(new ZSubnetListItemDelegate(m_model, this));
 
@@ -651,6 +653,38 @@ void ZenoGraphsEditor::onMenuActionTriggered(QAction* pAction)
 void ZenoGraphsEditor::onCommandDispatched(QAction* pAction, bool bTriggered)
 {
     onAction(pAction);
+}
+
+void ZenoGraphsEditor::onTreeItemSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected) 
+{
+    QModelIndexList lst = m_ui->subnetTree->selectionModel()->selectedIndexes();
+    if (lst.isEmpty())
+        return;
+
+    QModelIndex idx = lst.first();
+    if (lst.size() == 1) 
+    {
+        onTreeItemActivated(idx);
+    } 
+    else 
+    {
+        QModelIndexList indexs;
+        if (!idx.parent().isValid())
+            return;
+        QString parentName = idx.parent().data(ROLE_OBJNAME).toString();
+        indexs << idx;
+        for (auto index : lst) 
+        {
+            if (index == idx)
+                continue;
+            if (index.parent().data(ROLE_OBJNAME).toString() == parentName) {
+                indexs << index;
+            }
+        }
+        ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
+        ZASSERT_EXIT(pView);
+        pView->selectNodes(indexs);
+    }
 }
 
 void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool bChecked)

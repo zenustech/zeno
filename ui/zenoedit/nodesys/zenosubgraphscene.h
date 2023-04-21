@@ -29,6 +29,7 @@ public:
     QModelIndexList selectNodesIndice() const;
     QModelIndexList selectLinkIndice() const;
     void select(const QString& id);
+    void select(const QModelIndexList &nodes);
     void markError(const QString& nodeid);
     void clearMark();
     QGraphicsItem* getNode(const QString& id);

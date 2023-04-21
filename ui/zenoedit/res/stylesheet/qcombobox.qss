@@ -1,6 +1,5 @@
 QComboBox {
     border: 0px;
-    border-radius: 1px;
     padding: 3px 5px;
 	font-size: 9pt;
     color: #A3B1C0;

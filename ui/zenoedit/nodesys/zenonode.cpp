@@ -67,8 +67,18 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
         _drawBorderWangStyle(painter);
     }
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
-    if (type == NORMAL_NODE)
-        _base::paint(painter, option, widget);
+    if (type == NORMAL_NODE) {
+        painter->setRenderHint(QPainter::Antialiasing, true);
+        QRectF r = boundingRect();
+        qreal brWidth = ZenoStyle::scaleWidth(2);
+        r.adjust(-brWidth / 2, -brWidth / 2, brWidth / 2, brWidth / 2);
+        QPainterPath path;
+        path.addRect(r);
+        QPen pen(QColor(18,20,22), brWidth);
+        pen.setJoinStyle(Qt::MiterJoin);
+        painter->setPen(pen);
+        painter->drawPath(path);
+    }
 }
 
 void ZenoNode::_drawBorderWangStyle(QPainter* painter)
@@ -78,7 +88,7 @@ void ZenoNode::_drawBorderWangStyle(QPainter* painter)
     QColor baseColor = /*m_bError ? QColor(200, 84, 79) : */QColor(255, 100, 0);
 	QColor borderClr(baseColor);
 	borderClr.setAlphaF(0.2);
-	qreal innerBdrWidth = ZenoStyle::dpiScaled(6);
+    qreal innerBdrWidth = ZenoStyle::scaleWidth(6);
 	QPen pen(borderClr, innerBdrWidth);
 	pen.setJoinStyle(Qt::MiterJoin);
 	painter->setPen(pen);
@@ -90,7 +100,7 @@ void ZenoNode::_drawBorderWangStyle(QPainter* painter)
 	painter->drawPath(path);
 
     //draw outter border
-    qreal outterBdrWidth = ZenoStyle::dpiScaled(2);
+    qreal outterBdrWidth = ZenoStyle::scaleWidth(2);
     pen.setWidthF(outterBdrWidth);
     pen.setColor(baseColor);
 	painter->setPen(pen);

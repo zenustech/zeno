@@ -79,25 +79,37 @@ void ZenoApplication::initFonts()
     //QFontDatabase::addApplicationFont(":/font/Noto_Sans_SC/NotoSansSC-Regular.otf");
     //QFontDatabase::addApplicationFont(":/font/Noto_Sans_SC/NotoSansSC-Thin.otf");
 
-    QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Bold.ttf");
-    QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Heavy.ttf");
-    QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Light.ttf");
-    QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Medium.ttf");
-    QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Regular.ttf");
+    //QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Bold.ttf");
+    //QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Heavy.ttf");
+    //QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Light.ttf");
+    //QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Medium.ttf");
+    //QFontDatabase::addApplicationFont(":/font/PuHuiTi/Alibaba-PuHuiTi-Regular.ttf");
 
-    QFontDatabase::addApplicationFont(":/font/Segoe/SEGOEUI.TTF");
+    //QFontDatabase::addApplicationFont(":/font/Segoe/SEGOEUI.TTF");
 
-    QSettings settings(zsCompanyName, zsEditor);
-    QVariant use_chinese = settings.value("use_chinese");
-    bool bCN = !use_chinese.isNull() && use_chinese.toBool();
-    if (bCN) {
-        QFont font("Alibaba PuHuiTi", 10);
-        //QFont font("Noto Sans SC", 10);
-        setFont(font);
-    } else {
-        QFont font("Segoe UI", 10);
-        setFont(font);
-    }
+    //QSettings settings(zsCompanyName, zsEditor);
+    //QVariant use_chinese = settings.value("use_chinese");
+    //bool bCN = !use_chinese.isNull() && use_chinese.toBool();
+    //if (bCN) {
+    //    QFont font("Alibaba PuHuiTi", 10);
+    //    //QFont font("Noto Sans SC", 10);
+    //    setFont(font);
+    //} else {
+    //    QFont font("Segoe UI", 10);
+    //    setFont(font);
+    //}
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Thin.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Semibold.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Regular.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Normal.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Medium.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Light.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Heavy.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-ExtraLight.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Demibold.ttf");
+    QFontDatabase::addApplicationFont(":/font/MiSans/MiSans-Bold.ttf");
+    QFont font("MiSans", 10);
+    setFont(font);
 }
 
 GraphsManagment *ZenoApplication::graphsManagment() const

@@ -41,15 +41,19 @@ void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 }
 
 void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    qreal width = ZenoStyle::dpiScaled(1);
-    painter->fillRect(boundingRect().adjusted(-width, -width, width, 0), palette().color(QPalette::Window));
+    painter->fillRect(boundingRect(), palette().color(QPalette::Window));
+    QPen pen(palette().color(QPalette::Window));
+    pen.setWidthF(ZenoStyle::scaleWidth(2));
+    pen.setJoinStyle(Qt::MiterJoin);
+    painter->setPen(pen);
+    painter->drawRect(boundingRect());
 
     QColor color("#FFFFFF");
     painter->setPen(QPen(color));
     painter->setFont(font());
     QFontMetrics fontMetrics(font());
     QString text = m_text;
-    width = ZenoStyle::dpiScaled(4);
+    qreal width = ZenoStyle::scaleWidth(4);
     QRectF textRect = boundingRect().adjusted(width, 0, -width, 0);
     if (fontMetrics.width(text) > textRect.width()) {
         text = fontMetrics.elidedText(text, Qt::ElideRight, textRect.width());
@@ -142,7 +146,7 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
 
 void GroupNode::onZoomed() 
 {
-    int fontSize = 12 / editor_factor > 12 ? 12 / editor_factor : 12;
+    int fontSize = ZenoStyle::scaleWidth(12);
     QFont font = zenoApp->font();
     font.setPointSize(fontSize);
     font.setBold(true);
@@ -348,7 +352,7 @@ bool GroupNode::isDragArea(QPointF pos) {
     int diffRight = pos.x() - rect.right();
     int diffTop = pos.y() - rect.top() ;
     int diffBottom = pos.y() - rect.bottom();
-    qreal width = 50;
+    qreal width = ZenoStyle::scaleWidth(16);
 
     Qt::CursorShape cursorShape(Qt::ArrowCursor);
     resizeDir = nodir;
@@ -412,11 +416,11 @@ void GroupNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     painter->fillRect(rect, background);
     painter->setOpacity(1);
     QPen pen(background);
-    pen.setWidthF(ZenoStyle::dpiScaled(2));
+    pen.setWidthF(ZenoStyle::scaleWidth(2));
     pen.setJoinStyle(Qt::MiterJoin);
     painter->setPen(pen);
     painter->drawRect(rect);
-    qreal width = ZenoStyle::dpiScaled(16);
+    qreal width = ZenoStyle::scaleWidth(16);
     QSvgRenderer svgRender(m_svgByte);
     svgRender.render(painter, QRectF(boundingRect().bottomRight() - QPointF(width, width), boundingRect().bottomRight()));
 }
