@@ -53,6 +53,7 @@ public:
     void setAlways(bool bAlways);
     void setAlwaysLightCameraMaterial(bool bAlways);
     bool isAlways() const;
+    bool isAlwaysLightCameraMaterial() const;
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;
