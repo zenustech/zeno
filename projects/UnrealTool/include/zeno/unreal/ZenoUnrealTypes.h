@@ -84,6 +84,45 @@ struct NodeParamInput {
     }
 };
 
+struct Diff {
+    std::set<std::string> data;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(data);
+    }
+};
+
+enum class ESubjectType : int16_t {
+    Invalid = -1,
+    Mesh = 0,
+    Num,
+};
+
+struct SubjectContainer {
+    std::string Name;
+    int16_t Type;
+    std::vector<uint8_t> Data;
+
+    ESubjectType GetType() const {
+        return static_cast<ESubjectType>(Type);
+    }
+
+    template <class T>
+    void pack(T& pack) {
+        pack(Name, Type, Data);
+    }
+};
+
+struct SubjectContainerList {
+    std::vector<SubjectContainer> Data;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(Data);
+    }
+};
+
 extern "C" {
     class Mesh;
     struct SubnetNodeParamList;
