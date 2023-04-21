@@ -1536,21 +1536,35 @@ ZENDEFNODE(CompRename, {
 });
 
 /* 创建颜色图层，可能需要的参数：颜色，分辨率，图层名称 */
-struct CompColor : INode {
+struct CreateColor : INode {
     virtual void apply() override {
+        auto RGB = get_input2<vec3f>("RGB");
+        auto x = get_input2<int>("x");
+        auto y = get_input2<int>("y");
 
+        auto image = std::make_shared<PrimitiveObject>();
+        image->verts.resize(x * y);
+        image->userData().set2("h", y);
+        image->userData().set2("w", x);
+        image->userData().set2("isImage", 1);
+        for (int i = 0; i < x * y; i++){
+            image->verts[i] = {RGB[0],RGB[1],RGB[2]};
+        }
+        set_output("image", image);
     }
 };
 
-ZENDEFNODE(CompColor, {
+ZENDEFNODE(CreateColor, {
     {
-        {"image"}
+        {"vec3f", "RGB", "1,1,1"},
+        {"int", "x", "256"},
+        {"int", "y", "256"},
     },
     {
         {"image"}
         },
     {},
-    { "" },
+    { "comp" },
 });
 
 struct comp_color_ramp : INode {
