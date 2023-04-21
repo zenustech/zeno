@@ -32,12 +32,14 @@ struct ZSVDBToNavierStokesGrid : INode {
                                                  {"v1", 3},
                                                  {"p", 1},    // pressure
                                                  {"div", 1},  // velocity divergence
+                                                 /*
                                                  {"rho0", 1}, // smoke density
                                                  {"rho1", 1},
                                                  {"T0", 1}, // smoke temperature
                                                  {"T1", 1},
                                                  {"fuel0", 1}, // combustion
                                                  {"fuel1", 1},
+                                                 */
                                                  {"tmp", 3}, // FVM, BFECC, MultiGrid, normal
                                                  {"adv", 3}, // reflection
                                                  {"cut", 3}  // cut-cell face weight
