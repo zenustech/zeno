@@ -206,7 +206,9 @@ struct TransferPrimitiveToUnreal : public INode {
         std::string subject_name = get_input2<std::string>("name");
         std::shared_ptr<PrimitiveObject> prim = get_input2<PrimitiveObject>("prim");
         if (processor_type == "StaticMeshNoUV") {
-            zeno::remote::StaticRegistry.Push({ zeno::unreal::SubjectContainer{}, });
+            zeno::unreal::Mesh Mesh { prim->verts, prim->tris };
+            std::vector<uint8_t> Data = msgpack::pack(Mesh);
+            zeno::remote::StaticRegistry.Push({ zeno::unreal::SubjectContainer{ subject_name, static_cast<int16_t>(zeno::unreal::ESubjectType::Mesh), std::move(Data) }, });
         }
         set_output2("primRef", prim);
     }
