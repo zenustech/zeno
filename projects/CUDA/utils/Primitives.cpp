@@ -311,6 +311,17 @@ struct PrimitiveConnectedComponents : INode {
                     auto dst = preserveOffsets[vi];
                     posI[dst] = pos[vi];
                     // other vertex attributes
+                    for (auto &[key, arr] : primIsland->verts.attrs) {
+                        auto const &k = key;
+                        match(
+                            [&k, &verts, vi, dst](auto &arr)
+                                -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
+                                using T = RM_CVREF_T(arr[0]);
+                                const auto &srcArr = verts.attr<T>(k);
+                                arr[dst] = srcArr[vi];
+                            },
+                            [](...) {})(arr);
+                    }
                 }
             });
             if (hasTris) {
@@ -451,6 +462,57 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
                                              {"zs_geom"},
                                          });
 #endif
+
+struct SurfacePointsInterpolation : INode {
+    void apply() override {
+        using namespace zs;
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto attrTag = get_input2<std::string>("attrTag");
+        auto weightTag = get_input2<std::string>("weightTag");
+        auto indexTag = get_input2<std::string>("indexTag");
+
+        auto &ws = prim->attr<vec3f>(weightTag);
+        auto &triInds = prim->attr<float>(indexTag); // this in accordance with pnbvhw.cpp : QueryNearestPrimitive
+
+        auto refPrim = get_input<PrimitiveObject>("ref_prim");
+        auto refAttrTag = get_input2<std::string>("refAttrTag");
+
+        auto &refTris = refPrim->tris.values;
+        auto doWork = [&](auto &arr) -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
+            using T = RM_CVREF_T(arr[0]);
+            const auto &srcAttr = refPrim->attr<T>(refAttrTag);
+            auto pol = omp_exec();
+            pol(zip(arr, triInds, ws), [&refTris, &srcAttr](T &attr, int refTriNo, const vec3f &w) {
+                auto refTri = refTris[refTriNo];
+                attr = w[0] * srcAttr[refTri[0]] + w[1] * srcAttr[refTri[1]] + w[2] * srcAttr[refTri[2]];
+            });
+        };
+        if (attrTag == "pos") {
+            doWork(prim->attr<vec3f>("pos"));
+        } else {
+            auto &dstAttr = prim->attr(attrTag);
+            match(doWork, [](...) {})(dstAttr);
+        }
+
+        set_output("prim", prim);
+    }
+};
+
+ZENDEFNODE(SurfacePointsInterpolation, {
+                                           {
+                                               {"PrimitiveObject", "prim"},
+                                               {"string", "attrTag", "pos"},
+                                               {"string", "weightTag"},
+                                               {"string", "indexTag"},
+                                               {"PrimitiveObject", "ref_prim"},
+                                               {"string", "refAttrTag", "pos"},
+                                           },
+                                           {
+                                               {"PrimitiveObject", "prim"},
+                                           },
+                                           {},
+                                           {"zs_geom"},
+                                       });
 
 struct ParticleCluster : zeno::INode {
     virtual void apply() override {
