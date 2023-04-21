@@ -296,6 +296,11 @@ struct PrimitiveConnectedComponents : INode {
             outPrims->arr[setNo] = primIsland;
             /// @brief comptact vertices
             primIsland->resize(vertexCounts[setNo]);
+            // add custom vert attributes
+            verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                primIsland->verts.add_attr<T>(key);
+            });
             auto &posI = primIsland->attr<vec3f>("pos");
             // mark
             pol(zip(preserveMarks, setids), [&](int &mark, int setId) { mark = setId == setNo; });
@@ -318,12 +323,27 @@ struct PrimitiveConnectedComponents : INode {
                 auto triSize = elementOffsets.back() + elementMarks.back();
                 auto &triI = primIsland->tris;
                 triI.resize(triSize);
+                // add custom tris attributes
+                prim->tris.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    primIsland->tris.add_attr<T>(key);
+                });
                 pol(range(tris.size()), [&](int ei) {
                     if (elementMarks[ei]) {
                         auto dst = elementOffsets[ei];
                         for (int d = 0; d != 3; ++d)
                             triI[dst][d] = preserveOffsets[tris[ei][d]];
-                        // other vertex attributes
+                        for (auto &[key, arr] : triI.attrs) {
+                            auto const &k = key;
+                            match(
+                                [&k, &tris = prim->tris, ei, dst](auto &arr)
+                                    -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
+                                    using T = RM_CVREF_T(arr[0]);
+                                    const auto &srcArr = tris.attr<T>(k);
+                                    arr[dst] = srcArr[ei];
+                                },
+                                [](...) {})(arr);
+                        }
                     }
                 });
             } else {
@@ -342,6 +362,10 @@ struct PrimitiveConnectedComponents : INode {
                 auto &polyI = primIsland->polys;
                 auto polySize = elementOffsets.back() + elementMarks.back();
                 polyI.resize(polySize);
+                prim->polys.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    polyI.add_attr<T>(key);
+                });
 
                 std::vector<int> preservedPolySizes(polySize);
                 pol(enumerate(polys), [&](int ei, vec2i poly) {
@@ -357,14 +381,36 @@ struct PrimitiveConnectedComponents : INode {
                 auto &loopI = primIsland->loops;
                 auto loopSize = preservedPolyOffsets.back() + preservedPolySizes.back();
                 loopI.resize(loopSize);
+                loops.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    loopI.add_attr<T>(key);
+                });
+                primIsland->uvs = prim->uvs; // BEWARE: does not remove redundant uvs here
 
-                // write poly
+                // write poly.values
                 pol(zip(polyI.values, preservedPolyOffsets, preservedPolySizes), [](vec2i &poly, int offset, int size) {
                     poly[0] = offset;
                     poly[1] = size;
                 });
+                // write poly.attrs
+                pol(range(polys.size()), [&](int ei) {
+                    if (elementMarks[ei]) {
+                        auto dst = elementOffsets[ei];
+                        for (auto &[key, arr] : polyI.attrs) {
+                            auto const &k = key;
+                            match(
+                                [&k, &polys, ei, dst](auto &arr)
+                                    -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
+                                    using T = RM_CVREF_T(arr[0]);
+                                    const auto &srcArr = polys.attr<T>(k);
+                                    arr[dst] = srcArr[ei];
+                                },
+                                [](...) {})(arr);
+                        }
+                    }
+                });
 
-                // write loop
+                // write loop.values/attrs
                 pol(enumerate(polys), [&](int ei, vec2i poly) {
                     if (elementMarks[ei]) {
                         auto dstPolyNo = elementOffsets[ei];
@@ -372,6 +418,20 @@ struct PrimitiveConnectedComponents : INode {
                         for (int i = 0; i != poly[1]; ++i) {
                             auto point = loops[poly[0] + i];
                             loopI.values[dstLoopOffset + i] = preserveOffsets[point];
+                        }
+                        for (auto &[key, arr] : loopI.attrs) {
+                            auto const &k = key;
+                            // may include loops["uvs"] (int)
+                            match(
+                                [&k, &loops, &poly, ei, dstLoopOffset](auto &arr)
+                                    -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
+                                    using T = RM_CVREF_T(arr[0]);
+                                    const auto &srcArr = loops.attr<T>(k);
+                                    for (int i = 0; i != poly[1]; ++i) {
+                                        arr[dstLoopOffset + i] = srcArr[poly[0] + i];
+                                    }
+                                },
+                                [](...) {})(arr);
                         }
                     }
                 });
