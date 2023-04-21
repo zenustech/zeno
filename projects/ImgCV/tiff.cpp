@@ -82,25 +82,20 @@ std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
     }
     TIFFClose(tif);
 
-    std::vector<float> data(data_.size() / 4);
-    {
-        uint32_t *ptr = (uint32_t *)data_.data();
-        for (auto i = 0; i < data.size(); i++) {
-            data[i] = float(((double)ptr[i]) / 4294967295.0);
-        }
-    }
     img->resize(width * height);
     if (samplesPerPixel == 4) {
-        vec4f *ptr = (vec4f*)data.data();
+        vec4f *ptr = (vec4f*)data_.data();
+        auto &alpha = img->verts.add_attr<float>("alpha");
         for (auto i = 0; i < height; i++) {
             for (auto j = 0; j < width; j++) {
                 vec4f rgba = ptr[i * width + j];
-                img->verts[i * width + j] =  { rgba[3] };
+                img->verts[i * width + j] =  { rgba[0], rgba[1], rgba[2] };
+                alpha[i * width + j] =  rgba[3];
             }
         }
     }
     else if (samplesPerPixel == 3) {
-        vec3f *ptr = (vec3f*)data.data();
+        vec3f *ptr = (vec3f*)data_.data();
         for (auto i = 0; i < height; i++) {
             for (auto j = 0; j < width; j++) {
                 vec3f rgb = ptr[i * width + j];
@@ -109,7 +104,7 @@ std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
         }
     }
     else if (samplesPerPixel == 1) {
-        float *ptr = data.data();
+        float *ptr = (float *)data_.data();
         for (auto i = 0; i < height; i++) {
             for (auto j = 0; j < width; j++) {
                 float r = ptr[i * width + j];
