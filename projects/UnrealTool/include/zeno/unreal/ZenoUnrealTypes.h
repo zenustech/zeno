@@ -8,6 +8,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <vector>
+#include <cassert>
 
 namespace zeno::unreal {
 
@@ -96,6 +97,7 @@ struct Diff {
 enum class ESubjectType : int16_t {
     Invalid = -1,
     Mesh = 0,
+    HeightField,
     Num,
 };
 
@@ -120,6 +122,45 @@ struct SubjectContainerList {
     template <class T>
     void pack(T& pack) {
         pack(Data);
+    }
+};
+
+struct HeightField {
+    int32_t Nx = 0, Ny = 0;
+    std::vector<std::vector<uint16_t>> Data;
+
+    HeightField() = default;
+
+    HeightField(int32_t InNx, int32_t InNy, const std::vector<uint16_t>& InData)
+        : Nx(InNx)
+        , Ny(InNy)
+    {
+        assert(Nx * Ny == InData.size());
+        Data.resize(Ny);
+        for (std::vector<uint16_t>& Vy : Data) { Vy.resize(Nx); }
+        for (size_t Y = 0; Y < Ny; ++Y) {
+            for (size_t X = 0; X < Nx; ++X) {
+                const size_t Idx = Y * Ny + X;
+                Data[Y][X] = InData[Idx];
+            }
+        }
+    }
+
+    std::vector<uint16_t> ToFlat() const {
+        std::vector<uint16_t> Result;
+        Result.reserve(Nx * Ny);
+        for (const std::vector<uint16_t>& Ry : Data) {
+            for (uint16_t Rx : Ry) {
+                Result.push_back(Rx);
+            }
+        }
+
+        return Result;
+    }
+
+    template <class T>
+    void pack(T& pack) {
+        pack(Nx, Ny, Data);
     }
 };
 

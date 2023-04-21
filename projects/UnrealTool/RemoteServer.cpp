@@ -5,11 +5,13 @@
 #include <numeric>
 #include <string>
 #include <vector>
+#include <limits>
 #include <zeno/core/INode.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/unreal/ZenoUnrealTypes.h>
+#include <zeno/logger.h>
 
 #if !defined(UT_MAYBE_UNUSED) && defined(__has_cpp_attribute)
     #if __has_cpp_attribute(maybe_unused)
@@ -209,6 +211,24 @@ struct TransferPrimitiveToUnreal : public INode {
             zeno::unreal::Mesh Mesh { prim->verts, prim->tris };
             std::vector<uint8_t> Data = msgpack::pack(Mesh);
             zeno::remote::StaticRegistry.Push({ zeno::unreal::SubjectContainer{ subject_name, static_cast<int16_t>(zeno::unreal::ESubjectType::Mesh), std::move(Data) }, });
+        } else if (processor_type == "HeightField") {
+            if (prim->verts.has_attr("height")) {
+                auto& HeightAttrs = prim->verts.attr<float>("height");
+                // Currently height field are always square.
+                const auto N = static_cast<int32_t>(std::round(std::sqrt(prim->verts.size())));
+                std::vector<uint16_t> RemappedHeightFieldData;
+                RemappedHeightFieldData.reserve(prim->verts.size());
+                for (float Height : HeightAttrs) {
+                    // Map height [-255, 255] in R to [0, UINT16_MAX] in Z
+                    auto NewValue = static_cast<uint16_t>(((Height + 255.f) / (255.f * 2.f)) * std::numeric_limits<uint16_t>::max());
+                    RemappedHeightFieldData.push_back(NewValue);
+                }
+                zeno::unreal::HeightField HeightField { N, N, RemappedHeightFieldData };
+                std::vector<uint8_t> Data = msgpack::pack(HeightField);
+                zeno::remote::StaticRegistry.Push({ zeno::unreal::SubjectContainer{ subject_name, static_cast<int16_t>(zeno::unreal::ESubjectType::HeightField), std::move(Data) }, });
+            } else {
+                log_error(R"(Primitive type HeightField must have attribute "float")");
+            }
         }
         set_output2("primRef", prim);
     }
@@ -216,7 +236,7 @@ struct TransferPrimitiveToUnreal : public INode {
 
 ZENO_DEFNODE(TransferPrimitiveToUnreal)({
       {
-              {"enum StaticMeshNoUV", "type", "StaticMeshNoUV"},
+              {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
               {"string", "name", "SubjectFromZeno"},
               {"prim"},
           },
