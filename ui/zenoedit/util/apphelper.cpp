@@ -114,14 +114,18 @@ void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex node
     ZenoMainWindow *main = zenoApp->getMainWindow();
     if (!pModel || !main)
         return;
-    if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" && nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
-        (main->isAlways() || main->isAlwaysLightCameraMaterial())) {
+    if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" &&
+        nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
+        (main->isAlways() || main->isAlwaysLightCameraMaterial()))
+    {
+        //only update nodes.
+        zeno::scope_exit sp([=] { pModel->setApiRunningEnable(true);});
         pModel->setApiRunningEnable(false);
+
         QAbstractItemModel *paramsModel = const_cast<QAbstractItemModel *>(paramIdx.model());
         ZASSERT_EXIT(paramsModel);
         paramsModel->setData(paramIdx, newValue, ROLE_PARAM_VALUE);
         modifyLightData(nodeIdx);
-        pModel->setApiRunningEnable(true);
     } else {
         int ret = pModel->ModelSetData(paramIdx, newValue, ROLE_PARAM_VALUE);
     }
