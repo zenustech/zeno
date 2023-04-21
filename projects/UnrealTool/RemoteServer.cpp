@@ -10,7 +10,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/unreal/ZenoUnrealTypes.h>
+#include <zeno/unreal/ZenoRemoteTypes.h>
 #include <zeno/logger.h>
 
 #if !defined(UT_MAYBE_UNUSED) && defined(__has_cpp_attribute)
@@ -44,13 +44,13 @@ static struct Flags {
 } StaticFlags;
 
 static struct SubjectRegistry {
-    std::map<std::string, zeno::unreal::SubjectContainer> Elements;
+    std::map<std::string, SubjectContainer> Elements;
     std::function<void(const std::set<std::string>&)> Callback;
 
-    void Push(const std::vector<zeno::unreal::SubjectContainer>& InitList) {
+    void Push(const std::vector<SubjectContainer>& InitList) {
         if (StaticFlags.IsMainProcess) {
             std::set<std::string> ChangeList;
-            for (const zeno::unreal::SubjectContainer& Value : InitList) {
+            for (const SubjectContainer& Value : InitList) {
                 ChangeList.emplace(Value.Name);
                 Elements.try_emplace(Value.Name, Value);
             }
@@ -60,7 +60,7 @@ static struct SubjectRegistry {
         } else {
             // In child process, transfer data with http
             httplib::Client Cli { "http://localhost:23343" };
-            zeno::unreal::SubjectContainerList List { InitList };
+            SubjectContainerList List { InitList };
             std::vector<uint8_t> Data = msgpack::pack(List);
             Cli.Post("/subject/push", reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
         }
@@ -137,6 +137,7 @@ public:
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #include "processthreadsapi.h"
+#include "zeno/core/defNode.h"
 
 DWORD WINAPI RunServerWrapper(LPVOID lpParam) {
     zeno::ZenoRemoteServer Server;
@@ -166,7 +167,7 @@ void ZenoRemoteServer::IndexPage(const httplib::Request& Req, httplib::Response&
 void ZenoRemoteServer::FetchDataDiff(const httplib::Request &Req, httplib::Response &Res) {
     int32_t client_version = std::atoi(Req.get_param_value("client_version").c_str());
     std::set<std::string> Changes = History.Diff(client_version);
-    zeno::unreal::Diff Diff { std::move(Changes) };
+    remote::Diff Diff { std::move(Changes) };
     std::vector<uint8_t> Data = msgpack::pack(Diff);
     Res.set_content(reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
 }
@@ -174,7 +175,7 @@ void ZenoRemoteServer::FetchDataDiff(const httplib::Request &Req, httplib::Respo
 void ZenoRemoteServer::PushData(const httplib::Request& Req, httplib::Response &Res) {
     const std::string& Body = Req.body;
     std::error_code Err;
-    auto Container = msgpack::unpack<zeno::unreal::SubjectContainerList>(reinterpret_cast<const uint8_t*>(Body.data()), Body.size(), Err);
+    auto Container = msgpack::unpack<remote::SubjectContainerList>(reinterpret_cast<const uint8_t*>(Body.data()), Body.size(), Err);
     if (!Err) {
         zeno::remote::StaticRegistry.Push(Container.Data);
         Res.status = 204;
@@ -185,7 +186,7 @@ void ZenoRemoteServer::PushData(const httplib::Request& Req, httplib::Response &
 
 void ZenoRemoteServer::FetchData(const httplib::Request &Req, httplib::Response &Res) {
     size_t Num = Req.get_param_value_count("key");
-    zeno::unreal::SubjectContainerList List;
+    remote::SubjectContainerList List;
     List.Data.reserve(Num);
     for (size_t Idx = 0; Idx < Num; ++Idx) {
         std::string Key = Req.get_param_value("key", Idx);
@@ -208,9 +209,17 @@ struct TransferPrimitiveToUnreal : public INode {
         std::string subject_name = get_input2<std::string>("name");
         std::shared_ptr<PrimitiveObject> prim = get_input2<PrimitiveObject>("prim");
         if (processor_type == "StaticMeshNoUV") {
-            zeno::unreal::Mesh Mesh { prim->verts, prim->tris };
+            std::vector<std::array<remote::AnyNumeric, 3>> verts;
+            std::vector<std::array<int32_t, 3>> tris;
+            for (const std::array<float, 3>& data : prim->verts) {
+                verts.push_back( { data.at(0), data.at(2), data.at(1) });
+            }
+            for (const std::array<int32_t, 3>& data : prim->tris) {
+                tris.emplace_back(data);
+            }
+            remote::Mesh Mesh { std::move(verts), std::move(tris) };
             std::vector<uint8_t> Data = msgpack::pack(Mesh);
-            zeno::remote::StaticRegistry.Push({ zeno::unreal::SubjectContainer{ subject_name, static_cast<int16_t>(zeno::unreal::ESubjectType::Mesh), std::move(Data) }, });
+            zeno::remote::StaticRegistry.Push({ remote::SubjectContainer{ subject_name, static_cast<int16_t>(remote::ESubjectType::Mesh), std::move(Data) }, });
         } else if (processor_type == "HeightField") {
             if (prim->verts.has_attr("height")) {
                 auto& HeightAttrs = prim->verts.attr<float>("height");
@@ -223,9 +232,9 @@ struct TransferPrimitiveToUnreal : public INode {
                     auto NewValue = static_cast<uint16_t>(((Height + 255.f) / (255.f * 2.f)) * std::numeric_limits<uint16_t>::max());
                     RemappedHeightFieldData.push_back(NewValue);
                 }
-                zeno::unreal::HeightField HeightField { N, N, RemappedHeightFieldData };
+                remote::HeightField HeightField { N, N, RemappedHeightFieldData };
                 std::vector<uint8_t> Data = msgpack::pack(HeightField);
-                zeno::remote::StaticRegistry.Push({ zeno::unreal::SubjectContainer{ subject_name, static_cast<int16_t>(zeno::unreal::ESubjectType::HeightField), std::move(Data) }, });
+                zeno::remote::StaticRegistry.Push({ remote::SubjectContainer{ subject_name, static_cast<int16_t>(remote::ESubjectType::HeightField), std::move(Data) }, });
             } else {
                 log_error(R"(Primitive type HeightField must have attribute "float")");
             }
