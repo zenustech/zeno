@@ -38,7 +38,7 @@ struct UniformRemeshing : INode {
 
         // if there exist marked lines
         std::set<std::pair<int, int>> marked_lines{};
-#if 0
+#if 1
         if (has_input("marked_lines")) {
             const auto &markedLines = get_input<PrimitiveObject>("marked_lines")->lines.values;
             for (vec2i line : markedLines) {
