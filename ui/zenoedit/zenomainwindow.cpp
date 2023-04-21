@@ -1456,6 +1456,10 @@ bool ZenoMainWindow::isAlways() const
     return m_bAlways;
 }
 
+bool ZenoMainWindow::isAlwaysLightCameraMaterial() const {
+    return m_bAlwaysLightCameraMaterial;
+}
+
 void ZenoMainWindow::setAlways(bool bAlways)
 {
     m_bAlways = bAlways;

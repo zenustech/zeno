@@ -925,10 +925,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     const QPersistentModelIndex perIdx(paramIdx);
 
     auto cbUpdateSocketDefl = [=](QVariant newValue) {
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        if (!pModel)
-            return;
-        int ret = pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
+        AppHelper::socketEditFinished(newValue, m_index, perIdx);
     };
 
     auto cbSwith = [=](bool bOn) {
