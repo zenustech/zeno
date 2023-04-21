@@ -511,11 +511,14 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->isSS == true  && subsurface==0 )
     {
         prd->passed = true;
+
+        prd->readMat(prd->sigma_t, prd->ss_alpha);
         auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
         prd->attenuation2 *= trans;
         prd->attenuation *= trans;
         //prd->origin = P + 1e-5 * ray_dir; 
-        prd->offsetUpdateRay(P, -prd->geometryNormal); 
+
+        prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
 
@@ -670,7 +673,7 @@ extern "C" __global__ void __closesthit__radiance()
     {
         if (prd->curMatIdx > 0) {
             //vec3 sigma_t, ss_alpha;
-            //prd->readMat(prd->sigma_t, prd->ss_alpha);
+            prd->readMat(prd->sigma_t, prd->ss_alpha);
             if (isTrans) { // Glass
                 prd->attenuation *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
                 prd->attenuation2 *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
@@ -758,7 +761,6 @@ extern "C" __global__ void __closesthit__radiance()
             }
         }else{
             if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-
                     vec3 trans;
                     prd->readMat(prd->sigma_t, prd->ss_alpha);
                     if (isTrans) { // Glass

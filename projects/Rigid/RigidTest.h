@@ -85,12 +85,27 @@ struct BulletObject : zeno::IObject {
     btScalar mass = 0.f;
     //btTransform trans;
 
+    void printDynamics(std::any clr_) const;
+    void printChildDynamics(int rbi, std::any clr) const;
+
     bool isCompound() const noexcept {
         if (colShape)
             return colShape->isCompound();
         if (body)
             return body->getCollisionShape()->isCompound();
         return false;
+    }
+    int locateChild(const btCollisionShape *chShape) const {
+        btCompoundShape *btcpdShape = nullptr;
+        if (auto shape = colShape->shape.get(); shape->isCompound())
+            btcpdShape = (btCompoundShape *)shape;
+        if (btcpdShape == nullptr)
+            throw std::runtime_error("not able to locate child transform within a non-compound shape!");
+
+        for (int ch = 0; ch != btcpdShape->getNumChildShapes(); ++ch)
+            if (btcpdShape->getChildShape(ch) == chShape)
+                return ch;
+        return -1;
     }
 
     btTransform getChildTransform(btCollisionShape *chShape) const {
@@ -107,8 +122,10 @@ struct BulletObject : zeno::IObject {
         }
         throw std::runtime_error("unable to locate the child transform within this rigid body!");
     }
-    void setTransform(const btTransform &trans) {
-        static_cast<btCollisionObject *>(body.get())->getWorldTransform() = trans;
+    void setWorldTransform(const btTransform &trans) {
+        if (body && body->getMotionState())
+            body->getMotionState()->setWorldTransform(trans);
+        static_cast<btCollisionObject *>(body.get())->setWorldTransform(trans);
     }
     btTransform getWorldTransform() const {
         btTransform trans;
@@ -563,7 +580,9 @@ struct BulletWorld : zeno::IObject {
         zeno::log_debug("stepping with dt={}, steps={}, len(objects)={}", dt, steps, objects.size());
         //dt /= steps;
         for (int i = 0; i < steps; i++)
-            dynamicsWorld->stepSimulation(dt / (float)steps, 1, dt / (float)steps);
+            // ref: src/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h L108
+            // use 0 to disable motion interpolation
+            dynamicsWorld->stepSimulation(dt / (float)steps, 0, dt / (float)steps);
 
         /*for (int j = dynamicsWorld->getNumCollisionObjects() - 1; j >= 0; j--)
         {

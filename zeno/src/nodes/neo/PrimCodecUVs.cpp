@@ -67,9 +67,10 @@ ZENO_DEFNODE(PrimLoopUVsToVerts)({
     {"primitive"},
 });
 
-struct PrimSplitSharedUVVertex : INode {
+struct PrimUVEdgeDuplicate : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
+        auto writeUVToVertex = get_input2<bool>("writeUVToVertex");
         bool isTris = prim->tris.size() > 0;
         if (isTris) {
             primPolygonate(prim.get(), true);
@@ -106,6 +107,14 @@ struct PrimSplitSharedUVVertex : INode {
             }
         });
         std::swap(prim->verts, new_verts);
+        if (writeUVToVertex) {
+            auto &vert_uv = prim->verts.add_attr<vec3f>("uv");
+            auto &loopsuv = prim->loops.attr<int>("uvs");
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                auto uv = prim->uvs[loopsuv[i]];
+                vert_uv[prim->loops[i]] = {uv[0], uv[1], 0};
+            }
+        }
         if (isTris) {
             primTriangulate(prim.get(), true, false);
         }
@@ -114,9 +123,10 @@ struct PrimSplitSharedUVVertex : INode {
     }
 };
 
-ZENO_DEFNODE(PrimSplitSharedUVVertex)({
+ZENO_DEFNODE(PrimUVEdgeDuplicate)({
      {
          "prim",
+         {"bool", "writeUVToVertex", "1"},
      },
      {
          "prim",
