@@ -10,6 +10,7 @@
 #include <algorithm>
 #include "settings/zsettings.h"
 #include "exceptionhandle.h"
+#include <curl/curl.h>
 
 
 void startUp()
@@ -94,6 +95,47 @@ std::string getZenoVersion() {
 #endif
 }
 
+static size_t writeToString(void *ptr, size_t size, size_t count, void *stream)
+{
+    ((std::string *)stream)->append((char *)ptr, 0, size * count);
+    return size * count;
+}
+
+QString netGetLatestVersion()
+{
+    static const QString versionURL = "https://web.zenustech.com/web-api/version/version/list";
+    QString zenoUrl;
+    CURL *curl;
+    CURLcode res;
+    std::string strData;
+    QString data;
+    curl = curl_easy_init();
+    if (curl) {
+        curl_slist *pHeadlist = NULL;
+        pHeadlist = curl_slist_append(pHeadlist, "Content-Type:application/json;charset=UTF-8");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, pHeadlist);
+        curl_easy_setopt(curl, CURLOPT_URL, versionURL.toStdString().c_str());
+        //curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strBody.c_str());//POST参数
+
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToString); //对返回的数据进行操作的函数地址
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &strData);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+
+        curl_easy_setopt(curl, CURLOPT_POST, 0); // 0 是get ，1 是post
+        res = curl_easy_perform(curl);
+
+        /* Check for errors */
+        if (res != CURLE_OK)
+            data = QString("{\"code\":-1,\"message\":\"network error:%1\"}").arg(curl_easy_strerror(res));
+        else
+            data = strData.c_str();
+
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(pHeadlist);
+    }
+    return "";
+}
+
 void verifyVersion()
 {
     auto ver = getZenoVersion();
@@ -144,6 +186,7 @@ void verifyVersion()
 #endif
                    ;
     // TODO: luzh, may check the internet latest version and compare, if not latest hint the user to update..
+    netGetLatestVersion();
     zeno::log_info("zeno {} {} {} {}", plat, ver, __TIME__, feat);
 }
 
