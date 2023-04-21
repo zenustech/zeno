@@ -28,6 +28,11 @@ __forceinline__ __device__ TOut clamp(TOut v, const T vmin, const T vmax) {
     return v;
 }
 
+__forceinline__ __device__ zs::vec<float, 3> normalizeSafe(const zs::vec<float, 3> &a,
+                                                           float b = zs::limits<float>::epsilon()) {
+    return a * (1 / zs::max(b, a.length()));
+}
+
 template <typename T, execspace_e space = deduce_execution_space(), enable_if_t<std::is_floating_point_v<T>> = 0>
 constexpr T tan(T v, wrapv<space> = {}) noexcept {
     if constexpr (space == execspace_e::cuda) {
@@ -49,21 +54,30 @@ constexpr T tan(T v, wrapv<space> = {}) noexcept {
 namespace zeno {
 
 template <typename T>
-zs::Vector<T> to_device_vector(const std::vector<T> &hv, bool copy = true) {
+auto to_device_vector(const std::vector<T> &hv, bool copy = true) {
     using namespace zs;
-    zs::Vector<T> dv{hv.size(), memsrc_e::device, 0};
-    if (copy) {
-        Resource::copy(MemoryEntity{dv.memoryLocation(), (void *)dv.data()},
-                       MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)hv.data()}, hv.size() * sizeof(T));
+    if constexpr (zs::is_vec<T>::value) {
+        zs::Vector<zs::vec<typename T::value_type, std::tuple_size_v<T>>> dv{hv.size(), memsrc_e::device, 0};
+        if (copy) {
+            Resource::copy(MemoryEntity{dv.memoryLocation(), (void *)dv.data()},
+                           MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)hv.data()}, hv.size() * sizeof(T));
+        }
+        return dv;
+    } else {
+        zs::Vector<T> dv{hv.size(), memsrc_e::device, 0};
+        if (copy) {
+            Resource::copy(MemoryEntity{dv.memoryLocation(), (void *)dv.data()},
+                           MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)hv.data()}, hv.size() * sizeof(T));
+        }
+        return dv;
     }
-    return dv;
 }
 
-template <typename T>
-void retrieve_device_vector(std::vector<T> &hv, const zs::Vector<T> &dv) {
+template <typename T0, typename T1, zs::enable_if_t<sizeof(T0) == sizeof(T1)> = 0>
+void retrieve_device_vector(std::vector<T0> &hv, const zs::Vector<T1> &dv) {
     using namespace zs;
     Resource::copy(MemoryEntity{MemoryLocation{memsrc_e::host, -1}, (void *)hv.data()},
-                   MemoryEntity{dv.memoryLocation(), (void *)dv.data()}, dv.size() * sizeof(T));
+                   MemoryEntity{dv.memoryLocation(), (void *)dv.data()}, dv.size() * sizeof(T1));
 }
 
 __forceinline__ __device__ int Pos2Idx(const int x, const int z, const int nx) {
@@ -1637,5 +1651,198 @@ ZENDEFNODE(zs_erode_tumble_material_v4,
             {
                 "erode",
             }});
+
+__forceinline__ __device__ float fit(const float data, const float ss, const float se, const float ds, const float de) {
+    float b = zs::limits<float>::epsilon();
+    b = zs::max(zs::abs(se - ss), b);
+    b = se - ss >= 0 ? b : -b;
+    float alpha = (data - ss) / b;
+    return ds + (de - ds) * alpha;
+}
+
+__forceinline__ __device__ float chramp(const float inputData) {
+    float data = zs::min(zs::max(inputData, 0.0f), 1.0f);
+    float outputData = 0;
+    if (data <= 0.1) {
+        outputData = fit(data, 0, 0.1, 0, 1);
+    } else if (data >= 0.9) {
+        outputData = fit(data, 0.9, 1.0, 1, 0);
+    } else {
+        outputData = 1;
+    }
+    return outputData;
+}
+
+struct zs_HF_maskByFeature : INode {
+    void apply() override {
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 初始化
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        // 初始化网格
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        int nx, nz;
+        auto &ud = terrain->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+        nx = ud.get2<int>("nx");
+        nz = ud.get2<int>("nz");
+        auto &pos = terrain->verts;
+        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+
+        // 获取面板参数
+        auto heightLayer = get_input2<std::string>("height_layer");
+        auto maskLayer = get_input2<std::string>("mask_layer");
+        auto smoothRadius = get_input2<int>("smooth_radius");
+
+        auto useSlope = get_input2<bool>("use_slope");
+        auto minSlope = get_input2<float>("min_slopeangle");
+        auto maxSlope = get_input2<float>("max_slopeangle");
+
+        auto useDir = get_input2<bool>("use_direction");
+        auto goalAngle = get_input2<float>("goal_angle");
+        auto angleSpread = get_input2<float>("angle_spread");
+
+        auto useHeight = get_input2<bool>("use_height");
+        auto minHeight = get_input2<float>("min_height");
+        auto maxHeight = get_input2<float>("max_height");
+
+        // 初始化网格属性
+        if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
+            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}' or '{}'.", heightLayer, maskLayer);
+        }
+        auto &height = terrain->verts.attr<float>(heightLayer);
+        auto &mask = terrain->verts.attr<float>(maskLayer);
+
+        auto &_grad = terrain->verts.add_attr<vec3f>("_grad");
+        std::fill(_grad.begin(), _grad.end(), vec3f(0, 0, 0));
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 计算
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        /// @brief  accelerate cond computation using cuda
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto pol = cuda_exec();
+        /// @brief  copy host-side attribute
+        auto zs_height = to_device_vector(height);
+        auto zs_mask = to_device_vector(mask, false);
+        auto zs_grad = to_device_vector(_grad);
+
+        pol(range((std::size_t)nz * (std::size_t)nx),
+            [=, height = view<space>(zs_height), mask = view<space>(zs_mask),
+             _grad = view<space>(zs_grad)] __device__(std::size_t idx) mutable {
+                using vec3f = zs::vec<float, 3>;
+
+                auto id_z = idx / nx; // outer index
+                auto id_x = idx % nx; // inner index
+
+                // int idx = Pos2Idx(id_x, id_z, nx);
+                int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
+
+                if (id_x == 0) {
+                    idx_xl = idx;
+                    idx_xr = Pos2Idx(id_x + 1, id_z, nx);
+                    scale = 1;
+                } else if (id_x == nx - 1) {
+                    idx_xl = Pos2Idx(id_x - 1, id_z, nx);
+                    idx_xr = idx;
+                    scale = 1;
+                } else {
+                    idx_xl = Pos2Idx(id_x - 1, id_z, nx);
+                    idx_xr = Pos2Idx(id_x + 1, id_z, nx);
+                    scale = 2;
+                }
+
+                if (id_z == 0) {
+                    idx_zl = idx;
+                    idx_zr = Pos2Idx(id_x, id_z + 1, nx);
+                    scale = 1;
+                } else if (id_x == nz - 1) {
+                    idx_zl = Pos2Idx(id_x, id_z - 1, nx);
+                    idx_zr = idx;
+                    scale = 1;
+                } else {
+                    idx_zl = Pos2Idx(id_x, id_z - 1, nx);
+                    idx_zr = Pos2Idx(id_x, id_z + 1, nx);
+                    scale = 2;
+                }
+
+                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
+                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+
+                vec3f dx = zs::normalizeSafe(vec3f(1, 0, _grad[idx][0]));
+                vec3f dy = zs::normalizeSafe(vec3f(0, 1, _grad[idx][2]));
+                vec3f n = zs::normalizeSafe(dx.cross(dy));
+
+                mask[idx] = 1;
+                if (!useSlope && !useDir && !useHeight) // &&
+                                                        //                    //!useCurvature &&
+                                                        //                    //!useOcclusion)
+                {
+                    mask[idx] = 0;
+                }
+
+                if (useSlope) {
+                    float slope = 180 * zs::acos(n[2]) / M_PI;
+                    slope = fit(slope, minSlope, maxSlope, 0, 1);
+                    slope = chramp(slope);
+                    mask[idx] *= slope;
+                }
+
+                if (useDir) {
+                    float direction = 180 * zs::atan2(n[0], n[1]) / M_PI;
+                    direction -= goalAngle;
+                    direction -= 360 * zs::floor(direction / 360); // Get in range -180 to 180
+                    direction -= 180;
+                    direction = fit(direction, -angleSpread, angleSpread, 0, 1);
+                    direction = chramp(direction);
+                    mask[idx] *= direction;
+                }
+
+                if (useHeight) {
+                    float h = fit(height[idx], minHeight, maxHeight, 0, 1);
+                    mask[idx] *= chramp(h);
+                }
+            });
+
+        /// @brief  write back to host-side attribute
+        retrieve_device_vector(mask, zs_mask);
+        retrieve_device_vector(_grad, zs_grad);
+
+        set_output("prim_2DGrid", std::move(terrain));
+    }
+};
+ZENDEFNODE(zs_HF_maskByFeature, {/* inputs: */ {
+                                     "prim_2DGrid",
+                                     {"string", "height_layer", "height"},
+                                     {"string", "mask_layer", "mask"},
+                                     {"int", "smooth_radius", "1"},
+                                     {"bool", "use_slope", "0"},
+                                     {"float", "min_slopeangle", "0"},
+                                     {"float", "max_slopeangle", "90"},
+                                     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                     {"bool", "use_direction", "0"},
+                                     {"float", "goal_angle", "0"},
+                                     {"float", "angle_spread", "30"},
+                                     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                     {"bool", "use_height", "0"},
+                                     {"float", "min_height", "0"},
+                                     {"float", "max_height", "1"},
+                                 },
+                                 /* outputs: */
+                                 {
+                                     "prim_2DGrid",
+                                 },
+                                 /* params: */
+                                 {},
+                                 /* category: */
+                                 {
+                                     "erode",
+                                 }});
 
 } // namespace zeno
