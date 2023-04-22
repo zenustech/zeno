@@ -507,7 +507,19 @@ struct ComputeAverageEdgeLength : INode {
                 compute(prim->lines);
         }
 
-        reduce(pol, std::begin(els), std::end(els), std::begin(sum), 0, std::plus<float>{});
+        sum[0] = 0;
+        pol(range(els.size()), [&sum, &els](int ei) { atomic_add(exec_omp, &sum[0], els[ei]); });
+#if 0
+        sum[0] = 0;
+        for (auto el : els)
+            sum[0] += el;
+        fmt::print("deduced init: {}\n", deduce_identity<std::plus<float>, float>());
+        fmt::print("ref sum edge lengths: {}, num edges: {}\n", sum[0], els.size());
+        auto sz = els.size();
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(sum), 0);
+        fmt::print("sum edge lengths: {}, num edges: {}\n", sum[0], els.size());
+#endif
+
         set_output("prim", prim);
         set_output("average_edge_length", std::make_shared<NumericObject>(sum[0] / els.size()));
     }
