@@ -463,6 +463,68 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
                                          });
 #endif
 
+struct ComputeAverageEdgeLength : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto prim = get_input<PrimitiveObject>("prim");
+        const auto &pos = prim->attr<vec3f>("pos");
+
+        std::vector<float> els(0);
+        std::vector<float> sum(1);
+
+        if (prim->polys.size()) {
+            const auto &loops = prim->loops;
+            const auto &polys = prim->polys;
+            els.resize(loops.size());
+            pol(range(polys), [&pos, &loops, &els](vec2i poly) {
+                for (int i = 0; i != poly[1]; ++i) {
+                    auto a = loops[poly[0] + i];
+                    auto b = loops[poly[0] + (i + 1) % poly[1]];
+                    els[poly[0] + i] = length(pos[a] - pos[b]);
+                }
+            });
+        } else {
+            auto compute = [&](auto &topos) {
+                constexpr int codim = std::tuple_size_v<typename RM_CVREF_T(topos)::value_type>;
+                els.resize(topos.size() * codim);
+                pol(enumerate(topos), [&pos, &els, codim_c = wrapv<codim>{}](int ei, auto ele) {
+                    constexpr int codim = RM_CVREF_T(codim_c)::value;
+                    for (int i = 0; i != codim; ++i) {
+                        auto a = ele[i];
+                        auto b = ele[(i + 1) % codim];
+                        els[ei * codim + i] = length(pos[a] - pos[b]);
+                    }
+                });
+            };
+            if (prim->quads.size())
+                compute(prim->quads);
+            else if (prim->tris.size())
+                compute(prim->tris);
+            else if (prim->lines.size())
+                compute(prim->lines);
+        }
+
+        reduce(pol, std::begin(els), std::end(els), std::begin(sum), 0, std::plus<float>{});
+        set_output("prim", prim);
+        set_output("average_edge_length", std::make_shared<NumericObject>(sum[0] / els.size()));
+    }
+};
+
+ZENDEFNODE(ComputeAverageEdgeLength, {
+                                         {
+                                             {"PrimitiveObject", "prim"},
+                                         },
+                                         {
+                                             {"PrimitiveObject", "prim"},
+                                             {"NumericObject", "average_edge_length"},
+                                         },
+                                         {},
+                                         {"zs_query"},
+                                     });
+
 struct SurfacePointsInterpolation : INode {
     void apply() override {
         using namespace zs;
