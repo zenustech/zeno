@@ -541,6 +541,7 @@ struct SurfacePointsInterpolation : INode {
     void apply() override {
         using namespace zs;
         auto prim = get_input<PrimitiveObject>("prim");
+        /// @note assume weight/index tag presence, attr tag can be constructed on-the-fly
         auto attrTag = get_input2<std::string>("attrTag");
         auto weightTag = get_input2<std::string>("weightTag");
         auto indexTag = get_input2<std::string>("indexTag");
@@ -548,13 +549,14 @@ struct SurfacePointsInterpolation : INode {
         auto &ws = prim->attr<vec3f>(weightTag);
         auto &triInds = prim->attr<float>(indexTag); // this in accordance with pnbvhw.cpp : QueryNearestPrimitive
 
-        auto refPrim = get_input<PrimitiveObject>("ref_prim");
+        const auto refPrim = get_input<PrimitiveObject>("ref_prim");
         auto refAttrTag = get_input2<std::string>("refAttrTag");
 
-        auto &refTris = refPrim->tris.values;
-        auto doWork = [&](auto &arr) -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
-            using T = RM_CVREF_T(arr[0]);
-            const auto &srcAttr = refPrim->attr<T>(refAttrTag);
+        const auto &refTris = refPrim->tris.values;
+        auto doWork = [&](const auto &srcAttr)
+            -> std::enable_if_t<variant_contains<RM_CVREF_T(srcAttr[0]), AttrAcceptAll>::value> {
+            using T = RM_CVREF_T(srcAttr[0]);
+            auto &arr = prim->add_attr<T>(attrTag);
             auto pol = omp_exec();
             pol(zip(arr, triInds, ws), [&refTris, &srcAttr](T &attr, int refTriNo, const vec3f &w) {
                 auto refTri = refTris[refTriNo];
@@ -562,10 +564,10 @@ struct SurfacePointsInterpolation : INode {
             });
         };
         if (attrTag == "pos") {
-            doWork(prim->attr<vec3f>("pos"));
+            doWork(refPrim->attr<vec3f>(refAttrTag));
         } else {
-            auto &dstAttr = prim->attr(attrTag);
-            match(doWork, [](...) {})(dstAttr);
+            // auto &dstAttr = prim->attr(attrTag);
+            match(doWork, [](...) {})(refPrim->attr(refAttrTag));
         }
 
         set_output("prim", prim);
