@@ -170,50 +170,122 @@ ZENDEFNODE(ReadTiffFile, {
     {"primitive"},
 });
 
-struct TestTiff : INode {
+static void flipVertically(PrimitiveObject* image) {
+    auto& ud = image->userData();
+    int width = ud.get2<int>("w");
+    int height = ud.get2<int>("h");
+    std::vector<vec3f> temp(width);
+    for (auto i = 0; i < height / 2; i++) {
+        memcpy(temp.data(), &image->verts[i * width], width * sizeof(vec3f));
+        memcpy(&image->verts[i * width], &image->verts[(height - 1 - i) * width], width * sizeof(vec3f));
+        memcpy(&image->verts[(height - 1 - i) * width], temp.data(), width * sizeof(vec3f));
+    }
+}
+struct WriteTiffFile : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
-        TIFF* tif = TIFFOpen(path.c_str(), "r");
-        if (!tif) {
-            printf("Failed to open TIFF file: %s\n", path.c_str());
+        auto image = get_input2<PrimitiveObject>("image");
+        auto tiled = get_input2<bool>("tiled");
+        auto& ud = image->userData();
+        int width = ud.get2<int>("w");
+        int height = ud.get2<int>("h");
+        flipVertically(image.get());
+        TIFF* tif = TIFFOpen(path.c_str(), "w");
+        if (tif == nullptr) {
+            zeno::log_error("Failed to open TIFF file: {}", path);
+        }
+        uint16_t bits_per_sample = 32;
+        uint16_t samples_per_pixel = 1;
+        uint16_t planar_config = PLANARCONFIG_CONTIG;
+        uint16_t photometric = PHOTOMETRIC_MINISBLACK;
+        uint32_t tile_width = 128;
+        uint32_t tile_height = 128;
+
+        TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, width);
+        TIFFSetField(tif, TIFFTAG_IMAGELENGTH, height);
+        TIFFSetField(tif, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
+        TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, bits_per_sample);
+        TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, samples_per_pixel);
+        TIFFSetField(tif, TIFFTAG_PLANARCONFIG, planar_config);
+        TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, photometric);
+        if (tiled) {
+            TIFFSetField(tif, TIFFTAG_TILEWIDTH, tile_width);
+            TIFFSetField(tif, TIFFTAG_TILELENGTH, tile_height);
         }
 
-        // Determine if TIFF file is tiled
-        uint32 tile_width, tile_length;
-        if (TIFFIsTiled(tif)) {
-            printf("TIFF file is tiled.\n");
-            TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tile_width);
-            TIFFGetField(tif, TIFFTAG_TILELENGTH, &tile_length);
-        } else {
-            printf("TIFF file is not tiled.\n");
-            TIFFClose(tif);
+        if (tiled) {
+            for (uint32_t y = 0; y < height; y += tile_height) {
+                for (uint32_t x = 0; x < width; x += tile_width) {
+
+                    uint32_t w = (x + tile_width > width) ? width - x : tile_width;
+                    uint32_t h = (y + tile_height > height) ? height - y : tile_height;
+
+                    std::vector<float> temp;
+                    temp.reserve(tile_width * tile_height);
+                    if (w == tile_width && h == tile_height) {
+                        for (auto j = y; j < y + tile_height; j++) {
+                            for (auto i = x; i < x + tile_width; i++) {
+                                int index = j * width + i;
+                                temp.push_back(image->verts[index][0]);
+                            }
+                        }
+                    }
+                    else {
+                        for (auto j = y; j < y + tile_height; j++) {
+                            for (auto i = x; i < x + tile_width; i++) {
+                                if (j < y + h && i < x + w) {
+                                    int index = j * width + i;
+                                    temp.push_back(image->verts[index][0]);
+                                }
+                                else {
+                                    temp.push_back(0);
+                                }
+                            }
+                        }
+                    }
+
+                    for (auto j = y; j < y + tile_height; j++) {
+                        for (auto i = x; i < x + tile_width; i++) {
+                            if (j < y + h && i < x + w) {
+                                int index = j * width + i;
+                                temp.push_back(image->verts[index][0]);
+                            }
+                            else {
+                                temp.push_back(0);
+                            }
+                        }
+                    }
+
+                    TIFFWriteEncodedTile(tif, TIFFComputeTile(tif, x, y, 0, 0), temp.data(), tile_width * tile_height * sizeof(float));
+                }
+            }
+        }
+        else {
+            std::vector<float> data(width * height);
+            for (auto i = 0; i < width; i++) {
+                for (auto j = 0; j < height; j++) {
+                    int index = j * width + i;
+                    data[index] = image->verts[index][0];
+                }
+            }
+            for (uint32_t y = 0; y < height; y++) {
+                TIFFWriteScanline(tif, &data[y * width], y);
+            }
         }
 
-        // Read a tile
-        uint32 tile_x = 0;
-        uint32 tile_y = 0;
-        uint16 tile_index = 0;
-        uint32 tile_size = TIFFTileSize(tif);
-        void* tile_buf = _TIFFmalloc(tile_size);
-        tsize_t result = TIFFReadTile(tif, tile_buf, tile_x, tile_y, 0, tile_index);
-        if (result > 0) {
-            printf("Successfully read tile %d at (%d, %d)\n", tile_index, tile_x, tile_y);
-        } else {
-            printf("Failed to read tile %d at (%d, %d)\n", tile_index, tile_x, tile_y);
-        }
-
-        _TIFFfree(tile_buf);
         TIFFClose(tif);
+        zeno::log_info("TIFF write done!");
     }
 };
-ZENDEFNODE(TestTiff, {
+ZENDEFNODE(WriteTiffFile, {
 {
-    {"readpath", "path"},
-},
-{
+    {"writepath", "path"},
+    {"image"},
+    {"bool", "tiled", "0"},
 },
 {},
-    {"primitive"},
+{},
+{"primitive"},
 });
 }
 
