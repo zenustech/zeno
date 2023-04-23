@@ -143,4 +143,11 @@ struct HeightField {
     }
 };
 
+struct Dummy {
+    template <class T>
+    void pack(T& pack) {
+        pack();
+    }
+};
+
 }
