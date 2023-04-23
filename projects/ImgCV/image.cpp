@@ -2,6 +2,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
 #include <zeno/zeno.h>
 #include <zeno/utils/arrayindex.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -539,7 +540,6 @@ struct ImageEditHSV : INode {
                 float G = image->verts[i][1];
                 float B = image->verts[i][2];
                 zeno::RGBtoHSV(R, G, B, H, S, V);
-                H = H + (H - 0.5)*(Hi-1);
                 S = S + (S - 0.5)*(Si-1);
                 V = V + (V - 0.5)*(Vi-1);
                 zeno::HSVtoRGB(H, S, V, R, G, B);
@@ -1172,7 +1172,54 @@ ZENDEFNODE(ImageEditInvert, {
 /* 将灰度图像转换为法线贴图 */
 struct CompNormalMap : INode {
     virtual void apply() override {
-
+        auto image = get_input<PrimitiveObject>("image");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        using normal =  std::tuple<float, float, float>;
+        normal n = {0, 0, 1};
+        float n0 = std::get<0>(n);
+        float n1 = std::get<1>(n);
+        float n2 = std::get<2>(n);
+        std::vector<normal> normalmap;
+        normalmap.resize(image->size());
+        float gx = 0;
+        float gy = 0;
+        float gz = 1;
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                int idx = i * w + j;
+                if (i == 0 || i == h || j == 0 || j == w) {
+                    normalmap[idx] = {0, 0, 1};
+                }
+            }
+        }
+        for (int i = 1; i < h-1; i++) {
+            for (int j = 1; j < w-1; j++) {
+                int idx = i * w + j;
+                gx = (image->verts[idx+1][0] - image->verts[idx-1][0]) / 2.0f * 255;
+                gy = (image->verts[idx+w][0] - image->verts[idx-w][0]) / 2.0f * 255;
+                // 归一化法线向量
+                float len = sqrt(gx * gx + gy * gy + gz * gz);
+                gx /= len;
+                gy /= len;
+                gz /= len;
+                // 计算光照值
+                gx = 0.5f * (gx + 1.0f) ;
+                gy = 0.5f * (gy + 1.0f) ;
+                gz = 0.5f * (gz + 1.0f) ;
+                normalmap[i * w + j] = {gx,gy,gz};
+            }
+        }
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                int idx = i * w + j;
+                image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
+                image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
+                image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+            }
+        }
+        set_output("image", image);
     }
 };
 ZENDEFNODE(CompNormalMap, {
@@ -1183,8 +1230,54 @@ ZENDEFNODE(CompNormalMap, {
         {"image"}
         },
     {},
-    { "" },
+    { "comp" },
 });
+//
+//struct CompNormalMapCV : INode {
+//    virtual void apply() override {
+//        auto image = get_input<PrimitiveObject>("image");
+//        auto &ud = image->userData();
+//        int w = ud.get2<int>("w");
+//        int h = ud.get2<int>("h");
+//        cv::Mat imagecvin(h, w, CV_32F);
+//        cv::Mat imagecvout(h, w, CV_32FC3);
+//        cv::Mat sobelx(h, w, CV_32F);
+//        cv::Mat sobely(h, w, CV_32F);
+//        cv::Mat M1 = cv::Mat::ones(imagecvin.size(), CV_32F);
+//        float l= 0;
+//        for (int i = 0; i < h; i++) {
+//            for (int j = 0; j < w; j++) {
+//                int idx = i * w + j;
+//                vec3f rgb = image->verts[idx];
+//                l = std::min(std::min(image->verts[idx + 1][0] , image->verts[idx + 1][1]), image->verts[idx + 1][2]);
+//                imagecvin.at<float>(i, j) = image->verts[idx][0];
+//            }
+//        }
+//        cv::Sobel(imagecvin, sobelx, CV_32F, 1, 0);
+//        cv::Sobel(imagecvin, sobely, CV_32F, 0, 1);
+//        std::vector<cv::Mat> channels = {-sobelx, -sobely, M1};
+//        cv::merge(channels,imagecvout);
+//        normalize(imagecvout, imagecvout);
+//
+//        for (int i = 0; i < h; i++) {
+//            for (int j = 0; j < w; j++) {
+//                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+//                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+//            }
+//        }
+//        set_output("image", image);
+//    }
+//};
+//ZENDEFNODE(CompNormalMapCV, {
+//    {
+//        {"image"}
+//    },
+//    {
+//        {"image"}
+//    },
+//    {},
+//    { "comp" },
+//});
 
 struct ImageEditGray : INode {
     virtual void apply() override {
