@@ -18,6 +18,7 @@ namespace zeno {
 
 namespace {
 
+//Test：https://blog.csdn.net/Angelloveyatou/article/details/130190085
 struct Composite: INode {
     virtual void apply() override {
         auto image1 = get_input2<PrimitiveObject>("Foreground");
@@ -361,6 +362,7 @@ ZENDEFNODE(CompositeCV, {
     { "comp" },
 });
 */
+
 struct EditRGB : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
