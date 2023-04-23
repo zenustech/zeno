@@ -167,7 +167,9 @@ void ZenoRemoteServer::IndexPage(const httplib::Request& Req, httplib::Response&
 void ZenoRemoteServer::FetchDataDiff(const httplib::Request &Req, httplib::Response &Res) {
     int32_t client_version = std::atoi(Req.get_param_value("client_version").c_str());
     std::set<std::string> Changes = History.Diff(client_version);
-    remote::Diff Diff { std::move(Changes) };
+    std::vector<std::string> VChanges;
+    VChanges.assign(Changes.begin(), Changes.end());
+    remote::Diff Diff { std::move(VChanges) };
     std::vector<uint8_t> Data = msgpack::pack(Diff);
     Res.set_content(reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
 }
