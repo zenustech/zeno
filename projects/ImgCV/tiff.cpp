@@ -50,6 +50,28 @@ namespace zeno {
 //    // Process image data here...
 //    return img;
 //}
+static void flipVertically(PrimitiveObject* image) {
+    auto& ud = image->userData();
+    int width = ud.get2<int>("w");
+    int height = ud.get2<int>("h");
+    {
+        std::vector<vec3f> temp(width);
+        for (auto i = 0; i < height / 2; i++) {
+            memcpy(temp.data(), &image->verts[i * width], width * sizeof(vec3f));
+            memcpy(&image->verts[i * width], &image->verts[(height - 1 - i) * width], width * sizeof(vec3f));
+            memcpy(&image->verts[(height - 1 - i) * width], temp.data(), width * sizeof(vec3f));
+        }
+    }
+    if (image->verts.has_attr("alpha")) {
+        std::vector<float> temp(width);
+        auto &alpha = image->verts.attr<float>("alpha");
+        for (auto i = 0; i < height / 2; i++) {
+            memcpy(temp.data(), &alpha[i * width], width * sizeof(float));
+            memcpy(&alpha[i * width], &alpha[(height - 1 - i) * width], width * sizeof(float));
+            memcpy(&alpha[(height - 1 - i) * width], temp.data(), width * sizeof(float));
+        }
+    }
+}
 std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
     TIFF* tif = TIFFOpen(path.c_str(), "r");
     if (!tif) {
@@ -59,21 +81,21 @@ std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
 
     uint32 width, height;
     uint16_t samplesPerPixel, bitsPerSample;
-    uint32 tileWidth = 0;
-    uint32 tileHeight = 0;
+    uint32 tile_width = 0;
+    uint32 tile_height = 0;
     TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
     TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
     TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
     TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
-    TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tileWidth);
-    TIFFGetField(tif, TIFFTAG_TILELENGTH, &tileHeight);
+    TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tile_width);
+    TIFFGetField(tif, TIFFTAG_TILELENGTH, &tile_height);
     img->userData().set2("isImage", 1);
     img->userData().set2("w", (int)width);
     img->userData().set2("h", (int)height);
     img->userData().set2("samplesPerPixel", (int)samplesPerPixel);
     img->userData().set2("bitsPerSample", (int)bitsPerSample);
-    img->userData().set2("tileWidth", (int)tileWidth);
-    img->userData().set2("tileHeight", (int)tileHeight);
+    img->userData().set2("tileWidth", (int)tile_width);
+    img->userData().set2("tileHeight", (int)tile_height);
     if (bitsPerSample != 32) {
         throw std::runtime_error("tiff read fail");
     }
@@ -83,38 +105,36 @@ std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
     img->userData().set2("rowSize", (int)rowSize);
     data_.resize(rowSize * height);
 
-    if (tileHeight == 0 && tileWidth == 0) {
+    if (tile_height == 0 && tile_height == 0) {
         for (int32_t row = 0; row < height; ++row) {
             TIFFReadScanline(tif, &data_[row * rowSize], row);
         }
     }
     else {
-        if (TIFFTileSize(tif) != (uint32)(tileWidth * tileHeight * sizeof(uint32))) {
+        if (TIFFTileSize(tif) != (uint32)(tile_width * tile_height * sizeof(float))) {
             zeno::log_error("TIFFTileSize(tif) != tileWidth * tileHeight * sizeof(uint32)");
         }
-        uint32* tile = (uint32*)_TIFFmalloc(tileWidth * tileHeight * sizeof(uint32));
+        float* tile = (float*)_TIFFmalloc(tile_width * tile_height * sizeof(float));
         if (!tile) {
             zeno::log_error("Failed to allocate memory for tile!");
         }
 
-        for (uint32 tileY = 0; tileY < height; tileY += tileHeight) {
-            zeno::log_info("tile: {} ", tileY);
-            for (uint32 tileX = 0; tileX < width; tileX += tileWidth) {
-                uint32 maxX = tileX + tileWidth < width ? tileX + tileWidth : width;
-                uint32 maxY = tileY + tileHeight < height ? tileY + tileHeight : height;
+        for (uint32_t y = 0; y < height; y += tile_height) {
+            for (uint32_t x = 0; x < width; x += tile_width) {
+                TIFFReadTile(tif, tile, x, y, 0, 0);
 
-                for (uint32 y = tileY; y < maxY; y++) {
-                    uint32* dataPtr = (uint32*)((uint32*)data_.data() + y * width + tileX);
-                    for (uint32 x = tileX; x < maxX; x += tileWidth) {
-                        TIFFReadTile(tif, tile, x, y, 0, 0);
-                        for (uint32 i = 0; i < tileWidth && x + i < width; i++) {
-                            dataPtr[i] = tile[i];
-                        }
-                        dataPtr += tileWidth;
-                    }
+                uint32_t w = (x + tile_width > width) ? width - x : tile_width;
+                uint32_t h = (y + tile_height > height) ? height - y : tile_height;
+
+                for (auto j = 0; j < h; j++) {
+                    auto tile_index = j * tile_width;
+                    auto index = (y + j) * width + x;
+                    auto ptr = (float*)data_.data();
+                    memcpy(&ptr[index], &tile[tile_index], w * sizeof(float));
                 }
             }
         }
+
         _TIFFfree(tile);
     }
     TIFFClose(tif);
@@ -151,6 +171,7 @@ std::shared_ptr<PrimitiveObject> readTiffFile(std::string const &path) {
     }
 
     // Process image data here...
+    flipVertically(img.get());
     return img;
 }
 struct ReadTiffFile : INode {
@@ -170,17 +191,6 @@ ZENDEFNODE(ReadTiffFile, {
     {"primitive"},
 });
 
-static void flipVertically(PrimitiveObject* image) {
-    auto& ud = image->userData();
-    int width = ud.get2<int>("w");
-    int height = ud.get2<int>("h");
-    std::vector<vec3f> temp(width);
-    for (auto i = 0; i < height / 2; i++) {
-        memcpy(temp.data(), &image->verts[i * width], width * sizeof(vec3f));
-        memcpy(&image->verts[i * width], &image->verts[(height - 1 - i) * width], width * sizeof(vec3f));
-        memcpy(&image->verts[(height - 1 - i) * width], temp.data(), width * sizeof(vec3f));
-    }
-}
 struct WriteTiffFile : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
