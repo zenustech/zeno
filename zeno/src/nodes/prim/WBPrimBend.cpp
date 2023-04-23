@@ -303,6 +303,7 @@ struct LineResample : INode {
             auto it = std::lower_bound(linesLen.begin(), linesLen.end(), insertU);
             size_t index = it - linesLen.begin();
             index = std::min(index, prim->lines.size() - 1);
+            if (index <= 0) continue;
             auto const& ind = prim->lines[index];
             auto a = prim->verts[ind[0]];
             auto b = prim->verts[ind[1]];
