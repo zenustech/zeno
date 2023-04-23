@@ -363,7 +363,7 @@ ZENDEFNODE(CompositeCV, {
 });
 */
 
-struct EditRGB : INode {
+struct ImageEditRGB : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGB = get_input2<std::string>("RGB");
@@ -434,7 +434,7 @@ struct EditRGB : INode {
     }
 };
 
-ZENDEFNODE(EditRGB, {
+ZENDEFNODE(ImageEditRGB, {
     {
         {"image"},
         {"enum RGB R G B", "RGB", "RGB"},
@@ -525,7 +525,7 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
     }
 }
 
-struct EditHSV : INode {
+struct ImageEditHSV : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         float H = 0, S = 0, V = 0;
@@ -672,7 +672,7 @@ struct EditHSV : INode {
     }
 };
 
-ZENDEFNODE(EditHSV, {
+ZENDEFNODE(ImageEditHSV, {
     {
         {"image"},
         {"enum default edit red orange yellow green cyan blue purple ", "Hue", "edit"},
@@ -800,9 +800,9 @@ ZENDEFNODE(ImageEdit, {
         {"float", "R", "1"},
         {"float", "G", "1"},
         {"float", "B", "1"},
+        {"float", "Saturation", "1"},
         {"float", "Luminace", "1"},
         {"float", "ContrastRatio", "1"},
-        {"float", "Saturation", "1"},
         {"bool", "Gray", "0"},
         {"bool", "Invert", "0"},
     },
@@ -813,7 +813,7 @@ ZENDEFNODE(ImageEdit, {
     { "comp" },
 });
 
-struct CompBlur : INode {
+struct ImageEditBlur : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -861,7 +861,7 @@ struct CompBlur : INode {
     }
 };
 
-ZENDEFNODE(CompBlur, {
+ZENDEFNODE(ImageEditBlur, {
     {
         {"image"},
         {"enum Blur GaussianBlur MedianBlur BilateralFilter", "mode", "mode"},
@@ -1107,12 +1107,8 @@ ZENDEFNODE(comp_color_ramp, {
     { "" },
 });
 
-
-/* 图像对比度调节
-此操作可增加或降低图像的对比度。这可以通过两种方式实现：
-范围-通过设置原始黑白的新值。该范围将被重新映射以适应新值。
-缩放-通过拾取中心轴(通常为0.5)并围绕该值进行缩放。 */
-struct CompContrast : INode {
+//对比度
+struct ImageEditContrast : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         float ContrastRatio = get_input2<float>("ContrastRatio");
@@ -1126,7 +1122,7 @@ struct CompContrast : INode {
     }
 };
 
-ZENDEFNODE(CompContrast, {
+ZENDEFNODE(ImageEditContrast, {
     {
         {"image"},
         {"float", "ContrastRatio", "1"},
@@ -1136,41 +1132,38 @@ ZENDEFNODE(CompContrast, {
     { "comp" },
 });
 
-/* 图像饱和度调节() */
-struct CompSaturation : INode {
+//饱和度
+struct ImageEditSaturation : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         float Si = get_input2<float>("Saturation");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
+        float H = 0, S = 0, V = 0;
         for (auto i = 0; i < image->verts.size(); i++) {
-
             float R = image->verts[i][0];
             float G = image->verts[i][1];
             float B = image->verts[i][2];
-
-            image->verts[i][0] = R * Si;
-            image->verts[i][1] = G * Si;
-            image->verts[i][2] = B * Si;
+            zeno::RGBtoHSV(R, G, B, H, S, V);
+            S = S + (S - 0.5)*(Si-1);
+            zeno::HSVtoRGB(H, S, V, R, G, B);
+            image->verts[i][0] = R;
+            image->verts[i][1] = G;
+            image->verts[i][2] = B;
         }
         set_output("image", image);
     }
 };
 
-ZENDEFNODE(CompSaturation, {
+ZENDEFNODE(ImageEditSaturation, {
     {
         {"image"},
-        {"float", "ContrastRatio", "1"},
+        {"float", "Saturation", "1"},
     },
     {"image"},
     {},
-    { "" },
+    { "comp" },
 });
 
-
-/* 对图像应用像素反转，本质上是 Clr_out = 1 - Clr_in */
-struct CompInvert : INode{
+struct ImageEditInvert : INode{
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
@@ -1182,7 +1175,7 @@ struct CompInvert : INode{
         set_output("image", image);
     }
 };
-ZENDEFNODE(CompInvert, {
+ZENDEFNODE(ImageEditInvert, {
     {
         {"image"},
     },
@@ -1213,7 +1206,7 @@ ZENDEFNODE(CompNormalMap, {
 
 /* 此操作将颜色或向量转换为标量，如亮度或长度。或者，可以将向量
 平面转换为标量平面。 */
-struct CompAverage : INode {
+struct ImageEditAverage : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
@@ -1228,7 +1221,7 @@ struct CompAverage : INode {
     }
 };
 
-ZENDEFNODE(CompAverage, {
+ZENDEFNODE(ImageEditAverage, {
     {
         {"image"}
     },
