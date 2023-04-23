@@ -1204,9 +1204,7 @@ ZENDEFNODE(CompNormalMap, {
     { "" },
 });
 
-/* 此操作将颜色或向量转换为标量，如亮度或长度。或者，可以将向量
-平面转换为标量平面。 */
-struct ImageEditAverage : INode {
+struct ImageEditGray : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
@@ -1221,7 +1219,7 @@ struct ImageEditAverage : INode {
     }
 };
 
-ZENDEFNODE(ImageEditAverage, {
+ZENDEFNODE(ImageEditGray, {
     {
         {"image"}
     },
