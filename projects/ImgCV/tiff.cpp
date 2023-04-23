@@ -244,18 +244,6 @@ struct WriteTiffFile : INode {
                         }
                     }
 
-                    for (auto j = y; j < y + tile_height; j++) {
-                        for (auto i = x; i < x + tile_width; i++) {
-                            if (j < y + h && i < x + w) {
-                                int index = j * width + i;
-                                temp.push_back(image->verts[index][0]);
-                            }
-                            else {
-                                temp.push_back(0);
-                            }
-                        }
-                    }
-
                     TIFFWriteEncodedTile(tif, TIFFComputeTile(tif, x, y, 0, 0), temp.data(), tile_width * tile_height * sizeof(float));
                 }
             }
