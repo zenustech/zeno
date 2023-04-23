@@ -18,10 +18,6 @@ namespace zeno {
 
 namespace {
 
-/*
-功能示例：https://blog.csdn.net/Angelloveyatou/article/details/129960238
-*/
-
 struct Composite: INode {
     virtual void apply() override {
         auto image1 = get_input2<PrimitiveObject>("Foreground");
@@ -30,677 +26,240 @@ struct Composite: INode {
         auto &ud1 = image1->userData();
         int w1 = ud1.get2<int>("w");
         int h1 = ud1.get2<int>("h");
-        if (compmode == "Over") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * (l2 - ((l1 != 0) && (l2 != 0) ? l2 : 0));
-                    }
+        auto &ud2 = image2->userData();
+        int w2 = ud2.get2<int>("w");
+        int h2 = ud2.get2<int>("h");
+        auto A1 = std::make_shared<PrimitiveObject>();
+        A1->verts.resize(image1->size());
+        A1->verts.add_attr<float>("alpha");
+        for(int i = 0;i < w1 * h1;i++){
+            A1->verts.attr<float>("alpha")[i] = 1.0;
+        }
+        auto A2 = std::make_shared<PrimitiveObject>();
+        A2->verts.resize(image2->size());
+        A2->verts.add_attr<float>("alpha");
+        for(int i = 0;i < w2 * h2;i++){
+            A2->verts.attr<float>("alpha")[i] = 1.0;
+        }
+        std::vector<float> &alpha1 = A1->verts.attr<float>("alpha");
+        if(image1->verts.has_attr("alpha")){
+            alpha1 = image1->verts.attr<float>("alpha");
+        }
+        if(has_input("Mask1")) {
+            auto Mask1 = get_input2<PrimitiveObject>("Mask1");
+            Mask1->verts.add_attr<float>("alpha");
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    Mask1->verts.attr<float>("alpha")[i * w1 + j] = Mask1->verts[i * w1 + j][0];
                 }
             }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * (l2 - ((l1 != 0) && (l2 != 0) ? l2 : 0));
-                        }
-                    }
+            alpha1 = Mask1->verts.attr<float>("alpha");
+        }
+        std::vector<float> &alpha2 = A2->verts.attr<float>("alpha");
+        if(image2->verts.has_attr("alpha")){
+            alpha2 = image2->verts.attr<float>("alpha");
+        }
+        if(has_input("Mask2")) {
+            auto Mask2 = get_input2<PrimitiveObject>("Mask2");
+            Mask2->verts.add_attr<float>("alpha");
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    Mask2->verts.attr<float>("alpha")[i * w1 + j] = Mask2->verts[i * w1 + j][0];
                 }
-                else {
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1;
-                        }
-                    }
+            }
+            alpha2 = Mask2->verts.attr<float>("alpha");
+        }
+
+        if (compmode == "Over") {
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * (l2 - ((l1 != 0) && (l2 != 0) ? l2 : 0));
                 }
             }
         }
         if (compmode == "Under") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb2 * l2 + rgb1 * (l1 - ((l1 != 0) && (l2 != 0) ? l1 : 0));
-                    }
-                }
-            }
-            else{
-                if (image2->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb2 * l2 + rgb1 * (l1 - ((l1 != 0) && (l2 != 0) ? l1 : 0));
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb2;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb2 * l2 + rgb1 * (l1 - ((l1 != 0) && (l2 != 0) ? l1 : 0));
                 }
             }
         }
         if (compmode == "Atop") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] =
-                                rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
-                    }
-                }
-            }
-            else{
-                if (image2->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] =
+                            rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
                 }
             }
         }
         if (compmode == "Inside") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
                 }
             }
         }
         if (compmode == "Outside") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb3 = {0, 0, 0};
-                            image1->verts[i * w1 + j] = rgb3;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
                 }
             }
         }
         if(compmode == "Screen"){
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float var = (image1->verts[i * w1 + j][0] + image1->verts[i * w1 + j][1] +
-                                     image1->verts[i * w1 + j][2]) / 3;
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb2 * l2 + rgb2 * ((l1 != 0 && l2 != 0) ? var : 0);
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb2 * l2 + rgb2 *((l1!=0 && l2!=0)? var: 0);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
-                            image1->verts[i * w1 + j] = rgb2 + rgb2 * var;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb2 * l2 + rgb2 *((l1!=0 && l2!=0)? var: 0);
                 }
             }
         }
         if (compmode == "Add") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * 0.5 + rgb2 * 0.5;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
                 }
             }
         }
         if (compmode == "Subtract") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb1 * l1 - rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * l1 - rgb2 * l2;
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 - rgb2;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb1 * l1 - rgb2 * l2;
                 }
             }
         }
         if (compmode == "Multiply") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * rgb2;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
                 }
             }
         }
         if (compmode == "Divide") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb1 * l1 / (rgb2 * l2);
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1 * l1 / (rgb2 * l2);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb1/rgb2;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb1 * l1 / (rgb2 * l2);
                 }
             }
         }
         if (compmode == "Diff") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = abs(rgb1 * l1 - (rgb2 * l2));
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = abs(rgb1*l1 - rgb2 * l2);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            image1->verts[i * w1 + j] = abs(rgb1- rgb2);
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = abs(rgb1 * l1 - (rgb2 * l2));
                 }
             }
         }
         if (compmode == "Min") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = l1 <= l2 ? rgb1 * l1 : rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = l1 <= l2 ? rgb1 * l1 : rgb2 * l2;
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float add1 = image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2];
-                            float add2 = image2->verts[i * w1 + j][0]+image2->verts[i * w1 + j][1]+image2->verts[i * w1 + j][2];
-                            image1->verts[i * w1 + j] = add1 <= add2 ? rgb1 : rgb2;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = l1 <= l2 ? rgb1 * l1 : rgb2 * l2;
                 }
             }
         }
         if (compmode == "Max") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            float add1 = image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2];
-                            float add2 = image2->verts[i * w1 + j][0]+image2->verts[i * w1 + j][1]+image2->verts[i * w1 + j][2];
-                            image1->verts[i * w1 + j] = add1 >= add2 ? rgb1 : rgb2;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
                 }
             }
         }
         if (compmode == "Average") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = (rgb1 + rgb2) / 2;
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb3 * (l1 + l2);
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            vec3f rgb3 = (rgb1+rgb2)/2;
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb3 * (l1+l2);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            vec3f rgb3 = (rgb1+rgb2)/2;
-                            image1->verts[i * w1 + j] = rgb3;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    vec3f rgb3 = (rgb1+rgb2)/2;
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb3 * (l1+l2);
                 }
             }
         }
         if (compmode == "Xor") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = {0, 0, 0};
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            vec3f rgb3 = {0, 0, 0};
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb3 = {0, 0, 0};
-                            image1->verts[i * w1 + j] = rgb3;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    vec3f rgb3 = {0, 0, 0};
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
                 }
             }
         }
         if (compmode == "Alpha") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = {1, 1, 1};
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 1 : 0);
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            vec3f rgb3 = {1,1,1};
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 1 : 0);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb3 = {0, 0, 0};
-                            image1->verts[i * w1 + j] = rgb3;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    vec3f rgb3 = {1,1,1};
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 1 : 0);
                 }
             }
         }
         if (compmode == "!Alpha") {
-            if(has_input("Mask1")&& has_input("Mask2")) {
-                auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-                auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = {1, 1, 1};
-                        float l1 = Mask1->verts[i * w1 + j][0];
-                        float l2 = Mask2->verts[i * w1 + j][0];
-                        image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : 1);
-                    }
-                }
-            }
-            else{
-                if (image1->verts.has_attr("alpha")) {
-                    auto &alpha1 = image1->verts.attr<float>("alpha");
-                    auto &alpha2 = image2->verts.attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb1 = image1->verts[i * w1 + j];
-                            vec3f rgb2 = image2->verts[i * w1 + j];
-                            vec3f rgb3 = {1,1,1};
-                            float l1 = alpha1[i * w1 + j];
-                            float l2 = alpha2[i * w1 + j];
-                            image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : 1);
-                        }
-                    }
-                }
-                else{
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            vec3f rgb3 = {1, 1, 1};
-                            image1->verts[i * w1 + j] = rgb3;
-                        }
-                    }
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb1 = image1->verts[i * w1 + j];
+                    vec3f rgb2 = image2->verts[i * w1 + j];
+                    vec3f rgb3 = {1,1,1};
+                    float l1 = alpha1[i * w1 + j];
+                    float l2 = alpha2[i * w1 + j];
+                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : 1);
                 }
             }
         }
@@ -723,7 +282,8 @@ ZENDEFNODE(Composite, {
     { "comp" },
 });
 
-
+//replaced by Composite
+/*
 struct CompositeCV: INode {
     virtual void apply() override {
         auto image1 = get_input<PrimitiveObject>("Foreground");
@@ -800,753 +360,7 @@ ZENDEFNODE(CompositeCV, {
     {},
     { "comp" },
 });
-
-//无alpha只能做加减乘除
-struct Composite1: INode {
-    virtual void apply() override {
-        auto image1 = get_input<PrimitiveObject>("Foreground");
-        auto image2 = get_input<PrimitiveObject>("Background");
-        auto compmode = get_input2<std::string>("compmode");
-        auto &ud1 = image1->userData();
-        int w1 = ud1.get2<int>("w");
-        int h1 = ud1.get2<int>("h");
-        auto &ud2 = image2->userData();
-        int w2 = ud2.get2<int>("w");
-        int h2 = ud2.get2<int>("h");
-        if(compmode == "Add"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * 0.5 + rgb2 * 0.5;
-                }
-            }
-        }
-        if(compmode == "Subtract"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 - rgb2;
-                }
-            }
-        }
-        if(compmode == "Multiply"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * rgb2;
-                }
-            }
-        }
-        if(compmode == "Divide"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 / rgb2;
-                }
-            }
-        }
-        if(compmode == "Diff"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    image1->verts[i * w1 + j] = abs(rgb1- rgb2);
-                }
-            }
-        }
-        if(compmode == "Invert"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    image1->verts[i * w1 + j] = 1 - (rgb1+rgb2)/2;
-                }
-            }
-        }
-        if(compmode == "Average"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = (rgb1+rgb2)/2;
-                    image1->verts[i * w1 + j] = rgb3;
-                }
-            }
-        }
-        set_output("image", image1);
-    }
-};
-
-ZENDEFNODE(Composite1, {
-    {
-        {"Foreground"},
-        {"Background"},
-        {"enum Add Subtract Multiply Divide Diff Invert Average", "compmode", "Add"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-//两张图片都有alpha
-struct Composite2: INode {
-    virtual void apply() override {
-        auto image1 = get_input<PrimitiveObject>("Foreground");
-        auto image2 = get_input<PrimitiveObject>("Background");
-        auto compmode = get_input2<std::string>("compmode");
-        auto &ud1 = image1->userData();
-        int w1 = ud1.get2<int>("w");
-        int h1 = ud1.get2<int>("h");
-        auto &ud2 = image2->userData();
-        int w2 = ud2.get2<int>("w");
-        int h2 = ud2.get2<int>("h");
-        if(compmode == "Over"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * (l2 - ((l1 != 0) && (l2 != 0) ? l2 : 0));
-                    }
-                }
-            }
-            else {
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1;
-                    }
-                }
-            }
-        }
-        if(compmode == "Under"){
-            if (image2->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb2 * l2 + rgb1 * (l1 - ((l1 != 0) && (l2 != 0) ? l1 : 0));
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb2;
-                    }
-                }
-            }
-        }
-        if(compmode == "Atop"){
-            if (image2->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1;
-                    }
-                }
-            }
-        }
-        if(compmode == "Inside"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1;
-                    }
-                }
-            }
-        }
-        if(compmode == "Outside"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb3 = {0, 0, 0};
-                        image1->verts[i * w1 + j] = rgb3;
-                    }
-                }
-            }
-        }
-        if(compmode == "Add"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * 0.5 + rgb2 * 0.5;
-                    }
-                }
-            }
-        }
-        if(compmode == "Subtract"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * l1 - rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 - rgb2;
-                    }
-                }
-            }
-        }
-        if(compmode == "Multiply"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * rgb2;
-                    }
-                }
-            }
-        }
-        if(compmode == "Divide"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1 * l1 / (rgb2 * l2);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb1/rgb2;
-                    }
-                }
-            }
-        }
-        if(compmode == "Diff"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = abs(rgb1*l1 - rgb2 * l2);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        image1->verts[i * w1 + j] = abs(rgb1- rgb2);
-                    }
-                }
-            }
-        }
-        if(compmode == "Min"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = l1 <= l2 ? rgb1 * l1 : rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float add1 = image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2];
-                        float add2 = image2->verts[i * w1 + j][0]+image2->verts[i * w1 + j][1]+image2->verts[i * w1 + j][2];
-                        image1->verts[i * w1 + j] = add1 <= add2 ? rgb1 : rgb2;
-                    }
-                }
-            }
-        }
-        if(compmode == "Max"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float add1 = image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2];
-                        float add2 = image2->verts[i * w1 + j][0]+image2->verts[i * w1 + j][1]+image2->verts[i * w1 + j][2];
-                        image1->verts[i * w1 + j] = add1 >= add2 ? rgb1 : rgb2;
-                    }
-                }
-            }
-        }
-        if(compmode == "Average"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = (rgb1+rgb2)/2;
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb3 * (l1+l2);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = (rgb1+rgb2)/2;
-                        image1->verts[i * w1 + j] = rgb3;
-                    }
-                }
-            }
-        }
-        if(compmode == "Xor"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = {0, 0, 0};
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb3 = {0, 0, 0};
-                        image1->verts[i * w1 + j] = rgb3;
-                    }
-                }
-            }
-        }
-        if(compmode == "Alpha"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = {1,1,1};
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 1 : 0);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb3 = {0, 0, 0};
-                        image1->verts[i * w1 + j] = rgb3;
-                    }
-                }
-            }
-        }
-        if(compmode == "!Alpha"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        vec3f rgb3 = {1,1,1};
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : 1);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb3 = {1, 1, 1};
-                        image1->verts[i * w1 + j] = rgb3;
-                    }
-                }
-            }
-        }
-        if(compmode == "Screen"){
-            if (image1->verts.has_attr("alpha")) {
-                auto &alpha1 = image1->verts.attr<float>("alpha");
-                auto &alpha2 = image2->verts.attr<float>("alpha");
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
-                        float l1 = alpha1[i * w1 + j];
-                        float l2 = alpha2[i * w1 + j];
-                        image1->verts[i * w1 + j] = rgb2 * l2 + rgb2 *((l1!=0 && l2!=0)? var: 0);
-                    }
-                }
-            }
-            else{
-                for (int i = 0; i < h1; i++) {
-                    for (int j = 0; j < w1; j++) {
-                        vec3f rgb1 = image1->verts[i * w1 + j];
-                        vec3f rgb2 = image2->verts[i * w1 + j];
-                        float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
-                        image1->verts[i * w1 + j] = rgb2 + rgb2 * var;
-                    }
-                }
-            }
-        }
-        set_output("image", image1);
-    }
-};
-
-ZENDEFNODE(Composite2, {
-    {
-        {"Foreground"},
-        {"Background"},
-        {"enum Over Under Atop Inside Outside Screen Add Subtract Multiply Divide Diff Min Max Average Xor Alpha !Alpha", "compmode", "Over"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-//Mask1Mask2赋给两张图片alpha
-struct Composite3: INode {
-    virtual void apply() override {
-        auto image1 = get_input<PrimitiveObject>("Foreground");
-        auto image2 = get_input<PrimitiveObject>("Background");
-        auto Mask1 = get_input<PrimitiveObject>("Mask1");
-        auto Mask2 = get_input<PrimitiveObject>("Mask2");
-        auto compmode = get_input2<std::string>("compmode");
-        auto &ud1 = image1->userData();
-        int w1 = ud1.get2<int>("w");
-        int h1 = ud1.get2<int>("h");
-
-        if (compmode == "Add") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Subtract") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb1 * l1 - rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Multiply") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Divide") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb1 * l1 / (rgb2 * l2);
-                }
-            }
-        }
-        if (compmode == "Diff") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = abs(rgb1 * l1 - (rgb2 * l2));
-                }
-            }
-        }
-        if (compmode == "Over") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * (l2 - ((l1 != 0) && (l2 != 0) ? l2 : 0));
-                }
-            }
-        }
-        if (compmode == "Under") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb2 * l2 + rgb1 * (l1 - ((l1 != 0) && (l2 != 0) ? l1 : 0));
-                }
-            }
-        }
-        if (compmode == "Atop") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] =
-                            rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
-                }
-            }
-        }
-        if (compmode == "Inside") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
-                }
-            }
-        }
-        if (compmode == "Outside") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
-                }
-            }
-        }
-        if (compmode == "Min") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = l1 <= l2 ? rgb1 * l1 : rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Max") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Xor") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = {0, 0, 0};
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
-                }
-            }
-        }
-        if (compmode == "Alpha") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = {1,1,1};
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 1 : 0);
-                }
-            }
-        }
-        if (compmode == "Average") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = (rgb1+rgb2)/2;
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb3 * (l1+l2);
-                }
-            }
-        }
-        if(compmode == "Screen"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
-                    float l1 = Mask1->verts[i * w1 + j][0];
-                    float l2 = Mask2->verts[i * w1 + j][0];
-                    image1->verts[i * w1 + j] = rgb2 * l2 + rgb2 *((l1!=0 && l2!=0)? var: 0);
-                }
-            }
-        }
-        set_output("image", image1);
-    }
-};
-
-ZENDEFNODE(Composite3, {
-    {
-        {"Foreground"},
-        {"Background"},
-        {"Mask1"},
-        {"Mask2"},
-        {"enum Over Under Atop Inside Outside Screen Add Subtract Multiply Divide Diff Min Max Average Xor Alpha", "compmode", "Over"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
+*/
 struct EditRGB : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
