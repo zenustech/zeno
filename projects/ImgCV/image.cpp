@@ -1062,8 +1062,8 @@ ZENDEFNODE(CompImport, {
 struct CreateColor : INode {
     virtual void apply() override {
         auto RGB = get_input2<vec3f>("RGB");
-        auto x = get_input2<int>("x");
-        auto y = get_input2<int>("y");
+        auto x = get_input2<int>("width");
+        auto y = get_input2<int>("height");
 
         auto image = std::make_shared<PrimitiveObject>();
         image->verts.resize(x * y);
@@ -1080,31 +1080,14 @@ struct CreateColor : INode {
 ZENDEFNODE(CreateColor, {
     {
         {"vec3f", "RGB", "1,1,1"},
-        {"int", "x", "256"},
-        {"int", "y", "256"},
+        {"int", "width", "256"},
+        {"int", "height", "256"},
     },
     {
         {"image"}
         },
     {},
     { "comp" },
-});
-
-struct comp_color_ramp : INode {
-    virtual void apply() override {
-
-    }
-};
-
-ZENDEFNODE(comp_color_ramp, {
-    {
-        {"image"}
-    },
-    {
-        {"image"}
-        },
-    {},
-    { "" },
 });
 
 //对比度
@@ -1185,7 +1168,6 @@ ZENDEFNODE(ImageEditInvert, {
     {},
     {"comp"},
 });
-
 
 /* 将灰度图像转换为法线贴图 */
 struct CompNormalMap : INode {
