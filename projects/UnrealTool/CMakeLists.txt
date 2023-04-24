@@ -6,4 +6,4 @@ target_compile_definitions(zeno PRIVATE -DZENO_WITH_UnrealTool)
 
 target_include_directories(zeno PUBLIC ./include)
 
-target_sources(zeno PUBLIC ${PROJECT_SOURCE})
+target_sources(zeno PRIVATE ${PROJECT_SOURCE})

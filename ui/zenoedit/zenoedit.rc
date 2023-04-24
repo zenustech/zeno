@@ -49,8 +49,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,418
- PRODUCTVERSION 1,0,0,418
+ FILEVERSION 1,0,0,421
+ PRODUCTVERSION 1,0,0,421
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -67,12 +67,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ZENUSTECH"
             VALUE "FileDescription", "TODO: <文件说明>"
-            VALUE "FileVersion", "1.0.0.418"
+            VALUE "FileVersion", "1.0.0.421"
             VALUE "InternalName", "zenoedit.rc"
             VALUE "LegalCopyright", "Copyright (C) 2023"
             VALUE "OriginalFilename", "zenoedit.rc"
             VALUE "ProductName", "Zeno"
-            VALUE "ProductVersion", "1.0.0.418"
+            VALUE "ProductVersion", "1.0.0.421"
         END
     END
     BLOCK "VarFileInfo"

@@ -11,6 +11,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <zeno/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/zeno.h>
@@ -57,6 +58,7 @@ static zs::Vector<zs::AABBBox<3, float>> retrieve_bounding_volumes(zs::OmpExecut
     return ret;
 }
 
+#if 0
 struct PrimitiveConnectedComponents : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -183,6 +185,212 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
                                              {},
                                              {"zs_query"},
                                          });
+#else
+
+struct PrimitiveConnectedComponents : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto &verts = prim->verts;
+        const auto &pos = verts.values;
+
+        const auto &tris = prim->tris.values;
+        const bool hasTris = tris.size() > 0;
+        // const bool hasTriUV = tris.has_attr<vec3f>("uv0") && tris.has_attr<vec3f>("uv1") && tris.has_attr<vec3f>("uv2");
+        // const auto &uvs = prim->uvs;
+
+        const auto &loops = prim->loops;
+        const auto &polys = prim->polys;
+        const bool hasLoops = polys.size() > 1;
+
+        std::size_t expectedLinks = hasTris ? tris.size() * 3 : (polys.values.back()[0] + polys.values.back()[1]);
+
+        if ((hasTris ^ hasLoops) == 0)
+            throw std::runtime_error("The input mesh must either own active triangle topology or loop topology.");
+
+        // for island partition
+        std::vector<int> elementMarks(hasTris ? tris.size() : polys.size());
+        std::vector<int> elementOffsets(elementMarks.size());
+
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{expectedLinks};
+        std::vector<int> is, js;
+
+        if (hasTris) {
+            auto &eles = tris;
+            pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
+                using eleT = RM_CVREF_T(ele);
+                for (int i = 0; i < 3; ++i) {
+                    auto a = ele[i];
+                    auto b = ele[(i + 1) % 3];
+                    if (a > b)
+                        std::swap(a, b);
+                    tab.insert(IV{a, b});
+                }
+            });
+        } else {
+            pol(range(polys), [&, tab = view<execspace_e::openmp>(tab)](const auto &poly) mutable {
+                auto offset = poly[0];
+                auto size = poly[1];
+                for (int i = 0; i < size; ++i) {
+                    auto a = loops[offset + i];
+                    auto b = loops[offset + (i + 1) % size];
+                    if (a > b)
+                        std::swap(a, b);
+                    tab.insert(IV{a, b});
+                }
+            });
+        }
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<int, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+
+        /// @note update fathers of each vertex
+        std::vector<int> fas(pos.size());
+        union_find(pol, spmat, range(fas));
+
+        /// @note update ancestors, discretize connected components
+        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+
+        pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            vtab.insert(fa);
+        });
+
+        auto numSets = vtab.size();
+        fmt::print("{} disjoint sets in total.\n", numSets);
+        /// @brief compute the set index of each vertex and calculate the size of each set
+        auto &setids = prim->add_attr<int>("set");
+        std::vector<int> vertexCounts(numSets), vertexOffsets(numSets);
+        pol(range(pos.size()), [&fas, &setids, &vertexCounts, vtab = view<space>(vtab)](int vi) mutable {
+            auto ancestor = fas[vi];
+            auto setNo = vtab.query(ancestor);
+            setids[vi] = setNo;
+            atomic_add(exec_omp, &vertexCounts[setNo], 1);
+        });
+        exclusive_scan(pol, std::begin(vertexCounts), std::end(vertexCounts), std::begin(vertexOffsets));
+
+        auto outPrims = std::make_shared<ListObject>();
+        outPrims->arr.resize(numSets);
+
+        std::vector<int> preserveMarks(pos.size()), preserveOffsets(pos.size());
+        for (int setNo = 0; setNo != numSets; ++setNo) {
+            auto primIsland = std::make_shared<PrimitiveObject>();
+            outPrims->arr[setNo] = primIsland;
+            /// @brief comptact vertices
+            primIsland->resize(vertexCounts[setNo]);
+            auto &posI = primIsland->attr<vec3f>("pos");
+            // mark
+            pol(zip(preserveMarks, setids), [&](int &mark, int setId) { mark = setId == setNo; });
+            exclusive_scan(pol, std::begin(preserveMarks), std::end(preserveMarks), std::begin(preserveOffsets));
+            // verts
+            pol(range(pos.size()), [&](int vi) {
+                if (preserveMarks[vi]) {
+                    auto dst = preserveOffsets[vi];
+                    posI[dst] = pos[vi];
+                    // other vertex attributes
+                }
+            });
+            if (hasTris) {
+                // tris
+                pol(range(tris.size()), [&](int ei) {
+                    auto tri = tris[ei];
+                    elementMarks[ei] = setids[tri[0]] == setNo && setids[tri[1]] == setNo && setids[tri[2]] == setNo;
+                });
+                exclusive_scan(pol, std::begin(elementMarks), std::end(elementMarks), std::begin(elementOffsets));
+                auto triSize = elementOffsets.back() + elementMarks.back();
+                auto &triI = primIsland->tris;
+                triI.resize(triSize);
+                pol(range(tris.size()), [&](int ei) {
+                    if (elementMarks[ei]) {
+                        auto dst = elementOffsets[ei];
+                        for (int d = 0; d != 3; ++d)
+                            triI[dst][d] = preserveOffsets[tris[ei][d]];
+                        // other vertex attributes
+                    }
+                });
+            } else {
+                // loops
+                // select polys
+                pol(enumerate(polys), [&](int ei, vec2i poly) {
+                    int mark = 1;
+                    for (int i = 0; i != poly[1]; ++i)
+                        if (setids[loops[poly[0] + i]] != setNo) {
+                            mark = 0;
+                            break;
+                        }
+                    elementMarks[ei] = mark;
+                });
+                exclusive_scan(pol, std::begin(elementMarks), std::end(elementMarks), std::begin(elementOffsets));
+                auto &polyI = primIsland->polys;
+                auto polySize = elementOffsets.back() + elementMarks.back();
+                polyI.resize(polySize);
+
+                std::vector<int> preservedPolySizes(polySize);
+                pol(enumerate(polys), [&](int ei, vec2i poly) {
+                    if (elementMarks[ei]) {
+                        auto dst = elementOffsets[ei];
+                        preservedPolySizes[dst] = poly[1];
+                    }
+                });
+                std::vector<int> preservedPolyOffsets(polySize);
+                exclusive_scan(pol, std::begin(preservedPolySizes), std::end(preservedPolySizes),
+                               std::begin(preservedPolyOffsets));
+
+                auto &loopI = primIsland->loops;
+                auto loopSize = preservedPolyOffsets.back() + preservedPolySizes.back();
+                loopI.resize(loopSize);
+
+                // write poly
+                pol(zip(polyI.values, preservedPolyOffsets, preservedPolySizes), [](vec2i &poly, int offset, int size) {
+                    poly[0] = offset;
+                    poly[1] = size;
+                });
+
+                // write loop
+                pol(enumerate(polys), [&](int ei, vec2i poly) {
+                    if (elementMarks[ei]) {
+                        auto dstPolyNo = elementOffsets[ei];
+                        auto dstLoopOffset = preservedPolyOffsets[dstPolyNo];
+                        for (int i = 0; i != poly[1]; ++i) {
+                            auto point = loops[poly[0] + i];
+                            loopI.values[dstLoopOffset + i] = preserveOffsets[point];
+                        }
+                    }
+                });
+            }
+        }
+
+        set_output("prim_islands", std::move(outPrims));
+    }
+};
+
+ZENDEFNODE(PrimitiveConnectedComponents, {
+                                             {{"PrimitiveObject", "prim"}},
+                                             {
+                                                 {"ListObject", "prim_islands"},
+                                             },
+                                             {},
+                                             {"zs_geom"},
+                                         });
+#endif
 
 struct ParticleCluster : zeno::INode {
     virtual void apply() override {
@@ -220,7 +428,7 @@ struct ParticleCluster : zeno::INode {
 
         /// @brief uv
         if (pars->has_attr("uv") && uvDist > zs::limits<float>::epsilon() * 10) {
-            const auto &uv = pars->attr<vec2i>("uv");
+            const auto &uv = pars->attr<vec2f>("uv");
             pol(range(pos.size()), [&neighbors, &uv, uvDist2 = uvDist * uvDist](int vi) mutable {
                 int n = neighbors[vi].size();
                 int nExcl = 0;
@@ -299,6 +507,11 @@ struct ParticleSegmentation : zeno::INode {
 
         auto pars = get_input<zeno::PrimitiveObject>("pars");
         float dist = get_input2<float>("dist");
+        float uvDist2 = zs::sqr(get_input2<float>("uv_dist"));
+        const vec2f *uvPtr = nullptr;
+
+        if (pars->has_attr("uv") && std::sqrt(uvDist2) > zs::limits<float>::epsilon() * 10)
+            uvPtr = pars->attr<vec2f>("uv").data();
 
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
@@ -384,14 +597,17 @@ struct ParticleSegmentation : zeno::INode {
                 auto cnt = 1;
                 clusterids[vi] = no;
                 for (int vj : distNeighbors[vi]) {
-                    if (vi == vj)
-                        continue;
+                    // if (vi == vj)
+                    //    continue;
 #if 0
                     if (colors[vj] == color)
                         fmt::print("this cannot be happening! vi [{}] clr {}, while nei vj [{}] clr {}\n", vi,
                                    colors[vi], vj, colors[vj]);
 #endif
                     /// use 'cas' in case points at the boundary got inserted into adjacent clusters
+                    if (uvPtr)
+                        if (lengthSquared(uvPtr[vi] - uvPtr[vj]) > uvDist2)
+                            continue;
                     if (atomic_cas(exec_omp, &maskOut[vj], 0, 1) == 0) {
                         clusterids[vj] = no;
                         cnt++;
@@ -406,35 +622,52 @@ struct ParticleSegmentation : zeno::INode {
         auto npp = get_input2<int>("post_process_cnt");
         while (npp--) {
             std::vector<vec3f> clusterCenters(clusterNo);
-            pol(clusterCenters, [](vec3f &v) { v[0] = v[1] = v[2] = 0; });
+            std::vector<vec2f> clusterUVCenters(clusterNo);
+
+            std::memset(clusterCenters.data(), 0, sizeof(vec3f) * clusterNo);
+            if (uvPtr)
+                std::memset(clusterUVCenters.data(), 0, sizeof(vec2f) * clusterNo);
+
             pol(range(pos.size()), [&](int vi) {
                 auto cno = clusterids[vi];
                 const auto &p = pos[vi];
                 for (int d = 0; d != 3; ++d)
                     atomic_add(exec_omp, &clusterCenters[cno][d], p[d]);
+                if (uvPtr) {
+                    auto uv = uvPtr[vi];
+                    atomic_add(exec_omp, &clusterUVCenters[cno][0], uv[0]);
+                    atomic_add(exec_omp, &clusterUVCenters[cno][1], uv[1]);
+                }
             });
             pol(range(clusterNo), [&](int cno) { clusterCenters[cno] = clusterCenters[cno] / clusterSize[cno]; });
+            if (uvPtr)
+                pol(range(clusterNo),
+                    [&](int cno) { clusterUVCenters[cno] = clusterUVCenters[cno] / clusterSize[cno]; });
 
             if (npp)
                 std::memset(clusterSize.data(), 0, sizeof(int) * clusterNo);
             bvs = retrieve_bounding_volumes(pol, clusterCenters, 0);
             bvh_t bvh;
             bvh.build(pol, bvs);
-            pol(range(pos.size()),
-                [bvh = proxy<space>(bvh), &pos, &clusterids, &clusterCenters, &clusterSize, dist](int vi) mutable {
-                    const auto &p = pos[vi];
-                    auto cno = clusterids[vi];
-                    float curDist = length(p - clusterCenters[cno]);
-                    bv_t pb{vec_to_other<zs::vec<float, 3>>(p - curDist), vec_to_other<zs::vec<float, 3>>(p + curDist)};
-                    bvh.iter_neighbors(pb, [&](int oCNo) {
-                        if (auto d = length(p - clusterCenters[oCNo]); d < curDist/* && d < dist*/) {
-                            cno = oCNo;
-                            curDist = d;
-                        }
-                    });
-                    clusterids[vi] = cno;
-                    atomic_add(exec_omp, &clusterSize[cno], 1);
+            pol(range(pos.size()), [bvh = proxy<space>(bvh), &pos, &clusterids, &clusterCenters, &clusterUVCenters,
+                                    &clusterSize, uvPtr, dist, uvDist2](int vi) mutable {
+                const auto &p = pos[vi];
+                auto cno = clusterids[vi];
+                float curDist = length(p - clusterCenters[cno]);
+                bv_t pb{vec_to_other<zs::vec<float, 3>>(p - curDist), vec_to_other<zs::vec<float, 3>>(p + curDist)};
+                bvh.iter_neighbors(pb, [&](int oCNo) {
+                    if (uvPtr) {
+                        if (lengthSquared(uvPtr[vi] - clusterUVCenters[oCNo]) > uvDist2)
+                            return;
+                    }
+                    if (auto d = length(p - clusterCenters[oCNo]); d < curDist /* && d < dist*/) {
+                        cno = oCNo;
+                        curDist = d;
+                    }
                 });
+                clusterids[vi] = cno;
+                atomic_add(exec_omp, &clusterSize[cno], 1);
+            });
         }
         fmt::print("{} colors {} clusters.\n", ncolors, clusterNo);
 
@@ -472,6 +705,7 @@ ZENDEFNODE(ParticleSegmentation, {
                                      {
                                          {"PrimitiveObject", "pars"},
                                          {"float", "dist", "1"},
+                                         {"float", "uv_dist", "0"},
                                          {"string", "segment_tag", "segment_index"},
                                          {"int", "post_process_cnt", "0"},
                                          {"bool", "paint_color", "1"},

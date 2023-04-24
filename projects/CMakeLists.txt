@@ -36,7 +36,6 @@ set(ZENO_EXTENSIONS
     USD
     Python
     Parameterization
-    UnrealBridge
     UnrealTool
     )
 

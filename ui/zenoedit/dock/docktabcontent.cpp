@@ -7,6 +7,7 @@
 #include "../panel/zenoproppanel.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
+#include <zenoedit/panel/zenoimagepanel.h>
 #include "nodesview/zenographseditor.h"
 #include "viewport/viewportwidget.h"
 #include "zenoapplication.h"
@@ -874,4 +875,19 @@ void DockContent_Log::initConnections()
         m_pBtnFilterLog->setChecked(false);
         m_stack->setCurrentIndex(1);
     });
+}
+
+DockContent_Image::DockContent_Image(QWidget *parent)
+    : DockToolbarWidget(parent)
+    , m_ImagePanel(nullptr)
+{
+}
+
+QWidget *DockContent_Image::initWidget() {
+    m_ImagePanel = new ZenoImagePanel(this);
+    return m_ImagePanel;
+}
+
+ZenoImagePanel *DockContent_Image::getImagePanel() {
+    return m_ImagePanel;
 }

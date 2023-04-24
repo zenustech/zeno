@@ -303,6 +303,7 @@ struct LineResample : INode {
             auto it = std::lower_bound(linesLen.begin(), linesLen.end(), insertU);
             size_t index = it - linesLen.begin();
             index = std::min(index, prim->lines.size() - 1);
+            if (index <= 0) continue;
             auto const& ind = prim->lines[index];
             auto a = prim->verts[ind[0]];
             auto b = prim->verts[ind[1]];
@@ -1225,12 +1226,12 @@ struct PrimAttribBlur : INode {
         auto prim = get_input<PrimitiveObject>("prim");
         auto prim_type = get_input2<std::string>("primType");
 
-        auto maskName = get_input2<std::string>("group");
-        if (!prim->verts.has_attr(maskName)) {
-            auto &_mask = prim->verts.add_attr<float>(maskName);
-            std::fill(_mask.begin(), _mask.end(), 1.0);
-        }
-        auto &mask = prim->verts.attr<float>(maskName);
+//        auto maskName = get_input2<std::string>("group");
+//        if (!prim->verts.has_attr(maskName)) {
+//            auto &_mask = prim->verts.add_attr<float>(maskName);
+//            std::fill(_mask.begin(), _mask.end(), 1.0);
+//        }
+//        auto &mask = prim->verts.attr<float>(maskName);
 
         auto attr_name = get_input2<std::string>("attributes");
         auto attr_type = get_input2<std::string>("attributesType");
@@ -1534,7 +1535,7 @@ ZENDEFNODE(PrimAttribBlur,
            {/* inputs: */ {
                    "prim",
                    {"enum line tri", "primType", "line"},
-                   {"string", "group", "mask"},
+//                   {"string", "group", "mask"},
                    {"string", "attributes", "ratio"},
                    {"enum float vec3f ", "attributesType", "float"},
                    {"int", "useEdgeLengthWeight", "0"},

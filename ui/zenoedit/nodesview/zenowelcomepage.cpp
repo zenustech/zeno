@@ -7,6 +7,7 @@
 #include "settings/zsettings.h"
 #include <zenoui/style/zenostyle.h>
 #include <QtSvg/QSvgWidget>
+#include "startup/zstartup.h"
 
 
 ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
@@ -66,6 +67,7 @@ ZenoWelcomePage::ZenoWelcomePage(QWidget* parent)
     m_ui->lblOfficialWeb->setProperty("cssClass", "welcomepage_label");
     m_ui->lblOfficialWeb->setUnderlineOnHover(true);
  
+    m_ui->lblCurrVer->setText(QString::fromStdString(getZenoVersion()));
 
     m_ui->lblForum->setText(tr("Forum"));
     m_ui->lblForum->setProperty("cssClass", "welcomepage_label");

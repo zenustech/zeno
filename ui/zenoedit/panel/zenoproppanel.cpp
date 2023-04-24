@@ -330,10 +330,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     }
 
     cbSet.cbEditFinished = [=](QVariant newValue) {
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        if (!pModel)
-            return;
-        int ret = pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
+        AppHelper::socketEditFinished(newValue, m_idx, perIdx);
     };
     cbSet.cbSwitch = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);   //deal with ubuntu dialog slow problem when update viewport.
