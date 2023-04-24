@@ -543,6 +543,49 @@ ZENDEFNODE(ComputeAverageEdgeLength, {
                                          {"zs_query"},
                                      });
 
+struct PrimitiveHasUV : INode {
+    void apply() override {
+
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        auto ret = std::make_shared<NumericObject>(0);
+        if (prim->verts.has_attr("uv"))
+            ret = std::make_shared<NumericObject>(1);
+        if (prim->polys.size()) {
+            if (prim->loops.has_attr("uvs") && prim->uvs.size() > 0)
+                ret = std::make_shared<NumericObject>(1);
+        } else {
+            if (prim->quads.size()) {
+                if (prim->quads.has_attr("uv0") && prim->quads.has_attr("uv1") && prim->quads.has_attr("uv2") &&
+                    prim->quads.has_attr("uv3"))
+                    ret = std::make_shared<NumericObject>(1);
+            } else if (prim->tris.size()) {
+                if (prim->tris.has_attr("uv0") && prim->tris.has_attr("uv1") && prim->tris.has_attr("uv2"))
+                    ret = std::make_shared<NumericObject>(1);
+            } else if (prim->lines.size()) {
+                if (prim->lines.has_attr("uv0") && prim->lines.has_attr("uv1"))
+                    ret = std::make_shared<NumericObject>(1);
+            } else if (prim->points.size()) {
+                if (prim->points.has_attr("uv0"))
+                    ret = std::make_shared<NumericObject>(1);
+            }
+        }
+        set_output("prim", prim);
+        set_output("has_uv", ret);
+    }
+};
+ZENDEFNODE(PrimitiveHasUV, {
+                               {
+                                   {"PrimitiveObject", "prim"},
+                               },
+                               {
+                                   {"PrimitiveObject", "prim"},
+                                   {"NumericObject", "has_uv"},
+                               },
+                               {},
+                               {"zs_query"},
+                           });
+
 struct SurfacePointsInterpolation : INode {
     void apply() override {
         using namespace zs;
