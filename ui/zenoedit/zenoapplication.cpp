@@ -9,6 +9,7 @@
 #include "startup/zstartup.h"
 #include <style/zenostyle.h>
 #include "settings/zenosettingsmanager.h"
+#include "manager/calculatemgr.h"
 
 
 ZenoApplication::ZenoApplication(int &argc, char **argv)
@@ -17,6 +18,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     , m_server(nullptr)
 #endif
+    , m_calcMgr(nullptr)
 {
     initMetaTypes();
     initFonts();
@@ -115,6 +117,13 @@ void ZenoApplication::initFonts()
 GraphsManagment *ZenoApplication::graphsManagment() const
 {
     return &GraphsManagment::instance();
+}
+
+CalculateMgr* ZenoApplication::calculateMgr()
+{
+    if (m_calcMgr == nullptr)
+        m_calcMgr = new CalculateMgr(this);
+    return m_calcMgr;
 }
 
 QStandardItemModel* ZenoApplication::logModel() const

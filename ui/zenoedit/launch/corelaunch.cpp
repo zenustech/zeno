@@ -14,6 +14,7 @@
 #include "settings/zsettings.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "serialize.h"
+#include "manager/calculatemgr.h"
 #if !defined(ZENO_MULTIPROCESS) || !defined(ZENO_IPC_USE_TCP)
 #include <thread>
 #include <mutex>
@@ -210,6 +211,11 @@ void launchProgramJSON(std::string progJson)
         pServer->startProc(std::move(progJson));
     }
 #else
+    CalculateMgr* pMgr = zenoApp->calculateMgr();
+    QString json = QString::fromStdString(progJson);
+    pMgr->doCalculate(json);
+
+    /*
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
     if (!lck.owns_lock()) {
         zeno::log_debug("background process already running, give up");
@@ -219,6 +225,7 @@ void launchProgramJSON(std::string progJson)
     ProgramRunData::g_state = ProgramRunData::kRunning;
     std::thread thr{ProgramRunData{std::move(progJson)}};
     thr.detach();
+    */
 #endif
 }
 

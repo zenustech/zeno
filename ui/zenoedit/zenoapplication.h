@@ -6,6 +6,7 @@
 #include <zeno/utils/scope_exit.h>
 
 class GraphsManagment;
+class CalculateMgr;
 class ZenoMainWindow;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 class ZTcpServer;
@@ -18,6 +19,7 @@ public:
     ZenoApplication(int &argc, char **argv);
     ~ZenoApplication();
     GraphsManagment *graphsManagment() const;
+    CalculateMgr* calculateMgr();
     void initFonts();
     void initStyleSheets();
     ZenoMainWindow* getMainWindow();
@@ -36,6 +38,7 @@ private:
     ZTcpServer* m_server;
 #endif
     QDir m_appDataPath;
+    CalculateMgr* m_calcMgr;
 };
 
 #define zenoApp (qobject_cast<ZenoApplication*>(QApplication::instance()))
