@@ -169,7 +169,7 @@ void ZenoRemoteServer::FetchDataDiff(const httplib::Request &Req, httplib::Respo
     std::set<std::string> Changes = History.Diff(client_version);
     std::vector<std::string> VChanges;
     VChanges.assign(Changes.begin(), Changes.end());
-    remote::Diff Diff { std::move(VChanges) };
+    remote::Diff Diff { std::move(VChanges), static_cast<int32_t>(History.GetTopIndex()) };
     std::vector<uint8_t> Data = msgpack::pack(Diff);
     Res.set_content(reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
 }
