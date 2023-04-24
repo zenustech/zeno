@@ -540,8 +540,8 @@ struct Mesh{
 
                                     for (auto &ut : udim_texs) {
                                         int width, height, n;
-
-                                        uint8_t *data = stbi_load(ut.second.c_str(), &width, &height, &n, 4);
+                                        std::string native_path = std::filesystem::u8path(ut.second).string();
+                                        uint8_t *data = stbi_load(native_path.c_str(), &width, &height, &n, 4);
                                         zeno::log_info("UDIM: Read Tex {}, {} {} {}", Path(ut.second).filename().string(),
                                                        width, height, n);
                                         if (width != height) {

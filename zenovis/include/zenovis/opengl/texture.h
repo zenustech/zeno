@@ -4,6 +4,7 @@
 #include <stb_image.h>
 #include <zeno/utils/disable_copy.h>
 #include <zenovis/opengl/common.h>
+#include <filesystem>
 
 namespace zenovis::opengl {
 
@@ -45,7 +46,8 @@ struct Texture : zeno::disable_copy {
     void load(const char *path) {
         int nx, ny, nc;
         stbi_set_flip_vertically_on_load(true);
-        unsigned char *img = stbi_load(path, &nx, &ny, &nc, 0);
+        std::string native_path = std::filesystem::u8path(path).string();
+        unsigned char *img = stbi_load(native_path.c_str(), &nx, &ny, &nc, 0);
         int maxSize;
         CHECK_GL(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxSize));
         nx = std::min(std::max(nx, 1), maxSize);

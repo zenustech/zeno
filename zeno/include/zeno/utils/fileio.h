@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cstdio>
 #include <vector>
+#include <filesystem>
 
 namespace zeno {
 
@@ -28,7 +29,8 @@ static bool file_exists(std::string const &path) {
 
 template <class Arr = std::vector<char>>
 static Arr file_get_binary(std::string const &path) {
-  char const *filename = path.c_str();
+  std::string native_path = std::filesystem::u8path(path).string();
+  char const *filename = native_path.c_str();
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
     perror(filename);

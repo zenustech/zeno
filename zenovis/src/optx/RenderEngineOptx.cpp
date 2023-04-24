@@ -449,7 +449,6 @@ struct GraphicsManager {
             }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
                 auto path = prim_in->userData().get2<std::string>("HDRSky");
-                path = std::filesystem::u8path(path).string(); 
                 float evnTexRotation = prim_in->userData().get2<float>("evnTexRotation");
                 zeno::vec3f evnTex3DRotation = prim_in->userData().get2<zeno::vec3f>("evnTex3DRotation");
                 float evnTexStrength = prim_in->userData().get2<float>("evnTexStrength");
@@ -882,7 +881,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     int texid=0;
                     for(auto tex:mtldet->tex2Ds)
                     {
-                        OptixUtil::addTexture(std::filesystem::u8path(tex->path.c_str()).string());
+                        OptixUtil::addTexture(tex->path.c_str());
                         shaderTex.emplace_back(tex->path);
                         texid++;
                     }

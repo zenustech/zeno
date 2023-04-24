@@ -494,7 +494,8 @@ inline std::optional<std::string> sky_tex;
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
-    std::filesystem::file_time_type ftime = std::filesystem::last_write_time(path);
+    std::string native_path = std::filesystem::u8path(path).string();
+    std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
     if(g_tex.count(path) && g_tex_last_write_time[path] == ftime) {
         return;
     }
@@ -505,7 +506,7 @@ inline void addTexture(std::string path)
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
         const char* err;
-        int ret = LoadEXR(&rgba, &nx, &ny, path.c_str(), &err);
+        int ret = LoadEXR(&rgba, &nx, &ny, native_path.c_str(), &err);
         if (ret != 0) {
             zeno::log_error("load exr: {}", err);
             return;
@@ -524,8 +525,8 @@ inline void addTexture(std::string path)
         g_tex[path] = makeCudaTexture(rgba, nx, ny, nc);
         free(rgba);
     }
-    else if (stbi_is_hdr(path.c_str())) {
-        float *img = stbi_loadf(path.c_str(), &nx, &ny, &nc, 0);
+    else if (stbi_is_hdr(native_path.c_str())) {
+        float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading texture failed:{}", path);
             g_tex[path] = std::make_shared<cuTexture>();
@@ -538,7 +539,7 @@ inline void addTexture(std::string path)
         stbi_image_free(img);
     }
     else {
-        unsigned char *img = stbi_load(path.c_str(), &nx, &ny, &nc, 0);
+        unsigned char *img = stbi_load(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
             zeno::log_error("loading hdr texture failed:{}", path);
             g_tex[path] = std::make_shared<cuTexture>();
