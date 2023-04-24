@@ -98,6 +98,18 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->uvs.emplace_back(uv1[i][0], uv1[i][1]);
             prim->uvs.emplace_back(uv2[i][0], uv2[i][1]);
         }
+        // remove duplicate uv index
+        {
+            std::map<std::tuple<float, float>, int> mapping;
+            auto &loopsuv = prim->loops.attr<int>("uvs");
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                vec2f uv = prim->uvs[loopsuv[i]];
+                if (mapping.count({uv[0], uv[1]}) == false) {
+                    mapping[{uv[0], uv[1]}] = loopsuv[i];
+                }
+                loopsuv[i] = mapping[{uv[0], uv[1]}];
+            }
+        }
     }
 
     prim->tris.clear();
