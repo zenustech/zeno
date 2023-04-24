@@ -6,6 +6,12 @@
 #include <set>
 #include <cassert>
 
+#if defined(__clang__) || _MSC_VER >= 1900
+#define CONSTEXPR constexpr
+#else
+#define CONSTEXPR
+#endif
+
 namespace zeno::remote {
 
 struct AnyNumeric {
@@ -149,6 +155,21 @@ struct Dummy {
     void pack(T& pack) {
         pack();
     }
+};
+
+template <typename T>
+struct TGetClassSubjectType {
+    static CONSTEXPR ESubjectType Value = ESubjectType::Invalid;
+};
+
+template <>
+struct TGetClassSubjectType<Mesh> {
+    static CONSTEXPR ESubjectType Value = ESubjectType::Mesh;
+};
+
+template <>
+struct TGetClassSubjectType<HeightField> {
+    static CONSTEXPR ESubjectType Value = ESubjectType::HeightField;
 };
 
 }
