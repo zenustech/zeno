@@ -66,6 +66,7 @@ static EParamType ConvertStringToEParamType(const std::string& str) {
 
 struct Diff {
     std::vector<std::string> data;
+    int32_t CurrentHistory;
 
     template <class T>
     void pack(T& pack) {
