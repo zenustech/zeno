@@ -122,4 +122,33 @@ ZENDEFNODE(ShaderNormalMap, {
     {"shader"},
 });
 
+struct CalcCameraUp : INode {
+    virtual void apply() override {
+        auto refUp = zeno::normalize(get_input2<vec3f>("refUp"));
+        auto pos = get_input2<vec3f>("pos");
+        auto target = get_input2<vec3f>("target");
+        vec3f view = zeno::normalize(target - pos);
+        vec3f right = zeno::cross(view, refUp);
+        vec3f up = zeno::cross(right, view);
+        set_output2("pos", pos);
+        set_output2("up", up);
+        set_output2("view", view);
+    }
+};
+
+ZENDEFNODE(CalcCameraUp, {
+    {
+        {"vec3f", "refUp", "0, 1, 0"},
+        {"vec3f", "pos", "0, 0, 5"},
+        {"vec3f", "target", "0, 0, 0"},
+    },
+    {
+        {"vec3f", "pos"},
+        {"vec3f", "up"},
+        {"vec3f", "view"},
+    },
+    {},
+    {"shader"},
+});
+
 }
