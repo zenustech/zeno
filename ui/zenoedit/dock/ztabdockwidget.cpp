@@ -197,12 +197,13 @@ QString ZTabDockWidget::type2Title(PANEL_TYPE type)
 {
     switch (type)
     {
-    case PANEL_VIEW:        return tr("View");
-    case PANEL_EDITOR:      return tr("Editor");
+    case PANEL_VIEW:        return tr("Scene Viewport");
+    case PANEL_EDITOR:      return tr("Node Editor");
     case PANEL_NODE_PARAMS: return tr("Parameter");
-    case PANEL_NODE_DATA:   return tr("Data");
-    case PANEL_LOG:         return tr("Logger");
+    case PANEL_NODE_DATA:   return tr("Spreadsheet");
+    case PANEL_LOG:         return tr("Log");
     case PANEL_LIGHT:       return tr("Light");
+    case PANEL_IMAGE: return tr("Image");
     default:
         return "";
     }
@@ -214,16 +215,16 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     if (title == tr("Parameter") || title == "Parameter") {
         type = PANEL_NODE_PARAMS;
     }
-    else if (title == tr("View") || title == "View") {
+    else if (title == tr("View") || title == "View" || title == tr("Scene Viewport") || title == "Scene Viewport") {
         type = PANEL_VIEW;
     }
-    else if (title == tr("Editor") || title == "Editor") {
+    else if (title == tr("Editor") || title == "Editor" || title == tr("Node Editor") || title == "Node Editor") {
         type = PANEL_EDITOR;
     }
-    else if (title == tr("Data") || title == "Data") {
+    else if (title == tr("Data") || title == "Data" || title == tr("Spreadsheet") || title == "Spreadsheet") {
         type = PANEL_NODE_DATA;
     }
-    else if (title == tr("Logger") || title == "Logger") {
+    else if (title == tr("Logger") || title == "Logger" || title == tr("Log") || title == "Log") {
         type = PANEL_LOG;
     }
     else if (title == tr("Light")|| title == "Light") {
@@ -477,7 +478,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger"), tr("Light"), tr("Image") };
+    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Light"), tr("Image") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
