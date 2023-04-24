@@ -105,8 +105,8 @@ endmacro()
 ## --- end cihou pyb nowarn
 
 macro (zeno_dbg_msvc project)
-    if (WIN32)
-        target_compile_options(${project} PRIVATE /Zi /Od /Ob0)
+    if (WIN32 AND CMAKE_BUILD_TYPE EQUAL "Release")
+        target_compile_options(${project} PRIVATE /Zi /O2 /Ob2)
         # Tell linker to include symbol data
         set_target_properties(${project} PROPERTIES 
             LINK_FLAGS "/INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF"
