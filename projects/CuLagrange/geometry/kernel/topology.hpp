@@ -10,7 +10,11 @@
 #include "tiled_vector_ops.hpp"
 
 #include "zensim/math/matrix/SparseMatrix.hpp"
+
 #include "zensim/graph/ConnectedComponents.hpp"
+
+#include "zensim/container/Bht.hpp"
+
 
 namespace zeno {
 
@@ -666,8 +670,179 @@ namespace zeno {
 
     }
 
+    template<typename Pol,typename VecTI/*,zs::enable_if_all<VecTI::dim == 1, (VecTI::extent >= 2), (VecTI::etent <= 4)> = 0*/>
+    void topological_incidence_matrix(Pol& pol,
+            int nm_points,
+            const zs::Vector<VecTI>& topos,
+            zs::SparseMatrix<int,true>& spmat) {
+        using namespace zs;
+        using ICoord = zs::vec<int, 2>;
+        constexpr auto CDIM = VecTI::extent;
+        constexpr auto space = Pol::exec_tag::value;
+        constexpr auto execTag = wrapv<space>{};
 
 
+        auto cudaPol = cuda_exec();
+
+        zs::Vector<int> exclusive_offsets{topos.get_allocator(),nm_points + 1};
+        zs::Vector<int> p2ts{topos.get_allocator(),0};
+
+        {
+            zs::Vector<int> cnts{topos.get_allocator(),nm_points};
+            zs::Vector<int> tab_buffer{topos.get_allocator(), topos.size() * CDIM};
+            bht<int,2,int> tab{topos.get_allocator(), topos.size() * CDIM};
+            tab.reset(pol, true);
+
+            cnts.reset(0);
+            pol(zs::range(topos.size()),[
+                topos = proxy<space>(topos),
+                tab = proxy<space>(tab),
+                tab_buffer = proxy<space>(tab_buffer),
+                cnts = proxy<space>(cnts)] ZS_LAMBDA(int ti) mutable {
+                    for(int i = 0;i != CDIM;++i)
+                        if(topos[ti][i] < 0)
+                            break;
+                        else{
+                            int local_offset = atomic_add(execTag,&cnts[topos[ti][i]], (int)1);
+                            if(auto id = tab.insert(ICoord{topos[ti][i],local_offset}); id != bht<int,2,int>::sentinel_v){
+                                tab_buffer[id] = ti;
+                            }
+                        }
+            });
+
+            exclusive_scan(pol,std::begin(cnts),std::end(cnts),std::begin(exclusive_offsets));
+            auto nmPTEntries = exclusive_offsets.getVal(nm_points);
+            p2ts.resize(nmPTEntries);
+
+
+            pol(zs::range(nm_points),[
+                topos = proxy<space>(topos),
+                tab = proxy<space>(tab),
+                cnts = proxy<space>(cnts),
+                p2ts = proxy<space>(p2ts),
+                tab_buffer = proxy<space>(tab_buffer),
+                exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(int pi) mutable {
+                    auto pt_count = cnts[pi];
+                    auto ex_offset = exclusive_offsets[pi];
+                    for(int i = 0;i != pt_count;++i)
+                        if(auto id = tab.query(ICoord{pi,i}); id != bht<int,2,int>::sentinel_v) {
+                            auto ti = tab_buffer[id];
+                            p2ts[ex_offset + i] = ti;
+                        }
+            });
+        }
+
+        zs::Vector<int> is{topos.get_allocator(),topos.size()};
+        zs::Vector<int> js{topos.get_allocator(),topos.size()};
+        cudaPol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
+        auto reserveStorage = [&is, &js](std::size_t n) {
+            auto size = is.size();
+            is.resize(size + n);
+            js.resize(size + n);
+            return size;
+        };
+        // auto tets_entry_offset = reserveStorage(p2ts.size());
+
+        {
+            bool success = false;
+            zs::Vector<int> cnts{topos.get_allocator(),topos.size()};
+
+            // the buffer size might need to be resized
+            bht<int,2,int> tab{topos.get_allocator(),topos.size() * CDIM * 2};
+            zs::Vector<int> tab_buffer{topos.get_allocator(), topos.size() * CDIM * 2};
+
+            cnts.reset(0);
+            pol(range(topos.size()),[
+                topos = proxy<space>(topos),
+                tab = proxy<space>(tab),
+                tab_buffer = proxy<space>(tab_buffer),
+                p2ts = proxy<space>(p2ts),
+                cnts = proxy<space>(cnts),
+                execTag,
+                CDIM,
+                exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(int ti) mutable {
+                    auto topo = topos[ti];
+                    for(int i = 0;i != CDIM;++i){
+                        auto vi = topo[i];
+                        if(vi < 0)
+                            return;
+                        auto ex_offset = exclusive_offsets[vi];
+                        auto nm_nts = exclusive_offsets[vi + 1] - exclusive_offsets[vi];
+                        for(int j = 0;j != nm_nts;++j) {
+                            auto nti = p2ts[ex_offset + j];
+                            if(nti > ti)
+                                continue;
+                            if(auto id = tab.insert(ICoord{ti,atomic_add(execTag,&cnts[ti],(int)1)}); id != bht<int,2,int>::sentinel_v){
+                                tab_buffer[id] = nti;
+                            }
+                        }
+                    }
+            });
+            exclusive_offsets.resize(topos.size() + 1);
+            exclusive_scan(pol,std::begin(cnts),std::end(cnts),std::begin(exclusive_offsets));
+            int nm_topo_incidences = exclusive_offsets.getVal(topos.size());
+            auto topo_conn_entry_offset = reserveStorage(nm_topo_incidences);
+
+            pol(range(topos.size()),[
+                topos = proxy<space>(topos),
+                topo_conn_entry_offset = topo_conn_entry_offset,
+                exclusive_offsets = proxy<space>(exclusive_offsets),
+                tab = proxy<space>(tab),
+                is = proxy<space>(is),
+                js = proxy<space>(js),
+                tab_buffer = proxy<space>(tab_buffer)] ZS_LAMBDA(int ti) mutable {
+                    auto ex_offset = exclusive_offsets[ti];
+                    auto nm_ntopos = exclusive_offsets[ti + 1] - exclusive_offsets[ti];
+                    for(int i = 0;i != nm_ntopos;++i) {
+                        if(auto id = tab.insert(ICoord{ti,i}); id != bht<int,2,int>::sentinel_v){
+                            auto nti = tab_buffer[id];
+                            is[ex_offset + i] = ti;
+                            js[ex_offset + i] = nti;
+                        }                        
+                    }
+            });
+
+
+        }
+
+        spmat = zs::SparseMatrix<int,true>{topos.get_allocator(),(int)topos.size(),(int)topos.size()};
+        spmat.build(pol,(int)nm_points,(int)topos.size(),zs::range(is),zs::range(js)/*,zs::range(rs)*/,zs::false_c);
+        spmat.localOrdering(pol,zs::false_c);
+        spmat._vals.resize(spmat.nnz());
+        spmat._vals.reset((int)1);
+    }
+
+    template<typename Pol,typename VecTI>
+    void topological_coloring(Pol& pol,
+            int nm_points,
+            const zs::Vector<VecTI>& topo,
+            zs::Vector<int>& coloring) {
+        using namespace zs;
+        constexpr auto space = Pol::exec_tag::value;
+
+        coloring.resize(topo.size());
+        zs::SparseMatrix<int,true> pt_incidence{};
+        topo_nodal_incidence_matrix(pol,nm_points,topo,pt_incidence);
+
+        union_find(pol,pt_incidence,range(coloring));
+        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{coloring.get_allocator(),coloring.size()};        
+        pol(range(coloring.size()),[
+            vtab = proxy<space>(vtab),
+            coloring = proxy<space>(coloring)] ZS_LAMBDA(int vi) mutable {
+                auto fa = coloring[vi];
+                while(fa != coloring[fa])
+                    fa = coloring[fa];
+                coloring[vi] = fa;
+                vtab.insert(fa);
+        });     
+
+        pol(range(coloring.size()),[
+            coloring = proxy<space>(coloring),vtab = proxy<space>(vtab)] ZS_LAMBDA(int vi) mutable {
+                auto ancestor = coloring[vi];
+                auto setNo = vtab.query(ancestor);
+                coloring[vi] = setNo;
+        });    
+    }
     // template<typename Pol,typename VecTI,zs::enable_if_all<VecTI::dim == 1, VecTI::extent >= 2, VecTI::etent <= 4> = 0>
     // void surface_topological_coloring(Pol& pol,
     //         const zs::Vector<VecTI>& topo,
