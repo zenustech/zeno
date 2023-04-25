@@ -146,6 +146,54 @@ static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
             break;
     }
 }
+static void sobel(const std::vector<float>& grayImage, int width, int height, std::vector<float>& dx, std::vector<float>& dy)
+{
+    dx.resize(width * height);
+    dy.resize(width * height);
+
+    for (int y = 1; y < height - 1; y++) {
+        for (int x = 1; x < width - 1; x++) {
+            float gx = -grayImage[(y - 1) * width + x - 1] + grayImage[(y - 1) * width + x + 1]
+                       - 2.0f * grayImage[y * width + x - 1] + 2.0f * grayImage[y * width + x + 1]
+                       - grayImage[(y + 1) * width + x - 1] + grayImage[(y + 1) * width + x + 1];
+            float gy = grayImage[(y - 1) * width + x - 1] + 2.0f * grayImage[(y - 1) * width + x] + grayImage[(y - 1) * width + x + 1]
+                       - grayImage[(y + 1) * width + x - 1] - 2.0f * grayImage[(y + 1) * width + x] - grayImage[(y + 1) * width + x + 1];
+
+            dx[y * width + x] = gx;
+            dy[y * width + x] = gy;
+        }
+    }
+}
+// 计算法向量
+static void normalMap(const std::vector<float>& grayImage, int width, int height, std::vector<float>& normal)
+{
+    std::vector<float> dx, dy;
+    sobel(grayImage, width, height, dx, dy);
+
+    normal.resize(width * height * 3);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int i = y * width + x;
+            float gx = dx[i];
+            float gy = dy[i];
+
+            float normalX = -gx;
+            float normalY = -gy;
+            float normalZ = 1.0f;
+
+            float length = sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+            normalX /= length;
+            normalY /= length;
+            normalZ /= length;
+
+            normal[i * 3 + 0] = normalX;
+            normal[i * 3 + 1] = normalY;
+            normal[i * 3 + 2] = normalZ;
+        }
+    }
+}
+
 
 struct Composite: INode {
     virtual void apply() override {
