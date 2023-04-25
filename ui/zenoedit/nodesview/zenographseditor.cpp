@@ -807,10 +807,10 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QVariant varCacheRoot = inst.getValue("zencachedir");
         QVariant varCacheNum = inst.getValue("zencachenum");
 
-        bool bEnableCache = varEnableCache.type() == QVariant::Bool ? varEnableCache.toBool() : false;
-        bool bAutoRemove = varAutoRemove.type() == QVariant::Bool ? varAutoRemove.toBool() : false;
-        QString cacheRootDir = varCacheRoot.type() == QVariant::String ? varCacheRoot.toString() : "";
-        int cacheNum = varCacheNum.type() == QVariant::Int ? varCacheNum.toInt() : 1;
+        bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
+        bool bAutoRemove = varAutoRemove.isValid() ? varAutoRemove.toBool() : false;
+        QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
+        int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
 
         ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
         pathLineEdit->setFixedWidth(256);
