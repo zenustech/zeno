@@ -410,11 +410,11 @@ void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
         //executing zoom
         QVector<qreal> factors = UiHelper::scaleFactors();
         qreal zoomFactor = transform().m11();
-        qreal spread = 0.02;
+        qreal spread = zoomFactor/10;
         if (event->angleDelta().y() > 0)
-            zoomFactor += 0.02;
+            zoomFactor += spread;
         else if (event->angleDelta().y() < 0)
-            zoomFactor -= 0.02;
+            zoomFactor -= spread;
 
        if (zoomFactor < factors.first()) {
             zoomFactor = factors.first();
