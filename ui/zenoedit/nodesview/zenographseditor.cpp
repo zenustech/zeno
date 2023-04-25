@@ -118,7 +118,12 @@ void ZenoGraphsEditor::initSignals()
     connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
     connect(m_ui->searchResView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onSearchItemClicked(const QModelIndex&)));
 
-    ZenoSettingsManager::GetInstance().setValue("zencache-enable", true);
+    auto& inst = ZenoSettingsManager::GetInstance();
+    if (!inst.getValue("zencache-enable").isValid())
+    {
+        ZenoSettingsManager::GetInstance().setValue("zencache-enable", true);
+    }
+
     //m_selection->setCurrentIndex(m_sideBarModel->index(0, 0), QItemSelectionModel::SelectCurrent);
 }
 
@@ -794,10 +799,19 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_ZENCACHE) 
     {
         QSettings settings(zsCompanyName, zsEditor);
-        bool bEnableCache = settings.value("zencache-enable").toBool();
-        bool bAutoRemove = settings.value("zencache-autoremove", true).toBool();
-        QString cacheRootDir = settings.value("zencachedir").toString();
-        int cacheNum = settings.value("zencachenum").toInt() < 1 ? 1 : settings.value("zencachenum").toInt();
+
+        auto &inst = ZenoSettingsManager::GetInstance();
+
+        QVariant varEnableCache = inst.getValue("zencache-enable");
+        QVariant varAutoRemove = inst.getValue("zencache-autoremove");
+        QVariant varCacheRoot = inst.getValue("zencachedir");
+        QVariant varCacheNum = inst.getValue("zencachenum");
+
+        bool bEnableCache = varEnableCache.type() == QVariant::Bool ? varEnableCache.toBool() : false;
+        bool bAutoRemove = varAutoRemove.type() == QVariant::Bool ? varAutoRemove.toBool() : false;
+        QString cacheRootDir = varCacheRoot.type() == QVariant::String ? varCacheRoot.toString() : "";
+        int cacheNum = varCacheNum.type() == QVariant::Int ? varCacheNum.toInt() : 1;
+
         ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
         pathLineEdit->setFixedWidth(256);
         pathLineEdit->setEnabled(!bAutoRemove && bEnableCache);
@@ -810,10 +824,9 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         });
 
         QSpinBox* pSpinBox = new QSpinBox;
-        pSpinBox->setRange(0, 10000);
+        pSpinBox->setRange(1, 10000);
         pSpinBox->setValue(cacheNum);
         pSpinBox->setEnabled(bEnableCache);
-        pSpinBox->setMinimum(1);
 
         QCheckBox *pCheckbox = new QCheckBox;
         pCheckbox->setCheckState(bEnableCache ? Qt::Checked : Qt::Unchecked);
@@ -849,10 +862,10 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         dlg.setLayout(pLayout);
         if (QDialog::Accepted == dlg.exec())
         {
-            settings.setValue("zencache-enable", pCheckbox->checkState() == Qt::Checked);
-            settings.setValue("zencache-autoremove", pAutoDelCache->checkState() == Qt::Checked);
-            settings.setValue("zencachedir", pathLineEdit->text());
-            settings.setValue("zencachenum", pSpinBox->value());
+            inst.setValue("zencache-enable", pCheckbox->checkState() == Qt::Checked);
+            inst.setValue("zencache-autoremove", pAutoDelCache->checkState() == Qt::Checked);
+            inst.setValue("zencachedir", pathLineEdit->text());
+            inst.setValue("zencachenum", pSpinBox->value());
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_ZOOM) 

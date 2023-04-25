@@ -1620,7 +1620,7 @@ void UiHelper::getAllParamsIndex(
 
 QVector<qreal> UiHelper::scaleFactors()
 {
-    static QVector<qreal> lst({0.05, .1, .15, .2, .25, .5, .75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0});
+    static QVector<qreal> lst({0.01, 0.025, 0.05, .1, .15, .2, .25, .5, .75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0});
     return lst;
 }
 
