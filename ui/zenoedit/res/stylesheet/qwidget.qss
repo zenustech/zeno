@@ -160,7 +160,7 @@ QTreeView QLineEdit, QListWidget QLineEdit
 
 QTreeView::item, QListWidget::item
 {
-	min-height:16px;
+	height:20px;
 	border:1px solid transparent;
 }
 
