@@ -52,6 +52,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_outputsLayout(nullptr)
     , m_groupNode(nullptr)
     , m_pStatusWidgets(nullptr)
+    , m_bVisible(true)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -170,6 +171,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     m_border->hide();
 
     m_bUIInited = true;
+    onZoomed();
 }
 
 ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
@@ -1135,6 +1137,30 @@ bool ZenoNode::isMoving() {
 void ZenoNode::onZoomed()
 {
     m_pStatusWidgets->onZoomed();
+    bool bVisible = true;
+    if (editor_factor < 0.3) {
+        bVisible = false;
+    }
+    if (m_bVisible != bVisible) {
+        m_bVisible = bVisible;
+        if (m_NameItem) {
+            setToolTip(bVisible ? "" : m_NameItem->text());
+        }
+        for (auto item : m_inSockets) 
+        {
+            item->setVisible(bVisible);
+        }
+        for (auto item : m_outSockets) 
+        {
+            item->setVisible(bVisible);
+        }
+        for (auto it = m_params.begin(); it != m_params.end(); it++) {
+            if (it->second.param_control)
+                it->second.param_control->setVisible(bVisible);
+            if (it->second.param_name)
+                it->second.param_name->setVisible(bVisible);
+        }
+    }
     if (m_bodyWidget)
         m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 }

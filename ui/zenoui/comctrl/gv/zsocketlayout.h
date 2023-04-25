@@ -31,6 +31,7 @@ public:
     virtual ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const;
     virtual QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist);
     QPersistentModelIndex viewSocketIdx() const;
+    virtual void setVisible(bool bVisible);
 
 protected:
     ZenoSocketItem* m_socket;
@@ -54,6 +55,7 @@ public:
     ZenoSocketItem* socketItemByIdx(const QModelIndex& sockIdx) const override;
     QPointF getSocketPos(const QModelIndex& sockIdx, bool& exist) override;
     void setCollasped(bool bCollasped);
+    void setVisible(bool bVisible);
 
 private:
     ZDictPanel* m_panel;
@@ -68,6 +70,7 @@ class ZGroupSocketLayout : public ZSocketLayout {
     ZenoSocketItem *socketItemByIdx(const QModelIndex &sockIdx) const override;
     QPointF getSocketPos(const QModelIndex &sockIdx, bool &exist) override;
     void updateSockName(const QString &name) override;
+    void setVisible(bool bVisible);
 
   private:
     ZenoParamGroupLine *m_pGroupLine;

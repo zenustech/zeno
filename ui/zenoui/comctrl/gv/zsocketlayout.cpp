@@ -141,6 +141,16 @@ QPersistentModelIndex ZSocketLayout::viewSocketIdx() const
     return m_viewSockIdx;
 }
 
+void ZSocketLayout::setVisible(bool bVisible) 
+{
+    if (m_socket->sockStatus() != ZenoSocketItem::STATUS_CONNECTED && m_control) {
+        m_control->setVisible(bVisible);
+    }
+    if (m_text) {
+        m_text->setVisible(bVisible);
+    }
+}
+
 void ZSocketLayout::updateSockName(const QString& name)
 {
     if (m_bEditable)
@@ -250,6 +260,18 @@ void ZDictSocketLayout::setCollasped(bool bCollasped)
     m_collaspeBtn->toggle(!bCollasped);
 }
 
+void ZDictSocketLayout::setVisible(bool bVisible) 
+{
+    m_text->setVisible(bVisible);
+    m_collaspeBtn->setVisible(bVisible);
+    QAbstractItemModel *dictkeyModel = QVariantPtr<QAbstractItemModel>::asPtr(m_viewSockIdx.data(ROLE_VPARAM_LINK_MODEL));
+    ZASSERT_EXIT(dictkeyModel);
+    bool bCollasped = dictkeyModel->data(QModelIndex(), ROLE_COLLASPED).toBool();
+    if (!bCollasped) {
+        m_panel->setVisible(bVisible);
+    }
+}
+
 ZenoSocketItem* ZDictSocketLayout::socketItemByIdx(const QModelIndex& sockIdx) const
 {
     // dict/list socket match?
@@ -319,4 +341,9 @@ QPointF ZGroupSocketLayout::getSocketPos(const QModelIndex &sockIdx, bool &exist
 void ZGroupSocketLayout::updateSockName(const QString &name) 
 {
     m_pGroupLine->setText(name);
+}
+
+void ZGroupSocketLayout::setVisible(bool bVisible) 
+{
+    m_pGroupLine->setVisible(bVisible);
 }

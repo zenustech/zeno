@@ -158,6 +158,7 @@ private:
     // it's convenient to view all nodes in big scale picture, but it also brings some problem.
     static const bool bEnableZoomPreview = false;
     GroupNode *m_groupNode;
+    bool m_bVisible;
 };
 
 #endif
