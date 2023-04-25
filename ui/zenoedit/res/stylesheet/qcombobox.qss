@@ -66,11 +66,11 @@ QComboBox QAbstractItemView::item:selected {
 
 
 ZComboBox::down-arrow {
-    image: url();
+    image: url(:/);
 	width: 16px;
 	height: 16px;
 }
 
 ZComboBox::down-arrow:on, ZComboBox::down-arrow:hover {
-    image: url();
+    image: url(:/);
 }
