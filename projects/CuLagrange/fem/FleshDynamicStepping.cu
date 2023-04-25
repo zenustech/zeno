@@ -498,7 +498,7 @@ struct FleshDynamicStepping : INode {
                             const std::string& planeConsIDTag,
                             dtiles_t& nodal_gh_buffer,
                             dtiles_t& tris_gh_buffer,
-                            T cnorm) {
+                            T cnorm,bool use_sticky_condition) {
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
 
@@ -511,6 +511,7 @@ struct FleshDynamicStepping : INode {
                     planeConsIDTag = zs::SmallString(planeConsIDTag),
                     kine_out_collisionEps = kine_out_collisionEps,
                     plane_constraint_stiffness = plane_constraint_stiffness,
+                    use_sticky_condition = use_sticky_condition,
                     nodal_gh_buffer = proxy<space>({},nodal_gh_buffer)] ZS_LAMBDA(int vi) mutable {
                 auto idx = reinterpret_bits<int>(verts(planeConsIDTag,vi));
                 if(idx < 0)
@@ -520,14 +521,7 @@ struct FleshDynamicStepping : INode {
                 auto is_inverted_vert = vtemp("is_inverted",vi) > (T)0.5;
                 if(is_inverted_vert)
                     return;
-                // auto bary = verts.pack(dim_c<3>,planeConsBaryTag,vi);
-                // auto plane_root = vec3::zeros();
-                // for(int i = 0;i != 3;++i)
-                //     plane_root += kverts.pack(dim_c<3>,"x",ktri[i]) * bary[i];
-                // auto plane_nrm = vec3::zeros();
-                // for(int i = 0;i != 3;++i)
-                //     plane_nrm += kverts.pack(dim_c<3>,"nrm",ktri[i]) * bary[i];
-                // plane_nrm /= (plane_nrm.norm() + 1e-6);    
+
 
 
                 auto plane_root = kverts.pack(dim_c<3>,"x",ktri[0]);
@@ -543,7 +537,7 @@ struct FleshDynamicStepping : INode {
                 auto fc = vec3::zeros();
                 auto Hc = mat3::zeros();
                 auto dist = seg.dot(plane_nrm) - eps;
-                if(dist < (T)0){
+                if(dist < (T)0 || use_sticky_condition){
                     fc = -dist * mu * plane_constraint_stiffness * plane_nrm;
                     Hc = mu * plane_constraint_stiffness * dyadic_prod(plane_nrm,plane_nrm);
                 }
@@ -568,6 +562,7 @@ struct FleshDynamicStepping : INode {
                     kine_out_collisionEps = kine_out_collisionEps,
                     kine_in_collisionEps = kine_in_collisionEps,
                     plane_constraint_stiffness = plane_constraint_stiffness,
+                    use_sticky_condition = use_sticky_condition,
                     tris_gh_buffer = proxy<space>({},tris_gh_buffer)] ZS_LAMBDA(int ti) mutable {
                 auto kp_idx = reinterpret_bits<int>(tris(planeConsIDTag,ti));
                 if(kp_idx < 0)
@@ -597,13 +592,13 @@ struct FleshDynamicStepping : INode {
                 e[2] = vs[1] - vs[2];
 
                 auto n = e[2].cross(e[0]);
-                if(n.norm() < 1e-4)
-                    return;
+                // if(n.norm() < 1e-4)
+                //     return;
                 n = n/(n.norm() + 1e-6);
 
                 T springLength = e[1].dot(n) - eps;
                 auto gvf = zs::vec<T,9>::zeros();
-                if(springLength < (T)0){
+                if(springLength < (T)0 || use_sticky_condition){
                     auto gvf_v12 = COLLISION_UTILS::springLengthGradient(vs,e,n);
                     if(isnan(gvf_v12.norm()))
                         printf("nan gvf detected at %d %f %f\n",ti,gvf_v12.norm(),n.norm());
@@ -1665,6 +1660,8 @@ struct FleshDynamicStepping : INode {
 
         auto cnorm = compute_average_edge_length(cudaPol,kverts,"x",ktris);
 
+        auto use_sticky_condition = get_input2<bool>("use_sticky_condition");
+
         while(nm_iters < max_newton_iterations) {
             // break;
             T e0 = (T)0;
@@ -1718,7 +1715,7 @@ struct FleshDynamicStepping : INode {
                     planeConsBaryTag,
                     planeConsIDTag,
                     vtemp,
-                    sttemp,cnorm);
+                    sttemp,cnorm,use_sticky_condition);
             }
             else{
                 std::cout << "apply no plane constraint : " << 
@@ -1916,7 +1913,8 @@ ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","kinematic_boundary",
                                     {"float","binderStiffness","1.0"},
                                     {"float","planeConsStiffness","0.01"},
                                     {"int","use_plane_constraint","0"},
-                                    {"int","use_self_collision","0"}
+                                    {"int","use_self_collision","0"},
+                                    {"bool","use_sticky_condition","0"}
                                     },
                                   {"ZSParticles"},
                                   {
