@@ -12,6 +12,7 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {

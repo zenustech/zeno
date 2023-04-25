@@ -1,5 +1,6 @@
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
+#include "cameracontrol.h"
 #include "../zenomainwindow.h"
 #include "../launch/corelaunch.h"
 #include "../timeline/ztimeline.h"

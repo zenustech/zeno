@@ -3,6 +3,7 @@
 #include <zenomodel/include/modelrole.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "zeno/utils/log.h"

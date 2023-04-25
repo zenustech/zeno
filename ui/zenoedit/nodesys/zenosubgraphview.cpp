@@ -13,10 +13,12 @@
 #include <zeno/utils/cppdemangle.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "util/log.h"
 #include <zenomodel/include/uihelper.h>
 #include "settings/zenosettingsmanager.h"
 #include "groupnode.h"
+#include "viewport/cameracontrol.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)

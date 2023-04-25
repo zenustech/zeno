@@ -12,6 +12,7 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 
 
 int ZLightsModel::rowCount(const QModelIndex &parent) const {

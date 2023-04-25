@@ -6,6 +6,8 @@
 #include "common_def.h"
 #include "../startup/zstartup.h"
 #include "variantptr.h"
+#include "viewport/displaywidget.h"
+
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
 {

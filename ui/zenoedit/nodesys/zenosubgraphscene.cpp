@@ -28,6 +28,7 @@
 #include "nodesys/groupnode.h"
 #include <zenoui/style/zenostyle.h>
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "zenomainwindow.h"
 #include <zenovis/ObjectsManager.h>
 #include <viewportinteraction/picker.h>

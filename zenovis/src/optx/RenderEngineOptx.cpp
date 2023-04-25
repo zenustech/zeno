@@ -556,7 +556,9 @@ struct GraphicsManager {
 
 struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     std::unique_ptr<GraphicsManager> graphicsMan;
+#ifdef OPTIX_BASE_GL
     std::unique_ptr<opengl::VAO> vao;
+#endif
     Scene *scene;
 
 
@@ -575,11 +577,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     explicit RenderEngineOptx(Scene *scene_) : scene(scene_) {
         zeno::log_info("OptiX Render Engine started...");
+#ifdef OPTIX_BASE_GL
         auto guard = setupState();
+#endif
 
         graphicsMan = std::make_unique<GraphicsManager>(scene);
 
+#ifdef OPTIX_BASE_GL
         vao = std::make_unique<opengl::VAO>();
+#endif
 
         char *argv[] = {nullptr};
         xinxinoptix::optixinit(std::size(argv), argv);
@@ -685,7 +691,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
     void draw() override {
         //std::cout<<"in draw()"<<std::endl;
+#ifdef OPTIX_BASE_GL
         auto guard = setupState();
+#endif
         auto const &cam = *scene->camera;
         auto const &opt = *scene->drawOptions;
 
@@ -921,6 +929,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             staticNeedUpdate = false;
         }
 
+#ifdef OPTIX_BASE_GL
         int targetFBO = 0;
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {
@@ -928,6 +937,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
+#else
+        xinxinoptix::optixrender(0, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
+#endif
     }
 
     ~RenderEngineOptx() override {

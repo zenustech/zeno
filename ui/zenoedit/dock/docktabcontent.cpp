@@ -10,6 +10,7 @@
 #include <zenoedit/panel/zenoimagepanel.h>
 #include "nodesview/zenographseditor.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>

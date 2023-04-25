@@ -33,6 +33,7 @@
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
 #include "viewport/recordvideomgr.h"
+#include "viewport/displaywidget.h"
 #include "ui_zenomainwindow.h"
 #include <QJsonDocument>
 #include "dialog/zdocklayoutmangedlg.h"

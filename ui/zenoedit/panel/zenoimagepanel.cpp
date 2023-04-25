@@ -15,6 +15,7 @@
 #include "zassert.h"
 #include "viewport/viewportwidget.h"
 #include "zenomainwindow.h"
+#include "viewport/displaywidget.h"
 
 
 const float ziv_wheelZoomFactor = 1.25;

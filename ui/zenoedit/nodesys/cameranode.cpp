@@ -7,7 +7,7 @@
 #include "viewport/viewportwidget.h"
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "viewport/displaywidget.h"
 #include <viewport/zenovis.h>
 #include "zenovis/Session.h"
 #include <zeno/core/Session.h>

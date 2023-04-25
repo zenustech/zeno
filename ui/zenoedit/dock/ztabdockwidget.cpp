@@ -7,6 +7,7 @@
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "nodesview/zenographseditor.h"
 #include <zenoui/comctrl/zlabel.h>
 #include "zenomainwindow.h"
@@ -19,6 +20,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
+#include "viewport/optixviewport.h"
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
@@ -189,6 +191,11 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
             wid->initUI();
             return wid;
         }
+        case PANEL_OPTIX_VIEW:
+        {
+            ZOptixViewport *pView = new ZOptixViewport;
+            return pView;
+        }
     }
     return nullptr;
 }
@@ -231,6 +238,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     }
     else if (title == tr("Image")|| title == "Image") {
         type = PANEL_IMAGE;
+    }
+    else if (title == tr("Optix")) {
+        type = PANEL_OPTIX_VIEW;
     }
     return type;
 }
@@ -477,7 +487,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger"), tr("Light"), tr("Image") };
+    static QList<QString> panels = { tr("Parameter"), tr("View"), tr("Editor"), tr("Data"), tr("Logger"), tr("Light"), tr("Image"), tr("Optix") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -495,6 +505,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 4: m_debugPanel = PANEL_LOG; break;
                 case 5: m_debugPanel = PANEL_LIGHT; break;
                 case 6: m_debugPanel = PANEL_IMAGE; break;
+                case 7: m_debugPanel = PANEL_OPTIX_VIEW; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }

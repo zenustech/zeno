@@ -3,8 +3,6 @@
 
 #include <QtWidgets>
 #include <QtOpenGL>
-#include "comctrl/zmenubar.h"
-#include "comctrl/zmenu.h"
 #include "common.h"
 #include "recordvideomgr.h"
 
@@ -16,52 +14,7 @@ class ZenoMainWindow;
 class Zenovis;
 class ViewportWidget;
 class Picker;
-
-class CameraControl : public QObject
-{
-    Q_OBJECT
-public:
-    CameraControl(ViewportWidget* parent = nullptr);
-    void setRes(QVector2D res);
-    QVector2D res() const { return m_res; }
-    void setAperture(float aperture);
-    void setDisPlane(float disPlane);
-    void updatePerspective();
-    void setKeyFrame();
-
-    void fakeMousePressEvent(QMouseEvent* event);
-    void fakeMouseReleaseEvent(QMouseEvent* event);
-    void fakeMouseMoveEvent(QMouseEvent* event);
-    void fakeWheelEvent(QWheelEvent* event);
-     void fakeMouseDoubleClickEvent(QMouseEvent* event);
-    void focus(QVector3D center, float radius);
-    QVector3D realPos() const;
-    QVector3D screenToWorldRay(float x, float y) const;
-    QVariant hitOnFloor(float x, float y) const;
-    void lookTo(int dir);
-    void clearTransformer();
-    void changeTransformOperation(const QString& node);
-    void changeTransformOperation(int mode);
-    void changeTransformCoordSys();
-    void resizeTransformHandler(int dir);
-
-private:
-    ViewportWidget* getViewport() const;
-
-    bool m_mmb_pressed;
-    float m_theta;
-    float m_phi;
-    QPointF m_lastPos;
-    QPoint m_boundRectStartPos;
-    QVector3D  m_center;
-    bool m_ortho_mode;
-    float m_fov;
-    float m_radius;
-    float m_aperture;
-    float m_focalPlaneDistance;
-    QVector2D m_res;
-    QSet<int> m_pressedKeys;
-};
+class CameraControl;
 
 class ViewportWidget : public QGLWidget
 {
@@ -122,52 +75,6 @@ public:
     int simpleRenderTime;
     bool updateLightOnce;
     bool m_bMovingCamera;
-};
-
-class CameraKeyframeWidget;
-
-class DisplayWidget : public QWidget
-{
-    Q_OBJECT
-public:
-    DisplayWidget(QWidget* parent = nullptr);
-    ~DisplayWidget();
-    void init();
-    QSize sizeHint() const override;
-    ViewportWidget* getViewportWidget();
-    void runAndRecord(const VideoRecInfo& info);
-    void testCleanUp();
-    void beforeRun();
-    void afterRun();
-
-public slots:
-    void updateFrame(const QString& action = "");
-    void onRun();
-    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false);
-    void onRecord();
-    void onScreenShoot();
-    void onKill();
-    void onPlayClicked(bool);
-    void onSliderValueChanged(int);
-    void onFinished();
-    void onCommandDispatched(int actionType, bool bTriggered);
-    void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
-
-signals:
-    void frameUpdated(int new_frame);
-
-private:
-    bool isOptxRendering() const;
-    void initRecordMgr();
-    void moveToFrame(int frame);
-
-    ViewportWidget* m_view;
-    CameraKeyframeWidget* m_camera_keyframe;
-    QTimer* m_pTimer;
-    RecordVideoMgr m_recordMgr;
-    bool m_bRecordRun;
-    static const int m_updateFeq = 16;
-    static const int m_sliderFeq = 16;
 };
 
 #endif

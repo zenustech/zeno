@@ -1,6 +1,7 @@
 #include "recordvideomgr.h"
 #include <viewport/zenovis.h>
-#include <viewport/viewportwidget.h>
+#include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include <zenovis/DrawOptions.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/log.h>
@@ -9,6 +10,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenoedit/zenomainwindow.h>
+
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
     : QObject(parent)
