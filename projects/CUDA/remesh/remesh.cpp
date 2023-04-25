@@ -228,9 +228,20 @@ struct AdaptiveRemeshing : INode {
             vduplicate[i] = i;
         }
 
+        std::set<std::pair<int, int>> marked_lines{};
+#if 1
+        if (has_input("marked_lines")) {
+            const auto &markedLines = get_input<PrimitiveObject>("marked_lines")->lines.values;
+            for (vec2i line : markedLines) {
+                marked_lines.insert(std::make_pair(line[0], line[1]));
+            }
+        }
+        auto &lines = prim->lines;
+        lines.clear();
+        elocked.clear();
+#else
         // if there exist marked lines
         auto &lines = prim->lines;
-        std::set<std::pair<int, int>> marked_lines{};
         if (lines.size() > 0) {
             int siz = lines.size();
             for (int i = 0; i < siz; ++i) {
@@ -241,6 +252,7 @@ struct AdaptiveRemeshing : INode {
             lines.clear();
             elocked.clear();
         }
+#endif
 
         // handle non-manifold edges
         std::map<std::pair<int, int>, int> lines_map{};
@@ -355,7 +367,8 @@ ZENO_DEFNODE(AdaptiveRemeshing)
      {"float", "max_length", "0"},
      {"float", "min_length", "0"},
      {"float", "approximation_tolerance", "0"},
-     {"string", "line_pick_tag", "line_selected"}},
+     {"string", "line_pick_tag", "line_selected"},
+     {"marked_lines"}},
     {"prim"},
     {},
     {"primitive"},
