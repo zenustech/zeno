@@ -2,6 +2,8 @@
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
+#include "zeno/types/PrimitiveObject.h"
+#include "zeno/types/UserData.h"
 
 namespace zeno {
 
@@ -122,4 +124,26 @@ ZENDEFNODE(ShaderNormalMap, {
     {"shader"},
 });
 
+
+struct SetPrimInvisible : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        int invisible = get_input2<int>("invisible");
+        prim->userData().set2("invisible", invisible);
+
+        set_output("out", std::move(prim));
+    }
+};
+
+ZENDEFNODE(SetPrimInvisible, {
+    {
+        { "prim" },
+        { "bool", "invisible", "1" },
+    },
+    {
+        { "out" },
+    },
+    {},
+    { "shader" },
+});
 }
