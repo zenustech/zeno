@@ -4,23 +4,34 @@
 #include <QtWidgets>
 #include "common.h"
 #include "recordvideomgr.h"
+#include "viewportinteraction/picker.h"
 
 class ViewportWidget;
+class ZOptixViewport;
 class CameraKeyframeWidget;
 
 class DisplayWidget : public QWidget
 {
     Q_OBJECT
 public:
-    DisplayWidget(QWidget* parent = nullptr);
+    DisplayWidget(bool bGLView, QWidget* parent = nullptr);
     ~DisplayWidget();
     void init();
     QSize sizeHint() const override;
-    ViewportWidget* getViewportWidget();
+    Zenovis* getZenoVis() const;
     void runAndRecord(const VideoRecInfo& info);
     void testCleanUp();
     void beforeRun();
     void afterRun();
+    void changeTransformOperation(const QString &node);
+    void changeTransformOperation(int mode);
+    QSize viewportSize() const;
+    void resizeViewport(QSize sz);
+    std::shared_ptr<zeno::Picker> picker() const;
+    void updateCameraProp(float aperture, float disPlane);
+    void setSimpleRenderOption();
+    bool isCameraMoving() const;
+    bool isPlaying() const;
 
 public slots:
     void updateFrame(const QString& action = "");
@@ -43,12 +54,13 @@ private:
     void initRecordMgr();
     void moveToFrame(int frame);
 
-    ViewportWidget* m_view;
+    ViewportWidget* m_glView;
+    ZOptixViewport* m_optixView;
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
     RecordVideoMgr m_recordMgr;
     bool m_bRecordRun;
-    static const int m_updateFeq = 16;
+    const bool m_bGLView;
     static const int m_sliderFeq = 16;
 };
 

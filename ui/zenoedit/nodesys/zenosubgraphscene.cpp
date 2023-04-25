@@ -926,13 +926,13 @@ void ZenoSubGraphScene::selectObjViaNodes() {
     QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
     for (auto pDisplay : views) {
         ZASSERT_EXIT(pDisplay);
-        ViewportWidget *pViewport = pDisplay->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-        auto scene = pViewport->getSession()->get_scene();
+        auto pZenovis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
         ZASSERT_EXIT(scene);
 
-        QList<QGraphicsItem *> selItems = this->selectedItems();
-        auto picker = pViewport->picker();
+        QList<QGraphicsItem*> selItems = this->selectedItems();
+        auto picker = pDisplay->picker();
         ZASSERT_EXIT(picker);
         picker->clear();
         for (auto item : selItems) {

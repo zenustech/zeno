@@ -57,8 +57,8 @@ void ZTimeline::initSignals()
     connect(m_ui->editSR, &QLineEdit::editingFinished, this, [=]() {
         auto srTime = std::abs(m_ui->editSR->text().toInt());  // Avoid negative
         //std::cout << "SR: SimpleRender " << srTime << "\n";
-        auto viewport = zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget();
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        Zenovis* pZenovis = views[0]->getZenoVis();
+        auto scene = pZenovis->get_scene();
         viewport->simpleRenderTime = srTime;
         if(srTime == 0){
             scene->drawOptions->simpleRender = false;

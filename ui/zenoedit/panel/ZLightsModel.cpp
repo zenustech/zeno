@@ -40,10 +40,10 @@ void ZLightsModel::updateByObjectsMan() {
     {
         DisplayWidget* pWid = views[0];
         ZERROR_EXIT(pWid);
-        ViewportWidget* pViewport = pWid->getViewportWidget();
-        ZERROR_EXIT(pViewport);
+        auto* pZenovis = pWid->getZenoVis();
+        ZERROR_EXIT(pZenovis);
 
-        auto session = pViewport->getSession();
+        auto session = pZenovis->getSession();
         ZERROR_EXIT(session);
 
         auto scene = session->get_scene();

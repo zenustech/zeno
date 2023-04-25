@@ -18,10 +18,13 @@ signals:
 
 public slots:
     void work();
+    void needUpdateCamera();
+    void updateFrame();
 
 private:
     Zenovis *m_zenoVis;
     QImage m_renderImg;
+    QTimer* m_pTimer;
 };
 
 class ZOptixViewport : public QWidget
@@ -33,6 +36,13 @@ public:
     ~ZOptixViewport();
     void setSimpleRenderOption();
     void cameraLookTo(int dir);
+    void updateCameraProp(float aperture, float disPlane);
+    Zenovis* getZenoVis() const;
+    bool isCameraMoving() const;
+    void updateCamera();
+
+signals:
+    void cameraAboutToRefresh();
 
 protected:
     void paintEvent(QPaintEvent* event) override;

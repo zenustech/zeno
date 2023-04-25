@@ -62,9 +62,9 @@ void CameraNode::onEditClicked()
     for (auto pDisplay : views)
     {
         ZASSERT_EXIT(pDisplay);
-        ViewportWidget* pViewport = pDisplay->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-        auto sess = pViewport->getSession();
+        auto pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto sess = pZenoVis->getSession();
         ZASSERT_EXIT(sess);
 
         auto scene = sess->get_scene();
@@ -170,10 +170,10 @@ void LightNode::onEditClicked(){
     if (views.isEmpty())
         return;
 
-    Zenovis* pZenovis = views[0]->getViewportWidget()->getZenoVis();
-    ZASSERT_EXIT(pZenovis);
+    auto pZenoVis = views[0]->getZenoVis();
+    ZASSERT_EXIT(pZenoVis);
 
-    auto sess = pZenovis->getSession();
+    auto sess = pZenoVis->getSession();
     ZASSERT_EXIT(sess);
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);

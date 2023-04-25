@@ -17,6 +17,7 @@ struct DrawOptions {
     bool normal_check = false;
     bool simpleRender = false;
     bool needRefresh = false;
+    bool needUpdateGeo = false;
     int num_samples = 1;
     int msaa_samples = 0;
 

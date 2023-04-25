@@ -99,7 +99,7 @@ void ViewportWidget::setSimpleRenderOption() {
 
 ViewportWidget::~ViewportWidget()
 {
-    testCleanUp();
+    //testCleanUp();
     delete m_pauseRenderDally;
     delete m_wheelEventDally;
 }

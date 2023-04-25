@@ -88,7 +88,7 @@ void ZenoImagePanel::setPrim(std::string primid) {
     QVector<DisplayWidget*> wids = mainWin->viewports();
     if (!wids.isEmpty())
     {
-        auto session = wids[0]->getViewportWidget()->getSession();
+        auto session = wids[0]->getZenoVis()->getSession();
         ZASSERT_EXIT(session);
         scene = session->get_scene();
     }
@@ -182,13 +182,13 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     if (wids.isEmpty())
         return;
 
-    Zenovis* zenovis = wids[0]->getViewportWidget()->getZenoVis();
+    Zenovis* zenovis = wids[0]->getZenoVis();
     if (!zenovis)
         return;
 
     connect(zenovis, &Zenovis::objectsUpdated, this, [=](int frame) {
         std::string prim_name = pPrimName->text().toStdString();
-        Zenovis* zenovis = wids[0]->getViewportWidget()->getZenoVis();
+        Zenovis* zenovis = wids[0]->getZenoVis();
         ZASSERT_EXIT(zenovis);
         auto session = zenovis->getSession();
         ZASSERT_EXIT(session);

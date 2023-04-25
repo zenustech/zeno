@@ -12,10 +12,25 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     : QObject(nullptr)
     , m_zenoVis(pzenoVis)
 {
+    m_pTimer = new QTimer(this);
+    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+}
+
+void OptixWorker::updateFrame()
+{
+    m_zenoVis->paintGL();
+    int w, h;
+    void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
+
+    m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
+    m_renderImg = m_renderImg.mirrored(false, true);
+    emit renderIterate(m_renderImg);
 }
 
 void OptixWorker::work()
 {
+    m_pTimer->start(16);
+    /*
     while (true)
     {
         m_zenoVis->paintGL();
@@ -26,11 +41,20 @@ void OptixWorker::work()
         m_renderImg = m_renderImg.mirrored(false, true);
         emit renderIterate(m_renderImg);
     }
+    */
 }
 
 QImage OptixWorker::renderImage() const
 {
     return m_renderImg;
+}
+
+void OptixWorker::needUpdateCamera()
+{
+    //todo: update reason.
+    m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
+    m_zenoVis->getSession()->get_scene()->drawOptions->needUpdateGeo = true;
+    m_pTimer->start();
 }
 
 
@@ -76,6 +100,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         m_renderImage = img;
         update();
     });
+    connect(this, &ZOptixViewport::cameraAboutToRefresh, worker, &OptixWorker::needUpdateCamera);
 
     m_thdOptix.start();
 }
@@ -93,6 +118,28 @@ void ZOptixViewport::setSimpleRenderOption()
 void ZOptixViewport::cameraLookTo(int dir)
 {
     m_camera->lookTo(dir);
+}
+
+Zenovis* ZOptixViewport::getZenoVis() const
+{
+    return m_zenovis;
+}
+
+bool ZOptixViewport::isCameraMoving() const
+{
+    return m_bMovingCamera;
+}
+
+void ZOptixViewport::updateCamera()
+{
+    emit cameraAboutToRefresh();
+}
+
+void ZOptixViewport::updateCameraProp(float aperture, float disPlane)
+{
+    m_camera->setAperture(aperture);
+    m_camera->setDisPlane(disPlane);
+    m_camera->updatePerspective();
 }
 
 void ZOptixViewport::resizeEvent(QResizeEvent* event)

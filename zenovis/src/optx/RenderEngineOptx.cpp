@@ -604,7 +604,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
             staticNeedUpdate = true;
         }
-        if (graphicsMan->load_objects(scene->objectsMan->pairs())) {
+        if (graphicsMan->load_objects(scene->objectsMan->pairs()) || 
+            scene->drawOptions->needUpdateGeo)
+        {
             meshNeedUpdate = matNeedUpdate = true;
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
@@ -715,6 +717,9 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if(scene->drawOptions->needRefresh){
             camNeedUpdate = true;
             scene->drawOptions->needRefresh = false;
+        }
+        if (scene->drawOptions->needUpdateGeo) {
+            scene->drawOptions->needUpdateGeo = false;
         }
 
         //std::cout << "Render Options: SimpleRender " << scene->drawOptions->simpleRender

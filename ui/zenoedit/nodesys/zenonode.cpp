@@ -515,7 +515,8 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
                 {
                     QGraphicsItem* pNewControl = initSocketWidget(pScene, pItem->index());
                     pControlLayout->setControl(pNewControl);
-                    pNewControl->setVisible(pControlLayout->socketItem()->sockStatus() != ZenoSocketItem::STATUS_CONNECTED);
+                    if (pNewControl)
+                        pNewControl->setVisible(pControlLayout->socketItem()->sockStatus() != ZenoSocketItem::STATUS_CONNECTED);
                     pControl = pNewControl;
                     updateWhole();
                 }
@@ -1243,9 +1244,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
             for (auto pDisplay : views)
             {
                 ZASSERT_EXIT(pDisplay);
-                auto viewport = pDisplay->getViewportWidget();
-                if (viewport)
-                    viewport->changeTransformOperation(nodeId());
+                pDisplay->changeTransformOperation(nodeId());
             }
         }
     }

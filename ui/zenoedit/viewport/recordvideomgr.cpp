@@ -27,9 +27,7 @@ Zenovis* RecordVideoMgr::getZenovis()
 {
     DisplayWidget* pWid =  qobject_cast<DisplayWidget *>(parent());
     ZASSERT_EXIT(pWid, nullptr);
-    ViewportWidget* viewport = pWid->getViewportWidget();
-    ZASSERT_EXIT(viewport, nullptr);
-    return viewport->getZenoVis();
+    return pWid->getZenoVis();
 }
 
 void RecordVideoMgr::cancelRecord()

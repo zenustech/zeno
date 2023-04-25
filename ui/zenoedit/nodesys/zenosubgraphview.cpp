@@ -180,9 +180,7 @@ void _ZenoSubGraphView::cameraFocus()
         for (auto pDisplay : views)
         {
             ZASSERT_EXIT(pDisplay);
-            ViewportWidget *pViewport = pDisplay->getViewportWidget();
-            ZASSERT_EXIT(pViewport);
-            auto pZenovis = pViewport->getZenoVis();
+            auto pZenovis = pDisplay->getZenoVis();
             ZASSERT_EXIT(pZenovis);
 
             bool found = pZenovis->getSession()->focus_on_node(nodeId.toStdString(), center, radius);

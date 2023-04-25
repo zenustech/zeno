@@ -161,7 +161,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_VIEW:
         {
-            DockContent_View* wid = new DockContent_View;
+            DockContent_View* wid = new DockContent_View(true);
             wid->initUI();
             return wid;
         }
@@ -193,8 +193,9 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_OPTIX_VIEW:
         {
-            ZOptixViewport *pView = new ZOptixViewport;
-            return pView;
+            DockContent_View* wid = new DockContent_View(false);
+            wid->initUI();
+            return wid;
         }
     }
     return nullptr;
@@ -271,10 +272,9 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                 QVector<DisplayWidget *> views = pWin->viewports();
                 for (auto pDisplay : views)
                 {
-                    ViewportWidget* pViewport = pDisplay->getViewportWidget();
-                    ZASSERT_EXIT(pViewport);
-
-                    auto *scene = pViewport->getSession()->get_scene();
+                    auto pZenoVis = pDisplay->getZenoVis();
+                    ZASSERT_EXIT(pZenoVis);
+                    auto *scene = pZenoVis->getSession()->get_scene();
                     scene->selected.clear();
                     std::string nodeid = nodeId.toStdString();
                     for (auto const &[key, ptr] : scene->objectsMan->pairs()) {

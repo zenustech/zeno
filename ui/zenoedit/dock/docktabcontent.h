@@ -121,7 +121,7 @@ class DockContent_View : public DockToolbarWidget
 {
     Q_OBJECT
 public:
-    explicit DockContent_View(QWidget* parent = nullptr);
+    explicit DockContent_View(bool bOptixView, QWidget* parent = nullptr);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
     DisplayWidget* getDisplayWid() const;
     QSize viewportSize() const;
@@ -158,6 +158,8 @@ private:
     QAction *m_move;
     QAction *m_rotate;
     QAction *m_scale;
+
+    const bool m_bOptixView;
 };
 
 class DockContent_Log : public DockToolbarWidget
