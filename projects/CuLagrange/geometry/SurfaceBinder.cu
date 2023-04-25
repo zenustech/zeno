@@ -136,6 +136,8 @@ struct ZSSurfaceBind : zeno::INode {
             tris.tuple(dim_c<3>,"nrm",ti) = nrm;
         });        
 
+        auto align_angle_cosin = get_input2<float>("align_angle_cosin");
+
         cudaPol(zs::range(tris.size()),
             [tris = proxy<space>({},tris),
                 verts = proxy<space>({},verts),
@@ -147,6 +149,7 @@ struct ZSSurfaceBind : zeno::INode {
                 thickness_tag = zs::SmallString(thickness_tag),
                 inversion_tag = zs::SmallString(inversion_tag),
                 max_nm_binders = max_nm_binders,
+                align_angle_cosin = align_angle_cosin,
                 kinInCollisionEps = kinInCollisionEps,
                 kinOutCollisionEps = kinOutCollisionEps,
                 align_direction = align_direction,
@@ -189,9 +192,9 @@ struct ZSSurfaceBind : zeno::INode {
                 auto knrm = kverts.pack(dim_c<3>,"nrm",kpi);
                 // alignment
 
-                if(nrm.dot(knrm) < (T)0.67 && align_direction)
+                if(nrm.dot(knrm) < (T)align_angle_cosin && align_direction)
                     return;
-                if(nrm.dot(knrm) > (T)-0.67 && !align_direction)
+                if(nrm.dot(knrm) > (T)-align_angle_cosin && !align_direction)
                     return;
 
                 auto dist = seg.dot(nrm);
@@ -253,7 +256,8 @@ struct ZSSurfaceBind : zeno::INode {
 
 ZENDEFNODE(ZSSurfaceBind, {{"zssurf","kboundary",
                                     {"float","kinInColEps","0.01"},
-                                    {"float","kinOutColEps","0.02"}
+                                    {"float","kinOutColEps","0.02"},
+                                    {"float","align_angle_cosin","0.68"},
                                     },
                                   {"zssurf","kboundary"},
                                   {
@@ -880,12 +884,15 @@ struct ZSSurfaceClosestPoints : zeno::INode {
             verts.tuple(dim_c<3>,"nrm",vi) = nrm;
         });   
 
+        auto align_angle_cosin = get_input2<float>("align_angle_cosin");
+
 
         cudaPol(zs::range(verts.size()),[
             verts = proxy<space>({},verts),
             ktBvh = proxy<space>(ktBvh),
             kverts = proxy<space>({},kverts),
             ktris = proxy<space>({},ktris),
+            align_angle_cosin = align_angle_cosin,
             project_pos_tag = zs::SmallString(project_pos_tag),
             project_nrm_tag = zs::SmallString(project_nrm_tag),
             project_idx_tag = zs::SmallString(project_idx_tag),
@@ -940,11 +947,12 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                     
 
                     auto align = knrm.dot(pnrm);
-                    if(align < 0.96 && align_direction && dist < 0){
+                    // TO RECOVER
+                    if(align < align_angle_cosin && align_direction && dist < 0){
                         // printf("failed of %d %d due to aligh = %f\n",vi,kti,(float)align);
                         return;
                     }
-                    if(align > -0.96 && !align_direction && dist < 0){
+                    if(align > -align_angle_cosin && !align_direction && dist < 0){
                         // printf("failed of %d %d due to aligh = %f\n",vi,kti,(float)align);
                         return;
                     }
@@ -1052,6 +1060,7 @@ ZENDEFNODE(ZSSurfaceClosestPoints, {
                                     "kboundary",
                                     {"float","kinInColEps","0.001"},
                                     {"float","kinOutColEps","0.001"},
+                                    {"float","align_angle_cosin","0.96"}
                                   },
                                   {"zsparticles","kboundary"},
                                   {
@@ -1211,7 +1220,49 @@ ZENDEFNODE(ZSVisualizeClosestPoints, {{"zsparticles","kboundary",{"float","nrm_s
                                   {"ZSGeometry"}});
 
 
+struct UpdateSurfTrisProjectTag : zeno::INode {
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
 
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto srcTag = get_param<std::string>("srcTag");
+        auto dstTag = get_param<std::string>("dstTag");
+
+        auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? 
+            (*zsparticles)[ZenoParticles::s_surfTriTag] : 
+            zsparticles->getQuadraturePoints();        
+
+        if(!tris.hasProperty(srcTag))
+            throw std::runtime_error("the input tris has no specified srcTag");
+         if(!tris.hasProperty(dstTag))
+            throw std::runtime_error("the input tris has no specified dstTag");       
+
+        auto only_update_valid_tag = get_input2<bool>("only_update_valid_tag");
+
+        cudaPol(zs::range(tris.size()),[
+                tris = proxy<space>({},tris),
+                srcTag = zs::SmallString(srcTag),
+                only_update_valid_tag,
+                dstTag = zs::SmallString(dstTag)] ZS_LAMBDA(int ti) mutable {
+            int src_tag_v = reinterpret_bits<int>(tris(srcTag,ti));
+            if(only_update_valid_tag && src_tag_v < 0)
+                return;
+            tris(dstTag,ti) = reinterpret_bits<float>(src_tag_v);
+        });
+
+        set_output("zsparticles",zsparticles);
+    }
+};
+
+ZENDEFNODE(UpdateSurfTrisProjectTag, {{"zsparticles",{"bool","only_update_valid_tag","1"}},
+                                  {"zsparticles"},
+                                  {
+                                    {"string","srcTag","srcTag"},
+                                    {"string","dstTag","dstTag"},
+                                  },
+                                  {"ZSGeometry"}});
 
 struct ZSSurfaceClosestTris : zeno::INode {
     using T = float;
@@ -1349,11 +1400,13 @@ struct ZSSurfaceClosestTris : zeno::INode {
         }  
 
         // for each triangle, find the closest point
+        auto align_angle_cosin = get_input2<float>("align_angle_cosin");
         cudaPol(zs::range(tris.size()),[
                 verts = proxy<space>({},verts),
                 tris = proxy<space>({},tris),
                 kpBvh = proxy<space>(kpBvh),
                 kverts = proxy<space>({},kverts),
+                align_angle_cosin = align_angle_cosin,
                 project_idx_tag = zs::SmallString(project_idx_tag),
                 kinInCollisionEps = kinInCollisionEps,
                 kinOutCollisionEps = kinOutCollisionEps,
@@ -1376,6 +1429,7 @@ struct ZSSurfaceClosestTris : zeno::INode {
             for(int i = 0;i != 3;++i)
                 tnrm += verts.pack(dim_c<3>,"nrm",tri[i]);
             tnrm /= tnrm.norm();
+            // auto tnrm = tris.pack(dim_c<3>,"nrm",ti);
 
             vec3 tvs[3] = {};
             for(int i = 0;i != 3;++i)
@@ -1419,18 +1473,16 @@ struct ZSSurfaceClosestTris : zeno::INode {
                     return;
                 
                 auto align = kpnrm.dot(tnrm);
-                if(align < 0.68 && align_direction && dist < 0)
+                // TO RECOVER
+                if(align < align_angle_cosin && align_direction && dist < 0)
                     return;
-                if(align > -0.68 && !align_direction && dist < 0)
+                if(align > -align_angle_cosin && !align_direction && dist < 0)
                     return;
-                // if(align < 0.5 && align_direction && dist < 0)
-                //     return;
-                // if(align > -0.5 && !align_direction && dist < 0)
-                //     return;
-                
+
                 auto bary_sum = fabs(bary[0]) + fabs(bary[1]) + fabs(bary[2]);
                 if(bary_sum > 1.01)
                     return;
+                // TO RECOVER
                 else{
                     for(int i = 0;i != 3;++i) {
                         seg = kp - tvs[i];
@@ -1460,6 +1512,7 @@ ZENDEFNODE(ZSSurfaceClosestTris, {
                                     "kboundary",
                                     {"float","kinInColEps","0.001"},
                                     {"float","kinOutColEps","0.001"},
+                                    {"float","align_angle_cosin","0.68"}
                                   },
                                   {"zsparticles","kboundary"},
                                   {
@@ -2262,6 +2315,351 @@ ZENDEFNODE(ZSSurfaceClosestPointsGrp, {
                                     {"string","project_nrm_tag","project_nrm_tag"},
                                     {"string","project_idx_tag","project_idx_tag"},
                                     {"bool","align_direction","1"},
+                                  },
+                                  {"ZSGeometry"}});
+
+struct ZSSurfaceClosestIntersectingTris : zeno::INode {
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using vec2 = zs::vec<T,2>;
+    using vec3 = zs::vec<T, 3>;
+    using mat3 = zs::vec<T, 3, 3>;
+    using mat9 = zs::vec<T,9,9>;
+    using mat12 = zs::vec<T,12,12>;
+
+    using bvh_t = zs::LBvh<3,int,T>;
+    using bv_t = zs::AABBBox<3, T>;
+
+    using pair3_t = zs::vec<Ti,3>;
+    using pair4_t = zs::vec<Ti,4>;      
+
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto kboundary = get_input<ZenoParticles>("kboundary");
+
+        auto& verts = zsparticles->getParticles();
+        auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? 
+            (*zsparticles)[ZenoParticles::s_surfTriTag] : 
+            zsparticles->getQuadraturePoints();
+
+        auto& kverts = kboundary->getParticles();
+        auto& ktris = kboundary->getQuadraturePoints();
+
+        auto project_idx_tag = get_param<std::string>("project_idx_tag");
+        auto align_direction = get_param<bool>("align_direction");
+
+        if(!tris.hasProperty(project_idx_tag))
+            tris.append_channels(cudaPol,{{project_idx_tag,1}});
+        TILEVEC_OPS::fill(cudaPol,tris,project_idx_tag,reinterpret_bits<T>((int)-1));
+
+        auto cnorm = compute_average_edge_length(cudaPol,verts,"x",tris);
+        auto average_vel = TILEVEC_OPS::dot<3>(cudaPol,kverts,"v","v") / (T)kverts.size();
+        average_vel = std::sqrt(average_vel);
+        auto thickness = 2 * cnorm;
+
+        if(!kverts.hasProperty("inds")) {
+            kverts.append_channels(cudaPol,{{"inds",1}});
+            cudaPol(zs::range(kverts.size()),
+                [kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kvi) mutable {
+                    kverts("inds",kvi) = reinterpret_bits<T>(kvi);
+            });
+        }
+
+        if(!tris.hasProperty("nrm"))
+            tris.append_channels(cudaPol,{{"nrm",3}});
+         cudaPol(zs::range(tris.size()),
+            [tris = proxy<space>({},tris),
+                verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) {
+            auto tri = tris.template pack<3>("inds",ti).reinterpret_bits(int_c);
+            auto v0 = verts.template pack<3>("x",tri[0]);
+            auto v1 = verts.template pack<3>("x",tri[1]);
+            auto v2 = verts.template pack<3>("x",tri[2]);
+
+            auto e01 = v1 - v0;
+            auto e02 = v2 - v0;
+
+            auto nrm = e01.cross(e02);
+            auto nrm_norm = nrm.norm();
+            if(nrm_norm < 1e-8)
+                nrm = zs::vec<T,3>::zeros();
+            else
+                nrm = nrm / nrm_norm;
+
+            tris.tuple(dim_c<3>,"nrm",ti) = nrm;
+        });
+
+        if(!verts.hasProperty("nrm"))
+            verts.append_channels(cudaPol,{{"nrm",3}});
+        TILEVEC_OPS::fill(cudaPol,verts,"nrm",(T)0.0);
+        #if 1
+        cudaPol(zs::range(tris.size()),[
+                tris = proxy<space>({},tris),
+                verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) mutable {
+            auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+            auto nrm = tris.pack(dim_c<3>,"nrm",ti);
+            for(int i = 0;i != 3;++i)
+                for(int d = 0;d != 3;++d)
+                    atomic_add(exec_cuda,&verts("nrm",d,tri[i]),nrm[d]/*/(T)kverts("valence",ktri[i])*/);
+        });  
+        #else
+        cudaPol(zs::range(tris.size()),[
+                tris = proxy<space>({},tris),
+                verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) mutable {
+            auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+            bool is_active_tri = true;
+            if(verts.hasProperty("k_active")){
+                for(int i = 0;i != 3;++i)
+                    if(verts("k_active",tri[i]) < (T)0.5)
+                        is_active_tri = false;
+            }
+
+            auto nrm = tris.pack(dim_c<3>,"nrm",ti);
+            for(int i = 0;i != 3;++i){
+                if(is_active_tri || (verts.hasProperty("k_active") && verts("k_active",tri[i]) < (T)0.5))
+                    for(int d = 0;d != 3;++d)
+                        atomic_add(exec_cuda,&verts("nrm",d,tri[i]),nrm[d]/*/(T)kverts("valence",ktri[i])*/);
+            }
+        });   
+        #endif  
+        cudaPol(zs::range(verts.size()),[verts = proxy<space>({},verts)] ZS_LAMBDA(int vi) mutable {
+            auto nrm = verts.pack(dim_c<3>,"nrm",vi);
+            nrm = nrm / (nrm.norm() + (T)1e-6);
+            verts.tuple(dim_c<3>,"nrm",vi) = nrm;
+        });           
+        // make sure the kboundary has normal
+        if(!kverts.hasProperty("nrm")) {
+            fmt::print(fg(fmt::color::red),"the input kboundary should have nodal normal\n");
+            throw std::runtime_error("the input kboundary should have nodal normal");
+        }  
+        if(!kverts.hasProperty("v")) {
+            fmt::print(fg(fmt::color::red),"the input kboundary should have velelocity \'vel\' channel");
+            throw std::runtime_error("the input kboundary should have nodal velocity");
+        }
+
+        auto kpBvh = bvh_t{};
+        auto bvs = retrieve_bounding_volumes(cudaPol,kverts,kverts,wrapv<1>{},(T)thickness,"x");
+        kpBvh.build(cudaPol,bvs);
+
+        auto vn = TILEVEC_OPS::dot<3>(cudaPol,kverts,"v","v");
+        std::cout << "vn = " << vn << std::endl;
+
+        cudaPol(zs::range(tris.size()),[
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            kpBvh = proxy<space>(kpBvh),
+            kverts = proxy<space>({},kverts),
+            project_idx_tag = zs::SmallString(project_idx_tag),
+            thickness = thickness,
+            align_direction = align_direction] ZS_LAMBDA(int ti) mutable {
+                auto tp = vec3::zeros();
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                if(verts.hasProperty("k_active"))
+                    for(int i = 0;i != 3;++i)
+                        if(verts("k_active",tri[i]) < (T)0.5)
+                            return;
+                for(int i = 0;i != 3;++i)
+                    tp += verts.pack(dim_c<3>,"x",tri[i]) / (T)3.0;
+                auto bv = bv_t{get_bounding_box(tp - thickness,tp + thickness)};
+
+                auto min_dist = std::numeric_limits<T>::infinity();
+                int min_kp_idx = -1;
+                T min_depth = std::numeric_limits<T>::infinity();
+
+                // should we still implement the orientation alignment here
+                auto tnrm = tris.pack(dim_c<3>,"nrm",ti);
+                vec3 ps[3] = {};
+                for(int i = 0;i != 3;++i)
+                    ps[i] = verts.pack(dim_c<3>,"x",tri[i]);
+
+                auto process_potential_intersecting_point = [&](int kpi) {
+                    if(kverts.hasProperty("k_active"))
+                        if(kverts("k_active",kpi) < (T)0.5)
+                            return;
+
+                    // printf("testing %d %d\n",kpi,ti);
+                    auto kp = kverts.pack(dim_c<3>,"x",kpi);
+                    auto kd = kverts.pack(dim_c<3>,"v",kpi);
+
+                    auto knrm = kverts.pack(dim_c<3>,"nrm",kpi);
+
+                    if(tnrm.dot(knrm) < (T)0.7 && align_direction)
+                        return;
+                    if(tnrm.dot(knrm) > (T)-0.7 && !align_direction)
+                        return;                    
+
+                    auto kr = kp - kd;
+
+                    auto vn = kd.norm();
+                    if(vn < 1e-4)
+                        return;
+                    
+                    // kd = kd / (vn + 1e-6);
+                    // if(kd.norm() > 1e-6)
+                    //     printf("kd.norm() = %f\n",(float)kd.norm());
+                    auto depth = LSL_GEO::tri_ray_intersect(kr,kd,ps[0],ps[1],ps[2]);
+
+                    if(depth > (T)1.0)
+                        return;
+
+                    auto dist = depth * kd.norm();
+
+                    if(dist < min_dist){
+                        min_dist = dist;
+                        min_kp_idx = kpi;
+                        min_depth = depth;
+                    }else{
+                        // printf("skip intersecting %f %f\n",(float)min_dist,(float)dist);
+                    }
+                };
+
+                kpBvh.iter_neighbors(bv,process_potential_intersecting_point);
+                if(min_kp_idx != -1) {
+                    // printf("find intersecting tri-p pairs<%d %d> %f %f\n",min_kp_idx,ti,min_dist,min_depth);
+                    tris(project_idx_tag,ti) = reinterpret_bits<T>(min_kp_idx);
+                }
+        });
+
+        set_output("zsparticles",zsparticles);
+        set_output("kboundary",kboundary);
+    }  
+};
+
+ZENDEFNODE(ZSSurfaceClosestIntersectingTris, {
+                                  {
+                                    "zsparticles",
+                                    "kboundary",
+                                    // {"float","kinInColEps","0.001"},
+                                    // {"float","kinOutColEps","0.001"},
+                                  },
+                                  {"zsparticles","kboundary"},
+                                  {
+                                    {"bool","align_direction","1"},
+                                    {"string","project_idx_tag","project_idx_tag"}
+                                  },
+                                  {"ZSGeometry"}});
+
+
+
+
+struct VisualizeClosestIntersectingTris : zeno::INode {
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using vec2 = zs::vec<T,2>;
+    using vec3 = zs::vec<T, 3>;
+    using mat3 = zs::vec<T, 3, 3>;
+    using mat9 = zs::vec<T,9,9>;
+    using mat12 = zs::vec<T,12,12>;
+
+    using bvh_t = zs::LBvh<3,int,T>;
+    using bv_t = zs::AABBBox<3, T>;
+
+    using pair3_t = zs::vec<Ti,3>;
+    using pair4_t = zs::vec<Ti,4>; 
+
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto kboundary = get_input<ZenoParticles>("kboundary");
+
+        auto& verts = zsparticles->getParticles();
+        auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? 
+            (*zsparticles)[ZenoParticles::s_surfTriTag] : 
+            zsparticles->getQuadraturePoints();
+
+        auto& kverts = kboundary->getParticles();
+        auto& ktris = kboundary->getQuadraturePoints();
+
+        auto project_idx_tag = get_param<std::string>("project_idx_tag");
+        dtiles_t verts_buffer{tris.get_allocator(),{
+            {"x",3},
+            {"xp",3},
+            {"nrm",3},
+            {"inds",3},
+            {"grad",9}
+        },tris.size()};   
+
+        TILEVEC_OPS::copy(cudaPol,tris,"inds",verts_buffer,"inds");
+        cudaPol(zs::range(tris.size()),[
+            verts_buffer = proxy<space>({},verts_buffer),
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            kverts = proxy<space>({},kverts),
+            ktris = proxy<space>({},ktris),
+            project_idx_tag = zs::SmallString(project_idx_tag)] ZS_LAMBDA(int ti) mutable {
+                auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+                auto tp = vec3::zeros();
+                for(int i = 0;i != 3;++i)
+                    tp += verts.pack(dim_c<3>,"x",tri[i]) / (T)3.0;
+                
+                verts_buffer.tuple(dim_c<3>,"x",ti) = tp;
+                verts_buffer.tuple(dim_c<3>,"nrm",ti) = vec3::zeros();
+                auto kp_idx = reinterpret_bits<int>(tris(project_idx_tag,ti));
+                if(kp_idx < 0)
+                    verts_buffer.tuple(dim_c<3>,"xp",ti) = tp;
+                else{
+                    auto kp = kverts.pack(dim_c<3>,"x",kp_idx);
+                    auto tnrm = tris.pack(dim_c<3>,"nrm",ti);
+                    verts_buffer.tuple(dim_c<3>,"xp",ti) = kp;
+                    verts_buffer.tuple(dim_c<3>,"nrm",ti) = tnrm;
+                }
+
+        });
+
+
+        constexpr auto omp_space = execspace_e::openmp;
+        auto ompPol = omp_exec();         
+        verts_buffer = verts_buffer.clone({zs::memsrc_e::host});   
+        auto closest_points_vis = std::make_shared<zeno::PrimitiveObject>();
+        auto& pverts = closest_points_vis->verts;
+        auto& plines = closest_points_vis->lines;
+        pverts.resize(verts_buffer.size()  * 2);
+        plines.resize(verts_buffer.size());
+
+        ompPol(zs::range(verts_buffer.size()),[
+            verts_buffer = proxy<omp_space>({},verts_buffer),
+            &pverts,&plines] (int vi) mutable {
+                pverts[vi * 2 + 0] = verts_buffer.pack(dim_c<3>,"x",vi).to_array();
+                pverts[vi * 2 + 1] = verts_buffer.pack(dim_c<3>,"xp",vi).to_array();
+                plines[vi] = zeno::vec2i{vi * 2 + 0,vi * 2 + 1};
+        });
+        auto nrm_scale = get_input2<float>("nrm_scale");
+        auto normal_vis = std::make_shared<zeno::PrimitiveObject>();
+        auto& nverts = normal_vis->verts;
+        auto& nlines = normal_vis->lines;
+        nverts.resize(verts_buffer.size() * 2);
+        nlines.resize(verts_buffer.size());
+        ompPol(zs::range(verts_buffer.size()),[
+            verts_buffer = proxy<omp_space>({},verts_buffer),
+            &nverts,&nlines,nrm_scale = nrm_scale] (int vi) mutable {
+                nverts[vi * 2 + 0] = verts_buffer.pack(dim_c<3>,"x",vi).to_array();
+                auto ep = verts_buffer.pack(dim_c<3>,"nrm",vi) * nrm_scale + verts_buffer.pack(dim_c<3>,"x",vi);
+                nverts[vi * 2 + 1] = ep.to_array();
+                nlines[vi] = zeno::vec2i{vi * 2 + 0,vi * 2 + 1};
+        });
+
+        set_output("closest_vis",std::move(closest_points_vis));
+        set_output("normal_vis",std::move(normal_vis));
+    }
+};
+
+
+ZENDEFNODE(VisualizeClosestIntersectingTris, {{"zsparticles","kboundary",
+                                        {"float","nrm_scale","1.0"},
+                                  },
+                                  {"closest_vis","normal_vis"},
+                                  {
+                                    {"string","project_idx_tag","project_idx_tag"},
                                   },
                                   {"ZSGeometry"}});
 
