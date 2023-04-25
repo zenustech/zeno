@@ -10,6 +10,9 @@
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/string.h>
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
 namespace zeno {
 
@@ -112,22 +115,94 @@ ZENO_API std::string Session::dumpDescriptors() const {
         Descriptor &desc = *cls->desc;
 
         strs.clear();
-        for (auto const &[type, name, defl] : desc.inputs) {
+        for (auto const &[type, name, defl, _] : desc.inputs) {
             strs.push_back(type + "@" + (name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
-        for (auto const &[type, name, defl] : desc.outputs) {
+        for (auto const &[type, name, defl, _] : desc.outputs) {
             strs.push_back(type + "@" + (name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         strs.clear();
-        for (auto const &[type, name, defl] : desc.params) {
+        for (auto const &[type, name, defl, _] : desc.params) {
             strs.push_back(type + "@" + (name) + "@" + defl);
         }
         res += "{" + join_str(strs, "%") + "}";
         res += "{" + join_str(desc.categories, "%") + "}";
 
+        res += "\n";
+    }
+    return res;
+}
+
+namespace {
+std::string dumpDescriptorToJson(const std::string &key, const Descriptor& descriptor) {
+    using namespace rapidjson;
+    Document doc;
+    doc.SetArray();
+
+    // Inputs array
+    Value inputs(kArrayType);
+    for (const auto& input : descriptor.inputs) {
+        Value inputArray(kArrayType);
+        inputArray.PushBack(Value().SetString(input.type.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        inputArray.PushBack(Value().SetString(input.name.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        inputArray.PushBack(Value().SetString(input.defl.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        inputArray.PushBack(Value().SetString(input.doc.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        inputs.PushBack(inputArray, doc.GetAllocator());
+    }
+
+    // Outputs array
+    Value outputs(kArrayType);
+    for (const auto& output : descriptor.outputs) {
+        Value outputArray(kArrayType);
+        outputArray.PushBack(Value().SetString(output.type.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        outputArray.PushBack(Value().SetString(output.name.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        outputArray.PushBack(Value().SetString(output.defl.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        outputArray.PushBack(Value().SetString(output.doc.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        outputs.PushBack(outputArray, doc.GetAllocator());
+    }
+
+    // Params array
+    Value params(kArrayType);
+    for (const auto& param : descriptor.params) {
+        Value paramArray(kArrayType);
+        paramArray.PushBack(Value().SetString(param.type.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        paramArray.PushBack(Value().SetString(param.name.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        paramArray.PushBack(Value().SetString(param.defl.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        paramArray.PushBack(Value().SetString(param.doc.c_str(), doc.GetAllocator()), doc.GetAllocator());
+        params.PushBack(paramArray, doc.GetAllocator());
+    }
+
+    // Categories array
+    Value categories(kArrayType);
+    for (const auto& category : descriptor.categories) {
+        categories.PushBack(Value().SetString(category.c_str(), doc.GetAllocator()), doc.GetAllocator());
+    }
+
+    // Push values into the main document
+    doc.PushBack(Value().SetString(key.c_str(), doc.GetAllocator()), doc.GetAllocator());
+    doc.PushBack(inputs, doc.GetAllocator());
+    doc.PushBack(outputs, doc.GetAllocator());
+    doc.PushBack(params, doc.GetAllocator());
+    doc.PushBack(categories, doc.GetAllocator());
+    doc.PushBack(Value().SetString(descriptor.doc.c_str(), doc.GetAllocator()), doc.GetAllocator());
+
+    // Write the JSON string to stdout
+    StringBuffer buffer;
+    Writer<StringBuffer> writer(buffer);
+    doc.Accept(writer);
+    return buffer.GetString();
+}
+}
+
+ZENO_API std::string Session::dumpDescriptorsJSON() const {
+    std::string res = "";
+    std::vector<std::string> strs;
+
+    for (auto const &[key, cls] : nodeClasses) {
+        res += dumpDescriptorToJson(key, *cls->desc);
         res += "\n";
     }
     return res;

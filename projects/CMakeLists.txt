@@ -35,6 +35,7 @@ set(ZENO_EXTENSIONS
     PBD
     Python
     Parameterization
+    ChatZeno
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
