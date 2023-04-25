@@ -295,6 +295,121 @@ ZENDEFNODE(QueryNearestPrimitive, {
                                       {"zenofx"},
                                   });
 
+struct QueryNearestPrimitiveWithinGroup : zeno::INode {
+  struct KVPair {
+    zeno::vec3f w;
+    float dist;
+    int pid;
+    bool operator<(const KVPair &o) const noexcept { return dist < o.dist; }
+  };
+  virtual void apply() override {
+    using namespace zeno;
+
+    auto lbvh = get_input<LBvh>("lbvh");
+    auto line = std::make_shared<PrimitiveObject>();
+
+    using Ti = typename LBvh::Ti;
+    Ti pid = 0;
+    Ti bvhId = -1;
+    float dist = std::numeric_limits<float>::max();
+    zeno::vec3f w{0.f, 0.f, 0.f};
+    if (has_input<PrimitiveObject>("prim")) {
+      auto prim = get_input<PrimitiveObject>("prim");
+      auto groupTag = get_input2<std::string>("groupTag");
+
+      auto idTag = get_input2<std::string>("idTag");
+      auto distTag = get_input2<std::string>("distTag");
+      auto weightTag = get_input2<std::string>("weightTag");
+      auto closestPointTag = get_input2<std::string>("closestPointTag");
+
+      auto &bvhids = prim->add_attr<float>(idTag);
+      auto &dists = prim->add_attr<float>(distTag);
+      auto &ws = prim->add_attr<zeno::vec3f>(weightTag);
+      auto &closestPoints = prim->add_attr<zeno::vec3f>(closestPointTag);
+
+      const auto &groupIds = prim->attr<int>(groupTag);
+      const auto &targetGroupIds = lbvh->primPtr.lock()->attr<int>(groupTag);
+
+      std::vector<KVPair> kvs(prim->size());
+      std::vector<Ti> ids(prim->size(), -1);
+#if defined(_OPENMP)
+#pragma omp parallel for schedule(guided, 4)
+#endif
+      for (Ti i = 0; i < prim->size(); ++i) {
+        kvs[i].dist = std::numeric_limits<float>::max();
+        kvs[i].pid = i;
+        kvs[i].w = lbvh->find_nearest_within_group(prim->verts[i], ids[i], kvs[i].dist, [&groupIds, &targetGroupIds, i](int no) {
+          return groupIds[i] == targetGroupIds[no];
+        }, LBvh::template element_c<LBvh::tri>);
+        // record info as attribs
+        bvhids[i] = ids[i];
+        dists[i] = kvs[i].dist;
+        ws[i] = kvs[i].w;
+        closestPoints[i] = lbvh->retrievePrimitiveCenter(ids[i], kvs[i].w);
+      }
+
+      KVPair mi{zeno::vec3f{0.f, 0.f, 0.f}, std::numeric_limits<float>::max(), -1};
+// ref:
+// https://stackoverflow.com/questions/28258590/using-openmp-to-get-the-index-of-minimum-element-parallelly
+#ifndef _MSC_VER
+#if defined(_OPENMP)
+#pragma omp declare reduction(minimum:KVPair                                   \
+                              : omp_out = omp_in < omp_out ? omp_in : omp_out) \
+    initializer(omp_priv = KVPair{zeno::vec3f{0.f, 0.f, 0.f}, std::numeric_limits <float>::max(), -1})
+#pragma omp parallel for reduction(minimum : mi)
+#endif
+#endif
+      for (Ti i = 0; i < kvs.size(); ++i) {
+        if (kvs[i].dist < mi.dist)
+          mi = kvs[i];
+      }
+      pid = mi.pid;
+      dist = mi.dist;
+      w = mi.w;
+      bvhId = ids[pid];
+      line->verts.push_back(prim->verts[pid]);
+#if 0
+      fmt::print("done nearest reduction. dist: {}, bvh[{}] (of {})-prim[{}]"
+                 "(of {})\n",
+                 dist, bvhId, lbvh->getNumLeaves(), pid, prim->size());
+#endif
+    } else if (has_input<NumericObject>("prim")) {
+      auto p = get_input<NumericObject>("prim")->get<vec3f>();
+      w = lbvh->find_nearest(p, bvhId, dist);
+      line->verts.push_back(p);
+    } else
+      throw std::runtime_error("unknown primitive kind (only supports "
+                               "PrimitiveObject and NumericObject::vec3f).");
+
+    line->verts.push_back(lbvh->retrievePrimitiveCenter(bvhId, w));
+    line->lines.push_back({0, 1});
+
+    set_output("primid", std::make_shared<NumericObject>(pid));
+    set_output("bvh_primid", std::make_shared<NumericObject>(bvhId));
+    set_output("dist", std::make_shared<NumericObject>(dist));
+    set_output("bvh_prim", lbvh->retrievePrimitive(bvhId));
+    set_output("segment", std::move(line));
+  }
+};
+
+ZENDEFNODE(QueryNearestPrimitiveWithinGroup, {
+                                      {{"prim"}, {"LBvh", "lbvh"},
+                                      {"string", "groupTag", "island_index"},
+                                      {"string", "idTag", "bvh_id"},
+                                      {"string", "distTag", "bvh_dist"},
+                                      {"string", "closestPointTag", "cp"},
+                                      {"string", "weightTag", "bvh_ws"}
+                                      },
+                                      {{"NumericObject", "primid"},
+                                       {"NumericObject", "bvh_primid"},
+                                       {"NumericObject", "dist"},
+                                       {"PrimitiveObject", "bvh_prim"},
+                                       {"PrimitiveObject", "segment"}},
+                                      {},
+                                      {"zenofx"},
+                                  });
+
+
 struct ParticlesNeighborBvhWrangle : zeno::INode {
   virtual void apply() override {
     auto prim = get_input<zeno::PrimitiveObject>("prim");
