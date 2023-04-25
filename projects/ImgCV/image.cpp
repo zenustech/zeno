@@ -20,6 +20,181 @@ namespace zeno {
 namespace {
 
 //Test：https://blog.csdn.net/Angelloveyatou/article/details/130190085
+
+static std::shared_ptr<PrimitiveObject> normal_tiling(std::shared_ptr<PrimitiveObject> &image1, std::shared_ptr<PrimitiveObject> &image2, int rows, int cols) {
+    int width = image1->userData().get2<int>("w");
+    int height = image1->userData().get2<int>("h");
+    int new_width = width * cols;
+    int new_height = height * rows;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            int x = j * width;
+            int y = i * height;
+            for (int h = 0; h < height; h++) {
+                for (int w = 0; w < width; w++) {
+                    int index1 = (y + h) * new_width + (x + w);
+                    int index2 = h * width + w;
+                    image2->verts[index1] = image1->verts[index2];
+                }
+            }
+        }
+    }
+    return image2;
+}
+
+static std::shared_ptr<PrimitiveObject> mirror_tiling(std::shared_ptr<PrimitiveObject> &image1, std::shared_ptr<PrimitiveObject> &image2, int rows, int cols) {
+    int width = image1->userData().get2<int>("w");
+    int height = image1->userData().get2<int>("h");
+    int new_width = width * cols;
+    int new_height = height * rows;
+    // 复制像素并进行镜像平铺
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            int x = j * width;
+            int y = i * height;
+            for (int h = 0; h < height; h++) {
+                for (int w = 0; w < width; w++) {
+                    if(i%2 == 0 && j%2 == 0){
+                        image2->verts[(y + h) * width * cols + (x + w)] = image1->verts[h * width + w];
+                    }
+                    if(i%2 == 0 && j%2 == 1){
+                        image2->verts[((y + h) * width * cols + x + (width - w - 1))] = image1->verts[(h * width + w)];
+                    }
+                    if(i%2 == 1 && j%2 == 0){
+                        image2->verts[(y + (height - h - 1)) * width * cols + w + x] = image1->verts[(h * width + w)];
+                    }
+                    if(i%2 == 1 && j%2 == 1){
+                        image2->verts[(y + (height - h - 1)) * width * cols + (width - w - 1) + x] = image1->verts[(h * width + w)];
+                    }
+                }
+            }
+        }
+    }
+    return image2;
+}
+
+static void RGBtoHSV(float r, float g, float b, float &h, float &s, float &v) {
+    float rd = r;
+    float gd = g;
+    float bd = b;
+    float cmax = fmax(rd, fmax(gd, bd));
+    float cmin = fmin(rd, fmin(gd, bd));
+    float delta = cmax - cmin;
+
+    if (delta != 0) {
+        if (cmax == rd) {
+            h = fmod((gd - bd) / delta, 6.0);
+        } else if (cmax == gd) {
+            h = (bd - rd) / delta + 2.0;
+        } else if (cmax == bd) {
+            h = (rd - gd) / delta + 4.0;
+        }
+        h *= 60.0;
+        if (h < 0) {
+            h += 360.0;
+        }
+    }
+    s = (cmax != 0) ? delta / cmax : 0.0;
+    v = cmax;
+}
+
+static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
+{
+    int i;
+    float f, p, q, t;
+    if( s == 0 ) {
+        // achromatic (grey)
+        r = g = b = v;
+        return;
+    }
+    h /= 60;            // sector 0 to 5
+    i = floor( h );
+    f = h - i;          // factorial part of h
+    p = v * ( 1 - s );
+    q = v * ( 1 - s * f );
+    t = v * ( 1 - s * ( 1 - f ) );
+    switch( i ) {
+        case 0:
+            r = v;
+            g = t;
+            b = p;
+            break;
+        case 1:
+            r = q;
+            g = v;
+            b = p;
+            break;
+        case 2:
+            r = p;
+            g = v;
+            b = t;
+            break;
+        case 3:
+            r = p;
+            g = q;
+            b = v;
+            break;
+        case 4:
+            r = t;
+            g = p;
+            b = v;
+            break;
+        default:        // case 5:
+            r = v;
+            g = p;
+            b = q;
+            break;
+    }
+}
+static void sobel(const std::vector<float>& grayImage, int width, int height, std::vector<float>& dx, std::vector<float>& dy)
+{
+    dx.resize(width * height);
+    dy.resize(width * height);
+
+    for (int y = 1; y < height - 1; y++) {
+        for (int x = 1; x < width - 1; x++) {
+            float gx = -grayImage[(y - 1) * width + x - 1] + grayImage[(y - 1) * width + x + 1]
+                       - 2.0f * grayImage[y * width + x - 1] + 2.0f * grayImage[y * width + x + 1]
+                       - grayImage[(y + 1) * width + x - 1] + grayImage[(y + 1) * width + x + 1];
+            float gy = grayImage[(y - 1) * width + x - 1] + 2.0f * grayImage[(y - 1) * width + x] + grayImage[(y - 1) * width + x + 1]
+                       - grayImage[(y + 1) * width + x - 1] - 2.0f * grayImage[(y + 1) * width + x] - grayImage[(y + 1) * width + x + 1];
+
+            dx[y * width + x] = gx;
+            dy[y * width + x] = gy;
+        }
+    }
+}
+// 计算法向量
+static void normalMap(const std::vector<float>& grayImage, int width, int height, std::vector<float>& normal)
+{
+    std::vector<float> dx, dy;
+    sobel(grayImage, width, height, dx, dy);
+
+    normal.resize(width * height * 3);
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int i = y * width + x;
+            float gx = dx[i];
+            float gy = dy[i];
+
+            float normalX = -gx;
+            float normalY = -gy;
+            float normalZ = 1.0f;
+
+            float length = sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+            normalX /= length;
+            normalY /= length;
+            normalZ /= length;
+
+            normal[i * 3 + 0] = normalX;
+            normal[i * 3 + 1] = normalY;
+            normal[i * 3 + 2] = normalZ;
+        }
+    }
+}
+
+
 struct Composite: INode {
     virtual void apply() override {
         auto image1 = get_input2<PrimitiveObject>("Foreground");
@@ -451,80 +626,6 @@ ZENDEFNODE(ImageEditRGB, {
     {},
     { "comp" },
 });
-
-void RGBtoHSV(float r, float g, float b, float &h, float &s, float &v) {
-    float rd = r;
-    float gd = g;
-    float bd = b;
-    float cmax = fmax(rd, fmax(gd, bd));
-    float cmin = fmin(rd, fmin(gd, bd));
-    float delta = cmax - cmin;
-
-    if (delta != 0) {
-        if (cmax == rd) {
-            h = fmod((gd - bd) / delta, 6.0);
-        } else if (cmax == gd) {
-            h = (bd - rd) / delta + 2.0;
-        } else if (cmax == bd) {
-            h = (rd - gd) / delta + 4.0;
-        }
-        h *= 60.0;
-        if (h < 0) {
-            h += 360.0;
-        }
-    }
-    s = (cmax != 0) ? delta / cmax : 0.0;
-    v = cmax;
-}
-
-void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
-{
-    int i;
-    float f, p, q, t;
-    if( s == 0 ) {
-        // achromatic (grey)
-        r = g = b = v;
-        return;
-    }
-    h /= 60;            // sector 0 to 5
-    i = floor( h );
-    f = h - i;          // factorial part of h
-    p = v * ( 1 - s );
-    q = v * ( 1 - s * f );
-    t = v * ( 1 - s * ( 1 - f ) );
-    switch( i ) {
-        case 0:
-            r = v;
-            g = t;
-            b = p;
-            break;
-        case 1:
-            r = q;
-            g = v;
-            b = p;
-            break;
-        case 2:
-            r = p;
-            g = v;
-            b = t;
-            break;
-        case 3:
-            r = p;
-            g = q;
-            b = v;
-            break;
-        case 4:
-            r = t;
-            g = p;
-            b = v;
-            break;
-        default:        // case 5:
-            r = v;
-            g = p;
-            b = q;
-            break;
-    }
-}
 
 struct ImageEditHSV : INode {
     virtual void apply() override {
@@ -1023,6 +1124,9 @@ struct CompImport : INode {
 
         auto image = std::make_shared<PrimitiveObject>();
         image->resize(nx * ny);
+        image->userData().set2("isImage", 1);
+        image->userData().set2("w", nx);
+        image->userData().set2("h", ny);
 
         if (prim->verts.attr_is<float>(attrName)) {
             auto &attr = prim->attr<float>(attrName);
@@ -1037,11 +1141,6 @@ struct CompImport : INode {
                 image->verts[i] = attr[i];
             }
         }
-
-        image->userData().set2("isImage", 1);
-        image->userData().set2("w", nx);
-        image->userData().set2("h", ny);
-
         set_output("image", image);
     }
 };
@@ -1310,75 +1409,98 @@ ZENDEFNODE(CompNormalMap, {
 //});
 
 struct ImageEditGray : INode {
-    virtual void apply() override {
+    void apply() override {
         auto image = get_input<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
         for (auto i = 0; i < image->verts.size(); i++) {
             vec3f rgb = image->verts[i];
-            float avg = (rgb[0] + rgb[1] + rgb[2]) / 3;
-            image->verts[i] = {avg, avg, avg};
+            if(mode=="average"){
+                float avg = (rgb[0] + rgb[1] + rgb[2]) / 3;
+                image->verts[i] = {avg, avg, avg};
+            }
+            if(mode=="luminace"){
+                float l = std::min(std::min(rgb[0], rgb[1]),rgb[2]);
+                image->verts[i] = {l,l,l};
+            }
         }
         set_output("image", image);
     }
 };
-
 ZENDEFNODE(ImageEditGray, {
     {
-        {"image"}
+        {"image"},
+        {"enum average luminace", "mode", "average"},
     },
     {
         {"image"}
-        },
+    },
     {},
     { "comp" },
 });
 
-/* 调整黑点、白点和中值以增加、平衡或降低对比度。
-您可以使用Value选项卡全局调整级别(影响所有通道)，或使用R、
-G、B或Comp 4选项卡逐个通道调整。输入级别用于压缩黑点和白点
-范围，从而增加对比度。
-Gamma将作为使用输入级别指定的范围的中值调整进行应用。输出级
-别扩展了黑白点范围，降低了对比度。 */
-
-struct CompLevels : INode {
-    virtual void apply() override {
+struct ImageGetSize : INode {
+    void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        for (auto i = 0; i < image->verts.size(); i++) {
+        set_output2("width", w);
+        set_output2("height", h);
+    }
+};
+ZENDEFNODE(ImageGetSize, {
+    {
+        {"image"},
+    },
+    {
+        {"int", "width"},
+        {"int", "height"},
+    },
+    {},
+    {"comp"},
+});
 
+struct Imagetile: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        auto tilemode = get_input2<std::string>("tilemode");
+        auto rows = get_input2<int>("rows");
+        auto cols = get_input2<int>("cols");
+        UserData &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        int w1 = w * cols;
+        int h1 = h * rows;
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->resize(w1 * h1);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w1);
+        image2->userData().set2("h", h1);
+        if(tilemode == "normal"){
+            zeno::normal_tiling(image,image2, rows, cols);
         }
-        set_output("image", image);
+        if(tilemode == "mirror"){
+            zeno::mirror_tiling(image,image2, rows, cols);
+        }
+        set_output("image", image2);
     }
 };
-
-ZENDEFNODE(CompLevels, {
+ZENDEFNODE(Imagetile, {
     {
-        {"image"}
+        {"image"},
+        {"enum normal mirror", "tilemode", "normal"},
+        {"int", "rows", "2"},
+        {"int", "cols", "2"},
     },
     {
-        {"image"}
-        },
-    {},
-    { "" },
-});
-
-/* 此操作将输入数据量化为离散的步骤，从而降低图像中的颜色级别。 */
-struct comp_quantize : INode {
-    virtual void apply() override {
-
-    }
-};
-
-ZENDEFNODE(comp_quantize, {
-    {
+        {"image"},
     },
     {},
-    {},
-    { "" },
+    {"comp"},
 });
 }
 }
+
