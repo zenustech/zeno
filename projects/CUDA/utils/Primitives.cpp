@@ -12,8 +12,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <zeno/ListObject.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
@@ -461,6 +463,98 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
                                              {},
                                              {"zs_geom"},
                                          });
+
+// assuming point uv and triangle topo
+struct PrimitiveMarkIslands : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        if (!prim->verts.has_attr("uv")) {
+            set_output("prim", std::move(prim));
+            zeno::log_warn("this primitive object does not include vertex uv property.");
+            return;
+        }
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &vert_uv = prim->verts.attr<vec3f>("uv");
+
+        bool isTris = prim->tris.size() > 0;
+        if (isTris) {
+            primPolygonate(prim.get(), true);
+        }
+
+        const auto &loops = prim->loops;
+        const auto &polys = prim->polys;
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{polys.values.back()[0] + polys.values.back()[1]};
+        std::vector<int> is, js;
+        pol(range(polys), [&, tab = view<space>(tab)](const auto &poly) mutable {
+            auto offset = poly[0];
+            auto size = poly[1];
+            for (int i = 0; i < size; ++i) {
+                auto a = loops[offset + i];
+                auto b = loops[offset + (i + 1) % size];
+                if (a > b)
+                    std::swap(a, b);
+                tab.insert(IV{a, b});
+            }
+        });
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<int, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+
+        /// @note update fathers of each vertex
+        std::vector<int> fas(pos.size());
+        union_find(pol, spmat, range(fas));
+
+        /// @note update ancestors, discretize connected components
+        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+
+        pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            vtab.insert(fa);
+        });
+
+        auto &setids = prim->add_attr<int>(get_input2<std::string>("island_tag"));
+        pol(range(pos.size()), [&fas, &setids, vtab = view<space>(vtab)](int vi) mutable {
+            auto ancestor = fas[vi];
+            auto setNo = vtab.query(ancestor);
+            setids[vi] = setNo;
+        });
+        auto numSets = vtab.size();
+        fmt::print("{} islands in total.\n", numSets);
+
+        if (isTris) {
+            primTriangulate(prim.get(), true, false);
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveMarkIslands, {
+                                     {{"PrimitiveObject", "prim"}, {"string", "island_tag", "island_index"}},
+                                     {
+                                         {"PrimitiveObject", "prim"},
+                                     },
+                                     {},
+                                     {"zs_geom"},
+                                 });
 #endif
 
 struct ComputeAverageEdgeLength : INode {
@@ -473,7 +567,7 @@ struct ComputeAverageEdgeLength : INode {
         const auto &pos = prim->attr<vec3f>("pos");
 
         std::vector<float> els(0);
-        std::vector<float> sum(1);
+        std::vector<float> sum(1), minEl(1), maxEl(1);
 
         if (prim->polys.size()) {
             const auto &loops = prim->loops;
@@ -525,9 +619,15 @@ struct ComputeAverageEdgeLength : INode {
         fmt::print("sum edge lengths: {}, num edges: {}\n", sum[0], els.size());
 #endif
         zs::reduce(pol, std::begin(els), std::end(els), std::begin(sum), 0);
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(minEl), zs::limits<float>::max(),
+                   zs::getmin<float>{});
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(maxEl), zs::limits<float>::min(),
+                   zs::getmax<float>{});
 
         set_output("prim", prim);
         set_output("average_edge_length", std::make_shared<NumericObject>(sum[0] / els.size()));
+        set_output("minimum_edge_length", std::make_shared<NumericObject>(minEl[0]));
+        set_output("maximum_edge_length", std::make_shared<NumericObject>(maxEl[0]));
     }
 };
 
@@ -538,6 +638,8 @@ ZENDEFNODE(ComputeAverageEdgeLength, {
                                          {
                                              {"PrimitiveObject", "prim"},
                                              {"NumericObject", "average_edge_length"},
+                                             {"NumericObject", "minimum_edge_length"},
+                                             {"NumericObject", "maximum_edge_length"},
                                          },
                                          {},
                                          {"zs_query"},
