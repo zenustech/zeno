@@ -146,18 +146,20 @@ static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
             break;
     }
 }
-static void sobel(const std::vector<float>& grayImage, int width, int height, std::vector<float>& dx, std::vector<float>& dy)
+static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int height, std::vector<float>& dx, std::vector<float>& dy)
 {
     dx.resize(width * height);
     dy.resize(width * height);
 
     for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
-            float gx = -grayImage[(y - 1) * width + x - 1] + grayImage[(y - 1) * width + x + 1]
-                       - 2.0f * grayImage[y * width + x - 1] + 2.0f * grayImage[y * width + x + 1]
-                       - grayImage[(y + 1) * width + x - 1] + grayImage[(y + 1) * width + x + 1];
-            float gy = grayImage[(y - 1) * width + x - 1] + 2.0f * grayImage[(y - 1) * width + x] + grayImage[(y - 1) * width + x + 1]
-                       - grayImage[(y + 1) * width + x - 1] - 2.0f * grayImage[(y + 1) * width + x] - grayImage[(y + 1) * width + x + 1];
+            float gx = -grayImage->verts[(y - 1) * width + x - 1][0] + grayImage->verts[(y - 1) * width + x + 1][0]
+                       - 2.0f * grayImage->verts[y * width + x - 1][0] + 2.0f * grayImage->verts[y * width + x + 1][0]
+                       - grayImage->verts[(y + 1) * width + x - 1][0] + grayImage->verts[(y + 1) * width + x + 1][0];
+            float gy = grayImage->verts[(y - 1) * width + x - 1][0] + 2.0f * grayImage->verts[(y - 1) * width + x][0] +
+                       grayImage->verts[(y - 1) * width + x + 1][0]
+                       - grayImage->verts[(y + 1) * width + x - 1][0] - 2.0f * grayImage->verts[(y + 1) * width + x][0] -
+                       grayImage->verts[(y + 1) * width + x + 1][0];
 
             dx[y * width + x] = gx;
             dy[y * width + x] = gy;
@@ -165,11 +167,10 @@ static void sobel(const std::vector<float>& grayImage, int width, int height, st
     }
 }
 // 计算法向量
-static void normalMap(const std::vector<float>& grayImage, int width, int height, std::vector<float>& normal)
+static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, int height, std::vector<float>& normal)
 {
     std::vector<float> dx, dy;
     sobel(grayImage, width, height, dx, dy);
-
     normal.resize(width * height * 3);
 
     for (int y = 0; y < height; y++) {
@@ -193,7 +194,6 @@ static void normalMap(const std::vector<float>& grayImage, int width, int height
         }
     }
 }
-
 
 struct Composite: INode {
     virtual void apply() override {
@@ -554,7 +554,6 @@ struct ImageEditRGB : INode {
                 float R1 = R * image->verts[i][0];
                 float G1 = G * image->verts[i][1];
                 float B1 = B * image->verts[i][2];
-
                 image->verts[i][0] = R1 ;
                 image->verts[i][1] = G1 ;
                 image->verts[i][2] = B1 ;
@@ -965,7 +964,7 @@ struct ImageEditBlur : INode {
 ZENDEFNODE(ImageEditBlur, {
     {
         {"image"},
-        {"enum Blur GaussianBlur MedianBlur BilateralFilter", "mode", "mode"},
+        {"enum Blur GaussianBlur MedianBlur BilateralFilter", "mode", "Blur"},
         {"float", "xsize", "1"},
         {"float", "ysize", "1"},
     },
@@ -979,7 +978,7 @@ ZENDEFNODE(ImageEditBlur, {
 //边缘检测
 struct EdgeDetect : INode {
     void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
         auto low_threshold = get_input2<float>("low_threshold");
         auto high_threshold = get_input2<float>("high_threshold");
@@ -987,6 +986,11 @@ struct EdgeDetect : INode {
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
 
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->resize(w * h);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w);
+        image2->userData().set2("h", h);
         if(mode=="canny"){
             cv::Mat imagecvin(h, w, CV_8U);
             cv::Mat imagecvout(h, w, CV_8U);
@@ -1004,31 +1008,18 @@ struct EdgeDetect : INode {
                 }
             }
         }
-        //TODO：error
         if(mode=="sobel"){
-            cv::Mat imagecvin(h, w, CV_8U);
-            cv::Mat imagecvout(h, w, CV_8U);
+            std::vector<float> dx,dy;
+            zeno::sobel(image, w, h, dx, dy);
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
-                }
-            }
-            cv::Mat gray(h, w, CV_8U);
-            cv::Mat dx(h, w, CV_8U), dy(h, w, CV_8U);
-            cv::cvtColor(imagecvin, gray, cv::COLOR_BGR2GRAY);
-            cv::Sobel(gray,dx, CV_8U, 1, 0);
-            cv::Sobel(gray,dy, CV_8U, 0, 1);
-            cv::Mat angle(h, w, CV_8U);
-            cv::cartToPolar(dx, dy, imagecvout, angle);
-            cv::normalize(imagecvout, imagecvout, 0, 255, cv::NORM_MINMAX);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
+                    // 计算梯度幅值
+                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
+                    image->verts[i * w + j] = {gradient,gradient,gradient};
                 }
             }
         }
+
         if(mode=="scharr"){
 
         }
@@ -1043,7 +1034,7 @@ struct EdgeDetect : INode {
 ZENDEFNODE(EdgeDetect, {
    {
         {"image"},
-       {"enum canny sobel scharr laplacian", "mode", "canny"},
+       {"enum sobel canny scharr laplacian", "mode", "sobel"},
        {"float", "low_threshold", "100"},
        {"float", "high_threshold", "200"},
     },
