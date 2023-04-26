@@ -1246,7 +1246,7 @@ struct zs_erode_tumble_material_v4 : INode {
         constexpr auto space = execspace_e::cuda;
         auto pol = cuda_exec();
         /// @brief  copy host-side attribute
-        auto zs_height = to_device_vector(_height, false);
+        auto zs_height = to_device_vector(_height);
         auto zs_temp_height = to_device_vector(_temp_height);
         auto zs_material = to_device_vector(_material, false);
         auto zs_temp_material = to_device_vector(_temp_material);
