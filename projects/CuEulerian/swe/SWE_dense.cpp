@@ -87,15 +87,13 @@ struct SolveShallowWaterHeight : INode {
 
     void apply() override {
         auto grid = get_input<PrimitiveObject>("SWGrid");
-        int nx, nz, halo;
         auto &ud = grid->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")))
-            zeno::log_error("no such UserData named '{}', '{}' or '{}'.", "nx", "nz", "halo");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
-        halo = ud.get2<int>("halo");
-        auto &pos = grid->verts;
-        float dx = std::abs(pos[0][0] - pos[1][0]);
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")) || (!ud.has<float>("dx")))
+            zeno::log_error("no such UserData named '{}', '{}', '{}' or '{}'.", "nx", "nz", "halo", "dx");
+        int nx = ud.get2<int>("nx");
+        int nz = ud.get2<int>("nz");
+        int halo = ud.get2<int>("halo");
+        float dx = ud.get2<float>("dx");
         auto dt = get_input2<float>("dt");
 
         const uint nc = (nx + halo) * (nz + halo);
@@ -224,7 +222,8 @@ struct SolveShallowWaterMomentum : INode {
             upwind = w_adv < 0 ? 1 : -1;
             adv_term += w_adv * scheme::HJ_WENO3(u_old[idx(i, j - upwind)], u_old[idx(i, j)], u_old[idx(i, j + upwind)],
                                                  u_old[idx(i, j + 2 * upwind)], w_adv, dx);
-            grad_term = gravity * (h[idx(i, j)] - h[idx(i - 1, j)]) / dx;
+            grad_term = gravity * 0.5f * (h[idx(i, j)] + h[idx(i - 1, j)]) *
+                        ((h[idx(i, j)] - h[idx(i - 1, j)]) / dx + (B[idx(i, j)] - B[idx(i - 1, j)]) / dx);
 
             u_new[idx(i, j)] = c0 * u_n[idx(i, j)] + c1 * (u_old[idx(i, j)] - (adv_term + grad_term) * dt);
 
@@ -239,7 +238,8 @@ struct SolveShallowWaterMomentum : INode {
             upwind = w_adv < 0 ? 1 : -1;
             adv_term += w_adv * scheme::HJ_WENO3(w_old[idx(i, j - upwind)], w_old[idx(i, j)], w_old[idx(i, j + upwind)],
                                                  w_old[idx(i, j + 2 * upwind)], w_adv, dx);
-            grad_term = gravity * (h[idx(i, j)] - h[idx(i, j - 1)]) / dx;
+            grad_term = gravity * 0.5f * (h[idx(i, j)] + h[idx(i, j - 1)]) *
+                        ((h[idx(i, j)] - h[idx(i, j - 1)]) / dx + (B[idx(i, j)] - B[idx(i, j - 1)]) / dx);
 
             w_new[idx(i, j)] = c0 * w_n[idx(i, j)] + c1 * (w_old[idx(i, j)] - (adv_term + grad_term) * dt);
         });
@@ -247,15 +247,13 @@ struct SolveShallowWaterMomentum : INode {
 
     void apply() override {
         auto grid = get_input<PrimitiveObject>("SWGrid");
-        int nx, nz, halo;
         auto &ud = grid->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")))
-            zeno::log_error("no such UserData named '{}', '{}' or '{}'.", "nx", "nz", "halo");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
-        halo = ud.get2<int>("halo");
-        auto &pos = grid->verts;
-        float dx = std::abs(pos[0][0] - pos[1][0]);
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")) || (!ud.has<float>("dx")))
+            zeno::log_error("no such UserData named '{}', '{}', '{}' or '{}'.", "nx", "nz", "halo", "dx");
+        int nx = ud.get2<int>("nx");
+        int nz = ud.get2<int>("nz");
+        int halo = ud.get2<int>("halo");
+        float dx = ud.get2<float>("dx");
         auto dt = get_input2<float>("dt");
         auto gravity = get_input2<float>("gravity");
 
