@@ -23,6 +23,8 @@ class ZenoNode : public ZLayoutBackground
 {
     Q_OBJECT
     typedef ZLayoutBackground _base;
+
+  public:
     struct _param_ctrl
     {
         ZSimpleTextItem* param_name;
@@ -62,6 +64,7 @@ public:
     virtual void onZoomed();
     void setGroupNode(GroupNode *pNode);
     GroupNode *getGroupNode();
+    void addParam(const _param_ctrl &param);
 
 signals:
     void socketClicked(ZenoSocketItem*);
