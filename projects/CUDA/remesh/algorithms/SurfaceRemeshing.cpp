@@ -4,6 +4,7 @@
 #include "./SurfaceRemeshing.h"
 #include <Eigen/LU>
 #include <cmath>
+#include <limits>
 #include <set>
 #include <algorithm>
 
@@ -711,10 +712,15 @@ void SurfaceRemeshing::tangential_smoothing(unsigned int iterations) {
                 } else {
                     vec3f p(0.0f);
                     bool flag;
+#if 1
                     p = minimize_squared_areas(v, flag);
                     if (!flag) {
                         p = weighted_centroid(v);
                     }
+#else
+                    flag = false;
+                    p = weighted_centroid(v);
+#endif
                     u = p - points[v];
 
                     n = vnormal[v];
@@ -848,7 +854,7 @@ vec3f SurfaceRemeshing::minimize_squared_areas(int v, bool& inversable) {
 
     // compute minimizer
     float det = A.determinant();
-    if (fabs(det) < 1.0e-10 || std::isnan(det)) {
+    if (fabs(det) < std::numeric_limits<float>::epsilon() * 100 || std::isnan(det)) {
         inversable = false;
     } else {
         inversable = true;
