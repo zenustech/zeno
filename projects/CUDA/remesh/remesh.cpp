@@ -186,8 +186,13 @@ struct UniformRemeshing : INode {
             }
         }
 
+#if 1
+        prim->verts.attrs.clear();
+#else
         // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
+        prim->verts.update();
+#endif
 
         set_output("prim", std::move(prim));
     }
@@ -353,8 +358,23 @@ struct AdaptiveRemeshing : INode {
             }
         }
 
+#if 1
+        prim->verts.attrs.clear();
+#else
         // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
+        // check existing redundant properties
+        for (auto &[key, arr] : prim->verts.attrs) {
+            auto const &k = key;
+            prim->verts.erase_attr("v_duplicate");
+            zs::match(
+                [&k](auto &arr) -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
+                    fmt::print("key [{}] type [{}] size {}\n", k, zs::get_var_type_str(arr), arr.size());
+                },
+                [](...) {})(arr);
+        }
+        prim->verts.update();
+#endif
 
         set_output("prim", std::move(prim));
     }
