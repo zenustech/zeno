@@ -68,13 +68,15 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
         _drawBorderWangStyle(painter);
     }
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
-    if (type == NORMAL_NODE) {
+    if (type == NORMAL_NODE || type == HEATMAP_NODE || type == SUBINPUT_NODE || type == SUBOUTPUT_NODE) {
         painter->setRenderHint(QPainter::Antialiasing, true);
-        QRectF r = boundingRect();
+        QRectF r = m_headerWidget->boundingRect();
         qreal brWidth = ZenoStyle::scaleWidth(2);
-        r.adjust(-brWidth / 2, -brWidth / 2, brWidth / 2, brWidth / 2);
+        r.adjust(-brWidth / 2, -brWidth / 2, brWidth / 2, 0);
         QPainterPath path;
-        path.addRect(r);
+        QPolygonF polygon;
+        polygon << r.bottomLeft() << r.topLeft() << r.topRight() << r.bottomRight();
+        path.addPolygon(polygon);
         QPen pen(QColor(18,20,22), brWidth);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
@@ -133,13 +135,14 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
 
     m_headerWidget = initHeaderWidget(pGraphsModel);
     m_bodyWidget = initBodyWidget(pScene);
+    m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 
     ZGraphicsLayout* mainLayout = new ZGraphicsLayout(false);
     mainLayout->setDebugName("mainLayout");
     mainLayout->addItem(m_headerWidget);
     mainLayout->addItem(m_bodyWidget);
 
-    mainLayout->setSpacing(type == NORMAL_NODE ? ZenoStyle::dpiScaled(2) : 0);
+    mainLayout->setSpacing(0);
     setLayout(mainLayout);
 
     QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
