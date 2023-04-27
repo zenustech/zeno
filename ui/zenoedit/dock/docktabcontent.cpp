@@ -488,6 +488,19 @@ void DockContent_Editor::initConnections()
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
         QString percent = QString::number(int(newFactor * 100));
         percent += "%";
+        QStringList items;
+        QVector<qreal> factors = UiHelper::scaleFactors();
+        for (int i = 0; i < factors.size(); i++) {
+            qreal factor = factors.at(i);
+            if ((i == 0 && factor > newFactor) || (i > 0 && factor > newFactor && factors.at(i - 1) < newFactor)) {
+                items.append(percent);
+            }
+            int per = factor * 100;
+            QString sPer = QString("%1%").arg(per);
+            items.append(sPer);
+        }
+        cbZoom->clear();
+        cbZoom->addItems(items);
         cbZoom->setCurrentText(percent);
     });
 

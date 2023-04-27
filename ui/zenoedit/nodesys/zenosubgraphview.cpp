@@ -248,8 +248,9 @@ void _ZenoSubGraphView::setPath(const QString& path)
 void _ZenoSubGraphView::scaleBy(qreal scaleFactor)
 {
     qreal curScaleFactor = transform().m11();
-    static qreal minScale = 0.1;
-    static qreal maxScale = 5.0;
+    QVector<qreal> factors = UiHelper::scaleFactors();
+    qreal minScale = factors.first();
+    qreal maxScale = factors.last();
 
     if (((curScaleFactor == minScale) && (scaleFactor < 1.0)) ||
         ((curScaleFactor == maxScale) && (scaleFactor > 1.0))) return;
@@ -265,6 +266,7 @@ void _ZenoSubGraphView::scaleBy(qreal scaleFactor)
     }
     scale(sc, sc);
     //centerOn(target_scene_pos);
+    editor_factor = transform().m11();
 }
 
 void _ZenoSubGraphView::setScale(qreal scale)
@@ -408,18 +410,17 @@ void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
         //executing zoom
         QVector<qreal> factors = UiHelper::scaleFactors();
         qreal zoomFactor = transform().m11();
-        int idx = factors.indexOf(zoomFactor);
-        if (idx == -1)
-        {
-            gentle_zoom(1.0);
-            return;
-        }
+        qreal spread = zoomFactor/10;
         if (event->angleDelta().y() > 0)
-            idx++;
+            zoomFactor += spread;
         else if (event->angleDelta().y() < 0)
-            idx--;
-        idx = std::max(0, std::min(idx, factors.size() - 1));
-        zoomFactor = factors[idx];
+            zoomFactor -= spread;
+
+       if (zoomFactor < factors.first()) {
+            zoomFactor = factors.first();
+        } else if (zoomFactor > factors.last()) {
+            zoomFactor = factors.last();
+        }
         gentle_zoom(zoomFactor);
     }
 }
