@@ -394,7 +394,8 @@ struct GraphicsManager {
                 }
             }
         }
-        xinxinoptix::optixUpdateUniforms(shaderUniforms);
+        // xinxinoptix::optixUpdateUniforms(shaderUniforms);
+        xinxinoptix::optixUpdateUniforms(shaderUniforms.data(), shaderUniforms.size());
         return true;
     }
     // return if find sky

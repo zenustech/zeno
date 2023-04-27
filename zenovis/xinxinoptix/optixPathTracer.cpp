@@ -1928,13 +1928,14 @@ static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, flo
     g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
 }
 static int uniformBufferInitialized = false;
-void optixUpdateUniforms(std::vector<float4> & inConstants) {
+// void optixUpdateUniforms(std::vector<float4> & inConstants) 
+void optixUpdateUniforms(void *inConstants, std::size_t size) {
 
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*512));
 
     CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*512));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), inConstants.data(),
-                          sizeof(float4)*inConstants.size(), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), (float4*)inConstants,
+                          sizeof(float4)*size, cudaMemcpyHostToDevice));
 
     uniformBufferInitialized = true;
 
