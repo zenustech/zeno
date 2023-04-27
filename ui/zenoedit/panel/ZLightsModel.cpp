@@ -12,6 +12,7 @@
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 
 
 int ZLightsModel::rowCount(const QModelIndex &parent) const {
@@ -39,10 +40,10 @@ void ZLightsModel::updateByObjectsMan() {
     {
         DisplayWidget* pWid = views[0];
         ZERROR_EXIT(pWid);
-        ViewportWidget* pViewport = pWid->getViewportWidget();
-        ZERROR_EXIT(pViewport);
+        auto* pZenovis = pWid->getZenoVis();
+        ZERROR_EXIT(pZenovis);
 
-        auto session = pViewport->getSession();
+        auto session = pZenovis->getSession();
         ZERROR_EXIT(session);
 
         auto scene = session->get_scene();

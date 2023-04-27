@@ -7,6 +7,7 @@
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "nodesview/zenographseditor.h"
 #include <zenoui/comctrl/zlabel.h>
 #include "zenomainwindow.h"
@@ -19,6 +20,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
+#include "viewport/optixviewport.h"
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
@@ -159,7 +161,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_VIEW:
         {
-            DockContent_View* wid = new DockContent_View;
+            DockContent_View* wid = new DockContent_View(true);
             wid->initUI();
             return wid;
         }
@@ -186,6 +188,12 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         case PANEL_IMAGE:
         {
             DockContent_Image *wid = new DockContent_Image;
+            wid->initUI();
+            return wid;
+        }
+        case PANEL_OPTIX_VIEW:
+        {
+            DockContent_View* wid = new DockContent_View(false);
             wid->initUI();
             return wid;
         }
@@ -233,6 +241,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     else if (title == tr("Image")|| title == "Image") {
         type = PANEL_IMAGE;
     }
+    else if (title == tr("Optix")) {
+        type = PANEL_OPTIX_VIEW;
+    }
     return type;
 }
 
@@ -262,10 +273,9 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                 QVector<DisplayWidget *> views = pWin->viewports();
                 for (auto pDisplay : views)
                 {
-                    ViewportWidget* pViewport = pDisplay->getViewportWidget();
-                    ZASSERT_EXIT(pViewport);
-
-                    auto *scene = pViewport->getSession()->get_scene();
+                    auto pZenoVis = pDisplay->getZenoVis();
+                    ZASSERT_EXIT(pZenoVis);
+                    auto *scene = pZenoVis->getSession()->get_scene();
                     scene->selected.clear();
                     std::string nodeid = nodeId.toStdString();
                     for (auto const &[key, ptr] : scene->objectsMan->pairs()) {
@@ -478,7 +488,7 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Light"), tr("Image") };
+    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Light"), tr("Image"), tr("Optix") };
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -496,6 +506,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 4: m_debugPanel = PANEL_LOG; break;
                 case 5: m_debugPanel = PANEL_LIGHT; break;
                 case 6: m_debugPanel = PANEL_IMAGE; break;
+                case 7: m_debugPanel = PANEL_OPTIX_VIEW; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }

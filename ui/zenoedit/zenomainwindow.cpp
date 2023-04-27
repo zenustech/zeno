@@ -33,6 +33,7 @@
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
 #include "viewport/recordvideomgr.h"
+#include "viewport/displaywidget.h"
 #include "ui_zenomainwindow.h"
 #include <QJsonDocument>
 #include "dialog/zdocklayoutmangedlg.h"
@@ -1027,13 +1028,6 @@ void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
             }
         }
     }
-
-    QVector<DisplayWidget*> displays = viewports();
-    for (auto wid : displays)
-    {
-        ViewportWidget* pViewport = wid->getViewportWidget();
-        //TODO
-    }
 }
 
 void ZenoMainWindow::importGraph() {
@@ -1329,9 +1323,9 @@ void ZenoMainWindow::screenShoot()
             //todo: ask the user to select a viewport to screenshot.
             DisplayWidget* pWid = views[0];
             ZASSERT_EXIT(pWid);
-            ViewportWidget* pViewport = pWid->getViewportWidget();
-            ZASSERT_EXIT(pViewport);
-            pViewport->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+            auto pZenovis = pWid->getZenoVis();
+            ZASSERT_EXIT(pZenovis);
+            pZenovis->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
         }
     }
 }
@@ -1579,12 +1573,11 @@ void ZenoMainWindow::doFrameUpdate(int frame) {
     for (auto displayWid : views)
     {
         ZASSERT_EXIT(displayWid);
-        auto viewport = displayWid->getViewportWidget();
-        ZASSERT_EXIT(viewport);
-        std::cout << "====== CameraMoving " << viewport->m_bMovingCamera << "\n";
+        bool bMovingCamera = displayWid->isCameraMoving();
+        std::cout << "====== CameraMoving " << bMovingCamera << "\n";
 
         // Sync Camera
-        if(viewport->m_bMovingCamera){
+        if (bMovingCamera) {
 
         }
         // Sync Frame

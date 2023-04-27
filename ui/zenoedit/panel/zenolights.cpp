@@ -3,6 +3,7 @@
 #include <zenomodel/include/modelrole.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "zeno/utils/log.h"
@@ -141,9 +142,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
         DisplayWidget *pWid = views[0];
         ZASSERT_EXIT(pWid);
-        ViewportWidget *pViewport = pWid->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-        auto scene = pViewport->getSession()->get_scene();
+        auto pZenovis = pWid->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
         ZASSERT_EXIT(scene);
 
         //todo: move objsMan outof scene.
@@ -164,10 +165,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
         DisplayWidget *pWid = views[0];
         ZASSERT_EXIT(pWid);
-        ViewportWidget *pViewport = pWid->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-
-        auto scene = pViewport->getSession()->get_scene();
+        auto pZenovis = pWid->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
         ZASSERT_EXIT(scene);
 
         for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
@@ -203,9 +203,9 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             return;
 
         DisplayWidget *pWid = views[0];
-        ViewportWidget *pViewport = pWid->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-        auto scene = pViewport->getSession()->get_scene();
+        auto pZenovis = pWid->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
         ZASSERT_EXIT(scene);
 
         std::shared_ptr<zeno::IObject> ptr = scene->objectsMan->lightObjects[name];
@@ -471,9 +471,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
         for (auto pDisplay : views) {
             ZASSERT_EXIT(pDisplay);
-            ViewportWidget *pViewport = pDisplay->getViewportWidget();
-            ZASSERT_EXIT(pViewport);
-            pViewport->updateCameraProp(camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+            pDisplay->updateCameraProp(camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
             zenoApp->getMainWindow()->updateViewport();
         }
     });
@@ -481,9 +479,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
         for (auto pDisplay : views) {
             ZASSERT_EXIT(pDisplay);
-            ViewportWidget *pViewport = pDisplay->getViewportWidget();
-            ZASSERT_EXIT(pViewport);
-            pViewport->updateCameraProp(camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+            pDisplay->updateCameraProp(camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
             zenoApp->getMainWindow()->updateViewport();
         }
     });
@@ -560,10 +556,9 @@ void ZenoLights::modifyLightData() {
     QVector<DisplayWidget*> views = pWin->viewports();
     for (auto pDisplay : views) {
 
-        ViewportWidget* pViewport = pDisplay->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-
-        auto scene = pViewport->getSession()->get_scene();
+        Zenovis* pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto scene = pZenoVis->getSession()->get_scene();
         ZASSERT_EXIT(scene);
 
         std::shared_ptr<zeno::IObject> obj = scene->objectsMan->lightObjects[name];
@@ -586,7 +581,7 @@ void ZenoLights::modifyLightData() {
             }
 
             scene->objectsMan->needUpdateLight = true;
-            pViewport->setSimpleRenderOption();
+            pDisplay->setSimpleRenderOption();
             zenoApp->getMainWindow()->updateViewport();
         } else {
             zeno::log_info("modifyLightData not found {}", name);
@@ -619,10 +614,10 @@ void ZenoLights::modifySunLightDir() {
     QVector<DisplayWidget*> views = pWin->viewports();
     for (auto pDisplayWid : views)
     {
-        ViewportWidget* pViewport = pDisplayWid->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
+        Zenovis* pZenovis = pDisplayWid->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
 
-        auto scene = pViewport->getSession()->get_scene();
+        auto scene = pZenovis->getSession()->get_scene();
         ZASSERT_EXIT(scene);
 
         for (auto const &[key, obj] : scene->objectsMan->lightObjects) {
@@ -662,7 +657,7 @@ void ZenoLights::modifySunLightDir() {
             ud.set2("colorTemperature", std::move(colorTemperatureValue));
         }
         scene->objectsMan->needUpdateLight = true;
-        pViewport->setSimpleRenderOption();
+        pDisplayWid->setSimpleRenderOption();
         zenoApp->getMainWindow()->updateViewport();
     }
 }
@@ -674,9 +669,9 @@ void ZenoLights::write_param_into_node(const QString& primid) {
     QVector<DisplayWidget*> views = pWin->viewports();
     for (DisplayWidget* pDisplay : views)
     {
-        ViewportWidget* pViewport = pDisplay->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-        auto scene = pViewport->getSession()->get_scene();
+        auto pZenovis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
 
         if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
             return;

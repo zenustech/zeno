@@ -537,6 +537,8 @@ static void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sut
             framebuf_res_y,
             output_buffer.getPBO(),
             fbo);
+    //output_buffer.getBuffer();
+    //output_buffer_o.getHostPointer();
 }
 
 
@@ -1371,7 +1373,11 @@ static void detectHuangrenxunHappiness() {
 //
 //------------------------------------------------------------------------------
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
+
+#ifdef OPTIX_BASE_GL
 std::optional<sutil::GLDisplay> gl_display_o;
+#endif
+
 sutil::CUDAOutputBufferType output_buffer_type = sutil::CUDAOutputBufferType::GL_INTEROP;
 void optixinit( int argc, char* argv[] )
 {
@@ -1420,6 +1426,9 @@ void optixinit( int argc, char* argv[] )
             printUsageAndExit( argv[0] );
         }
     }
+#ifndef OPTIX_BASE_GL
+    output_buffer_type = sutil::CUDAOutputBufferType::CUDA_DEVICE;
+#endif
 
     detectHuangrenxunHappiness();
         initCameraState();
@@ -1443,9 +1452,11 @@ void optixinit( int argc, char* argv[] )
                     );
             output_buffer_o->setStream( 0 );
         }
+#ifdef OPTIX_BASE_GL
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
         }
+#endif
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
                                        1.0, 0.0, 6500.0);
     xinxinoptix::using_hdr_sky(false);
@@ -2932,7 +2943,9 @@ void optixrender(int fbo, int samples, bool simpleRender) {
     zeno::log_debug("rendering samples {}", samples);
     state.params.simpleRender = false;//simpleRender;
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
+#ifdef OPTIX_BASE_GL
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
+#endif
     updateState( *output_buffer_o, state.params );
     const int max_samples_once = 16;
 
@@ -2941,7 +2954,9 @@ void optixrender(int fbo, int samples, bool simpleRender) {
         launchSubframe( *output_buffer_o, state );
         state.params.subframe_index++;
     }
+#ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
+#endif
     auto &ud = zeno::getSession().userData();
     if (ud.has("optix_image_path")) {
         auto path = ud.get2<std::string>("optix_image_path");

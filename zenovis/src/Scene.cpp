@@ -12,6 +12,7 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/scope.h>
+#include "../xinxinoptix/xinxinoptixapi.h"
 #include <cstdlib>
 #include <map>
 
@@ -45,6 +46,11 @@ Scene::Scene()
 
 void Scene::switchRenderEngine(std::string const &name) {
     renderMan->switchDefaultEngine(name);
+}
+
+void* Scene::getOptixImg(int& w, int& h)
+{
+    return xinxinoptix::optixgetimg(w, h);
 }
 
 std::vector<float> Scene::getCameraProp(){
@@ -100,9 +106,12 @@ bool Scene::loadFrameObjects(int frameid) {
 }
 
 void Scene::draw() {
-    //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
-    //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
+    if (renderMan->getDefaultEngineName() != "optx")
+    {
+        //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+        CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
+        //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
+    }
 
     zeno::log_trace("scene redraw {}x{}", camera->m_nx, camera->m_ny);
     renderMan->getEngine()->draw();

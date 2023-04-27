@@ -25,6 +25,15 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     auto att_instUv = attrs.instUv;
     auto att_instClr = attrs.instClr;
     auto att_instTang = attrs.instTang;
+    auto att_NoL      = attrs.NoL;
+    auto att_LoV      = attrs.LoV;
+    auto att_N        = attrs.N;
+    auto att_T        = attrs.T;
+    auto att_L        = attrs.L;
+    auto att_V        = attrs.V;
+    auto att_H        = attrs.H;
+    auto att_reflectance = attrs.reflectance;
+    auto att_fresnel  = attrs.fresnel;
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
@@ -58,12 +67,15 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_emissionIntensity = float(0);
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
     float mat_displacement = 0.0f;
+    float mat_NoL = 1.0f;
+    float mat_LoV = 1.0f;
+    vec3 mat_reflectance = att_reflectance;
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
     if constexpr(isDisplacement)
     {
-        mats.displacement = mat_displacement;
+        mats.reflectance = mat_reflectance;
         return mats;
     }else {
         /* MODME */
@@ -108,7 +120,10 @@ static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex[
     return evalMat<true>(zenotex, uniforms, attrs);
 }
 
-
+static __inline__ __device__ MatOutput evalReflectance(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
+{
+    return evalMat<true>(zenotex, uniforms, attrs);
+}
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
 {
     float w0 = 1 - barys.x - barys.y;
@@ -816,6 +831,19 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->medium = prd->next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
  
+    if(thin>0.5){
+        vec3 H = normalize(vec3(normalize(wi)) + vec3(-normalize(ray_dir)));
+        attrs.N = N;
+        attrs.T = cross(B,N);
+        attrs.L = vec3(normalize(wi));
+        attrs.V = vec3(-normalize(ray_dir));
+        attrs.H = normalize(H);
+        attrs.reflectance = reflectance;
+        attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+        MatOutput mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+        reflectance = mat2.reflectance;
+    }
+
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
     prd->depth++;
@@ -899,8 +927,19 @@ extern "C" __global__ void __closesthit__radiance()
                     clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
                     dot(N, L));
-
-                prd->radiance = light_attenuation * weight * 2.0 * light.emission * lbrdf;
+                MatOutput mat2;
+                if(thin>0.5){
+                    vec3 H = normalize(vec3(normalize(L)) + vec3(-normalize(inDir)));
+                    attrs.N = N;
+                    attrs.T = cross(B,N);
+                    attrs.L = vec3(normalize(L));
+                    attrs.V = vec3(-normalize(inDir));
+                    attrs.H = normalize(H);
+                    attrs.reflectance = lbrdf;
+                    attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+                    mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+                }
+                prd->radiance = light_attenuation * weight * 2.0 * light.emission * (thin>0.5? float3(mat2.reflectance):lbrdf);
                 computed = true;
             }
         }
@@ -932,8 +971,19 @@ extern "C" __global__ void __closesthit__radiance()
             auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                           10, // be careful
                                           .45, 15., 1.030725 * 0.3, params.elapsedTime));
-
-            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * sky * lbrdf;
+            MatOutput mat2;
+            if(thin>0.5){
+                    vec3 H = normalize(vec3(normalize(sun_dir)) + vec3(-normalize(inDir)));
+                    attrs.N = N;
+                    attrs.T = cross(B,N);
+                    attrs.L = vec3(normalize(sun_dir));
+                    attrs.V = vec3(-normalize(inDir));
+                    attrs.H = normalize(H);
+                    attrs.reflectance = lbrdf;
+                    attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+                    mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+            }
+            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * sky * (thin>0.5? float3(mat2.reflectance):lbrdf);
     }
 
     P = P_OLD;

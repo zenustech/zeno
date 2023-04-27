@@ -23,7 +23,8 @@
 #include "zvalidator.h"
 #include "zenonewmenu.h"
 #include "util/apphelper.h"
-#include <viewport/viewportwidget.h>
+#include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include <zenoui/comctrl/gv/zgraphicstextitem.h>
 #include <zenoui/comctrl/gv/zenogvhelper.h>
 #include <zenomodel/include/iparammodel.h>
@@ -1249,9 +1250,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
             for (auto pDisplay : views)
             {
                 ZASSERT_EXIT(pDisplay);
-                auto viewport = pDisplay->getViewportWidget();
-                if (viewport)
-                    viewport->changeTransformOperation(nodeId());
+                pDisplay->changeTransformOperation(nodeId());
             }
         }
     }

@@ -1,4 +1,5 @@
 #include <zenovis/Camera.h>
+#include <zenovis/opengl/shader.h>
 
 namespace zenovis {
 

@@ -29,6 +29,7 @@ struct MatOutput {
     vec3  sssColor;
     vec3  sssParam;
     float displacement;
+    vec3 reflectance;
 
     vec3 nrm;
     vec3 emission;
@@ -45,4 +46,13 @@ struct MatInput {
     vec3 instUv;
     vec3 instClr;
     vec3 instTang;
+    float NoL;
+    float LoV;
+    vec3 reflectance;
+    vec3 N;
+    vec3 T;
+    vec3 L;
+    vec3 V;
+    vec3 H;
+    vec3 fresnel;
 };

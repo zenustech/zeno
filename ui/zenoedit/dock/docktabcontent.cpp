@@ -10,6 +10,7 @@
 #include <zenoedit/panel/zenoimagepanel.h>
 #include "nodesview/zenographseditor.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
@@ -568,7 +569,7 @@ void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
 /// <summary>
 /// </summary>
 /// <param name="parent"></param>
-DockContent_View::DockContent_View(QWidget* parent)
+DockContent_View::DockContent_View(bool bOptixView, QWidget* parent)
     : DockToolbarWidget(parent)
     , m_pDisplay(nullptr)
     , m_cbRenderWay(nullptr)
@@ -580,6 +581,7 @@ DockContent_View::DockContent_View(QWidget* parent)
     , m_recordVideo(nullptr)
     , m_screenshoot(nullptr)
     , m_resizeViewport(nullptr)
+    , m_bOptixView(bOptixView)
 {
 }
 
@@ -730,28 +732,22 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
 QWidget* DockContent_View::initWidget()
 {
-    m_pDisplay = new DisplayWidget;
+    m_pDisplay = new DisplayWidget(m_bOptixView);
     return m_pDisplay;
 }
 
 void DockContent_View::initConnections()
 {
     connect(m_moveBtn, &ZToolBarButton::clicked, this, [=]() {
-        auto viewport = m_pDisplay->getViewportWidget();
-        if (viewport)
-            viewport->changeTransformOperation(0);
+        m_pDisplay->changeTransformOperation(0);
     });
 
     connect(m_rotateBtn, &ZToolBarButton::clicked, this, [=]() {
-        auto viewport = m_pDisplay->getViewportWidget();
-        if (viewport)
-            viewport->changeTransformOperation(1);
+        m_pDisplay->changeTransformOperation(1);
     });
 
     connect(m_scaleBtn, &ZToolBarButton::clicked, this, [=]() {
-        auto viewport = m_pDisplay->getViewportWidget();
-        if (viewport)
-            viewport->changeTransformOperation(2);
+        m_pDisplay->changeTransformOperation(2);
     });
 
     connect(m_smooth_shading, &ZToolBarButton::toggled, this, [=](bool bToggled) {
@@ -806,13 +802,10 @@ void DockContent_View::initConnections()
 
         if (QDialog::Accepted == dlg.exec())
         {
-            ViewportWidget* pViewport = m_pDisplay->getViewportWidget();
             int w = pWidthEdit->text().toInt();
             int h = pHeightEdit->text().toInt();
-            pViewport->resizeGL(w, h);
-            pViewport->updateGL();
+            m_pDisplay->resizeViewport(QSize(w, h));
         }
-
     });
 }
 
@@ -831,7 +824,7 @@ DisplayWidget* DockContent_View::getDisplayWid() const
 
 QSize DockContent_View::viewportSize() const
 {
-    return m_pDisplay->getViewportWidget()->size();
+    return m_pDisplay->viewportSize();
 }
 
 

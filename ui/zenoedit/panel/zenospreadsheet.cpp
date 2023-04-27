@@ -12,6 +12,7 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include "zenomainwindow.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 
 
 ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
@@ -105,9 +106,9 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
         return;
 
     ZASSERT_EXIT(views[0]);
-    ViewportWidget *pViewport = views[0]->getViewportWidget();
-    ZASSERT_EXIT(pViewport);
-    auto scene = pViewport->getSession()->get_scene();
+    Zenovis* pZenovis = views[0]->getZenoVis();
+    ZASSERT_EXIT(pZenovis);
+    auto scene = pZenovis->getSession()->get_scene();
     ZASSERT_EXIT(scene);
 
     bool found = false;

@@ -13,10 +13,12 @@
 #include <zeno/utils/cppdemangle.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "util/log.h"
 #include <zenomodel/include/uihelper.h>
 #include "settings/zenosettingsmanager.h"
 #include "groupnode.h"
+#include "viewport/cameracontrol.h"
 
 
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
@@ -178,9 +180,7 @@ void _ZenoSubGraphView::cameraFocus()
         for (auto pDisplay : views)
         {
             ZASSERT_EXIT(pDisplay);
-            ViewportWidget *pViewport = pDisplay->getViewportWidget();
-            ZASSERT_EXIT(pViewport);
-            auto pZenovis = pViewport->getZenoVis();
+            auto pZenovis = pDisplay->getZenoVis();
             ZASSERT_EXIT(pZenovis);
 
             bool found = pZenovis->getSession()->focus_on_node(nodeId.toStdString(), center, radius);

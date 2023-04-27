@@ -6,6 +6,8 @@
 #include "common_def.h"
 #include "../startup/zstartup.h"
 #include "variantptr.h"
+#include "viewport/displaywidget.h"
+
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
 {
@@ -165,12 +167,12 @@ void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
     ZASSERT_EXIT(pWin);
 
     QVector<DisplayWidget *> views = pWin->viewports();
-    for (auto pDisplay : views) {
+    for (auto pDisplay : views)
+    {
+        Zenovis* pZenovis = views[0]->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
 
-        ViewportWidget *pViewport = pDisplay->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-
-        auto scene = pViewport->getSession()->get_scene();
+        auto scene = pZenovis->getSession()->get_scene();
         ZASSERT_EXIT(scene);
 
         std::shared_ptr<zeno::IObject> obj;
@@ -199,7 +201,7 @@ void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
             }
 
             scene->objectsMan->needUpdateLight = true;
-            pViewport->setSimpleRenderOption();
+            views[0]->setSimpleRenderOption();
             zenoApp->getMainWindow()->updateViewport();
         } else {
             zeno::log_info("modifyLightData not found {}", name);

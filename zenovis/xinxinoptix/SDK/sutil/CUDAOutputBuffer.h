@@ -74,6 +74,7 @@ public:
 
     // Get output buffer
     GLuint         getPBO();
+    void           getBuffer();
     void           deletePBO();
     PIXEL_FORMAT*  getHostPointer();
 
@@ -293,6 +294,22 @@ void CUDAOutputBuffer<PIXEL_FORMAT>::unmap()
     }
 }
 
+template <typename PIXEL_FORMAT>
+void CUDAOutputBuffer<PIXEL_FORMAT>::getBuffer() {
+    
+    const size_t buffer_size = m_width * m_height * sizeof(PIXEL_FORMAT);
+
+    if (m_type == CUDAOutputBufferType::CUDA_DEVICE) {
+        // We need a host buffer to act as a way-station
+        //if (m_host_pixels.empty())
+        m_host_pixels.resize(m_width * m_height);
+
+        makeCurrent();
+        CUDA_CHECK(cudaMemcpy(static_cast<void *>(m_host_pixels.data()), m_device_pixels, buffer_size,
+                              cudaMemcpyDeviceToHost));
+
+    }
+}
 
 template <typename PIXEL_FORMAT>
 GLuint CUDAOutputBuffer<PIXEL_FORMAT>::getPBO()

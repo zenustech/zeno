@@ -7,7 +7,7 @@
 #include "viewport/viewportwidget.h"
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
+#include "viewport/displaywidget.h"
 #include <viewport/zenovis.h>
 #include "zenovis/Session.h"
 #include <zeno/core/Session.h>
@@ -62,9 +62,9 @@ void CameraNode::onEditClicked()
     for (auto pDisplay : views)
     {
         ZASSERT_EXIT(pDisplay);
-        ViewportWidget* pViewport = pDisplay->getViewportWidget();
-        ZASSERT_EXIT(pViewport);
-        auto sess = pViewport->getSession();
+        auto pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto sess = pZenoVis->getSession();
         ZASSERT_EXIT(sess);
 
         auto scene = sess->get_scene();
@@ -170,10 +170,10 @@ void LightNode::onEditClicked(){
     if (views.isEmpty())
         return;
 
-    Zenovis* pZenovis = views[0]->getViewportWidget()->getZenoVis();
-    ZASSERT_EXIT(pZenovis);
+    auto pZenoVis = views[0]->getZenoVis();
+    ZASSERT_EXIT(pZenoVis);
 
-    auto sess = pZenovis->getSession();
+    auto sess = pZenoVis->getSession();
     ZASSERT_EXIT(sess);
     auto scene = sess->get_scene();
     ZASSERT_EXIT(scene);

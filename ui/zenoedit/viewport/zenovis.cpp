@@ -1,5 +1,6 @@
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
+#include "cameracontrol.h"
 #include "../zenomainwindow.h"
 #include "../launch/corelaunch.h"
 #include "../timeline/ztimeline.h"
@@ -112,12 +113,16 @@ int Zenovis::setCurrentFrameId(int frameid)
 
 void Zenovis::doFrameUpdate()
 {
-    //if fileio.isIOPathChanged() :
-    //    core.clear_graphics()
-
     int frameid = getCurrentFrameId();
-    int ui_frameid = zenoApp->getMainWindow()->timeline()->value();
+    ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+    if (!pMainWin)
+        return;
 
+    ZTimeline* timeline = pMainWin->timeline();
+    if (!timeline)
+        return;
+
+    int ui_frameid = timeline->value();
     zenoApp->getMainWindow()->doFrameUpdate(ui_frameid);
 
     if (m_playing) {
