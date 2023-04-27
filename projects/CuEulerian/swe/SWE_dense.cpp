@@ -96,7 +96,7 @@ struct SolveShallowWaterHeight : INode {
         float dx = ud.get2<float>("dx");
         auto dt = get_input2<float>("dt");
 
-        const uint nc = (nx + halo) * (nz + halo);
+        const unsigned int nc = (nx + halo) * (nz + halo);
 
         auto height_attr = get_input2<std::string>("height_attr");
         auto u_attr = get_input2<std::string>("u_attr");
@@ -257,7 +257,7 @@ struct SolveShallowWaterMomentum : INode {
         auto dt = get_input2<float>("dt");
         auto gravity = get_input2<float>("gravity");
 
-        const uint nc = (nx + halo) * (nz + halo);
+        const unsigned int nc = (nx + halo) * (nz + halo);
 
         auto terrain_attr = get_input2<std::string>("terrain_attr");
         auto height_attr = get_input2<std::string>("height_attr");
