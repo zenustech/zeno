@@ -1,4 +1,6 @@
 #include "nodesync.h"
+#include <zenomodel/include/uihelper.h>
+
 
 namespace zeno {
 std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_location,
@@ -14,15 +16,18 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
                                                new_node_type.c_str(),
                                                pos);
     auto this_node_id = node.data(ROLE_OBJID).toString();
-    EdgeInfo edge = {
-        this_node_id,
-        new_node_id,
-        output_sock.c_str(),
-        input_sock.c_str()
-    };
-    m_graph_model->addLink(edge,
-                           subgraph,
-                           false);
+
+    const QString& subgName = subgraph.data(ROLE_OBJNAME).toString();
+    const QString& outNode = this_node_id;
+    const QString& inNode = new_node_id;
+    const QString& outSock = QString::fromLocal8Bit(output_sock.c_str());
+    const QString& inSock = QString::fromLocal8Bit(input_sock.c_str());
+
+    QString outSockObj = UiHelper::constructObjPath(subgName, outNode, "[node]/outputs/", outSock);
+    QString inSockObj = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
+
+    EdgeInfo edge(outSockObj, inSockObj);
+    m_graph_model->addLink(edge, false);
     return searchNode(new_node_id.toStdString());
 }
 
@@ -48,7 +53,12 @@ bool NodeSyncMgr::checkNodeType(const QModelIndex& node,
 bool NodeSyncMgr::checkNodeInputHasValue(const QModelIndex& node,
                                          const std::string& input_name) {
     auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    return inputs[input_name.c_str()].linkIndice.empty();
+    QString inSock = QString::fromLocal8Bit(input_name.c_str());
+    if (inputs.find(inSock) == inputs.end())
+        return false;
+
+    const INPUT_SOCKET& inSocket = inputs[inSock];
+    return inSocket.info.links.isEmpty();
 }
 
 std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QModelIndex& node,
@@ -57,9 +67,14 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
     auto this_node_id = node.data(ROLE_OBJID).toString(); // TransformPrimitive-1f4erf21
     auto this_node_type = this_node_id.section("-", 1); // TransformPrimitive
     auto prim_sock_name = getPrimSockName(this_node_type.toStdString());
-    auto linked_edges = this_outputs[prim_sock_name.c_str()].linkIndice;
+
+    QString sockName = QString::fromLocal8Bit(prim_sock_name.c_str());
+    if (this_outputs.find(sockName) == this_outputs.end())
+        return {};
+
+    auto linked_edges = this_outputs[sockName].info.links;
     for (const auto& linked_edge : linked_edges) {
-        auto next_node_id = linked_edge.data(ROLE_INNODE).toString();
+        auto next_node_id = UiHelper::getSockNode(linked_edge.inSockPath);
         if (next_node_id.contains(node_type.c_str())) {
             auto search_result = m_graph_model->search(next_node_id,
                                                        SEARCH_NODEID);
@@ -79,9 +94,13 @@ std::vector<NodeLocation> NodeSyncMgr::getInputNodes(const QModelIndex& node,
                                                      const std::string& input_name) {
     std::vector<NodeLocation> res;
     auto inputs = node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-    auto input_edges = inputs[input_name.c_str()].linkIndice;
-    for (const auto& input_edge : input_edges) {
-        auto input_node_id = input_edge.data(ROLE_OUTNODE).toString();
+
+    QString sockName = QString::fromLocal8Bit(input_name.c_str());
+    if (inputs.find(sockName) == inputs.end())
+        return res;
+
+    for (const auto& input_edge : inputs[sockName].info.links) {
+        auto input_node_id = UiHelper::getSockName(input_edge.outSockPath);
         auto searched_node = searchNode(input_node_id.toStdString());
         if (searched_node.has_value())
             res.emplace_back(searched_node.value());

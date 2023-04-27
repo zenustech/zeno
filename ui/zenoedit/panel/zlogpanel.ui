@@ -14,208 +14,52 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <property name="spacing">
-      <number>20</number>
+      <number>10</number>
+     </property>
+     <property name="leftMargin">
+      <number>12</number>
      </property>
      <property name="topMargin">
-      <number>10</number>
+      <number>4</number>
+     </property>
+     <property name="rightMargin">
+      <number>6</number>
      </property>
      <property name="bottomMargin">
-      <number>10</number>
+      <number>4</number>
      </property>
      <item>
-      <widget class="QCheckBox" name="cbAll">
-       <property name="styleSheet">
-        <string notr="true">QCheckBox {
-    spacing: 8px;
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgba(255, 255, 255, 0.7);
-}
-
-QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
-}
-
-QCheckBox::indicator:unchecked {
-    image: url(:/icons/checkbox_unchecked.svg);
-}
-
-QCheckBox::indicator:checked {
-    image: url(:/icons/checkbox_checked_normal.svg);
-}</string>
-       </property>
-       <property name="text">
-        <string>All</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
+      <widget class="ZToolButton" name="btnKey" native="true"/>
      </item>
      <item>
-      <widget class="QCheckBox" name="cbDebug">
-       <property name="styleSheet">
-        <string notr="true">QCheckBox {
-    spacing: 8px;
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgba(255, 255, 255, 0.7);
-}
-
-QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
-}
-
-QCheckBox::indicator:unchecked {
-    image: url(:/icons/checkbox_unchecked.svg);
-}
-
-QCheckBox::indicator:checked {
-    image: url(:/icons/checkbox_checked_normal.svg);
-}</string>
-       </property>
-       <property name="text">
-        <string>Debug</string>
-       </property>
-       <property name="checked">
-        <bool>false</bool>
-       </property>
-      </widget>
+      <widget class="ZToolButton" name="btnDebug" native="true"/>
      </item>
      <item>
-      <widget class="QCheckBox" name="cbCritical">
-       <property name="styleSheet">
-        <string notr="true">QCheckBox {
-    spacing: 8px;
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgba(80, 154, 200, 0.7);
-}
-
-QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
-}
-
-QCheckBox::indicator:unchecked {
-    image: url(:/icons/checkbox_unchecked.svg);
-}
-
-QCheckBox::indicator:checked {
-    image: url(:/icons/checkbox_checked_cyan.svg);
-}</string>
-       </property>
-       <property name="text">
-        <string>Critical</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
+      <widget class="ZToolButton" name="btnInfo" native="true"/>
      </item>
      <item>
-      <widget class="QCheckBox" name="cbInfo">
-       <property name="styleSheet">
-        <string notr="true">QCheckBox {
-    spacing: 8px;
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgba(255, 255, 255, 0.7);
-}
-
-QCheckBox:checked{
-	color: rgb(51,148,85);
-}
-
-QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
-}
-
-QCheckBox::indicator:unchecked {
-    image: url(:/icons/checkbox_unchecked.svg);
-}
-
-QCheckBox::indicator:checked {
-    image: url(:/icons/checkbox_checked_green.svg);
-}</string>
-       </property>
-       <property name="text">
-        <string>Info</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
+      <widget class="ZToolButton" name="btnWarn" native="true"/>
      </item>
      <item>
-      <widget class="QCheckBox" name="cbWarning">
-       <property name="styleSheet">
-        <string notr="true">QCheckBox {
-    spacing: 8px;
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgba(255, 255, 255, 0.7);
-}
-
-QCheckBox:checked{
-	color: rgb(200,154,80);
-}
-
-QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
-}
-
-QCheckBox::indicator:unchecked {
-    image: url(:/icons/checkbox_unchecked.svg);
-}
-
-QCheckBox::indicator:checked {
-    image: url(:/icons/checkbox_checked_yellow.svg);
-}</string>
-       </property>
-       <property name="text">
-        <string>Warning</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="cbError">
-       <property name="styleSheet">
-        <string notr="true">QCheckBox {
-    spacing: 8px;
-	font: 14px &quot;HarmonyOS Sans&quot;;
-	color: rgba(255, 255, 255, 0.7);
-}
-
-QCheckBox:checked{
-	color: rgb(200,84,79);
-}
-
-QCheckBox::indicator {
-    width: 15px;
-    height: 15px;
-}
-
-QCheckBox::indicator:unchecked {
-    image: url(:/icons/checkbox_unchecked.svg);
-}
-
-QCheckBox::indicator:checked {
-    image: url(:/icons/checkbox_checked_red.svg);
-}</string>
-       </property>
-       <property name="text">
-        <string>Error</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
+      <widget class="ZToolButton" name="btnError" native="true"/>
      </item>
      <item>
       <spacer name="horizontalSpacer">
@@ -231,7 +75,32 @@ QCheckBox::indicator:checked {
       </spacer>
      </item>
      <item>
-      <widget class="ZIconLabel" name="btnClearAll"/>
+      <widget class="QLineEdit" name="editSearch">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>20</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="ZToolButton" name="btnDelete" native="true"/>
+     </item>
+     <item>
+      <widget class="ZToolButton" name="btnSetting" native="true"/>
      </item>
      <item>
       <spacer name="horizontalSpacer_2">
@@ -252,22 +121,41 @@ QCheckBox::indicator:checked {
     </layout>
    </item>
    <item>
-    <widget class="LogListView" name="listView">
-     <property name="styleSheet">
-      <string notr="true">QListView
+    <widget class="ZPlainLine" name="seperateline" native="true"/>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <property name="leftMargin">
+      <number>6</number>
+     </property>
+     <property name="topMargin">
+      <number>6</number>
+     </property>
+     <property name="rightMargin">
+      <number>6</number>
+     </property>
+     <property name="bottomMargin">
+      <number>6</number>
+     </property>
+     <item>
+      <widget class="LogListView" name="listView">
+       <property name="styleSheet">
+        <string notr="true">QListView
 {
-	background-color: rgb(21,21,25);
+	background-color: #191D21;
 	show-decoration-selected: 1;
-	font: 12pt 'HarmonyOS Sans';
+	font-size: 12pt;
 }</string>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::NoFrame</enum>
-     </property>
-     <property name="frameShadow">
-      <enum>QFrame::Plain</enum>
-     </property>
-    </widget>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::Panel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Plain</enum>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>
@@ -279,9 +167,15 @@ QCheckBox::indicator:checked {
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>ZIconLabel</class>
-   <extends>QLabel</extends>
-   <header>zenoui/comctrl/zlabel.h</header>
+   <class>ZPlainLine</class>
+   <extends>QWidget</extends>
+   <header>zenoui/comctrl/zlinewidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ZToolButton</class>
+   <extends>QWidget</extends>
+   <header>zenoui/comctrl/ztoolbutton.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

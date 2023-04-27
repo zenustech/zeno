@@ -1,6 +1,24 @@
 #include "zlabel.h"
 
 
+ZDebugLabel::ZDebugLabel(QWidget* parent)
+    : QLabel(parent)
+{
+}
+
+ZDebugLabel::ZDebugLabel(const QString& text, QWidget* parent)
+    : QLabel(text, parent)
+    , m_text(text)
+{
+}
+
+void ZDebugLabel::adjustText(const QString& text)
+{
+    m_text = text;
+}
+
+
+
 ZIconLabel::ZIconLabel(QWidget* parent)
     : QLabel(parent)
     , m_bToggled(false)
@@ -23,6 +41,18 @@ void ZIconLabel::setIcons(const QSize& sz, const QString& iconEnable, const QStr
     if (!iconNormalOn.isEmpty())
         m_bToggleable = true;
 
+    setPixmap(m_icon.pixmap(m_iconSz, QIcon::Normal));
+    setFixedSize(m_iconSz);
+}
+
+void ZIconLabel::setIcons(const QString& iconIdle, const QString& iconLight)
+{
+    QIcon ic(iconIdle);
+    QPixmap px(iconIdle);
+    m_iconSz = px.size();
+    m_icon.addFile(iconIdle, QSize(), QIcon::Normal, QIcon::Off);
+    m_icon.addFile(iconLight, QSize(), QIcon::Active, QIcon::Off);
+    m_bToggleable = false;
     setPixmap(m_icon.pixmap(m_iconSz, QIcon::Normal));
     setFixedSize(m_iconSz);
 }
@@ -108,6 +138,11 @@ ZTextLabel::ZTextLabel(const QString& text, QWidget* parent)
     , m_hoverCursor(Qt::PointingHandCursor)
 {
     setMouseTracking(true);
+}
+
+void ZTextLabel::setHoverCursor(Qt::CursorShape shape)
+{
+    m_hoverCursor = shape;
 }
 
 void ZTextLabel::setUnderline(bool bUnderline)

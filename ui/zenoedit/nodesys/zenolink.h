@@ -40,12 +40,12 @@ class ZenoTempLink : public ZenoLink
 {
     Q_OBJECT
 public:
-    ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QString sockName, QPointF fixedPos, bool fixInput);
+    ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput);
     ~ZenoTempLink();
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
     void setFloatingPos(QPointF pos);
-    void getFixedInfo(QString& nodeId, QString& sockName, QPointF& fixedPos, bool& bFixedInput);
+    void getFixedInfo(QString& nodeId, QPointF& fixedPos, bool& bFixedInput);
     ZenoSocketItem* getFixedSocket() const;
     ZenoSocketItem* getAdsorbedSocket() const;
     void setAdsortedSocket(ZenoSocketItem* pSocket);
@@ -62,7 +62,6 @@ protected:
 private:
     static constexpr float BEZIER = 0.5f, WIDTH = 3;
 
-    QString m_sockName;
     QString m_nodeId;
     QPointF m_floatingPos;
     SOCKET_INFO m_info;

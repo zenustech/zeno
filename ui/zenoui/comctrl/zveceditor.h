@@ -12,16 +12,21 @@ class ZVecEditor : public QWidget
 public:
 	ZVecEditor(const UI_VECTYPE& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent = nullptr);
 	UI_VECTYPE vec() const;
+	bool isFloat() const;
 
 signals:
 	void valueChanged(UI_VECTYPE);
 	void editingFinished();
 
 public slots:
-	void onValueChanged(const UI_VECTYPE&);
+	void setVec(const UI_VECTYPE& vec, bool bFloat);
 
 private:
+	void initUI(const UI_VECTYPE& vec);
+
 	QVector<ZLineEdit*> m_editors;
+	int m_deflSize;
+	QString m_styleCls;
 	bool m_bFloat;
 };
 

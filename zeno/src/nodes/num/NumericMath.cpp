@@ -226,5 +226,43 @@ ZENDEFNODE(CalcDirectionFromAngle, {
     {"math"},
 });
 
+
+struct DegreetoRad : INode {
+    virtual void apply() override {
+
+        auto degree = get_input2<float>("degree");
+        float radian = degree * 0.01745329251994329576923690768489;
+        set_output2("radian", radian);
+
+    }
+};
+
+ZENDEFNODE(DegreetoRad, {
+    {{"float", "degree", ""}, 
+    },
+    {{"float", "radian"}},
+    {},
+    {"math"},
+});
+
+
+struct RadtoDegree : INode {
+    virtual void apply() override {
+
+        auto radian = get_input2<float>("radian");
+        float degree = radian * 180.f / M_PI;
+        set_output2("degree", degree);
+
+    }
+};
+
+ZENDEFNODE(RadtoDegree, {
+    {{"float", "radian", ""}, 
+    },
+    {{"float", "degree"}},
+    {},
+    {"math"},
+});
+
 }
 }

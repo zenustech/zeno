@@ -10,6 +10,10 @@ set_property(TARGET zenoui PROPERTY AUTOUIC ON)
 set_property(TARGET zenoui PROPERTY AUTOMOC ON)
 set_property(TARGET zenoui PROPERTY AUTORCC ON)
 
+if (ZENO_DEBUG_MSVC)
+    zeno_dbg_msvc(zenoui)
+endif()
+
 target_link_libraries(zenoui PUBLIC Qt5::Widgets Qt5::Svg Qt5::Network)
 target_link_libraries(zenoui PUBLIC zeno)
 

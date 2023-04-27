@@ -1,0 +1,94 @@
+QTabBar::close-button {
+    image: url(:/icons/closebtn.svg);
+    subcontrol-position: right;
+}
+
+QTabBar::close-button:hover {
+    image: url(:/icons/closebtn_on.svg);
+}
+
+QTabBar {
+    background-color: #22252C;
+    border-bottom: 1px solid rgb(24, 29, 33);
+    border-right: 0px;
+	font-size: 10pt;
+    font-weight: 500;
+}
+
+QTabBar::tab {
+    background: #22252C;
+    color: #737B85;
+    border-top: 0px solid rgb(24,29,33);
+    border-right: 1px solid rgb(24, 29, 33);
+    border-bottom: 1px solid rgb(24, 29, 33);
+    padding: 2px 16px 3px 16px;
+}
+
+QTabBar::tab:top {
+    padding: 2px 16px 3px 16px;
+}
+
+QTabBar::tab:selected {
+    background: #2D3239;
+    color: #C3D2DF;
+    border-bottom: 0px;
+    padding: 0px 16px 3px 16px;
+}
+
+QTabBar[cssClass = "propanel"]::tab {
+    background: #22252C;
+    color: #737B85;
+    border-top: 1px solid rgb(24,29,33);
+    border-right: 1px solid rgb(24, 29, 33);
+    border-bottom: 1px solid rgb(24, 29, 33);
+    padding: 2px 16px 3px 16px;
+}
+
+QTabBar[cssClass = "propanel"]::tab:top {
+    padding: 2px 16px 3px 16px;
+}
+
+QTabBar[cssClass = "propanel"]::tab:selected {
+    background: #2D3239;
+    color: #C3D2DF;
+    border-bottom: 0px;
+    padding: 0px 16px 3px 16px;
+}
+
+QTabBar[cssClass = "graphicsediter"] {
+    background-color: #2D3239;
+    font-weight: bold;
+}
+
+QTabWidget[cssClass = "graphicsediter"]::pane {
+    border: 0px;
+}
+
+QTabBar[cssClass = "graphicsediter"]::tab {
+    background: #2D3239;
+    color: #737B85;
+    border-right: 1px solid rgb(24, 29, 33);
+	font-size: 10pt;
+    font-weight: 500;
+}
+
+QTabBar[cssClass = "graphicsediter"]::tab:first {
+    border-left: 1px solid rgb(36, 36, 36);
+}
+
+QTabBar[cssClass = "graphicsediter"]::tab:top {
+    padding: 4px 12px 4px 12px;
+}
+
+QTabBar[cssClass = "graphicsediter"]::tab:top:first {
+    margin-left: 0px;
+}
+
+QTabBar[cssClass = "graphicsediter"]::tab:!selected {
+    font-weight: normal;
+}
+
+QTabBar[cssClass = "graphicsediter"]::tab:selected {
+    background: #191D21;
+    color: #C3D2DF;
+}

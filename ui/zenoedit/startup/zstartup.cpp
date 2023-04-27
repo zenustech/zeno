@@ -9,9 +9,15 @@
 #include <QSettings>
 #include <algorithm>
 #include "settings/zsettings.h"
+#include "exceptionhandle.h"
+
 
 void startUp()
 {
+#ifdef Q_OS_WIN
+    registerExceptionFilter();
+#endif
+
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
     zeno::setConfigVariable("EXECFILE", QCoreApplication::applicationFilePath().toStdString());
 
@@ -43,7 +49,49 @@ std::string getZenoVersion() {
     int month = std::find(table, table + 12, std::string(date, 3)) - table + 1;
     int day = std::stoi(std::string(date + 4, 2));
     int year = std::stoi(std::string(date + 7, 4));
+
+#ifdef WIN32
+    TCHAR szFilename[MAX_PATH + 1] = {0};
+    if (GetModuleFileName(NULL, szFilename, MAX_PATH) == 0)
+    {
+        return "";
+    }
+
+    // allocate a block of memory for the version info
+    DWORD dummy;
+    DWORD dwSize = GetFileVersionInfoSize(szFilename, &dummy);
+    if (dwSize == 0) {
+        zeno::log_error("GetFileVersionInfoSize failed with error %d\n", GetLastError());
+        return "";
+    }
+    std::vector<BYTE> data(dwSize);
+    // load the version info
+    if (!GetFileVersionInfo(szFilename, NULL, dwSize, &data[0])) {
+        zeno::log_error("GetFileVersionInfo failed with error %d\n", GetLastError());
+        return "";
+    }
+
+    // get the name and version strings
+    LPVOID pvProductName = NULL;
+    unsigned int iProductNameLen = 0;
+    LPVOID pvProductVersion = NULL;
+    unsigned int iProductVersionLen = 0;
+
+    // replace "080404b0" with the language ID of your resources
+    if (!VerQueryValue(&data[0], "\\StringFileInfo\\080404b0\\ProductName", &pvProductName, &iProductNameLen) ||
+        !VerQueryValue(&data[0], "\\StringFileInfo\\080404b0\\ProductVersion", &pvProductVersion,
+                       &iProductVersionLen)) {
+        zeno::log_error("Can't obtain ProductName and ProductVersion from resources\n");
+        return "";
+    }
+    if (!pvProductVersion)
+        return "";
+
+    std::string productVersion((LPCSTR)pvProductVersion);
+    return productVersion;
+#else
     return zeno::format("{:04d}.{:02d}.{:02d}", year, month, day);
+#endif
 }
 
 void verifyVersion()

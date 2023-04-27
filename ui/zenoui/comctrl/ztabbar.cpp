@@ -128,3 +128,8 @@ void ZTabBar::refresh()
 {
 
 }
+
+void ZTabBar::paintEvent(QPaintEvent* e)
+{
+
+}

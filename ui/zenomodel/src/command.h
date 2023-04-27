@@ -2,14 +2,21 @@
 #define __TRANSCATION_COMMAND_H__
 
 #include <QUndoCommand>
-#include "modeldata.h"
+#include <zenomodel/include/modeldata.h>
 
 class GraphsModel;
+class IGraphsModel;
+
+#define COMMAND_VIEWADD "ViewParamAdd"
+#define COMMAND_VIEWREMOVE "ViewParamRemove"
+#define COMMAND_VIEWMOVE "ViewParamMove"
+#define COMMAND_VIEWSETDATA "ViewParamSetData"
+#define COMMAND_MAPPING "MappingParamIndex"
 
 class AddNodeCommand : public QUndoCommand
 {
 public:
-    AddNodeCommand(const QString& id, const NODE_DATA& data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    AddNodeCommand(const QString& id, const NODE_DATA& data, IGraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~AddNodeCommand();
     void redo() override;
     void undo() override;
@@ -18,7 +25,7 @@ private:
     QString m_id;
     NODE_DATA m_data;
     QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_model;
+    IGraphsModel* m_model;
 };
 
 class RemoveNodeCommand : public QUndoCommand
@@ -37,89 +44,17 @@ private:
     int m_row;
 };
 
-class AddLinkCommand : public QUndoCommand
+class LinkCommand : public QUndoCommand
 {
 public:
-    AddLinkCommand(EdgeInfo info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-	void redo() override;
-	void undo() override;
-
-private:
-	EdgeInfo m_info;
-	GraphsModel* m_model;
-	QPersistentModelIndex m_subgIdx;
-	QPersistentModelIndex m_linkIdx;
-};
-
-class RemoveLinkCommand : public QUndoCommand
-{
-public:
-    RemoveLinkCommand(QPersistentModelIndex linkIdx, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    LinkCommand(bool bAddLink, const EdgeInfo& link, GraphsModel *pModel);
     void redo() override;
     void undo() override;
 
 private:
-    EdgeInfo m_info;
+    const bool m_bAdd;
+    const EdgeInfo m_link;
     GraphsModel* m_model;
-    QPersistentModelIndex m_subgIdx;
-    QPersistentModelIndex m_linkIdx;
-    bool m_bAdded;
-};
-
-class UpdateDataCommand : public QUndoCommand
-{
-public:
-    UpdateDataCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    PARAM_UPDATE_INFO m_updateInfo;
-    QString m_nodeid;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_model;
-};
-
-class UpdateSockDeflCommand : public QUndoCommand
-{
-public:
-    UpdateSockDeflCommand(const QString& nodeid, const PARAM_UPDATE_INFO& updateInfo, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    PARAM_UPDATE_INFO m_updateInfo;
-    QString m_nodeid;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_model;
-};
-
-class UpdateStateCommand : public QUndoCommand
-{
-public:
-    UpdateStateCommand(const QString& nodeid, STATUS_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    QString m_nodeid;
-    STATUS_UPDATE_INFO m_info;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_pModel;
-};
-
-class UpdateSocketCommand : public QUndoCommand
-{
-public:
-    UpdateSocketCommand(const QString& nodeid, SOCKET_UPDATE_INFO info, GraphsModel* pModel, QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    SOCKET_UPDATE_INFO m_info;
-    QString m_nodeid;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_pModel;
 };
 
 class UpdateBlackboardCommand : public QUndoCommand
@@ -138,20 +73,6 @@ private:
     GraphsModel *m_pModel;
 };
 
-class UpdateNotDescSockNameCommand : public QUndoCommand
-{
-public:
-    UpdateNotDescSockNameCommand(const QString& nodeid, const SOCKET_UPDATE_INFO& updateInfo, GraphsModel* pModel,                                 QPersistentModelIndex subgIdx);
-    void redo() override;
-    void undo() override;
-
-private:
-    SOCKET_UPDATE_INFO m_info;
-    QString m_nodeid;
-    QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_pModel;
-};
-
 class ImportNodesCommand : public QUndoCommand
 {
 public:
@@ -166,6 +87,97 @@ private:
     GraphsModel* m_model;
     QPointF m_pos;
 };
+
+class ModelDataCommand : public QUndoCommand
+{
+public:
+    ModelDataCommand(IGraphsModel* pModel, const QModelIndex& idx, const QVariant& oldData, const QVariant& newData, int role);
+    void redo() override;
+    void undo() override;
+
+private:
+    void ensureIdxValid();
+
+    IGraphsModel* m_model;
+    const QVariant m_oldData;
+    const QVariant m_newData;
+    QString m_objPath;
+    QPersistentModelIndex m_index;
+    const int m_role;
+};
+
+class UpdateSubgDescCommand : public QUndoCommand
+{
+public:
+    UpdateSubgDescCommand(IGraphsModel* pModel, const QString& subgraphName, const NODE_DESC newDesc);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    const QString m_subgName;
+    NODE_DESC m_oldDesc;
+    NODE_DESC m_newDesc;
+};
+
+class MapParamIndexCommand : public QUndoCommand
+{
+public:
+    MapParamIndexCommand(IGraphsModel* pModel, const QString& sourceObj, const QString& dstObj);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel *m_model;
+    QString m_sourceObj;
+    QString m_dstObj;
+    QString m_oldMappingObj;
+};
+
+class RenameObjCommand : public QUndoCommand
+{
+public:
+    RenameObjCommand(IGraphsModel* pModel, const QString& objPath, const QString& newName);
+    void redo() override;
+    void undo() override;
+
+private:
+    IGraphsModel* m_model;
+    QString m_oldPath;
+    QString m_newPath;
+    QString m_oldName;
+    QString m_newName;
+};
+
+class DictKeyAddRemCommand : public QUndoCommand
+{
+public:
+    DictKeyAddRemCommand(bool bAdd, IGraphsModel* pModel, const QString& dictlistSock, int row);
+    void redo() override;
+    void undo() override;
+
+private:
+    QString m_distlistSock;
+    QString m_keyName;      //cached the key name.
+    int m_row;
+    IGraphsModel *m_model;
+    bool m_bAdd;
+};
+
+class ModelMoveCommand : public QUndoCommand
+{
+public:
+    ModelMoveCommand(IGraphsModel* pModel, const QString& movingItemPath, int destRow);
+    void redo() override;
+    void undo() override;
+
+private:
+    QString m_movingObj;
+    IGraphsModel* m_model;
+    int m_srcRow;
+    int m_destRow;
+};
+
 
 
 #endif

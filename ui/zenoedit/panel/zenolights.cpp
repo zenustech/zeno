@@ -3,6 +3,7 @@
 #include <zenomodel/include/modelrole.h>
 #include "viewport/zenovis.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/displaywidget.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
 #include "zeno/utils/log.h"
@@ -12,6 +13,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>
 #include <glm/glm.hpp>
+
 
 ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     QVBoxLayout* pMainLayout = new QVBoxLayout;
@@ -130,7 +132,22 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         }
     });
     connect(write_all_btn, &QPushButton::clicked, this, [&](){
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+
+        QVector<DisplayWidget*> views = pWin->viewports();
+        if (views.isEmpty())
+            return;
+
+        DisplayWidget *pWid = views[0];
+        ZASSERT_EXIT(pWid);
+        auto pZenovis = pWid->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
+        //todo: move objsMan outof scene.
         for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
             if (key.find("LightNode") != std::string::npos) {
                 QString primid = QString(key.c_str());
@@ -139,7 +156,20 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
         }
     });
     connect(procedural_sky_btn, &QPushButton::clicked, this, [&](){
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        QVector<DisplayWidget*> views = pWin->viewports();
+        if (views.isEmpty())
+            return;
+
+        DisplayWidget *pWid = views[0];
+        ZASSERT_EXIT(pWid);
+        auto pZenovis = pWid->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
         for (auto const &[key, ptr]: scene->objectsMan->lightObjects) {
             if (key.find("ProceduralSky") != std::string::npos) {
                 QString primid = QString(key.c_str());
@@ -165,7 +195,19 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
 
     connect(lights_view, &QListView::pressed, this, [&](auto & index){
         std::string name = this->dataModel->light_names[index.row()];
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        QVector<DisplayWidget*> views = pWin->viewports();
+        if (views.isEmpty())
+            return;
+
+        DisplayWidget *pWid = views[0];
+        auto pZenovis = pWid->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
         std::shared_ptr<zeno::IObject> ptr = scene->objectsMan->lightObjects[name];
 
         if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(ptr.get())){
@@ -426,14 +468,20 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(intensityEdit, &QLineEdit::textChanged, this, [&](){ modifyLightData(); });
 
     connect(camApertureEdit, &QLineEdit::textChanged, this, [&](){
-        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->updateCameraProp(
-            camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
-        zenoApp->getMainWindow()->updateViewport();
+        QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+        for (auto pDisplay : views) {
+            ZASSERT_EXIT(pDisplay);
+            pDisplay->updateCameraProp(camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+            zenoApp->getMainWindow()->updateViewport();
+        }
     });
     connect(camDisPlaneEdit, &QLineEdit::textChanged, this, [&](){
-        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->updateCameraProp(
-            camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
-        zenoApp->getMainWindow()->updateViewport();
+        QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+        for (auto pDisplay : views) {
+            ZASSERT_EXIT(pDisplay);
+            pDisplay->updateCameraProp(camApertureEdit->text().toFloat(), camDisPlaneEdit->text().toFloat());
+            zenoApp->getMainWindow()->updateViewport();
+        }
     });
 
     updateLights();
@@ -502,31 +550,42 @@ void ZenoLights::modifyLightData() {
     zeno::vec3f rotate = zeno::vec3f(rotateX, rotateY, rotateZ);
     auto verts = computeLightPrim(pos, rotate, scale);
 
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    std::shared_ptr<zeno::IObject> obj = scene->objectsMan->lightObjects[name];
-    auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
 
-    if(prim_in){
-        auto &prim_verts = prim_in->verts;
-        prim_verts[0] = verts[0];
-        prim_verts[1] = verts[1];
-        prim_verts[2] = verts[2];
-        prim_verts[3] = verts[3];
-        prim_in->verts.attr<zeno::vec3f>("clr")[0] = zeno::vec3f(r,g,b) * intensity;
+    QVector<DisplayWidget*> views = pWin->viewports();
+    for (auto pDisplay : views) {
 
-        prim_in->userData().setLiterial<zeno::vec3f>("pos", zeno::vec3f(posX, posY, posZ));
-        prim_in->userData().setLiterial<zeno::vec3f>("scale", zeno::vec3f(scaleX, scaleY, scaleZ));
-        prim_in->userData().setLiterial<zeno::vec3f>("rotate", zeno::vec3f(rotateX, rotateY, rotateZ));
-        if (prim_in->userData().has("intensity")) {
-            prim_in->userData().setLiterial<zeno::vec3f>("color", zeno::vec3f(r, g, b));
-            prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
+        Zenovis* pZenoVis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto scene = pZenoVis->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
+        std::shared_ptr<zeno::IObject> obj = scene->objectsMan->lightObjects[name];
+        auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
+
+        if (prim_in) {
+            auto &prim_verts = prim_in->verts;
+            prim_verts[0] = verts[0];
+            prim_verts[1] = verts[1];
+            prim_verts[2] = verts[2];
+            prim_verts[3] = verts[3];
+            prim_in->verts.attr<zeno::vec3f>("clr")[0] = zeno::vec3f(r, g, b) * intensity;
+
+            prim_in->userData().setLiterial<zeno::vec3f>("pos", zeno::vec3f(posX, posY, posZ));
+            prim_in->userData().setLiterial<zeno::vec3f>("scale", zeno::vec3f(scaleX, scaleY, scaleZ));
+            prim_in->userData().setLiterial<zeno::vec3f>("rotate", zeno::vec3f(rotateX, rotateY, rotateZ));
+            if (prim_in->userData().has("intensity")) {
+                prim_in->userData().setLiterial<zeno::vec3f>("color", zeno::vec3f(r, g, b));
+                prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
+            }
+
+            scene->objectsMan->needUpdateLight = true;
+            pDisplay->setSimpleRenderOption();
+            zenoApp->getMainWindow()->updateViewport();
+        } else {
+            zeno::log_info("modifyLightData not found {}", name);
         }
-
-        scene->objectsMan->needUpdateLight = true;
-        zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->setSimpleRenderOption();
-        zenoApp->getMainWindow()->updateViewport();
-    }else{
-        zeno::log_info("modifyLightData not found {}", name);
     }
 }
 
@@ -549,92 +608,114 @@ void ZenoLights::modifySunLightDir() {
 
     bool found = false;
 
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    for (auto const &[key, obj] : scene->objectsMan->lightObjects) {
-        if (key.find("ProceduralSky") != std::string::npos) {
-            found = true;
-            if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
-                prim_in->userData().set2("sunLightDir", std::move(sunLightDir));
-                prim_in->userData().set2("sunLightSoftness", std::move(sunSoftnessValue));
-                prim_in->userData().set2("windDir", std::move(windDir));
-                prim_in->userData().set2("timeStart", std::move(timeStartValue));
-                prim_in->userData().set2("timeSpeed", std::move(timeSpeedValue));
-                prim_in->userData().set2("sunLightIntensity", std::move(sunLightIntensityValue));
-                prim_in->userData().set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
-                prim_in->userData().set2("colorTemperature", std::move(colorTemperatureValue));
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+
+    QVector<DisplayWidget*> views = pWin->viewports();
+    for (auto pDisplayWid : views)
+    {
+        Zenovis* pZenovis = pDisplayWid->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+
+        auto scene = pZenovis->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+
+        for (auto const &[key, obj] : scene->objectsMan->lightObjects) {
+            if (key.find("ProceduralSky") != std::string::npos) {
+                found = true;
+                if (auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get())) {
+                    prim_in->userData().set2("sunLightDir", std::move(sunLightDir));
+                    prim_in->userData().set2("sunLightSoftness", std::move(sunSoftnessValue));
+                    prim_in->userData().set2("windDir", std::move(windDir));
+                    prim_in->userData().set2("timeStart", std::move(timeStartValue));
+                    prim_in->userData().set2("timeSpeed", std::move(timeSpeedValue));
+                    prim_in->userData().set2("sunLightIntensity", std::move(sunLightIntensityValue));
+                    prim_in->userData().set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
+                    prim_in->userData().set2("colorTemperature", std::move(colorTemperatureValue));
+                }
             }
         }
+        auto &ud = zeno::getSession().userData();
+        if (found) {
+            ud.erase("sunLightDir");
+            ud.erase("sunLightSoftness");
+            ud.erase("windDir");
+            ud.erase("timeStart");
+            ud.erase("timeSpeed");
+            ud.erase("sunLightIntensity");
+            ud.erase("colorTemperatureMix");
+            ud.erase("colorTemperature");
+        }
+        else {
+            ud.set2("sunLightDir", std::move(sunLightDir));
+            ud.set2("sunLightSoftness", std::move(sunSoftnessValue));
+            ud.set2("windDir", std::move(windDir));
+            ud.set2("timeStart", std::move(timeStartValue));
+            ud.set2("timeSpeed", std::move(timeSpeedValue));
+            ud.set2("sunLightIntensity", std::move(sunLightIntensityValue));
+            ud.set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
+            ud.set2("colorTemperature", std::move(colorTemperatureValue));
+        }
+        scene->objectsMan->needUpdateLight = true;
+        pDisplayWid->setSimpleRenderOption();
+        zenoApp->getMainWindow()->updateViewport();
     }
-    auto &ud = zeno::getSession().userData();
-    if (found) {
-        ud.erase("sunLightDir");
-        ud.erase("sunLightSoftness");
-        ud.erase("windDir");
-        ud.erase("timeStart");
-        ud.erase("timeSpeed");
-        ud.erase("sunLightIntensity");
-        ud.erase("colorTemperatureMix");
-        ud.erase("colorTemperature");
-    }
-    else {
-        ud.set2("sunLightDir", std::move(sunLightDir));
-        ud.set2("sunLightSoftness", std::move(sunSoftnessValue));
-        ud.set2("windDir", std::move(windDir));
-        ud.set2("timeStart", std::move(timeStartValue));
-        ud.set2("timeSpeed", std::move(timeSpeedValue));
-        ud.set2("sunLightIntensity", std::move(sunLightIntensityValue));
-        ud.set2("colorTemperatureMix", std::move(colorTemperatureMixValue));
-        ud.set2("colorTemperature", std::move(colorTemperatureValue));
-    }
-    scene->objectsMan->needUpdateLight = true;
-    zenoApp->getMainWindow()->getDisplayWidget()->getViewportWidget()->setSimpleRenderOption();
-    zenoApp->getMainWindow()->updateViewport();
 }
 
 void ZenoLights::write_param_into_node(const QString& primid) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
-        return;
-    }
-    auto realtime_obj = scene->objectsMan->lightObjects[primid.toStdString()];
-    auto ud = realtime_obj->userData();
-    IGraphsModel* pIGraphsModel = zenoApp->graphsManagment()->currentModel();
-    if (pIGraphsModel == nullptr) {
-        return;
-    }
-    auto subgraphIndices = pIGraphsModel->subgraphsIndice();
 
-    for (const auto &subGpIdx : subgraphIndices) {
-        int n = pIGraphsModel->itemCount(subGpIdx);
-        for (int i = 0; i < n; i++) {
-            const NODE_DATA& item = pIGraphsModel->itemData(pIGraphsModel->index(i, subGpIdx), subGpIdx);
-            if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
-                auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
-                if (ud.get2<int>("isL", 0)) {
-                    auto p = ud.get2<zeno::vec3f>("pos");
-                    auto s = ud.get2<zeno::vec3f>("scale");
-                    auto r = ud.get2<zeno::vec3f>("rotate");
-                    auto c = ud.get2<zeno::vec3f>("color");
-                    inputs["position"].info.defaultValue.setValue(UI_VECTYPE({p[0], p[1], p[2]}));
-                    inputs["scale"].info.defaultValue.setValue(UI_VECTYPE({s[0], s[1], s[2]}));
-                    inputs["rotate"].info.defaultValue.setValue(UI_VECTYPE({r[0], r[1], r[2]}));
-                    inputs["color"].info.defaultValue.setValue(UI_VECTYPE({c[0], c[1], c[2]}));
-                    inputs["intensity"].info.defaultValue = (double)ud.get2<float>("intensity");
+    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin);
+    QVector<DisplayWidget*> views = pWin->viewports();
+    for (DisplayWidget* pDisplay : views)
+    {
+        auto pZenovis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto scene = pZenovis->getSession()->get_scene();
+
+        if (scene->objectsMan->lightObjects.find(primid.toStdString()) == scene->objectsMan->lightObjects.end()) {
+            return;
+        }
+        auto realtime_obj = scene->objectsMan->lightObjects[primid.toStdString()];
+        auto ud = realtime_obj->userData();
+        IGraphsModel* pIGraphsModel = zenoApp->graphsManagment()->currentModel();
+        if (pIGraphsModel == nullptr) {
+            return;
+        }
+        auto subgraphIndices = pIGraphsModel->subgraphsIndice();
+
+        for (const auto &subGpIdx : subgraphIndices) {
+            int n = pIGraphsModel->itemCount(subGpIdx);
+            for (int i = 0; i < n; i++) {
+                const NODE_DATA& item = pIGraphsModel->itemData(pIGraphsModel->index(i, subGpIdx), subGpIdx);
+                if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
+                    auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
+                    if (ud.get2<int>("isL", 0)) {
+                        auto p = ud.get2<zeno::vec3f>("pos");
+                        auto s = ud.get2<zeno::vec3f>("scale");
+                        auto r = ud.get2<zeno::vec3f>("rotate");
+                        auto c = ud.get2<zeno::vec3f>("color");
+                        inputs["position"].info.defaultValue.setValue(UI_VECTYPE({p[0], p[1], p[2]}));
+                        inputs["scale"].info.defaultValue.setValue(UI_VECTYPE({s[0], s[1], s[2]}));
+                        inputs["rotate"].info.defaultValue.setValue(UI_VECTYPE({r[0], r[1], r[2]}));
+                        inputs["color"].info.defaultValue.setValue(UI_VECTYPE({c[0], c[1], c[2]}));
+                        inputs["intensity"].info.defaultValue = (double)ud.get2<float>("intensity");
+                    }
+                    else if (ud.get2<int>("ProceduralSky", 0)) {
+                        auto d = ud.get2<zeno::vec2f>("sunLightDir");
+                        auto w = ud.get2<zeno::vec2f>("windDir");
+                        inputs["sunLightDir"].info.defaultValue.setValue(UI_VECTYPE({d[0], d[1]}));
+                        inputs["windDir"].info.defaultValue.setValue(UI_VECTYPE({w[0], w[1]}));
+                        inputs["sunLightSoftness"].info.defaultValue = (double)ud.get2<float>("sunLightSoftness");
+                        inputs["timeStart"].info.defaultValue = (double)ud.get2<float>("timeStart");
+                        inputs["timeSpeed"].info.defaultValue = (double)ud.get2<float>("timeSpeed");
+                        inputs["sunLightIntensity"].info.defaultValue = (double)ud.get2<float>("sunLightIntensity");
+                        inputs["colorTemperatureMix"].info.defaultValue = (double)ud.get2<float>("colorTemperatureMix");
+                        inputs["colorTemperature"].info.defaultValue = (double)ud.get2<float>("colorTemperature");
+                    }
+                    auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
+                    pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 }
-                else if (ud.get2<int>("ProceduralSky", 0)) {
-                    auto d = ud.get2<zeno::vec2f>("sunLightDir");
-                    auto w = ud.get2<zeno::vec2f>("windDir");
-                    inputs["sunLightDir"].info.defaultValue.setValue(UI_VECTYPE({d[0], d[1]}));
-                    inputs["windDir"].info.defaultValue.setValue(UI_VECTYPE({w[0], w[1]}));
-                    inputs["sunLightSoftness"].info.defaultValue = (double)ud.get2<float>("sunLightSoftness");
-                    inputs["timeStart"].info.defaultValue = (double)ud.get2<float>("timeStart");
-                    inputs["timeSpeed"].info.defaultValue = (double)ud.get2<float>("timeSpeed");
-                    inputs["sunLightIntensity"].info.defaultValue = (double)ud.get2<float>("sunLightIntensity");
-                    inputs["colorTemperatureMix"].info.defaultValue = (double)ud.get2<float>("colorTemperatureMix");
-                    inputs["colorTemperature"].info.defaultValue = (double)ud.get2<float>("colorTemperature");
-                }
-                auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
-                pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
             }
         }
     }

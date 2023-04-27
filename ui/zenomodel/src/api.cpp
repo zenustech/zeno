@@ -4,6 +4,9 @@
 #include "nodesmgr.h"
 #include "apiutil.h"
 #include "zeno/utils/log.h"
+#include "variantptr.h"
+#include "nodeparammodel.h"
+#include "uihelper.h"
 
 
 ZENO_ERROR Zeno_NewFile()
@@ -192,14 +195,13 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
     //get subgraph directly from node.
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
 
-    EdgeInfo info;
-    info.inputNode = inIdx.data(ROLE_OBJID).toString();
-    info.inputSock = QString::fromStdString(inSock);
-    info.outputNode = outIdx.data(ROLE_OBJID).toString();
-    info.outputSock = QString::fromStdString(outSock);
+    NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(inIdx.data(ROLE_NODE_PARAMS));
+    QModelIndex inSockIdx = inNodeParams->getParam(PARAM_INPUT, QString::fromStdString(inSock));
 
-    bool bAddDynamicSock = false;
-    pModel->addLink(info, subgIdx, bAddDynamicSock);
+    NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(outIdx.data(ROLE_NODE_PARAMS));
+    QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, QString::fromStdString(outSock));
+
+    pModel->addLink(outSockIdx, inSockIdx);
     return Err_NoError;
 }
 
@@ -224,7 +226,7 @@ ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hOutnode, const std::string& outSock,
                                             QString::fromStdString(inSock));
     QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
 
-    pModel->removeLink(linkIdx, subgIdx);
+    pModel->removeLink(linkIdx);
     return Err_NoError;
 }
 
@@ -253,14 +255,12 @@ ZENO_ERROR Zeno_GetOutNodes(
     }
 
     OUTPUT_SOCKET output = outputs[qsOutSock];
-    for (auto linkIdx : output.linkIndice)
+    for (auto link : output.info.links)
     {
-        QString inNode = linkIdx.data(ROLE_INNODE).toString();
-        QString inSock = linkIdx.data(ROLE_INSOCK).toString();
-        QModelIndex inIdx = pModel->index(inSock, subgIdx);
-
+        QString inNode = UiHelper::getSockNode(link.inSockPath);
+        QModelIndex inIdx = pModel->index(inNode, subgIdx);
         ZENO_HANDLE hdl = inIdx.internalId();
-        res.push_back(std::make_pair(hdl, inSock.toStdString()));
+        res.push_back(std::make_pair(hdl, inNode.toStdString()));
     }
 
     return Err_NoError;
@@ -290,12 +290,12 @@ ZENO_ERROR Zeno_GetInput(
     const QModelIndex& subgIdx = pModel->subgByNodeId(hNode);
     INPUT_SOCKET input = inputs[qsInSock];
 
-    if (1 == input.linkIndice.size())
+    if (1 == input.info.links.size())
     {
-        QModelIndex linkIdx = input.linkIndice[0];
-        const QString& outNode = linkIdx.data(ROLE_OUTNODE).toString();
-        const QString& outSock = linkIdx.data(ROLE_OUTSOCK).toString();
-        
+        EdgeInfo link = input.info.links[0];
+
+        QString outNode = UiHelper::getSockNode(link.outSockPath);
+        QString outSock = UiHelper::getSockName(link.outSockPath);
         QModelIndex outIdx = pModel->index(outNode, subgIdx);
         ret.first = outIdx.internalId();
         ret.second = outSock.toStdString();

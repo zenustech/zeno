@@ -22,10 +22,11 @@ public:
 
     QString text;
     int buttonOpts;
-    int roundCorner;
+    int bgRadius;
     Qt::Orientation orientation;
     bool hideText;
     bool buttonEnabled;
+    bool bDrawBackground;
     bool bDown;
     bool bTextUnderIcon;
     ArrowOption m_arrowOption;

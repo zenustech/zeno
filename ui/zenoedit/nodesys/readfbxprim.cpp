@@ -29,11 +29,14 @@ ReadFBXPrim::~ReadFBXPrim()
 
 }
 
-QGraphicsLinearLayout* ReadFBXPrim::initCustomParamWidgets()
+ZGraphicsLayout* ReadFBXPrim::initCustomParamWidgets()
 {
-    QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("node", m_renderParams.paramFont, m_renderParams.paramClr.color());
+    ZSimpleTextItem* pNameItem = new ZSimpleTextItem("node");
+    pNameItem->setBrush(m_renderParams.socketClr.color());
+    pNameItem->setFont(m_renderParams.socketFont);
+    pNameItem->updateBoundingRect();
     pHLayout->addItem(pNameItem);
 
     ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);

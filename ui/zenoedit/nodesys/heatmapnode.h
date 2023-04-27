@@ -11,8 +11,7 @@ public:
 	~MakeHeatMapNode();
 
 protected:
-	QGraphicsLayout* initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene) override;
-	//QGraphicsLinearLayout* initCustomParamWidgets() override;
+	ZGraphicsLayout* initCustomParamWidgets() override;
 
 private slots:
 	void onEditClicked();
@@ -20,6 +19,5 @@ private slots:
 private:
 
 };
-
 
 #endif

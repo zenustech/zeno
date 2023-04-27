@@ -25,6 +25,15 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     auto att_instUv = attrs.instUv;
     auto att_instClr = attrs.instClr;
     auto att_instTang = attrs.instTang;
+    auto att_NoL      = attrs.NoL;
+    auto att_LoV      = attrs.LoV;
+    auto att_N        = attrs.N;
+    auto att_T        = attrs.T;
+    auto att_L        = attrs.L;
+    auto att_V        = attrs.V;
+    auto att_H        = attrs.H;
+    auto att_reflectance = attrs.reflectance;
+    auto att_fresnel  = attrs.fresnel;
     /** generated code here beg **/
     //GENERATED_BEGIN_MARK
     /* MODME */
@@ -58,12 +67,15 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_emissionIntensity = float(0);
     vec3 mat_emission = vec3(1.0f, 1.0f, 1.0f);
     float mat_displacement = 0.0f;
+    float mat_NoL = 1.0f;
+    float mat_LoV = 1.0f;
+    vec3 mat_reflectance = att_reflectance;
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
     if constexpr(isDisplacement)
     {
-        mats.displacement = mat_displacement;
+        mats.reflectance = mat_reflectance;
         return mats;
     }else {
         /* MODME */
@@ -108,7 +120,10 @@ static __inline__ __device__ MatOutput evalGeometry(cudaTextureObject_t zenotex[
     return evalMat<true>(zenotex, uniforms, attrs);
 }
 
-
+static __inline__ __device__ MatOutput evalReflectance(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs)
+{
+    return evalMat<true>(zenotex, uniforms, attrs);
+}
 __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float3 c)
 {
     float w0 = 1 - barys.x - barys.y;
@@ -511,13 +526,15 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->isSS == true  && subsurface==0 )
     {
         prd->passed = true;
-
+        prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
+        prd->opacity = 0;
         prd->readMat(prd->sigma_t, prd->ss_alpha);
-        auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+        auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
         prd->attenuation2 *= trans;
         prd->attenuation *= trans;
         //prd->origin = P + 1e-5 * ray_dir; 
-
+        if(prd->maxDistance>optixGetRayTmax())
+            prd->maxDistance-=optixGetRayTmax();
         prd->offsetUpdateRay(P, ray_dir); 
         return;
     }
@@ -672,14 +689,14 @@ extern "C" __global__ void __closesthit__radiance()
     if(thin>0.5 || mats.doubleSide>0.5)
     {
         if (prd->curMatIdx > 0) {
-            //vec3 sigma_t, ss_alpha;
-            prd->readMat(prd->sigma_t, prd->ss_alpha);
-            if (isTrans) { // Glass
-                prd->attenuation *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
-                prd->attenuation2 *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
+            vec3 sigma_t, ss_alpha;
+            prd->readMat(sigma_t, ss_alpha);
+            if (ss_alpha.x<0.0f) { // is inside Glass
+                prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+                prd->attenuation2 *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
             } else {
-                prd->attenuation *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
-                prd->attenuation2 *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+                prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+                prd->attenuation2 *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
             }
         }else {
             prd->attenuation *= 1;
@@ -698,18 +715,18 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->medium = DisneyBSDF::PhaseFunctions::isotropic;
 
                     if (prd->curMatIdx > 0) {
+                        vec3 sigma_t, ss_alpha;
                         //vec3 sigma_t, ss_alpha;
-                        prd->readMat(prd->sigma_t, prd->ss_alpha);
-                        if (isTrans) { // Glass
-                            prd->attenuation *= DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
+                        prd->readMat(sigma_t, ss_alpha);
+                        if (ss_alpha.x < 0.0f) { // is inside Glass
+                            prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                         } else {
-                            prd->attenuation *= DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+                            prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                         }
                     }
-
+                    prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
                         prd->maxDistance = 1e16;
-                        //printf("sigma_t: %f, %f, %f\n", extinction.x, extinction.y, extinction.z);
                         prd->pushMat(extinction);
                     } else {
 
@@ -722,6 +739,11 @@ extern "C" __global__ void __closesthit__radiance()
                         //printf("maxdist:%f\n",prd->maxDistance);
                         prd->channelPDF = channelPDF;
                         // already calculated in BxDF
+
+                        // if (idx.x == w/2 && idx.y == h/2) {
+                        //     printf("into sss, sigma_t, alpha: %f, %f, %f\n", prd->sigma_t.x, prd->sigma_t.y, prd->sigma_t.z,prd->ss_alpha.x, prd->ss_alpha.y, prd->ss_alpha.z);
+                        // }
+                        
                         prd->pushMat(prd->sigma_t, prd->ss_alpha);
                     }
 
@@ -735,20 +757,36 @@ extern "C" __global__ void __closesthit__radiance()
                 inToOut = true;
 
                 float3 trans;
-                prd->readMat(prd->sigma_t, prd->ss_alpha);
-                if (isTrans) { // Glass
+                vec3 sigma_t, ss_alpha;
+                prd->readMat(sigma_t, ss_alpha);
+                if(prd->curMatIdx==0)
+                { 
+                    trans = vec3(1.0f); 
+                }
+                else if (ss_alpha.x<0.0f) { // Glass
                 
-                    trans = DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
+                    trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                 } else {
-                    trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+                    trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                 }
 
                 prd->attenuation2 *= trans;
                 prd->attenuation *= trans;
 
-                prd->popMat(prd->sigma_t, prd->ss_alpha);
+                prd->popMat(sigma_t, ss_alpha);
 
                 prd->medium = (prd->curMatIdx==0)? DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
+
+                if(ss_alpha.x >= 0.0f) //next ray in 3s object
+                {
+                    prd->isSS = true;
+                    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
+                }
+                else
+                {
+                    prd->isSS = false;
+                    prd->maxDistance = 1e16;
+                }
 
                 // if (prd->medium != DisneyBSDF::PhaseFunctions::vacuum) {
 
@@ -761,15 +799,22 @@ extern "C" __global__ void __closesthit__radiance()
             }
         }else{
             if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
-                    vec3 trans;
-                    prd->readMat(prd->sigma_t, prd->ss_alpha);
-                    if (isTrans) { // Glass
-                        trans = DisneyBSDF::Transmission(prd->sigma_t, optixGetRayTmax());
+                    vec3 trans = vec3(1.0f);
+                    vec3 sigma_t, ss_alpha;
+                    prd->readMat(sigma_t, ss_alpha);
+                    prd->isSS = false;
+                    if(prd->curMatIdx==0)
+                    {
+                        prd->maxDistance = 1e16;
+                    }
+                    else if (prd->ss_alpha.x<0.0f) { // Glass
+                        trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                         prd->maxDistance = 1e16;
                     } else { // SSS
-                        trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+                        trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                         prd->channelPDF = vec3(1.0/3.0);
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
+                        prd->isSS = true;
                     }
 
                     prd->attenuation2 *= trans;
@@ -777,6 +822,7 @@ extern "C" __global__ void __closesthit__radiance()
             }
                 else
                 {
+                    prd->isSS = false;
                     prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
                     prd->channelPDF = vec3(1.0f/3.0f);
                     prd->maxDistance = 1e16f;
@@ -785,6 +831,19 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->medium = prd->next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
  
+    if(thin>0.5){
+        vec3 H = normalize(vec3(normalize(wi)) + vec3(-normalize(ray_dir)));
+        attrs.N = N;
+        attrs.T = cross(B,N);
+        attrs.L = vec3(normalize(wi));
+        attrs.V = vec3(-normalize(ray_dir));
+        attrs.H = normalize(H);
+        attrs.reflectance = reflectance;
+        attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+        MatOutput mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+        reflectance = mat2.reflectance;
+    }
+
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
     prd->depth++;
@@ -868,8 +927,19 @@ extern "C" __global__ void __closesthit__radiance()
                     clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
                     dot(N, L));
-
-                prd->radiance = light_attenuation * weight * 2.0 * light.emission * lbrdf;
+                MatOutput mat2;
+                if(thin>0.5){
+                    vec3 H = normalize(vec3(normalize(L)) + vec3(-normalize(inDir)));
+                    attrs.N = N;
+                    attrs.T = cross(B,N);
+                    attrs.L = vec3(normalize(L));
+                    attrs.V = vec3(-normalize(inDir));
+                    attrs.H = normalize(H);
+                    attrs.reflectance = lbrdf;
+                    attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+                    mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+                }
+                prd->radiance = light_attenuation * weight * 2.0 * light.emission * (thin>0.5? float3(mat2.reflectance):lbrdf);
                 computed = true;
             }
         }
@@ -901,8 +971,19 @@ extern "C" __global__ void __closesthit__radiance()
             auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                           10, // be careful
                                           .45, 15., 1.030725 * 0.3, params.elapsedTime));
-
-            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * sky * lbrdf;
+            MatOutput mat2;
+            if(thin>0.5){
+                    vec3 H = normalize(vec3(normalize(sun_dir)) + vec3(-normalize(inDir)));
+                    attrs.N = N;
+                    attrs.T = cross(B,N);
+                    attrs.L = vec3(normalize(sun_dir));
+                    attrs.V = vec3(-normalize(inDir));
+                    attrs.H = normalize(H);
+                    attrs.reflectance = lbrdf;
+                    attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+                    mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+            }
+            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * sky * (thin>0.5? float3(mat2.reflectance):lbrdf);
     }
 
     P = P_OLD;

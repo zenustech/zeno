@@ -1,6 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
 	<file>languages/zh.qm</file>
+	<file>languages/qt_zh_CN.qm</file>
 	<file>languages/zh.txt</file>
 </qresource>
 </RCC>

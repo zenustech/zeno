@@ -1,5 +1,5 @@
 #include "heatmapnode.h"
-#include "panel/zenoheatmapeditor.h"
+#include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "util/log.h"
@@ -18,25 +18,18 @@ MakeHeatMapNode::~MakeHeatMapNode()
 
 }
 
-QGraphicsLayout* MakeHeatMapNode::initParam(PARAM_CONTROL ctrl, const QString& name, const PARAM_INFO& param, ZenoSubGraphScene* pScene)
+ZGraphicsLayout* MakeHeatMapNode::initCustomParamWidgets()
 {
-    if (param.control == CONTROL_COLOR)
-    {
-        ZASSERT_EXIT(name == "_RAMPS", nullptr);
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-        QGraphicsLinearLayout* pParamLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-        ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("color", m_renderParams.paramFont, m_renderParams.paramClr.color());
-        pParamLayout->addItem(pNameItem);
+    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("color", m_renderParams.paramFont, m_renderParams.paramClr.color());
+    pHLayout->addItem(pNameItem);
 
-        ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
-        pParamLayout->addItem(pEditBtn);
-        connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
-        return pParamLayout;
-    }
-    else
-    {
-        return ZenoNode::initParam(ctrl, name, param, pScene);
-    }
+    ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
+    pHLayout->addItem(pEditBtn, Qt::AlignRight);
+    connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
+
+    return pHLayout;
 }
 
 void MakeHeatMapNode::onEditClicked()

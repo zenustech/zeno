@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>413</width>
-    <height>406</height>
+    <height>428</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -151,7 +151,7 @@
      <item row="11" column="0">
       <widget class="QCheckBox" name="cbRunRecord">
        <property name="text">
-        <string>record when run</string>
+        <string>record video after running.</string>
        </property>
        <property name="checked">
         <bool>true</bool>
@@ -160,7 +160,7 @@
      </item>
     </layout>
    </item>
-   <item row="12" column="0">
+   <item>
     <widget class="QCheckBox" name="cbExportVideo">
      <property name="text">
       <string>export video</string>

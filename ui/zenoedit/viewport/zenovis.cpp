@@ -1,5 +1,6 @@
 #include "camerakeyframe.h"
 #include "viewportwidget.h"
+#include "cameracontrol.h"
 #include "../zenomainwindow.h"
 #include "../launch/corelaunch.h"
 #include "../timeline/ztimeline.h"
@@ -9,8 +10,9 @@
 #include <zeno/zeno.h>
 
 
-Zenovis::Zenovis()
-    : m_solver_frameid(0)
+Zenovis::Zenovis(QObject *parent)
+    : QObject(parent)
+    , m_solver_frameid(0)
     , m_solver_interval(0)
     , m_render_fps(0)
     , m_resolution(QPoint(1,1))
@@ -18,12 +20,6 @@ Zenovis::Zenovis()
     , m_playing(false)
     , m_camera_keyframe(nullptr)
 {
-}
-
-Zenovis& Zenovis::GetInstance()
-{
-    static Zenovis instance;
-    return instance;
 }
 
 void Zenovis::loadGLAPI(void *procaddr)
@@ -117,12 +113,16 @@ int Zenovis::setCurrentFrameId(int frameid)
 
 void Zenovis::doFrameUpdate()
 {
-    //if fileio.isIOPathChanged() :
-    //    core.clear_graphics()
-
     int frameid = getCurrentFrameId();
-    int ui_frameid = zenoApp->getMainWindow()->getDisplayWidget()->getTimelinePointer()->value();
+    ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+    if (!pMainWin)
+        return;
 
+    ZTimeline* timeline = pMainWin->timeline();
+    if (!timeline)
+        return;
+
+    int ui_frameid = timeline->value();
     zenoApp->getMainWindow()->doFrameUpdate(ui_frameid);
 
     if (m_playing) {

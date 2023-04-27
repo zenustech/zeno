@@ -5,6 +5,10 @@
 #include <zenoui/style/zenostyle.h>
 #include <zeno/utils/log.h>
 #include <zenomodel/include/uihelper.h>
+#include "../view/zcomboboxitemdelegate.h"
+#include "zenoedit/zenoapplication.h"
+#include "../zpathedit.h"
+#include <QSvgRenderer>
 
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
@@ -16,10 +20,6 @@ ZenoParamWidget::~ZenoParamWidget()
 {
 }
 
-int ZenoParamWidget::type() const
-{
-    return Type;
-}
 
 void ZenoParamWidget::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -94,7 +94,9 @@ ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, Li
     m_pLineEdit->setTextMargins(param.margins);
     m_pLineEdit->setPalette(param.palette);
     m_pLineEdit->setFont(param.font);
-    m_pLineEdit->setProperty("cssClass", "proppanel");
+    if (param.propertyParam.isEmpty())
+        param.propertyParam = "zeno2_2_lineedit";
+    m_pLineEdit->setProperty("cssClass", param.propertyParam);
     m_pLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     setWidget(m_pLineEdit);
     connect(m_pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
@@ -129,6 +131,11 @@ void ZenoParamLineEdit::setNumSlider(QGraphicsScene* pScene, const QVector<qreal
     m_pSlider->setZValue(1000);
     m_pSlider->hide();
     pScene->addItem(m_pSlider);
+}
+
+void ZenoParamLineEdit::setFont(const QFont &font) 
+{
+    m_pLineEdit->setFont(font);
 }
 
 QString ZenoParamLineEdit::text() const
@@ -217,34 +224,14 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
 {
-    QGraphicsLinearLayout *pLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-    m_pLineEdit = new ZenoParamLineEdit(path, ctrl, param);
-    pLayout->addItem(m_pLineEdit);
-    pLayout->setContentsMargins(0, 0, 0, 0);
-
-    ImageElement elem;
-    elem.image = ":/icons/ic_openfile.svg";
-    elem.imageHovered = ":/icons/ic_openfile-on.svg";
-    elem.imageOn = ":/icons/ic_openfile-on.svg";
-    m_openBtn = new ZenoSvgLayoutItem(elem, ZenoStyle::dpiScaledSize(QSize(30, 30)));
-    bool isRead = (ctrl == CONTROL_READPATH);
-    pLayout->addItem(m_openBtn);
-    pLayout->setItemSpacing(0, 0);
-    pLayout->setItemSpacing(0, 0);
-
-    this->setLayout(pLayout);
+    m_pLineEdit = new ZPathEdit(path);
+    m_pLineEdit->setProperty("control", ctrl);
+    setWidget(m_pLineEdit);
 
     //connect slot.
-    connect(m_pLineEdit, &ZenoParamLineEdit::editingFinished, this, [=]() {
+    connect(m_pLineEdit, &ZPathEdit::textEditFinished, this, [=]() {
         emit pathValueChanged(m_pLineEdit->text());
     });
-    connect(m_openBtn, &ZenoImageItem::clicked, this, &ZenoParamPathEdit::clicked);
-}
-
-void ZenoParamPathEdit::setValidator(QValidator* pValidator)
-{
-    //will override the original.
-    //m_pLineEdit->setValidator(pValidator);
 }
 
 QString ZenoParamPathEdit::path() const
@@ -262,10 +249,12 @@ void ZenoParamPathEdit::setPath(const QString& path)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoParamCheckBox::ZenoParamCheckBox(const QString& text, QGraphicsItem* parent)
+ZenoParamCheckBox::ZenoParamCheckBox(QGraphicsItem* parent)
     : ZenoParamWidget(parent)
 {
-    m_pCheckbox = new ZCheckBoxBar;
+    m_pCheckbox = new ZCheckBox;
+    m_pCheckbox->setText("");
+    m_pCheckbox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     setWidget(m_pCheckbox);
     connect(m_pCheckbox, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
 }
@@ -280,9 +269,15 @@ void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
     m_pCheckbox->setCheckState(state);
 }
 
+QSizeF ZenoParamCheckBox::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
+{
+    QSizeF sz = ZenoParamWidget::sizeHint(which, constraint);
+    return sz;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////
-ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent)
+ZenoVecEditItem::ZenoVecEditItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent)
     : ZenoParamWidget(parent)
     , m_bFloatVec(bFloat)
     , m_param(param)
@@ -290,7 +285,7 @@ ZenoVecEditWidget::ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEdi
     initUI(vec, bFloat, pScene);
 }
 
-void ZenoVecEditWidget::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+void ZenoVecEditItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
 {
     for (int i = 0; i < m_editors.size(); i++)
     {
@@ -313,12 +308,12 @@ void ZenoVecEditWidget::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScen
     setLayout(pLayout);
 }
 
-bool ZenoVecEditWidget::isFloatType() const
+bool ZenoVecEditItem::isFloatType() const
 {
     return m_bFloatVec;
 }
 
-UI_VECTYPE ZenoVecEditWidget::vec() const
+UI_VECTYPE ZenoVecEditItem::vec() const
 {
     UI_VECTYPE vec;
     for (auto editor : m_editors)
@@ -335,7 +330,7 @@ UI_VECTYPE ZenoVecEditWidget::vec() const
     return vec;
 }
 
-void ZenoVecEditWidget::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+void ZenoVecEditItem::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
 {
     if (bFloat != m_bFloatVec || vec.size() != m_editors.size())
     {
@@ -347,6 +342,14 @@ void ZenoVecEditWidget::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScen
         {
             m_editors[i]->setText(QString::number(vec[i]));
         }
+    }
+}
+
+void ZenoVecEditItem::setVec(const UI_VECTYPE& vec)
+{
+    for (int i = 0; i < vec.size(); i++)
+    {
+        m_editors[i]->setText(QString::number(vec[i]));
     }
 }
 
@@ -430,23 +433,43 @@ void ZenoGvComboBox::paintEvent(QPaintEvent *e)
     QComboBox::paintEvent(e);
 }
 
+
+ZenoParamComboBox::ZenoParamComboBox(QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+{
+    m_combobox = new ZComboBox(true);
+    m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
+    setWidget(m_combobox);
+
+    setZValue(ZVALUE_ELEMENT);
+    connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
+    connect(m_combobox, SIGNAL(beforeShowPopup()), this, SLOT(onBeforeShowPopup()));
+    connect(m_combobox, SIGNAL(afterHidePopup()), this, SLOT(onAfterHidePopup()));
+}
+
 ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
 {
-    m_combobox = new ZComboBox(false);
+    m_combobox = new ZComboBox(true);
     m_combobox->addItems(items);
-    m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_combobox->setItemDelegate(new ZComboBoxItemDelegate(m_combobox));
+    m_combobox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);    
     m_combobox->setEditable(true);
 
+#if 0
     ZLineEdit* pLineEdit = new ZLineEdit(m_combobox);
     pLineEdit->setTextMargins(param.margins);
     pLineEdit->setPalette(param.palette);
-    QFont font("HarmonyOS Sans", 10);
+    QFont font = zenoApp->font();
     pLineEdit->setFont(font);
     pLineEdit->setProperty("cssClass", "proppanel");
     pLineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     m_combobox->setLineEdit(pLineEdit);
+#endif
+
+    QListView* pComboboxView = qobject_cast<QListView*>(m_combobox->view());
+    if (pComboboxView)
+        pComboboxView->installEventFilter(this);
 
     setWidget(m_combobox);
 
@@ -454,6 +477,25 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     connect(m_combobox, SIGNAL(activated(int)), this, SLOT(onComboItemActivated(int)));
     connect(m_combobox, SIGNAL(beforeShowPopup()), this, SLOT(onBeforeShowPopup()));
     connect(m_combobox, SIGNAL(afterHidePopup()), this, SLOT(onAfterHidePopup()));
+}
+
+bool ZenoParamComboBox::eventFilter(QObject* object, QEvent* event)
+{
+    if (event->type() == QEvent::Wheel && object == m_combobox->view())
+    {
+        //when scroll to the bottom of combobox's view, the event will be ignore,
+        //and then trigger zoom, which is not convient when activating.
+        //see _ZenoSubGraphView::wheelEvent.
+        event->setAccepted(true);
+        return true;
+    }
+    return ZenoParamWidget::eventFilter(object, event);
+}
+
+void ZenoParamComboBox::setItems(const QStringList& items)
+{
+    m_combobox->clear();
+    m_combobox->addItems(items);
 }
 
 void ZenoParamComboBox::onBeforeShowPopup()
@@ -485,17 +527,47 @@ void ZenoParamComboBox::onComboItemActivated(int index)
 
 
 ////////////////////////////////////////////////////////////////////////////////////
+ZenoParamPushButton::ZenoParamPushButton(QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_pBtn(nullptr)
+{
+    m_pBtn = new QPushButton;
+    m_pBtn->setProperty("cssClass", "grayButton");
+    m_pBtn->setCursor(Qt::PointingHandCursor);
+    setWidget(m_pBtn);
+    connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
+}
+
+ZenoParamPushButton::ZenoParamPushButton(const QString& name, const QString& qssName, QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_pBtn(nullptr)
+{
+    m_pBtn = new QPushButton(name);
+    m_pBtn->setProperty("cssClass", qssName);
+    m_pBtn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    m_pBtn->setCursor(Qt::PointingHandCursor);
+    setWidget(m_pBtn);
+    connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
+}
+
 ZenoParamPushButton::ZenoParamPushButton(const QString &name, int width, QSizePolicy::Policy hor, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
     , m_width(width)
+    , m_pBtn(nullptr)
 {
-    QPushButton* pBtn = new QPushButton(name);
-    pBtn->setProperty("cssClass", "grayButton");
+    m_pBtn = new QPushButton(name);
+    m_pBtn->setProperty("cssClass", "grayButton");
+    m_pBtn->setCursor(Qt::PointingHandCursor);
     if (hor == QSizePolicy::Fixed)
-        pBtn->setFixedWidth(width);
-    pBtn->setSizePolicy(hor, QSizePolicy::Preferred);
-    setWidget(pBtn);
-    connect(pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
+        m_pBtn->setFixedWidth(width);
+    m_pBtn->setSizePolicy(hor, QSizePolicy::Preferred);
+    setWidget(m_pBtn);
+    connect(m_pBtn, SIGNAL(clicked()), this, SIGNAL(clicked()));
+}
+
+void ZenoParamPushButton::setText(const QString& text)
+{
+    m_pBtn->setText(text);
 }
 
 
@@ -519,6 +591,24 @@ ZenoParamOpenPath::ZenoParamOpenPath(const QString &filename, QGraphicsItem *par
 
 
 //////////////////////////////////////////////////////////////////////////////////////
+
+ZenoParamMultilineStr::ZenoParamMultilineStr(QGraphicsItem* parent)
+    : ZenoParamWidget(parent)
+    , m_pTextEdit(nullptr)
+{
+    m_pTextEdit = new QTextEdit;
+    setWidget(m_pTextEdit);
+    connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
+    m_pTextEdit->installEventFilter(this);
+    m_pTextEdit->setFrameShape(QFrame::NoFrame);
+    /*m_pTextEdit->setFont(param.font);*/
+    m_pTextEdit->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(256, 228)));
+
+    QPalette pal;
+    pal.setColor(QPalette::Base, QColor(25, 29, 33));
+    m_pTextEdit->setPalette(pal);
+}
+
 ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent)
     : ZenoParamWidget(parent)
     , m_value(value)
@@ -527,20 +617,22 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     m_pTextEdit = new QTextEdit;
     setWidget(m_pTextEdit);
     connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
+    //m_pTextEdit->setProperty("cssClass", "proppanel");
     m_pTextEdit->installEventFilter(this);
     m_pTextEdit->setFrameShape(QFrame::NoFrame);
     m_pTextEdit->setFont(param.font);
     m_pTextEdit->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(256, 228)));
-
-	QTextCharFormat format;
-    QFont font("HarmonyOS Sans", 12);
-	format.setFont(font);
-    m_pTextEdit->setCurrentFont(font);
     m_pTextEdit->setText(value);
 
-    QPalette pal = param.palette;
-    pal.setColor(QPalette::Base, QColor(37, 37, 37));
-    m_pTextEdit->setPalette(pal);
+	//QTextCharFormat format;
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
+    m_pTextEdit->setCurrentFont(font);
+    m_pTextEdit->setFont(font);
+
+    //QPalette pal = param.palette;
+    //pal.setColor(QPalette::Base, QColor(25, 29, 33));
+    //m_pTextEdit->setPalette(pal);
 }
 
 void ZenoParamMultilineStr::setText(const QString& text)
@@ -579,15 +671,16 @@ ZenoParamBlackboard::ZenoParamBlackboard(const QString& value, LineEditParam par
     connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
     m_pTextEdit->installEventFilter(this);
     m_pTextEdit->setFrameShape(QFrame::NoFrame);
-    m_pTextEdit->setFont(param.font);
-    m_pTextEdit->setProperty("cssClass", "blackboard");
-
-    QTextCharFormat format;
-    QFont font("HarmonyOS Sans", 12);
-    format.setFont(font);
-    m_pTextEdit->setCurrentFont(font);
     m_pTextEdit->setText(value);
-    m_pTextEdit->setStyleSheet("QTextEdit { background-color: rgb(0, 0, 0); color: rgb(111, 111, 111); }");
+
+    //set line height
+    QTextBlockFormat blockFormat;
+    blockFormat.setLineHeight(5, QTextBlockFormat::LineDistanceHeight);
+    auto textCursor = m_pTextEdit->textCursor();
+    textCursor.setBlockFormat(blockFormat);
+    m_pTextEdit->setTextCursor(textCursor);
+    //set style
+    updateStyleSheet(param.font.pointSize());
 }
 
 QString ZenoParamBlackboard::text() const
@@ -599,6 +692,18 @@ void ZenoParamBlackboard::setText(const QString& text)
 {
     m_pTextEdit->setText(text);
 }
+void ZenoParamBlackboard::foucusInEdit() 
+{
+    m_pTextEdit->setFocus();
+}
+
+void ZenoParamBlackboard::updateStyleSheet(int fontSize) 
+{
+    m_pTextEdit->setStyleSheet(
+        ZenoStyle::dpiScaleSheet(QString("QTextEdit { background-color: rgb(0, 0, 0); color: rgb(111, 111, 111); "
+                                         "padding:16px 5px 5px 5px; font:%1pt \" HarmonyOS Sans \";}")
+                                     .arg(fontSize)));
+}
 
 bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)
 {
@@ -608,8 +713,216 @@ bool ZenoParamBlackboard::eventFilter(QObject* object, QEvent* event)
     return ZenoParamWidget::eventFilter(object, event);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSlider::ZenoParamSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent)
+    : ZenoParamWidget(parent) {
+    m_pSlider = new QSlider(orientation);
+    m_pSlider->setValue(value);
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+    setWidget(m_pSlider);
+    updateStyleSheet();
+
+    QObject::connect(m_pSlider, &QSlider::valueChanged, this, &ZenoParamSlider::valueChanged);
+
+    QObject::connect(m_pSlider, &QSlider::sliderPressed, [=]() {
+        QPoint pos = QCursor::pos();
+        QToolTip::showText(pos, QString("%1").arg(m_pSlider->value()), nullptr);
+    });
+
+    QObject::connect(m_pSlider, &QSlider::sliderMoved, [=](int value) {
+        QPoint pos = QCursor::pos();
+        QToolTip::showText(pos, QString("%1").arg(value), nullptr);
+    });
+}
+
+void ZenoParamSlider::setValue(int value) {
+    m_pSlider->setValue(value);
+}
+
+void ZenoParamSlider::setSliderInfo(const SLIDER_INFO &info) {
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+}
+
+void ZenoParamSlider::updateStyleSheet() {
+    m_pSlider->setStyleSheet(ZenoStyle::dpiScaleSheet(R"(
+					QSlider {
+					    background: rgb(31,39,42);
+						margin-top : 8px;
+					}
+                    QSlider::groove:horizontal {
+                        height: 4px;
+                        background: #707D9C;
+                    }
+                    QSlider::handle:horizontal {
+                        background: #DFE2E5;
+                        width: 6px;
+                        margin: -8px 0;
+                    }
+                    QSlider::add-page:horizontal {
+                        background: #191D21;
+                    }
+                    
+                    QSlider::sub-page:horizontal {
+                        background: #707D9C;
+                    }
+    )"));
+}
 
 //////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSpinBoxSlider::ZenoParamSpinBoxSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent)
+    : ZenoParamWidget(parent) 
+{
+    m_pSlider = new ZSpinBoxSlider();
+    m_pSlider->setValue(value);
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+    m_pSlider->setAttribute(Qt::WA_StyledBackground, false);
+    setWidget(m_pSlider);
+    updateStyleSheet();
+
+    connect(m_pSlider, &ZSpinBoxSlider::valueChanged, this, &ZenoParamSpinBoxSlider::valueChanged);
+}
+
+void ZenoParamSpinBoxSlider::setValue(int value) {
+    m_pSlider->setValue(value);
+}
+
+void ZenoParamSpinBoxSlider::setSliderInfo(const SLIDER_INFO &info) {
+    m_pSlider->setSingleStep(info.step);
+    m_pSlider->setRange(info.min, info.max);
+}
+
+void ZenoParamSpinBoxSlider::updateStyleSheet() {
+    m_pSlider->setStyleSheet("background:rgb(31,39,42);");
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamSpinBox::ZenoParamSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent) : ZenoParamWidget(parent) 
+{
+    m_pSpinBox = new QSpinBox;
+    m_pSpinBox->setProperty("cssClass", "control");
+    m_pSpinBox->setAlignment(Qt::AlignCenter);
+    m_pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(24));
+    m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
+    m_pSpinBox->installEventFilter(this);
+    setWidget(m_pSpinBox);
+    connect(m_pSpinBox, SIGNAL(valueChanged(int)), this, SIGNAL(valueChanged(int)));
+}
+
+void ZenoParamSpinBox::setValue(int value) 
+{
+    m_pSpinBox->setValue(value);
+}
+
+void ZenoParamSpinBox::setSliderInfo(const SLIDER_INFO &info) 
+{
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
+}
+
+bool ZenoParamSpinBox::eventFilter(QObject *obj, QEvent *event) {
+    if (obj == m_pSpinBox && event->type() == QEvent::Paint) {
+        QSvgRenderer svgRnder(QString(":/icons/leftArrow.svg"));
+        QPainter painter(m_pSpinBox);
+        QRect iconRect = m_pSpinBox->rect();
+        QRect leftRect = iconRect.adjusted(0, ZenoStyle::dpiScaled(3), -iconRect.width() + ZenoStyle::dpiScaled(16), -ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, leftRect);
+        svgRnder.load(QString(":/icons/rightArrow.svg"));
+         QRect rightRect = iconRect.adjusted(iconRect.right() - ZenoStyle::dpiScaled(16), ZenoStyle::dpiScaled(3), 0,-ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, rightRect);
+        return true;
+    }
+    return ZenoParamWidget::eventFilter(obj, event);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamDoubleSpinBox::ZenoParamDoubleSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent)
+{
+    m_pSpinBox = new QDoubleSpinBox;
+    m_pSpinBox->setAlignment(Qt::AlignCenter);
+    m_pSpinBox->setFixedHeight(ZenoStyle::dpiScaled(24));
+    m_pSpinBox->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
+    m_pSpinBox->installEventFilter(this);
+    setWidget(m_pSpinBox);
+    connect(m_pSpinBox, SIGNAL(valueChanged(double)), this, SIGNAL(valueChanged(double)));
+}
+
+void ZenoParamDoubleSpinBox::setValue(double value) 
+{
+    m_pSpinBox->setValue(value);
+}
+
+void ZenoParamDoubleSpinBox::setSliderInfo(const SLIDER_INFO &info) 
+{
+    m_pSpinBox->setSingleStep(info.step);
+    m_pSpinBox->setRange(info.min, info.max);
+}
+
+bool ZenoParamDoubleSpinBox::eventFilter(QObject *obj, QEvent *event) 
+{
+    if (obj == m_pSpinBox && event->type() == QEvent::Paint) 
+    {
+        QSvgRenderer svgRnder(QString(":/icons/leftArrow.svg"));
+        QPainter painter(m_pSpinBox);
+        QRect iconRect = m_pSpinBox->rect();
+        QRect leftRect = iconRect.adjusted(0, ZenoStyle::dpiScaled(3),-iconRect.width() + ZenoStyle::dpiScaled(16), -ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, leftRect);
+        svgRnder.load(QString(":/icons/rightArrow.svg"));
+        QRect rightRect = iconRect.adjusted(iconRect.right() - ZenoStyle::dpiScaled(16), ZenoStyle::dpiScaled(3), 0, -ZenoStyle::dpiScaled(3));
+        svgRnder.render(&painter, rightRect);
+        return true;
+    }
+    return ZenoParamWidget::eventFilter(obj, event);
+}
+//////////////////////////////////////////////////////////////////////////////////////
+ZenoParamGroupLine::ZenoParamGroupLine(const QString &text, QGraphicsItem *parent) : 
+    QGraphicsItem(parent),
+    m_text(text)
+{
+
+}
+
+QRectF ZenoParamGroupLine::boundingRect() const 
+{
+    return QRectF(QPointF(0, 0), data(GVKEY_SIZEHINT).toSizeF());
+}
+
+void ZenoParamGroupLine::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
+{
+    //draw text
+    QFont font = zenoApp->font();
+    QFontMetrics fm(font);
+    qreal width = fm.width(m_text);
+    QPen pen;
+    pen.setColor(QColor(94, 103, 115));
+    painter->setPen(pen);
+    painter->setFont(font);
+    QRectF rect = this->boundingRect();
+    qreal x = (rect.width() - width) / 2;
+    rect.adjust(x, 0, -x, 0);
+    painter->drawText(rect, Qt::AlignCenter, m_text);
+    //draw line
+    qreal y = rect.y() + (rect.height() / 2);
+    pen.setColor(QColor(22, 25, 29));
+    pen.setWidthF(ZenoStyle::dpiScaled(2));
+    painter->setPen(pen);
+    painter->drawLine(QPointF(0, y), QPointF(rect.left() - ZenoStyle::dpiScaled(4), y));
+    painter->drawLine(QPointF(rect.right() + ZenoStyle::dpiScaled(4), y), QPointF(boundingRect().right(), y));
+}
+
+void ZenoParamGroupLine::setText(const QString &text) 
+{
+    m_text = text;
+    update();
+}
+
+    //////////////////////////////////////////////////////////////////////////////////////
 ZenoTextLayoutItem::ZenoTextLayoutItem(const QString &text, const QFont &font, const QColor &color, QGraphicsItem *parent)
     : QGraphicsLayoutItem()
     , QGraphicsTextItem(text, parent)
@@ -905,9 +1218,9 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     , m_minView(nullptr)
     , m_minOnce(nullptr)
 {
-    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
-    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(25, 42)), this);
-    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(33, 42)), this);
+    m_minMute = new ZenoImageItem(statusComp.mute, ZenoStyle::dpiScaledSize(QSize(48, 66)), this);
+    m_minOnce = new ZenoImageItem(statusComp.once, ZenoStyle::dpiScaledSize(QSize(48, 66)), this);
+    m_minView = new ZenoImageItem(statusComp.view, ZenoStyle::dpiScaledSize(QSize(37, 66)), this);
 	m_once = new ZenoImageItem(
         ":/icons/ONCE_dark.svg",
         ":/icons/ONCE_light.svg",
@@ -926,6 +1239,11 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
         ":/icons/VIEW_light.svg",
         ZenoStyle::dpiScaledSize(QSize(50, 42)),
         this);
+
+    //m_once->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    //m_mute->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    //m_view->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+
     m_minMute->setCheckable(true);
     m_minView->setCheckable(true);
     m_minOnce->setCheckable(true);
@@ -937,17 +1255,20 @@ ZenoMinStatusBtnItem::ZenoMinStatusBtnItem(const StatusComponent& statusComp, QG
     m_view->hide();
 
     m_minOnce->setPos(QPointF(0, 0));
-    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(20), 0));
-    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(40), 0));
+    m_minMute->setPos(QPointF(ZenoStyle::dpiScaled(29), 0));
+    m_minView->setPos(QPointF(ZenoStyle::dpiScaled(58), 0));
 
     QSizeF sz2 = m_once->size();
+    qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
     //todo: kill these magin number.
-	QPointF base = QPointF(ZenoStyle::dpiScaled(12), -sz2.height() - ZenoStyle::dpiScaled(8));
+    QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
 	m_once->setPos(base);
 	base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_mute->setPos(base);
 	base += QPointF(ZenoStyle::dpiScaled(38), 0);
 	m_view->setPos(base);
+
+    onZoomed();
 
     m_minOnce->setZValue(ZVALUE_ELEMENT);
     m_minView->setZValue(ZVALUE_ELEMENT);
@@ -1049,6 +1370,25 @@ void ZenoMinStatusBtnItem::paint(QPainter* painter, const QStyleOptionGraphicsIt
 {
 }
 
+void ZenoMinStatusBtnItem::onZoomed() 
+{
+    if (1 - editor_factor > 0.00001f) 
+    {
+        QSize size = QSize(ZenoStyle::scaleWidth(50), ZenoStyle::scaleWidth(42));
+        m_once->resize(size);
+        m_mute->resize(size);
+        m_view->resize(size);
+        QSizeF sz2 = m_once->size();
+        qreal sMarginTwoBar = ZenoStyle::dpiScaled(4);
+        QPointF base = QPointF(ZenoStyle::dpiScaled(18), -sz2.height() - sMarginTwoBar);
+        m_once->setPos(base);
+        qreal offset = ZenoStyle::scaleWidth(38);
+        base += QPointF(offset, 0);
+        m_mute->setPos(base);
+        base += QPointF(offset, 0);
+        m_view->setPos(base);
+    }
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 ZenoMinStatusBtnWidget::ZenoMinStatusBtnWidget(const StatusComponent& statusComp, QGraphicsItem* parent)

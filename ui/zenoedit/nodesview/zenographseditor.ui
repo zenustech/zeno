@@ -35,7 +35,7 @@
       <string notr="true"/>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="mainEditor">
       <property name="styleSheet">
@@ -43,13 +43,13 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_2333">
        <property name="spacing">
-        <number>1</number>
+        <number>0</number>
        </property>
        <property name="leftMargin">
         <number>0</number>
        </property>
        <property name="topMargin">
-        <number>1</number>
+        <number>0</number>
        </property>
        <property name="rightMargin">
         <number>0</number>
@@ -57,64 +57,6 @@
        <property name="bottomMargin">
         <number>0</number>
        </property>
-       <item>
-        <widget class="QWidget" name="sidebar" native="true">
-         <property name="styleSheet">
-          <string notr="true">background: rgb(51,51,51);</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <property name="spacing">
-           <number>0</number>
-          </property>
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="topMargin">
-           <number>1</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <property name="bottomMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="ZenoCheckButton" name="subnetBtn" native="true"/>
-          </item>
-          <item>
-           <widget class="ZenoCheckButton" name="treeviewBtn" native="true"/>
-          </item>
-          <item>
-           <widget class="ZenoCheckButton" name="searchBtn" native="true"/>
-          </item>
-          <item>
-           <widget class="ZenoCheckButton" name="annotationBtn" native="true"/>
-          </item>
-          <item>
-           <widget class="ZenoCheckButton" name="parameterBtn" native="true"/>
-          </item>
-          <item>
-           <widget class="ZenoCheckButton" name="noteBtn" native="true"/>
-          </item>
-          <item>
-           <widget class="ZenoCheckButton" name="presetBtn" native="true"/>
-          </item>
-          <item>
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
-       </item>
        <item>
         <widget class="QSplitter" name="splitter">
          <property name="styleSheet">
@@ -167,11 +109,11 @@
               <item>
                <widget class="QLabel" name="label">
                 <property name="styleSheet">
-                 <string notr="true">color: #858280;
-font: 12pt 'HarmonyOS Sans';</string>
+                 <string notr="true">color: #737B85;
+font-size: 12pt;</string>
                 </property>
                 <property name="text">
-                 <string>SUBNET</string>
+                 <string>Subnet</string>
                 </property>
                </widget>
               </item>
@@ -201,9 +143,10 @@ font: 12pt 'HarmonyOS Sans';</string>
               <property name="styleSheet">
                <string notr="true">QListView
 {
-	background-color: rgb(37,37,38);
+	background-color: transparent;
 	show-decoration-selected: 1;
-	font: 12pt 'HarmonyOS Sans';
+	font-size: 12pt;
+    font-weight: bold;
 }</string>
               </property>
               <property name="frameShape">
@@ -225,39 +168,6 @@ font: 12pt 'HarmonyOS Sans';</string>
              <widget class="QTreeView" name="subnetTree">
               <property name="focusPolicy">
                <enum>Qt::NoFocus</enum>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QTreeView
-{
-	background-color: rgb(37,37,38);
-	show-decoration-selected: 1;
-	font: 12pt 'HarmonyOS Sans';
-}
-
-QTreeView::item {
-	color: #858280;
-	border: 1px solid transparent;
-}
-
-QTreeView::item:hover {
-	background-color: transparent;
-}
-
-QTreeView::item:selected {
-	border: 1px solid #4B9EF4;
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:active{
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:!active {
-	background: #334960;
-	color: #ffffff;
-}</string>
               </property>
               <property name="frameShape">
                <enum>QFrame::NoFrame</enum>
@@ -292,7 +202,7 @@ QTreeView::item:selected:!active {
                <widget class="QLabel" name="label_2">
                 <property name="styleSheet">
                  <string notr="true">color: #858280;
-font: 12pt 'HarmonyOS Sans';</string>
+font-size: 12pt;</string>
                 </property>
                 <property name="text">
                  <string>SEARCH</string>
@@ -328,39 +238,6 @@ font: 12pt 'HarmonyOS Sans';</string>
              <widget class="QTreeView" name="searchResView">
               <property name="focusPolicy">
                <enum>Qt::NoFocus</enum>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QTreeView
-{
-	background-color: rgb(43,43,43);
-	show-decoration-selected: 1;
-	font: 12pt 'HarmonyOS Sans';
-}
-
-QTreeView::item {
-	color: #858280;
-	border: 1px solid transparent;
-}
-
-QTreeView::item:hover {
-	background-color: transparent;
-}
-
-QTreeView::item:selected {
-	border: 1px solid #4B9EF4;
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:active{
-	background: #334960;
-	color: #ffffff;
-}
-
-QTreeView::item:selected:!active {
-	background: #334960;
-	color: #ffffff;
-}</string>
               </property>
               <property name="frameShape">
                <enum>QFrame::NoFrame</enum>
@@ -449,50 +326,10 @@ QTreeView::item:selected:!active {
            <bool>true</bool>
           </property>
           <property name="styleSheet">
-           <string notr="true">QTabBar {
-	font-weight: bold;
-}
-
-QTabWidget::pane { /* The tab widget frame */
-    border: 0px;
-}
-
-QTabBar::tab {
-    background: rgb(58, 58, 58);
-	color: rgb(129, 125, 123);
-	border-right: 1px solid rgb(36, 36, 36);
-	font: 16px 'HarmonyOS Sans';
-	/*margin-right: 1px;*/
-}
-
-QTabBar::tab:first {
-    border-left: 1px solid rgb(36, 36, 36);
-}
-
-QTabBar::tab:top {
-	/*margin-right: 1px;*/
-    padding: 7px 16px 7px 16px;
-}
-
-QTabBar::tab:top:first {
-    margin-left: 0px;
-}
-
-QTabBar::tab:!selected { font-weight: normal; }
-
-QTabBar::tab:selected {
-    background: rgb(48, 48, 48);
-	color: rgb(255, 255, 255);
-	border-bottom: 2px solid rgb(23, 160, 252);
-}
-
-QTabBar::close-button {
-    image: url(:/icons/closebtn.svg);
-    subcontrol-position: right;
-}
-QTabBar::close-button:hover {
-    image: url(:/icons/closebtn_on.svg);
-}</string>
+           <string notr="true"></string>
+          </property>
+          <property name="documentMode">
+           <bool>true</bool>
           </property>
           <property name="tabsClosable">
            <bool>true</bool>
@@ -505,18 +342,38 @@ QTabBar::close-button:hover {
        </item>
       </layout>
      </widget>
-     <widget class="ZenoWelcomePage" name="welcomePage"/>
+     <widget class="QScrollArea" name="welcomeScrollPage">
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="sizeAdjustPolicy">
+       <enum>QAbstractScrollArea::AdjustIgnored</enum>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="ZenoWelcomePage" name="welcomePage">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>977</width>
+         <height>581</height>
+        </rect>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
+     </widget>
     </widget>
    </item>
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>ZenoCheckButton</class>
-   <extends>QWidget</extends>
-   <header>zenoui/comctrl/zenocheckbutton.h</header>
-   <container>1</container>
-  </customwidget>
   <customwidget>
    <class>ZIconLabel</class>
    <extends>QLabel</extends>

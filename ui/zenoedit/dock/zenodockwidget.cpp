@@ -1,3 +1,4 @@
+#if 0
 #include "zenodockwidget.h"
 #include "zenodocktitlewidget.h"
 #include "zenomainwindow.h"
@@ -15,6 +16,14 @@
 #include "viewport/zenovis.h"
 #include "panel/zenolights.h"
 #include <zenovis/ObjectsManager.h>
+#include <zenoui/comctrl/zlabel.h>
+#include <zenoui/style/zenostyle.h>
+#include <zenoui/comctrl/zdocktabwidget.h>
+#include "nodesview/zenographseditor.h"
+#include "../panel/zenodatapanel.h"
+#include "panel/zenoproppanel.h"
+#include "../panel/zenospreadsheet.h"
+#include "../panel/zlogpanel.h"
 #include <zenomodel/include/api.h>
 
 
@@ -186,18 +195,18 @@ void ZenoDockWidget::init(ZenoMainWindow* pMainWin)
     palette.setBrush(QPalette::Window, QColor(38, 38, 38));
     palette.setBrush(QPalette::WindowText, QColor());
     setPalette(palette);
-    ZenoDockTitleWidget* pTitleWidget = new ZenoDockTitleWidget;
+    ZenoDockTitleWidget *pTitleWidget = new ZenoDockTitleWidget;
     pTitleWidget->setupUi();
     setTitleBarWidget(pTitleWidget);
-	connect(pTitleWidget, SIGNAL(dockOptionsClicked()), this, SLOT(onDockOptionsClicked()));
-	connect(pTitleWidget, SIGNAL(dockSwitchClicked(DOCK_TYPE)), this, SIGNAL(dockSwitchClicked(DOCK_TYPE)));
+    connect(pTitleWidget, SIGNAL(dockOptionsClicked()), this, SLOT(onDockOptionsClicked()));
+    connect(pTitleWidget, SIGNAL(dockSwitchClicked(DOCK_TYPE)), this, SIGNAL(dockSwitchClicked(DOCK_TYPE)));
     connect(this, SIGNAL(dockSwitchClicked(DOCK_TYPE)), pMainWin, SLOT(onDockSwitched(DOCK_TYPE)));
 }
 
 void ZenoDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
     font.setBold(false);
     menu->setFont(font);
     QAction* pSplitHor = new QAction("Split Left/Right");
@@ -337,3 +346,4 @@ void ZenoDockWidget::newFrameUpdate() {
         panel->updateLights();
     }
 }
+#endif

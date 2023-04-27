@@ -15,9 +15,9 @@ bool CameraKeyframeWidget::queryFrame(int frame, PerspectiveInfo& ret)
 
 void CameraKeyframeWidget::insertKeyFrames()
 {
-    int frameid = Zenovis::GetInstance().getCurrentFrameId();
-    m_keyFrames[frameid] = Zenovis::GetInstance().m_perspective;
-    updateList();
+    //int frameid = Zenovis::GetInstance().getCurrentFrameId();
+    //m_keyFrames[frameid] = Zenovis::GetInstance().m_perspective;
+    //updateList();
 }
 
 void CameraKeyframeWidget::removeKeyFrame()

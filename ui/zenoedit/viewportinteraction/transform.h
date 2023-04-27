@@ -12,6 +12,8 @@
 
 #include <unordered_map>
 
+class ViewportWidget;
+
 namespace zeno {
 
 enum {
@@ -22,11 +24,8 @@ enum {
 };
 
 class FakeTransformer {
-  public:
-    static FakeTransformer& GetInstance() {
-        static FakeTransformer instance;
-        return instance;
-    }
+public:
+    FakeTransformer(ViewportWidget* viewport);
     void addObject(const std::string& name);
     void addObject(const std::unordered_set<std::string>& names);
     void removeObject(const std::string& name);
@@ -49,11 +48,10 @@ class FakeTransformer {
     glm::vec3 getCenter() const;
     void clear();
 
-    FakeTransformer(const FakeTransformer&) = delete;
-    const FakeTransformer& operator = (const FakeTransformer&) = delete;
+private:
+    zenovis::Scene* scene() const;
+    zenovis::Session* session() const;
 
-  private:
-    FakeTransformer();
     void translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis);
     void scale(float scale_size, vec3i axis);
     void rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 axis);
@@ -98,7 +96,7 @@ class FakeTransformer {
             return {};
     }
 
-  private:
+private:
     std::unordered_map<std::string, PrimitiveObject*> m_objects;
 
     glm::vec3 m_objects_center;
@@ -121,6 +119,7 @@ class FakeTransformer {
     int m_coord_sys;
     float m_handler_scale;
     std::shared_ptr<zenovis::IGraphicHandler> m_handler;
+    ViewportWidget* m_viewport;
 };
 
 }

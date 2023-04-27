@@ -6,6 +6,7 @@
 
 #include <zenomodel/include/igraphsmodel.h>
 #include "subgraphmodel.h"
+#include "linkmodel.h"
 #include "modeldata.h"
 #include <stack>
 
@@ -38,6 +39,7 @@ public:
     NODE_DESCS descriptors() const override;
     bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) override;
     bool getDescriptor(const QString& descName, NODE_DESC& desc) override;
+    bool updateSubgDesc(const QString& descName, const NODE_DESC& desc) override;
     //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
@@ -55,8 +57,10 @@ public:
     QModelIndex subgByNodeId(uint32_t id) override;
     QModelIndex index(const QString& subGraphName) const override;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
+    QModelIndex indexFromPath(const QString& path) override;
     QModelIndex linkIndex(int r) override;
     QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) override;
+
     QModelIndex parent(const QModelIndex& child) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
@@ -67,7 +71,8 @@ public:
 
     //IGraphsModel
 
-	QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
+    QModelIndex index(const QString& id, const QModelIndex& subGpIdx) override;
+    QModelIndex nodeIndex(const QString &ident) override;
     QModelIndex index(int r, const QModelIndex& subGpIdx) override;
     int itemCount(const QModelIndex& subGpIdx) const override;
 	void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
@@ -81,18 +86,19 @@ public:
             bool enableTransaction = false) override;
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx);
-    void removeLink(const QPersistentModelIndex& linkIdx, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
+    void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) override;
+    void removeLink(const EdgeInfo& linkIdx, bool enableTransaction = false) override;
 	void removeSubGraph(const QString& name) override;
-    QModelIndex addLink(const EdgeInfo& info, const QModelIndex& subGpIdx, bool bAddDynamicSock, bool enableTransaction = false) override;
+    QModelIndex addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) override;
+    QModelIndex addLink(const EdgeInfo& info, bool enableTransaction = false) override;
 
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
-    void updateParamNotDesc(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) override;
-    void updateBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard, const QModelIndex& subgIdx,
+    void updateBlackboard(const QString &id, const QVariant &blackboard, const QModelIndex &subgIdx,
                           bool enableTransaction) override;
 
-    QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
+    QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) override;
     bool IsSubGraphNode(const QModelIndex& nodeIdx) const override;
 
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
@@ -103,22 +109,33 @@ public:
 	void redo() override;
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
     QModelIndexList subgraphsIndice() const override;
-    QStandardItemModel* linkModel() const;
+    LinkModel* linkModel() const override;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
     QRectF viewRect(const QModelIndex& subgIdx) override;
-    QList<SEARCH_RESULT> search(const QString& content, int searchOpts) override;
+    QList<SEARCH_RESULT> search(const QString &content, int searchOpts, QVector<SubGraphModel *> vec = QVector<SubGraphModel *>()) override;
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
-    bool updateSocketNameNotDesc(const QString &id, SOCKET_UPDATE_INFO info, const QModelIndex &subGpIdx, bool enableTransaction = false) override;
 
     bool hasDescriptor(const QString& nodeName) const;
     void beginTransaction(const QString& name) override;
 	void endTransaction() override;
-    void removeLinks(const QList<QPersistentModelIndex>& info, const QModelIndex& subGpIdx, bool enableTransaction = false);
-    void updateSocket(const QString& id, SOCKET_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false);
-    void updateLinkInfo(const QPersistentModelIndex& linkIdx, const LINK_UPDATE_INFO& info, bool enableTransaction = false);
+    void beginApiLevel() override;
+    void endApiLevel() override;
     void setIOProcessing(bool bIOProcessing) override;
     bool IsIOProcessing() const override;
+    QModelIndexList findSubgraphNode(const QString& subgName) override;
+    int ModelSetData(
+        const QPersistentModelIndex& idx,
+        const QVariant& value,
+        int role,
+        const QString& comment = "") override;
+    int undoRedo_updateSubgDesc(const QString &descName, const NODE_DESC &desc) override;
+    bool addExecuteCommand(QUndoCommand* pCommand) override;
+    void setIOVersion(zenoio::ZSG_VERSION ver) override;
+    zenoio::ZSG_VERSION ioVersion() const override;
+    void setApiRunningEnable(bool bEnable) override;
+    bool isApiRunningEnable() const override;
+    bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -141,12 +158,11 @@ public slots:
 
 private:
     NODE_DESCS getCoreDescs();
+    void parseDescStr(const QString& descStr, QString& name, QString& type, QVariant& defl);
     void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
-    void updateDescInfo(const QString& descName, const SOCKET_UPDATE_INFO& updateInfo);
-    void importNodeLinks(const QList<NODE_DATA> &nodes, const QModelIndex &subGpIdx);
-    void resolveLinks(const QModelIndex& idx, SubGraphModel* pCurrentGraph);
-    void copyPaste(const QModelIndex &fromSubg, const QModelIndexList &srcNodes, const QModelIndex &toSubg, QPointF pos,
-                   bool enableTrans = false);
+    bool onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
+    bool onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
+
     QModelIndex _createIndex(SubGraphModel* pSubModel) const;
     void initDescriptors();
     NODE_DESC getSubgraphDesc(SubGraphModel* pModel);
@@ -154,15 +170,13 @@ private:
     NODE_DATA _fork(const QString& forkSubgName);
     QString uniqueSubgraph(QString orginName);
 
-    void beginApiLevel();
-    void endApiLevel();
     void onApiBatchFinished();
 
     QVector<SubGraphModel*> m_subGraphs;
     QMap<uint32_t, QString> m_id2name;
     QMap<QString, uint32_t> m_name2id;
     QItemSelectionModel* m_selection;
-    QStandardItemModel* m_linkModel;
+    LinkModel* m_linkModel;
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;
     NODE_CATES m_nodesCate;
@@ -172,6 +186,8 @@ private:
     int m_apiLevel;
     bool m_dirty;
     bool m_bIOProcessing;
+    bool m_bApiEnableRun;
+    zenoio::ZSG_VERSION m_version;
 
     friend class ApiLevelScope;
 };

@@ -18,30 +18,30 @@ public:
     ZTimeline(QWidget* parent = nullptr);
     QPair<int, int> fromTo() const;
     void initFromTo(int from, int to);
-    bool isAlways() const;
-    void setAlways(bool bOn);
     void resetSlider();
     int value() const;
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
 
 signals:
     void playForward(bool bPlaying);
     void playForwardOneFrame();
     void playForwardLastFrame();
-    int sliderValueChanged(int);
-    void alwaysChecked();
-    void run();
-    void kill();
+    void sliderValueChanged(int);
 
 public slots:
     void onTimelineUpdate(int frameid);
     void onFrameEditted();
     void setSliderValue(int frameid);
-    void setPlayButtonToggle(bool bToggle);
+    void setPlayButtonChecked(bool bToggle);
+    void togglePlayButton(bool bOn);
 
 private:
     void initStyleSheet();
     void initSignals();
-    void initBtnIcons();
+    void initButtons();
+    void initSize();
 
     int m_frames;
 

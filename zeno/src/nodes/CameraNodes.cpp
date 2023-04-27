@@ -40,6 +40,49 @@ ZENO_DEFNODE(MakeCamera)({
     {"shader"},
 });
 
+struct TargetCamera : INode {
+    virtual void apply() override {
+        auto camera = std::make_unique<CameraObject>();
+
+        auto refUp = zeno::normalize(get_input2<vec3f>("refUp"));
+        auto pos = get_input2<vec3f>("pos");
+        auto target = get_input2<vec3f>("target");
+        vec3f view = zeno::normalize(target - pos);
+        vec3f right = zeno::cross(view, refUp);
+        vec3f up = zeno::cross(right, view);
+
+        camera->pos = pos;
+        camera->up = up;
+        camera->view = view;
+        camera->ffar = get_input2<float>("far");
+        camera->fnear = get_input2<float>("near");
+        camera->fov = get_input2<float>("fov");
+        camera->aperture = get_input2<float>("aperture");
+        camera->focalPlaneDistance = get_input2<float>("focalPlaneDistance");
+
+        set_output("camera", std::move(camera));
+    }
+};
+
+ZENO_DEFNODE(TargetCamera)({
+    {
+        {"vec3f", "pos", "0,0,5"},
+        {"vec3f", "refUp", "0,1,0"},
+        {"vec3f", "target", "0,0,0"},
+        {"float", "near", "0.01"},
+        {"float", "far", "20000"},
+        {"float", "fov", "45"},
+        {"float", "aperture", "0.1"},
+        {"float", "focalPlaneDistance", "2.0"},
+    },
+    {
+        {"CameraObject", "camera"},
+    },
+    {
+    },
+    {"shader"},
+});
+
 struct MakeLight : INode {
     virtual void apply() override {
         auto light = std::make_unique<LightObject>();

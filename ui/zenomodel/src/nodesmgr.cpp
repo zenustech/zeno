@@ -3,10 +3,10 @@
 #include <zeno/utils/log.h>
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/curvemodel.h>
-#include <zenomodel/include/variantptr.h>
+#include "variantptr.h"
 #include <zenomodel/include/curveutil.h>
 #include "zassert.h"
-
+#include "graphsmodel.h"
 
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
@@ -26,7 +26,7 @@ NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, c
     node[ROLE_OBJID] = nodeid;
     node[ROLE_OBJNAME] = descName;
     node[ROLE_NODETYPE] = nodeType(descName);
-    initInputSocks(pModel, nodeid, desc.inputs);
+    initInputSocks(pModel, nodeid, desc.inputs, desc.is_subgraph);
     node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
     initOutputSocks(pModel, nodeid, desc.outputs);
     node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
@@ -43,6 +43,10 @@ NODE_TYPE NodesMgr::nodeType(const QString& name)
     if (name == "Blackboard")
     {
         return BLACKBOARD_NODE;
+    }
+    else if (name == "Group")
+    {
+        return GROUP_NODE;
     }
     else if (name == "SubInput")
     {
@@ -62,7 +66,7 @@ NODE_TYPE NodesMgr::nodeType(const QString& name)
     }
 }
 
-void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid, INPUT_SOCKETS& descInputs)
+void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid, INPUT_SOCKETS& descInputs, bool isSubgraph)
 {
     if (descInputs.find("SRC") == descInputs.end())
     {
@@ -71,24 +75,6 @@ void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid,
         srcSocket.info.control = CONTROL_NONE;
         srcSocket.info.nodeid = nodeid;
         descInputs.insert("SRC", srcSocket);
-    }
-
-    if (descInputs.lastKey() != "SRC")
-    {
-        //ensure that the "SRC" is the last key in sockets.
-        INPUT_SOCKET srcSocket = descInputs["SRC"];
-        descInputs.remove("SRC");
-        descInputs.insert("SRC", srcSocket);
-    }
-
-    if (descInputs.find("curve") != descInputs.end())
-    {
-        INPUT_SOCKET& input = descInputs["curve"];
-        if (input.info.control == CONTROL_CURVE)
-        {
-            CurveModel *pModel = curve_util::deflModel(pGraphsModel);
-            input.info.defaultValue = QVariantPtr<CurveModel>::asVariant(pModel);
-        }
     }
 }
 
@@ -119,8 +105,16 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
         PARAM_INFO& param = params["curve"];
         if (param.control == CONTROL_CURVE)
         {
-            CurveModel *pModel = curve_util::deflModel(pGraphsModel);
-            param.value = QVariantPtr<CurveModel>::asVariant(pModel);
+            CURVES_MODEL curves;
+            QString ids[] = {"x", "y", "z"};
+            for (int i = 0; i < 3; i++) {
+                CurveModel *pModel = curve_util::deflModel(pGraphsModel);
+                pModel->setData(pModel->index(0, 0), QVariant::fromValue(QPointF(0, i*0.5)), ROLE_NODEPOS);
+                pModel->setData(pModel->index(1, 0), QVariant::fromValue(QPointF(1, 1-i*0.5)), ROLE_NODEPOS);
+                pModel->setId(ids[i]);
+                curves.insert(ids[i], pModel);
+            }
+            param.value = QVariant::fromValue(curves);
         }
     }
     if (descName == "MakeHeatmap" && params.find("_RAMPS") == params.end())
@@ -153,11 +147,13 @@ void NodesMgr::initParams(const QString& descName, IGraphsModel* pGraphsModel, P
 PARAMS_INFO NodesMgr::initParamsNotDesc(const QString& name)
 {
     PARAMS_INFO paramsNotDesc;
-    if (name == "Blackboard")
+    if (name == "Blackboard" || name == "Group")
     {
         BLACKBOARD_INFO blackboard;
-        blackboard.content = tr("Please input the content of blackboard");
-        blackboard.title = tr("Please input the title of blackboard");
+        blackboard.content = tr("content");
+        blackboard.title = tr("title");
+        blackboard.background = QColor(0, 100, 168);
+        blackboard.sz = QSize(500, 500);
         paramsNotDesc["blackboard"].name = "blackboard";
         paramsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
     }

@@ -30,6 +30,10 @@ public:
 signals:
     void modelInited(IGraphsModel*);
     void modelDataChanged();
+    void fileOpened(QString);
+    void fileClosed();
+    void fileSaved(QString);
+    void dirtyChanged(bool);
 
 private slots:
     void onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);

@@ -34,6 +34,7 @@ public:
     void resize(QSizeF sz);
     QSizeF size() const { return m_size; }
     bool isHovered() const;
+    bool isToggled() const;
     void setCheckable(bool bCheckable);
 
 signals:

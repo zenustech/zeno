@@ -1,30 +1,35 @@
 #include "zenosocketitem.h"
+#include "zgraphicstextitem.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/modelrole.h>
+#include <zenomodel/include/viewparammodel.h>
 
 
 ZenoSocketItem::ZenoSocketItem(
-        const QString& sockName,
-        bool bInput,
-        QPersistentModelIndex nodeIdx,
-        const ImageElement& elem,
+        const QPersistentModelIndex& viewSockIdx,
         const QSizeF& sz,
-        QGraphicsItem* parent)
-    : ZenoImageItem(elem, sz, parent)
-    , m_bInput(bInput)
-    , m_name(sockName)
-    , m_index(nodeIdx)
+        QGraphicsItem* parent
+)
+    : _base(parent)
+    , m_viewSockIdx(viewSockIdx)
     , m_status(STATUS_UNKNOWN)
-    , m_svgHover(nullptr)
-    , m_hoverSvg(elem.imageHovered)
-    , m_noHoverSvg(elem.image)
-    , sHorLargeMargin(ZenoStyle::dpiScaled(40))
-    , sTopMargin(ZenoStyle::dpiScaled(10))
-    , sHorSmallMargin(ZenoStyle::dpiScaled(5))
-    , sBottomMargin(ZenoStyle::dpiScaled(10))
+    , m_size(sz)
+    , m_bHovered(false)
 {
-    setCheckable(true);
+    PARAM_CLASS cls = (PARAM_CLASS)viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
+    ZASSERT_EXIT(cls == PARAM_INNER_INPUT || cls == PARAM_INPUT ||
+                 cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT);
+    m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT);
+    m_bInnerSock = (cls == PARAM_INNER_INPUT || cls == PARAM_INNER_OUTPUT);
+    m_innerSockMargin = ZenoStyle::dpiScaled(15);
+    m_socketXOffset = ZenoStyle::dpiScaled(24);
+    if (!m_bInnerSock)
+    {
+        setData(GVKEY_SIZEHINT, m_size);
+        setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+    }
     setSockStatus(STATUS_NOCONN);
+    setAcceptHoverEvents(true);
 }
 
 int ZenoSocketItem::type() const
@@ -32,63 +37,55 @@ int ZenoSocketItem::type() const
     return Type;
 }
 
-void ZenoSocketItem::setOffsetToName(const QPointF& offsetToName)
-{
-    m_offsetToName = offsetToName;
-}
-
-void ZenoSocketItem::socketNamePosition(const QPointF& nameScenePos)
-{
-    QPointF namePos = mapFromScene(nameScenePos);
-    setPos(namePos + m_offsetToName);
-}
-
 QPointF ZenoSocketItem::center() const
 {
-    QRectF rcImage = ZenoImageItem::boundingRect();
-    QRectF br = boundingRect();
-    QPointF cen = br.topLeft();
-    if (m_bInput)
-    {
-        cen += QPointF(sHorLargeMargin + rcImage.width() / 2., sTopMargin + rcImage.height() / 2);
-        QPointF c = mapToScene(cen);
-        return c;
+    if (m_bInnerSock) {
+        return this->sceneBoundingRect().center();
     }
     else
     {
-        cen += QPointF(sHorSmallMargin + rcImage.width() / 2., sTopMargin + rcImage.height() / 2);
-        QPointF c = mapToScene(cen);
-        return c;
+        //(0, 0) is the position of socket.
+        QPointF center = mapToScene(QPointF(m_size.width() / 2., m_size.height() / 2.));
+        return center;
     }
+}
+
+QModelIndex ZenoSocketItem::paramIndex() const
+{
+    return m_viewSockIdx;
 }
 
 QRectF ZenoSocketItem::boundingRect() const
 {
-    QRectF rc = ZenoImageItem::boundingRect();
-    if (m_bInput) {
-        rc = rc.adjusted(-sHorLargeMargin, -sTopMargin, sHorSmallMargin, sBottomMargin);
+    if (m_bInnerSock)
+    {
+        QRectF rc(QPointF(0, 0), m_size + QSize(2 * m_innerSockMargin, 2 * m_innerSockMargin));
+        return rc;
     }
-    else {
-        rc = rc.adjusted(-sHorSmallMargin, -sTopMargin, sHorLargeMargin, sBottomMargin);
+    else
+    {
+        QSizeF wholeSize = QSizeF(m_size.width() + m_socketXOffset, m_size.height());
+        if (m_bInput)
+            return QRectF(QPointF(-m_socketXOffset, 0), wholeSize);
+        else
+            return QRectF(QPointF(0, 0), wholeSize);
     }
-    return rc;
 }
 
-void ZenoSocketItem::updateSockName(const QString& sockName)
+bool ZenoSocketItem::isInputSocket() const
 {
-    m_name = sockName;
+    return m_bInput;
 }
 
-bool ZenoSocketItem::getSocketInfo(bool& bInput, QString& nodeid, QString& sockName)
+QString ZenoSocketItem::nodeIdent() const
 {
-    Q_ASSERT(m_index.isValid());
-    if (!m_index.isValid())
-        return false;
+    return m_viewSockIdx.isValid() ? m_viewSockIdx.data(ROLE_OBJID).toString() : "";
+}
 
-    bInput = m_bInput;
-    nodeid = m_index.data(ROLE_OBJID).toString();
-    sockName = m_name;
-    return true;
+void ZenoSocketItem::setHovered(bool bHovered)
+{
+    m_bHovered = bHovered;
+    update();
 }
 
 void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
@@ -96,87 +93,130 @@ void ZenoSocketItem::setSockStatus(SOCK_STATUS status)
     if (m_status == status)
         return;
 
-    if (status == STATUS_NOCONN || status == STATUS_TRY_DISCONN)
-    {
-        if (m_bInput) {
-            INPUT_SOCKETS inputs = m_index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
-            if (inputs.find(m_name) != inputs.end()) {
-                if (!inputs[m_name].linkIndice.isEmpty()) {
-                    status = STATUS_CONNECTED;
-                }
-            }
-        } else {
-            OUTPUT_SOCKETS outputs = m_index.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
-            if (outputs.find(m_name) != outputs.end()) {
-                if (!outputs[m_name].linkIndice.isEmpty()) {
-                    status = STATUS_CONNECTED;
-                }
-            }
-        }
-    }
-
     m_status = status;
-    switch (m_status)
-    {
-    case STATUS_CONNECTED:
-        m_noHoverSvg = m_selected;
-        m_hoverSvg = ":/icons/socket-on-hover.svg";
-        delete m_svg;
-        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
-        m_svg->setSize(m_size);
-        break;
-    case STATUS_TRY_CONN:
-        m_noHoverSvg = ":/icons/socket-on-hover.svg";
-        m_hoverSvg = ":/icons/socket-on-hover.svg";
-        delete m_svg;
-        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
-        m_svg->setSize(m_size);
-        break;
-    case STATUS_TRY_DISCONN:
-    case STATUS_NOCONN:
-        m_noHoverSvg = m_normal;
-        m_hoverSvg = m_hoverSvg;
-        delete m_svg;
-        m_svg = new ZenoSvgItem(m_noHoverSvg, this);
-        m_svg->setSize(m_size);
-        break;
-    }
     update();
+}
+
+ZenoSocketItem::SOCK_STATUS ZenoSocketItem::sockStatus() const
+{
+    return m_status;
 }
 
 void ZenoSocketItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)
 {
-    delete m_svg;
-    m_svg = new ZenoSvgItem(m_hoverSvg, this);
-    m_svg->setSize(m_size);
-    QGraphicsObject::hoverEnterEvent(event);
+    _base::hoverEnterEvent(event);
+    setHovered(true);
 }
 
 void ZenoSocketItem::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
 {
-    QGraphicsObject::hoverMoveEvent(event);
+    _base::hoverMoveEvent(event);
 }
 
 void ZenoSocketItem::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 {
-    delete m_svg;
-    m_svg = new ZenoSvgItem(m_noHoverSvg, this);
-    m_svg->setSize(m_size);
-    QGraphicsObject::hoverLeaveEvent(event);
+    _base::hoverLeaveEvent(event);
+    setHovered(false);
 }
 
 void ZenoSocketItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-    ZenoImageItem::mousePressEvent(event);
+    _base::mousePressEvent(event);
+    event->setAccepted(true);
 }
 
 void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    ZenoImageItem::mouseReleaseEvent(event);
+    _base::mouseReleaseEvent(event);
+    update();
     emit clicked(m_bInput);
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-    ZenoImageItem::paint(painter, option, widget);
+    painter->setRenderHint(QPainter::Antialiasing, true);
+
+    QColor bgClr;
+    if (m_bHovered)
+    {
+        bgClr = QColor("#5FD2FF");
+    }
+    else
+    {
+        bgClr = QColor("#4B9EF4");
+    }
+
+    QPen pen(bgClr, ZenoStyle::dpiScaled(4));
+    pen.setJoinStyle(Qt::RoundJoin);
+
+    QColor innerBgclr(bgClr.red(), bgClr.green(), bgClr.blue(), 120);
+
+    static const int startAngle = 0;
+    static const int spanAngle = 360;
+    painter->setPen(pen);
+    bool bDrawBg = (m_status == STATUS_TRY_CONN || m_status == STATUS_CONNECTED);
+
+    if (bDrawBg)
+    {
+        painter->setBrush(bgClr);
+    }
+    else
+    {
+        painter->setBrush(innerBgclr);
+    }
+
+    if (!m_bInnerSock)
+    {
+        QPainterPath path;
+        qreal halfpw = pen.widthF() / 2;
+        qreal xleft, xright, ytop, ybottom;
+
+        xleft = halfpw;
+        xright = m_size.width() - halfpw;
+        ytop = halfpw;
+        ybottom = m_size.height() - halfpw;
+
+        if (m_bInput)
+        {
+            path.moveTo(QPointF(xleft, ybottom));
+            path.lineTo(QPointF((xleft + xright) / 2., ybottom));
+            //bottom right arc.
+            QRectF rcBr(QPointF(xleft, (ytop + ybottom) / 2.), QPointF(xright, ybottom));
+            path.arcTo(rcBr, 270, 90);
+
+            QRectF rcTopRight(QPointF(xleft, ytop), QPointF(xright, (ybottom + ytop) / 2));
+            path.lineTo(QPointF(xright, rcTopRight.center().y()));
+            path.arcTo(rcTopRight, 0, 90);
+            path.lineTo(QPointF(xleft, ytop));
+
+            painter->setBrush(Qt::NoBrush);
+            painter->drawPath(path);
+            QRectF rc(QPointF(0, halfpw), QPointF(halfpw * 3.5, m_size.height() * 0.9));
+            painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
+        }
+        else
+        {
+            path.moveTo(QPointF(xright, ytop));
+            path.lineTo(QPointF((xleft + xright) / 2., ytop));
+
+            QRectF rcTopLeft(QPointF(xleft, ytop), QPointF(xright, (ytop + ybottom)/2.));
+            path.arcTo(rcTopLeft, 90, 90);
+
+            QRectF rcBottomLeft(QPointF(xleft, (ytop + ybottom) / 2.), QPointF(xright, ybottom));
+            path.lineTo(QPointF(xleft, rcBottomLeft.center().y()));
+
+            path.arcTo(rcBottomLeft, 180, 90);
+            path.lineTo(QPointF(xright, ybottom));
+
+            painter->setBrush(Qt::NoBrush);
+            painter->drawPath(path);
+            QRectF rc(QPointF(halfpw, halfpw), QPointF(m_size.width(), m_size.height() * 0.9));
+            painter->fillRect(rc, bDrawBg ? bgClr : innerBgclr);
+        }
+    }
+    else
+    {
+        QRectF rc(m_innerSockMargin, m_innerSockMargin, m_size.width(), m_size.height());
+        painter->drawEllipse(rc);
+    }
 }

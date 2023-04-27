@@ -2,7 +2,7 @@
 #include "curvemapnode.h"
 #include "../curvemap/zcurvemapeditor.h"
 #include <zenomodel/include/curvemodel.h>
-#include <zenoui/util/cihou.h>
+#include "common_def.h"
 #include "util/log.h"
 
 

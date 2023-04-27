@@ -23,8 +23,8 @@ LiveMeshNode::~LiveMeshNode()
 
 }
 
-QGraphicsLinearLayout *LiveMeshNode::initCustomParamWidgets() {
-    QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+ZGraphicsLayout *LiveMeshNode::initCustomParamWidgets() {
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
     ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("node", m_renderParams.paramFont, m_renderParams.paramClr.color());
     pHLayout->addItem(pNameItem);

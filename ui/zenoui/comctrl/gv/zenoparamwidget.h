@@ -10,8 +10,10 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zveceditor.h>
 #include <zenoui/comctrl/zcheckboxbar.h>
+#include <zenoui/comctrl/zcheckbox.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/znumslider.h>
+#include <zenoui/comctrl/zspinboxslider.h>
 
 
 class ZenoTextLayoutItem;
@@ -24,10 +26,6 @@ public:
     ZenoParamWidget(QGraphicsItem *parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
     ~ZenoParamWidget();
 
-    enum {
-        Type = ZTYPE_PARAMWIDGET
-    };
-    int type() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 protected:
@@ -73,6 +71,7 @@ public:
     void setText(const QString& text);
     void setValidator(const QValidator* pValidator);
     void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
+    void setFont(const QFont &font);
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
@@ -89,7 +88,7 @@ private:
 };
 
 
-class ZenoSvgLayoutItem;
+class ZPathEdit;
 
 class ZenoParamPathEdit : public ZenoParamWidget
 {
@@ -98,16 +97,13 @@ public:
     ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString path() const;
     void setPath(const QString& path);
-    QString getOpenFileName(const QString& caption, const QString& dir, const QString& filter);
-    void setValidator(QValidator*);
 
 signals:
     void pathValueChanged(QString);
     void clicked();     //due the bug of rendering when open dialog, we have to move out this signal.
 
 private:
-    ZenoParamLineEdit* m_pLineEdit;
-    ZenoSvgLayoutItem* m_openBtn;
+    ZPathEdit *m_pLineEdit;
 };
 
 
@@ -115,25 +111,29 @@ class ZenoParamCheckBox : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoParamCheckBox(const QString &text, QGraphicsItem *parent = nullptr);
+    ZenoParamCheckBox(QGraphicsItem *parent = nullptr);
     Qt::CheckState checkState() const;
     void setCheckState(Qt::CheckState state);
+
+protected:
+    QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
 
 Q_SIGNALS:
     void stateChanged(int);
 
 private:
-    ZCheckBoxBar* m_pCheckbox;
+    ZCheckBox* m_pCheckbox;
 };
 
 
-class ZenoVecEditWidget : public ZenoParamWidget
+class ZenoVecEditItem : public ZenoParamWidget
 {
     Q_OBJECT
 public:
-    ZenoVecEditWidget(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent = nullptr);
+    ZenoVecEditItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent = nullptr);
     UI_VECTYPE vec() const;
     void setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene);
+    void setVec(const UI_VECTYPE& vec);
     bool isFloatType() const;
 
 signals:
@@ -186,9 +186,14 @@ class ZenoParamComboBox : public ZenoParamWidget
 {
     Q_OBJECT
 public:
+    ZenoParamComboBox(QGraphicsItem* parent = nullptr);
     ZenoParamComboBox(const QStringList& items, ComboBoxParam param, QGraphicsItem *parent = nullptr);
+    void setItems(const QStringList& items);
     void setText(const QString& text);
     QString text();
+
+protected:
+    bool eventFilter(QObject* object, QEvent* event) override;
 
 signals:
     void textActivated(const QString& text);
@@ -206,13 +211,17 @@ class ZenoParamPushButton : public ZenoParamWidget
 {
     Q_OBJECT
 public:
+    ZenoParamPushButton(QGraphicsItem* parent = nullptr);
+    ZenoParamPushButton(const QString& name, const QString& qssName, QGraphicsItem* parent = nullptr);
     ZenoParamPushButton(const QString& name, int width, QSizePolicy::Policy hor, QGraphicsItem* parent = nullptr);
+    void setText(const QString& text);
 
 signals:
     void clicked(bool checked = false);
 
 private:
     int m_width;
+    QPushButton* m_pBtn;
 };
 
 class ZenoParamOpenPath : public ZenoParamWidget
@@ -229,6 +238,7 @@ class ZenoParamMultilineStr : public ZenoParamWidget
 {
     Q_OBJECT
 public:
+    ZenoParamMultilineStr(QGraphicsItem* parent = nullptr);
     ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString &text);
@@ -254,6 +264,8 @@ public:
     ZenoParamBlackboard(const QString &value, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString text() const;
     void setText(const QString &text);
+    void foucusInEdit();
+    void updateStyleSheet(int fontSize);
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
@@ -267,6 +279,80 @@ private:
     QTextEdit *m_pTextEdit;
 };
 
+class ZenoParamSlider : public ZenoParamWidget {
+    Q_OBJECT
+  public:
+    ZenoParamSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent = nullptr);
+    void setValue(int value);
+    void setSliderInfo(const SLIDER_INFO &info);
+  signals:
+    void valueChanged(int);
+
+  private:
+    void updateStyleSheet();
+  private:
+    QSlider *m_pSlider;
+};
+
+class ZenoParamSpinBoxSlider : public ZenoParamWidget 
+{
+    Q_OBJECT
+  public:
+    ZenoParamSpinBoxSlider(Qt::Orientation orientation, int value, const SLIDER_INFO &info, QGraphicsItem *parent = nullptr);
+    void setValue(int value);
+    void setSliderInfo(const SLIDER_INFO &info);
+  signals:
+    void valueChanged(int);
+
+  private:
+    void updateStyleSheet();
+
+  private:
+    ZSpinBoxSlider *m_pSlider;
+};
+
+class ZenoParamSpinBox : public ZenoParamWidget {
+    Q_OBJECT
+  public:
+    ZenoParamSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent = nullptr);
+    void setValue(int value);
+    void setSliderInfo(const SLIDER_INFO &info);
+  signals:
+    void valueChanged(int);
+
+  protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+  private:
+    QSpinBox *m_pSpinBox;
+};
+
+class ZenoParamDoubleSpinBox : public ZenoParamWidget 
+{
+    Q_OBJECT
+  public:
+    ZenoParamDoubleSpinBox(const SLIDER_INFO &info, QGraphicsItem *parent = nullptr);
+    void setValue(double value);
+    void setSliderInfo(const SLIDER_INFO &info);
+  signals:
+    void valueChanged(double);
+
+  protected:
+    bool eventFilter(QObject *obj, QEvent *event) override;
+  private:
+    QDoubleSpinBox *m_pSpinBox;
+};
+
+class ZenoParamGroupLine : public QGraphicsItem
+{
+public:
+    ZenoParamGroupLine(const QString &text, QGraphicsItem *parent = nullptr);
+   QRectF boundingRect() const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    void setText(const QString &text);
+
+  private:
+    QString m_text;
+};
 
 class ZenoSpacerItem : public QGraphicsLayoutItem, public QGraphicsItem
 {
@@ -348,6 +434,7 @@ public:
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
     void setChecked(STATUS_BTN btn, bool bChecked);
     void setOptions(int options);
+    void onZoomed();
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
