@@ -141,6 +141,8 @@ private:
     QVector<ZSocketLayout*> m_outSockets;
 
     ZSimpleTextItem* m_NameItem;
+    ZSimpleTextItem *m_pCategoryItem;
+    ZSimpleTextItem *m_NameItemTip;
     ZenoMinStatusBtnItem* m_pStatusWidgets;
 
     QGraphicsRectItem* m_border;

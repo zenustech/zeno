@@ -42,6 +42,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_headerWidget(nullptr)
     , m_border(new QGraphicsRectItem)
     , m_NameItem(nullptr)
+    , m_pCategoryItem(nullptr)
     , m_bError(false)
     , m_bEnableSnap(false)
     , m_bMoving(false)
@@ -53,6 +54,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_groupNode(nullptr)
     , m_pStatusWidgets(nullptr)
     , m_bVisible(true)
+    , m_NameItemTip(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -215,13 +217,13 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     pNameLayout->addItem(m_NameItem);
     if (!category.isEmpty())
     {
-        ZSimpleTextItem *pCategoryItem = new ZSimpleTextItem(category);
-        pCategoryItem->setBrush(QColor("#AB6E40"));
+        m_pCategoryItem = new ZSimpleTextItem(category);
+        m_pCategoryItem->setBrush(QColor("#AB6E40"));
         QFont font = zenoApp->font();
-        pCategoryItem->setFont(font);
-        pCategoryItem->updateBoundingRect();
-        pCategoryItem->setAcceptHoverEvents(false);
-        pNameLayout->addItem(pCategoryItem);
+        m_pCategoryItem->setFont(font);
+        m_pCategoryItem->updateBoundingRect();
+        m_pCategoryItem->setAcceptHoverEvents(false);
+        pNameLayout->addItem(m_pCategoryItem);
     }
 
     m_pStatusWidgets = new ZenoMinStatusBtnItem(m_renderParams.status);
@@ -1143,15 +1145,10 @@ void ZenoNode::onZoomed()
     }
     if (m_bVisible != bVisible) {
         m_bVisible = bVisible;
-        if (m_NameItem) {
-            setToolTip(bVisible ? "" : m_NameItem->text());
-        }
-        for (auto item : m_inSockets) 
-        {
+        for (auto item : m_inSockets) {
             item->setVisible(bVisible);
         }
-        for (auto item : m_outSockets) 
-        {
+        for (auto item : m_outSockets) {
             item->setVisible(bVisible);
         }
         for (auto it = m_params.begin(); it != m_params.end(); it++) {
@@ -1160,6 +1157,24 @@ void ZenoNode::onZoomed()
             if (it->second.param_name)
                 it->second.param_name->setVisible(bVisible);
         }
+        if (m_NameItem) {
+            m_NameItem->setVisible(bVisible);
+        }
+        if (m_pCategoryItem) {
+            m_pCategoryItem->setVisible(bVisible);
+        }
+        if (bVisible && m_NameItemTip) {
+            delete m_NameItemTip;
+            m_NameItemTip = nullptr;
+        } else {
+            m_NameItemTip = new ZSimpleTextItem(m_NameItem->text(), this);
+            m_NameItemTip->setBrush(QColor("#FFFFFF"));
+            m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+            m_NameItemTip->show();
+        }
+    }
+    if (m_NameItemTip) {
+        m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(40)));
     }
     if (m_bodyWidget)
         m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
