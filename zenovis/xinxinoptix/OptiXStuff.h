@@ -490,11 +490,11 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
 inline std::vector<float> IES2HDR(const std::string& path)
 {
     IESFileInfo info;
-    auto IESBuffer = zeno::file_get_binary<std::vector<std::uint8_t>>(path);
+    auto IESBuffer = zeno::file_get_binary(path);
     IESBuffer.push_back(0);
 
     IESLoadHelper IESLoader;
-    if (!IESLoader.load((char*)IESBuffer.data(), IESBuffer.size() - 1, info)) {
+    if (!IESLoader.load(IESBuffer.data(), IESBuffer.size() - 1, info)) {
         std::string l = "IESLoader.load";
         throw std::runtime_error(l);
     }
