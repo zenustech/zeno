@@ -32,6 +32,7 @@ public:
     void setSimpleRenderOption();
     bool isCameraMoving() const;
     bool isPlaying() const;
+    bool isGLViewport() const;
 
 public slots:
     void updateFrame(const QString& action = "");

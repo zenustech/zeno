@@ -160,6 +160,11 @@ bool DisplayWidget::isPlaying() const
     return zenoVis->isPlaying();
 }
 
+bool DisplayWidget::isGLViewport() const
+{
+    return m_bGLView;
+}
+
 void DisplayWidget::onPlayClicked(bool bChecked)
 {
     if (bChecked)
