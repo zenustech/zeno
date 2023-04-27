@@ -648,7 +648,7 @@ inline void addLFNoiseTexture(std::string directoryPath)
     int Image3DSize = nx*ny*nz*nc;
     uint8_t* texture3DPixels = new uint8_t[Image3DSize];
 	memset(texture3DPixels, 0, Image3DSize);
-// #pragma omp parallel for
+#pragma omp parallel for
 	for (int z=0; z<nz; z++)
 	{
         // tofix: try hardcode first

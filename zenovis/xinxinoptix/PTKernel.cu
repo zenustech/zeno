@@ -242,6 +242,11 @@ extern "C" __global__ void __miss__radiance()
             params.sunLightDirY,
             params.sunLightDirZ
             );
+    vec3 windDir = vec3(
+            params.windDirX,
+            params.windDirY,
+            params.windDirZ
+            );
     MissData* rt_data  = reinterpret_cast<MissData*>( optixGetSbtDataPointer() );
     RadiancePRD* prd = getPRD();
     prd->attenuation2 = prd->attenuation;
@@ -252,9 +257,9 @@ extern "C" __global__ void __miss__radiance()
         prd->radiance = envSky(
             normalize(prd->direction),
             sunLightDir,
-            make_float3(0., 0., 1.),
+            windDir, //make_float3(0., 0., 1.),
             40, // be careful
-            .45,
+            params.coverage,
             15.,
             1.030725 * 0.3,
             params.elapsedTime

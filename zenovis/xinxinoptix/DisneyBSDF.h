@@ -1305,7 +1305,7 @@ static __inline__ __device__ float sampleLowFrequency(
 static __inline__ __device__ float density(vec3 pos, vec3 windDir, float coverage, float time, float freq = 1.0f, int layer = 6)
 {
 
-    vec3 samplePoint = (pos+windDir*time)/(128.0f);
+    vec3 samplePoint = (pos+windDir*time)/(256.0f);
 
     float baseDensity = sampleLowFrequency(
             samplePoint,
@@ -1328,7 +1328,7 @@ static __inline__ __device__ float light(
 	vec3 pos = origin;
 	vec3 dir_step = -sunLightDir * march_step;
 	float T = 1.; // transmitance
-        float coef = 1.0;
+    float coef = 1.0;
 	for (int i = 0; i < steps; i++) {
 		float dens = density(pos, windDir, coverage, time, freq,6);
 
@@ -1355,7 +1355,7 @@ static __inline__ __device__ vec4 render_clouds(
     float absorption, 
     float time
 ){
-    //r.direction.x = r.direction.x * 2.0f;
+    //r.direction.x = r.direction.x * 2.0f; //debug
     vec3 C = vec3(0, 0, 0);
     float alpha = 0.;
     float s = mix(30, 10, sqrtf(r.direction.y));
@@ -1389,16 +1389,12 @@ static __inline__ __device__ vec4 render_clouds(
         if (T < .01)
             break;
         talpha += (1. - T_i) * (1. - talpha);
-        pos = vec3(
-            pos.x + coef * 2.0* dir_step.x,
-            pos.y + coef * 2.0* dir_step.y,
-            pos.z + coef * 2.0* dir_step.z
-        );
+        pos += coef * 2.0* dir_step;
         coef *= 1.0f;
         if (length(pos) > 1e3) break;
     }
 
-    //vec3 pos = r.direction * 500.0f;
+    //vec3 pos = r.direction * 500.0f; //debug
     pos = hit.origin;
     alpha = 0;
     T = 1.; // transmitance
@@ -1419,12 +1415,12 @@ static __inline__ __device__ vec4 render_clouds(
 #ifdef SIMULATE_LIGHT
                       light(pos, sunLightDir, windDir, coverage, absorption, time, freq) *
 #endif
-                      // #ifdef FAKE_LIGHT
-                      // 			(exp(h) / 1.75) *
-                      // #endif
+// #ifdef FAKE_LIGHT
+//                       (exp(h) / 1.75) *
+// #endif
                       dens * march_step;
 
-                C = vec3(C.x + C_i, C.y + C_i, C.z + C_i);
+                C += C_i;
                 alpha += (1. - T_i) * (1. - alpha);
                 pos += coef * dir_step;
                 coef *= 1.0f;

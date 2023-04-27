@@ -85,6 +85,7 @@ struct Params
     float windDirY;
     float windDirZ;
 
+    float coverage;
     float sunSoftness;
     float elapsedTime;
     bool simpleRender;

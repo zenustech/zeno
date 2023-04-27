@@ -882,6 +882,13 @@ extern "C" __global__ void __closesthit__radiance()
         auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
                                                    params.sunSoftness * 0.2); //perturb the sun to have some softness
         sun_dir = normalize(sun_dir);
+
+        vec3 windDir = vec3(
+                params.windDirX,
+                params.windDirY,
+                params.windDirZ
+                );
+
         prd->LP = P;
         prd->Ldir = sun_dir;
         prd->nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
@@ -898,9 +905,10 @@ extern "C" __global__ void __closesthit__radiance()
             dot(N, float3(sun_dir)));
         light_attenuation = shadow_prd.shadowAttanuation;
         //if (fmaxf(light_attenuation) > 0.0f) {
-            auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+            auto sky = float3(envSky(sun_dir, sunLightDir, windDir,
                                           10, // be careful
-                                          .45, 15., 1.030725 * 0.3, params.elapsedTime));
+                                          params.coverage
+                                          , 15., 1.030725 * 0.3, params.elapsedTime));
 
             prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * sky * lbrdf;
     }

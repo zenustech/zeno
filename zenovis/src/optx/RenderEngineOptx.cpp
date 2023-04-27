@@ -445,10 +445,11 @@ struct GraphicsManager {
                 float sunLightIntensity = prim_in->userData().get2<float>("sunLightIntensity");
                 float colorTemperatureMix = prim_in->userData().get2<float>("colorTemperatureMix");
                 float colorTemperature = prim_in->userData().get2<float>("colorTemperature");
+                float coverage = prim_in->userData().get2<float>("coverage");
                 zeno::vec2f windDir = prim_in->userData().get2<zeno::vec2f>("windDir");
                 float timeStart = prim_in->userData().get2<float>("timeStart");
                 float timeSpeed = prim_in->userData().get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed,
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, coverage, windDir, timeStart, timeSpeed,
                                                    sunLightIntensity, colorTemperatureMix, colorTemperature);
             }
             else if (prim_in->userData().has<std::string>("HDRSky")) {
@@ -498,10 +499,11 @@ struct GraphicsManager {
                 float sunLightIntensity = ud.get2<float>("sunLightIntensity");
                 float colorTemperatureMix = ud.get2<float>("colorTemperatureMix");
                 float colorTemperature = ud.get2<float>("colorTemperature");
+                float coverage = ud.get2<float>("coverage");
                 zeno::vec2f windDir = ud.get2<zeno::vec2f>("windDir");
                 float timeStart = ud.get2<float>("timeStart");
                 float timeSpeed = ud.get2<float>("timeSpeed");
-                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, windDir, timeStart, timeSpeed,
+                xinxinoptix::update_procedural_sky(sunLightDir, sunLightSoftness, coverage, windDir, timeStart, timeSpeed,
                                                    sunLightIntensity, colorTemperatureMix, colorTemperature);
             }
         }

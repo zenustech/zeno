@@ -16,6 +16,7 @@ struct ProceduralSky : INode {
         prim->userData().set2("LFDirectoryPath", std::move(LFDirectoryPath));
         prim->userData().set2("sunLightDir", std::move(get_input2<vec2f>("sunLightDir")));
         prim->userData().set2("sunLightSoftness", std::move(get_input2<float>("sunLightSoftness")));
+        prim->userData().set2("coverage", std::move(get_input2<float>("coverage")));
         prim->userData().set2("windDir", std::move(get_input2<vec2f>("windDir")));
         prim->userData().set2("timeStart", std::move(get_input2<float>("timeStart")));
         prim->userData().set2("timeSpeed", std::move(get_input2<float>("timeSpeed")));
@@ -34,6 +35,7 @@ ZENDEFNODE(ProceduralSky, {
                 {"float", "sunLightIntensity", "1"},
                 {"float", "colorTemperatureMix", "0"},
                 {"float", "colorTemperature", "6500"},
+                {"float", "coverage", "0.4"},
                 {"vec2f", "windDir", "0,0"},
                 {"float", "timeStart", "0"},
                 {"float", "timeSpeed", "0.1"},

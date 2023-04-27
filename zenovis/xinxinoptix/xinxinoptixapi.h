@@ -35,7 +35,7 @@ void load_inst(const std::string &key, const std::string &instID, const std::str
 void unload_inst(const std::string &key);
 void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi );
 void unload_light();
-void update_procedural_sky(zeno::vec2f sunLightDir, float sunLightSoftness, zeno::vec2f windDir, float timeStart, float timeSpeed,
+void update_procedural_sky(zeno::vec2f sunLightDir, float sunLightSoftness, float coverage, zeno::vec2f windDir, float timeStart, float timeSpeed,
                            float sunLightIntensity, float colorTemperatureMix, float colorTemperature);
 void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength);
 void using_hdr_sky(bool enable);
