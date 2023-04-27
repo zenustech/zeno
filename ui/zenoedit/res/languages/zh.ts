@@ -1133,7 +1133,7 @@
     </message>
     <message>
         <source>record video after running.</source>
-        <translation>运行以后才能录制</translation>
+        <translation>是否先运行，再录制</translation>
     </message>
 </context>
 <context>

@@ -1285,12 +1285,21 @@ void DisplayWidget::onRecord()
         int recStartFrame = recInfo.frameRange.first;
         int recEndFrame = recInfo.frameRange.second;
 
-        if (recStartFrame < frameLeft || recEndFrame > frameRight)
+        if (!bRun && (recStartFrame < frameLeft || recEndFrame > frameRight))
         {
             QMessageBox::information(nullptr, "Zeno", tr("The available frame range is %1 - %2, please rerun first").arg(frameLeft).arg(frameRight), QMessageBox::Ok);
             return;
         }
 
+#ifdef ENABLE_RECORD_PROGRESS_DIG
+        ZRecordProgressDlg dlgProc(recInfo);
+        connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
+        connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
+        connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
+        connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
+        connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
+        connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
+#endif
         if (bRun)
         {
             //clear the global Comm first, to avoid play old frames.
@@ -1320,24 +1329,17 @@ void DisplayWidget::onRecord()
             moveToFrame(recStartFrame);
             // and then play.
             mainWin->toggleTimelinePlay(true);
+        }
 
 #ifdef ENABLE_RECORD_PROGRESS_DIG
-            ZRecordProgressDlg dlgProc(recInfo);
-            connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
-            connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
-            connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
-            connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
-            connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
-            connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
-
-            if (QDialog::Accepted == dlgProc.exec())
-            {
-            } else
-            {
-                m_recordMgr.cancelRecord();
-            }
-#endif
+        if (QDialog::Accepted == dlgProc.exec())
+        {
         }
+        else
+        {
+            m_recordMgr.cancelRecord();
+        }
+#endif
     }
 }
 
