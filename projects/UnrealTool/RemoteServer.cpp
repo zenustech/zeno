@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <limits>
+#include <cassert>
 #include <zeno/core/INode.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/EventCallbacks.h>
@@ -65,6 +66,43 @@ static struct SubjectRegistry {
             Cli.Post("/subject/push", reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
         }
     }
+
+    template <typename T>
+    std::optional<T> Get(const std::string& Key) {
+        CONSTEXPR ESubjectType RequiredSubjectType = TGetClassSubjectType<T>::Value;
+        if (StaticFlags.IsMainProcess) {
+            auto TargetIter = Elements.find(Key);
+            if (TargetIter == Elements.end()) return std::nullopt;
+            if (TargetIter->second.Type != static_cast<int16_t>(RequiredSubjectType)) return std::nullopt;
+            std::error_code Err;
+            T Result = msgpack::unpack<T>(TargetIter->second.Data, Err);
+            if (!Err) {
+                return std::make_optional(Result);
+            }
+        } else {
+            // In child process, transfer data with http
+            httplib::Client Cli { "http://localhost:23343" };
+            httplib::Params Param;
+            Param.insert(std::make_pair("key", Key));
+            const httplib::Result Response = Cli.Get("/subject/fetch", Param, httplib::Headers {}, httplib::Progress {});
+            if (Response) {
+                const std::string& Body = Response->body;
+                std::error_code Err;
+                auto List = msgpack::unpack<struct SubjectContainerList>(reinterpret_cast<uint8_t*>(const_cast<char*>(Body.data())), Body.size(), Err);
+                if (!Err) {
+                    for (const auto& Subject : List.Data) {
+                        if (Subject.Type == static_cast<int16_t>(RequiredSubjectType) && Key == Subject.Name) {
+                            T Result = msgpack::unpack<T>(Subject.Data, Err);
+                            if (!Err) {
+                                return std::make_optional(Result);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return std::nullopt;
+    }
 } StaticRegistry;
 
 struct SubjectCommit {
@@ -101,6 +139,16 @@ public:
         return Commits.size() - 1;
     }
 };
+
+ESubjectType NameToSubjectType(const std::string& InStr) {
+    if (InStr == "StaticMeshNoUV") {
+        return ESubjectType::Mesh;
+    } else if (InStr == "HeightField") {
+        return ESubjectType::HeightField;
+    }
+    return ESubjectType::Invalid;
+};
+
 }
 
 #define SERVER_HANDLER_WRAPPER(FUNC) [this] (const httplib::Request& Req, httplib::Response& Res) { FUNC(Req, Res); }
@@ -257,5 +305,115 @@ ZENO_DEFNODE(TransferPrimitiveToUnreal)({
       }
  );
 
+struct ReadPrimitiveFromRegistry : public INode {
+    template <typename T>
+    std::shared_ptr<zeno::PrimitiveObject> ToPrimitiveObject(T& Data) {
+        assert(false);
+        return nullptr;
+    }
+
+    template <>
+    std::shared_ptr<zeno::PrimitiveObject> ToPrimitiveObject(zeno::remote::Mesh& Data) {
+        std::shared_ptr<zeno::PrimitiveObject> Prim = std::make_shared<zeno::PrimitiveObject>();
+        // Triangles
+        Prim->tris.reserve(Data.triangles.size());
+        for (const auto& [x, z, y] : Data.triangles) {
+            Prim->tris.emplace_back(x, z, y);
+        }
+        // Vertices
+        for (const auto& [a, b, c] : Data.vertices) {
+            Prim->verts.emplace_back(a.data(), b.data(), c.data());
+        }
+
+        return Prim;
+    }
+
+    template <>
+    std::shared_ptr<zeno::PrimitiveObject> ToPrimitiveObject(zeno::remote::HeightField& Data) {
+        std::shared_ptr<zeno::PrimitiveObject> Prim = std::make_shared<zeno::PrimitiveObject>();
+        size_t Nx = get_input2<int>("nx");
+        size_t Ny = get_input2<int>("ny");
+        float Dx = 1.f / std::max((float)Nx - 1.f, 1.f);
+        float Dy = 1.f / std::max((float)Ny - 1.f, 1.f);
+        vec3f ax {1, 0, 0};
+        vec3f ay {0, 0, 1};
+        float Scale = get_input2<float>("scale");
+        vec3f o = (ax + ay) / 2;
+        ax *= Dx; ay *= Dy;
+        ax *= Scale;
+        ay *= Scale;
+        Prim->resize(Nx * Ny);
+
+        auto &pos = Prim->add_attr<vec3f>("pos");
+#pragma omp parallel for collapse(2)
+        for (intptr_t y = 0; y < Ny; y++)
+            for (intptr_t x = 0; x < Nx; x++) {
+                intptr_t index = y * Nx + x;
+                vec3f p = o + x * ax + y * ay;
+                size_t i = x + y * Nx;
+                pos[i] = p;
+            }
+        Prim->tris.resize((Nx - 1) * (Ny - 1) * 2);
+#pragma omp parallel for collapse(2)
+        for (intptr_t y = 0; y < Ny - 1; y++)
+            for (intptr_t x = 0; x < Nx - 1; x++) {
+                intptr_t index = y * (Nx - 1) + x;
+                Prim->tris[index * 2][2] = y * Nx + x;
+                Prim->tris[index * 2][1] = y * Nx + x + 1;
+                Prim->tris[index * 2][0] = (y + 1) * Nx + x + 1;
+                Prim->tris[index * 2 + 1][2] = (y + 1) * Nx + x + 1;
+                Prim->tris[index * 2 + 1][1] = (y + 1) * Nx + x;
+                Prim->tris[index * 2 + 1][0] = y * Nx + x;
+            }
+
+        auto& Arr = Prim->verts.add_attr<float>("height");
+        size_t Idx = 0;
+        for (const auto& Row : Data.Data) {
+            for (const uint16_t Height : Row) {
+                Arr[Idx] = ((float)Height / std::numeric_limits<uint16_t>::max()) * (255.f * 2) - 255.f;
+                Prim->verts[Idx] = { Prim->verts[Idx].at(0), Arr[Idx], Prim->verts[Idx].at(2) };
+                Idx++;
+            }
+        }
+
+        return Prim;
+    }
+
+    void apply() override {
+        zeno::remote::StaticFlags.IsMainProcess = false;
+        std::string subject_name = get_input2<std::string>("name");
+        remote::ESubjectType Type = remote::NameToSubjectType(get_input2<std::string>("type"));
+        std::shared_ptr<zeno::PrimitiveObject> OutPrim;
+        if (Type == remote::ESubjectType::Mesh) {
+            std::optional<remote::Mesh> Data = remote::StaticRegistry.Get<remote::Mesh>(subject_name);
+            if (Data.has_value()) {
+                OutPrim = ToPrimitiveObject(Data.value());
+            }
+        } else if (Type == remote::ESubjectType::HeightField) {
+            std::optional<remote::HeightField> Data = remote::StaticRegistry.Get<remote::HeightField>(subject_name);
+            if (Data.has_value()) {
+                OutPrim = ToPrimitiveObject(Data.value());
+            }
+        }
+        if (!OutPrim) {
+            zeno::log_error("Prim data not found.");
+            return;
+        }
+        set_output2("prim", OutPrim);
+    }
+};
+
+ZENO_DEFNODE(ReadPrimitiveFromRegistry)({
+    {
+        {"string", "name", "SubjectFromZeno"},
+        {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
+        {"int", "nx", "10"},
+        {"int", "ny", "10"},
+        {"float", "scale", "250"},
+    },
+    { "prim" },
+    {},
+    { "Unreal" }
+});
 
 }
