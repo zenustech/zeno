@@ -40,6 +40,7 @@ struct UnifiedIPCSystem : IObject {
     using dpair_t = zs::vec<Ti, 2>;
     using dpair3_t = zs::vec<Ti, 3>;
     using dpair4_t = zs::vec<Ti, 4>;
+    using bvs_t = zs::LBvs<3, int, T>;
     // using bvh_t = zeno::ZenoLBvh<3, 32, int, T>;
     using bvh_t = zs::LBvh<3, int, T>;
     using bvfront_t = zs::BvttFront<int, int>;
@@ -117,6 +118,17 @@ struct UnifiedIPCSystem : IObject {
         bool hasBendingConstraints() const noexcept {
             return static_cast<bool>(bendingEdgesPtr);
         }
+        int getPrincipalAxis() {
+            int axis = 0;
+            T extent = bv._max[0] - bv._min[0];
+            for (int d = 1; d != 3; ++d) {
+                if (auto ext = bv._max[d] - bv._min[d]; ext > extent) {
+                    extent = ext;
+                    axis = d;
+                }
+            }
+            return axis;
+        }
 
         std::shared_ptr<ZenoParticles> zsprimPtr{}; // nullptr if it is an auxiliary
         std::shared_ptr<const ZenoConstitutiveModel> modelsPtr;
@@ -129,6 +141,7 @@ struct UnifiedIPCSystem : IObject {
         typename ZenoParticles::dtiles_t svtemp;
         const std::size_t vOffset, sfOffset, seOffset, svOffset;
         ZenoParticles::category_e category;
+        ZenoParticles::bv_t bv;
     };
 
     bool hasBoundary() const noexcept {
@@ -526,9 +539,13 @@ struct UnifiedIPCSystem : IObject {
     // boundary contacts
     // auxiliary data (spatial acceleration)
     tiles_t stInds, seInds, svInds;
-    using bvs_t = zs::LBvs<3, int, T>;
     bvh_t stBvh, seBvh;       // for simulated objects
     bvh_t bouStBvh, bouSeBvh; // for collision objects
+
+    int principalAxis;
+    bvs_t stBvs, seBvs;
+    bvs_t bouStBvs, bouSeBvs;
+
     std::optional<bv_t> wholeBv;
     T dt, framedt;
 };

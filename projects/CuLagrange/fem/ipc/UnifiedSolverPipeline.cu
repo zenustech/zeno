@@ -143,9 +143,11 @@ void UnifiedIPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T 
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.refit(pol, bvs);
+        stBvs.refit(pol, bvs);
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.refit(pol, bvs);
+        seBvs.refit(pol, bvs);
         findCollisionConstraintsImpl(pol, dHat, xi, false);
     }
 
@@ -153,9 +155,11 @@ void UnifiedIPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T 
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
         bouStBvh.refit(pol, bvs);
+        bouStBvs.refit(pol, bvs);
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.refit(pol, bvs);
+        bouSeBvs.refit(pol, bvs);
         findCollisionConstraintsImpl(pol, dHat, xi, true);
 
         /// @note assume stBvh is already updated
@@ -163,6 +167,7 @@ void UnifiedIPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T 
             bvs.resize(stInds.size());
             retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
             stBvh.refit(pol, bvs);
+            stBvs.refit(pol, bvs);
         }
         findBoundaryCollisionConstraintsImpl(pol, dHat, xi);
     }
@@ -530,9 +535,18 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, vtemp, "dir", alpha, 0, bvs);
         stBvh.refit(pol, bvs);
+        stBvs.refit(pol, bvs);
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, vtemp, "dir", alpha, 0, bvs);
+
+        zs::CppTimer timer;
+        timer.tick();
         seBvh.refit(pol, bvs);
+        timer.tock("sebvh refit");
+
+        timer.tick();
+        seBvs.refit(pol, bvs);
+        timer.tock("sebvs refit");
 
         findCCDConstraintsImpl(pol, alpha, xi, false);
     }
@@ -546,10 +560,12 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, vtemp, "dir", alpha, coOffset, bvs);
         bouStBvh.refit(pol, bvs);
+        bouStBvs.refit(pol, bvs);
 
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, vtemp, "dir", alpha, coOffset, bvs);
         bouSeBvh.refit(pol, bvs);
+        bouSeBvs.refit(pol, bvs);
 
         findCCDConstraintsImpl(pol, alpha, xi, true);
 
@@ -558,6 +574,7 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
             bvs.resize(stInds.size());
             retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, vtemp, "dir", alpha, 0, bvs);
             stBvh.refit(pol, bvs);
+            stBvs.refit(pol, bvs);
         }
         findBoundaryCCDConstraintsImpl(pol, alpha, xi);
     }
