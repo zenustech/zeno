@@ -99,6 +99,14 @@ static zeno::vec2i uvClampToEdge(vec3f uv, int w, int h) {
     return {iu, iv};
 }
 
+static zeno::vec2i uvClampToEdge(vec3f uv, int w, int h, float &u, float &v) {
+    int iu = clamp(int(uv[0] * (w-eps)), 0, (w-1));
+    int iv = clamp(int(uv[1] * (h-eps)), 0, (h-1));
+    u = clamp(uv[0] * (w-eps), float(0), float(w-1)) - float(iu);
+    v = clamp(uv[1] * (h-eps), float(0), float(h-1)) - float(iv);
+    return {iu, iv};
+}
+
 //static zeno::vec3f queryColorInner(vec2i uv, const uint8_t* data, int w, int n) {
     //int iu = uv[0];
     //int iv = uv[1];
@@ -117,6 +125,15 @@ static zeno::vec3f queryColorInner(vec2i uv, const float* data, int w, int n) {
     float b = (data[start+2]);
     return {r, g, b};
 }
+static zeno::vec3f queryColorInner(vec2i uv, const float* data, int w, int n, int h) {
+    int iu = clamp(uv[0], 0, w-1);
+    int iv = clamp(uv[1], 0, h-1);
+    int start = (iu + iv * w) * n;
+    float r = (data[start]);
+    float g = (data[start+1]);
+    float b = (data[start+2]);
+    return {r, g, b};
+}
 void primSampleTexture(
     std::shared_ptr<PrimitiveObject> prim,
     const std::string &srcChannel,
@@ -124,7 +141,7 @@ void primSampleTexture(
     const std::string &dstChannel,
     std::shared_ptr<PrimitiveObject> img,
     const std::string &wrap,
-    // ZHOUHANG: please add arg filter, which is enum NEAREST LINEAR, impl bilerp version for LINEAR
+    const std::string &filter,
     vec3f borderColor,
     float remapMin,
     float remapMax
@@ -136,38 +153,49 @@ void primSampleTexture(
     auto w = img->userData().get2<int>("w");
     auto h = img->userData().get2<int>("h");
     std::function<zeno::vec3f(vec3f, const ColorT*, int, int, int, vec3f)> queryColor;
-    // if (filter == "NEAREST") {
-    if (wrap == "REPEAT") {
-        queryColor = [=] (vec3f uv, const ColorT* data, int w, int h, int n, vec3f _clr)-> vec3f {
-            uv = (uv - remapMin) / (remapMax - remapMin);
-            auto iuv = uvRepeat(uv, w, h);
-            return queryColorInner(iuv, data, w, n);
-        };
-    }
-    else if (wrap == "CLAMP_TO_EDGE") {
-        queryColor = [=] (vec3f uv, const ColorT* data, int w, int h, int n, vec3f _clr)-> vec3f {
-            uv = (uv - remapMin) / (remapMax - remapMin);
-            auto iuv = uvClampToEdge(uv, w, h);
-            return queryColorInner(iuv, data, w, n);
-        };
-    }
-    else if (wrap == "CLAMP_TO_BORDER") {
-        queryColor = [=] (vec3f uv, const ColorT* data, int w, int h, int n, vec3f clr)-> vec3f {
-            uv = (uv - remapMin) / (remapMax - remapMin);
-            if (uv[0] < 0 || uv[0] > 1 || uv[1] < 0 || uv[1] > 1) {
-                return clr;
-            }
-            auto iuv = uvClampToEdge(uv, w, h);
-            return queryColorInner(iuv, data, w, n);
-        };
+    if (filter == "nearest") {
+        if (wrap == "REPEAT") {
+            queryColor = [=](vec3f uv, const ColorT *data, int w, int h, int n, vec3f _clr) -> vec3f {
+                uv = (uv - remapMin) / (remapMax - remapMin);
+                auto iuv = uvRepeat(uv, w, h);
+                return queryColorInner(iuv, data, w, n);
+            };
+        } else if (wrap == "CLAMP_TO_EDGE") {
+            queryColor = [=](vec3f uv, const ColorT *data, int w, int h, int n, vec3f _clr) -> vec3f {
+                uv = (uv - remapMin) / (remapMax - remapMin);
+                auto iuv = uvClampToEdge(uv, w, h);
+                return queryColorInner(iuv, data, w, n);
+            };
+        } else if (wrap == "CLAMP_TO_BORDER") {
+            queryColor = [=](vec3f uv, const ColorT *data, int w, int h, int n, vec3f clr) -> vec3f {
+                uv = (uv - remapMin) / (remapMax - remapMin);
+                if (uv[0] < 0 || uv[0] > 1 || uv[1] < 0 || uv[1] > 1) {
+                    return clr;
+                }
+                auto iuv = uvClampToEdge(uv, w, h);
+                return queryColorInner(iuv, data, w, n);
+            };
+        } else {
+            zeno::log_error("wrap type error");
+            throw std::runtime_error("wrap type error");
+        }
     }
     else {
-        zeno::log_error("wrap type error");
-        throw std::runtime_error("wrap type error");
+        queryColor = [=](vec3f uv, const ColorT *data, int w, int h, int n, vec3f _clr) -> vec3f {
+            uv = (uv - remapMin) / (remapMax - remapMin);
+            float u, v;
+            auto iuv = uvClampToEdge(uv, w, h, u, v);
+
+            auto c00 = queryColorInner(iuv, data, w, n, h);
+            auto c01 = queryColorInner(iuv + vec2i(1, 0), data, w, n, h);
+            auto c10 = queryColorInner(iuv + vec2i(0, 1), data, w, n, h);
+            auto c11 = queryColorInner(iuv + vec2i(1, 1), data, w, n, h);
+            auto a = zeno::mix(c00, c01, u);
+            auto b = zeno::mix(c10, c11, u);
+            auto c = zeno::mix(a, b, v);
+            return c;
+        };
     }
-    // else if (filter == "NEAREST") {
-    // copy-paste all above wrap ifelses
-    // }
 
     if (uvSource == "vertex") {
         auto &uv = prim->attr<zeno::vec3f>(srcChannel);
@@ -204,6 +232,19 @@ void primSampleTexture(
     }
 }
 
+void primSampleTexture(
+        std::shared_ptr<PrimitiveObject> prim,
+        const std::string &srcChannel,
+        const std::string &uvSource,
+        const std::string &dstChannel,
+        std::shared_ptr<PrimitiveObject> img,
+        const std::string &wrap,
+        vec3f borderColor,
+        float remapMin,
+        float remapMax
+) {
+    return primSampleTexture(prim, srcChannel, uvSource, dstChannel, img, wrap, "nearest", borderColor, remapMin, remapMax);;
+}
 struct PrimSample2D : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -212,10 +253,11 @@ struct PrimSample2D : zeno::INode {
         auto dstChannel = get_input2<std::string>("targetChannel");
         auto image = get_input2<PrimitiveObject>("image");
         auto wrap = get_input2<std::string>("wrap");
+        auto filter = get_input2<std::string>("filter");
         auto borderColor = get_input2<vec3f>("borderColor");
         auto remapMin = get_input2<float>("remapMin");
         auto remapMax = get_input2<float>("remapMax");
-        primSampleTexture(prim, srcChannel, srcSource, dstChannel, image, wrap, borderColor, remapMin, remapMax);
+        primSampleTexture(prim, srcChannel, srcSource, dstChannel, image, wrap, filter, borderColor, remapMin, remapMax);
 
         set_output("outPrim", std::move(prim));
     }
@@ -230,6 +272,7 @@ ZENDEFNODE(PrimSample2D, {
         {"float", "remapMin", "0"},
         {"float", "remapMax", "1"},
         {"enum REPEAT CLAMP_TO_EDGE CLAMP_TO_BORDER", "wrap", "REPEAT"},
+        {"enum nearest linear", "filter", "nearest"},
         {"vec3f", "borderColor", "0,0,0"},
     },
     {
