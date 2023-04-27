@@ -53,7 +53,6 @@ void OptixWorker::needUpdateCamera()
 {
     //todo: update reason.
     m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
-    m_zenoVis->getSession()->get_scene()->drawOptions->needUpdateGeo = true;
     m_pTimer->start();
 }
 

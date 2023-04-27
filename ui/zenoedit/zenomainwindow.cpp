@@ -669,6 +669,17 @@ void ZenoMainWindow::onMaximumTriggered()
     }
 }
 
+DisplayWidget *ZenoMainWindow::getOptixWidget() const
+{
+    auto views = viewports();
+    for (auto view : views)
+    {
+        if (!view->isGLViewport())
+            return view;
+    }
+    return nullptr;
+}
+
 QVector<DisplayWidget*> ZenoMainWindow::viewports() const
 {
     QVector<DisplayWidget*> views;
