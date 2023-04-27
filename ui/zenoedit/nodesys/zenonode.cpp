@@ -1163,17 +1163,25 @@ void ZenoNode::onZoomed()
         if (m_pCategoryItem) {
             m_pCategoryItem->setVisible(bVisible);
         }
-        if (bVisible && m_NameItemTip) {
+    }
+
+    if (editor_factor < 0.1 || editor_factor > 0.3) 
+    {
+        if (m_NameItemTip) 
+        {
             delete m_NameItemTip;
             m_NameItemTip = nullptr;
-        } else {
-            m_NameItemTip = new ZSimpleTextItem(m_NameItem->text(), this);
-            m_NameItemTip->setBrush(QColor("#FFFFFF"));
-            m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
-            m_NameItemTip->show();
         }
     }
-    if (m_NameItemTip) {
+    else if (m_NameItemTip == nullptr) 
+    {
+        m_NameItemTip = new ZSimpleTextItem(m_NameItem->text(), this);
+        m_NameItemTip->setBrush(QColor("#FFFFFF"));
+        m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+        m_NameItemTip->show();
+    }
+    if (m_NameItemTip) 
+    {
         m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(40)));
     }
     if (m_bodyWidget)
