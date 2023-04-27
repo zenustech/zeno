@@ -318,11 +318,11 @@ struct ReadPrimitiveFromRegistry : public INode {
         // Triangles
         Prim->tris.reserve(Data.triangles.size());
         for (const auto& [x, z, y] : Data.triangles) {
-            Prim->tris.emplace_back(x, z, y);
+            Prim->tris.emplace_back(x, y, z);
         }
         // Vertices
         for (const auto& [a, b, c] : Data.vertices) {
-            Prim->verts.emplace_back(a.data(), b.data(), c.data());
+            Prim->verts.emplace_back(a.data(), c.data(), b.data());
         }
 
         return Prim;
@@ -331,8 +331,8 @@ struct ReadPrimitiveFromRegistry : public INode {
     template <>
     std::shared_ptr<zeno::PrimitiveObject> ToPrimitiveObject(zeno::remote::HeightField& Data) {
         std::shared_ptr<zeno::PrimitiveObject> Prim = std::make_shared<zeno::PrimitiveObject>();
-        size_t Nx = get_input2<int>("nx");
-        size_t Ny = get_input2<int>("ny");
+        size_t Nx = std::max(get_input2<int>("nx"), Data.Nx);
+        size_t Ny = std::max(get_input2<int>("ny"), Data.Ny);
         float Dx = 1.f / std::max((float)Nx - 1.f, 1.f);
         float Dy = 1.f / std::max((float)Ny - 1.f, 1.f);
         vec3f ax {1, 0, 0};
@@ -407,8 +407,8 @@ ZENO_DEFNODE(ReadPrimitiveFromRegistry)({
     {
         {"string", "name", "SubjectFromZeno"},
         {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
-        {"int", "nx", "10"},
-        {"int", "ny", "10"},
+        {"int", "nx", "0"},
+        {"int", "ny", "0"},
         {"float", "scale", "250"},
     },
     { "prim" },
