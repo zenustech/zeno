@@ -554,7 +554,10 @@ void ZenoLights::modifyLightData() {
     ZASSERT_EXIT(pWin);
 
     QVector<DisplayWidget*> views = pWin->viewports();
-    for (auto pDisplay : views) {
+    for (auto pDisplay : views)
+    {
+        if (pDisplay->isGLViewport())
+            continue;
 
         Zenovis* pZenoVis = pDisplay->getZenoVis();
         ZASSERT_EXIT(pZenoVis);
