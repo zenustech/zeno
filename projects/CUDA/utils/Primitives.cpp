@@ -489,7 +489,7 @@ struct PrimitiveMarkIslands : INode {
         const auto &loops = prim->loops;
         const auto &polys = prim->polys;
         using IV = zs::vec<int, 2>;
-        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{polys.values.back()[0] + polys.values.back()[1]};
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{(std::size_t)(polys.values.back()[0] + polys.values.back()[1])};
         std::vector<int> is, js;
         pol(range(polys), [&, tab = view<space>(tab)](const auto &poly) mutable {
             auto offset = poly[0];
