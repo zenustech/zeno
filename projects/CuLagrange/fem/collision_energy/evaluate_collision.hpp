@@ -40,6 +40,114 @@ using bv_t = zs::AABBBox<3, T>;
 using vec3 = zs::vec<T, 3>;
 
 
+
+template<typename Pol,
+            typename PosTileVec,
+            typename SurfPointTileVec,
+            typename SurfTriTileVec,
+            typename SurfTriNrmTileVec> 
+void do_facet_point_collsion_detection_and_compute_surface_normal(Pol& cudaPol,
+    const PosTileVec& verts,const zs::SmallString& xtag,
+    const SurfPointTileVec& points,
+    const SurfTriTileVec& tris,
+    SurfTriNrmTileVec& triNrmBuffer,
+    zs::Vector<zs::vec<int,4>>& csPT,
+    int& nm_collisions,T in_collisionEps,T out_collisionEps) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        auto avgl = compute_average_edge_length(cudaPol,verts,xtag,tris);
+        auto bvh_thickness = 2 * avgl;
+        if(!calculate_facet_normal(cudaPol,verts,xtag,tris,triNrmBuffer,"nrm")){
+            throw std::runtime_error("fail updating facet normal");
+        } 
+
+        auto spBvh = bvh_t{};
+        auto bvs = retrieve_bounding_volumes(cudaPol,verts,points,wrapv<1>{},(T)bvh_thickness,xtag);
+        spBvh.build(cudaPol,bvs);
+
+        zs::Vector<int> nm_csPT{points.get_allocator(),1};
+        nm_csPT.setVal(0);
+
+        cudaPol(zs::range(tris.size()),[in_collisionEps = in_collisionEps,
+            out_collisionEps = out_collisionEps,
+            verts = proxy<space>({},verts),
+            points = proxy<space>({},points),
+            tris = proxy<space>({},tris),
+            triNrmBuffer = proxy<space>({},triNrmBuffer),
+            nm_csPT = proxy<space>(nm_csPT),
+            xtag = xtag,
+            csPT = proxy<space>(csPT),
+            spBvh = proxy<space>(spBvh),thickness = bvh_thickness] ZS_LAMBDA(int stI) {
+                auto tri = tris.pack(dim_c<3>,"inds",stI,int_c);
+                if(verts.hasProperty("active"))
+                    for(int i = 0;i != 3;++i)
+                        if(verts("active",tri[i]) < 1e-6)
+                            return;
+                
+                auto cp = vec3::zeros();
+                for(int i = 0;i != 3;++i)
+                    cp += verts.pack(dim_c<3>,xtag,tri[i]) / (T)3.0;
+                auto bv = bv_t{get_bounding_box(cp - thickness,cp + thickness)};
+            
+                auto tnrm = triNrmBuffer.pack(dim_c<3>,"nrm",stI);
+                vec3 tvs[3] = {};
+                for(int i = 0;i != 3;++i)
+                    tvs[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+
+                auto ntris = tris.pack(dim_c<3>,"ff_inds",stI,int_c);
+                vec3 bnrms[3] = {};
+                for(int i = 0;i != 3;++i){
+                    auto nti = ntris[i];
+                    auto edge_normal = vec3::zeros();
+                    if(nti < 0)
+                        edge_normal = tnrm;
+                    else{
+                        edge_normal = tnrm + triNrmBuffer.pack(dim_c<3>,"nrm",nti);
+                        edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
+                    }
+                    auto e01 = tvs[(i + 1) % 3] - tvs[(i + 0) % 3];
+                    bnrms[i] = edge_normal.cross(e01).normalized();
+                }  
+
+                auto process_vertex_face_collision_pairs = [&](int spI) {
+                    auto vi = reinterpret_bits<int>(points("inds",spI));
+                    if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
+                        return;
+                    if(verts.hasProperty("active"))
+                        if(verts("active",vi) < 1e-6)
+                            return;
+
+                    auto p = verts.pack(dim_c<3>,xtag,vi);
+
+                    auto dist = (T)0.0;
+                    auto seg = p - tvs[0];
+                    auto collisionEps = seg.dot(tnrm) > 0 ? out_collisionEps : in_collisionEps;
+
+                    auto barySum = (T)1.0;
+                    T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],p,barySum);
+
+                    if(distance > collisionEps)
+                        return;
+
+                    if(barySum > 1.01)
+                        return;
+                    else {
+                        for(int i = 0;i != 3;++i){
+                            seg = p - tvs[i];
+                            if(bnrms[i].dot(seg) < 0)
+                                return;
+                        }
+                    }
+
+                    csPT[atomic_add(exec_cuda,&nm_csPT[0],(int)1)] = zs::vec<int,4>{vi,tri[0],tri[1],tri[2]};
+                };
+                spBvh.iter_neighbors(bv,process_vertex_face_collision_pairs);
+        });
+
+        nm_collisions = nm_csPT.getVal(0);
+}
+
 template<int MAX_FP_COLLISION_PAIRS,typename Pol,
             typename PosTileVec,
             typename SurfPointTileVec,
@@ -170,27 +278,34 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
                 // collisionEps = avge * max_ratio;
                 auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
-
-                if(barySum > 5)
-                    return;
-
                 if(distance > collisionEps)
                     return;
                 dist = seg.dot(nrm);
-                // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
-                //     return;
 
-                // if the triangle cell is too degenerate
-                if(!LSL_GEO::pointProjectsInsideTriangle(t0,t1,t2,p))
-                    for(int i = 0;i != 3;++i) {
-                            auto bisector_normal = get_bisector_orient(lines,tris,setemp,"nrm",stI,i);
-                            // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
 
-                            seg = p - verts.template pack<3>(xtag,tri[i]);
-                            if(bisector_normal.dot(seg) < 0)
-                                return;
 
-                        }
+                // if()
+
+                if(barySum > 1.01)
+                    return;
+                else {
+
+
+                    // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
+                    //     return;
+
+                    // if the triangle cell is too degenerate
+                    if(!LSL_GEO::pointProjectsInsideTriangle(t0,t1,t2,p))
+                        for(int i = 0;i != 3;++i) {
+                                auto bisector_normal = get_bisector_orient(lines,tris,setemp,"nrm",stI,i);
+                                // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
+
+                                seg = p - verts.template pack<3>(xtag,tri[i]);
+                                if(bisector_normal.dot(seg) < 0)
+                                    return;
+
+                            }
+                }
         
                 // now the points is inside the cell
 
@@ -629,6 +744,52 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
         
 // }
 
+
+template<typename Pol,
+    typename PosTileVec,
+    typename GradHessianTileVec>
+void evaluate_fp_collision_grad_and_hessian(
+    Pol& cudaPol,
+    const PosTileVec& verts,const zs::SmallString& xtag,
+    const zs::Vector<zs::vec<int,4>>& csPT,
+    int nm_csPT,
+    GradHessianTileVec& gh_buffer,
+    T in_collisionEps,T out_collisionEps,
+    T collisionStiffness,
+    T mu,T lambda) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        gh_buffer.resize(nm_csPT);
+        cudaPol(zs::range(nm_csPT),[
+            gh_buffer = proxy<space>({},gh_buffer),
+            in_collisionEps = in_collisionEps,
+            out_collisionEps = out_collisionEps,
+            verts = proxy<space>({},verts),
+            csPT = proxy<space>(csPT),
+            mu = mu,lam = lambda,
+            stiffness = collisionStiffness,
+            xtag = xtag] ZS_LAMBDA(int ci) mutable {
+                auto inds = csPT[ci];
+                gh_buffer.tuple(dim_c<4>,"inds",ci) = inds.reinterpret_bits(float_c);
+                vec3 cv[4] = {};
+                for(int i = 0;i != 4;++i)
+                    cv[i] = verts.pack(dim_c<3>,xtag,inds[i]);
+
+                auto ceps = out_collisionEps;
+                auto alpha = stiffness;
+                auto beta = (T)1.0;
+
+                auto cforce = -alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,ceps);
+                auto K = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps);
+
+                gh_buffer.tuple(dim_c<12>,"grad",ci) = cforce/* + dforce*/;
+                gh_buffer.tuple(dim_c<12 * 12>,"H",ci) = K/* + C/dt*/;
+                if(isnan(K.norm())){
+                    printf("nan cK detected : %d\n",ci);
+                }
+        });
+}
 
 template<typename Pol,
     typename PosTileVec,

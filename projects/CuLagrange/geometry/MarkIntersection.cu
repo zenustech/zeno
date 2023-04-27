@@ -161,7 +161,7 @@ struct ZSMarkCollisionRegion : zeno::INode {
                         auto edge = edges1.pack(dim_c<2>,"inds",ei - size0).reinterpret_bits(int_c);
                         verts1("inst",edge[0]) = (T)1;
                         verts1("inst",edge[1]) = (T)1;
-                    }宾德尔
+                    }
             });
         }
 

@@ -128,6 +128,11 @@ int mark_edge_tri_intersection(Pol& pol,
 // #ip : the position of intersection point
 // return number of intersection pairs
 
+// template<typename Vector3d>
+// constexpr bool is_triangle_segment_intersect(const Vector3d tvs[3],const Vector3d svs[2]) {
+//     return true;
+// }
+
 // calculate the surface normal of the two tribuffer before apply this function
 template<typename Pol,typename PosTileVec,typename TriTileVec,typename IntersectionBuffer>
 int triangulate_mesh_intersection(Pol& pol,
@@ -181,35 +186,6 @@ int triangulate_mesh_intersection(Pol& pol,
 
     auto cnorm = cnormA > cnormB ? cnormA : cnormB;
     cnorm *= 2;
-
-    // if(!tris_A.hasProperty("nrm")) {
-    //     tris_A.append_channels(pol,{{"nrm",3}});
-    // }
-    // if(!tris_B.hasProperty("nrm")) {
-    //     tris_B.append_channels(pol,{{"nrm",3}});
-    // }
-
-    // pol(zs::range(tris_A.size()),[
-    //         xTagA = xTagA,
-    //         tris_A = proxy<space>({},tris_A),
-    //         verts_A = proxy<space>({},verts_A)] ZS_LAMBDA(int ti) mutable {
-    //     auto tri = tris_A.template pack<3>("inds",ti).reinterpret_bits(int_c);
-    //     auto v0 = verts_A.template pack<3>(xTagA,tri[0]);
-    //     auto v1 = verts_A.template pack<3>(xTagA,tri[1]);
-    //     auto v2 = verts_A.template pack<3>(xTagA,tri[2]);
-
-    //     auto e01 = v1 - v0;
-    //     auto e02 = v2 - v0;
-
-    //     auto nrm = e01.cross(e02);
-    //     auto nrm_norm = nrm.norm();
-    //     if(nrm_norm < 1e-8)
-    //         nrm = zs::vec<T,3>::zeros();
-    //     else
-    //         nrm = nrm / nrm_norm;
-
-    //     tris_A.template tuple<3>(nrmTag,ti) = nrm;
-    // });
 
     // retrieve all the intersection pairs
     pol(zs::range(tris_B.size()),[

@@ -983,6 +983,9 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                         }
                     }
 
+                    
+
+
                     min_dist = distance;
                     min_tri_idx = kti;
                     min_bary = project_bary;
