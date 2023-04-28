@@ -721,7 +721,6 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     ZASSERT_EXIT(pModel, NODE_DATA());
 
     QMap<QString, NODE_DATA> nodes;
-    QMap<QString, NODE_DATA> oldGraphsToNew;
     QList<EdgeInfo> links;
     for (int r = 0; r < pModel->rowCount(); r++)
     {
@@ -737,8 +736,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
             data = _fork(ssubnetName);
             const QString& subgNewNodeId = data[ROLE_OBJID].toString();
 
-            nodes.insert(snodeId, pModel->nodeData(idx));
-            oldGraphsToNew.insert(snodeId, data);
+            nodes.insert(snodeId, data);
         }
         else
         {
