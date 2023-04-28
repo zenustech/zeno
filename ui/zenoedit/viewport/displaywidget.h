@@ -33,6 +33,7 @@ public:
     bool isCameraMoving() const;
     bool isPlaying() const;
     bool isGLViewport() const;
+    ZOptixViewport* optixViewport() const;
 
 public slots:
     void updateFrame(const QString& action = "");

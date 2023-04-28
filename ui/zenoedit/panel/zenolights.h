@@ -10,6 +10,8 @@
 #include "ZLightsModel.h"
 #include "comctrl/zlineedit.h"
 
+class DisplayWidget;
+
 class ZenoLights : public QWidget {
     Q_OBJECT
 public:
@@ -59,6 +61,9 @@ public:
     ZenoLights(QWidget* parent = nullptr);
     void updateLights();
     static std::vector<zeno::vec3f> computeLightPrim(zeno::vec3f position, zeno::vec3f rotate, zeno::vec3f scale);
+
+private:
+    DisplayWidget* getViewportWithOptixFirst() const;
 };
 
 

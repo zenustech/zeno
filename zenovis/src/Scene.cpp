@@ -131,6 +131,13 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
         {4, GL_RGBA},
     }.at(rgbComps);
 
+    bool bOptix = renderMan->getDefaultEngineName() == "optx";
+    if (bOptix)
+    {
+        draw();
+        return std::vector<char>();
+    }
+
     std::vector<char> pixels(camera->m_nx * camera->m_ny * rgbComps * hdrSize);
 
     //GLint zerofbo = 0, zerorbo = 0;
