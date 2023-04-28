@@ -772,12 +772,17 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
         }
     }
     for (QMap<QString, NODE_DATA>::const_iterator it = oldGraphsToNew.cbegin(); it != oldGraphsToNew.cend(); it++) {
-        if (nodes.find(it.key()) != nodes.end()) {
-            NODE_DATA data = it.value();
-            data[ROLE_OBJPOS] = nodes[it.key()][ROLE_OBJPOS];
-            nodes.remove(it.key());
-            QString newId = it.value()[ROLE_OBJID].toString();
-            nodes.insert(newId, data);
+        const QString &ident = it.key();
+        if (nodes.find(ident) != nodes.end()) {
+            NODE_DATA newData = it.value();
+            NODE_DATA oldData = nodes[ident];
+            oldData[ROLE_OBJID] = newData[ROLE_OBJID];
+            oldData[ROLE_OBJNAME] = newData[ROLE_OBJNAME];
+
+            newData = oldData;
+
+            nodes.remove(ident);
+            nodes.insert(newData[ROLE_OBJID].toString(), newData);
         }
     }
 
