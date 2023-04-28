@@ -28,6 +28,7 @@ public:
     QPushButton* write_btn = new QPushButton("Write");
     QPushButton* write_all_btn = new QPushButton("Write ALL");
     QPushButton* procedural_sky_btn = new QPushButton("Procedural Sky");
+    QPushButton* sync_btn = new QPushButton("Sync Lights");
 
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();

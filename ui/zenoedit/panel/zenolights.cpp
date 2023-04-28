@@ -122,6 +122,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     write_btn->setProperty("cssClass", "grayButton");
     write_all_btn->setProperty("cssClass", "grayButton");
     procedural_sky_btn->setProperty("cssClass", "grayButton");
+    sync_btn->setProperty("cssClass", "grayButton");
     connect(write_btn, &QPushButton::clicked, this, [&](){
         QModelIndex index = lights_view->currentIndex();
         if (index.row() >= 0) {
@@ -168,9 +169,14 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             }
         }
     });
+    connect(sync_btn, &QPushButton::clicked, this, [=]() {
+        dataModel->updateByObjectsMan();
+    });
+
     pTitleLayout->addWidget(write_btn);
     pTitleLayout->addWidget(write_all_btn);
     pTitleLayout->addWidget(procedural_sky_btn);
+    pTitleLayout->addWidget(sync_btn);
 
     pPrimName->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pPrimName);
