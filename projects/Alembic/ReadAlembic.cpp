@@ -49,7 +49,7 @@ static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySampleP
     }
 }
 
-static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProperty arbattrs, bool read_done) {
+static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProperty arbattrs, const ISampleSelector &iSS, bool read_done) {
     if (!arbattrs) {
         return;
     }
@@ -59,7 +59,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
         if (IFloatGeomParam::matches(p)) {
             IFloatGeomParam param(arbattrs, p.getName());
 
-            IFloatGeomParam::Sample samp = param.getIndexedValue();
+            IFloatGeomParam::Sample samp = param.getIndexedValue(iSS);
             std::vector<float> data;
             data.resize(samp.getVals()->size());
             for (auto i = 0; i < samp.getVals()->size(); i++) {
@@ -81,19 +81,57 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
                 }
             }
+            else {
+                if (!read_done) {
+                    log_error("[alembic] can not load attr {}.", p.getName());
+                }
+            }
         }
         else if (IV3fGeomParam::matches(p)) {
             IV3fGeomParam param(arbattrs, p.getName());
             if (!read_done) {
                 log_info("[alembic] vec3f attr {}.", p.getName());
             }
-            IV3fGeomParam::Sample samp = param.getIndexedValue();
+            IV3fGeomParam::Sample samp = param.getIndexedValue(iSS);
             if (prim->verts.size() == samp.getVals()->size()) {
                 auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
                 for (auto i = 0; i < prim->verts.size(); i++) {
                     auto v = samp.getVals()->get()[i];
                     attr[i] = {v[0], v[1], v[2]};
                 }
+            }
+        }
+        else if (IN3fGeomParam::matches(p)) {
+            if (!read_done) {
+                log_info("[alembic] IN3fGeomParam attr {}.", p.getName());
+            }
+            IN3fGeomParam param(arbattrs, p.getName());
+            IN3fGeomParam::Sample samp = param.getIndexedValue(iSS);
+            if (prim->verts.size() == samp.getVals()->size()) {
+                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+        }
+        else if (IC3fGeomParam::matches(p)) {
+            if (!read_done) {
+                log_info("[alembic] IC3fGeomParam attr {}.", p.getName());
+            }
+            IC3fGeomParam param(arbattrs, p.getName());
+            IC3fGeomParam::Sample samp = param.getIndexedValue(iSS);
+            if (prim->verts.size() == samp.getVals()->size()) {
+                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+        }
+        else {
+            if (!read_done) {
+                log_error("[alembic] can not load attr {}..", p.getName());
             }
         }
     }
@@ -108,7 +146,8 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     int start_frame = (int)std::round(start / time_per_cycle );
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
-    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+    ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
+    Alembic::AbcGeom::IPolyMeshSchema::Sample mesamp = mesh.getValue(iSS);
 
     if (auto marr = mesamp.getPositions()) {
         if (!read_done) {
@@ -196,7 +235,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
-    read_attributes(prim, arbattrs, read_done);
+    read_attributes(prim, arbattrs, iSS, read_done);
 
     return prim;
 }
@@ -242,7 +281,8 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     int start_frame = (int)std::round(start / time_per_cycle );
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
-    Alembic::AbcGeom::IPointsSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+    auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
+    Alembic::AbcGeom::IPointsSchema::Sample mesamp = mesh.getValue(iSS);
     if (auto marr = mesamp.getPositions()) {
         if (!read_done) {
             log_info("[alembic] totally {} positions", marr->size());
@@ -255,7 +295,7 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     }
     read_velocity(prim, mesamp.getVelocities(), read_done);
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
-    read_attributes(prim, arbattrs, read_done);
+    read_attributes(prim, arbattrs, iSS, read_done);
     return prim;
 }
 
@@ -268,7 +308,8 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     int start_frame = (int)std::round(start / time_per_cycle );
 
     int sample_index = clamp(frameid - start_frame, 0, (int)mesh.getNumSamples() - 1);
-    Alembic::AbcGeom::ICurvesSchema::Sample mesamp = mesh.getValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+    auto iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
+    Alembic::AbcGeom::ICurvesSchema::Sample mesamp = mesh.getValue(iSS);
     if (auto marr = mesamp.getPositions()) {
         if (!read_done) {
             log_info("[alembic] totally {} positions", marr->size());
@@ -293,7 +334,7 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
         }
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
-    read_attributes(prim, arbattrs, read_done);
+    read_attributes(prim, arbattrs, iSS, read_done);
     return prim;
 }
 
