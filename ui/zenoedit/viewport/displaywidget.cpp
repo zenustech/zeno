@@ -173,8 +173,7 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     }
     else
     {
-        if (!isOptxRendering())
-            m_pTimer->stop();
+        m_pTimer->stop();
     }
     if (getZenoVis())
         getZenoVis()->startPlay(bChecked);
