@@ -122,25 +122,25 @@ ZENO_HANDLE Zeno_AddNode(ZENO_HANDLE hGraph, const std::string& nodeCls)
     return pModel->index(ident, subgIdx).internalId();
 }
 
-ZENO_ERROR Zeno_DeleteNode(ZENO_HANDLE hNode)
+ZENO_ERROR Zeno_DeleteNode(ZENO_HANDLE hSubg, ZENO_HANDLE hNode)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex subgIdx = pModel->subgByNodeId(hNode);
-    QModelIndex nodeIdx = pModel->nodeIndex(hNode);
+    QModelIndex nodeIdx = pModel->nodeIndex(hSubg, hNode);
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
     pModel->removeNode(nodeIdx.data(ROLE_OBJID).toString(), subgIdx);
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_GetName(ZENO_HANDLE hNode, std::string& name)
+ZENO_ERROR Zeno_GetName(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, std::string& name)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     name = idx.data(ROLE_OBJNAME).toString().toStdString();
     return Err_NoError;
 }
@@ -161,14 +161,15 @@ ZENO_ERROR Zeno_SaveAs(const std::string &fn)
     return ret ? Err_NoError : -1;
 }
 
-ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
+ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hSubg,
+                        ZENO_HANDLE hOutnode, const std::string &outSock,
                         ZENO_HANDLE hInnode, const std::string &inSock)
 {
     IGraphsModel* pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex outIdx = pModel->nodeIndex(hOutnode);
+    QModelIndex outIdx = pModel->nodeIndex(hSubg, hOutnode);
     if (!outIdx.isValid()) {
         zeno::log_error("miss hOutnode: {}", hOutnode);
         return Err_NodeNotExist;
@@ -180,7 +181,7 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
         return Err_SockNotExist;
     }
 
-    QModelIndex inIdx = pModel->nodeIndex(hInnode);
+    QModelIndex inIdx = pModel->nodeIndex(hSubg, hInnode);
     if (!inIdx.isValid()) {
         zeno::log_error("miss hInnode: {}", hInnode);
         return Err_NodeNotExist;
@@ -193,7 +194,7 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
     }
 
     //get subgraph directly from node.
-    QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
 
     NodeParamModel* inNodeParams = QVariantPtr<NodeParamModel>::asPtr(inIdx.data(ROLE_NODE_PARAMS));
     QModelIndex inSockIdx = inNodeParams->getParam(PARAM_INPUT, QString::fromStdString(inSock));
@@ -205,18 +206,19 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hOutnode, const std::string &outSock,
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hOutnode, const std::string& outSock,
+ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hSubg, 
+                           ZENO_HANDLE hOutnode, const std::string& outSock,
                            ZENO_HANDLE hInnode, const std::string &inSock)
 {
     IGraphsModel* pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex outIdx = pModel->nodeIndex(hOutnode);
+    QModelIndex outIdx = pModel->nodeIndex(hSubg, hOutnode);
     if (!outIdx.isValid())
         return Err_NodeNotExist;
 
-    QModelIndex inIdx = pModel->nodeIndex(hInnode);
+    QModelIndex inIdx = pModel->nodeIndex(hSubg, hInnode);
     if (!inIdx.isValid())
         return Err_NodeNotExist;
 
@@ -224,13 +226,12 @@ ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hOutnode, const std::string& outSock,
                                             QString::fromStdString(outSock),
                                             inIdx.data(ROLE_OBJID).toString(),
                                             QString::fromStdString(inSock));
-    QModelIndex subgIdx = pModel->subgByNodeId(hInnode);
-
     pModel->removeLink(linkIdx);
     return Err_NoError;
 }
 
 ZENO_ERROR Zeno_GetOutNodes(
+        ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,
         const std::string& outSock,
         std::vector<std::pair<ZENO_HANDLE, std::string>>& res)
@@ -239,11 +240,11 @@ ZENO_ERROR Zeno_GetOutNodes(
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
-    QModelIndex subgIdx = pModel->subgByNodeId(hNode);
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
     if (!subgIdx.isValid())
         return Err_SubgNotExist;
 
@@ -267,6 +268,7 @@ ZENO_ERROR Zeno_GetOutNodes(
 }
 
 ZENO_ERROR Zeno_GetInput(
+        ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,
         const std::string& inSock,
         std::pair<ZENO_HANDLE, std::string>& ret)
@@ -275,7 +277,7 @@ ZENO_ERROR Zeno_GetInput(
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
@@ -287,7 +289,7 @@ ZENO_ERROR Zeno_GetInput(
     }
 
     const QString& nodeid = idx.data(ROLE_OBJID).toString();
-    const QModelIndex& subgIdx = pModel->subgByNodeId(hNode);
+    const QModelIndex& subgIdx = pModel->subgIndex(hSubg);
     INPUT_SOCKET input = inputs[qsInSock];
 
     if (1 == input.info.links.size())
@@ -308,6 +310,7 @@ ZENO_ERROR Zeno_GetInput(
 }
 
 ZENO_ERROR Zeno_GetInputDefl(
+        ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,
         const std::string& inSock,
         /*out*/ ZVARIANT& ret,
@@ -317,7 +320,7 @@ ZENO_ERROR Zeno_GetInputDefl(
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
@@ -334,6 +337,7 @@ ZENO_ERROR Zeno_GetInputDefl(
 }
 
 ZENO_ERROR Zeno_SetInputDefl(
+        ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,
         const std::string& inSock,
         const ZVARIANT& var)
@@ -342,7 +346,7 @@ ZENO_ERROR Zeno_SetInputDefl(
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
@@ -352,7 +356,7 @@ ZENO_ERROR Zeno_SetInputDefl(
         return Err_SockNotExist;
 
     const QString& nodeid = idx.data(ROLE_OBJID).toString();
-    const QModelIndex& subgIdx = pModel->subgByNodeId(hNode);
+    const QModelIndex& subgIdx = pModel->subgIndex(hSubg);
     INPUT_SOCKET input = inputs[qsInSock];
 
     PARAM_UPDATE_INFO info;
@@ -364,6 +368,7 @@ ZENO_ERROR Zeno_SetInputDefl(
 }
 
 ZENO_ERROR Zeno_GetParam(
+        ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,
         const std::string& name,
         /*out*/ ZVARIANT& ret,
@@ -373,7 +378,7 @@ ZENO_ERROR Zeno_GetParam(
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
@@ -391,6 +396,7 @@ ZENO_ERROR Zeno_GetParam(
 }
 
 ZENO_ERROR Zeno_SetParam(
+        ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,
         const std::string& name,
         const ZVARIANT& var)
@@ -399,7 +405,7 @@ ZENO_ERROR Zeno_SetParam(
     if (!pModel)
         return Err_ModelNull;
 
-    const QModelIndex& idx = pModel->nodeIndex(hNode);
+    const QModelIndex &idx = pModel->nodeIndex(hSubg, hNode);
     QString qsName = QString::fromStdString(name);
     PARAMS_INFO params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
     if (params.find(qsName) == params.end())
@@ -408,7 +414,7 @@ ZENO_ERROR Zeno_SetParam(
     }
 
     PARAM_INFO param = params[qsName];
-    const QModelIndex& subgIdx = pModel->subgByNodeId(hNode);
+    const QModelIndex& subgIdx = pModel->subgIndex(hSubg);
 
     PARAM_UPDATE_INFO info;
     info.name = qsName;
@@ -419,13 +425,13 @@ ZENO_ERROR Zeno_SetParam(
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_IsView(ZENO_HANDLE hNode, bool& ret)
+ZENO_ERROR Zeno_IsView(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool& ret)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
@@ -434,17 +440,17 @@ ZENO_ERROR Zeno_IsView(ZENO_HANDLE hNode, bool& ret)
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_SetView(ZENO_HANDLE hNode, bool bOn)
+ZENO_ERROR Zeno_SetView(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool bOn)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
-    QModelIndex subgIdx = pModel->subgByNodeId(hNode);
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
 
     STATUS_UPDATE_INFO info;
     int options = idx.data(ROLE_OPTIONS).toInt();
@@ -461,13 +467,13 @@ ZENO_ERROR Zeno_SetView(ZENO_HANDLE hNode, bool bOn)
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_IsMute(ZENO_HANDLE hNode, bool& ret)
+ZENO_ERROR Zeno_IsMute(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool& ret)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
@@ -476,17 +482,17 @@ ZENO_ERROR Zeno_IsMute(ZENO_HANDLE hNode, bool& ret)
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_SetMute(ZENO_HANDLE hNode, bool bOn)
+ZENO_ERROR Zeno_SetMute(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool bOn)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
-    QModelIndex subgIdx = pModel->subgByNodeId(hNode);
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
 
     STATUS_UPDATE_INFO info;
     int options = idx.data(ROLE_OPTIONS).toInt();
@@ -503,13 +509,13 @@ ZENO_ERROR Zeno_SetMute(ZENO_HANDLE hNode, bool bOn)
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_IsOnce(ZENO_HANDLE hNode, bool& ret)
+ZENO_ERROR Zeno_IsOnce(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool& ret)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
@@ -518,17 +524,17 @@ ZENO_ERROR Zeno_IsOnce(ZENO_HANDLE hNode, bool& ret)
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_SetOnce(ZENO_HANDLE hNode, bool bOn)
+ZENO_ERROR Zeno_SetOnce(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, bool bOn)
 {
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
-    QModelIndex subgIdx = pModel->subgByNodeId(hNode);
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
 
     STATUS_UPDATE_INFO info;
     int options = idx.data(ROLE_OPTIONS).toInt();
@@ -545,13 +551,13 @@ ZENO_ERROR Zeno_SetOnce(ZENO_HANDLE hNode, bool bOn)
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_GetPos(ZENO_HANDLE hNode, std::pair<float, float>& pt)
+ZENO_ERROR Zeno_GetPos(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, std::pair<float, float>& pt)
 {
     IGraphsModel* pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
@@ -561,17 +567,17 @@ ZENO_ERROR Zeno_GetPos(ZENO_HANDLE hNode, std::pair<float, float>& pt)
     return Err_NoError;
 }
 
-ZENO_ERROR Zeno_SetPos(ZENO_HANDLE hNode, const std::pair<float, float>& pt)
+ZENO_ERROR Zeno_SetPos(ZENO_HANDLE hSubg, ZENO_HANDLE hNode, const std::pair<float, float>& pt)
 {
     IGraphsModel* pModel = GraphsManagment::instance().currentModel();
     if (!pModel)
         return Err_ModelNull;
 
-    QModelIndex idx = pModel->nodeIndex(hNode);
+    QModelIndex idx = pModel->nodeIndex(hSubg, hNode);
     if (!idx.isValid())
         return Err_NodeNotExist;
 
-    QModelIndex subgIdx = pModel->subgByNodeId(hNode);
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
 
     const QString& nodeid = idx.data(ROLE_OBJID).toString();
     QPointF oldPos = idx.data(ROLE_OBJPOS).toPointF();

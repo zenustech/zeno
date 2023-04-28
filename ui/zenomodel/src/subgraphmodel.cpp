@@ -163,7 +163,7 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
     return createIndex(row, 0, interlId);
 }
 
-QModelIndex SubGraphModel::index(int id) const
+QModelIndex SubGraphModel::index(uint32_t id) const
 {
     if (m_num2strId.find(id) == m_num2strId.end())
         return QModelIndex();

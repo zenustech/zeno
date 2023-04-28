@@ -25,9 +25,8 @@ public:
 	virtual QModelIndex nodeIndex(const QString& ident) = 0;
 	/* end: node index: */
 
-	virtual QModelIndex nodeIndex(uint32_t id) = 0;
+	virtual QModelIndex nodeIndex(uint32_t sid, uint32_t nodeid) = 0;
 	virtual QModelIndex subgIndex(uint32_t sid) = 0;
-	virtual QModelIndex subgByNodeId(uint32_t id) = 0;
 
 	virtual int itemCount(const QModelIndex &subGpIdx) const = 0;
 

@@ -66,7 +66,7 @@ public:
     //SubGraphModel
     bool insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent = QModelIndex());
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
-    QModelIndex index(int id) const;
+    QModelIndex index(uint32_t id) const;
     void appendItem(const NODE_DATA& nodeData, bool enableTransaction = false);
     void removeNode(const QString& nodeid, bool enableTransaction = false);
     void removeNode(int row, bool enableTransaction = false);
