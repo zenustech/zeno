@@ -16,6 +16,26 @@
 #include <filesystem>
 #include <vector>
 
+int my_sqrt(int x) {
+    // Base case
+    if (x == 0 || x == 1) {
+        return x;
+    }
+
+    // Initialize variables
+    int y = x;
+    int z = 1;
+
+    // Apply Babylonian method until convergence
+    while (y > z) {
+        y = (y + z) / 2;
+        z = x / y;
+    }
+
+    // Return the floor of the final square root
+    return y;
+}
+
 using Path = std::filesystem::path;
 
 ReadFBXPrim::ReadFBXPrim(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -89,13 +109,26 @@ void ReadFBXPrim::onEditClicked()
         ZENO_HANDLE fbxPartGraph = Zeno_GetGraph("FBXPart");
         ZASSERT_EXIT(fbxPartGraph);
 
+        int my_x = my_sqrt(matNum);
+        int my_i = 0;
+        float add_x_pos = 0.0f;
+        float add_y_pos = 0.0f;
+
         for (int i = 0; i < matNum; i++) {
             auto matName = fbxObj->userData().getLiterial<std::string>(std::to_string(i));
             zeno::log_info("Create with mat name {}, fbx name {}", matName, fbxName);
 
             ZENO_HANDLE dictNode = Zeno_AddNode(hGraph, "DictGetItem");
-            std::pair<float, float> dictNodePos = {fbxNodePos.first + 500.0f, fbxNodePos.second + i * 300.0f};
-            Zeno_SetPos(hGraph, dictNode, dictNodePos);
+            add_y_pos = my_i * 300.0f;
+            my_i++;
+            if(i % my_x == 0){
+                add_x_pos += 1500.0f;
+                my_i = 0;
+                add_y_pos = 0.0f;
+            }
+
+            std::pair<float, float> dictNodePos = {fbxNodePos.first + 600.0f + add_x_pos, fbxNodePos.second + add_y_pos};
+            Zeno_SetPos(hGraph,dictNode, dictNodePos);
 
             Zeno_SetInputDefl(hGraph, dictNode, "key", matName);
             Zeno_AddLink(hGraph, fbxNode, "mats", dictNode, "dict");
@@ -158,7 +191,7 @@ void ReadFBXPrim::onEditClicked()
             Zeno_SetView(hGraph, forkedNode, true);
         }
 
-        Zeno_SetView(hGraph, fbxNode, false);
+
         Zeno_SetInputDefl(hGraph, fbxNode, "generate", false);
     }else{
         zeno::log_error("Not found ReadFBXPrim node in objectsMan");
