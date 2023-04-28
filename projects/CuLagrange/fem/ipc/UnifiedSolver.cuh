@@ -199,6 +199,7 @@ struct UnifiedIPCSystem : IObject {
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization
     void findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi = 0);
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
+    void findCCDConstraintsImplEE(zs::CudaExecutionPolicy &pol, T alpha, T xi);
     void findBoundaryCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi);
     // linear system setup
     void computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPol,
