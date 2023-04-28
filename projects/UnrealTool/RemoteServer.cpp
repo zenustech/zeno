@@ -1,3 +1,11 @@
+#ifndef ZENO_REMOTE_TOKEN
+#define ZENO_REMOTE_TOKEN "ZENO_DEFAULT_TOKEN"
+#endif
+
+#ifndef ZENO_LOCAL_TOKEN
+#define ZENO_LOCAL_TOKEN "ZENO_LOCAL_TOKEN"
+#endif
+
 #include "httplib/httplib.h"
 #include "msgpack/msgpack.h"
 #include <functional>
@@ -7,6 +15,7 @@
 #include <vector>
 #include <limits>
 #include <cassert>
+#include <random>
 #include <zeno/core/INode.h>
 #include <zeno/core/Session.h>
 #include <zeno/extra/EventCallbacks.h>
@@ -31,6 +40,27 @@
 #ifndef UT_NODISCARD
     #define UT_NODISCARD
 #endif // UT_NODISCARD
+
+/**
+ * Copy from https://stackoverflow.com/questions/440133/how-do-i-create-a-random-alpha-numeric-string-in-c
+ * @param length string length
+ * @return Random string
+ */
+std::string RandomString( size_t Length )
+{
+    auto randchar = []() -> char
+    {
+        const char charset[] =
+            "0123456789"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    std::string str(Length,0);
+    std::generate_n( str.begin(), Length, randchar );
+    return str;
+}
 
 namespace zeno {
 
@@ -61,6 +91,7 @@ static struct SubjectRegistry {
         } else {
             // In child process, transfer data with http
             httplib::Client Cli { "http://localhost:23343" };
+            Cli.set_default_headers({ {"X-Zeno-SessionKey", ZENO_LOCAL_TOKEN} });
             SubjectContainerList List { InitList };
             std::vector<uint8_t> Data = msgpack::pack(List);
             Cli.Post("/subject/push", reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
@@ -82,6 +113,7 @@ static struct SubjectRegistry {
         } else {
             // In child process, transfer data with http
             httplib::Client Cli { "http://localhost:23343" };
+            Cli.set_default_headers({ {"X-Zeno-SessionKey", ZENO_LOCAL_TOKEN} });
             httplib::Params Param;
             Param.insert(std::make_pair("key", Key));
             const httplib::Result Response = Cli.Get("/subject/fetch", Param, httplib::Headers {}, httplib::Progress {});
@@ -152,26 +184,42 @@ ESubjectType NameToSubjectType(const std::string& InStr) {
 }
 
 #define SERVER_HANDLER_WRAPPER(FUNC) [this] (const httplib::Request& Req, httplib::Response& Res) { FUNC(Req, Res); }
+#define HANDLER_SESSION_CHECK(FUNC) [this] (const httplib::Request& Req, httplib::Response& Res) { if ((Req.remote_addr == "127.0.0.1" && Req.has_header(ZENO_SESSION_HEADER_NAME) && Req.get_header_value(ZENO_SESSION_HEADER_NAME) == ZENO_LOCAL_TOKEN) || (Req.has_header(ZENO_SESSION_HEADER_NAME) && IsValidSession(Req.get_header_value(ZENO_SESSION_HEADER_NAME)))) { FUNC(Req, Res); } else { Res.status = 403; } }
 
 class ZenoRemoteServer {
+
+    inline const static std::string ZENO_SESSION_HEADER_NAME = "X-Zeno-SessionKey";
+
     httplib::Server Srv;
     remote::SubjectHistory History;
+    std::vector<std::string> Sessions;
 
 private:
+    bool IsValidSession(const std::string& SessionKey) const;
+
+    static void OnError(const httplib::Request& Req, httplib::Response& Res);
+
     static void IndexPage(const httplib::Request& Req, httplib::Response& Res);
+    void NewSession(const httplib::Request& Req, httplib::Response& Res);
+
     void FetchDataDiff(const httplib::Request& Req, httplib::Response& Res);
     static void PushData(const httplib::Request& Req, httplib::Response& Res);
     static void FetchData(const httplib::Request& Req, httplib::Response& Res);
+    static void ParseGraphInfo(const httplib::Request& Req, httplib::Response& Res);
 
 public:
     void Run() {
         zeno::remote::StaticRegistry.Callback = [this] (const std::set<std::string>& Changes) {
             History.Commit(Changes);
         };
-        Srv.Get("/", &ZenoRemoteServer::IndexPage);
-        Srv.Get("/subject/diff", SERVER_HANDLER_WRAPPER(FetchDataDiff));
-        Srv.Post("/subject/push", PushData);
-        Srv.Get("/subject/fetch", FetchData);
+        Srv.set_payload_max_length(1024 * 1024 * 1024); // 1 GB
+        Srv.set_error_handler(OnError);
+        Srv.Get("/", HANDLER_SESSION_CHECK(IndexPage));
+        Srv.Get("/auth", SERVER_HANDLER_WRAPPER(NewSession));
+        Srv.Get("/subject/diff", HANDLER_SESSION_CHECK(FetchDataDiff));
+        Srv.Post("/subject/push", HANDLER_SESSION_CHECK(PushData));
+        Srv.Get("/subject/fetch", HANDLER_SESSION_CHECK(FetchData));
+        Srv.Post("/graph/parse", HANDLER_SESSION_CHECK(ParseGraphInfo));
         zeno::remote::StaticFlags.IsMainProcess = true;
         Srv.listen("127.0.0.1", 23343);
         // Listen failed or server exited, set flag to false
@@ -179,6 +227,7 @@ public:
     }
 };
 
+#undef HANDLER_SESSION_CHECK
 #undef SERVER_HANDLER_WRAPPER
 
 }
@@ -208,10 +257,39 @@ UT_MAYBE_UNUSED static int defUnrealToolInit = getSession().eventCallbacks->hook
     StartServerThread();
 });
 
+bool ZenoRemoteServer::IsValidSession(const std::string &SessionKey) const {
+    return std::find(Sessions.begin(), Sessions.end(), SessionKey) != Sessions.end();
+}
+
 void ZenoRemoteServer::IndexPage(const httplib::Request& Req, httplib::Response& Res) {
     Res.set_content(R"({"api_version": 1, "protocol": "msgpack"})", "application/json");
 }
 
+/**
+ * GET /auth
+ * HEADER X-Zeno-Token {string}
+ * return session key in plain text with 204 if success
+ * return status code 401 if failed
+ */
+void ZenoRemoteServer::NewSession(const httplib::Request &Req, httplib::Response &Res) {
+    const static std::string HeaderKey = "X-Zeno-Token";
+    if (Req.has_header(HeaderKey)) {
+        std::string Token = Req.get_header_value(HeaderKey);
+        if (Token == ZENO_REMOTE_TOKEN) {
+            Res.status = 201;
+            std::string SessionKey = RandomString(32);
+            Res.set_content(SessionKey, "text/plain");
+            Sessions.emplace_back(std::move(SessionKey));
+            return;
+        }
+    }
+    Res.status = 401;
+}
+
+/**
+ * GET /subject/diff?client_version={int}
+ * return zeno::remote::Diff
+ */
 void ZenoRemoteServer::FetchDataDiff(const httplib::Request &Req, httplib::Response &Res) {
     int32_t client_version = std::atoi(Req.get_param_value("client_version").c_str());
     std::set<std::string> Changes = History.Diff(client_version);
@@ -222,6 +300,11 @@ void ZenoRemoteServer::FetchDataDiff(const httplib::Request &Req, httplib::Respo
     Res.set_content(reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
 }
 
+/**
+ * POST /subject/push
+ * BODY msgpack packed data of zeno::remote::SubjectContainerList
+ * return status code 204 if success, 400 if failed
+ */
 void ZenoRemoteServer::PushData(const httplib::Request& Req, httplib::Response &Res) {
     const std::string& Body = Req.body;
     std::error_code Err;
@@ -234,6 +317,10 @@ void ZenoRemoteServer::PushData(const httplib::Request& Req, httplib::Response &
     }
 }
 
+/**
+ * GET /subject/fetch?key={string}&key={string}  ...
+ * return msgpack packed data of zeno::remote::SubjectContainerList, list will be empty if nothing found
+ */
 void ZenoRemoteServer::FetchData(const httplib::Request &Req, httplib::Response &Res) {
     size_t Num = Req.get_param_value_count("key");
     remote::SubjectContainerList List;
@@ -247,6 +334,19 @@ void ZenoRemoteServer::FetchData(const httplib::Request &Req, httplib::Response 
     }
     std::vector<uint8_t> Data = msgpack::pack(List);
     Res.set_content(reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
+}
+
+/**
+ * POST /graph/parse
+ * BODY a string of zsl file (json).
+ * return msgpack packed data of zeno::remote::GraphInfo
+ */
+void ZenoRemoteServer::ParseGraphInfo(const httplib::Request &Req, httplib::Response &Res) {
+    // TODO [darc]
+}
+
+void ZenoRemoteServer::OnError(const httplib::Request &Req, httplib::Response &Res) {
+    Res.set_content(R"({"code": 404, "msg": "Opps, who am I, where am I, what am I doing?"})", "application/json");
 }
 }
 

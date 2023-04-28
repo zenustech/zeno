@@ -89,7 +89,7 @@ enum class ESubjectType : int16_t {
 
 struct SubjectContainer {
     std::string Name;
-    int16_t Type;
+    int16_t/* ESubjectType */ Type;
     std::vector<uint8_t> Data;
 
     ESubjectType GetType() const {
@@ -156,6 +156,42 @@ struct Dummy {
         pack();
     }
 };
+
+struct ParamContainer {
+    int8_t/* EParamType */ Type;
+    std::string Data;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(Type, Data);
+    }
+};
+
+template <typename T, uint8_t N>
+using TVectorN = std::array<T, N>;
+using Vector3f = TVectorN<float, 3>;
+
+struct ParamDescriptor {
+    std::string SubjectName;
+    int16_t/* ESubjectType */ SubjectType = 0;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(SubjectName, SubjectType);
+    }
+};
+
+struct GraphInfo {
+    std::map<std::string, int8_t/* EParamType */> InputParameters;
+    std::map<std::string, zeno::remote::ParamDescriptor> OutputParameters;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(InputParameters, OutputParameters);
+    }
+};
+
+inline const static std::string NAME_LandscapeInfoSimple = "__Internal_Reserved_LandscapeInfo";
 
 template <typename T>
 struct TGetClassSubjectType {
