@@ -721,6 +721,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     ZASSERT_EXIT(pModel, NODE_DATA());
 
     QMap<QString, NODE_DATA> nodes;
+    QMap<QString, NODE_DATA> oldGraphsToNew;
     QList<EdgeInfo> links;
     for (int r = 0; r < pModel->rowCount(); r++)
     {
@@ -736,7 +737,8 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
             data = _fork(ssubnetName);
             const QString& subgNewNodeId = data[ROLE_OBJID].toString();
 
-            nodes.insert(snodeId, data);
+            nodes.insert(snodeId, pModel->nodeData(idx));
+            oldGraphsToNew.insert(snodeId, data);
         }
         else
         {
@@ -754,9 +756,28 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
         {
             QModelIndex outSockIdx = idx.data(ROLE_OUTSOCK_IDX).toModelIndex();
             QModelIndex inSockIdx = idx.data(ROLE_INSOCK_IDX).toModelIndex();
-            const QString& outSockPath = outSockIdx.data(ROLE_OBJPATH).toString();
-            const QString& inSockPath = inSockIdx.data(ROLE_OBJPATH).toString();
+            QString outSockPath = outSockIdx.data(ROLE_OBJPATH).toString();
+            QString inSockPath = inSockIdx.data(ROLE_OBJPATH).toString();
+            if (oldGraphsToNew.find(inNode) != oldGraphsToNew.end()) {
+                QString newId = oldGraphsToNew[inNode][ROLE_OBJID].toString();
+                QString oldId = UiHelper::getSockNode(inSockPath);
+                inSockPath.replace(oldId, newId);
+            }
+            if (oldGraphsToNew.find(outNode) != oldGraphsToNew.end()) {
+                QString newId = oldGraphsToNew[outNode][ROLE_OBJID].toString();
+                QString oldId = UiHelper::getSockNode(outSockPath);
+                outSockPath.replace(oldId, newId);
+            }
             links.append(EdgeInfo(outSockPath, inSockPath));
+        }
+    }
+    for (QMap<QString, NODE_DATA>::const_iterator it = oldGraphsToNew.cbegin(); it != oldGraphsToNew.cend(); it++) {
+        if (nodes.find(it.key()) != nodes.end()) {
+            NODE_DATA data = it.value();
+            data[ROLE_OBJPOS] = nodes[it.key()][ROLE_OBJPOS];
+            nodes.remove(it.key());
+            QString newId = it.value()[ROLE_OBJID].toString();
+            nodes.insert(newId, data);
         }
     }
 
