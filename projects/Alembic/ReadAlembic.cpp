@@ -49,6 +49,56 @@ static void read_velocity(std::shared_ptr<PrimitiveObject> prim, V3fArraySampleP
     }
 }
 
+static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProperty arbattrs, bool read_done) {
+    if (!arbattrs) {
+        return;
+    }
+    size_t numProps = arbattrs.getNumProperties();
+    for (auto i = 0; i < numProps; i++) {
+        PropertyHeader p = arbattrs.getPropertyHeader(i);
+        if (IFloatGeomParam::matches(p)) {
+            IFloatGeomParam param(arbattrs, p.getName());
+
+            IFloatGeomParam::Sample samp = param.getIndexedValue();
+            std::vector<float> data;
+            data.resize(samp.getVals()->size());
+            for (auto i = 0; i < samp.getVals()->size(); i++) {
+                data[i] = samp.getVals()->get()[i];
+            }
+            if (!read_done) {
+                log_info("[alembic] float attr {}, len {}.", p.getName(), data.size());
+            }
+
+            if (prim->verts.size() == data.size()) {
+                auto &attr = prim->add_attr<float>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    attr[i] = data[i];
+                }
+            }
+            else if (prim->verts.size() * 3 == data.size()) {
+                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
+                }
+            }
+        }
+        else if (IV3fGeomParam::matches(p)) {
+            IV3fGeomParam param(arbattrs, p.getName());
+            if (!read_done) {
+                log_info("[alembic] vec3f attr {}.", p.getName());
+            }
+            IV3fGeomParam::Sample samp = param.getIndexedValue();
+            if (prim->verts.size() == samp.getVals()->size()) {
+                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+        }
+    }
+}
+
 static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMeshSchema &mesh, int frameid, bool read_done) {
     auto prim = std::make_shared<PrimitiveObject>();
 
@@ -146,53 +196,7 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
         }
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
-
-    if (arbattrs) {
-        size_t numProps = arbattrs.getNumProperties();
-        for (auto i = 0; i < numProps; i++) {
-            PropertyHeader p = arbattrs.getPropertyHeader(i);
-            if (IFloatGeomParam::matches(p)) {
-                IFloatGeomParam param(arbattrs, p.getName());
-
-                IFloatGeomParam::Sample samp = param.getIndexedValue();
-                std::vector<float> data;
-                data.resize(samp.getVals()->size());
-                for (auto i = 0; i < samp.getVals()->size(); i++) {
-                    data[i] = samp.getVals()->get()[i];
-                }
-                if (!read_done) {
-                    log_info("[alembic] float attr {}, len {}.", p.getName(), data.size());
-                }
-
-                if (prim->verts.size() == data.size()) {
-                    auto &attr = prim->add_attr<float>(p.getName());
-                    for (auto i = 0; i < prim->verts.size(); i++) {
-                        attr[i] = data[i];
-                    }
-                }
-                else if (prim->verts.size() * 3 == data.size()) {
-                    auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
-                    for (auto i = 0; i < prim->verts.size(); i++) {
-                        attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
-                    }
-                }
-            }
-            else if (IV3fGeomParam::matches(p)) {
-                IV3fGeomParam param(arbattrs, p.getName());
-                if (!read_done) {
-                    log_info("[alembic] vec3f attr {}.", p.getName());
-                }
-                IV3fGeomParam::Sample samp = param.getIndexedValue();
-                if (prim->verts.size() == samp.getVals()->size()) {
-                    auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
-                    for (auto i = 0; i < prim->verts.size(); i++) {
-                        auto v = samp.getVals()->get()[i];
-                        attr[i] = {v[0], v[1], v[2]};
-                    }
-                }
-            }
-        }
-    }
+    read_attributes(prim, arbattrs, read_done);
 
     return prim;
 }
@@ -250,6 +254,8 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
         }
     }
     read_velocity(prim, mesamp.getVelocities(), read_done);
+    ICompoundProperty arbattrs = mesh.getArbGeomParams();
+    read_attributes(prim, arbattrs, read_done);
     return prim;
 }
 
@@ -286,6 +292,8 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
             offset += count;
         }
     }
+    ICompoundProperty arbattrs = mesh.getArbGeomParams();
+    read_attributes(prim, arbattrs, read_done);
     return prim;
 }
 
