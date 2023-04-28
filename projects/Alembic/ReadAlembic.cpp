@@ -81,6 +81,11 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     attr[i] = { data[ 3 * i], data[3 * i + 1], data[3 * i + 2]};
                 }
             }
+            else {
+                if (!read_done) {
+                    log_error("[alembic] can not load attr {}.", p.getName());
+                }
+            }
         }
         else if (IV3fGeomParam::matches(p)) {
             IV3fGeomParam param(arbattrs, p.getName());
@@ -94,6 +99,39 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                     auto v = samp.getVals()->get()[i];
                     attr[i] = {v[0], v[1], v[2]};
                 }
+            }
+        }
+        else if (IN3fGeomParam::matches(p)) {
+            if (!read_done) {
+                log_info("[alembic] IN3fGeomParam attr {}.", p.getName());
+            }
+            IN3fGeomParam param(arbattrs, p.getName());
+            IN3fGeomParam::Sample samp = param.getIndexedValue();
+            if (prim->verts.size() == samp.getVals()->size()) {
+                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+        }
+        else if (IC3fGeomParam::matches(p)) {
+            if (!read_done) {
+                log_info("[alembic] IC3fGeomParam attr {}.", p.getName());
+            }
+            IC3fGeomParam param(arbattrs, p.getName());
+            IC3fGeomParam::Sample samp = param.getIndexedValue();
+            if (prim->verts.size() == samp.getVals()->size()) {
+                auto &attr = prim->add_attr<zeno::vec3f>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    auto v = samp.getVals()->get()[i];
+                    attr[i] = {v[0], v[1], v[2]};
+                }
+            }
+        }
+        else {
+            if (!read_done) {
+                log_error("[alembic] can not load attr {}..", p.getName());
             }
         }
     }
