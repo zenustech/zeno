@@ -174,12 +174,12 @@ private:
 
     //QVector<SubGraphModel*> m_subGraphs;
 
-    QMap<QString, SubGraphModel*> m_subGraphs;
-    QMap<QString, int> m_key2Row;
-    QMap<int, QString> m_row2Key;
+    QHash<QString, SubGraphModel*> m_subGraphs;
+    QHash<QString, int> m_key2Row;
+    QHash<int, QString> m_row2Key;
 
-    QMap<uint32_t, QString> m_id2name;
-    QMap<QString, uint32_t> m_name2id;
+    QHash<uint32_t, QString> m_id2name;
+    QHash<QString, uint32_t> m_name2id;
     QItemSelectionModel* m_selection;
     LinkModel* m_linkModel;
     NODE_DESCS m_nodesDesc;

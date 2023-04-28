@@ -18,9 +18,10 @@ QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const
 
 NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, const QPointF& pt)
 {
-    NODE_DESCS descs = pModel->descriptors();
-    NODE_DESC desc = descs[descName];
     NODE_DATA node;
+    NODE_DESC desc;
+    bool ret = pModel->getDescriptor(descName, desc);
+    ZASSERT_EXIT(ret, node);
 
     const QString &nodeid = UiHelper::generateUuid(descName);
     node[ROLE_OBJID] = nodeid;

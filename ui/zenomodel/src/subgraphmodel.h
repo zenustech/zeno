@@ -118,12 +118,12 @@ private:
     bool checkCustomName(const QString &name);
 
     QString m_name;
-    QMap<QString, int> m_key2Row;
-    QMap<int, QString> m_row2Key;
-    QMap<QString, _NodeItem> m_nodes;
+    QHash<QString, int> m_key2Row;
+    QHash<int, QString> m_row2Key;
+    QHash<QString, _NodeItem> m_nodes;
 
-    QMap<uint32_t, QString> m_num2strId;
-    QMap<QString, uint32_t> m_str2numId;
+    QHash<uint32_t, QString> m_num2strId;
+    QHash<QString, uint32_t> m_str2numId;
 
     QRectF m_rect;
     GraphsModel* m_pGraphsModel;

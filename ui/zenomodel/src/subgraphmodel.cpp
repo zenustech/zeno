@@ -611,13 +611,15 @@ bool SubGraphModel::itemFromIndex(const QModelIndex &index, _NodeItem& retNode) 
     if (!index.isValid())
         return false;
 
-    if (m_row2Key.find(index.row()) == m_row2Key.end())
+    auto iter1 = m_row2Key.find(index.row());
+    if (iter1 == m_row2Key.end())
         return false;
 
-    QString id = m_row2Key[index.row()];
-    if (m_nodes.find(id) != m_nodes.end())
+    QString id = iter1.value();
+    auto iter2 = m_nodes.find(id);
+    if (iter2 != m_nodes.end())
     {
-        retNode = m_nodes[id];
+        retNode = iter2.value();
         return true;
     }
     else
