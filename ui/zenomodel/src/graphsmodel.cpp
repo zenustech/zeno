@@ -1312,14 +1312,15 @@ void GraphsModel::removeSubGraph(const QString& name)
 QModelIndexList GraphsModel::findSubgraphNode(const QString& subgName)
 {
     QModelIndexList nodes;
-    for (auto subg : m_subGraphs)
-    {
-        if (subg->name() != subgName)
-        {
-            auto results = subg->match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchExactly);
-            nodes.append(results);
-        }
-    }
+    //temp code: test fork.
+    //return nodes;
+    auto iter = m_subGraphs.find(subgName);
+    if (iter == m_subGraphs.end())
+        return nodes;
+
+    auto subg = iter.value();
+    auto results = subg->match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchExactly);
+    nodes.append(results);
     return nodes;
 }
 
