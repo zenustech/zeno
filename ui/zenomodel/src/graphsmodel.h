@@ -172,7 +172,12 @@ private:
 
     void onApiBatchFinished();
 
-    QVector<SubGraphModel*> m_subGraphs;
+    //QVector<SubGraphModel*> m_subGraphs;
+
+    QMap<QString, SubGraphModel*> m_subGraphs;
+    QMap<QString, int> m_key2Row;
+    QMap<int, QString> m_row2Key;
+
     QMap<uint32_t, QString> m_id2name;
     QMap<QString, uint32_t> m_name2id;
     QItemSelectionModel* m_selection;

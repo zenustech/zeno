@@ -54,19 +54,21 @@ void GraphsModel::setFilePath(const QString& fn)
 
 SubGraphModel* GraphsModel::subGraph(const QString& name) const
 {
-    for (int i = 0; i < m_subGraphs.size(); i++)
-    {
-        if (m_subGraphs[i]->name() == name)
-            return m_subGraphs[i];
-    }
-    return nullptr;
+    auto iter = m_subGraphs.find(name);
+    if (iter == m_subGraphs.end())
+        return nullptr;
+
+    return iter.value();
 }
 
 SubGraphModel* GraphsModel::subGraph(int idx) const
 {
     if (idx >= 0 && idx < m_subGraphs.count())
     {
-        return m_subGraphs[idx];
+        auto itRow = m_row2Key.find(idx);
+        ZASSERT_EXIT(itRow != m_row2Key.end(), nullptr);
+        QString subgName = itRow.value();
+        return subGraph(subgName);
     }
     return nullptr;
 }
@@ -148,9 +150,19 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
         }
     }
 
+    //replace:
+    ZASSERT_EXIT(m_subGraphs.find(oldName) != m_subGraphs.end());
+    m_subGraphs.remove(oldName);
+    m_subGraphs.insert(newName, pSubModel);
+
     NODE_DESC desc = m_subgsDesc[oldName];
     m_subgsDesc[newName] = desc;
     m_subgsDesc.remove(oldName);
+
+    int row = m_key2Row[oldName];
+    m_key2Row[newName] = row;
+    m_key2Row.remove(oldName);
+    m_row2Key[row] = newName;
 
     uint32_t ident = m_name2id[oldName];
     m_id2name[ident] = newName;
@@ -169,9 +181,9 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
 
 QModelIndex GraphsModel::nodeIndex(uint32_t id)
 {
-    for (int row = 0; row < m_subGraphs.size(); row++)
+    for (auto subg : m_subGraphs)
     {
-        QModelIndex idx = m_subGraphs[row]->index(id);
+        QModelIndex idx = subg->index(id);
         if (idx.isValid())
             return idx;
     }
@@ -187,10 +199,12 @@ QModelIndex GraphsModel::subgIndex(uint32_t sid)
 
 QModelIndex GraphsModel::subgByNodeId(uint32_t id)
 {
-    for (int row = 0; row < m_subGraphs.size(); row++)
+    for (auto subg : m_subGraphs)
     {
-        if (m_subGraphs[row]->index(id).isValid())
-            return index(row, 0);
+        if (subg->index(id).isValid())
+        {
+            return _createIndex(subg);
+        }
     }
     return QModelIndex();
 }
@@ -202,8 +216,10 @@ QModelIndex GraphsModel::_createIndex(SubGraphModel* pSubModel) const
 
     const QString& subgName = pSubModel->name();
     ZASSERT_EXIT(m_name2id.find(subgName) != m_name2id.end(), QModelIndex());
-    int row = m_subGraphs.indexOf(pSubModel);
-    return createIndex(row, 0, m_name2id[subgName]);
+    ZASSERT_EXIT(m_key2Row.find(subgName) != m_key2Row.end(), QModelIndex());
+    int row = m_key2Row[subgName];
+    uint32_t uuid = m_name2id[subgName];
+    return createIndex(row, 0, uuid);
 }
 
 QModelIndex GraphsModel::index(int row, int column, const QModelIndex& parent) const
@@ -211,29 +227,24 @@ QModelIndex GraphsModel::index(int row, int column, const QModelIndex& parent) c
     if (row < 0 || row >= m_subGraphs.size())
         return QModelIndex();
 
-    return _createIndex(m_subGraphs[row]);
+    ZASSERT_EXIT(m_row2Key.find(row) != m_row2Key.end(), QModelIndex());
+    const QString& subgName = m_row2Key[row];
+    uint32_t uuid = m_name2id[subgName];
+    return createIndex(row, 0, uuid);
 }
 
 QModelIndex GraphsModel::index(const QString& subGraphName) const
 {
-	for (int row = 0; row < m_subGraphs.size(); row++)
-	{
-		if (m_subGraphs[row]->name() == subGraphName)
-		{
-            return _createIndex(m_subGraphs[row]);
-		}
-	}
-    return QModelIndex();
+    auto itRow = m_key2Row.find(subGraphName);
+    ZASSERT_EXIT(itRow != m_key2Row.end(), QModelIndex());
+    int row = itRow.value();
+    uint32_t uuid = m_name2id[subGraphName];
+    return createIndex(row, 0, uuid);
 }
 
 QModelIndex GraphsModel::indexBySubModel(SubGraphModel* pSubModel) const
 {
-    for (int row = 0; row < m_subGraphs.size(); row++)
-    {
-        if (m_subGraphs[row] == pSubModel)
-            return _createIndex(pSubModel);
-    }
-    return QModelIndex();
+    return _createIndex(pSubModel);
 }
 
 QModelIndex GraphsModel::linkIndex(int r)
@@ -319,11 +330,11 @@ QVariant GraphsModel::data(const QModelIndex& index, int role) const
     {
         case Qt::DisplayRole:
         case Qt::EditRole:
-        case ROLE_OBJNAME:
-            return m_subGraphs[index.row()]->name();
+        case ROLE_OBJNAME: return m_row2Key[index.row()];
+            //return m_subGraphs[index.row()]->name();
         case ROLE_OBJPATH:
         {
-            const QString& subgName = m_subGraphs[index.row()]->name();
+            const QString& subgName = m_row2Key[index.row()];
             return subgName;
         }
     }
@@ -652,14 +663,21 @@ bool GraphsModel::updateSubgDesc(const QString& descName, const NODE_DESC& desc)
 void GraphsModel::appendSubGraph(SubGraphModel* pGraph)
 {
     int row = m_subGraphs.size();
-	beginInsertRows(QModelIndex(), row, row);
-    m_subGraphs.append(pGraph);
+    beginInsertRows(QModelIndex(), row, row);
 
     const QString& name = pGraph->name();
+
+    int nRows = m_subGraphs.size();
+    m_row2Key[nRows] = name;
+    m_key2Row[name] = nRows;
+
     QUuid uuid = QUuid::createUuid();
     uint32_t ident = uuid.data1;
     m_id2name[ident] = name;
     m_name2id[name] = ident;
+
+    //insert
+    m_subGraphs.insert(name, pGraph);
 
 	endInsertRows();
     //the subgraph desc has been inited when processing io.
@@ -678,8 +696,21 @@ void GraphsModel::removeGraph(int idx)
 {
     beginRemoveRows(QModelIndex(), idx, idx);
 
-    const QString& descName = m_subGraphs[idx]->name();
-    m_subGraphs.remove(idx);
+    auto itRow = m_row2Key.find(idx);
+    ZASSERT_EXIT(itRow != m_row2Key.end());
+    QString descName = itRow.value();
+
+    for (int r = idx + 1; r < rowCount(); r++)
+    {
+        const QString &key = m_row2Key[r];
+        m_row2Key[r - 1] = key;
+        m_key2Row[key] = r - 1;
+    }
+
+    //const QString& descName = m_subGraphs[idx]->name();
+    m_row2Key.remove(rowCount() - 1);
+    m_key2Row.remove(descName);
+    m_subGraphs.remove(descName);
 
     ZASSERT_EXIT(m_name2id.find(descName) != m_name2id.end());
     uint32_t ident = m_name2id[descName];
@@ -937,9 +968,9 @@ void GraphsModel::onApiBatchFinished()
 
 QModelIndex GraphsModel::nodeIndex(const QString& ident)
 {
-    for (int i = 0; i < m_subGraphs.size(); i++)
+    for (auto subg : m_subGraphs)
     {
-        QModelIndex idx = m_subGraphs[i]->index(ident);
+        QModelIndex idx = subg->index(ident);
         if (idx.isValid())
             return idx;
     }
@@ -1263,15 +1294,17 @@ void GraphsModel::removeSubGraph(const QString& name)
     if (name.compare("main", Qt::CaseInsensitive) == 0)
         return;
 
-    for (int i = 0; i < m_subGraphs.size(); i++)
+    for (QString subgName : m_subGraphs.keys())
     {
-        if (m_subGraphs[i]->name() == name)
-        {
-            removeGraph(i);
+        if (subgName == name) {
+            int nRow = m_key2Row[name];
+            removeGraph(nRow);
         }
         else
         {
-            m_subGraphs[i]->removeNodeByDescName(name);
+            SubGraphModel* subg = m_subGraphs[subgName];
+            ZASSERT_EXIT(subg);
+            subg->removeNodeByDescName(name);
         }
     }
 }
@@ -1279,12 +1312,11 @@ void GraphsModel::removeSubGraph(const QString& name)
 QModelIndexList GraphsModel::findSubgraphNode(const QString& subgName)
 {
     QModelIndexList nodes;
-    for (int i = 0; i < m_subGraphs.size(); i++)
+    for (auto subg : m_subGraphs)
     {
-        SubGraphModel* pModel = m_subGraphs[i];
-        if (pModel->name() != subgName)
+        if (subg->name() != subgName)
         {
-            auto results = pModel->match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchExactly);
+            auto results = subg->match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchExactly);
             nodes.append(results);
         }
     }
@@ -1515,13 +1547,12 @@ void GraphsModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, int 
 QModelIndex GraphsModel::getSubgraphIndex(const QModelIndex& linkIdx)
 {
 	const QString& inNode = linkIdx.data(ROLE_INNODE).toString();
-    for (int r = 0; r < m_subGraphs.size(); r++)
+    for (auto subg : m_subGraphs)
     {
-        SubGraphModel* pSubModel = m_subGraphs[r];
-		if (pSubModel->index(inNode).isValid())
-		{
-            return index(r, 0);
-		}
+        if (subg->index(inNode).isValid())
+        {
+            return _createIndex(subg);
+        }
     }
     return QModelIndex();
 }
@@ -1747,7 +1778,10 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts,
     /* start match len*/
     static int sStartMatch = 2;
     if (vec.isEmpty())
-        vec = m_subGraphs;
+    {
+        for (auto subg : m_subGraphs)
+            vec.append(subg);
+    }
     for (auto subgInfo : vec) {
         SubGraphModel *pModel = subgInfo;
         QModelIndex subgIdx = indexBySubModel(pModel);
