@@ -315,6 +315,7 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
 {
     //dump to item.
     QModelIndex layerIdx = m_ui->paramsView->currentIndex();
+    QString value = layerIdx.data(ROLE_PARAM_VALUE).toString();
     if (!layerIdx.isValid() && layerIdx.data(ROLE_VPARAM_TYPE) != VPARAM_PARAM)
         return;
 
@@ -341,7 +342,7 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
     properties["items"] = lst;
 
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
-    proxyModelSetData(layerIdx, lst[0], ROLE_PARAM_VALUE);
+
     if (row == m_ui->itemsTable->rowCount() - 1)
     {
         m_ui->itemsTable->insertRow(m_ui->itemsTable->rowCount());
@@ -355,6 +356,11 @@ void ZEditParamLayoutDlg::onComboTableItemsCellChanged(int row, int column)
         if (pControl) {
             pControl->clear();
             pControl->addItems(lst);
+            if (lst.contains(value)) {
+                pControl->setCurrentText(value);
+            } else {
+                proxyModelSetData(layerIdx, lst[0], ROLE_PARAM_VALUE);
+            }
         }
     }
 }
@@ -369,8 +375,10 @@ void ZEditParamLayoutDlg::onParamTreeDeleted()
 {
     if (m_ui->itemsTable->hasFocus()) {
         int row = m_ui->itemsTable->currentRow();
-        if (row < m_ui->itemsTable->rowCount() - 1)
+        if (row < m_ui->itemsTable->rowCount() - 1) {
             m_ui->itemsTable->removeRow(row);
+            onComboTableItemsCellChanged(row, 0);
+        }
     } else {
         QModelIndex idx = m_ui->paramsView->currentIndex();
         bool bEditable = m_proxyModel->isEditable(idx);
@@ -598,9 +606,18 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem)
         if (pros.find("items") != pros.end()) {
                 const QStringList &items = pros["items"].toStringList();
                 m_ui->itemsTable->setRowCount(items.size() + 1);
+                QString value = pItem->data(ROLE_PARAM_VALUE).toString();
                 for (int r = 0; r < items.size(); r++) {
-                QTableWidgetItem *newItem = new QTableWidgetItem(items[r]);
-                m_ui->itemsTable->setItem(r, 0, newItem);
+                    QTableWidgetItem *newItem = new QTableWidgetItem(items[r]);
+                    m_ui->itemsTable->setItem(r, 0, newItem);
+                    QLayoutItem *pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+                    if (pLayoutItem) {
+                        QComboBox *pControl = qobject_cast<QComboBox *>(pLayoutItem->widget());
+                        if (pControl) {
+                            pControl->setCurrentText(value);
+                            proxyModelSetData(pItem->index(), value, ROLE_PARAM_VALUE);
+                        }
+                    }
                 }
         } else {
                 m_ui->itemsTable->setRowCount(1);
