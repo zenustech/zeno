@@ -495,11 +495,18 @@ inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
     std::string native_path = std::filesystem::u8path(path).string();
-    std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
-    if(g_tex.count(path) && g_tex_last_write_time[path] == ftime) {
-        return;
+    if (std::filesystem::exists(native_path)) {
+        std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
+        if(g_tex.count(path) && g_tex_last_write_time[path] == ftime) {
+            return;
+        }
+        g_tex_last_write_time[path] = ftime;
     }
-    g_tex_last_write_time[path] = ftime;
+    else {
+        if(g_tex.count(path)) {
+            return;
+        }
+    }
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
 

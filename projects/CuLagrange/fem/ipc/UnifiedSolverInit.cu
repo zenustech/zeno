@@ -472,19 +472,42 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
     auto cudaPol = zs::cuda_exec();
 
     coOffset = sfOffset = seOffset = svOffset = 0;
+
+    std::array<int, 3> weightedAxis{0, 0, 0};
     for (auto primPtr : zsprims) {
         ///
         /// @note order once in the beginning for the moment
         ///
-        auto bv = primPtr->computeBoundingVolume(cudaPol, "x");
-        primPtr->orderByMortonCode(cudaPol, bv);
+        ZenoParticles::bv_t bv;
 
+        bool isSimulatedObject = true;
         if (primPtr->category == ZenoParticles::category_e::curve) {
+            bv = primPtr->computeBoundingVolume(cudaPol, "x");
+            primPtr->orderByMortonCode(cudaPol, bv);
             prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<2>{});
-        } else if (primPtr->category == ZenoParticles::category_e::surface)
+        } else if (primPtr->category == ZenoParticles::category_e::surface) {
+            bv = primPtr->computeBoundingVolume(cudaPol, "x");
+            primPtr->orderByMortonCode(cudaPol, bv);
             prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<3>{});
-        else if (primPtr->category == ZenoParticles::category_e::tet)
+        } else if (primPtr->category == ZenoParticles::category_e::tet) {
+            bv = primPtr->computeBoundingVolume(cudaPol, "x");
+            primPtr->orderByMortonCode(cudaPol, bv);
             prims.emplace_back(*primPtr, coOffset, sfOffset, seOffset, svOffset, zs::wrapv<4>{});
+        } else
+            isSimulatedObject = false;
+
+        if (isSimulatedObject) {
+            prims.back().bv = bv;
+            auto axis = prims.back().getPrincipalAxis();
+            weightedAxis[axis] += prims.back().getVerts().size();
+        }
+        principalAxis = 0;
+        T extent = bv._max[0] - bv._min[0];
+        for (int d = 1; d != 3; ++d)
+            if (auto ext = bv._max[d] - bv._min[d]; ext > extent) {
+                extent = ext;
+                principalAxis = d;
+            }
     }
     numDofs = coOffset;
     if (hasBoundary())
@@ -743,19 +766,23 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.build(pol, bvs);
+        stBvs.build(pol, bvs, principalAxis, false);
 
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.build(pol, bvs);
+        seBvs.build(pol, bvs, principalAxis, false);
     }
     if (hasBoundary()) {
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
         bouStBvh.build(pol, bvs);
+        bouStBvs.build(pol, bvs, principalAxis, false);
 
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.build(pol, bvs);
+        bouSeBvs.build(pol, bvs, principalAxis, false);
     }
 
     /// @note update whole bounding box, but the first one may be done during the initial morton code ordering

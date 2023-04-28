@@ -756,9 +756,33 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
         {
             QModelIndex outSockIdx = idx.data(ROLE_OUTSOCK_IDX).toModelIndex();
             QModelIndex inSockIdx = idx.data(ROLE_INSOCK_IDX).toModelIndex();
-            const QString& outSockPath = outSockIdx.data(ROLE_OBJPATH).toString();
-            const QString& inSockPath = inSockIdx.data(ROLE_OBJPATH).toString();
+            QString outSockPath = outSockIdx.data(ROLE_OBJPATH).toString();
+            QString inSockPath = inSockIdx.data(ROLE_OBJPATH).toString();
+            if (oldGraphsToNew.find(inNode) != oldGraphsToNew.end()) {
+                QString newId = oldGraphsToNew[inNode][ROLE_OBJID].toString();
+                QString oldId = UiHelper::getSockNode(inSockPath);
+                inSockPath.replace(oldId, newId);
+            }
+            if (oldGraphsToNew.find(outNode) != oldGraphsToNew.end()) {
+                QString newId = oldGraphsToNew[outNode][ROLE_OBJID].toString();
+                QString oldId = UiHelper::getSockNode(outSockPath);
+                outSockPath.replace(oldId, newId);
+            }
             links.append(EdgeInfo(outSockPath, inSockPath));
+        }
+    }
+    for (QMap<QString, NODE_DATA>::const_iterator it = oldGraphsToNew.cbegin(); it != oldGraphsToNew.cend(); it++) {
+        const QString &ident = it.key();
+        if (nodes.find(ident) != nodes.end()) {
+            NODE_DATA newData = it.value();
+            NODE_DATA oldData = nodes[ident];
+            oldData[ROLE_OBJID] = newData[ROLE_OBJID];
+            oldData[ROLE_OBJNAME] = newData[ROLE_OBJNAME];
+
+            newData = oldData;
+
+            nodes.remove(ident);
+            nodes.insert(newData[ROLE_OBJID].toString(), newData);
         }
     }
 

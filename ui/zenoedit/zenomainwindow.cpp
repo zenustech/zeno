@@ -1408,7 +1408,7 @@ void ZenoMainWindow::save()
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
     {
-        QMessageBox msgBox(QMessageBox::Information, "", QString::fromLocal8Bit("当前zsg为旧格式文件，为了确保不被新格式覆盖，只能通过“另存为”操作保存为新格式"));
+        QMessageBox msgBox(QMessageBox::Information, "", tr("The format of current zsg is old. To keep this file data trackable, we recommand you choose \"Save As\" to save it, as the format of new zsg"));
         msgBox.exec();
         bool ret = saveAs();
         if (ret) {
