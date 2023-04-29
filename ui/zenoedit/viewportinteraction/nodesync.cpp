@@ -27,7 +27,7 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
     QString inSockObj = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
 
     EdgeInfo edge(outSockObj, inSockObj);
-    m_graph_model->addLink(edge, false);
+    m_graph_model->addLink(subgraph, edge, false);
     return searchNode(new_node_id.toStdString());
 }
 

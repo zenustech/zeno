@@ -30,8 +30,8 @@ public:
 
 	virtual int itemCount(const QModelIndex &subGpIdx) const = 0;
 
-	virtual QModelIndex linkIndex(int r) = 0;
-	virtual QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) = 0;
+	virtual QModelIndex linkIndex(const QModelIndex& subgIdx, int r) = 0;
+	virtual QModelIndex linkIndex(const QModelIndex& subgIdx, const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) = 0;
 
 	virtual void addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
     virtual void setNodeData(const QModelIndex& nodeIndex, const QModelIndex& subGpIdx, const QVariant& value, int role) = 0;
@@ -43,10 +43,10 @@ public:
 			bool enableTransaction = false) = 0;
 	virtual void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 
-	virtual QModelIndex addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) = 0;
-	virtual QModelIndex addLink(const EdgeInfo& info, bool enableTransaction = false) = 0;
+	virtual QModelIndex addLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) = 0;
+	virtual QModelIndex addLink(const QModelIndex& subgIdx, const EdgeInfo& info, bool enableTransaction = false) = 0;
 	virtual void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) = 0;
-	virtual void removeLink(const EdgeInfo& linkIdx, bool enableTransaction = false) = 0;
+	virtual void removeLink(const QModelIndex& subgIdx, const EdgeInfo& linkIdx, bool enableTransaction = false) = 0;
 	virtual void removeSubGraph(const QString& name) = 0;
 	virtual QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links, const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false) = 0;
     virtual bool IsSubGraphNode(const QModelIndex& nodeIdx) const = 0;
@@ -97,7 +97,7 @@ public:
     virtual void endTransaction() = 0;
     virtual void beginApiLevel() = 0;
 	virtual void endApiLevel() = 0;
-	virtual LinkModel* linkModel() const = 0;
+	virtual LinkModel* linkModel(const QModelIndex& subgIdx) const = 0;
 	virtual QModelIndexList findSubgraphNode(const QString& subgName) = 0;
 	virtual int ModelSetData(
 			const QPersistentModelIndex& idx,

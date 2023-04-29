@@ -180,8 +180,6 @@ QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOpti
 {
     QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(QStyledItemDelegate::createEditor(parent, option, index));
     ZASSERT_EXIT(pLineEdit, nullptr);
-    SubgEditValidator* pValidator = new SubgEditValidator;
-    pLineEdit->setValidator(pValidator);
     return pLineEdit;
 }
 

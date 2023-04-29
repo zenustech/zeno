@@ -151,8 +151,8 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     connect(pGraphsModel, SIGNAL(_rowsInserted(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsInserted(const QModelIndex&, const QModelIndex&, int, int)));
 
     //link sync:
-    QAbstractItemModel* pLinkModel = pGraphsModel->linkModel();
-    connect(pGraphsModel, &IGraphsModel::linkInserted, this, &ZenoSubGraphScene::onLinkInserted);
+    QAbstractItemModel* pLinkModel = pGraphsModel->linkModel(m_subgIdx);
+    connect(pLinkModel, &QAbstractItemModel::rowsInserted, this, &ZenoSubGraphScene::onLinkInserted);
     connect(pLinkModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
 }
 
@@ -284,10 +284,11 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     }
 }
 
-void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
+void ZenoSubGraphScene::onLinkInserted(const QModelIndex& parent, int first, int last)
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    QModelIndex linkIdx = pGraphsModel->linkIndex(first);
+    QModelIndex linkIdx = pGraphsModel->linkIndex(m_subgIdx, first);
+    ZASSERT_EXIT(linkIdx.isValid());
     viewAddLink(linkIdx);
 }
 
@@ -327,7 +328,7 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
 void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex&, int first, int last)
 {
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-	QModelIndex linkIdx = pGraphsModel->linkIndex(first);
+    QModelIndex linkIdx = pGraphsModel->linkIndex(m_subgIdx, first);
 	ZASSERT_EXIT(linkIdx.isValid());
     viewRemoveLink(linkIdx);
 }
@@ -772,7 +773,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     pGraphsModel->removeLink(linkIdx, true);
             }
 
-            pGraphsModel->addLink(fromSockIdx, toSockIdx, true);
+            pGraphsModel->addLink(m_subgIdx, fromSockIdx, toSockIdx, true);
             return;
         }
     }

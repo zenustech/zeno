@@ -202,7 +202,7 @@ ZENO_ERROR Zeno_AddLink(ZENO_HANDLE hSubg,
     NodeParamModel* outNodeParams = QVariantPtr<NodeParamModel>::asPtr(outIdx.data(ROLE_NODE_PARAMS));
     QModelIndex outSockIdx = outNodeParams->getParam(PARAM_OUTPUT, QString::fromStdString(outSock));
 
-    pModel->addLink(outSockIdx, inSockIdx);
+    pModel->addLink(subgIdx, outSockIdx, inSockIdx);
     return Err_NoError;
 }
 
@@ -222,7 +222,12 @@ ZENO_ERROR Zeno_RemoveLink(ZENO_HANDLE hSubg,
     if (!inIdx.isValid())
         return Err_NodeNotExist;
 
-    QModelIndex linkIdx = pModel->linkIndex(outIdx.data(ROLE_OBJID).toString(),
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
+    if (!subgIdx.isValid())
+        return Err_SubgNotExist;
+
+    QModelIndex linkIdx = pModel->linkIndex(subgIdx,
+                                            outIdx.data(ROLE_OBJID).toString(),
                                             QString::fromStdString(outSock),
                                             inIdx.data(ROLE_OBJID).toString(),
                                             QString::fromStdString(inSock));

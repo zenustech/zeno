@@ -223,6 +223,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
 
     int row = index.row();
     QString id = m_row2Key[row];
+    QString name = m_nodes[id].objCls;
     ZASSERT_EXIT(!id.isEmpty(), false);
     for (int r = row + 1; r < rowCount(); r++)
     {
@@ -234,6 +235,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     m_row2Key.remove(rowCount() - 1);
     m_key2Row.remove(id);
     m_nodes.remove(id);
+    m_name2identLst[name].remove(id);
 
     uint32_t numId = m_str2numId[id];
     m_num2strId.remove(numId);
@@ -667,6 +669,8 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
     m_num2strId[ident] = id;
     m_str2numId[id] = ident;
 
+    m_name2identLst[name].insert(id);
+
     _NodeItem& item = m_nodes[id];
     QModelIndex nodeIdx = index(row, 0, QModelIndex());
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
@@ -707,12 +711,17 @@ QString SubGraphModel::name() const
 
 void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& newName)
 {
-    for (int i = 0; i < rowCount(); i++)
+    auto iter = m_name2identLst.find(oldName);
+    if (iter == m_name2identLst.end())
+        return;
+
+    auto sets = iter.value();
+    for (QString ident : sets)
     {
-        const QModelIndex& idx = index(i, 0);
-        if (idx.data(ROLE_OBJNAME).toString() == oldName)
-        {
-            setData(idx, newName, ROLE_OBJNAME);
-        }
+        QModelIndex idx = index(ident);
+        setData(idx, newName, ROLE_OBJNAME);
     }
+
+    m_name2identLst.remove(oldName);
+    m_name2identLst.insert(newName, sets);
 }

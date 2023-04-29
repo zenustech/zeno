@@ -122,6 +122,8 @@ private:
     QHash<int, QString> m_row2Key;
     QHash<QString, _NodeItem> m_nodes;
 
+    QHash<QString, QSet<QString>> m_name2identLst;
+
     QHash<uint32_t, QString> m_num2strId;
     QHash<QString, uint32_t> m_str2numId;
 

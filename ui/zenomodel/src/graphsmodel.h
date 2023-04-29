@@ -57,8 +57,8 @@ public:
     QModelIndex index(const QString& subGraphName) const override;
     QModelIndex indexBySubModel(SubGraphModel* pSubModel) const;
     QModelIndex indexFromPath(const QString& path) override;
-    QModelIndex linkIndex(int r) override;
-    QModelIndex linkIndex(const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) override;
+    QModelIndex linkIndex(const QModelIndex& subgIdx, int r) override;
+    QModelIndex linkIndex(const QModelIndex& subgIdx, const QString& outNode, const QString& outSock, const QString& inNode, const QString& inSock) override;
 
     QModelIndex parent(const QModelIndex& child) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
@@ -86,10 +86,10 @@ public:
 	void removeNode(const QString& nodeid, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
 	void removeNode(int row, const QModelIndex& subGpIdx);
     void removeLink(const QModelIndex& linkIdx, bool enableTransaction = false) override;
-    void removeLink(const EdgeInfo& linkIdx, bool enableTransaction = false) override;
+    void removeLink(const QModelIndex& subgIdx, const EdgeInfo& linkIdx, bool enableTransaction = false) override;
 	void removeSubGraph(const QString& name) override;
-    QModelIndex addLink(const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) override;
-    QModelIndex addLink(const EdgeInfo& info, bool enableTransaction = false) override;
+    QModelIndex addLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock, bool enableTransaction = false) override;
+    QModelIndex addLink(const QModelIndex& subgIdx, const EdgeInfo& info, bool enableTransaction = false) override;
 
 	void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
     void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) override;
@@ -108,7 +108,7 @@ public:
 	void redo() override;
     QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) override;
     QModelIndexList subgraphsIndice() const override;
-    LinkModel* linkModel() const override;
+    LinkModel* linkModel(const QModelIndex& subgIdx) const override;
     QModelIndex getSubgraphIndex(const QModelIndex& linkIdx);
     QRectF viewRect(const QModelIndex& subgIdx) override;
     QList<SEARCH_RESULT> search(const QString &content, int searchOpts, QVector<SubGraphModel *> vec = QVector<SubGraphModel *>()) override;
@@ -171,8 +171,6 @@ private:
 
     void onApiBatchFinished();
 
-    //QVector<SubGraphModel*> m_subGraphs;
-
     QHash<QString, SubGraphModel*> m_subGraphs;
     QHash<QString, int> m_key2Row;
     QHash<int, QString> m_row2Key;
@@ -180,7 +178,10 @@ private:
     QHash<uint32_t, QString> m_id2name;
     QHash<QString, uint32_t> m_name2id;
     QItemSelectionModel* m_selection;
-    LinkModel* m_linkModel;
+
+    //LinkModel* m_linkModel;
+    QHash<QString, LinkModel*> m_linksGroup;
+
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;
     NODE_CATES m_nodesCate;

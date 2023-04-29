@@ -119,7 +119,16 @@ void ModelAcceptor::resolveAllLinks()
             zeno::log_warn("no such output socket {} in {}", outSockName.toStdString(), outNodeCls.toStdString());
             continue;
         }
-        m_pModel->addLink(outSock, inSock);
+
+        QModelIndex nodeIdx = outSock.data(ROLE_NODE_IDX).toModelIndex();
+        if (!nodeIdx.isValid())
+        {
+            zeno::log_warn("cannot pull node index from outSock");
+            continue;
+        }
+        QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+        ZASSERT_EXIT(subgIdx.isValid());
+        m_pModel->addLink(subgIdx, outSock, inSock);
     }
 }
 
