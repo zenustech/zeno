@@ -1543,12 +1543,10 @@ void GraphsModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, int 
 QModelIndex GraphsModel::getSubgraphIndex(const QModelIndex& linkIdx)
 {
 	const QString& inNode = linkIdx.data(ROLE_INNODE).toString();
-    for (auto subg : m_subGraphs)
+    QModelIndex inNodeIdx = linkIdx.data(ROLE_INNODE_IDX).toModelIndex();
+    if (inNodeIdx.isValid())
     {
-        if (subg->index(inNode).isValid())
-        {
-            return _createIndex(subg);
-        }
+        return inNodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
     }
     return QModelIndex();
 }
@@ -1570,9 +1568,13 @@ void GraphsModel::on_linkDataChanged(const QModelIndex& topLeft, const QModelInd
 void GraphsModel::on_linkAboutToBeInserted(const QModelIndex& parent, int first, int last)
 {
      QModelIndex linkIdx = m_linkModel->index(first, 0, parent);
-     const QModelIndex& subgIdx = getSubgraphIndex(linkIdx);
-     if (subgIdx.isValid())
-        emit linkAboutToBeInserted(subgIdx, parent, first, last);
+     if (linkIdx.isValid())
+     {
+         const QModelIndex &subgIdx = getSubgraphIndex(linkIdx);
+         if (subgIdx.isValid())
+             emit linkAboutToBeInserted(subgIdx, parent, first, last);
+     }
+
 }
 
 void GraphsModel::on_linkInserted(const QModelIndex& parent, int first, int last)
