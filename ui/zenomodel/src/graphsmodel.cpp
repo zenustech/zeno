@@ -146,6 +146,11 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
     m_subGraphs.remove(oldName);
     m_subGraphs.insert(newName, pSubModel);
 
+    ZASSERT_EXIT(m_linksGroup.find(oldName) != m_linksGroup.end());
+    LinkModel* pLinkModel = m_linksGroup[oldName];
+    m_linksGroup.remove(oldName);
+    m_linksGroup.insert(newName, pLinkModel);
+
     NODE_DESC desc = m_subgsDesc[oldName];
     m_subgsDesc[newName] = desc;
     m_subgsDesc.remove(oldName);
