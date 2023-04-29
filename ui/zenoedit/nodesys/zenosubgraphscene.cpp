@@ -384,7 +384,15 @@ void ZenoSubGraphScene::select(const QString& id)
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     m_nodes[id]->setSelected(true);
 }
-
+void ZenoSubGraphScene::select(const QStringList& nodes)
+{
+    clearSelection();
+    for (auto ident : nodes)
+    {
+        ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
+        m_nodes[ident]->setSelected(true);
+    }
+}
 void ZenoSubGraphScene::select(const QModelIndexList &indexs) 
 {
     clearSelection();
