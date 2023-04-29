@@ -385,7 +385,45 @@ struct Mesh{
         }
         return true;
     }
+    void StringSplitReverse(std::string str, const const char split, std::vector<std::string> & ostrs)
+    {
+        std::istringstream iss(str);
+        std::string token;
+        std::vector<std::string> res(0);
+        while(getline(iss, token, split))
+        {
+            res.push_back(token);
+        }
+        ostrs.resize(0);
+        for(int i=res.size()-1; i>=0;i--)
+        {
+            ostrs.push_back(res[i]);
+        }
+    }
+    void formPath(std::vector<std::string> &tokens)
+    {
+        for(int i=1; i<tokens.size();i++)
+        {
+            tokens[i] = tokens[i] + '/' + tokens[i-1];
+        }
+    }
+    bool findFile(std::string HintPath, std::string origPath, std::string & oPath)
+    {
+        std::vector<std::string> paths;
+        StringSplitReverse(origPath, '/', paths);
+        formPath(paths);
+        for(int i=0; i<paths.size(); i++)
+        {
+            auto filename = HintPath + '/' + paths[i];
+            if(std::filesystem::exists(filename.c_str()))
+            {
+                oPath = filename;
+                return true;
+            }
+        }
+        return false;
 
+    }
     void readMaterial(aiMesh* mesh, std::string relMeshName, aiScene const* scene, float *uvscale){
         /*  assimp - v5.0.1
 
