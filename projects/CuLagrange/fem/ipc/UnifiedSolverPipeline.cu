@@ -915,8 +915,9 @@ void UnifiedIPCSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallStri
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), tagOffset = vtemp.getPropertyOffset(tag),
                                  orderOffset = vtemp.getPropertyOffset("BCorder")] ZS_LAMBDA(int vi) mutable {
             int BCorder = vtemp(orderOffset, vi);
-            for (int d = 0; d != BCorder; ++d)
-                vtemp(tagOffset + d, vi) = 0;
+            if (BCorder != 0)
+                for (int d = 0; d != 3; ++d)
+                    vtemp(tagOffset + d, vi) = 0;
         });
     else
         pol(zs::range(numDofs), [vtemp = proxy<space>({}, vtemp), tagOffset = vtemp.getPropertyOffset(tag),
@@ -925,8 +926,9 @@ void UnifiedIPCSystem::project(zs::CudaExecutionPolicy &pol, const zs::SmallStri
             int BCfixed = vtemp(fixedOffset, vi);
             if (BCfixed) {
                 int BCorder = vtemp(orderOffset, vi);
-                for (int d = 0; d != BCorder; ++d)
-                    vtemp(tagOffset + d, vi) = 0;
+                if (BCorder != 0)
+                    for (int d = 0; d != 3; ++d)
+                        vtemp(tagOffset + d, vi) = 0;
             }
         });
 }

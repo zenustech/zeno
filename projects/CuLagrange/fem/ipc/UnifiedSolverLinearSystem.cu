@@ -67,7 +67,7 @@ template <typename SpmatT, typename VecTM, typename VecTI,
           zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
                             VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
 static __forceinline__ __device__ void test_update_hessian(SpmatT &spmat, const VecTI &inds, const VecTM &hess,
-                                                      bool has_work = true) {
+                                                           bool has_work = true) {
     using namespace zs;
     constexpr int codim = VecTI::extent;
     if (has_work)
@@ -91,7 +91,7 @@ template <typename SpmatT, typename VecTM, typename VecTI,
           zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
                             VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
 static __forceinline__ __device__ void update_hessian(SpmatT &spmat, const VecTI &inds, const VecTM &hess,
-                                                           bool has_work = true) {
+                                                      bool has_work = true) {
     using namespace zs;
     constexpr int codim = VecTI::extent;
 
@@ -376,11 +376,7 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
             vtemp.tuple(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) -
                                                m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
 
-        /// hesssian
-        // auto Hi = mat3::identity() * m;
-        // for (int d = 0; d != BCorder; ++d)
-        //     Hi.val(d * 4) = 0;
-
+#if 1
         if (BCorder == 0) {
             auto loc = spmat._ptrs[i];
             auto &mat = spmat._vals[loc];
@@ -388,7 +384,14 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
             mat.val(4) += m;
             mat.val(8) += m;
         }
-        // update_hessian(spmat, zs::vec<int, 1>{i}, Hi, BCorder != 3);
+#else
+        /// hesssian
+        auto Hi = mat3::identity() * m;
+        if (BCorder != 0)
+            for (int d = 0; d != 3; ++d)
+                Hi.val(d * 4) = 0;
+        update_hessian(spmat, zs::vec<int, 1>{i}, Hi, BCorder == 0);
+#endif
     });
     /// @note force field gradient
     if (vtemp.hasProperty("extf")) {
