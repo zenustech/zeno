@@ -687,7 +687,8 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dic
     }
     else if (paramType == "list")
     {
-        if (!desc.categories.contains("list"))
+        PARAM_CLASS cls = pItem->getParamClass();
+        if (!desc.categories.contains("list") && cls == PARAM_INPUT)
             pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
     } 
     else if (paramType == "group-line") 

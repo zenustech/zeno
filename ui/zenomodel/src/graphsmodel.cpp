@@ -227,7 +227,8 @@ QModelIndex GraphsModel::index(int row, int column, const QModelIndex& parent) c
 QModelIndex GraphsModel::index(const QString& subGraphName) const
 {
     auto itRow = m_key2Row.find(subGraphName);
-    ZASSERT_EXIT(itRow != m_key2Row.end(), QModelIndex());
+    if (itRow == m_key2Row.end())
+        return QModelIndex();
     int row = itRow.value();
     uint32_t uuid = m_name2id[subGraphName];
     return createIndex(row, 0, uuid);
@@ -776,24 +777,24 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     {
         QModelIndex newIdx;
         QModelIndex idx = pModel->index(r, 0);
-        NODE_DATA data;
+        NODE_DATA nodeData;
         if (IsSubGraphNode(idx))
         {
             const QString& snodeId = idx.data(ROLE_OBJID).toString();
             const QString& ssubnetName = idx.data(ROLE_OBJNAME).toString();
             SubGraphModel* psSubModel = subGraph(ssubnetName);
             ZASSERT_EXIT(psSubModel, NODE_DATA());
-            data = _fork(ssubnetName);
-            const QString& subgNewNodeId = data[ROLE_OBJID].toString();
+            nodeData = _fork(ssubnetName);
+            const QString& subgNewNodeId = nodeData[ROLE_OBJID].toString();
 
             nodes.insert(snodeId, pModel->nodeData(idx));
-            oldGraphsToNew.insert(snodeId, data);
+            oldGraphsToNew.insert(snodeId, nodeData);
         }
         else
         {
             data = pModel->nodeData(idx);
             const QString &ident = idx.data(ROLE_OBJID).toString();
-            nodes.insert(ident, data);
+            nodes.insert(ident, nodeData);
         }
     }
 
