@@ -462,7 +462,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 m_transformer->clear();
                 m_transformer->addObject(m_picker->get_picked_prims());
                 std::cout<<"selected items:"<<m_picker->get_picked_prims().size()<<"\n";
-                QStringList nodes;
+                std::vector<QString> nodes;
                 QString sgname;
                 for(auto prim:m_picker->get_picked_prims())
                 {

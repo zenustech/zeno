@@ -29,7 +29,7 @@ public:
     QModelIndexList selectNodesIndice() const;
     QModelIndexList selectLinkIndice() const;
     void select(const QString& id);
-    void select(const QStringList& nodes);
+    void select(const std::vector<QString>& nodes);
     void select(const QModelIndexList &nodes);
     void markError(const QString& nodeid);
     void clearMark();

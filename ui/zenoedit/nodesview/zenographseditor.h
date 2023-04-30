@@ -30,7 +30,7 @@ public:
     ~ZenoGraphsEditor();
     void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
-    void selectTab(const QString& subGraphName, const QString& path, const QStringList& objId);
+    void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
 
 public slots:
 	void resetModel(IGraphsModel* pModel);

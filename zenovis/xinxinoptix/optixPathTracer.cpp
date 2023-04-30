@@ -2028,10 +2028,10 @@ void optixupdatematerial(std::vector<bool> const            &markers,
         OptixUtil::rtMaterialShaders.back().has_vdb = markers[i]; 
 
         if(texs.size()>0){
-            std::cout<<"texSize:"<<texs[i].size()<<std::endl;
+            //std::cout<<"texSize:"<<texs[i].size()<<std::endl;
             for(int j=0;j<texs[i].size();j++)
             {
-                std::cout<<"texName:"<<texs[i][j]<<std::endl;
+                //std::cout<<"texName:"<<texs[i][j]<<std::endl;
                 OptixUtil::rtMaterialShaders[i].addTexture(j, texs[i][j]);
             }
         }

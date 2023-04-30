@@ -393,7 +393,7 @@ void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
 	const QString& subgraphName = index.data().toString();
     activateTab(subgraphName);
 }
-void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& path, const QStringList& objIds)
+void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& path, std::vector<QString> & objIds)
 {
     auto graphsMgm = zenoApp->graphsManagment();
     IGraphsModel* pModel = graphsMgm->currentModel();
