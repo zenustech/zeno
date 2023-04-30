@@ -81,7 +81,11 @@ public:
 	virtual NODE_CATES getCates() = 0;
 	virtual QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& idx) = 0;
 	virtual QModelIndexList subgraphsIndice() const = 0;
-	virtual QList<SEARCH_RESULT> search(const QString& content, int searchOpts, QVector<SubGraphModel *> vec = QVector<SubGraphModel *>()) = 0;
+	virtual QList<SEARCH_RESULT> search(
+					const QString& content,
+					int searchType,
+					int searchOpts,
+					QVector<SubGraphModel *> vec = QVector<SubGraphModel *>()) = 0;
 	virtual void removeGraph(int idx) = 0;
 	virtual QString fileName() const = 0;
 	virtual QString filePath() const = 0;

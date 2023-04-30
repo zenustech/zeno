@@ -37,9 +37,9 @@ std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& pri
 }
 
 std::optional<NodeLocation> NodeSyncMgr::searchNode(const std::string& node_id) {
-    auto search_result = m_graph_model->search(node_id.c_str(),
-                                               SEARCH_NODEID);
-    if (search_result.empty()) return {};
+    auto search_result = m_graph_model->search(node_id.c_str(), SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
+    if (search_result.empty())
+        return {};
     return NodeLocation(search_result[0].targetIdx,
                         search_result[0].subgIdx);
 }
@@ -76,8 +76,7 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
     for (const auto& linked_edge : linked_edges) {
         auto next_node_id = UiHelper::getSockNode(linked_edge.inSockPath);
         if (next_node_id.contains(node_type.c_str())) {
-            auto search_result = m_graph_model->search(next_node_id,
-                                                       SEARCH_NODEID);
+            auto search_result = m_graph_model->search(next_node_id, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
             if (search_result.empty()) return {};
             auto linked_node = search_result[0].targetIdx;
             auto linked_subgraph = search_result[0].subgIdx;
