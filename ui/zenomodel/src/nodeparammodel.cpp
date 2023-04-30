@@ -112,6 +112,8 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         const QString& name = param->m_name;
 
         OUTPUT_SOCKET outSocket;
+        outSocket.retIdx = param->index();
+
         outSocket.info.defaultValue = param->data(ROLE_PARAM_VALUE);
         outSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
         outSocket.info.name = name;
