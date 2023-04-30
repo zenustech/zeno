@@ -1520,7 +1520,7 @@ QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QMod
     SubGraphModel* pModel = subGraph(subgIdx.row());
     QVector<SubGraphModel *> vec;
     vec << pModel;
-    QList<SEARCH_RESULT> results = search(objName, SEARCH_ARGS | SEARCH_NODECLS | SEARCH_NODEID | SEARCH_CUSTOM_NAME, vec);
+    QList<SEARCH_RESULT> results = search(objName, SEARCH_ARGS | SEARCH_NODECLS | SEARCH_NODEID | SEARCH_CUSTOM_NAME, SEARCH_FUZZ, vec);
     QModelIndexList list;
     for (auto res : results) 
     {
@@ -1805,14 +1805,14 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     }
 }
 
-QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts, QVector<SubGraphModel *> vec)
+QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType, int searchOpts, QVector<SubGraphModel*> vec)
 {
     QList<SEARCH_RESULT> results;
     if (content.isEmpty())
         return results;
 
     QSet<QString> nodes;
-    if (searchOpts & SEARCH_SUBNET)
+    if (searchType & SEARCH_SUBNET)
     {
         QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
         for (const QModelIndex &subgIdx : lst)
@@ -1833,7 +1833,7 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts,
     for (auto subgInfo : vec) {
         SubGraphModel *pModel = subgInfo;
         QModelIndex subgIdx = indexBySubModel(pModel);
-        if ((searchOpts & SEARCH_ARGS) && content.size() >= sStartMatch) {
+        if ((searchType & SEARCH_ARGS) && content.size() >= sStartMatch) {
             for (int r = 0; r < pModel->rowCount(); r++) {
                 QModelIndex nodeIdx = pModel->index(r, 0);
                 INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
@@ -1868,8 +1868,15 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts,
                 }
             }
         }
-        if (searchOpts & SEARCH_NODEID) {
-            QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJID, content, -1, Qt::MatchContains);
+        if (searchType & SEARCH_NODEID) {
+            QModelIndexList lst;
+            if (searchOpts == SEARCH_MATCH_EXACTLY) {
+                QModelIndex idx = pModel->index(content);
+                if (idx.isValid())
+                    lst.append(idx);
+            } else {
+                lst = pModel->match(pModel->index(0, 0), ROLE_OBJID, content, -1, Qt::MatchContains);
+            }
             if (!lst.isEmpty()) {
                 for (const QModelIndex &nodeIdx : lst) {
                     SEARCH_RESULT result;
@@ -1881,7 +1888,7 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts,
                 }
             }
         }
-        if (searchOpts & SEARCH_NODECLS) {
+        if (searchType & SEARCH_NODECLS) {
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
             for (const QModelIndex &nodeIdx : lst) {
                 if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
@@ -1895,7 +1902,7 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchOpts,
                 nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
             }
         }
-        if (searchOpts & SEARCH_CUSTOM_NAME) {
+        if (searchType & SEARCH_CUSTOM_NAME) {
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_CUSTOM_OBJNAME, content, -1, Qt::MatchContains);
             for (const QModelIndex &nodeIdx : lst) {
                 if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {

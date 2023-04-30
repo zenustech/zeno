@@ -30,6 +30,13 @@ enum SearchType
     SEARCHALL = SEARCH_NODECLS | SEARCH_NODEID | SEARCH_SUBNET | SEARCH_ANNO | SEARCH_ARGS | SEARCH_CUSTOM_NAME
 };
 
+enum SearchOpt
+{
+    SEARCH_FUZZ = 1 << 0,
+    SEARCH_MATCH_EXACTLY = 1 << 1,
+    SEARCH_CASE_SENSITIVE= 1 << 2,
+};
+
 struct SEARCH_RESULT
 {
     SearchType type;

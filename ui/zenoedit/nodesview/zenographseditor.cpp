@@ -504,7 +504,7 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 objId = lst.last();
             }
 
-            QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID);
+            QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
             for (int i = 0; i < results.length(); i++)
             {
                 const SEARCH_RESULT& res = results[i];
@@ -549,7 +549,7 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
 
 void ZenoGraphsEditor::onSearchEdited(const QString& content)
 {
-    QList<SEARCH_RESULT> results = m_model->search(content, m_searchOpts);
+    QList<SEARCH_RESULT> results = m_model->search(content, m_searchOpts, SEARCH_FUZZ);
 
     QStandardItemModel* pModel = new QStandardItemModel(this);
 

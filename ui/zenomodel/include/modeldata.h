@@ -207,6 +207,7 @@ Q_DECLARE_METATYPE(INPUT_SOCKETS)
 struct OUTPUT_SOCKET
 {
     SOCKET_INFO info;
+    QPersistentModelIndex retIdx;   //return idx by core.
 };
 Q_DECLARE_METATYPE(OUTPUT_SOCKET)
 typedef FuckQMap<QString, OUTPUT_SOCKET> OUTPUT_SOCKETS;
