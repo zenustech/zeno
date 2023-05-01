@@ -509,7 +509,7 @@ struct Mesh{
                         std::string truePath;
                         findFile(hintPath, combinePath, truePath);
                         //std::cout << "hintPath:" << hintPath << "\n";
-                        std::cout << "truePath:" << truePath << "\n";
+                        //std::cout << "truePath:" << truePath << "\n";
                         //std::cout << "fbxPath:" << fbxPath << "\n";
                         //std::cout << "combinePath:" << combinePath << "\n";
                         combinePath = truePath;

@@ -147,7 +147,11 @@ void ReadFBXPrim::onEditClicked()
 
             ZENO_HANDLE forkedSubg = 0;
             ZENO_HANDLE forkedNode = 0;
-            std::string fbxPartGraphName = fbxName+"_"+matName;
+            std::string concatname = matName;
+            if (matName.find(':') != std::string::npos) {
+                std::replace(concatname.begin(), concatname.end(), ':', '_');
+            }
+            std::string fbxPartGraphName = fbxName+"_"+concatname;
             ZENO_ERROR ret = Zeno_ForkGraph(hGraph, "FBXPart", forkedSubg, forkedNode);
             ZASSERT_EXIT(!ret);ZASSERT_EXIT(forkedSubg);ZASSERT_EXIT(forkedNode);
 

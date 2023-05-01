@@ -66,7 +66,7 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput)
+ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput, QModelIndexList selNodes)
     : ZenoLink(nullptr)
     , m_fixedSocket(socketItem)
     , m_fixedPos(fixedPos)
@@ -74,6 +74,7 @@ ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF f
     , m_bfixInput(fixInput)
     , m_nodeId(nodeId)
     , m_adsortedSocket(nullptr)
+    , m_selNodes(selNodes)
 {
 }
 
@@ -99,6 +100,11 @@ void ZenoTempLink::setOldLink(const QPersistentModelIndex& link)
 QPersistentModelIndex ZenoTempLink::oldLink() const
 {
     return m_oldLink;
+}
+
+QModelIndexList ZenoTempLink::selNodes() const
+{
+    return m_selNodes;
 }
 
 void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)

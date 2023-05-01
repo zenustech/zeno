@@ -30,10 +30,12 @@ public:
     QModelIndexList selectLinkIndice() const;
     void select(const QString& id);
     void select(const std::vector<QString>& nodes);
+    void select(const QStringList& nodes);
     void select(const QModelIndexList &nodes);
     void markError(const QString& nodeid);
     void clearMark();
     QGraphicsItem* getNode(const QString& id);
+    void collectNodeSelChanged(const QString& ident, bool bSelected);
 
     // FIXME temp function for merge
     void selectObjViaNodes();
@@ -43,6 +45,7 @@ protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
 
@@ -64,6 +67,7 @@ private slots:
     void onNodePosChanged();
 
 private:
+    void afterSelectionChanged();
     void onSocketAbsorted(const QPointF& mousePos);
     void viewAddLink(const QModelIndex& linkIdx);
     void viewRemoveLink(const QModelIndex& linkIdx);
@@ -77,6 +81,8 @@ private:
     QStringList m_errNodes;        //the nodes which have been marked "error" at run time.
     QMap<QString, ZenoFullLink*> m_links;
     ZenoTempLink* m_tempLink;
+
+    QVector<QPair<QString, bool>> m_selChanges;
 };
 
 #endif
