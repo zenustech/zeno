@@ -792,7 +792,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
         }
         else
         {
-            data = pModel->nodeData(idx);
+            nodeData = pModel->nodeData(idx);
             const QString &ident = idx.data(ROLE_OBJID).toString();
             nodes.insert(ident, nodeData);
         }
@@ -1350,15 +1350,13 @@ void GraphsModel::removeSubGraph(const QString& name)
 QModelIndexList GraphsModel::findSubgraphNode(const QString& subgName)
 {
     QModelIndexList nodes;
-    //temp code: test fork.
-    //return nodes;
-    auto iter = m_subGraphs.find(subgName);
-    if (iter == m_subGraphs.end())
-        return nodes;
-
-    auto subg = iter.value();
-    auto results = subg->match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchExactly);
-    nodes.append(results);
+    for (SubGraphModel* subg : m_subGraphs)
+    {
+        if (subg->name() != subgName)
+        {
+            nodes.append(subg->getNodesByCls(subgName));
+        }
+    }
     return nodes;
 }
 
