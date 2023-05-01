@@ -661,9 +661,14 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
     } while (true);
     /// ee
     if (enableContactEE) {
-        if (true) {
+        if (true) { //withBoundary
             const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
             snapshot(csEE);
+
+            zs::CppTimer timer;
+            if (!withBoundary)
+                timer.tick();
+
             do {
                 pol(Collapse{seInds.size()},
                     [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
@@ -703,6 +708,9 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
                     break;
                 resizeAndRewind(csEE);
             } while (true);
+
+            if (!withBoundary)
+                timer.tock("bvh ee self ccd (bvh)");
         } else {
             findCCDConstraintsImplEE(pol, alpha, xi);
         }
@@ -718,59 +726,58 @@ void UnifiedIPCSystem::findCCDConstraintsImplEE(zs::CudaExecutionPolicy &pol, T 
     /// ee
     if (enableContactEE) {
         const auto &sebvs = seBvs;
-        zs::Vector<int> flag{vtemp.get_allocator(), 1};
-        zs::Vector<int> ptrs{vtemp.get_allocator(), sebvs.getNumNodes()};
-        pol(enumerate(ptrs),
-            [sebvs = proxy<space>(sebvs), n = sebvs.getNumNodes(), axis = principalAxis] ZS_LAMBDA(int i, int &ptr) {
-                if (i + 1 >= n)
-                    ptr = -1;
-                else if (sebvs._bvs(axis + 3, i) < sebvs._bvs(axis, i + 1))
-                    ptr = -1;
-                else
-                    ptr = i + 1; // search starts from the next along the axis
-            });
 
         zs::CppTimer timer;
         timer.tick();
+        auto offset = csEE.getCount();
         do {
-            flag.setVal(0);
-            csEE.reserveFor(seInds.size());
-            pol(range(sebvs.getNumNodes()),
-                [seInds = view<space>(seInds), exclDofs = view<space>(exclDofs), vtemp = view<space>({}, vtemp),
-                 sebvs = proxy<space>(sebvs), flag = view<space>(flag), ptrs = view<space>(ptrs), axis = principalAxis,
-                 csEE = csEE.port(), alpha] ZS_LAMBDA(int i) mutable {
-                    auto j = ptrs[i];
-                    if (j < 0)
-                        return; // search already terminated
-
-                    auto bvi = sebvs._bvs.pack(dim_c<6>, 0, i);
-                    auto sei = sebvs._auxIndices[i];
-                    auto eiInds = seInds.pack(dim_c<2>, 0, sei, int_c);
+#if 0
+            // reference transitional impl
+            pol(Collapse{seInds.size()},
+                [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, seInds),
+                 exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvs = proxy<space>(sebvs),
+                 csEE = csEE.port(), xi, alpha, axis = principalAxis, voffset = 0] __device__(int sei) mutable {
+                    auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
                     if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
                         return;
 
                     bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
 
-                    // auto bvj = sebvs._bvs.pack(dim_c<6>, j);
+#if 1
+                    auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
+                    auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
+                    auto dir0 = vtemp.pack(dim_c<3>, "dir", eiInds[0]);
+                    auto dir1 = vtemp.pack(dim_c<3>, "dir", eiInds[1]);
+                    auto bv = bv_t{get_bounding_box(v0, v0 + alpha * dir0)};
+                    merge(bv, v1);
+                    merge(bv, v1 + alpha * dir1);
+                    bv._min -= xi;
+                    bv._max += xi;
 
-                    bool overlap = true;
-                    if (bvi(axis) > sebvs._bvs(axis + 3, j))
-                        overlap = false;
+                    if constexpr (false) {
+                        int target;
+                        for (int target = 0; target != bvs.numNodes(); ++target)
+                            if (bvs._auxIndices[target] == sei)
+                                break;
+                        // auto bv = bv_t{bvs._bvs.pack(dim_c<3>, 0, target) , bvs._bvs.pack(dim_c<3>, 3, target)};
 
-                    for (int d = 0; overlap && d != 3; ++d) {
-                        if (d == axis)
-                            continue;
-                        if (bvi(d + 3) < sebvs._bvs(d, j))
-                            overlap = false;
-                        else if (bvi(d) > sebvs._bvs(d + 3, j))
-                            overlap = false;
+                        //
+                        auto v = bv._min[axis];
+                        auto loc = bvs.locate(v - 1e-4);
+                        if (loc != target - 1)
+                            printf("searching [%f] wrong ! [back] found: %d, ref: %d\n", v - 1e-4, loc, target - 1);
+                        loc = bvs.locate(v);
+                        if (loc != target)
+                            printf("searching [%f] wrong ! [forward] found: %d, ref: %d\n", v, loc, target);
                     }
-
-                    /// @note broad-phase intersects
-                    if (overlap) {
-                        auto sej = sebvs._auxIndices[j];
-                        auto ejInds = seInds.pack(dim_c<2>, 0, sej, int_c);
-
+#endif
+                    bvs.iter_neighbors(bv, [&](int sej) {
+                        if (sei < sej)
+                            return;
+                        auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c);
+                        if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                            eiInds[1] == ejInds[1])
+                            return;
                         // all affected by sticky boundary conditions
                         if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
                             return;
@@ -778,21 +785,39 @@ void UnifiedIPCSystem::findCCDConstraintsImplEE(zs::CudaExecutionPolicy &pol, T 
                             return;
 
                         csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
-                    }
-
-                    /// @note
-                    if (j + 1 >= sebvs.numNodes()) {
-                        ptrs[i] = -1;
-                    } else if (bvi(axis + 3) < sebvs._bvs(axis, j + 1)) {
-                        ptrs[i] = -1;
-                    } else {
-                        ptrs[i] = j + 1;
-                        flag[0] = 1; // should continue search
-                    }
-                    return;
+                    });
                 });
-            if (flag.getVal() == 0)
+#else
+            // expected impl
+            pol(Collapse{sebvs.getNumNodes()},
+                [seInds = proxy<space>({}, seInds), exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp),
+                 bvs = proxy<space>(sebvs), csEE = csEE.port(), xi, alpha, axis = principalAxis,
+                 voffset = 0] __device__(int ii) mutable {
+                    int sei = bvs._auxIndices[ii];
+                    auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
+                    if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
+                        return;
+
+                    bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
+
+                    bvs.self_iter_neighbors(ii, [&](int sej) {
+                        auto ejInds = seInds.pack(dim_c<2>, "inds", sej, int_c);
+                        if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                            eiInds[1] == ejInds[1])
+                            return;
+                        // all affected by sticky boundary conditions
+                        if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                            return;
+                        if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
+                            return;
+
+                        csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                    });
+                });
+#endif
+            if (allFit(csEE))
                 break;
+            resizeAndRewind(csEE);
         } while (true);
         timer.tock("bvh ee self ccd (bvs)");
     }
