@@ -670,40 +670,70 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
                 timer.tick();
 
             do {
-                pol(Collapse{seInds.size()},
-                    [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
-                     exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
-                     csEE = csEE.port(), xi, alpha, voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
-                        auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
-                        if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
-                            return;
-
-                        bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
-                        auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
-                        auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
-                        auto dir0 = vtemp.pack(dim_c<3>, "dir", eiInds[0]);
-                        auto dir1 = vtemp.pack(dim_c<3>, "dir", eiInds[1]);
-                        auto bv = bv_t{get_bounding_box(v0, v0 + alpha * dir0)};
-                        merge(bv, v1);
-                        merge(bv, v1 + alpha * dir1);
-                        bv._min -= xi;
-                        bv._max += xi;
-                        bvh.iter_neighbors(bv, [&](int sej) {
-                            if (voffset == 0 && sei < sej)
-                                return;
-                            auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
-                            if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
-                                eiInds[1] == ejInds[1])
-                                return;
-                            // all affected by sticky boundary conditions
-                            if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
-                                return;
-                            if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
+                if (withBoundary)
+                    pol(Collapse{seInds.size()},
+                        [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
+                         exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
+                         csEE = csEE.port(), xi, alpha,
+                         voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
+                            auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
+                            if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
                                 return;
 
-                            csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                            bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
+                            auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
+                            auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
+                            auto dir0 = vtemp.pack(dim_c<3>, "dir", eiInds[0]);
+                            auto dir1 = vtemp.pack(dim_c<3>, "dir", eiInds[1]);
+                            auto bv = bv_t{get_bounding_box(v0, v0 + alpha * dir0)};
+                            merge(bv, v1);
+                            merge(bv, v1 + alpha * dir1);
+                            bv._min -= xi;
+                            bv._max += xi;
+                            bvh.iter_neighbors(bv, [&](int sej) {
+                                if (voffset == 0 && sei < sej)
+                                    return;
+                                auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
+                                if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                                    eiInds[1] == ejInds[1])
+                                    return;
+                                // all affected by sticky boundary conditions
+                                if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                                    return;
+                                if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
+                                    return;
+
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                            });
                         });
-                    });
+                else
+                    pol(Collapse{sebvh.getNumLeaves()},
+                        [seInds = proxy<space>({}, seInds), exclDofs = proxy<space>(exclDofs),
+                         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), csEE = csEE.port(),
+                         xi] __device__(int ii) mutable {
+                            int node = bvh._leafInds[ii];
+                            int sei = bvh._auxIndices[node];
+                            auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
+                            if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
+                                return;
+
+                            bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
+
+                            bvh.self_iter_neighbors(ii, [&](int sej) {
+                                // no need for pred [sei < sej] since we're using self_iter_neighbors api
+                                auto ejInds = seInds.pack(dim_c<2>, "inds", sej, int_c);
+                                if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                                    eiInds[1] == ejInds[1])
+                                    return;
+                                // all affected by sticky boundary conditions
+                                if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                                    return;
+                                if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
+                                    return;
+
+                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
+                            });
+                        });
                 if (allFit(csEE))
                     break;
                 resizeAndRewind(csEE);
