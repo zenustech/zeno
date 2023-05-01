@@ -9,6 +9,8 @@ class ZenoSubGraphScene;
 class ZenoSocketItem;
 class ZenoNode;
 
+//#define BASE_ON_CURVE
+
 class ZenoLink : public QGraphicsObject
 {
     Q_OBJECT
