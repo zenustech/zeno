@@ -792,7 +792,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
         }
         else
         {
-            data = pModel->nodeData(idx);
+            nodeData = pModel->nodeData(idx);
             const QString &ident = idx.data(ROLE_OBJID).toString();
             nodes.insert(ident, nodeData);
         }

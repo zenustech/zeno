@@ -265,6 +265,20 @@ struct GraphicsManager {
                         zeno::primTriangulateQuads(prim_in);
                         zeno::primTriangulate(prim_in);
                     }
+                    bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+                    if(prim_in->has_attr("uv") && has_uv == false)
+                    {
+                        auto &uv = prim_in->attr<zeno::vec3f>("uv");
+                        auto &uv0 = prim_in->tris.add_attr<zeno::vec3f>("uv0");
+                        auto &uv1 = prim_in->tris.add_attr<zeno::vec3f>("uv1");
+                        auto &uv2 = prim_in->tris.add_attr<zeno::vec3f>("uv2");
+                        for(size_t i=0; i<prim_in->tris.size();i++)
+                        {
+                            uv0[i]=uv[prim_in->tris[i][0]];
+                            uv1[i]=uv[prim_in->tris[i][1]];
+                            uv2[i]=uv[prim_in->tris[i][2]];
+                        }
+                    }
                     prim_in->add_attr<zeno::vec3f>("uv");
                     bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
@@ -283,7 +297,7 @@ struct GraphicsManager {
                     auto &att_nrm = prim->add_attr<zeno::vec3f>("nrm");
                     auto &att_uv  = prim->add_attr<zeno::vec3f>("uv");
                     auto &att_tan = prim->add_attr<zeno::vec3f>("tang");
-                    bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+                    has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
 
                     std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
                     auto &in_pos   = prim_in->verts;
