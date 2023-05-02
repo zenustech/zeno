@@ -28,6 +28,7 @@ struct VideoRecInfo
         frameRange = { -1, -1 };
     }
 };
+Q_DECLARE_METATYPE(VideoRecInfo);
 
 class Zenovis;
 

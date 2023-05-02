@@ -325,7 +325,7 @@ void ZTabDockWidget::onPrimitiveSelected(const std::unordered_set<std::string>& 
     }
 }
 
-void ZTabDockWidget::newFrameUpdate()
+void ZTabDockWidget::updateLights()
 {
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
