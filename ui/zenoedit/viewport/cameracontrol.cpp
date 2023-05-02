@@ -5,6 +5,7 @@
 #include <zenovis/ObjectsManager.h>
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
+#include <zeno/types/UserData.h>
 
 
 using std::string;
@@ -467,6 +468,13 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 for(auto prim:m_picker->get_picked_prims())
                 {
                     if (!prim.empty()) {
+                        auto primList = scene->objectsMan->pairs();
+                        for (auto const &[key, ptr]: primList) {
+                            if (prim == key) {
+                                auto &ud = ptr->userData();
+                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+                            }
+                        }
                         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(prim);
                         auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
                         auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
