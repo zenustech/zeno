@@ -294,9 +294,16 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
     auto pos = event->pos();
     if (!m_picker)
         return;
-
+    auto scene = m_zenovis->getSession()->get_scene();
     auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
     if (!picked_prim.empty()) {
+        auto primList = scene->objectsMan->pairs();
+        for (auto const &[key, ptr]: primList) {
+            if (picked_prim == key) {
+                auto &ud = ptr->userData();
+                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+            }
+        }
         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
         auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
         auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
@@ -450,6 +457,18 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                         onPrimSelected();
                     m_transformer->clear();
                     m_transformer->addObject(m_picker->get_picked_prims());
+                }
+                for(auto prim:m_picker->get_picked_prims())
+                {
+                    if (!prim.empty()) {
+                        auto primList = scene->objectsMan->pairs();
+                        for (auto const &[key, ptr]: primList) {
+                            if (prim == key) {
+                                auto &ud = ptr->userData();
+                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+                            }
+                        }
+                    }
                 }
             } else {
                 int x0 = m_boundRectStartPos.x();
