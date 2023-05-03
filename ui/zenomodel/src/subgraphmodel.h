@@ -61,6 +61,7 @@ public:
                           const QVariant &value, int hits = 1,
                           Qt::MatchFlags flags =
                           Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
+    QModelIndexList getNodesByCls(const QString& nodeCls);
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
 
     //SubGraphModel

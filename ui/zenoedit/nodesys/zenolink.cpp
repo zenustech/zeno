@@ -24,6 +24,7 @@ QRectF ZenoLink::boundingRect() const
 
 QPainterPath ZenoLink::shape() const
 {
+#ifdef BASE_ON_CURVE
     auto src = getSrcPos();
     auto dst = getDstPos();
     if (hasLastPath && src == lastSrcPos && dst == lastSrcPos)
@@ -45,6 +46,12 @@ QPainterPath ZenoLink::shape() const
     lastDstPos = dst;
     lastPath = path;
     return path;
+#else
+    QPainterPath path;
+    path.moveTo(getSrcPos());
+    path.lineTo(getDstPos());
+    return path;
+#endif
 }
 
 int ZenoLink::type() const

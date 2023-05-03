@@ -608,6 +608,21 @@ QModelIndexList SubGraphModel::match(const QModelIndex& start, int role, const Q
     return _base::match(start, role, value, hits, flags);
 }
 
+QModelIndexList SubGraphModel::getNodesByCls(const QString& nodeCls)
+{
+    QModelIndexList nodes;
+    auto iter = m_name2identLst.find(nodeCls);
+    if (iter != m_name2identLst.end())
+    {
+        for (QString ident : iter.value())
+        {
+            QModelIndex idx = index(ident);
+            nodes.append(idx);
+        }
+    }
+    return nodes;
+}
+
 bool SubGraphModel::itemFromIndex(const QModelIndex &index, _NodeItem& retNode) const
 {
     if (!index.isValid())
