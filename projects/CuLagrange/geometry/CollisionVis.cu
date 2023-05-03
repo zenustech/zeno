@@ -18,6 +18,8 @@
 
 #include "../fem/collision_energy/evaluate_collision.hpp"
 
+#include "kernel/intersection.hpp"
+
 
 #include <iostream>
 
@@ -2483,7 +2485,49 @@ ZENDEFNODE(VisualizeCollision, {{"ZSParticles",{"float","fp_scale","1.0"},{"floa
                                   {"ZSGeometry"}});
 
 
+struct VisualizeSelfIntersections : zeno::INode {
 
+    using T = float;
+    using Ti = int;
+    using dtiles_t = zs::TileVector<T,32>;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using bvh_t = zs::LBvh<3,int,T>;
+    using bv_t = zs::AABBBox<3, T>;
+    using vec3 = zs::vec<T, 3>;
 
+    virtual void apply() override {
+        using namespace zs;
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        const auto& tris  = (*zsparticles)[ZenoParticles::s_surfTriTag];
+        const auto& verts = zsparticles->getParticles();
+
+        constexpr auto cuda_space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();  
+
+        dtiles_t tri_buffer{tris.get_allocator(),{
+            {"inds",3},
+            {"nrm",3}
+        },tris.size()};
+        TILEVEC_OPS::copy(cudaPol,tris,"inds",tri_buffer,"inds");
+
+        if(!calculate_facet_normal(cudaPol,verts,"x",tris,tri_buffer,"nrm")){
+            throw std::runtime_error("fail updating facet normal");
+        }  
+
+        zs::Vector<zs::vec<int,2>> instBuffer{tris.get_allocator(),tris.size() * 8};
+
+        auto nm_insts = retrieve_triangulate_mesh_intersection_list(cudaPol,
+            verts,"x",tri_buffer,verts,"x",tri_buffer,instBuffer,true);
+
+        std::cout << "nm_insts : " << nm_insts << std::endl;
+    }
+};
+ZENDEFNODE(VisualizeSelfIntersections, {{"zsparticles"},
+                                  {
+
+                                    },
+                                  {
+                                  },
+                                  {"ZSGeometry"}});
 
 }

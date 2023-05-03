@@ -983,7 +983,7 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                         }
                     }
 
-                    
+
 
 
                     min_dist = distance;
@@ -1761,11 +1761,11 @@ virtual void apply() override {
                 verts = proxy<space>({},verts)] ZS_LAMBDA(int ti) mutable {
             auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
             bool is_active_tri = true;
-            if(verts.hasProperty("k_active")){
-                for(int i = 0;i != 3;++i)
-                    if(verts("k_active",tri[i]) < (T)0.5)
-                        is_active_tri = false;
-            }
+            // if(verts.hasProperty("k_active")){
+            //     for(int i = 0;i != 3;++i)
+            //         if(verts("k_active",tri[i]) < (T)0.5)
+            //             is_active_tri = false;
+            // }
 
             if(is_active_tri) {
                 auto nrm = tris.pack(dim_c<3>,"nrm",ti);

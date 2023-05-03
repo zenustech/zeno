@@ -44,7 +44,7 @@ namespace zeno {
 
 #define MAX_FP_COLLISION_PAIRS 4
 
-#define USE_SPARSE_MATRIX
+// #define USE_SPARSE_MATRIX
 
 
 template <typename SpmatT, typename VecTM, typename VecTI,
