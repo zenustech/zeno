@@ -49,8 +49,11 @@ signals:
     void recordFinished(QString);
     void recordFailed(QString);
 
-private:
+private slots:
     void endRecToExportVideo();
+    void onRunFrameFinished(int frame);
+
+private:
     Zenovis* getZenovis();
     void disconnectSignal();
 

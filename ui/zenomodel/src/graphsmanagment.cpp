@@ -230,11 +230,7 @@ void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
     if (msg.trimmed().isEmpty())
         return;
 
-    bool ret = m_mutex.tryLock(0);
-    if (!ret)
-        return;
-
-    zeno::scope_exit sp([=]() { m_mutex.unlock(); });
+    std::lock_guard lck(m_mtx);
 
     QStandardItem* item = new QStandardItem(msg);
     item->setData(QtFatalMsg, ROLE_LOGTYPE);
@@ -249,11 +245,7 @@ void GraphsManagment::appendLog(QtMsgType type, QString fileName, int ln, const 
     if (msg.trimmed().isEmpty())
         return;
 
-    bool ret = m_mutex.tryLock(0);
-    if (!ret)
-        return;
-
-    zeno::scope_exit sp([=]() { m_mutex.unlock(); });
+    std::lock_guard lck(m_mtx);
 
     QStandardItem *item = new QStandardItem(msg);
     item->setData(type, ROLE_LOGTYPE);

@@ -17,7 +17,7 @@ public:
 signals:
     void renderIterate(QImage);
     void sig_recordFinished();
-    void sig_frameFinished(int frame);
+    void sig_frameRecordFinished(int frame);
 
 public slots:
     void stop();
@@ -25,8 +25,11 @@ public slots:
     void needUpdateCamera();
     void updateFrame();
     void recordVideo(VideoRecInfo recInfo);
+    void recordOneFrame(VideoRecInfo recInfo, int frame);
 
 private:
+    void recordFrame_impl(VideoRecInfo recInfo, int frame);
+
     Zenovis *m_zenoVis;
     QImage m_renderImg;
     QTimer* m_pTimer;
@@ -56,7 +59,11 @@ signals:
     void resumeWork();
     void sigRecordVideo(VideoRecInfo recInfo);
     void sig_recordFinished();
-    void sig_frameFinished(int frame);
+    void sig_frameRecordFinished(int frame);
+    void sig_frameRunFinished(VideoRecInfo recInfo, int frame);
+
+public slots:
+    void onFrameRunFinished(VideoRecInfo recInfo, int frame);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

@@ -206,6 +206,8 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
             //restore the timer, because it will be stopped by signal of new frame.
             m_pTimer->start(m_sliderFeq);
         }
+        int frame = zeno::getSession().globalComm->maxPlayFrames();
+        emit frameRunFinished(frame);
     }
     else if (!action.isEmpty())
     {
@@ -526,6 +528,7 @@ void DisplayWidget::onRecord() {
                     recInfo.bRecordAfterRun, recInfo.bExportVideo);
         //validation.
 
+        //setup signals issues.
         m_recordMgr.setRecordInfo(recInfo);
 
         bool bRun = !recInfo.bRecordAfterRun;
@@ -561,10 +564,21 @@ void DisplayWidget::onRecord() {
 #endif
         if (!m_bGLView)
         {
-            m_optixView->recordVideo(recInfo);
+            //optix recording.
+            if (bRun)
+            {
+                //and then run.
+                onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+            }
+            else
+            {
+                //triggered:
+                m_optixView->recordVideo(recInfo);
+            }
         }
         else
         {
+            //normal viewport recording.
             if (bRun) {
                 //clear the global Comm first, to avoid play old frames.
                 zeno::getSession().globalComm->clearState();

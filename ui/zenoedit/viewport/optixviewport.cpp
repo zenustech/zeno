@@ -32,6 +32,26 @@ void OptixWorker::updateFrame()
     emit renderIterate(m_renderImg);
 }
 
+void OptixWorker::recordOneFrame(VideoRecInfo recInfo, int frame)
+{
+    //trigger by runner.
+    zeno::scope_exit sp([=] {
+        m_bRecording = false;
+        m_pTimer->start(16);
+    });
+
+    m_bRecording = true;
+    m_pTimer->stop();
+
+    recordFrame_impl(recInfo, frame);
+
+    if (frame == recInfo.frameRange.second)
+    {
+        emit sig_recordFinished();
+    }
+}
+
+
 void OptixWorker::recordVideo(VideoRecInfo recInfo)
 {
     zeno::scope_exit sp([=] {
@@ -44,39 +64,44 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
 
     for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second; frame++)
     {
-        auto record_file = zeno::format("{}/P/{:07d}.jpg", recInfo.record_path.toStdString(), frame);
-        auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
-
-        auto scene = m_zenoVis->getSession()->get_scene();
-        auto old_num_samples = scene->drawOptions->num_samples;
-        scene->drawOptions->num_samples = recInfo.numOptix;
-        //it seems that msaa is used by opengl, but opengl has been removed from optix.
-        scene->drawOptions->msaa_samples = recInfo.numMSAA;
-
-        auto [x, y] = m_zenoVis->getSession()->get_window_size();
-
-        int actualFrame = m_zenoVis->setCurrentFrameId(frame);
-        m_zenoVis->doFrameUpdate();
-        //todo: may be the frame has not been finished, in this case, we have to wait.
-
-        m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
-        m_zenoVis->getSession()->do_screenshot(record_file, extname);
-        m_zenoVis->getSession()->set_window_size(x, y);
-
-        scene->drawOptions->num_samples = old_num_samples;
-        //todo: emit some signal to main thread(ui)
-        emit sig_frameFinished(frame);
-
-        if (1) {
-            //update ui.
-            int w = 0, h = 0;
-            void* data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
-            m_renderImg = QImage((uchar*)data, w, h, QImage::Format_RGBA8888);
-            m_renderImg = m_renderImg.mirrored(false, true);
-            emit renderIterate(m_renderImg);
-        }
+        recordFrame_impl(recInfo, frame);
     }
     emit sig_recordFinished();
+}
+
+void OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
+{
+    auto record_file = zeno::format("{}/P/{:07d}.jpg", recInfo.record_path.toStdString(), frame);
+    auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
+
+    auto scene = m_zenoVis->getSession()->get_scene();
+    auto old_num_samples = scene->drawOptions->num_samples;
+    scene->drawOptions->num_samples = recInfo.numOptix;
+    //it seems that msaa is used by opengl, but opengl has been removed from optix.
+    scene->drawOptions->msaa_samples = recInfo.numMSAA;
+
+    auto [x, y] = m_zenoVis->getSession()->get_window_size();
+
+    int actualFrame = m_zenoVis->setCurrentFrameId(frame);
+    m_zenoVis->doFrameUpdate();
+    //todo: may be the frame has not been finished, in this case, we have to wait.
+
+    m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
+    m_zenoVis->getSession()->do_screenshot(record_file, extname);
+    m_zenoVis->getSession()->set_window_size(x, y);
+
+    scene->drawOptions->num_samples = old_num_samples;
+    //todo: emit some signal to main thread(ui)
+    emit sig_frameRecordFinished(frame);
+
+    if (1) {
+        //update ui.
+        int w = 0, h = 0;
+        void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
+        m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
+        m_renderImg = m_renderImg.mirrored(false, true);
+        emit renderIterate(m_renderImg);
+    }
 }
 
 void OptixWorker::stop()
@@ -150,8 +175,9 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
+    connect(this, &ZOptixViewport::sig_frameRunFinished, m_worker, &OptixWorker::recordOneFrame, Qt::QueuedConnection);
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
-    connect(m_worker, &OptixWorker::sig_frameFinished, this, &ZOptixViewport::sig_frameFinished);
+    connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
 
     m_thdOptix.start();
 }
@@ -199,6 +225,11 @@ void ZOptixViewport::resumeRender()
 void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 {
     emit sigRecordVideo(recInfo);
+}
+
+void ZOptixViewport::onFrameRunFinished(VideoRecInfo recInfo, int frame)
+{
+    emit sig_frameRunFinished(recInfo, frame);
 }
 
 void ZOptixViewport::updateCameraProp(float aperture, float disPlane)

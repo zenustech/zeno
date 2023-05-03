@@ -68,12 +68,12 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         //we can only record on another thread, the optix worker thread.
         ZOptixViewport *pView = pWid->optixViewport();
         ZASSERT_EXIT(pView);
-        bool ret = connect(pView, &ZOptixViewport::sig_frameFinished, this, [=](int frame) {
-            emit frameFinished(frame);
-        });
-        ret = connect(pView, &ZOptixViewport::sig_recordFinished, this, [=]() {
-            endRecToExportVideo();
-        });
+        bool ret = connect(pView, &ZOptixViewport::sig_frameRecordFinished, this, &RecordVideoMgr::frameFinished);
+        ret = connect(pView, &ZOptixViewport::sig_recordFinished, this, &RecordVideoMgr::endRecToExportVideo);
+        if (!m_recordInfo.bRecordAfterRun)
+        {
+            connect(pWid, &DisplayWidget::frameRunFinished, this, &RecordVideoMgr::onRunFrameFinished);
+        }
     }
     else
     {
@@ -81,6 +81,15 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         bool ret = connect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
         ZASSERT_EXIT(ret);
     }
+}
+
+void RecordVideoMgr::onRunFrameFinished(int frame)
+{
+    DisplayWidget *pWid = qobject_cast<DisplayWidget *>(parent());
+    ZASSERT_EXIT(pWid);
+    ZOptixViewport *pView = pWid->optixViewport();
+    ZASSERT_EXIT(pView);
+    pView->onFrameRunFinished(m_recordInfo, frame);
 }
 
 void RecordVideoMgr::endRecToExportVideo()
@@ -129,14 +138,23 @@ void RecordVideoMgr::endRecToExportVideo()
     else
     {
         //todo get the error string from QProcess.
-        emit recordFailed(QString());
+        emit recordFailed(QString(tr("ffmpeg command failed, please whether check ffmpeg exists.")));
     }
 }
 
 void RecordVideoMgr::disconnectSignal()
 {
-    Zenovis* pVis = getZenovis();
-    bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+    DisplayWidget *pWid = qobject_cast<DisplayWidget *>(parent());
+    ZASSERT_EXIT(pWid);
+    if (pWid->isGLViewport()) {
+        Zenovis *pVis = getZenovis();
+        bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+    } else {
+        ZOptixViewport *pView = pWid->optixViewport();
+        ZASSERT_EXIT(pView);
+        bool ret = disconnect(pView, &ZOptixViewport::sig_frameRecordFinished, this, &RecordVideoMgr::frameFinished);
+        ret = disconnect(pView, &ZOptixViewport::sig_recordFinished, this, &RecordVideoMgr::endRecToExportVideo);
+    }
 }
 
 void RecordVideoMgr::onFrameDrawn(int currFrame)

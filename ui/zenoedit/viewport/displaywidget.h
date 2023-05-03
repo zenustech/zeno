@@ -50,6 +50,7 @@ public slots:
 
 signals:
     void frameUpdated(int new_frame);
+    void frameRunFinished(int frame);
 
 private:
     bool isOptxRendering() const;
