@@ -1118,8 +1118,76 @@ ZENDEFNODE(EdgeDetect, {
     {},
     { "comp" },
 });
+struct EdgeDetect2 : INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        int low_threshold = get_input2<int>("low_threshold");
+        int high_threshold = get_input2<int>("high_threshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
 
-struct CompExtractRGBA : INode {
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->resize(w * h);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w);
+        image2->userData().set2("h", h);
+        if(mode=="canny"){
+            cv::Mat imagecvin(h, w, CV_8U);
+            cv::Mat imagecvout(h, w, CV_8U);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
+                }
+            }
+            cv::Canny(imagecvin,imagecvout,low_threshold, high_threshold);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="sobel"){
+            std::vector<float> dx,dy;
+            zeno::sobel(image, w, h, dx, dy);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    // 计算梯度幅值
+                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
+                    image->verts[i * w + j] = {gradient,gradient,gradient};
+                }
+            }
+            set_output("image", image);
+        }
+
+        if(mode=="scharr"){
+            zeno::scharr(image, image2, w, h, low_threshold);
+            set_output("image", image2);
+        }
+
+        if(mode=="laplacian"){
+
+        }
+    }
+};
+
+ZENDEFNODE(EdgeDetect2, {
+    {
+        {"image"},
+        {"enum sobel canny scharr laplacian sobel2", "mode", "sobel"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+struct CompExtractRGBA2 : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGBA = get_input2<std::string>("RGBA");
@@ -1163,7 +1231,7 @@ struct CompExtractRGBA : INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(CompExtractRGBA, {
+ZENDEFNODE(CompExtractRGBA2, {
     {
         {"image"},
         {"enum RGBA R G B A", "RGBA", "RGBA"},
@@ -1175,7 +1243,7 @@ ZENDEFNODE(CompExtractRGBA, {
     { "comp" },
 });
 
-struct CompExtractRGBA2 : INode {
+struct CompExtractRGBA : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGBA = get_input2<bool>("RGBA");
@@ -1230,7 +1298,7 @@ struct CompExtractRGBA2 : INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(CompExtractRGBA2, {
+ZENDEFNODE(CompExtractRGBA, {
     {
         {"image"},
         {"bool", "RGBA", "0"},
