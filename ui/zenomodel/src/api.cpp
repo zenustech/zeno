@@ -314,6 +314,20 @@ ZENO_ERROR Zeno_GetInput(
     }
 }
 
+ZENO_HANDLE Zeno_CreateExtractDict(ZENO_HANDLE hSubg, const std::string &listInfo) 
+{
+    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
+    if (!pModel)
+        return Err_ModelNull;
+
+    QModelIndex subgIdx = pModel->subgIndex(hSubg);
+    if (!subgIdx.isValid())
+        return -1;
+
+    QString ident = NodesMgr::createExtractDictNode(pModel, subgIdx, QString::fromStdString(listInfo));
+    return pModel->index(ident, subgIdx).internalId();
+}
+
 ZENO_ERROR Zeno_GetInputDefl(
         ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,

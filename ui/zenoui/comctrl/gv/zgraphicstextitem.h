@@ -174,6 +174,7 @@ public:
     void updateSockName(const QString& name);
     QPointF getPortPos();
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget);
+    void setAlignment(Qt::Alignment flag);
 
 protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
