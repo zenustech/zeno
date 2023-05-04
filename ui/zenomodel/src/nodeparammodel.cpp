@@ -933,8 +933,16 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                     // update socket for current subgraph node.
                     NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
                     QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
+                    QVariant ctrlProp = pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
                     nodeParams->setData(paramIdx, pItem->m_ctrl, ROLE_PARAM_CTRL);
-                    nodeParams->setData(paramIdx, pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES], ROLE_VPARAM_CTRL_PROPERTIES);
+                    nodeParams->setData(paramIdx, ctrlProp, ROLE_VPARAM_CTRL_PROPERTIES);
+                    QVariantMap props = ctrlProp.toMap();
+                    if (props.find("items") != props.end()) {
+                        QStringList items = props["items"].toStringList();
+                        if (!items.contains(paramIdx.data(ROLE_PARAM_VALUE).toString())) {
+                            nodeParams->setData(paramIdx, deflVal, ROLE_PARAM_VALUE);
+                        }
+                    }
                 }
 			}
         }
