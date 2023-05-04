@@ -489,7 +489,8 @@ struct PrimitiveMarkIslands : INode {
         const auto &loops = prim->loops;
         const auto &polys = prim->polys;
         using IV = zs::vec<int, 2>;
-        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{(std::size_t)(polys.values.back()[0] + polys.values.back()[1])};
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{
+            (std::size_t)(polys.values.back()[0] + polys.values.back()[1])};
         std::vector<int> is, js;
         pol(range(polys), [&, tab = view<space>(tab)](const auto &poly) mutable {
             auto offset = poly[0];
@@ -1392,14 +1393,45 @@ struct PrimitiveProject : INode {
             limit = std::numeric_limits<float>::infinity();
 
         auto const &nrm = prim->attr<vec3f>(nrmAttr);
+        std::string distTag = "dist";
+        if (has_input("distTag"))
+            distTag = get_input2<std::string>("distTag");
+        auto &dists = prim->add_attr<float>(distTag);
+
+        float tol = 5e-6f;
+        if (has_input("threshold"))
+            tol = get_input2<float>("threshold");
 
         pol(range(pos.size()), [&, bvh = proxy<space>(targetBvh), sideNo](size_t i) {
             using vec3 = zs::vec<float, 3>;
             auto ro = vec3::from_array(pos[i]);
             auto rd = vec3::from_array(nrm[i]).normalized();
-            float dist{0};
-            if (sideNo == 1) {
-                bvh.ray_intersect(ro, rd, [&](int triNo) {
+            float dist{-1};
+
+            auto robustProcess = [&](auto &f) {
+                auto ro0 = ro;
+                auto tan = rd.orthogonal().normalized();
+                bvh.ray_intersect(ro, rd, f);
+                if (dist < -0.5) {
+                    ro = ro0 + tan * tol;
+                    bvh.ray_intersect(ro, rd, f);
+                }
+                if (dist < -0.5) {
+                    ro = ro0 - tan * tol;
+                    bvh.ray_intersect(ro, rd, f);
+                }
+                if (dist < -0.5) {
+                    tan = tan.cross(rd);
+                    ro = ro0 + tan * tol;
+                    bvh.ray_intersect(ro, rd, f);
+                }
+                if (dist < -0.5) {
+                    ro = ro0 - tan * tol;
+                    bvh.ray_intersect(ro, rd, f);
+                }
+            };
+            if (sideNo == 1) { // farthest
+                auto f = [&](int triNo) {
                     auto tri = tris[triNo];
                     auto t0 = vec3::from_array(targetPos[tri[0]]);
                     auto t1 = vec3::from_array(targetPos[tri[1]]);
@@ -1407,19 +1439,25 @@ struct PrimitiveProject : INode {
                     if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && d > dist) {
                         dist = d;
                     }
-                });
-            } else if (sideNo == 0) {
-                bvh.ray_intersect(ro, rd, [&](int triNo) {
+                };
+                robustProcess(f);
+                // bvh.ray_intersect(ro, rd, f);
+            } else if (sideNo == 0) { // closest
+                auto f = [&](int triNo) {
                     auto tri = tris[triNo];
                     auto t0 = vec3::from_array(targetPos[tri[0]]);
                     auto t1 = vec3::from_array(targetPos[tri[1]]);
                     auto t2 = vec3::from_array(targetPos[tri[2]]);
-                    if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && (d < dist || dist == 0)) {
+                    if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && (d < dist || dist < -0.5)) {
                         dist = d;
                     }
-                });
+                };
+                robustProcess(f);
+                // bvh.ray_intersect(ro, rd, f);
             }
-            pos[i] = (ro + dist * rd).to_array();
+            if (dist > -0.5)
+                pos[i] = (ro + dist * rd).to_array();
+            dists[i] = dist;
         });
 
         set_output("prim", std::move(prim));
@@ -1432,6 +1470,8 @@ ZENDEFNODE(PrimitiveProject, {
                                      {"PrimitiveObject", "targetPrim"},
                                      {"string", "nrmAttr", "nrm"},
                                      {"float", "limit", "0"},
+                                     {"string", "distTag", "dist"},
+                                     {"float", "threshold", "5e-6"},
                                      {"enum closest farthest", "side", "farthest"},
                                  },
                                  {

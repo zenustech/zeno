@@ -194,8 +194,11 @@ struct UnifiedIPCSystem : IObject {
         return zs::make_tuple(csPT.getCount(), csEE.getCount());
     }
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
+    void findCollisionConstraints2(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
+    void findCollisionConstraintsImpl2(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
     void findBoundaryCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi);
+    void findBoundaryCollisionConstraintsImpl2(zs::CudaExecutionPolicy &pol, T dHat, T xi);
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization
     void findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi = 0);
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);

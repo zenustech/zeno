@@ -1571,7 +1571,7 @@ void ZenoMainWindow::updateLightList() {
     auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget* dock : docks) {
         if (dock->isVisible())
-            dock->newFrameUpdate();
+            dock->updateLights();
     }
 }
 void ZenoMainWindow::doFrameUpdate(int frame) {

@@ -11,6 +11,7 @@
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
     : QObject(nullptr)
     , m_zenoVis(pzenoVis)
+    , m_bRecording(false)
 {
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
@@ -18,6 +19,10 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
 
 void OptixWorker::updateFrame()
 {
+    //avoid conflict.
+    if (m_bRecording)
+        return;
+
     m_zenoVis->paintGL();
     int w, h;
     void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
@@ -27,21 +32,62 @@ void OptixWorker::updateFrame()
     emit renderIterate(m_renderImg);
 }
 
+void OptixWorker::recordVideo(VideoRecInfo recInfo)
+{
+    zeno::scope_exit sp([=] {
+        m_bRecording = false;
+        m_pTimer->start(16);
+    });
+
+    m_bRecording = true;
+    m_pTimer->stop();
+
+    for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second; frame++)
+    {
+        auto record_file = zeno::format("{}/P/{:07d}.jpg", recInfo.record_path.toStdString(), frame);
+        auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
+
+        auto scene = m_zenoVis->getSession()->get_scene();
+        auto old_num_samples = scene->drawOptions->num_samples;
+        scene->drawOptions->num_samples = recInfo.numOptix;
+        //it seems that msaa is used by opengl, but opengl has been removed from optix.
+        scene->drawOptions->msaa_samples = recInfo.numMSAA;
+
+        auto [x, y] = m_zenoVis->getSession()->get_window_size();
+
+        int actualFrame = m_zenoVis->setCurrentFrameId(frame);
+        m_zenoVis->doFrameUpdate();
+        //todo: may be the frame has not been finished, in this case, we have to wait.
+
+        m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
+        m_zenoVis->getSession()->do_screenshot(record_file, extname);
+        m_zenoVis->getSession()->set_window_size(x, y);
+
+        scene->drawOptions->num_samples = old_num_samples;
+        //todo: emit some signal to main thread(ui)
+        emit sig_frameFinished(frame);
+
+        if (1) {
+            //update ui.
+            int w = 0, h = 0;
+            void* data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
+            m_renderImg = QImage((uchar*)data, w, h, QImage::Format_RGBA8888);
+            m_renderImg = m_renderImg.mirrored(false, true);
+            emit renderIterate(m_renderImg);
+        }
+    }
+    emit sig_recordFinished();
+}
+
+void OptixWorker::stop()
+{
+    m_pTimer->stop();
+    //todo: use a flag to mark, otherwise the timer will be resumed.
+}
+
 void OptixWorker::work()
 {
     m_pTimer->start(16);
-    /*
-    while (true)
-    {
-        m_zenoVis->paintGL();
-        int w, h;
-        void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
-
-        m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
-        m_renderImg = m_renderImg.mirrored(false, true);
-        emit renderIterate(m_renderImg);
-    }
-    */
 }
 
 QImage OptixWorker::renderImage() const
@@ -52,8 +98,9 @@ QImage OptixWorker::renderImage() const
 void OptixWorker::needUpdateCamera()
 {
     //todo: update reason.
+    //m_zenoVis->getSession()->get_scene()->drawOptions->needUpdateGeo = false;	//just for teset.
     m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
-    m_pTimer->start();
+    m_pTimer->start(16);
 }
 
 
@@ -91,15 +138,20 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     auto scene = m_zenovis->getSession()->get_scene();
 
-    OptixWorker *worker = new OptixWorker(m_zenovis);
-    worker->moveToThread(&m_thdOptix);
-    connect(&m_thdOptix, &QThread::finished, worker, &QObject::deleteLater);
-    connect(&m_thdOptix, &QThread::started, worker, &OptixWorker::work);
-    connect(worker, &OptixWorker::renderIterate, this, [=](QImage img) {
+    m_worker = new OptixWorker(m_zenovis);
+    m_worker->moveToThread(&m_thdOptix);
+    connect(&m_thdOptix, &QThread::finished, m_worker, &QObject::deleteLater);
+    connect(&m_thdOptix, &QThread::started, m_worker, &OptixWorker::work);
+    connect(m_worker, &OptixWorker::renderIterate, this, [=](QImage img) {
         m_renderImage = img;
         update();
     });
-    connect(this, &ZOptixViewport::cameraAboutToRefresh, worker, &OptixWorker::needUpdateCamera);
+    connect(this, &ZOptixViewport::cameraAboutToRefresh, m_worker, &OptixWorker::needUpdateCamera);
+    connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
+    connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
+    connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
+    connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
+    connect(m_worker, &OptixWorker::sig_frameFinished, this, &ZOptixViewport::sig_frameFinished);
 
     m_thdOptix.start();
 }
@@ -132,6 +184,21 @@ bool ZOptixViewport::isCameraMoving() const
 void ZOptixViewport::updateCamera()
 {
     emit cameraAboutToRefresh();
+}
+
+void ZOptixViewport::stopRender()
+{
+    emit stopRenderOptix();
+}
+
+void ZOptixViewport::resumeRender()
+{
+    emit resumeWork();
+}
+
+void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
+{
+    emit sigRecordVideo(recInfo);
 }
 
 void ZOptixViewport::updateCameraProp(float aperture, float disPlane)

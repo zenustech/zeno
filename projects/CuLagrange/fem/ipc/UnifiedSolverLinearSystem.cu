@@ -12,7 +12,7 @@ namespace zeno {
 template <typename SpmatT, typename VecTM, typename VecTI,
           zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
                             VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
-__forceinline__ __device__ void
+static __forceinline__ __device__ void
 update_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, SpmatT &spmat,
                const VecTI &inds, const VecTM &hess) {
     using namespace zs;
@@ -27,7 +27,7 @@ update_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thre
         auto row = inds[i];
         // diagonal
         auto loc = spmat._ptrs[row];
-        auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+        auto &mat = spmat._vals[loc];
 
         for (int d = laneId; d < 9; d += cap) {
             atomic_add(exec_cuda, &mat(d / 3, d % 3), hess(subOffsetI + d / 3, subOffsetI + d % 3));
@@ -38,12 +38,12 @@ update_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thre
             auto col = inds[j];
             if (row < col) {
                 auto loc = spmat.locate(row, col, zs::true_c);
-                auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+                auto &mat = spmat._vals[loc];
                 for (int d = laneId; d < 9; d += cap)
                     atomic_add(exec_cuda, &mat.val(d), hess(subOffsetI + d / 3, subOffsetJ + d % 3));
             } else {
                 auto loc = spmat.locate(col, row, zs::true_c);
-                auto &mat = const_cast<mat3 &>(spmat._vals[loc]);
+                auto &mat = spmat._vals[loc];
                 for (int d = laneId; d < 9; d += cap)
                     atomic_add(exec_cuda, &mat.val(d), hess(subOffsetI + d % 3, subOffsetJ + d / 3));
             }
@@ -51,12 +51,12 @@ update_hessian(cooperative_groups::thread_block_tile<8, cooperative_groups::thre
     }
 }
 template <typename T, zs::enable_if_t<std::is_fundamental_v<T>> = 0>
-__forceinline__ __device__ T tile_shfl(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile,
-                                       T var, int srcLane) {
+static __forceinline__ __device__ T
+tile_shfl(cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, T var, int srcLane) {
     return tile.shfl(var, srcLane);
 }
 template <typename VecT, zs::enable_if_t<zs::is_vec<VecT>::value> = 0>
-__forceinline__ __device__ VecT tile_shfl(
+static __forceinline__ __device__ VecT tile_shfl(
     cooperative_groups::thread_block_tile<8, cooperative_groups::thread_block> &tile, const VecT &var, int srcLane) {
     VecT ret{};
     for (typename VecT::index_type i = 0; i != VecT::extent; ++i)
@@ -66,10 +66,35 @@ __forceinline__ __device__ VecT tile_shfl(
 template <typename SpmatT, typename VecTM, typename VecTI,
           zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
                             VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
-__forceinline__ __device__ void update_hessian(SpmatT &spmat, const VecTI &inds, const VecTM &hess,
-                                               bool has_work = true) {
+static __forceinline__ __device__ void test_update_hessian(SpmatT &spmat, const VecTI &inds, const VecTM &hess,
+                                                           bool has_work = true) {
     using namespace zs;
-    // constexpr int codim = VecTI::extent;
+    constexpr int codim = VecTI::extent;
+    if (has_work)
+        for (int vi = 0; vi != codim; ++vi) {
+            auto i = inds[vi];
+            for (int vj = 0; vj != codim; ++vj) {
+                auto j = inds[vj];
+                if (i > j)
+                    continue;
+                auto loc = spmat.locate(i, j, true_c);
+                auto &mat = spmat._vals[loc];
+                for (int r = 0; r != 3; ++r)
+                    for (int c = 0; c != 3; ++c) {
+                        atomic_add(exec_cuda, &mat(r, c), hess(vi * 3 + r, vj * 3 + c));
+                    }
+            }
+        }
+    return;
+}
+template <typename SpmatT, typename VecTM, typename VecTI,
+          zs::enable_if_all<VecTM::dim == 2, VecTM::template range_t<0>::value == VecTM::template range_t<1>::value,
+                            VecTI::dim == 1, VecTI::extent * 3 == VecTM::template range_t<0>::value> = 0>
+static __forceinline__ __device__ void update_hessian(SpmatT &spmat, const VecTI &inds, const VecTM &hess,
+                                                      bool has_work = true) {
+    using namespace zs;
+    constexpr int codim = VecTI::extent;
+
     auto tile = cg::tiled_partition<8>(cg::this_thread_block());
 
     u32 work_queue = tile.ballot(has_work);
@@ -351,11 +376,22 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
             vtemp.tuple(dim_c<3>, "grad", i) = vtemp.pack(dim_c<3>, "grad", i) -
                                                m * (vtemp.pack(dim_c<3>, "xn", i) - vtemp.pack(dim_c<3>, "xtilde", i));
 
+#if 1
+        if (BCorder == 0) {
+            auto loc = spmat._ptrs[i];
+            auto &mat = spmat._vals[loc];
+            mat.val(0) += m;
+            mat.val(4) += m;
+            mat.val(8) += m;
+        }
+#else
         /// hesssian
         auto Hi = mat3::identity() * m;
-        for (int d = 0; d != BCorder; ++d)
-            Hi.val(d * 4) = 0;
-        update_hessian(spmat, zs::vec<int, 1>{i}, Hi, BCorder != 3);
+        if (BCorder != 0)
+            for (int d = 0; d != 3; ++d)
+                Hi.val(d * 4) = 0;
+        update_hessian(spmat, zs::vec<int, 1>{i}, Hi, BCorder == 0);
+#endif
     });
     /// @note force field gradient
     if (vtemp.hasProperty("extf")) {

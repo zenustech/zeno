@@ -24,6 +24,8 @@ using std::string;
 using std::unordered_set;
 using std::unordered_map;
 
+#define ENABLE_RECORD_PROGRESS_DIG
+
 
 DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     : QWidget(parent)
@@ -31,6 +33,7 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     , m_pTimer(nullptr)
     , m_bRecordRun(false)
     , m_bGLView(bGLView)
+    , m_optixView(nullptr)
 {
     QVBoxLayout *pLayout = new QVBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
@@ -163,6 +166,11 @@ bool DisplayWidget::isPlaying() const
 bool DisplayWidget::isGLViewport() const
 {
     return m_bGLView;
+}
+
+ZOptixViewport* DisplayWidget::optixViewport() const
+{
+    return m_optixView;
 }
 
 void DisplayWidget::onPlayClicked(bool bChecked)
@@ -551,31 +559,38 @@ void DisplayWidget::onRecord() {
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
 #endif
-        if (bRun) {
-            //clear the global Comm first, to avoid play old frames.
-            zeno::getSession().globalComm->clearState();
+        if (!m_bGLView)
+        {
+            m_optixView->recordVideo(recInfo);
+        }
+        else
+        {
+            if (bRun) {
+                //clear the global Comm first, to avoid play old frames.
+                zeno::getSession().globalComm->clearState();
 
-            //expand the timeline if necessary.
-            ZTimeline *timeline = mainWin->timeline();
-            auto pair = timeline->fromTo();
-            if (pair.first > recStartFrame || pair.second < recEndFrame) {
-                //expand timeline
-                timeline->initFromTo(qMin(pair.first, recStartFrame), qMax(recEndFrame, pair.second));
+                //expand the timeline if necessary.
+                ZTimeline *timeline = mainWin->timeline();
+                auto pair = timeline->fromTo();
+                if (pair.first > recStartFrame || pair.second < recEndFrame) {
+                    //expand timeline
+                    timeline->initFromTo(qMin(pair.first, recStartFrame), qMax(recEndFrame, pair.second));
+                }
+
+                //reset the current frame on timeline.
+                moveToFrame(recStartFrame);
+
+                // and then toggle play.
+                mainWin->toggleTimelinePlay(true);
+
+                //and then run.
+                onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+            } else {
+                // first, set the time frame start end.
+                moveToFrame(recStartFrame);
+                // and then play.
+                mainWin->toggleTimelinePlay(true);
             }
-
-            //reset the current frame on timeline.
-            moveToFrame(recStartFrame);
-
-            // and then toggle play.
-            mainWin->toggleTimelinePlay(true);
-
-            //and then run.
-            onRun(recInfo.frameRange.first, recInfo.frameRange.second);
-        } else {
-            // first, set the time frame start end.
-            moveToFrame(recStartFrame);
-            // and then play.
-            mainWin->toggleTimelinePlay(true);
         }
 
 #ifdef ENABLE_RECORD_PROGRESS_DIG
