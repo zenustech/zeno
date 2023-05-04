@@ -6,6 +6,10 @@
 #define ZENO_LOCAL_TOKEN "ZENO_LOCAL_TOKEN"
 #endif
 
+#ifndef ZENO_TOOL_SERVER_ADDRESS
+#define ZENO_TOOL_SERVER_ADDRESS "http://localhost:23343"
+#endif
+
 #include "httplib/httplib.h"
 #include "msgpack/msgpack.h"
 #include <functional>
@@ -91,16 +95,15 @@ static struct Flags {
 
     Flags()
         : IsMainProcess(false)
-        , CurrentSession("")
     {}
 
     std::string GetCurrentSession() {
-        if (IsMainProcess || !CurrentSession.empty()) {
+        if (IsMainProcess) {
             std::string Result = CurrentSession;
-            if (IsMainProcess) {
-                CurrentSession = "";
-            }
+            CurrentSession = "";
             return Result;
+        } else if (!CurrentSession.empty()) {
+            return CurrentSession;
         } else {
             // Request session key from main process
             httplib::Client Cli { "http://localhost:23343" };
@@ -481,8 +484,35 @@ void ZenoRemoteServer::FetchData(const httplib::Request &Req, httplib::Response 
 void ZenoRemoteServer::ParseGraphInfo(const httplib::Request &Req, httplib::Response &Res) {
     const std::string& BodyStr = Req.body;
     try {
-        std::shared_ptr<zeno::Graph> NewGraph = zeno::getSession().createGraph();
+        auto& Session = zeno::getSession();
+        std::shared_ptr<zeno::Graph> NewGraph = Session.createGraph();
         NewGraph->loadGraph(BodyStr.c_str());
+        // Find nodes with class name "DeclareRemoteParameter"
+        std::unique_ptr<INodeClass>& DeclareNodeClass = zeno::safe_at(Session.nodeClasses, "DeclareRemoteParameter", "node class not found");
+        std::unique_ptr<INodeClass>& OutputNodeClass = zeno::safe_at(Session.nodeClasses, "SetExecutionResult", "node class not found");
+        zeno::remote::GraphInfo GraphInfo;
+        for (const auto& [NodeName, NodeClass] : NewGraph->nodes) {
+            if (NodeClass->nodeClass == DeclareNodeClass.get()) {
+                zeno::StringObject* InputName = dynamic_cast<zeno::StringObject*>(zeno::safe_at(NodeClass->inputs, "name", "name not found").get());
+                zeno::StringObject* InputType = dynamic_cast<zeno::StringObject*>(zeno::safe_at(NodeClass->inputs, "type", "type not found").get());
+                if (InputName == nullptr || InputType == nullptr) {
+                    throw std::runtime_error("name or type not found");
+                }
+                // TODO [darc] : Support passing default value :
+                GraphInfo.InputParameters.insert(std::make_pair(InputName->value, zeno::remote::ParamDescriptor{InputName->value, static_cast<int8_t>(zeno::remote::GetParamTypeFromString(InputType->value))}));
+            }
+            if (NodeClass->nodeClass == OutputNodeClass.get()) {
+                zeno::StringObject* InputName = dynamic_cast<zeno::StringObject*>(zeno::safe_at(NodeClass->inputs, "name", "name not found").get());
+                zeno::StringObject* InputType = dynamic_cast<zeno::StringObject*>(zeno::safe_at(NodeClass->inputs, "type", "type not found").get());
+                if (InputName == nullptr || InputType == nullptr) {
+                    throw std::runtime_error("name or type not found");
+                }
+                GraphInfo.OutputParameters.insert(std::make_pair(InputName->value, zeno::remote::ParamDescriptor{InputName->value, static_cast<int16_t>(remote::NameToSubjectType(InputType->value))}));
+            }
+        }
+        std::vector<uint8_t> Data = msgpack::pack(GraphInfo);
+        Res.set_content(reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
+        Res.status = 200;
     } catch (...) {
         Res.status = 400;
     }
@@ -772,6 +802,24 @@ ZENO_DEFNODE(DeclareRemoteParameter) ({
         { "DefaultValue" },
     },
     { "ParamValue" },
+    {},
+    { "Unreal" }
+});
+
+struct SetExecutionResult : public INode {
+    void apply() override {
+        // TODO [darc] : finish this node :
+    }
+};
+
+ZENO_DEFNODE(SetExecutionResult) ({
+{
+        {"string", "name", "OutputA"},
+        { "value" },
+        {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
+    },
+    {
+    },
     {},
     { "Unreal" }
 });

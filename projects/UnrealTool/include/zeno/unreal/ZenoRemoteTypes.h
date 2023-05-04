@@ -233,7 +233,7 @@ struct ParamValueBatch {
 };
 
 struct GraphInfo {
-    std::map<std::string, int8_t/* EParamType */> InputParameters;
+    std::map<std::string, zeno::remote::ParamDescriptor> InputParameters;
     std::map<std::string, zeno::remote::ParamDescriptor> OutputParameters;
 
     template <class T>
