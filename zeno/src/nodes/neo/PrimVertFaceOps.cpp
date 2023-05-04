@@ -115,7 +115,6 @@ struct face_polys {
         }
     }
 };
-
 struct PrimVertsAttrToFaces : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");

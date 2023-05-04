@@ -48,8 +48,9 @@ void LiveMeshNode::onSyncClicked() {
     auto t1 = high_resolution_clock::now();
 
     auto liveData = to_string(zenoApp->getMainWindow()->liveHttpServer->d_frame_mesh);
+    ZENO_HANDLE hSubg = subgIndex().internalId();
     ZENO_HANDLE liveNode = index().internalId();
-    Zeno_SetInputDefl(liveNode, "vertSrc", std::move(liveData));
+    Zeno_SetInputDefl(hSubg, liveNode, "vertSrc", std::move(liveData));
 
     auto t2 = high_resolution_clock::now();
     /* Getting number of milliseconds as an integer. */
@@ -61,7 +62,8 @@ void LiveMeshNode::onSyncClicked() {
 }
 
 void LiveMeshNode::onCleanClicked() {
+    ZENO_HANDLE hSubg = subgIndex().internalId();
     ZENO_HANDLE liveNode = index().internalId();
-    Zeno_SetInputDefl(liveNode, "vertSrc", std::string("{}"));
+    Zeno_SetInputDefl(hSubg, liveNode, "vertSrc", std::string("{}"));
     zenoApp->getMainWindow()->liveHttpServer->d_frame_mesh.clear();
 }

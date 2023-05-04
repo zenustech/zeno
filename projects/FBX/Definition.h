@@ -59,6 +59,7 @@ struct SFBXReadOption {
     bool generate = false;
     bool triangulate = false;
     bool printTree = false;
+    std::string hintPath = "";
 };
 
 struct SFBXEvalOption {

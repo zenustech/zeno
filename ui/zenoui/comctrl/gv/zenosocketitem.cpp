@@ -134,6 +134,10 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
+#if 1
+    if (editor_factor < 0.2)
+        return;
+#endif
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     QColor bgClr;

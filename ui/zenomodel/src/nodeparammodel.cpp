@@ -112,6 +112,8 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         const QString& name = param->m_name;
 
         OUTPUT_SOCKET outSocket;
+        outSocket.retIdx = param->index();
+
         outSocket.info.defaultValue = param->data(ROLE_PARAM_VALUE);
         outSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
         outSocket.info.name = name;
@@ -685,7 +687,8 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dic
     }
     else if (paramType == "list")
     {
-        if (!desc.categories.contains("list"))
+        PARAM_CLASS cls = pItem->getParamClass();
+        if (!desc.categories.contains("list") && cls == PARAM_INPUT)
             pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
     } 
     else if (paramType == "group-line") 

@@ -33,7 +33,7 @@ add_executable(zenoedit ${source} ${WIN32_RESOURCES})
 set_property(TARGET zenoedit PROPERTY AUTOUIC ON)
 set_property(TARGET zenoedit PROPERTY AUTOMOC ON)
 set_property(TARGET zenoedit PROPERTY AUTORCC ON)
-set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE ON)
+set_property(TARGET zenoedit PROPERTY WIN32_EXECUTABLE OFF)
 
 if (ZENO_DEBUG_MSVC)
     zeno_dbg_msvc(zenoedit)

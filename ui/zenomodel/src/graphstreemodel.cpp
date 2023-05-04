@@ -63,6 +63,7 @@ QStandardItem* GraphsTreeModel::appendSubModel(SubGraphModel* pModel)
 
 void GraphsTreeModel::on_subg_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
 {
+    return;
 	if (roles[0] == ROLE_OBJNAME)
 	{
 		SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
@@ -88,6 +89,8 @@ void GraphsTreeModel::on_subg_rowsAboutToBeInserted(const QModelIndex& parent, i
 
 void GraphsTreeModel::on_subg_rowsInserted(const QModelIndex& parent, int first, int last)
 {
+	return;
+
 	SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
 	QModelIndex itemIdx = pModel->index(first, 0, parent);
 	ZASSERT_EXIT(itemIdx.isValid());

@@ -263,7 +263,7 @@ struct EvalAnim{
         }else{
             isTris = false;
         }
-        std::cout << "mesh size loops " << m_IndicesLoops.size() << " tris " << m_IndicesTris.size() << " is tris " << isTris <<"\n";
+        //std::cout << "mesh size loops " << m_IndicesLoops.size() << " tris " << m_IndicesTris.size() << " is tris " << isTris <<"\n";
         for(int i=0;i<m_FbxData.jointIndices_elementSize;i++){
             prim->verts.add_attr<float>("jointIndice_" + std::to_string(i));
             prim->verts.add_attr<float>("jointWeight_" + std::to_string(i));

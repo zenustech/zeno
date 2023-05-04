@@ -1311,14 +1311,10 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
         m_headerWidget->toggle(bSelected);
         m_bodyWidget->toggle(bSelected);
 
-        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-
         ZenoSubGraphScene *pScene = qobject_cast<ZenoSubGraphScene *>(scene());
         ZASSERT_EXIT(pScene, value);
-        auto nodeIndice = pScene->selectNodesIndice();
-        if (!nodeIndice.contains(m_index))
-            nodeIndice.append(m_index);
-        mainWin->onNodesSelected(m_subGpIndex, nodeIndice, bSelected);
+        const QString& ident = m_index.data(ROLE_OBJID).toString();
+        pScene->collectNodeSelChanged(ident, bSelected);
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {

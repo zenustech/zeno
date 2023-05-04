@@ -287,7 +287,7 @@ void ZSimpleTextItem::keyPressEvent(QKeyEvent* event)
 
 void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-#if 0
+#if 1
     if (editor_factor < 0.2)
         return;
 #endif
@@ -387,6 +387,10 @@ ZEditableTextItem::ZEditableTextItem(QGraphicsItem* parent)
 
 void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+#if 1
+    if (editor_factor < 0.2)
+        return;
+#endif
     painter->setBrush(QColor("#191D21"));
     qreal width = ZenoStyle::dpiScaled(2);
     QPen pen(QColor(75, 158, 244), width);

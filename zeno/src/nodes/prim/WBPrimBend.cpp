@@ -977,6 +977,9 @@ struct PrimitiveDelAttrs : zeno::INode {
         std::string aname;
         while(sname >> aname) {
             prim->verts.attrs.erase(aname);
+            prim->tris.attrs.erase(aname);
+            prim->quads.attrs.erase(aname);
+            prim->loops.attrs.erase(aname);
         }
 
         set_output("prim", get_input("prim"));

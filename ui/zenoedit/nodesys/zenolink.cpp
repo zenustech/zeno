@@ -24,6 +24,7 @@ QRectF ZenoLink::boundingRect() const
 
 QPainterPath ZenoLink::shape() const
 {
+#ifdef BASE_ON_CURVE
     auto src = getSrcPos();
     auto dst = getDstPos();
     if (hasLastPath && src == lastSrcPos && dst == lastSrcPos)
@@ -45,6 +46,12 @@ QPainterPath ZenoLink::shape() const
     lastDstPos = dst;
     lastPath = path;
     return path;
+#else
+    QPainterPath path;
+    path.moveTo(getSrcPos());
+    path.lineTo(getDstPos());
+    return path;
+#endif
 }
 
 int ZenoLink::type() const
@@ -66,7 +73,7 @@ void ZenoLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOpt
 }
 
 
-ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput)
+ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput, QModelIndexList selNodes)
     : ZenoLink(nullptr)
     , m_fixedSocket(socketItem)
     , m_fixedPos(fixedPos)
@@ -74,6 +81,7 @@ ZenoTempLink::ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF f
     , m_bfixInput(fixInput)
     , m_nodeId(nodeId)
     , m_adsortedSocket(nullptr)
+    , m_selNodes(selNodes)
 {
 }
 
@@ -99,6 +107,11 @@ void ZenoTempLink::setOldLink(const QPersistentModelIndex& link)
 QPersistentModelIndex ZenoTempLink::oldLink() const
 {
     return m_oldLink;
+}
+
+QModelIndexList ZenoTempLink::selNodes() const
+{
+    return m_selNodes;
 }
 
 void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)

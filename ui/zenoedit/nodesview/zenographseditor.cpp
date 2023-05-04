@@ -393,7 +393,40 @@ void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
 	const QString& subgraphName = index.data().toString();
     activateTab(subgraphName);
 }
+void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& path, std::vector<QString> & objIds)
+{
+    auto graphsMgm = zenoApp->graphsManagment();
+    IGraphsModel* pModel = graphsMgm->currentModel();
 
+    if (!pModel->index(subGraphName).isValid())
+        return;
+
+    int idx = tabIndexOfName(subGraphName);
+    if (idx == -1)
+    {
+        const QModelIndex& subgIdx = pModel->index(subGraphName);
+
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+        if (!pScene)
+        {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(subgIdx, pScene);
+            pScene->initModel(subgIdx);
+        }
+
+        pScene->select(objIds);
+    }
+    const QModelIndex& subgIdx = pModel->index(subGraphName);
+    ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+    if (!pScene)
+    {
+        pScene = new ZenoSubGraphScene(graphsMgm);
+        graphsMgm->addScene(subgIdx, pScene);
+        pScene->initModel(subgIdx);
+    }
+
+    pScene->select(objIds);
+}
 void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId, bool isError)
 {
 	auto graphsMgm = zenoApp->graphsManagment();
@@ -407,33 +440,33 @@ void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& p
 	{
 		const QModelIndex& subgIdx = pModel->index(subGraphName);
 
-        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
-        if (!pScene)
-        {
-            pScene = new ZenoSubGraphScene(graphsMgm);
-            graphsMgm->addScene(subgIdx, pScene);
-            pScene->initModel(subgIdx);
-        }
+            ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+            if (!pScene)
+            {
+                pScene = new ZenoSubGraphScene(graphsMgm);
+                graphsMgm->addScene(subgIdx, pScene);
+                pScene->initModel(subgIdx);
+            }
 
-        ZenoSubGraphView* pView = new ZenoSubGraphView;
-        connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
-        connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
-        pView->initScene(pScene);
+            ZenoSubGraphView* pView = new ZenoSubGraphView;
+            connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
+            connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
+            pView->initScene(pScene);
 
-        idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
+            idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
 
-        QString tabIcon;
-        if (subGraphName.compare("main", Qt::CaseInsensitive) == 0)
-            tabIcon = ":/icons/subnet-main.svg";
-        else
-            tabIcon = ":/icons/subnet-general.svg";
-        m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
+            QString tabIcon;
+            if (subGraphName.compare("main", Qt::CaseInsensitive) == 0)
+                tabIcon = ":/icons/subnet-main.svg";
+            else
+                tabIcon = ":/icons/subnet-general.svg";
+            m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
 
-        connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
-            QStringList L = newPath.split("/", QtSkipEmptyParts);
-            QString subgName = L.last();
-            activateTab(subgName, newPath);
-        });
+            connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
+                QStringList L = newPath.split("/", QtSkipEmptyParts);
+                QString subgName = L.last();
+                activateTab(subgName, newPath);
+            });
 	}
 	m_ui->graphsViewTab->setCurrentIndex(idx);
 
@@ -504,7 +537,7 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 objId = lst.last();
             }
 
-            QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID);
+            QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
             for (int i = 0; i < results.length(); i++)
             {
                 const SEARCH_RESULT& res = results[i];
@@ -549,7 +582,7 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
 
 void ZenoGraphsEditor::onSearchEdited(const QString& content)
 {
-    QList<SEARCH_RESULT> results = m_model->search(content, m_searchOpts);
+    QList<SEARCH_RESULT> results = m_model->search(content, m_searchOpts, SEARCH_FUZZ);
 
     QStandardItemModel* pModel = new QStandardItemModel(this);
 
