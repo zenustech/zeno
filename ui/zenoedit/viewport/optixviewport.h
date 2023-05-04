@@ -2,6 +2,7 @@
 #define __ZOPTIX_VIEWPORT_H__
 
 #include <QtWidgets>
+#include "recordvideomgr.h"
 
 class Zenovis;
 class CameraControl;
@@ -15,16 +16,21 @@ public:
 
 signals:
     void renderIterate(QImage);
+    void sig_recordFinished();
+    void sig_frameFinished(int frame);
 
 public slots:
+    void stop();
     void work();
     void needUpdateCamera();
     void updateFrame();
+    void recordVideo(VideoRecInfo recInfo);
 
 private:
     Zenovis *m_zenoVis;
     QImage m_renderImg;
     QTimer* m_pTimer;
+    bool m_bRecording;
 };
 
 class ZOptixViewport : public QWidget
@@ -40,9 +46,17 @@ public:
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
     void updateCamera();
+    void stopRender();
+    void resumeRender();
+    void recordVideo(VideoRecInfo recInfo);
 
 signals:
     void cameraAboutToRefresh();
+    void stopRenderOptix();
+    void resumeWork();
+    void sigRecordVideo(VideoRecInfo recInfo);
+    void sig_recordFinished();
+    void sig_frameFinished(int frame);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -62,6 +76,7 @@ private:
     bool updateLightOnce;
     bool m_bMovingCamera;
     QImage m_renderImage;
+    OptixWorker* m_worker;
 };
 
 #endif

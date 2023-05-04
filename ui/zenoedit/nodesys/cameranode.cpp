@@ -170,6 +170,7 @@ void LightNode::onEditClicked(){
     if (views.isEmpty())
         return;
 
+    //todo: case about camera on multiple viewports.
     auto pZenoVis = views[0]->getZenoVis();
     ZASSERT_EXIT(pZenoVis);
 

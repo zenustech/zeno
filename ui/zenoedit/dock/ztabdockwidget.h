@@ -41,7 +41,7 @@ public:
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void onUpdateViewport(const QString& action);
-    void newFrameUpdate();
+    void updateLights();
     void testCleanupGL();
 
     static PANEL_TYPE title2Type(const QString &title);

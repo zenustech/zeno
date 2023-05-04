@@ -766,23 +766,29 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.build(pol, bvs);
-        stBvs.build(pol, bvs, principalAxis, false);
+        stBvs.build(pol, bvs, principalAxis);
 
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
+        zs::CppTimer timer;
+        timer.tick();
         seBvh.build(pol, bvs);
-        seBvs.build(pol, bvs, principalAxis, false);
+        timer.tock("sebvh build");
+
+        timer.tick();
+        seBvs.build(pol, bvs, principalAxis);
+        timer.tock("sebvs build");
     }
     if (hasBoundary()) {
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
         bouStBvh.build(pol, bvs);
-        bouStBvs.build(pol, bvs, principalAxis, false);
+        bouStBvs.build(pol, bvs, principalAxis);
 
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.build(pol, bvs);
-        bouSeBvs.build(pol, bvs, principalAxis, false);
+        bouSeBvs.build(pol, bvs, principalAxis);
     }
 
     /// @note update whole bounding box, but the first one may be done during the initial morton code ordering

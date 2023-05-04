@@ -2,6 +2,7 @@
 #include <viewport/zenovis.h>
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
+#include "viewport/optixviewport.h"
 #include <zenovis/DrawOptions.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/log.h>
@@ -60,9 +61,26 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         }
     }
 
-    Zenovis* pVis = getZenovis();
-    bool ret = connect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
-    ZASSERT_EXIT(ret);
+    DisplayWidget *pWid = qobject_cast<DisplayWidget *>(parent());
+    ZASSERT_EXIT(pWid);
+    if (!pWid->isGLViewport())
+    {
+        //we can only record on another thread, the optix worker thread.
+        ZOptixViewport *pView = pWid->optixViewport();
+        ZASSERT_EXIT(pView);
+        bool ret = connect(pView, &ZOptixViewport::sig_frameFinished, this, [=](int frame) {
+            emit frameFinished(frame);
+        });
+        ret = connect(pView, &ZOptixViewport::sig_recordFinished, this, [=]() {
+            endRecToExportVideo();
+        });
+    }
+    else
+    {
+        Zenovis *pVis = getZenovis();
+        bool ret = connect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+        ZASSERT_EXIT(ret);
+    }
 }
 
 void RecordVideoMgr::endRecToExportVideo()
