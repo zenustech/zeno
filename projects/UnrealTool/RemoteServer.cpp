@@ -44,6 +44,7 @@
 
 /**
  * Copy from https://stackoverflow.com/questions/440133/how-do-i-create-a-random-alpha-numeric-string-in-c
+ * @deprecated Use RandomString2 instead
  * @param length string length
  * @return Random string
  */
@@ -56,6 +57,7 @@ std::string RandomString( size_t Length )
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             "abcdefghijklmnopqrstuvwxyz";
         const size_t max_index = (sizeof(charset) - 1);
+        // Use C++ 11 random
         return charset[ rand() % max_index ];
     };
     std::string str(Length,0);
@@ -63,16 +65,55 @@ std::string RandomString( size_t Length )
     return str;
 }
 
+// Get a random string with given length using C++ 11 random library
+std::string RandomString2( size_t Length )
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 61);
+    const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    std::string str(Length,0);
+    std::generate_n( str.begin(), Length, [&](){ return charset[ dis(gen) ]; } );
+    return str;
+}
+
+
 namespace zeno {
 
 namespace remote {
 
 static struct Flags {
     bool IsMainProcess;
+    std::string CurrentSession;
 
     Flags()
         : IsMainProcess(false)
+        , CurrentSession("")
     {}
+
+    std::string GetCurrentSession() {
+        if (IsMainProcess || !CurrentSession.empty()) {
+            std::string Result = CurrentSession;
+            if (IsMainProcess) {
+                CurrentSession = "";
+            }
+            return Result;
+        } else {
+            // Request session key from main process
+            httplib::Client Cli { "http://localhost:23343" };
+            auto Res = Cli.Get("/session/current", httplib::Headers { { "X-Zeno-SessionKey", ZENO_LOCAL_TOKEN } });
+            if (Res && Res->status == 200) {
+                CurrentSession = Res->body;
+                return Res->body;
+            } else {
+                return "";
+            }
+        }
+    }
+
 } StaticFlags;
 
 /**
@@ -188,6 +229,7 @@ static struct SubjectRegistry {
      */
     [[nodiscard]]
     const zeno::remote::ParamValue* GetParameter(const std::string& SessionKey, const std::string& Key) const {
+        static zeno::remote::ParamValue TempValue;
         if (StaticFlags.IsMainProcess) {
             auto ParamMapIter = SessionalParameters.find(SessionKey);
             if (ParamMapIter != SessionalParameters.end()) {
@@ -211,13 +253,13 @@ static struct SubjectRegistry {
                 if (!Err) {
                     for (const auto& Subject : List.Values) {
                         // Alloc new memory and copy it
-                        // TODO [darc] : fix memory leak(might be) :
-                        auto* NewValue = new zeno::remote::ParamValue;
-                        *NewValue = Subject;
-                        return NewValue;
+                        // TODO [darc] : fix race condition(might be) :
+                        TempValue = Subject;
+                        return &TempValue;
                     }
                 }
             }
+            return nullptr;
         }
     }
 } StaticRegistry;
@@ -295,6 +337,9 @@ private:
     static void PushParameter(const httplib::Request& Req, httplib::Response& Res);
     static void FetchParameter(const httplib::Request& Req, httplib::Response& Res);
 
+    static void SetCurrentSession(const httplib::Request& Req, httplib::Response& Res);
+    static void GetCurrentSession(const httplib::Request& Req, httplib::Response& Res);
+
 public:
     void Run() {
         zeno::remote::StaticRegistry.Callback = [this] (const std::set<std::string>& Changes) {
@@ -310,6 +355,8 @@ public:
         Srv.Post("/graph/parse", HANDLER_SESSION_CHECK(ParseGraphInfo));
         Srv.Post("/graph/param/push", HANDLER_SESSION_CHECK(PushParameter));
         Srv.Get("/graph/param/fetch", HANDLER_SESSION_CHECK(FetchParameter));
+        Srv.Get("/session/set", HANDLER_SESSION_CHECK(SetCurrentSession));
+        Srv.Get("/session/current", HANDLER_SESSION_CHECK(GetCurrentSession));
         zeno::remote::StaticFlags.IsMainProcess = true;
         Srv.listen("127.0.0.1", 23343);
         // Listen failed or server exited, set flag to false
@@ -367,7 +414,7 @@ void ZenoRemoteServer::NewSession(const httplib::Request &Req, httplib::Response
         std::string Token = Req.get_header_value(HeaderKey);
         if (Token == ZENO_REMOTE_TOKEN) {
             Res.status = 201;
-            std::string SessionKey = RandomString(32);
+            std::string SessionKey = RandomString2(32);
             Res.set_content(SessionKey, "text/plain");
             Sessions.emplace_back(std::move(SessionKey));
             return;
@@ -486,6 +533,33 @@ void ZenoRemoteServer::FetchParameter(const httplib::Request &Req, httplib::Resp
     // Pack with msgpack and send
     std::vector<uint8_t> Data = msgpack::pack(Batch);
     Res.set_content(reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
+}
+
+/**
+ * GET /session/set
+ * @param Req
+ * @param Res
+ */
+void ZenoRemoteServer::SetCurrentSession(const httplib::Request &Req, httplib::Response &Res) {
+    // Get session key
+    const static std::string HeaderKey = "X-Zeno-SessionKey";
+    const std::string& SessionKey = Req.get_header_value(HeaderKey);
+
+    // TODO [darc] : fix race condition here :
+    if (!remote::StaticFlags.CurrentSession.empty()) {
+        Res.status = 409;
+    } else {
+        remote::StaticFlags.CurrentSession = SessionKey;
+        Res.status = 204;
+    }
+}
+
+/**
+ * GET /session/current
+ * return current session key
+ */
+void ZenoRemoteServer::GetCurrentSession(const httplib::Request &Req, httplib::Response &Res) {
+    Res.set_content(remote::StaticFlags.CurrentSession, "text/plain");
 }
 
 void ZenoRemoteServer::OnError(const httplib::Request &Req, httplib::Response &Res) {
@@ -654,6 +728,50 @@ ZENO_DEFNODE(ReadPrimitiveFromRegistry)({
         {"float", "scale", "250"},
     },
     { "prim" },
+    {},
+    { "Unreal" }
+});
+
+struct DeclareRemoteParameter : public INode {
+    void apply() override {
+        zeno::remote::StaticFlags.IsMainProcess = false;
+        const std::string& Name = get_input2<std::string>("name");
+        const std::string& Type = get_input2<std::string>("type");
+        const remote::EParamType ParamType = remote::GetParamTypeFromString(Type);
+        if (ParamType == remote::EParamType::Invalid) {
+            zeno::log_error("Invalid parameter type: {}", Type);
+            return;
+        }
+        const std::string& SessionKey = zeno::remote::StaticFlags.GetCurrentSession();
+        if (SessionKey.empty()) {
+            zeno::log_error("No session set in main process.");
+            return;
+        }
+
+        const zeno::remote::ParamValue* Value = zeno::remote::StaticRegistry.GetParameter(SessionKey, Name);
+        if (Value) {
+            if (ParamType == remote::EParamType::Float || ParamType == remote::EParamType::Integer) {
+                set_output2("ParamValue", std::make_shared<zeno::NumericObject>(Value->Cast<float>()));
+            }
+            return;
+        }
+
+        // If there is no parameter with this name, return default value
+        if (has_input("DefaultValue")) {
+            set_output2("ParamValue", get_input("DefaultValue"));
+        } else {
+            zeno::log_error("Parameter {} not found.", Name);
+        }
+    }
+};
+
+ZENO_DEFNODE(DeclareRemoteParameter) ({
+    {
+        {"string", "name", "ParamA"},
+        {"enum Integer Float", "type", "Integer"},
+        { "DefaultValue" },
+    },
+    { "ParamValue" },
     {},
     { "Unreal" }
 });

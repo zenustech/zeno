@@ -70,6 +70,17 @@ static EParamType ConvertStringToEParamType(const std::string& str) {
     return EParamType::Invalid;
 }
 
+// Get EParamType from std::string
+static EParamType GetParamTypeFromString(const std::string& str) {
+    if (str == "Float") {
+        return EParamType::Float;
+    } else if (str == "Integer") {
+        return EParamType::Integer;
+    }
+
+    return EParamType::Invalid;
+}
+
 struct Diff {
     std::vector<std::string> data;
     int32_t CurrentHistory;
