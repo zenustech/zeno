@@ -3,10 +3,9 @@
 #include <zeno/PrimitiveObject.h>
 #include <zeno/VDBGrid.h>
 #include <zeno/utils/log.h>
-//#include <zeno/utils/zeno_p.h>
-#include <tbb/concurrent_vector.h>
 #include <tbb/parallel_for.h>
-#include <tbb/scalable_allocator.h>
+#include <thread>
+#include <map>
 namespace zeno {
 
 struct GetVDBPoints : zeno::INode {
@@ -74,18 +73,19 @@ struct GetVDBPointsLeafCount : zeno::INode {
 };
 #endif
 
-
-//TODO: parallelize using concurrent vector
 struct VDBPointsToPrimitive : zeno::INode {
   virtual void apply() override {
     auto grid = get_input("grid")->as<VDBPointsGrid>()->m_grid;
 
-    std::vector<openvdb::points::PointDataTree::LeafNodeType*> leafs;
+    std::vector<openvdb::points::PointDataTree::LeafNodeType *> leafs;
     grid->tree().getNodes(leafs);
     zeno::log_info("VDBPointsToPrimitive: particle leaf nodes: {}\n", leafs.size());
     auto transform = grid->transformPtr();
 
     auto ret = zeno::IObject::make<zeno::PrimitiveObject>();
+    size_t count = openvdb::points::pointCount(grid->tree());
+    zeno::log_info("VDBPointsToPrimitive: particles: {}\n", count);
+    ret->resize(count);
     auto &retpos = ret->add_attr<zeno::vec3f>("pos");
 
     auto hasVel = !leafs.size() || leafs[0]->hasAttribute("v") && leafs[0]->hasAttribute("P");
@@ -93,11 +93,59 @@ struct VDBPointsToPrimitive : zeno::INode {
     //tbb::concurrent_vector<std::tuple<zeno::vec3f,zeno::vec3f>> data(0);
     if (hasVel) {
       auto &retvel = ret->add_attr<zeno::vec3f>("vel");
-      size_t count = openvdb::points::pointCount(grid->tree());
-      zeno::log_info("VDBPointsToPrimitive: particles: {}\n", count);
 
-      ret->resize(count);
+#if 0
+      using MapT = std::map<std::thread::id, std::tuple<std::vector<vec3f>, std::vector<vec3f>>>;
+      using IterT = typename MapT::iterator;
+      MapT pars;
+      std::mutex mutex;
 
+      auto converter = [&](auto &range) {
+          IterT iter;
+          {
+              std::lock_guard<std::mutex> lk(mutex);
+              bool tag;
+              std::tie(iter, tag) = pars.insert(std::make_pair(
+                  std::this_thread::get_id(), std::make_tuple(std::vector<vec3f>{}, std::vector<vec3f>{})));
+          }
+          auto &[pos_, vel_] = iter->second;
+
+          for (auto leafIter = range.begin(); leafIter; ++leafIter) {
+
+              const openvdb::points::AttributeArray &positionArray = leafIter->constAttributeArray("P");
+              const openvdb::points::AttributeArray &velocityArray = leafIter->constAttributeArray("v");
+
+              openvdb::points::AttributeHandle<openvdb::Vec3f> positionHandle(positionArray);
+              openvdb::points::AttributeHandle<openvdb::Vec3f> velocityHandle(velocityArray);
+
+              for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+                  openvdb::Vec3f voxelPosition = positionHandle.get(*indexIter);
+                  const openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
+                  openvdb::Vec3f worldPosition = grid->transform().indexToWorld(voxelPosition + xyz);
+
+                  openvdb::Vec3f particleVel = velocityHandle.get(*indexIter);
+
+                  pos_.emplace_back(worldPosition[0], worldPosition[1], worldPosition[2]);
+                  vel_.emplace_back(particleVel[0], particleVel[1], particleVel[2]);
+              }
+          }
+      };
+      openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
+      tbb::parallel_for(leafman.leafRange(), converter);
+
+      std::vector<vec3f> retpos_, retvel_;
+      retpos_.resize(count);
+      retvel_.resize(count);
+      std::size_t offset = 0;
+      for (const auto &[_, par] : pars) {
+        const auto &[pos, vel] = par;
+        std::copy(pos.begin(), pos.end(), retpos_.begin() + offset);
+        std::copy(vel.begin(), vel.end(), retvel_.begin() + offset);
+        offset += pos.size();
+      }
+      std::swap(retpos, retpos_);
+      std::swap(retvel, retvel_);
+#else
       size_t i = 0;
       for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
         const openvdb::points::AttributeArray &positionArray = leafIter->constAttributeArray("P");
@@ -118,77 +166,8 @@ struct VDBPointsToPrimitive : zeno::INode {
             i++;
         }
       }
-
-#if 0
-    std::vector<std::vector<std::tuple<zeno::vec3f,zeno::vec3f>>> data(leafs.size());
-    zeno::log_info("VDBPointsToPrimitive: before data reserve\n");
-    for(int i=0;i<leafs.size();i++)
-    {
-      data[i].resize(0);
-      data[i].reserve(512*32);
-    }
-    zeno::log_info("VDBPointsToPrimitive: begin tbb parallel for \n");
-    //tbb::parallel_for((size_t)0, (size_t)leafs.size(), (size_t)1, [&](size_t index)
-    //for (auto const &leaf: leafs)
-#pragma omp parallel for
-    for(size_t index = 0; index < leafs.size(); index++)
-    {
-      auto &leaf = leafs[index];
-      //attributes
-      // Attribute reader
-      // Extract the position attribute from the leaf by name (P is position).
-      openvdb::points::AttributeArray& positionArray =
-        leaf->attributeArray("P");
-      // Extract the velocity attribute from the leaf by name (v is velocity).
-      openvdb::points::AttributeArray& velocityArray =
-        leaf->attributeArray("v");
-
-      using PositionCodec = openvdb::points::FixedPointCodec</*one byte*/false>;
-      using VelocityCodec = openvdb::points::TruncateCodec;
-      // Create read handles for position and velocity
-      openvdb::points::AttributeHandle<openvdb::Vec3f, PositionCodec> positionHandle(positionArray);
-      openvdb::points::AttributeHandle<openvdb::Vec3f, VelocityCodec> velocityHandle(velocityArray);
-
-      for (auto iter = leaf->beginIndexOn(); iter; ++iter) {
-        openvdb::Vec3R p = positionHandle.get(*iter);
-        p += iter.getCoord().asVec3d();
-        // https://people.cs.clemson.edu/~jtessen/cpsc8190/OpenVDB-dpawiki.pdf
-        p = transform->indexToWorld(p);
-        openvdb::Vec3R v = velocityHandle.get(*iter);
-        //retpos.emplace_back(p[0], p[1], p[2]);
-        //retvel.emplace_back(v[0], v[1], v[2]);
-        data[index].emplace_back(std::make_tuple(zeno::vec3f(p[0],p[1],p[2]), zeno::vec3f(v[0],v[1],v[2])));
-      }
-    }//);
-    zeno::log_info("VDBPointsToPrimitive: end tbb parallel for\n");
-    std::vector<size_t> sum_table(data.size()+1);
-    sum_table[0] = 0;
-    for(size_t i=0;i<data.size();i++)
-    {
-      sum_table[i+1] = sum_table[i] +data[i].size();
-    }
-    size_t count = sum_table[sum_table.size()-1];
-    std::vector<std::tuple<zeno::vec3f,zeno::vec3f>> data2;
-    data2.resize(0);
-    data2.reserve(count);
-    ret->resize(count);
-    for(size_t i=0;i<data.size();i++)
-    {
-      data2.insert(data2.end(), data[i].begin(), data[i].end());
-    }
-    tbb::parallel_for((size_t)0, (size_t)ret->size(), (size_t)1, 
-    [&](size_t index)
-    {
-      retpos[index] = std::get<0>(data2[index]);
-      retvel[index] = std::get<1>(data2[index]);
-    });
 #endif
-
     } else {
-      size_t count = openvdb::points::pointCount(grid->tree());
-      zeno::log_info("VDBPointsToPrimitive: particles: {}\n", count);
-
-      ret->resize(count);
 
       size_t i = 0;
       for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
@@ -205,62 +184,9 @@ struct VDBPointsToPrimitive : zeno::INode {
             i++;
         }
       }
+    }
 
-#if 0
-    std::vector<std::vector<zeno::vec3f>> data(leafs.size());
-    for(int i=0;i<leafs.size();i++)
-    {
-      data[i].resize(0);
-      data[i].reserve(512*32);
-    }
-    tbb::parallel_for((size_t)0, (size_t)leafs.size(), (size_t)1, [&](size_t index)
-    //for (auto const &leaf: leafs)
-    {
-      auto &leaf = leafs[index];
-      //attributes
-      // Attribute reader
-      // Extract the position attribute from the leaf by name (P is position).
-      if (leaf->attributeSet().size() < 1) return;
-      openvdb::points::AttributeArray& positionArray = leaf->attributeArray(0);
-      //ZENO_P(positionArray.type());
-      //ZENO_P(positionArray.codecType());
-
-      //using PositionCodec = openvdb::points::FixedPointCodec<[>one byte<]false>;
-      // Create read handles for position and velocity
-      openvdb::points::AttributeHandle<openvdb::Vec3s> positionHandle(positionArray);
-
-      for (auto iter = leaf->beginIndexOn(); iter; ++iter) {
-        openvdb::Vec3R p = positionHandle.get(*iter);
-        p += iter.getCoord().asVec3d();
-        // https://people.cs.clemson.edu/~jtessen/cpsc8190/OpenVDB-dpawiki.pdf
-        p = transform->indexToWorld(p);
-        //retpos.emplace_back(p[0], p[1], p[2]);
-        //retvel.emplace_back(v[0], v[1], v[2]);
-        data[index].emplace_back((zeno::vec3f(p[0],p[1],p[2])));
-      }
-    });
-    std::vector<size_t> sum_table(data.size()+1);
-    sum_table[0] = 0;
-    for(size_t i=0;i<data.size();i++)
-    {
-      sum_table[i+1] = sum_table[i] +data[i].size();
-    }
-    size_t count = sum_table[sum_table.size()-1];
-    std::vector<zeno::vec3f> data2;
-    data2.resize(0);
-    data2.reserve(count);
-    ret->resize(count);
-    for(size_t i=0;i<data.size();i++)
-    {
-      data2.insert(data2.end(), data[i].begin(), data[i].end());
-    }
-    tbb::parallel_for((size_t)0, (size_t)ret->size(), (size_t)1, 
-    [&](size_t index)
-    {
-      retpos[index] = (data2[index]);
-    });
-#endif
-    }
+    zeno::log_info("VDBPointsToPrimitive: complete\n");
     set_output("prim", ret);
   }
 };
