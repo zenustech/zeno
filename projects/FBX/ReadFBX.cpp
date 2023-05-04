@@ -385,7 +385,7 @@ struct Mesh{
         }
         return true;
     }
-    void StringSplitReverse(std::string str, const const char split, std::vector<std::string> & ostrs)
+    void StringSplitReverse(std::string str, const char split, std::vector<std::string> & ostrs)
     {
         std::istringstream iss(str);
         std::string token;
