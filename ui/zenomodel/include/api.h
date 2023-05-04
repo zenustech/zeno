@@ -59,6 +59,11 @@ ZENO_ERROR  Zeno_GetInput(
         /*out*/ std::pair<ZENO_HANDLE, std::string>& ret
 );
 
+ZENO_HANDLE Zeno_CreateExtractDict(
+    ZENO_HANDLE hSubg,
+    const std::string& listInfo       //"obj0,obj1,obj2"
+);
+
 ZENO_ERROR  Zeno_GetInputDefl(
         ZENO_HANDLE hSubg,
         ZENO_HANDLE hNode,

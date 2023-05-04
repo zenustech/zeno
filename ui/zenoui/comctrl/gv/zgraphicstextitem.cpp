@@ -671,4 +671,16 @@ void ZSocketEditableItem::paint(QPainter* painter, const QStyleOptionGraphicsIte
     myOption.state &= ~QStyle::State_Selected;
     myOption.state &= ~QStyle::State_HasFocus;
     _base::paint(painter, &myOption, widget);
+    if (textWidth() != boundingRect().width()) 
+    {
+        setTextWidth(boundingRect().width());
+    }
+}
+
+void ZSocketEditableItem::setAlignment(Qt::Alignment flag) 
+{
+    QTextDocument *document = this->document();
+    QTextOption option = document->defaultTextOption();
+    option.setAlignment(flag);
+    document->setDefaultTextOption(option);
 }

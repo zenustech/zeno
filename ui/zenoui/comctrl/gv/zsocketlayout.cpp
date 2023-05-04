@@ -62,17 +62,22 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         Callback_EditContentsChange cbFuncRenameSock = [=](QString oldText, QString newText) {
             pModel->ModelSetData(m_viewSockIdx, newText, ROLE_PARAM_NAME);
         };
-        m_text = new ZSocketEditableItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
+        ZSocketEditableItem *pItem = new ZSocketEditableItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked, cbFuncRenameSock);
         setSpacing(ZenoStyle::dpiScaled(32));
+        if (!m_bInput) 
+        {
+            pItem->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
+        }
+        m_text = pItem;
     }
     else
     {
         m_text = new ZSocketPlainTextItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
         setSpacing(ZenoStyle::dpiScaled(32));
+        m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
+        m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
     }
     m_text->setToolTip(toolTip);
-    m_text->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
-    m_text->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
 
     if (m_bInput)
     {
