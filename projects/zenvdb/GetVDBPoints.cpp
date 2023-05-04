@@ -169,6 +169,48 @@ struct VDBPointsToPrimitive : zeno::INode {
 #endif
     } else {
 
+#if 0
+      using MapT = std::map<std::thread::id, std::vector<vec3f>>;
+      using IterT = typename MapT::iterator;
+      MapT pars;
+      std::mutex mutex;
+
+      auto converter = [&](auto &range) {
+          IterT iter;
+          {
+              std::lock_guard<std::mutex> lk(mutex);
+              bool tag;
+              std::tie(iter, tag) = pars.insert(std::make_pair(std::this_thread::get_id(), std::vector<vec3f>{}));
+          }
+          auto &pos_ = iter->second;
+
+          for (auto leafIter = range.begin(); leafIter; ++leafIter) {
+
+              const openvdb::points::AttributeArray &positionArray = leafIter->constAttributeArray("P");
+
+              openvdb::points::AttributeHandle<openvdb::Vec3f> positionHandle(positionArray);
+
+              for (auto indexIter = leafIter->beginIndexOn(); indexIter; ++indexIter) {
+                  openvdb::Vec3f voxelPosition = positionHandle.get(*indexIter);
+                  const openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
+                  openvdb::Vec3f worldPosition = grid->transform().indexToWorld(voxelPosition + xyz);
+
+                  pos_.emplace_back(worldPosition[0], worldPosition[1], worldPosition[2]);
+              }
+          }
+      };
+      openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
+      tbb::parallel_for(leafman.leafRange(), converter);
+
+      std::vector<vec3f> retpos_;
+      retpos_.resize(count);
+      std::size_t offset = 0;
+      for (const auto &[_, pos] : pars) {
+        std::copy(pos.begin(), pos.end(), retpos_.begin() + offset);
+        offset += pos.size();
+      }
+      std::swap(retpos, retpos_);
+#else
       size_t i = 0;
       for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
         const openvdb::points::AttributeArray &positionArray = leafIter->constAttributeArray("P");
@@ -184,6 +226,7 @@ struct VDBPointsToPrimitive : zeno::INode {
             i++;
         }
       }
+#endif
     }
 
     zeno::log_info("VDBPointsToPrimitive: complete\n");
