@@ -18,6 +18,7 @@
 
 #include "../fem/collision_energy/evaluate_collision.hpp"
 
+#include "kernel/topology.hpp"
 #include "kernel/intersection.hpp"
 
 
@@ -817,6 +818,8 @@ namespace zeno {
             auto nm_points = points.size();
             auto nm_tris = tris.size();
 
+            auto xtag = get_param<std::string>("xtag");
+
             // transfer the data from gpu to cpu
             constexpr auto cuda_space = execspace_e::cuda;
             auto cudaPol = cuda_exec(); 
@@ -825,9 +828,10 @@ namespace zeno {
             auto surf_tris_buffer  = typename ZenoParticles::particles_t({{"inds",3}},tris.size(),zs::memsrc_e::device,0);
             // copy the verts' pos data to buffer
             cudaPol(zs::range(points.size()),
-                [verts = proxy<cuda_space>({},verts),points = proxy<cuda_space>({},points),surf_verts_buffer = proxy<cuda_space>({},surf_verts_buffer)] ZS_LAMBDA(int pi) mutable {
+                [verts = proxy<cuda_space>({},verts),xtag = zs::SmallString(xtag),
+                        points = proxy<cuda_space>({},points),surf_verts_buffer = proxy<cuda_space>({},surf_verts_buffer)] ZS_LAMBDA(int pi) mutable {
                     auto v_idx = reinterpret_bits<int>(points("inds",pi));
-                    surf_verts_buffer.template tuple<3>("x",pi) = verts.template pack<3>("x",v_idx);
+                    surf_verts_buffer.template tuple<3>("x",pi) = verts.template pack<3>(xtag,v_idx);
             }); 
 
             // copy the tris topo to buffer
@@ -865,7 +869,9 @@ namespace zeno {
 
     ZENDEFNODE(VisualizeSurfaceMesh, {{{"ZSParticles"}},
                                 {{"prim"}},
-                                {},
+                                {
+                                    {"string","xtag","x"}
+                                },
                                 {"ZSGeometry"}});
 
 
@@ -2498,11 +2504,14 @@ struct VisualizeSelfIntersections : zeno::INode {
     virtual void apply() override {
         using namespace zs;
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
-        const auto& tris  = (*zsparticles)[ZenoParticles::s_surfTriTag];
+        const auto &tris = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfTriTag] : zsparticles->getQuadraturePoints(); 
+        // const auto& points = (*zsparticles)[ZenoParticles::s_surfPointTag];
         const auto& verts = zsparticles->getParticles();
 
         constexpr auto cuda_space = execspace_e::cuda;
         auto cudaPol = cuda_exec();  
+        constexpr auto omp_space = execspace_e::openmp;
+        auto ompPol = omp_exec();  
 
         dtiles_t tri_buffer{tris.get_allocator(),{
             {"inds",3},
@@ -2514,20 +2523,255 @@ struct VisualizeSelfIntersections : zeno::INode {
             throw std::runtime_error("fail updating facet normal");
         }  
 
+        // auto xtag = get_param<std::string>("xtag");
+
         zs::Vector<zs::vec<int,2>> instBuffer{tris.get_allocator(),tris.size() * 8};
+        zs::Vector<int> intersectTypes{tris.get_allocator(),tris.size() * 8};
 
         auto nm_insts = retrieve_triangulate_mesh_intersection_list(cudaPol,
-            verts,"x",tri_buffer,verts,"x",tri_buffer,instBuffer,true);
+            verts,"x",tri_buffer,verts,"x",tri_buffer,instBuffer,intersectTypes,true);
 
-        std::cout << "nm_insts : " << nm_insts << std::endl;
+        zs::Vector<zs::vec<int,2>> dc_edge_topos(tris.get_allocator(),nm_insts * 6);
+        zs::bcht<int,int,true,zs::universal_hash<int>,16> tab{tris.get_allocator(),tris.size() * 8};
+
+        cudaPol(zs::range(nm_insts),[
+            instBuffer = proxy<cuda_space>(instBuffer),
+            dc_edge_topos = proxy<cuda_space>(dc_edge_topos),
+            intersectTypes = proxy<cuda_space>(intersectTypes),
+            tab = proxy<cuda_space>(tab),
+            tris = proxy<cuda_space>({},tris)] ZS_LAMBDA(int sti) mutable {
+                auto ta = instBuffer[sti][0];
+                auto tb = instBuffer[sti][1];
+                auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
+                auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
+
+
+                dc_edge_topos[sti * 6 + 0] = zs::vec<int,2>{triA[0],triA[1]};
+                dc_edge_topos[sti * 6 + 1] = zs::vec<int,2>{triA[1],triA[2]};
+                dc_edge_topos[sti * 6 + 2] = zs::vec<int,2>{triA[2],triA[0]};
+                dc_edge_topos[sti * 6 + 3] = zs::vec<int,2>{triB[0],triB[1]};
+                dc_edge_topos[sti * 6 + 4] = zs::vec<int,2>{triB[1],triB[2]};
+                dc_edge_topos[sti * 6 + 5] = zs::vec<int,2>{triB[2],triB[0]};
+
+                if(intersectTypes[sti] == 1) {
+                    int coincident_idx = -1;
+                    for(int i = 0;i != 3;++i)
+                        for(int j = 0;j != 3;++j)
+                            if(triA[i] == triB[j])
+                                coincident_idx = triA[i];
+                    tab.insert(coincident_idx);
+                }
+        });
+
+        zs::Vector<zs::vec<int,2>> edge_topos{tris.get_allocator(),tris.size() * 3};
+        cudaPol(range(tris.size()),[
+            tris = proxy<cuda_space>({},tris),
+            tab = proxy<cuda_space>(tab),
+            edge_topos = proxy<cuda_space>(edge_topos)] ZS_LAMBDA(int ti) mutable {
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                auto is_coincident_idx = zs::vec<bool,3>::uniform(false);
+                for(int i = 0;i != 3;++i)
+                    if(auto qno = tab.query(tri[i]);qno >= 0)
+                        is_coincident_idx[i] = true;
+
+                for(int i = 0;i != 3;++i){
+                    if(is_coincident_idx[i] || is_coincident_idx[(i + 1) % 3])
+                        edge_topos[ti * 3 + i] = zs::vec<int,2>::uniform(-1);
+                    else
+                        edge_topos[ti * 3 + i] = zs::vec<int,2>{tri[i],tri[(i + 1) % 3]};
+                }
+                // edge_topos[ti * 3 + 0] = zs::vec<int,2>{tri[0],tri[1]};
+                // edge_topos[ti * 3 + 1] = zs::vec<int,2>{tri[1],tri[2]};
+                // edge_topos[ti * 3 + 2] = zs::vec<int,2>{tri[2],tri[0]};
+        }); 
+
+		zs::Vector<int> island_buffer{verts.get_allocator(),verts.size()};
+		auto nm_islands = mark_disconnected_island(cudaPol,edge_topos,dc_edge_topos,island_buffer);
+        zs::Vector<int> nm_cmps_every_island_count{verts.get_allocator(),(size_t)nm_islands};
+        // nm_cmps_every_island_count.setVal(0);
+        cudaPol(zs::range(nm_cmps_every_island_count.size()),[
+            nm_cmps_every_island_count = proxy<cuda_space>(nm_cmps_every_island_count)] ZS_LAMBDA(int i) mutable {
+                nm_cmps_every_island_count[i] = 0;
+        });
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<cuda_space>({},verts),
+            island_buffer = proxy<cuda_space>(island_buffer),
+            nm_cmps_every_island_count = proxy<cuda_space>(nm_cmps_every_island_count)] ZS_LAMBDA(int vi) mutable {
+                auto island_idx = island_buffer[vi];
+                atomic_add(exec_cuda,&nm_cmps_every_island_count[island_idx],(int)1);
+        });
+
+
+        int max_size = 0;
+        int max_island_idx = 0;
+        for(int i = 0;i != nm_islands;++i) {
+            auto size_of_island = nm_cmps_every_island_count.getVal(i);
+            if(size_of_island > max_size){
+                max_size = size_of_island;
+                max_island_idx = i;
+            }
+        }
+
+        std::cout << "nm_islands : " << nm_islands << " max_island : " << max_island_idx << "\t" << max_size << std::endl;
+
+        dtiles_t flood_region{verts.get_allocator(),{
+            {"x",3}
+        },(size_t)verts.size()};
+        TILEVEC_OPS::copy(cudaPol,verts,"x",flood_region,"x");
+        flood_region = flood_region.clone({zs::memsrc_e::host});
+        island_buffer = island_buffer.clone({zs::memsrc_e::host});
+        auto flood_region_vis = std::make_shared<zeno::PrimitiveObject>();
+        flood_region_vis->resize(verts.size());
+        auto& flood_region_verts = flood_region_vis->verts;
+        auto& flood_region_mark = flood_region_vis->add_attr<float>("flood");
+        
+        ompPol(zs::range(verts.size()),[
+            &flood_region_verts,&flood_region_mark,flood_region = proxy<omp_space>({},flood_region),island_buffer = proxy<omp_space>(island_buffer),max_island_idx] (int vi) mutable {
+                auto p = flood_region.pack(dim_c<3>,"x",vi);
+                flood_region_verts[vi] = p.to_array();
+                flood_region_mark[vi] = island_buffer[vi] == max_island_idx ? (float)0.0 : (float)1.0;
+        });
+        set_output("flood_region",std::move(flood_region_vis));
+
+
+        dtiles_t self_intersect_buffer{tris.get_allocator(),{
+            {"a0",3},{"A0",3},
+            {"a1",3},{"A1",3},
+            {"a2",3},{"A2",3},
+            {"b0",3},{"B0",3},
+            {"b1",3},{"B1",3},
+            {"b2",3},{"B2",3}
+        },(size_t)nm_insts};
+        cudaPol(zs::range(nm_insts),[
+            instBuffer = proxy<cuda_space>(instBuffer),
+            verts = proxy<cuda_space>({},verts),
+            self_intersect_buffer = proxy<cuda_space>({},self_intersect_buffer),
+            tris = proxy<cuda_space>({},tris)] ZS_LAMBDA(int sti) mutable {
+                auto ta = instBuffer[sti][0];
+                auto tb = instBuffer[sti][1];
+                auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
+                auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
+                self_intersect_buffer.tuple(dim_c<3>,"a0",sti) = verts.pack(dim_c<3>,"x",triA[0]);
+                self_intersect_buffer.tuple(dim_c<3>,"a1",sti) = verts.pack(dim_c<3>,"x",triA[1]);
+                self_intersect_buffer.tuple(dim_c<3>,"a2",sti) = verts.pack(dim_c<3>,"x",triA[2]);
+
+                self_intersect_buffer.tuple(dim_c<3>,"b0",sti) = verts.pack(dim_c<3>,"x",triB[0]);
+                self_intersect_buffer.tuple(dim_c<3>,"b1",sti) = verts.pack(dim_c<3>,"x",triB[1]);
+                self_intersect_buffer.tuple(dim_c<3>,"b2",sti) = verts.pack(dim_c<3>,"x",triB[2]);
+
+                self_intersect_buffer.tuple(dim_c<3>,"A0",sti) = verts.pack(dim_c<3>,"x",triA[0]);
+                self_intersect_buffer.tuple(dim_c<3>,"A1",sti) = verts.pack(dim_c<3>,"x",triA[1]);
+                self_intersect_buffer.tuple(dim_c<3>,"A2",sti) = verts.pack(dim_c<3>,"x",triA[2]);
+
+                self_intersect_buffer.tuple(dim_c<3>,"B0",sti) = verts.pack(dim_c<3>,"x",triB[0]);
+                self_intersect_buffer.tuple(dim_c<3>,"B1",sti) = verts.pack(dim_c<3>,"x",triB[1]);
+                self_intersect_buffer.tuple(dim_c<3>,"B2",sti) = verts.pack(dim_c<3>,"x",triB[2]);
+        });
+
+        self_intersect_buffer = self_intersect_buffer.clone({zs::memsrc_e::host});
+
+        auto st_fact_vis = std::make_shared<zeno::PrimitiveObject>();
+        auto& st_verts = st_fact_vis->verts;
+        auto& st_tris = st_fact_vis->tris;
+        st_verts.resize(self_intersect_buffer.size() * 6);
+        st_tris.resize(self_intersect_buffer.size() * 2);
+
+
+
+        ompPol(zs::range(nm_insts),[
+            &st_verts,&st_tris,self_intersect_buffer = proxy<omp_space>({},self_intersect_buffer)] (int sti) mutable {
+                st_verts[sti * 6 + 0] = self_intersect_buffer.pack(dim_c<3>,"a0",sti).to_array();
+                st_verts[sti * 6 + 1] = self_intersect_buffer.pack(dim_c<3>,"a1",sti).to_array();
+                st_verts[sti * 6 + 2] = self_intersect_buffer.pack(dim_c<3>,"a2",sti).to_array();
+                st_verts[sti * 6 + 3] = self_intersect_buffer.pack(dim_c<3>,"b0",sti).to_array();
+                st_verts[sti * 6 + 4] = self_intersect_buffer.pack(dim_c<3>,"b1",sti).to_array();
+                st_verts[sti * 6 + 5] = self_intersect_buffer.pack(dim_c<3>,"b2",sti).to_array();
+
+                st_tris[sti * 2 + 0] = zeno::vec3i(sti * 6 + 0,sti * 6 + 1,sti * 6 + 2);
+                st_tris[sti * 2 + 1] = zeno::vec3i(sti * 6 + 3,sti * 6 + 4,sti * 6 + 5);
+        });   
+
+        // std::cout << "nm_insts : " << nm_insts << std::endl;
+        set_output("st_facet_vis",std::move(st_fact_vis));
+
+        auto st_facet_rest_vis = std::make_shared<zeno::PrimitiveObject>();
+        auto& st_rest_verts = st_facet_rest_vis->verts;
+        auto& st_rest_tris = st_facet_rest_vis->tris;
+        st_rest_verts.resize(self_intersect_buffer.size() * 6);
+        st_rest_tris.resize(self_intersect_buffer.size() * 2);
+        ompPol(zs::range(nm_insts),[
+            &st_rest_verts,&st_rest_tris,self_intersect_buffer = proxy<omp_space>({},self_intersect_buffer)] (int sti) mutable {
+                st_rest_verts[sti * 6 + 0] = self_intersect_buffer.pack(dim_c<3>,"A0",sti).to_array();
+                st_rest_verts[sti * 6 + 1] = self_intersect_buffer.pack(dim_c<3>,"A1",sti).to_array();
+                st_rest_verts[sti * 6 + 2] = self_intersect_buffer.pack(dim_c<3>,"A2",sti).to_array();
+                st_rest_verts[sti * 6 + 3] = self_intersect_buffer.pack(dim_c<3>,"B0",sti).to_array();
+                st_rest_verts[sti * 6 + 4] = self_intersect_buffer.pack(dim_c<3>,"B1",sti).to_array();
+                st_rest_verts[sti * 6 + 5] = self_intersect_buffer.pack(dim_c<3>,"B2",sti).to_array();
+
+                st_rest_tris[sti * 2 + 0] = zeno::vec3i(sti * 6 + 0,sti * 6 + 1,sti * 6 + 2);
+                st_rest_tris[sti * 2 + 1] = zeno::vec3i(sti * 6 + 3,sti * 6 + 4,sti * 6 + 5);
+        });  
+        set_output("st_facet_rest_vis",std::move(st_facet_rest_vis));
+
+        dtiles_t st_pair_buffer{tris.get_allocator(),{
+            {"x0",3},
+            {"x1",3}
+        },nm_insts};    
+        cudaPol(zs::range(nm_insts),[
+            st_pair_buffer = proxy<cuda_space>({},st_pair_buffer),
+            verts = proxy<cuda_space>({},verts),
+            tris = proxy<cuda_space>({},tris),
+            instBuffer = proxy<cuda_space>(instBuffer)] ZS_LAMBDA(int sti) mutable {
+                auto ta = instBuffer[sti][0];
+                auto tb = instBuffer[sti][1];
+
+                auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
+                auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
+
+                auto x0 = vec3::zeros();
+                auto x1 = vec3::zeros();
+
+                for(int i = 0;i != 3;++i) {
+                    x0 += verts.pack(dim_c<3>,"x",triA[i]) / (T)3.0;
+                    x1 += verts.pack(dim_c<3>,"x",triB[i]) / (T)3.0;
+                }
+
+                st_pair_buffer.tuple(dim_c<3>,"x0",sti) = x0.to_array();
+                st_pair_buffer.tuple(dim_c<3>,"x1",sti) = x1.to_array();
+        });
+
+        st_pair_buffer = st_pair_buffer.clone({zs::memsrc_e::host});
+        auto st_pair_vis = std::make_shared<zeno::PrimitiveObject>();
+        auto& st_pair_verts = st_pair_vis->verts;
+        auto& st_pair_lines = st_pair_vis->lines;
+        st_pair_verts.resize(st_pair_buffer.size() * 2);
+        st_pair_lines.resize(st_pair_buffer.size());    
+
+        ompPol(zs::range(st_pair_buffer.size()),[
+            st_pair_buffer = proxy<omp_space>({},st_pair_buffer),
+            &st_pair_verts,&st_pair_lines] (int spi) mutable {
+                auto x0 = st_pair_buffer.pack(dim_c<3>,"x0",spi);
+                auto x1 = st_pair_buffer.pack(dim_c<3>,"x1",spi);
+                st_pair_verts[spi * 2 + 0] = x0.to_array();
+                st_pair_verts[spi * 2 + 1] = x1.to_array();
+                st_pair_lines[spi] = zeno::vec2i{spi * 2 + 0,spi * 2 + 1};
+        });
+
+        set_output("st_pair_vis",std::move(st_pair_vis));
+        
     }
 };
 ZENDEFNODE(VisualizeSelfIntersections, {{"zsparticles"},
                                   {
-
+                                        "st_facet_rest_vis",
+                                        "st_facet_vis",
+                                        "st_pair_vis",
+                                        "flood_region"
                                     },
                                   {
+                                    
                                   },
                                   {"ZSGeometry"}});
 
-}
+
+};
