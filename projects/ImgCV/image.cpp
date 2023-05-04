@@ -150,7 +150,6 @@ static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int h
 {
     dx.resize(width * height);
     dy.resize(width * height);
-
     for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
             float gx = -grayImage->verts[(y - 1) * width + x - 1][0] + grayImage->verts[(y - 1) * width + x + 1][0]
@@ -163,6 +162,74 @@ static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int h
 
             dx[y * width + x] = gx;
             dy[y * width + x] = gy;
+        }
+    }
+}
+static void sobel2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height, int threshold) {
+    std::vector<int> gx(width * height);
+    std::vector<int> gy(width * height);
+    dst->verts.resize(width * height);
+
+    // Calculate gradients
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+            gx[idx] = (-1 * src->verts[(y - 1) * width + x - 1][0] - 2 * src->verts[y * width + x - 1][0] - 1 * src->verts[(y + 1) * width + x - 1][0] +
+                       1 * src->verts[(y - 1) * width + x + 1][0] + 2 * src->verts[y * width + x + 1][0] + 1 * src->verts[(y + 1) * width + x + 1][0]);
+            gy[idx] = (-1 * src->verts[(y - 1) * width + x - 1][0] - 2 * src->verts[(y - 1) * width + x][0] - 1 * src->verts[(y - 1) * width + x + 1][0] +
+                       1 * src->verts[(y + 1) * width + x - 1][0] + 2 * src->verts[(y + 1) * width + x][0] + 1 * src->verts[(y + 1) * width + x + 1][0]);
+
+        }
+    }
+    // Calculate gradient magnitude
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+
+            // Calculate gradient magnitude
+            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
+
+            // Apply thresholding
+            float g = mag < threshold ? 0: 1;
+            dst->verts[idx] = {g,g,g};
+        }
+    }
+}
+
+static void scharr(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height,int threshold) {
+    std::vector<int> gx(width * height);
+    std::vector<int> gy(width * height);
+    dst->verts.resize(width * height);
+
+    // Calculate gradients
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+            gx[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[y * width + x - 1][0] - 3 * src->verts[(y + 1) * width + x - 1][0] +
+                       3 * src->verts[(y - 1) * width + x + 1][0] + 10 * src->verts[y * width + x + 1][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
+            gy[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[(y - 1) * width + x][0] - 3 * src->verts[(y - 1) * width + x + 1][0] +
+                       3 * src->verts[(y + 1) * width + x - 1][0] + 10 * src->verts[(y + 1) * width + x][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
+        }
+    }
+    // Calculate gradient magnitude
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+
+            // Calculate gradient magnitude
+            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
+            // Apply threshold
+            if (mag * 255 > threshold) {
+                // Set to white
+                dst->verts[idx] = { 1, 1, 1 };
+            }
+            else {
+                // Set to black
+                dst->verts[idx] = {0, 0, 0};
+            }
+            // Clamp to [0, 255] and store in output image
+            float g = std::min(1, std::max(0, mag));
+            dst->verts[idx] = {g,g,g};
         }
     }
 }
@@ -980,8 +1047,8 @@ struct EdgeDetect : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
-        auto low_threshold = get_input2<float>("low_threshold");
-        auto high_threshold = get_input2<float>("high_threshold");
+        int low_threshold = get_input2<int>("low_threshold");
+        int high_threshold = get_input2<int>("high_threshold");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -1007,6 +1074,7 @@ struct EdgeDetect : INode {
                     image->verts[i * w + j] = {r, r, r};
                 }
             }
+            set_output("image", image);
         }
         if(mode=="sobel"){
             std::vector<float> dx,dy;
@@ -1018,25 +1086,99 @@ struct EdgeDetect : INode {
                     image->verts[i * w + j] = {gradient,gradient,gradient};
                 }
             }
+            set_output("image", image);
+        }
+        if(mode=="sobel2"){
+            std::vector<float> dx,dy;
+            zeno::sobel2(image, image2, w , h, low_threshold);
+            set_output("image", image2);
         }
 
         if(mode=="scharr"){
-
+            zeno::scharr(image, image2, w, h, low_threshold);
+            set_output("image", image2);
         }
+
         if(mode=="laplacian"){
 
         }
-
-        set_output("image", image);
     }
 };
 
 ZENDEFNODE(EdgeDetect, {
    {
+       {"image"},
+       {"enum sobel canny scharr laplacian sobel2", "mode", "sobel"},
+       {"int", "low_threshold", "100"},
+       {"int", "high_threshold", "150"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+struct EdgeDetect2 : INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        int low_threshold = get_input2<int>("low_threshold");
+        int high_threshold = get_input2<int>("high_threshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->resize(w * h);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w);
+        image2->userData().set2("h", h);
+        if(mode=="canny"){
+            cv::Mat imagecvin(h, w, CV_8U);
+            cv::Mat imagecvout(h, w, CV_8U);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
+                }
+            }
+            cv::Canny(imagecvin,imagecvout,low_threshold, high_threshold);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="sobel"){
+            std::vector<float> dx,dy;
+            zeno::sobel(image, w, h, dx, dy);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    // 计算梯度幅值
+                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
+                    image->verts[i * w + j] = {gradient,gradient,gradient};
+                }
+            }
+            set_output("image", image);
+        }
+
+        if(mode=="scharr"){
+            zeno::scharr(image, image2, w, h, low_threshold);
+            set_output("image", image2);
+        }
+
+        if(mode=="laplacian"){
+
+        }
+    }
+};
+
+ZENDEFNODE(EdgeDetect2, {
+    {
         {"image"},
-       {"enum sobel canny scharr laplacian", "mode", "sobel"},
-       {"float", "low_threshold", "100"},
-       {"float", "high_threshold", "200"},
+        {"enum sobel canny scharr laplacian sobel2", "mode", "sobel"},
     },
     {
         {"image"}
@@ -1045,7 +1187,7 @@ ZENDEFNODE(EdgeDetect, {
     { "comp" },
 });
 
-struct CompExtractRGBA : INode {
+struct CompExtractRGBA2 : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGBA = get_input2<std::string>("RGBA");
@@ -1089,10 +1231,81 @@ struct CompExtractRGBA : INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(CompExtractRGBA, {
+ZENDEFNODE(CompExtractRGBA2, {
     {
         {"image"},
         {"enum RGBA R G B A", "RGBA", "RGBA"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+struct CompExtractRGBA : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto RGBA = get_input2<bool>("RGBA");
+        auto R = get_input2<bool>("R");
+        auto G = get_input2<bool>("G");
+        auto B = get_input2<bool>("B");
+        auto A = get_input2<bool>("A");
+
+        auto A1 = std::make_shared<PrimitiveObject>();
+        A1->verts.resize(image->size());
+        A1->verts.add_attr<float>("alpha");
+        for(int i = 0;i < image->size();i++){
+            A1->verts.attr<float>("alpha")[i] = 1.0;
+        }
+        std::vector<float> &Alpha = A1->verts.attr<float>("alpha");
+        if(image->verts.has_attr("alpha")){
+            Alpha = image->verts.attr<float>("alpha");
+        }
+
+        float R1=0,G1=0,B1=0;
+
+        if(!R&&!RGBA) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                R1 = image->verts[i][0];
+                image->verts[i][0] = R1 * ((Alpha[i] == 1) ? 0 : 1);
+            }
+        }
+
+        if(!G&&!RGBA) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                G1 = image->verts[i][1];
+                image->verts[i][1] = G1 * ((Alpha[i] == 1) ? 0 : 1);
+            }
+        }
+        if(!B&&!RGBA) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                B1 = image->verts[i][2];
+                image->verts[i][2] = B1 * ((Alpha[i] == 1) ? 0 : 1);
+            }
+        }
+
+        if(A) {
+            if (image->verts.has_attr("alpha")) {
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float A = Alpha[i];
+                    image->verts[i][0] = A;
+                    image->verts[i][1] = A;
+                    image->verts[i][2] = A;
+                }
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(CompExtractRGBA, {
+    {
+        {"image"},
+        {"bool", "RGBA", "0"},
+        {"bool", "R", "0"},
+        {"bool", "G", "0"},
+        {"bool", "B", "0"},
+        {"bool", "A", "0"},
     },
     {
         {"image"}
