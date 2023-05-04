@@ -172,12 +172,52 @@ using TVectorN = std::array<T, N>;
 using Vector3f = TVectorN<float, 3>;
 
 struct ParamDescriptor {
-    std::string SubjectName;
-    int16_t/* ESubjectType */ SubjectType = 0;
+    std::string Name;
+    int16_t/* ESubjectType */ Type = 0;
 
     template <class T>
     void pack(T& pack) {
-        pack(SubjectName, SubjectType);
+        pack(Name, Type);
+    }
+};
+
+struct ParamValue : public ParamDescriptor {
+    std::string NumericData;
+    std::vector<uint8_t> ComplexData;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(Name, Type, NumericData, ComplexData);
+    }
+
+    template <class T, typename std::enable_if<std::is_integral<T>::value, bool>::type = true>
+    T Cast() {
+        if (Type != static_cast<decltype(Type)>(EParamType::Integer)) {
+            throw "ParamValue integer casting runtime check failed.";
+        }
+        return static_cast<T>(std::stol(NumericData));
+    }
+
+    template <class T, typename std::enable_if<std::is_floating_point<T>::value, bool>::type = true>
+    T Cast() const {
+        if (Type != static_cast<decltype(Type)>(EParamType::Float)) {
+            throw "ParamValue float casting runtime check failed.";
+        }
+        return static_cast<T>(std::stod(NumericData));
+    }
+
+};
+
+/**
+ * @brief The ParamValueBatch struct
+ * This is a batch of ParamValue, used for sending multiple parameters at once.
+ */
+struct ParamValueBatch {
+    std::vector<ParamValue> Values;
+
+    template <class T>
+    void pack(T& pack) {
+        pack(Values);
     }
 };
 

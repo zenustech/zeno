@@ -18,6 +18,7 @@
 #include <random>
 #include <zeno/core/INode.h>
 #include <zeno/core/Session.h>
+#include <zeno/core/Graph.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/unreal/ZenoRemoteTypes.h>
@@ -74,10 +75,18 @@ static struct Flags {
     {}
 } StaticFlags;
 
+/**
+ * Subject container
+ */
 static struct SubjectRegistry {
     std::map<std::string, SubjectContainer> Elements;
+    std::map<std::string, std::map<std::string, zeno::remote::ParamValue>> SessionalParameters;
     std::function<void(const std::set<std::string>&)> Callback;
 
+    /**
+     * Push subject container to registry
+     * @param InitList Subject container list
+     */
     void Push(const std::vector<SubjectContainer>& InitList) {
         if (StaticFlags.IsMainProcess) {
             std::set<std::string> ChangeList;
@@ -98,6 +107,11 @@ static struct SubjectRegistry {
         }
     }
 
+    /**
+     * Get subject container
+     * @param Key Subject key
+     * @return Subject container
+     */
     template <typename T>
     std::optional<T> Get(const std::string& Key) {
         CONSTEXPR ESubjectType RequiredSubjectType = TGetClassSubjectType<T>::Value;
@@ -134,6 +148,77 @@ static struct SubjectRegistry {
             }
         }
         return std::nullopt;
+    }
+
+    /**
+     * Set parameter to session
+     * @param SessionKey Session key
+     * @param Key Parameter key
+     * @param Value Parameter value
+     */
+    void SetParameter(const std::string& SessionKey, const std::string& Key, zeno::remote::ParamValue& Value) {
+        if (StaticFlags.IsMainProcess) {
+            auto ParamMapIter = SessionalParameters.find(SessionKey);
+            if (ParamMapIter == SessionalParameters.end()) {
+                auto [Iter, Success] = SessionalParameters.insert(std::make_pair(SessionKey, std::map<std::string, zeno::remote::ParamValue> {}));
+                if (Success) {
+                    ParamMapIter = Iter;
+                }
+            }
+
+            assert(ParamMapIter != SessionalParameters.end());
+            ParamMapIter->second.insert(std::make_pair(Key, Value));
+        } else {
+            // In child process, transfer data with http
+            httplib::Client Cli { "http://localhost:23343" };
+            Cli.set_default_headers({ {"X-Zeno-SessionKey", ZENO_LOCAL_TOKEN} });
+            httplib::Params Param;
+            Param.insert(std::make_pair("session_key", SessionKey));
+            Param.insert(std::make_pair("key", Key));
+            std::vector<uint8_t> Data = msgpack::pack(Value);
+            const httplib::Result Response = Cli.Post("/graph/param/push", reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
+        }
+    }
+
+    /**
+     * Get parameter from session
+     * @param SessionKey Session key
+     * @param Key Parameter key
+     * @return Parameter value
+     */
+    [[nodiscard]]
+    const zeno::remote::ParamValue* GetParameter(const std::string& SessionKey, const std::string& Key) const {
+        if (StaticFlags.IsMainProcess) {
+            auto ParamMapIter = SessionalParameters.find(SessionKey);
+            if (ParamMapIter != SessionalParameters.end()) {
+                auto ParamIter = ParamMapIter->second.find(Key);
+                if (ParamIter != ParamMapIter->second.end()) {
+                    return &ParamIter->second;
+                }
+            }
+            return nullptr;
+        } else {
+            // In child process, transfer data with http
+            httplib::Client Cli { "http://localhost:23343" };
+            Cli.set_default_headers({ {"X-Zeno-SessionKey", ZENO_LOCAL_TOKEN} });
+            httplib::Params Param;
+            Param.insert(std::make_pair("key", Key));
+            const httplib::Result Response = Cli.Get("/graph/param/fetch", Param, httplib::Headers {}, httplib::Progress {});
+            if (Response) {
+                const std::string& Body = Response->body;
+                std::error_code Err;
+                auto List = msgpack::unpack<struct ParamValueBatch>(reinterpret_cast<uint8_t*>(const_cast<char*>(Body.data())), Body.size(), Err);
+                if (!Err) {
+                    for (const auto& Subject : List.Values) {
+                        // Alloc new memory and copy it
+                        // TODO [darc] : fix memory leak(might be) :
+                        auto* NewValue = new zeno::remote::ParamValue;
+                        *NewValue = Subject;
+                        return NewValue;
+                    }
+                }
+            }
+        }
     }
 } StaticRegistry;
 
@@ -207,6 +292,9 @@ private:
     static void FetchData(const httplib::Request& Req, httplib::Response& Res);
     static void ParseGraphInfo(const httplib::Request& Req, httplib::Response& Res);
 
+    static void PushParameter(const httplib::Request& Req, httplib::Response& Res);
+    static void FetchParameter(const httplib::Request& Req, httplib::Response& Res);
+
 public:
     void Run() {
         zeno::remote::StaticRegistry.Callback = [this] (const std::set<std::string>& Changes) {
@@ -220,6 +308,8 @@ public:
         Srv.Post("/subject/push", HANDLER_SESSION_CHECK(PushData));
         Srv.Get("/subject/fetch", HANDLER_SESSION_CHECK(FetchData));
         Srv.Post("/graph/parse", HANDLER_SESSION_CHECK(ParseGraphInfo));
+        Srv.Post("/graph/param/push", HANDLER_SESSION_CHECK(PushParameter));
+        Srv.Get("/graph/param/fetch", HANDLER_SESSION_CHECK(FetchParameter));
         zeno::remote::StaticFlags.IsMainProcess = true;
         Srv.listen("127.0.0.1", 23343);
         // Listen failed or server exited, set flag to false
@@ -342,11 +432,64 @@ void ZenoRemoteServer::FetchData(const httplib::Request &Req, httplib::Response 
  * return msgpack packed data of zeno::remote::GraphInfo
  */
 void ZenoRemoteServer::ParseGraphInfo(const httplib::Request &Req, httplib::Response &Res) {
-    // TODO [darc]
+    const std::string& BodyStr = Req.body;
+    try {
+        std::shared_ptr<zeno::Graph> NewGraph = zeno::getSession().createGraph();
+        NewGraph->loadGraph(BodyStr.c_str());
+    } catch (...) {
+        Res.status = 400;
+    }
+}
+
+/**
+ * GET /graph/param/push
+ * BODY msgpack packed data of zeno::remote::ParamValueBatch
+ * return 204 if success, 400 if failed
+ */
+void ZenoRemoteServer::PushParameter(const httplib::Request &Req, httplib::Response &Res) {
+    // Get session key
+    const static std::string HeaderKey = "X-Zeno-Session";
+    const std::string& SessionKey = Req.get_header_value(HeaderKey);
+    // Fetch post body from request and parse it as msgpack
+    const std::string& Body = Req.body;
+    std::error_code Err;
+    auto Container = msgpack::unpack<remote::ParamValueBatch>(reinterpret_cast<const uint8_t*>(Body.data()), Body.size(), Err);
+    if (!Err) {
+        for (auto& Param : Container.Values) {
+            zeno::remote::StaticRegistry.SetParameter(SessionKey, Param.Name, Param);
+        }
+        Res.status = 204;
+    } else {
+        Res.status = 400;
+    }
+}
+
+/**
+ * GET /graph/param/fetch?key={string}&key={string}  ...
+ * return msgpack packed data of zeno::remote::ParamValueBatch, batch will be empty if nothing found
+ */
+void ZenoRemoteServer::FetchParameter(const httplib::Request &Req, httplib::Response &Res) {
+    // Get session key
+    const static std::string HeaderKey = "X-Zeno-Session";
+    const std::string& SessionKey = Req.get_header_value(HeaderKey);
+    // Get requested parameter names
+    size_t Num = Req.get_param_value_count("key");
+    remote::ParamValueBatch Batch;
+    Batch.Values.reserve(Num);
+    for (size_t Idx = 0; Idx < Num; ++Idx) {
+        std::string Key = Req.get_param_value("key", Idx);
+        auto Value = zeno::remote::StaticRegistry.GetParameter(SessionKey, Key);
+        if (Value) {
+            Batch.Values.emplace_back( *Value );
+        }
+    }
+    // Pack with msgpack and send
+    std::vector<uint8_t> Data = msgpack::pack(Batch);
+    Res.set_content(reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
 }
 
 void ZenoRemoteServer::OnError(const httplib::Request &Req, httplib::Response &Res) {
-    Res.set_content(R"({"code": 404, "msg": "Opps, who am I, where am I, what am I doing?"})", "application/json");
+    Res.set_content(R"({"msg": "Opps, who am I, where am I, what am I doing?"})", "application/json");
 }
 }
 
@@ -448,7 +591,6 @@ struct ReadPrimitiveFromRegistry : public INode {
 #pragma omp parallel for collapse(2)
         for (intptr_t y = 0; y < Ny; y++)
             for (intptr_t x = 0; x < Nx; x++) {
-                intptr_t index = y * Nx + x;
                 vec3f p = o + x * ax + y * ay;
                 size_t i = x + y * Nx;
                 pos[i] = p;
