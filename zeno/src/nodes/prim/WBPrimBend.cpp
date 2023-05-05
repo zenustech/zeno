@@ -1364,14 +1364,14 @@ struct PrimAttribBlur : INode {
         std::fill(edgeweight_7.begin(), edgeweight_7.end(), 0);
 
         //========================================
-        LARGE_INTEGER t1_0,t2_0,tc_0;
-        LARGE_INTEGER t1_1,t2_1,tc_1;
-        LARGE_INTEGER t1_2,t2_2,tc_2;
+//        LARGE_INTEGER t1_0,t2_0,tc_0;
+//        LARGE_INTEGER t1_1,t2_1,tc_1;
+//        LARGE_INTEGER t1_2,t2_2,tc_2;
         //========================================
 
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        QueryPerformanceFrequency(&tc_0);
-        QueryPerformanceCounter(&t1_0);
+//        QueryPerformanceFrequency(&tc_0);
+//        QueryPerformanceCounter(&t1_0);
 
 #pragma omp parallel for
         for (size_t point_idx = 0; point_idx < prim->verts.size(); point_idx++) {   // 遍历所有点，找它的邻居
@@ -1415,10 +1415,10 @@ struct PrimAttribBlur : INode {
                 std::fill(pointNeighborSign.begin(), pointNeighborSign.end(), 0);
 
                 //========================================
-                if (point_idx == 50000) {
-                    QueryPerformanceFrequency(&tc_1);
-                    QueryPerformanceCounter(&t1_1);
-                }
+//                if (point_idx == 50000) {
+//                    QueryPerformanceFrequency(&tc_1);
+//                    QueryPerformanceCounter(&t1_1);
+//                }
                 //========================================
 
 #pragma omp parallel for
@@ -1453,11 +1453,11 @@ struct PrimAttribBlur : INode {
                 }
 
                 //========================================
-                if (point_idx == 50000) {
-                    QueryPerformanceCounter(&t2_1);
-                    double time_1 = (double)(t2_1.QuadPart - t1_1.QuadPart)/(double)tc_1.QuadPart;
-                    printf("time_1 = %f s\n", time_1);
-                }
+//                if (point_idx == 50000) {
+//                    QueryPerformanceCounter(&t2_1);
+//                    double time_1 = (double)(t2_1.QuadPart - t1_1.QuadPart)/(double)tc_1.QuadPart;
+//                    printf("time_1 = %f s\n", time_1);
+//                }
                 //========================================
             }
 
@@ -1507,12 +1507,12 @@ struct PrimAttribBlur : INode {
 
         }
 
-        QueryPerformanceCounter(&t2_0);
-        double time_0 = (double)(t2_0.QuadPart - t1_0.QuadPart)/(double)tc_0.QuadPart;
-        printf("time_0 = %f s\n", time_0);
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        QueryPerformanceFrequency(&tc_2);
-        QueryPerformanceCounter(&t1_2);
+//        QueryPerformanceCounter(&t2_0);
+//        double time_0 = (double)(t2_0.QuadPart - t1_0.QuadPart)/(double)tc_0.QuadPart;
+//        printf("time_0 = %f s\n", time_0);
+//        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//        QueryPerformanceFrequency(&tc_2);
+//        QueryPerformanceCounter(&t1_2);
 
         // 平滑属性计算
         std::visit(
@@ -1588,9 +1588,9 @@ struct PrimAttribBlur : INode {
             enum_variant<std::variant<float, vec3f>>(
                 array_index({"float", "vec3f"}, attr_type)));
 
-        QueryPerformanceCounter(&t2_2);
-        double time_2 = (double)(t2_2.QuadPart - t1_2.QuadPart)/(double)tc_2.QuadPart;
-        printf("time_2 = %f s\n", time_2);
+//        QueryPerformanceCounter(&t2_2);
+//        double time_2 = (double)(t2_2.QuadPart - t1_2.QuadPart)/(double)tc_2.QuadPart;
+//        printf("time_2 = %f s\n", time_2);
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
         prim->verts.erase_attr("_neighbor_0");
