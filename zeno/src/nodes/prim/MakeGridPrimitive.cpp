@@ -142,11 +142,20 @@ struct Make2DGridPrimitive : INode {
     prim->resize(nx * ny);
     auto &pos = prim->add_attr<vec3f>("pos");
 #pragma omp parallel for collapse(2)
-        for (intptr_t y = 0; y < ny; y++) for (intptr_t x = 0; x < nx; x++) {
+    for (intptr_t y = 0; y < ny; y++)
+      for (intptr_t x = 0; x < nx; x++) {
           intptr_t index = y * nx + x;
-      vec3f p = o + x * ax + y * ay;
-      size_t i = x + y * nx;
-      pos[i] = p;
+          vec3f p = o + x * ax + y * ay;
+          size_t i = x + y * nx;
+          pos[i] = p;
+      }
+    if (get_param<bool>("hasUV")) {
+      auto &uv = prim->verts.add_attr<vec3f>("uv");
+      for (intptr_t y = 0; y < ny; y++)
+          for (intptr_t x = 0; x < nx; x++) {
+              size_t i = x + y * nx;
+              uv[i] = {float(x) / float(nx - 1), float(y) / float(ny - 1), 0};
+          }
     }
     if (get_param<bool>("hasFaces")) {
         prim->tris.resize((nx - 1) * (ny - 1) * 2);
@@ -181,6 +190,7 @@ ZENDEFNODE(Make2DGridPrimitive,
         {"enum XZ XY YZ", "Direction", "XZ"}, // zhxxhappy
         {"bool", "isCentered", "0"},
         {"bool", "hasFaces", "1"},
+        {"bool", "hasUV", "0"},
         }, /* category: */ {
         "primitive",
         }});
