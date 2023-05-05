@@ -81,11 +81,11 @@ struct PrimToVDBPointDataGrid : zeno::INode {
     //auto dx = get_input2<float>("Dx");
     auto dx = get_input("Dx")->as<NumericObject>()->get<float>();
     auto prims = get_input("ParticleGeo")->as<PrimitiveObject>();
-    auto particles = std::make_unique<ParticlesObject>();
-    particles->pos.resize(prims->attr<zeno::vec3f>("pos").size());
-    particles->vel.resize(prims->attr<zeno::vec3f>("pos").size());
-    std::vector<openvdb::Vec3f> positions(particles->size());
-    std::vector<openvdb::Vec3f> velocitys(particles->size());
+    //auto particles = std::make_unique<ParticlesObject>();
+    //particles->pos.resize(prims->attr<zeno::vec3f>("pos").size());
+    //particles->vel.resize(prims->attr<zeno::vec3f>("pos").size());
+    std::vector<openvdb::Vec3f> positions(prims->size());
+    std::vector<openvdb::Vec3f> velocitys(prims->size());
     #pragma omp parallel for
     for(int i=0;i<prims->attr<zeno::vec3f>("pos").size();i++)
     {
