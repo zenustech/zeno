@@ -210,7 +210,7 @@ private:
     void initShortCut();
     void updateShortCut(QStringList keys);
     void shortCutDlg();
-
+    void killOptix();
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

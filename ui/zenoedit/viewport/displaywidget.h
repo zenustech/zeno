@@ -34,6 +34,7 @@ public:
     bool isPlaying() const;
     bool isGLViewport() const;
     ZOptixViewport* optixViewport() const;
+    void killOptix();
 
 public slots:
     void updateFrame(const QString& action = "");

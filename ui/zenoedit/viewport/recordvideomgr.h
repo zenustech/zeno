@@ -51,7 +51,6 @@ signals:
 
 private slots:
     void endRecToExportVideo();
-    void onRunFrameFinished(int frame);
 
 private:
     Zenovis* getZenovis();

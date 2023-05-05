@@ -24,36 +24,62 @@ void OptixWorker::updateFrame()
         return;
 
     m_zenoVis->paintGL();
-    int w, h;
+    int w = 0, h = 0;
     void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
 
     m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
     m_renderImg = m_renderImg.mirrored(false, true);
+
     emit renderIterate(m_renderImg);
 }
 
-void OptixWorker::recordOneFrame(VideoRecInfo recInfo, int frame)
+void OptixWorker::setupRecording(VideoRecInfo recInfo)
 {
-    //trigger by runner.
-    zeno::scope_exit sp([=] {
-        m_bRecording = false;
-        m_pTimer->start(16);
-    });
-
     m_bRecording = true;
+    m_recordInfo = recInfo;
     m_pTimer->stop();
+    emit sig_recordInfoSetuped();
+}
 
-    recordFrame_impl(recInfo, frame);
-
-    if (frame == recInfo.frameRange.second)
+void OptixWorker::onFrameRunFinished(int frame)
+{
+    if (m_bRecording)
     {
-        emit sig_recordFinished();
+        recordFrame_impl(m_recordInfo, frame);
+        if (frame == m_recordInfo.frameRange.second)
+        {
+            emit sig_recordFinished();
+            m_bRecording = false;
+            m_pTimer->start(16);
+        }
+    }
+    else
+    {
+        if (!m_zenoVis->isPlaying())
+        {
+            //timer will update frame automatically according to the frame setting on timeline.
+            updateFrame();
+        }
     }
 }
 
+void OptixWorker::onPlayToggled(bool bToggled)
+{
+    //todo: priority.
+    m_zenoVis->startPlay(bToggled);
+    m_pTimer->start(16);
+}
+
+void OptixWorker::onFrameSwitched(int frame)
+{
+    //ui switch.
+    m_zenoVis->setCurrentFrameId(frame);
+    m_zenoVis->startPlay(false);
+}
 
 void OptixWorker::recordVideo(VideoRecInfo recInfo)
 {
+    //for the case about recording after run.
     zeno::scope_exit sp([=] {
         m_bRecording = false;
         m_pTimer->start(16);
@@ -175,9 +201,16 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
-    connect(this, &ZOptixViewport::sig_frameRunFinished, m_worker, &OptixWorker::recordOneFrame, Qt::QueuedConnection);
+    connect(this, &ZOptixViewport::sig_frameRunFinished, m_worker, &OptixWorker::onFrameRunFinished);
+
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
+
+    connect(this, &ZOptixViewport::sig_setupRecordInfo, m_worker, &OptixWorker::setupRecording, Qt::QueuedConnection);
+    connect(m_worker, &OptixWorker::sig_recordInfoSetuped, this, &ZOptixViewport::sig_recordInfoSetuped);
+
+    connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
+    connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
 
     m_thdOptix.start();
 }
@@ -212,6 +245,13 @@ void ZOptixViewport::updateCamera()
     emit cameraAboutToRefresh();
 }
 
+void ZOptixViewport::killThread()
+{
+    stopRender();
+    m_thdOptix.quit();
+    m_thdOptix.wait();
+}
+
 void ZOptixViewport::stopRender()
 {
     emit stopRenderOptix();
@@ -227,9 +267,15 @@ void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
     emit sigRecordVideo(recInfo);
 }
 
-void ZOptixViewport::onFrameRunFinished(VideoRecInfo recInfo, int frame)
+void ZOptixViewport::setupRecording(VideoRecInfo recInfo)
 {
-    emit sig_frameRunFinished(recInfo, frame);
+    //run with recording.
+    emit sig_setupRecordInfo(recInfo);
+}
+
+void ZOptixViewport::onFrameRunFinished(int frame)
+{
+    emit sig_frameRunFinished(frame);
 }
 
 void ZOptixViewport::updateCameraProp(float aperture, float disPlane)

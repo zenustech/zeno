@@ -69,8 +69,9 @@ ViewportWidget::ViewportWidget(QWidget* parent)
 
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
-        if (mainWin)
+        if (mainWin) {
             mainWin->visFrameUpdated(frameid);
+        }
     });
 
     connect(m_pauseRenderDally, &QTimer::timeout, [&](){

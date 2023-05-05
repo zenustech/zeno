@@ -72,7 +72,7 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         ret = connect(pView, &ZOptixViewport::sig_recordFinished, this, &RecordVideoMgr::endRecToExportVideo);
         if (!m_recordInfo.bRecordAfterRun)
         {
-            connect(pWid, &DisplayWidget::frameRunFinished, this, &RecordVideoMgr::onRunFrameFinished);
+            pView->setupRecording(recInfo);
         }
     }
     else
@@ -81,15 +81,6 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         bool ret = connect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
         ZASSERT_EXIT(ret);
     }
-}
-
-void RecordVideoMgr::onRunFrameFinished(int frame)
-{
-    DisplayWidget *pWid = qobject_cast<DisplayWidget *>(parent());
-    ZASSERT_EXIT(pWid);
-    ZOptixViewport *pView = pWid->optixViewport();
-    ZASSERT_EXIT(pView);
-    pView->onFrameRunFinished(m_recordInfo, frame);
 }
 
 void RecordVideoMgr::endRecToExportVideo()

@@ -927,9 +927,20 @@ std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
     return m_spCacheMgr;
 }
 
+void ZenoMainWindow::killOptix()
+{
+    DisplayWidget* pWid = this->getOptixWidget();
+    if (pWid)
+    {
+        pWid->killOptix();
+    }
+}
+
 void ZenoMainWindow::closeEvent(QCloseEvent *event)
 {
     killProgram();
+    killOptix();
+
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
