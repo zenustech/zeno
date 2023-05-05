@@ -112,6 +112,7 @@ target_sources(zeno PRIVATE
   geometry/kernel/calculate_facet_normal.hpp
   geometry/kernel/calculate_bisector_normal.hpp
   geometry/kernel/tiled_vector_ops.hpp
+  geometry/kernel/intersection.hpp
   geometry/SolveLaplacian.cu
   geometry/VectorField.cu
   geometry/SetupSkinningWeight.cu
