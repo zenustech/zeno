@@ -1135,6 +1135,8 @@ bool ZenoNode::isMoving() {
 void ZenoNode::onZoomed()
 {
     m_pStatusWidgets->onZoomed();
+    if (m_bodyWidget)
+        m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 }
 
 void ZenoNode::setGroupNode(GroupNode *pNode) 
