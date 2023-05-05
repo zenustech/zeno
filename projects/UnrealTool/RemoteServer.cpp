@@ -796,6 +796,56 @@ remote::SubjectHistory &ZenoRemoteServer::GetGlobalHistory() {
 
 namespace zeno {
 
+template <remote::ESubjectType Type>
+struct IObjectExtractor {
+    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "") {
+        return { std::string{}, static_cast<int16_t>(remote::ESubjectType::Invalid), std::vector<uint8_t>{} };
+    }
+};
+
+template <>
+struct IObjectExtractor<remote::ESubjectType::Mesh> {
+    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "") {
+        auto* PrimObj = safe_dynamic_cast<PrimitiveObject>(Node);
+        std::vector<std::array<remote::AnyNumeric, 3>> verts;
+        std::vector<std::array<int32_t, 3>> tris;
+        for (const std::array<float, 3>& data : PrimObj->verts) {
+            verts.push_back( { data.at(0), data.at(2), data.at(1) });
+        }
+        for (const std::array<int32_t, 3>& data : PrimObj->tris) {
+            tris.emplace_back(data);
+        }
+        remote::Mesh Mesh { std::move(verts), std::move(tris) };
+        std::vector<uint8_t> Data = msgpack::pack(Mesh);
+        return remote::SubjectContainer{ InName, static_cast<int16_t>(remote::ESubjectType::Mesh), std::move(Data) };
+    }
+};
+
+template <>
+struct IObjectExtractor<remote::ESubjectType::HeightField> {
+    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "") {
+        auto* PrimObj = safe_dynamic_cast<PrimitiveObject>(Node);
+        if (PrimObj->verts.has_attr("height")) {
+            auto& HeightAttrs = PrimObj->verts.attr<float>("height");
+            // Currently height field are always square.
+            const auto N = static_cast<int32_t>(std::round(std::sqrt(PrimObj->verts.size())));
+            std::vector<uint16_t> RemappedHeightFieldData;
+            RemappedHeightFieldData.reserve(PrimObj->verts.size());
+            for (float Height : HeightAttrs) {
+                // Map height [-255, 255] in R to [0, UINT16_MAX] in Z
+                auto NewValue = static_cast<uint16_t>(((Height + 255.f) / (255.f * 2.f)) * std::numeric_limits<uint16_t>::max());
+                RemappedHeightFieldData.push_back(NewValue);
+            }
+            remote::HeightField HeightField { N, N, RemappedHeightFieldData };
+            std::vector<uint8_t> Data = msgpack::pack(HeightField);
+            return remote::SubjectContainer{ InName, static_cast<int16_t>(remote::ESubjectType::HeightField), std::move(Data) };
+        } else {
+            log_error(R"(Primitive type HeightField must have attribute "float")");
+            return { std::string{}, static_cast<int16_t>(remote::ESubjectType::Invalid), std::vector<uint8_t>{} };
+        }
+    }
+};
+
 struct TransferPrimitiveToUnreal : public INode {
     void apply() override {
         zeno::remote::StaticFlags.IsMainProcess = false;
@@ -803,35 +853,11 @@ struct TransferPrimitiveToUnreal : public INode {
         std::string subject_name = get_input2<std::string>("name");
         std::shared_ptr<PrimitiveObject> prim = get_input2<PrimitiveObject>("prim");
         if (processor_type == "StaticMeshNoUV") {
-            std::vector<std::array<remote::AnyNumeric, 3>> verts;
-            std::vector<std::array<int32_t, 3>> tris;
-            for (const std::array<float, 3>& data : prim->verts) {
-                verts.push_back( { data.at(0), data.at(2), data.at(1) });
-            }
-            for (const std::array<int32_t, 3>& data : prim->tris) {
-                tris.emplace_back(data);
-            }
-            remote::Mesh Mesh { std::move(verts), std::move(tris) };
-            std::vector<uint8_t> Data = msgpack::pack(Mesh);
-            zeno::remote::StaticRegistry.Push({ remote::SubjectContainer{ subject_name, static_cast<int16_t>(remote::ESubjectType::Mesh), std::move(Data) }, });
+            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::Mesh>{}(prim.get(), subject_name);
+            zeno::remote::StaticRegistry.Push({ std::move(NewSubject), });
         } else if (processor_type == "HeightField") {
-            if (prim->verts.has_attr("height")) {
-                auto& HeightAttrs = prim->verts.attr<float>("height");
-                // Currently height field are always square.
-                const auto N = static_cast<int32_t>(std::round(std::sqrt(prim->verts.size())));
-                std::vector<uint16_t> RemappedHeightFieldData;
-                RemappedHeightFieldData.reserve(prim->verts.size());
-                for (float Height : HeightAttrs) {
-                    // Map height [-255, 255] in R to [0, UINT16_MAX] in Z
-                    auto NewValue = static_cast<uint16_t>(((Height + 255.f) / (255.f * 2.f)) * std::numeric_limits<uint16_t>::max());
-                    RemappedHeightFieldData.push_back(NewValue);
-                }
-                remote::HeightField HeightField { N, N, RemappedHeightFieldData };
-                std::vector<uint8_t> Data = msgpack::pack(HeightField);
-                zeno::remote::StaticRegistry.Push({ remote::SubjectContainer{ subject_name, static_cast<int16_t>(remote::ESubjectType::HeightField), std::move(Data) }, });
-            } else {
-                log_error(R"(Primitive type HeightField must have attribute "float")");
-            }
+            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::HeightField>{}(prim.get(), subject_name);
+            zeno::remote::StaticRegistry.Push({ std::move(NewSubject), });
         }
         set_output2("primRef", prim);
     }
@@ -847,7 +873,20 @@ ZENO_DEFNODE(TransferPrimitiveToUnreal)({
           {},
           {"Unreal"},
       }
- );
+);
+
+using SavePrimitiveToGlobalRegistry = TransferPrimitiveToUnreal;
+ZENO_DEFNODE(SavePrimitiveToGlobalRegistry)({
+                                            {
+                                                {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
+                                                {"string", "name", "SubjectFromZeno"},
+                                                {"prim"},
+                                            },
+                                            { "primRef" },
+                                            {},
+                                            {"Unreal"},
+                                        }
+);
 
 struct ReadPrimitiveFromRegistry : public INode {
     template <typename T>
@@ -1005,7 +1044,22 @@ ZENO_DEFNODE(DeclareRemoteParameter) ({
 
 struct SetExecutionResult : public INode {
     void apply() override {
-        // TODO [darc] : finish this node :
+        const std::string ProcessorType = get_input2<std::string>("type");
+        const remote::ESubjectType Type = remote::NameToSubjectType(ProcessorType);
+        const std::string SubjectName = get_input2<std::string>("name");
+        std::shared_ptr<zeno::IObject> Value = get_input<zeno::IObject>("value");
+        if (!Value) {
+            zeno::log_error("No value provided.");
+            return;
+        }
+        const std::string SessionKey = zeno::remote::StaticFlags.GetCurrentSession();
+        if (Type == remote::ESubjectType::Mesh) {
+            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::Mesh>{}(Value.get(), SubjectName);
+            remote::StaticRegistry.Push( { NewSubject }, SessionKey);
+        } else if (Type == remote::ESubjectType::HeightField) {
+            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::HeightField>{}(Value.get(), SubjectName);
+            remote::StaticRegistry.Push( { NewSubject }, SessionKey);
+        }
     }
 };
 
