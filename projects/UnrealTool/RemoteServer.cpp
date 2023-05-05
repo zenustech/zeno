@@ -241,7 +241,7 @@ static struct SubjectRegistry {
      * @return Subject container
      */
     template <typename T>
-    std::optional<T> Get(const std::string& Key, const std::string& SessionKey = "") {
+    std::optional<T> Get(const std::string& Key, const std::string& SessionKey = "", bool bSearchAllSession = false) {
         CONSTEXPR ESubjectType RequiredSubjectType = TGetClassSubjectType<T>::Value;
         if (StaticFlags.IsMainProcess) {
             auto& ElementMap = GetOrCreateSessionElement(SessionKey);
@@ -253,7 +253,19 @@ static struct SubjectRegistry {
                 // If not found, try to find in global elements
                 TargetIter = GlobalElementMap.find(Key);
                 if (TargetIter == GlobalElementMap.end()) {
-                    return std::nullopt;
+                    if (bSearchAllSession) {
+                        // Search all sessions
+                        for (auto& [SessionKey, SessionElementMap] : SessionalElements) {
+                            TargetIter = SessionElementMap.find(Key);
+                            if (TargetIter != SessionElementMap.end()) {
+                                break;
+                            }
+                        }
+                    }
+                    // If still not found, return empty
+                    if (TargetIter == GlobalElementMap.end()) {
+                            return std::nullopt;
+                    }
                 }
             }
             if (TargetIter->second.Type != static_cast<int16_t>(RequiredSubjectType)) return std::nullopt;
@@ -269,6 +281,7 @@ static struct SubjectRegistry {
             httplib::Params Param;
             Param.insert(std::make_pair("key", Key));
             Param.insert(std::make_pair("session_key", SessionKey));
+            Param.insert(std::make_pair("search_all_session", bSearchAllSession ? "true" : "false"));
             const httplib::Result Response = Cli.Get("/subject/fetch", Param, httplib::Headers {}, httplib::Progress {});
             if (Response) {
                 const std::string& Body = Response->body;
@@ -406,7 +419,7 @@ ESubjectType NameToSubjectType(const std::string& InStr) {
         return ESubjectType::HeightField;
     }
     return ESubjectType::Invalid;
-};
+}
 
 }
 
@@ -432,7 +445,7 @@ private:
 
     void FetchDataDiff(const httplib::Request& Req, httplib::Response& Res);
     static void PushData(const httplib::Request& Req, httplib::Response& Res);
-    static void FetchData(const httplib::Request& Req, httplib::Response& Res);
+    void FetchData(const httplib::Request& Req, httplib::Response& Res);
     static void ParseGraphInfo(const httplib::Request& Req, httplib::Response& Res);
 
     static void PushParameter(const httplib::Request& Req, httplib::Response& Res);
@@ -585,9 +598,13 @@ void ZenoRemoteServer::PushData(const httplib::Request &Req, httplib::Response &
  * return msgpack packed data of zeno::remote::SubjectContainerList, list will be empty if nothing found
  */
 void ZenoRemoteServer::FetchData(const httplib::Request &Req, httplib::Response &Res) {
-    const std::string& SessionKey = ParseSessionKey(Req);
-    if (SessionKey.empty() && Req.has_param("session_key")) {
-        std::string ParamSessionKey = Req.get_param_value("session_key");
+    std::string SessionKey = Req.has_param("session_key") ? Req.get_param_value("session_key") : ParseSessionKey(Req);
+    if (SessionKey.empty() && !zeno::remote::StaticFlags.IsMainProcess) {
+        SessionKey = zeno::remote::StaticFlags.GetCurrentSession();
+    }
+    bool bSearchAllSession = false;
+    if (Req.has_param("search_all_session")) {
+        bSearchAllSession = Req.get_param_value("search_all_session") == "true";
     }
 
     auto& Elements = zeno::remote::StaticRegistry.GetOrCreateSessionElement(SessionKey);
@@ -601,10 +618,23 @@ void ZenoRemoteServer::FetchData(const httplib::Request &Req, httplib::Response 
         auto Value = Elements.find(Key);
         if (Value != Elements.end()) {
             List.Data.emplace_back(Value->second);
+            break;
         }
         Value = GlobalElements.find(Key);
         if (Value != GlobalElements.end()) {
             List.Data.emplace_back(Value->second);
+            break;
+        }
+        // Search all session if specified
+        if (bSearchAllSession) {
+            for (auto& Session : Sessions) {
+                auto& Elements = zeno::remote::StaticRegistry.GetOrCreateSessionElement(Session);
+                auto Value = Elements.find(Key);
+                if (Value != Elements.end()) {
+                    List.Data.emplace_back(Value->second);
+                    break;
+                }
+            }
         }
     }
     std::vector<uint8_t> Data = msgpack::pack(List);
@@ -898,12 +928,12 @@ struct ReadPrimitiveFromRegistry : public INode {
         remote::ESubjectType Type = remote::NameToSubjectType(get_input2<std::string>("type"));
         std::shared_ptr<zeno::PrimitiveObject> OutPrim;
         if (Type == remote::ESubjectType::Mesh) {
-            std::optional<remote::Mesh> Data = remote::StaticRegistry.Get<remote::Mesh>(subject_name);
+            std::optional<remote::Mesh> Data = remote::StaticRegistry.Get<remote::Mesh>(subject_name, zeno::remote::StaticFlags.GetCurrentSession(), true);
             if (Data.has_value()) {
                 OutPrim = ToPrimitiveObject(Data.value());
             }
         } else if (Type == remote::ESubjectType::HeightField) {
-            std::optional<remote::HeightField> Data = remote::StaticRegistry.Get<remote::HeightField>(subject_name);
+            std::optional<remote::HeightField> Data = remote::StaticRegistry.Get<remote::HeightField>(subject_name, zeno::remote::StaticFlags.GetCurrentSession(), true);
             if (Data.has_value()) {
                 OutPrim = ToPrimitiveObject(Data.value());
             }
