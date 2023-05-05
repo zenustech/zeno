@@ -1142,8 +1142,8 @@ ZENDEFNODE(ImageEditBlur, {
     {
         {"image"},
         {"enum Blur GaussianBlur MedianBlur BilateralFilter CVGaussianBlur CVMedianBlur CVBilateralFilter", "mode", "Blur"},
-        {"float", "xsize", "1"},
-        {"float", "ysize", "1"},
+        {"float", "xsize", "10"},
+        {"float", "ysize", "10"},
     },
     {
         {"image"}
