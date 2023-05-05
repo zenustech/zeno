@@ -1088,11 +1088,11 @@ QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName
 {
     ZASSERT_EXIT(pModel, "");
 
-    NODE_DESCS descs = pModel->descriptors();
-    if (descs.find(subgName) == descs.end())
+    NODE_DESC desc;
+    bool ret = pModel->getDescriptor(subgName, desc);
+    if (!ret)
         return "";
 
-    const NODE_DESC& desc = descs[subgName];
     QString finalName = newName;
     int i = 1;
     if (bInput)

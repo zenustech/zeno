@@ -62,6 +62,7 @@ private:
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
     void initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dictpanel);
     void exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel);
+    void checkExtractDict(QString &name);
 
     IGraphsModel* m_pGraphsModel;
     const QPersistentModelIndex m_subgIdx;

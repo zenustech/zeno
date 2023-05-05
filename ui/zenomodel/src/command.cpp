@@ -73,11 +73,12 @@ void RemoveNodeCommand::undo()
 }
 
 
-LinkCommand::LinkCommand(bool bAddLink, const EdgeInfo& link, GraphsModel* pModel)
+LinkCommand::LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EdgeInfo& link, GraphsModel* pModel)
     : QUndoCommand()
     , m_bAdd(bAddLink)
     , m_link(link)
     , m_model(pModel)
+    , m_subgIdx(subgIdx)
 {
 }
 
@@ -85,11 +86,11 @@ void LinkCommand::redo()
 {
     if (m_bAdd)
     {
-        m_model->addLink(m_link);
+        m_model->addLink(m_subgIdx, m_link);
     }
     else
     {
-        m_model->removeLink(m_link);
+        m_model->removeLink(m_subgIdx, m_link);
     }
 }
 
@@ -97,11 +98,11 @@ void LinkCommand::undo()
 {
     if (m_bAdd)
     {
-        m_model->removeLink(m_link);
+        m_model->removeLink(m_subgIdx, m_link);
     }
     else
     {
-        m_model->addLink(m_link);
+        m_model->addLink(m_subgIdx, m_link);
     }
 }
 

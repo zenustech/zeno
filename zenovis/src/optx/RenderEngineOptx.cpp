@@ -265,6 +265,20 @@ struct GraphicsManager {
                         zeno::primTriangulateQuads(prim_in);
                         zeno::primTriangulate(prim_in);
                     }
+                    bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+                    if(prim_in->has_attr("uv") && has_uv == false)
+                    {
+                        auto &uv = prim_in->attr<zeno::vec3f>("uv");
+                        auto &uv0 = prim_in->tris.add_attr<zeno::vec3f>("uv0");
+                        auto &uv1 = prim_in->tris.add_attr<zeno::vec3f>("uv1");
+                        auto &uv2 = prim_in->tris.add_attr<zeno::vec3f>("uv2");
+                        for(size_t i=0; i<prim_in->tris.size();i++)
+                        {
+                            uv0[i]=uv[prim_in->tris[i][0]];
+                            uv1[i]=uv[prim_in->tris[i][1]];
+                            uv2[i]=uv[prim_in->tris[i][2]];
+                        }
+                    }
                     prim_in->add_attr<zeno::vec3f>("uv");
                     bool primNormalCorrect = prim_in->has_attr("nrm") && length(prim_in->attr<zeno::vec3f>("nrm")[0])>1e-5;
                     bool need_computeNormal = !primNormalCorrect || !(prim_in->has_attr("nrm"));
@@ -283,7 +297,7 @@ struct GraphicsManager {
                     auto &att_nrm = prim->add_attr<zeno::vec3f>("nrm");
                     auto &att_uv  = prim->add_attr<zeno::vec3f>("uv");
                     auto &att_tan = prim->add_attr<zeno::vec3f>("tang");
-                    bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
+                    has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
 
                     std::cout<<"size verts:"<<prim_in->verts.size()<<std::endl;
                     auto &in_pos   = prim_in->verts;
@@ -373,6 +387,7 @@ struct GraphicsManager {
     };
 
     zeno::MapStablizer<std::map<std::string, std::unique_ptr<ZxxGraphic>>> graphics;
+    std::map<std::string, int> objOrder;
 
     explicit GraphicsManager(Scene *scene) : scene(scene) {
     }
@@ -531,10 +546,17 @@ struct GraphicsManager {
     }
     bool load_objects(std::vector<std::pair<std::string, zeno::IObject *>> const &objs) {
         auto ins = graphics.insertPass();
-
+        objOrder.clear();
         bool changed = false;
+        int idx = 0;
         for (auto const &[key, obj] : objs) {
+            objOrder[key] = idx;
+            idx++;
+        }
+        for (auto const &[key, obj] : objs) {
+            //auto ikey = key + ':' + std::string(std::to_string(idx));
             if (ins.may_emplace(key) && key.find(":static:")==key.npos) {
+
                 zeno::log_info("load_object: loading graphics [{}]", key);
                 changed = true;
 
@@ -777,10 +799,36 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             OptixUtil::g_vdb_indice_visible.clear();
             OptixUtil::g_vdb_list_for_each_shader.clear();
-            
-            for (auto const &[key, obj]: graphicsMan->graphics) { 
-                
+            //first pass, remove duplicated mat and keep the later
+            std::map<std::string, GraphicsManager::DetMaterial*> matMap;
+            std::map<std::string, int> order;
+            for (auto const &[key, obj]: graphicsMan->graphics){
                 if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det)) {
+                    auto matkey = mtldet->mtlidkey;
+                    if(matMap.find(matkey)!=matMap.end())
+                    {
+                        auto idx = order[matkey];
+                        auto curr_idx = graphicsMan->objOrder[key];
+                        if(curr_idx < idx) {
+                            matMap[matkey] = mtldet;
+                            order[matkey] = curr_idx;
+                        }
+                    }
+                    else
+                    {
+                        matMap.insert({matkey, mtldet});
+                        auto curr_idx = graphicsMan->objOrder[key];
+                        order[matkey] = curr_idx;
+                    }
+                }
+            }
+            
+            //for (auto const &[key, obj]: graphicsMan->graphics)
+            for(auto const &[matkey, mtldet] : matMap)
+            {
+                
+                //if (auto mtldet = std::get_if<GraphicsManager::DetMaterial>(&obj->det))
+                {
                     //zeno::log_debug("got material shader:\n{}", mtldet->shader);
 
                     glm::f64mat4 linear_transform(1.0);  

@@ -5,6 +5,7 @@
 #include <zenovis/ObjectsManager.h>
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
+#include <zeno/types/UserData.h>
 
 
 using std::string;
@@ -293,9 +294,16 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
     auto pos = event->pos();
     if (!m_picker)
         return;
-
+    auto scene = m_zenovis->getSession()->get_scene();
     auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
     if (!picked_prim.empty()) {
+        auto primList = scene->objectsMan->pairs();
+        for (auto const &[key, ptr]: primList) {
+            if (picked_prim == key) {
+                auto &ud = ptr->userData();
+                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+            }
+        }
         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
         auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
         auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
@@ -419,6 +427,22 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 auto scene = m_zenovis->getSession()->get_scene();
                 ZenoMainWindow *mainWin = zenoApp->getMainWindow();
                 mainWin->onPrimitiveSelected(scene->selected);
+//                auto pos = event->pos();
+//                if (!m_picker)
+//                    return;
+//
+//                auto picked_prim = m_picker->just_pick_prim(pos.x(), pos.y());
+//                if (!picked_prim.empty()) {
+//                    auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(picked_prim);
+//                    auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
+//                    auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
+//                    ZenoMainWindow *pWin = zenoApp->getMainWindow();
+//                    if (pWin) {
+//                        ZenoGraphsEditor *pEditor = pWin->getAnyEditor();
+//                        if (pEditor)
+//                            pEditor->activateTab(subgraph_name, "", obj_node_name);
+//                    }
+//                }
             };
 
             QPoint releasePos = event->pos();
@@ -434,6 +458,18 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     m_transformer->clear();
                     m_transformer->addObject(m_picker->get_picked_prims());
                 }
+                for(auto prim:m_picker->get_picked_prims())
+                {
+                    if (!prim.empty()) {
+                        auto primList = scene->objectsMan->pairs();
+                        for (auto const &[key, ptr]: primList) {
+                            if (prim == key) {
+                                auto &ud = ptr->userData();
+                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+                            }
+                        }
+                    }
+                }
             } else {
                 int x0 = m_boundRectStartPos.x();
                 int y0 = m_boundRectStartPos.y();
@@ -445,6 +481,41 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                     onPrimSelected();
                 m_transformer->clear();
                 m_transformer->addObject(m_picker->get_picked_prims());
+                std::cout<<"selected items:"<<m_picker->get_picked_prims().size()<<"\n";
+                std::vector<QString> nodes;
+                QString sgname;
+                for(auto prim:m_picker->get_picked_prims())
+                {
+                    if (!prim.empty()) {
+                        auto primList = scene->objectsMan->pairs();
+                        for (auto const &[key, ptr]: primList) {
+                            if (prim == key) {
+                                auto &ud = ptr->userData();
+                                std::cout<<"selected MatId: "<<ud.get2<std::string>("mtlid", "Default")<<"\n";
+                            }
+                        }
+                        auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(prim);
+                        auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
+                        auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
+                        nodes.push_back(obj_node_name);
+//                        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+//                        if (pWin) {
+//                            ZenoGraphsEditor *pEditor = pWin->getAnyEditor();
+//                            if (pEditor)
+//                                pEditor->selectTab(subgraph_name, "", obj_node_name);
+//                        }
+                        sgname = subgraph_name;
+                    }
+                }
+
+                ZenoMainWindow *pWin = zenoApp->getMainWindow();
+                if (pWin) {
+                    ZenoGraphsEditor *pEditor = pWin->getAnyEditor();
+                    if (pEditor)
+                        pEditor->selectTab(sgname, "", nodes);
+                }
+
+
             }
         }
     }

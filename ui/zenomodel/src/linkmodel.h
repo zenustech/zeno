@@ -10,9 +10,13 @@ class LinkModel : public QAbstractItemModel
     struct _linkItem
     {
         QString ident;
+        QString fromNode;
+        QString toNode;
         QPersistentModelIndex fromSock;
         QPersistentModelIndex toSock;
     };
+
+    typedef QVector<_linkItem> LINKS_ITEM;
 
 public:
     LinkModel(QObject* parent = nullptr);
@@ -44,7 +48,7 @@ public:
     void clear();
 
 private:
-    QVector<_linkItem> m_items;
+    LINKS_ITEM m_items;
 };
 
 

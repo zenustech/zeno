@@ -47,7 +47,7 @@ private:
 class LinkCommand : public QUndoCommand
 {
 public:
-    LinkCommand(bool bAddLink, const EdgeInfo& link, GraphsModel *pModel);
+    LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EdgeInfo& link, GraphsModel *pModel);
     void redo() override;
     void undo() override;
 
@@ -55,6 +55,7 @@ private:
     const bool m_bAdd;
     const EdgeInfo m_link;
     GraphsModel* m_model;
+    QPersistentModelIndex m_subgIdx;
 };
 
 class UpdateBlackboardCommand : public QUndoCommand
