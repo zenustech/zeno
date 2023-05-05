@@ -287,7 +287,7 @@ void ZSimpleTextItem::keyPressEvent(QKeyEvent* event)
 
 void ZSimpleTextItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-#if 1
+#if 0
     if (editor_factor < 0.2)
         return;
 #endif

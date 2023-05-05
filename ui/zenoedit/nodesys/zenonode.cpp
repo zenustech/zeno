@@ -75,11 +75,9 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
         painter->setRenderHint(QPainter::Antialiasing, true);
         QRectF r = m_headerWidget->boundingRect();
         qreal brWidth = ZenoStyle::scaleWidth(2);
-        r.adjust(-brWidth / 2, -brWidth / 2, brWidth / 2, 0);
+        r.adjust(-brWidth / 2, -brWidth / 2, brWidth / 2, brWidth / 2);
         QPainterPath path;
-        QPolygonF polygon;
-        polygon << r.bottomLeft() << r.topLeft() << r.topRight() << r.bottomRight();
-        path.addPolygon(polygon);
+        path.addRect(r);
         QPen pen(QColor(18,20,22), brWidth);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);
@@ -1140,7 +1138,7 @@ void ZenoNode::onZoomed()
 {
     m_pStatusWidgets->onZoomed();
     bool bVisible = true;
-    if (editor_factor < 0.3) {
+    if (editor_factor < 0.2) {
         bVisible = false;
     }
     if (m_bVisible != bVisible) {
@@ -1165,7 +1163,7 @@ void ZenoNode::onZoomed()
         }
     }
 
-    if (editor_factor < 0.1 || editor_factor > 0.3) 
+    if (editor_factor < 0.1 || editor_factor > 0.2) 
     {
         if (m_NameItemTip) 
         {
@@ -1182,7 +1180,7 @@ void ZenoNode::onZoomed()
     }
     if (m_NameItemTip) 
     {
-        m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(40)));
+        m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(36)));
     }
     if (m_bodyWidget)
         m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));

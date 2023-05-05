@@ -79,9 +79,9 @@ QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
 qreal ZenoStyle::scaleWidth(qreal value) 
 {
     qreal dividend = 1;
-    if (1 - editor_factor > 0.7f)
+    if (editor_factor < 0.3f)
         dividend = editor_factor / 0.5;
-    else if (1 - editor_factor > 0.00001f)
+    else if (editor_factor < 1.0f)
         dividend = editor_factor / 0.8;
     return ZenoStyle::dpiScaled(value / dividend);
 }
