@@ -5,7 +5,7 @@
 #include "cameracontrol.h"
 #include <zenovis/DrawOptions.h>
 #include "settings/zenosettingsmanager.h"
-
+#include "launch/corelaunch.h"
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
@@ -41,6 +41,25 @@ void OptixWorker::setupRecording(VideoRecInfo recInfo)
     emit sig_recordInfoSetuped();
 }
 
+void OptixWorker::onPlayToggled(bool bToggled)
+{
+    //todo: priority.
+    m_zenoVis->startPlay(bToggled);
+    m_pTimer->start(16);
+}
+
+void OptixWorker::onFrameSwitched(int frame)
+{
+    //ui switch.
+    m_zenoVis->setCurrentFrameId(frame);
+    m_zenoVis->startPlay(false);
+}
+
+void OptixWorker::cancelRecording()
+{
+    m_bRecording = false;
+}
+
 void OptixWorker::onFrameRunFinished(int frame)
 {
     if (m_bRecording)
@@ -63,20 +82,6 @@ void OptixWorker::onFrameRunFinished(int frame)
     }
 }
 
-void OptixWorker::onPlayToggled(bool bToggled)
-{
-    //todo: priority.
-    m_zenoVis->startPlay(bToggled);
-    m_pTimer->start(16);
-}
-
-void OptixWorker::onFrameSwitched(int frame)
-{
-    //ui switch.
-    m_zenoVis->setCurrentFrameId(frame);
-    m_zenoVis->startPlay(false);
-}
-
 void OptixWorker::recordVideo(VideoRecInfo recInfo)
 {
     //for the case about recording after run.
@@ -90,6 +95,11 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
 
     for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second; frame++)
     {
+        if (!m_bRecording)
+        {
+            emit sig_recordCanceled();
+            return;
+        }
         recordFrame_impl(recInfo, frame);
     }
     emit sig_recordFinished();
@@ -175,7 +185,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin)
-            mainWin->visFrameUpdated(frameid);
+            emit mainWin->visFrameUpdated(false, frameid);
     });
 
     //fake GL
@@ -271,6 +281,15 @@ void ZOptixViewport::setupRecording(VideoRecInfo recInfo)
 {
     //run with recording.
     emit sig_setupRecordInfo(recInfo);
+}
+
+void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)
+{
+    m_worker->cancelRecording();
+
+    if (!recInfo.bRecordAfterRun) {
+        killProgram();
+    }
 }
 
 void ZOptixViewport::onFrameRunFinished(int frame)

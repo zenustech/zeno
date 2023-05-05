@@ -70,7 +70,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin) {
-            mainWin->visFrameUpdated(frameid);
+            mainWin->visFrameUpdated(true, frameid);
         }
     });
 

@@ -34,11 +34,21 @@ Zenovis* RecordVideoMgr::getZenovis()
 void RecordVideoMgr::cancelRecord()
 {
     disconnectSignal();
-    //todo:
-    //Zenovis::GetInstance().blockSignals(false);
-    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-    if (mainWin)
-        mainWin->toggleTimelinePlay(false);
+
+    DisplayWidget* pWid = qobject_cast<DisplayWidget*>(parent());
+    ZASSERT_EXIT(pWid);
+    if (!pWid->isGLViewport())
+    {
+        ZOptixViewport* pView = pWid->optixViewport();
+        ZASSERT_EXIT(pView);
+        pView->cancelRecording(m_recordInfo);
+    }
+    else
+    {
+        ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+        if (mainWin)
+            mainWin->toggleTimelinePlay(false);
+    }
 }
 
 void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)

@@ -30,6 +30,7 @@ public slots:
     void onFrameRunFinished(int frame);
     void onPlayToggled(bool bToggled);
     void onFrameSwitched(int frame);
+    void cancelRecording();
 
 private:
     void recordFrame_impl(VideoRecInfo recInfo, int frame);
@@ -58,6 +59,7 @@ public:
     void resumeRender();
     void recordVideo(VideoRecInfo recInfo);
     void setupRecording(VideoRecInfo recInfo);
+    void cancelRecording(VideoRecInfo recInfo);
     void killThread();
 
 signals:
@@ -72,6 +74,7 @@ signals:
     void sig_recordInfoSetuped();
     void sig_togglePlayButton(bool bToggled);
     void sig_switchTimeFrame(int frame);
+    void sig_cancelRecording();
 
 public slots:
     void onFrameRunFinished(int frame);

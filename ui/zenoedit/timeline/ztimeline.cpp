@@ -95,10 +95,6 @@ void ZTimeline::initSignals()
         QString numText = QString::number(m_ui->timeliner->value());
         m_ui->editFrame->setText(numText);
     });
-
-    ZenoMainWindow* pWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(pWin);
-    connect(pWin, SIGNAL(visFrameUpdated(int)), this, SLOT(onTimelineUpdate(int)));
 }
 
 void ZTimeline::initStyleSheet()
