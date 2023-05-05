@@ -1044,6 +1044,7 @@ ZENO_DEFNODE(DeclareRemoteParameter) ({
 
 struct SetExecutionResult : public INode {
     void apply() override {
+        zeno::remote::StaticFlags.IsMainProcess = false;
         const std::string ProcessorType = get_input2<std::string>("type");
         const remote::ESubjectType Type = remote::NameToSubjectType(ProcessorType);
         const std::string SubjectName = get_input2<std::string>("name");
