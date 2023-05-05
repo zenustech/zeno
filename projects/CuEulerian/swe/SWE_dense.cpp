@@ -13,6 +13,8 @@
 
 namespace zeno {
 
+#define SW_OPEN_BOUNDARY 1
+
 struct SolveShallowWaterHeight : INode {
     void height_flux(float *flx, float *flz, float *h, float *u, float *w, int nx, int nz, int halo) {
         auto pol = zs::omp_exec();
@@ -159,19 +161,30 @@ struct SolveShallowWaterMomentum : INode {
 
             if (i < halo / 2) {
                 // left
+#if SW_OPEN_BOUNDARY
+                u[idx(i, j)] = -std::abs(u[idx(halo - 1 - i, j)]);
+                if (i == halo / 2 - 1) {
+                    u[idx(i + 1, j)] = -std::abs(u[idx(i + 2, j)]);
+                }
+#else
                 u[idx(i, j)] = -u[idx(halo - i, j)];
                 if (i == halo / 2 - 1) {
                     u[idx(i + 1, j)] = 0;
                 }
+#endif
                 w[idx(i, j)] = w[idx(halo - 1 - i, j)];
             } else {
                 // right
                 i += nx;
+#if SW_OPEN_BOUNDARY
+                u[idx(i, j)] = std::abs(u[idx(2 * nx + halo - 1 - i, j)]);
+#else
                 if (i == nx + halo / 2) {
                     u[idx(i, j)] = 0;
                 } else {
                     u[idx(i, j)] = -u[idx(2 * nx + halo - i, j)];
                 }
+#endif
                 w[idx(i, j)] = w[idx(2 * nx + halo - 1 - i, j)];
             }
         });
@@ -183,19 +196,30 @@ struct SolveShallowWaterMomentum : INode {
             if (j < halo / 2) {
                 // front
                 u[idx(i, j)] = u[idx(i, halo - 1 - j)];
+#if SW_OPEN_BOUNDARY
+                w[idx(i, j)] = -std::abs(w[idx(i, halo - 1 - j)]);
+                if (j == halo / 2 - 1) {
+                    w[idx(i, j + 1)] = -std::abs(w[idx(i, j + 2)]);
+                }
+#else
                 w[idx(i, j)] = -w[idx(i, halo - j)];
                 if (j == halo / 2 - 1) {
                     w[idx(i, j + 1)] = 0;
                 }
+#endif
             } else {
                 // back
                 j += nz;
                 u[idx(i, j)] = u[idx(i, 2 * nz + halo - 1 - j)];
+#if SW_OPEN_BOUNDARY
+                w[idx(i, j)] = std::abs(w[idx(i, 2 * nz + halo - 1 - j)]);
+#else
                 if (j == nz + halo / 2) {
                     w[idx(i, j)] = 0;
                 } else {
                     w[idx(i, j)] = -w[idx(i, 2 * nz + halo - j)];
                 }
+#endif
             }
         });
     }
