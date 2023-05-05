@@ -245,9 +245,17 @@ static struct SubjectRegistry {
         CONSTEXPR ESubjectType RequiredSubjectType = TGetClassSubjectType<T>::Value;
         if (StaticFlags.IsMainProcess) {
             auto& ElementMap = GetOrCreateSessionElement(SessionKey);
+            auto& GlobalElementMap = GetOrCreateSessionElement("");
 
+            // Try to find in sessional elements
             auto TargetIter = ElementMap.find(Key);
-            if (TargetIter == ElementMap.end()) return std::nullopt;
+            if (TargetIter == ElementMap.end()) {
+                // If not found, try to find in global elements
+                TargetIter = GlobalElementMap.find(Key);
+                if (TargetIter == GlobalElementMap.end()) {
+                    return std::nullopt;
+                }
+            }
             if (TargetIter->second.Type != static_cast<int16_t>(RequiredSubjectType)) return std::nullopt;
             std::error_code Err;
             T Result = msgpack::unpack<T>(TargetIter->second.Data, Err);
