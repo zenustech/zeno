@@ -204,7 +204,7 @@ ZENDEFNODE(CreateCircle,
 struct ParameterizeLine : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        if(! prim->lines.has_attr("parameterization")) {
+        if(!prim->lines.has_attr("parameterization")) {
             prim->lines.add_attr<float>("parameterization");
             float total = 0;
             std::vector<float> linesLen(prim->lines.size());
@@ -241,7 +241,7 @@ struct LineResample : INode {
         auto segments = get_input<NumericObject>("segments")->get<int>();
         if (segments < 1) { segments = 1; }
         std::vector<float> linesLen(prim->lines.size());
-        if(! prim->lines.has_attr("parameterization")) {
+        if(!prim->lines.has_attr("parameterization")) {
             prim->lines.add_attr<float>("parameterization");
             float total = 0;
             for (size_t i = 0; i < prim->lines.size(); i++) {
@@ -305,7 +305,6 @@ struct LineResample : INode {
             auto it = std::upper_bound(linesLen.begin(), linesLen.end(), insertU);
             size_t index = it - linesLen.begin();
             index = std::min(index, prim->lines.size() - 1);
-            if (index <= 0) continue;
             auto const& ind = prim->lines[index];
             auto a = prim->verts[ind[0]];
             auto b = prim->verts[ind[1]];
