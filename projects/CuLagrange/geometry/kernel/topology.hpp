@@ -973,6 +973,68 @@ namespace zeno {
                 coloring[vi] = setNo;
         });    
     }
+
+    template<typename Pol,typename TopoTileVec>
+    void reorder_topology(Pol& pol,
+        const TopoTileVec& reorder_map,
+        TopoTileVec& dst) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        using T = typename RM_CVREF_T(reorder_map)::value_type;
+
+        zs::bcht<int,int,true,zs::universal_hash<int>,16> v2p_tab{reorder_map.get_allocator(),reorder_map.size()};
+        zs::Vector<int> v2p_buffer{reorder_map.get_allocator(),reorder_map.size()};
+        pol(zs::range(reorder_map.size()),[
+            points = proxy<space>({},reorder_map),
+            v2p_buffer = proxy<space>(v2p_buffer),
+            v2p_tab = proxy<space>(v2p_tab)] ZS_LAMBDA(int pi) mutable {
+                auto vi = zs::reinterpret_bits<int>(points("inds",pi));
+                auto vNo = v2p_tab.insert(vi);
+                v2p_buffer[vNo] = pi;
+        });  
+
+        auto simplex_size = dst.getPropertySize("inds");
+
+        pol(zs::range(dst.size()),[
+            dst = proxy<space>({},dst),
+            simplex_size,
+            reorder_map = proxy<space>({},reorder_map),
+            v2p_tab = proxy<space>(v2p_tab),
+            v2p_buffer = proxy<space>(v2p_buffer)] ZS_LAMBDA(int ti) mutable {
+                for(int i = 0;i != simplex_size;++i) {
+                    auto di = zs::reinterpret_bits<int>(dst("inds",i,ti));
+                    auto vNo = v2p_tab.query(di);
+                    auto pi = v2p_buffer[vNo];
+                    dst("inds",i,ti) = zs::reinterpret_bits<T>(pi);
+                }
+        });      
+    }
+
+    template<typename Pol,typename SampleTileVec,typename TopoTileVec>
+    void topological_sample(Pol& pol,
+        const TopoTileVec& points,
+        const SampleTileVec& verts,
+        const std::string& attr_name,
+        SampleTileVec& dst
+    ) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        using T = typename RM_CVREF_T(verts)::value_type;    
+
+        dst.resize(points.size());
+        int attr_dim = verts.getPropertySize(attr_name);
+
+        pol(zs::range(points.size()),[
+            dst = proxy<space>({},dst),
+            points = proxy<space>({},points),
+            verts = proxy<space>({},verts),
+            attr_dim,
+            attr_name = zs::SmallString(attr_name)] ZS_LAMBDA(int pi) mutable {
+                auto vi = reinterpret_bits<int>(points("inds",pi));
+                for(int i = 0;i != attr_dim;++i)
+                    dst(attr_name,i,pi) = verts(attr_name,i,vi);
+        });    
+    }
     // template<typename Pol,typename VecTI,zs::enable_if_all<VecTI::dim == 1, VecTI::extent >= 2, VecTI::etent <= 4> = 0>
     // void surface_topological_coloring(Pol& pol,
     //         const zs::Vector<VecTI>& topo,

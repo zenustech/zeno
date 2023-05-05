@@ -126,6 +126,17 @@ int mark_edge_tri_intersection(Pol& pol,
 //         island_ids
 // }
 
+// template<typename Pol,typename PosTileVec,typename TriTileVec,typename InstTable>
+// int retrieve_triangulate_mesh_intersections(Pol& pol,
+//     const PosTileVec& verts_A,
+//     const zs::SmallString& xtag_A,
+//     TriTileVec& tris_A,
+//     const PosTileVec& verts_B,
+//     const zs::SmallString& xtag_B,
+//     TriTileVec& tris_B,
+// )
+
+
 
 template<typename Pol,typename PosTileVec,typename TriTileVec>
 int retrieve_triangulate_mesh_intersection_list(Pol& pol,
@@ -356,6 +367,170 @@ int retrieve_triangulate_mesh_intersection_list(Pol& pol,
         });
 
         return nmIts.getVal(0);
+}
+
+
+template<typename Pol,typename PosTileVec,typename TriTileVec>
+int do_global_self_intersection_analysis_on_surface_mesh(Pol& pol,
+    const PosTileVec& verts,
+    const zs::SmallString& xtag,
+    const TriTileVec& tris,
+    // bool is_volume_surface,
+    zs::Vector<zs::vec<int,2>>& ints_buffer,
+    zs::Vector<int>& nodal_colors) {
+        using namespace zs;
+        using index_type = std::make_signed_t<int>;
+        using size_type = std::make_unsigned_t<int>;
+        using table_vec2i_type = zs::bcht<zs::vec<int,2>,int,true,zs::universal_hash<zs::vec<int,2>>,16>;
+        using table_int_type = zs::bcht<int,int,true,zs::universal_hash<int>,16>;
+        using edge_topo_type = zs::Vector<zs::vec<int,2>>;
+        using inst_buffer_type = zs::Vector<zs::vec<int,2>>;
+        using inst_class_type = zs::Vector<int>;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        constexpr auto exec_tag = wrapv<space>{};
+
+        // table_type tab{verts.get_allocator(),tris.size() * 8};
+        // inst_buffer_type ints_buffer{tris.get_allocator(),tris.size() * 8};
+        inst_class_type ints_types{tris.get_allocator(),tris.size() * 8};
+
+        auto nm_insts = retrieve_triangulate_mesh_intersection_list(pol,
+            verts,xtag,tris,verts,xtag,tris,ints_buffer,ints_types,true);
+        
+        edge_topo_type dc_edge_topos{tris.get_allocator(),nm_insts * 6};
+        table_int_type tab{tris.get_allocator(),tris.size() * 8};
+
+        // auto topo_tag = is_volume_surface ? "fp_inds" : "inds";
+        std::string topo_tag{"inds"};
+        // if(!tris.hasProperty(topo_tag))
+        //     fmt::print(fg(fmt::color::red),"do_global_self_intersection_analysis::the input tris has no {} topo channel\n",topo_tag);
+
+        pol(zs::range(nm_insts),[
+            ints_buffer = proxy<space>(ints_buffer),
+            ints_types = proxy<space>(ints_types),
+            topo_tag = zs::SmallString(topo_tag),
+            dc_edge_topos = proxy<space>(dc_edge_topos),
+            tab = proxy<space>(tab),
+            tris = proxy<space>({},tris)] ZS_LAMBDA(int isi) mutable {
+                auto ta = ints_buffer[isi][0];
+                auto tb = ints_buffer[isi][1];
+                auto triA = tris.pack(dim_c<3>,topo_tag,ta,int_c);
+                auto triB = tris.pack(dim_c<3>,topo_tag,tb,int_c);
+
+                dc_edge_topos[isi * 6 + 0] = zs::vec<int,2>{triA[0],triA[1]};
+                dc_edge_topos[isi * 6 + 1] = zs::vec<int,2>{triA[1],triA[2]};
+                dc_edge_topos[isi * 6 + 2] = zs::vec<int,2>{triA[2],triA[0]};
+                dc_edge_topos[isi * 6 + 3] = zs::vec<int,2>{triB[0],triB[1]};
+                dc_edge_topos[isi * 6 + 4] = zs::vec<int,2>{triB[1],triB[2]};
+                dc_edge_topos[isi * 6 + 5] = zs::vec<int,2>{triB[2],triB[0]};
+
+                if(ints_types[isi] == 1) {
+                    int coincident_idx = -1;
+                    for(int i = 0;i != 3;++i)
+                        for(int j = 0;j != 3;++j)
+                            if(triA[i] == triB[j])
+                                coincident_idx = triA[i];
+                    tab.insert(coincident_idx);
+                }                
+        });
+
+        edge_topo_type edge_topos{tris.get_allocator(),tris.size() * 3};
+        pol(range(tris.size()),[
+            tris = proxy<space>({},tris),
+            tab = proxy<space>(tab),
+            topo_tag = zs::SmallString(topo_tag),
+            edge_topos = proxy<space>(edge_topos)] ZS_LAMBDA(int ti) mutable {
+                auto tri = tris.pack(dim_c<3>,topo_tag,ti,int_c);
+                auto is_coincident_idx = zs::vec<bool,3>::uniform(false);
+                for(int i = 0;i != 3;++i)
+                    if(auto qno = tab.query(tri[i]);qno >= 0)
+                        is_coincident_idx[i] = true;
+
+                for(int i = 0;i != 3;++i){
+                    if(is_coincident_idx[i] || is_coincident_idx[(i + 1) % 3])
+                        edge_topos[ti * 3 + i] = zs::vec<int,2>::uniform(-1);
+                    else
+                        edge_topos[ti * 3 + i] = zs::vec<int,2>{tri[i],tri[(i + 1) % 3]};
+                }
+        }); 
+
+        zs::Vector<int> island_buffer{verts.get_allocator(),verts.size()};
+		auto nm_islands = mark_disconnected_island(pol,edge_topos,dc_edge_topos,island_buffer);
+        zs::Vector<int> nm_cmps_every_island_count{verts.get_allocator(),(size_t)nm_islands};
+        // nm_cmps_every_island_count.setVal(0);
+        pol(zs::range(nm_cmps_every_island_count.size()),[
+            nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int i) mutable {
+                nm_cmps_every_island_count[i] = 0;
+        });
+        pol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            island_buffer = proxy<space>(island_buffer),
+            nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int vi) mutable {
+                auto island_idx = island_buffer[vi];
+                atomic_add(exec_cuda,&nm_cmps_every_island_count[island_idx],(int)1);
+        });
+
+
+        int max_size = 0;
+        int max_island_idx = 0;
+        for(int i = 0;i != nm_islands;++i) {
+            auto size_of_island = nm_cmps_every_island_count.getVal(i);
+            if(size_of_island > max_size){
+                max_size = size_of_island;
+                max_island_idx = i;
+            }
+        }
+
+        nodal_colors.resize(verts.size());
+        pol(zs::range(verts.size()),[
+            nodal_colors = proxy<space>(nodal_colors),
+            // ints_types = proxy<space>(ints_types),
+            max_island_idx = max_island_idx,
+            island_buffer = proxy<space>(island_buffer)] ZS_LAMBDA(int vi) mutable {
+                auto island_idx = island_buffer[vi];
+
+                if(island_idx == max_island_idx/* || ints_types[island_idx] == 1*/)
+                    nodal_colors[vi] = 0;
+                else
+                    nodal_colors[vi] = 1;
+        });
+        // skip the intersection pair with only one coincident point? s
+        pol(zs::range(nm_insts),[
+            ints_types = proxy<space>(ints_types),
+            nodal_colors = proxy<space>(nodal_colors),
+            ints_buffer = proxy<space>(ints_buffer),
+            tris = proxy<space>({},tris)] ZS_LAMBDA(int isi) mutable {
+                if(ints_types[isi] == 1) {
+                    auto ta = ints_buffer[isi][0];
+                    auto tb = ints_buffer[isi][1];
+                    auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
+                    auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
+
+                    int coidx = 0;
+                    for(int i = 0;i != 3;++i)
+                        for(int j = 0;j != 3;++j)
+                            if(triA[i] == triB[j])
+                                coidx = triA[i];
+                    nodal_colors[coidx] = 0;
+                }
+        });
+
+        // pol(zs::range(nm_insts),[
+        //     ints_buffer = proxy<space>(ints_buffer),
+        //     tris = proxy<space>({},tris),
+        //     topo_tag = zs::SmallString(topo_tag),
+        //     nodal_colors = proxy<space>(nodal_colors)] ZS_LAMBDA(int isi) mutable {
+        //         auto ta = ints_buffer[isi][0];
+        //         auto tb = ints_buffer[isi][1];
+        //         auto triA = tris.pack(dim_c<3>,topo_tag,ta,int_c);
+        //         auto triB = tris.pack(dim_c<3>,topo_tag,tb,int_c);
+
+        //         for(int i = 0;i != 3;++i) {
+        //             nodal_colors[triA[i]] = 1;
+        //             nodal_colors[triB[i]] = 1;
+        //         }
+        // });
+
+        return nm_insts;
 }
 
 // structure of intersection Buffer output

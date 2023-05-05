@@ -214,6 +214,12 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                     return;
             }
 
+            // if(verts.hasProperty("gia_tag")) {
+            //     auto gia_tag = verts("gia_tag",vi);
+            //     if(gia_tag < (T)0.5)
+            //         return;
+            // }
+
             auto p = verts.template pack<3>(xtag,vi);
             auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
 
@@ -234,6 +240,16 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                             return;
 
                 }
+
+                // if(verts.hasProperty("gia_tag")) {
+                //     for(int i = 0;i != 3;++i)
+                //         if(verts("gia_tag",tri[i]) < (T)0.5)
+                //             return;
+                //     // auto gia_tag = verts("gia_tag",vi);
+                //     // if(gia_tag < (T)0.5)
+                //     //     return;
+                // }
+
 
                 bool is_active_tri = true;
                 for(int i = 0;i != 3;++i)
@@ -277,11 +293,18 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 T distance = LSL_GEO::pointTriangleDistance(t0,t1,t2,p,barySum);
                 // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
                 // collisionEps = avge * max_ratio;
-                auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
+                dist = seg.dot(nrm);
+                auto collisionEps = dist > 0 ? out_collisionEps : in_collisionEps;
                 if(distance > collisionEps)
                     return;
-                dist = seg.dot(nrm);
 
+                if(dist < 0 && verts.hasProperty("gia_tag")) {  
+                    if(verts("gia_tag",vi) < (T)0.5)
+                        return;
+                    for(int i = 0;i != 3;++i)
+                        if(verts("gia_tag",tri[i]) < (T)0.5)
+                            return;
+                }
 
 
                 // if()

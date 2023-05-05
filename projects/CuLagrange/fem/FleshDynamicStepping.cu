@@ -37,6 +37,7 @@
 // #include "collision_energy/edge_edge_collision.hpp"
 
 #include "collision_energy/evaluate_collision.hpp"
+#include "../geometry/kernel/intersection.hpp"
 
 #include "zensim/math/matrix/SparseMatrix.hpp"
 
@@ -1192,8 +1193,6 @@ struct FleshDynamicStepping : INode {
 
         auto muscle_id_tag = get_input2<std::string>("muscle_id_tag");
 
-
-
         // auto bone_driven_weight = (T)0.02;
 
         auto newton_res = get_input2<float>("newton_res");
@@ -1280,6 +1279,23 @@ struct FleshDynamicStepping : INode {
         auto ktris = typename ZenoParticles::particles_t({
                 {"inds",3},
                 {"nrm",3}},0,zs::memsrc_e::device,0);
+
+
+        dtiles_t surf_tris_buffer{tris.get_allocator(),{
+            {"inds",3},
+            {"nrm",3}
+        },tris.size()};
+
+        dtiles_t surf_verts_buffer{points.get_allocator(),{
+            {"inds",1},
+            {"xn",3}
+        },points.size()};
+        TILEVEC_OPS::copy(cudaPol,points,"inds",surf_verts_buffer,"inds");
+        TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
+        reorder_topology(cudaPol,points,surf_tris_buffer);
+        zs::Vector<int> nodal_colors{surf_verts_buffer.get_allocator(),surf_verts_buffer.size()};
+        zs::Vector<zs::vec<int,2>> instBuffer{surf_verts_buffer.get_allocator(),surf_verts_buffer.size() * 8};
+
         if(has_input<ZenoParticles>("kinematic_boundary")){
             auto kinematic_boundary = get_input<ZenoParticles>("kinematic_boundary");
             // if (kinematic_boundary.empty())
@@ -1340,6 +1356,7 @@ struct FleshDynamicStepping : INode {
                                 {"is_inverted",1},
                                 {"active",1},
                                 {"k_active",1},
+                                {"gia_tag",1},
                                 {"grad",3},
                                 {"H",9},
                                 {"inds",1}
@@ -1733,6 +1750,7 @@ struct FleshDynamicStepping : INode {
             if(verts.hasProperty(planeConsPosTag) && verts.hasProperty(planeConsNrmTag) && verts.hasProperty(planeConsIDTag) && verts.hasProperty(planeConsBaryTag) && use_plane_constraint){
                 std::cout << "apply plane constraint" << std::endl;
                 // A.computePlaneConstraintGradientAndHessian(cudaPol,
+                
                 A.computePlaneConstraintGradientAndHessian2(cudaPol,
                     vtemp,
                     sttemp,
@@ -1755,6 +1773,8 @@ struct FleshDynamicStepping : INode {
 
 
             if(turn_on_self_collision) {
+                // auto nm_insts = do_
+
                 #ifdef USE_SPARSE_MATRIX
                 COLLISION_UTILS::do_facet_point_collsion_detection_and_compute_surface_normal(
                     cudaPol,
@@ -1779,6 +1799,24 @@ struct FleshDynamicStepping : INode {
                     throw std::runtime_error("nan cHn detected");
                 }
                 #else
+
+                // if(verts.hasProperty("active"))
+                //     TILEVEC_OPS::copy(cudaPol,verts,"k_active",vtemp,"k_active");
+                // else
+                //     TILEVEC_OPS::fill(cudaPol,vtemp,"k_active",(T)1.0);
+
+                topological_sample(cudaPol,points,vtemp,"xn",surf_verts_buffer);
+                auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh(cudaPol,
+                    surf_verts_buffer,"xn",surf_tris_buffer,instBuffer,nodal_colors);
+                TILEVEC_OPS::fill(cudaPol,vtemp,"gia_tag",(T)0.0);
+                cudaPol(zs::range(nodal_colors.size()),[
+                    nodal_colors = proxy<space>(nodal_colors),
+                    vtemp = proxy<space>({},vtemp),
+                    points = proxy<space>({},points)] ZS_LAMBDA(int pi) mutable {
+                        auto vi = zs::reinterpret_bits<int>(points("inds",pi));
+                        if(nodal_colors[pi] == 1)
+                            vtemp("gia_tag",vi) = (T)1.0;
+                });
                 match([&](auto &elasticModel) {
                     A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
                         vtemp,
