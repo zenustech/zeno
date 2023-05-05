@@ -94,21 +94,40 @@ struct VDBPointsToPrimitive : zeno::INode {
     if (hasVel) {
       auto &retvel = ret->add_attr<zeno::vec3f>("vel");
 
-#if 0
-      using MapT = std::map<std::thread::id, std::tuple<std::vector<vec3f>, std::vector<vec3f>>>;
+#if 1
+      using MapT = std::map<std::thread::id, size_t>;
       using IterT = typename MapT::iterator;
       MapT pars;
+      MapT offsets;
       std::mutex mutex;
 
-      auto converter = [&](auto &range) {
+      auto counter = [&](auto &range) {
           IterT iter;
           {
               std::lock_guard<std::mutex> lk(mutex);
               bool tag;
-              std::tie(iter, tag) = pars.insert(std::make_pair(
-                  std::this_thread::get_id(), std::make_tuple(std::vector<vec3f>{}, std::vector<vec3f>{})));
+              std::tie(iter, tag) = pars.insert(std::make_pair(std::this_thread::get_id(), 0));
           }
-          auto &[pos_, vel_] = iter->second;
+          size_t &inc = iter->second;
+          for (auto leafIter = range.begin(); leafIter; ++leafIter) {
+              size_t count = leafIter->pointCount();
+              inc += count;
+          }
+          //std::cout << "thread [" << std::this_thread::get_id() << "]: " << lcnt << "leafs, " << inc << "pars in total\n";
+      };
+      {
+        openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
+        tbb::parallel_for(leafman.leafRange(), counter, tbb::static_partitioner());
+      }
+
+      size_t offset = 0;
+      for (const auto &[tid, sz] : pars) {
+        offsets.emplace(tid, offset);
+        offset += sz;
+      }
+
+      auto converter = [&](auto &range) {
+          auto offset = offsets[std::this_thread::get_id()];
 
           for (auto leafIter = range.begin(); leafIter; ++leafIter) {
 
@@ -125,26 +144,16 @@ struct VDBPointsToPrimitive : zeno::INode {
 
                   openvdb::Vec3f particleVel = velocityHandle.get(*indexIter);
 
-                  pos_.emplace_back(worldPosition[0], worldPosition[1], worldPosition[2]);
-                  vel_.emplace_back(particleVel[0], particleVel[1], particleVel[2]);
+                  retpos[offset] = zeno::vec3f(worldPosition[0], worldPosition[1], worldPosition[2]);
+                  retvel[offset++] = zeno::vec3f(particleVel[0], particleVel[1], particleVel[2]);
               }
           }
       };
-      openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
-      tbb::parallel_for(leafman.leafRange(), converter);
-
-      std::vector<vec3f> retpos_, retvel_;
-      retpos_.resize(count);
-      retvel_.resize(count);
-      std::size_t offset = 0;
-      for (const auto &[_, par] : pars) {
-        const auto &[pos, vel] = par;
-        std::copy(pos.begin(), pos.end(), retpos_.begin() + offset);
-        std::copy(vel.begin(), vel.end(), retvel_.begin() + offset);
-        offset += pos.size();
+      {
+        openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
+        tbb::parallel_for(leafman.leafRange(), converter, tbb::static_partitioner());
       }
-      std::swap(retpos, retpos_);
-      std::swap(retvel, retvel_);
+
 #else
       size_t i = 0;
       for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
@@ -169,23 +178,42 @@ struct VDBPointsToPrimitive : zeno::INode {
 #endif
     } else {
 
-#if 0
-      using MapT = std::map<std::thread::id, std::vector<vec3f>>;
+#if 1
+      using MapT = std::map<std::thread::id, size_t>;
       using IterT = typename MapT::iterator;
       MapT pars;
+      MapT offsets;
       std::mutex mutex;
 
-      auto converter = [&](auto &range) {
+      auto counter = [&](auto &range) {
           IterT iter;
           {
               std::lock_guard<std::mutex> lk(mutex);
               bool tag;
-              std::tie(iter, tag) = pars.insert(std::make_pair(std::this_thread::get_id(), std::vector<vec3f>{}));
+              std::tie(iter, tag) = pars.insert(std::make_pair(std::this_thread::get_id(), 0));
           }
-          auto &pos_ = iter->second;
+          size_t &inc = iter->second;
+          for (auto leafIter = range.begin(); leafIter; ++leafIter) {
+              size_t count = leafIter->pointCount();
+              inc += count;
+          }
+          //std::cout << "thread [" << std::this_thread::get_id() << "]: " << lcnt << "leafs, " << inc << "pars in total\n";
+      };
+      {
+        openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
+        tbb::parallel_for(leafman.leafRange(), counter, tbb::static_partitioner());
+      }
+
+      size_t offset = 0;
+      for (const auto &[tid, sz] : pars) {
+        offsets.emplace(tid, offset);
+        offset += sz;
+      }
+
+      auto converter = [&](auto &range) {
+          auto offset = offsets[std::this_thread::get_id()];
 
           for (auto leafIter = range.begin(); leafIter; ++leafIter) {
-
               const openvdb::points::AttributeArray &positionArray = leafIter->constAttributeArray("P");
 
               openvdb::points::AttributeHandle<openvdb::Vec3f> positionHandle(positionArray);
@@ -195,21 +223,14 @@ struct VDBPointsToPrimitive : zeno::INode {
                   const openvdb::Vec3d xyz = indexIter.getCoord().asVec3d();
                   openvdb::Vec3f worldPosition = grid->transform().indexToWorld(voxelPosition + xyz);
 
-                  pos_.emplace_back(worldPosition[0], worldPosition[1], worldPosition[2]);
+                  retpos[offset++] = zeno::vec3f(worldPosition[0], worldPosition[1], worldPosition[2]);
               }
           }
       };
-      openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
-      tbb::parallel_for(leafman.leafRange(), converter);
-
-      std::vector<vec3f> retpos_;
-      retpos_.resize(count);
-      std::size_t offset = 0;
-      for (const auto &[_, pos] : pars) {
-        std::copy(pos.begin(), pos.end(), retpos_.begin() + offset);
-        offset += pos.size();
+      {
+        openvdb::tree::LeafManager<std::decay_t<decltype(grid->tree())>> leafman(grid->tree());
+        tbb::parallel_for(leafman.leafRange(), converter, tbb::static_partitioner());
       }
-      std::swap(retpos, retpos_);
 #else
       size_t i = 0;
       for (auto leafIter = grid->tree().cbeginLeaf(); leafIter; ++leafIter) {
