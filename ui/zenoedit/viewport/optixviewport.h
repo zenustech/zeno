@@ -19,6 +19,7 @@ signals:
     void sig_recordFinished();
     void sig_frameRecordFinished(int frame);
     void sig_recordInfoSetuped();
+    void sig_recordCanceled();
 
 public slots:
     void stop();

@@ -186,7 +186,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin)
             emit mainWin->visFrameUpdated(false, frameid);
-    });
+    }, Qt::BlockingQueuedConnection);
 
     //fake GL
     m_zenovis->initializeGL();
