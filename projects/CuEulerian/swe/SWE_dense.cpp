@@ -16,8 +16,8 @@ namespace zeno {
 struct SolveShallowWaterHeight : INode {
     void height_flux(float *flx, float *flz, float *h, float *u, float *w, int nx, int nz, int halo) {
         auto pol = zs::omp_exec();
-        pol(zs::Collapse{nx + 1, nz + 1}, [&](int i, int j) {
-            auto idx = [=](auto i, auto j) { return i * (nz + halo) + j; };
+        pol(zs::Collapse{nz + 1, nx + 1}, [&](int j, int i) {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
             i += halo / 2;
             j += halo / 2;
 
@@ -41,8 +41,8 @@ struct SolveShallowWaterHeight : INode {
     void height_integral(float *h_new, float *h_old, float *h_n, float *flx, float *flz, int nx, int nz, int halo,
                          float dx, float dt, float c0, float c1) {
         auto pol = zs::omp_exec();
-        pol(zs::Collapse{nx, nz}, [&](int i, int j) {
-            auto idx = [=](auto i, auto j) { return i * (nz + halo) + j; };
+        pol(zs::Collapse{nz, nx}, [&](int j, int i) {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
             i += halo / 2;
             j += halo / 2;
 
@@ -57,8 +57,8 @@ struct SolveShallowWaterHeight : INode {
         auto pol = zs::omp_exec();
 
         // x boundary
-        pol(zs::Collapse{halo, nz + halo}, [&](int i, int j) {
-            auto idx = [=](auto i, auto j) { return i * (nz + halo) + j; };
+        pol(zs::Collapse{nz + halo, halo}, [&](int j, int i) {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
 
             if (i < halo / 2) {
                 // left
@@ -71,8 +71,8 @@ struct SolveShallowWaterHeight : INode {
         });
 
         // z boundary
-        pol(zs::Collapse{nx + halo, halo}, [&](int i, int j) {
-            auto idx = [=](auto i, auto j) { return i * (nz + halo) + j; };
+        pol(zs::Collapse{halo, nx + halo}, [&](int j, int i) {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
 
             if (j < halo / 2) {
                 // front
@@ -154,8 +154,8 @@ struct SolveShallowWaterMomentum : INode {
         auto pol = zs::omp_exec();
 
         // x boundary
-        pol(zs::Collapse{halo, nz + halo}, [&](int i, int j) {
-            auto idx = [=](auto i, auto j) { return i * (nz + halo) + j; };
+        pol(zs::Collapse{nz + halo, halo}, [&](int j, int i) {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
 
             if (i < halo / 2) {
                 // left
@@ -177,8 +177,8 @@ struct SolveShallowWaterMomentum : INode {
         });
 
         // z boundary
-        pol(zs::Collapse{nx + halo, halo}, [&](int i, int j) {
-            auto idx = [=](auto i, auto j) { return i * (nz + halo) + j; };
+        pol(zs::Collapse{halo, nx + halo}, [&](int j, int i) {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
 
             if (j < halo / 2) {
                 // front
@@ -203,8 +203,8 @@ struct SolveShallowWaterMomentum : INode {
     void momentum_stencil(float *u_new, float *w_new, float *u_old, float *w_old, float *u_n, float *w_n, float *h,
                           float *B, float gravity, int nx, int nz, int halo, float dx, float dt, float c0, float c1) {
         auto pol = zs::omp_exec();
-        pol(zs::Collapse{nx, nz}, [&](int i, int j) {
-            auto idx = [=](auto i, auto j) { return i * (nz + halo) + j; };
+        pol(zs::Collapse{nz, nx}, [&](int j, int i) {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
             i += halo / 2;
             j += halo / 2;
 
