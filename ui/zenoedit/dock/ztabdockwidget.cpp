@@ -159,7 +159,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
             wid->initUI();
             return wid;
         }
-        case PANEL_VIEW:
+        case PANEL_GL_VIEW:
         {
             DockContent_View* wid = new DockContent_View(true);
             wid->initUI();
@@ -205,12 +205,13 @@ QString ZTabDockWidget::type2Title(PANEL_TYPE type)
 {
     switch (type)
     {
-    case PANEL_VIEW:        return tr("Scene Viewport");
+    case PANEL_GL_VIEW:        return tr("Scene Viewport");
     case PANEL_EDITOR:      return tr("Node Editor");
     case PANEL_NODE_PARAMS: return tr("Parameter");
     case PANEL_NODE_DATA:   return tr("Spreadsheet");
     case PANEL_LOG:         return tr("Log");
     case PANEL_LIGHT:       return tr("Light");
+    case PANEL_OPTIX_VIEW:  return tr("Optix");
     case PANEL_IMAGE: return tr("Image");
     default:
         return "";
@@ -224,7 +225,7 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
         type = PANEL_NODE_PARAMS;
     }
     else if (title == tr("View") || title == "View" || title == tr("Scene Viewport") || title == "Scene Viewport") {
-        type = PANEL_VIEW;
+        type = PANEL_GL_VIEW;
     }
     else if (title == tr("Editor") || title == "Editor" || title == tr("Node Editor") || title == "Node Editor") {
         type = PANEL_EDITOR;
@@ -241,7 +242,7 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     else if (title == tr("Image")|| title == "Image") {
         type = PANEL_IMAGE;
     }
-    else if (title == tr("Optix")) {
+    else if (title == tr("Optix")|| title == "Optix") {
         type = PANEL_OPTIX_VIEW;
     }
     return type;
@@ -500,7 +501,7 @@ void ZTabDockWidget::onAddTabClicked()
                 int idx = m_tabWidget->addTab(wid, name);
                 switch (panels.indexOf(name)) {
                 case 0: m_debugPanel = PANEL_NODE_PARAMS; break;
-                case 1: m_debugPanel = PANEL_VIEW; break;
+                case 1: m_debugPanel = PANEL_GL_VIEW; break;
                 case 2: m_debugPanel = PANEL_EDITOR; break;
                 case 3: m_debugPanel = PANEL_NODE_DATA; break;
                 case 4: m_debugPanel = PANEL_LOG; break;
