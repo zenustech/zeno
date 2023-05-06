@@ -114,6 +114,9 @@ int Zenovis::setCurrentFrameId(int frameid)
 void Zenovis::doFrameUpdate()
 {
     int frameid = getCurrentFrameId();
+
+    //todo: move out of the optix working thread.
+#if 0
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     if (!pMainWin)
         return;
@@ -124,6 +127,7 @@ void Zenovis::doFrameUpdate()
 
     int ui_frameid = timeline->value();
     zenoApp->getMainWindow()->doFrameUpdate(ui_frameid);
+#endif
 
     if (m_playing) {
         zeno::log_trace("playing at frame {}", frameid);

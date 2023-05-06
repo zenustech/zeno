@@ -52,6 +52,7 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     {
         m_optixView = new ZOptixViewport;
         pLayout->addWidget(m_optixView);
+        connect(this, &DisplayWidget::frameRunFinished, m_optixView, &ZOptixViewport::onFrameRunFinished);
     }
 
     setLayout(pLayout);
@@ -173,18 +174,31 @@ ZOptixViewport* DisplayWidget::optixViewport() const
     return m_optixView;
 }
 
+void DisplayWidget::killOptix()
+{
+    if (m_optixView)
+        m_optixView->killThread();
+}
+
 void DisplayWidget::onPlayClicked(bool bChecked)
 {
-    if (bChecked)
+    if (m_bGLView)
     {
-        m_pTimer->start(m_sliderFeq);
+        if (bChecked)
+        {
+            m_pTimer->start(m_sliderFeq);
+        }
+        else
+        {
+            m_pTimer->stop();
+        }
+        if (getZenoVis())
+            getZenoVis()->startPlay(bChecked);
     }
     else
     {
-        m_pTimer->stop();
+        emit m_optixView->sig_togglePlayButton(bChecked);
     }
-    if (getZenoVis())
-        getZenoVis()->startPlay(bChecked);
 }
 
 void DisplayWidget::updateFrame(const QString &action) // cihou optix
@@ -206,6 +220,9 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
             //restore the timer, because it will be stopped by signal of new frame.
             m_pTimer->start(m_sliderFeq);
         }
+        int frame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+        frame = std::max(frame, 0);
+        emit frameRunFinished(frame);
     }
     else if (!action.isEmpty())
     {
@@ -214,10 +231,11 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
         return;
     }
     if (m_bGLView)
+    {
         m_glView->update();
+    }
     else
     {
-        m_optixView->updateCamera();
         m_optixView->update();
     }
 }
@@ -333,9 +351,6 @@ void DisplayWidget::onFinished()
     {
         pZenoVis->setCurrentFrameId(frameid_ui);
         updateFrame();
-        onPlayClicked(false);
-        BlockSignalScope scope(timeline);
-        timeline->setPlayButtonChecked(false);
     }
 }
 
@@ -344,7 +359,8 @@ bool DisplayWidget::isOptxRendering() const
     return !m_bGLView;
 }
 
-void DisplayWidget::onSliderValueChanged(int frame) {
+void DisplayWidget::onSliderValueChanged(int frame)
+{
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     mainWin->clearErrorMark();
 
@@ -360,11 +376,19 @@ void DisplayWidget::onSliderValueChanged(int frame) {
     }
     else
     {
-        Zenovis *pZenoVis = getZenoVis();
-        ZASSERT_EXIT(pZenoVis);
-        pZenoVis->setCurrentFrameId(frame);
-        updateFrame();
-        onPlayClicked(false);
+        if (m_bGLView)
+        {
+            Zenovis *pZenoVis = getZenoVis();
+            ZASSERT_EXIT(pZenoVis);
+            pZenoVis->setCurrentFrameId(frame);
+            updateFrame();
+            onPlayClicked(false);
+        }
+        else
+        {
+            ZASSERT_EXIT(m_optixView);
+            emit m_optixView->sig_switchTimeFrame(frame);
+        }
         BlockSignalScope scope(timeline);
         timeline->setPlayButtonChecked(false);
     }
@@ -505,7 +529,8 @@ void DisplayWidget::onScreenShoot() {
     }
 }
 
-void DisplayWidget::onRecord() {
+void DisplayWidget::onRecord()
+{
     auto &pGlobalComm = zeno::getSession().globalComm;
     ZASSERT_EXIT(pGlobalComm);
 
@@ -519,13 +544,15 @@ void DisplayWidget::onRecord() {
     }
 
     ZRecordVideoDlg dlg(frameLeft, frameRight, this);
-    if (QDialog::Accepted == dlg.exec()) {
+    if (QDialog::Accepted == dlg.exec())
+    {
         VideoRecInfo recInfo;
         dlg.getInfo(recInfo.frameRange.first, recInfo.frameRange.second, recInfo.fps, recInfo.bitrate, recInfo.res[0],
                     recInfo.res[1], recInfo.record_path, recInfo.videoname, recInfo.numOptix, recInfo.numMSAA,
                     recInfo.bRecordAfterRun, recInfo.bExportVideo);
         //validation.
 
+        //setup signals issues.
         m_recordMgr.setRecordInfo(recInfo);
 
         bool bRun = !recInfo.bRecordAfterRun;
@@ -561,10 +588,21 @@ void DisplayWidget::onRecord() {
 #endif
         if (!m_bGLView)
         {
-            m_optixView->recordVideo(recInfo);
+            //optix recording.
+            if (bRun)
+            {
+                //and then run.
+                onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+            }
+            else
+            {
+                //triggered:
+                m_optixView->recordVideo(recInfo);
+            }
         }
         else
         {
+            //normal viewport recording.
             if (bRun) {
                 //clear the global Comm first, to avoid play old frames.
                 zeno::getSession().globalComm->clearState();

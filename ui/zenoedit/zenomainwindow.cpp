@@ -132,6 +132,7 @@ void ZenoMainWindow::initWindowProperty()
         updateNativeWinTitle(title);
     });
     connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
+    connect(this, &ZenoMainWindow::visFrameUpdated, this, &ZenoMainWindow::onZenovisFrameUpdate);
 }
 
 void ZenoMainWindow::updateNativeWinTitle(const QString& title)
@@ -800,6 +801,8 @@ void ZenoMainWindow::updateViewport(const QString& action)
     {
         view->updateFrame(action);
     }
+    if (action == "finishFrame")
+        updateLightList();
 }
 
 ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
@@ -927,9 +930,20 @@ std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
     return m_spCacheMgr;
 }
 
+void ZenoMainWindow::killOptix()
+{
+    DisplayWidget* pWid = this->getOptixWidget();
+    if (pWid)
+    {
+        pWid->killOptix();
+    }
+}
+
 void ZenoMainWindow::closeEvent(QCloseEvent *event)
 {
     killProgram();
+    killOptix();
+
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
@@ -1016,6 +1030,25 @@ void ZenoMainWindow::mouseMoveEvent(QMouseEvent* event)
 void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
 {
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
+{
+    if (!m_pTimeline)
+        return;
+
+    bool bHasOptix = getOptixWidget() != nullptr;
+    if (bHasOptix)
+    {
+        if (!bGLView)
+        {
+            m_pTimeline->onTimelineUpdate(frameid);
+        }
+    }
+    else
+    {
+        m_pTimeline->onTimelineUpdate(frameid);
+    }
 }
 
 void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
