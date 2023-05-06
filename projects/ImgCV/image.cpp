@@ -1111,7 +1111,7 @@ struct ImageEditBlur : INode {
                 }
             }
         }
-        if(mode=="CVBilateralFilter"){
+        if(mode=="CVBilateralBlur"){
             if(xsize%2==0){
                 xsize += 1;
             }
@@ -1130,7 +1130,7 @@ struct ImageEditBlur : INode {
         if(mode=="MedianBlur"){
             MedianBlur(image,imagetmp, w, h, xsize);
         }
-        if(mode=="BilateralFilter"){
+        if(mode=="BilateralBlur"){
             bilateralFilter(image,imagetmp, w, h, xsize, ysize);
         }
 
@@ -1141,7 +1141,7 @@ struct ImageEditBlur : INode {
 ZENDEFNODE(ImageEditBlur, {
     {
         {"image"},
-        {"enum Blur GaussianBlur MedianBlur BilateralFilter CVGaussianBlur CVMedianBlur CVBilateralFilter", "mode", "Blur"},
+        {"enum Blur GaussianBlur MedianBlur BilateralBlur CVGaussianBlur CVMedianBlur CVBilateralBlur", "mode", "Blur"},
         {"float", "xsize", "10"},
         {"float", "ysize", "10"},
     },
@@ -1214,7 +1214,6 @@ struct EdgeDetect : INode {
         }
     }
 };
-
 ZENDEFNODE(EdgeDetect, {
    {
        {"image"},
@@ -1228,6 +1227,7 @@ ZENDEFNODE(EdgeDetect, {
     {},
     { "comp" },
 });
+
 struct EdgeDetect2 : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
@@ -1256,7 +1256,6 @@ struct EdgeDetect2 : INode {
         }
     }
 };
-
 ZENDEFNODE(EdgeDetect2, {
     {
         {"image"},
@@ -1270,7 +1269,7 @@ ZENDEFNODE(EdgeDetect2, {
     { "comp" },
 });
 
-struct CompExtractRGBA2 : INode {
+struct CompExtractRGBA_gray : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGBA = get_input2<std::string>("RGBA");
@@ -1314,7 +1313,7 @@ struct CompExtractRGBA2 : INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(CompExtractRGBA2, {
+ZENDEFNODE(CompExtractRGBA_gray, {
     {
         {"image"},
         {"enum RGBA R G B A", "RGBA", "RGBA"},
