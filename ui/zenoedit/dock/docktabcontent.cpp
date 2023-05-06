@@ -569,7 +569,7 @@ void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
 /// <summary>
 /// </summary>
 /// <param name="parent"></param>
-DockContent_View::DockContent_View(bool bOptixView, QWidget* parent)
+DockContent_View::DockContent_View(bool bGLView, QWidget* parent)
     : DockToolbarWidget(parent)
     , m_pDisplay(nullptr)
     , m_cbRenderWay(nullptr)
@@ -581,7 +581,7 @@ DockContent_View::DockContent_View(bool bOptixView, QWidget* parent)
     , m_recordVideo(nullptr)
     , m_screenshoot(nullptr)
     , m_resizeViewport(nullptr)
-    , m_bOptixView(bOptixView)
+    , m_bGLView(bGLView)
 {
 }
 
@@ -732,7 +732,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
 QWidget* DockContent_View::initWidget()
 {
-    m_pDisplay = new DisplayWidget(m_bOptixView);
+    m_pDisplay = new DisplayWidget(m_bGLView);
     return m_pDisplay;
 }
 
@@ -820,6 +820,11 @@ void DockContent_View::onCommandDispatched(QAction *pAction, bool bTriggered)
 DisplayWidget* DockContent_View::getDisplayWid() const
 {
     return m_pDisplay;
+}
+
+bool DockContent_View::isGLView() const
+{
+    return m_bGLView;
 }
 
 QSize DockContent_View::viewportSize() const

@@ -801,6 +801,8 @@ void ZenoMainWindow::updateViewport(const QString& action)
     {
         view->updateFrame(action);
     }
+    if (action == "finishFrame")
+        updateLightList();
 }
 
 ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
