@@ -104,17 +104,18 @@ ZENDEFNODE(MakeDict, {
     {"dict"},
 });
 
-struct MocDictAsInput : zeno::INode {
+struct MultiMakeDict : zeno::INode {
     virtual void apply() override {
-    
+        auto lst = get_input2<zeno::DictObject>("dict");
+        set_output("dict", std::move(lst));
     }
 };
 
-ZENDEFNODE(MocDictAsInput, {
+ZENDEFNODE(MultiMakeDict, {
     {{"DictObject", "dict"}},
+    {"dict"},
     {},
-    {},
-    {"dict2"},
+    {"dict"},
 });
 
 struct MocDictAsOutput : zeno::INode {

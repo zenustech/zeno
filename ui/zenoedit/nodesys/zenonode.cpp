@@ -42,6 +42,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_headerWidget(nullptr)
     , m_border(new QGraphicsRectItem)
     , m_NameItem(nullptr)
+    , m_pCategoryItem(nullptr)
     , m_bError(false)
     , m_bEnableSnap(false)
     , m_bMoving(false)
@@ -52,6 +53,8 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_outputsLayout(nullptr)
     , m_groupNode(nullptr)
     , m_pStatusWidgets(nullptr)
+    , m_bVisible(true)
+    , m_NameItemTip(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -68,9 +71,9 @@ void ZenoNode::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
         _drawBorderWangStyle(painter);
     }
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
-    if (type == NORMAL_NODE) {
+    if (type == NORMAL_NODE || type == HEATMAP_NODE || type == SUBINPUT_NODE || type == SUBOUTPUT_NODE) {
         painter->setRenderHint(QPainter::Antialiasing, true);
-        QRectF r = boundingRect();
+        QRectF r = m_headerWidget->boundingRect();
         qreal brWidth = ZenoStyle::scaleWidth(2);
         r.adjust(-brWidth / 2, -brWidth / 2, brWidth / 2, brWidth / 2);
         QPainterPath path;
@@ -133,13 +136,14 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
 
     m_headerWidget = initHeaderWidget(pGraphsModel);
     m_bodyWidget = initBodyWidget(pScene);
+    m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 
     ZGraphicsLayout* mainLayout = new ZGraphicsLayout(false);
     mainLayout->setDebugName("mainLayout");
     mainLayout->addItem(m_headerWidget);
     mainLayout->addItem(m_bodyWidget);
 
-    mainLayout->setSpacing(type == NORMAL_NODE ? ZenoStyle::dpiScaled(2) : 0);
+    mainLayout->setSpacing(0);
     setLayout(mainLayout);
 
     QPointF pos = m_index.data(ROLE_OBJPOS).toPointF();
@@ -167,6 +171,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     m_border->hide();
 
     m_bUIInited = true;
+    onZoomed();
 }
 
 ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
@@ -210,13 +215,13 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     pNameLayout->addItem(m_NameItem);
     if (!category.isEmpty())
     {
-        ZSimpleTextItem *pCategoryItem = new ZSimpleTextItem(category);
-        pCategoryItem->setBrush(QColor("#AB6E40"));
+        m_pCategoryItem = new ZSimpleTextItem(category);
+        m_pCategoryItem->setBrush(QColor("#AB6E40"));
         QFont font = zenoApp->font();
-        pCategoryItem->setFont(font);
-        pCategoryItem->updateBoundingRect();
-        pCategoryItem->setAcceptHoverEvents(false);
-        pNameLayout->addItem(pCategoryItem);
+        m_pCategoryItem->setFont(font);
+        m_pCategoryItem->updateBoundingRect();
+        m_pCategoryItem->setAcceptHoverEvents(false);
+        pNameLayout->addItem(m_pCategoryItem);
     }
 
     m_pStatusWidgets = new ZenoMinStatusBtnItem(m_renderParams.status);
@@ -1132,6 +1137,53 @@ bool ZenoNode::isMoving() {
 void ZenoNode::onZoomed()
 {
     m_pStatusWidgets->onZoomed();
+    bool bVisible = true;
+    if (editor_factor < 0.2) {
+        bVisible = false;
+    }
+    if (m_bVisible != bVisible) {
+        m_bVisible = bVisible;
+        for (auto item : m_inSockets) {
+            item->setVisible(bVisible);
+        }
+        for (auto item : m_outSockets) {
+            item->setVisible(bVisible);
+        }
+        for (auto it = m_params.begin(); it != m_params.end(); it++) {
+            if (it->second.param_control)
+                it->second.param_control->setVisible(bVisible);
+            if (it->second.param_name)
+                it->second.param_name->setVisible(bVisible);
+        }
+        if (m_NameItem) {
+            m_NameItem->setVisible(bVisible);
+        }
+        if (m_pCategoryItem) {
+            m_pCategoryItem->setVisible(bVisible);
+        }
+    }
+
+    if (editor_factor < 0.1 || editor_factor > 0.2) 
+    {
+        if (m_NameItemTip) 
+        {
+            delete m_NameItemTip;
+            m_NameItemTip = nullptr;
+        }
+    }
+    else if (m_NameItemTip == nullptr) 
+    {
+        m_NameItemTip = new ZSimpleTextItem(m_NameItem->text(), this);
+        m_NameItemTip->setBrush(QColor("#FFFFFF"));
+        m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+        m_NameItemTip->show();
+    }
+    if (m_NameItemTip) 
+    {
+        m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(36)));
+    }
+    if (m_bodyWidget)
+        m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 }
 
 void ZenoNode::setGroupNode(GroupNode *pNode) 
@@ -1142,6 +1194,11 @@ void ZenoNode::setGroupNode(GroupNode *pNode)
 GroupNode *ZenoNode::getGroupNode() 
 {
     return m_groupNode;
+}
+
+void ZenoNode::addParam(const _param_ctrl &param) 
+{
+    m_params[param.param_name->text()] = param;
 }
 
 bool ZenoNode::sceneEventFilter(QGraphicsItem *watched, QEvent *event) {

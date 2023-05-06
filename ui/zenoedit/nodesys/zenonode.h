@@ -23,6 +23,8 @@ class ZenoNode : public ZLayoutBackground
 {
     Q_OBJECT
     typedef ZLayoutBackground _base;
+
+  public:
     struct _param_ctrl
     {
         ZSimpleTextItem* param_name;
@@ -62,6 +64,7 @@ public:
     virtual void onZoomed();
     void setGroupNode(GroupNode *pNode);
     GroupNode *getGroupNode();
+    void addParam(const _param_ctrl &param);
 
 signals:
     void socketClicked(ZenoSocketItem*);
@@ -138,6 +141,8 @@ private:
     QVector<ZSocketLayout*> m_outSockets;
 
     ZSimpleTextItem* m_NameItem;
+    ZSimpleTextItem *m_pCategoryItem;
+    ZSimpleTextItem *m_NameItemTip;
     ZenoMinStatusBtnItem* m_pStatusWidgets;
 
     QGraphicsRectItem* m_border;
@@ -158,6 +163,7 @@ private:
     // it's convenient to view all nodes in big scale picture, but it also brings some problem.
     static const bool bEnableZoomPreview = false;
     GroupNode *m_groupNode;
+    bool m_bVisible;
 };
 
 #endif

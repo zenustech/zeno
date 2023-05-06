@@ -683,13 +683,13 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dic
     if (paramType == "dict" || paramType == "DictObject" || paramType == "DictObject:NumericObject")
     {
         pItem->setData("dict", ROLE_PARAM_TYPE);    //pay attention not to export to outside, only as a ui keyword.
-        if (!desc.categories.contains("dict"))
+        if (!desc.categories.contains("dict") || nodeCls == "MultiMakeDict")
             pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
     }
     else if (paramType == "list")
     {
         PARAM_CLASS cls = pItem->getParamClass();
-        if (!desc.categories.contains("list") && cls == PARAM_INPUT)
+        if ((!desc.categories.contains("list") || nodeCls == "MultiMakeList") && cls == PARAM_INPUT)
             pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
     } 
     else if (paramType == "group-line") 
