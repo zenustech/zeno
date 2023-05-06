@@ -8,11 +8,11 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
-
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
+#include <cmath>
 
 
 namespace zeno {
@@ -1841,6 +1841,298 @@ ZENDEFNODE(Imagetile, {
     {},
     {"comp"},
 });
+
+
+struct ImageDilate: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int value = get_input2<int>("value");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->resize(w * h);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w);
+        image2->userData().set2("h", h);
+
+        const int kernelSize = 3;
+        int kernel[kernelSize][kernelSize] = {
+                {1, 1, 1},
+                {1, 1, 1},
+                {1, 1, 1}
+        };
+        // 对于每个像素进行膨胀操作
+        for (int y = kernelSize / 2; y < h - kernelSize / 2; y++) {
+            for (int x = kernelSize / 2; x < w - kernelSize / 2; x++) {
+                float maxValue0 = 0;
+                float maxValue1 = 0;
+                float maxValue2 = 0;
+                for (int ky = -kernelSize / 2; ky <= kernelSize / 2; ky++) {
+                    for (int kx = -kernelSize / 2; kx <= kernelSize / 2; kx++) {
+                        int px = x + kx;
+                        int py = y + ky;
+//                        int value0 = image->verts[(py * w + px) * 3][0];
+//                        int value1 = image->verts[(py * w + px) * 3][0];
+//                        int value2 = image->verts[(py * w + px) * 3][0];
+                        maxValue0<image->verts[py * w + px][0]?maxValue0 = image->verts[py * w + px][0]:maxValue0;
+                        maxValue1<image->verts[py * w + px][1]?maxValue1 = image->verts[py * w + px][1]:maxValue1;
+                        maxValue2<image->verts[py * w + px][2]?maxValue2 = image->verts[py * w + px][2]:maxValue2;
+
+                    }
+                }
+                image2->verts[y * w + x] = {value * maxValue0,value * maxValue1,value * maxValue2};
+//                image2->verts[y * w + x] = {1,1,maxValue2};
+            }
+        }
+        set_output("image", image2);
+    }
+};
+ZENDEFNODE(ImageDilate, {
+    {
+        {"image"},
+        {"float", "value", "1"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
+// 图像膨胀函数
+void dilateImage(cv::Mat& src, cv::Mat& dst, int kernelSize, float dilateStrength) {
+    // 定义结构元素
+    cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSize, kernelSize));
+    // 进行膨胀操作
+    cv::dilate(src, dst, kernel, cv::Point(-1, -1), dilateStrength);
+}
+struct ImageDilateCV: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int kernelsize = get_input2<int>("kernelsize");
+        int strength = get_input2<int>("strength");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        cv::Mat imagecvin(h, w, CV_32FC3);
+        cv::Mat imagecvout(h, w, CV_32FC3);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        const int kernelSize = 3;
+        dilateImage(imagecvin, imagecvout, kernelsize, strength);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageDilateCV, {
+    {
+        {"image"},
+        {"int", "kernelsize", "3"},
+        {"float", "strength", "1"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
+struct ImageErodeCV: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        cv::Mat imagecvin(h, w, CV_32FC3);
+        cv::Mat imagecvout(h, w, CV_32FC3);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        cv::Mat element = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * strength + 1, 2 * strength + 1),
+                                                cv::Point(strength, strength));
+        cv::erode(imagecvin, imagecvout, element);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageErodeCV, {
+    {
+        {"image"},
+        {"int", "strength", "1"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
+struct ImageDilateColor: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        auto Hue = get_input2<std::string>("Hue");
+        float Hi = get_input2<float>("H");
+        float H = 0, S = 0, V = 0;
+        const int kernelSize = 3;
+        int kernel[kernelSize][kernelSize] = {
+                {1, 1, 1},
+                {1, 1, 1},
+                {1, 1, 1}
+        };
+        if(Hue == "edit"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = Hi;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "red"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 0;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "orange"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 30;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "yellow"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 60;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "green"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 120;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "cyan"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 180;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "blue"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 240;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "purple"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 300;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageDilateColor, {
+    {
+        {"image"},
+        {"enum default edit red orange yellow green cyan blue purple ", "Hue", "edit"},
+        {"float", "Hue", "0"},
+        {"float", "distance", "30"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
+
+
+
+
+
+
 }
 }
 
