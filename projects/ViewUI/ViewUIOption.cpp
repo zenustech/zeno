@@ -132,7 +132,7 @@ struct CreatePrimeListInPointIndex : zeno::INode {
                 }
             }
             for (int i = 0; i < changePntList.size(); i++) {
-                auto tmpPntOffset = changePntList[i]->get<zeno::vec3f>();
+                auto tmpPntOffset = changePntList[i]->get<zeno::vec2f>();
                 auto tmpIdx = pntIdx[i];
                 for (auto tmpIdxSub : tmpIdx) {
                     auto tmpPntOriginal = prim->verts[tmpIdxSub];
