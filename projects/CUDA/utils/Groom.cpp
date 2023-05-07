@@ -144,11 +144,12 @@ struct RepelPoints : zeno::INode {
         auto pol = omp_exec();
         constexpr auto space = execspace_e::openmp;
         auto &pos = points->attr<zeno::vec3f>("pos");
-        pol(range(pos.size()), [&grid, &gridGrad, &pos, dx, sep_dist](int vi) {
+        pol(range(pos.size()), [&grid, &gridGrad, &pos, dx, sep_dist, maxIters](int vi) {
             // auto p = vec_to_other<openvdb::Vec3R>(pos[vi]);
             auto p = zeno::vec_to_other<openvdb::Vec3R>(pos[vi]);
+            auto mi = maxIters;
             for (auto sdf = openvdb::tools::BoxSampler::sample(grid->getConstUnsafeAccessor(), grid->worldToIndex(p));
-                 sdf < sep_dist && maxIters-- > 0;
+                 sdf < sep_dist && mi-- > 0;
                  sdf = openvdb::tools::BoxSampler::sample(grid->getConstUnsafeAccessor(), grid->worldToIndex(p))) {
 
                 auto ddd =
@@ -157,8 +158,8 @@ struct RepelPoints : zeno::INode {
                 // fmt::print("pt[{}] current at <{}, {}, {}>, sdf: {}, direction <{}, {}, {}>\n", vi, p[0], p[1], p[2], sdf, ddd[0], ddd[1], ddd[2]);
 
                 // p += ddd.normalize() * dx;
-                // p += ddd.normalize() * -sdf;
-                p += ddd;
+                p += ddd.normalize() * -sdf;
+                // p += ddd;
             }
             pos[vi] = zeno::other_to_vec<3>(p);
         });
