@@ -88,23 +88,26 @@ struct CreateBezierCurve : zeno::INode {
             for (auto p : tmpPs) {
                 inputPoint.push_back(p);
             }
-
-            auto tmpTags = inPrim->attr<float>(tag);
-            for (auto p : tmpTags) {
-                tagList.push_back(p);
+            if (!tag.empty()) {
+                auto tmpTags = inPrim->attr<float>(tag);
+                for (auto p : tmpTags) {
+                    tagList.push_back(p);
+                }
             }
         }
+        if (inputPoint.size() > 0)
+        {
+            CreateNBezierCurve(inputPoint, cPoints, precision);
 
-        CreateNBezierCurve(inputPoint, cPoints, precision);
+            zeno::log_info("input point size: {}", inputPoint.size());
+            zeno::log_info("output point size: {}", cPoints.size());
+            zeno::log_info("precision : {}", precision);
 
-        zeno::log_info("input point size: {}", inputPoint.size());
-        zeno::log_info("output point size: {}", cPoints.size());
-        zeno::log_info("precision : {}", precision);
-        
-        outCurve->points = inputPoint;
-        outCurve->precision = precision;
-        outCurve->bPoints = cPoints;
-        outCurve->sampleTag = tag;
+            outCurve->points = inputPoint;
+            outCurve->precision = precision;
+            outCurve->bPoints = cPoints;
+            outCurve->sampleTag = tag;
+        }        
 
         if (tagList.size() > 0)
         {
