@@ -726,7 +726,8 @@ extern "C" __global__ void __closesthit__radiance()
                     }
                     prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
-                        prd->maxDistance = 1e16;
+                        vec3 channelPDF = vec3(1.0/3.0);
+                        prd->maxDistance = scatterStep>0.5? DisneyBSDF::SampleDistance2(prd->seed, prd->sigma_t, prd->sigma_t, channelPDF) : 1e16;
                         prd->pushMat(extinction);
                     } else {
 
@@ -809,7 +810,8 @@ extern "C" __global__ void __closesthit__radiance()
                     }
                     else if (prd->ss_alpha.x<0.0f) { // Glass
                         trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-                        prd->maxDistance = 1e16;
+                        vec3 channelPDF = vec3(1.0/3.0);
+                        prd->maxDistance = scatterStep>0.5? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16;
                     } else { // SSS
                         trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                         prd->channelPDF = vec3(1.0/3.0);
