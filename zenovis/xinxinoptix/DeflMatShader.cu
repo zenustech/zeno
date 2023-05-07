@@ -968,9 +968,9 @@ extern "C" __global__ void __closesthit__radiance()
             dot(N, float3(sun_dir)));
         light_attenuation = shadow_prd.shadowAttanuation;
         //if (fmaxf(light_attenuation) > 0.0f) {
-            auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
-                                          10, // be careful
-                                          .45, 15., 1.030725 * 0.3, params.elapsedTime));
+//            auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+//                                          10, // be careful
+//                                          .45, 15., 1.030725 * 0.3, params.elapsedTime));
             MatOutput mat2;
             if(thin>0.5){
                     vec3 H = normalize(vec3(normalize(sun_dir)) + vec3(-normalize(inDir)));
@@ -983,7 +983,7 @@ extern "C" __global__ void __closesthit__radiance()
                     attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
                     mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
             }
-            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * sky * (thin>0.5? float3(mat2.reflectance):lbrdf);
+            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 *  (thin>0.5? float3(mat2.reflectance):lbrdf);
     }
 
     P = P_OLD;
