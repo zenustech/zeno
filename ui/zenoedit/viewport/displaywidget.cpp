@@ -149,6 +149,13 @@ void DisplayWidget::setSimpleRenderOption()
         m_glView->setSimpleRenderOption();
 }
 
+void DisplayWidget::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+    if (m_optixView)
+    {
+        m_optixView->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+    }
+}
+
 bool DisplayWidget::isCameraMoving() const
 {
     if (m_glView)
@@ -417,7 +424,7 @@ void DisplayWidget::afterRun()
     scene->objectsMan->lightObjects.clear();
 }
 
-void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly)
+void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -436,7 +443,7 @@ void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCamera
         m_glView->getSession()->get_scene()->selected.clear();
     }
 
-    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly);
+    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly, applyMaterialOnly);
 
     if (m_glView)
         m_glView->updateLightOnce = true;
