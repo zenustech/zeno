@@ -5,6 +5,9 @@
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 
+#include "Structures.hpp"
+#include "zensim/container/Vector.hpp"
+#include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/types/Iterator.h"
 #include "zensim/zpc_tpls/fmt/format.h"
@@ -14,6 +17,165 @@
 namespace zeno {
 
 #define SW_OPEN_BOUNDARY 1
+
+struct ZSSolveShallowWaterHeight : INode {
+    template <typename Iter0, typename Iter1, typename Iter2, typename Iter3, typename Iter4>
+    void height_flux(Iter0 flx, Iter1 flz, Iter2 h, Iter3 u, Iter4 w, int nx, int nz, int halo) {
+        auto pol = zs::cuda_exec();
+        pol(zs::range((nz + 1) * (nx + 1)), [=] ZS_LAMBDA(size_t index) mutable {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
+
+            int i = index % (nx + 1);
+            int j = index / (nx + 1);
+            i += halo / 2;
+            j += halo / 2;
+
+            float u_adv = u[idx(i, j)];
+            float w_adv = w[idx(i, j)];
+
+            if (u_adv < 0) {
+                flx[idx(i, j)] = u_adv * scheme::TVD_MUSCL3(h[idx(i - 1, j)], h[idx(i, j)], h[idx(i + 1, j)]);
+            } else {
+                flx[idx(i, j)] = u_adv * scheme::TVD_MUSCL3(h[idx(i, j)], h[idx(i - 1, j)], h[idx(i - 2, j)]);
+            }
+
+            if (w_adv < 0) {
+                flz[idx(i, j)] = w_adv * scheme::TVD_MUSCL3(h[idx(i, j - 1)], h[idx(i, j)], h[idx(i, j + 1)]);
+            } else {
+                flz[idx(i, j)] = w_adv * scheme::TVD_MUSCL3(h[idx(i, j)], h[idx(i, j - 1)], h[idx(i, j - 2)]);
+            }
+        });
+    }
+
+    template <typename Iter0, typename Iter1, typename Iter2, typename Iter3, typename Iter4>
+    void height_integral(Iter0 h_new, Iter1 h_old, Iter2 h_n, Iter3 flx, Iter4 flz, int nx, int nz, int halo, float dx,
+                         float dt, float c0, float c1) {
+        auto pol = zs::cuda_exec();
+        pol(zs::range(nz * nx), [=] ZS_LAMBDA(size_t index) mutable {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
+
+            int i = index % nx;
+            int j = index / nx;
+            i += halo / 2;
+            j += halo / 2;
+
+            h_new[idx(i, j)] =
+                c0 * h_n[idx(i, j)] +
+                c1 * (h_old[idx(i, j)] +
+                      (flx[idx(i, j)] - flx[idx(i + 1, j)] + flz[idx(i, j)] - flz[idx(i, j + 1)]) / dx * dt);
+        });
+    }
+
+    template <typename IterT>
+    void boundary_height(IterT h, int nx, int nz, int halo) {
+        auto pol = zs::cuda_exec();
+
+        // x boundary
+        pol(zs::range(nz + halo, halo), [=] ZS_LAMBDA(size_t index) mutable {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
+
+            int i = index % halo;
+            int j = index / halo;
+
+            if (i < halo / 2) {
+                // left
+                h[idx(i, j)] = h[idx(halo - 1 - i, j)];
+            } else {
+                // right
+                i += nx;
+                h[idx(i, j)] = h[idx(2 * nx + halo - 1 - i, j)];
+            }
+        });
+
+        // z boundary
+        pol(zs::range(halo * (nx + halo)), [=] ZS_LAMBDA(size_t index) mutable {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
+
+            int i = index % (nx + halo);
+            int j = index / (nx + halo);
+
+            if (j < halo / 2) {
+                // front
+                h[idx(i, j)] = h[idx(i, halo - 1 - j)];
+            } else {
+                // back
+                j += nz;
+                h[idx(i, j)] = h[idx(i, 2 * nz + halo - 1 - j)];
+            }
+        });
+    }
+
+    void apply() override {
+        auto grid = get_input<ZenoParticles>("SWGrid");
+        auto &ud = grid->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")) || (!ud.has<float>("dx")))
+            zeno::log_error("no such UserData named '{}', '{}', '{}' or '{}'.", "nx", "nz", "halo", "dx");
+        int nx = ud.get2<int>("nx");
+        int nz = ud.get2<int>("nz");
+        int halo = ud.get2<int>("halo");
+        float dx = ud.get2<float>("dx");
+        auto dt = get_input2<float>("dt");
+
+        const unsigned int nc = (nx + halo) * (nz + halo);
+
+        auto height_attr = get_input2<std::string>("height_attr");
+        auto u_attr = get_input2<std::string>("u_attr");
+        auto w_attr = get_input2<std::string>("w_attr");
+
+        auto pars = grid->getParticles();
+
+        auto h_old = pars.begin(height_attr);
+        auto u = pars.begin(u_attr);
+        auto w = pars.begin(w_attr);
+        zs::Vector<float> h_new_{nc, zs::memsrc_e::device, 0}, h_rk_{nc, zs::memsrc_e::device, 0},
+            flx_{nc, zs::memsrc_e::device, 0}, flz_{nc, zs::memsrc_e::device, 0};
+
+        {
+            auto h_new = h_new_.data();
+            auto h_rk = h_rk_.data();
+            auto flx = flx_.data();
+            auto flz = flz_.data();
+
+            // 3rd-order 3-stage TVD Runge-Kutta method
+            // 1st stage h_old --> h_new
+            height_flux(flx, flz, h_old, u, w, nx, nz, halo);
+            height_integral(h_new, h_old, h_old, flx, flz, nx, nz, halo, dx, dt, 0.f, 1.f);
+            boundary_height(h_new, nx, nz, halo);
+
+            // 2nd stage h_new --> h_rk
+            height_flux(flx, flz, h_new, u, w, nx, nz, halo);
+            height_integral(h_rk, h_new, h_old, flx, flz, nx, nz, halo, dx, dt, 3.f / 4.f, 1.f / 4.f);
+            boundary_height(h_rk, nx, nz, halo);
+
+            // 3rd stage h_rk --> h_new
+            height_flux(flx, flz, h_rk, u, w, nx, nz, halo);
+            height_integral(h_new, h_rk, h_old, flx, flz, nx, nz, halo, dx, dt, 1.f / 3.f, 2.f / 3.f);
+            boundary_height(h_new, nx, nz, halo);
+
+            auto pol = zs::cuda_exec();
+            pol(zs::range(nc), [h_old, h_new] ZS_LAMBDA(size_t index) mutable { h_old[index] = h_new[index]; });
+        }
+
+        set_output("SWGrid", std::move(grid));
+    }
+};
+
+ZENDEFNODE(ZSSolveShallowWaterHeight, {/* inputs: */
+                                       {
+                                           "SWGrid",
+                                           {"float", "dt", "0.04"},
+                                           {"string", "height_attr", "height"},
+                                           {"string", "u_attr", "u"},
+                                           {"string", "w_attr", "w"},
+                                       },
+                                       /* outputs: */
+                                       {
+                                           "SWGrid",
+                                       },
+                                       /* params: */
+                                       {},
+                                       /* category: */
+                                       {"Eulerian"}});
 
 struct SolveShallowWaterHeight : INode {
     void height_flux(float *flx, float *flz, float *h, float *u, float *w, int nx, int nz, int halo) {
