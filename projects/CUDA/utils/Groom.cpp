@@ -12,17 +12,17 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
-#include <openvdb/tree/LeafManager.h>
 #include <openvdb/openvdb.h>
 #include <openvdb/tools/GridOperators.h>
 #include <openvdb/tools/VolumeToSpheres.h>
+#include <openvdb/tree/LeafManager.h>
 #include <zeno/ListObject.h>
+#include <zeno/VDBGrid.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
-#include <zeno/VDBGrid.h>
 
 namespace zeno {
 
@@ -70,6 +70,16 @@ struct SpawnGuidelines : INode {
             });
         pol(enumerate(prim->loops.values), [](int vi, int &loopid) { loopid = vi; });
         // copy point attrs to polys attrs
+        for (auto &[key, srcArr] : points->verts.attrs) {
+            auto const &k = key;
+            match(
+                [&k, &prim](
+                    auto &srcArr) -> std::enable_if_t<variant_contains<RM_CVREF_T(srcArr[0]), AttrAcceptAll>::value> {
+                    using T = RM_CVREF_T(srcArr[0]);
+                    prim->polys.add_attr<T>(k);
+                },
+                [](...) {})(srcArr);
+        }
         pol(range(points->size()), [&](int vi) {
             {
                 for (auto &[key, srcArr] : points->verts.attrs) {
@@ -78,7 +88,7 @@ struct SpawnGuidelines : INode {
                         [&k, &prim, vi](auto &srcArr)
                             -> std::enable_if_t<variant_contains<RM_CVREF_T(srcArr[0]), AttrAcceptAll>::value> {
                             using T = RM_CVREF_T(srcArr[0]);
-                            auto &arr = prim->polys.add_attr<T>(k);
+                            auto &arr = prim->polys.attr<T>(k);
                             arr[vi] = srcArr[vi];
                         },
                         [](...) {})(srcArr);
@@ -180,4 +190,3 @@ ZENDEFNODE(RepelPoints, {
                             {},
                             {"zs_hair"},
                         });
-
