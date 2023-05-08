@@ -38,6 +38,8 @@
 #include <assert.h>
 #include <algorithm>
 #include <functional>
+#include <limits>
+#include <cmath>
 
 IESFileInfo::IESFileInfo()
 	: _cachedIntegral(std::numeric_limits<float>::max())
