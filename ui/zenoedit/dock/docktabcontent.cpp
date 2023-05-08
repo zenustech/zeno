@@ -285,6 +285,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
+    pLinkLineShape = new ZToolBarButton(true, ":/icons/timeline-curvemap.svg",":/icons/timeline-curvemap.svg");
 
     m_btnRun = new ZToolMenuButton;
     m_btnKill = new ZToolButton;
@@ -374,6 +375,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pListView->setChecked(false);
     pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool());
     pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool());
+    pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(zsLinkLineShape).toBool());
 
     QStringList items;
     QVector<qreal> factors = UiHelper::scaleFactors();
@@ -415,6 +417,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pShowGrid);
     pToolLayout->addWidget(pCustomParam);
     pToolLayout->addWidget(pGroup);
+    pToolLayout->addWidget(pLinkLineShape);
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
 
@@ -485,7 +488,9 @@ void DockContent_Editor::initConnections()
     connect(pShowGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
         ZenoSettingsManager::GetInstance().setValue(zsShowGrid, bChecked);
     });
-
+    connect(pLinkLineShape, &ZToolBarButton::toggled, this, [=](bool bChecked) {
+        ZenoSettingsManager::GetInstance().setValue(zsLinkLineShape, bChecked);
+    });
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
         QString percent = QString::number(int(newFactor * 100));
         percent += "%";
