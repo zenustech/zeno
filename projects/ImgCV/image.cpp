@@ -13,7 +13,7 @@
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
 #include <cmath>
-
+#include <opencv2/imgproc.hpp>
 
 namespace zeno {
 
@@ -1452,7 +1452,43 @@ ZENDEFNODE(CompExtractRGBA, {
     {},
     { "comp" },
 });
+struct ImageInRange : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        vec3i lb = get_input2<vec3i>("low_threshold");
+        vec3i ub = get_input2<vec3i>("high_threshold");
 
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
+                ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
+                ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
+                    image->verts[i * w + j] = {1,1,1};
+                }
+                else{
+                    image->verts[i * w + j] = {0,0,0};
+                }
+            }
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageInRange, {
+    {
+        {"image"},
+        {"vec3i", "high_threshold", "255,255,255"},
+        {"vec3i", "low_threshold", "0,0,0"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
 /* 导入地形网格的属性，可能会有多个属性。它将地形的属性转换为图
 像，每个属性对应一个图层。
 可能需要的参数：outRemapRange，分辨率，属性名称，属性数据
