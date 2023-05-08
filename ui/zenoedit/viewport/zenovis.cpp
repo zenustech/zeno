@@ -89,12 +89,25 @@ zenovis::Session *Zenovis::getSession() const
 
 int Zenovis::setCurrentFrameId(int frameid)
 {
-    if (frameid < 0)
+    if (frameid < 0 || !session)
         frameid = 0;
-    int nFrames = zeno::getSession().globalComm->maxPlayFrames();
-    if (frameid >= nFrames)
-        frameid = std::max(0, nFrames - 1);
-    zeno::log_trace("now frame {}/{}", frameid, nFrames);
+
+    auto &globalComm = zeno::getSession().globalComm;
+    std::pair<int, int> frameRg = globalComm->frameRange();
+    int numOfFrames = globalComm->numOfFinishedFrame();
+    if (numOfFrames > 0)
+    {
+        int endFrame = frameRg.first + numOfFrames - 1;
+        if (frameid < frameRg.first) {
+            frameid = frameRg.first;
+        } else if (frameid > endFrame) {
+            frameid = endFrame;
+        }
+    } else {
+        frameid = 0;
+    }
+
+    zeno::log_trace("now frame {}/{}", frameid, frameRg.second);
     int old_frameid = session->get_curr_frameid();
     session->set_curr_frameid(frameid);
     if (old_frameid != frameid) {
@@ -114,6 +127,9 @@ int Zenovis::setCurrentFrameId(int frameid)
 void Zenovis::doFrameUpdate()
 {
     int frameid = getCurrentFrameId();
+
+    //todo: move out of the optix working thread.
+#if 0
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     if (!pMainWin)
         return;
@@ -124,6 +140,7 @@ void Zenovis::doFrameUpdate()
 
     int ui_frameid = timeline->value();
     zenoApp->getMainWindow()->doFrameUpdate(ui_frameid);
+#endif
 
     if (m_playing) {
         zeno::log_trace("playing at frame {}", frameid);

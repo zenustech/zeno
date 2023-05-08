@@ -17,7 +17,9 @@ public:
 signals:
     void renderIterate(QImage);
     void sig_recordFinished();
-    void sig_frameFinished(int frame);
+    void sig_frameRecordFinished(int frame);
+    void sig_recordInfoSetuped();
+    void sig_recordCanceled();
 
 public slots:
     void stop();
@@ -25,12 +27,20 @@ public slots:
     void needUpdateCamera();
     void updateFrame();
     void recordVideo(VideoRecInfo recInfo);
+    void setupRecording(VideoRecInfo recInfo);
+    void onFrameRunFinished(int frame);
+    void onPlayToggled(bool bToggled);
+    void onFrameSwitched(int frame);
+    void cancelRecording();
 
 private:
+    void recordFrame_impl(VideoRecInfo recInfo, int frame);
+
     Zenovis *m_zenoVis;
     QImage m_renderImg;
     QTimer* m_pTimer;
     bool m_bRecording;
+    VideoRecInfo m_recordInfo;
 };
 
 class ZOptixViewport : public QWidget
@@ -49,6 +59,9 @@ public:
     void stopRender();
     void resumeRender();
     void recordVideo(VideoRecInfo recInfo);
+    void setupRecording(VideoRecInfo recInfo);
+    void cancelRecording(VideoRecInfo recInfo);
+    void killThread();
 
 signals:
     void cameraAboutToRefresh();
@@ -56,7 +69,16 @@ signals:
     void resumeWork();
     void sigRecordVideo(VideoRecInfo recInfo);
     void sig_recordFinished();
-    void sig_frameFinished(int frame);
+    void sig_frameRecordFinished(int frame);
+    void sig_frameRunFinished(int frame);
+    void sig_setupRecordInfo(VideoRecInfo recInfo);
+    void sig_recordInfoSetuped();
+    void sig_togglePlayButton(bool bToggled);
+    void sig_switchTimeFrame(int frame);
+    void sig_cancelRecording();
+
+public slots:
+    void onFrameRunFinished(int frame);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

@@ -26,15 +26,28 @@ LiveMeshNode::~LiveMeshNode()
 ZGraphicsLayout *LiveMeshNode::initCustomParamWidgets() {
     ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("node", m_renderParams.paramFont, m_renderParams.paramClr.color());
+    ZSimpleTextItem *pNameItem = new ZSimpleTextItem("node");
+    pNameItem->setBrush(m_renderParams.socketClr.color());
+    pNameItem->setFont(m_renderParams.socketFont);
     pHLayout->addItem(pNameItem);
 
     ZenoParamPushButton* pSyncBtn = new ZenoParamPushButton("Sync", -1, QSizePolicy::Expanding);
     ZenoParamPushButton* pCleanBtn = new ZenoParamPushButton("Clean", -1, QSizePolicy::Expanding);
-    pHLayout->addItem(pSyncBtn);
-    pHLayout->addItem(pCleanBtn);
+    QGraphicsWidget *widget = new QGraphicsWidget;
+    QGraphicsLinearLayout *layout = new QGraphicsLinearLayout(widget);
+    layout->setContentsMargins(20, 0, 0, 0);
+    widget->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    layout->addItem(pSyncBtn);
+    layout->addItem(pCleanBtn);
+    pHLayout->addItem(widget);
     connect(pSyncBtn, SIGNAL(clicked()), this, SLOT(onSyncClicked()));
     connect(pCleanBtn, SIGNAL(clicked()), this, SLOT(onCleanClicked()));
+    
+    _param_ctrl param;
+    param.param_name = pNameItem;
+    param.param_control = widget;
+    param.ctrl_layout = pHLayout;
+    addParam(param);
 
     return pHLayout;
 }

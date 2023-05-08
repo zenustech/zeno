@@ -22,12 +22,20 @@ ZGraphicsLayout* MakeHeatMapNode::initCustomParamWidgets()
 {
     ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("color", m_renderParams.paramFont, m_renderParams.paramClr.color());
+    ZSimpleTextItem* pNameItem = new ZSimpleTextItem("color");
+    pNameItem->setBrush(m_renderParams.socketClr.color());
+    pNameItem->setFont(m_renderParams.socketFont);
     pHLayout->addItem(pNameItem);
 
     ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
     pHLayout->addItem(pEditBtn, Qt::AlignRight);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
+
+    _param_ctrl param;
+    param.param_name = pNameItem;
+    param.param_control = pEditBtn;
+    param.ctrl_layout = pHLayout;
+    addParam(param);
 
     return pHLayout;
 }

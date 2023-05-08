@@ -94,7 +94,7 @@ struct VDBPointsToPrimitive : zeno::INode {
     if (hasVel) {
       auto &retvel = ret->add_attr<zeno::vec3f>("vel");
 
-#if 1
+#if 0
       using MapT = std::map<std::thread::id, size_t>;
       using IterT = typename MapT::iterator;
       MapT pars;
@@ -178,7 +178,7 @@ struct VDBPointsToPrimitive : zeno::INode {
 #endif
     } else {
 
-#if 1
+#if 0
       using MapT = std::map<std::thread::id, size_t>;
       using IterT = typename MapT::iterator;
       MapT pars;

@@ -114,6 +114,7 @@ void ZenoImagePanel::setPrim(std::string primid) {
                     int h = i / width;
                     int w = i % width;
                     auto c = obj->verts[i];
+                    c = zeno::pow(c, 1.0f / 2.2f);
                     int r = glm::clamp(int(c[0] * 255.99), 0, 255);
                     int g = glm::clamp(int(c[1] * 255.99), 0, 255);
                     int b = glm::clamp(int(c[2] * 255.99), 0, 255);

@@ -70,6 +70,7 @@ target_sources(zeno PRIVATE
   utils/Primitives.cu
   utils/TopoUtils.cu
   utils/Noise.cu
+  utils/Groom.cpp
 )
 
 add_subdirectory(remesh)

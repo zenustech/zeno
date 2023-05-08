@@ -107,6 +107,7 @@ private:
     ZToolBarButton *pShowGrid;
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
+    ZToolBarButton *pLinkLineShape;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
 
@@ -121,9 +122,10 @@ class DockContent_View : public DockToolbarWidget
 {
     Q_OBJECT
 public:
-    explicit DockContent_View(bool bOptixView, QWidget* parent = nullptr);
+    explicit DockContent_View(bool bGLView, QWidget* parent = nullptr);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
     DisplayWidget* getDisplayWid() const;
+    bool isGLView() const;
     QSize viewportSize() const;
 
 protected:
@@ -159,7 +161,7 @@ private:
     QAction *m_rotate;
     QAction *m_scale;
 
-    const bool m_bOptixView;
+    const bool m_bGLView;
 };
 
 class DockContent_Log : public DockToolbarWidget

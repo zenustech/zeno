@@ -69,8 +69,9 @@ ViewportWidget::ViewportWidget(QWidget* parent)
 
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
-        if (mainWin)
-            mainWin->visFrameUpdated(frameid);
+        if (mainWin) {
+            mainWin->visFrameUpdated(true, frameid);
+        }
     });
 
     connect(m_pauseRenderDally, &QTimer::timeout, [&](){
@@ -175,16 +176,6 @@ bool ViewportWidget::isPlaying() const
 void ViewportWidget::startPlay(bool bPlaying)
 {
     m_zenovis->startPlay(bPlaying);
-}
-
-int ViewportWidget::getCurrentFrameId()
-{
-    return m_zenovis->getCurrentFrameId();
-}
-
-int ViewportWidget::setCurrentFrameId(int frameid)
-{
-    return m_zenovis->setCurrentFrameId(frameid);
 }
 
 void ViewportWidget::setCameraRes(const QVector2D& res)
