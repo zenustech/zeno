@@ -53,7 +53,6 @@ void OptixWorker::needUpdateCamera()
 {
     //todo: update reason.
     m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
-    m_zenoVis->getSession()->get_scene()->drawOptions->needUpdateGeo = true;
     m_pTimer->start();
 }
 
@@ -102,6 +101,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     });
     connect(this, &ZOptixViewport::cameraAboutToRefresh, worker, &OptixWorker::needUpdateCamera);
 
+    setRenderSeparately(false, false);
     m_thdOptix.start();
 }
 
@@ -113,6 +113,12 @@ void ZOptixViewport::setSimpleRenderOption()
 {
     auto scene = m_zenovis->getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
+}
+
+void ZOptixViewport::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+    auto scene = m_zenovis->getSession()->get_scene();
+    scene->drawOptions->updateLightCameraOnly = updateLightCameraOnly;
+    scene->drawOptions->updateMatlOnly = updateMatlOnly;
 }
 
 void ZOptixViewport::cameraLookTo(int dir)

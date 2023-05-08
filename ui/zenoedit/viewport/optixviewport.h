@@ -35,6 +35,7 @@ public:
     ZOptixViewport(QWidget* parent = nullptr);
     ~ZOptixViewport();
     void setSimpleRenderOption();
+    void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void cameraLookTo(int dir);
     void updateCameraProp(float aperture, float disPlane);
     Zenovis* getZenoVis() const;

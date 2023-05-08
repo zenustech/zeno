@@ -104,17 +104,23 @@ ZToolMenuButton::ZToolMenuButton() {
     setArrowOption(ZStyleOptionToolButton::DOWNARROW);
     menu = new QMenu(this);
     run = new QAction(icon(), tr("Run"), this);
-    runLightCameraMaterial = new QAction(icon(), tr("RunLightCameraMaterial"), this);
+    runLightCamera = new QAction(icon(), tr("RunLightCamera"), this);
+    runMaterial = new QAction(icon(), tr("RunMaterial"), this);
     connect(run, &QAction::triggered, this, [=]() {
         setText(tr("Run"));
         this->setMinimumWidth(sizeHint().width());
     });
-    connect(runLightCameraMaterial, &QAction::triggered, this, [=]() {
-        setText(tr("RunLightCameraMaterial"));
+    connect(runLightCamera, &QAction::triggered, this, [=]() {
+        setText(tr("RunLightCamera"));
+        this->setMinimumWidth(sizeHint().width());
+    });
+    connect(runMaterial, &QAction::triggered, this, [=]() {
+        setText(tr("RunMaterial"));
         this->setMinimumWidth(sizeHint().width());
     });
     menu->addAction(run);
-    menu->addAction(runLightCameraMaterial);
+    menu->addAction(runLightCamera);
+    menu->addAction(runMaterial);
 }
 
 
@@ -510,22 +516,38 @@ void DockContent_Editor::initConnections()
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
+        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+            QVector<DisplayWidget *> views = pMainWin->viewports();
+            for (auto displayWid : views) {
+                if (displayWid->isOptxRendering()) {
+                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                }
+            }
+        };
         if (m_btnRun->text() == tr("Run"))
         {
+            setOptixUpdateSeparately(false, false);
             mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
             pMainWin->onRunTriggered();
         }
-        else if (m_btnRun->text() == tr("RunLightCameraMaterial"))
-        {
+        else {
             QSettings settings(zsCompanyName, zsEditor);
             if (!settings.value("zencache-enable").toBool()) {
                 QMessageBox::warning(nullptr, tr("RunLightCamera"), tr("This function can only be used in cache mode."));
             } else {
                 mgr->setCacheOpt(ZCacheMgr::Opt_RunLightCameraMaterial);
-                pMainWin->onRunTriggered(true);
+                if (m_btnRun->text() == tr("RunLightCamera"))
+                {
+                    setOptixUpdateSeparately(true, false);
+                    pMainWin->onRunTriggered(true, false);
+                }
+                if (m_btnRun->text() == tr("RunMaterial"))
+                {
+                    setOptixUpdateSeparately(false, true);
+                    pMainWin->onRunTriggered(false, true);
+                }
             }
         }
-
     });
 
     connect(m_btnKill, &ZToolButton::clicked, this, [=]() {

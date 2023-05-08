@@ -131,9 +131,13 @@
         <source>Kill</source>
         <translation>终止</translation>
     </message>
-    <message>
-        <source>RunLightCameraMaterial</source>
-        <translation>运行灯光相机材质</translation>
+	<message>
+        <source>RunLightCamera</source>
+        <translation>运行灯光相机</translation>
+    </message>
+	<message>
+        <source>RunMaterial</source>
+        <translation>运行材质</translation>
     </message>
     <message>
         <source>This function can only be used in cache mode.</source>
@@ -1579,8 +1583,12 @@
         <translation>运行</translation>
     </message>
     <message>
-        <source>RunLightCameraMaterial</source>
-        <translation>运行灯光相机材质</translation>
+        <source>RunLightCamera</source>
+        <translation>运行灯光相机</translation>
+    </message>
+	<message>
+        <source>RunMaterial</source>
+        <translation>运行材质</translation>
     </message>
 </context>
 <context>

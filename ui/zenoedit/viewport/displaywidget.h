@@ -30,8 +30,10 @@ public:
     std::shared_ptr<zeno::Picker> picker() const;
     void updateCameraProp(float aperture, float disPlane);
     void setSimpleRenderOption();
+    void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     bool isCameraMoving() const;
     bool isPlaying() const;
+    bool isOptxRendering() const;
 
 public slots:
     void updateFrame(const QString& action = "");
@@ -50,7 +52,6 @@ signals:
     void frameUpdated(int new_frame);
 
 private:
-    bool isOptxRendering() const;
     void initRecordMgr();
     void moveToFrame(int frame);
 

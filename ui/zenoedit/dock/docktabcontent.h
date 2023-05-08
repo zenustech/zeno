@@ -44,7 +44,8 @@ protected:
 private:
     QMenu *menu;
     QAction *run;
-    QAction *runLightCameraMaterial;
+    QAction *runLightCamera;
+    QAction *runMaterial;
 };
 
 class DockToolbarWidget : public QWidget

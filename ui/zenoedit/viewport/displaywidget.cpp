@@ -145,6 +145,13 @@ void DisplayWidget::setSimpleRenderOption()
         m_glView->setSimpleRenderOption();
 }
 
+void DisplayWidget::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+    if (m_optixView)
+    {
+        m_optixView->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+    }
+}
+
 bool DisplayWidget::isCameraMoving() const
 {
     if (m_glView)
