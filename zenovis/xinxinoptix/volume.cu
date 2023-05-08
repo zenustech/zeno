@@ -406,7 +406,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         VolumeIn vol_in { test_point };
         
-        vol_out = evalVolume(nullptr, vol_in);
+        vol_out = evalVolume(sbt_data->uniforms, vol_in);
         v_density = vol_out.density;
 
         //prd->vol_tr *= exp(-sigma_t * t_ele);
@@ -427,7 +427,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         
             float3 emission_prob = a_prob_rgb / _prob_rgb; // scale by emission prob
 
-            le *= emission_prob; 
+            //le *= emission_prob; 
             emitting += le;
         }
 
@@ -582,6 +582,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     const float3 ray_dir  = optixGetWorldRayDirection();
 
     RadiancePRD* prd = getPRD();
+    const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
     const float t0 = prd->vol_t0;
     const float t1 = prd->vol_t1;
@@ -625,7 +626,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
         } // over shoot, outside of volume
 
         VolumeIn vol_in { test_point };
-        VolumeOut vol_out = evalVolume(nullptr, vol_in);
+        VolumeOut vol_out = evalVolume(sbt_data->uniforms, vol_in);
 
         const auto v_density = vol_out.density;
 
