@@ -1649,51 +1649,6 @@ ZENDEFNODE(CompNormalMap, {
     { "comp" },
 });
 
-//struct CompNormalMapCV : INode {
-//    virtual void apply() override {
-//        auto image = get_input<PrimitiveObject>("image");
-//        auto &ud = image->userData();
-//        int w = ud.get2<int>("w");
-//        int h = ud.get2<int>("h");
-//        cv::Mat imagecvin(h, w, CV_32F);
-//        cv::Mat imagecvout(h, w, CV_32FC3);
-//        cv::Mat sobelx(h, w, CV_32F);
-//        cv::Mat sobely(h, w, CV_32F);
-//        cv::Mat M1 = cv::Mat::ones(imagecvin.size(), CV_32F);
-//        float l= 0;
-//        for (int i = 0; i < h; i++) {
-//            for (int j = 0; j < w; j++) {
-//                int idx = i * w + j;
-//                vec3f rgb = image->verts[idx];
-//                l = std::min(std::min(image->verts[idx + 1][0] , image->verts[idx + 1][1]), image->verts[idx + 1][2]);
-//                imagecvin.at<float>(i, j) = image->verts[idx][0];
-//            }
-//        }
-//        cv::Sobel(imagecvin, sobelx, CV_32F, 1, 0);
-//        cv::Sobel(imagecvin, sobely, CV_32F, 0, 1);
-//        std::vector<cv::Mat> channels = {-sobelx, -sobely, M1};
-//        cv::merge(channels,imagecvout);
-//        normalize(imagecvout, imagecvout);
-//
-//        for (int i = 0; i < h; i++) {
-//            for (int j = 0; j < w; j++) {
-//                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-//                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-//            }
-//        }
-//        set_output("image", image);
-//    }
-//};
-//ZENDEFNODE(CompNormalMapCV, {
-//    {
-//        {"image"}
-//    },
-//    {
-//        {"image"}
-//    },
-//    {},
-//    { "comp" },
-//});
 
 struct ImageEditGray : INode {
     void apply() override {
@@ -1841,103 +1796,125 @@ ZENDEFNODE(Imagetile, {
     {"comp"},
 });
 
+// ImageDilate函数实现
+void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector<int>>& kernel,int iterations) {
+    // 获取图像和卷积核的形状
+    int image_height = image->userData().get2<int>("h");
+    int image_width = image->userData().get2<int>("w");
+    int kernel_height = kernel.size();
+    int kernel_width = kernel[0].size();
 
-struct ImageDilate: INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        int value = get_input2<int>("value");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->resize(w * h);
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w);
-        image2->userData().set2("h", h);
+    // 计算卷积核的中心点
+    int center_y = kernel_height / 2;
+    int center_x = kernel_width / 2;
 
-        const int kernelSize = 3;
-        int kernel[kernelSize][kernelSize] = {
-                {1, 1, 1},
-                {1, 1, 1},
-                {1, 1, 1}
-        };
-        // 对于每个像素进行膨胀操作
-        for (int y = kernelSize / 2; y < h - kernelSize / 2; y++) {
-            for (int x = kernelSize / 2; x < w - kernelSize / 2; x++) {
+    // 对每个像素进行膨胀操作,迭代
+    for (int iter = 0; iter < iterations; iter++){
+        auto imagetmp = std::make_shared<PrimitiveObject>();
+        imagetmp->resize(image_width * image_height);
+        imagetmp->userData().set2("isImage", 1);
+        imagetmp->userData().set2("w", image_width);
+        imagetmp->userData().set2("h", image_height);
+        for (int y = center_y; y < image_height - center_y; y++) {
+            for (int x = center_x; x < image_width - center_x; x++) {
                 float maxValue0 = 0;
                 float maxValue1 = 0;
                 float maxValue2 = 0;
-                for (int ky = -kernelSize / 2; ky <= kernelSize / 2; ky++) {
-                    for (int kx = -kernelSize / 2; kx <= kernelSize / 2; kx++) {
-                        int px = x + kx;
-                        int py = y + ky;
-//                        int value0 = image->verts[(py * w + px) * 3][0];
-//                        int value1 = image->verts[(py * w + px) * 3][0];
-//                        int value2 = image->verts[(py * w + px) * 3][0];
-                        maxValue0<image->verts[py * w + px][0]?maxValue0 = image->verts[py * w + px][0]:maxValue0;
-                        maxValue1<image->verts[py * w + px][1]?maxValue1 = image->verts[py * w + px][1]:maxValue1;
-                        maxValue2<image->verts[py * w + px][2]?maxValue2 = image->verts[py * w + px][2]:maxValue2;
-
+                // 遍历卷积核中的像素
+                for (int ky = 0; ky < kernel_height; ky++) {
+                    for (int kx = 0; kx < kernel_width; kx++) {
+                        // 计算卷积核中的像素在原始图像中的位置
+                        int image_y = y - center_y + ky;
+                        int image_x = x - center_x + kx;
+                        // 如果该位置是前景像素，则更新最大值
+                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][0] > maxValue0) {
+                            maxValue0 = image->verts[image_y * image_width + image_x][0];
+                        }
+                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][1] > maxValue1) {
+                            maxValue1 = image->verts[image_y * image_width + image_x][1];
+                        }
+                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][2] > maxValue2) {
+                            maxValue2 = image->verts[image_y * image_width + image_x][2];
+                        }
                     }
                 }
-                image2->verts[y * w + x] = {value * maxValue0,value * maxValue1,value * maxValue2};
-//                image2->verts[y * w + x] = {1,1,maxValue2};
+                // 将最大值赋值给输出图像
+                imagetmp->verts[y * image_width + x]= {maxValue0,maxValue1,maxValue2};
             }
         }
-        set_output("image", image2);
+        image = imagetmp;
+    }
+}
+
+struct ImageDilateED: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        int rows = get_input2<int>("kernel_rows");
+        int cols = get_input2<int>("kernel_cols");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        std::vector<std::vector<int>> kernelvec(rows,std::vector<int>(cols,1));
+        imagedilate(image,kernelvec,strength);
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageDilateED, {
+    {
+        {"image"},
+        {"int", "strength", "1"},
+        {"int", "kernel_rows", "3"},
+        {"int", "kernel_cols", "3"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+// 图像膨胀函数
+void dilateImage(cv::Mat& src, cv::Mat& dst, int kheight, int kwidth, int Strength) {
+    // 定义结构元素
+    cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(kheight, kwidth));
+    // 进行膨胀操作
+    cv::dilate(src, dst, kernel, cv::Point(-1, -1), Strength);
+}
+struct ImageDilate: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        int kheight = get_input2<int>("kernel_height");
+        int kwidth = get_input2<int>("kernel_width");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        cv::Mat imagecvin(h, w, CV_32FC3);
+        cv::Mat imagecvout(h, w, CV_32FC3);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        const int kernelSize = 3;
+        dilateImage(imagecvin, imagecvout, kheight, kwidth, strength);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image);
     }
 };
 ZENDEFNODE(ImageDilate, {
     {
         {"image"},
-        {"float", "value", "1"},
-    },
-    {
-        {"image"},
-    },
-    {},
-    {"comp"},
-});
-
-// 图像膨胀函数
-void dilateImage(cv::Mat& src, cv::Mat& dst, int kernelSize, float dilateStrength) {
-    // 定义结构元素
-    cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSize, kernelSize));
-    // 进行膨胀操作
-    cv::dilate(src, dst, kernel, cv::Point(-1, -1), dilateStrength);
-}
-struct ImageDilateCV: INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        int kernelsize = get_input2<int>("kernelsize");
-        int strength = get_input2<int>("strength");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        cv::Mat imagecvin(h, w, CV_32FC3);
-        cv::Mat imagecvout(h, w, CV_32FC3);
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                vec3f rgb = image->verts[i * w + j];
-                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
-        const int kernelSize = 3;
-        dilateImage(imagecvin, imagecvout, kernelsize, strength);
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
-        set_output("image", image);
-    }
-};
-ZENDEFNODE(ImageDilateCV, {
-    {
-        {"image"},
-        {"int", "kernelsize", "3"},
         {"float", "strength", "1"},
+        {"int", "kernel_width", "3"},
+        {"int", "kernel_height", "3"},
     },
     {
         {"image"},
@@ -1946,37 +1923,108 @@ ZENDEFNODE(ImageDilateCV, {
     {"comp"},
 });
 
-struct ImageErodeCV: INode {
+void imageerode(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector<int>>& kernel, int iterations) {
+    int image_height = image->userData().get2<int>("h");
+    int image_width = image->userData().get2<int>("w");
+    int kernel_height = kernel.size();
+    int kernel_width = kernel[0].size();
+
+    for (int iter = 0; iter < iterations; iter++) {
+        auto imagetmp = std::make_shared<PrimitiveObject>();
+        imagetmp->resize(image_width * image_height);
+        imagetmp->userData().set2("isImage", 1);
+        imagetmp->userData().set2("w", image_width);
+        imagetmp->userData().set2("h", image_height);
+
+        for (int i = 0; i < image_height; i++) {
+            for (int j = 0; j < image_width; j++) {
+                float minVal0 = 1;
+                float minVal1 = 1;
+                float minVal2 = 1;
+                for (int x = 0; x < kernel_width; x++) {
+                    for (int y = 0; y < kernel_height; y++) {
+                        int posX = j + x - kernel_width / 2;
+                        int posY = i + y - kernel_height / 2;
+                        if (posX >= 0 && posX < image_width && posY >= 0 && posY < image_height) {
+                            if (kernel[x][y] == 1) {
+                                minVal0 = std::min(minVal0, image->verts[posY * image_width + posX][0]);
+                                minVal1 = std::min(minVal1, image->verts[posY * image_width + posX][1]);
+                                minVal2 = std::min(minVal2, image->verts[posY * image_width + posX][2]);
+                            }
+                        }
+                    }
+                }
+                imagetmp->verts[i * image_width + j]= {minVal0,minVal1,minVal2};
+            }
+        }
+        image = imagetmp;
+    }
+}
+
+struct ImageErodeED: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
         int strength = get_input2<int>("strength");
+        int rows = get_input2<int>("kernel_rows");
+        int cols = get_input2<int>("kernel_cols");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        cv::Mat imagecvin(h, w, CV_32FC3);
-        cv::Mat imagecvout(h, w, CV_32FC3);
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                vec3f rgb = image->verts[i * w + j];
-                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
-        cv::Mat element = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * strength + 1, 2 * strength + 1),
-                                                cv::Point(strength, strength));
-        cv::erode(imagecvin, imagecvout, element);
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
+        std::vector<std::vector<int>> kernelvec(rows,std::vector<int>(cols,1));
+        imageerode(image, kernelvec, strength);
         set_output("image", image);
     }
 };
-ZENDEFNODE(ImageErodeCV, {
+ZENDEFNODE(ImageErodeED, {
     {
         {"image"},
         {"int", "strength", "1"},
+        {"int", "kernel_rows", "3"},
+        {"int", "kernel_cols", "3"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+struct ImageErode: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        int kheight = get_input2<int>("kernel_height");
+        int kwidth = get_input2<int>("kernel_width");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        cv::Mat imagecvin(h, w, CV_32FC3);
+        cv::Mat imagecvout(h, w, CV_32FC3);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * kheight + 1, 2 * kwidth + 1),
+                                                cv::Point(1, 1));
+        cv::erode(imagecvin, imagecvout, kernel,cv::Point(-1, -1), strength);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageErode, {
+    {
+        {"image"},
+        {"int", "strength", "1"},
+        {"int", "kernel_width", "3"},
+        {"int", "kernel_height", "3"},
+
     },
     {
         {"image"},
