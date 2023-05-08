@@ -1843,11 +1843,10 @@ void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vecto
             }
         }
         image = imagetmp;
-
     }
 }
 
-struct ImageDilate: INode {
+struct ImageDilateED: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
         int strength = get_input2<int>("strength");
@@ -1861,7 +1860,7 @@ struct ImageDilate: INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(ImageDilate, {
+ZENDEFNODE(ImageDilateED, {
     {
         {"image"},
         {"int", "strength", "1"},
@@ -1872,21 +1871,22 @@ ZENDEFNODE(ImageDilate, {
         {"image"},
     },
     {},
-    {"comp"},
+    {"deprecated"},
 });
 
 // 图像膨胀函数
-void dilateImage(cv::Mat& src, cv::Mat& dst, int kernelSize, float dilateStrength) {
+void dilateImage(cv::Mat& src, cv::Mat& dst, int kheight, int kwidth, int Strength) {
     // 定义结构元素
-    cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(kernelSize, kernelSize));
+    cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(kheight, kwidth));
     // 进行膨胀操作
-    cv::dilate(src, dst, kernel, cv::Point(-1, -1), dilateStrength);
+    cv::dilate(src, dst, kernel, cv::Point(-1, -1), Strength);
 }
-struct ImageDilateCV: INode {
+struct ImageDilate: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        int kernelsize = get_input2<int>("kernelsize");
         int strength = get_input2<int>("strength");
+        int kheight = get_input2<int>("kernel_height");
+        int kwidth = get_input2<int>("kernel_width");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -1899,7 +1899,7 @@ struct ImageDilateCV: INode {
             }
         }
         const int kernelSize = 3;
-        dilateImage(imagecvin, imagecvout, kernelsize, strength);
+        dilateImage(imagecvin, imagecvout, kheight, kwidth, strength);
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
@@ -1909,11 +1909,12 @@ struct ImageDilateCV: INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(ImageDilateCV, {
+ZENDEFNODE(ImageDilate, {
     {
         {"image"},
-        {"int", "kernelsize", "3"},
         {"float", "strength", "1"},
+        {"int", "kernel_width", "3"},
+        {"int", "kernel_height", "3"},
     },
     {
         {"image"},
@@ -1922,10 +1923,78 @@ ZENDEFNODE(ImageDilateCV, {
     {"comp"},
 });
 
-struct ImageErodeCV: INode {
+void imageerode(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector<int>>& kernel, int iterations) {
+    int image_height = image->userData().get2<int>("h");
+    int image_width = image->userData().get2<int>("w");
+    int kernel_height = kernel.size();
+    int kernel_width = kernel[0].size();
+
+    for (int iter = 0; iter < iterations; iter++) {
+        auto imagetmp = std::make_shared<PrimitiveObject>();
+        imagetmp->resize(image_width * image_height);
+        imagetmp->userData().set2("isImage", 1);
+        imagetmp->userData().set2("w", image_width);
+        imagetmp->userData().set2("h", image_height);
+
+        for (int i = 0; i < image_height; i++) {
+            for (int j = 0; j < image_width; j++) {
+                float minVal0 = 1;
+                float minVal1 = 1;
+                float minVal2 = 1;
+                for (int x = 0; x < kernel_width; x++) {
+                    for (int y = 0; y < kernel_height; y++) {
+                        int posX = j + x - kernel_width / 2;
+                        int posY = i + y - kernel_height / 2;
+                        if (posX >= 0 && posX < image_width && posY >= 0 && posY < image_height) {
+                            if (kernel[x][y] == 1) {
+                                minVal0 = std::min(minVal0, image->verts[posY * image_width + posX][0]);
+                                minVal1 = std::min(minVal1, image->verts[posY * image_width + posX][1]);
+                                minVal2 = std::min(minVal2, image->verts[posY * image_width + posX][2]);
+                            }
+                        }
+                    }
+                }
+                imagetmp->verts[i * image_width + j]= {minVal0,minVal1,minVal2};
+            }
+        }
+        image = imagetmp;
+    }
+}
+
+struct ImageErodeED: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
         int strength = get_input2<int>("strength");
+        int rows = get_input2<int>("kernel_rows");
+        int cols = get_input2<int>("kernel_cols");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        std::vector<std::vector<int>> kernelvec(rows,std::vector<int>(cols,1));
+        imageerode(image, kernelvec, strength);
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageErodeED, {
+    {
+        {"image"},
+        {"int", "strength", "1"},
+        {"int", "kernel_rows", "3"},
+        {"int", "kernel_cols", "3"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+struct ImageErode: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        int kheight = get_input2<int>("kernel_height");
+        int kwidth = get_input2<int>("kernel_width");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -1937,9 +2006,9 @@ struct ImageErodeCV: INode {
                 imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
             }
         }
-        cv::Mat element = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * strength + 1, 2 * strength + 1),
-                                                cv::Point(strength, strength));
-        cv::erode(imagecvin, imagecvout, element);
+        cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * kheight + 1, 2 * kwidth + 1),
+                                                cv::Point(1, 1));
+        cv::erode(imagecvin, imagecvout, kernel,cv::Point(-1, -1), strength);
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
@@ -1949,10 +2018,13 @@ struct ImageErodeCV: INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(ImageErodeCV, {
+ZENDEFNODE(ImageErode, {
     {
         {"image"},
         {"int", "strength", "1"},
+        {"int", "kernel_width", "3"},
+        {"int", "kernel_height", "3"},
+
     },
     {
         {"image"},
