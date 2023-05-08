@@ -89,17 +89,22 @@ zenovis::Session *Zenovis::getSession() const
 
 int Zenovis::setCurrentFrameId(int frameid)
 {
-    if (frameid < 0)
+    if (frameid < 0 || !session)
         frameid = 0;
 
-    std::pair<int, int> frameRg = zeno::getSession().globalComm->frameRange();
-    if (frameid < frameRg.first)
+    auto &globalComm = zeno::getSession().globalComm;
+    std::pair<int, int> frameRg = globalComm->frameRange();
+    int numOfFrames = globalComm->numOfFinishedFrame();
+    if (numOfFrames > 0)
     {
-        frameid = frameRg.first;
-    }
-    else if (frameid > frameRg.second)
-    {
-        frameid = frameRg.second;
+        int endFrame = frameRg.first + numOfFrames - 1;
+        if (frameid < frameRg.first) {
+            frameid = frameRg.first;
+        } else if (frameid > endFrame) {
+            frameid = endFrame;
+        }
+    } else {
+        frameid = 0;
     }
 
     zeno::log_trace("now frame {}/{}", frameid, frameRg.second);
