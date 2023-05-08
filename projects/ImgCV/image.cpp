@@ -551,6 +551,62 @@ ZENDEFNODE(CompositeCV, {
 });
 */
 
+struct ImageRGB2HSV : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        float H = 0, S = 0, V = 0;
+        for (auto i = 0; i < image->verts.size(); i++){
+            float R = image->verts[i][0];
+            float G = image->verts[i][1];
+            float B = image->verts[i][2];
+            zeno::RGBtoHSV(R, G, B, H, S, V);
+            image->verts[i][0]= H;
+            image->verts[i][1]= S;
+            image->verts[i][2]= V;
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageRGB2HSV, {
+    {
+        {"image"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
+
+struct ImageHSV2RGB : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        float R = 0, G = 0, B = 0;
+        for (auto i = 0; i < image->verts.size(); i++){
+            float H = image->verts[i][0];
+            float S = image->verts[i][1];
+            float V = image->verts[i][2];
+            zeno::HSVtoRGB(H, S, V, R, G, B);
+            image->verts[i][0]= R ;
+            image->verts[i][1]= G ;
+            image->verts[i][2]= B ;
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageHSV2RGB, {
+    {
+        {"image"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
+
 struct ImageEditRGB : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -1757,7 +1813,7 @@ static std::shared_ptr<PrimitiveObject> mirror_tiling(std::shared_ptr<PrimitiveO
     return image2;
 }
 
-struct Imagetile: INode {
+struct ImageTile: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
         auto tilemode = get_input2<std::string>("tilemode");
@@ -1782,7 +1838,7 @@ struct Imagetile: INode {
         set_output("image", image2);
     }
 };
-ZENDEFNODE(Imagetile, {
+ZENDEFNODE(ImageTile, {
     {
         {"image"},
         {"enum normal mirror", "tilemode", "normal"},
@@ -2033,7 +2089,7 @@ ZENDEFNODE(ImageErode, {
     {"comp"},
 });
 
-struct ImageDilateColor: INode {
+struct ImageDilateByColor: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
         auto Hue = get_input2<std::string>("Hue");
@@ -2160,7 +2216,7 @@ struct ImageDilateColor: INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(ImageDilateColor, {
+ZENDEFNODE(ImageDilateByColor, {
     {
         {"image"},
         {"enum default edit red orange yellow green cyan blue purple ", "Hue", "edit"},
@@ -2171,7 +2227,7 @@ ZENDEFNODE(ImageDilateColor, {
         {"image"},
     },
     {},
-    {"comp"},
+    {"deprecated"},
 });
 
 
