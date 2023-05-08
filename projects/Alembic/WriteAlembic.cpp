@@ -182,7 +182,7 @@ ZENDEFNODE(WriteAlembic, {
         {"int", "frame_end", "100"},
         {"bool", "flipFrontBack", "1"},
     },
-    {"alembic"},
+    {"deprecated"},
 });
 
 struct WriteAlembic2 : INode {
@@ -264,7 +264,12 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
                             uvsamp);
-
+                    {
+                        if (prim->verts.has_attr("v")) {
+                            auto &vel = prim->verts.attr<vec3f>("v");
+                            mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
+                        }
+                    }
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -272,6 +277,12 @@ struct WriteAlembic2 : INode {
                     V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
+                    {
+                        if (prim->verts.has_attr("v")) {
+                            auto &vel = prim->verts.attr<vec3f>("v");
+                            mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
+                        }
+                    }
                     mesh.set( mesh_samp );
                 }
             }
@@ -320,13 +331,24 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
                             uvsamp);
-
+                    {
+                        if (prim->verts.has_attr("v")) {
+                            auto &vel = prim->verts.attr<vec3f>("v");
+                            mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
+                        }
+                    }
                     mesh.set( mesh_samp );
                 } else {
                     OPolyMeshSchema::Sample mesh_samp(
                     V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
+                    {
+                        if (prim->verts.has_attr("v")) {
+                            auto &vel = prim->verts.attr<vec3f>("v");
+                            mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
+                        }
+                    }
                     mesh.set( mesh_samp );
                 }
             }
@@ -336,12 +358,12 @@ struct WriteAlembic2 : INode {
 
 ZENDEFNODE(WriteAlembic2, {
     {
+        {"prim"},
+        {"frameid"},
         {"writepath", "path", ""},
         {"int", "frame_start", "0"},
         {"int", "frame_end", "100"},
         {"bool", "flipFrontBack", "1"},
-        {"prim"},
-        {"frameid"},
     },
     {},
     {},

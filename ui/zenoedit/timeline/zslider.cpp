@@ -1,6 +1,7 @@
 #include "zslider.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoedit/zenoapplication.h>
+#include "zassert.h"
 
 
 ZSlider::ZSlider(QWidget* parent)
@@ -71,6 +72,11 @@ int ZSlider::_frameToPos(int frame)
 
 void ZSlider::setFromTo(int from, int to)
 {
+    if (m_from == from && m_to == to)
+        return;
+
+    ZASSERT_EXIT(from <= to);
+
     m_from = from;
     m_to = to;
     if (m_value < m_from)
