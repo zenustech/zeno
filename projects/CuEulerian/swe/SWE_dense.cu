@@ -313,6 +313,215 @@ ZENDEFNODE(SolveShallowWaterHeight, {/* inputs: */
                                      /* category: */
                                      {"Eulerian"}});
 
+struct ZSSolveShallowWaterMomentum : INode {
+    template <typename IterT>
+    void boundary_velocity(IterT u, IterT w, int nx, int nz, int halo) {
+        auto pol = zs::cuda_exec();
+
+        // x boundary
+        pol(zs::range((nz + halo) * halo), [=] ZS_LAMBDA(size_t index) mutable {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
+
+            int i = index % halo;
+            int j = index / halo;
+
+            if (i < halo / 2) {
+                // left
+#if SW_OPEN_BOUNDARY
+                u[idx(i, j)] = -std::abs(u[idx(halo - 1 - i, j)]);
+                if (i == halo / 2 - 1) {
+                    u[idx(i + 1, j)] = -std::abs(u[idx(i + 2, j)]);
+                }
+#else
+                u[idx(i, j)] = -u[idx(halo - i, j)];
+                if (i == halo / 2 - 1) {
+                    u[idx(i + 1, j)] = 0;
+                }
+#endif
+                w[idx(i, j)] = w[idx(halo - 1 - i, j)];
+            } else {
+                // right
+                i += nx;
+#if SW_OPEN_BOUNDARY
+                u[idx(i, j)] = std::abs(u[idx(2 * nx + halo - 1 - i, j)]);
+#else
+                if (i == nx + halo / 2) {
+                    u[idx(i, j)] = 0;
+                } else {
+                    u[idx(i, j)] = -u[idx(2 * nx + halo - i, j)];
+                }
+#endif
+                w[idx(i, j)] = w[idx(2 * nx + halo - 1 - i, j)];
+            }
+        });
+
+        // z boundary
+        pol(zs::range(halo * (nx + halo)), [=] ZS_LAMBDA(size_t index) mutable {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
+
+            int i = index % (nx + halo);
+            int j = index / (nx + halo);
+
+            if (j < halo / 2) {
+                // front
+                u[idx(i, j)] = u[idx(i, halo - 1 - j)];
+#if SW_OPEN_BOUNDARY
+                w[idx(i, j)] = -std::abs(w[idx(i, halo - 1 - j)]);
+                if (j == halo / 2 - 1) {
+                    w[idx(i, j + 1)] = -std::abs(w[idx(i, j + 2)]);
+                }
+#else
+                w[idx(i, j)] = -w[idx(i, halo - j)];
+                if (j == halo / 2 - 1) {
+                    w[idx(i, j + 1)] = 0;
+                }
+#endif
+            } else {
+                // back
+                j += nz;
+                u[idx(i, j)] = u[idx(i, 2 * nz + halo - 1 - j)];
+#if SW_OPEN_BOUNDARY
+                w[idx(i, j)] = std::abs(w[idx(i, 2 * nz + halo - 1 - j)]);
+#else
+                if (j == nz + halo / 2) {
+                    w[idx(i, j)] = 0;
+                } else {
+                    w[idx(i, j)] = -w[idx(i, 2 * nz + halo - j)];
+                }
+#endif
+            }
+        });
+    }
+
+    template <typename Iter0, typename Iter1, typename Iter2, typename Iter3, typename Iter4, typename Iter5,
+              typename IterT>
+    void momentum_stencil(Iter0 u_new, Iter1 w_new, Iter2 u_old, Iter3 w_old, Iter4 u_n, Iter5 w_n, IterT h, IterT B,
+                          float gravity, int nx, int nz, int halo, float dx, float dt, float c0, float c1) {
+        auto pol = zs::cuda_exec();
+        pol(zs::range(nz * nx), [=] ZS_LAMBDA(size_t index) mutable {
+            auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
+
+            int i = index % nx;
+            int j = index / nx;
+            i += halo / 2;
+            j += halo / 2;
+
+            float u_adv, w_adv, adv_term, grad_term;
+            int upwind;
+
+            // update u
+            u_adv = u_old[idx(i, j)];
+            w_adv = 0.25f * (w_old[idx(i - 1, j)] + w_old[idx(i, j)] + w_old[idx(i - 1, j + 1)] + w_old[idx(i, j + 1)]);
+
+            adv_term = 0;
+            upwind = u_adv < 0 ? 1 : -1;
+            adv_term += u_adv * scheme::HJ_WENO3(u_old[idx(i - upwind, j)], u_old[idx(i, j)], u_old[idx(i + upwind, j)],
+                                                 u_old[idx(i + 2 * upwind, j)], u_adv, dx);
+            upwind = w_adv < 0 ? 1 : -1;
+            adv_term += w_adv * scheme::HJ_WENO3(u_old[idx(i, j - upwind)], u_old[idx(i, j)], u_old[idx(i, j + upwind)],
+                                                 u_old[idx(i, j + 2 * upwind)], w_adv, dx);
+            grad_term = gravity * 0.5f * (h[idx(i, j)] + h[idx(i - 1, j)]) *
+                        ((h[idx(i, j)] - h[idx(i - 1, j)]) / dx + (B[idx(i, j)] - B[idx(i - 1, j)]) / dx);
+
+            u_new[idx(i, j)] = c0 * u_n[idx(i, j)] + c1 * (u_old[idx(i, j)] - (adv_term + grad_term) * dt);
+
+            // update w
+            u_adv = 0.25f * (u_old[idx(i, j - 1)] + u_old[idx(i, j)] + u_old[idx(i + 1, j - 1)] + u_old[idx(i + 1, j)]);
+            w_adv = w_old[idx(i, j)];
+
+            adv_term = 0;
+            upwind = u_adv < 0 ? 1 : -1;
+            adv_term += u_adv * scheme::HJ_WENO3(w_old[idx(i - upwind, j)], w_old[idx(i, j)], w_old[idx(i + upwind, j)],
+                                                 w_old[idx(i + 2 * upwind, j)], u_adv, dx);
+            upwind = w_adv < 0 ? 1 : -1;
+            adv_term += w_adv * scheme::HJ_WENO3(w_old[idx(i, j - upwind)], w_old[idx(i, j)], w_old[idx(i, j + upwind)],
+                                                 w_old[idx(i, j + 2 * upwind)], w_adv, dx);
+            grad_term = gravity * 0.5f * (h[idx(i, j)] + h[idx(i, j - 1)]) *
+                        ((h[idx(i, j)] - h[idx(i, j - 1)]) / dx + (B[idx(i, j)] - B[idx(i, j - 1)]) / dx);
+
+            w_new[idx(i, j)] = c0 * w_n[idx(i, j)] + c1 * (w_old[idx(i, j)] - (adv_term + grad_term) * dt);
+        });
+    };
+
+    void apply() override {
+        auto grid = get_input<ZenoParticles>("SWGrid");
+        auto &ud = grid->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")) || (!ud.has<float>("dx")))
+            zeno::log_error("no such UserData named '{}', '{}', '{}' or '{}'.", "nx", "nz", "halo", "dx");
+        int nx = ud.get2<int>("nx");
+        int nz = ud.get2<int>("nz");
+        int halo = ud.get2<int>("halo");
+        float dx = ud.get2<float>("dx");
+        auto dt = get_input2<float>("dt");
+        auto gravity = get_input2<float>("gravity");
+
+        const unsigned int nc = (nx + halo) * (nz + halo);
+
+        auto terrain_attr = get_input2<std::string>("terrain_attr");
+        auto height_attr = get_input2<std::string>("height_attr");
+        auto u_attr = get_input2<std::string>("u_attr");
+        auto w_attr = get_input2<std::string>("w_attr");
+
+        auto pars = grid->getParticles();
+
+        auto B = pars.begin(terrain_attr);
+        auto h = pars.begin(height_attr);
+        auto u_old = pars.begin(u_attr);
+        auto w_old = pars.begin(w_attr);
+        zs::Vector<float> u_new_{nc, zs::memsrc_e::device, 0}, w_new_{nc, zs::memsrc_e::device, 0},
+            u_rk_{nc, zs::memsrc_e::device, 0}, w_rk_{nc, zs::memsrc_e::device, 0};
+
+        {
+            auto u_new = u_new_.data();
+            auto w_new = w_new_.data();
+            auto u_rk = u_rk_.data();
+            auto w_rk = w_rk_.data();
+
+            // 3rd-order 3-stage TVD Runge-Kutta method
+            // 1st stage u_old, w_old --> u_new, w_new
+            momentum_stencil(u_new, w_new, u_old, w_old, u_old, w_old, h, B, gravity, nx, nz, halo, dx, dt, 0.f, 1.f);
+            boundary_velocity(u_new, w_new, nx, nz, halo);
+
+            // 2nd stage u_new, w_new --> u_rk, w_rk
+            momentum_stencil(u_rk, w_rk, u_new, w_new, u_old, w_old, h, B, gravity, nx, nz, halo, dx, dt, 3.f / 4.f,
+                             1.f / 4.f);
+            boundary_velocity(u_rk, w_rk, nx, nz, halo);
+
+            // 3rd stage u_rk, w_rk --> u_new, w_new
+            momentum_stencil(u_new, w_new, u_rk, w_rk, u_old, w_old, h, B, gravity, nx, nz, halo, dx, dt, 1.f / 3.f,
+                             2.f / 3.f);
+            boundary_velocity(u_new, w_new, nx, nz, halo);
+
+            auto pol = zs::cuda_exec();
+            pol(zs::range(nc), [u_old, w_old, u_new, w_new] ZS_LAMBDA(size_t index) mutable {
+                u_old[index] = u_new[index];
+                w_old[index] = w_new[index];
+            });
+        }
+
+        set_output("SWGrid", std::move(grid));
+    }
+};
+
+ZENDEFNODE(ZSSolveShallowWaterMomentum, {/* inputs: */
+                                         {
+                                             "SWGrid",
+                                             {"float", "dt", "0.04"},
+                                             {"float", "gravity", "9.8"},
+                                             {"string", "terrain_attr", "terrain"},
+                                             {"string", "height_attr", "height"},
+                                             {"string", "u_attr", "u"},
+                                             {"string", "w_attr", "w"},
+                                         },
+                                         /* outputs: */
+                                         {
+                                             "SWGrid",
+                                         },
+                                         /* params: */
+                                         {},
+                                         /* category: */
+                                         {"Eulerian"}});
+
 struct SolveShallowWaterMomentum : INode {
     void boundary_velocity(float *u, float *w, int nx, int nz, int halo) {
         auto pol = zs::omp_exec();
