@@ -4,6 +4,7 @@
 #include <array>
 #include <string>
 #include <set>
+#include <map>
 #include <cassert>
 
 #if defined(__clang__) || _MSC_VER >= 1900
@@ -202,7 +203,7 @@ struct ParamValue : public ParamDescriptor {
     }
 
     template <class T, typename std::enable_if<std::is_integral<T>::value, bool>::type = true>
-    T Cast() {
+    T Cast() const {
         if (Type != static_cast<decltype(Type)>(EParamType::Integer)) {
             throw "ParamValue integer casting runtime check failed.";
         }
@@ -232,13 +233,29 @@ struct ParamValueBatch {
     }
 };
 
+/**
+ * @brief The GraphInfo struct
+ * This is a struct that contains information about the graph.
+ * It is used for sending information about the graph to the client.
+ */
 struct GraphInfo {
+    bool bIsValid = false;
     std::map<std::string, zeno::remote::ParamDescriptor> InputParameters;
     std::map<std::string, zeno::remote::ParamDescriptor> OutputParameters;
 
     template <class T>
     void pack(T& pack) {
-        pack(InputParameters, OutputParameters);
+        pack(bIsValid, InputParameters, OutputParameters);
+    }
+};
+
+struct GraphRunInfo {
+    ParamValueBatch Values;
+    std::string GraphDefinition; // zsl file
+
+    template <class T>
+    void pack(T& pack) {
+        pack(Values, GraphDefinition);
     }
 };
 

@@ -29,6 +29,7 @@
 #include <zeno/core/INode.h>
 #include <zeno/core/Session.h>
 #include <zeno/core/Graph.h>
+#include <zeno/extra/GraphException.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/unreal/ZenoRemoteTypes.h>
@@ -167,7 +168,6 @@ static struct Flags {
     std::string GetCurrentSession() {
         if (IsMainProcess) {
             std::string Result = CurrentSession;
-            CurrentSession = "";
             return Result;
         } else if (!CurrentSession.empty()) {
             return CurrentSession;
@@ -310,16 +310,9 @@ static struct SubjectRegistry {
      */
     void SetParameter(const std::string& SessionKey, const std::string& Key, zeno::remote::ParamValue& Value) {
         if (StaticFlags.IsMainProcess) {
-            auto ParamMapIter = SessionalParameters.find(SessionKey);
-            if (ParamMapIter == SessionalParameters.end()) {
-                auto [Iter, Success] = SessionalParameters.insert(std::make_pair(SessionKey, std::map<std::string, zeno::remote::ParamValue> {}));
-                if (Success) {
-                    ParamMapIter = Iter;
-                }
-            }
+            auto& ParamMapIter = GetOrCreate(SessionalParameters, SessionKey);
 
-            assert(ParamMapIter != SessionalParameters.end());
-            ParamMapIter->second.insert(std::make_pair(Key, Value));
+            ParamMapIter.insert(std::make_pair(Key, Value));
         } else {
             // In child process, transfer data with http
             httplib::Client Cli { ZENO_TOOL_SERVER_ADDRESS };
@@ -346,7 +339,8 @@ static struct SubjectRegistry {
             if (ParamMapIter != SessionalParameters.end()) {
                 auto ParamIter = ParamMapIter->second.find(Key);
                 if (ParamIter != ParamMapIter->second.end()) {
-                    return &ParamIter->second;
+                    TempValue = ParamIter->second;
+                    return &TempValue;
                 }
             }
             return nullptr;
@@ -424,7 +418,7 @@ ESubjectType NameToSubjectType(const std::string& InStr) {
 }
 
 #define SERVER_HANDLER_WRAPPER(FUNC) [this] (const httplib::Request& Req, httplib::Response& Res) { FUNC(Req, Res); }
-#define HANDLER_SESSION_CHECK(FUNC) [this] (const httplib::Request& Req, httplib::Response& Res) { if ((Req.remote_addr == "127.0.0.1" && Req.has_header(ZENO_SESSION_HEADER_NAME) && Req.get_header_value(ZENO_SESSION_HEADER_NAME) == ZENO_LOCAL_TOKEN) || (Req.has_header(ZENO_SESSION_HEADER_NAME) && IsValidSession(Req.get_header_value(ZENO_SESSION_HEADER_NAME)))) { FUNC(Req, Res); } else { Res.status = 403; } }
+#define HANDLER_SESSION_CHECK(FUNC) [this] (const httplib::Request& Req, httplib::Response& Res) { remote::StaticFlags.IsMainProcess = true; if ((Req.remote_addr == "127.0.0.1" && Req.has_header(ZENO_SESSION_HEADER_NAME) && Req.get_header_value(ZENO_SESSION_HEADER_NAME) == ZENO_LOCAL_TOKEN) || (Req.has_header(ZENO_SESSION_HEADER_NAME) && IsValidSession(Req.get_header_value(ZENO_SESSION_HEADER_NAME)))) { FUNC(Req, Res); } else { Res.status = 403; } }
 
 class ZenoRemoteServer {
 
@@ -446,7 +440,9 @@ private:
     void FetchDataDiff(const httplib::Request& Req, httplib::Response& Res);
     static void PushData(const httplib::Request& Req, httplib::Response& Res);
     void FetchData(const httplib::Request& Req, httplib::Response& Res);
+
     static void ParseGraphInfo(const httplib::Request& Req, httplib::Response& Res);
+    static void RunGraph(const httplib::Request& Req, httplib::Response& Res);
 
     static void PushParameter(const httplib::Request& Req, httplib::Response& Res);
     static void FetchParameter(const httplib::Request& Req, httplib::Response& Res);
@@ -477,13 +473,15 @@ public:
         Srv.Get("/subject/fetch", HANDLER_SESSION_CHECK(FetchData));
         Srv.Post("/graph/parse", HANDLER_SESSION_CHECK(ParseGraphInfo));
         Srv.Post("/graph/param/push", HANDLER_SESSION_CHECK(PushParameter));
+        Srv.Post("/graph/run", HANDLER_SESSION_CHECK(RunGraph));
         Srv.Get("/graph/param/fetch", HANDLER_SESSION_CHECK(FetchParameter));
         Srv.Get("/session/set", HANDLER_SESSION_CHECK(SetCurrentSession));
         Srv.Get("/session/current", HANDLER_SESSION_CHECK(GetCurrentSession));
         zeno::remote::StaticFlags.IsMainProcess = true;
+        Srv.set_write_timeout(120);
         Srv.listen("127.0.0.1", 23343);
         // Listen failed or server exited, set flag to false
-        zeno::remote::StaticFlags.IsMainProcess = false;
+//        zeno::remote::StaticFlags.IsMainProcess = false;
     }
 };
 
@@ -648,6 +646,8 @@ void ZenoRemoteServer::FetchData(const httplib::Request &Req, httplib::Response 
  */
 void ZenoRemoteServer::ParseGraphInfo(const httplib::Request &Req, httplib::Response &Res) {
     const std::string &BodyStr = Req.body;
+    zeno::remote::GraphInfo GraphInfo;
+    GraphInfo.bIsValid = false;
     try {
         auto &Session = zeno::getSession();
         std::shared_ptr<zeno::Graph> NewGraph = Session.createGraph();
@@ -657,7 +657,6 @@ void ZenoRemoteServer::ParseGraphInfo(const httplib::Request &Req, httplib::Resp
             zeno::safe_at(Session.nodeClasses, "DeclareRemoteParameter", "node class not found");
         std::unique_ptr<INodeClass> &OutputNodeClass =
             zeno::safe_at(Session.nodeClasses, "SetExecutionResult", "node class not found");
-        zeno::remote::GraphInfo GraphInfo;
         for (const auto &[NodeName, NodeClass] : NewGraph->nodes) {
             if (NodeClass->nodeClass == DeclareNodeClass.get()) {
                 zeno::StringObject *InputName = dynamic_cast<zeno::StringObject *>(
@@ -688,11 +687,50 @@ void ZenoRemoteServer::ParseGraphInfo(const httplib::Request &Req, httplib::Resp
                                                   static_cast<int16_t>(remote::NameToSubjectType(InputType->value))}));
             }
         }
-        std::vector<uint8_t> Data = msgpack::pack(GraphInfo);
-        Res.set_content(reinterpret_cast<const char *>(Data.data()), Data.size(), "application/binary");
+        GraphInfo.bIsValid = true;
         Res.status = 200;
     } catch (...) {
         Res.status = 400;
+    }
+    std::vector<uint8_t> Data = msgpack::pack(GraphInfo);
+    Res.set_content(reinterpret_cast<const char *>(Data.data()), Data.size(), "application/binary");
+}
+
+/**
+ * POST /graph/run
+ * BODY msgpack packed data of zeno::remote::GraphRunInfo
+ * return msgpack packed data of zeno::remote::GraphRunResult
+ */
+void ZenoRemoteServer::RunGraph(const httplib::Request &Req, httplib::Response &Res) {
+    const std::string& SessionKey = ParseSessionKey(Req);
+    const std::string& BodyStr = Req.body;
+    std::error_code Err;
+    auto RunInfo = msgpack::unpack<zeno::remote::GraphRunInfo>(reinterpret_cast<const uint8_t *>(BodyStr.data()), BodyStr.size(), Err);
+    zeno::log_error("Test4");
+    if (!Err) {
+        try {
+            // Initialize graph
+            auto& Session = zeno::getSession();
+            auto Graph = Session.createGraph();
+            Graph->loadGraph(RunInfo.GraphDefinition.c_str());
+            // Set input parameters
+            for (auto& Param : RunInfo.Values.Values) {
+                zeno::remote::StaticRegistry.SetParameter(SessionKey, Param.Name, Param);
+            }
+            remote::StaticFlags.CurrentSession = SessionKey;
+            // Run graph
+            zeno::log_error("Test5");
+            GraphException::catched([&] {Graph->applyNodesToExec();}, *Session.globalStatus);
+            remote::StaticFlags.CurrentSession = "";
+            Res.status = 204;
+            zeno::log_error("Test1");
+        } catch (...) {
+            Res.status = 400;
+        }
+    }
+    else {
+        Res.status = 400;
+        zeno::log_error("Test2");
     }
 }
 
@@ -848,7 +886,7 @@ struct IObjectExtractor<remote::ESubjectType::HeightField> {
 
 struct TransferPrimitiveToUnreal : public INode {
     void apply() override {
-        zeno::remote::StaticFlags.IsMainProcess = false;
+//        zeno::remote::StaticFlags.IsMainProcess = false;
         std::string processor_type = get_input2<std::string>("type");
         std::string subject_name = get_input2<std::string>("name");
         std::shared_ptr<PrimitiveObject> prim = get_input2<PrimitiveObject>("prim");
@@ -962,7 +1000,7 @@ struct ReadPrimitiveFromRegistry : public INode {
     }
 
     void apply() override {
-        zeno::remote::StaticFlags.IsMainProcess = false;
+//        zeno::remote::StaticFlags.IsMainProcess = false;
         std::string subject_name = get_input2<std::string>("name");
         remote::ESubjectType Type = remote::NameToSubjectType(get_input2<std::string>("type"));
         std::shared_ptr<zeno::PrimitiveObject> OutPrim;
@@ -1000,7 +1038,7 @@ ZENO_DEFNODE(ReadPrimitiveFromRegistry)({
 
 struct DeclareRemoteParameter : public INode {
     void apply() override {
-        zeno::remote::StaticFlags.IsMainProcess = false;
+//        zeno::remote::StaticFlags.IsMainProcess = false;
         const std::string& Name = get_input2<std::string>("name");
         const std::string& Type = get_input2<std::string>("type");
         const remote::EParamType ParamType = remote::GetParamTypeFromString(Type);
@@ -1016,8 +1054,12 @@ struct DeclareRemoteParameter : public INode {
 
         const zeno::remote::ParamValue* Value = zeno::remote::StaticRegistry.GetParameter(SessionKey, Name);
         if (Value) {
-            if (ParamType == remote::EParamType::Float || ParamType == remote::EParamType::Integer) {
-                set_output2("ParamValue", std::make_shared<zeno::NumericObject>(Value->Cast<float>()));
+            if (ParamType == remote::EParamType::Float) {
+                const float Data = Value->Cast<float>();
+                set_output2("ParamValue", std::make_shared<zeno::NumericObject>(Data));
+            } else if (ParamType == remote::EParamType::Integer) {
+                const int32_t Data = Value->Cast<int32_t>();
+                set_output2("ParamValue", std::make_shared<zeno::NumericObject>(Data));
             }
             return;
         }
@@ -1044,7 +1086,7 @@ ZENO_DEFNODE(DeclareRemoteParameter) ({
 
 struct SetExecutionResult : public INode {
     void apply() override {
-        zeno::remote::StaticFlags.IsMainProcess = false;
+//        zeno::remote::StaticFlags.IsMainProcess = false;
         const std::string ProcessorType = get_input2<std::string>("type");
         const remote::ESubjectType Type = remote::NameToSubjectType(ProcessorType);
         const std::string SubjectName = get_input2<std::string>("name");
