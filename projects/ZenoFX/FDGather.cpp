@@ -219,16 +219,16 @@ T lerp(T a, T b, float c)
 {
     return (1.0 - c) * a + c * b;
 }
-template<class T>
-void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, int nx, int ny, float h, zeno::vec3f bmin)
-{
+template <class T>
+void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vector<T> &primAttr, int nx, int ny, float h,
+              zeno::vec3f bmin) {
     std::vector<T> temp(field.size());
 #pragma omp parallel for
     for(size_t tidx=0;tidx<coord.size();tidx++)
     {
         auto uv = coord[tidx];
         auto uv2 = (uv - bmin) / h;
-        uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.01,0.0,0.01)), zeno::vec3f(nx-1.01, 0.0, ny-1.01));
+        uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.01,0.0,0.01)), zeno::vec3f((float)nx-1.01, 0.0, (float)ny-1.01));
         int i = uv2[0];
         int j = uv2[2];
         float cx = uv2[0] - i, cy = uv2[2] - j;
@@ -238,7 +238,7 @@ void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, int nx, in
 #pragma omp parallel for
     for(size_t tidx=0;tidx<coord.size();tidx++)
     {
-        field[tidx]=temp[tidx];
+        primAttr[tidx]=temp[tidx];
     }
 }
 struct Grid2DSample : zeno::INode {
@@ -246,38 +246,40 @@ struct Grid2DSample : zeno::INode {
         auto nx = get_input<zeno::NumericObject>("nx")->get<int>();
         auto ny = get_input<zeno::NumericObject>("ny")->get<int>();
         auto bmin = get_input2<zeno::vec3f>("bmin");
-        auto grid = get_input<zeno::PrimitiveObject>("grid");
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto grid = get_input<zeno::PrimitiveObject>("sampleGrid");
         auto attrT = get_param<std::string>("attrT");
         auto channel = get_input<zeno::StringObject>("channel")->get();
         auto sampleby = get_input<zeno::StringObject>("sampleBy")->get();
         auto h = get_input<zeno::NumericObject>("h")->get<float>();
-        if(grid->has_attr(channel) && grid->has_attr(sampleby))
-        {
-            if(attrT == "float")
-            {
-                sample2D<float>(grid->attr<zeno::vec3f>(sampleby), grid->attr<float>(channel), nx, ny, h, bmin);
+        if (grid->has_attr(channel) && prim->has_attr(sampleby)) {
+            if (attrT == "float") {
+                prim->add_attr<float>(channel);
+                sample2D<float>(prim->attr<zeno::vec3f>(sampleby), grid->attr<float>(channel),
+                                prim->attr<float>(channel), nx, ny, h, bmin);
+            } else if (attrT == "vec3") {
+                prim->add_attr<zeno::vec3f>(channel);
+                sample2D<zeno::vec3f>(prim->attr<zeno::vec3f>(sampleby), grid->attr<zeno::vec3f>(channel),
+                                      prim->attr<zeno::vec3f>(channel), nx, ny, h, bmin);
             }
-            else if(attrT == "vec3f")
-            {
-                sample2D<zeno::vec3f>(grid->attr<zeno::vec3f>(sampleby), grid->attr<zeno::vec3f>(channel), nx, ny, h, bmin);
-            }
-    }
+        }
 
-        set_output("prim", std::move(grid));
-
+        set_output("prim", std::move(prim));
     }
 };
 ZENDEFNODE(Grid2DSample, {
-                                         {{"PrimitiveObject", "grid"},
-                                          {"int", "nx","1"},
-                                          {"int", "ny", "1"},
-                                          {"float", "h", "1"},
-                                          {"vec3f","bmin", "0,0,0" },
-                                          {"string", "channel", "pos"},
-                                          {"string", "sampleBy", "pos"}},
-                                         {{"PrimitiveObject", "prim"}},
-                                         {{"enum vec3 float", "attrT", "float"},
-                                          },
-                                         {"zenofx"},
-                                     });
-}
+                             {{"PrimitiveObject", "prim"},
+                              {"PrimitiveObject", "sampleGrid"},
+                              {"int", "nx", "1"},
+                              {"int", "ny", "1"},
+                              {"float", "h", "1"},
+                              {"vec3f", "bmin", "0,0,0"},
+                              {"string", "channel", "vel"},
+                              {"string", "sampleBy", "pos"}},
+                             {{"PrimitiveObject", "prim"}},
+                             {
+                                 {"enum vec3 float", "attrT", "float"},
+                             },
+                             {"zenofx"},
+                         });
+} // namespace zeno
