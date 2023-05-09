@@ -51,20 +51,89 @@ struct SpawnGuidelines : INode {
         prim->polys.resize(numLines);
 
         auto &pos = prim->attr<vec3f>("pos");
-        pol(enumerate(prim->polys.values),
-            [&roots, &nrm, &pos, numSegments, segLength = length / numSegments](int polyi, vec2i &tup) {
-                auto offset = polyi * (numSegments + 1);
-                tup[0] = offset;
-                tup[1] = (numSegments + 1);
+        if (has_input("vdb_collider")) {
+            auto collider = get_input2<zeno::VDBFloatGrid>("vdb_collider");
+            auto sep_dist = get_input2<float>("sep_dist");
+            auto maxIters = get_input2<int>("max_iter");
+            auto grid = collider->m_grid;
+            grid->tree().voxelizeActiveTiles();
+            auto dx = collider->getVoxelSize()[0];
+            openvdb::Vec3fGrid::Ptr gridGrad = openvdb::tools::gradient(*grid);
+            auto getSdf = [&grid](openvdb::Vec3R p) {
+                return openvdb::tools::BoxSampler::sample(grid->getConstUnsafeAccessor(), grid->worldToIndex(p));
+            };
+            auto getGrad = [&gridGrad](openvdb::Vec3R p) {
+                return openvdb::tools::BoxSampler::sample(gridGrad->getConstUnsafeAccessor(),
+                                                          gridGrad->worldToIndex(p));
+            };
+            pol(enumerate(prim->polys.values),
+                /// @note cap [sep_dist] in case repel points outside the narrowband where grad is invalid
+                [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters, &roots, &nrm, &pos,
+                 numSegments, segLength = length / numSegments](int polyi, vec2i &tup) {
+                    auto offset = polyi * (numSegments + 1);
+                    tup[0] = offset;
+                    tup[1] = (numSegments + 1);
 
-                auto rt = roots[polyi];
-                pos[offset] = rt;
-                auto step = nrm[polyi] * segLength;
-                for (int i = 0; i != numSegments; ++i) {
-                    rt += step;
-                    pos[++offset] = rt;
-                }
-            });
+                    auto rt = roots[polyi];
+                    pos[offset] = rt;
+
+                    auto p = zeno::vec_to_other<openvdb::Vec3R>(rt);
+                    auto lastStep = zeno::vec_to_other<openvdb::Vec3R>(nrm[polyi] * segLength);
+                    auto prevPos = p;
+                    for (int i = 0; i != numSegments; ++i) {
+                        p += lastStep;
+                        auto mi = maxIters;
+                        int cnt = 0;
+                        for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
+                            auto d = getGrad(p);
+                            d.normalize();
+                            if (sdf < 0)
+                                p += d * -sdf;
+                            // p += d * dx;
+                            else
+                                p += d * (sep_dist - sdf);
+                            // p += d * -dx;
+                        }
+#if 0
+                        auto fwd = lastStep = p - prevPos;
+                        if (std::abs(fwd.length() - segLength) > segLength * 0.001) {
+                            auto g = getGrad(p);
+                            auto side = g.cross(fwd);
+                            g = g.cross(side);
+                            if (g.normalize() && fwd.normalize()) {
+                                auto yita = std::acos(fwd.dot(g));
+                                auto theta = zs::g_pi - yita;
+                                if (yita > zs::g_half_pi)
+                                    p += segLength / std::tan(theta) * g;
+                                else
+                                    p += segLength * std::tan(theta) * g;
+                            }
+                        }
+#endif
+
+                        lastStep = (p - prevPos);
+                        lastStep.normalize();
+                        lastStep *= segLength;
+                        prevPos = p;
+                        pos[++offset] = zeno::other_to_vec<3>(p);
+                    }
+                });
+        } else {
+            pol(enumerate(prim->polys.values),
+                [&roots, &nrm, &pos, numSegments, segLength = length / numSegments](int polyi, vec2i &tup) {
+                    auto offset = polyi * (numSegments + 1);
+                    tup[0] = offset;
+                    tup[1] = (numSegments + 1);
+
+                    auto rt = roots[polyi];
+                    pos[offset] = rt;
+                    auto step = nrm[polyi] * segLength;
+                    for (int i = 0; i != numSegments; ++i) {
+                        rt += step;
+                        pos[++offset] = rt;
+                    }
+                });
+        }
         pol(enumerate(prim->loops.values), [](int vi, int &loopid) { loopid = vi; });
         // copy point attrs to polys attrs
         for (auto &[key, srcArr] : points->verts.attrs) {
@@ -103,6 +172,9 @@ ZENDEFNODE(SpawnGuidelines, {
                                     {"string", "normalTag", "nrm"},
                                     {"float", "length", "0.5"},
                                     {"int", "segments", "5"},
+                                    {"vdb_collider"},
+                                    {"float", "sep_dist", "0"},
+                                    {"int", "max_iter", "100"},
                                 },
                                 {
                                     {"PrimitiveObject", "guide_lines"},
@@ -263,9 +335,12 @@ struct RepelPoints : zeno::INode {
 
                 // fmt::print("pt[{}] current at <{}, {}, {}>, sdf: {}, direction <{}, {}, {}>\n", vi, p[0], p[1], p[2], sdf, ddd[0], ddd[1], ddd[2]);
 
-                // p += ddd.normalize() * dx;
-                p += ddd.normalize() * -sdf;
-                // p += ddd;
+                ddd.normalize();
+                // p += ddd * dx;
+                if (sdf < 0)
+                    p += ddd * -sdf;
+                else
+                    p += ddd * (sep_dist - sdf);
             }
             pos[vi] = zeno::other_to_vec<3>(p);
         });
