@@ -71,7 +71,7 @@ struct ZSSolveShallowWaterHeight : INode {
         auto pol = zs::cuda_exec();
 
         // x boundary
-        pol(zs::range(nz + halo, halo), [=] ZS_LAMBDA(size_t index) mutable {
+        pol(zs::range((nz + halo) * halo), [=] ZS_LAMBDA(size_t index) mutable {
             auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
 
             int i = index % halo;
@@ -107,9 +107,10 @@ struct ZSSolveShallowWaterHeight : INode {
 
     void apply() override {
         auto grid = get_input<ZenoParticles>("SWGrid");
-        auto &ud = grid->userData();
+        auto &ud = static_cast<IObject *>(grid.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")) || (!ud.has<float>("dx")))
             zeno::log_error("no such UserData named '{}', '{}', '{}' or '{}'.", "nx", "nz", "halo", "dx");
+
         int nx = ud.get2<int>("nx");
         int nz = ud.get2<int>("nz");
         int halo = ud.get2<int>("halo");
@@ -122,7 +123,7 @@ struct ZSSolveShallowWaterHeight : INode {
         auto u_attr = get_input2<std::string>("u_attr");
         auto w_attr = get_input2<std::string>("w_attr");
 
-        auto pars = grid->getParticles();
+        auto &pars = grid->getParticles();
 
         auto h_old = pars.begin(height_attr);
         auto u = pars.begin(u_attr);
@@ -135,7 +136,6 @@ struct ZSSolveShallowWaterHeight : INode {
             auto h_rk = h_rk_.data();
             auto flx = flx_.data();
             auto flz = flz_.data();
-
             // 3rd-order 3-stage TVD Runge-Kutta method
             // 1st stage h_old --> h_new
             height_flux(flx, flz, h_old, u, w, nx, nz, halo);
@@ -445,7 +445,7 @@ struct ZSSolveShallowWaterMomentum : INode {
 
     void apply() override {
         auto grid = get_input<ZenoParticles>("SWGrid");
-        auto &ud = grid->userData();
+        auto &ud = static_cast<IObject *>(grid.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")) || (!ud.has<float>("dx")))
             zeno::log_error("no such UserData named '{}', '{}', '{}' or '{}'.", "nx", "nz", "halo", "dx");
         int nx = ud.get2<int>("nx");
@@ -462,7 +462,7 @@ struct ZSSolveShallowWaterMomentum : INode {
         auto u_attr = get_input2<std::string>("u_attr");
         auto w_attr = get_input2<std::string>("w_attr");
 
-        auto pars = grid->getParticles();
+        auto &pars = grid->getParticles();
 
         auto B = pars.begin(terrain_attr);
         auto h = pars.begin(height_attr);
