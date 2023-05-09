@@ -824,7 +824,7 @@ void ZenoMainWindow::onRunFinished()
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto dock : docks2)
     {
-        dock->onFinished();
+        dock->onRunFinished();
     }
 }
 

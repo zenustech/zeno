@@ -34,7 +34,7 @@ public slots:
     void cancelRecording();
 
 private:
-    void recordFrame_impl(VideoRecInfo recInfo, int frame);
+    bool recordFrame_impl(VideoRecInfo recInfo, int frame);
 
     Zenovis *m_zenoVis;
     QImage m_renderImg;

@@ -11,6 +11,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenoedit/zenomainwindow.h>
+#include "launch/corelaunch.h"
 
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
@@ -80,10 +81,6 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         ZASSERT_EXIT(pView);
         bool ret = connect(pView, &ZOptixViewport::sig_frameRecordFinished, this, &RecordVideoMgr::frameFinished);
         ret = connect(pView, &ZOptixViewport::sig_recordFinished, this, &RecordVideoMgr::endRecToExportVideo);
-        if (!m_recordInfo.bRecordAfterRun)
-        {
-            pView->setupRecording(recInfo);
-        }
     }
     else
     {

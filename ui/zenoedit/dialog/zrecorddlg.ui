@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>413</width>
-    <height>428</height>
+    <height>379</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,111 +19,10 @@
      <property name="verticalSpacing">
       <number>10</number>
      </property>
-     <item row="5" column="0">
-      <widget class="QLabel" name="label_6">
-       <property name="text">
-        <string>Width:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_7">
-       <property name="text">
-        <string>Height:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QLineEdit" name="bitrate"/>
-     </item>
-     <item row="10" column="1">
-      <widget class="QLineEdit" name="msaaSamplerNumber"/>
-     </item>
-     <item row="10" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>MSAA Sample Number:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="1">
-      <widget class="QLineEdit" name="lineHeight"/>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Presets:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QComboBox" name="cbPresets"/>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Frame End:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
+     <item row="0" column="1">
       <widget class="QLineEdit" name="fps"/>
      </item>
      <item row="5" column="1">
-      <widget class="QLineEdit" name="lineWidth"/>
-     </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="filename">
-       <property name="text">
-        <string>File Name:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QLineEdit" name="frameStart"/>
-     </item>
-     <item row="9" column="1">
-      <widget class="QLineEdit" name="optixSamplerNumber"/>
-     </item>
-     <item row="1" column="1">
-      <widget class="QLineEdit" name="frameEnd"/>
-     </item>
-     <item row="8" column="1">
-      <widget class="QLineEdit" name="lineName">
-       <property name="placeholderText">
-        <string>(Option)</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>Bit Rate:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_8">
-       <property name="text">
-        <string>Path:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Frame Start:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>FPS:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
         <widget class="QLineEdit" name="linePath">
@@ -141,22 +40,93 @@
        </item>
       </layout>
      </item>
-     <item row="9" column="0">
+     <item row="5" column="0">
+      <widget class="QLabel" name="label_8">
+       <property name="text">
+        <string>Path:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QLineEdit" name="lineWidth"/>
+     </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="filename">
+       <property name="text">
+        <string>File Name:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLineEdit" name="lineHeight"/>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Width:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
         <string>Optix Sample Number:</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="0">
-      <widget class="QCheckBox" name="cbRunRecord">
-       <property name="text">
-        <string>record video after running.</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="bitrate"/>
+     </item>
+     <item row="6" column="1">
+      <widget class="QLineEdit" name="lineName">
+       <property name="placeholderText">
+        <string>(Option)</string>
        </property>
       </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_7">
+       <property name="text">
+        <string>Height:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>FPS:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QLineEdit" name="msaaSamplerNumber"/>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Presets:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>MSAA Sample Number:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Bit Rate:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QLineEdit" name="optixSamplerNumber"/>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="cbPresets"/>
      </item>
     </layout>
    </item>

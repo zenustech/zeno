@@ -45,7 +45,7 @@ public slots:
     void onKill();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
-    void onFinished();
+    void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
