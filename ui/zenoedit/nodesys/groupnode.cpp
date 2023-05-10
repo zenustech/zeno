@@ -151,7 +151,7 @@ void GroupNode::onZoomed()
     font.setPointSize(fontSize);
     font.setBold(true);
     QFontMetrics fontMetrics(font);
-    m_pTextItem->resize(QSize(boundingRect().width(), fontMetrics.height() + ZenoStyle::dpiScaled(10)));
+    m_pTextItem->resize(QSizeF(boundingRect().width(), fontMetrics.height() + ZenoStyle::dpiScaled(10)));
     m_pTextItem->setFont(font);
     QPointF pos = QPointF(0, -m_pTextItem->boundingRect().height());
     m_pTextItem->setPos(pos);
@@ -177,7 +177,7 @@ void GroupNode::onUpdateParamsNotDesc()
         emit nodePosChangedSignal();
     }
     if (blackboard.sz.width() != m_pTextItem->boundingRect().width())
-        m_pTextItem->resize(QSize(blackboard.sz.width(), m_pTextItem->boundingRect().height()));
+        m_pTextItem->resize(QSizeF(blackboard.sz.width(), m_pTextItem->boundingRect().height()));
 }
 
 void GroupNode::appendChildItem(ZenoNode *item)
@@ -240,7 +240,7 @@ ZLayoutBackground *GroupNode::initBodyWidget(ZenoSubGraphScene *pScene) {
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
     if (blackboard.sz.isValid()) {
         resize(blackboard.sz);
-        m_pTextItem->resize(QSize(boundingRect().width(), m_pTextItem->boundingRect().height()));
+        m_pTextItem->resize(QSizeF(boundingRect().width(), m_pTextItem->boundingRect().height()));
     }
     QPalette palette = m_pTextItem->palette();
     palette.setColor(QPalette::Window, blackboard.background);
