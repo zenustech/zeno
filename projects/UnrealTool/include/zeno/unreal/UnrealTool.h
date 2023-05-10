@@ -23,6 +23,10 @@
 #define ZENO_SESSION_HEADER_KEY "X-Zeno-SessionKey"
 #endif // ZENO_SESSION_HEADER_KEY
 
+namespace zeno {
+struct PrimitiveObject;
+}
+
 namespace zeno::remote {
 
 /**
@@ -225,4 +229,11 @@ static struct SubjectRegistry {
     [[nodiscard]] const zeno::remote::ParamValue *GetParameter(const std::string &SessionKey,
                                                                const std::string &Key) const;
 } StaticRegistry;
+
+/** Convert zeno::remote::HeightData to PrimitiveObject
+ * @param HeightData Height data
+ * @return PrimitiveObject
+ */
+std::shared_ptr<zeno::PrimitiveObject> ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField& InHeightData, int Nx = 0, int Ny = 0, float Scale = 250.f);
+
 }

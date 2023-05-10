@@ -4,4 +4,3 @@
 namespace zeno::remote {
     Flags StaticFlags;
 }
-

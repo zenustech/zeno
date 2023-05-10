@@ -640,52 +640,10 @@ struct ReadPrimitiveFromRegistry : public INode {
 
     template <>
     std::shared_ptr<zeno::PrimitiveObject> ToPrimitiveObject(zeno::remote::HeightField& Data) {
-        std::shared_ptr<zeno::PrimitiveObject> Prim = std::make_shared<zeno::PrimitiveObject>();
-        size_t Nx = std::max(get_input2<int>("nx"), Data.Nx);
-        size_t Ny = std::max(get_input2<int>("ny"), Data.Ny);
-        float Dx = 1.f / std::max((float)Nx - 1.f, 1.f);
-        float Dy = 1.f / std::max((float)Ny - 1.f, 1.f);
-        vec3f ax {1, 0, 0};
-        vec3f ay {0, 0, 1};
+        int32_t Nx = std::max(get_input2<int32_t>("nx"), Data.Nx);
+        int32_t Ny = std::max(get_input2<int32_t>("ny"), Data.Ny);
         float Scale = get_input2<float>("scale");
-        vec3f o = (ax + ay) / 2;
-        ax *= Dx; ay *= Dy;
-        ax *= Scale;
-        ay *= Scale;
-        Prim->resize(Nx * Ny);
-
-        auto &pos = Prim->add_attr<vec3f>("pos");
-#pragma omp parallel for collapse(2)
-        for (intptr_t y = 0; y < Ny; y++)
-            for (intptr_t x = 0; x < Nx; x++) {
-                vec3f p = o + x * ax + y * ay;
-                size_t i = x + y * Nx;
-                pos[i] = p;
-            }
-        Prim->tris.resize((Nx - 1) * (Ny - 1) * 2);
-#pragma omp parallel for collapse(2)
-        for (intptr_t y = 0; y < Ny - 1; y++)
-            for (intptr_t x = 0; x < Nx - 1; x++) {
-                intptr_t index = y * (Nx - 1) + x;
-                Prim->tris[index * 2][2] = y * Nx + x;
-                Prim->tris[index * 2][1] = y * Nx + x + 1;
-                Prim->tris[index * 2][0] = (y + 1) * Nx + x + 1;
-                Prim->tris[index * 2 + 1][2] = (y + 1) * Nx + x + 1;
-                Prim->tris[index * 2 + 1][1] = (y + 1) * Nx + x;
-                Prim->tris[index * 2 + 1][0] = y * Nx + x;
-            }
-
-        auto& Arr = Prim->verts.add_attr<float>("height");
-        size_t Idx = 0;
-        for (const auto& Row : Data.Data) {
-            for (const uint16_t Height : Row) {
-                Arr[Idx] = ((float)Height / std::numeric_limits<uint16_t>::max()) * (255.f * 2) - 255.f;
-                Prim->verts[Idx] = { Prim->verts[Idx].at(0), Arr[Idx], Prim->verts[Idx].at(2) };
-                Idx++;
-            }
-        }
-
-        return Prim;
+        return zeno::remote::ConvertHeightDataToPrimitiveObject(Data, Nx, Ny, Scale);
     }
 
     void apply() override {
