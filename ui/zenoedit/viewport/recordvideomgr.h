@@ -15,14 +15,14 @@ struct VideoRecInfo
     int bitrate;
     int numMSAA = 0;
     int numOptix = 1;
-    bool bRecordAfterRun;
     bool bExportVideo;
     bool exitWhenRecordFinish = false;
+    bool bLaunchRunByRecord;
     VideoRecInfo()
-        : bRecordAfterRun(false)
-        , bExportVideo(false)
+        : bExportVideo(false)
         , fps(0)
         , bitrate(0)
+        , bLaunchRunByRecord(false)
     {
         res = { 0,0 };
         frameRange = { -1, -1 };

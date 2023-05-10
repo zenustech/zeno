@@ -15,10 +15,13 @@
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/optixviewport.h"
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include <zeno/utils/log.h>
 #include <zeno/utils/envconfig.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/core/Session.h>
@@ -802,7 +805,34 @@ void ZenoMainWindow::updateViewport(const QString& action)
         view->updateFrame(action);
     }
     if (action == "finishFrame")
+    {
         updateLightList();
+        bool bPlayed = m_pTimeline->isPlayToggled();
+        if (!bPlayed)
+        {
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int ui_frame = m_pTimeline->value();
+            if (ui_frame == endFrame)
+            {
+                for (DisplayWidget *view : views)
+                {
+                    if (view->isGLViewport())
+                    {
+                        Zenovis* pZenovis = view->getZenoVis();
+                        ZASSERT_EXIT(pZenovis);
+                        pZenovis->setCurrentFrameId(ui_frame);
+                    }
+                    else
+                    {
+                        ZOptixViewport* pOptix = view->optixViewport();
+                        ZASSERT_EXIT(pOptix);
+                        emit pOptix->sig_switchTimeFrame(ui_frame);
+                    }
+                    view->updateFrame();
+                }
+            }
+        }
+    }
 }
 
 ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
@@ -824,7 +854,7 @@ void ZenoMainWindow::onRunFinished()
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto dock : docks2)
     {
-        dock->onFinished();
+        dock->onRunFinished();
     }
 }
 

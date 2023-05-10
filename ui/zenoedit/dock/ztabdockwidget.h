@@ -49,7 +49,7 @@ public:
 public slots:
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
-    void onFinished();
+    void onRunFinished();
     void onAddTab(PANEL_TYPE type);
     void onMenuActionTriggered(QAction* pAction, bool bTriggered);
 

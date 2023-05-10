@@ -18,7 +18,6 @@ signals:
     void renderIterate(QImage);
     void sig_recordFinished();
     void sig_frameRecordFinished(int frame);
-    void sig_recordInfoSetuped();
     void sig_recordCanceled();
 
 public slots:
@@ -27,14 +26,12 @@ public slots:
     void needUpdateCamera();
     void updateFrame();
     void recordVideo(VideoRecInfo recInfo);
-    void setupRecording(VideoRecInfo recInfo);
-    void onFrameRunFinished(int frame);
     void onPlayToggled(bool bToggled);
     void onFrameSwitched(int frame);
     void cancelRecording();
 
 private:
-    void recordFrame_impl(VideoRecInfo recInfo, int frame);
+    bool recordFrame_impl(VideoRecInfo recInfo, int frame);
 
     Zenovis *m_zenoVis;
     QImage m_renderImg;
@@ -59,7 +56,6 @@ public:
     void stopRender();
     void resumeRender();
     void recordVideo(VideoRecInfo recInfo);
-    void setupRecording(VideoRecInfo recInfo);
     void cancelRecording(VideoRecInfo recInfo);
     void killThread();
 
@@ -71,8 +67,6 @@ signals:
     void sig_recordFinished();
     void sig_frameRecordFinished(int frame);
     void sig_frameRunFinished(int frame);
-    void sig_setupRecordInfo(VideoRecInfo recInfo);
-    void sig_recordInfoSetuped();
     void sig_togglePlayButton(bool bToggled);
     void sig_switchTimeFrame(int frame);
     void sig_cancelRecording();

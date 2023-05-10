@@ -75,11 +75,11 @@
     <name>DisplayWidget</name>
     <message>
         <source>Run the graph before recording</source>
-        <translation>开始录制前请先点一下“运行”按钮</translation>
+        <translation type="vanished">开始录制前请先点一下“运行”按钮</translation>
     </message>
     <message>
         <source>The available frame range is %1 - %2, please rerun first</source>
-        <translation>可用帧范围为%1-%2 ，请先重新运行</translation>
+        <translation type="vanished">可用帧范围为%1-%2 ，请先重新运行</translation>
     </message>
     <message>
         <source>Path to Save</source>
@@ -88,6 +88,14 @@
     <message>
         <source>PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;</source>
         <translation>PNG图像(*.png);;JPEG图像(*.jpg);;BMP图像(*.bmp);;EXR图像(*.exr);;HDR图像(*.hdr);;</translation>
+    </message>
+    <message>
+        <source>Record</source>
+        <translation type="vanished">录制场景</translation>
+    </message>
+    <message>
+        <source>Do you want kill this run, launched by this record?</source>
+        <translation type="vanished">是否需要终止由录制过程产生的运行计算？</translation>
     </message>
 </context>
 <context>
@@ -994,6 +1002,37 @@
     </message>
 </context>
 <context>
+    <name>RecFrameSelectDlg</name>
+    <message>
+        <source>Select frame to record scene</source>
+        <translation>选择用于录制场景的帧</translation>
+    </message>
+    <message>
+        <source>record frame:</source>
+        <translation>要录制的帧的范围：</translation>
+    </message>
+    <message>
+        <source>-</source>
+        <translation>-</translation>
+    </message>
+    <message>
+        <source>record by last run</source>
+        <translation>基于上次的运行结果录制</translation>
+    </message>
+    <message>
+        <source>Run by record frame</source>
+        <translation>先重新运行再录制</translation>
+    </message>
+    <message>
+        <source>Record Directly</source>
+        <translation>直接录制</translation>
+    </message>
+    <message>
+        <source>Cancel Recording</source>
+        <translation>取消录制</translation>
+    </message>
+</context>
+<context>
     <name>RecProgressDlg</name>
     <message>
         <source>Dialog</source>
@@ -1005,7 +1044,15 @@
     </message>
     <message>
         <source>PushButton</source>
-        <translation>按钮</translation>
+        <translation type="vanished">按钮</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>暂停</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
     </message>
 </context>
 <context>
@@ -1048,11 +1095,11 @@
     </message>
     <message>
         <source>Frame End:</source>
-        <translation>结束帧：</translation>
+        <translation type="vanished">结束帧：</translation>
     </message>
     <message>
         <source>Frame Start:</source>
-        <translation>开始帧：</translation>
+        <translation type="vanished">开始帧：</translation>
     </message>
     <message>
         <source>Optix Sample Number:</source>
@@ -1080,7 +1127,14 @@
     </message>
     <message>
         <source>record video after running.</source>
-        <translation>是否先运行，再录制</translation>
+        <translation type="vanished">是否先运行，再录制</translation>
+    </message>
+</context>
+<context>
+    <name>RecordVideoMgr</name>
+    <message>
+        <source>ffmpeg command failed, please whether check ffmpeg exists.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1265,10 +1319,37 @@
     </message>
 </context>
 <context>
+    <name>ZRecFrameSelectDlg</name>
+    <message>
+        <source>The scene has not been run yet.</source>
+        <translation>当前场景还没运行计算。</translation>
+    </message>
+    <message>
+        <source>Last run frame: [%1 - %2]</source>
+        <translation>上一次运行的帧范围是：[%1 - %2]</translation>
+    </message>
+    <message>
+        <source>Running frame: [%1 - %2]</source>
+        <translation>正在运行帧范围 [ %1 - %2 ] 的计算。</translation>
+    </message>
+    <message>
+        <source>frame range</source>
+        <translation>帧的范围</translation>
+    </message>
+    <message>
+        <source>invalid frame range</source>
+        <translation>不合法的帧范围</translation>
+    </message>
+    <message>
+        <source>Last complete run frame: [%1 - %2], you can record the video based on it.</source>
+        <translation>上一次运行的帧范围是：[%1 - %2]，你可以基于上一次运行结果直接录制。</translation>
+    </message>
+</context>
+<context>
     <name>ZRecordProgressDlg</name>
     <message>
         <source>Cancel</source>
-        <translation>取消</translation>
+        <translation type="vanished">取消</translation>
     </message>
     <message>
         <source>Pause</source>
@@ -1289,6 +1370,14 @@
     <message>
         <source>Open file location</source>
         <translation>打开文件位置</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Recording frame %1</source>
+        <translation>正在录制第%1帧...</translation>
     </message>
 </context>
 <context>
