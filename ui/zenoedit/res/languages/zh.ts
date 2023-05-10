@@ -1044,7 +1044,15 @@
     </message>
     <message>
         <source>PushButton</source>
-        <translation>按钮</translation>
+        <translation type="vanished">按钮</translation>
+    </message>
+    <message>
+        <source>Pause</source>
+        <translation>暂停</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
     </message>
 </context>
 <context>
@@ -1341,7 +1349,7 @@
     <name>ZRecordProgressDlg</name>
     <message>
         <source>Cancel</source>
-        <translation>取消</translation>
+        <translation type="vanished">取消</translation>
     </message>
     <message>
         <source>Pause</source>
@@ -1362,6 +1370,10 @@
     <message>
         <source>Open file location</source>
         <translation>打开文件位置</translation>
+    </message>
+    <message>
+        <source>%1%</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

@@ -599,32 +599,9 @@ void DisplayWidget::onRecord()
         else
         {
             //normal viewport recording.
-            if (bRun) {
-                //clear the global Comm first, to avoid play old frames.
-                zeno::getSession().globalComm->clearState();
-
-                //expand the timeline if necessary.
-                ZTimeline *timeline = mainWin->timeline();
-                auto pair = timeline->fromTo();
-                if (pair.first > recStartFrame || pair.second < recEndFrame) {
-                    //expand timeline
-                    timeline->initFromTo(qMin(pair.first, recStartFrame), qMax(recEndFrame, pair.second));
-                }
-
-                //reset the current frame on timeline.
-                moveToFrame(recStartFrame);
-
-                // and then toggle play.
-                mainWin->toggleTimelinePlay(true);
-
-                //and then run.
-                onRun(recInfo.frameRange.first, recInfo.frameRange.second);
-            } else {
-                // first, set the time frame start end.
-                moveToFrame(recStartFrame);
-                // and then play.
-                mainWin->toggleTimelinePlay(true);
-            }
+            moveToFrame(recStartFrame);         // first, set the time frame start end.
+            mainWin->toggleTimelinePlay(true);  // and then play.
+            //the recording implementation is RecordVideoMgr::onFrameDrawn.
         }
 
         if (QDialog::Accepted == dlgProc.exec()) {
