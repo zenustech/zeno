@@ -5,7 +5,6 @@
 #include <string>
 #include <memory>
 #include <sstream>
-#include "log.h"
 
 
 namespace zeno {
