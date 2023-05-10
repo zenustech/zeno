@@ -1152,11 +1152,10 @@ struct ReadFBXPrim : zeno::INode {
                 zeno::log_info("FBX: Setting user data {} {}", count, k);
                 prim->userData().setLiterial(std::to_string(count), k);
 
-                auto texLists = vc->getSimplestTexList();
-                for(int i=0;i<texLists.size();i++){
-                    prim->userData().setLiterial(
-                        std::to_string(count)+"_tex_"+std::to_string(i),
-                        texLists[i]);
+                std::vector<std::string> texList{}; std::map<std::string, int> texMap{};
+                vc->getSimplestTexList(texList, texMap);
+                for(int i=0;i<texList.size();i++){
+                    prim->userData().setLiterial(std::to_string(count) + "_tex_" + std::to_string(i), texList[i]);
                 }
 
                 count++;
