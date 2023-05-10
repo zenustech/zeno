@@ -16,6 +16,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     : QDialog(parent)
     , m_recStartF(0)
     , m_recEndF(0)
+    , m_state(NO_RUN)
 {
     m_ui = new Ui::RecFrameSelectDlg;
     m_ui->setupUi(this);
@@ -33,33 +34,52 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     connect(m_ui->editRecFrom, SIGNAL(editingFinished()), this, SLOT(onRecFromEdited()));
     connect(m_ui->editRecTo, SIGNAL(editingFinished()), this, SLOT(onRecToEdited()));
     connect(m_ui->btnRunFirst, SIGNAL(clicked()), this, SLOT(onRunNow()));
-    connect(m_ui->btnRecLastRun, SIGNAL(clicked()), this, SLOT(onRecordLastRun()));
     connect(m_ui->btnRecordNow, SIGNAL(clicked()), this, SLOT(onRecordNow()));
     connect(m_ui->btnCancelRecord, SIGNAL(clicked()), this, SLOT(onCancelRecord()));
 
     if (!bWorking)
     {
-        m_ui->btnRecordNow->setVisible(false);
-        m_ui->btnRunFirst->setVisible(true);
-
-        m_ui->editRecFrom->setValidator(new QIntValidator(0, MAX_FRAME));
-        m_ui->editRecTo->setValidator(new QIntValidator(0, MAX_FRAME));
+        m_ui->editRecFrom->setValidator(new QIntValidator);
+        m_ui->editRecTo->setValidator(new QIntValidator);
 
         if (nRunFrames == 0)
         {
             m_ui->lblRunFrame->setText(tr("The scene has not been run yet."));
             m_ui->btnRecLastRun->setVisible(false);
+            m_ui->btnRecordNow->setVisible(false);
+            m_ui->btnRunFirst->setVisible(true);
+            m_ui->btnCancelRecord->setVisible(true);
 
             m_ui->editRecFrom->setText(QString::number(timelineframes.first));
             m_ui->editRecTo->setText(QString::number(timelineframes.second));
+
+            m_state = NO_RUN;
         }
         else
         {
             int nLastRunFrom = pair.first;
-            int nLastRunTo = nLastRunFrom + zeno::getSession().globalComm->maxPlayFrames() -1;
+            int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() -1;
+            ZASSERT_EXIT(nLastRunTo >= nLastRunFrom);
+            if (nLastRunTo == pair.second)
+            {
+                //complete calculation on last run.
+                m_ui->lblRunFrame->setText(tr("Last complete run frame: [%1 - %2], you can record the video based on it.").arg(nLastRunFrom).arg(nLastRunTo));
+                m_ui->btnRecLastRun->setVisible(false);
+                m_ui->btnRecordNow->setVisible(true);
+                m_ui->btnRunFirst->setVisible(true);
+                m_ui->btnCancelRecord->setVisible(true);
 
-            m_ui->lblRunFrame->setText(tr("Last run frame: [%1 - %2]").arg(nLastRunFrom).arg(nLastRunTo));
-            m_ui->btnRecLastRun->setVisible(true);
+                m_state = RUN_COMPLELTE;
+            }
+            else
+            {
+                m_ui->lblRunFrame->setText(tr("Last run frame: [%1 - %2]").arg(nLastRunFrom).arg(nLastRunTo));
+                m_ui->btnRecordNow->setVisible(false);
+                m_ui->btnRunFirst->setVisible(true);
+                m_ui->btnCancelRecord->setVisible(true);
+
+                m_state = RUN_INCOMPLETE;
+            }
 
             m_ui->editRecFrom->setText(QString::number(nLastRunFrom));
             m_ui->editRecTo->setText(QString::number(nLastRunTo));
@@ -75,11 +95,13 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         m_ui->btnRunFirst->setVisible(false);
         m_ui->btnRecordNow->setVisible(true);
 
-        m_ui->editRecFrom->setValidator(new QIntValidator(nRunStartF, nRunEndF));
-        m_ui->editRecTo->setValidator(new QIntValidator(nRunStartF, nRunEndF));
+        m_ui->editRecFrom->setValidator(new QIntValidator);
+        m_ui->editRecTo->setValidator(new QIntValidator);
 
         m_ui->editRecFrom->setText(QString::number(nRunStartF));
         m_ui->editRecTo->setText(QString::number(nRunEndF));
+
+        m_state = RUNNING;
     }
 
     onRecFromEdited();
@@ -108,24 +130,22 @@ QPair<int, int> ZRecFrameSelectDlg::recordFrameRange(bool& runBeforeRun) const
 
 void ZRecFrameSelectDlg::onRunNow()
 {
-    if (!validateFrame())
+    if (m_recStartF > m_recEndF) {
+        QMessageBox::information(this, tr("frame range"), tr("invalid frame range"));
         return;
+    }
     m_bRunBeforeRecord = true;
-    accept();
-}
-
-void ZRecFrameSelectDlg::onRecordLastRun()
-{
-    if (!validateFrame())
-        return;
-    m_bRunBeforeRecord = false;
     accept();
 }
 
 void ZRecFrameSelectDlg::onRecordNow()
 {
     if (!validateFrame())
+    {
+        QMessageBox::information(this, tr("frame range"), tr("invalid frame range"));
         return;
+    }
+
     m_bRunBeforeRecord = false;
     accept();
 }
@@ -140,7 +160,22 @@ bool ZRecFrameSelectDlg::validateFrame()
 {
     if (m_recStartF > m_recEndF)
     {
-        QMessageBox::information(this, tr("frame range"), tr("invalid frame range"));
+        return false;
+    }
+
+    auto pair = zeno::getSession().globalComm->frameRange();
+    int nLastRunFrom = pair.first;
+    int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() - 1;
+    if (m_state == RUN_COMPLELTE)
+    {
+        if (pair.first <= m_recStartF && m_recEndF <= nLastRunTo)
+            return true;
+        return false;
+    }
+    else if (m_state == RUNNING)
+    {
+        if (pair.first <= m_recStartF && m_recEndF <= pair.second)
+            return true;
         return false;
     }
     return true;

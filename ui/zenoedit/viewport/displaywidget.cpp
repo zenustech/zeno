@@ -631,14 +631,6 @@ void DisplayWidget::onRecord()
 
         } else {
             m_recordMgr.cancelRecord();
-            if (bRunBeforeRecord) {
-                QMessageBox hintBox(QMessageBox::Question, tr("Record"),
-                                    tr("Do you want kill this run, launched by this record?"),
-                                    QMessageBox::Yes | QMessageBox::No, this);
-                int ret = hintBox.exec();
-                if (ret && QMessageBox::Yes)
-                    killProgram();
-            }
         }
     }
 }

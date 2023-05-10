@@ -11,13 +11,21 @@ namespace Ui
 class ZRecFrameSelectDlg : public QDialog
 {
     Q_OBJECT
+
+    enum RunState
+    {
+        NO_RUN,
+        RUN_INCOMPLETE,
+        RUN_COMPLELTE,
+        RUNNING,
+    };
+
 public:
     ZRecFrameSelectDlg(QWidget* parent = nullptr);
     QPair<int, int> recordFrameRange(bool& runBeforeRun) const;
 
 private slots:
     void onRunNow();
-    void onRecordLastRun();
     void onRecordNow();
     void onCancelRecord();
     void onRecFromEdited();
@@ -30,6 +38,7 @@ private:
     int m_recStartF;
     int m_recEndF;
     bool m_bRunBeforeRecord;
+    RunState m_state;
 };
 
 

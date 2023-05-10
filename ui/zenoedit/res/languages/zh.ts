@@ -91,11 +91,11 @@
     </message>
     <message>
         <source>Record</source>
-        <translation>录制场景</translation>
+        <translation type="vanished">录制场景</translation>
     </message>
     <message>
         <source>Do you want kill this run, launched by this record?</source>
-        <translation>是否需要终止由录制过程产生的运行计算？</translation>
+        <translation type="vanished">是否需要终止由录制过程产生的运行计算？</translation>
     </message>
 </context>
 <context>
@@ -1331,6 +1331,10 @@
     <message>
         <source>invalid frame range</source>
         <translation>不合法的帧范围</translation>
+    </message>
+    <message>
+        <source>Last complete run frame: [%1 - %2], you can record the video based on it.</source>
+        <translation>上一次运行的帧范围是：[%1 - %2]，你可以基于上一次运行结果直接录制。</translation>
     </message>
 </context>
 <context>
