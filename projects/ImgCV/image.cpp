@@ -14,6 +14,11 @@
 #include <stdexcept>
 #include <cmath>
 #include <opencv2/imgproc.hpp>
+#include <tinygltf/stb_image.h>
+#include "tinyexr.h"
+#include "stb_image_write.h"
+#include "half.h"
+#include <filesystem>
 
 namespace zeno {
 
@@ -1109,7 +1114,6 @@ void bilateralFilter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<Pr
     image = imagetmp;
 }
 
-
 struct ImageEditBlur : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -1325,11 +1329,11 @@ ZENDEFNODE(EdgeDetect2, {
     { "comp" },
 });
 
-struct CompExtractRGBA_gray : INode {
+struct CompExtractChanel : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGBA = get_input2<std::string>("RGBA");
-
+        image->verts.add_attr<float>("alpha");
         if(RGBA == "RGBA") {}
         if(RGBA == "R") {
             for (auto i = 0; i < image->verts.size(); i++) {
@@ -1369,11 +1373,10 @@ struct CompExtractRGBA_gray : INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(CompExtractRGBA_gray, {
+ZENDEFNODE(CompExtractChanel, {
     {
         {"image"},
         {"enum RGBA R G B A", "RGBA", "RGBA"},
-        {"int", "R", "1"},
     },
     {
         {"image"}
@@ -1382,7 +1385,7 @@ ZENDEFNODE(CompExtractRGBA_gray, {
     { "comp" },
 });
 
-struct CompExtractRGBA : INode {
+struct CompExtractChanel_RGBA : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGBA = get_input2<bool>("RGBA");
@@ -1391,53 +1394,80 @@ struct CompExtractRGBA : INode {
         auto B = get_input2<bool>("B");
         auto A = get_input2<bool>("A");
 
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+//alpha=1
+        auto A11 = std::make_shared<PrimitiveObject>();
+        A11->verts.resize(image->size());
+        A11->userData().set2("isImage", 1);
+        A11->userData().set2("w", w);
+        A11->userData().set2("h", h);
+        A11->verts.add_attr<float>("alpha");
+        for(int i = 0;i < image->size();i++){
+            A11->verts.attr<float>("alpha")[i] = 1;
+        }
+        std::vector<float> &Alpha = A11->verts.attr<float>("alpha");
+
+//alpha=0
         auto A1 = std::make_shared<PrimitiveObject>();
         A1->verts.resize(image->size());
+        A1->userData().set2("isImage", 1);
+        A1->userData().set2("w", w);
+        A1->userData().set2("h", h);
         A1->verts.add_attr<float>("alpha");
         for(int i = 0;i < image->size();i++){
-            A1->verts.attr<float>("alpha")[i] = 1.0;
+            A1->verts.attr<float>("alpha")[i] = 0;
         }
-        std::vector<float> &Alpha = A1->verts.attr<float>("alpha");
+
         if(image->verts.has_attr("alpha")){
+            A1->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
             Alpha = image->verts.attr<float>("alpha");
         }
 
         float R1=0,G1=0,B1=0;
 
-        if(!R&&!RGBA) {
+        if(RGBA) {
+            A1 = image;
+        }
+        if(R && !RGBA) {
             for (auto i = 0; i < image->verts.size(); i++) {
                 R1 = image->verts[i][0];
-                image->verts[i][0] = R1 * ((Alpha[i] == 1) ? 0 : 1);
+                A1->verts[i][0] = (Alpha[i] == 1) ? R1 : 0;
+                A1->verts.attr<float>("alpha")[i] = ((R1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
             }
         }
 
-        if(!G&&!RGBA) {
+        if(G && !RGBA) {
             for (auto i = 0; i < image->verts.size(); i++) {
                 G1 = image->verts[i][1];
-                image->verts[i][1] = G1 * ((Alpha[i] == 1) ? 0 : 1);
+                A1->verts[i][1] = (Alpha[i] == 1) ? G1 : 0;
+                A1->verts.attr<float>("alpha")[i] = ((G1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
             }
         }
-        if(!B&&!RGBA) {
+        if(B && !RGBA) {
             for (auto i = 0; i < image->verts.size(); i++) {
                 B1 = image->verts[i][2];
-                image->verts[i][2] = B1 * ((Alpha[i] == 1) ? 0 : 1);
+                A1->verts[i][2] = (Alpha[i] == 1) ? B1 : 0;
+                A1->verts.attr<float>("alpha")[i] = ((B1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
             }
         }
-
-        if(A) {
+        if(A && (!R&&!G&&!B) && !RGBA) {
             if (image->verts.has_attr("alpha")) {
                 for (auto i = 0; i < image->verts.size(); i++) {
                     float A = Alpha[i];
-                    image->verts[i][0] = A;
-                    image->verts[i][1] = A;
-                    image->verts[i][2] = A;
+                    A1->verts[i][0] = A;
+                    A1->verts[i][1] = A;
+                    A1->verts[i][2] = A;
+                    A1->verts.attr<float>("alpha")[i] = image->verts.attr<float>("alpha")[i];
                 }
             }
         }
-        set_output("image", image);
+        set_output("image", A1);
     }
 };
-ZENDEFNODE(CompExtractRGBA, {
+ZENDEFNODE(CompExtractChanel_RGBA, {
     {
         {"image"},
         {"bool", "RGBA", "0"},
@@ -1452,7 +1482,92 @@ ZENDEFNODE(CompExtractRGBA, {
     {},
     { "comp" },
 });
+
 struct ImageInRange : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        vec3i lb = get_input2<vec3i>("low_threshold");
+        vec3i ub = get_input2<vec3i>("high_threshold");
+
+        auto A11 = std::make_shared<PrimitiveObject>();
+        A11->verts.resize(image->size());
+        A11->userData().set2("isImage", 1);
+        A11->userData().set2("w", w);
+        A11->userData().set2("h", h);
+        A11->verts.add_attr<float>("alpha");
+        for(int i = 0;i < image->size();i++){
+            A11->verts.attr<float>("alpha")[i] = 1;
+        }
+        std::vector<float> &Alpha = A11->verts.attr<float>("alpha");
+        if(image->verts.has_attr("alpha")){
+            A11->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
+        }
+
+        if(mode == "Transparent"){
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
+                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
+                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
+                        A11->verts[i * w + j] = image->verts[i * w + j];
+                    }
+                    else{
+
+                        A11->verts.attr<float>("alpha")[i * w + j] = 0;
+                    }
+                }
+            }
+        }
+        else if(mode == "Black"){
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
+                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
+                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
+                        A11->verts[i * w + j] = image->verts[i * w + j];
+                    }
+                    else{
+                        A11->verts[i * w + j] = {0,0,0};
+                    }
+                }
+            }
+        }
+        else if(mode == "White"){
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
+                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
+                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
+                        A11->verts[i * w + j] = image->verts[i * w + j];
+                    }
+                    else{
+                        A11->verts[i * w + j] = {1,1,1};
+                    }
+                }
+            }
+        }
+        set_output("image", A11);
+    }
+};
+ZENDEFNODE(ImageInRange, {
+    {
+        {"image"},
+        {"enum Transparent Black White", "mode", "Transparent"},
+        {"vec3i", "high_threshold", "255,255,255"},
+        {"vec3i", "low_threshold", "0,0,0"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
+
+struct ImageInRange_blackED : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
@@ -1477,7 +1592,7 @@ struct ImageInRange : INode {
     }
 };
 
-ZENDEFNODE(ImageInRange, {
+ZENDEFNODE(ImageInRange_blackED, {
     {
         {"image"},
         {"vec3i", "high_threshold", "255,255,255"},
@@ -1487,8 +1602,9 @@ ZENDEFNODE(ImageInRange, {
         {"image"},
     },
     {},
-    { "comp" },
+    { "deprecated" },
 });
+
 /* 导入地形网格的属性，可能会有多个属性。它将地形的属性转换为图
 像，每个属性对应一个图层。
 可能需要的参数：outRemapRange，分辨率，属性名称，属性数据
@@ -2124,7 +2240,7 @@ ZENDEFNODE(ImageErode, {
     {},
     {"comp"},
 });
-
+//TODO
 struct ImageDilateByColor: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
@@ -2266,12 +2382,92 @@ ZENDEFNODE(ImageDilateByColor, {
     {"deprecated"},
 });
 
-
-
-
-
-
-
+struct WriteImageFile : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto path = get_input2<std::string>("path");
+        auto type = get_input2<std::string>("type");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        int n = 4;
+        auto A = std::make_shared<PrimitiveObject>();
+        A->verts.resize(image->size());
+        A->verts.add_attr<float>("alpha");
+        for(int i = 0;i < w * h;i++){
+            A->verts.attr<float>("alpha")[i] = 1.0;
+        }
+        std::vector<float> &alpha = A->verts.attr<float>("alpha");
+        if(image->verts.has_attr("alpha")){
+            n = 4;
+            alpha = image->verts.attr<float>("alpha");
+        }
+        if(has_input("mask")) {
+            n = 4;
+            auto mask = get_input2<PrimitiveObject>("mask");
+            image->verts.add_attr<float>("alpha");
+            image->verts.attr<float>("alpha") = mask->verts.attr<float>("alpha");
+            alpha = mask->verts.attr<float>("alpha");
+        }
+        std::vector<char> data(w * h * n);
+        constexpr float gamma = 2.2f;
+        for (int i = 0; i < w * h; i++) {
+            data[n * i + 0] = (char)(255 * powf(image->verts[i][0], 1.0f / gamma));
+            data[n * i + 1] = (char)(255 * powf(image->verts[i][1], 1.0f / gamma));
+            data[n * i + 2] = (char)(255 * powf(image->verts[i][2], 1.0f / gamma));
+            data[n * i + 3] = (char)(255 * powf(alpha[i] , 1.0f / gamma));
+        }
+        if(type == "jpg"){
+            path += ".jpg";
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_jpg(native_path.c_str(), w, h, n, data.data(), 100);
+        }
+        else if(type == "png"){
+            path += ".png";
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_png(native_path.c_str(), w, h, n, data.data(),0);
+        }
+//        else if(type == "exr"){
+//            std::vector<float> data2(w * h * n);
+//            constexpr float gamma = 2.2f;
+//            for (int i = 0; i < w * h; i++) {
+//                data2[n * i + 0] = 255 * powf(image->verts[i][0], 1.0f / gamma);
+//                data2[n * i + 1] = 255 * powf(image->verts[i][1], 1.0f / gamma);
+//                data2[n * i + 2] = 255 * powf(image->verts[i][2], 1.0f / gamma);
+//                data2[n * i + 3] = 255 * powf(alpha[i], 1.0f / gamma);
+//            }
+//
+//            const char* err;
+//            path += ".exr";
+//            std::string native_path = std::filesystem::u8path(path).string();
+//            stbi_flip_vertically_on_write(1);
+//            int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
+//
+//            if (ret != TINYEXR_SUCCESS) {
+//                printf("Error saving EXR file: %s\n", err);
+//                FreeEXRErrorMessage(err); // free memory allocated by the library
+//                return;
+//            }
+//        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(WriteImageFile, {
+    {
+        {"image"},
+        {"writepath", "path"},
+        {"enum jpg png exr", "type", "jpg"},
+        {"mask"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
 }
 }
+
 
