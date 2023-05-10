@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <sstream>
+#include "log.h"
 
 
 namespace zeno {
@@ -37,7 +38,7 @@ static bool starts_with(std::string const &line, std::string const &pattern) {
 
 static bool ends_with(std::string const &line, std::string const &pattern, bool isCaseSensitive = true) {
     if (line.size() < pattern.size()) {
-        false;
+        return false;
     }
     for (auto i = 0; i < pattern.size(); i++) {
         if (isCaseSensitive) {
