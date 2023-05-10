@@ -28,9 +28,6 @@ namespace zeno {
 
 struct SpawnGuidelines : INode {
     virtual void apply() override {
-        using bvh_t = zs::LBvh<3, int, float>;
-        using bv_t = typename bvh_t::Box;
-
         auto points = get_input<PrimitiveObject>("points");
         auto nrmAttr = get_input2<std::string>("normalTag");
         auto length = get_input2<float>("length");
@@ -54,20 +51,89 @@ struct SpawnGuidelines : INode {
         prim->polys.resize(numLines);
 
         auto &pos = prim->attr<vec3f>("pos");
-        pol(enumerate(prim->polys.values),
-            [&roots, &nrm, &pos, numSegments, segLength = length / numSegments](int polyi, vec2i &tup) {
-                auto offset = polyi * (numSegments + 1);
-                tup[0] = offset;
-                tup[1] = (numSegments + 1);
+        if (has_input("vdb_collider")) {
+            auto collider = get_input2<zeno::VDBFloatGrid>("vdb_collider");
+            auto sep_dist = get_input2<float>("sep_dist");
+            auto maxIters = get_input2<int>("max_iter");
+            auto grid = collider->m_grid;
+            grid->tree().voxelizeActiveTiles();
+            auto dx = collider->getVoxelSize()[0];
+            openvdb::Vec3fGrid::Ptr gridGrad = openvdb::tools::gradient(*grid);
+            auto getSdf = [&grid](openvdb::Vec3R p) {
+                return openvdb::tools::BoxSampler::sample(grid->getConstUnsafeAccessor(), grid->worldToIndex(p));
+            };
+            auto getGrad = [&gridGrad](openvdb::Vec3R p) {
+                return openvdb::tools::BoxSampler::sample(gridGrad->getConstUnsafeAccessor(),
+                                                          gridGrad->worldToIndex(p));
+            };
+            pol(enumerate(prim->polys.values),
+                /// @note cap [sep_dist] in case repel points outside the narrowband where grad is invalid
+                [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters, &roots, &nrm, &pos,
+                 numSegments, segLength = length / numSegments](int polyi, vec2i &tup) {
+                    auto offset = polyi * (numSegments + 1);
+                    tup[0] = offset;
+                    tup[1] = (numSegments + 1);
 
-                auto rt = roots[polyi];
-                pos[offset] = rt;
-                auto step = nrm[polyi] * segLength;
-                for (int i = 0; i != numSegments; ++i) {
-                    rt += step;
-                    pos[++offset] = rt;
-                }
-            });
+                    auto rt = roots[polyi];
+                    pos[offset] = rt;
+
+                    auto p = zeno::vec_to_other<openvdb::Vec3R>(rt);
+                    auto lastStep = zeno::vec_to_other<openvdb::Vec3R>(nrm[polyi] * segLength);
+                    auto prevPos = p;
+                    for (int i = 0; i != numSegments; ++i) {
+                        p += lastStep;
+                        auto mi = maxIters;
+                        int cnt = 0;
+                        for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
+                            auto d = getGrad(p);
+                            d.normalize();
+                            if (sdf < 0)
+                                p += d * -sdf;
+                            // p += d * dx;
+                            else
+                                p += d * (sep_dist - sdf);
+                            // p += d * -dx;
+                        }
+#if 0
+                        auto fwd = lastStep = p - prevPos;
+                        if (std::abs(fwd.length() - segLength) > segLength * 0.001) {
+                            auto g = getGrad(p);
+                            auto side = g.cross(fwd);
+                            g = g.cross(side);
+                            if (g.normalize() && fwd.normalize()) {
+                                auto yita = std::acos(fwd.dot(g));
+                                auto theta = zs::g_pi - yita;
+                                if (yita > zs::g_half_pi)
+                                    p += segLength / std::tan(theta) * g;
+                                else
+                                    p += segLength * std::tan(theta) * g;
+                            }
+                        }
+#endif
+
+                        lastStep = (p - prevPos);
+                        lastStep.normalize();
+                        lastStep *= segLength;
+                        prevPos = p;
+                        pos[++offset] = zeno::other_to_vec<3>(p);
+                    }
+                });
+        } else {
+            pol(enumerate(prim->polys.values),
+                [&roots, &nrm, &pos, numSegments, segLength = length / numSegments](int polyi, vec2i &tup) {
+                    auto offset = polyi * (numSegments + 1);
+                    tup[0] = offset;
+                    tup[1] = (numSegments + 1);
+
+                    auto rt = roots[polyi];
+                    pos[offset] = rt;
+                    auto step = nrm[polyi] * segLength;
+                    for (int i = 0; i != numSegments; ++i) {
+                        rt += step;
+                        pos[++offset] = rt;
+                    }
+                });
+        }
         pol(enumerate(prim->loops.values), [](int vi, int &loopid) { loopid = vi; });
         // copy point attrs to polys attrs
         for (auto &[key, srcArr] : points->verts.attrs) {
@@ -106,6 +172,9 @@ ZENDEFNODE(SpawnGuidelines, {
                                     {"string", "normalTag", "nrm"},
                                     {"float", "length", "0.5"},
                                     {"int", "segments", "5"},
+                                    {"vdb_collider"},
+                                    {"float", "sep_dist", "0"},
+                                    {"int", "max_iter", "100"},
                                 },
                                 {
                                     {"PrimitiveObject", "guide_lines"},
@@ -117,25 +186,124 @@ ZENDEFNODE(SpawnGuidelines, {
 // after guideline simulation, mostly for rendering
 struct GenerateHairs : INode {
     virtual void apply() override {
+        using bvh_t = zs::LBvh<3, int, float>;
+        using bv_t = typename bvh_t::Box;
+
+        auto points = get_input<PrimitiveObject>("points");
+        auto guideLines = get_input<PrimitiveObject>("guide_lines");
+        bool interpAttrs = get_input2<bool>("interpAttrs");
+
+        using namespace zs;
+        auto pol = omp_exec();
+        constexpr auto space = execspace_e::openmp;
+
+        bvh_t bvh;
+        {
+            zs::Vector<bv_t> bvs{guideLines->polys.size()};
+            pol(range(guideLines->polys.size()), [&verts = guideLines->verts.values, &polys = guideLines->polys.values,
+                                                  &loops = guideLines->loops.values, &bvs](int polyI) {
+                auto p = vec_to_other<zs::vec<float, 3>>(verts[loops[polys[polyI][0]]]);
+                bvs[polyI] = bv_t{p, p};
+            });
+            bvh.build(pol, bvs);
+        }
+        auto numHairs = points->verts.size();
+        std::vector<int> gid(numHairs);
+        std::vector<int> numPoints(numHairs), hairPolyOffsets(numHairs);
+        pol(range(numHairs), [&gid, &points, &verts = guideLines->verts.values, &polys = guideLines->polys.values,
+                              &loops = guideLines->loops.values, &numPoints, lbvhv = proxy<space>(bvh)](int vi) {
+            using vec3 = zs::vec<float, 3>;
+            auto pi = vec3::from_array(points->verts.values[vi]);
+            auto [id, _] = lbvhv.find_nearest(
+                pi,
+                [&](int j, float &dist, int &id) {
+                    float d = zs::limits<float>::max();
+                    d = zs::dist_pp(pi, vec3::from_array(verts[loops[polys[j][0]]]));
+
+                    if (d < dist) {
+                        dist = d;
+                        id = j;
+                    }
+                },
+                true_c);
+            gid[vi] = id;
+            numPoints[vi] = polys[id][1];
+        });
+        exclusive_scan(pol, std::begin(numPoints), std::end(numPoints), std::begin(hairPolyOffsets));
+
+        /// hairs
+        auto prim = std::make_shared<PrimitiveObject>();
+        auto numTotalPoints = hairPolyOffsets.back() + numPoints.back();
+        prim->verts.resize(numTotalPoints);
+        prim->loops.resize(numTotalPoints);
+        prim->polys.resize(numHairs);
+
+        pol(enumerate(prim->polys.values),
+            [&numPoints, &hairPolyOffsets, &gid, &pos = prim->attr<vec3f>("pos"), &points,
+             &glPos = guideLines->attr<vec3f>("pos"), &polys = guideLines->polys.values,
+             &loops = guideLines->loops.values](int hairId, vec2i &tup) {
+                auto offset = hairPolyOffsets[hairId];
+                auto numPts = numPoints[hairId];
+                tup[0] = offset;
+                tup[1] = numPts;
+
+                auto glId = gid[hairId];
+                auto glOffset = polys[glId][0];
+                auto getGlVert = [&](int i) { return glPos[loops[glOffset + i]]; };
+
+                auto lastHairVert = points->verts.values[hairId];
+                auto lastGlVert = getGlVert(0);
+                auto curGlVert = getGlVert(1);
+                pos[offset] = lastHairVert;
+                for (int i = 1; i != numPts; ++i) {
+                    curGlVert = getGlVert(i);
+                    lastHairVert += curGlVert - lastGlVert;
+                    pos[++offset] = lastHairVert;
+                    lastGlVert = curGlVert;
+                }
+            });
+        pol(enumerate(prim->loops.values), [](int vi, int &loopid) { loopid = vi; });
+
+        /// @note override guideline attribs to hairs
+        if (get_input2<bool>("interpAttrs")) {
+            for (auto &[key, srcArr] : guideLines->polys.attrs) {
+                auto const &k = key;
+                match(
+                    [&k, &prim](auto &srcArr)
+                        -> std::enable_if_t<variant_contains<RM_CVREF_T(srcArr[0]), AttrAcceptAll>::value> {
+                        using T = RM_CVREF_T(srcArr[0]);
+                        prim->polys.add_attr<T>(k);
+                    },
+                    [](...) {})(srcArr);
+            }
+            pol(range(prim->polys.size()), [&](int hairId) {
+                for (auto &[key, srcArr] : guideLines->polys.attrs) {
+                    auto const &k = key;
+                    match(
+                        [&k, &prim, &gid, hairId](auto &srcArr)
+                            -> std::enable_if_t<variant_contains<RM_CVREF_T(srcArr[0]), AttrAcceptAll>::value> {
+                            using T = RM_CVREF_T(srcArr[0]);
+                            auto &arr = prim->polys.attr<T>(k);
+                            arr[hairId] = srcArr[gid[hairId]]; // assign the value same as its guideline
+                        },
+                        [](...) {})(srcArr);
+                }
+            });
+        }
+
+        set_output("prim", prim);
     }
 };
 
-ZENDEFNODE(GenerateHairs, {
-                              {
-                                  {"PrimitiveObject", "guide_lines"},
-                                  {"float", "thickness", "0.1"},
-                                  {"string", "denAttr", ""},
-                                  {"float", "density", "100"},
-                                  {"float", "minRadius", "0"},
-                                  {"bool", "interpAttrs", "1"},
-                                  {"int", "relax_iterations", "3"},
-                              },
-                              {
-                                  {"PrimitiveObject", "prim"},
-                              },
-                              {},
-                              {"zs_hair"},
-                          });
+ZENDEFNODE(GenerateHairs,
+           {
+               {{"PrimitiveObject", "points"}, {"PrimitiveObject", "guide_lines"}, {"bool", "interpAttrs", "1"}},
+               {
+                   {"PrimitiveObject", "prim"},
+               },
+               {},
+               {"zs_hair"},
+           });
 
 } // namespace zeno
 
@@ -167,9 +335,12 @@ struct RepelPoints : zeno::INode {
 
                 // fmt::print("pt[{}] current at <{}, {}, {}>, sdf: {}, direction <{}, {}, {}>\n", vi, p[0], p[1], p[2], sdf, ddd[0], ddd[1], ddd[2]);
 
-                // p += ddd.normalize() * dx;
-                p += ddd.normalize() * -sdf;
-                // p += ddd;
+                ddd.normalize();
+                // p += ddd * dx;
+                if (sdf < 0)
+                    p += ddd * -sdf;
+                else
+                    p += ddd * (sep_dist - sdf);
             }
             pos[vi] = zeno::other_to_vec<3>(p);
         });
