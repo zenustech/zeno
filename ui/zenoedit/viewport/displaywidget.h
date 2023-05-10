@@ -32,6 +32,9 @@ public:
     void setSimpleRenderOption();
     bool isCameraMoving() const;
     bool isPlaying() const;
+    bool isGLViewport() const;
+    ZOptixViewport* optixViewport() const;
+    void killOptix();
 
 public slots:
     void updateFrame(const QString& action = "");
@@ -42,12 +45,13 @@ public slots:
     void onKill();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
-    void onFinished();
+    void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 signals:
     void frameUpdated(int new_frame);
+    void frameRunFinished(int frame);
 
 private:
     bool isOptxRendering() const;

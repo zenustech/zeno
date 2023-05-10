@@ -122,6 +122,7 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     write_btn->setProperty("cssClass", "grayButton");
     write_all_btn->setProperty("cssClass", "grayButton");
     procedural_sky_btn->setProperty("cssClass", "grayButton");
+    sync_btn->setProperty("cssClass", "grayButton");
     connect(write_btn, &QPushButton::clicked, this, [&](){
         QModelIndex index = lights_view->currentIndex();
         if (index.row() >= 0) {
@@ -133,15 +134,10 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     });
     connect(write_all_btn, &QPushButton::clicked, this, [&](){
 
-        ZenoMainWindow *pWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(pWin);
 
-        QVector<DisplayWidget*> views = pWin->viewports();
-        if (views.isEmpty())
+        DisplayWidget* pWid = getViewportWithOptixFirst();
+        if (!pWid)
             return;
-
-        DisplayWidget *pWid = views[0];
-        ZASSERT_EXIT(pWid);
         auto pZenovis = pWid->getZenoVis();
         ZASSERT_EXIT(pZenovis);
         auto scene = pZenovis->getSession()->get_scene();
@@ -157,14 +153,10 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     });
     connect(procedural_sky_btn, &QPushButton::clicked, this, [&](){
 
-        ZenoMainWindow *pWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(pWin);
-        QVector<DisplayWidget*> views = pWin->viewports();
-        if (views.isEmpty())
+        DisplayWidget* pWid = getViewportWithOptixFirst();
+        if (!pWid)
             return;
 
-        DisplayWidget *pWid = views[0];
-        ZASSERT_EXIT(pWid);
         auto pZenovis = pWid->getZenoVis();
         ZASSERT_EXIT(pZenovis);
         auto scene = pZenovis->getSession()->get_scene();
@@ -177,9 +169,14 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
             }
         }
     });
+    connect(sync_btn, &QPushButton::clicked, this, [=]() {
+        dataModel->updateByObjectsMan();
+    });
+
     pTitleLayout->addWidget(write_btn);
     pTitleLayout->addWidget(write_all_btn);
     pTitleLayout->addWidget(procedural_sky_btn);
+    pTitleLayout->addWidget(sync_btn);
 
     pPrimName->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pPrimName);
@@ -196,13 +193,10 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     connect(lights_view, &QListView::pressed, this, [&](auto & index){
         std::string name = this->dataModel->light_names[index.row()];
 
-        ZenoMainWindow *pWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(pWin);
-        QVector<DisplayWidget*> views = pWin->viewports();
-        if (views.isEmpty())
+        DisplayWidget* pWid = getViewportWithOptixFirst();
+        if (!pWid) {
             return;
-
-        DisplayWidget *pWid = views[0];
+        }
         auto pZenovis = pWid->getZenoVis();
         ZASSERT_EXIT(pZenovis);
         auto scene = pZenovis->getSession()->get_scene();
@@ -487,6 +481,20 @@ ZenoLights::ZenoLights(QWidget *parent) : QWidget(parent) {
     updateLights();
 }
 
+DisplayWidget* ZenoLights::getViewportWithOptixFirst() const
+{
+    ZenoMainWindow* pWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pWin, nullptr);
+    DisplayWidget *pWid = pWin->getOptixWidget();
+    if (!pWid) {
+        QVector<DisplayWidget*> views = pWin->viewports();
+        if (!views.isEmpty()) {
+            pWid = views[0];
+        }
+    }
+    return pWid;
+}
+
 void ZenoLights::updateLights() {
     dataModel->updateByObjectsMan();
 }
@@ -554,7 +562,10 @@ void ZenoLights::modifyLightData() {
     ZASSERT_EXIT(pWin);
 
     QVector<DisplayWidget*> views = pWin->viewports();
-    for (auto pDisplay : views) {
+    for (auto pDisplay : views)
+    {
+        if (pDisplay->isGLViewport())
+            continue;
 
         Zenovis* pZenoVis = pDisplay->getZenoVis();
         ZASSERT_EXIT(pZenoVis);

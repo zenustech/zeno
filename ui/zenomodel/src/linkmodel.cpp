@@ -58,6 +58,8 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
     case ROLE_OBJID:   return m_items[r].ident;
     case ROLE_OUTNODE:
     {
+        return m_items[r].fromNode;
+
         if (!fromSock.isValid())
             return QVariant();
         return fromSock.data(ROLE_OBJID).toString();
@@ -70,6 +72,8 @@ QVariant LinkModel::data(const QModelIndex& index, int role) const
     }
     case ROLE_INNODE:
     {
+        return m_items[r].toNode;
+
         if (!toSock.isValid())
             return QVariant();
         return toSock.data(ROLE_OBJID).toString();
@@ -157,6 +161,8 @@ int LinkModel::addLink(const QModelIndex& fromSock, const QModelIndex& toSock)
     _linkItem item;
     item.fromSock = fromSock;
     item.toSock = toSock;
+    item.fromNode = fromSock.data(ROLE_OBJID).toString();
+    item.toNode = toSock.data(ROLE_OBJID).toString();
     item.ident = UiHelper::generateUuid();
     m_items.append(item);
 

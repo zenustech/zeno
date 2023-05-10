@@ -112,6 +112,8 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         const QString& name = param->m_name;
 
         OUTPUT_SOCKET outSocket;
+        outSocket.retIdx = param->index();
+
         outSocket.info.defaultValue = param->data(ROLE_PARAM_VALUE);
         outSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
         outSocket.info.name = name;
@@ -583,10 +585,11 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
             VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
             ZERROR_EXIT(pItem, false);
             const QString& oldName = pItem->m_name;
-            const QString& newName = value.toString();
+            QString newName = value.toString();
             if (oldName == newName)
                 return false;
 
+            checkExtractDict(newName);
             pItem->setData(newName, role);
             break;
         }
@@ -680,12 +683,13 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dic
     if (paramType == "dict" || paramType == "DictObject" || paramType == "DictObject:NumericObject")
     {
         pItem->setData("dict", ROLE_PARAM_TYPE);    //pay attention not to export to outside, only as a ui keyword.
-        if (!desc.categories.contains("dict"))
+        if (!desc.categories.contains("dict") || nodeCls == "MultiMakeDict")
             pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
     }
     else if (paramType == "list")
     {
-        if (!desc.categories.contains("list"))
+        PARAM_CLASS cls = pItem->getParamClass();
+        if ((!desc.categories.contains("list") || nodeCls == "MultiMakeList") && cls == PARAM_INPUT)
             pItem->m_sockProp = SOCKPROP_DICTLIST_PANEL;
     } 
     else if (paramType == "group-line") 
@@ -751,6 +755,20 @@ void NodeParamModel::exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel)
 
         panel.keys.append(keyInfo);
         keyNames.push_back(key);
+    }
+}
+
+void NodeParamModel::checkExtractDict(QString &name)
+{
+    QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    QStringList lst = name.split(",");
+    if (nodeCls == "ExtractDict" && lst.size() > 1) 
+    {
+        for (int i = 1; i < lst.size(); i++)
+        {
+            setAddParam(PARAM_OUTPUT, lst.at(i).simplified(), "", QVariant(), CONTROL_NONE, QVariant(), SOCKPROP_EDITABLE);
+        }
+        name = lst.first();
     }
 }
 
@@ -930,8 +948,16 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                     // update socket for current subgraph node.
                     NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
                     QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
+                    QVariant ctrlProp = pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
                     nodeParams->setData(paramIdx, pItem->m_ctrl, ROLE_PARAM_CTRL);
-                    nodeParams->setData(paramIdx, pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES], ROLE_VPARAM_CTRL_PROPERTIES);
+                    nodeParams->setData(paramIdx, ctrlProp, ROLE_VPARAM_CTRL_PROPERTIES);
+                    QVariantMap props = ctrlProp.toMap();
+                    if (props.find("items") != props.end()) {
+                        QStringList items = props["items"].toStringList();
+                        if (!items.contains(paramIdx.data(ROLE_PARAM_VALUE).toString())) {
+                            nodeParams->setData(paramIdx, deflVal, ROLE_PARAM_VALUE);
+                        }
+                    }
                 }
 			}
         }
@@ -944,14 +970,19 @@ void NodeParamModel::onLinkAdded(const VParamItem* pItem)
         return;
 
     //dynamic socket from MakeList/Dict and ExtractDict
-    QStringList lst = sockNames(PARAM_INPUT);
+    QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    QStringList lst;
+    if (nodeCls == "ExtractDict") {
+        lst = sockNames(PARAM_OUTPUT);
+    } else {
+        lst = sockNames(PARAM_INPUT);
+    }
     int maxObjId = UiHelper::getMaxObjId(lst);
     if (maxObjId == -1)
         maxObjId = 0;
 
     QString maxObjSock = QString("obj%1").arg(maxObjId);
     QString lastKey = lst.last();
-    QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
     if ((nodeCls == "MakeList" || nodeCls == "MakeDict") && pItem->m_name == lastKey)
     {
         const QString &newObjName = QString("obj%1").arg(maxObjId + 1);

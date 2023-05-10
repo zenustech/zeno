@@ -9,6 +9,8 @@ class ZenoSubGraphScene;
 class ZenoSocketItem;
 class ZenoNode;
 
+//#define BASE_ON_CURVE
+
 class ZenoLink : public QGraphicsObject
 {
     Q_OBJECT
@@ -40,7 +42,7 @@ class ZenoTempLink : public ZenoLink
 {
     Q_OBJECT
 public:
-    ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput);
+    ZenoTempLink(ZenoSocketItem* socketItem, QString nodeId, QPointF fixedPos, bool fixInput, QModelIndexList selNodes);
     ~ZenoTempLink();
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
@@ -52,6 +54,7 @@ public:
     void paint(QPainter *painter, QStyleOptionGraphicsItem const *styleOptions, QWidget *widget) override;
     void setOldLink(const QPersistentModelIndex& link);
     QPersistentModelIndex oldLink() const;
+    QModelIndexList selNodes() const;
 
 protected:
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
@@ -69,6 +72,7 @@ private:
     ZenoSocketItem* m_adsortedSocket;
     ZenoSocketItem* m_fixedSocket;
     QPersistentModelIndex m_oldLink;    //the link which belongs to
+    QModelIndexList m_selNodes;
     bool m_bfixInput;
 };
 

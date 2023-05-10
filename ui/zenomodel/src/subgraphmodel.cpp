@@ -163,7 +163,7 @@ QModelIndex SubGraphModel::index(QString id, const QModelIndex& parent) const
     return createIndex(row, 0, interlId);
 }
 
-QModelIndex SubGraphModel::index(int id) const
+QModelIndex SubGraphModel::index(uint32_t id) const
 {
     if (m_num2strId.find(id) == m_num2strId.end())
         return QModelIndex();
@@ -223,6 +223,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
 
     int row = index.row();
     QString id = m_row2Key[row];
+    QString name = m_nodes[id].objCls;
     ZASSERT_EXIT(!id.isEmpty(), false);
     for (int r = row + 1; r < rowCount(); r++)
     {
@@ -234,6 +235,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     m_row2Key.remove(rowCount() - 1);
     m_key2Row.remove(id);
     m_nodes.remove(id);
+    m_name2identLst[name].remove(id);
 
     uint32_t numId = m_str2numId[id];
     m_num2strId.remove(numId);
@@ -606,18 +608,35 @@ QModelIndexList SubGraphModel::match(const QModelIndex& start, int role, const Q
     return _base::match(start, role, value, hits, flags);
 }
 
+QModelIndexList SubGraphModel::getNodesByCls(const QString& nodeCls)
+{
+    QModelIndexList nodes;
+    auto iter = m_name2identLst.find(nodeCls);
+    if (iter != m_name2identLst.end())
+    {
+        for (QString ident : iter.value())
+        {
+            QModelIndex idx = index(ident);
+            nodes.append(idx);
+        }
+    }
+    return nodes;
+}
+
 bool SubGraphModel::itemFromIndex(const QModelIndex &index, _NodeItem& retNode) const
 {
     if (!index.isValid())
         return false;
 
-    if (m_row2Key.find(index.row()) == m_row2Key.end())
+    auto iter1 = m_row2Key.find(index.row());
+    if (iter1 == m_row2Key.end())
         return false;
 
-    QString id = m_row2Key[index.row()];
-    if (m_nodes.find(id) != m_nodes.end())
+    QString id = iter1.value();
+    auto iter2 = m_nodes.find(id);
+    if (iter2 != m_nodes.end())
     {
-        retNode = m_nodes[id];
+        retNode = iter2.value();
         return true;
     }
     else
@@ -665,6 +684,8 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
     m_num2strId[ident] = id;
     m_str2numId[id] = ident;
 
+    m_name2identLst[name].insert(id);
+
     _NodeItem& item = m_nodes[id];
     QModelIndex nodeIdx = index(row, 0, QModelIndex());
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
@@ -705,12 +726,17 @@ QString SubGraphModel::name() const
 
 void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& newName)
 {
-    for (int i = 0; i < rowCount(); i++)
+    auto iter = m_name2identLst.find(oldName);
+    if (iter == m_name2identLst.end())
+        return;
+
+    auto sets = iter.value();
+    for (QString ident : sets)
     {
-        const QModelIndex& idx = index(i, 0);
-        if (idx.data(ROLE_OBJNAME).toString() == oldName)
-        {
-            setData(idx, newName, ROLE_OBJNAME);
-        }
+        QModelIndex idx = index(ident);
+        setData(idx, newName, ROLE_OBJNAME);
     }
+
+    m_name2identLst.remove(oldName);
+    m_name2identLst.insert(newName, sets);
 }

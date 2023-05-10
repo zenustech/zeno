@@ -15,10 +15,13 @@
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/optixviewport.h"
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include <zeno/utils/log.h>
 #include <zeno/utils/envconfig.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/core/Session.h>
@@ -132,6 +135,7 @@ void ZenoMainWindow::initWindowProperty()
         updateNativeWinTitle(title);
     });
     connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
+    connect(this, &ZenoMainWindow::visFrameUpdated, this, &ZenoMainWindow::onZenovisFrameUpdate);
 }
 
 void ZenoMainWindow::updateNativeWinTitle(const QString& title)
@@ -669,6 +673,17 @@ void ZenoMainWindow::onMaximumTriggered()
     }
 }
 
+DisplayWidget *ZenoMainWindow::getOptixWidget() const
+{
+    auto views = viewports();
+    for (auto view : views)
+    {
+        if (!view->isGLViewport())
+            return view;
+    }
+    return nullptr;
+}
+
 QVector<DisplayWidget*> ZenoMainWindow::viewports() const
 {
     QVector<DisplayWidget*> views;
@@ -789,6 +804,35 @@ void ZenoMainWindow::updateViewport(const QString& action)
     {
         view->updateFrame(action);
     }
+    if (action == "finishFrame")
+    {
+        updateLightList();
+        bool bPlayed = m_pTimeline->isPlayToggled();
+        if (!bPlayed)
+        {
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int ui_frame = m_pTimeline->value();
+            if (ui_frame == endFrame)
+            {
+                for (DisplayWidget *view : views)
+                {
+                    if (view->isGLViewport())
+                    {
+                        Zenovis* pZenovis = view->getZenoVis();
+                        ZASSERT_EXIT(pZenovis);
+                        pZenovis->setCurrentFrameId(ui_frame);
+                    }
+                    else
+                    {
+                        ZOptixViewport* pOptix = view->optixViewport();
+                        ZASSERT_EXIT(pOptix);
+                        emit pOptix->sig_switchTimeFrame(ui_frame);
+                    }
+                    view->updateFrame();
+                }
+            }
+        }
+    }
 }
 
 ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
@@ -810,7 +854,7 @@ void ZenoMainWindow::onRunFinished()
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto dock : docks2)
     {
-        dock->onFinished();
+        dock->onRunFinished();
     }
 }
 
@@ -916,9 +960,20 @@ std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
     return m_spCacheMgr;
 }
 
+void ZenoMainWindow::killOptix()
+{
+    DisplayWidget* pWid = this->getOptixWidget();
+    if (pWid)
+    {
+        pWid->killOptix();
+    }
+}
+
 void ZenoMainWindow::closeEvent(QCloseEvent *event)
 {
     killProgram();
+    killOptix();
+
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
@@ -1005,6 +1060,25 @@ void ZenoMainWindow::mouseMoveEvent(QMouseEvent* event)
 void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
 {
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
+{
+    if (!m_pTimeline)
+        return;
+
+    bool bHasOptix = getOptixWidget() != nullptr;
+    if (bHasOptix)
+    {
+        if (!bGLView)
+        {
+            m_pTimeline->onTimelineUpdate(frameid);
+        }
+    }
+    else
+    {
+        m_pTimeline->onTimelineUpdate(frameid);
+    }
 }
 
 void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
@@ -1397,7 +1471,7 @@ void ZenoMainWindow::save()
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
     {
-        QMessageBox msgBox(QMessageBox::Information, "", QString::fromLocal8Bit("当前zsg为旧格式文件，为了确保不被新格式覆盖，只能通过“另存为”操作保存为新格式"));
+        QMessageBox msgBox(QMessageBox::Information, "", tr("The format of current zsg is old. To keep this file data trackable, we recommand you choose \"Save As\" to save it, as the format of new zsg"));
         msgBox.exec();
         bool ret = saveAs();
         if (ret) {
@@ -1560,7 +1634,7 @@ void ZenoMainWindow::updateLightList() {
     auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
     for (ZTabDockWidget* dock : docks) {
         if (dock->isVisible())
-            dock->newFrameUpdate();
+            dock->updateLights();
     }
 }
 void ZenoMainWindow::doFrameUpdate(int frame) {

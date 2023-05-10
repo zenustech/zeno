@@ -151,8 +151,8 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     connect(pGraphsModel, SIGNAL(_rowsInserted(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsInserted(const QModelIndex&, const QModelIndex&, int, int)));
 
     //link sync:
-    QAbstractItemModel* pLinkModel = pGraphsModel->linkModel();
-    connect(pGraphsModel, &IGraphsModel::linkInserted, this, &ZenoSubGraphScene::onLinkInserted);
+    QAbstractItemModel* pLinkModel = pGraphsModel->linkModel(m_subgIdx);
+    connect(pLinkModel, &QAbstractItemModel::rowsInserted, this, &ZenoSubGraphScene::onLinkInserted);
     connect(pLinkModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &ZenoSubGraphScene::onLinkAboutToBeRemoved);
 }
 
@@ -284,10 +284,11 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
     }
 }
 
-void ZenoSubGraphScene::onLinkInserted(const QModelIndex& subGpIdx, const QModelIndex& parent, int first, int last)
+void ZenoSubGraphScene::onLinkInserted(const QModelIndex& parent, int first, int last)
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    QModelIndex linkIdx = pGraphsModel->linkIndex(first);
+    QModelIndex linkIdx = pGraphsModel->linkIndex(m_subgIdx, first);
+    ZASSERT_EXIT(linkIdx.isValid());
     viewAddLink(linkIdx);
 }
 
@@ -327,7 +328,7 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
 void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex&, int first, int last)
 {
 	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-	QModelIndex linkIdx = pGraphsModel->linkIndex(first);
+    QModelIndex linkIdx = pGraphsModel->linkIndex(m_subgIdx, first);
 	ZASSERT_EXIT(linkIdx.isValid());
     viewRemoveLink(linkIdx);
 }
@@ -377,13 +378,38 @@ QGraphicsItem* ZenoSubGraphScene::getNode(const QString& id)
     return m_nodes[id];
 }
 
+void ZenoSubGraphScene::collectNodeSelChanged(const QString& ident, bool bSelected)
+{
+    m_selChanges.append({ident, bSelected});
+}
+
 void ZenoSubGraphScene::select(const QString& id)
 {
     clearSelection();
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     m_nodes[id]->setSelected(true);
+    afterSelectionChanged();
 }
 
+void ZenoSubGraphScene::select(const QStringList& nodes)
+{
+    clearSelection();
+    for (auto ident : nodes)
+    {
+        ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
+        m_nodes[ident]->setSelected(true);
+    }
+    afterSelectionChanged();
+}
+void ZenoSubGraphScene::select(const std::vector<QString>& nodes)
+{
+    clearSelection();
+    for (auto ident : nodes)
+    {
+        //ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
+        m_nodes[ident]->setSelected(true);
+    }
+}
 void ZenoSubGraphScene::select(const QModelIndexList &indexs) 
 {
     clearSelection();
@@ -393,6 +419,7 @@ void ZenoSubGraphScene::select(const QModelIndexList &indexs)
         if (m_nodes.find(id) != m_nodes.end());
             m_nodes[id]->setSelected(true);
     }
+    afterSelectionChanged();
 }
 
 void ZenoSubGraphScene::markError(const QString& nodeid)
@@ -544,7 +571,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
 
         socketPos = m_nodes[outNode]->getSocketPos(outSockIdx);
         ZenoSocketItem* pOutSocketItem = m_nodes[outNode]->getSocketItem(outSockIdx);
-        m_tempLink = new ZenoTempLink(pOutSocketItem, outNode, socketPos, false);
+        m_tempLink = new ZenoTempLink(pOutSocketItem, outNode, socketPos, false, QModelIndexList());
         m_tempLink->setOldLink(linkIdx);
         addItem(m_tempLink);
 
@@ -552,7 +579,15 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     }
     else
     {
-        m_tempLink = new ZenoTempLink(pSocketItem, nodeid, socketPos, bInput);
+        //cihou zxx: sort this nodelist by pos.y()
+        QModelIndexList selNodes = selectNodesIndice();
+        std::sort(selNodes.begin(), selNodes.end(), [](const QModelIndex& p1, const QModelIndex& p2) {
+            int y1 = p1.data(ROLE_OBJPOS).toPointF().y();
+            int y2 = p2.data(ROLE_OBJPOS).toPointF().y();
+            return y1 < y2;
+        });
+
+        m_tempLink = new ZenoTempLink(pSocketItem, nodeid, socketPos, bInput, selNodes);
         addItem(m_tempLink);
         pSocketItem->setSockStatus(ZenoSocketItem::STATUS_TRY_CONN);
     }
@@ -752,6 +787,42 @@ void ZenoSubGraphScene::onTempLinkClosed()
                 }
                 else
                 {
+                    //check multiple links
+                    QModelIndexList fromSockets;
+                    //check selected nodes.
+                    //model: ViewParamModel
+                    QString paramName = fromSockIdx.data(ROLE_PARAM_NAME).toString();
+                    QString paramType = fromSockIdx.data(ROLE_PARAM_TYPE).toString();
+
+                    QModelIndexList nodes = m_tempLink->selNodes();
+                    for (QModelIndex nodeIdx : nodes)
+                    {
+                        QString ident_ = nodeIdx.data(ROLE_OBJID).toString();
+                        //model: SubGraphModel
+                        OUTPUT_SOCKETS outputs = nodeIdx.data(ROLE_OUTPUTS).value<OUTPUT_SOCKETS>();
+                        if (outputs.find(paramName) != outputs.end() &&
+                            outputs[paramName].info.type == paramType)
+                        {
+                            OUTPUT_SOCKET outSock = outputs[paramName];
+                            fromSockets.append(outputs[paramName].retIdx);
+                        }
+                    }
+                    if (fromSockets.size() > 1)
+                    {
+                        QString toSockName = toSockIdx.data(ROLE_OBJPATH).toString();
+                        for (QModelIndex fromSockIdx : fromSockets)
+                        {
+                            QString ident_ = fromSockIdx.data(ROLE_OBJID).toString();
+                            int n = pKeyObjModel->rowCount();
+                            pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(true, pGraphsModel, toSockName, n));
+                            toSockIdx = pKeyObjModel->index(n, 0);
+                            pGraphsModel->addLink(m_subgIdx, fromSockIdx, toSockIdx, true);
+                        }
+                        return;
+                    }
+
+                    QString toSockName = toSockIdx.data(ROLE_OBJPATH).toString();
+
                     // link to inner dict key automatically.
                     int n = pKeyObjModel->rowCount();
                     pGraphsModel->addExecuteCommand(
@@ -772,7 +843,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
                     pGraphsModel->removeLink(linkIdx, true);
             }
 
-            pGraphsModel->addLink(fromSockIdx, toSockIdx, true);
+            pGraphsModel->addLink(m_subgIdx, fromSockIdx, toSockIdx, true);
             return;
         }
     }
@@ -822,6 +893,34 @@ void ZenoSubGraphScene::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
         return;
     }
     QGraphicsScene::mouseReleaseEvent(event);
+
+    //catch selection:
+    afterSelectionChanged();
+}
+
+void ZenoSubGraphScene::afterSelectionChanged()
+{
+    if (!m_selChanges.empty())
+    {
+        ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        QModelIndexList selNodes, unSelNodes;
+        for (auto pair : m_selChanges) {
+            const QString& ident = pair.first;
+            bool bSelected = pair.second;
+            if (m_nodes.find(ident) == m_nodes.end())
+                continue;
+            ZenoNode* pNode = m_nodes[ident];
+            ZASSERT_EXIT(pNode);
+            if (bSelected)
+                selNodes.push_back(pNode->index());
+            else
+                unSelNodes.push_back(pNode->index());
+        }
+        mainWin->onNodesSelected(m_subgIdx, unSelNodes, false);
+        mainWin->onNodesSelected(m_subgIdx, selNodes, true);
+    }
+    m_selChanges.clear();
 }
 
 void ZenoSubGraphScene::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
@@ -1017,4 +1116,9 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             it.second->setSelected(true);
         }
     }
+}
+
+void ZenoSubGraphScene::keyReleaseEvent(QKeyEvent* event)
+{
+    QGraphicsScene::keyReleaseEvent(event);
 }

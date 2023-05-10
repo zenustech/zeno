@@ -114,15 +114,18 @@ public:
     ZenoParamCheckBox(QGraphicsItem *parent = nullptr);
     Qt::CheckState checkState() const;
     void setCheckState(Qt::CheckState state);
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    QRectF boundingRect() const override;
 
 protected:
     QSizeF sizeHint(Qt::SizeHint which, const QSizeF &constraint = QSizeF()) const override;
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
 
 Q_SIGNALS:
     void stateChanged(int);
 
 private:
-    ZCheckBox* m_pCheckbox;
+    Qt::CheckState m_checkState;
 };
 
 

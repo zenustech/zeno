@@ -307,6 +307,7 @@ struct InstData
 };
 static std::map<std::string, InstData> g_instLUT;
 std::unordered_map<std::string, std::vector<glm::mat4>> g_instMatsLUT;
+std::unordered_map<std::string, std::vector<float>> g_instScaleLUT;
 struct InstAttr
 {
     std::vector<float3> pos;
@@ -765,6 +766,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         if (it != g_instMatsLUT.end())
         {
             const auto &instMats = it->second;
+            const auto &instScales = g_instScaleLUT[instID];
             const auto &instAttrs = g_instAttrsLUT[instID];
             for (std::size_t i = 0; i < instData.meshPieces.size(); ++i)
             {
@@ -772,10 +774,11 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 for (std::size_t k = 0; k < instMats.size(); ++k)
                 {
                     const auto &instMat = instMats[k];
+                    float scale = instScales[k];
                     float instMat4x4[12] = {
-                        instMat[0][0], instMat[1][0], instMat[2][0], instMat[3][0],
-                        instMat[0][1], instMat[1][1], instMat[2][1], instMat[3][1],
-                        instMat[0][2], instMat[1][2], instMat[2][2], instMat[3][2]};
+                        instMat[0][0] * scale, instMat[1][0] * scale, instMat[2][0] * scale, instMat[3][0],
+                        instMat[0][1] * scale, instMat[1][1] * scale, instMat[2][1] * scale, instMat[3][1],
+                        instMat[0][2] * scale, instMat[1][2] * scale, instMat[2][2] * scale, instMat[3][2]};
                     auto& optix_instance = optix_instances[instanceId];
                     optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
                     optix_instance.instanceId = static_cast<unsigned int>(instanceId);
@@ -1246,6 +1249,8 @@ static void createSBT( PathTracerState& state )
 
             sbt_idx = 2*j; 
             HitGroupRecord rec = {};
+
+            rec.data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
 
             if (OptixUtil::g_vdb_list_for_each_shader.count(j) == 0) {
                 continue;
@@ -1928,13 +1933,14 @@ static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, flo
     g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
 }
 static int uniformBufferInitialized = false;
-void optixUpdateUniforms(std::vector<float4> & inConstants) {
+// void optixUpdateUniforms(std::vector<float4> & inConstants) 
+void optixUpdateUniforms(void *inConstants, std::size_t size) {
 
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*512));
 
     CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*512));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), inConstants.data(),
-                          sizeof(float4)*inConstants.size(), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), (float4*)inConstants,
+                          sizeof(float4)*size, cudaMemcpyHostToDevice));
 
     uniformBufferInitialized = true;
 
@@ -2024,10 +2030,10 @@ void optixupdatematerial(std::vector<bool> const            &markers,
         OptixUtil::rtMaterialShaders.back().has_vdb = markers[i]; 
 
         if(texs.size()>0){
-            std::cout<<"texSize:"<<texs[i].size()<<std::endl;
+            //std::cout<<"texSize:"<<texs[i].size()<<std::endl;
             for(int j=0;j<texs[i].size();j++)
             {
-                std::cout<<"texName:"<<texs[i][j]<<std::endl;
+                //std::cout<<"texName:"<<texs[i][j]<<std::endl;
                 OptixUtil::rtMaterialShaders[i].addTexture(j, texs[i][j]);
             }
         }
@@ -2787,9 +2793,12 @@ void UpdateInst()
         const auto& instID = instTrs.instID;
         auto& instMat = g_instMatsLUT[instID];
         auto& instAttr = g_instAttrsLUT[instID];
+        auto& instScale = g_instScaleLUT[instID];
+
 
         const auto& numInstMats = instTrs.pos.size() / 3;
         instMat.resize(numInstMats);
+        instScale.resize(numInstMats);
         instAttr.pos.resize(numInstMats);
         instAttr.nrm.resize(numInstMats);
         instAttr.uv.resize(numInstMats);
@@ -2802,6 +2811,7 @@ void UpdateInst()
 
             zeno::vec3f t0 = {instTrs.nrm[3 * i + 0], instTrs.nrm[3 * i + 1], instTrs.nrm[3 * i + 2]};
             zeno::vec3f t1 = {instTrs.clr[3 * i + 0], instTrs.clr[3 * i + 1], instTrs.clr[3 * i + 2]};
+            float pScale = instTrs.tang[3*i +0];
             t0 = normalizeSafe(t0);
             zeno::vec3f t2;
             zeno::guidedPixarONB(t0, t1, t2);
@@ -2881,6 +2891,7 @@ void UpdateInst()
 
             auto scaleMat = glm::scale(glm::vec3(1, 1, 1));
             instMat[i] = translateMat * rotateMat * scaleMat;
+            instScale[i] = pScale;
             instAttr.pos[i].x = instTrs.pos[3 * i + 0];
             instAttr.pos[i].y = instTrs.pos[3 * i + 1];
             instAttr.pos[i].z = instTrs.pos[3 * i + 2];

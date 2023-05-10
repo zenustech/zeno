@@ -61,12 +61,13 @@ public:
                           const QVariant &value, int hits = 1,
                           Qt::MatchFlags flags =
                           Qt::MatchFlags(Qt::MatchStartsWith | Qt::MatchWrap)) const override;
+    QModelIndexList getNodesByCls(const QString& nodeCls);
     bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex()) override;
 
     //SubGraphModel
     bool insertRow(int row, const NODE_DATA &nodeData, const QModelIndex &parent = QModelIndex());
     QModelIndex index(QString id, const QModelIndex &parent = QModelIndex()) const;
-    QModelIndex index(int id) const;
+    QModelIndex index(uint32_t id) const;
     void appendItem(const NODE_DATA& nodeData, bool enableTransaction = false);
     void removeNode(const QString& nodeid, bool enableTransaction = false);
     void removeNode(int row, bool enableTransaction = false);
@@ -118,12 +119,14 @@ private:
     bool checkCustomName(const QString &name);
 
     QString m_name;
-    QMap<QString, int> m_key2Row;
-    QMap<int, QString> m_row2Key;
-    QMap<QString, _NodeItem> m_nodes;
+    QHash<QString, int> m_key2Row;
+    QHash<int, QString> m_row2Key;
+    QHash<QString, _NodeItem> m_nodes;
 
-    QMap<uint32_t, QString> m_num2strId;
-    QMap<QString, uint32_t> m_str2numId;
+    QHash<QString, QSet<QString>> m_name2identLst;
+
+    QHash<uint32_t, QString> m_num2strId;
+    QHash<QString, uint32_t> m_str2numId;
 
     QRectF m_rect;
     GraphsModel* m_pGraphsModel;

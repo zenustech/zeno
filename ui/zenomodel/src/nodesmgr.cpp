@@ -16,11 +16,32 @@ QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const
     return node[ROLE_OBJID].toString();
 }
 
+QString NodesMgr::createExtractDictNode(IGraphsModel *pModel, QModelIndex subgIdx, const QString &infos) 
+{
+    zeno::log_debug("onExtractDictCreated");
+    NODE_DATA node = newNodeData(pModel, "ExtractDict", QPointF());
+    if (!infos.isEmpty()) {
+        OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        QStringList lst = infos.split(",");
+        for (auto name : lst) {
+            OUTPUT_SOCKET newSocket;
+            newSocket.info.name = name;
+            newSocket.info.control = CONTROL_NONE;
+            newSocket.info.sockProp = SOCKPROP_EDITABLE;
+            outputs.insert(name, newSocket);
+        }
+        node[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+    }
+    pModel->addNode(node, subgIdx, true);
+    return node[ROLE_OBJID].toString();
+}
+
 NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, const QPointF& pt)
 {
-    NODE_DESCS descs = pModel->descriptors();
-    NODE_DESC desc = descs[descName];
     NODE_DATA node;
+    NODE_DESC desc;
+    bool ret = pModel->getDescriptor(descName, desc);
+    ZASSERT_EXIT(ret, node);
 
     const QString &nodeid = UiHelper::generateUuid(descName);
     node[ROLE_OBJID] = nodeid;

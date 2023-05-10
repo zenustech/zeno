@@ -125,7 +125,11 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
                     writer.String("Editor");
                 }
                 else if (qobject_cast<DockContent_View*>(wid)) {
-                    writer.String("View");
+                    DockContent_View* pView = qobject_cast<DockContent_View*>(wid);
+                    if (pView->isGLView())
+                        writer.String("View");
+                    else
+                        writer.String("Optix");
                 }
                 else if (qobject_cast<ZenoSpreadsheet*>(wid)) {
                     writer.String("Data");

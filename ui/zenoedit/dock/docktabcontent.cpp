@@ -285,6 +285,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pGroup = new ZToolBarButton(false, ":/icons/nodeEditor_blackboard_unselected.svg", ":/icons/nodeEditor_blackboard_selected.svg");
     pSearchBtn = new ZToolBarButton(true, ":/icons/toolbar_search_idle.svg", ":/icons/toolbar_search_light.svg");
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
+    pLinkLineShape = new ZToolBarButton(true, ":/icons/timeline-curvemap.svg",":/icons/timeline-curvemap.svg");
 
     m_btnRun = new ZToolMenuButton;
     m_btnKill = new ZToolButton;
@@ -374,6 +375,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pListView->setChecked(false);
     pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool());
     pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool());
+    pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(zsLinkLineShape).toBool());
 
     QStringList items;
     QVector<qreal> factors = UiHelper::scaleFactors();
@@ -415,6 +417,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(pShowGrid);
     pToolLayout->addWidget(pCustomParam);
     pToolLayout->addWidget(pGroup);
+    pToolLayout->addWidget(pLinkLineShape);
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
 
@@ -485,7 +488,9 @@ void DockContent_Editor::initConnections()
     connect(pShowGrid, &ZToolBarButton::toggled, this, [=](bool bChecked) {
         ZenoSettingsManager::GetInstance().setValue(zsShowGrid, bChecked);
     });
-
+    connect(pLinkLineShape, &ZToolBarButton::toggled, this, [=](bool bChecked) {
+        ZenoSettingsManager::GetInstance().setValue(zsLinkLineShape, bChecked);
+    });
     connect(m_pEditor, &ZenoGraphsEditor::zoomed, [=](qreal newFactor) {
         QString percent = QString::number(int(newFactor * 100));
         percent += "%";
@@ -569,7 +574,7 @@ void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
 /// <summary>
 /// </summary>
 /// <param name="parent"></param>
-DockContent_View::DockContent_View(bool bOptixView, QWidget* parent)
+DockContent_View::DockContent_View(bool bGLView, QWidget* parent)
     : DockToolbarWidget(parent)
     , m_pDisplay(nullptr)
     , m_cbRenderWay(nullptr)
@@ -581,7 +586,7 @@ DockContent_View::DockContent_View(bool bOptixView, QWidget* parent)
     , m_recordVideo(nullptr)
     , m_screenshoot(nullptr)
     , m_resizeViewport(nullptr)
-    , m_bOptixView(bOptixView)
+    , m_bGLView(bGLView)
 {
 }
 
@@ -732,7 +737,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
 QWidget* DockContent_View::initWidget()
 {
-    m_pDisplay = new DisplayWidget(m_bOptixView);
+    m_pDisplay = new DisplayWidget(m_bGLView);
     return m_pDisplay;
 }
 
@@ -820,6 +825,11 @@ void DockContent_View::onCommandDispatched(QAction *pAction, bool bTriggered)
 DisplayWidget* DockContent_View::getDisplayWid() const
 {
     return m_pDisplay;
+}
+
+bool DockContent_View::isGLView() const
+{
+    return m_bGLView;
 }
 
 QSize DockContent_View::viewportSize() const

@@ -7,16 +7,6 @@
 
 
 static CONTROL_INFO _infos[] = {
-    {"ParticleParticleWrangle",     PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"ParticlesWrangle",            PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"VDBWrangle",                  PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"NumericWrangle",              PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"ParticlesMaskedWrangle",      PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"ParticlesNeighborBvhWrangle", PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"ParticlesTwoWrangle",         PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"StringEval",                  PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"NumericEval",                 PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
-    {"ParticlesNeighborz",          PARAM_INPUT, "zfxCode",     CONTROL_MULTILINE_STRING, QVariant()},
     {"SubInput",                    PARAM_PARAM, "type",        CONTROL_ENUM,             QVariant()},
     {"SubOutput", PARAM_PARAM, "type", CONTROL_ENUM, QVariant()},
 };
@@ -59,6 +49,10 @@ CONTROL_INFO GlobalControlMgr::controlInfo(const QString& nodeCls, PARAM_CLASS c
         QVariantMap map;
         map["items"] = items;
         return CONTROL_INFO(CONTROL_ENUM, map);
+    }
+    if (coreParam == "zfxCode" && coreType == "string") 
+    {
+        return CONTROL_INFO(CONTROL_MULTILINE_STRING, QVariant());
     }
     return CONTROL_INFO(UiHelper::getControlByType(coreType), QVariant());
 }

@@ -42,7 +42,8 @@
 #include <sstream>
 #include <string>
 #include <filesystem>
-
+#include "ies/ies_loader.h"
+#include "zeno/utils/fileio.h"
 #include <cudaMemMarco.hpp>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
@@ -486,7 +487,28 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
 
     return true;
 }
+inline std::vector<float> IES2HDR(const std::string& path)
+{
+    IESFileInfo info;
+    auto IESBuffer = zeno::file_get_binary(path);
+    IESBuffer.push_back(0);
 
+    IESLoadHelper IESLoader;
+    if (!IESLoader.load(IESBuffer.data(), IESBuffer.size() - 1, info)) {
+        std::string l = "IESLoader.load";
+        throw std::runtime_error(l);
+    }
+
+    std::vector<float> img;
+    img.resize(256 * 3);
+
+    if (!IESLoader.saveAs1D(info, img.data(), 256, 3)) {
+        std::string l = "IESLoader.saveAs1D";
+        throw std::runtime_error(l);
+    }
+
+    return img;
+}
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
@@ -495,11 +517,18 @@ inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
     std::string native_path = std::filesystem::u8path(path).string();
-    std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
-    if(g_tex.count(path) && g_tex_last_write_time[path] == ftime) {
-        return;
+    if (std::filesystem::exists(native_path)) {
+        std::filesystem::file_time_type ftime = std::filesystem::last_write_time(native_path);
+        if(g_tex.count(path) && g_tex_last_write_time[path] == ftime) {
+            return;
+        }
+        g_tex_last_write_time[path] = ftime;
     }
-    g_tex_last_write_time[path] = ftime;
+    else {
+        if(g_tex.count(path)) {
+            return;
+        }
+    }
     int nx, ny, nc;
     stbi_set_flip_vertically_on_load(true);
 
@@ -524,6 +553,10 @@ inline void addTexture(std::string path)
         assert(rgba);
         g_tex[path] = makeCudaTexture(rgba, nx, ny, nc);
         free(rgba);
+    }
+    else if (zeno::ends_with(path, ".ies", false)) {
+        auto img = IES2HDR(path);
+        g_tex[path] = makeCudaTexture(img.data(), 256, 1, 3);
     }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);

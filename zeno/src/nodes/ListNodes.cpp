@@ -199,18 +199,18 @@ ZENDEFNODE(MakeList, {
     });
 
 
-struct MockList : zeno::INode {
+struct MultiMakeList : zeno::INode {
     virtual void apply() override {
         auto lst = get_input2<zeno::ListObject>("list");
         set_output("list", std::move(lst));
     }
 };
 
-ZENDEFNODE(MockList, {
-    {"list"},
+ZENDEFNODE(MultiMakeList, {
+    {{"list","list"}},
     {"list"},
     {},
-    {"list2"},
+    {"list"},
     });
 
 

@@ -39,6 +39,12 @@ ZGraphicsLayout* CameraNode::initCustomParamWidgets()
     pHLayout->addItem(pEditBtn);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
 
+    _param_ctrl param;
+    param.param_name = pNameItem;
+    param.param_control = pEditBtn;
+    param.ctrl_layout = pHLayout;
+    addParam(param);
+
     return pHLayout;
 }
 
@@ -170,6 +176,7 @@ void LightNode::onEditClicked(){
     if (views.isEmpty())
         return;
 
+    //todo: case about camera on multiple viewports.
     auto pZenoVis = views[0]->getZenoVis();
     ZASSERT_EXIT(pZenoVis);
 
@@ -225,6 +232,12 @@ ZGraphicsLayout* LightNode::initCustomParamWidgets()
     ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Edit", -1, QSizePolicy::Expanding);
     pHLayout->addItem(pEditBtn);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
+
+    _param_ctrl param;
+    param.param_name = pNameItem;
+    param.param_control = pEditBtn;
+    param.ctrl_layout = pHLayout;
+    addParam(param);
 
     return pHLayout;
 }

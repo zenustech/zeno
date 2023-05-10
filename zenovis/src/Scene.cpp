@@ -33,8 +33,10 @@ Scene::Scene()
       objectsMan(std::make_unique<ObjectsManager>()),
       renderMan(std::make_unique<RenderManager>(this)) {
 
+    /* gl has been removed from optix scene.
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
+    */
 
     if (zeno::envconfig::get("OPTX"))
         switchRenderEngine("optx");
@@ -130,6 +132,13 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
         {3, GL_RGB},
         {4, GL_RGBA},
     }.at(rgbComps);
+
+    bool bOptix = renderMan->getDefaultEngineName() == "optx";
+    if (bOptix)
+    {
+        draw();
+        return std::vector<char>();
+    }
 
     std::vector<char> pixels(camera->m_nx * camera->m_ny * rgbComps * hdrSize);
 

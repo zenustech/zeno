@@ -251,22 +251,18 @@ void ZenoParamPathEdit::setPath(const QString& path)
 ///////////////////////////////////////////////////////////////////////////
 ZenoParamCheckBox::ZenoParamCheckBox(QGraphicsItem* parent)
     : ZenoParamWidget(parent)
+    , m_checkState(Qt::Unchecked) 
 {
-    m_pCheckbox = new ZCheckBox;
-    m_pCheckbox->setText("");
-    m_pCheckbox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    setWidget(m_pCheckbox);
-    connect(m_pCheckbox, SIGNAL(stateChanged(int)), this, SIGNAL(stateChanged(int)));
 }
 
 Qt::CheckState ZenoParamCheckBox::checkState() const
 {
-    return m_pCheckbox->checkState();
+    return m_checkState;
 }
 
 void ZenoParamCheckBox::setCheckState(Qt::CheckState state)
 {
-    m_pCheckbox->setCheckState(state);
+    m_checkState = state;
 }
 
 QSizeF ZenoParamCheckBox::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
@@ -275,6 +271,50 @@ QSizeF ZenoParamCheckBox::sizeHint(Qt::SizeHint which, const QSizeF& constraint)
     return sz;
 }
 
+void ZenoParamCheckBox::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+{
+    qreal size = ZenoStyle::dpiScaled(20);
+    QRectF rect = boundingRect();
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing);
+    painter->fillRect(rect, QColor("#191D21"));
+
+    if (m_checkState == Qt::Checked) 
+    {
+        QSvgRenderer svgRnder(QString(":/icons/checkbox-light.svg"));
+        svgRnder.render(painter, rect);
+    }
+    painter->restore();
+    ZenoParamWidget::paint(painter, option, widget);
+}
+
+QRectF ZenoParamCheckBox::boundingRect() const 
+{
+    QSizeF size = data(GVKEY_SIZEHINT).toSizeF();
+    if (size.isValid()) {
+        return QRectF(QPointF(0, 0), size);
+    } else {
+        return QRectF(QPointF(0, 0), ZenoStyle::dpiScaledSize(QSizeF(20, 20)));
+    }
+
+}
+
+void ZenoParamCheckBox::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+     if (event->button() == Qt::LeftButton) 
+     {
+        QPointF pressPoint = event->pos();
+        QRectF rect = boundingRect();
+
+        if (rect.contains(pressPoint)) 
+        {
+            m_checkState = m_checkState == Qt::Checked? Qt::Unchecked : Qt::Checked;
+            emit stateChanged(m_checkState);
+            update();
+        }
+     }
+     ZenoParamWidget::mousePressEvent(event);
+}
 
 ///////////////////////////////////////////////////////////////////////////
 ZenoVecEditItem::ZenoVecEditItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent)

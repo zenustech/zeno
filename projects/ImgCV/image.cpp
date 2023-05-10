@@ -8,70 +8,21 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
-
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
-
+#include <cmath>
+#include <opencv2/imgproc.hpp>
+#include <tinygltf/stb_image.h>
+#include "tinyexr.h"
+#include "stb_image_write.h"
+#include "half.h"
+#include <filesystem>
 
 namespace zeno {
 
 namespace {
-
-//Test：https://blog.csdn.net/Angelloveyatou/article/details/130190085
-
-static std::shared_ptr<PrimitiveObject> normal_tiling(std::shared_ptr<PrimitiveObject> &image1, std::shared_ptr<PrimitiveObject> &image2, int rows, int cols) {
-    int width = image1->userData().get2<int>("w");
-    int height = image1->userData().get2<int>("h");
-    int new_width = width * cols;
-    int new_height = height * rows;
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            int x = j * width;
-            int y = i * height;
-            for (int h = 0; h < height; h++) {
-                for (int w = 0; w < width; w++) {
-                    int index1 = (y + h) * new_width + (x + w);
-                    int index2 = h * width + w;
-                    image2->verts[index1] = image1->verts[index2];
-                }
-            }
-        }
-    }
-    return image2;
-}
-
-static std::shared_ptr<PrimitiveObject> mirror_tiling(std::shared_ptr<PrimitiveObject> &image1, std::shared_ptr<PrimitiveObject> &image2, int rows, int cols) {
-    int width = image1->userData().get2<int>("w");
-    int height = image1->userData().get2<int>("h");
-    int new_width = width * cols;
-    int new_height = height * rows;
-    // 复制像素并进行镜像平铺
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            int x = j * width;
-            int y = i * height;
-            for (int h = 0; h < height; h++) {
-                for (int w = 0; w < width; w++) {
-                    if(i%2 == 0 && j%2 == 0){
-                        image2->verts[(y + h) * width * cols + (x + w)] = image1->verts[h * width + w];
-                    }
-                    if(i%2 == 0 && j%2 == 1){
-                        image2->verts[((y + h) * width * cols + x + (width - w - 1))] = image1->verts[(h * width + w)];
-                    }
-                    if(i%2 == 1 && j%2 == 0){
-                        image2->verts[(y + (height - h - 1)) * width * cols + w + x] = image1->verts[(h * width + w)];
-                    }
-                    if(i%2 == 1 && j%2 == 1){
-                        image2->verts[(y + (height - h - 1)) * width * cols + (width - w - 1) + x] = image1->verts[(h * width + w)];
-                    }
-                }
-            }
-        }
-    }
-    return image2;
-}
 
 static void RGBtoHSV(float r, float g, float b, float &h, float &s, float &v) {
     float rd = r;
@@ -150,7 +101,6 @@ static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int h
 {
     dx.resize(width * height);
     dy.resize(width * height);
-
     for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
             float gx = -grayImage->verts[(y - 1) * width + x - 1][0] + grayImage->verts[(y - 1) * width + x + 1][0]
@@ -163,6 +113,73 @@ static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int h
 
             dx[y * width + x] = gx;
             dy[y * width + x] = gy;
+        }
+    }
+}
+static void sobel2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height, int threshold) {
+    std::vector<int> gx(width * height);
+    std::vector<int> gy(width * height);
+    dst->verts.resize(width * height);
+
+    // Calculate gradients
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+            gx[idx] = (-1 * src->verts[(y - 1) * width + x - 1][0] - 2 * src->verts[y * width + x - 1][0] - 1 * src->verts[(y + 1) * width + x - 1][0] +
+                       1 * src->verts[(y - 1) * width + x + 1][0] + 2 * src->verts[y * width + x + 1][0] + 1 * src->verts[(y + 1) * width + x + 1][0]);
+            gy[idx] = (-1 * src->verts[(y - 1) * width + x - 1][0] - 2 * src->verts[(y - 1) * width + x][0] - 1 * src->verts[(y - 1) * width + x + 1][0] +
+                       1 * src->verts[(y + 1) * width + x - 1][0] + 2 * src->verts[(y + 1) * width + x][0] + 1 * src->verts[(y + 1) * width + x + 1][0]);
+        }
+    }
+    // Calculate gradient magnitude
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+
+            // Calculate gradient magnitude
+            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
+
+            // Apply thresholding
+            float g = mag < threshold ? 0: 1;
+            dst->verts[idx] = {g,g,g};
+        }
+    }
+}
+
+static void scharr2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height,int threshold) {
+    std::vector<int> gx(width * height);
+    std::vector<int> gy(width * height);
+    dst->verts.resize(width * height);
+
+    // Calculate gradients
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+            gx[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[y * width + x - 1][0] - 3 * src->verts[(y + 1) * width + x - 1][0] +
+                       3 * src->verts[(y - 1) * width + x + 1][0] + 10 * src->verts[y * width + x + 1][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
+            gy[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[(y - 1) * width + x][0] - 3 * src->verts[(y - 1) * width + x + 1][0] +
+                       3 * src->verts[(y + 1) * width + x - 1][0] + 10 * src->verts[(y + 1) * width + x][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
+        }
+    }
+    // Calculate gradient magnitude
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+
+            // Calculate gradient magnitude
+            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
+            // Apply threshold
+            if (mag * 255 > threshold) {
+                // Set to white
+                dst->verts[idx] = { 1, 1, 1 };
+            }
+            else {
+                // Set to black
+                dst->verts[idx] = {0, 0, 0};
+            }
+            // Clamp to [0, 255] and store in output image
+            float g = std::min(1, std::max(0, mag));
+            dst->verts[idx] = {g,g,g};
         }
     }
 }
@@ -539,6 +556,62 @@ ZENDEFNODE(CompositeCV, {
 });
 */
 
+struct ImageRGB2HSV : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        float H = 0, S = 0, V = 0;
+        for (auto i = 0; i < image->verts.size(); i++){
+            float R = image->verts[i][0];
+            float G = image->verts[i][1];
+            float B = image->verts[i][2];
+            zeno::RGBtoHSV(R, G, B, H, S, V);
+            image->verts[i][0]= H;
+            image->verts[i][1]= S;
+            image->verts[i][2]= V;
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageRGB2HSV, {
+    {
+        {"image"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
+
+struct ImageHSV2RGB : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        float R = 0, G = 0, B = 0;
+        for (auto i = 0; i < image->verts.size(); i++){
+            float H = image->verts[i][0];
+            float S = image->verts[i][1];
+            float V = image->verts[i][2];
+            zeno::HSVtoRGB(H, S, V, R, G, B);
+            image->verts[i][0]= R ;
+            image->verts[i][1]= G ;
+            image->verts[i][2]= B ;
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageHSV2RGB, {
+    {
+        {"image"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
+
 struct ImageEditRGB : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -913,6 +986,134 @@ ZENDEFNODE(ImageEdit, {
     { "comp" },
 });
 
+// 高斯函数
+float gaussian(float x, float sigma) {
+    return exp(-(x * x) / (2 * sigma * sigma));
+}
+// 高斯滤波函数
+void gaussian_filter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<PrimitiveObject> &imagetmp, int width, int height, int sigma) {
+    // 计算高斯核大小
+    int size = (int)(2 * sigma + 1);
+    if (size % 2 == 0) {
+        size++;
+    }
+    // 创建高斯核
+    float* kernel = new float[size];
+    float sum = 0.0;
+    int mid = size / 2;
+    for (int i = 0; i < size; i++) {
+        kernel[i] = gaussian(i - mid, sigma);
+        sum += kernel[i];
+    }
+    for (int i = 0; i < size; i++) {
+        kernel[i] /= sum;
+    }
+    // 对每个像素进行卷积操作
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            float sum0 = 0.0, sum1 = 0.0, sum2 = 0.0;
+            for (int i = -mid; i <= mid; i++) {
+                int nx = x + i;
+                if (nx < 0 || nx >= width) {
+                    continue;
+                }
+                sum0 += kernel[i + mid] * image->verts[y * width + nx][0];
+                sum1 += kernel[i + mid] * image->verts[y * width + nx][1];
+                sum2 += kernel[i + mid] * image->verts[y * width + nx][2];
+            }
+            imagetmp->verts[y * width + x] = {sum0,sum1,sum2};
+        }
+    }
+    image = imagetmp;
+    // 释放内存
+    delete[] kernel;
+}
+//MedianBlur
+// 定义一个结构体，用于存储像素点的信息
+struct Pixel {
+    int x;
+    int y;
+    int value;
+};
+// MedianBlur函数，实现中值滤波操作
+void MedianBlur(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<PrimitiveObject> &imagetmp, int width, int height, int kernel_size) {
+    // 定义一个vector，用于存储周围像素的值
+    using kernel = std::tuple<float, float, float>;
+    kernel n = {0, 0, 0};
+    std::vector<kernel> kernel_values(kernel_size * kernel_size);
+    // 遍历图像中的每个像素点
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            // 获取当前像素点的值
+            int current_value0 = image->verts[y * width + x][0];
+            int current_value1 = image->verts[y * width + x][1];
+            int current_value2 = image->verts[y * width + x][2];
+            // 遍历周围像素，获取像素值和坐标信息
+            for (int ky = 0; ky < kernel_size; ++ky) {
+                for (int kx = 0; kx < kernel_size; ++kx) {
+                    int px = x - kernel_size / 2 + kx;
+                    int py = y - kernel_size / 2 + ky;
+                    // 判断像素是否越界，如果越界则使用当前像素值作为周围像素值
+                    if (px < 0 || px >= width || py < 0 || py >= height) {
+                        kernel_values[ky * kernel_size + kx] = {current_value0,current_value1,current_value2};
+                    }
+                    else {
+                        kernel_values[ky * kernel_size + kx] = {image->verts[py * width + px][0],image->verts[py * width + px][1],image->verts[py * width + px][2]};
+                    }
+                }
+            }
+            // 对周围像素的值进行排序，并取中间值作为新的像素值
+            std::sort(kernel_values.begin(), kernel_values.end());
+            float new_value0 = std::get<0>(kernel_values[kernel_size * kernel_size / 2]);
+            float new_value1 = std::get<1>(kernel_values[kernel_size * kernel_size / 2]);
+            float new_value2 = std::get<2>(kernel_values[kernel_size * kernel_size / 2]);
+            // 将新的像素值赋值给输出图像
+            imagetmp->verts[y * width + x] = {new_value0,new_value1,new_value2};
+        }
+    }
+    image = imagetmp;
+}
+
+
+// 定义一个函数，用于计算双边权重
+float bilateral(float src, float dst, float sigma_s, float sigma_r) {
+    return gaussian(src - dst, sigma_s) * gaussian(abs(src - dst), sigma_r);
+}
+
+// 定义一个函数，用于对图像进行双边滤波
+void bilateralFilter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<PrimitiveObject> &imagetmp, int width, int height, float sigma_s, float sigma_r) {
+    // 计算卷积核的半径
+    int k = ceil(3 * sigma_s);
+    // 定义一个临时数组，用于存储每个像素点的中间值
+    float* tmp = new float[width * height];
+    for (int i = k; i < height-k; i++) {
+        for (int j = k; j < width-k; j++) {
+            // 定义变量，用于存储像素值的加权平均值
+            float sum0 = 0, sum1 = 0, sum2 = 0;
+            // 定义变量，用于存储权重的和
+            float wsum0 = 0,wsum1 = 0,wsum2 = 0;
+            for (int m = -k; m <= k; m++) {
+                for (int n = -k; n <= k; n++) {
+                    // 计算双边权重
+                    float w0 = bilateral(image->verts[i*width+j][0],image->verts[(i+m)*width+j+n][0], sigma_s, sigma_r);
+                    float w1 = bilateral(image->verts[i*width+j][1],image->verts[(i+m)*width+j+n][1], sigma_s, sigma_r);
+                    float w2 = bilateral(image->verts[i*width+j][2],image->verts[(i+m)*width+j+n][2], sigma_s, sigma_r);
+                    // 计算加权平均值
+                    sum0 += w0 * image->verts[(i+m)*width+j+n][0];
+                    sum1 += w1 * image->verts[(i+m)*width+j+n][1];
+                    sum2 += w2 * image->verts[(i+m)*width+j+n][2];
+                    // 计算权重的和
+                    wsum0 += w0;
+                    wsum1 += w1;
+                    wsum2 += w2;
+                }
+            }
+            imagetmp->verts[i*width+j] = {sum0 / wsum0,sum1/ wsum1, sum2 / wsum2};   // 计算每个像素点的中间值，并将结果存储到临时数组中
+        }
+    }
+    image = imagetmp;
+}
+
 struct ImageEditBlur : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -922,6 +1123,13 @@ struct ImageEditBlur : INode {
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
+
+        auto imagetmp = std::make_shared<PrimitiveObject>();
+        imagetmp->resize(w * h);
+        imagetmp->userData().set2("isImage", 1);
+        imagetmp->userData().set2("w", w);
+        imagetmp->userData().set2("h", h);
+
         cv::Mat imagecvin(h, w, CV_32FC3);
         cv::Mat imagecvout(h, w, CV_32FC3);
         for (int i = 0; i < h; i++) {
@@ -932,31 +1140,60 @@ struct ImageEditBlur : INode {
         }
         if(mode=="Blur"){
             cv::blur(imagecvin,imagecvout,cv::Size(xsize,ysize),cv::Point(-1,-1));
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                    image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+                }
+            }
         }
-        if(mode=="GaussianBlur"){
+        if(mode=="CVGaussianBlur"){
             if(xsize%2==0){
                 xsize += 1;
             }
             cv::GaussianBlur(imagecvin,imagecvout,cv::Size(xsize,xsize),1.5);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                    image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+                }
+            }
         }
-        if(mode=="MedianBlur"){
+        if(mode=="CVMedianBlur"){
             if(xsize%2==0){
                 xsize += 1;
             }
             cv::medianBlur(imagecvin,imagecvout,xsize);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                    image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+                }
+            }
         }
-        if(mode=="BilateralFilter"){
+        if(mode=="CVBilateralBlur"){
             if(xsize%2==0){
                 xsize += 1;
             }
             cv::bilateralFilter(imagecvin,imagecvout,xsize,75,75);
-        }
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                    image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+                }
             }
         }
+        if(mode=="GaussianBlur"){
+            // 进行高斯滤波
+            gaussian_filter(image,imagetmp, w, h, xsize);
+        }
+        if(mode=="MedianBlur"){
+            MedianBlur(image,imagetmp, w, h, xsize);
+        }
+        if(mode=="BilateralBlur"){
+            bilateralFilter(image,imagetmp, w, h, xsize, ysize);
+        }
+
         set_output("image", image);
     }
 };
@@ -964,9 +1201,9 @@ struct ImageEditBlur : INode {
 ZENDEFNODE(ImageEditBlur, {
     {
         {"image"},
-        {"enum Blur GaussianBlur MedianBlur BilateralFilter", "mode", "Blur"},
-        {"float", "xsize", "1"},
-        {"float", "ysize", "1"},
+        {"enum Blur GaussianBlur MedianBlur BilateralBlur CVGaussianBlur CVMedianBlur CVBilateralBlur", "mode", "Blur"},
+        {"float", "xsize", "10"},
+        {"float", "ysize", "10"},
     },
     {
         {"image"}
@@ -980,8 +1217,8 @@ struct EdgeDetect : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
-        auto low_threshold = get_input2<float>("low_threshold");
-        auto high_threshold = get_input2<float>("high_threshold");
+        int low_threshold = get_input2<int>("low_threshold");
+        int high_threshold = get_input2<int>("high_threshold");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -1007,6 +1244,7 @@ struct EdgeDetect : INode {
                     image->verts[i * w + j] = {r, r, r};
                 }
             }
+            set_output("image", image);
         }
         if(mode=="sobel"){
             std::vector<float> dx,dy;
@@ -1018,25 +1256,30 @@ struct EdgeDetect : INode {
                     image->verts[i * w + j] = {gradient,gradient,gradient};
                 }
             }
+            set_output("image", image);
+        }
+        if(mode=="sobel2"){
+            std::vector<float> dx,dy;
+            zeno::sobel2(image, image2, w , h, low_threshold);
+            set_output("image", image2);
         }
 
         if(mode=="scharr"){
-
+            zeno::scharr2(image, image2, w, h, low_threshold);
+            set_output("image", image2);
         }
+
         if(mode=="laplacian"){
 
         }
-
-        set_output("image", image);
     }
 };
-
 ZENDEFNODE(EdgeDetect, {
    {
-        {"image"},
-       {"enum sobel canny scharr laplacian", "mode", "sobel"},
-       {"float", "low_threshold", "100"},
-       {"float", "high_threshold", "200"},
+       {"image"},
+       {"enum sobel canny scharr laplacian sobel2", "mode", "sobel"},
+       {"int", "low_threshold", "100"},
+       {"int", "high_threshold", "150"},
     },
     {
         {"image"}
@@ -1045,11 +1288,52 @@ ZENDEFNODE(EdgeDetect, {
     { "comp" },
 });
 
-struct CompExtractRGBA : INode {
+struct EdgeDetect2 : INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        int threshold = ud.get2<int>("threshold");
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->resize(w * h);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w);
+        image2->userData().set2("h", h);
+        if(mode=="sobel"){
+            zeno::sobel2(image, image2, w, h,threshold);
+            set_output("image", image2);
+        }
+
+        if(mode=="scharr"){
+            zeno::scharr2(image, image2, w, h,threshold);
+            set_output("image", image2);
+        }
+
+        if(mode=="laplacian"){
+
+        }
+    }
+};
+ZENDEFNODE(EdgeDetect2, {
+    {
+        {"image"},
+        {"enum sobel scharr laplacian", "mode", "sobel"},
+        {"int", "threshold", "150"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+struct CompExtractChanel : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGBA = get_input2<std::string>("RGBA");
-
+        image->verts.add_attr<float>("alpha");
         if(RGBA == "RGBA") {}
         if(RGBA == "R") {
             for (auto i = 0; i < image->verts.size(); i++) {
@@ -1089,7 +1373,7 @@ struct CompExtractRGBA : INode {
         set_output("image", image);
     }
 };
-ZENDEFNODE(CompExtractRGBA, {
+ZENDEFNODE(CompExtractChanel, {
     {
         {"image"},
         {"enum RGBA R G B A", "RGBA", "RGBA"},
@@ -1099,6 +1383,226 @@ ZENDEFNODE(CompExtractRGBA, {
     },
     {},
     { "comp" },
+});
+
+struct CompExtractChanel_RGBA : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto RGBA = get_input2<bool>("RGBA");
+        auto R = get_input2<bool>("R");
+        auto G = get_input2<bool>("G");
+        auto B = get_input2<bool>("B");
+        auto A = get_input2<bool>("A");
+
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+//alpha=1
+        auto A11 = std::make_shared<PrimitiveObject>();
+        A11->verts.resize(image->size());
+        A11->userData().set2("isImage", 1);
+        A11->userData().set2("w", w);
+        A11->userData().set2("h", h);
+        A11->verts.add_attr<float>("alpha");
+        for(int i = 0;i < image->size();i++){
+            A11->verts.attr<float>("alpha")[i] = 1;
+        }
+        std::vector<float> &Alpha = A11->verts.attr<float>("alpha");
+
+//alpha=0
+        auto A1 = std::make_shared<PrimitiveObject>();
+        A1->verts.resize(image->size());
+        A1->userData().set2("isImage", 1);
+        A1->userData().set2("w", w);
+        A1->userData().set2("h", h);
+        A1->verts.add_attr<float>("alpha");
+        for(int i = 0;i < image->size();i++){
+            A1->verts.attr<float>("alpha")[i] = 0;
+        }
+
+        if(image->verts.has_attr("alpha")){
+            A1->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
+            Alpha = image->verts.attr<float>("alpha");
+        }
+
+        float R1=0,G1=0,B1=0;
+
+        if(RGBA) {
+            A1 = image;
+        }
+        if(R && !RGBA) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                R1 = image->verts[i][0];
+                A1->verts[i][0] = (Alpha[i] == 1) ? R1 : 0;
+                A1->verts.attr<float>("alpha")[i] = ((R1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
+            }
+        }
+
+        if(G && !RGBA) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                G1 = image->verts[i][1];
+                A1->verts[i][1] = (Alpha[i] == 1) ? G1 : 0;
+                A1->verts.attr<float>("alpha")[i] = ((G1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
+            }
+        }
+        if(B && !RGBA) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                B1 = image->verts[i][2];
+                A1->verts[i][2] = (Alpha[i] == 1) ? B1 : 0;
+                A1->verts.attr<float>("alpha")[i] = ((B1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
+            }
+        }
+        if(A && (!R&&!G&&!B) && !RGBA) {
+            if (image->verts.has_attr("alpha")) {
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float A = Alpha[i];
+                    A1->verts[i][0] = A;
+                    A1->verts[i][1] = A;
+                    A1->verts[i][2] = A;
+                    A1->verts.attr<float>("alpha")[i] = image->verts.attr<float>("alpha")[i];
+                }
+            }
+        }
+        set_output("image", A1);
+    }
+};
+ZENDEFNODE(CompExtractChanel_RGBA, {
+    {
+        {"image"},
+        {"bool", "RGBA", "0"},
+        {"bool", "R", "0"},
+        {"bool", "G", "0"},
+        {"bool", "B", "0"},
+        {"bool", "A", "0"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+struct ImageInRange : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        vec3i lb = get_input2<vec3i>("low_threshold");
+        vec3i ub = get_input2<vec3i>("high_threshold");
+
+        auto A11 = std::make_shared<PrimitiveObject>();
+        A11->verts.resize(image->size());
+        A11->userData().set2("isImage", 1);
+        A11->userData().set2("w", w);
+        A11->userData().set2("h", h);
+        A11->verts.add_attr<float>("alpha");
+        for(int i = 0;i < image->size();i++){
+            A11->verts.attr<float>("alpha")[i] = 1;
+        }
+        std::vector<float> &Alpha = A11->verts.attr<float>("alpha");
+        if(image->verts.has_attr("alpha")){
+            A11->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
+        }
+
+        if(mode == "Transparent"){
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
+                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
+                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
+                        A11->verts[i * w + j] = image->verts[i * w + j];
+                    }
+                    else{
+
+                        A11->verts.attr<float>("alpha")[i * w + j] = 0;
+                    }
+                }
+            }
+        }
+        else if(mode == "Black"){
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
+                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
+                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
+                        A11->verts[i * w + j] = image->verts[i * w + j];
+                    }
+                    else{
+                        A11->verts[i * w + j] = {0,0,0};
+                    }
+                }
+            }
+        }
+        else if(mode == "White"){
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
+                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
+                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
+                        A11->verts[i * w + j] = image->verts[i * w + j];
+                    }
+                    else{
+                        A11->verts[i * w + j] = {1,1,1};
+                    }
+                }
+            }
+        }
+        set_output("image", A11);
+    }
+};
+ZENDEFNODE(ImageInRange, {
+    {
+        {"image"},
+        {"enum Transparent Black White", "mode", "Transparent"},
+        {"vec3i", "high_threshold", "255,255,255"},
+        {"vec3i", "low_threshold", "0,0,0"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
+
+struct ImageInRange_blackED : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        vec3i lb = get_input2<vec3i>("low_threshold");
+        vec3i ub = get_input2<vec3i>("high_threshold");
+
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
+                ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
+                ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
+                    image->verts[i * w + j] = {1,1,1};
+                }
+                else{
+                    image->verts[i * w + j] = {0,0,0};
+                }
+            }
+        }
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageInRange_blackED, {
+    {
+        {"image"},
+        {"vec3i", "high_threshold", "255,255,255"},
+        {"vec3i", "low_threshold", "0,0,0"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "deprecated" },
 });
 
 /* 导入地形网格的属性，可能会有多个属性。它将地形的属性转换为图
@@ -1353,51 +1857,6 @@ ZENDEFNODE(CompNormalMap, {
     { "comp" },
 });
 
-//struct CompNormalMapCV : INode {
-//    virtual void apply() override {
-//        auto image = get_input<PrimitiveObject>("image");
-//        auto &ud = image->userData();
-//        int w = ud.get2<int>("w");
-//        int h = ud.get2<int>("h");
-//        cv::Mat imagecvin(h, w, CV_32F);
-//        cv::Mat imagecvout(h, w, CV_32FC3);
-//        cv::Mat sobelx(h, w, CV_32F);
-//        cv::Mat sobely(h, w, CV_32F);
-//        cv::Mat M1 = cv::Mat::ones(imagecvin.size(), CV_32F);
-//        float l= 0;
-//        for (int i = 0; i < h; i++) {
-//            for (int j = 0; j < w; j++) {
-//                int idx = i * w + j;
-//                vec3f rgb = image->verts[idx];
-//                l = std::min(std::min(image->verts[idx + 1][0] , image->verts[idx + 1][1]), image->verts[idx + 1][2]);
-//                imagecvin.at<float>(i, j) = image->verts[idx][0];
-//            }
-//        }
-//        cv::Sobel(imagecvin, sobelx, CV_32F, 1, 0);
-//        cv::Sobel(imagecvin, sobely, CV_32F, 0, 1);
-//        std::vector<cv::Mat> channels = {-sobelx, -sobely, M1};
-//        cv::merge(channels,imagecvout);
-//        normalize(imagecvout, imagecvout);
-//
-//        for (int i = 0; i < h; i++) {
-//            for (int j = 0; j < w; j++) {
-//                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-//                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-//            }
-//        }
-//        set_output("image", image);
-//    }
-//};
-//ZENDEFNODE(CompNormalMapCV, {
-//    {
-//        {"image"}
-//    },
-//    {
-//        {"image"}
-//    },
-//    {},
-//    { "comp" },
-//});
 
 struct ImageEditGray : INode {
     void apply() override {
@@ -1454,7 +1913,59 @@ ZENDEFNODE(ImageGetSize, {
     {"comp"},
 });
 
-struct Imagetile: INode {
+static std::shared_ptr<PrimitiveObject> normal_tiling(std::shared_ptr<PrimitiveObject> &image1, std::shared_ptr<PrimitiveObject> &image2, int rows, int cols) {
+    int width = image1->userData().get2<int>("w");
+    int height = image1->userData().get2<int>("h");
+    int new_width = width * cols;
+    int new_height = height * rows;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            int x = j * width;
+            int y = i * height;
+            for (int h = 0; h < height; h++) {
+                for (int w = 0; w < width; w++) {
+                    int index1 = (y + h) * new_width + (x + w);
+                    int index2 = h * width + w;
+                    image2->verts[index1] = image1->verts[index2];
+                }
+            }
+        }
+    }
+    return image2;
+}
+
+static std::shared_ptr<PrimitiveObject> mirror_tiling(std::shared_ptr<PrimitiveObject> &image1, std::shared_ptr<PrimitiveObject> &image2, int rows, int cols) {
+    int width = image1->userData().get2<int>("w");
+    int height = image1->userData().get2<int>("h");
+    int new_width = width * cols;
+    int new_height = height * rows;
+    // 复制像素并进行镜像平铺
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            int x = j * width;
+            int y = i * height;
+            for (int h = 0; h < height; h++) {
+                for (int w = 0; w < width; w++) {
+                    if(i%2 == 0 && j%2 == 0){
+                        image2->verts[(y + h) * width * cols + (x + w)] = image1->verts[h * width + w];
+                    }
+                    if(i%2 == 0 && j%2 == 1){
+                        image2->verts[((y + h) * width * cols + x + (width - w - 1))] = image1->verts[(h * width + w)];
+                    }
+                    if(i%2 == 1 && j%2 == 0){
+                        image2->verts[(y + (height - h - 1)) * width * cols + w + x] = image1->verts[(h * width + w)];
+                    }
+                    if(i%2 == 1 && j%2 == 1){
+                        image2->verts[(y + (height - h - 1)) * width * cols + (width - w - 1) + x] = image1->verts[(h * width + w)];
+                    }
+                }
+            }
+        }
+    }
+    return image2;
+}
+
+struct ImageTile: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
         auto tilemode = get_input2<std::string>("tilemode");
@@ -1479,7 +1990,7 @@ struct Imagetile: INode {
         set_output("image", image2);
     }
 };
-ZENDEFNODE(Imagetile, {
+ZENDEFNODE(ImageTile, {
     {
         {"image"},
         {"enum normal mirror", "tilemode", "normal"},
@@ -1492,6 +2003,471 @@ ZENDEFNODE(Imagetile, {
     {},
     {"comp"},
 });
+
+// ImageDilate函数实现
+void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector<int>>& kernel,int iterations) {
+    // 获取图像和卷积核的形状
+    int image_height = image->userData().get2<int>("h");
+    int image_width = image->userData().get2<int>("w");
+    int kernel_height = kernel.size();
+    int kernel_width = kernel[0].size();
+
+    // 计算卷积核的中心点
+    int center_y = kernel_height / 2;
+    int center_x = kernel_width / 2;
+
+    // 对每个像素进行膨胀操作,迭代
+    for (int iter = 0; iter < iterations; iter++){
+        auto imagetmp = std::make_shared<PrimitiveObject>();
+        imagetmp->resize(image_width * image_height);
+        imagetmp->userData().set2("isImage", 1);
+        imagetmp->userData().set2("w", image_width);
+        imagetmp->userData().set2("h", image_height);
+        for (int y = center_y; y < image_height - center_y; y++) {
+            for (int x = center_x; x < image_width - center_x; x++) {
+                float maxValue0 = 0;
+                float maxValue1 = 0;
+                float maxValue2 = 0;
+                // 遍历卷积核中的像素
+                for (int ky = 0; ky < kernel_height; ky++) {
+                    for (int kx = 0; kx < kernel_width; kx++) {
+                        // 计算卷积核中的像素在原始图像中的位置
+                        int image_y = y - center_y + ky;
+                        int image_x = x - center_x + kx;
+                        // 如果该位置是前景像素，则更新最大值
+                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][0] > maxValue0) {
+                            maxValue0 = image->verts[image_y * image_width + image_x][0];
+                        }
+                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][1] > maxValue1) {
+                            maxValue1 = image->verts[image_y * image_width + image_x][1];
+                        }
+                        if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][2] > maxValue2) {
+                            maxValue2 = image->verts[image_y * image_width + image_x][2];
+                        }
+                    }
+                }
+                // 将最大值赋值给输出图像
+                imagetmp->verts[y * image_width + x]= {maxValue0,maxValue1,maxValue2};
+            }
+        }
+        image = imagetmp;
+    }
+}
+
+struct ImageDilateED: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        int rows = get_input2<int>("kernel_rows");
+        int cols = get_input2<int>("kernel_cols");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        std::vector<std::vector<int>> kernelvec(rows,std::vector<int>(cols,1));
+        imagedilate(image,kernelvec,strength);
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageDilateED, {
+    {
+        {"image"},
+        {"int", "strength", "1"},
+        {"int", "kernel_rows", "3"},
+        {"int", "kernel_cols", "3"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+// 图像膨胀函数
+void dilateImage(cv::Mat& src, cv::Mat& dst, int kheight, int kwidth, int Strength) {
+    // 定义结构元素
+    cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(kheight, kwidth));
+    // 进行膨胀操作
+    cv::dilate(src, dst, kernel, cv::Point(-1, -1), Strength);
+}
+struct ImageDilate: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        int kheight = get_input2<int>("kernel_height");
+        int kwidth = get_input2<int>("kernel_width");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        cv::Mat imagecvin(h, w, CV_32FC3);
+        cv::Mat imagecvout(h, w, CV_32FC3);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        const int kernelSize = 3;
+        dilateImage(imagecvin, imagecvout, kheight, kwidth, strength);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageDilate, {
+    {
+        {"image"},
+        {"float", "strength", "1"},
+        {"int", "kernel_width", "3"},
+        {"int", "kernel_height", "3"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
+void imageerode(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector<int>>& kernel, int iterations) {
+    int image_height = image->userData().get2<int>("h");
+    int image_width = image->userData().get2<int>("w");
+    int kernel_height = kernel.size();
+    int kernel_width = kernel[0].size();
+
+    for (int iter = 0; iter < iterations; iter++) {
+        auto imagetmp = std::make_shared<PrimitiveObject>();
+        imagetmp->resize(image_width * image_height);
+        imagetmp->userData().set2("isImage", 1);
+        imagetmp->userData().set2("w", image_width);
+        imagetmp->userData().set2("h", image_height);
+
+        for (int i = 0; i < image_height; i++) {
+            for (int j = 0; j < image_width; j++) {
+                float minVal0 = 1;
+                float minVal1 = 1;
+                float minVal2 = 1;
+                for (int x = 0; x < kernel_width; x++) {
+                    for (int y = 0; y < kernel_height; y++) {
+                        int posX = j + x - kernel_width / 2;
+                        int posY = i + y - kernel_height / 2;
+                        if (posX >= 0 && posX < image_width && posY >= 0 && posY < image_height) {
+                            if (kernel[x][y] == 1) {
+                                minVal0 = std::min(minVal0, image->verts[posY * image_width + posX][0]);
+                                minVal1 = std::min(minVal1, image->verts[posY * image_width + posX][1]);
+                                minVal2 = std::min(minVal2, image->verts[posY * image_width + posX][2]);
+                            }
+                        }
+                    }
+                }
+                imagetmp->verts[i * image_width + j]= {minVal0,minVal1,minVal2};
+            }
+        }
+        image = imagetmp;
+    }
+}
+
+struct ImageErodeED: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        int rows = get_input2<int>("kernel_rows");
+        int cols = get_input2<int>("kernel_cols");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        std::vector<std::vector<int>> kernelvec(rows,std::vector<int>(cols,1));
+        imageerode(image, kernelvec, strength);
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageErodeED, {
+    {
+        {"image"},
+        {"int", "strength", "1"},
+        {"int", "kernel_rows", "3"},
+        {"int", "kernel_cols", "3"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+struct ImageErode: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int strength = get_input2<int>("strength");
+        int kheight = get_input2<int>("kernel_height");
+        int kwidth = get_input2<int>("kernel_width");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        cv::Mat imagecvin(h, w, CV_32FC3);
+        cv::Mat imagecvout(h, w, CV_32FC3);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                vec3f rgb = image->verts[i * w + j];
+                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * kheight + 1, 2 * kwidth + 1),
+                                                cv::Point(1, 1));
+        cv::erode(imagecvin, imagecvout, kernel,cv::Point(-1, -1), strength);
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageErode, {
+    {
+        {"image"},
+        {"int", "strength", "1"},
+        {"int", "kernel_width", "3"},
+        {"int", "kernel_height", "3"},
+
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+//TODO
+struct ImageDilateByColor: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        auto Hue = get_input2<std::string>("Hue");
+        float Hi = get_input2<float>("H");
+        float H = 0, S = 0, V = 0;
+        const int kernelSize = 3;
+        int kernel[kernelSize][kernelSize] = {
+                {1, 1, 1},
+                {1, 1, 1},
+                {1, 1, 1}
+        };
+        if(Hue == "edit"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = Hi;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "red"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 0;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "orange"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 30;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "yellow"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 60;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "green"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 120;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "cyan"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 180;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "blue"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 240;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        if(Hue == "purple"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                float G = image->verts[i][1];
+                float B = image->verts[i][2];
+                zeno::RGBtoHSV(R, G, B, H, S, V);
+                H = 300;
+
+                zeno::HSVtoRGB(H, S, V, R, G, B);
+                image->verts[i][0] = R;
+                image->verts[i][1] = G;
+                image->verts[i][2] = B;
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageDilateByColor, {
+    {
+        {"image"},
+        {"enum default edit red orange yellow green cyan blue purple ", "Hue", "edit"},
+        {"float", "Hue", "0"},
+        {"float", "distance", "30"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"deprecated"},
+});
+
+struct WriteImageFile : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto path = get_input2<std::string>("path");
+        auto type = get_input2<std::string>("type");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        int n = 4;
+        auto A = std::make_shared<PrimitiveObject>();
+        A->verts.resize(image->size());
+        A->verts.add_attr<float>("alpha");
+        for(int i = 0;i < w * h;i++){
+            A->verts.attr<float>("alpha")[i] = 1.0;
+        }
+        std::vector<float> &alpha = A->verts.attr<float>("alpha");
+        if(image->verts.has_attr("alpha")){
+            n = 4;
+            alpha = image->verts.attr<float>("alpha");
+        }
+        if(has_input("mask")) {
+            n = 4;
+            auto mask = get_input2<PrimitiveObject>("mask");
+            image->verts.add_attr<float>("alpha");
+            image->verts.attr<float>("alpha") = mask->verts.attr<float>("alpha");
+            alpha = mask->verts.attr<float>("alpha");
+        }
+        std::vector<char> data(w * h * n);
+        constexpr float gamma = 2.2f;
+        for (int i = 0; i < w * h; i++) {
+            data[n * i + 0] = (char)(255 * powf(image->verts[i][0], 1.0f / gamma));
+            data[n * i + 1] = (char)(255 * powf(image->verts[i][1], 1.0f / gamma));
+            data[n * i + 2] = (char)(255 * powf(image->verts[i][2], 1.0f / gamma));
+            data[n * i + 3] = (char)(255 * powf(alpha[i] , 1.0f / gamma));
+        }
+        if(type == "jpg"){
+            path += ".jpg";
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_jpg(native_path.c_str(), w, h, n, data.data(), 100);
+        }
+        else if(type == "png"){
+            path += ".png";
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_png(native_path.c_str(), w, h, n, data.data(),0);
+        }
+//        else if(type == "exr"){
+//            std::vector<float> data2(w * h * n);
+//            constexpr float gamma = 2.2f;
+//            for (int i = 0; i < w * h; i++) {
+//                data2[n * i + 0] = 255 * powf(image->verts[i][0], 1.0f / gamma);
+//                data2[n * i + 1] = 255 * powf(image->verts[i][1], 1.0f / gamma);
+//                data2[n * i + 2] = 255 * powf(image->verts[i][2], 1.0f / gamma);
+//                data2[n * i + 3] = 255 * powf(alpha[i], 1.0f / gamma);
+//            }
+//
+//            const char* err;
+//            path += ".exr";
+//            std::string native_path = std::filesystem::u8path(path).string();
+//            stbi_flip_vertically_on_write(1);
+//            int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
+//
+//            if (ret != TINYEXR_SUCCESS) {
+//                printf("Error saving EXR file: %s\n", err);
+//                FreeEXRErrorMessage(err); // free memory allocated by the library
+//                return;
+//            }
+//        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(WriteImageFile, {
+    {
+        {"image"},
+        {"writepath", "path"},
+        {"enum jpg png exr", "type", "jpg"},
+        {"mask"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
 }
 }
+
 

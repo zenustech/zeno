@@ -172,11 +172,13 @@ ZENO_API void GlobalComm::clearState() {
 }
 
 ZENO_API void GlobalComm::frameCache(std::string const &path, int gcmax) {
+    std::lock_guard lck(m_mtx);
     cacheFramePath = path;
     maxCachedFrames = gcmax;
 }
 
-ZENO_API void GlobalComm::frameRange(int beg, int end) {
+ZENO_API void GlobalComm::initFrameRange(int beg, int end) {
+    std::lock_guard lck(m_mtx);
     beginFrameNumber = beg;
     endFrameNumber = end;
 }
@@ -186,9 +188,19 @@ ZENO_API int GlobalComm::maxPlayFrames() {
     return m_maxPlayFrame + beginFrameNumber; // m_frames.size();
 }
 
-ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
-    int frameIdx = frameid - beginFrameNumber;
+ZENO_API int GlobalComm::numOfFinishedFrame() {
     std::lock_guard lck(m_mtx);
+    return m_maxPlayFrame;
+}
+
+ZENO_API std::pair<int, int> GlobalComm::frameRange() {
+    std::lock_guard lck(m_mtx);
+    return std::pair<int, int>(beginFrameNumber, endFrameNumber);
+}
+
+ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
+    std::lock_guard lck(m_mtx);
+    int frameIdx = frameid - beginFrameNumber;
     if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
     if (maxCachedFrames != 0) {
@@ -222,6 +234,7 @@ ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
 }
 
 ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
+    std::lock_guard lck(m_mtx);
     frameid -= beginFrameNumber;
     if (frameid < 0 || frameid >= m_frames.size())
         return false;

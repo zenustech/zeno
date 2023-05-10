@@ -57,6 +57,7 @@ public:
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;
+    DisplayWidget* getOptixWidget() const;
     ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
     std::shared_ptr<ZCacheMgr> cacheMgr() const;
@@ -141,7 +142,7 @@ public:
 signals:
     void recentFilesChanged(const QObject *sender);
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
-    void visFrameUpdated(int);
+    void visFrameUpdated(bool bGLView, int frameid);
     void alwaysModeChanged(bool bAlways);
     void dockSeparatorMoving(bool bMoving);
 
@@ -174,6 +175,7 @@ public slots:
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
     void onDockSeparatorMoving(bool bMoving);
+    void onZenovisFrameUpdate(bool bGLView, int frameid);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -209,7 +211,7 @@ private:
     void initShortCut();
     void updateShortCut(QStringList keys);
     void shortCutDlg();
-
+    void killOptix();
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

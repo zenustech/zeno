@@ -72,7 +72,10 @@ void ZLayoutBackground::paint(QPainter* painter, const QStyleOptionGraphicsItem*
     if (m_borderWidth > 0)
     {
         painter->setRenderHint(QPainter::Antialiasing, true);
-        QPainterPath path = shape();
+        QRectF r = boundingRect();
+        r.adjust(-m_borderWidth/2, 0, m_borderWidth/2, m_borderWidth/2);
+        QPainterPath path;
+        path.addRect(r);
         QPen pen(m_clrBorder, m_borderWidth);
         pen.setJoinStyle(Qt::MiterJoin);
         painter->setPen(pen);

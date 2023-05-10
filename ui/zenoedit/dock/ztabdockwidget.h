@@ -13,7 +13,7 @@ class ZDockTabWidget;   //may confuse with ZTabDockWidget...
 enum PANEL_TYPE
 {
     PANEL_EMPTY,
-    PANEL_VIEW,
+    PANEL_GL_VIEW,
     PANEL_EDITOR,
     PANEL_NODE_PARAMS,
     PANEL_NODE_DATA,
@@ -41,7 +41,7 @@ public:
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);
     void onUpdateViewport(const QString& action);
-    void newFrameUpdate();
+    void updateLights();
     void testCleanupGL();
 
     static PANEL_TYPE title2Type(const QString &title);
@@ -49,7 +49,7 @@ public:
 public slots:
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
-    void onFinished();
+    void onRunFinished();
     void onAddTab(PANEL_TYPE type);
     void onMenuActionTriggered(QAction* pAction, bool bTriggered);
 
