@@ -1375,6 +1375,10 @@
         <source>%1%</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Recording frame %1</source>
+        <translation>正在录制第%1帧...</translation>
+    </message>
 </context>
 <context>
     <name>ZRecordVideoDlg</name>

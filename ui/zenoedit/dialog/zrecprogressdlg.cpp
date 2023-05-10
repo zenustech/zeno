@@ -34,7 +34,7 @@ void ZRecordProgressDlg::onFrameFinished(int frame)
     if (frame == m_info.frameRange.second)
         dProgress = 1;
     m_ui->progressBar->setFormat(tr("%1%").arg(QString::number(dProgress * 100, 'f', 1)));
-    m_ui->lblFrameHint->setText(QString("Recording frame %1").arg(QString::number(frame)));
+    m_ui->lblFrameHint->setText(tr("Recording frame %1").arg(QString::number(frame)));
     m_ui->progressBar->setValue(frame);
 }
 
