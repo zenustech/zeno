@@ -35,14 +35,6 @@ void OptixWorker::updateFrame()
     emit renderIterate(m_renderImg);
 }
 
-void OptixWorker::setupRecording(VideoRecInfo recInfo)
-{
-    m_bRecording = true;
-    m_recordInfo = recInfo;
-    m_pTimer->stop();
-    emit sig_recordInfoSetuped();
-}
-
 void OptixWorker::onPlayToggled(bool bToggled)
 {
     //todo: priority.
@@ -60,28 +52,6 @@ void OptixWorker::onFrameSwitched(int frame)
 void OptixWorker::cancelRecording()
 {
     m_bRecording = false;
-}
-
-void OptixWorker::onFrameRunFinished(int frame)
-{
-    if (m_bRecording)
-    {
-        recordFrame_impl(m_recordInfo, frame);
-        if (frame == m_recordInfo.frameRange.second)
-        {
-            emit sig_recordFinished();
-            m_bRecording = false;
-            m_pTimer->start(16);
-        }
-    }
-    else
-    {
-        if (!m_zenoVis->isPlaying())
-        {
-            //timer will update frame automatically according to the frame setting on timeline.
-            updateFrame();
-        }
-    }
 }
 
 void OptixWorker::recordVideo(VideoRecInfo recInfo)
@@ -234,13 +204,9 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
-    connect(this, &ZOptixViewport::sig_frameRunFinished, m_worker, &OptixWorker::onFrameRunFinished);
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
-
-    connect(this, &ZOptixViewport::sig_setupRecordInfo, m_worker, &OptixWorker::setupRecording, Qt::QueuedConnection);
-    connect(m_worker, &OptixWorker::sig_recordInfoSetuped, this, &ZOptixViewport::sig_recordInfoSetuped);
 
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
@@ -298,12 +264,6 @@ void ZOptixViewport::resumeRender()
 void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 {
     emit sigRecordVideo(recInfo);
-}
-
-void ZOptixViewport::setupRecording(VideoRecInfo recInfo)
-{
-    //run with recording.
-    emit sig_setupRecordInfo(recInfo);
 }
 
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)

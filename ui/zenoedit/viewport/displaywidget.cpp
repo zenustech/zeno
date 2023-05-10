@@ -341,25 +341,6 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
 
 void DisplayWidget::onRunFinished()
 {
-    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-    ZTimeline *timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-    int frameid_ui = timeline->value();
-
-    if (m_bGLView)
-    {
-        Zenovis *pZenoVis = getZenoVis();
-        ZASSERT_EXIT(pZenoVis);
-        if (frameid_ui != pZenoVis->getCurrentFrameId()) {
-            pZenoVis->setCurrentFrameId(frameid_ui);
-            updateFrame();
-        }
-    }
-    else
-    {
-        ZASSERT_EXIT(m_optixView);
-
-    }
 }
 
 bool DisplayWidget::isOptxRendering() const
@@ -545,12 +526,6 @@ void DisplayWidget::onRecord()
     //based on timeline value directory.
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
-    ZTimeline* timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-    auto pair = timeline->fromTo();
-
-    int frameLeft = pair.first;
-    int frameRight = pair.second;
 
     ZRecordVideoDlg dlg(this);
     if (QDialog::Accepted == dlg.exec())
@@ -572,16 +547,13 @@ void DisplayWidget::onRecord()
 
         if (bRunBeforeRecord)
         {
+            //clear cached objs.
+            zeno::getSession().globalComm->clearState();
             onRun(recInfo.frameRange.first, recInfo.frameRange.second);
         }
 
         //setup signals issues.
         m_recordMgr.setRecordInfo(recInfo);
-
-        bool bRun = false;//!recInfo.bRecordAfterRun;
-
-        int recStartFrame = recInfo.frameRange.first;
-        int recEndFrame = recInfo.frameRange.second;
 
         ZRecordProgressDlg dlgProc(recInfo, this);
         connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
@@ -593,14 +565,13 @@ void DisplayWidget::onRecord()
 
         if (!m_bGLView)
         {
-            //optix recording.
+            ZASSERT_EXIT(m_optixView);
             m_optixView->recordVideo(recInfo);
         }
         else
         {
-            //normal viewport recording.
-            moveToFrame(recStartFrame);         // first, set the time frame start end.
-            mainWin->toggleTimelinePlay(true);  // and then play.
+            moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
+            mainWin->toggleTimelinePlay(true);          // and then play.
             //the recording implementation is RecordVideoMgr::onFrameDrawn.
         }
 
