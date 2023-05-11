@@ -1066,19 +1066,7 @@ void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
 {
     if (!m_pTimeline)
         return;
-
-    bool bHasOptix = getOptixWidget() != nullptr;
-    if (bHasOptix)
-    {
-        if (!bGLView)
-        {
-            m_pTimeline->onTimelineUpdate(frameid);
-        }
-    }
-    else
-    {
-        m_pTimeline->onTimelineUpdate(frameid);
-    }
+    m_pTimeline->onTimelineUpdate(frameid);
 }
 
 void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
