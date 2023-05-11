@@ -283,7 +283,7 @@ int retrieve_triangulate_mesh_intersection_list(Pol& pol,
                             auto ro = vA[(triA_coincide_idx + 1) % 3];
                             auto r = LSL_GEO::tri_ray_intersect(ro,ea,vB[0],vB[1],vB[2]);
                             if(r < (T)(1.0 + 1e-6)) {
-                                printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
+                                // printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
                                 auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
                                 intersect_buffers[offset][0] = ta_i;
                                 intersect_buffers[offset][1] = tb_i;
@@ -294,7 +294,7 @@ int retrieve_triangulate_mesh_intersection_list(Pol& pol,
                             ro = vB[(triB_coincide_idx + 1) % 3];
                             r = LSL_GEO::tri_ray_intersect(ro,eb,vA[0],vA[1],vA[2]);
                             if(r < (T)(1.0 + 1e-6)) {
-                                printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
+                                // printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
                                 auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
                                 intersect_buffers[offset][0] = ta_i;
                                 intersect_buffers[offset][1] = tb_i;
@@ -402,8 +402,8 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
 
         // if(!tris_B.hasProperty("nrm"))
         //     throw std::runtime_error("the tris_B has no \'nrm\' channel");
-        // if(!intersect_buffers.hasProperty("int_points"))
-        //     throw std::runtime_error("the input intersect_buffers has no \'int_points\' attribute");
+        if(!intersect_buffers.hasProperty("int_points"))
+            throw std::runtime_error("the input intersect_buffers has no \'int_points\' attribute");
 
 
         pol(zs::range(tris_B.size()),[
@@ -457,7 +457,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                 }
                         if(nm_topological_coincidences >= 3)
                             printf("invalid nm_topological_coincidences detected %d\n",nm_topological_coincidences);
-                        if(nm_topological_coincidences == 2){
+                        else if(nm_topological_coincidences == 2){
                             // should we neglect this sort of intersection?
                             return;
                             int triA_different_idx = -1;
@@ -490,7 +490,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                             // now the two triangles are coplanar
                             // check intersection
 
-                            printf("detected target type[0] of intersection : %d %d\n",ta_i,tb_i);
+                            // printf("detected target type[0] of intersection : %d %d\n",ta_i,tb_i);
 
                             // auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
                             // intersect_buffers[offset][0] = ta_i;
@@ -498,7 +498,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                             // intersect_types[offset] = 2;
                             return;
                         }
-                        if(nm_topological_coincidences == 1){
+                        else if(nm_topological_coincidences == 1){
                             // return;
                             int triA_coincide_idx = -1;
                             int triB_coincide_idx = -1;
@@ -516,7 +516,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
 
                             auto ro = vA[(triA_coincide_idx + 1) % 3];
                             auto r = LSL_GEO::tri_ray_intersect(ro,ea,vB[0],vB[1],vB[2]);
-                            if(r < (T)(1.0 + 1e-6)) {
+                            if(r < (T)(1.0 - 1e-6)) {
                                 printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
                                 auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
                                 intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
@@ -536,7 +536,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
 
                             ro = vB[(triB_coincide_idx + 1) % 3];
                             r = LSL_GEO::tri_ray_intersect(ro,eb,vA[0],vA[1],vA[2]);
-                            if(r < (T)(1.0 + 1e-6)) {
+                            if(r < (T)(1.0 - 1e-6)) {
                                 printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
                                 auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
                                 intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
@@ -547,7 +547,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                 // intersect_buffers.tuple(dim_c<2>,"its_edges",offset) = zs::vec<int,2>{(triB_coincide_idx + 1) % 3,-1}.reinterpret_bits(float_c);
                                 // intersect_buffers.tuple(dim_c<2>,"its_edge_types",offset) = zs::vec<int,2>{1,-1}.reinterpret_bits(float_c);
                                 intersect_buffers.tuple(dim_c<6>,"its_edge_mark",offset) = zs::vec<int,6>::uniform(0).reinterpret_bits(float_c);
-                                intersect_buffers("its_edge_mark",(triB_coincide_idx + 1) % 3 + 3,offset) = zs::reinterpret_bits<T>((int)1);
+                                intersect_buffers("its_edge_mark",((triB_coincide_idx + 1) % 3) + 3,offset) = zs::reinterpret_bits<T>((int)1);
 
                                 auto its_p0 = ro + eb * r;
                                 auto its_p1 = vB[triB_coincide_idx];
@@ -556,7 +556,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                     its_p1[0],its_p1[1],its_p1[2]};
                                 return;
                             }
-                        } else { 
+                        } else if(nm_topological_coincidences == 0){ 
  // return;
                             vec3 eas[3] = {};
                             vec3 ebs[3] = {};
@@ -566,6 +566,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                 ebs[i] = vB[(i + 1) % 3] - vB[i];
                             }
 
+
                             auto ea_indices = zs::vec<int,3>::uniform(-1);
                             auto eb_indices = zs::vec<int,3>::uniform(-1);
                             int nm_ea_its = 0;
@@ -573,47 +574,198 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                             vec3 ea_its[3] = {};
                             vec3 eb_its[3] = {};
 
+
+                            auto va01 = vA[1] - vA[0];
+                            auto va02 = vA[2] - vA[0];
+                            auto nrmA = va01.cross(va02).normalized();
+                            // if(zs::abs(nrmA.dot(nrmB)) > (T)(1 - 1e-5))
+                            //     return;
+                            // auto avg_ta_edge_length = (eas[0].norm() + eas[1].norm() + eas[2].norm()) / (T)3.0;
+                            // auto avg_tb_edge_length = (ebs[0].norm() + ebs[1].norm() + ebs[2].norm()) / (T)3.0;
+
+                            vec3 ra{};
+                            vec3 rb{};
+
                             for(int i = 0;i != 3;++i){
                                 auto r = LSL_GEO::tri_ray_intersect(vA[i],eas[i],vB[0],vB[1],vB[2]);
-                                if(r < (T)(1.0 + 1e-6)) {
+                                ra[i] = r;
+                                if(r < (T)(1.0)) {
                                     ea_indices[nm_ea_its] = i;
                                     ea_its[nm_ea_its] = vA[i] + eas[i] * r;
                                     ++nm_ea_its;
                                 }
 
                                 r = LSL_GEO::tri_ray_intersect(vB[i],ebs[i],vA[0],vA[1],vA[2]);
-                                if(r < (T)(1.0 + 1e-6)) {
+                                rb[i] = r;
+                                if(r < (T)(1.0)) {
                                     eb_indices[nm_eb_its] = i;
                                     eb_its[nm_eb_its] = vB[i] + ebs[i] * r;
                                     ++nm_eb_its;
                                 } 
                             }
 
-                            if(nm_ea_its + nm_eb_its > 2)
-                                printf("invalid number of intersections detected\n");
-
-                            if(nm_ea_its + nm_eb_its > 0) {
-                                auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
-                                intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
-
-                                intersect_buffers.tuple(dim_c<6>,"its_edge_mark",offset) = zs::vec<int,6>::uniform(0).reinterpret_bits(float_c);
-                                for(int i = 0;i != nm_ea_its;++i)
-                                    intersect_buffers("its_edge_mark",ea_indices[i],offset) = zs::reinterpret_bits<T>((int)1);
-                                for(int i = 0;i != nm_eb_its;++i)
-                                    intersect_buffers("its_edge_mark",eb_indices[i] + 3,offset) = zs::reinterpret_bits<T>((int)1);
-
-                                vec3 its_ps[2];
-                                for(int i = 0;i != nm_ea_its;++i)
-                                    its_ps[i] = ea_its[i];
-                                for(int i = 0;i != nm_eb_its;++i)
-                                    its_ps[nm_ea_its + i] = eb_its[i];
-                                intersect_buffers.tuple(dim_c<6>,"int_points",offset) = zs::vec<T,6>{
-                                    its_ps[0][0],its_ps[0][1],its_ps[0][2],
-                                    its_ps[1][0],its_ps[1][1],its_ps[1][2]};
-
-                                intersect_buffers("type",offset) = zs::reinterpret_bits<T>((int)0);
-                                return;                                
+                            if(nm_eb_its + nm_ea_its > 2) {
+                                printf("more than 2 intersection detected\n");
                             }
+// #if 0
+
+                            auto ori_nm_ea_its = nm_ea_its;
+                            auto ori_nm_eb_its = nm_eb_its;
+                            if(nm_ea_its + nm_eb_its == 1) {
+                                // return;
+                                if(nm_ea_its == 1) {
+                                    auto ea_idx = ea_indices[0];
+                                    auto v0 = vA[ea_idx];
+                                    auto v1 = vA[(ea_idx + 1)  % 3];
+                                    // auto avg_tb_edge_length = (ebs[0].norm() + ebs[1].norm() + ebs[2].norm()) / (T)3.0;
+
+                                    // check if the end point of edge lies inside the the counter facet A, if so, push all the neighbored tris of  the end point 
+                                    T d0 = (T)0;
+                                    T d1 = (T)0;
+                                    T b0 = (T)0;
+                                    T b1 = (T)0;
+                                    d0 = LSL_GEO::pointTriangleDistance(vB[0],vB[1],vB[2],v0,b0);
+                                    d1 = LSL_GEO::pointTriangleDistance(vB[0],vB[1],vB[2],v1,b1);
+                                    if(b0 < (T)(1 + 1e-6) && b1 < (T)(1 + 1e-6))
+                                        return;
+                                    d0 = b0 < (T)(1 + 1e-6) ? d0 : std::numeric_limits<T>::infinity();
+                                    d1 = b1 < (T)(1 + 1e-6) ? d1 : std::numeric_limits<T>::infinity();
+                                    // if(d0 < 0 || d1 < 0)
+                                    //     printf("wrong zs::abs impl\n");
+                                    if(d0 < d1) {
+                                        nm_ea_its++;
+                                        ea_indices[1] = (ea_idx - 1 + 3) % 3;
+                                        ea_its[1] = ea_its[0];
+                                    }else {
+                                        nm_ea_its++;
+                                        ea_indices[1] = (ea_idx + 1) % 3;
+                                        ea_its[1] = ea_its[0];
+                                    }
+                                    // if(zs::abs((v0 - vB[0]).dot(nrmB)) < avg_tb_edge_length * 1e-4) {
+                                    //     nm_ea_its++;
+                                    //     ea_indices[1] = (ea_idx - 1 + 3) % 3;
+                                    //     ea_its[1] = ea_its[0];
+                                    // }else if(zs::abs((v1 - vB[0]).dot(nrmB)) < avg_tb_edge_length * 1e-4) {
+                                    //     nm_ea_its++;
+                                    //     ea_indices[1] = (ea_idx + 1) % 3;
+                                    //     ea_its[1] = ea_its[0];
+                                    // }
+                                    // else {
+                                    //     printf("losing one potential collision\n");
+                                    //     // return;
+                                    // }
+                                }
+                                if(nm_eb_its == 1) {
+                                    auto eb_idx = eb_indices[0];
+                                    auto v0 = vB[eb_idx];
+                                    auto v1 = vB[(eb_idx + 1)  % 3];
+
+                                    T d0 = (T)0;
+                                    T d1 = (T)0;
+                                    T b0 = (T)0;
+                                    T b1 = (T)0;
+                                    d0 = LSL_GEO::pointTriangleDistance(vA[0],vA[1],vA[2],v0,b0);
+                                    d1 = LSL_GEO::pointTriangleDistance(vA[0],vA[1],vA[2],v1,b1);
+                                    if(b0 < (T)(1 + 1e-6) && b1 < (T)(1 + 1e-6))
+                                        return;
+                                    d0 = b0 < (T)(1 + 1e-6) ? d0 : std::numeric_limits<T>::infinity();
+                                    d1 = b1 < (T)(1 + 1e-6) ? d1 : std::numeric_limits<T>::infinity();
+
+                                    // if(d0 < 0 || d1 < 0)
+                                    //     printf("wrong zs::abs impl\n");
+                                    if(d0 < d1) {
+                                        nm_eb_its++;
+                                        eb_indices[1] = (eb_idx - 1 + 3) % 3;
+                                        eb_its[1] = eb_its[0];
+                                    }else {
+                                        nm_eb_its++;
+                                        eb_indices[1] = (eb_idx + 1) % 3;
+                                        eb_its[1] = eb_its[0];
+                                    }
+                                    // auto avg_ta_edge_length = (eas[0].norm() + eas[1].norm() + eas[2].norm()) / (T)3.0;
+
+                                    // if(zs::abs((v0 - vB[0]).dot(nrmA)) < avg_ta_edge_length * 1e-4) {
+                                    //     nm_eb_its++;
+                                    //     eb_indices[1] = (eb_idx - 1 + 3) % 3;
+                                    //     eb_its[1] = eb_its[0];
+                                    // }
+                                    // else if(zs::abs((v1 - vB[0]).dot(nrmA)) < avg_ta_edge_length * 1e-4) {
+                                    //     nm_eb_its++;
+                                    //     eb_indices[1] = (eb_idx + 1) % 3;
+                                    //     eb_its[1] = eb_its[0];
+                                    // }
+                                    // else {
+                                    //     printf("losing one potential collision\n");
+                                    //     // return;
+                                    // }
+                                }
+                            }
+// #else
+                            if(nm_ea_its + nm_eb_its == 0) {
+                                // check wheter vertex of A intersect with B 
+                                auto avg_ta_edge_length = (eas[0].norm() + eas[1].norm() + eas[2].norm()) / (T)3.0;
+                                auto avg_tb_edge_length = (ebs[0].norm() + ebs[1].norm() + ebs[2].norm()) / (T)3.0;
+                                for(int i = 0;i != 3;++i) {
+                                    T barySum = (T)0;
+                                    auto distance = LSL_GEO::pointTriangleDistance(vB[0],vB[1],vB[2],vA[i],barySum);
+                                    if(barySum < (T)(1 + 1e-6) && distance < avg_tb_edge_length * 1e-5) {
+                                        nm_ea_its = 2;
+                                        ea_indices[0] = i;
+                                        ea_indices[1] = (i + 2) % 3;
+                                        ea_its[0] = ea_its[1] = vA[i];
+                                        break;
+                                    }
+
+                                    distance = LSL_GEO::pointTriangleDistance(vA[0],vA[1],vA[2],vB[i],barySum);
+                                    if(barySum < (T)(1 + 1e-6) && distance < avg_ta_edge_length * 1e-5) {
+                                        nm_eb_its = 2;
+                                        eb_indices[0] = i;
+                                        eb_indices[1] = (i + 2) % 3;
+                                        eb_its[0] = eb_its[1] = vB[i];
+                                        break;
+                                    }
+                                }
+                                if(nm_ea_its + nm_eb_its > 0) {
+                                    printf("find point collision : %d\n",nm_ea_its + nm_eb_its);
+                                }
+                            }
+// #endif
+                            if(nm_ea_its + nm_eb_its == 0)
+                                return;
+
+                            if(nm_ea_its + nm_eb_its != 2){
+                                printf("only one collision edge impossible reaching here, check the code :[%d %d] -> [%d %d]!!!\nvA : %f %f %f %f %f %f %f %f %f\nvB : %f %f %f %f %f %f %f %f %f\n",
+                                    ori_nm_ea_its,ori_nm_eb_its,nm_ea_its,nm_eb_its,
+                                    (float)vA[0][0],(float)vA[0][1],(float)vA[0][2],
+                                    (float)vA[1][0],(float)vA[1][1],(float)vA[1][2],
+                                    (float)vA[2][0],(float)vA[2][1],(float)vA[2][2],
+                                    (float)vB[0][0],(float)vB[0][1],(float)vB[0][2],
+                                    (float)vB[1][0],(float)vB[1][1],(float)vB[1][2],
+                                    (float)vB[2][0],(float)vB[2][1],(float)vB[2][2]);
+                            }
+
+                            // if(nm_ea_its + nm_eb_its == 2) {
+                            auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                            intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
+
+                            intersect_buffers.tuple(dim_c<6>,"its_edge_mark",offset) = zs::vec<int,6>::uniform(0).reinterpret_bits(float_c);
+                            for(int i = 0;i != nm_ea_its;++i)
+                                intersect_buffers("its_edge_mark",ea_indices[i],offset) = zs::reinterpret_bits<T>((int)1);
+                            for(int i = 0;i != nm_eb_its;++i)
+                                intersect_buffers("its_edge_mark",eb_indices[i] + 3,offset) = zs::reinterpret_bits<T>((int)1);
+
+                            vec3 its_ps[2];
+                            for(int i = 0;i != nm_ea_its;++i)
+                                its_ps[i] = ea_its[i];
+                            for(int i = 0;i != nm_eb_its;++i)
+                                its_ps[nm_ea_its + i] = eb_its[i];
+                            intersect_buffers.tuple(dim_c<6>,"int_points",offset) = zs::vec<T,6>{
+                                its_ps[0][0],its_ps[0][1],its_ps[0][2],
+                                its_ps[1][0],its_ps[1][1],its_ps[1][2]};
+
+                            intersect_buffers("type",offset) = zs::reinterpret_bits<T>((int)0);
+                            return;                                
+                            // }
                         }
                     }
                     else{
@@ -800,6 +952,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
         using edge_topo_type = zs::Vector<zs::vec<int,2>>;
         using inst_buffer_type = zs::Vector<zs::vec<int,2>>;
         using inst_class_type = zs::Vector<int>;
+        using vec3 = zs::vec<T,3>;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
         constexpr auto exec_tag = wrapv<space>{};
 
@@ -831,7 +984,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                 auto ta = pair[0];
                 auto tb = pair[1];
                 // auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
-                // printf("pair[%d] : [%d %d]\n",type,pair[0],pair[1]);
+                printf("pair[%d] : [%d %d]\n",type,pair[0],pair[1]);
                 if(auto setNo = cftab.insert(zs::vec<int,2>{ta,tb});setNo != table_vec2i_type::sentinel_v)
                     cfbuffer[setNo] = isi;
 
@@ -845,6 +998,8 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
             cftab = proxy<space>(cftab),
             cfbuffer = proxy<space>(cfbuffer),
             tris = proxy<space>({},tris),
+            verts = proxy<space>({},verts),
+            xtag,
             incidentItsTab = proxy<space>(incidentItsTab),
             halfedges = proxy<space>({},halfedges)] ZS_LAMBDA(int isi) mutable {
                 auto tpair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
@@ -966,8 +1121,110 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     isi1 = tmp;
                                 }
                                 incidentItsTab.insert(zs::vec<int,2>{isi0,isi1});                                
-                            }else
-                                printf("invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\n",nItsIdx,t0,t1,tpair[0],tpair[1]);
+                            }else{
+                                // auto tri_t0 = tris.pack(dim_c<3>,"inds",t0,int_c);
+                                // auto tri_t1 = tris.pack(dim_c<3>,"inds",t1,int_c);
+                                // auto tri_tp0 = tris.pack(dim_c<3>,"inds",tpair[0],int_c);
+                                // auto tri_tp1 = tris.pack(dim_c<3>,"inds",tpair[1],int_c);
+                                // printf("invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
+                                //     nItsIdx,t0,t1,tpair[0],tpair[1],
+                                //     tri_t0[0],tri_t0[1],tri_t0[2],
+                                //     tri_t1[0],tri_t1[1],tri_t1[2],
+                                //     tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                //     tri_tp1[0],tri_tp1[1],tri_tp1[2]);
+                                auto tri_t0 = tris.pack(dim_c<3>,"inds",t0,int_c);
+                                auto tri_t1 = tris.pack(dim_c<3>,"inds",t1,int_c);
+                                auto tri_tp0 = tris.pack(dim_c<3>,"inds",tpair[0],int_c);
+                                auto tri_tp1 = tris.pack(dim_c<3>,"inds",tpair[1],int_c);
+
+                                // testing if t0 and t1 actually intersect
+                                int nm_topological_coincidences = 0;
+                                for(int j = 0;j != 3;++j)
+                                    for(int k = 0;k != 3;++k)
+                                        if(tri_t0[j] == tri_t1[k])
+                                            ++nm_topological_coincidences;
+                                
+                                if(nm_topological_coincidences == 0) {
+                                    vec3 v0[3] = {};
+                                    vec3 v1[3] = {};
+                                    vec3 e0s[3] = {};
+                                    vec3 e1s[3] = {};
+                                    for(int i = 0;i != 3;++i) {
+                                        v0[i] = verts.pack(dim_c<3>,xtag,tri_t0[i]);
+                                        v1[i] = verts.pack(dim_c<3>,xtag,tri_t1[i]);
+                                    }
+
+                                    for(int i = 0;i != 3;++i) {
+                                        e0s[i] = v0[(i + 1) % 3] - v0[i];
+                                        e1s[i] = v1[(i + 1) % 3] - v1[i];
+                                    }
+
+                                    auto nrm0 = (v0[1] - v0[0]).cross(v0[2] - v0[0]).normalized();
+                                    auto nrm1 = (v1[1] - v1[0]).cross(v1[2] - v1[0]).normalized();
+
+                                    if(zs::abs(nrm0.dot(nrm1)) > (T)(1 - 1e-5)) {
+                                        printf("due to normal check invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnormal_check : %f\n",
+                                            nItsIdx,t0,t1,tpair[0],tpair[1],
+                                            tri_t0[0],tri_t0[1],tri_t0[2],
+                                            tri_t1[0],tri_t1[1],tri_t1[2],
+                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                            tri_tp1[0],tri_tp1[1],tri_tp1[2],(float)zs::abs(nrm0.dot(nrm1)));
+                                        return;
+                                    }
+                                    // return;
+
+                                    auto e0_indices = zs::vec<int,3>::uniform(-1);
+                                    auto e1_indices = zs::vec<int,3>::uniform(-1);
+                                    int nm_e0_its = 0;
+                                    int nm_e1_its = 0;
+                                    vec3 e0_its[3] = {};
+                                    vec3 e1_its[3] = {};
+
+                                    for(int j = 0;j != 3;++j){
+                                        auto r = LSL_GEO::tri_ray_intersect(v0[j],e0s[j],v1[0],v1[1],v1[2]);
+                                        if(r < (T)(1.0 - 1e-6)) {
+                                            e0_indices[nm_e0_its] = j;
+                                            e0_its[nm_e0_its] = v0[j] + e0s[j] * r;
+                                            ++nm_e0_its;
+                                        }
+
+                                        r = LSL_GEO::tri_ray_intersect(v1[j],e1s[j],v0[0],v0[1],v0[2]);
+                                        if(r < (T)(1.0 - 1e-6)) {
+                                            e1_indices[nm_e1_its] = j;
+                                            e1_its[nm_e1_its] = v1[i] + e1s[j] * r;
+                                            ++nm_e1_its;
+                                        } 
+                                    }
+
+                                    if(nm_e0_its + nm_e1_its == 1){
+                                        printf("point geometrical coincidence invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
+                                        nItsIdx,t0,t1,tpair[0],tpair[1],
+                                        tri_t0[0],tri_t0[1],tri_t0[2],
+                                        tri_t1[0],tri_t1[1],tri_t1[2],
+                                        tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                        tri_tp1[0],tri_tp1[1],tri_tp1[2]); 
+                                        return;
+                                    }else {
+                                        printf("impossible reaching here invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnm_its : %d\n",
+                                            nItsIdx,t0,t1,tpair[0],tpair[1],
+                                            tri_t0[0],tri_t0[1],tri_t0[2],
+                                            tri_t1[0],tri_t1[1],tri_t1[2],
+                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                            tri_tp1[0],tri_tp1[1],tri_tp1[2],nm_e0_its + nm_e1_its); 
+                                        return;
+                                    }
+                                    
+
+                                }else {
+                                    printf("due to topological coincidence invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
+                                        nItsIdx,t0,t1,tpair[0],tpair[1],
+                                        tri_t0[0],tri_t0[1],tri_t0[2],
+                                        tri_t1[0],tri_t1[1],tri_t1[2],
+                                        tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                        tri_tp1[0],tri_tp1[1],tri_tp1[2]); 
+                                    return;  
+                                }
+                            }
                         }
                     }
                     for(int i = 3;i != 6;++i){
@@ -978,6 +1235,9 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                 he_idx = zs::reinterpret_bits<int>(halfedges("next_he",he_idx));
                             auto opposite_he_idx = zs::reinterpret_bits<int>(halfedges("opposite_he",he_idx));
                             auto tn = zs::reinterpret_bits<int>(halfedges("to_face",opposite_he_idx));
+
+                            // auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
+                            // auto inter_b_edge = zs::vec<int,2>{tri_B[(i + 1) % ],tri_B[i]};
 
                             auto t0 = ta;
                             auto t1 = tn;
@@ -997,8 +1257,125 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     isi1 = tmp;
                                 }
                                 incidentItsTab.insert(zs::vec<int,2>{isi0,isi1});                                
-                            }else
-                                printf("invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\n",nItsIdx,t0,t1,tpair[0],tpair[1]);                
+                            }else{
+                                auto tri_t0 = tris.pack(dim_c<3>,"inds",t0,int_c);
+                                auto tri_t1 = tris.pack(dim_c<3>,"inds",t1,int_c);
+                                auto tri_tp0 = tris.pack(dim_c<3>,"inds",tpair[0],int_c);
+                                auto tri_tp1 = tris.pack(dim_c<3>,"inds",tpair[1],int_c);
+
+                                // testing if t0 and t1 actually intersect
+                                int nm_topological_coincidences = 0;
+                                for(int j = 0;j != 3;++j)
+                                    for(int k = 0;k != 3;++k)
+                                        if(tri_t0[j] == tri_t1[k])
+                                            ++nm_topological_coincidences;
+                                
+                                if(nm_topological_coincidences == 0) {
+                                    vec3 v0[3] = {};
+                                    vec3 v1[3] = {};
+                                    vec3 e0s[3] = {};
+                                    vec3 e1s[3] = {};
+                                    for(int i = 0;i != 3;++i) {
+                                        v0[i] = verts.pack(dim_c<3>,xtag,tri_t0[i]);
+                                        v1[i] = verts.pack(dim_c<3>,xtag,tri_t1[i]);
+                                    }
+
+                                    for(int i = 0;i != 3;++i) {
+                                        e0s[i] = v0[(i + 1) % 3] - v0[i];
+                                        e1s[i] = v1[(i + 1) % 3] - v1[i];
+                                    }
+
+                                    auto nrm0 = (v0[1] - v0[0]).cross(v0[2] - v0[0]).normalized();
+                                    auto nrm1 = (v1[1] - v1[0]).cross(v1[2] - v1[0]).normalized();
+
+                                    if(zs::abs(nrm0.dot(nrm1)) > (T)(1 - 1e-5)) {
+                                        printf("due to normal check invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnormal_check : %f\n",
+                                            nItsIdx,t0,t1,tpair[0],tpair[1],
+                                            tri_t0[0],tri_t0[1],tri_t0[2],
+                                            tri_t1[0],tri_t1[1],tri_t1[2],
+                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                            tri_tp1[0],tri_tp1[1],tri_tp1[2],(float)nrm0.dot(nrm1));
+                                        return;
+                                    }
+                                    // return;
+
+                                    auto e0_indices = zs::vec<int,3>::uniform(-1);
+                                    auto e1_indices = zs::vec<int,3>::uniform(-1);
+                                    int nm_e0_its = 0;
+                                    int nm_e1_its = 0;
+                                    vec3 e0_its[3] = {};
+                                    vec3 e1_its[3] = {};
+
+                                    for(int j = 0;j != 3;++j){
+                                        auto r = LSL_GEO::tri_ray_intersect(v0[j],e0s[j],v1[0],v1[1],v1[2]);
+                                        if(r < (T)(1.0)) {
+                                            e0_indices[nm_e0_its] = j;
+                                            e0_its[nm_e0_its] = v0[j] + e0s[j] * r;
+                                            ++nm_e0_its;
+                                        }
+
+                                        r = LSL_GEO::tri_ray_intersect(v1[j],e1s[j],v0[0],v0[1],v0[2]);
+                                        if(r < (T)(1.0)) {
+                                            e1_indices[nm_e1_its] = j;
+                                            e1_its[nm_e1_its] = v1[i] + e1s[j] * r;
+                                            ++nm_e1_its;
+                                        } 
+                                    }
+
+                                    if(nm_e0_its + nm_e1_its == 1){
+                                        printf("point geometrical coincidence invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nv0 : %f %f %f %f %f %f %f %f %f\nv1: %f %f %f %f %f %f %f %f %f\n",
+                                            nItsIdx,t0,t1,tpair[0],tpair[1],
+                                            tri_t0[0],tri_t0[1],tri_t0[2],
+                                            tri_t1[0],tri_t1[1],tri_t1[2],
+                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                            tri_tp1[0],tri_tp1[1],tri_tp1[2],
+                                            (float)v0[0][0],(float)v0[0][1],(float)v0[0][2],
+                                            (float)v0[1][0],(float)v0[1][1],(float)v0[1][2],
+                                            (float)v0[2][0],(float)v0[2][1],(float)v0[2][2],
+                                            (float)v1[0][0],(float)v1[0][1],(float)v1[0][2],
+                                            (float)v1[1][0],(float)v1[1][1],(float)v1[1][2],
+                                            (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]); 
+                                        return;
+                                    }else{
+                                        // printf("impossible reaching here invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnm_ints : %d\nv0 : %f %f %f %f %f %f %f %f %f\nv1: %f %f %f %f %f %f %f %f %f\n",
+                                        //     nItsIdx,t0,t1,tpair[0],tpair[1],
+                                        //     tri_t0[0],tri_t0[1],tri_t0[2],
+                                        //     tri_t1[0],tri_t1[1],tri_t1[2],
+                                        //     tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                        //     tri_tp1[0],tri_tp1[1],tri_tp1[2],nm_e0_its + nm_e1_its,
+                                        //     (float)v0[0][0],(float)v0[0][1],(float)v0[0][2],
+                                        //     (float)v0[1][0],(float)v0[1][1],(float)v0[1][2],
+                                        //     (float)v0[2][0],(float)v0[2][1],(float)v0[2][2],
+                                        //     (float)v1[0][0],(float)v1[0][1],(float)v1[0][2],
+                                        //     (float)v1[1][0],(float)v1[1][1],(float)v1[1][2],
+                                        //     (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]);  
+                                        printf("impossible reaching here invalid_3 nItsIdx[%d] \nv0 : %f %f %f %f %f %f %f %f %f\nv1: %f %f %f %f %f %f %f %f %f\n",
+                                            nItsIdx,
+                                            // t0,t1,tpair[0],tpair[1],
+                                            // tri_t0[0],tri_t0[1],tri_t0[2],
+                                            // tri_t1[0],tri_t1[1],tri_t1[2],
+                                            // tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                            // tri_tp1[0],tri_tp1[1],tri_tp1[2],nm_e0_its + nm_e1_its,
+                                            (float)v0[0][0],(float)v0[0][1],(float)v0[0][2],
+                                            (float)v0[1][0],(float)v0[1][1],(float)v0[1][2],
+                                            (float)v0[2][0],(float)v0[2][1],(float)v0[2][2],
+                                            (float)v1[0][0],(float)v1[0][1],(float)v1[0][2],
+                                            (float)v1[1][0],(float)v1[1][1],(float)v1[1][2],
+                                            (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]);  
+                                        return;
+                                    }
+                                    
+
+                                }else {
+                                    printf("due to topological coincidence invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
+                                        nItsIdx,t0,t1,tpair[0],tpair[1],
+                                        tri_t0[0],tri_t0[1],tri_t0[2],
+                                        tri_t1[0],tri_t1[1],tri_t1[2],
+                                        tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                        tri_tp1[0],tri_tp1[1],tri_tp1[2]);   
+                                    return;
+                                }
+                            }           
                         }
                     }
                 }
