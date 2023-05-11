@@ -106,61 +106,49 @@ void ZenoImagePanel::setPrim(std::string primid) {
         if (auto obj = dynamic_cast<zeno::PrimitiveObject *>(ptr)) {
             int width = ud.get2<int>("w");
             int height = ud.get2<int>("h");
-
             if (image_view) {
                 QImage img(width, height, QImage::Format_RGB32);
                 int gridSize = 50;
-                std::vector<zeno::vec3f> rgb;
                 if (obj->verts.has_attr("alpha")) {
+                    for (auto i = 0; i < obj->verts.size(); i++) {
+                        int h = i / width;
+                        int w = i % width;
+                        auto c = obj->verts[i];
+                        c = zeno::pow(c, 1.0f / 2.2f);
+                        int r = glm::clamp(int(c[0] * 255.99), 0, 255);
+                        int g = glm::clamp(int(c[1] * 255.99), 0, 255);
+                        int b = glm::clamp(int(c[2] * 255.99), 0, 255);
+
+                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                    }
                     for (int i = 0; i < height; ++i) {
                         for (int j = 0; j < width; ++j) {
                             if(obj->verts.attr<float>("alpha")[i * width + j]==0){
                                 if ((i / gridSize) % 2 == (j / gridSize) % 2) {
-                                    rgb.push_back(zeno::vec3f(220,220,220));
+                                    img.setPixel(j, height-1-i, qRgb(18, 20, 22)); // 黑色格子
                                 } else {
-                                    rgb.push_back(zeno::vec3f(255, 255, 255));
-//                                    img.setPixel(j, height-1-i, qRgba(255, 255, 255, 255)); // 白色格子
+                                    img.setPixel(j, height-1-i, qRgb(45, 50, 57)); // 白色格子
                                 }
-                            }
-                            else if(obj->verts.attr<float>("alpha")[i * width + j]!=0 && obj->verts.attr<float>("alpha")[i * width + j]!=1){
-                                auto a1 = obj->verts.attr<float>("alpha")[i * width + j];
-                                auto c = obj->verts[i * width + j];
-                                if ((i / gridSize) % 2 == (j / gridSize) % 2) {
-                                    c = zeno::pow(c, 1.0f / 2.2f);
-                                    rgb.push_back(zeno::vec3f(glm::clamp(int(c[0] * 255.99 * a1 + 220 * (1-a1)), 0, 255),
-                                                              glm::clamp(int(c[1] * 255.99 * a1 + 220 * (1-a1)), 0, 255),
-                                                              glm::clamp(int(c[2] * 255.99 * a1 + 220 * (1-a1)), 0, 255)));
-                                } else {
-                                    c = zeno::pow(c, 1.0f / 2.2f);
-                                    rgb.push_back(zeno::vec3f(glm::clamp(int(c[0] * 255.99 * a1 + 255 * (1-a1)), 0, 255),
-                                                              glm::clamp(int(c[1] * 255.99 * a1 + 255 * (1-a1)), 0, 255),
-                                                              glm::clamp(int(c[2] * 255.99 * a1 + 255 * (1-a1)), 0, 255)));
-                                }
-                            }
-                            else{
-                                auto c = obj->verts[i * width + j];
-                                c = zeno::pow(c, 1.0f / 2.2f);
-                                rgb.push_back(zeno::vec3f(glm::clamp(int(c[0] * 255.99), 0, 255),
-                                                          glm::clamp(int(c[1] * 255.99), 0, 255),
-                                                          glm::clamp(int(c[2] * 255.99), 0, 255)));
                             }
                         }
                     }
                 }
                 else{
                     for (auto i = 0; i < obj->verts.size(); i++) {
+                        int h = i / width;
+                        int w = i % width;
                         auto c = obj->verts[i];
                         c = zeno::pow(c, 1.0f / 2.2f);
-                        rgb.push_back(zeno::vec3f(glm::clamp(int(c[0] * 255.99), 0, 255),
-                                                  glm::clamp(int(c[1] * 255.99), 0, 255),
-                                                  glm::clamp(int(c[2] * 255.99), 0, 255)));
+                        int r = glm::clamp(int(c[0] * 255.99), 0, 255);
+                        int g = glm::clamp(int(c[1] * 255.99), 0, 255);
+                        int b = glm::clamp(int(c[2] * 255.99), 0, 255);
+
+                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
                     }
                 }
-                for (int i = 0; i < height; ++i) {
-                    for (int j = 0; j < width; ++j) {
-                        img.setPixel(j, height - 1 - i, qRgba(rgb[i * width + j][0], rgb[i * width + j][1], rgb[i * width + j][2] ,255));
-                    }
-                }
+
+
+
                 image_view->setImage(img);
             }
             QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
