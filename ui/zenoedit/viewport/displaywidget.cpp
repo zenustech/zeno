@@ -64,7 +64,8 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     }
     //connect(m_view, SIGNAL(sig_Draw()), this, SLOT(onRun()));
 
-    //it seems there is no need to use timer, because optix is seperated from GL and update by a thread.
+    //this timer is used to slide view when play button was toggled.
+    //todo: should be moved into the `ViewportWidget`.
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 }
@@ -184,7 +185,12 @@ void DisplayWidget::onPlayClicked(bool bChecked)
 {
     if (m_bGLView)
     {
-        if (bChecked)
+        ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        bool bHasOptix = mainWin->getOptixWidget() != nullptr;
+
+        //optix case: update by optix signal, rather than this timer.
+        if (bChecked && !bHasOptix)
         {
             m_pTimer->start(m_sliderFeq);
         }
@@ -217,8 +223,13 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     {
         if (isPlaying())
         {
-            //restore the timer, because it will be stopped by signal of new frame.
-            m_pTimer->start(m_sliderFeq);
+            //if there is optix view, then the play of glview should be driven by optix signal.
+            bool bHasOptix = mainWin->getOptixWidget() != nullptr;
+            if (!bHasOptix)
+            {
+                //restore the timer, because it will be stopped by signal of new frame.
+                m_pTimer->start(m_sliderFeq);
+            }
         }
         int frame = zeno::getSession().globalComm->maxPlayFrames() - 1;
         frame = std::max(frame, 0);

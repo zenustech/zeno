@@ -19,6 +19,7 @@ signals:
     void sig_recordFinished();
     void sig_frameRecordFinished(int frame);
     void sig_recordCanceled();
+    void sig_playFrameRendered(int);
 
 public slots:
     void stop();

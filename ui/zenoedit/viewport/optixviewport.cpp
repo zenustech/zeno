@@ -17,6 +17,7 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
 {
     m_pTimer = new QTimer(this);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+    connect(m_zenoVis, SIGNAL(framePlayDrawn(int)), this, SIGNAL(sig_playFrameRendered(int)));
 }
 
 void OptixWorker::updateFrame()
@@ -174,12 +175,6 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         //    emit mainWin->visObjectsUpdated(this, frameid);
     });
 
-    connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
-        auto mainWin = zenoApp->getMainWindow();
-        if (mainWin)
-            emit mainWin->visFrameUpdated(false, frameid);
-    }, Qt::BlockingQueuedConnection);
-
     //fake GL
     m_zenovis->initializeGL();
     m_zenovis->setCurrentFrameId(0);    //correct frame automatically.
@@ -207,6 +202,11 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
+    connect(m_worker, &OptixWorker::sig_playFrameRendered, this, [=](int frameid) {
+        auto mainWin = zenoApp->getMainWindow();
+        if (mainWin)
+            mainWin->onOptixPlayFrameUpdate(frameid);
+    }, Qt::BlockingQueuedConnection);
 
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
