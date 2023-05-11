@@ -15,10 +15,13 @@
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/optixviewport.h"
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include <zeno/utils/log.h>
 #include <zeno/utils/envconfig.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/core/Session.h>
@@ -132,7 +135,6 @@ void ZenoMainWindow::initWindowProperty()
         updateNativeWinTitle(title);
     });
     connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
-    connect(this, &ZenoMainWindow::visFrameUpdated, this, &ZenoMainWindow::onZenovisFrameUpdate);
 }
 
 void ZenoMainWindow::updateNativeWinTitle(const QString& title)
@@ -681,6 +683,18 @@ DisplayWidget *ZenoMainWindow::getOptixWidget() const
     return nullptr;
 }
 
+QVector<DisplayWidget*> ZenoMainWindow::glViewports() const
+{
+    QVector<DisplayWidget*> glViews;
+    auto views = viewports();
+    for (auto view : views)
+    {
+        if (view->isGLViewport())
+            glViews.append(view);
+    }
+    return glViews;
+}
+
 QVector<DisplayWidget*> ZenoMainWindow::viewports() const
 {
     QVector<DisplayWidget*> views;
@@ -802,7 +816,34 @@ void ZenoMainWindow::updateViewport(const QString& action)
         view->updateFrame(action);
     }
     if (action == "finishFrame")
+    {
         updateLightList();
+        bool bPlayed = m_pTimeline->isPlayToggled();
+        if (!bPlayed)
+        {
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int ui_frame = m_pTimeline->value();
+            if (ui_frame == endFrame)
+            {
+                for (DisplayWidget *view : views)
+                {
+                    if (view->isGLViewport())
+                    {
+                        Zenovis* pZenovis = view->getZenoVis();
+                        ZASSERT_EXIT(pZenovis);
+                        pZenovis->setCurrentFrameId(ui_frame);
+                    }
+                    else
+                    {
+                        ZOptixViewport* pOptix = view->optixViewport();
+                        ZASSERT_EXIT(pOptix);
+                        emit pOptix->sig_switchTimeFrame(ui_frame);
+                    }
+                    view->updateFrame();
+                }
+            }
+        }
+    }
 }
 
 ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
@@ -824,7 +865,7 @@ void ZenoMainWindow::onRunFinished()
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto dock : docks2)
     {
-        dock->onFinished();
+        dock->onRunFinished();
     }
 }
 
@@ -1032,22 +1073,41 @@ void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
     QMainWindow::mouseReleaseEvent(event);
 }
 
-void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
+void ZenoMainWindow::onOptixPlayFrameUpdate(int frameid)
 {
-    if (!m_pTimeline)
-        return;
-
-    bool bHasOptix = getOptixWidget() != nullptr;
-    if (bHasOptix)
+    QVector<DisplayWidget*> glViews = glViewports();
+    if (glViews.isEmpty())
     {
-        if (!bGLView)
-        {
-            m_pTimeline->onTimelineUpdate(frameid);
-        }
+        //no gl viewport need to update, so update timeline value directly.
+        updateTimelineSlider(frameid);
     }
     else
     {
-        m_pTimeline->onTimelineUpdate(frameid);
+        for (auto view : glViews)
+        {
+            Zenovis *pZenovis = view->getZenoVis();
+            ZASSERT_EXIT(pZenovis);
+            view->updateFrame();
+        }
+    }
+}
+
+void ZenoMainWindow::onGLPlayFrameUpdate(int frameid)
+{
+    updateTimelineSlider(frameid);
+}
+
+void ZenoMainWindow::updateTimelineSlider(int frameid)
+{
+    if (!m_pTimeline)
+        return;
+    m_pTimeline->onTimelineUpdate(frameid);
+
+    //stop play when the frame have reached to the end frame.
+    auto &globalComm = zeno::getSession().globalComm;
+    if (globalComm->endFrameNumber == frameid)
+    {
+        toggleTimelinePlay(false);
     }
 }
 

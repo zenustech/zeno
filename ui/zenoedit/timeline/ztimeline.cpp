@@ -282,6 +282,11 @@ int ZTimeline::value() const
     return m_ui->timeliner->value();
 }
 
+bool ZTimeline::isPlayToggled() const
+{
+    return m_ui->btnPlay->isChecked();
+}
+
 void ZTimeline::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);

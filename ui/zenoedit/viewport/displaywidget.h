@@ -45,7 +45,7 @@ public slots:
     void onKill();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
-    void onFinished();
+    void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
@@ -61,7 +61,7 @@ private:
     ViewportWidget* m_glView;
     ZOptixViewport* m_optixView;
     CameraKeyframeWidget* m_camera_keyframe;
-    QTimer* m_pTimer;
+    QTimer* m_pTimer;       //actually this timer is only applied on glviewport.
     RecordVideoMgr m_recordMgr;
     bool m_bRecordRun;
     const bool m_bGLView;

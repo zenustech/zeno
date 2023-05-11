@@ -20,6 +20,7 @@ public:
     void initFromTo(int from, int to);
     void resetSlider();
     int value() const;
+    bool isPlayToggled() const;
 
 protected:
     void paintEvent(QPaintEvent* event) override;
