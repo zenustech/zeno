@@ -406,7 +406,7 @@ struct ZSSolveShallowWaterMomentum : INode {
             i += halo / 2;
             j += halo / 2;
 
-            float u_adv, w_adv, adv_term, grad_term;
+            float u_adv, w_adv, h_f, adv_term, grad_term;
             int upwind;
 
             // update u
@@ -420,7 +420,8 @@ struct ZSSolveShallowWaterMomentum : INode {
             upwind = w_adv < 0 ? 1 : -1;
             adv_term += w_adv * scheme::HJ_WENO3(u_old[idx(i, j - upwind)], u_old[idx(i, j)], u_old[idx(i, j + upwind)],
                                                  u_old[idx(i, j + 2 * upwind)], w_adv, dx);
-            grad_term = gravity * 0.5f * (h[idx(i, j)] + h[idx(i - 1, j)]) *
+            h_f = 0.5f * (h[idx(i, j)] + h[idx(i - 1, j)]);
+            grad_term = gravity * h_f / (h_f + 1e-6) *
                         ((h[idx(i, j)] - h[idx(i - 1, j)]) / dx + (B[idx(i, j)] - B[idx(i - 1, j)]) / dx);
 
             u_new[idx(i, j)] = c0 * u_n[idx(i, j)] + c1 * (u_old[idx(i, j)] - (adv_term + grad_term) * dt);
@@ -436,7 +437,8 @@ struct ZSSolveShallowWaterMomentum : INode {
             upwind = w_adv < 0 ? 1 : -1;
             adv_term += w_adv * scheme::HJ_WENO3(w_old[idx(i, j - upwind)], w_old[idx(i, j)], w_old[idx(i, j + upwind)],
                                                  w_old[idx(i, j + 2 * upwind)], w_adv, dx);
-            grad_term = gravity * 0.5f * (h[idx(i, j)] + h[idx(i, j - 1)]) *
+            h_f = 0.5f * (h[idx(i, j)] + h[idx(i, j - 1)]);
+            grad_term = gravity * h_f / (h_f + 1e-6) *
                         ((h[idx(i, j)] - h[idx(i, j - 1)]) / dx + (B[idx(i, j)] - B[idx(i, j - 1)]) / dx);
 
             w_new[idx(i, j)] = c0 * w_n[idx(i, j)] + c1 * (w_old[idx(i, j)] - (adv_term + grad_term) * dt);
