@@ -37,27 +37,7 @@ void Zenovis::paintGL()
     int frameid = session->get_curr_frameid();
     doFrameUpdate();
     session->new_frame();
-    notifyUpdate(frameid);
-}
-
-void Zenovis::notifyUpdate(int frameid)
-{
     emit frameDrawn(frameid);
-    if (m_playing)
-    {
-        int currframe = session->get_curr_frameid();
-        auto &globalComm = zeno::getSession().globalComm;
-        std::pair<int, int> frameRg = globalComm->frameRange();
-        if (currframe != frameid)
-        {
-            emit framePlayDrawn(frameid);
-        }
-        else if (globalComm->maxPlayFrames() > 0 &&
-                 globalComm->endFrameNumber == currframe)
-        {
-            emit framePlayDrawn(frameid);
-        }
-    }
 }
 
 //void Zenovis::recordGL(const std::string& record_path, int nsamples)
