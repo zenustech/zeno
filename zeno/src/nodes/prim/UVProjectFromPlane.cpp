@@ -11,10 +11,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
-
 #define TINYEXR_IMPLEMENTATION
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
+#include <opencv2/imgproc.hpp>
+#include "stb_image_write.h"
+#include <iostream>
+#include <vector>
 
 static const float eps = 0.0001f;
 
@@ -369,6 +372,121 @@ ZENDEFNODE(ReadImageFile, {
     },
     {
         {"PrimitiveObject", "image"},
+    },
+    {},
+    {"comp"},
+});
+
+struct WriteImageFile : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto path = get_input2<std::string>("path");
+        auto type = get_input2<std::string>("type");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        int n = 4;
+        auto A = std::make_shared<PrimitiveObject>();
+        A->verts.resize(image->size());
+        A->verts.add_attr<float>("alpha");
+        for(int i = 0;i < w * h;i++){
+            A->verts.attr<float>("alpha")[i] = 1.0;
+        }
+        std::vector<float> &alpha = A->verts.attr<float>("alpha");
+        if(image->verts.has_attr("alpha")){
+            n = 4;
+            alpha = image->verts.attr<float>("alpha");
+        }
+        if(has_input("mask")) {
+            n = 4;
+            auto mask = get_input2<PrimitiveObject>("mask");
+            image->verts.add_attr<float>("alpha");
+            image->verts.attr<float>("alpha") = mask->verts.attr<float>("alpha");
+            alpha = mask->verts.attr<float>("alpha");
+        }
+        std::vector<char> data(w * h * n);
+        constexpr float gamma = 2.2f;
+        for (int i = 0; i < w * h; i++) {
+            data[n * i + 0] = (char)(255 * powf(image->verts[i][0], 1.0f / gamma));
+            data[n * i + 1] = (char)(255 * powf(image->verts[i][1], 1.0f / gamma));
+            data[n * i + 2] = (char)(255 * powf(image->verts[i][2], 1.0f / gamma));
+            data[n * i + 3] = (char)(255 * powf(alpha[i] , 1.0f / gamma));
+        }
+        if(type == "jpg"){
+            path += ".jpg";
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_jpg(native_path.c_str(), w, h, n, data.data(), 100);
+        }
+        else if(type == "png"){
+            path += ".png";
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            stbi_write_png(native_path.c_str(), w, h, n, data.data(),0);
+        }
+        else if(type == "exr"){
+            std::vector<float> data2(w * h * n);
+            constexpr float gamma = 2.2f;
+            for (int i = 0; i < w * h; i++) {
+                data2[n * i + 0] = image->verts[i][0];
+                data2[n * i + 1] = image->verts[i][1];
+                data2[n * i + 2] = image->verts[i][2];
+                data2[n * i + 3] = alpha[i];
+            }
+
+            // Create EXR header
+            EXRHeader header;
+            InitEXRHeader(&header);
+
+            // Set image width, height, and number of channels
+            header.num_channels = n;
+
+            // Create EXR image
+            EXRImage exrImage;
+            InitEXRImage(&exrImage);
+
+            // Set image data
+            exrImage.num_channels = n;
+            exrImage.width = w;
+            exrImage.height = h;
+            exrImage.images = reinterpret_cast<unsigned char**>(&data2[0]);
+
+            // Set image channel names (optional)
+            std::vector<std::string> channelNames = {"R", "G", "B", "A"};
+            header.channels = new EXRChannelInfo[n];
+            for (int i = 0; i < n; ++i) {
+                strncpy(header.channels[i].name, channelNames[i].c_str(), 255);
+                header.channels[i].name[strlen(channelNames[i].c_str())] = '\0';
+                header.channels[i].pixel_type = TINYEXR_PIXELTYPE_FLOAT;
+            }
+
+            const char* err;
+            path += ".exr";
+            std::string native_path = std::filesystem::u8path(path).string();
+            stbi_flip_vertically_on_write(1);
+            int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
+
+            if (ret != TINYEXR_SUCCESS) {
+                zeno::log_error("Error saving EXR file: %s\n", err);
+                FreeEXRErrorMessage(err); // free memory allocated by the library
+                return;
+            }
+            else{
+                zeno::log_info("EXR file saved successfully.");
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(WriteImageFile, {
+    {
+        {"image"},
+        {"writepath", "path"},
+        {"enum png jpg exr", "type", "png"},
+        {"mask"},
+    },
+    {
+        {"image"},
     },
     {},
     {"comp"},
