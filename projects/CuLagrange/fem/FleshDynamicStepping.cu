@@ -359,14 +359,14 @@ struct FleshDynamicStepping : INode {
                         //         (float)binder_weakness_param,
                         //         (float)alpha);
 
-                        if(isnan(cH.norm())) {
-                            printf("nan CH detected at Binder : %d from inside %d and ceps = \n",ti,from_inside,(float)ceps);
-                            printf("cp : \n%f %f %f\n%f %f %f\n%f %f %f\n%f %f %f\n",
-                                (float)cp[0][0],(float)cp[0][1],(float)cp[0][2],
-                                (float)cp[1][0],(float)cp[1][1],(float)cp[1][2],
-                                (float)cp[2][0],(float)cp[2][1],(float)cp[2][2],
-                                (float)cp[3][0],(float)cp[3][1],(float)cp[3][2]);
-                        }
+                        // if(isnan(cH.norm())) {
+                        //     printf("nan CH detected at Binder : %d from inside %d and ceps = \n",ti,from_inside,(float)ceps);
+                        //     printf("cp : \n%f %f %f\n%f %f %f\n%f %f %f\n%f %f %f\n",
+                        //         (float)cp[0][0],(float)cp[0][1],(float)cp[0][2],
+                        //         (float)cp[1][0],(float)cp[1][1],(float)cp[1][2],
+                        //         (float)cp[2][0],(float)cp[2][1],(float)cp[2][2],
+                        //         (float)cp[3][0],(float)cp[3][1],(float)cp[3][2]);
+                        // }
 
                         for(int i = 3;i != 12;++i){
                             int d0 = i % 3;
@@ -1186,10 +1186,13 @@ struct FleshDynamicStepping : INode {
             throw std::runtime_error("the input zsparticles has no surface lines");
         if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) 
             throw std::runtime_error("the input zsparticles has no surface points");
+        if(!zsparticles->hasAuxData(ZenoParticles::s_surfHalfEdgeTag))
+            throw std::runtime_error("the input zsparticles has no half edge structures");
 
         auto& tris  = (*zsparticles)[ZenoParticles::s_surfTriTag];
         auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
         auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
+        const auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
 
         auto muscle_id_tag = get_input2<std::string>("muscle_id_tag");
 
@@ -1283,7 +1286,8 @@ struct FleshDynamicStepping : INode {
 
         dtiles_t surf_tris_buffer{tris.get_allocator(),{
             {"inds",3},
-            {"nrm",3}
+            {"nrm",3},
+            {"he_inds",1}
         },tris.size()};
 
         dtiles_t surf_verts_buffer{points.get_allocator(),{
@@ -1292,9 +1296,17 @@ struct FleshDynamicStepping : INode {
         },points.size()};
         TILEVEC_OPS::copy(cudaPol,points,"inds",surf_verts_buffer,"inds");
         TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
+        TILEVEC_OPS::copy(cudaPol,tris,"he_inds",surf_tris_buffer,"he_inds");
         reorder_topology(cudaPol,points,surf_tris_buffer);
         zs::Vector<int> nodal_colors{surf_verts_buffer.get_allocator(),surf_verts_buffer.size()};
-        zs::Vector<zs::vec<int,2>> instBuffer{surf_verts_buffer.get_allocator(),surf_verts_buffer.size() * 8};
+        // zs::Vector<zs::vec<int,2>> instBuffer{surf_verts_buffer.get_allocator(),surf_verts_buffer.size() * 8};
+        dtiles_t inst_buffer_info{tris.get_allocator(),{
+            {"pair",2},
+            {"type",1},
+            {"its_edge_mark",6},
+            {"int_points",6}
+        },tris.size() * 2};
+
 
         if(has_input<ZenoParticles>("kinematic_boundary")){
             auto kinematic_boundary = get_input<ZenoParticles>("kinematic_boundary");
@@ -1779,7 +1791,7 @@ struct FleshDynamicStepping : INode {
                 COLLISION_UTILS::do_facet_point_collsion_detection_and_compute_surface_normal(
                     cudaPol,
                     vtemp,"xn",
-                    points,tris,sttemp,csPT,nm_csPT,(T)in_collisionEps,(T)out_collisionEps);
+                    points,tris,sttemp,csPT,nm_csPT,(T)in_collisionEps,(T )out_collisionEps);
                 std::cout << "nm_csPT detected : " << nm_csPT << std::endl;
 
                 match([&](auto &elasticModel) {
@@ -1806,16 +1818,17 @@ struct FleshDynamicStepping : INode {
                 //     TILEVEC_OPS::fill(cudaPol,vtemp,"k_active",(T)1.0);
 
                 topological_sample(cudaPol,points,vtemp,"xn",surf_verts_buffer);
-                auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh(cudaPol,
-                    surf_verts_buffer,"xn",surf_tris_buffer,instBuffer,nodal_colors);
-                TILEVEC_OPS::fill(cudaPol,vtemp,"gia_tag",(T)0.0);
+                auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(cudaPol,
+                    surf_verts_buffer,"xn",surf_tris_buffer,halfedges,inst_buffer_info,nodal_colors);
+                TILEVEC_OPS::fill(cudaPol,vtemp,"gia_tag",zs::reinterpret_bits<T>((int)0));
                 cudaPol(zs::range(nodal_colors.size()),[
                     nodal_colors = proxy<space>(nodal_colors),
                     vtemp = proxy<space>({},vtemp),
                     points = proxy<space>({},points)] ZS_LAMBDA(int pi) mutable {
                         auto vi = zs::reinterpret_bits<int>(points("inds",pi));
-                        if(nodal_colors[pi] == 1)
-                            vtemp("gia_tag",vi) = (T)1.0;
+                        if(nodal_colors[pi] >= 0){
+                            vtemp("gia_tag",vi) = zs::reinterpret_bits<T>(nodal_colors[pi]);
+                        }
                 });
                 match([&](auto &elasticModel) {
                     A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
@@ -1837,6 +1850,7 @@ struct FleshDynamicStepping : INode {
             // TILEVEC_OPS::fill(cudaPol,vtemp,"grad",(T)0.0); 
             TILEVEC_OPS::assemble(cudaPol,gh_buffer,"grad","inds",vtemp,"grad");
             TILEVEC_OPS::assemble(cudaPol,sttemp,"grad","inds",vtemp,"grad");
+
             #ifdef USE_SPARSE_MATRIX
             if(turn_on_self_collision)
                 TILEVEC_OPS::assemble(cudaPol,fp_buffer,"grad","inds",vtemp,"grad");

@@ -208,11 +208,12 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 return;
             }
 
-            if(verts.hasProperty("is_verted")) {
-                auto is_inverted =reinterpret_bits<int>(verts("is_inverted",vi));
-                if(is_inverted)
-                    return;
-            }
+// EDIT CANCEL INVERSION
+            // if(verts.hasProperty("is_verted")) {
+            //     auto is_inverted =reinterpret_bits<int>(verts("is_inverted",vi));
+            //     if(is_inverted)
+            //         return;
+            // }
 
             // if(verts.hasProperty("gia_tag")) {
             //     auto gia_tag = verts("gia_tag",vi);
@@ -232,14 +233,14 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
                     return;
 
+// EDIT CANCEL INVERSION
+                // if(verts.hasProperty("is_verted")) {
 
-                if(verts.hasProperty("is_verted")) {
+                //     for(int i = 0;i != 3;++i)
+                //         if(reinterpret_bits<int>(verts("is_inverted",tri[i])))
+                //             return;
 
-                    for(int i = 0;i != 3;++i)
-                        if(reinterpret_bits<int>(verts("is_inverted",tri[i])))
-                            return;
-
-                }
+                // }
 
                 // if(verts.hasProperty("gia_tag")) {
                 //     for(int i = 0;i != 3;++i)
@@ -259,38 +260,41 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 T dist = (T)0.0;
 
                 // we should also neglect over deformed facet
-                auto triRestArea = tris("area",stI);
+                // auto triRestArea = tris("area",stI);
 
-                if(triRestArea < 1e-8)
-                    return;
+                // if(triRestArea < 1e-8)
+                //     return;
 
-                auto triDeformedArea = LSL_GEO::area(
-                    verts.template pack<3>(xtag,tri[0]),
-                    verts.template pack<3>(xtag,tri[1]),
-                    verts.template pack<3>(xtag,tri[2]));
+                // auto triDeformedArea = LSL_GEO::area(
+                //     verts.template pack<3>(xtag,tri[0]),
+                //     verts.template pack<3>(xtag,tri[1]),
+                //     verts.template pack<3>(xtag,tri[2]));
 
 
-                auto areaDeform = triDeformedArea / triRestArea;
-                if(areaDeform < 1e-1)
-                    return;
+                // auto areaDeform = triDeformedArea / triRestArea;
+                // if(areaDeform < 1e-1)
+                //     return;
 
                 auto nrm = sttemp.template pack<3>("nrm",stI);
                 
                 auto seg = p - verts.template pack<3>(xtag,tri[0]);    
 
                 // evaluate the avg edge length
-                auto t0 = verts.template pack<3>(xtag,tri[0]);
-                auto t1 = verts.template pack<3>(xtag,tri[1]);
-                auto t2 = verts.template pack<3>(xtag,tri[2]);
+                // auto t0 = verts.template pack<3>(xtag,tri[0]);
+                // auto t1 = verts.template pack<3>(xtag,tri[1]);
+                // auto t2 = verts.template pack<3>(xtag,tri[2]);
+                vec3 tvs[3] = {};
+                for(int i = 0;i != 3;++i)
+                    tvs[i] = verts.template pack<3>(xtag,tri[i]);
 
-                auto e01 = (t0 - t1).norm();
-                auto e02 = (t0 - t2).norm();
-                auto e12 = (t1 - t2).norm();
+                auto e01 = (tvs[0] - tvs[1]).norm();
+                auto e02 = (tvs[0] - tvs[2]).norm();
+                auto e12 = (tvs[1] - tvs[2]).norm();
 
                 // auto avge = (e01 + e02 + e12)/(T)3.0;
 
                 T barySum = (T)1.0;
-                T distance = LSL_GEO::pointTriangleDistance(t0,t1,t2,p,barySum);
+                T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],p,barySum);
                 // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
                 // collisionEps = avge * max_ratio;
                 dist = seg.dot(nrm);
@@ -299,26 +303,39 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                     return;
 
                 if(dist < 0 && verts.hasProperty("gia_tag")) {  
-                    if(verts("gia_tag",vi) < (T)0.5)
+                    auto GIA_TAG = reinterpret_bits<int>(verts("gia_tag",vi));
+                    if(GIA_TAG == 0)
                         return;
-                    for(int i = 0;i != 3;++i)
-                        if(verts("gia_tag",tri[i]) < (T)0.5)
-                            return;
+                    
+                    // for(int i = 0;i != 3;++i)
+                    //     if(verts("gia_tag",tri[i]) < (T)0.5)
+                    //         return;
+
+                    bool is_same_ring = false;
+                    for(int i = 0;i != 3;++i){
+                        auto TGIA_TAG = reinterpret_bits<int>(verts("gia_tag",tri[i]));
+                        if((TGIA_TAG | GIA_TAG) > 0)
+                            is_same_ring = true;
+                    }
+                    if(!is_same_ring)
+                        return;
                 }
 
 
                 // if()
 
-                if(barySum > 1.01)
-                    return;
-                else {
+#if 0
+
+                if(barySum > 1.01){
+                //     return;
+                // else {
 
 
                     // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
                     //     return;
 
                     // if the triangle cell is too degenerate
-                    if(!LSL_GEO::pointProjectsInsideTriangle(t0,t1,t2,p))
+                    // if(!LSL_GEO::pointProjectsInsideTriangle(t0,t1,t2,p))
                         for(int i = 0;i != 3;++i) {
                                 auto bisector_normal = get_bisector_orient(lines,tris,setemp,"nrm",stI,i);
                                 // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
@@ -329,6 +346,34 @@ void do_facet_point_collision_detection(Pol& cudaPol,
 
                             }
                 }
+#else
+                if(barySum > 1.01) {
+                    auto ntris = tris.pack(dim_c<3>,"ff_inds",stI,int_c);
+                    vec3 bnrms[3] = {};
+                    for(int i = 0;i != 3;++i){
+                        auto nti = ntris[i];
+                        auto edge_normal = vec3::zeros();
+                        if(nti < 0)
+                            edge_normal = nrm;
+                        else{
+                            edge_normal = nrm + sttemp.pack(dim_c<3>,"nrm",nti);
+                            edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
+                        }
+                        auto e01 = tvs[(i + 1) % 3] - tvs[(i + 0) % 3];
+                        bnrms[i] = edge_normal.cross(e01).normalized();
+                    }  
+
+                    for(int i = 0;i != 3;++i) {
+                        // auto bisector_normal = get_bisector_orient(lines,tris,setemp,"nrm",stI,i);
+                        // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
+
+                        seg = p - tvs[i];
+                        if(bnrms[i].dot(seg) < 0)
+                            return;
+
+                    }
+                }
+#endif
         
                 // now the points is inside the cell
 

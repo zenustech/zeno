@@ -330,6 +330,73 @@ namespace zeno {
         return true;
     }
 
+    constexpr void elm_to_edges(const zs::vec<int,2>& single_edge,zs::vec<int,2> out_edges[1]) {
+        out_edges[0] = single_edge;
+    }
+
+    constexpr void elm_to_edges(const zs::vec<int,3>& tri,zs::vec<int,2> out_edges[3]) {
+        out_edges[0] = zs::vec<int,2>{tri[0],tri[1]};
+        out_edges[1] = zs::vec<int,2>{tri[1],tri[2]};
+        out_edges[2] = zs::vec<int,2>{tri[2],tri[0]};
+    }
+
+    constexpr void elm_to_edges(const zs::vec<int,4>& tet,zs::vec<int,2> out_edges[6]) {
+        out_edges[0] = zs::vec<int,2>{tet[0],tet[1]};
+        out_edges[1] = zs::vec<int,2>{tet[0],tet[2]};
+        out_edges[2] = zs::vec<int,2>{tet[0],tet[3]};
+        out_edges[3] = zs::vec<int,2>{tet[1],tet[2]};
+        out_edges[4] = zs::vec<int,2>{tet[1],tet[3]};
+        out_edges[5] = zs::vec<int,2>{tet[2],tet[3]};
+    }
+
+    // template<typename Pol,typename TopoTileVec,int CODIM>
+    // bool topo_to_incident_matrix(Pol& pol,
+    //     const TopoTileVec& topo,
+    //     const zs::wrapv<CODIM>& codimv,
+    //     zs::SparseMatrix<int,true>& spmat
+    // ) {
+    //     using namespace zs;
+    //     using vec2i = zs::vec<int,2>;
+    //     using vec3i = zs::vec<int,3>;
+    //     using vec4i = zs::vec<int,4>;
+
+    //     using IV = zs::vec<int,2>;
+    //     constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+    //     constexpr int NM_EDGES = CODIM * (CODIM - 1) / 2;
+
+    //     auto simplex_size = topo.getPropertySize("inds");
+    //     zs::bht<int,2,int> tab{topo.get_allocator(),topo.size() * NM_EDGES};
+    //     tab.reset(pol,true);
+    //     pol(range(topo.size()),[
+    //         topo = proxy<space>({},topo),
+    //         tab = proxy<space>(tab)] ZS_LAMBDA(int ti) mutable {
+    //             auto inds = topo.pack(dim_c<CODIM>,"inds",ti,int_c);
+    //             zs::vec<int,2> out_edges[NM_EDGES] = {};
+    //             elm_to_edges(inds,out_edges);
+
+    //             for(int i = 0;i != NM_EDGES;++i) {
+    //                 auto a = out_edges[i][0];
+    //                 auto b = out_edges[i][1];
+    //                 if(a > b){
+    //                     auto tmp = a;
+    //                     a = b;
+    //                     b = tmp;
+    //                 }
+
+    //                 tab.insert(IV{a,b});                       
+    //             }
+    //     });
+
+    //     auto nmEntries = tab.size();
+        
+    //     zs::Vector<int> is{topo.get_allocator(),nmEntries},js{topo.get_allocator(),nmEntries};
+    //     pol(zip(is,js,range(tab._activeKeys)),[] ZS_LAMBDA(int &i,int &j,const auto& ij){
+    //         i = ij[0];
+    //         j = ij[1];
+    //     });
+    //     spmat.build(pol,(int)fasBuffer.size(),(int)fasBuffer.size(),range(is),range(js),true_c);
+    // }
+
     template<typename Pol>
     int mark_disconnected_island(Pol& pol,
             const zs::Vector<zs::vec<int,2>>& topo,
@@ -431,6 +498,114 @@ namespace zeno {
         fmt::print("{} disjoint sets in total.\n",nmSets);
     }
 
+
+    template<typename Pol>
+    int mark_disconnected_island(Pol& pol,
+            const zs::SparseMatrix<int,true>& spmat,
+            zs::Vector<int>& fasBuffer) {
+        using namespace zs;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+
+        using IV = zs::vec<int,2>;
+
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+
+        if(spmat.rows() != spmat.cols()){
+            throw std::runtime_error("mark_disconnected_island : only square incident matrix is supported");
+        }
+        if(spmat.rows() != fasBuffer.size() || spmat.cols() != fasBuffer.size()){
+            throw std::runtime_error("mark_diconnnected_island : the input fasBuffer size and spmat size not match");
+        }
+
+        union_find(pol,spmat,range(fasBuffer));
+        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{fasBuffer.get_allocator(),fasBuffer.size()};        
+        pol(range(fasBuffer.size()),[
+            vtab = proxy<space>(vtab),
+            fasBuffer = proxy<space>(fasBuffer)] ZS_LAMBDA(int vi) mutable {
+                auto fa = fasBuffer[vi];
+                while(fa != fasBuffer[fa])
+                    fa = fasBuffer[fa];
+                fasBuffer[vi] = fa;
+                vtab.insert(fa);
+        });
+
+        pol(range(fasBuffer.size()),[
+            fasBuffer = proxy<space>(fasBuffer),vtab = proxy<space>(vtab)] ZS_LAMBDA(int vi) mutable {
+                auto ancestor = fasBuffer[vi];
+                auto setNo = vtab.query(ancestor);
+                fasBuffer[vi] = setNo;
+        });
+
+        auto nmSets = vtab.size();
+        return nmSets;
+    }
+
+    template<typename Pol>
+    int mark_disconnected_island(Pol& pol,
+            const zs::Vector<zs::vec<int,2>>& topo,
+            const zs::bht<int,1,int>& disable_points,
+            const zs::bht<int,2,int>& disable_lines,
+            zs::Vector<int>& fasBuffer
+    ) {
+        using namespace zs;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+
+        using IV = zs::vec<int,2>;
+
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;    
+
+        zs::bcht<IV,int,true,zs::universal_hash<IV>,16> tab{topo.get_allocator(),topo.size() * 2};
+        zs::Vector<int> is{topo.get_allocator(),0},js{topo.get_allocator(),0};
+        // bool use_disable = topo_disable_buffer.size() == fasBuffer.size();
+
+        pol(range(topo.size()),[
+            topo = proxy<space>(topo),
+            disable_points = proxy<space>(disable_points),
+            disable_lines = proxy<space>(disable_lines),
+            tab = proxy<space>(tab)] ZS_LAMBDA(int ei) mutable {
+                auto a = topo[ei][0];
+                auto b = topo[ei][1];
+
+                auto setNo = disable_points.query(a);
+                if(setNo >= 0)
+                    return;
+                setNo = disable_points.query(b);
+                if(setNo >= 0)
+                    return;
+
+                if(a < 0 || b < 0)
+                    return;
+                if(a > b){
+                    auto tmp = a;
+                    a = b;
+                    b = tmp;
+                }
+                setNo = disable_lines.query(vec2i{a,b});
+                if(setNo >= 0)
+                    return;
+
+                tab.insert(IV{a,b});                    
+        });
+
+        auto nmEntries = tab.size();
+        std::cout << "nmEntries of Topo : " << nmEntries << std::endl;
+        is.resize(nmEntries);
+        js.resize(nmEntries);
+
+        pol(zip(is,js,range(tab._activeKeys)),[] ZS_LAMBDA(int &i,int &j,const auto& ij){
+            i = ij[0];
+            j = ij[1];
+        });
+
+        zs::SparseMatrix<int,true> spmat{topo.get_allocator(),(int)fasBuffer.size(),(int)fasBuffer.size()};
+        spmat.build(pol,(int)fasBuffer.size(),(int)fasBuffer.size(),range(is),range(js),true_c);
+
+        return mark_disconnected_island(pol,spmat,fasBuffer);    
+    }
 
     template<typename Pol>
     int mark_disconnected_island(Pol& pol,
@@ -536,28 +711,30 @@ namespace zeno {
         zs::SparseMatrix<int,true> spmat{topo.get_allocator(),(int)fasBuffer.size(),(int)fasBuffer.size()};
         spmat.build(pol,(int)fasBuffer.size(),(int)fasBuffer.size(),range(is),range(js),true_c);
 
-        union_find(pol,spmat,range(fasBuffer));
-        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{fasBuffer.get_allocator(),fasBuffer.size()};        
-        pol(range(fasBuffer.size()),[
-            vtab = proxy<space>(vtab),
-            fasBuffer = proxy<space>(fasBuffer)] ZS_LAMBDA(int vi) mutable {
-                auto fa = fasBuffer[vi];
-                while(fa != fasBuffer[fa])
-                    fa = fasBuffer[fa];
-                fasBuffer[vi] = fa;
-                vtab.insert(fa);
-        });
+        return mark_disconnected_island(pol,spmat,fasBuffer);
 
-        pol(range(fasBuffer.size()),[
-            fasBuffer = proxy<space>(fasBuffer),vtab = proxy<space>(vtab)] ZS_LAMBDA(int vi) mutable {
-                auto ancestor = fasBuffer[vi];
-                auto setNo = vtab.query(ancestor);
-                fasBuffer[vi] = setNo;
-        });
+        // union_find(pol,spmat,range(fasBuffer));
+        // zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{fasBuffer.get_allocator(),fasBuffer.size()};        
+        // pol(range(fasBuffer.size()),[
+        //     vtab = proxy<space>(vtab),
+        //     fasBuffer = proxy<space>(fasBuffer)] ZS_LAMBDA(int vi) mutable {
+        //         auto fa = fasBuffer[vi];
+        //         while(fa != fasBuffer[fa])
+        //             fa = fasBuffer[fa];
+        //         fasBuffer[vi] = fa;
+        //         vtab.insert(fa);
+        // });
 
-        auto nmSets = vtab.size();
-        return nmSets;
-        fmt::print("{} disjoint sets in total.\n",nmSets);
+        // pol(range(fasBuffer.size()),[
+        //     fasBuffer = proxy<space>(fasBuffer),vtab = proxy<space>(vtab)] ZS_LAMBDA(int vi) mutable {
+        //         auto ancestor = fasBuffer[vi];
+        //         auto setNo = vtab.query(ancestor);
+        //         fasBuffer[vi] = setNo;
+        // });
+
+        // auto nmSets = vtab.size();
+        // return nmSets;
+        // fmt::print("{} disjoint sets in total.\n",nmSets);
     }
 
     template<typename Pol,typename SurfTriTileVec,typename PosTileVec>
@@ -812,7 +989,7 @@ namespace zeno {
         constexpr auto execTag = wrapv<space>{};
 
 
-        auto cudaPol = cuda_exec();
+        // auto cudaPol = cuda_exec();
 
         zs::Vector<int> exclusive_offsets{topos.get_allocator(),nm_points + 1};
         zs::Vector<int> p2ts{topos.get_allocator(),0};
@@ -864,7 +1041,7 @@ namespace zeno {
 
         zs::Vector<int> is{topos.get_allocator(),topos.size()};
         zs::Vector<int> js{topos.get_allocator(),topos.size()};
-        cudaPol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
+        pol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
         auto reserveStorage = [&is, &js](std::size_t n) {
             auto size = is.size();
             is.resize(size + n);

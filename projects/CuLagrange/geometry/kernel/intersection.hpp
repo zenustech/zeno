@@ -370,6 +370,269 @@ int retrieve_triangulate_mesh_intersection_list(Pol& pol,
 }
 
 
+
+template<typename Pol,typename PosTileVec,typename TriTileVec,typename InstTileVec>
+int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
+    const PosTileVec& verts_A,
+    const zs::SmallString& xtag_A,
+    TriTileVec& tris_A,
+    const PosTileVec& verts_B,
+    const zs::SmallString& xtag_B,
+    TriTileVec& tris_B,
+    InstTileVec& intersect_buffers,
+    bool use_self_collision = true) {
+        using namespace zs;
+        using vec2i = zs::vec<int,2>;
+        using bv_t = typename ZenoParticles::lbvh_t::Box;
+        using vec3 = zs::vec<T,3>;
+
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        constexpr auto exec_tag = wrapv<space>{};
+        zs::Vector<int> nmIts{verts_A.get_allocator(),1};
+        nmIts.setVal(0);
+
+        auto bvsA = retrieve_bounding_volumes(pol,verts_A,tris_A,wrapv<3>{},0,xtag_A);
+        auto triABvh = LBvh<3,int,T>{};
+        triABvh.build(pol,bvsA);
+
+        auto cnormA = compute_average_edge_length(pol,verts_A,xtag_A,tris_A);
+        auto cnormB = compute_average_edge_length(pol,verts_B,xtag_B,tris_B);        
+        auto cnorm = cnormA > cnormB ? cnormA : cnormB;
+        cnorm *= 3;
+
+        // if(!tris_B.hasProperty("nrm"))
+        //     throw std::runtime_error("the tris_B has no \'nrm\' channel");
+        // if(!intersect_buffers.hasProperty("int_points"))
+        //     throw std::runtime_error("the input intersect_buffers has no \'int_points\' attribute");
+
+
+        pol(zs::range(tris_B.size()),[
+            exec_tag,
+            nmIts = proxy<space>(nmIts),
+            verts_A = proxy<space>({},verts_A),
+            tris_A = proxy<space>({},tris_A),
+            verts_B = proxy<space>({},verts_B),
+            tris_B = proxy<space>({},tris_B),
+            triABvh = proxy<space>(triABvh),
+            intersect_buffers = proxy<space>({},intersect_buffers),
+            thickness = cnorm,
+            xtag_A = xtag_A,
+            xtag_B = xtag_B,
+            use_self_collision = use_self_collision] ZS_LAMBDA(int tb_i) mutable {
+                auto triBCenter = vec3::zeros();
+                auto triB = tris_B.pack(dim_c<3>,"inds",tb_i,int_c);
+                vec3 vA[3] = {};
+                vec3 vB[3] = {};
+                for(int i = 0;i != 3;++i)
+                    vB[i] = verts_B.pack(dim_c<3>,xtag_B,triB[i]);
+
+                auto vb01 = vB[1] - vB[0];
+                auto vb02 = vB[2] - vB[0];
+                auto nrmB = vb01.cross(vb02).normalized();
+                // nrmB = nrmB / (nrmB.norm() + (T)1e-6);
+
+                for(int i = 0;i != 3;++i)
+                    triBCenter += vB[i] / (T)3.0;
+                
+                auto bv = bv_t{get_bounding_box(triBCenter - thickness,triBCenter + thickness)};
+                // auto nrmB = tris_B.pack(dim_c<3>,"nrm",tb_i);
+
+                auto process_potential_intersection_pairs = [&](int ta_i) {
+                    auto triA = tris_A.pack(dim_c<3>,"inds",ta_i,int_c);
+                    for(int i = 0;i != 3;++i)
+                        vA[i] = verts_A.pack(dim_c<3>,xtag_A,triA[i]);
+
+                    if(use_self_collision){
+                        if(ta_i >= tb_i)
+                            return;
+                        int nm_topological_coincidences = 0;
+                        zs::vec<bool,3> triA_coincidences_flag = zs::vec<bool,3>::uniform(false_c);
+                        zs::vec<bool,3> triB_coincidences_flag = zs::vec<bool,3>::uniform(false_c);
+                        for(int i = 0;i != 3;++i)
+                            for(int j = 0;j != 3;++j)
+                                if(triA[i] == triB[j]){
+                                    triA_coincidences_flag[i] = true_c;
+                                    triB_coincidences_flag[j] = true_c;
+                                    ++nm_topological_coincidences;
+                                }
+                        if(nm_topological_coincidences >= 3)
+                            printf("invalid nm_topological_coincidences detected %d\n",nm_topological_coincidences);
+                        if(nm_topological_coincidences == 2){
+                            // should we neglect this sort of intersection?
+                            return;
+                            int triA_different_idx = -1;
+                            int triB_different_idx = -1;
+                            for(int i = 0;i != 3;++i){
+                                if(!triA_coincidences_flag[i])
+                                    triA_different_idx = i;
+                                if(!triB_coincidences_flag[i])
+                                    triB_different_idx = i;
+                            }
+                            if(triA_different_idx < 0 || triB_different_idx < 0)
+                                printf("invalid tri_different_idx detected : %d %d\n",triA_different_idx,triB_different_idx);
+                            auto e01 = vA[(triA_different_idx + 1) % 3] - vA[triA_different_idx];
+                            auto e02 = vA[(triA_different_idx + 2) % 3] - vA[triA_different_idx];
+                            auto e03 = vB[triB_different_idx] - vA[triA_different_idx];
+
+                            auto vol = zs::abs(e01.cross(e02).dot(e03));
+                            if(vol < 0)
+                                printf("invalid vol evaluation detected %f\n",(float)vol);
+                            if(vol > 1e-4)
+                                return;
+
+
+                            auto va01 = vA[1] - vA[0];
+                            auto va02 = vA[2] - vA[0];
+                            auto nrmA = va01.cross(va02).normalized();
+
+                            if(nrmA.dot(nrmB) > (T)0.0)
+                                return;
+                            // now the two triangles are coplanar
+                            // check intersection
+
+                            printf("detected target type[0] of intersection : %d %d\n",ta_i,tb_i);
+
+                            // auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                            // intersect_buffers[offset][0] = ta_i;
+                            // intersect_buffers[offset][1] = tb_i;
+                            // intersect_types[offset] = 2;
+                            return;
+                        }
+                        if(nm_topological_coincidences == 1){
+                            // return;
+                            int triA_coincide_idx = -1;
+                            int triB_coincide_idx = -1;
+                            for(int i = 0;i != 3;++i){
+                                if(triA_coincidences_flag[i])
+                                    triA_coincide_idx = i;
+                                if(triB_coincidences_flag[i])
+                                    triB_coincide_idx = i;
+                            }
+                            if(triA_coincide_idx == -1 || triB_coincide_idx == -1)
+                                printf("invalid triA_coincide_idx and triB_coincide_idx detected\n");
+
+                            auto ea = vA[(triA_coincide_idx + 2) % 3] - vA[(triA_coincide_idx + 1) % 3];
+                            auto eb = vB[(triB_coincide_idx + 2) % 3] - vB[(triB_coincide_idx + 1) % 3];
+
+                            auto ro = vA[(triA_coincide_idx + 1) % 3];
+                            auto r = LSL_GEO::tri_ray_intersect(ro,ea,vB[0],vB[1],vB[2]);
+                            if(r < (T)(1.0 + 1e-6)) {
+                                printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
+                                auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                                intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
+                                intersect_buffers("type",offset) = zs::reinterpret_bits<T>((int)1);
+
+                                // intersect_buffers.tuple(dim_c<2>,"its_edges",offset) = zs::vec<int,2>{(triA_coincide_idx + 1) % 3,-1}.reinterpret_bits(float_c);
+                                intersect_buffers.tuple(dim_c<6>,"its_edge_mark",offset) = zs::vec<int,6>::uniform(0).reinterpret_bits(float_c);
+                                intersect_buffers("its_edge_mark",(triA_coincide_idx + 1) % 3,offset) = zs::reinterpret_bits<T>((int)1);
+                                auto its_p0 = ro + ea * r;
+                                auto its_p1 = vA[triA_coincide_idx];
+                                intersect_buffers.tuple(dim_c<6>,"int_points",offset) = zs::vec<T,6>{
+                                    its_p0[0],its_p0[1],its_p0[2],
+                                    its_p1[0],its_p1[1],its_p1[2]};
+
+                                return;
+                            }
+
+                            ro = vB[(triB_coincide_idx + 1) % 3];
+                            r = LSL_GEO::tri_ray_intersect(ro,eb,vA[0],vA[1],vA[2]);
+                            if(r < (T)(1.0 + 1e-6)) {
+                                printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
+                                auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                                intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
+                                intersect_buffers("type",offset) = zs::reinterpret_bits<T>((int)1);
+                                // intersect_buffers.tuple(dim_c<4>,"int_edges",offset) = zs::vec<int,4>{
+                                //     -1,(triB_coincide_idx + 1) % 3,
+                                //     -1,-1}.reinterpret_bits(float_c);
+                                // intersect_buffers.tuple(dim_c<2>,"its_edges",offset) = zs::vec<int,2>{(triB_coincide_idx + 1) % 3,-1}.reinterpret_bits(float_c);
+                                // intersect_buffers.tuple(dim_c<2>,"its_edge_types",offset) = zs::vec<int,2>{1,-1}.reinterpret_bits(float_c);
+                                intersect_buffers.tuple(dim_c<6>,"its_edge_mark",offset) = zs::vec<int,6>::uniform(0).reinterpret_bits(float_c);
+                                intersect_buffers("its_edge_mark",(triB_coincide_idx + 1) % 3 + 3,offset) = zs::reinterpret_bits<T>((int)1);
+
+                                auto its_p0 = ro + eb * r;
+                                auto its_p1 = vB[triB_coincide_idx];
+                                intersect_buffers.tuple(dim_c<6>,"int_points",offset) = zs::vec<T,6>{
+                                    its_p0[0],its_p0[1],its_p0[2],
+                                    its_p1[0],its_p1[1],its_p1[2]};
+                                return;
+                            }
+                        } else { 
+ // return;
+                            vec3 eas[3] = {};
+                            vec3 ebs[3] = {};
+
+                            for(int i = 0;i != 3;++i) {
+                                eas[i] = vA[(i + 1) % 3] - vA[i];
+                                ebs[i] = vB[(i + 1) % 3] - vB[i];
+                            }
+
+                            auto ea_indices = zs::vec<int,3>::uniform(-1);
+                            auto eb_indices = zs::vec<int,3>::uniform(-1);
+                            int nm_ea_its = 0;
+                            int nm_eb_its = 0;
+                            vec3 ea_its[3] = {};
+                            vec3 eb_its[3] = {};
+
+                            for(int i = 0;i != 3;++i){
+                                auto r = LSL_GEO::tri_ray_intersect(vA[i],eas[i],vB[0],vB[1],vB[2]);
+                                if(r < (T)(1.0 + 1e-6)) {
+                                    ea_indices[nm_ea_its] = i;
+                                    ea_its[nm_ea_its] = vA[i] + eas[i] * r;
+                                    ++nm_ea_its;
+                                }
+
+                                r = LSL_GEO::tri_ray_intersect(vB[i],ebs[i],vA[0],vA[1],vA[2]);
+                                if(r < (T)(1.0 + 1e-6)) {
+                                    eb_indices[nm_eb_its] = i;
+                                    eb_its[nm_eb_its] = vB[i] + ebs[i] * r;
+                                    ++nm_eb_its;
+                                } 
+                            }
+
+                            if(nm_ea_its + nm_eb_its > 2)
+                                printf("invalid number of intersections detected\n");
+
+                            if(nm_ea_its + nm_eb_its > 0) {
+                                auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                                intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
+
+                                intersect_buffers.tuple(dim_c<6>,"its_edge_mark",offset) = zs::vec<int,6>::uniform(0).reinterpret_bits(float_c);
+                                for(int i = 0;i != nm_ea_its;++i)
+                                    intersect_buffers("its_edge_mark",ea_indices[i],offset) = zs::reinterpret_bits<T>((int)1);
+                                for(int i = 0;i != nm_eb_its;++i)
+                                    intersect_buffers("its_edge_mark",eb_indices[i] + 3,offset) = zs::reinterpret_bits<T>((int)1);
+
+                                vec3 its_ps[2];
+                                for(int i = 0;i != nm_ea_its;++i)
+                                    its_ps[i] = ea_its[i];
+                                for(int i = 0;i != nm_eb_its;++i)
+                                    its_ps[nm_ea_its + i] = eb_its[i];
+                                intersect_buffers.tuple(dim_c<6>,"int_points",offset) = zs::vec<T,6>{
+                                    its_ps[0][0],its_ps[0][1],its_ps[0][2],
+                                    its_ps[1][0],its_ps[1][1],its_ps[1][2]};
+
+                                intersect_buffers("type",offset) = zs::reinterpret_bits<T>((int)0);
+                                return;                                
+                            }
+                        }
+                    }
+                    else{
+                        printf("the non-self-intersection algorithm not implemented yet");
+                        return;
+                    }
+                };
+
+                triABvh.iter_neighbors(bv,process_potential_intersection_pairs);
+        });
+
+        auto nmIntersections = nmIts.getVal(0);
+        
+
+        return nmIntersections;
+}
+
+
+
 template<typename Pol,typename PosTileVec,typename TriTileVec>
 int do_global_self_intersection_analysis_on_surface_mesh(Pol& pol,
     const PosTileVec& verts,
@@ -514,21 +777,416 @@ int do_global_self_intersection_analysis_on_surface_mesh(Pol& pol,
                 }
         });
 
-        // pol(zs::range(nm_insts),[
-        //     ints_buffer = proxy<space>(ints_buffer),
-        //     tris = proxy<space>({},tris),
-        //     topo_tag = zs::SmallString(topo_tag),
-        //     nodal_colors = proxy<space>(nodal_colors)] ZS_LAMBDA(int isi) mutable {
-        //         auto ta = ints_buffer[isi][0];
-        //         auto tb = ints_buffer[isi][1];
-        //         auto triA = tris.pack(dim_c<3>,topo_tag,ta,int_c);
-        //         auto triB = tris.pack(dim_c<3>,topo_tag,tb,int_c);
+        return nm_insts;
+}
 
-        //         for(int i = 0;i != 3;++i) {
-        //             nodal_colors[triA[i]] = 1;
-        //             nodal_colors[triB[i]] = 1;
-        //         }
-        // });
+
+template<typename Pol,typename PosTileVec,typename TriTileVec,typename IntsTileVec,typename HalfEdgeTileVec>
+int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
+    const PosTileVec& verts,
+    const zs::SmallString& xtag,
+    const TriTileVec& tris,
+    const HalfEdgeTileVec& halfedges,
+    IntsTileVec& ints_buffer,
+    zs::Vector<int>& nodal_colors) {
+        using namespace zs;
+        using index_type = std::make_signed_t<int>;
+        using size_type = std::make_unsigned_t<int>;
+        using IV = zs::vec<int,2>;
+        // using table_vec2i_type = zs::bcht<IV,int,true,zs::universal_hash<IV>,16>;
+        using table_vec2i_type = zs::bht<int,2,int>;
+        // using table_int_type = zs::bcht<int,int,true,zs::universal_hash<int>,16>;
+        using table_int_type = zs::bht<int,1,int>;
+        using edge_topo_type = zs::Vector<zs::vec<int,2>>;
+        using inst_buffer_type = zs::Vector<zs::vec<int,2>>;
+        using inst_class_type = zs::Vector<int>;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        constexpr auto exec_tag = wrapv<space>{};
+
+        // table_type tab{verts.get_allocator(),tris.size() * 8};
+        // inst_buffer_type ints_buffer{tris.get_allocator(),tris.size() * 8};
+        // inst_class_type ints_types{tris.get_allocator(),tris.size() * 8};
+
+        auto nm_insts = retrieve_triangulate_mesh_self_intersection_list_info(pol,
+            verts,xtag,tris,verts,xtag,tris,ints_buffer,true);
+
+        // auto topo_tag = is_volume_surface ? "fp_inds" : "inds";
+        std::string topo_tag{"inds"};
+        // if(!tris.hasProperty(topo_tag))
+        //     fmt::print(fg(fmt::color::red),"do_global_self_intersection_analysis::the input tris has no {} topo channel\n",topo_tag);
+
+        table_vec2i_type cftab{ints_buffer.get_allocator(),(size_t)nm_insts};
+        cftab.reset(pol,true);
+        zs::Vector<int> cfbuffer{ints_buffer.get_allocator(),(size_t)nm_insts};
+
+        // std::cout << "ALL_INTERSECTION PAIR: " << nm_insts << std::endl;
+        if(!ints_buffer.hasProperty("pair"))
+            printf("the ints_buffer has no \'pair\' channel\n");
+        pol(zs::range(nm_insts),[
+            cftab = proxy<space>(cftab),
+            cfbuffer = proxy<space>(cfbuffer),
+            ints_buffer = proxy<space>({},ints_buffer)] ZS_LAMBDA(int isi) mutable {
+                auto pair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
+                auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
+                auto ta = pair[0];
+                auto tb = pair[1];
+                // auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
+                // printf("pair[%d] : [%d %d]\n",type,pair[0],pair[1]);
+                if(auto setNo = cftab.insert(zs::vec<int,2>{ta,tb});setNo != table_vec2i_type::sentinel_v)
+                    cfbuffer[setNo] = isi;
+
+        });
+
+
+        table_vec2i_type incidentItsTab{tris.get_allocator(),nm_insts * 2};
+        incidentItsTab.reset(pol,true);
+        pol(zs::range(nm_insts),[
+            ints_buffer = proxy<space>({},ints_buffer),
+            cftab = proxy<space>(cftab),
+            cfbuffer = proxy<space>(cfbuffer),
+            tris = proxy<space>({},tris),
+            incidentItsTab = proxy<space>(incidentItsTab),
+            halfedges = proxy<space>({},halfedges)] ZS_LAMBDA(int isi) mutable {
+                auto tpair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
+                auto ta = tpair[0];
+                auto tb = tpair[1];
+                auto its_edge_mark = ints_buffer.pack(dim_c<6>,"its_edge_mark",isi,int_c);
+                auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
+
+                // printf("test incidence for pair-type[%d]-[%d %d] : edge_incidence[%d %d %d %d %d %d]\n",
+                //     type,tpair[0],tpair[1],
+                //     its_edge_mark[0],
+                //     its_edge_mark[1],
+                //     its_edge_mark[2],
+                //     its_edge_mark[3],
+                //     its_edge_mark[4],
+                //     its_edge_mark[5]);
+
+                // return;
+                if(type == 1) {// intersection pair with one topological coincident vertex
+                    for(int i = 0;i != 3;++i)
+                        if(its_edge_mark[i] == 1){
+                            // the edge of the first triangle intersect with the second triangle
+                            auto he_idx = zs::reinterpret_bits<int>(tris("he_inds",ta));
+                            // int he_idx = start_he_idx;
+                            for(int j = 0;j != i;++j)
+                                he_idx = zs::reinterpret_bits<int>(halfedges("next_he",he_idx));
+                            auto opposite_he_idx = zs::reinterpret_bits<int>(halfedges("opposite_he",he_idx));
+                            auto tn = zs::reinterpret_bits<int>(halfedges("to_face",opposite_he_idx));
+
+                            auto t0 = tb;
+                            auto t1 = tn;
+                            if(t0 > t1) {
+                                auto tmp = t1;
+                                t1 = t0;
+                                t0 = tmp;
+                            }
+
+                            if(auto nItsIdx = cftab.query(zs::vec<int,2>{t0,t1});nItsIdx != table_vec2i_type::sentinel_v) {
+                                nItsIdx = cfbuffer[nItsIdx];
+                                auto isi0 = isi;
+                                auto isi1 = nItsIdx;
+                                if(isi0 > isi1) {
+                                    auto tmp = isi0;
+                                    isi0 = isi1;
+                                    isi1 = tmp;
+                                }
+                                incidentItsTab.insert(zs::vec<int,2>{isi0,isi1});                                
+                            }else
+                                printf("invalid_0 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\ntest incidence for pair-type[%d]-[%d %d] : edge_incidence[%d %d %d %d %d %d]\n",
+                                    nItsIdx,t0,t1,tpair[0],tpair[1],
+                                    type,tpair[0],tpair[1],
+                                    its_edge_mark[0],
+                                    its_edge_mark[1],
+                                    its_edge_mark[2],
+                                    its_edge_mark[3],
+                                    its_edge_mark[4],
+                                    its_edge_mark[5]);
+
+                                    
+                        }
+                    for(int i = 3;i != 6;++i)
+                        if(its_edge_mark[i] == 1) {
+                            // the edge of the second triangle intersect with the first triangle
+                            auto he_idx = zs::reinterpret_bits<int>(tris("he_inds",tb));
+                            // int he_idx = start_he_idx;
+                            for(int j = 0;j != i-3;++j)
+                                he_idx = zs::reinterpret_bits<int>(halfedges("next_he",he_idx));
+                            auto opposite_he_idx = zs::reinterpret_bits<int>(halfedges("opposite_he",he_idx));
+                            auto tn = zs::reinterpret_bits<int>(halfedges("to_face",opposite_he_idx));
+
+                            auto t0 = ta;
+                            auto t1 = tn;
+                            if(t0 > t1) {
+                                auto tmp = t1;
+                                t1 = t0;
+                                t0 = tmp;
+                            }
+
+                            if(auto nItsIdx = cftab.query(zs::vec<int,2>{t0,t1});nItsIdx != table_vec2i_type::sentinel_v) {
+                                nItsIdx = cfbuffer[nItsIdx];
+                                auto isi0 = isi;
+                                auto isi1 = nItsIdx;
+                                if(isi0 > isi1) {
+                                    auto tmp = isi0;
+                                    isi0 = isi1;
+                                    isi1 = tmp;
+                                }
+                                incidentItsTab.insert(zs::vec<int,2>{isi0,isi1});                                
+                            }else
+                                printf("invalid_1 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\n",nItsIdx,t0,t1,tpair[0],tpair[1]);
+                        }
+                }
+                else if(type == 0) {// intersection pair without topological coincident vertex
+                    for(int i = 0;i != 3;++i){
+                        if(its_edge_mark[i] == 1){
+                            // // the edge of the first triangle intersect with the second triangle
+                            auto he_idx = zs::reinterpret_bits<int>(tris("he_inds",ta));
+                            // int he_idx = start_he_idx;
+                            for(int j = 0;j != i;++j)
+                                he_idx = zs::reinterpret_bits<int>(halfedges("next_he",he_idx));
+                            auto opposite_he_idx = zs::reinterpret_bits<int>(halfedges("opposite_he",he_idx));
+                            auto tn = zs::reinterpret_bits<int>(halfedges("to_face",opposite_he_idx));
+
+                            auto t0 = tb;
+                            auto t1 = tn;
+                            if(t0 > t1) {
+                                auto tmp = t1;
+                                t1 = t0;
+                                t0 = tmp;
+                            }
+
+                            if(auto nItsIdx = cftab.query(zs::vec<int,2>{t0,t1});nItsIdx != table_vec2i_type::sentinel_v) {
+                                nItsIdx = cfbuffer[nItsIdx];
+                                auto isi0 = isi;
+                                auto isi1 = nItsIdx;
+                                if(isi0 > isi1) {
+                                    auto tmp = isi0;
+                                    isi0 = isi1;
+                                    isi1 = tmp;
+                                }
+                                incidentItsTab.insert(zs::vec<int,2>{isi0,isi1});                                
+                            }else
+                                printf("invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\n",nItsIdx,t0,t1,tpair[0],tpair[1]);
+                        }
+                    }
+                    for(int i = 3;i != 6;++i){
+                        if(its_edge_mark[i] == 1) {
+                            auto he_idx = zs::reinterpret_bits<int>(tris("he_inds",tb));
+                            // int he_idx = start_he_idx;
+                            for(int j = 0;j != i-3;++j)
+                                he_idx = zs::reinterpret_bits<int>(halfedges("next_he",he_idx));
+                            auto opposite_he_idx = zs::reinterpret_bits<int>(halfedges("opposite_he",he_idx));
+                            auto tn = zs::reinterpret_bits<int>(halfedges("to_face",opposite_he_idx));
+
+                            auto t0 = ta;
+                            auto t1 = tn;
+                            if(t0 > t1) {
+                                auto tmp = t1;
+                                t1 = t0;
+                                t0 = tmp;
+                            }
+
+                            if(auto nItsIdx = cftab.query(zs::vec<int,2>{t0,t1});nItsIdx != table_vec2i_type::sentinel_v) {
+                                nItsIdx = cfbuffer[nItsIdx];
+                                auto isi0 = isi;
+                                auto isi1 = nItsIdx;
+                                if(isi0 > isi1) {
+                                    auto tmp = isi0;
+                                    isi0 = isi1;
+                                    isi1 = tmp;
+                                }
+                                incidentItsTab.insert(zs::vec<int,2>{isi0,isi1});                                
+                            }else
+                                printf("invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\n",nItsIdx,t0,t1,tpair[0],tpair[1]);                
+                        }
+                    }
+                }
+
+        });
+
+        std::cout << "FINISH INTERSECTION TOPO EVAL" << std::endl;
+
+        auto nmEntries = incidentItsTab.size();
+        zs::Vector<zs::vec<int,2>> conn_topo{tris.get_allocator(),nmEntries};
+        pol(zip(conn_topo,range(incidentItsTab._activeKeys)),[] ZS_LAMBDA(zs::vec<int,2> &ij,const auto& key) mutable {
+            ij = key;
+        });
+
+        edge_topo_type edge_topos{tris.get_allocator(),tris.size() * 3};
+        pol(range(tris.size()),[
+            tris = proxy<space>({},tris),
+            // tab = proxy<space>(tab),
+            topo_tag = zs::SmallString(topo_tag),
+            edge_topos = proxy<space>(edge_topos)] ZS_LAMBDA(int ti) mutable {
+                auto tri = tris.pack(dim_c<3>,topo_tag,ti,int_c);
+                // auto is_coincident_idx = zs::vec<bool,3>::uniform(false);
+                // for(int i = 0;i != 3;++i)
+                //     if(auto qno = tab.query(tri[i]);qno >= 0)
+                //         is_coincident_idx[i] = true;
+
+                for(int i = 0;i != 3;++i){
+                    // if(is_coincident_idx[i] || is_coincident_idx[(i + 1) % 3])
+                    //     edge_topos[ti * 3 + i] = zs::vec<int,2>::uniform(-1);
+                    // else
+                    edge_topos[ti * 3 + i] = zs::vec<int,2>{tri[i],tri[(i + 1) % 3]};
+                }
+        }); 
+
+
+        zs::Vector<int> ringTag{tris.get_allocator(),nm_insts};
+        auto nm_rings = mark_disconnected_island(pol,conn_topo,ringTag);
+        zs::Vector<int> ringSize(tris.get_allocator(),nm_rings);
+        pol(zs::range(ringSize.size()),[
+            ringSize = proxy<space>(ringSize)] ZS_LAMBDA(int ri) mutable {
+                ringSize[ri] = 0;
+        });
+        pol(zs::range(nm_insts),[
+            ints_buffer = proxy<space>({},ints_buffer),
+            ringTag = proxy<space>(ringTag),
+            exec_tag,
+            ringSize = proxy<space>(ringSize)] ZS_LAMBDA(int isi) mutable {
+                atomic_add(exec_tag,&ringSize[ringTag[isi]],(int)1);
+        });
+
+        zs::Vector<int> island_buffer{verts.get_allocator(),verts.size()};
+        
+        nodal_colors.resize(verts.size());
+        pol(zs::range(nodal_colors.size()),[nodal_colors = proxy<space>(nodal_colors)] ZS_LAMBDA(int ni) mutable {
+            nodal_colors[ni] = 0;
+        });
+
+        std::cout << "nm_rings " << nm_rings << std::endl;
+
+        for(int ri = 0;ri != nm_rings;++ri) {
+            auto rsize = ringSize.getVal(ri);
+            printf("ring[%d] Size : %d\n",ri,rsize);
+
+            // edge_topo_type dc_edge_topos{tris.get_allocator(),rsize * 6};
+            table_int_type disable_points{tris.get_allocator(),rsize * 8};
+            table_vec2i_type disable_lines{tris.get_allocator(),rsize * 6};
+            disable_points.reset(pol,true);
+            disable_lines.reset(pol,true);
+
+            pol(zs::range(nm_insts),[
+                ints_buffer = proxy<space>({},ints_buffer),
+                ringTag = proxy<space>(ringTag),
+                ri,
+                topo_tag = zs::SmallString(topo_tag),
+                // dc_edge_topos = proxy<space>(dc_edge_topos),
+                disable_points = proxy<space>(disable_points),
+                disable_lines = proxy<space>(disable_lines),
+                nm_insts,
+                tris = proxy<space>({},tris)] ZS_LAMBDA(int isi) mutable {
+                    if(ringTag[isi] != ri)
+                        return;
+                    auto pair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
+                    auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
+
+                    auto ta = pair[0];
+                    auto tb = pair[1];
+                    zs::vec<int,3> tri_pairs[2] = {};
+                    tri_pairs[0] = tris.pack(dim_c<3>,topo_tag,ta,int_c);
+                    tri_pairs[1] = tris.pack(dim_c<3>,topo_tag,tb,int_c);
+
+                    for(int t = 0;t != 2;++t) {
+                        zs::vec<int,2> out_edges[3] = {};
+                        elm_to_edges(tri_pairs[t],out_edges);
+                        for(int i = 0;i != 3;++i) {
+                            auto a = out_edges[i][0];
+                            auto b = out_edges[i][1];
+                            if(a > b) {
+                                auto tmp = a;
+                                a = b;
+                                b = tmp;
+                            }
+                            disable_lines.insert(zs::vec<int,2>{a,b});
+                        }
+                    }
+
+                    if(type == 1) {
+                        int coincident_idx = -1;
+                        for(int i = 0;i != 3;++i)
+                            for(int j = 0;j != 3;++j)
+                                if(tri_pairs[0][i] == tri_pairs[1][j])
+                                    coincident_idx = tri_pairs[0][i];
+                        if(coincident_idx < 0)
+                            printf("invalid coincident_idx detected : %d\n",coincident_idx);
+                        else
+                            disable_points.insert(coincident_idx);
+                    }   
+    
+            });
+            auto nm_islands = mark_disconnected_island(pol,edge_topos,disable_points,disable_lines,island_buffer);
+            zs::Vector<int> nm_cmps_every_island_count{verts.get_allocator(),(size_t)nm_islands};
+            // nm_cmps_every_island_count.setVal(0);
+            pol(zs::range(nm_cmps_every_island_count.size()),[
+                nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int i) mutable {
+                    nm_cmps_every_island_count[i] = 0;
+            });
+            pol(zs::range(verts.size()),[
+                verts = proxy<space>({},verts),
+                island_buffer = proxy<space>(island_buffer),
+                nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int vi) mutable {
+                    auto island_idx = island_buffer[vi];
+                    atomic_add(exec_cuda,&nm_cmps_every_island_count[island_idx],(int)1);
+            });
+
+            int max_size = 0;
+            int max_island_idx = 0;
+            for(int i = 0;i != nm_islands;++i) {
+                auto size_of_island = nm_cmps_every_island_count.getVal(i);
+                if(size_of_island > max_size){
+                    max_size = size_of_island;
+                    max_island_idx = i;
+                }
+            }
+
+            pol(zs::range(verts.size()),[
+                nodal_colors = proxy<space>(nodal_colors),
+                ri,
+                exec_tag,
+                // ints_types = proxy<space>(ints_types),
+                max_island_idx = max_island_idx,
+                island_buffer = proxy<space>(island_buffer)] ZS_LAMBDA(int vi) mutable {
+                    auto island_idx = island_buffer[vi];
+
+                    // might exceed the integer range
+                    if(island_idx != max_island_idx/* || ints_types[island_idx] == 1*/)
+                        atomic_add(exec_tag,&nodal_colors[vi],(int)1 << ri);
+                        // nodal_colors[vi] = ri;
+            });
+        }
+
+
+
+
+        // skip the intersection pair with only one coincident point? s
+        pol(zs::range(nm_insts),[
+            // ints_types = proxy<space>(ints_types),
+            nodal_colors = proxy<space>(nodal_colors),
+            ints_buffer = proxy<space>({},ints_buffer),
+            tris = proxy<space>({},tris)] ZS_LAMBDA(int isi) mutable {
+                auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
+                if(type == 1) {
+                    auto tpair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
+                    auto ta = tpair[0];
+                    auto tb = tpair[1];
+                    auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
+                    auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
+
+                    int coidx = 0;
+                    for(int i = 0;i != 3;++i)
+                        for(int j = 0;j != 3;++j)
+                            if(triA[i] == triB[j])
+                                coidx = triA[i];
+                    nodal_colors[coidx] = 0;
+                }
+        });
+
+        // std::cout << "nm_insts : " << nm_insts << std::endl;
+
+        // return 0;
 
         return nm_insts;
 }
