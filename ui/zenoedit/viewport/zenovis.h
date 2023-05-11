@@ -34,7 +34,6 @@ signals:
     void frameUpdated(int);
     void objectsUpdated(int);
     void frameDrawn(int);
-    void framePlayDrawn(int);
     void perspectiveUpdated(PerspectiveInfo);
 
 public slots:
@@ -55,7 +54,6 @@ public:
 
 //private:
     void doFrameUpdate();
-    void notifyUpdate(int frameid);
 
     //static QString sIoPath;
 
