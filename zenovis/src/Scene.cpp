@@ -52,7 +52,9 @@ void Scene::switchRenderEngine(std::string const &name) {
 
 void* Scene::getOptixImg(int& w, int& h)
 {
+#ifdef ZENO_ENABLE_OPTIX
     return xinxinoptix::optixgetimg(w, h);
+#endif
 }
 
 std::vector<float> Scene::getCameraProp(){
