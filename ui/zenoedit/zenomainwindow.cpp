@@ -135,6 +135,7 @@ void ZenoMainWindow::initWindowProperty()
         updateNativeWinTitle(title);
     });
     connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
+    connect(this, &ZenoMainWindow::visFrameUpdated, this, &ZenoMainWindow::onZenovisFrameUpdate);
 }
 
 void ZenoMainWindow::updateNativeWinTitle(const QString& title)
@@ -683,18 +684,6 @@ DisplayWidget *ZenoMainWindow::getOptixWidget() const
     return nullptr;
 }
 
-QVector<DisplayWidget*> ZenoMainWindow::glViewports() const
-{
-    QVector<DisplayWidget*> glViews;
-    auto views = viewports();
-    for (auto view : views)
-    {
-        if (view->isGLViewport())
-            glViews.append(view);
-    }
-    return glViews;
-}
-
 QVector<DisplayWidget*> ZenoMainWindow::viewports() const
 {
     QVector<DisplayWidget*> views;
@@ -1073,41 +1062,22 @@ void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
     QMainWindow::mouseReleaseEvent(event);
 }
 
-void ZenoMainWindow::onOptixPlayFrameUpdate(int frameid)
-{
-    QVector<DisplayWidget*> glViews = glViewports();
-    if (glViews.isEmpty())
-    {
-        //no gl viewport need to update, so update timeline value directly.
-        updateTimelineSlider(frameid);
-    }
-    else
-    {
-        for (auto view : glViews)
-        {
-            Zenovis *pZenovis = view->getZenoVis();
-            ZASSERT_EXIT(pZenovis);
-            view->updateFrame();
-        }
-    }
-}
-
-void ZenoMainWindow::onGLPlayFrameUpdate(int frameid)
-{
-    updateTimelineSlider(frameid);
-}
-
-void ZenoMainWindow::updateTimelineSlider(int frameid)
+void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
 {
     if (!m_pTimeline)
         return;
-    m_pTimeline->onTimelineUpdate(frameid);
 
-    //stop play when the frame have reached to the end frame.
-    auto &globalComm = zeno::getSession().globalComm;
-    if (globalComm->endFrameNumber == frameid)
+    bool bHasOptix = getOptixWidget() != nullptr;
+    if (bHasOptix)
     {
-        toggleTimelinePlay(false);
+        if (!bGLView)
+        {
+            m_pTimeline->onTimelineUpdate(frameid);
+        }
+    }
+    else
+    {
+        m_pTimeline->onTimelineUpdate(frameid);
     }
 }
 

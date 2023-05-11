@@ -67,10 +67,10 @@ ViewportWidget::ViewportWidget(QWidget* parent)
             emit mainWin->visObjectsUpdated(this, frameid);
     });
 
-    connect(m_zenovis, &Zenovis::framePlayDrawn, this, [=](int frameid) {
+    connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin) {
-            mainWin->onGLPlayFrameUpdate(frameid);
+            mainWin->visFrameUpdated(true, frameid);
         }
     });
 
