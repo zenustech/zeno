@@ -14,9 +14,7 @@
 #define TINYEXR_IMPLEMENTATION
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
-#include <opencv2/imgproc.hpp>
 #include "stb_image_write.h"
-#include <iostream>
 #include <vector>
 
 static const float eps = 0.0001f;
@@ -410,7 +408,7 @@ struct WriteImageFile : INode {
             data[n * i + 0] = (char)(255 * powf(image->verts[i][0], 1.0f / gamma));
             data[n * i + 1] = (char)(255 * powf(image->verts[i][1], 1.0f / gamma));
             data[n * i + 2] = (char)(255 * powf(image->verts[i][2], 1.0f / gamma));
-            data[n * i + 3] = (char)(255 * powf(alpha[i] , 1.0f / gamma));
+            data[n * i + 3] = (char)(255 * alpha[i]);
         }
         if(type == "jpg"){
             path += ".jpg";
@@ -463,7 +461,6 @@ struct WriteImageFile : INode {
             const char* err;
             path += ".exr";
             std::string native_path = std::filesystem::u8path(path).string();
-            stbi_flip_vertically_on_write(1);
             int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
 
             if (ret != TINYEXR_SUCCESS) {
