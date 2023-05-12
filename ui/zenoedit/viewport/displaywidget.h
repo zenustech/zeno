@@ -61,7 +61,7 @@ private:
     ViewportWidget* m_glView;
     ZOptixViewport* m_optixView;
     CameraKeyframeWidget* m_camera_keyframe;
-    QTimer* m_pTimer;       //actually this timer is only applied on glviewport.
+    QTimer* m_pTimer;
     RecordVideoMgr m_recordMgr;
     bool m_bRecordRun;
     const bool m_bGLView;

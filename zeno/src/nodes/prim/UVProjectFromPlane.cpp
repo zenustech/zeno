@@ -14,7 +14,7 @@
 #define TINYEXR_IMPLEMENTATION
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
-#include "stb_image_write.h"
+#include <tinygltf/stb_image_write.h>
 #include <vector>
 
 static const float eps = 0.0001f;
