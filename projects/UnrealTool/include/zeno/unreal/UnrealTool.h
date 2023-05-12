@@ -120,7 +120,7 @@ private:
 /**
  * Subject container
  */
-static struct SubjectRegistry {
+struct SubjectRegistry {
     [[deprecated("Use SessionalElements instead.")]]
     std::map<std::string, SubjectContainer> Elements;
     std::map<std::string, std::map<std::string, zeno::remote::ParamValue>> SessionalParameters;
@@ -163,17 +163,20 @@ static struct SubjectRegistry {
                 // If not found, try to find in global elements
                 TargetIter = GlobalElementMap.find(Key);
                 if (TargetIter == GlobalElementMap.end()) {
+                    // Flag to indicate whether found. Because iterator to compare must from same container.
+                    bool bFound = false;
                     if (bSearchAllSession) {
                         // Search all sessions
                         for (auto& [SessionKey, SessionElementMap] : SessionalElements) {
                             TargetIter = SessionElementMap.find(Key);
                             if (TargetIter != SessionElementMap.end()) {
+                                bFound = true;
                                 break;
                             }
                         }
                     }
                     // If still not found, return empty
-                    if (TargetIter == GlobalElementMap.end()) {
+                    if (!bFound) {
                         return std::nullopt;
                     }
                 }
@@ -228,7 +231,7 @@ static struct SubjectRegistry {
      */
     [[nodiscard]] const zeno::remote::ParamValue *GetParameter(const std::string &SessionKey,
                                                                const std::string &Key) const;
-} StaticRegistry;
+};
 
 /** Convert zeno::remote::HeightData to PrimitiveObject
  * @param HeightData Height data

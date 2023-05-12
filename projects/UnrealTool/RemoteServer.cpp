@@ -29,6 +29,9 @@
 #include <zeno/core/INode.h>
 #include <zeno/core/Session.h>
 #include <zeno/core/Graph.h>
+#include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalStatus.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -226,11 +229,16 @@ void ZenoRemoteServer::NewSession(const httplib::Request &Req, httplib::Response
     const static std::string HeaderKey = "X-Zeno-Token";
     if (Req.has_header(HeaderKey)) {
         std::string Token = Req.get_header_value(HeaderKey);
+        // TODO [darc] : refactor session mechanism
         if (Token == ZENO_REMOTE_TOKEN) {
             Res.status = 201;
-            std::string SessionKey = zeno::remote::RandomString2(32);
+            // Use token as session for now
+            // std::string SessionKey = zeno::remote::RandomString2(32);
+            std::string SessionKey = Token;
             Res.set_content(SessionKey, "text/plain");
-            Sessions.emplace_back(std::move(SessionKey));
+            if (std::find(Sessions.begin(), Sessions.end(), SessionKey) == Sessions.end()) {
+                Sessions.emplace_back(std::move(SessionKey));
+            }
             return;
         }
     }
@@ -404,6 +412,9 @@ void ZenoRemoteServer::RunGraph(const httplib::Request &Req, httplib::Response &
         try {
             // Initialize graph
             auto& Session = zeno::getSession();
+            Session.globalState->clearState();
+            Session.globalComm->clearState();
+            Session.globalStatus->clearState();
             auto Graph = Session.createGraph();
             Graph->loadGraph(RunInfo.GraphDefinition.c_str());
             // Set input parameters
@@ -411,8 +422,15 @@ void ZenoRemoteServer::RunGraph(const httplib::Request &Req, httplib::Response &
                 zeno::remote::StaticRegistry.SetParameter(SessionKey, Param.Name, Param);
             }
             remote::StaticFlags.CurrentSession = SessionKey;
+            Session.globalState->frameid = 0;
+            Session.globalComm->newFrame();
+            Session.globalState->frameBegin();
             // Run graph
-            GraphException::catched([&] {Graph->applyNodesToExec();}, *Session.globalStatus);
+            while (Session.globalState->substepBegin()) {
+                GraphException::catched([&] {Graph->applyNodesToExec();}, *Session.globalStatus);
+                Session.globalState->substepEnd();
+            }
+            Session.globalComm->finishFrame();
             remote::StaticFlags.CurrentSession = "";
             Res.status = 204;
         } catch (...) {
@@ -693,8 +711,7 @@ struct DeclareRemoteParameter : public INode {
         }
         const std::string& SessionKey = zeno::remote::StaticFlags.GetCurrentSession();
         if (SessionKey.empty()) {
-            zeno::log_error("No session set in main process.");
-            return;
+            zeno::log_warn("No session set in main process.");
         }
 
         const zeno::remote::ParamValue* Value = zeno::remote::StaticRegistry.GetParameter(SessionKey, Name);

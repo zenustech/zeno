@@ -38,7 +38,7 @@ zeno::remote::ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField
     float Dy = 1.f / std::max((float)Ny - 1.f, 1.f);
     vec3f ax {1, 0, 0};
     vec3f ay {0, 0, 1};
-    vec3f o = (ax + ay) / 2;
+    vec3f o = -((ax + ay) / 2);
     ax *= Dx; ay *= Dy;
     ax *= Scale;
     ay *= Scale;
@@ -113,7 +113,7 @@ void zeno::remote::SubjectRegistry::Push(const std::vector<SubjectContainer> &In
 
         for (const SubjectContainer& Value : InitList) {
             ChangeList.emplace(Value.Name);
-            ElementMap.try_emplace(Value.Name, Value);
+            ElementMap.insert_or_assign(Value.Name, Value);
         }
         if (Callback) {
             Callback(ChangeList, SessionKey);
@@ -134,7 +134,7 @@ void zeno::remote::SubjectRegistry::SetParameter(const std::string &SessionKey, 
     if (StaticFlags.IsMainProcess()) {
         auto& ParamMapIter = GetOrCreate(SessionalParameters, SessionKey);
 
-        ParamMapIter.insert(std::make_pair(Key, Value));
+        ParamMapIter.insert_or_assign(Key, Value);
     } else {
         // In child process, transfer data with http
         httplib::Client Cli { ZENO_TOOL_SERVER_ADDRESS };
