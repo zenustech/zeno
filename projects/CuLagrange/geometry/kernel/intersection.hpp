@@ -516,8 +516,8 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
 
                             auto ro = vA[(triA_coincide_idx + 1) % 3];
                             auto r = LSL_GEO::tri_ray_intersect(ro,ea,vB[0],vB[1],vB[2]);
-                            if(r < (T)(1.0 - 1e-6)) {
-                                printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
+                            if(r < (T)(1.0)) {
+                                // printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
                                 auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
                                 intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
                                 intersect_buffers("type",offset) = zs::reinterpret_bits<T>((int)1);
@@ -536,8 +536,8 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
 
                             ro = vB[(triB_coincide_idx + 1) % 3];
                             r = LSL_GEO::tri_ray_intersect(ro,eb,vA[0],vA[1],vA[2]);
-                            if(r < (T)(1.0 - 1e-6)) {
-                                printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
+                            if(r < (T)(1.0)) {
+                                // printf("detected target type[1] of intersection : %d %d\n",ta_i,tb_i);
                                 auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
                                 intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ta_i,tb_i}.reinterpret_bits(float_c);
                                 intersect_buffers("type",offset) = zs::reinterpret_bits<T>((int)1);
@@ -557,7 +557,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                 return;
                             }
                         } else if(nm_topological_coincidences == 0){ 
- // return;
+                            // return;
                             vec3 eas[3] = {};
                             vec3 ebs[3] = {};
 
@@ -702,13 +702,14 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                             }
 // #else
                             if(nm_ea_its + nm_eb_its == 0) {
+                                // return;
                                 // check wheter vertex of A intersect with B 
                                 auto avg_ta_edge_length = (eas[0].norm() + eas[1].norm() + eas[2].norm()) / (T)3.0;
                                 auto avg_tb_edge_length = (ebs[0].norm() + ebs[1].norm() + ebs[2].norm()) / (T)3.0;
                                 for(int i = 0;i != 3;++i) {
                                     T barySum = (T)0;
                                     auto distance = LSL_GEO::pointTriangleDistance(vB[0],vB[1],vB[2],vA[i],barySum);
-                                    if(barySum < (T)(1 + 1e-6) && distance < avg_tb_edge_length * 1e-5) {
+                                    if(barySum < (T)(1 + 1e-6) && distance < avg_ta_edge_length * 1e-5) {
                                         nm_ea_its = 2;
                                         ea_indices[0] = i;
                                         ea_indices[1] = (i + 2) % 3;
@@ -717,7 +718,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                     }
 
                                     distance = LSL_GEO::pointTriangleDistance(vA[0],vA[1],vA[2],vB[i],barySum);
-                                    if(barySum < (T)(1 + 1e-6) && distance < avg_ta_edge_length * 1e-5) {
+                                    if(barySum < (T)(1 + 1e-6) && distance < avg_tb_edge_length * 1e-5) {
                                         nm_eb_its = 2;
                                         eb_indices[0] = i;
                                         eb_indices[1] = (i + 2) % 3;
@@ -726,7 +727,16 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                     }
                                 }
                                 if(nm_ea_its + nm_eb_its > 0) {
-                                    printf("find point collision : %d\n",nm_ea_its + nm_eb_its);
+                                    // printf("find point collision : %d\ntriA: %d %d %d\ntriB: %d %d %d\nvA: %f %f %f %f %f %f %f %f %f\nvB: %f %f %f %f %f %f %f %f %f",
+                                    //     nm_ea_its + nm_eb_its,
+                                    //     triA[0],triA[1],triA[2],
+                                    //     triB[0],triB[1],triB[2],    
+                                    //     (float)vA[0][0],(float)vA[0][1],(float)vA[0][2],
+                                    //     (float)vA[1][0],(float)vA[1][1],(float)vA[1][2],
+                                    //     (float)vA[2][0],(float)vA[2][1],(float)vA[2][2],
+                                    //     (float)vB[0][0],(float)vB[0][1],(float)vB[0][2],
+                                    //     (float)vB[1][0],(float)vB[1][1],(float)vB[1][2],
+                                    //     (float)vB[2][0],(float)vB[2][1],(float)vB[2][2]);
                                 }
                             }
 // #endif
@@ -734,14 +744,14 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                                 return;
 
                             if(nm_ea_its + nm_eb_its != 2){
-                                printf("only one collision edge impossible reaching here, check the code :[%d %d] -> [%d %d]!!!\nvA : %f %f %f %f %f %f %f %f %f\nvB : %f %f %f %f %f %f %f %f %f\n",
-                                    ori_nm_ea_its,ori_nm_eb_its,nm_ea_its,nm_eb_its,
-                                    (float)vA[0][0],(float)vA[0][1],(float)vA[0][2],
-                                    (float)vA[1][0],(float)vA[1][1],(float)vA[1][2],
-                                    (float)vA[2][0],(float)vA[2][1],(float)vA[2][2],
-                                    (float)vB[0][0],(float)vB[0][1],(float)vB[0][2],
-                                    (float)vB[1][0],(float)vB[1][1],(float)vB[1][2],
-                                    (float)vB[2][0],(float)vB[2][1],(float)vB[2][2]);
+                                // printf("only one collision edge impossible reaching here, check the code :[%d %d] -> [%d %d]!!!\nvA : %f %f %f %f %f %f %f %f %f\nvB : %f %f %f %f %f %f %f %f %f\n",
+                                //     ori_nm_ea_its,ori_nm_eb_its,nm_ea_its,nm_eb_its,
+                                //     (float)vA[0][0],(float)vA[0][1],(float)vA[0][2],
+                                //     (float)vA[1][0],(float)vA[1][1],(float)vA[1][2],
+                                //     (float)vA[2][0],(float)vA[2][1],(float)vA[2][2],
+                                //     (float)vB[0][0],(float)vB[0][1],(float)vB[0][2],
+                                //     (float)vB[1][0],(float)vB[1][1],(float)vB[1][2],
+                                //     (float)vB[2][0],(float)vB[2][1],(float)vB[2][2]);
                             }
 
                             // if(nm_ea_its + nm_eb_its == 2) {
@@ -940,7 +950,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
     const TriTileVec& tris,
     const HalfEdgeTileVec& halfedges,
     IntsTileVec& ints_buffer,
-    zs::Vector<int>& nodal_colors) {
+    zs::Vector<int>& nodal_colors,bool output_intermediate_information = false) {
         using namespace zs;
         using index_type = std::make_signed_t<int>;
         using size_type = std::make_unsigned_t<int>;
@@ -973,10 +983,10 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
         zs::Vector<int> cfbuffer{ints_buffer.get_allocator(),(size_t)nm_insts};
 
         // std::cout << "ALL_INTERSECTION PAIR: " << nm_insts << std::endl;
-        if(!ints_buffer.hasProperty("pair"))
-            printf("the ints_buffer has no \'pair\' channel\n");
+        // if(!ints_buffer.hasProperty("pair"))
+        //     printf("the ints_buffer has no \'pair\' channel\n");
         pol(zs::range(nm_insts),[
-            cftab = proxy<space>(cftab),
+            cftab = proxy<space>(cftab),output_intermediate_information,
             cfbuffer = proxy<space>(cfbuffer),
             ints_buffer = proxy<space>({},ints_buffer)] ZS_LAMBDA(int isi) mutable {
                 auto pair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
@@ -984,7 +994,8 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                 auto ta = pair[0];
                 auto tb = pair[1];
                 // auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
-                printf("pair[%d] : [%d %d]\n",type,pair[0],pair[1]);
+                if(output_intermediate_information)
+                    printf("pair[%d] : [%d %d]\n",type,pair[0],pair[1]);
                 if(auto setNo = cftab.insert(zs::vec<int,2>{ta,tb});setNo != table_vec2i_type::sentinel_v)
                     cfbuffer[setNo] = isi;
 
@@ -1000,6 +1011,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
             tris = proxy<space>({},tris),
             verts = proxy<space>({},verts),
             xtag,
+            output_intermediate_information,
             incidentItsTab = proxy<space>(incidentItsTab),
             halfedges = proxy<space>({},halfedges)] ZS_LAMBDA(int isi) mutable {
                 auto tpair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
@@ -1047,7 +1059,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     isi1 = tmp;
                                 }
                                 incidentItsTab.insert(zs::vec<int,2>{isi0,isi1});                                
-                            }else
+                            }else if(output_intermediate_information)
                                 printf("invalid_0 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\ntest incidence for pair-type[%d]-[%d %d] : edge_incidence[%d %d %d %d %d %d]\n",
                                     nItsIdx,t0,t1,tpair[0],tpair[1],
                                     type,tpair[0],tpair[1],
@@ -1088,7 +1100,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     isi1 = tmp;
                                 }
                                 incidentItsTab.insert(zs::vec<int,2>{isi0,isi1});                                
-                            }else
+                            }else if(output_intermediate_information)
                                 printf("invalid_1 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\n",nItsIdx,t0,t1,tpair[0],tpair[1]);
                         }
                 }
@@ -1163,12 +1175,13 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     auto nrm1 = (v1[1] - v1[0]).cross(v1[2] - v1[0]).normalized();
 
                                     if(zs::abs(nrm0.dot(nrm1)) > (T)(1 - 1e-5)) {
-                                        printf("due to normal check invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnormal_check : %f\n",
-                                            nItsIdx,t0,t1,tpair[0],tpair[1],
-                                            tri_t0[0],tri_t0[1],tri_t0[2],
-                                            tri_t1[0],tri_t1[1],tri_t1[2],
-                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
-                                            tri_tp1[0],tri_tp1[1],tri_tp1[2],(float)zs::abs(nrm0.dot(nrm1)));
+                                        if(output_intermediate_information)
+                                            printf("due to normal check invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnormal_check : %f\n",
+                                                nItsIdx,t0,t1,tpair[0],tpair[1],
+                                                tri_t0[0],tri_t0[1],tri_t0[2],
+                                                tri_t1[0],tri_t1[1],tri_t1[2],
+                                                tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                                tri_tp1[0],tri_tp1[1],tri_tp1[2],(float)zs::abs(nrm0.dot(nrm1)));
                                         return;
                                     }
                                     // return;
@@ -1197,31 +1210,34 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     }
 
                                     if(nm_e0_its + nm_e1_its == 1){
-                                        printf("point geometrical coincidence invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
-                                        nItsIdx,t0,t1,tpair[0],tpair[1],
-                                        tri_t0[0],tri_t0[1],tri_t0[2],
-                                        tri_t1[0],tri_t1[1],tri_t1[2],
-                                        tri_tp0[0],tri_tp0[1],tri_tp0[2],
-                                        tri_tp1[0],tri_tp1[1],tri_tp1[2]); 
-                                        return;
-                                    }else {
-                                        printf("impossible reaching here invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnm_its : %d\n",
+                                        if(output_intermediate_information)
+                                            printf("point geometrical coincidence invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
                                             nItsIdx,t0,t1,tpair[0],tpair[1],
                                             tri_t0[0],tri_t0[1],tri_t0[2],
                                             tri_t1[0],tri_t1[1],tri_t1[2],
                                             tri_tp0[0],tri_tp0[1],tri_tp0[2],
-                                            tri_tp1[0],tri_tp1[1],tri_tp1[2],nm_e0_its + nm_e1_its); 
+                                            tri_tp1[0],tri_tp1[1],tri_tp1[2]); 
+                                        return;
+                                    }else {
+                                        if(output_intermediate_information)
+                                            printf("impossible reaching here invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnm_its : %d\n",
+                                                nItsIdx,t0,t1,tpair[0],tpair[1],
+                                                tri_t0[0],tri_t0[1],tri_t0[2],
+                                                tri_t1[0],tri_t1[1],tri_t1[2],
+                                                tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                                tri_tp1[0],tri_tp1[1],tri_tp1[2],nm_e0_its + nm_e1_its); 
                                         return;
                                     }
                                     
 
                                 }else {
-                                    printf("due to topological coincidence invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
-                                        nItsIdx,t0,t1,tpair[0],tpair[1],
-                                        tri_t0[0],tri_t0[1],tri_t0[2],
-                                        tri_t1[0],tri_t1[1],tri_t1[2],
-                                        tri_tp0[0],tri_tp0[1],tri_tp0[2],
-                                        tri_tp1[0],tri_tp1[1],tri_tp1[2]); 
+                                    if(output_intermediate_information)
+                                        printf("due to topological coincidence invalid_2 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
+                                            nItsIdx,t0,t1,tpair[0],tpair[1],
+                                            tri_t0[0],tri_t0[1],tri_t0[2],
+                                            tri_t1[0],tri_t1[1],tri_t1[2],
+                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                            tri_tp1[0],tri_tp1[1],tri_tp1[2]); 
                                     return;  
                                 }
                             }
@@ -1289,12 +1305,13 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     auto nrm1 = (v1[1] - v1[0]).cross(v1[2] - v1[0]).normalized();
 
                                     if(zs::abs(nrm0.dot(nrm1)) > (T)(1 - 1e-5)) {
-                                        printf("due to normal check invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnormal_check : %f\n",
-                                            nItsIdx,t0,t1,tpair[0],tpair[1],
-                                            tri_t0[0],tri_t0[1],tri_t0[2],
-                                            tri_t1[0],tri_t1[1],tri_t1[2],
-                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
-                                            tri_tp1[0],tri_tp1[1],tri_tp1[2],(float)nrm0.dot(nrm1));
+                                        if(output_intermediate_information)
+                                            printf("due to normal check invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnormal_check : %f\n",
+                                                nItsIdx,t0,t1,tpair[0],tpair[1],
+                                                tri_t0[0],tri_t0[1],tri_t0[2],
+                                                tri_t1[0],tri_t1[1],tri_t1[2],
+                                                tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                                tri_tp1[0],tri_tp1[1],tri_tp1[2],(float)nrm0.dot(nrm1));
                                         return;
                                     }
                                     // return;
@@ -1323,18 +1340,19 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     }
 
                                     if(nm_e0_its + nm_e1_its == 1){
-                                        printf("point geometrical coincidence invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nv0 : %f %f %f %f %f %f %f %f %f\nv1: %f %f %f %f %f %f %f %f %f\n",
-                                            nItsIdx,t0,t1,tpair[0],tpair[1],
-                                            tri_t0[0],tri_t0[1],tri_t0[2],
-                                            tri_t1[0],tri_t1[1],tri_t1[2],
-                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
-                                            tri_tp1[0],tri_tp1[1],tri_tp1[2],
-                                            (float)v0[0][0],(float)v0[0][1],(float)v0[0][2],
-                                            (float)v0[1][0],(float)v0[1][1],(float)v0[1][2],
-                                            (float)v0[2][0],(float)v0[2][1],(float)v0[2][2],
-                                            (float)v1[0][0],(float)v1[0][1],(float)v1[0][2],
-                                            (float)v1[1][0],(float)v1[1][1],(float)v1[1][2],
-                                            (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]); 
+                                        if(output_intermediate_information)
+                                            printf("point geometrical coincidence invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nv0 : %f %f %f %f %f %f %f %f %f\nv1: %f %f %f %f %f %f %f %f %f\n",
+                                                nItsIdx,t0,t1,tpair[0],tpair[1],
+                                                tri_t0[0],tri_t0[1],tri_t0[2],
+                                                tri_t1[0],tri_t1[1],tri_t1[2],
+                                                tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                                tri_tp1[0],tri_tp1[1],tri_tp1[2],
+                                                (float)v0[0][0],(float)v0[0][1],(float)v0[0][2],
+                                                (float)v0[1][0],(float)v0[1][1],(float)v0[1][2],
+                                                (float)v0[2][0],(float)v0[2][1],(float)v0[2][2],
+                                                (float)v1[0][0],(float)v1[0][1],(float)v1[0][2],
+                                                (float)v1[1][0],(float)v1[1][1],(float)v1[1][2],
+                                                (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]); 
                                         return;
                                     }else{
                                         // printf("impossible reaching here invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\nnm_ints : %d\nv0 : %f %f %f %f %f %f %f %f %f\nv1: %f %f %f %f %f %f %f %f %f\n",
@@ -1348,31 +1366,33 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                         //     (float)v0[2][0],(float)v0[2][1],(float)v0[2][2],
                                         //     (float)v1[0][0],(float)v1[0][1],(float)v1[0][2],
                                         //     (float)v1[1][0],(float)v1[1][1],(float)v1[1][2],
-                                        //     (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]);  
-                                        printf("impossible reaching here invalid_3 nItsIdx[%d] \nv0 : %f %f %f %f %f %f %f %f %f\nv1: %f %f %f %f %f %f %f %f %f\n",
-                                            nItsIdx,
-                                            // t0,t1,tpair[0],tpair[1],
-                                            // tri_t0[0],tri_t0[1],tri_t0[2],
-                                            // tri_t1[0],tri_t1[1],tri_t1[2],
-                                            // tri_tp0[0],tri_tp0[1],tri_tp0[2],
-                                            // tri_tp1[0],tri_tp1[1],tri_tp1[2],nm_e0_its + nm_e1_its,
-                                            (float)v0[0][0],(float)v0[0][1],(float)v0[0][2],
-                                            (float)v0[1][0],(float)v0[1][1],(float)v0[1][2],
-                                            (float)v0[2][0],(float)v0[2][1],(float)v0[2][2],
-                                            (float)v1[0][0],(float)v1[0][1],(float)v1[0][2],
-                                            (float)v1[1][0],(float)v1[1][1],(float)v1[1][2],
-                                            (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]);  
+                                        //     (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]);
+                                        if(output_intermediate_information)  
+                                            printf("impossible reaching here invalid_3 nItsIdx[%d] \nv0 : %f %f %f %f %f %f %f %f %f\nv1: %f %f %f %f %f %f %f %f %f\n",
+                                                nItsIdx,
+                                                // t0,t1,tpair[0],tpair[1],
+                                                // tri_t0[0],tri_t0[1],tri_t0[2],
+                                                // tri_t1[0],tri_t1[1],tri_t1[2],
+                                                // tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                                // tri_tp1[0],tri_tp1[1],tri_tp1[2],nm_e0_its + nm_e1_its,
+                                                (float)v0[0][0],(float)v0[0][1],(float)v0[0][2],
+                                                (float)v0[1][0],(float)v0[1][1],(float)v0[1][2],
+                                                (float)v0[2][0],(float)v0[2][1],(float)v0[2][2],
+                                                (float)v1[0][0],(float)v1[0][1],(float)v1[0][2],
+                                                (float)v1[1][0],(float)v1[1][1],(float)v1[1][2],
+                                                (float)v1[2][0],(float)v1[2][1],(float)v1[2][2]);  
                                         return;
                                     }
                                     
 
                                 }else {
-                                    printf("due to topological coincidence invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
-                                        nItsIdx,t0,t1,tpair[0],tpair[1],
-                                        tri_t0[0],tri_t0[1],tri_t0[2],
-                                        tri_t1[0],tri_t1[1],tri_t1[2],
-                                        tri_tp0[0],tri_tp0[1],tri_tp0[2],
-                                        tri_tp1[0],tri_tp1[1],tri_tp1[2]);   
+                                    if(output_intermediate_information)
+                                        printf("due to topological coincidence invalid_3 nItsIdx[%d] query from [%d %d] : tpair[%d %d]\nt0 : %d %d %d\nt1 : %d %d %d\ntpair[0]: %d %d %d\ntpair[1]: %d %d %d\n",
+                                            nItsIdx,t0,t1,tpair[0],tpair[1],
+                                            tri_t0[0],tri_t0[1],tri_t0[2],
+                                            tri_t1[0],tri_t1[1],tri_t1[2],
+                                            tri_tp0[0],tri_tp0[1],tri_tp0[2],
+                                            tri_tp1[0],tri_tp1[1],tri_tp1[2]);   
                                     return;
                                 }
                             }           
@@ -1382,7 +1402,8 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
 
         });
 
-        std::cout << "FINISH INTERSECTION TOPO EVAL" << std::endl;
+        if(output_intermediate_information)
+            std::cout << "FINISH INTERSECTION TOPO EVAL" << std::endl;
 
         auto nmEntries = incidentItsTab.size();
         zs::Vector<zs::vec<int,2>> conn_topo{tris.get_allocator(),nmEntries};
@@ -1433,11 +1454,13 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
             nodal_colors[ni] = 0;
         });
 
-        std::cout << "nm_rings " << nm_rings << std::endl;
+        if(output_intermediate_information)
+            std::cout << "nm_rings " << nm_rings << std::endl;
 
         for(int ri = 0;ri != nm_rings;++ri) {
             auto rsize = ringSize.getVal(ri);
-            printf("ring[%d] Size : %d\n",ri,rsize);
+            if(output_intermediate_information)
+                printf("ring[%d] Size : %d\n",ri,rsize);
 
             // edge_topo_type dc_edge_topos{tris.get_allocator(),rsize * 6};
             table_int_type disable_points{tris.get_allocator(),rsize * 8};
@@ -1448,6 +1471,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
             pol(zs::range(nm_insts),[
                 ints_buffer = proxy<space>({},ints_buffer),
                 ringTag = proxy<space>(ringTag),
+                output_intermediate_information,
                 ri,
                 topo_tag = zs::SmallString(topo_tag),
                 // dc_edge_topos = proxy<space>(dc_edge_topos),
@@ -1487,9 +1511,10 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                             for(int j = 0;j != 3;++j)
                                 if(tri_pairs[0][i] == tri_pairs[1][j])
                                     coincident_idx = tri_pairs[0][i];
-                        if(coincident_idx < 0)
-                            printf("invalid coincident_idx detected : %d\n",coincident_idx);
-                        else
+                        if(coincident_idx < 0){
+                            if(output_intermediate_information)
+                                printf("invalid coincident_idx detected : %d\n",coincident_idx);
+                        }else
                             disable_points.insert(coincident_idx);
                     }   
     
@@ -1551,6 +1576,10 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                     auto tb = tpair[1];
                     auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
                     auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
+                    // for(int i = 0;i != 3;++i){
+                    //     nodal_colors[triA[i]] = 0;
+                    //     nodal_colors[triB[i]] = 0;
+                    // }
 
                     int coidx = 0;
                     for(int i = 0;i != 3;++i)
@@ -1561,9 +1590,44 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                 }
         });
 
-        // std::cout << "nm_insts : " << nm_insts << std::endl;
 
-        // return 0;
+
+        // pol(zs::range(tris.size()),[
+        //     halfedges = proxy<space>({},halfedges),
+        //     tris = proxy<space>({},tris),
+        //     xtag,
+        //     verts = proxy<space>({},verts),
+        //     nodal_colors = proxy<space>(nodal_colors)] ZS_LAMBDA(int ti) mutable {
+        //         auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+        //         vec3 Vt[3] = {};
+        //         vec3 Vn[3] = {};
+        //         for(int i = 0;i != 3;++i)
+        //             Vt[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+        //         auto nrmt = (Vt[1] - Vt[0]).cross(Vt[2] - Vt[0]).normalized();
+                
+
+        //         auto he_idx = zs::reinterpret_bits<int>(tris("he_inds",ti));
+        //         bool is_flip_tri = false;
+        //         for(int i = 0;i != 3;++i) {
+        //             auto opposite_he_idx = zs::reinterpret_bits<int>(halfedges("opposite_he",he_idx));
+        //             if(opposite_he_idx < 0)
+        //                 continue;
+        //             auto tn = zs::reinterpret_bits<int>(halfedges("to_face",opposite_he_idx));
+        //             auto trin = tris.pack(dim_c<3>,"inds",tn,int_c);
+        //             for(int j = 0;j != 3;++j)
+        //                 Vn[j] = verts.pack(dim_c<3>,xtag,trin[i]);
+
+        //             auto nrmn = (Vn[1] - Vn[0]).cross(Vn[2] - Vn[0]).normalized();
+        //             if(nrmn.dot(nrmt) < -0.966) {
+        //                 // is_flip_tri = true;
+        //                 // break;
+        //                 nodal_colors[tri[(i+1) % 3]] = 0;
+        //                 nodal_colors[tri[i]] = 0;
+        //             }
+
+        //             he_idx = zs::reinterpret_bits<int>(halfedges("next_he",he_idx));
+        //         }
+        // });
 
         return nm_insts;
 }

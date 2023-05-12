@@ -57,7 +57,7 @@ void do_facet_point_collsion_detection_and_compute_surface_normal(Pol& cudaPol,
         constexpr auto space = execspace_e::cuda;
 
         auto avgl = compute_average_edge_length(cudaPol,verts,xtag,tris);
-        auto bvh_thickness = 2 * avgl;
+        auto bvh_thickness = 3 * avgl;
         if(!calculate_facet_normal(cudaPol,verts,xtag,tris,triNrmBuffer,"nrm")){
             throw std::runtime_error("fail updating facet normal");
         } 
@@ -119,10 +119,23 @@ void do_facet_point_collsion_detection_and_compute_surface_normal(Pol& cudaPol,
                             return;
 
                     auto p = verts.pack(dim_c<3>,xtag,vi);
-
-                    auto dist = (T)0.0;
                     auto seg = p - tvs[0];
-                    auto collisionEps = seg.dot(tnrm) > 0 ? out_collisionEps : in_collisionEps;
+                    auto dist = seg.dot(tnrm);
+                    if(dist < 0 && verts.hasProperty("gia_tag")) {
+                        auto GIA_TAG = reinterpret_bits<int>(verts("gia_tag",vi));
+                        if(GIA_TAG == 0)
+                            return;
+                        bool is_same_ring = false;
+                        for(int i = 0;i != 3;++i) {
+                            auto TGIA_TAG = reinterpret_bits<int>(verts("gia_tag",tri[i]));
+                            if((TGIA_TAG | GIA_TAG) > 0)
+                                is_same_ring = true;
+                        }
+                        if(!is_same_ring)
+                            return;
+                    }
+
+                    auto collisionEps = dist > 0 ? out_collisionEps : in_collisionEps;
 
                     auto barySum = (T)1.0;
                     T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],p,barySum);
@@ -130,9 +143,7 @@ void do_facet_point_collsion_detection_and_compute_surface_normal(Pol& cudaPol,
                     if(distance > collisionEps)
                         return;
 
-                    if(barySum > 1.01)
-                        return;
-                    else {
+                    if(barySum > (T)(1.0 + 1e-6)) {
                         for(int i = 0;i != 3;++i){
                             seg = p - tvs[i];
                             if(bnrms[i].dot(seg) < 0)
@@ -180,14 +191,14 @@ void do_facet_point_collision_detection(Pol& cudaPol,
         if(!calculate_facet_normal(cudaPol,verts,xtag,tris,sttemp,"nrm")){
             throw std::runtime_error("fail updating facet normal");
         }       
-        if(!COLLISION_UTILS::calculate_cell_bisector_normal(cudaPol,
-            verts,xtag,
-            lines,
-            tris,
-            sttemp,"nrm",
-            setemp,"nrm")){
-                throw std::runtime_error("fail calculate cell bisector normal");
-        }       
+        // if(!COLLISION_UTILS::calculate_cell_bisector_normal(cudaPol,
+        //     verts,xtag,
+        //     lines,
+        //     tris,
+        //     sttemp,"nrm",
+        //     setemp,"nrm")){
+        //         throw std::runtime_error("fail calculate cell bisector normal");
+        // }       
         TILEVEC_OPS::fill<4>(cudaPol,fp_collision_buffer,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
         TILEVEC_OPS::fill(cudaPol,fp_collision_buffer,"inverted",reinterpret_bits<T>((int)0));
         cudaPol(zs::range(points.size()),[in_collisionEps = in_collisionEps,

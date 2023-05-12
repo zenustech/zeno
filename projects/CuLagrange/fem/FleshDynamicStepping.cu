@@ -1642,6 +1642,7 @@ struct FleshDynamicStepping : INode {
         auto max_cg_iters = get_param<int>("max_cg_iters");
 
         bool use_plane_constraint = get_input2<bool>("use_plane_constraint");
+        bool use_binder_constraint = get_input2<bool>("use_binder_constraint");
 
         bool use_line_search = get_param<bool>("use_line_search");
 
@@ -1752,13 +1753,19 @@ struct FleshDynamicStepping : INode {
                 throw std::runtime_error("unsupported anisotropic elasticity model");
             })(models.getElasticModel(),models.getAnisoElasticModel());
             // std::cout << "computePositionConstraintGradientAndHessian : " << kverts.size() << std::endl;
-            A.computePositionConstraintGradientAndHessian(cudaPol,
-                vtemp,
-                binderTag,
-                binderThicknessTag,
-                binderInversionTag,
-                kverts,
-                gh_buffer);
+            // the binder constraint gradient and hessian
+            if(use_binder_constraint) {
+                std::cout << "apply binder constraint " << std::endl;
+                A.computePositionConstraintGradientAndHessian(cudaPol,
+                    vtemp,
+                    binderTag,
+                    binderThicknessTag,
+                    binderInversionTag,
+                    kverts,
+                    gh_buffer);
+            }else {
+                std::cout << "apply no binder constraint" << std::endl;
+            }
             if(verts.hasProperty(planeConsPosTag) && verts.hasProperty(planeConsNrmTag) && verts.hasProperty(planeConsIDTag) && verts.hasProperty(planeConsBaryTag) && use_plane_constraint){
                 std::cout << "apply plane constraint" << std::endl;
                 // A.computePlaneConstraintGradientAndHessian(cudaPol,
@@ -1786,37 +1793,6 @@ struct FleshDynamicStepping : INode {
 
             if(turn_on_self_collision) {
                 // auto nm_insts = do_
-
-                #ifdef USE_SPARSE_MATRIX
-                COLLISION_UTILS::do_facet_point_collsion_detection_and_compute_surface_normal(
-                    cudaPol,
-                    vtemp,"xn",
-                    points,tris,sttemp,csPT,nm_csPT,(T)in_collisionEps,(T )out_collisionEps);
-                std::cout << "nm_csPT detected : " << nm_csPT << std::endl;
-
-                match([&](auto &elasticModel) {
-                COLLISION_UTILS::evaluate_fp_collision_grad_and_hessian(
-                    cudaPol,
-                    vtemp,"xn",
-                    csPT,nm_csPT,
-                    fp_buffer,
-                    (T)in_collisionEps,(T)out_collisionEps,
-                    (T)collisionStiffness,
-                    elasticModel.mu,elasticModel.lam);
-                })(models.getElasticModel());
-
-                auto cHn = TILEVEC_OPS::dot<12 * 12>(cudaPol,fp_buffer,"H","H");
-                if(std::isnan(cHn)) {
-                    std::cout << "nan cHn detected : " << std::endl;
-                    throw std::runtime_error("nan cHn detected");
-                }
-                #else
-
-                // if(verts.hasProperty("active"))
-                //     TILEVEC_OPS::copy(cudaPol,verts,"k_active",vtemp,"k_active");
-                // else
-                //     TILEVEC_OPS::fill(cudaPol,vtemp,"k_active",(T)1.0);
-
                 topological_sample(cudaPol,points,vtemp,"xn",surf_verts_buffer);
                 auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(cudaPol,
                     surf_verts_buffer,"xn",surf_tris_buffer,halfedges,inst_buffer_info,nodal_colors);
@@ -1830,18 +1806,44 @@ struct FleshDynamicStepping : INode {
                             vtemp("gia_tag",vi) = zs::reinterpret_bits<T>(nodal_colors[pi]);
                         }
                 });
-                match([&](auto &elasticModel) {
-                    A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
-                        vtemp,
-                        etemp,
-                        sttemp,
-                        setemp,
-                        // ee_buffer,
+
+
+                #ifdef USE_SPARSE_MATRIX
+                    COLLISION_UTILS::do_facet_point_collsion_detection_and_compute_surface_normal(
+                        cudaPol,
+                        vtemp,"xn",
+                        points,tris,sttemp,csPT,nm_csPT,(T)in_collisionEps,(T )out_collisionEps);
+                    std::cout << "nm_csPT detected : " << nm_csPT << std::endl;
+
+                    match([&](auto &elasticModel) {
+                    COLLISION_UTILS::evaluate_fp_collision_grad_and_hessian(
+                        cudaPol,
+                        vtemp,"xn",
+                        csPT,nm_csPT,
                         fp_buffer,
-                        kverts,
-                        kc_buffer,
-                        gh_buffer,kd_theta);
+                        (T)in_collisionEps,(T)out_collisionEps,
+                        (T)collisionStiffness,
+                        elasticModel.mu,elasticModel.lam);
                     })(models.getElasticModel());
+
+                    // auto cHn = TILEVEC_OPS::dot<12 * 12>(cudaPol,fp_buffer,"H","H");
+                    // if(std::isnan(cHn)) {
+                    //     std::cout << "nan cHn detected : " << std::endl;
+                    //     throw std::runtime_error("nan cHn detected");
+                    // }
+                #else
+                    match([&](auto &elasticModel) {
+                        A.computeCollisionGradientAndHessian(cudaPol,elasticModel,
+                            vtemp,
+                            etemp,
+                            sttemp,
+                            setemp,
+                            // ee_buffer,
+                            fp_buffer,
+                            kverts,
+                            kc_buffer,
+                            gh_buffer,kd_theta);
+                        })(models.getElasticModel());
                 #endif
             }
 
@@ -1910,8 +1912,8 @@ struct FleshDynamicStepping : INode {
             timer.tick();
             TILEVEC_OPS::fill(cudaPol,vtemp,"dir",(T)0.0);
             // std::cout << "solve using pcg" << std::endl;
-            auto Hn = TILEVEC_OPS::dot<12 * 12>(cudaPol,gh_buffer,"H","H");
-            std::cout << "Hn : " << Hn << std::endl;
+            // auto Hn = TILEVEC_OPS::dot<12 * 12>(cudaPol,gh_buffer,"H","H");
+            // std::cout << "Hn : " << Hn << std::endl;
             int nm_CG_iters = 0;
             #ifdef USE_SPARSE_MATRIX
                 if(turn_on_self_collision)
@@ -2025,6 +2027,7 @@ ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","kinematic_boundary",
                                     {"float","binderStiffness","1.0"},
                                     {"float","planeConsStiffness","0.01"},
                                     {"bool","use_plane_constraint","0"},
+                                    {"bool","use_binder_constraint","0"},
                                     {"bool","use_self_collision","0"},
                                     {"bool","use_sticky_condition","0"}
                                     },

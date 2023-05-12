@@ -933,16 +933,16 @@ if(do_cuda_profile)
             add<space_dim>(pol,vtemp,"r",(T)1.0,"temp",-alpha,"r");
             // timer.tock("add time");
             // recalculate the residual to fix floating point error accumulation
-            if(iter % (recal_iter + 1) == recal_iter){
-                // r = b - Hx
-                TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
-                multiply(pol,vtemp,spmat,"x","temp",do_cuda_profile,true);
-                multiply<space_dim,4>(pol,vtemp,dyn_buffer,"H","inds","p","temp",do_cuda_profile,false);
-                // multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
-                // multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp");
-                add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
-                project<space_dim>(pol,vtemp,"r","btag");
-            }
+            // if(iter % (recal_iter + 1) == recal_iter){
+            //     // r = b - Hx
+            //     TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+            //     multiply(pol,vtemp,spmat,"x","temp",do_cuda_profile,true);
+            //     multiply<space_dim,4>(pol,vtemp,dyn_buffer,"H","inds","p","temp",do_cuda_profile,false);
+            //     // multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
+            //     // multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp");
+            //     add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
+            //     project<space_dim>(pol,vtemp,"r","btag");
+            // }
             // P * r -> q
             // timer.tick();
             precondition<space_dim>(pol,vtemp,"P","r","q");
@@ -1092,14 +1092,14 @@ if(do_cuda_profile)
             add<space_dim>(pol,vtemp,"r",(T)1.0,"temp",-alpha,"r");
             // timer.tock("add time");
             // recalculate the residual to fix floating point error accumulation
-            if(iter % (recal_iter + 1) == recal_iter){
-                // r = b - Hx
-                TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
-                multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp",false,true);
-                multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp",false,false);
-                add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
-                project<space_dim>(pol,vtemp,"r","btag");
-            }
+            // if(iter % (recal_iter + 1) == recal_iter){
+            //     // r = b - Hx
+            //     TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+            //     multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp",false,true);
+            //     multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp",false,false);
+            //     add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
+            //     project<space_dim>(pol,vtemp,"r","btag");
+            // }
             // P * r -> q
             // timer.tick();
             precondition<space_dim>(pol,vtemp,"P","r","q");
