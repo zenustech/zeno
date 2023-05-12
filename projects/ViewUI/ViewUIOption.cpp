@@ -11,7 +11,7 @@ namespace {
 
 enum CarModelOptionType
 {
-    Head = 0,
+    Head = 2,
     Tail,
     Top,
     Window,
@@ -59,6 +59,12 @@ struct BlendShapeListParse : zeno::INode {
         //objOption->originalObj = std::make_shared<zeno::PrimitiveObject>(*tmpPrim);
         if (tmpPrim1 == nullptr)
         {
+            set_output("prim", objOption->originalObj);
+            set_output("controlPoint", objOption->newObj);
+            set_output("opt", objOption);
+            set_output("length", std::make_shared<zeno::NumericObject>(0));
+            set_output("width", std::make_shared<zeno::NumericObject>(0));
+            set_output("height", std::make_shared<zeno::NumericObject>(0));
             return;
         }
         auto tmpPrim = dynamic_cast<zeno::PrimitiveObject *>(tmpPrim1->arr[0].get());
@@ -70,8 +76,10 @@ struct BlendShapeListParse : zeno::INode {
             z.push_back(p[2]);
         }
 
-        objOption->newObj = std::make_shared<zeno::PrimitiveObject>(*tmpPrim);
-        set_output("prim", objOption->newObj);
+        auto tmpNewPrim = dynamic_cast<zeno::PrimitiveObject *>(primAndMaterial->arr[objOption->type].get());
+        objOption->newObj = std::make_shared<zeno::PrimitiveObject>(*tmpNewPrim);
+        set_output("prim", objOption->originalObj);
+        set_output("controlPoint", objOption->newObj);
         set_output("opt", objOption);
 
         float minl = *std::min_element(x.begin(), x.end());
@@ -99,7 +107,7 @@ struct BlendShapeListParse : zeno::INode {
 ZENDEFNODE(BlendShapeListParse,{/*输入*/
                            {"list"},
                            /*输出*/
-                           {"prim", "opt", "length", "width", "height"},
+                           {"prim", "controlPoint", "opt", "length", "width", "height"},
                            /*参数*/
                            {
                                {"bool", "Checked", "false"},
@@ -124,30 +132,35 @@ struct CreatePrimeListInPointIndex : zeno::INode {
                     auto tmp1 = dynamic_cast<zeno::ListObject *>(pointList[i].get());
                     auto tmp2 = tmp1->get<std::decay_t<zeno::NumericObject>>();
                     std::vector<int> tmpPntIdx;
-                    for (int i = 0; i < tmp2.size(); i++)
+                    for (int n = 0; n < tmp2.size(); n++)
                     {
-                        tmpPntIdx.push_back(tmp2[i]->get<int>());
+                        tmpPntIdx.push_back(tmp2[n]->get<int>());
                     }
                     pntIdx.push_back(tmpPntIdx);
                 }
             }
+            outPrim->verts.resize(pntIdx.size());
             for (int i = 0; i < changePntList.size(); i++) {
                 auto tmpPntOffset = changePntList[i]->get<zeno::vec2f>();
-                auto tmpIdx = pntIdx[i];
+                auto tmpIdx = pntIdx[i];                
                 for (auto tmpIdxSub : tmpIdx) {
-                    auto tmpPntOriginal = prim->verts[tmpIdxSub];
-                    prim->verts[tmpIdxSub][0] = tmpPntOriginal[0] + tmpPntOffset[0];
-                    prim->verts[tmpIdxSub][1] = tmpPntOriginal[1] + tmpPntOffset[1];
-                }                
-            }          
+                    //auto tmpPntOriginal = prim->verts[tmpIdxSub];
+                    //prim->verts[tmpIdxSub][0] = tmpPntOriginal[0] + tmpPntOffset[0];
+                    //prim->verts[tmpIdxSub][1] = tmpPntOriginal[1] + tmpPntOffset[1];
+                    prim->verts[tmpIdxSub][0] += tmpPntOffset[0];
+                    prim->verts[tmpIdxSub][1] += tmpPntOffset[1];
+                }
+                outPrim->verts[i] = prim->verts[tmpIdx[0]];
+            }
         }
         set_output("prim", std::move(prim));
+        set_output("ControlPoint", std::move(outPrim));
     }
 };
 ZENDEFNODE(CreatePrimeListInPointIndex, {/*输入*/
                                          {"prim", "pointList", "changePntList"},
                                           /*输出*/
-                                          {"prim"},
+                                         {"prim", "ControlPoint"},
                                           /*参数*/
                                           {},
                                           /*类别*/
