@@ -467,11 +467,11 @@ struct ZSSolveShallowWaterMomentum : INode {
         int block_length = ud.get2<int>("block");
         int block_nx = (nx + block_length - 1) / block_length;
         int block_nz = (nz + block_length - 1) / block_length;
+        size_t block_cnt = block_nx * block_nz;
         if (!grid->hasAuxData("sparsity")) {
-            (*grid)["sparsity"] =
-                ZenoParticles::particles_t{pars.get_allocator(), {{"spg", 1}}, (size_t)block_nx * block_nz};
+            (*grid)["sparsity"] = ZenoParticles::particles_t{pars.get_allocator(), {{"spg", 1}}, block_cnt};
         };
-        auto &sparsity = (*grid)["sparsity"];
+        auto spg = (*grid)["sparsity"].begin("spg");
 
         const unsigned int nc = (nx + halo) * (nz + halo);
 
@@ -486,6 +486,54 @@ struct ZSSolveShallowWaterMomentum : INode {
         auto w_old = pars.begin(w_attr);
         zs::Vector<float> u_new_{nc, zs::memsrc_e::device, 0}, w_new_{nc, zs::memsrc_e::device, 0},
             u_rk_{nc, zs::memsrc_e::device, 0}, w_rk_{nc, zs::memsrc_e::device, 0};
+
+        {
+            // mark active blocks
+            auto pol = zs::cuda_exec();
+            zs::Vector<float> spg_{pars.get_allocator(), block_cnt};
+            spg_.reset(0);
+            pol(zs::Collapse{block_cnt, 128}, [spg_ = spg_.data(), h, block_length, block_nx, block_nz, halo, nx,
+                                               nz] ZS_LAMBDA(int bid, int tid) mutable {
+                auto idx = [=](auto i, auto j) { return j * (nx + halo) + i; };
+                int block_size = block_length * block_length;
+                for (int cid = tid; cid < block_size; cid += 128) {
+                    int i = (bid % block_nx) * block_length + cid % block_length + halo / 2;
+                    int j = int(bid / block_nx) * block_length + int(cid / block_length) + halo / 2;
+
+                    if (i >= nx + halo / 2 || j >= nz + halo / 2)
+                        continue;
+
+                    if (h[idx(i, j)] > zs::limits<float>::epsilon() * 10)
+                        spg_[bid] = 1;
+                }
+            });
+            pol(zs::range(block_cnt), [spg, spg_prev = spg_.data(), block_nx, block_nz] ZS_LAMBDA(int bid) mutable {
+                int bx = bid % block_nx;
+                int bz = bid / block_nx;
+
+                auto getNeighborId = [=](int i, int j) -> int {
+                    i = bx + i;
+                    j = bz + j;
+                    if (i < 0 || i >= block_nx || j < 0 || j >= block_nz)
+                        return -1;
+                    return j * block_nx + i;
+                };
+                spg[bid] = spg_prev[bid];
+                bool marked = false;
+                for (int j = -1; j <= 1; j += 2)
+                    for (int i = -1; i <= 1; i += 2) {
+                        if (marked)
+                            break;
+                        auto nid = getNeighborId(i, j);
+                        if (nid >= 0) {
+                            if (spg_prev[nid] > 0) {
+                                spg[bid] = 1;
+                                marked = true;
+                            }
+                        }
+                    }
+            });
+        }
 
         {
             auto u_new = u_new_.data();
