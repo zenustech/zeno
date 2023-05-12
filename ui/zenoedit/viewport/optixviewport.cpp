@@ -54,6 +54,12 @@ void OptixWorker::cancelRecording()
     m_bRecording = false;
 }
 
+void OptixWorker::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+    auto scene = m_zenoVis->getSession()->get_scene();
+    scene->drawOptions->updateLightCameraOnly = updateLightCameraOnly;
+    scene->drawOptions->updateMatlOnly = updateMatlOnly;
+}
+
 void OptixWorker::recordVideo(VideoRecInfo recInfo)
 {
     //for the case about recording after run.
@@ -213,7 +219,9 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
+    connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
 
+    setRenderSeparately(false, false);
     m_thdOptix.start();
 }
 
@@ -225,6 +233,10 @@ void ZOptixViewport::setSimpleRenderOption()
 {
     auto scene = m_zenovis->getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
+}
+
+void ZOptixViewport::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+    emit sig_setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
 }
 
 void ZOptixViewport::cameraLookTo(int dir)

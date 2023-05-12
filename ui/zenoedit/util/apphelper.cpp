@@ -118,7 +118,7 @@ void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex node
         return;
     if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" &&
         nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
-        (main->isAlways() || main->isAlwaysLightCameraMaterial()))
+        (main->isAlways() || main->isAlwaysLightCamera()))
     {
         //only update nodes.
         zeno::scope_exit sp([=] { pModel->setApiRunningEnable(true);});
