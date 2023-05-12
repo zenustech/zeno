@@ -182,7 +182,7 @@ struct CameraEval: zeno::INode {
                     int next_frame = (int)next_node->userData().get2<float>("frame");
                     int pre_frame = (int)pre_node->userData().get2<float>("frame");
                     int total_frame = next_frame - pre_frame;
-                    float r = (float)frameid / total_frame;
+                    float r = ((float)frameid - pre_frame) / total_frame;
 
                     if(frameid <= next_frame){
                         auto pos = pre_node->pos + (next_node->pos - pre_node->pos) * r;

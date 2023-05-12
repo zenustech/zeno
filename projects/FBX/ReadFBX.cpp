@@ -644,6 +644,7 @@ struct Mesh{
                 mat.val.at(com.first).texPath = "-1";
             }
 
+            // TODO Get Material Value To Node
             /*
             if(! texfound)
             // The second step - to find the material-prop and to generate a value-based texture
