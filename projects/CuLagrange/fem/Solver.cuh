@@ -180,7 +180,7 @@ struct IPCSystem : IObject {
         return zs::make_tuple(ncsPT.getVal(), ncsEE.getVal());
     }
     void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol);
-    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, std::true_type);
+    void markSelfIntersectionPrimitives(zs::CudaExecutionPolicy &pol, zs::true_type);
     void findProximityPairs(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary);
     void findCollisionConstraints(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0);
     void findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol, T dHat, T xi, bool withBoundary = false);
@@ -214,18 +214,18 @@ struct IPCSystem : IObject {
     // krylov solver
     T infNorm(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag = "dir");
     T dot(zs::CudaExecutionPolicy &cudaPol, const zs::SmallString tag0, const zs::SmallString tag1);
-    void project(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString tag);
+    void project(zs::CudaExecutionPolicy &pol, zs::true_type, const zs::SmallString tag);
     void project(zs::CudaExecutionPolicy &pol, const zs::SmallString tag);
-    void precondition(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString srcTag,
+    void precondition(zs::CudaExecutionPolicy &pol, zs::true_type, const zs::SmallString srcTag,
                       const zs::SmallString dstTag);
     void precondition(zs::CudaExecutionPolicy &pol, const zs::SmallString srcTag, const zs::SmallString dstTag);
 
-    void multiply(zs::CudaExecutionPolicy &pol, std::true_type, const zs::SmallString dxTag,
+    void multiply(zs::CudaExecutionPolicy &pol, zs::true_type, const zs::SmallString dxTag,
                   const zs::SmallString bTag);
     void multiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
     void systemMultiply(zs::CudaExecutionPolicy &pol, const zs::SmallString dxTag, const zs::SmallString bTag);
 
-    void cgsolve(zs::CudaExecutionPolicy &cudaPol, std::true_type);
+    void cgsolve(zs::CudaExecutionPolicy &cudaPol, zs::true_type);
     void cgsolve(zs::CudaExecutionPolicy &cudaPol);
     void systemSolve(zs::CudaExecutionPolicy &cudaPol);
 
