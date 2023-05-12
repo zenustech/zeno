@@ -451,8 +451,11 @@ struct ZSSolveShallowWaterMomentum : INode {
 
     void apply() override {
         auto grid = get_input<ZenoParticles>("SWGrid");
+        auto &pars = grid->getParticles();
+
         auto &ud = static_cast<IObject *>(grid.get())->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")) || (!ud.has<float>("dx")))
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")) || (!ud.has<int>("halo")) || (!ud.has<float>("dx")) ||
+            (!ud.has<int>("block")))
             zeno::log_error("no such UserData named '{}', '{}', '{}' or '{}'.", "nx", "nz", "halo", "dx");
         int nx = ud.get2<int>("nx");
         int nz = ud.get2<int>("nz");
@@ -461,14 +464,21 @@ struct ZSSolveShallowWaterMomentum : INode {
         auto dt = get_input2<float>("dt");
         auto gravity = get_input2<float>("gravity");
 
+        int block_length = ud.get2<int>("block");
+        int block_nx = (nx + block_length - 1) / block_length;
+        int block_nz = (nz + block_length - 1) / block_length;
+        if (!grid->hasAuxData("sparsity")) {
+            (*grid)["sparsity"] =
+                ZenoParticles::particles_t{pars.get_allocator(), {{"spg", 1}}, (size_t)block_nx * block_nz};
+        };
+        auto &sparsity = (*grid)["sparsity"];
+
         const unsigned int nc = (nx + halo) * (nz + halo);
 
         auto terrain_attr = get_input2<std::string>("terrain_attr");
         auto height_attr = get_input2<std::string>("height_attr");
         auto u_attr = get_input2<std::string>("u_attr");
         auto w_attr = get_input2<std::string>("w_attr");
-
-        auto &pars = grid->getParticles();
 
         auto B = pars.begin(terrain_attr);
         auto h = pars.begin(height_attr);
