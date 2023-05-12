@@ -30,6 +30,7 @@ public:
     std::shared_ptr<zeno::Picker> picker() const;
     void updateCameraProp(float aperture, float disPlane);
     void setSimpleRenderOption();
+    void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     bool isCameraMoving() const;
     bool isPlaying() const;
     bool isGLViewport() const;
@@ -39,7 +40,7 @@ public:
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
-    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false);
+    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void onRecord();
     void onScreenShoot();
     void onKill();
