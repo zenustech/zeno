@@ -863,8 +863,6 @@ static void getCuStringFromFile( std::string& cu, std::string& location, const c
     throw std::runtime_error( "Couldn't open source file " + std::string( filename ) );
 }
 
-static std::string g_nvrtcLog;
-
 std::vector<const char *> &getIncFileTab() {
     static std::vector<const char *> ret;
     return ret;
@@ -934,15 +932,19 @@ static bool getPtxFromCuString( std::string&                    ptx,
     // JIT compile CU to PTX
     const nvrtcResult compileRes = nvrtcCompileProgram( prog, (int)options.size(), options.data() );
 
+    std::string _nvrtcLog;
     // Retrieve log output
     size_t log_size = 0;
     NVRTC_CHECK_ERROR( nvrtcGetProgramLogSize( prog, &log_size ) );
-    g_nvrtcLog.resize( log_size );
+    
     if( log_size > 1 )
     {
-        NVRTC_CHECK_ERROR( nvrtcGetProgramLog( prog, &g_nvrtcLog[0] ) );
-        if( log_string )
-            *log_string = g_nvrtcLog.c_str();
+        _nvrtcLog.resize( log_size );
+        NVRTC_CHECK_ERROR( nvrtcGetProgramLog( prog, &_nvrtcLog[0] ) );
+        if( log_string ) {
+            //*log_string = ;
+            //std::cout << _nvrtcLog.c_str() << std::endl;
+        }
     }
     if( compileRes != NVRTC_SUCCESS ) {
 #if 1
@@ -968,7 +970,7 @@ static bool getPtxFromCuString( std::string&                    ptx,
         //                          + mod_cu_source + "\n=====END=====\n" + g_nvrtcLog );
         std::cout<<"NVRTC Compilation failed.\n===================BEGIN============\n";
         std::cout<<mod_cu_source<<"\n=============END==============\n";
-        std::cout<<g_nvrtcLog<<std::endl;
+        std::cout<<_nvrtcLog<<std::endl;
         NVRTC_CHECK_ERROR( nvrtcDestroyProgram( &prog ) );
         std::cout<<"mabimabi not compiled!!!!!"<<std::endl;
         return false;
