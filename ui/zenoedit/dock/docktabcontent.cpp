@@ -876,17 +876,19 @@ void DockContent_Log::initToolbar(QHBoxLayout* pToolLayout)
 {
     m_pBtnFilterLog = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
     m_pBtnPlainLog = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
-    m_pBtnFilterLog->setChecked(true);
-    pToolLayout->addWidget(m_pBtnFilterLog);
+    m_pBtnPlainLog->setChecked(true);
+    m_pBtnFilterLog->setChecked(false);
+
     pToolLayout->addWidget(m_pBtnPlainLog);
+    pToolLayout->addWidget(m_pBtnFilterLog);
     pToolLayout->addStretch();
 }
 
 QWidget* DockContent_Log::initWidget()
 {
     m_stack = new QStackedWidget;
-    m_stack->addWidget(new ZlogPanel);
     m_stack->addWidget(new ZPlainLogPanel);
+    m_stack->addWidget(new ZlogPanel);
     m_stack->setCurrentIndex(0);
 
     m_pWidget = m_stack;
@@ -898,12 +900,12 @@ void DockContent_Log::initConnections()
     connect(m_pBtnFilterLog, &ZToolBarButton::toggled, this, [=](bool isShow) {
         BlockSignalScope scope(m_pBtnPlainLog);
         m_pBtnPlainLog->setChecked(false);
-        m_stack->setCurrentIndex(0);
+        m_stack->setCurrentIndex(1);
     });
     connect(m_pBtnPlainLog, &ZToolBarButton::toggled, this, [=](bool isShow) {
         BlockSignalScope scope(m_pBtnFilterLog);
         m_pBtnFilterLog->setChecked(false);
-        m_stack->setCurrentIndex(1);
+        m_stack->setCurrentIndex(0);
     });
 }
 
