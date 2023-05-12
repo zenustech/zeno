@@ -39,7 +39,7 @@ struct UniformRemeshing : INode {
 
         // if there exist marked lines
         std::set<std::pair<int, int>> marked_lines{};
-#if 0
+#if 1
         if (has_input("marked_lines")) {
             const auto &markedLines = get_input<PrimitiveObject>("marked_lines")->lines.values;
             for (vec2i line : markedLines) {
@@ -49,7 +49,7 @@ struct UniformRemeshing : INode {
         auto &lines = prim->lines;
         lines.clear();
         efeature.clear();
-#elif 1
+#elif 0
         /// DEBUG, all perimeter lines preserved
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
@@ -197,11 +197,15 @@ struct UniformRemeshing : INode {
             }
         }
 
-#if 1
+#if 0
         prim->verts.attrs.clear();
 #else
         // delete v_duplicate at last
         prim->verts.erase_attr("v_duplicate");
+        prim->verts.erase_attr("v_normal");
+        prim->verts.erase_attr("v_deleted");
+        prim->lines.erase_attr("e_deleted");
+        prim->tris.erase_attr("f_deleted");
         prim->verts.update();
 #endif
 
