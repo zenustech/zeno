@@ -2260,7 +2260,6 @@ struct ImageDilateByColor: INode {
                 float B = image->verts[i][2];
                 zeno::RGBtoHSV(R, G, B, H, S, V);
                 H = Hi;
-
                 zeno::HSVtoRGB(H, S, V, R, G, B);
                 image->verts[i][0] = R;
                 image->verts[i][1] = G;
@@ -2274,7 +2273,6 @@ struct ImageDilateByColor: INode {
                 float B = image->verts[i][2];
                 zeno::RGBtoHSV(R, G, B, H, S, V);
                 H = 0;
-
                 zeno::HSVtoRGB(H, S, V, R, G, B);
                 image->verts[i][0] = R;
                 image->verts[i][1] = G;
