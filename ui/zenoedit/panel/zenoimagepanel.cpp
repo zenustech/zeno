@@ -110,27 +110,26 @@ void ZenoImagePanel::setPrim(std::string primid) {
                 QImage img(width, height, QImage::Format_RGB32);
                 int gridSize = 50;
                 if (obj->verts.has_attr("alpha")) {
+                    auto &alpha = obj->verts.attr<float>("alpha");
                     for (auto i = 0; i < obj->verts.size(); i++) {
                         int h = i / width;
                         int w = i % width;
-                        auto c = obj->verts[i];
-                        c = zeno::pow(c, 1.0f / 2.2f);
+                        auto foreground = obj->verts[i];
+                        foreground = zeno::pow(foreground, 1.0f / 2.2f);
+                        zeno::vec3f background;
+                        if ((h / gridSize) % 2 == (w / gridSize) % 2) {
+                            background = {1, 1, 1};
+                        }
+                        else {
+                            background = {0.86, 0.86, 0.86};
+                        }
+                        zeno::vec3f c = zeno::mix(background, foreground, alpha[i]);
+
                         int r = glm::clamp(int(c[0] * 255.99), 0, 255);
                         int g = glm::clamp(int(c[1] * 255.99), 0, 255);
                         int b = glm::clamp(int(c[2] * 255.99), 0, 255);
 
                         img.setPixel(w, height - 1 - h, qRgb(r, g, b));
-                    }
-                    for (int i = 0; i < height; ++i) {
-                        for (int j = 0; j < width; ++j) {
-                            if(obj->verts.attr<float>("alpha")[i * width + j]==0){
-                                if ((i / gridSize) % 2 == (j / gridSize) % 2) {
-                                    img.setPixel(j, height-1-i, qRgb(18, 20, 22)); // 黑色格子
-                                } else {
-                                    img.setPixel(j, height-1-i, qRgb(45, 50, 57)); // 白色格子
-                                }
-                            }
-                        }
                     }
                 }
                 else{
@@ -146,9 +145,6 @@ void ZenoImagePanel::setPrim(std::string primid) {
                         img.setPixel(w, height - 1 - h, qRgb(r, g, b));
                     }
                 }
-
-
-
                 image_view->setImage(img);
             }
             QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
