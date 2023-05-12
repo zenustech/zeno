@@ -2,7 +2,24 @@
 
 #include <stdint.h>
 #include <stddef.h>
+
+#include <cstring>
+#include <set>
+#include <stdexcept>
+#include <memory>
+
 #include "../utils/api.h"  // <zeno/utils/api.h>
+#include <zeno/zeno.h>
+#include <zeno/utils/memory.h>
+#include <zeno/utils/variantswitch.h>
+#include <zeno/utils/cppdemangle.h>
+#include <zeno/utils/compile_opts.h>
+#include <zeno/utils/log.h>
+#include <zeno/types/StringObject.h>
+#include <zeno/types/PrimitiveObject.h>
+#include <zeno/utils/zeno_p.h>
+#include <zeno/core/Session.h>
+#include <zeno/core/Graph.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,3 +88,90 @@ ZENO_CAPI Zeno_Error Zeno_InvokeCFunctionPtr(void *ffiObjArg_, const char *typeN
 #ifdef __cplusplus
 }
 #endif
+
+namespace PyZeno
+{
+template <class T>
+class LUT {
+    std::map<std::shared_ptr<T>, uint32_t> lut;
+
+public:
+    uint64_t create(std::shared_ptr<T> p) {
+        T *raw_p = p.get();
+        auto [it, succ] = lut.emplace(std::move(p), 0);
+        ++it->second;
+        return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(raw_p));
+    }
+
+    std::shared_ptr<T> const &access(uint64_t key) const {
+        T *raw_p = reinterpret_cast<T *>(static_cast<uint64_t>(key));
+        auto it = lut.find(make_stale_shared(raw_p));
+        if (ZENO_UNLIKELY(it == lut.end()))
+            throw zeno::makeError<zeno::KeyError>(std::to_string(key), zeno::cppdemangle(typeid(T)));
+        return it->first;
+    }
+
+    void destroy(uint64_t key) {
+        T *raw_p = reinterpret_cast<T *>(static_cast<uint64_t>(key));
+        auto it = lut.find(make_stale_shared(raw_p));
+        if (ZENO_UNLIKELY(it == lut.end()))
+            throw zeno::makeError<zeno::KeyError>(std::to_string(key), zeno::cppdemangle(typeid(T)));
+        if (--it->second <= 0)
+            lut.erase(it);
+    }
+};
+
+class LastError {
+    uint32_t errcode;
+    std::string message;
+
+public:
+    template <class Func>
+    uint32_t catched(Func const &func) noexcept {
+        errcode = 0;
+        message.clear();
+        try {
+            func();
+        } catch (std::exception const &e) {
+            errcode = 1;
+            message = e.what();
+            zeno::log_debug("Zeno API catched error: {}", message);
+        } catch (...) {
+            errcode = 1;
+            message = "(unknown)";
+            zeno::log_debug("Zeno API catched unknown error");
+        }
+        return errcode;
+    }
+
+    const char *what() noexcept {
+        return message.empty() ? "(success)" : message.c_str();
+    }
+
+    uint32_t code() noexcept {
+        return errcode;
+    }
+};
+
+extern LUT<zeno::Session> lutSession;
+extern LUT<zeno::Graph> lutGraph;
+extern LUT<zeno::IObject> lutObject;
+extern LastError lastError;
+extern std::map<std::string, std::shared_ptr<zeno::IObject>> tempNodeRes;
+extern std::shared_ptr<zeno::Graph> currentGraph;
+
+static auto &getObjFactory() {
+    static std::map<std::string, Zeno_Object (*)(void *)> impl;
+    return impl;
+}
+
+static auto &getObjDefactory() {
+    static std::map<std::string, void *(*)(Zeno_Object)> impl;
+    return impl;
+}
+
+static auto &getCFuncPtrs() {
+    static std::map<std::string, void *(*)(void *)> impl;
+    return impl;
+}    
+}
