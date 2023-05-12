@@ -300,7 +300,7 @@ constexpr auto solve_quadratic(const zs::VecInterface<VecT> &c,
                                double eps = 1e-8) {
   using T = typename VecT::value_type;
   using RetT = typename VecT::template variant_vec<
-      T, zs::integer_seq<typename VecT::index_type, 2>>;
+      T, zs::integer_sequence<typename VecT::index_type, 2>>;
   auto s = RetT::zeros();
   // make sure we have a d2 equation
   if (zs::abs(c[2]) < eps) {
