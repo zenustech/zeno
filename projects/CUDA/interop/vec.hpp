@@ -17,7 +17,8 @@ namespace zs
     DEFINE_SQR_MAT(3, type, tail) DEFINE_SQR_MAT(4, type, tail)
 #define LIST_MAT_VEC_TYPE(tail) mat11##tail, mat12##tail, mat13##tail, mat14##tail, \
         mat21##tail, mat22##tail, mat23##tail, mat24##tail, mat31##tail, mat32##tail, \
-        mat33##tail, mat34##tail, mat41##tail, mat42##tail, mat43##tail, mat44##tail
+        mat33##tail, mat34##tail, mat41##tail, mat42##tail, mat43##tail, mat44##tail, \
+        vec1##tail, vec2##tail, vec3##tail, vec4##tail
 
     DEFINE_MAT_VEC_TYPE(int, i)
     DEFINE_MAT_VEC_TYPE(float, f)
