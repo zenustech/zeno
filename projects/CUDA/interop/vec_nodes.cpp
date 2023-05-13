@@ -9,9 +9,10 @@ namespace zeno
 struct NumericToSmallVec : INode {
     virtual void apply() override {
         const auto& numVal = get_input<NumericObject>("numeric")->value;
-        bool isCol = get_input2<bool>("is_col"); 
+        bool isCol = get_input2<bool>("is_col");
+        auto vecType = get_input2<std::string>("vec_type");  
         auto ret = std::make_shared<SmallVecObject>(); 
-        std::visit([&ret, isCol](auto const& numObj)
+        std::visit([&ret, vecType](auto const& numObj)
         {
             using num_t = RM_CVREF_T(numObj); 
             if constexpr (zs::is_same_v<num_t, float> || zs::is_same_v<num_t, int>)
@@ -22,18 +23,21 @@ struct NumericToSmallVec : INode {
             else {
                 constexpr auto size = std::tuple_size_v<num_t>;  
                 using val_t = typename num_t::value_type; 
-                if (isCol)
+                if (vecType == "nx1")
                 {
-                    using vec_t = zs::vec<val_t, size, 1>; 
-                    auto value = vec_t(); 
+                    auto value = zs::vec<val_t, size, 1>(); 
                     for (int d = 0; d < size; d++)
                         value(d, 0) = numObj[d]; 
                     ret->set(value); 
-                } else {
-                    using vec_t = zs::vec<val_t, 1, size>; 
-                    auto value = vec_t(); 
+                } else if (vecType == "1xn") {
+                    auto value = zs::vec<val_t, 1, size>(); 
                     for (int d = 0; d < size; d++)
                         value(0, d) = numObj[d]; 
+                    ret->set(value); 
+                } else if (vecType == "n") {
+                    auto value = zs::vec<val_t, size>(); 
+                    for (int d = 0; d < size; d++)
+                        value(d) = numObj[d]; 
                     ret->set(value); 
                 }
             }
@@ -45,7 +49,7 @@ struct NumericToSmallVec : INode {
 ZENDEFNODE(NumericToSmallVec, {
     {
         "numeric", 
-        {"bool", "is_col", "1"}
+        {"enum n nx1 1xn", "vec_type", "n"}
     },
     {"ZSSmallVec"},
     {}, 
