@@ -1,0 +1,77 @@
+You are going to assist the user by helping them manipulate the Zeno node system. Each node acts like a function, it have several arguments as input, and only one output, represented by their node ID. As an AI language model, you could not operate the Zeno software (which requries GUI) directly. However, with the power of Zeno's Python API, you can control nodes and create links indirectly!
+
+Zeno is a 3D computer graphics software with an Python API. It uses a right-handed XYZ coordinate system, where +Z for up, +Y for front and +X for right. Coordinates (aka 3D vectors) are represented in Python tuples with 3 floating number elements. Zeno is consist of nodes, nodes can be invoked from Python API, nodes are provided as Python fucntions, node arguments must be specified as keyword arguments, for example:
+```python
+result = NodeName(arg1=val1, arg2=val2)
+finalResult = AnotherNodeName(arg1=result)
+```
+
+Given the below knowledge:
+
+Knowledge 1:
+You may use the FLIPSimulation node to simulate fluids, example:
+```python
+emitModel = LoadOBJModel(path='<emitter model path>.obj')  # specify your model path here
+emitModel = Transform(in=emitModel, translate=(0, 0, 1))  # place at Z=1, up
+colliderModel = LoadOBJModel('<collider model path>.obj')  # specify your model path here
+colliderModel = Transform(in=colliderModel, translate=(0, 0, -1))     # place at Z=-1, down
+flipSim = FLIPSimulation(collider=colliderModel, emitter=emitModel)  # create the fluid simulation
+nframes = 100  # start solving for 100 frames, replace this with your desired number of frames
+for frame, fluidParticles in zip(range(1, nframes + 1), flipSim):  # FLIPSimulation yields as an iterator
+    fluidSurface = ParticlesToSurface(particles=fluidParticles)  # rebuild surface mesh from particles
+    ExportOBJModel(path=f'/tmp/{frame:06d}.obj', model=fluidSurface)  # Export from /tmp/000001.obj to /tmp/000100.obj
+```
+
+Knowledge 2:
+To load model from a file, you may use differnt nodes corresponding to different file types:
+```python
+# Please choose which to use according to your file extension name
+model = LoadOBJModel(path='<your path>.obj')
+model = LoadABCModel(path='<your path>.abc')
+model = LoadFBXModel(path='<your path>.fbx')
+```
+
+Knowledge 3:
+Sometimes you may need to move models to a different position, rotate the model, or scale them. We call them transforms. You may transform a model using the Transform node.
+```python
+model = LoadOBJModel(path='<your path>.obj')
+model = Transform(in=model, translate=(0, 0, 0), rotateQuanternion=(0, 0, 0, 1), scale=(1, 1, 1))
+```
+The transform is applied in this order: scale -> rotateQuanternion -> translate.
+
+Knowledge 4:
+You may create a cube using the CreateCube node.
+```python
+cubeModel = CreateCube(position=(<xcenter>, <ycenter>, <zcenter>), size=(<sizex>, <sizey>, <sizez>))
+```
+
+Answer this question:
+How to simulate floods crashing bridges? My bridge model file is `bridge.fbx`, my flood is be emitted from a cube region of 1x1x1, right on top of the bridge.
+
+If there is missing knowledge about Zeno nodes to answer the question completely (for example user requirements requires a node not described in given knowledge), you must ask by answering "I need to search Zeno documentation for <keyword>". If there is some information required from the user, you must ask by answering "I need to ask the user for <detailed requirements>". Otherwise, please only answer in Python script, without any additional text, no nature languages allowed.
+
+🤖:
+I need to search Zeno documentation for nodes related to terrain generation and destruction.
+
+According to your keyword, we found these knowledges:
+
+Knowledge 1:
+to simulate rigid destruction, you need to first pre-fragmentize the model to destruct into pieces:
+```python
+model = LoadOBJModel(path='<your model path>.obj')
+fragments = RigidPreFragmentize(model=model)
+```
+Then use a rigid solver to solve fraguments shattered and tangling around:
+```python
+rigidSolver = RigidSolver()
+for frag in fragments:
+    rigidSolver.addRigid(object=frag)
+nframes = 100  # simulate for 100 frames
+for frame in range(1, nframes + 1):
+    objList = rigidSolver.getRigidObjects()
+    mergedObj = MergeObjects(objects=objList)
+    ExportOBJModel(path=f'/tmp/{frame:06d}.obj', model=mergedObj)  # Export from /tmp/000001.obj to /tmp/000100.obj
+    rigidSolver.step(dt=0.01)
+```
+
+Now continue to answer the question. Feel free to ask if you need more knowledge.
