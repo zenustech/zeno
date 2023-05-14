@@ -81,3 +81,4 @@ target_sources(zeno PRIVATE
 )
 
 add_subdirectory(remesh)
+add_subdirectory(interop)
