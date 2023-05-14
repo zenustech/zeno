@@ -23,7 +23,6 @@ struct NumericToSmallVec : INode {
                         auto value = zs::vec<num_t, 1, 1>{numVal};
                         ret->set(value);
                     }
-                    // TODO: add scalar into smallVec?
                 } else {
                     constexpr auto size = std::tuple_size_v<num_t>;
                     using val_t = typename num_t::value_type;
