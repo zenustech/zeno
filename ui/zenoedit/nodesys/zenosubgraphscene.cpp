@@ -1115,9 +1115,44 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
         for (auto it : m_nodes) {
             it.second->setSelected(true);
         }
+    } 
+    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Once)) 
+    {
+        updateNodeStatus(true, OPT_ONCE);
+    } 
+    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Bypass))
+    {
+        updateNodeStatus(true, OPT_MUTE);
+    } 
+    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_ClearOnce)) 
+    {
+        updateNodeStatus(false, ~OPT_ONCE);
+    } 
+    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_ClearBypass)) 
+    {
+        updateNodeStatus(false, ~OPT_MUTE);
     }
 }
 
+void ZenoSubGraphScene::updateNodeStatus(bool bOn, int option) 
+{
+    for (const QModelIndex &idx : selectNodesIndice()) 
+    {
+        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        STATUS_UPDATE_INFO info;
+        int options = idx.data(ROLE_OPTIONS).toInt();
+        info.oldValue = options;
+        if (bOn)
+            options |= option;
+        else
+            options &= option;
+        info.role = ROLE_OPTIONS;
+        info.newValue = options;
+        pGraphsModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, m_subgIdx);
+    }
+    
+}
 void ZenoSubGraphScene::keyReleaseEvent(QKeyEvent* event)
 {
     QGraphicsScene::keyReleaseEvent(event);
