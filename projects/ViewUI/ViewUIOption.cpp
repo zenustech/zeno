@@ -14,7 +14,6 @@ enum CarModelOptionType
     Head = 2,
     Tail,
     Top,
-    Window,
     HeadOutline,
     TopProfile,
     SideProfile
@@ -27,31 +26,56 @@ struct CarModelOption : zeno::IObjectClone<CarModelOption> {
     std::shared_ptr<zeno::PrimitiveObject> newObj = {};
 };
 
+struct ShowPrim : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(ShowPrim,
+    {/*输入*/
+    {"prim"},
+    /*输出*/
+    {"prim"},
+    /*参数*/
+    {},
+    /*类别*/
+    {"ViewUI"}});
+
+struct PointSpace : zeno::INode {
+    virtual void apply() override {
+        auto prim = get_input<zeno::PrimitiveObject>("prim");
+        auto pointList = get_input<zeno::ListObject>("pointList").get();
+        auto tmp1 = pointList->get<std::decay_t<zeno::NumericObject>>();
+        std::vector<zeno::vec3f> tmpPnts;
+        for (int n = 0; n < tmp1.size(); n++) {
+            tmpPnts.push_back(prim->verts[tmp1[n]->get<int>()]);
+        }
+        float space = fabs(fabs(tmpPnts[1][0] - tmpPnts[0][0] + tmpPnts[0][0]) -
+                           fabs(tmpPnts[2][0] + tmpPnts[3][0] - tmpPnts[2][0]));
+        auto value = std::make_shared<zeno::NumericObject>();
+        value->set(space);
+        set_output("value", value);
+    }
+};
+
+ZENDEFNODE(PointSpace, {/*输入*/
+                      {"prim", "pointList"},
+                      /*输出*/
+                      {"value"},
+                      /*参数*/
+                      {},
+                      /*类别*/
+                      {"ViewUI"}});
+
 struct BlendShapeListParse : zeno::INode {
     virtual void apply() override {
         auto objOption = std::make_shared<CarModelOption>();
 
         auto lineType = get_param<std::string>("LineType");
         auto checked = get_param<bool>("Checked");
-        if (checked == true) {
-            objOption->checked = true;
 
-            if (lineType == "Head") {
-                objOption->type = Head;
-            } else if (lineType == "Tail") {
-                objOption->type = Tail;
-            } else if (lineType == "Top") {
-                objOption->type = Top;
-            } else if (lineType == "Window") {
-                objOption->type = Window;
-            } else if (lineType == "HeadOutline") {
-                objOption->type = HeadOutline;
-            } else if (lineType == "TopProfile") {
-                objOption->type = TopProfile;
-            } else if (lineType == "SideProfile") {
-                objOption->type = SideProfile;
-            }
-        }
         //auto bsPrims = get_input<zeno::PrimitiveObject>("bsPrims").get();
         auto primAndMaterial = get_input<zeno::ListObject>("list").get();
         //auto tmpPrim = dynamic_cast<zeno::PrimitiveObject *>(primAndMaterial->arr[0].get());
@@ -76,8 +100,28 @@ struct BlendShapeListParse : zeno::INode {
             z.push_back(p[2]);
         }
 
-        auto tmpNewPrim = dynamic_cast<zeno::PrimitiveObject *>(primAndMaterial->arr[objOption->type].get());
-        objOption->newObj = std::make_shared<zeno::PrimitiveObject>(*tmpNewPrim);
+        if (checked == true) {
+            objOption->checked = true;
+
+            if (lineType == "Head") {
+                objOption->type = Head;
+            } else if (lineType == "Tail") {
+                objOption->type = Tail;
+            } else if (lineType == "Top") {
+                objOption->type = Top;
+            } else if (lineType == "HeadOutline") {
+                objOption->type = HeadOutline;
+            } else if (lineType == "TopProfile") {
+                objOption->type = TopProfile;
+            } else if (lineType == "SideProfile") {
+                objOption->type = SideProfile;
+            }
+            auto tmpNewPrim = dynamic_cast<zeno::PrimitiveObject *>(primAndMaterial->arr[objOption->type].get());
+            objOption->newObj = std::make_shared<zeno::PrimitiveObject>(*tmpNewPrim);
+        } else {
+            objOption->newObj = std::make_shared<zeno::PrimitiveObject>();
+        }
+        
         set_output("prim", objOption->originalObj);
         set_output("controlPoint", objOption->newObj);
         set_output("opt", objOption);
@@ -111,7 +155,7 @@ ZENDEFNODE(BlendShapeListParse,{/*输入*/
                            /*参数*/
                            {
                                {"bool", "Checked", "false"},
-                               {"enum Head Tail Top Window HeadOutline TopProfile SideProfile", "LineType", "Head"},
+                               {"enum Head Tail Top HeadOutline TopProfile SideProfile", "LineType", "Head"},
                            },
                            /*类别*/
                            {"ViewUI"}});
@@ -141,14 +185,28 @@ struct CreatePrimeListInPointIndex : zeno::INode {
             }
             outPrim->verts.resize(pntIdx.size());
             for (int i = 0; i < changePntList.size(); i++) {
-                auto tmpPntOffset = changePntList[i]->get<zeno::vec2f>();
-                auto tmpIdx = pntIdx[i];                
-                for (auto tmpIdxSub : tmpIdx) {
-                    //auto tmpPntOriginal = prim->verts[tmpIdxSub];
-                    //prim->verts[tmpIdxSub][0] = tmpPntOriginal[0] + tmpPntOffset[0];
-                    //prim->verts[tmpIdxSub][1] = tmpPntOriginal[1] + tmpPntOffset[1];
-                    prim->verts[tmpIdxSub][0] += tmpPntOffset[0];
-                    prim->verts[tmpIdxSub][1] += tmpPntOffset[1];
+                auto tmpIdx = pntIdx[i];
+                if (changePntList[i]->value.index() == 4)
+                {                    
+                    auto tmpPntOffset = changePntList[i]->get<float>();
+                    int tmpSize = tmpIdx.size() / 2;
+                    for (int i = 0; i < tmpIdx.size(); i++)
+                    {
+                        if (i < tmpSize) {
+                            prim->verts[tmpIdx[i]][2] += tmpPntOffset;
+                        } else {
+                            prim->verts[tmpIdx[i]][2] -= tmpPntOffset;
+                        }
+                    }
+                    /*for (auto tmpIdxSub : tmpIdx) {
+                    }*/
+
+                } else {
+                    auto tmpPntOffset = changePntList[i]->get<zeno::vec2f>();                    
+                    for (auto tmpIdxSub : tmpIdx) {
+                        prim->verts[tmpIdxSub][0] += tmpPntOffset[0];
+                        prim->verts[tmpIdxSub][1] += tmpPntOffset[1];
+                    }
                 }
                 outPrim->verts[i] = prim->verts[tmpIdx[0]];
             }
