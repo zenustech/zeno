@@ -543,7 +543,7 @@ struct Composite: INode {
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
                     image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : zeno::clamp(l1 + l2, 0, 1));
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(1 - (l1 + l2), 0, 1);
                 }
             }
         }
