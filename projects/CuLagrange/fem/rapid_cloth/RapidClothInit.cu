@@ -373,15 +373,13 @@ void RapidClothSystem::reinitialize(zs::CudaExecutionPolicy &pol, T framedt) {
         if (enablePE_c)
             init_front(svInds, boundarySevFront);
     }
-    iterPrims->arr.resize(0); 
-    iterBouPrims->arr.resize(0); 
 }
 
 RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t *coVerts, tiles_t *coPoints, tiles_t *coEdges,
                     tiles_t *coEles, T dt, std::size_t spmatCps, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, 
                     T augLagCoeff, T cgRel, T lcpTol, int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, bool enableSL, 
                     T gamma, T eps, int maxVertCons, T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, 
-                    bool enableDistConstraint, T repulsionRange, T tinyDist, T bouTinyDist, bool enableFric, float clothFricMu, float boundaryFricMu)
+                    bool enableDistConstraint, T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu)
     : coVerts{coVerts}, coPoints{coPoints}, coEdges{coEdges}, coEles{coEles}, spmatCps{spmatCps}, estNumCps{ncps}, bvhFrontCps{bvhFrontCps}, 
         nPP{zsprims[0]->getParticles().get_allocator(), 1}, nPE{zsprims[0]->getParticles().get_allocator(), 1},
         nPT{zsprims[0]->getParticles().get_allocator(), 1}, nEE{zsprims[0]->getParticles().get_allocator(), 1},
@@ -532,10 +530,6 @@ RapidClothSystem::RapidClothSystem(std::vector<ZenoParticles *> zsprims, tiles_t
     lcpTopMat = ispmat_t{zs::memsrc_e::device}; 
     lcpMatIs = lcpMatJs = {vtemp.get_allocator(), spmatCps}; 
     lcpConverged = lcpMatSize = {vtemp.get_allocator(), 1}; 
-    iterPrims = std::make_shared<ListObject>(); 
-    iterBouPrims = std::make_shared<ListObject>();
-    iterPrims->arr.reserve(L); 
-    iterBouPrims->arr.reserve(L); 
     initialize(cudaPol); 
 
     // debug 
@@ -663,7 +657,6 @@ struct MakeRapidClothSystem : INode {
         auto input_enable_dist_constraint = get_input2<bool>("enable_dist_constraint"); 
         auto input_repulsion_range = get_input2<float>("repulsion_range"); 
         auto input_sync_dist_thresh = get_input2<float>("sync_dist_thresh"); 
-        auto input_boundary_dist_coef = get_input2<float>("boundary_dist_coef"); 
         auto input_enable_friction = get_input2<bool>("enable_friction"); 
         auto input_cloth_fric_coef = get_input2<float>("cloth_fric_coef"); 
         auto input_boundary_fric_coef = get_input2<float>("boundary_fric_coef"); 
@@ -678,8 +671,8 @@ struct MakeRapidClothSystem : INode {
                                                    input_delta, input_sigma, input_enable_SL, input_gamma, input_eps, 
                                                    input_max_vert_cons, input_BC_stiffness, input_enable_excl_edges, 
                                                    input_repulsion_coef, input_enable_degenerated_dist, input_enable_dist_constraint, 
-                                                   input_repulsion_range, input_sync_dist_thresh, input_delta * input_boundary_dist_coef, 
-                                                   input_enable_friction, input_cloth_fric_coef, input_boundary_fric_coef);
+                                                   input_repulsion_range, input_sync_dist_thresh, input_enable_friction, 
+                                                   input_cloth_fric_coef, input_boundary_fric_coef);
         A->enableContactSelf = input_contactSelf;
 
         set_output("ZSClothSystem", A);
@@ -714,7 +707,6 @@ ZENDEFNODE(MakeRapidClothSystem, {{"ZSParticles",
                               {"float", "repulsion_coef", "0"}, 
                               {"float", "repulsion_range", "2"}, 
                               {"float", "sync_dist_thresh", "1e-2"}, 
-                              {"float", "boundary_dist_coef", "0.5"}, 
                               {"bool", "enable_degenerated_dist" , "1"} , 
                               {"bool", "enable_dist_constraint", "1"}, 
                               {"bool", "enable_friction", "0"}, 
