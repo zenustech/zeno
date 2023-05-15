@@ -565,7 +565,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             vbo->attribute(/*index=*/3,
                            /*offset=*/sizeof(float) * 9,
                            /*stride=*/sizeof(float) * 14, GL_FLOAT,
-                           /*count=*/3);
+                           /*count=*/2);
             // vTangent
             vbo->attribute(/*index=*/4,
                            /*offset=*/sizeof(float) * 11,
