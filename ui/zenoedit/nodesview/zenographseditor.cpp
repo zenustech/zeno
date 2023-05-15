@@ -104,7 +104,7 @@ void ZenoGraphsEditor::initSignals()
     connect(m_selection, &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onSideBtnToggleChanged);
     connect(m_selection, &QItemSelectionModel::currentChanged, this, &ZenoGraphsEditor::onCurrentChanged);
 
-    connect(m_ui->subnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
+    //connect(m_ui->subnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
     //connect(m_ui->subnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onTreeItemActivated(const QModelIndex&)));
 
 	connect(m_ui->welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
@@ -147,9 +147,22 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_ui->subnetTree->setModel(mgr->treeModel());
     m_ui->subnetList->setModel(pModel);
     m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_ui->subnetList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
 
-    m_ui->subnetList->setItemDelegate(new ZSubnetListItemDelegate(m_model, this));
+    ZSubnetListItemDelegate *delegate = new ZSubnetListItemDelegate(m_model, this);
+    m_ui->subnetList->setItemDelegate(delegate);
+    connect(m_ui->subnetList->selectionModel(), &QItemSelectionModel::selectionChanged, this, [=]() {
+        QModelIndexList lst = m_ui->subnetList->selectionModel()->selectedIndexes();
+        delegate->setSelectedIndexs(lst);
+        if (lst.size() == 1) 
+        {
+            onListItemActivated(lst.first());
+        }
+    });
+
+    QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Delete), m_ui->subnetList);
+    connect(shortcut, SIGNAL(activated()), delegate, SLOT(onDelete()));
 
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->mainEditor);
     m_ui->graphsViewTab->clear();

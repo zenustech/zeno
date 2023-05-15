@@ -8,7 +8,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <cmath>
 #include <random>
-//#include <array>
 
 namespace zeno
 {
@@ -523,13 +522,12 @@ float noise_simplexNoise4(float x, float y, float z, float w) {
 }
 
 //
-// ע�⣺Ҫ���� noise ���Ա���Ϊ pos ��������ԣ����磺
-//#define snoise(P) (2*noise(P) - 1) // noise() function in RenderMan shading language has range [0,1]
-//float DistNoise(point Pt, float distortion)
-//{
-//    point offset = snoise(Pt + point(0.5, 0.5, 0.5));
-//    return snoise(Pt + distortion * offset);
-//}
+// #define snoise(P) (2*noise(P) - 1) // noise() function in RenderMan shading language has range [0,1]
+// float DistNoise(point Pt, float distortion)
+// {
+//     point offset = snoise(Pt + point(0.5, 0.5, 0.5));
+//     return snoise(Pt + distortion * offset);
+// }
 //
 struct erode_noise_simplex : INode {
     void apply() override {
@@ -978,7 +976,6 @@ class pseudo_random_number_generator {
     unsigned x_;
 };
 
-
 float gabor(float K, float a, float F_0, float omega_0, float x, float y) {
     float gaussian_envelop = K * std::exp(-M_PI * (a * a) * ((x * x) + (y * y)));
     float sinusoidal_carrier = std::cos(2.0 * M_PI * F_0 * ((x * std::cos(omega_0)) + (y * std::sin(omega_0))));
@@ -1256,7 +1253,7 @@ struct erode_noise_worley : INode {
 ZENDEFNODE(erode_noise_worley,
     { /* inputs: */ {
         "prim_2DGrid",
-        "seed",
+        {"vec3f", "seed", "0,0,0"},
         {"string", "posLikeAttrName", "pos"},
         {"float", "celljitter", "1"},
         {"enum Euclidean Chebyshev Manhattan", "distType", "Euclidean"},
