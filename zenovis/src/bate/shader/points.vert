@@ -9,7 +9,7 @@ uniform float mPointScale;
 in vec3 vPosition;
 in vec3 vColor;
 in vec3 vNormal;
-in vec3 vTexCoord;
+in vec2 vTexCoord;
 in vec3 vTangent;
 
 out vec3 position;

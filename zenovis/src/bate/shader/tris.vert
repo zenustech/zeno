@@ -10,7 +10,7 @@ uniform mat4 mInvProj;
 in vec3 vPosition;
 in vec3 vColor;
 in vec3 vNormal;
-in vec3 vTexCoord;
+in vec2 vTexCoord;
 in vec3 vTangent;
 
 out vec3 position;
@@ -24,7 +24,7 @@ void main()
   position = vPosition;
   iColor = vColor;
   iNormal = vNormal;
-  iTexCoord = vTexCoord;
+  iTexCoord = vec3(vTexCoord, 0);
   iTangent = vTangent;
   gl_Position = mVP * vec4(position, 1.0);
 }

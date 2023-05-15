@@ -453,7 +453,32 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             mem[5 * i + 3] = uv[i];
             mem[5 * i + 4] = tang[i];
         }
-        vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+//        vbo->bind_data(mem);
+
+//        using vec3h = zeno::vec<3, half>;
+        struct BindData {
+            BindData(const zeno::vec3f &pos, const zeno::vec3f &clr, const zeno::vec3f &nrm, const zeno::vec2f &uv,
+                     const zeno::vec3f &tang) : pos(pos), clr(clr), nrm(nrm), uv(uv), tang(tang) {}
+
+            zeno::vec3f pos;
+            zeno::vec3f clr;
+            zeno::vec3f nrm;
+            zeno::vec2f uv;
+            zeno::vec3f tang;
+        };
+        std::vector<BindData> bind_data;
+        bind_data.reserve(vertex_count);
+        for (int i = 0; i < vertex_count; i++) {
+            bind_data.emplace_back(
+                pos[i],
+                clr[i],
+                nrm[i],
+                zeno::vec2f(uv[i][0], uv[i][1]),
+                tang[i]
+            );
+        }
+        vbo->bind_data(bind_data);
+
 
         points_count = prim->points.size();
         if (points_count) {
@@ -521,25 +546,30 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 
         auto vbobind = [&](auto &vbo) {
             vbo->bind();
+            // vPosition
             vbo->attribute(/*index=*/0,
                            /*offset=*/sizeof(float) * 0,
-                           /*stride=*/sizeof(float) * 15, GL_FLOAT,
+                           /*stride=*/sizeof(float) * 14, GL_FLOAT,
                            /*count=*/3);
+            // vColor
             vbo->attribute(/*index=*/1,
                            /*offset=*/sizeof(float) * 3,
-                           /*stride=*/sizeof(float) * 15, GL_FLOAT,
+                           /*stride=*/sizeof(float) * 14, GL_FLOAT,
                            /*count=*/3);
+            // vNormal
             vbo->attribute(/*index=*/2,
                            /*offset=*/sizeof(float) * 6,
-                           /*stride=*/sizeof(float) * 15, GL_FLOAT,
+                           /*stride=*/sizeof(float) * 14, GL_FLOAT,
                            /*count=*/3);
+            // vTexCoord
             vbo->attribute(/*index=*/3,
                            /*offset=*/sizeof(float) * 9,
-                           /*stride=*/sizeof(float) * 15, GL_FLOAT,
+                           /*stride=*/sizeof(float) * 14, GL_FLOAT,
                            /*count=*/3);
+            // vTangent
             vbo->attribute(/*index=*/4,
-                           /*offset=*/sizeof(float) * 12,
-                           /*stride=*/sizeof(float) * 15, GL_FLOAT,
+                           /*offset=*/sizeof(float) * 11,
+                           /*stride=*/sizeof(float) * 14, GL_FLOAT,
                            /*count=*/3);
         };
         auto vbounbind = [&](auto &vbo) {
