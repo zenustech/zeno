@@ -13,6 +13,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 
+#include "kernel/topology.hpp"
 #include "kernel/intersection.hpp"
 #include "kernel/tiled_vector_ops.hpp"
 
@@ -54,6 +55,63 @@ ZENDEFNODE(ZSMarkSelfCollisionRegion, {{{"zsparticles"}},
                                 {"bool","mark_tri","1"}
                             },
 							{"ZSGeometry"}});
+
+
+struct ZSTriMeshSelfCollisionRegion : zeno::INode {
+    using T = float;
+    using dtiles_t = zs::TileVector<T,32>;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using vec3 = zs::vec<T,3>;
+    using mat3 = zs::vec<T,3,3>;
+
+    virtual void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto& verts = zsparticles->getParticles();
+        auto &tris = zsparticles->getQuadraturePoints(); 
+
+        if(tris.getPropertySize("inds") != 3)
+            throw std::runtime_error("only trimesh is currently supported");
+
+        zs::Vector<int> nodal_colors{verts.get_allocator(),verts.size()};
+        zs::Vector<zs::vec<int,2>> instBuffer{tris.get_allocator(),tris.size() * 8};
+
+        auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh(cudaPol,
+            verts,"x",tris,instBuffer,nodal_colors);
+
+        std::cout << "nm_intersections : " << nm_insts << std::endl;
+
+        auto paramName = get_param<std::string>("paramName");
+        auto paramVal = get_input2<float>("paramVal");
+        
+        if(!verts.hasProperty(paramName))
+            verts.append_channels(cudaPol,{{paramName,1}});
+        TILEVEC_OPS::fill(cudaPol,verts,paramName,(T)0);
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            tris = proxy<space>({},tris),
+            paramName = zs::SmallString(paramName),
+            paramVal,
+            nodal_colors = proxy<space>(nodal_colors)] ZS_LAMBDA(int vi) mutable {
+                if(nodal_colors[vi] == 1)
+                    verts(paramName,vi) = (T)paramVal;
+        });
+
+        set_output("zsparticles",zsparticles);
+    }
+};
+
+ZENDEFNODE(ZSTriMeshSelfCollisionRegion, {{{"zsparticles"},{"float","paramVal","1.0"}},
+							{{"zsparticles"}},
+							{
+                                {"string","paramName","paramName"}
+                            },
+							{"ZSGeometry"}});
+
+
 
 struct ZSMarkCollisionRegion : zeno::INode {
     using T = float;

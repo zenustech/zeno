@@ -45,7 +45,7 @@ namespace zeno {
 
 #define MAX_FP_COLLISION_PAIRS 4
 
-// #define USE_SPARSE_MATRIX
+#define USE_SPARSE_MATRIX
 
 
 template <typename SpmatT, typename VecTM, typename VecTI,
@@ -1298,7 +1298,12 @@ struct FleshDynamicStepping : INode {
         TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
         TILEVEC_OPS::copy(cudaPol,tris,"he_inds",surf_tris_buffer,"he_inds");
         reorder_topology(cudaPol,points,surf_tris_buffer);
-        zs::Vector<int> nodal_colors{surf_verts_buffer.get_allocator(),surf_verts_buffer.size()};
+        // zs::Vector<int> nodal_colors{surf_verts_buffer.get_allocator(),surf_verts_buffer.size()};
+        dtiles_t gia_res{points.get_allocator(),{
+            {"ring_mask",1},
+            {"type_mask",1},
+            {"color_mask",1}
+        },points.size()};
         // zs::Vector<zs::vec<int,2>> instBuffer{surf_verts_buffer.get_allocator(),surf_verts_buffer.size() * 8};
         dtiles_t inst_buffer_info{tris.get_allocator(),{
             {"pair",2},
@@ -1368,7 +1373,9 @@ struct FleshDynamicStepping : INode {
                                 {"is_inverted",1},
                                 {"active",1},
                                 {"k_active",1},
-                                {"gia_tag",1},
+                                {"ring_mask",1},
+                                {"color_mask",1},
+                                {"type_mask",1},
                                 {"grad",3},
                                 {"H",9},
                                 {"inds",1}
@@ -1795,16 +1802,18 @@ struct FleshDynamicStepping : INode {
                 // auto nm_insts = do_
                 topological_sample(cudaPol,points,vtemp,"xn",surf_verts_buffer);
                 auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(cudaPol,
-                    surf_verts_buffer,"xn",surf_tris_buffer,halfedges,inst_buffer_info,nodal_colors);
-                TILEVEC_OPS::fill(cudaPol,vtemp,"gia_tag",zs::reinterpret_bits<T>((int)0));
-                cudaPol(zs::range(nodal_colors.size()),[
-                    nodal_colors = proxy<space>(nodal_colors),
+                    surf_verts_buffer,"xn",surf_tris_buffer,halfedges,inst_buffer_info,gia_res);
+                TILEVEC_OPS::fill(cudaPol,vtemp,"ring_mask",zs::reinterpret_bits<T>((int)0));
+                TILEVEC_OPS::fill(cudaPol,vtemp,"color_mask",zs::reinterpret_bits<T>((int)0));
+                TILEVEC_OPS::fill(cudaPol,vtemp,"type_mask",zs::reinterpret_bits<T>((int)0));
+                cudaPol(zs::range(gia_res.size()),[
+                    gia_res = proxy<space>({},gia_res),
                     vtemp = proxy<space>({},vtemp),
                     points = proxy<space>({},points)] ZS_LAMBDA(int pi) mutable {
                         auto vi = zs::reinterpret_bits<int>(points("inds",pi));
-                        if(nodal_colors[pi] >= 0){
-                            vtemp("gia_tag",vi) = zs::reinterpret_bits<T>(nodal_colors[pi]);
-                        }
+                        vtemp("ring_mask",vi) = gia_res("ring_mask",pi);
+                        vtemp("color_mask",vi) = gia_res("color_mask",pi);
+                        vtemp("type_mask",vi) = gia_res("type_mask",pi);
                 });
 
 

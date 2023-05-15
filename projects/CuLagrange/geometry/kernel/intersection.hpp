@@ -942,15 +942,14 @@ int do_global_self_intersection_analysis_on_surface_mesh(Pol& pol,
         return nm_insts;
 }
 
-
-template<typename Pol,typename PosTileVec,typename TriTileVec,typename IntsTileVec,typename HalfEdgeTileVec>
+template<typename Pol,typename PosTileVec,typename TriTileVec,typename IntsTileVec,typename HalfEdgeTileVec,typename GIA_TILEVEC>
 int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
     const PosTileVec& verts,
     const zs::SmallString& xtag,
     const TriTileVec& tris,
     const HalfEdgeTileVec& halfedges,
     IntsTileVec& ints_buffer,
-    zs::Vector<int>& nodal_colors,bool output_intermediate_information = false) {
+    GIA_TILEVEC& gia_res,bool output_intermediate_information = false) {
         using namespace zs;
         using index_type = std::make_signed_t<int>;
         using size_type = std::make_unsigned_t<int>;
@@ -1107,7 +1106,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                 else if(type == 0) {// intersection pair without topological coincident vertex
                     for(int i = 0;i != 3;++i){
                         if(its_edge_mark[i] == 1){
-                            // // the edge of the first triangle intersect with the second triangle
+                            // // the edge of the first triangle intersect with the second trianglegia_res
                             auto he_idx = zs::reinterpret_bits<int>(tris("he_inds",ta));
                             // int he_idx = start_he_idx;
                             for(int j = 0;j != i;++j)
@@ -1449,9 +1448,12 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
 
         zs::Vector<int> island_buffer{verts.get_allocator(),verts.size()};
         
-        nodal_colors.resize(verts.size());
-        pol(zs::range(nodal_colors.size()),[nodal_colors = proxy<space>(nodal_colors)] ZS_LAMBDA(int ni) mutable {
-            nodal_colors[ni] = 0;
+        gia_res.resize(verts.size());
+        pol(zs::range(verts.size()),[gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int ni) mutable {
+            // nodal_colors[ni] = 0;
+            gia_res("ring_mask",ni) = zs::reinterpret_bits<T>((int)0);
+            gia_res("color_mask",ni) = zs::reinterpret_bits<T>((int)0);
+            gia_res("type_mask",ni) = zs::reinterpret_bits<T>((int)0);
         });
 
         if(output_intermediate_information)
@@ -1543,10 +1545,22 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                     max_island_idx = i;
                 }
             }
+            int black_island_idx = -1;
+            if(nm_islands == 3) {
+                for(int i = 0;i != nm_islands;++i){
+                    if(i == max_island_idx)
+                        continue;
+                    black_island_idx = i;
+                    break;
+                }
+            }
+            auto cur_ri_mask = (int)1 << ri;
 
             pol(zs::range(verts.size()),[
-                nodal_colors = proxy<space>(nodal_colors),
-                ri,
+                gia_res = proxy<space>({},gia_res),
+                nm_islands,
+                cur_ri_mask,
+                black_island_idx,
                 exec_tag,
                 // ints_types = proxy<space>(ints_types),
                 max_island_idx = max_island_idx,
@@ -1554,9 +1568,20 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                     auto island_idx = island_buffer[vi];
 
                     // might exceed the integer range
-                    if(island_idx != max_island_idx/* || ints_types[island_idx] == 1*/)
-                        atomic_add(exec_tag,&nodal_colors[vi],(int)1 << ri);
-                        // nodal_colors[vi] = ri;
+                    auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",vi));
+                    auto color_mask = zs::reinterpret_bits<int>(gia_res("color_mask",vi));
+                    auto type_mask = zs::reinterpret_bits<int>(gia_res("type_mask",vi));
+                    // ring_mask += ((int) << ri)
+                    if(island_idx != max_island_idx/* || ints_types[island_idx] == 1*/){
+                        ring_mask |= cur_ri_mask;
+                    }
+                    if(nm_islands == 3)
+                        type_mask |= cur_ri_mask;
+                    if(nm_islands == 3 && island_idx == black_island_idx)
+                        color_mask |= cur_ri_mask;
+                    gia_res("ring_mask",vi) = zs::reinterpret_bits<T>(ring_mask);
+                    gia_res("color_mask",vi) = zs::reinterpret_bits<T>(color_mask);
+                    gia_res("type_mask",vi) = zs::reinterpret_bits<T>(type_mask);
             });
         }
 
@@ -1566,7 +1591,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
         // skip the intersection pair with only one coincident point? s
         pol(zs::range(nm_insts),[
             // ints_types = proxy<space>(ints_types),
-            nodal_colors = proxy<space>(nodal_colors),
+            gia_res = proxy<space>({},gia_res),
             ints_buffer = proxy<space>({},ints_buffer),
             tris = proxy<space>({},tris)] ZS_LAMBDA(int isi) mutable {
                 auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
@@ -1576,17 +1601,17 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                     auto tb = tpair[1];
                     auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
                     auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
-                    // for(int i = 0;i != 3;++i){
-                    //     nodal_colors[triA[i]] = 0;
-                    //     nodal_colors[triB[i]] = 0;
-                    // }
+
 
                     int coidx = 0;
                     for(int i = 0;i != 3;++i)
                         for(int j = 0;j != 3;++j)
                             if(triA[i] == triB[j])
                                 coidx = triA[i];
-                    nodal_colors[coidx] = 0;
+                    // nodal_colors[coidx] = 0;
+                    gia_res("ring_mask",coidx) = zs::reinterpret_bits<T>((int)0);
+                    gia_res("color_mask",coidx) = zs::reinterpret_bits<T>((int)0);
+                    gia_res("type_mask",coidx) = zs::reinterpret_bits<T>((int)0);
                 }
         });
 

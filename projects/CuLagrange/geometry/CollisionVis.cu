@@ -2580,7 +2580,7 @@ struct VisualizeSelfIntersections : zeno::INode {
             throw std::runtime_error("fail updating facet normal");
         }  
 
-        zs::Vector<int> nodal_colors{verts_buffer.get_allocator(),verts_buffer.size()};
+        // zs::Vector<int> nodal_colors{verts_buffer.get_allocator(),verts_buffer.size()};
         // zs::Vector<zs::vec<int,2>> instBuffer{tri_buffer.get_allocator(),tri_buffer.size() * 2};
         dtiles_t inst_buffer_info{tris.get_allocator(),{
             {"pair",2},
@@ -2589,9 +2589,15 @@ struct VisualizeSelfIntersections : zeno::INode {
             {"int_points",6}
         },tris.size() * 2};
 
+        dtiles_t gia_res{verts_buffer.get_allocator(),{
+            {"ring_mask",1},
+            {"type_mask",1},
+            {"color_mask",1}
+        },verts_buffer.size()};
+
         const auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
         auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(
-            cudaPol,verts_buffer,"x",tri_buffer,halfedges,inst_buffer_info,nodal_colors);
+            cudaPol,verts_buffer,"x",tri_buffer,halfedges,inst_buffer_info,gia_res);
 
         // std::cout << "inst_buffer_info : " << std::endl;
         // cudaPol(zs::range(nm_insts),[
@@ -2614,7 +2620,7 @@ struct VisualizeSelfIntersections : zeno::INode {
         // verts_buffer = verts_buffer.clone({zs::memsrc_e::host});
         // tri_buffer = tri_buffer.clone({zs::memsrc_e::host});
         flood_region = flood_region.clone({zs::memsrc_e::host});
-        nodal_colors = nodal_colors.clone({zs::memsrc_e::host});
+        gia_res = gia_res.clone({zs::memsrc_e::host});
 
         auto flood_region_vis = std::make_shared<zeno::PrimitiveObject>();
         flood_region_vis->resize(verts.size());
@@ -2625,10 +2631,11 @@ struct VisualizeSelfIntersections : zeno::INode {
             &flood_region_verts,
             &flood_region_mark,
             flood_region = proxy<omp_space>({},flood_region),
-            nodal_colors = proxy<omp_space>(nodal_colors)] (int vi) mutable {
+            gia_res = proxy<omp_space>({},gia_res)] (int vi) mutable {
                 auto p = flood_region.pack(dim_c<3>,"x",vi);
                 flood_region_verts[vi] = p.to_array();
-                flood_region_mark[vi] = nodal_colors[vi] == 0 ? (float)0.0 : (float)1.0;
+                auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",vi));
+                flood_region_mark[vi] = ring_mask == 0 ? (float)0.0 : (float)1.0;
         });
         set_output("flood_region",std::move(flood_region_vis));
 

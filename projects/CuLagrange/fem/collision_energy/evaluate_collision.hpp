@@ -121,18 +121,52 @@ void do_facet_point_collsion_detection_and_compute_surface_normal(Pol& cudaPol,
                     auto p = verts.pack(dim_c<3>,xtag,vi);
                     auto seg = p - tvs[0];
                     auto dist = seg.dot(tnrm);
-                    if(dist < 0 && verts.hasProperty("gia_tag")) {
-                        auto GIA_TAG = reinterpret_bits<int>(verts("gia_tag",vi));
-                        if(GIA_TAG == 0)
+                    if(dist < 0 && verts.hasProperty("ring_mask")) {
+                        int RING_MASK = zs::reinterpret_bits<int>(verts("ring_mask",vi));
+                        if(RING_MASK == 0)
                             return;
-                        bool is_same_ring = false;
+                        // bool is_same_ring = false;
+                        int TRING_MASK = 0;
                         for(int i = 0;i != 3;++i) {
-                            auto TGIA_TAG = reinterpret_bits<int>(verts("gia_tag",tri[i]));
-                            if((TGIA_TAG | GIA_TAG) > 0)
-                                is_same_ring = true;
+                            // auto TGIA_TAG = reinterpret_bits<int>(verts("ring_mask",tri[i]));
+                            TRING_MASK |= zs::reinterpret_bits<int>(verts("ring_mask",tri[i]));
+                            // if((TGIA_TAG | GIA_TAG) > 0)
+                            //     is_same_ring = true;
                         }
-                        if(!is_same_ring)
+                        RING_MASK = RING_MASK & TRING_MASK;
+                        // the point and the tri should belong to the same ring
+                        if(RING_MASK == 0)
                             return;
+
+                        // now the two pair belong to the same ring, check whether they belong black-white loop, and have different colors 
+
+                        // {
+#if 1
+                        auto COLOR_MASK = reinterpret_bits<int>(verts("color_mask",vi));
+                        auto TYPE_MASK = reinterpret_bits<int>(verts("type_mask",vi));
+
+                        // only check the common type-1(white-black loop) rings
+                        int TTYPE_MASK = 0;
+                        for(int i = 0;i != 3;++i)
+                            TTYPE_MASK |= reinterpret_bits<int>(verts("type_mask",tri[i]));
+                        
+                        RING_MASK &= (TYPE_MASK & TTYPE_MASK);
+                        // int nm_common_rings = 0;
+                        // while()
+                        // as long as there is one ring in which the pair have different colors, neglect the pair
+                        int curr_ri_mask = 1;
+                        for(;RING_MASK > 0;RING_MASK = RING_MASK >> 1,curr_ri_mask = curr_ri_mask << 1) {
+                            if(RING_MASK & 1) {
+                                for(int i = 0;i != 3;++i) {
+                                    auto TCOLOR_MASK = reinterpret_bits<int>(verts("color_mask",tri[i])) & curr_ri_mask;
+                                    auto VCOLOR_MASK = reinterpret_bits<int>(verts("color_mask",vi)) & curr_ri_mask;
+                                    if(TCOLOR_MASK == VCOLOR_MASK)
+                                        return;
+                                }
+                            }
+                        }
+#endif
+                        // }
                     }
 
                     auto collisionEps = dist > 0 ? out_collisionEps : in_collisionEps;
