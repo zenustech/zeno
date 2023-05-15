@@ -137,9 +137,13 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             QAction* pRename = new QAction(tr("Rename"));
             QAction* pDelete = new QAction(tr("Delete"));
 
+            if (m_selectedIndexs.size() > 1) 
+            {
+                pRename->setEnabled(false);
+            }
             connect(pDelete, &QAction::triggered, this, [=]() {
                 onDelete(index);
-                });
+             });
 
             connect(pRename, &QAction::triggered, this, [=]() {
                 onRename(index);
@@ -158,14 +162,18 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
 
 void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
 {
-    QString subgName = index.data(ROLE_OBJNAME).toString();
-    if (subgName.compare("main", Qt::CaseInsensitive) == 0)
-    {
-        QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
-        msg.exec();
-        return;
+    QStringList nameList;
+    for (const QModelIndex &idx : m_selectedIndexs) {
+        QString subgName = idx.data(ROLE_OBJNAME).toString();
+        if (subgName.compare("main", Qt::CaseInsensitive) == 0) {
+            QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
+            msg.exec();
+            continue;;
+        }
+        nameList << subgName;
     }
-    m_model->removeSubGraph(subgName);
+    for (const QString &name : nameList)
+        m_model->removeSubGraph(name);
 }
 
 void ZSubnetListItemDelegate::onRename(const QModelIndex &index) 
@@ -196,4 +204,8 @@ void ZSubnetListItemDelegate::setModelData(QWidget* editor, QAbstractItemModel* 
 void ZSubnetListItemDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const  QModelIndex& index) const
 {
     QStyledItemDelegate::updateEditorGeometry(editor, option, index);
+}
+void ZSubnetListItemDelegate::setSelectedIndexs(const QModelIndexList &list) 
+{
+    m_selectedIndexs = list;
 }
