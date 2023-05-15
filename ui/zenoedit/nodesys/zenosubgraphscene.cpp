@@ -38,6 +38,9 @@
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
     , m_tempLink(nullptr)
+    , m_bOnceOn(false)
+    , m_bBypassOn(false)
+    , m_bViewOn(false)
 {
     ZtfUtil &inst = ZtfUtil::GetInstance();
     m_nodeParams = inst.toUtilParam(inst.loadZtf(":/templates/node-example.xml"));
@@ -1118,24 +1121,21 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     } 
     else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Once)) 
     {
-        updateNodeStatus(true, OPT_ONCE);
+        updateNodeStatus(m_bOnceOn, OPT_ONCE);
     } 
     else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Bypass))
     {
-        updateNodeStatus(true, OPT_MUTE);
+        updateNodeStatus(m_bBypassOn, OPT_MUTE);
     } 
-    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_ClearOnce)) 
+    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
     {
-        updateNodeStatus(false, ~OPT_ONCE);
-    } 
-    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_ClearBypass)) 
-    {
-        updateNodeStatus(false, ~OPT_MUTE);
+        updateNodeStatus(m_bViewOn, OPT_VIEW);
     }
 }
 
-void ZenoSubGraphScene::updateNodeStatus(bool bOn, int option) 
+void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option) 
 {
+    bOn = !bOn;
     for (const QModelIndex &idx : selectNodesIndice()) 
     {
         IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
@@ -1146,7 +1146,7 @@ void ZenoSubGraphScene::updateNodeStatus(bool bOn, int option)
         if (bOn)
             options |= option;
         else
-            options &= option;
+            options &= (~option);
         info.role = ROLE_OPTIONS;
         info.newValue = options;
         pGraphsModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, m_subgIdx);

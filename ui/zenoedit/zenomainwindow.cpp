@@ -1197,7 +1197,7 @@ void ZenoMainWindow::initShortCut()
         << ShortCut_Export_Graph << ShortCut_Solid << ShortCut_Optix << ShortCut_NormalCheck
         << ShortCut_Undo << ShortCut_Redo << ShortCut_SmoothShading << ShortCut_WireFrame
         << ShortCut_ShowGrid << ShortCut_Shading << ShortCut_ScreenShoot << ShortCut_RecordVideo
-        << ShortCut_NewSubgraph << ShortCut_New_File << ShortCut_OpenView << ShortCut_ClearView;
+        << ShortCut_NewSubgraph << ShortCut_New_File;
     updateShortCut(lst);
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString key) {
         updateShortCut(QStringList(key));
@@ -1243,10 +1243,6 @@ void ZenoMainWindow::updateShortCut(QStringList keys)
         m_ui->actionRecord_Video->setShortcut(settings.getShortCut(ShortCut_RecordVideo));
     if (keys.contains(ShortCut_NewSubgraph))
         m_ui->actionNew_Subgraph->setShortcut(settings.getShortCut(ShortCut_NewSubgraph));
-    if (keys.contains(ShortCut_OpenView))
-        m_ui->actionOpen_View->setShortcut(settings.getShortCut(ShortCut_OpenView));
-    if (keys.contains(ShortCut_ClearView))
-        m_ui->actionClear_View->setShortcut(settings.getShortCut(ShortCut_ClearView));
 }
 
 void ZenoMainWindow::shortCutDlg() 

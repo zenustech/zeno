@@ -74,7 +74,7 @@ private:
     void onTempLinkClosed();
     ZenoNode* createNode(const QModelIndex& idx, const NodeUtilParam& params);
     void initLink(const QModelIndex& linkIdx);
-    void updateNodeStatus(bool bOn, int option);
+    void updateNodeStatus(bool &bOn, int option);
 
     NodeUtilParam m_nodeParams;
     QPersistentModelIndex m_subgIdx;      //index to the subgraphmodel or node in "graphsModel"
@@ -84,6 +84,10 @@ private:
     ZenoTempLink* m_tempLink;
 
     QVector<QPair<QString, bool>> m_selChanges;
+
+    bool m_bOnceOn;
+    bool m_bBypassOn;
+    bool m_bViewOn;
 };
 
 #endif

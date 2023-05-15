@@ -174,12 +174,9 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo()
         {ShortCut_UpwardView, QObject::tr("Upward View"), "Ctrl+7"},
         {ShortCut_FloatPanel, QObject::tr("Float Panel"), "P"}, 
         {ShortCut_SelectAllNodes, QObject::tr("Float Panel"), "Ctrl+A"},
-        {ShortCut_OpenView, QObject::tr("Open View"), "V"},
+        {ShortCut_View, QObject::tr("View"), "V"},
         {ShortCut_Once, QObject::tr("Once"), "C"}, 
         {ShortCut_Bypass, QObject::tr("Bypass"), "B"},
-        {ShortCut_ClearView, QObject::tr("Clear View"), "Alt+V"},
-        {ShortCut_ClearOnce, QObject::tr("Clear Once"), "Alt+C"},
-        {ShortCut_ClearBypass, QObject::tr("Clear Bypass"), "Alt+B"}
     };
     return ret;
 }
