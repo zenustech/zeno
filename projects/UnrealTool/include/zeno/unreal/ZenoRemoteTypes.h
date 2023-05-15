@@ -15,6 +15,25 @@
 
 namespace zeno::remote {
 
+enum class ESubjectType : int16_t {
+    Invalid = -1,
+    Mesh = 0,
+    HeightField,
+    Num,
+};
+
+template <ESubjectType SubjectType>
+struct ZenoSubject {
+
+    constexpr static ESubjectType SubjectType = SubjectType;
+    std::map<std::string, std::string> Meta;
+
+    template <typename T>
+    void pack(T& pack) {
+        pack(Meta);
+    }
+};
+
 struct AnyNumeric {
     std::string data_;
 
@@ -36,7 +55,7 @@ struct AnyNumeric {
 
 };
 
-struct Mesh {
+struct Mesh : public ZenoSubject<ESubjectType::Mesh> {
 
     Mesh() = default;
     Mesh(std::vector<std::array<AnyNumeric,3>>&& verts, std::vector<std::array<int32_t, 3>>&& trigs) {
@@ -47,8 +66,21 @@ struct Mesh {
     std::vector<std::array<AnyNumeric, 3>> vertices;
     std::vector<std::array<int32_t, 3>> triangles;
 
+    /**
+     * @return Identify if bdiff meta not found
+     */
+    inline std::array<float, 4> GetBoundDiff() const {
+        auto it = Meta.find("bdiff");
+        std::array<float, 4> bdiff {1.f, 1.f, 1.f, 1.f};
+        if (it != Meta.end()) {
+            sscanf(it->second.c_str(), "%f,%f,%f,%f", &bdiff[0], &bdiff[1], &bdiff[2], &bdiff[3]);
+        }
+        return bdiff;
+    }
+
     template <class T>
     void pack(T& pack) {
+        ZenoSubject::pack(pack);
         pack(vertices, triangles);
     }
 
@@ -92,13 +124,6 @@ struct Diff {
     }
 };
 
-enum class ESubjectType : int16_t {
-    Invalid = -1,
-    Mesh = 0,
-    HeightField,
-    Num,
-};
-
 struct SubjectContainer {
     std::string Name;
     int16_t/* ESubjectType */ Type;
@@ -123,7 +148,7 @@ struct SubjectContainerList {
     }
 };
 
-struct HeightField {
+struct HeightField : public ZenoSubject<ESubjectType::HeightField> {
     int32_t Nx = 0, Ny = 0;
     std::vector<std::vector<uint16_t>> Data;
 
@@ -158,6 +183,7 @@ struct HeightField {
 
     template <class T>
     void pack(T& pack) {
+        ZenoSubject::pack(pack);
         pack(Nx, Ny, Data);
     }
 };

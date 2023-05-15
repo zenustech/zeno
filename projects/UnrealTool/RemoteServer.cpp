@@ -544,14 +544,14 @@ namespace zeno {
 
 template <remote::ESubjectType Type>
 struct IObjectExtractor {
-    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "") {
+    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "", const std::map<std::string, std::string>& InMeta = {}) {
         return { std::string{}, static_cast<int16_t>(remote::ESubjectType::Invalid), std::vector<uint8_t>{} };
     }
 };
 
 template <>
 struct IObjectExtractor<remote::ESubjectType::Mesh> {
-    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "") {
+    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "", const std::map<std::string, std::string>& InMeta = {}) {
         auto* PrimObj = safe_dynamic_cast<PrimitiveObject>(Node);
         std::vector<std::array<remote::AnyNumeric, 3>> verts;
         std::vector<std::array<int32_t, 3>> tris;
@@ -562,6 +562,7 @@ struct IObjectExtractor<remote::ESubjectType::Mesh> {
             tris.emplace_back(data);
         }
         remote::Mesh Mesh { std::move(verts), std::move(tris) };
+        Mesh.Meta = InMeta;
         std::vector<uint8_t> Data = msgpack::pack(Mesh);
         return remote::SubjectContainer{ InName, static_cast<int16_t>(remote::ESubjectType::Mesh), std::move(Data) };
     }
@@ -569,7 +570,7 @@ struct IObjectExtractor<remote::ESubjectType::Mesh> {
 
 template <>
 struct IObjectExtractor<remote::ESubjectType::HeightField> {
-    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "") {
+    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "", const std::map<std::string, std::string>& InMeta = {}) {
         auto* PrimObj = safe_dynamic_cast<PrimitiveObject>(Node);
         if (PrimObj->verts.has_attr("height")) {
             auto& HeightAttrs = PrimObj->verts.attr<float>("height");
@@ -583,6 +584,7 @@ struct IObjectExtractor<remote::ESubjectType::HeightField> {
                 RemappedHeightFieldData.push_back(NewValue);
             }
             remote::HeightField HeightField { N, N, RemappedHeightFieldData };
+            HeightField.Meta = InMeta;
             std::vector<uint8_t> Data = msgpack::pack(HeightField);
             return remote::SubjectContainer{ InName, static_cast<int16_t>(remote::ESubjectType::HeightField), std::move(Data) };
         } else {
@@ -751,17 +753,22 @@ struct SetExecutionResult : public INode {
         const std::string ProcessorType = get_input2<std::string>("type");
         const remote::ESubjectType Type = remote::NameToSubjectType(ProcessorType);
         const std::string SubjectName = get_input2<std::string>("name");
+        const std::shared_ptr<zeno::remote::MetaData> MetaData = get_input2<zeno::remote::MetaData>("meta");
         std::shared_ptr<zeno::IObject> Value = get_input<zeno::IObject>("value");
         if (!Value) {
             zeno::log_error("No value provided.");
             return;
         }
         const std::string SessionKey = zeno::remote::StaticFlags.GetCurrentSession();
+        std::map<std::string, std::string> Meta;
+        if (MetaData) {
+            Meta = MetaData->Data;
+        }
         if (Type == remote::ESubjectType::Mesh) {
-            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::Mesh>{}(Value.get(), SubjectName);
+            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::Mesh>{}(Value.get(), SubjectName, Meta);
             remote::StaticRegistry.Push( { NewSubject }, SessionKey);
         } else if (Type == remote::ESubjectType::HeightField) {
-            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::HeightField>{}(Value.get(), SubjectName);
+            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::HeightField>{}(Value.get(), SubjectName, Meta);
             remote::StaticRegistry.Push( { NewSubject }, SessionKey);
         }
     }
@@ -772,6 +779,7 @@ ZENO_DEFNODE(SetExecutionResult) ({
         {"string", "name", "OutputA"},
         { "value" },
         {"enum StaticMeshNoUV HeightField", "type", "StaticMeshNoUV"},
+        { "meta" },
     },
     {
     },

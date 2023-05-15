@@ -1,11 +1,12 @@
 #pragma once
 
+#include "StaticDefinition.h"
 #include "ZenoRemoteTypes.h"
 #include "httplib/httplib.h"
 #include "msgpack/msgpack.h"
-#include "StaticDefinition.h"
-#include <string>
+#include "zeno/core/IObject.h"
 #include <optional>
+#include <string>
 
 #ifndef ZENO_REMOTE_TOKEN
 #define ZENO_REMOTE_TOKEN "ZENO_DEFAULT_TOKEN"
@@ -238,5 +239,9 @@ struct SubjectRegistry {
  * @return PrimitiveObject
  */
 std::shared_ptr<zeno::PrimitiveObject> ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField& InHeightData, int Nx = 0, int Ny = 0, float Scale = 250.f);
+
+struct MetaData : IObjectClone<MetaData> {
+    std::map<std::string, std::string> Data;
+};
 
 }
