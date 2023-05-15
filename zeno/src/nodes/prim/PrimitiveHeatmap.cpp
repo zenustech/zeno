@@ -63,10 +63,10 @@ struct PrimitiveColorByHeatmap : zeno::INode {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto heatmap = get_input<HeatmapObject>("heatmap");
         std::string attrName;
-        if (has_input("attrName")) {
-            attrName = get_param<std::string>("attrName");
-        } else {
+        if (has_input("attrName2")) {
             attrName = get_input2<std::string>("attrName2");
+        } else {
+            attrName = get_param<std::string>("attrName");
         }
 
         float maxv = 1.0f;
@@ -91,7 +91,7 @@ struct PrimitiveColorByHeatmap : zeno::INode {
 ZENDEFNODE(PrimitiveColorByHeatmap,
         { /* inputs: */ {
             "prim",
-            {"string", "attrName2", "rho"},
+            "attrName2",
             "heatmap",
             {"float", "min", "0"},
             {"float", "max", "1"},
