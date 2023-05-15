@@ -127,7 +127,7 @@ void ZenoTempLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     painter->save();
     QPen pen;
     pen.setColor(QColor("#5FD2FF"));
-    pen.setWidthF(ZenoStyle::dpiScaled(WIDTH));
+    pen.setWidthF(ZenoStyle::scaleWidth(WIDTH));
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(pen);
     painter->setBrush(Qt::NoBrush);
