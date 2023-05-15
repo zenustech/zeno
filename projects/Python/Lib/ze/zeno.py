@@ -12,7 +12,7 @@ Numeric = Union[int, float, Iterable[int], Iterable[float]]
 Literial = Union[int, float, Iterable[int], Iterable[float], str]
 
 
-def initDLLPath(path: str):
+def init_zeno_lib(path: str):
     global api
     api = ctypes.cdll.LoadLibrary(path)
 
@@ -35,6 +35,7 @@ def initDLLPath(path: str):
         if do_checks:
             func = wrapchkerr(func)
             setattr(api, funcname, func)
+    init_zeno_lib.define = define
 
     define(ctypes.c_uint32, 'Zeno_GetLastError', ctypes.POINTER(ctypes.c_char_p), do_checks=False)
     define(ctypes.c_uint32, 'Zeno_CreateGraph', ctypes.POINTER(ctypes.c_uint64))

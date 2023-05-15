@@ -10,6 +10,7 @@
 #include "zensim/math/Vec.h"
 #include "zensim/math/matrix/SparseMatrix.hpp"
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 namespace zeno {
@@ -20,11 +21,12 @@ struct RapidClothSystem : IObject {
     constexpr static auto T_c = zs::float_c; 
     constexpr static auto enablePE_c = false; 
     constexpr static auto enablePP_c = false;
-    constexpr static auto debugVis_c = true; 
+    constexpr static auto debugVis_c = false; 
     constexpr static auto enableProfile_c = false; 
     constexpr static auto showStatistics_c = false; 
     constexpr static auto silentMode_c = true; 
     T tinyDist = 1e-3; 
+    T bouTinyDist = 0.5f; 
     T repulsionCoef = 1.f; 
     T repulsionRange = 2.f; 
     bool enableDegeneratedDist = true; 
@@ -36,6 +38,7 @@ struct RapidClothSystem : IObject {
     T boundaryFricMu = 10.0f;   
 
     using primptr_t = typename std::shared_ptr<PrimitiveObject>; 
+    using listptr_t = typename std::shared_ptr<ListObject>; 
     using tiles_t = typename ZenoParticles::particles_t;
     using i2tab_t = typename zs::bht<int, 2, int>; 
     using itiles_t = zs::TileVector<int, 32>; 
@@ -167,7 +170,7 @@ struct RapidClothSystem : IObject {
                     tiles_t *coEles, T dt, std::size_t spmatCps, std::size_t ncps, std::size_t bvhFrontCps, bool withContact, T augLagCoeff, T cgRel, T lcpTol, 
                     int PNCap, int CGCap, int lcpCap, T gravity, int L, T delta, T sigma, bool enableSL, T gamma, T eps, int maxVertCons, 
                     T BCStiffness, bool enableExclEdges, T repulsionCoef, bool enableDegeneratedDist, bool enableDistConstraint, 
-                    T repulsionRange, T tinyDist, bool enableFric, float clothFricMu, float boundaryFricMu); 
+                    T repulsionRange, T tinyDist, T bouTinyDist, bool enableFric, float clothFricMu, float boundaryFricMu); 
 
     /// @note initialize "ws" (mass), "yn", "vn" properties
     void reinitialize(zs::CudaExecutionPolicy &pol, T framedt);
@@ -301,6 +304,7 @@ struct RapidClothSystem : IObject {
 
     //debug 
     primptr_t visPrim; 
+    listptr_t iterPrims, iterBouPrims; 
 };
 
     template <

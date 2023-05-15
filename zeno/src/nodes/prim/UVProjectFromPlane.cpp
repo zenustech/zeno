@@ -16,8 +16,6 @@
 #define TINYEXR_IMPLEMENTATION
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
 #include <glm/glm.hpp>

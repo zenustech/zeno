@@ -646,14 +646,15 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
 #else 
         auto grad = - 2.f * (xi - xj) * zs::sqr(yij_norm_inv); 
         auto val = sigma * sigma - zs::sqr(xij_norm) * zs::sqr(yij_norm_inv); 
-#endif 
-        if (val >= 0)
-            return; 
+#endif
+        // DEBUG  
+        // if (val >= 0)
+        //     return; 
         auto consInd = atomic_add(exec_cuda, &oE[0], 1); 
         for (int d = 0; d < 3; d++)
-            tempCons("grad", d, consInd, T_c) = fixi ? 0.f : grad(d); 
+            tempCons("grad", d, consInd, T_c) = grad(d); 
         for (int d = 0; d < 3; d++)
-            tempCons("grad", d + 3, consInd, T_c) = fixj ? 0.f : -grad(d); 
+            tempCons("grad", d + 3, consInd, T_c) = -grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 2; 
         tempCons("type", consInd) = 4; 
@@ -688,9 +689,9 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto grad = (xi - xj) / xij_norm * delta_inv;             
         auto consInd = atomic_add(exec_cuda, &oPP[0], 1); 
         for (int d = 0; d < 3; d++)
-            tempCons("grad", d, consInd, T_c) = fixi ? 0.f : grad(d); 
+            tempCons("grad", d, consInd, T_c) = grad(d); 
         for (int d = 0; d < 3; d++)
-            tempCons("grad", d + 3, consInd, T_c) = fixj ? 0.f : -grad(d); 
+            tempCons("grad", d + 3, consInd, T_c) = -grad(d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 2; 
         tempCons("dist", consInd, T_c) = dist; 
@@ -740,7 +741,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto consInd = atomic_add(exec_cuda, &oPE[0], 1); 
         for (int k = 0; k < 3; k++)
             for (int d = 0; d < 3; d++)
-                tempCons("grad", k * 3 + d, consInd, T_c) = fixed[k] ? 0.f : grad(k * 3 + d); 
+                tempCons("grad", k * 3 + d, consInd, T_c) = grad(k * 3 + d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 3; 
         tempCons("dist", consInd, T_c) = dist; 
@@ -820,7 +821,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto consInd = atomic_add(exec_cuda, &oPT[0], 1); 
         for (int k = 0; k < 4; k++)
             for (int d = 0; d < 3; d++)
-                tempCons("grad", k * 3 + d, consInd, T_c) = fixed[k] ? 0.f : grad(k, d); 
+                tempCons("grad", k * 3 + d, consInd, T_c) = grad(k, d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
         tempCons("dist", consInd, T_c) = pt_dist; 
@@ -958,7 +959,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         auto consInd = atomic_add(exec_cuda, &oEE[0], 1); 
         for (int k = 0; k < 4; k++)
             for (int d = 0; d < 3; d++)
-                tempCons("grad", k * 3 + d, consInd, T_c) = fixed[k] ? 0.f : grad(k, d); 
+                tempCons("grad", k * 3 + d, consInd, T_c) = grad(k, d); 
         tempCons("val", consInd, T_c) = val; 
         tempCons("vN", consInd) = 4; 
         tempCons("dist", consInd, T_c) = dist; 
@@ -981,13 +982,14 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
         }); 
     pol(range(nCons), 
         [tempCons = view<space>({}, tempCons, false_c, "tempCons"), 
+         vtemp = proxy<space>({}, vtemp), 
          vCons = view<space>({}, vCons, false_c, "vCons"), 
          coOffset = coOffset] __device__ (int ci) mutable {
             int vN = tempCons("vN", ci); 
             for (int k = 0; k < vN; k++)
             {
                 int vi = tempCons("vi", k, ci); 
-                if (vi >= coOffset)
+                if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f)
                     continue; 
                 int n = atomic_add(exec_cuda, &vCons("n", vi), 1); 
                 vCons("cons", n, vi) = ci; 
@@ -1009,6 +1011,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     lcpMatSize.setVal(0); 
     pol(range(nCons), 
         [vCons = proxy<space>({}, vCons), 
+         vtemp = proxy<space>({}, vtemp), 
          tempCons = proxy<space>({}, tempCons), 
          lcpMatIs = view<space>(lcpMatIs, false_c, "lcpMatIs"), 
          lcpMatJs = view<space>(lcpMatJs, false_c, "lcpMatJs"), 
@@ -1018,7 +1021,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             for (int k = 0; k < vN; k++)
             {
                 int vi = tempCons("vi", k, ci); 
-                if (vi >= coOffset)
+                if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f)
                     continue; 
                 int n = vCons("n", vi); 
                 for (int j = 0; j < n; j++)
@@ -1055,8 +1058,8 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
     // A = J * M^{-1} * J.T
     pol(range(nCons), 
         [tempCons = view<space>({}, tempCons, false_c, "tempCons"), 
+        vtemp = proxy<space>({}, vtemp), 
         vCons = view<space>({}, vCons, false_c, "vCons"), 
-        vtemp = view<space>({}, vtemp, false_c, "vtemp"), 
         lcpMat = proxy<space>(lcpMat), 
         coOffset = coOffset] __device__ (int i) mutable {
             auto &ax = lcpMat._vals; 
@@ -1064,7 +1067,7 @@ void RapidClothSystem::computeConstraints(zs::CudaExecutionPolicy &pol, const zs
             for (int j = 0; j < vN; j++)                        // this V
             {
                 int vi = tempCons("vi", j, i); 
-                if (vi >= coOffset)
+                if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f)
                     continue; 
                 int n = vCons("n", vi);
                 for (int k = 0; k < n; k++)
@@ -1103,13 +1106,16 @@ void RapidClothSystem::solveLCP(zs::CudaExecutionPolicy &pol)
         [tempCons = proxy<space>({}, tempCons), 
          vtemp = proxy<space>({}, vtemp), coOffset = coOffset] __device__ (int ci) mutable {   
             auto val = tempCons("val", ci, T_c); 
-            for (int i = 0; i < tempCons("vN", ci); i++)
-            {
-                int vi = tempCons("vi", i, ci); 
-                for (int d = 0; d < 3; d++)
-                    val += tempCons("grad", i * 3 + d, ci, T_c) * 
-                        (vtemp("y(l)", d, vi) - vtemp("x(l)", d, vi)); 
-            }
+            if (tempCons("type", ci) != 4) // edge constraints are linearized at y(l) instead of x(l)
+                for (int i = 0; i < tempCons("vN", ci); i++)
+                {
+                    int vi = tempCons("vi", i, ci); 
+                    // if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f)
+                    //     continue; 
+                    for (int d = 0; d < 3; d++)
+                        val += tempCons("grad", i * 3 + d, ci, T_c) * 
+                            (vtemp("y(l)", d, vi) - vtemp("x(l)", d, vi)); 
+                }
             tempCons("b", ci, T_c) = -val; 
             tempCons("lambda", ci, T_c) = 0.f; 
          }); 
@@ -1171,7 +1177,7 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
             for (int k = 0; k < n; k++)
             {
                 int vi = tempCons("vi", k, ci); 
-                if (vi >= coOffset)
+                if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f)
                     continue; 
                 auto m = vtemp("ws", vi); 
                 if (m <= 0.f)
@@ -1233,7 +1239,6 @@ void RapidClothSystem::backwardStep(zs::CudaExecutionPolicy &pol)
                             dxt0 = dxt0 - dxt0.dot(nrm) * nrm; 
                             dxt1 = dxt1 - dxt1.dot(nrm) * nrm; 
                             dxt2 = dxt2 - dxt2.dot(nrm) * nrm; 
-                            // TODO: debug y(l) nan
                             auto betas = point_triangle_closest_point(xlp, xlt0, xlt1, xlt2); 
                             auto weights = zs::vec<T, 4> {1.f, -(1.f - betas[0] - betas[1]), 
                                 -betas[0], -betas[1]}; 
@@ -1345,6 +1350,63 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     zs::CppTimer timer; 
     if (enableProfile_c)
         timer.tick(); 
+    // debug 
+    {
+        auto iterPrim = std::make_shared<PrimitiveObject>(); 
+        auto iterBouPrim = std::make_shared<PrimitiveObject>(); 
+        int n = coOffset;
+        int nBou = numBouDofs; 
+        auto hv = vtemp.clone({memsrc_e::host, -1}); 
+        auto hv_view = proxy<execspace_e::host>({}, hv);  
+        
+        iterPrim->verts.resize(n * 2); 
+        iterPrim->lines.resize(n); 
+        for (int vi = 0; vi < n; vi++)
+        {
+            iterPrim->verts.values[vi] = zeno::vec3f {
+                hv_view("x(l)", 0, vi), 
+                hv_view("x(l)", 1, vi), 
+                hv_view("x(l)", 2, vi)
+            }; 
+            iterPrim->verts.values[vi + n] = zeno::vec3f {
+                hv_view("y(l)", 0, vi), 
+                hv_view("y(l)", 1, vi), 
+                hv_view("y(l)", 2, vi)
+            }; 
+            iterPrim->lines.values[vi] = zeno::vec2i {vi, vi + n}; 
+        }
+
+        iterBouPrim->verts.resize(nBou * 2); 
+        iterBouPrim->lines.resize(nBou); 
+        for (int ofs = 0; ofs < nBou; ofs++)
+        {
+            auto vi = ofs + n; 
+            iterBouPrim->verts.values[ofs] = zeno::vec3f {
+                hv_view("x(l)", 0, vi), 
+                hv_view("x(l)", 1, vi), 
+                hv_view("x(l)", 2, vi)
+            }; 
+            iterBouPrim->verts.values[ofs + nBou] = zeno::vec3f {
+                hv_view("y(l)", 0, vi), 
+                hv_view("y(l)", 1, vi), 
+                hv_view("y(l)", 2, vi)
+            }; 
+            iterBouPrim->lines.values[ofs] = zeno::vec2i {ofs, ofs + nBou}; 
+        }
+
+        auto ht = stInds.clone({memsrc_e::host, -1}); 
+        auto ht_view = proxy<execspace_e::host>({}, ht); 
+        int tn = stInds.size(); 
+        iterPrim->tris.resize(tn); 
+        for (int ti = 0; ti < tn; ti++)
+        {
+            iterPrim->tris.values[ti] = zeno::vec3i {ht_view("inds", 0, ti, int_c), 
+                ht_view("inds", 1, ti, int_c), ht_view("inds", 2, ti, int_c)}; 
+        }
+        iterPrims->arr.push_back(std::move(iterPrim)); 
+        iterBouPrims->arr.push_back(std::move(iterBouPrim)); 
+    }
+
     // updated y(l) -> updated x(l)
 #if 0 
     pol(range(vtemp.size()), 
@@ -1377,12 +1439,17 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
             auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
             auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
             vtemp("sync", vi) = 0.f; 
-            if ((y - x).l2NormSqr() < eps_c && vi >= coOffset)
+            if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f)
             {
-                vtemp("disp", vi) = 0.f;
-                vtemp("r(l)", vi) = 0.f; 
-                vtemp("alpha", vi) = 1.f; 
-                return; 
+                vtemp("temp", 0,  vi) = 0.f;                 
+                if ((y - x).l2NormSqr() < eps_c)
+                {
+                    vtemp("disp", vi) = 0.f;
+                    vtemp("r(l)", vi) = 0.f; 
+                    vtemp("alpha", vi) = 1.f; 
+                    return;
+                }  
+                // gamma = 0.6f;               
             }
             auto alpha = 0.5f * vtemp("Di", vi) * gamma / 
                 ((y - x).norm() + eps_c);
@@ -1397,7 +1464,19 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
         [tempCons = proxy<space>({}, tempCons), 
          vtemp = proxy<space>({}, vtemp), 
          temp = proxy<space>(temp), 
+         coOffset = coOffset, 
+         bouTinyDist = bouTinyDist, 
          tinyDist = tinyDist] __device__ (int ci) mutable {
+            if (tempCons("dist", ci, T_c) < bouTinyDist) // slow_boundary_dist
+            {
+                int vN = tempCons("vN", ci); 
+                for (int k = 0; k < vN; k++)
+                {
+                    int vi = tempCons("vi", k, ci); 
+                    if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f)
+                        vtemp("temp", 0, vi) = 1.f; // isBou and included in tiny pairs 
+                }
+            }
             auto syncAlpha = limits<T>::max(); 
             if (tempCons("dist", ci, T_c) >= tinyDist)
                 return; 
@@ -1406,9 +1485,11 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
             for (int k = 0; k < vN; k++)
             {
                 int vi = tempCons("vi", k, ci); 
+                vtemp("sync", vi) = 1.f; 
+                if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f) // do not use bou step to sync  
+                    continue; 
                 auto alpha = vtemp("alpha", vi); 
                 syncAlpha = zs::min(syncAlpha, alpha); 
-                vtemp("sync", vi) = 1.f; 
             }
             atomic_min(exec_cuda, &temp[0], syncAlpha); 
         }); 
@@ -1417,6 +1498,47 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
     auto alpha = tvMin(pol, vtemp, "alpha", coOffset, T_c); 
     fmt::print("uniform alpha: {}\n", alpha); 
 #endif 
+// #if 1
+//     temp.resize(1); 
+//     temp.setVal(1.f); 
+//     pol(range(nCons), 
+//         [tempCons = proxy<space>({}, tempCons), 
+//          vtemp = proxy<space>({}, vtemp), 
+//          temp = proxy<space>(temp), 
+//          coOffset = coOffset, 
+//          bouTinyDist = bouTinyDist, 
+//          tinyDist = tinyDist] __device__ (int ci) mutable {
+//             // if (tempCons("dist", ci, T_c) < bouTinyDist) // slow_boundary_dist
+//             // {
+//             //     int vN = tempCons("vN", ci); 
+//             //     for (int k = 0; k < vN; k++)
+//             //     {
+//             //         int vi = tempCons("vi", k, ci); 
+//             //         if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f)
+//             //             vtemp("temp", 0, vi) = 1.f; // isBou and included in tiny pairs 
+//             //     }
+//             // }
+//             auto syncAlpha = limits<T>::max(); 
+//             if (tempCons("dist", ci, T_c) >= tinyDist)
+//                 return; 
+//             // sync alpha 
+//             int vN = tempCons("vN", ci); 
+//             for (int k = 0; k < vN; k++)
+//             {
+//                 int vi = tempCons("vi", k, ci); 
+//                 vtemp("sync", vi) = 1.f; 
+//                 // if (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f) // do not use bou step to sync  
+//                 //     continue; 
+//                 auto alpha = vtemp("alpha", vi); 
+//                 syncAlpha = zs::min(syncAlpha, alpha); 
+//             }
+//             atomic_min(exec_cuda, &temp[0], syncAlpha); 
+//         }); 
+//     auto alpha = temp.getVal(); 
+// #else 
+//     auto alpha = tvMin(pol, vtemp, "alpha", coOffset, T_c); 
+//     fmt::print("uniform alpha: {}\n", alpha); 
+// #endif 
     pol(range(vtemp.size()), 
         [vtemp = proxy<space>({}, vtemp),
          coOffset = coOffset, 
@@ -1425,9 +1547,22 @@ void RapidClothSystem::forwardStep(zs::CudaExecutionPolicy &pol)
          ] __device__ (int vi) mutable {
             auto y = vtemp.pack(dim_c<3>, "y(l)", vi); 
             auto x = vtemp.pack(dim_c<3>, "x(l)", vi); 
-            if ((y - x).l2NormSqr() < eps_c && vi >= coOffset)
+            auto isBou = (vi >= coOffset || vtemp("BCfixed", vi) > 0.5f); 
+            if ((y - x).l2NormSqr() < eps_c && isBou)
                 return; 
             auto alpha = vtemp("sync", vi) > 0.5f ? syncAlpha : vtemp("alpha", vi); 
+            {
+                if (isBou && vtemp("sync", vi) > 0.5f) // stop tiny bou 
+                {
+                    vtemp("disp", vi) = 0.f; 
+                    return; 
+                }
+                if (isBou && vtemp("temp", 0, vi) > 0.5f)
+                {
+                    vtemp("disp", vi) = 0.f; 
+                    return; 
+                }
+            }
             vtemp.tuple(dim_c<3>, "x(l)", vi) = vtemp.pack(dim_c<3>, "x(l)", vi) + 
                 alpha * (y - x); 
             vtemp("r(l)", vi) *= 1.0f - alpha; 
