@@ -54,7 +54,9 @@ struct erode_value2cond : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto value = get_input<NumericObject>("value")->get<float>();
@@ -233,7 +235,9 @@ struct erode_tumble_material_v0 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -507,7 +511,9 @@ struct erode_tumble_material_v2 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto& pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -795,7 +801,9 @@ struct erode_tumble_material_v3 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -1099,7 +1107,9 @@ struct erode_smooth_flow : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto smooth_rate = get_input<NumericObject>("smoothRate")->get<float>();
@@ -1195,7 +1205,9 @@ struct erode_tumble_material_v4 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         // 侵蚀主参数
@@ -1730,7 +1742,6 @@ ZENDEFNODE(erode_terrainHiMeLo,
         } });
 
 
-
 float fit(const float data, const float ss, const float se, const float ds, const float de) {
     float b = std::numeric_limits<float>::epsilon();
     b = max(abs(se - ss), b);
@@ -1769,7 +1780,9 @@ struct HF_maskByFeature : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto heightLayer = get_input2<std::string>("height_layer");
@@ -1915,7 +1928,6 @@ ZENDEFNODE(HF_maskByFeature,
         {
             "erode",
         }});
-
 
 
 } // namespace

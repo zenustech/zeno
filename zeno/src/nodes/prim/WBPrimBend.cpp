@@ -12,15 +12,12 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/arrayindex.h>
-#include <zeno/utils/wangsrng.h>
 #include <zeno/utils/log.h>
 
 #include <glm/gtx/quaternion.hpp>
 #include <random>
-#include <numeric>
 #include <sstream>
 #include <ctime>
-#include <windows.h>
 
 namespace zeno
 {
@@ -130,43 +127,6 @@ ZENDEFNODE(WBPrimBend,
                }, /* category: */ {
                    "primitive",
                }});
-
-struct PrintPrimInfo : INode {
-    void apply() override
-    {
-        auto prim = get_input<PrimitiveObject>("prim");
-
-        if (get_param<bool>("printInfo"))
-        {
-            const std::vector<std::string>& myKeys = prim->attr_keys();
-            printf("--------------------------------\n");
-            printf("wb-Debug ==> vert has attr :\n");
-            for (const std::string& i : myKeys)
-            {
-                printf("wb-Debug ==> vertAttr.%s\n", i.c_str());
-            }
-            printf("--------------------------------\n");
-            printf("wb-Debug ==> vertsCount = %i\n", int(prim->verts.size()));
-            printf("wb-Debug ==> pointsCount = %i\n", int(prim->points.size()));
-            printf("wb-Debug ==> linesCount = %i\n", int(prim->lines.size()));
-            printf("wb-Debug ==> trisCount = %i\n", int(prim->tris.size()));
-            printf("wb-Debug ==> quadsCount = %i\n", int(prim->quads.size()));
-            printf("--------------------------------\n");
-        }
-
-        set_output("prim", std::move(prim));
-    }
-};
-ZENDEFNODE(PrintPrimInfo,
-           { /* inputs: */ {
-                   "prim",
-               }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
-                   {"int", "printInfo", "1"},
-               }, /* category: */ {
-                   "primitive",
-               } });
 
 struct CreateCircle : INode {
     void apply() override
@@ -650,45 +610,6 @@ ZENDEFNODE(TracePositionOneStep,
                    "visualize",
                }});
 
-struct PrimCopyFloatAttr : INode {
-    void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-
-        auto sourceName = get_input<StringObject>("sourceName")->get();
-        if (!prim->verts.has_attr(sourceName))
-        {
-            zeno::log_error("no such attr named '{}'.", sourceName);
-        }
-        auto& sourceAttr = prim->verts.attr<float>(sourceName); // 源属性
-
-        auto targetName = get_input<StringObject>("targetName")->get();
-        if (!prim->verts.has_attr(targetName))
-        {
-            prim->verts.add_attr<float>(targetName);
-        }
-        auto& targetAttr = prim->verts.attr<float>(targetName); // 目标属性
-
-#pragma omp parallel for
-        for (intptr_t i = 0; i < prim->verts.size(); i++)
-        {
-            targetAttr[i] = sourceAttr[i];
-        }
-
-        set_output("prim", std::move(prim));
-    }
-};
-ZENDEFNODE(PrimCopyFloatAttr,
-           { /* inputs: */ {
-                   "prim",
-                   {"string", "sourceName", "s"},
-                   {"string", "targetName", "t"},
-               }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
-               }, /* category: */ {
-                   "primitive",
-               }});
-
 struct PrimCopyAttr : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -729,8 +650,9 @@ ZENDEFNODE(PrimCopyAttr,
                    "prim",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "erode",
                }});
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // 2022.07.22 BVH
@@ -957,7 +879,7 @@ ZENDEFNODE(PrimSetAttr,
                    "prim",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "erode",
                }});
 
 // Get Attr
@@ -1006,20 +928,36 @@ ZENDEFNODE(PrimGetAttr,
                    "value",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "erode",
                }});
 
 // 删除多个属性
 struct PrimitiveDelAttrs : zeno::INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_param<std::string>("name");
+        auto invert = get_input2<bool>("invert");
+        auto nameString = get_input2<std::string>("names");
 
-        std::istringstream sname(name);
         std::vector<std::string> names;
-        std::string aname;
-        while(sname >> aname) {
-            prim->verts.attrs.erase(aname);
+        std::istringstream ss(nameString);
+        std::string name;
+        while(ss >> name) {
+            names.push_back(name);
+        }
+
+        if (!invert) {
+            for(std::string attr : names)
+                prim->verts.attrs.erase(attr);
+        } else {
+            std::vector<std::string> myKeys = prim->verts.attr_keys();
+
+            auto reserve_attr = std::remove_if(myKeys.begin(), myKeys.end(), [&](const auto &item) {
+              return std::find(names.begin(), names.end(), item) != names.end();
+            });
+            myKeys.erase(reserve_attr, myKeys.end());
+
+            for(std::string attr : myKeys)
+                prim->verts.attrs.erase(attr);
         }
 
         set_output("prim", get_input("prim"));
@@ -1028,12 +966,13 @@ struct PrimitiveDelAttrs : zeno::INode {
 ZENDEFNODE(PrimitiveDelAttrs,
            { /* inputs: */ {
                    "prim",
+                   {"bool", "invert", "0"},
+                   {"string", "names", "name_1 name_2"},
                }, /* outputs: */ {
                    "prim",
                }, /* params: */ {
-                   {"string", "name", "nrm"},
                }, /* category: */ {
-                   "primitive",
+                   "erode",
                } });
 
 
@@ -1658,7 +1597,6 @@ ZENDEFNODE(PrimCurveFromVerts,
                    "primCurve",
                }});
 
-
 /**
  * @brief _CreateBezierCurve 生成N阶贝塞尔曲线点
  * @param src 源贝塞尔控制点
@@ -1772,6 +1710,30 @@ ZENDEFNODE(CreatePrimCurve,
                    "primCurve",
                }});
 
+struct PrimHasAttr : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto attrName = get_input2<std::string>("attrName");
+
+        bool x = false;
+        if (prim->verts.has_attr(attrName))
+            x = true;
+
+        auto hasAttr = std::make_shared<NumericObject>();
+        hasAttr->set<bool>(x);
+        set_output("hasAttr", hasAttr);
+    }
+};
+ZENDEFNODE(PrimHasAttr,
+           { /* inputs: */ {
+                   "prim",
+                   {"string", "attrName", "attr_x"},
+               }, /* outputs: */ {
+                   "hasAttr",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "erode",
+               }});
 
 
 } // namespace
