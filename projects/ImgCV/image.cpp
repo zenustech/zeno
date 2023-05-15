@@ -214,15 +214,58 @@ static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, in
 
 struct Composite: INode {
     virtual void apply() override {
-        auto image1 = get_input2<PrimitiveObject>("Foreground");
-        auto image2 = get_input2<PrimitiveObject>("Background");
         auto compmode = get_input2<std::string>("compmode");
-        auto &ud1 = image1->userData();
-        int w1 = ud1.get2<int>("w");
-        int h1 = ud1.get2<int>("h");
-        auto &ud2 = image2->userData();
-        int w2 = ud2.get2<int>("w");
-        int h2 = ud2.get2<int>("h");
+        int w1 = 1024 ;
+        int h1 = 1024 ;
+        auto image1 = std::make_shared<PrimitiveObject>();
+        image1->userData().set2("isImage", 1);
+        image1->userData().set2("w", w1);
+        image1->userData().set2("h", h1);
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w1);
+        image2->userData().set2("h", h1);
+
+        if(has_input("Background")){
+            image2 = get_input2<PrimitiveObject>("Background");
+            auto &ud2 = image2->userData();
+            w1 = ud2.get2<int>("w");
+            h1 = ud2.get2<int>("h");
+            if(!has_input("Foreground")){
+                image1->verts.resize(image2->size());
+                image1->userData().set2("w", w1);
+                image1->userData().set2("h", h1);
+                image1->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w1 * h1;i++){
+                    image1->verts.attr<float>("alpha")[i] = 1.0;
+                }
+            }
+        }
+        if(has_input("Foreground")){
+            image1 = get_input2<PrimitiveObject>("Foreground");
+            auto &ud1 = image1->userData();
+            w1 = ud1.get2<int>("w");
+            h1 = ud1.get2<int>("h");
+            if(!has_input("Background")){
+                image2->verts.resize(image1->size());
+                image2->userData().set2("w", w1);
+                image2->userData().set2("h", h1);
+                image2->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w1 * h1;i++){
+                    image2->verts.attr<float>("alpha")[i] = 1.0;
+                }
+            }
+            if(has_input("Background")){
+                auto &ud2 = image2->userData();
+                int w2 = ud2.get2<int>("w");
+                int h2 = ud2.get2<int>("h");
+                if(w1 != w2 || h1 != h2 || image1->size() != image2->size()){
+                    image2->verts.resize(image1->size());
+                    image2->userData().set2("w", w1);
+                    image2->userData().set2("h", h1);
+                }
+            }
+        }
         auto A1 = std::make_shared<PrimitiveObject>();
         A1->verts.resize(image1->size());
         A1->verts.add_attr<float>("alpha");
@@ -232,301 +275,54 @@ struct Composite: INode {
         auto A2 = std::make_shared<PrimitiveObject>();
         A2->verts.resize(image2->size());
         A2->verts.add_attr<float>("alpha");
-        for(int i = 0;i < w2 * h2;i++){
-            A2->verts.attr<float>("alpha")[i] = 1.0;
-        }
-        std::vector<float> &alpha1 = A1->verts.attr<float>("alpha");
-        if(image1->verts.has_attr("alpha")){
-            alpha1 = image1->verts.attr<float>("alpha");
-        }
-        if(has_input("Mask1")) {
-            auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-            Mask1->verts.add_attr<float>("alpha");
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    Mask1->verts.attr<float>("alpha")[i * w1 + j] = Mask1->verts[i * w1 + j][0];
-                }
-            }
-            alpha1 = Mask1->verts.attr<float>("alpha");
-        }
-        std::vector<float> &alpha2 = A2->verts.attr<float>("alpha");
-        if(image2->verts.has_attr("alpha")){
-            alpha2 = image2->verts.attr<float>("alpha");
-        }
-        if(has_input("Mask2")) {
-            auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-            Mask2->verts.add_attr<float>("alpha");
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    Mask2->verts.attr<float>("alpha")[i * w1 + j] = Mask2->verts[i * w1 + j][0];
-                }
-            }
-            alpha2 = Mask2->verts.attr<float>("alpha");
-        }
-
-        if (compmode == "Over") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * (l2 - ((l1 != 0) && (l2 != 0) ? l2 : 0));
-                }
-            }
-        }
-        if (compmode == "Under") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb2 * l2 + rgb1 * (l1 - ((l1 != 0) && (l2 != 0) ? l1 : 0));
-                }
-            }
-        }
-        if (compmode == "Atop") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] =
-                            rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
-                }
-            }
-        }
-        if (compmode == "Inside") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
-                }
-            }
-        }
-        if (compmode == "Outside") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
-                }
-            }
-        }
-        if(compmode == "Screen"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb2 * l2 + rgb2 *((l1!=0 && l2!=0)? var: 0);
-                }
-            }
-        }
-        if (compmode == "Add") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Subtract") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 - rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Multiply") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Divide") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 / (rgb2 * l2);
-                }
-            }
-        }
-        if (compmode == "Diff") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = abs(rgb1 * l1 - (rgb2 * l2));
-                }
-            }
-        }
-        if (compmode == "Min") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = l1 <= l2 ? rgb1 * l1 : rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Max") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
-                }
-            }
-        }
-        if (compmode == "Average") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = (rgb1+rgb2)/2;
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * (l1+l2);
-                }
-            }
-        }
-        if (compmode == "Xor") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = {0, 0, 0};
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
-                }
-            }
-        }
-        if (compmode == "Alpha") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = {1,1,1};
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 1 : 0);
-                }
-            }
-        }
-        if (compmode == "!Alpha") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = {1,1,1};
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : 1);
-                }
-            }
-        }
-        set_output("image", image1);
-    }
-};
-
-ZENDEFNODE(Composite, {
-    {
-        {"Foreground"},
-        {"Background"},
-        {"Mask1"},
-        {"Mask2"},
-        {"enum Over Under Atop Inside Outside Screen Add Subtract Multiply Divide Diff Min Max Average Xor Alpha !Alpha", "compmode", "Over"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-struct Composite2: INode {
-    virtual void apply() override {
-        auto image1 = get_input2<PrimitiveObject>("Foreground");
-        auto image2 = get_input2<PrimitiveObject>("Background");
-        auto compmode = get_input2<std::string>("compmode");
-        auto &ud1 = image1->userData();
-        int w1 = ud1.get2<int>("w");
-        int h1 = ud1.get2<int>("h");
-        auto &ud2 = image2->userData();
-        int w2 = ud2.get2<int>("w");
-        int h2 = ud2.get2<int>("h");
-        auto A1 = std::make_shared<PrimitiveObject>();
-        A1->verts.resize(image1->size());
-        A1->verts.add_attr<float>("alpha");
         for(int i = 0;i < w1 * h1;i++){
-            A1->verts.attr<float>("alpha")[i] = 1.0;
-        }
-        auto A2 = std::make_shared<PrimitiveObject>();
-        A2->verts.resize(image2->size());
-        A2->verts.add_attr<float>("alpha");
-        for(int i = 0;i < w2 * h2;i++){
             A2->verts.attr<float>("alpha")[i] = 1.0;
         }
         std::vector<float> &alpha1 = A1->verts.attr<float>("alpha");
         if(image1->verts.has_attr("alpha")){
             alpha1 = image1->verts.attr<float>("alpha");
         }
+        else{
+            image1->verts.add_attr<float>("alpha");
+        }
+
         if(has_input("Mask1")) {
             auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-            Mask1->verts.add_attr<float>("alpha");
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    Mask1->verts.attr<float>("alpha")[i * w1 + j] = Mask1->verts[i * w1 + j][0];
-                }
+            if(Mask1->verts.has_attr("alpha")){
+                alpha1 = Mask1->verts.attr<float>("alpha");
             }
-            alpha1 = Mask1->verts.attr<float>("alpha");
+            else{
+                Mask1->verts.add_attr<float>("alpha");
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        Mask1->verts.attr<float>("alpha")[i * w1 + j] = Mask1->verts[i * w1 + j][0];
+                    }
+                }
+                alpha1 = Mask1->verts.attr<float>("alpha");
+            }
         }
         std::vector<float> &alpha2 = A2->verts.attr<float>("alpha");
         if(image2->verts.has_attr("alpha")){
             alpha2 = image2->verts.attr<float>("alpha");
         }
+        else{
+            image2->verts.add_attr<float>("alpha");
+        }
         if(has_input("Mask2")) {
             auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-            Mask2->verts.add_attr<float>("alpha");
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    Mask2->verts.attr<float>("alpha")[i * w1 + j] = Mask2->verts[i * w1 + j][0];
-                }
+            if(Mask2->verts.has_attr("alpha")){
+                alpha2 = Mask2->verts.attr<float>("alpha");
             }
-            alpha2 = Mask2->verts.attr<float>("alpha");
+            else{
+                for (int i = 0; i < h1; i++) {
+                    for (int j = 0; j < w1; j++) {
+                        Mask2->verts.attr<float>("alpha")[i * w1 + j] = Mask2->verts[i * w1 + j][0];
+                    }
+                }
+                alpha2 = Mask2->verts.attr<float>("alpha");
+            }
         }
+
         if (compmode == "Over") {
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
@@ -602,7 +398,7 @@ struct Composite2: INode {
                     float l2 = alpha2[i * w1 + j];
                     vec3f c = rgb2 * l2 + rgb2 * ((l1!=0 && l2!=0)? l: 0);
                     image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = (l1 != 0 && l2 == 0)? l1 : 0;
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = l2;
                 }
             }
         }
@@ -613,7 +409,9 @@ struct Composite2: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
+                    vec3f c = rgb2 * l2 + rgb1 * l1;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -624,7 +422,9 @@ struct Composite2: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 - rgb2 * l2;
+                    vec3f c = rgb1 * l1 - rgb2 * l2 ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -635,7 +435,9 @@ struct Composite2: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
+                    vec3f c = rgb1 * l1 * rgb2 * l2 ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -646,7 +448,9 @@ struct Composite2: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 / (rgb2 * l2);
+                    vec3f c = rgb1 * l1 / (rgb2 * l2) ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -657,7 +461,9 @@ struct Composite2: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = abs(rgb1 * l1 - (rgb2 * l2));
+                    vec3f c = abs(rgb1 * l1 - (rgb2 * l2)) ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -668,7 +474,9 @@ struct Composite2: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = l1 <= l2 ? rgb1 * l1 : rgb2 * l2;
+                    vec3f c = l1 <= l2 ? rgb1 * l1 : rgb2 * l2 ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -679,7 +487,9 @@ struct Composite2: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
+                    vec3f c = l1 >= l2 ? rgb1 * l1 : rgb2 * l2 ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -691,7 +501,9 @@ struct Composite2: INode {
                     vec3f rgb3 = (rgb1+rgb2)/2;
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * (l1+l2);
+                    vec3f c = rgb3 * (l1+l2) ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -703,7 +515,9 @@ struct Composite2: INode {
                     vec3f rgb3 = {0, 0, 0};
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
+                    vec3f c = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2) ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -715,7 +529,8 @@ struct Composite2: INode {
                     vec3f rgb3 = {1,1,1};
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 1 : 0);
+                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? zeno::clamp(l1 + l2, 0, 1) : 0);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -727,7 +542,8 @@ struct Composite2: INode {
                     vec3f rgb3 = {1,1,1};
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : 1);
+                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : zeno::clamp(l1 + l2, 0, 1));
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -735,7 +551,7 @@ struct Composite2: INode {
     }
 };
 
-ZENDEFNODE(Composite2, {
+ZENDEFNODE(Composite, {
     {
         {"Foreground"},
         {"Background"},
@@ -749,6 +565,7 @@ ZENDEFNODE(Composite2, {
     {},
     { "comp" },
 });
+
 
 //replaced by Composite
 /*
