@@ -1772,7 +1772,7 @@ struct HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("HeightField");
         int nx, nz;
         auto &ud = terrain->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
@@ -1896,12 +1896,12 @@ struct HF_maskByFeature : INode {
             }
         }
 
-        set_output("prim_2DGrid", std::move(terrain));
+        set_output("HeightField", std::move(terrain));
     }
 };
 ZENDEFNODE(HF_maskByFeature,
         {/* inputs: */ {
-            "prim_2DGrid",
+            "HeightField",
             {"string", "height_layer", "height"},
             {"string", "mask_layer", "mask"},
             {"int", "smooth_radius", "1"},
@@ -1919,7 +1919,7 @@ ZENDEFNODE(HF_maskByFeature,
         },
         /* outputs: */
         {
-            "prim_2DGrid",
+            "HeightField",
         },
         /* params: */
         {

@@ -2014,7 +2014,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1122475157,
+                                    "uuid": 2758341720,
                                     "property": "normal"
                                 },
                                 "prim_2DGrid": {
@@ -2025,7 +2025,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2987655274,
+                                    "uuid": 410436294,
                                     "property": "normal"
                                 },
                                 "iterations": {
@@ -2036,7 +2036,7 @@
                                     "control": {
                                         "name": "Integer"
                                     },
-                                    "uuid": 1330390819,
+                                    "uuid": 3958724370,
                                     "property": "normal"
                                 },
                                 "gridbias": {
@@ -2047,7 +2047,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 1979658383,
+                                    "uuid": 3687705894,
                                     "property": "normal"
                                 },
                                 "seed": {
@@ -2058,7 +2058,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 434262844,
+                                    "uuid": 982414414,
                                     "property": "normal"
                                 },
                                 "openborder": {
@@ -2069,7 +2069,7 @@
                                     "control": {
                                         "name": "Integer"
                                     },
-                                    "uuid": 3557330598,
+                                    "uuid": 2835399020,
                                     "property": "normal"
                                 },
                                 "flow_rate": {
@@ -2080,7 +2080,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 169200727,
+                                    "uuid": 1667405376,
                                     "property": "normal"
                                 },
                                 "quant_amt": {
@@ -2091,7 +2091,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 2414747274,
+                                    "uuid": 1412671298,
                                     "property": "normal"
                                 },
                                 "repose_angle": {
@@ -2102,7 +2102,7 @@
                                     "control": {
                                         "name": "Float"
                                     },
-                                    "uuid": 1926433011,
+                                    "uuid": 2633897093,
                                     "property": "normal"
                                 },
                                 "visualEnable": {
@@ -2113,7 +2113,7 @@
                                     "control": {
                                         "name": "Integer"
                                     },
-                                    "uuid": 1416811222,
+                                    "uuid": 3814063484,
                                     "property": "normal"
                                 },
                                 "sta_mask_name": {
@@ -2124,7 +2124,7 @@
                                     "control": {
                                         "name": "String"
                                     },
-                                    "uuid": 2998607163,
+                                    "uuid": 2913920775,
                                     "property": "normal"
                                 }
                             },
@@ -2135,7 +2135,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 3605832466,
+                                    "uuid": 3263625836,
                                     "property": "normal"
                                 },
                                 "prim_2DGrid": {
@@ -2143,7 +2143,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2532552668,
+                                    "uuid": 4192242129,
                                     "property": "normal"
                                 }
                             }
@@ -2318,1058 +2318,6 @@
                     ],
                     "options": []
                 },
-                "139fa1d0-ParticlesWrangle": {
-                    "name": "ParticlesWrangle",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:5f34a57d-ParticlesWrangle:[node]/outputs/prim",
-                            "type": "PrimitiveObject",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "zfxCode": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "x = floor(@__id_x / 10)\nz = floor(@__id_z / 10)\n@clr = (@__id_x - x*10)==0 ? vec3(1,1,1) : vec3(0,0,0)\n@clr += (@__id_z - z*10)==0 ? vec3(1,1,1) : vec3(0,0,0)",
-                            "control": {
-                                "name": "Multiline String"
-                            }
-                        },
-                        "params": {
-                            "property": "dict-panel",
-                            "dictlist-panel": {
-                                "collasped": false,
-                                "keys": {}
-                            },
-                            "link": null,
-                            "type": "dict",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -700.0,
-                        -7600.0
-                    ],
-                    "options": []
-                },
-                "46aaffbf-SetUserData": {
-                    "name": "SetUserData",
-                    "inputs": {
-                        "object": {
-                            "link": "main:4a08efd5-SetUserData:[node]/outputs/object",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "data": {
-                            "link": "main:c04ebb79-NumericInt:[node]/outputs/value",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {
-                        "key": {
-                            "value": "nz",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "object": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -3800.0,
-                        -6900.0
-                    ],
-                    "options": []
-                },
-                "4a08efd5-SetUserData": {
-                    "name": "SetUserData",
-                    "inputs": {
-                        "object": {
-                            "link": "main:f8a09d0-Make2DGridPrimitive:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "data": {
-                            "link": "main:c04ebb79-NumericInt:[node]/outputs/value",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {
-                        "key": {
-                            "value": "nx",
-                            "control": {
-                                "name": "String"
-                            },
-                            "type": "string"
-                        }
-                    },
-                    "outputs": {
-                        "object": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -4500.0,
-                        -6900.0
-                    ],
-                    "options": []
-                },
-                "5f34a57d-ParticlesWrangle": {
-                    "name": "ParticlesWrangle",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:711a3dbb-PrimMarkIndex:[node]/outputs/prim",
-                            "type": "PrimitiveObject",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "zfxCode": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "@__id_z = floor(@__idx / $nx)\n@__id_x = @__idx - @__id_z * $nx\nx_start = @__id_x == 0\nx_end = @__id_x == ($nx - 1)\nz_start = @__id_z == 0\nz_end = @__id_z == ($nz - 1)\n@is_bounded = (x_start|x_end|z_start|z_end) ? 1 : 0\n@clr = @is_bounded==1 ? vec3(1,0,0) : vec3(1,1,1)\n",
-                            "control": {
-                                "name": "Multiline String"
-                            }
-                        },
-                        "params": {
-                            "property": "dict-panel",
-                            "dictlist-panel": {
-                                "collasped": false,
-                                "keys": {}
-                            },
-                            "link": "main:af5f87d6-MakeDict:[node]/outputs/dict",
-                            "type": "dict",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -2300.0,
-                        -6900.0
-                    ],
-                    "options": []
-                },
-                "711a3dbb-PrimMarkIndex": {
-                    "name": "PrimMarkIndex",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:46aaffbf-SetUserData:[node]/outputs/object",
-                            "type": "PrimitiveObject",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "tagAttr": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "__idx",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "type": {
-                            "link": null,
-                            "type": "enum int float",
-                            "default-value": "float",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "int",
-                                    "float"
-                                ]
-                            }
-                        },
-                        "base": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 0,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "step": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 1,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -3100.0,
-                        -6900.0
-                    ],
-                    "options": []
-                },
-                "ad09204d-ParticlesWrangle": {
-                    "name": "ParticlesWrangle",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:2d06bae8-zs_erode_smooth_flow:[node]/outputs/prim_2DGrid",
-                            "type": "PrimitiveObject",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "zfxCode": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "# blur back to value\n@clr = @blur * vec3(1,1,1)",
-                            "control": {
-                                "name": "Multiline String"
-                            }
-                        },
-                        "params": {
-                            "property": "dict-panel",
-                            "dictlist-panel": {
-                                "collasped": false,
-                                "keys": {}
-                            },
-                            "link": null,
-                            "type": "dict",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        1900.0,
-                        -7600.0
-                    ],
-                    "options": []
-                },
-                "af5f87d6-MakeDict": {
-                    "name": "MakeDict",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "nx": {
-                            "property": "editable",
-                            "link": "main:c89d9b61-NumericOperator:[node]/outputs/ret",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "nz": {
-                            "property": "editable",
-                            "link": "main:c89d9b61-NumericOperator:[node]/outputs/ret",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "obj2": {
-                            "property": "editable",
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "dict": {
-                            "type": "dict"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -3100.0,
-                        -7400.0
-                    ],
-                    "options": [],
-                    "dict_keys": {
-                        "inputs": [
-                            "nx",
-                            "nz",
-                            "obj2"
-                        ],
-                        "outputs": []
-                    }
-                },
-                "c04ebb79-NumericInt": {
-                    "name": "NumericInt",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {
-                        "value": {
-                            "value": 5000,
-                            "control": {
-                                "name": "Integer"
-                            },
-                            "type": "int"
-                        }
-                    },
-                    "outputs": {
-                        "value": {
-                            "type": "int"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -6100.0,
-                        -7400.0
-                    ],
-                    "options": []
-                },
-                "c89d9b61-NumericOperator": {
-                    "name": "NumericOperator",
-                    "inputs": {
-                        "lhs": {
-                            "link": "main:c04ebb79-NumericInt:[node]/outputs/value",
-                            "type": "NumericObject",
-                            "default-value": 0.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "rhs": {
-                            "link": null,
-                            "type": "NumericObject",
-                            "default-value": 0.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {
-                        "op_type": {
-                            "value": "tofloat",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "add",
-                                    "sub",
-                                    "mul",
-                                    "div",
-                                    "mod",
-                                    "and",
-                                    "or",
-                                    "xor",
-                                    "shr",
-                                    "shl",
-                                    "cmpge",
-                                    "cmple",
-                                    "cmpgt",
-                                    "cmplt",
-                                    "cmpne",
-                                    "cmpeq",
-                                    "land",
-                                    "lor",
-                                    "pos",
-                                    "neg",
-                                    "inv",
-                                    "not",
-                                    "atan2",
-                                    "pow",
-                                    "max",
-                                    "min",
-                                    "fmod",
-                                    "dot",
-                                    "cross",
-                                    "distance",
-                                    "length",
-                                    "normalize",
-                                    "abs",
-                                    "sqrt",
-                                    "sin",
-                                    "cos",
-                                    "tan",
-                                    "asin",
-                                    "acos",
-                                    "atan",
-                                    "exp",
-                                    "log",
-                                    "floor",
-                                    "ceil",
-                                    "toint",
-                                    "tofloat",
-                                    "anytrue",
-                                    "alltrue",
-                                    "copy",
-                                    "copyr"
-                                ]
-                            },
-                            "type": "enum add sub mul div mod and or xor shr shl cmpge cmple cmpgt cmplt cmpne cmpeq land lor pos neg inv not atan2 pow max min fmod dot cross distance length normalize abs sqrt sin cos tan asin acos atan exp log floor ceil toint tofloat anytrue alltrue copy copyr"
-                        }
-                    },
-                    "outputs": {
-                        "ret": {
-                            "type": "NumericObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -3800.0,
-                        -7400.0
-                    ],
-                    "options": []
-                },
-                "e8832a2e-ParticlesWrangle": {
-                    "name": "ParticlesWrangle",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:139fa1d0-ParticlesWrangle:[node]/outputs/prim",
-                            "type": "PrimitiveObject",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "zfxCode": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "# value to blur\n@blur = @clr.x",
-                            "control": {
-                                "name": "Multiline String"
-                            }
-                        },
-                        "params": {
-                            "property": "dict-panel",
-                            "dictlist-panel": {
-                                "collasped": false,
-                                "keys": {}
-                            },
-                            "link": null,
-                            "type": "dict",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        0.0,
-                        -7600.0
-                    ],
-                    "options": []
-                },
-                "f8a09d0-Make2DGridPrimitive": {
-                    "name": "Make2DGridPrimitive",
-                    "inputs": {
-                        "nx": {
-                            "link": "main:c04ebb79-NumericInt:[node]/outputs/value",
-                            "type": "int",
-                            "default-value": 500,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "ny": {
-                            "link": "main:c04ebb79-NumericInt:[node]/outputs/value",
-                            "type": "int",
-                            "default-value": 500,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "sizeX": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "sizeY": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                0.0,
-                                1.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "scale": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 250.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "origin": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                0.0,
-                                0.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {
-                        "Direction": {
-                            "value": "XZ",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "XZ",
-                                    "XY",
-                                    "YZ"
-                                ]
-                            },
-                            "type": "enum XZ XY YZ"
-                        },
-                        "hasFaces": {
-                            "value": true,
-                            "control": {
-                                "name": "Boolean"
-                            },
-                            "type": "bool"
-                        },
-                        "hasUV": {
-                            "value": false,
-                            "control": {
-                                "name": "Boolean"
-                            },
-                            "type": "bool"
-                        },
-                        "isCentered": {
-                            "value": true,
-                            "control": {
-                                "name": "Boolean"
-                            },
-                            "type": "bool"
-                        }
-                    },
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -5400.0,
-                        -6900.0
-                    ],
-                    "options": []
-                },
-                "7dbe499e-erode_smooth_flow": {
-                    "name": "erode_smooth_flow",
-                    "inputs": {
-                        "prim_2DGrid": {
-                            "link": "main:e8832a2e-ParticlesWrangle:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "smoothRate": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 5.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "flowName": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "blur",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim_2DGrid": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        900.0,
-                        -7700.0
-                    ],
-                    "options": []
-                },
-                "bd67262b-Group": {
-                    "name": "Group",
-                    "inputs": {},
-                    "params": {},
-                    "outputs": {},
-                    "uipos": [
-                        -1020.0819091796875,
-                        -7901.1494140625
-                    ],
-                    "options": [],
-                    "blackboard": {
-                        "width": 3808.0,
-                        "height": 1120.0,
-                        "title": "erode_smooth_flow 节点测试",
-                        "background": "#ff0004",
-                        "items": [
-                            "139fa1d0-ParticlesWrangle",
-                            "1c1411f5-PrimitiveDelAttr",
-                            "3499226f-ParticlesTwoWrangle",
-                            "36cc4938-ReadObjPrim",
-                            "6bea2336-Route",
-                            "7303f9d8-PrimitiveDelAttr",
-                            "7dbe499e-erode_smooth_flow",
-                            "a5b95fc9-noiseFbm",
-                            "ad09204d-ParticlesWrangle",
-                            "c538a4b2-ParticlesWrangle",
-                            "c63fb8d3-PrimitiveDelAttr",
-                            "cd9da26e-PrimitiveDelAttr",
-                            "cdd22b7f-PrimitiveDelAttr",
-                            "d17c8e58-IfElse",
-                            "e8832a2e-ParticlesWrangle",
-                            "f8a97301-NumericInt",
-                            "162cb51d-erode_HeightField_blur",
-                            "ea638841-erode_HeightField_blur",
-                            "2d06bae8-zs_erode_smooth_flow"
-                        ]
-                    }
-                },
-                "599dcef2-erode_smooth_flow": {
-                    "name": "erode_smooth_flow",
-                    "inputs": {
-                        "prim_2DGrid": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "smoothRate": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 1.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "flowName": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "blur",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim_2DGrid": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        900.0,
-                        -8500.0
-                    ],
-                    "options": []
-                },
-                "c8dace6e-erode_HeightField_Precipitation": {
-                    "name": "Erode_Precipitation",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "prim_2DGrid": {
-                            "link": "main:ad55bf7e-ParticlesWrangle:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "amount": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.20000000298023225,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "visualEnable": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 1.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "density": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.75,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "seed": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 12345.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "DST": {
-                            "type": ""
-                        },
-                        "prim_2DGrid": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        800.0,
-                        -6000.0
-                    ],
-                    "options": []
-                },
-                "ad55bf7e-ParticlesWrangle": {
-                    "name": "ParticlesWrangle",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:5f34a57d-ParticlesWrangle:[node]/outputs/prim",
-                            "type": "PrimitiveObject",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "zfxCode": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "@water = 0.0",
-                            "control": {
-                                "name": "Multiline String"
-                            }
-                        },
-                        "params": {
-                            "property": "dict-panel",
-                            "dictlist-panel": {
-                                "collasped": false,
-                                "keys": {}
-                            },
-                            "link": null,
-                            "type": "dict",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        0.0,
-                        -6000.0
-                    ],
-                    "options": []
-                },
-                "2312abeb-Group": {
-                    "name": "Group",
-                    "inputs": {},
-                    "params": {},
-                    "outputs": {},
-                    "uipos": [
-                        -226.0819091796875,
-                        -6373.1494140625
-                    ],
-                    "options": [],
-                    "blackboard": {
-                        "width": 2224.0,
-                        "height": 1068.0,
-                        "title": "erode_value2cond 节点测试",
-                        "background": "#3ab203",
-                        "items": [
-                            "c8dace6e-erode_HeightField_Precipitation"
-                        ]
-                    }
-                },
-                "2d06bae8-zs_erode_smooth_flow": {
-                    "name": "zs_erode_smooth_flow",
-                    "inputs": {
-                        "prim_2DGrid": {
-                            "link": "main:e8832a2e-ParticlesWrangle:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "smoothRate": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 5.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "flowName": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "blur",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim_2DGrid": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        900.0,
-                        -7200.0
-                    ],
-                    "options": []
-                },
                 "76078a7-WriteObjPrim": {
                     "name": "WriteObjPrim",
                     "inputs": {
@@ -3528,743 +2476,6 @@
                     ],
                     "options": []
                 },
-                "51a069a8-Make1DLinePrimitive": {
-                    "name": "Make1DLinePrimitive",
-                    "inputs": {
-                        "n": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 4,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "direction": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "scale": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 1.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "origin": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                0.0,
-                                0.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {
-                        "Direction": {
-                            "value": "X",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "X",
-                                    "Y",
-                                    "Z"
-                                ]
-                            },
-                            "type": "enum X Y Z"
-                        },
-                        "hasLines": {
-                            "value": true,
-                            "control": {
-                                "name": "Boolean"
-                            },
-                            "type": "bool"
-                        },
-                        "isCentered": {
-                            "value": false,
-                            "control": {
-                                "name": "Boolean"
-                            },
-                            "type": "bool"
-                        }
-                    },
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -12900.0,
-                        -7100.0
-                    ],
-                    "options": []
-                },
-                "f8a8f3e6-Clone": {
-                    "name": "Clone",
-                    "inputs": {
-                        "object": {
-                            "link": "main:227937aa-WBPrimBend:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "newObject": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -11100.0,
-                        -7300.0
-                    ],
-                    "options": []
-                },
-                "8d33dcd6-ParticlesWrangle": {
-                    "name": "ParticlesWrangle",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:5951e645-CurveOrientation:[node]/outputs/prim",
-                            "type": "PrimitiveObject",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "zfxCode": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "@pos += @dir * -0.1",
-                            "control": {
-                                "name": "Multiline String"
-                            }
-                        },
-                        "params": {
-                            "property": "dict-panel",
-                            "dictlist-panel": {
-                                "collasped": false,
-                                "keys": {}
-                            },
-                            "link": null,
-                            "type": "dict",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": "main:cb797e13-VisVec3Attribute:[node]/outputs/DST",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -9800.0,
-                        -7400.0
-                    ],
-                    "options": []
-                },
-                "c4564969-MakeList": {
-                    "name": "MakeList",
-                    "inputs": {
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "obj0": {
-                            "link": "main:8d33dcd6-ParticlesWrangle:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "obj1": {
-                            "link": "main:227937aa-WBPrimBend:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "obj2": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "list": {
-                            "type": "list"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -8900.0,
-                        -6800.0
-                    ],
-                    "options": []
-                },
-                "9f8be5fd-PrimConnectSkin": {
-                    "name": "PrimConnectSkin",
-                    "inputs": {
-                        "primList": {
-                            "link": "main:c4564969-MakeList:[node]/outputs/list",
-                            "type": "ListObject",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "isCloseRing": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": false,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -8400.0,
-                        -6800.0
-                    ],
-                    "options": []
-                },
-                "227937aa-WBPrimBend": {
-                    "name": "WBPrimBend",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:51a069a8-Make1DLinePrimitive:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "Limit Deformation": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 1,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "Symmetric Deformation": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 0,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "Bend Angle (degree)": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 120.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "Up Vector": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                0.0,
-                                0.0,
-                                1.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "Capture Origin": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                0.0,
-                                0.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "Capture Direction": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "Capture Length": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 1.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -12000.0,
-                        -7100.0
-                    ],
-                    "options": []
-                },
-                "5951e645-CurveOrientation": {
-                    "name": "CurveOrientation",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:f8a8f3e6-Clone:[node]/outputs/newObject",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "dirName": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "dir",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "tanName": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "tan",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "bitanName": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "bitan",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -10500.0,
-                        -7400.0
-                    ],
-                    "options": []
-                },
-                "4176e1aa-VisVec3Attribute": {
-                    "name": "VisVec3Attribute",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:5951e645-CurveOrientation:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "name": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "dir",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "normalize": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "lengthScale": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.20000000298023225,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "color": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                1.0,
-                                0.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "SRC": {
-                            "link": "main:5951e645-CurveOrientation:[node]/outputs/DST",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "primVis": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -11100.0,
-                        -8200.0
-                    ],
-                    "options": []
-                },
-                "6c2bf962-VisVec3Attribute": {
-                    "name": "VisVec3Attribute",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:5951e645-CurveOrientation:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "name": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "tan",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "normalize": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "lengthScale": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.20000000298023225,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "color": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                0.0,
-                                1.0,
-                                0.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "SRC": {
-                            "link": "main:4176e1aa-VisVec3Attribute:[node]/outputs/DST",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "primVis": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -10400.0,
-                        -8200.0
-                    ],
-                    "options": []
-                },
-                "cb797e13-VisVec3Attribute": {
-                    "name": "VisVec3Attribute",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:5951e645-CurveOrientation:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "name": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "bitan",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "normalize": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "lengthScale": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.20000000298023225,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "color": {
-                            "link": null,
-                            "type": "vec3f",
-                            "default-value": [
-                                0.0,
-                                0.0,
-                                1.0
-                            ],
-                            "control": {
-                                "name": "Float Vector 3"
-                            }
-                        },
-                        "SRC": {
-                            "link": "main:6c2bf962-VisVec3Attribute:[node]/outputs/DST",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "primVis": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -9700.0,
-                        -8200.0
-                    ],
-                    "options": []
-                },
-                "868f7d9b-OSDPrimSubdiv": {
-                    "name": "OSDPrimSubdiv",
-                    "inputs": {
-                        "prim": {
-                            "link": "main:9f8be5fd-PrimConnectSkin:[node]/outputs/prim",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "levels": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 1,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "edgeCreaseAttr": {
-                            "link": null,
-                            "type": "string",
-                            "default-value": "",
-                            "control": {
-                                "name": "String"
-                            }
-                        },
-                        "triangulate": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "asQuadFaces": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "hasLoopUVs": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "delayTillIpc": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": false,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "prim": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -7700.0,
-                        -6800.0
-                    ],
-                    "options": []
-                },
                 "feb75ca5-Route": {
                     "name": "Route",
                     "inputs": {
@@ -4296,7 +2507,7 @@
                     },
                     "uipos": [
                         1700.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -4615,7 +2826,7 @@
                     },
                     "uipos": [
                         7600.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -4686,7 +2897,7 @@
                     },
                     "uipos": [
                         7600.0,
-                        2700.0
+                        3600.0
                     ],
                     "options": []
                 },
@@ -4720,7 +2931,7 @@
                         "Blur Type": {
                             "link": null,
                             "type": "string",
-                            "default-value": "blur",
+                            "default-value": "dilate",
                             "control": {
                                 "name": "Enum",
                                 "items": [
@@ -4733,7 +2944,7 @@
                         "Blur Radius": {
                             "link": null,
                             "type": "int",
-                            "default-value": 200,
+                            "default-value": 150,
                             "control": {
                                 "name": "Integer"
                             }
@@ -4758,7 +2969,7 @@
                     },
                     "uipos": [
                         8400.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -4829,7 +3040,7 @@
                     },
                     "uipos": [
                         8400.0,
-                        2700.0
+                        3600.0
                     ],
                     "options": []
                 },
@@ -4916,7 +3127,7 @@
                     },
                     "uipos": [
                         9200.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -4958,7 +3169,7 @@
                     },
                     "uipos": [
                         5500.0,
-                        2800.0
+                        3700.0
                     ],
                     "options": []
                 },
@@ -5014,7 +3225,7 @@
                     },
                     "uipos": [
                         3500.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -5085,7 +3296,7 @@
                     },
                     "uipos": [
                         900.0,
-                        3900.0
+                        4800.0
                     ],
                     "options": []
                 },
@@ -5096,7 +3307,7 @@
                             "link": null,
                             "type": "vec3f",
                             "default-value": [
-                                300.0,
+                                1300.0,
                                 100.0,
                                 0.0
                             ],
@@ -5212,11 +3423,9 @@
                     },
                     "uipos": [
                         200.0,
-                        3900.0
+                        4800.0
                     ],
-                    "options": [
-                        "VIEW"
-                    ]
+                    "options": []
                 },
                 "562ad616-erode_HeightField_Mask_by_Object": {
                     "name": "HF_Mask_by_Object",
@@ -5239,7 +3448,7 @@
                             }
                         },
                         "HeightField": {
-                            "link": "main:feb75ca5-Route:[node]/outputs/output",
+                            "link": "main:7c48fa1e-TransformPrimitive:[node]/outputs/outPrim",
                             "type": "",
                             "default-value": null,
                             "control": {
@@ -5396,7 +3605,7 @@
                     },
                     "uipos": [
                         2500.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -5471,7 +3680,7 @@
                     },
                     "uipos": [
                         800.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -5550,7 +3759,7 @@
                     },
                     "uipos": [
                         1700.0,
-                        3900.0
+                        4800.0
                     ],
                     "options": []
                 },
@@ -5648,7 +3857,7 @@
                         "Blur Type": {
                             "link": null,
                             "type": "string",
-                            "default-value": "Zeno Blur",
+                            "default-value": "OpenCV Blur",
                             "control": {
                                 "name": "Enum",
                                 "items": [
@@ -5732,7 +3941,7 @@
                     },
                     "uipos": [
                         4500.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -5788,7 +3997,7 @@
                     },
                     "uipos": [
                         5500.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": []
                 },
@@ -6019,7 +4228,7 @@
                     },
                     "uipos": [
                         6500.0,
-                        3300.0
+                        4200.0
                     ],
                     "options": [
                         "VIEW"
@@ -6352,7 +4561,9 @@
                         11800.0,
                         100.0
                     ],
-                    "options": []
+                    "options": [
+                        "VIEW"
+                    ]
                 },
                 "3a0819c-erode_HeightField_curl_noise": {
                     "name": "HF_Curl_Noise",
@@ -6587,7 +4798,7 @@
                 "6dcddf87-HF_maskByFeature": {
                     "name": "HF_maskByFeature",
                     "inputs": {
-                        "prim_2DGrid": {
+                        "HeightField": {
                             "link": null,
                             "type": "",
                             "default-value": null,
@@ -6702,7 +4913,7 @@
                     },
                     "params": {},
                     "outputs": {
-                        "prim_2DGrid": {
+                        "HeightField": {
                             "type": ""
                         },
                         "DST": {
@@ -6710,8 +4921,280 @@
                         }
                     },
                     "uipos": [
-                        3000.0,
-                        2500.0
+                        7300.0,
+                        4900.0
+                    ],
+                    "options": []
+                },
+                "2d06d07d-Group": {
+                    "name": "Group",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -265.83445312471306,
+                        3191.7618343825449
+                    ],
+                    "options": [],
+                    "blackboard": {
+                        "width": 10282.624332670995,
+                        "height": 2604.9061018090076,
+                        "title": "地形分层计算及可视化测试",
+                        "background": "#0064a8",
+                        "items": [
+                            "1479a907-erode_HeightField_visualize_mask",
+                            "22e1321c-PrimMarkIndex",
+                            "468e7c4a-CreateTube",
+                            "48b4fec3-PrimScatter",
+                            "562ad616-erode_HeightField_Mask_by_Object",
+                            "6dcddf87-HF_maskByFeature",
+                            "701b9e8f-erode_HeightField_Mask_by_Object",
+                            "72c2818a-erode_HeightField_blur_OpenCV",
+                            "73d6b75a-MakeHeatmap",
+                            "9149d8b0-erode_HeightField_visualize",
+                            "a692f10a-VisPrimAttrValue_Modify",
+                            "b1ca90cd-ParticlesWrangle",
+                            "d001fec7-erode_HeightField_blur_OpenCV",
+                            "d339da7f-PrimFilter",
+                            "e8f548a3-ParticlesWrangle",
+                            "f668f6ed-erode_HeightField_visualize_mask",
+                            "feb75ca5-Route",
+                            "551a7c43-SetUserData",
+                            "c7e7b731-NumericVec3",
+                            "7c48fa1e-TransformPrimitive"
+                        ]
+                    }
+                },
+                "551a7c43-SetUserData": {
+                    "name": "SetUserData",
+                    "inputs": {
+                        "object": {
+                            "link": "main:feb75ca5-Route:[node]/outputs/output",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "data": {
+                            "link": "main:c7e7b731-NumericVec3:[node]/outputs/vec3",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "key": {
+                            "value": "pos",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "object": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        1900.0,
+                        3300.0
+                    ],
+                    "options": []
+                },
+                "c7e7b731-NumericVec3": {
+                    "name": "NumericVec3",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "x": {
+                            "value": 1000.0,
+                            "control": {
+                                "name": "Float"
+                            },
+                            "type": "float"
+                        },
+                        "y": {
+                            "value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            },
+                            "type": "float"
+                        },
+                        "z": {
+                            "value": 0.0,
+                            "control": {
+                                "name": "Float"
+                            },
+                            "type": "float"
+                        }
+                    },
+                    "outputs": {
+                        "vec3": {
+                            "type": "vec3f"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        800.0,
+                        3600.0
+                    ],
+                    "options": []
+                },
+                "7c48fa1e-TransformPrimitive": {
+                    "name": "TransformPrimitive",
+                    "inputs": {
+                        "prim": {
+                            "link": "main:551a7c43-SetUserData:[node]/outputs/object",
+                            "type": "PrimitiveObject",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "translation": {
+                            "link": "main:c7e7b731-NumericVec3:[node]/outputs/vec3",
+                            "type": "vec3f",
+                            "default-value": [
+                                500.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "eulerXYZ": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "quatRotation": {
+                            "link": null,
+                            "type": "vec4f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 4"
+                            }
+                        },
+                        "scaling": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "shear": {
+                            "link": null,
+                            "type": "vec3f",
+                            "default-value": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "control": {
+                                "name": "Float Vector 3"
+                            }
+                        },
+                        "Matrix": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "preTransform": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "local": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "outPrim": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        2500.0,
+                        3500.0
                     ],
                     "options": []
                 }
@@ -8263,7 +6746,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1442794299,
+                                    "uuid": 1141710203,
                                     "property": "normal"
                                 },
                                 "zfxCode": {
@@ -8274,7 +6757,7 @@
                                     "control": {
                                         "name": "Multiline String"
                                     },
-                                    "uuid": 2160201477,
+                                    "uuid": 1853624396,
                                     "property": "normal"
                                 },
                                 "params": {
@@ -8285,7 +6768,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2971878425,
+                                    "uuid": 201962030,
                                     "property": "normal"
                                 },
                                 "SRC": {
@@ -8296,7 +6779,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 305882884,
+                                    "uuid": 3277329580,
                                     "property": "normal"
                                 }
                             },
@@ -8307,7 +6790,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 3971989268,
+                                    "uuid": 2037110605,
                                     "property": "normal"
                                 },
                                 "DST": {
@@ -8315,7 +6798,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 3791650573,
+                                    "uuid": 833605919,
                                     "property": "normal"
                                 }
                             }
@@ -26147,7 +24630,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2674669381,
+                                    "uuid": 663800534,
                                     "property": "normal"
                                 },
                                 "zfxCode": {
@@ -26158,7 +24641,7 @@
                                     "control": {
                                         "name": "Multiline String"
                                     },
-                                    "uuid": 979249607,
+                                    "uuid": 2214412430,
                                     "property": "normal"
                                 },
                                 "params": {
@@ -26169,7 +24652,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1810933725,
+                                    "uuid": 1643723385,
                                     "property": "normal"
                                 },
                                 "SRC": {
@@ -26180,7 +24663,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1418963277,
+                                    "uuid": 2604460881,
                                     "property": "normal"
                                 }
                             },
@@ -26194,7 +24677,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1817555667,
+                                    "uuid": 1213384376,
                                     "property": "normal"
                                 },
                                 "DST": {
@@ -26205,7 +24688,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 3486270124,
+                                    "uuid": 3557492602,
                                     "property": "normal"
                                 }
                             }
@@ -26278,7 +24761,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1498587656,
+                                    "uuid": 2237308753,
                                     "property": "normal"
                                 },
                                 "zfxCode": {
@@ -26289,7 +24772,7 @@
                                     "control": {
                                         "name": "Multiline String"
                                     },
-                                    "uuid": 3366775110,
+                                    "uuid": 1734590907,
                                     "property": "normal"
                                 },
                                 "params": {
@@ -26300,7 +24783,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2618012123,
+                                    "uuid": 3349353784,
                                     "property": "normal"
                                 },
                                 "SRC": {
@@ -26311,7 +24794,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1581462859,
+                                    "uuid": 1159790007,
                                     "property": "normal"
                                 }
                             },
@@ -26325,7 +24808,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1933390328,
+                                    "uuid": 1330898123,
                                     "property": "normal"
                                 },
                                 "DST": {
@@ -26336,7 +24819,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 185910201,
+                                    "uuid": 4106789474,
                                     "property": "normal"
                                 }
                             }
@@ -26444,7 +24927,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2603569897,
+                                    "uuid": 1531258637,
                                     "property": "normal"
                                 },
                                 "zfxCode": {
@@ -26455,7 +24938,7 @@
                                     "control": {
                                         "name": "Multiline String"
                                     },
-                                    "uuid": 948346370,
+                                    "uuid": 3266305567,
                                     "property": "normal"
                                 },
                                 "params": {
@@ -26466,7 +24949,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1474351186,
+                                    "uuid": 3848078912,
                                     "property": "normal"
                                 },
                                 "SRC": {
@@ -26477,7 +24960,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 369514396,
+                                    "uuid": 4244542215,
                                     "property": "normal"
                                 }
                             },
@@ -26491,7 +24974,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2973588801,
+                                    "uuid": 223842361,
                                     "property": "normal"
                                 },
                                 "DST": {
@@ -26502,7 +24985,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1796575816,
+                                    "uuid": 1199297770,
                                     "property": "normal"
                                 }
                             }
@@ -36844,7 +35327,7 @@
                                 "name": ""
                             }
                         },
-                        "attrName": {
+                        "attrName2": {
                             "link": "HF_Visualize:51d3109-SubInput:[node]/outputs/port",
                             "type": "string",
                             "default-value": "rho",
@@ -36885,7 +35368,15 @@
                             }
                         }
                     },
-                    "params": {},
+                    "params": {
+                        "attrName": {
+                            "value": "rho",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
                     "outputs": {
                         "prim": {
                             "type": ""
@@ -39900,14 +38391,14 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 177132938,
+                                    "uuid": 2655330423,
                                     "property": "normal"
                                 },
                                 "zfxCode": {
                                     "control": {
                                         "name": "Multiline String"
                                     },
-                                    "uuid": 908190264,
+                                    "uuid": 1796343594,
                                     "property": "normal"
                                 },
                                 "params": {
@@ -39915,7 +38406,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 2037004416,
+                                    "uuid": 1025651085,
                                     "property": "normal"
                                 },
                                 "SRC": {
@@ -39923,7 +38414,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1558860185,
+                                    "uuid": 3143964070,
                                     "property": "normal"
                                 }
                             },
@@ -39934,7 +38425,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 3716137204,
+                                    "uuid": 386023272,
                                     "property": "normal"
                                 },
                                 "DST": {
@@ -39942,7 +38433,7 @@
                                     "control": {
                                         "name": ""
                                     },
-                                    "uuid": 1533796916,
+                                    "uuid": 3403095447,
                                     "property": "normal"
                                 }
                             }
@@ -40527,7 +39018,7 @@
     "views": {
         "timeline": {
             "start-frame": 0,
-            "end-frame": 0,
+            "end-frame": 5,
             "curr-frame": 0,
             "always": false
         }
@@ -55986,7 +54477,7 @@
             "inputs": [
                 [
                     "",
-                    "prim_2DGrid",
+                    "HeightField",
                     ""
                 ],
                 [
@@ -56059,7 +54550,7 @@
             "outputs": [
                 [
                     "",
-                    "prim_2DGrid",
+                    "HeightField",
                     ""
                 ],
                 [
@@ -67692,7 +66183,7 @@
                 ],
                 [
                     "string",
-                    "attrName",
+                    "attrName2",
                     "rho"
                 ],
                 [
@@ -67716,7 +66207,13 @@
                     ""
                 ]
             ],
-            "params": [],
+            "params": [
+                [
+                    "string",
+                    "attrName",
+                    "rho"
+                ]
+            ],
             "outputs": [
                 [
                     "",
@@ -83748,7 +82245,7 @@
             "inputs": [
                 [
                     "",
-                    "prim_2DGrid",
+                    "HeightField",
                     ""
                 ],
                 [
@@ -83821,7 +82318,7 @@
             "outputs": [
                 [
                     "",
-                    "prim_2DGrid",
+                    "HeightField",
                     ""
                 ],
                 [
