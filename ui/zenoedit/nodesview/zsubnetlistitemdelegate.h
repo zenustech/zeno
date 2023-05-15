@@ -38,8 +38,9 @@ protected:
     bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
         const QModelIndex& index) override;
 
+public slots:
+    void onDelete();
 private slots:
-    void onDelete(const QModelIndex& index);
     void onRename(const QModelIndex &index);
 
 private:

@@ -154,12 +154,15 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_ui->subnetList->setItemDelegate(delegate);
     connect(m_ui->subnetList->selectionModel(), &QItemSelectionModel::selectionChanged, this, [=]() {
         QModelIndexList lst = m_ui->subnetList->selectionModel()->selectedIndexes();
-        if (lst.size() > 1) {
-            delegate->setSelectedIndexs(lst);
-        } else if (lst.size() > 0) {
+        delegate->setSelectedIndexs(lst);
+        if (lst.size() == 1) 
+        {
             onListItemActivated(lst.first());
         }
     });
+
+    QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Delete), m_ui->subnetList);
+    connect(shortcut, SIGNAL(activated()), delegate, SLOT(onDelete()));
 
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->mainEditor);
     m_ui->graphsViewTab->clear();

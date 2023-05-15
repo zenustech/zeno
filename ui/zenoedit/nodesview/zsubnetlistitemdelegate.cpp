@@ -136,13 +136,14 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             QAction* pPasteSubnet = new QAction(tr("Paste subnet"));
             QAction* pRename = new QAction(tr("Rename"));
             QAction* pDelete = new QAction(tr("Delete"));
+            pDelete->setShortcut(Qt::Key_Delete);
 
             if (m_selectedIndexs.size() > 1) 
             {
                 pRename->setEnabled(false);
             }
             connect(pDelete, &QAction::triggered, this, [=]() {
-                onDelete(index);
+                onDelete();
              });
 
             connect(pRename, &QAction::triggered, this, [=]() {
@@ -160,20 +161,23 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
     return QStyledItemDelegate::editorEvent(event, model, option, index);
 }
 
-void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
+void ZSubnetListItemDelegate::onDelete()
 {
-    QStringList nameList;
-    for (const QModelIndex &idx : m_selectedIndexs) {
-        QString subgName = idx.data(ROLE_OBJNAME).toString();
-        if (subgName.compare("main", Qt::CaseInsensitive) == 0) {
-            QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
-            msg.exec();
-            continue;;
+    int button = QMessageBox::question(nullptr, tr("Delete Subgraph"), tr("Do you want to delete the selected subgraphs"));
+    if (button == QMessageBox::Yes) {
+        QStringList nameList;
+        for (const QModelIndex &idx : m_selectedIndexs) {
+            QString subgName = idx.data(ROLE_OBJNAME).toString();
+            if (subgName.compare("main", Qt::CaseInsensitive) == 0) {
+                QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
+                msg.exec();
+                continue;
+            }
+            nameList << subgName;
         }
-        nameList << subgName;
+        for (const QString &name : nameList)
+            m_model->removeSubGraph(name);
     }
-    for (const QString &name : nameList)
-        m_model->removeSubGraph(name);
 }
 
 void ZSubnetListItemDelegate::onRename(const QModelIndex &index) 
