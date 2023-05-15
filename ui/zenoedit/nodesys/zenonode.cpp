@@ -136,7 +136,6 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
 
     m_headerWidget = initHeaderWidget(pGraphsModel);
     m_bodyWidget = initBodyWidget(pScene);
-    m_bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 
     ZGraphicsLayout* mainLayout = new ZGraphicsLayout(false);
     mainLayout->setDebugName("mainLayout");
@@ -249,7 +248,7 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     bodyWidget->setColors(bodyBg.bAcceptHovers, bodyBg.clr_normal);
 
     qreal bdrWidth = ZenoStyle::dpiScaled(bodyBg.border_witdh);
-    bodyWidget->setBorder(bdrWidth, bodyBg.clr_border);
+    bodyWidget->setBorder(ZenoStyle::scaleWidth(2), QColor(18, 20, 22));
 
     m_bodyLayout = new ZGraphicsLayout(false);
     m_bodyLayout->setDebugName("Body Layout");
@@ -1160,6 +1159,9 @@ void ZenoNode::onZoomed()
         }
         if (m_pCategoryItem) {
             m_pCategoryItem->setVisible(bVisible);
+        }
+        if (m_bVisible) {
+            updateWhole();
         }
     }
 

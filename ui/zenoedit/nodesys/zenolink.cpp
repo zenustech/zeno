@@ -6,11 +6,17 @@
 #include <zenoui/comctrl/gv/zenosocketitem.h>
 #include <zenoui/style/zenostyle.h>
 #include "../util/log.h"
+#include "settings/zenosettingsmanager.h"
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
     : _base(parent)
 {
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString key) { 
+        if (key == zsLinkLineShape) {
+            update();
+        }
+    });
 }
 
 ZenoLink::~ZenoLink()
@@ -24,34 +30,36 @@ QRectF ZenoLink::boundingRect() const
 
 QPainterPath ZenoLink::shape() const
 {
-#ifdef BASE_ON_CURVE
-    auto src = getSrcPos();
-    auto dst = getDstPos();
-    if (hasLastPath && src == lastSrcPos && dst == lastSrcPos)
-        return lastPath;
+    bool bCurve = ZenoSettingsManager::GetInstance().getValue(zsLinkLineShape).toBool();
+    if (bCurve)
+    {
+        auto src = getSrcPos();
+        auto dst = getDstPos();
+        if (hasLastPath && src == lastSrcPos && dst == lastSrcPos)
+            return lastPath;
 
-    QPainterPath path(src);
-    if (BEZIER == 0) {
-        path.lineTo(dst);
-    } else {
-        float dist = dst.x() - src.x();
-        dist = std::clamp(std::abs(dist), 40.f, 700.f) * BEZIER;
-        path.cubicTo(src.x() + dist, src.y(),
-                     dst.x() - dist, dst.y(),
-                     dst.x(), dst.y());
+        QPainterPath path(src);
+        if (BEZIER == 0) {
+            path.lineTo(dst);
+        } else {
+            float dist = dst.x() - src.x();
+            dist = std::clamp(std::abs(dist), 40.f, 700.f) * BEZIER;
+            path.cubicTo(src.x() + dist, src.y(), dst.x() - dist, dst.y(), dst.x(), dst.y());
+        }
+
+        hasLastPath = true;
+        lastSrcPos = src;
+        lastDstPos = dst;
+        lastPath = path;
+        return path;
+    } 
+    else 
+    {
+        QPainterPath path;
+        path.moveTo(getSrcPos());
+        path.lineTo(getDstPos());
+        return path;
     }
-
-    hasLastPath = true;
-    lastSrcPos = src;
-    lastDstPos = dst;
-    lastPath = path;
-    return path;
-#else
-    QPainterPath path;
-    path.moveTo(getSrcPos());
-    path.lineTo(getDstPos());
-    return path;
-#endif
 }
 
 int ZenoLink::type() const

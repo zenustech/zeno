@@ -8,6 +8,7 @@ const char *const zsShowGrid = "ShowGrid";
 const char *const zsSnapGrid = "SnapGrid";
 const char *const zsTraceErrorNode = "TraceErrorNode";
 const char *const zsShortCut = "ShortCut";
+const char *const zsLinkLineShape = "LinkLineShape";
 
 //short cut
 const char *const ShortCut_Save = "Save";
