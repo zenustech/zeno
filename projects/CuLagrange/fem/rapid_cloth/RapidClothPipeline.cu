@@ -519,22 +519,23 @@ void RapidClothSystem::subStepping(zs::CudaExecutionPolicy &pol) {
                 hv_view("x(l)", 2, vi)
             }; 
             visPrim->verts.values[vi + n] = zeno::vec3f {
-                hv_view("y[k+1]", 0, vi), 
-                hv_view("y[k+1]", 1, vi), 
-                hv_view("y[k+1]", 2, vi)
+                hv_view("y(l)", 0, vi), 
+                hv_view("y(l)", 1, vi), 
+                hv_view("y(l)", 2, vi)
             }; 
             visPrim->lines.values[vi] = zeno::vec2i {vi, vi + n}; 
         }
-
+#if 0 
         auto ht = stInds.clone({memsrc_e::host, -1}); 
         auto ht_view = proxy<execspace_e::host>({}, ht); 
         int tn = stInds.size(); 
         visPrim->tris.resize(tn); 
         for (int ti = 0; ti < tn; ti++)
         {
-            visPrim->tris.values[ti] = zeno::vec3i {n + ht_view("inds", 0, ti, int_c), 
-                n + ht_view("inds", 1, ti, int_c), n + ht_view("inds", 2, ti, int_c)}; 
+            visPrim->tris.values[ti] = zeno::vec3i {ht_view("inds", 0, ti, int_c), 
+                ht_view("inds", 1, ti, int_c), ht_view("inds", 2, ti, int_c)}; 
         }
+#endif 
     }
 }
 
@@ -561,6 +562,8 @@ struct StepRapidClothSystem : INode {
 
         set_output("ZSRapidClothSystem", A);
         set_output("visPrim", A->visPrim); 
+        set_output("iterPrims", A->iterPrims); 
+        set_output("iterBouPrims", A->iterBouPrims); 
     }
 };
 
@@ -569,7 +572,7 @@ ZENDEFNODE(StepRapidClothSystem, {{
                                  {"int", "num_substeps", "1"},
                                  {"float", "dt", "0.01"},
                              },
-                             {"ZSRapidClothSystem", "visPrim"},
+                             {"ZSRapidClothSystem", "visPrim", "iterPrims", "iterBouPrims"},
                              {},
                              {"FEM"}});
 
