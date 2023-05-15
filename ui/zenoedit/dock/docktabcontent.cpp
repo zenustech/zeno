@@ -328,7 +328,12 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     QFontMetrics fontMetrics(fnt);
     m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCameraMaterial")) + ZenoStyle::dpiScaled(30));
     QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
-        static int lastItem = 0;
+        QSettings settings(zsCompanyName, zsEditor);
+        if (settings.value("zencache-enable").toBool() && !QFileInfo(settings.value("zencache-rootdir").toString()).isDir()) {
+            QMessageBox::warning(nullptr, tr("ZenCache"), tr("Root path of cache is invalid, please choose another path."));
+            m_btnAlways->setCurrentIndex(0);
+            return;
+        }
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
@@ -336,7 +341,6 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
         std::function<void()> resetAlways = [=]() {
             m_btnAlways->setCurrentText(tr("disable"));
             pMainWin->setAlwaysLightCameraMaterial(false);
-            lastItem = 0;
         };
         connect(zenoApp->graphsManagment(), &GraphsManagment::fileOpened, this, resetAlways);
         connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
@@ -346,26 +350,22 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
             pMainWin->setAlways(true);
             pMainWin->setAlwaysLightCameraMaterial(false);
             pMainWin->onRunTriggered();
-            lastItem = 1;
         }
         else if (text == tr("alwaysLightCameraMaterial")) {
-            QSettings settings(zsCompanyName, zsEditor);
             if (!settings.value("zencache-enable").toBool()) {
                 QMessageBox::warning(nullptr, tr("alwaysLightCameraMaterial"), tr("This function can only be used in cache mode."));
-                m_btnAlways->setCurrentIndex(lastItem);
+                m_btnAlways->setCurrentIndex(0);
             } else {
                 mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
                 pMainWin->setAlways(false);
                 pMainWin->setAlwaysLightCameraMaterial(true);
                 pMainWin->onRunTriggered();
-                lastItem = 2;
             }
         }
         else {
             mgr->setCacheOpt(ZCacheMgr::Opt_Undefined);
             pMainWin->setAlways(false);
             pMainWin->setAlwaysLightCameraMaterial(false);
-            lastItem = 0;
         }
         m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(text) + ZenoStyle::dpiScaled(26));
     });

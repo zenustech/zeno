@@ -804,24 +804,25 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
 
         QVariant varEnableCache = inst.getValue("zencache-enable");
         QVariant varAutoRemove = inst.getValue("zencache-autoremove");
-        QVariant varCacheRoot = inst.getValue("zencachedir");
+        QVariant varCacheRoot = inst.getValue("zencache-rootdir");
+        QVariant varCacheSub = inst.getValue("zencache-subdir");
         QVariant varCacheNum = inst.getValue("zencachenum");
 
         bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
         bool bAutoRemove = varAutoRemove.isValid() ? varAutoRemove.toBool() : false;
         QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
+        QString cacheRootSub = varCacheSub.isValid() ? varCacheSub.toString() : "";
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
 
-        ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
-        pathLineEdit->setFixedWidth(256);
-        pathLineEdit->setEnabled(!bAutoRemove && bEnableCache);
+        ZPathEdit *rootPathLineEdit = new ZPathEdit(cacheRootDir);
+        rootPathLineEdit->setFixedWidth(256);
+        rootPathLineEdit->setEnabled(bEnableCache);
+        ZLineEdit *subPathLineEdit = new ZLineEdit(cacheRootSub);
+        subPathLineEdit->setFixedWidth(256);
+        subPathLineEdit->setEnabled(bEnableCache);
         QCheckBox *pAutoDelCache = new QCheckBox;
         pAutoDelCache->setCheckState(bAutoRemove ? Qt::Checked : Qt::Unchecked);
         pAutoDelCache->setEnabled(bEnableCache);
-        connect(pAutoDelCache, &QCheckBox::stateChanged, [=](bool state) {
-            pathLineEdit->setText("");
-            pathLineEdit->setEnabled(!state);
-        });
 
         QSpinBox* pSpinBox = new QSpinBox;
         pSpinBox->setRange(1, 10000);
@@ -834,27 +835,31 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             if (!state)
             {
                 pSpinBox->clear();
-                pathLineEdit->clear();
                 pAutoDelCache->setCheckState(Qt::Unchecked);
+                rootPathLineEdit->clear();
+                subPathLineEdit->clear();
             }
             pSpinBox->setEnabled(state);
-            pathLineEdit->setEnabled(state);
             pAutoDelCache->setEnabled(state);
+            rootPathLineEdit->setEnabled(state);
+            subPathLineEdit->setEnabled(state);
         });
 
         QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
         QDialog dlg(this);
         QGridLayout* pLayout = new QGridLayout;
-        pLayout->addWidget(new QLabel("enable cache"), 0, 0);
+        pLayout->addWidget(new QLabel("enable cache", &dlg), 0, 0);
         pLayout->addWidget(pCheckbox, 0, 1);
-        pLayout->addWidget(new QLabel("cache num"), 1, 0);
+        pLayout->addWidget(new QLabel("cache num", &dlg), 1, 0);
         pLayout->addWidget(pSpinBox, 1, 1);
-        pLayout->addWidget(new QLabel("cache root"), 2, 0);
-        pLayout->addWidget(pathLineEdit, 2, 1);
-        pLayout->addWidget(new QLabel("temp cache directory"), 3, 0);
-        pLayout->addWidget(pAutoDelCache, 3, 1);
-        pLayout->addWidget(pButtonBox, 4, 1);
+        pLayout->addWidget(new QLabel("cache root directory", &dlg), 2, 0);
+        pLayout->addWidget(rootPathLineEdit, 2, 1);
+        pLayout->addWidget(new QLabel("subdirectory name", &dlg), 3, 0);
+        pLayout->addWidget(subPathLineEdit, 3, 1);
+        pLayout->addWidget(new QLabel("auto remove"), 4, 0);
+        pLayout->addWidget(pAutoDelCache, 4, 1);
+        pLayout->addWidget(pButtonBox, 5, 1);
 
         connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
         connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
@@ -862,9 +867,14 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         dlg.setLayout(pLayout);
         if (QDialog::Accepted == dlg.exec())
         {
+            if (pCheckbox->checkState() == Qt::Checked && !QFileInfo(rootPathLineEdit->text()).isDir())
+            {
+                QMessageBox::warning(nullptr, tr("Zencache"), tr("Root path of cache is invalid, please choose another path."));
+            }
             inst.setValue("zencache-enable", pCheckbox->checkState() == Qt::Checked);
             inst.setValue("zencache-autoremove", pAutoDelCache->checkState() == Qt::Checked);
-            inst.setValue("zencachedir", pathLineEdit->text());
+            inst.setValue("zencache-rootdir", rootPathLineEdit->text());
+            inst.setValue("zencache-subdir", subPathLineEdit->text());
             inst.setValue("zencachenum", pSpinBox->value());
         }
     }
