@@ -2,26 +2,39 @@
 #include "zassert.h"
 
 ZCacheMgr::ZCacheMgr()
-    : m_bTempDir(true)
+    : m_bAutoRemove(false)
+    , m_subDir("")
     , m_isNew(true)
     , m_cacheOpt(Opt_Undefined)
 {
 }
 
-bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
+bool ZCacheMgr::initCacheDir(bool bAutoRemove, QDir dirCacheRoot, QString subdir)
 {
     if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOnLightCameraMaterial)) {
         return true;
     }
-    m_bTempDir = bTempDir;
-    if (m_bTempDir) {
-        m_spTmpCacheDir.reset(new QTemporaryDir);
-        m_spTmpCacheDir->setAutoRemove(true);
+    m_bAutoRemove = bAutoRemove;
+    if (subdir.isEmpty()) {
+        m_spTmpCacheDir.reset(new QTemporaryDir(dirCacheRoot.path() + "/"));
+        m_spTmpCacheDir->setAutoRemove(m_bAutoRemove);
         m_isNew = false;
     } else {
+        m_subDir = subdir;
+        if (!QDir(dirCacheRoot.path() + "/" + m_subDir).exists())
+        {
+            bool ret = dirCacheRoot.mkdir(m_subDir);
+            ZASSERT_EXIT(ret, false);
+        }
+        bool ret = dirCacheRoot.cd(m_subDir);
+        ZASSERT_EXIT(ret, false);
         QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
-        bool ret = dirCacheRoot.mkdir(tempDirPath);
+        ret = dirCacheRoot.mkdir(tempDirPath);
         if (ret) {
+            if (m_bAutoRemove)
+            {
+                m_spCacheDir.removeRecursively();
+            }
             m_spCacheDir = dirCacheRoot;
             ret = m_spCacheDir.cd(tempDirPath);
             ZASSERT_EXIT(ret, false);
@@ -33,7 +46,7 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
 
 QString ZCacheMgr::cachePath() const
 {
-    if (m_bTempDir)
+    if (m_subDir.isEmpty())
     {
         return m_spTmpCacheDir->path();
     }

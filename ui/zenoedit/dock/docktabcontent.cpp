@@ -335,6 +335,14 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     QFontMetrics fontMetrics(fnt);
     m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCamera")) + ZenoStyle::dpiScaled(30));
     QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
+        m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(text) + ZenoStyle::dpiScaled(26));
+        QSettings settings(zsCompanyName, zsEditor);
+        if (settings.value("zencache-enable").toBool() && !QFileInfo(settings.value("zencache-rootdir").toString()).isDir()) {
+            QMessageBox::warning(nullptr, tr("ZenCache"), tr("Root path of cache is invalid, please choose another path."));
+            m_btnAlways->setCurrentIndex(0);
+            m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(tr("disable")) + ZenoStyle::dpiScaled(26));
+            return;
+        }
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
@@ -359,10 +367,10 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
             pMainWin->onRunTriggered();
         }
         else if (text == tr("alwaysLightCamera") || text == tr("alwaysMaterial")) {
-            QSettings settings(zsCompanyName, zsEditor);
             if (!settings.value("zencache-enable").toBool()) {
                 QMessageBox::warning(nullptr, text, tr("This function can only be used in cache mode."));
                 m_btnAlways->setCurrentIndex(0);
+                m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(tr("disable")) + ZenoStyle::dpiScaled(26));
             } else {
                 if (text == tr("alwaysLightCamera")) {
                     pMainWin->setAlwaysLightCameraMaterial(true, false);
@@ -379,7 +387,6 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
             pMainWin->setAlways(false);
             pMainWin->setAlwaysLightCameraMaterial(false, false);
         }
-        m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(text) + ZenoStyle::dpiScaled(26));
     });
     m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(tr("disable")) + ZenoStyle::dpiScaled(26));
 
