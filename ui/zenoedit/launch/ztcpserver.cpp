@@ -72,10 +72,9 @@ void ZTcpServer::startProc(const std::string& progJson)
     QString finalPath;
     if (bEnableCache)
     {
-        const QString &cacheRootdir = settings.value("zencache-rootdir").toString();
-        const QString &cacheSubdir = settings.value("zencache-subdir").toString();
+        const QString& cacheRootdir = settings.value("zencachedir").toString();
         QDir dirCacheRoot(cacheRootdir);
-        if (!QFileInfo(cacheRootdir).isDir())
+        if (!QFileInfo(cacheRootdir).isDir() && !bAutoRemove)
         {
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
@@ -83,7 +82,7 @@ void ZTcpServer::startProc(const std::string& progJson)
 
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
-        bool ret = mgr->initCacheDir(bAutoRemove, cacheRootdir, cacheSubdir);
+        bool ret = mgr->initCacheDir(bAutoRemove, cacheRootdir);
         ZASSERT_EXIT(ret);
         finalPath = mgr->cachePath();
         int cnum = settings.value("zencachenum").toInt();

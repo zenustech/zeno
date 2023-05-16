@@ -7,7 +7,7 @@ class ZCacheMgr
 {
 public:
     ZCacheMgr();
-    bool initCacheDir(bool bAutoRemove, QDir dir, QString subdir);
+    bool initCacheDir(bool bTempDir, QDir dir);
     QString cachePath() const;
     std::shared_ptr<QTemporaryDir> getTempDir() const;
     QDir getPersistenceDir() const;
@@ -26,8 +26,8 @@ public:
 private:
     std::shared_ptr<QTemporaryDir> m_spTmpCacheDir;
     QDir m_spCacheDir;
-    bool m_bAutoRemove;
-    QString m_subDir;
+    bool m_bTempDir;
+
     bool m_isNew;
     cacheOption m_cacheOpt;
 };
