@@ -161,9 +161,6 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
         }
     });
 
-    QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Delete), m_ui->subnetList);
-    connect(shortcut, SIGNAL(activated()), delegate, SLOT(onDelete()));
-
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->mainEditor);
     m_ui->graphsViewTab->clear();
 
