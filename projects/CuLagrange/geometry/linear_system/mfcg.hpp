@@ -1022,8 +1022,13 @@ if(do_cuda_profile)
         copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
         copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
         copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
-        copy<space_dim*space_dim>(pol,vert_buffer,Htag,vtemp,"H");
-        copy<1>(pol,vert_buffer,"inds",vtemp,"inds");
+        if(vert_buffer.hasProperty("H") && vert_buffer.hasProperty("inds")) {
+            copy<space_dim*space_dim>(pol,vert_buffer,Htag,vtemp,"H");
+            copy<1>(pol,vert_buffer,"inds",vtemp,"inds");
+        }else {
+            TILEVEC_OPS::fill(pol,vtemp,"H",(T)0.0);
+            TILEVEC_OPS::fill(pol,vtemp,"inds",zs::reinterpret_bits<T>((int)-1));
+        }
         // fmt::print("check point 1\n");
         ETileVec etemp{elm_buffer.get_allocator(),{
             {"inds",simplex_dim},
