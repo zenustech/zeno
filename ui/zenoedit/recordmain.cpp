@@ -95,7 +95,7 @@ int record_main(const QCoreApplication& app)
         QString text = cmdParser.value("cachePath");
         text.replace('\\', '/');
         QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencache-rootdir", text);
+        settings.setValue("zencachedir", text);
         if (!QDir(text).exists()) {
             QDir().mkdir(text);
         }
