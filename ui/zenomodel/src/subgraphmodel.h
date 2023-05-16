@@ -10,7 +10,7 @@
 #include "viewparammodel.h"
 #include "nodeparammodel.h"
 #include "panelparammodel.h"
-
+#include "nodeitem.h"
 
 class GraphsModel;
 
@@ -19,31 +19,6 @@ class SubGraphModel : public QAbstractItemModel
     Q_OBJECT
     typedef QAbstractItemModel _base;
     friend class AddNodeCommand;
-
-    struct _NodeItem
-    {
-        QString objid;
-        QString objCls;
-        QString customName;
-        NODE_TYPE type;
-        QPointF viewpos;
-        int options;
-        PARAMS_INFO paramNotDesc;
-
-        PanelParamModel* panelParams;
-        NodeParamModel* nodeParams;
-
-        bool bCollasped;
-
-        _NodeItem()
-            : options(0)
-            , bCollasped(false)
-            , type(NORMAL_NODE)
-            , panelParams(nullptr)
-            , nodeParams(nullptr)
-        {
-        }
-    };
 
 public:
 	explicit SubGraphModel(GraphsModel* pGraphsModel, QObject* parent = nullptr);
@@ -112,16 +87,16 @@ private:
     SubGraphModel(const SubGraphModel& rhs);
 
     bool _insertNode(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());
-    bool itemFromIndex(const QModelIndex& index, _NodeItem& retNode) const;
+    bool itemFromIndex(const QModelIndex& index, NodeItem& retNode) const;
     bool _removeRow(const QModelIndex &index);
-    NODE_DATA item2NodeData(const _NodeItem& item) const;
-    void importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret);
+    NODE_DATA item2NodeData(const NodeItem& item) const;
+    void importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, NodeItem& ret);
     bool checkCustomName(const QString &name);
 
     QString m_name;
     QHash<QString, int> m_key2Row;
     QHash<int, QString> m_row2Key;
-    QHash<QString, _NodeItem> m_nodes;
+    QHash<QString, NodeItem> m_nodes;
 
     QHash<QString, QSet<QString>> m_name2identLst;
 

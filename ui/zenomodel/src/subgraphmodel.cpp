@@ -77,7 +77,7 @@ void SubGraphModel::clear()
     emit m_pGraphsModel->clearLayout(subgIdx);
 }
 
-NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const
+NODE_DATA SubGraphModel::item2NodeData(const NodeItem& item) const
 {
     NODE_DATA data;
     data[ROLE_OBJID] = item.objid;
@@ -105,7 +105,7 @@ NODE_DATA SubGraphModel::item2NodeData(const _NodeItem& item) const
     return data;
 }
 
-void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret)
+void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, NodeItem& ret)
 {
     ret.objid = data[ROLE_OBJID].toString();
     ret.objCls = data[ROLE_OBJNAME].toString();
@@ -201,7 +201,7 @@ bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
 bool SubGraphModel::_removeRow(const QModelIndex& index)
 {
     //remove node by id and update params from other node.
-    _NodeItem item;
+    NodeItem item;
     if (!itemFromIndex(index, item))
         return false;
 
@@ -280,7 +280,7 @@ int SubGraphModel::columnCount(const QModelIndex& parent) const
 
 QModelIndex SubGraphModel::nodeParamIndex(const QModelIndex &nodeIdx, PARAM_CLASS cls, const QString &paramName) const
 {
-    _NodeItem item;
+    NodeItem item;
     if (!itemFromIndex(nodeIdx, item))
         return QModelIndex();
     return item.nodeParams->getParam(cls, paramName);
@@ -288,7 +288,7 @@ QModelIndex SubGraphModel::nodeParamIndex(const QModelIndex &nodeIdx, PARAM_CLAS
 
 ViewParamModel* SubGraphModel::viewParams(const QModelIndex& index)
 {
-    _NodeItem item;
+    NodeItem item;
     if (!itemFromIndex(index, item))
         return nullptr;
     return item.panelParams;
@@ -296,7 +296,7 @@ ViewParamModel* SubGraphModel::viewParams(const QModelIndex& index)
 
 ViewParamModel* SubGraphModel::nodeParams(const QModelIndex& index)
 {
-    _NodeItem item;
+    NodeItem item;
     if (!itemFromIndex(index, item))
         return nullptr;
     return item.nodeParams;
@@ -304,7 +304,7 @@ ViewParamModel* SubGraphModel::nodeParams(const QModelIndex& index)
 
 QVariant SubGraphModel::data(const QModelIndex& index, int role) const
 {
-    _NodeItem item;
+    NodeItem item;
     if (!itemFromIndex(index, item))
         return QVariant();
 
@@ -407,7 +407,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
     QString id = m_row2Key[index.row()];
     if (m_nodes.find(id) != m_nodes.end())
     {
-        _NodeItem& item = m_nodes[id];
+        NodeItem& item = m_nodes[id];
 
         switch (role)
         {
@@ -546,7 +546,7 @@ bool SubGraphModel::setParamValue(
         PARAM_CONTROL ctrl,
         SOCKET_PROPERTY sockProp)
 {
-    _NodeItem item;
+    NodeItem item;
     if (!itemFromIndex(idx, item))
         return false;
 
@@ -575,7 +575,7 @@ void SubGraphModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO i
     if (it == m_nodes.end())
         return;
 
-    _NodeItem& item = m_nodes[nodeid];
+    NodeItem& item = m_nodes[nodeid];
     switch (info.role)
     {
     case ROLE_COLLASPED: item.bCollasped = info.newValue.toBool(); break;
@@ -597,7 +597,7 @@ bool SubGraphModel::hasChildren(const QModelIndex& parent) const
 
 NODE_DATA SubGraphModel::nodeData(const QModelIndex &index) const
 {
-    _NodeItem item;
+    NodeItem item;
     if (!itemFromIndex(index, item))
         return NODE_DATA();
     return item2NodeData(item);
@@ -623,7 +623,7 @@ QModelIndexList SubGraphModel::getNodesByCls(const QString& nodeCls)
     return nodes;
 }
 
-bool SubGraphModel::itemFromIndex(const QModelIndex &index, _NodeItem& retNode) const
+bool SubGraphModel::itemFromIndex(const QModelIndex &index, NodeItem& retNode) const
 {
     if (!index.isValid())
         return false;
@@ -686,7 +686,7 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
 
     m_name2identLst[name].insert(id);
 
-    _NodeItem& item = m_nodes[id];
+    NodeItem& item = m_nodes[id];
     QModelIndex nodeIdx = index(row, 0, QModelIndex());
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 

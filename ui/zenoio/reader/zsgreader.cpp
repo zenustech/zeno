@@ -87,9 +87,16 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     for (const auto& subgraph : graph.GetObject())
     {
         const QString& graphName = subgraph.name.GetString();
+        if ("main" == graphName)
+            continue;
         if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
             return false;
     }
+
+    ZASSERT_EXIT(graph.HasMember("main"), false);
+    if (!_parseSubGraph("main", graph["main"], nodesDescs, pAcceptor))
+        return false;
+
     pAcceptor->EndGraphs();
     pAcceptor->switchSubGraph("main");
 
@@ -191,7 +198,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     if (objValue.HasMember("params"))
     {
         if (_parseParams2(nodeid, name, objValue["params"], pAcceptor) == false)
-			_parseParams(nodeid, name, objValue["params"], pAcceptor);
+            _parseParams(nodeid, name, objValue["params"], pAcceptor);
     }
     if (objValue.HasMember("outputs"))
     {
