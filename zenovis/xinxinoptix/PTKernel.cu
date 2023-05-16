@@ -211,6 +211,7 @@ extern "C" __global__ void __raygen__rg()
                 //prd.passed = false;
             //}
         }
+        seed = prd.seed;
     }
     while( --i );
 

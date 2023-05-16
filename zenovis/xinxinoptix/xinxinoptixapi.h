@@ -1,11 +1,73 @@
 #pragma once
+#include <functional>
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
+
 #include <zeno/utils/vec.h>
+#include <glm/matrix.hpp>
 #include <cuda_runtime.h>
 
+enum ShaderMaker {
+    Mesh = 0,
+    Sphere = 1,
+    Volume = 2,
+};
+
+struct ShaderPrepared {
+    ShaderMaker shader_mark;
+    std::string material_id;
+    std::string source_code;
+    std::vector<std::string> tex_names;
+};
+
 namespace xinxinoptix {
+
+struct InfoSphereTransformed {
+    std::string materialID;
+    std::string instanceID; // 
+    
+    glm::mat4 optix_transform;
+    //Draw uniform sphere with transform
+};
+
+inline std::map<std::string, InfoSphereTransformed> LutSpheresTransformed;
+void preload_sphere_transformed(std::string const &key, std::string const &mtlid, const std::string &instID, const glm::mat4& transform);
+
+struct InfoSpheresCrowded {
+    uint sbt_count = 0;
+    std::set<std::string> cached;
+    std::set<std::string> mtlset;
+    std::vector<std::string> mtlid_list{};
+    std::vector<uint>    sbtoffset_list{};
+
+    std::vector<std::string> instid_list{};
+
+    std::vector<float> radius_list{};
+    std::vector<zeno::vec3f> center_list{};
+}; 
+
+inline InfoSpheresCrowded SpheresCrowded;
+
+struct SphereInstanceGroupBase {
+    std::string key;
+    std::string instanceID;
+    std::string materialID;
+
+    zeno::vec3f center{};
+    float radius{};
+};
+
+inline std::map<std::string, SphereInstanceGroupBase> SpheresInstanceGroupMap;
+
+void preload_sphere_crowded(std::string const &key, std::string const &mtlid, const std::string &instID, const float &radius, const zeno::vec3f &center );
+void foreach_sphere_crowded(std::function<void( const std::string &mtlid, std::vector<uint> &sbtoffset_list)> func);
+
+void cleanupSpheres();
+
+std::set<std::string> uniqueMatsForMesh();
+std::set<std::string> uniqueMatsForSphere();
 
 void optixcleanup();
 void optixrender(int fbo = 0, int samples = 1, bool simpleRender = false);
@@ -19,10 +81,13 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut);
 void UpdateDynamicInstMesh(const std::map<std::string, int> &mtlidlut);
 void CopyInstMeshToGlobalMesh();
 void UpdateGasAndIas(bool staticNeedUpdate);
-void optixupdatematerial(std::vector<bool>        const &markers, 
-                         std::vector<std::string> const &shaders, 
-                         std::vector<std::vector<std::string>> &texs);
-void updateVolume();
+void optixupdatematerial(std::vector<ShaderPrepared>       &shaders);
+
+void updateCrowdedSpheresGAS();
+void updateUniformSphereGAS();
+void updateInstancedSpheresGAS();
+
+void updateVolume(uint volume_shader_offset);
 void optixupdatelight();
 void optixupdateend();
 

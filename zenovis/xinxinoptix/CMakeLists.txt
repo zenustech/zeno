@@ -8,6 +8,7 @@ target_sources(zenovis PRIVATE
 
   volume/optixVolume.cpp
   volume/optixVolume.h
+  optixSphere.h
   
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h

@@ -31,7 +31,7 @@ namespace rtgems {
     constexpr float float_scale() { return 1.0f / 65536.0f; }
     
     // Normal points outward for rays exiting the surface, else is flipped.
-    float3 offset_ray(const float3 p, const float3 n)
+    static __inline__ __device__ float3 offset_ray(const float3 p, const float3 n)
     {
         int3 of_i {
             (int)(int_scale() * n.x),
