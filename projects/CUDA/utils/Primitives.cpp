@@ -12,8 +12,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <zeno/ListObject.h>
+#include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
+#include <zeno/utils/log.h>
 #include <zeno/zeno.h>
 
 namespace zeno {
@@ -461,6 +463,99 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
                                              {},
                                              {"zs_geom"},
                                          });
+
+// assuming point uv and triangle topo
+struct PrimitiveMarkIslands : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        if (!prim->verts.has_attr("uv")) {
+            set_output("prim", std::move(prim));
+            zeno::log_warn("this primitive object does not include vertex uv property.");
+            return;
+        }
+
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto &pos = prim->attr<zeno::vec3f>("pos");
+        auto &vert_uv = prim->verts.attr<vec3f>("uv");
+
+        bool isTris = prim->tris.size() > 0;
+        if (isTris) {
+            primPolygonate(prim.get(), true);
+        }
+
+        const auto &loops = prim->loops;
+        const auto &polys = prim->polys;
+        using IV = zs::vec<int, 2>;
+        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{
+            (std::size_t)(polys.values.back()[0] + polys.values.back()[1])};
+        std::vector<int> is, js;
+        pol(range(polys), [&, tab = view<space>(tab)](const auto &poly) mutable {
+            auto offset = poly[0];
+            auto size = poly[1];
+            for (int i = 0; i < size; ++i) {
+                auto a = loops[offset + i];
+                auto b = loops[offset + (i + 1) % size];
+                if (a > b)
+                    std::swap(a, b);
+                tab.insert(IV{a, b});
+            }
+        });
+
+        auto numEntries = tab.size();
+        is.resize(numEntries);
+        js.resize(numEntries);
+
+        pol(zip(is, js, range(tab._activeKeys)), [](int &i, int &j, const auto &ij) {
+            i = ij[0];
+            j = ij[1];
+        });
+
+        /// @note doublets (wihtout value) to csr matrix
+        zs::SparseMatrix<int, true> spmat{(int)pos.size(), (int)pos.size()};
+        spmat.build(pol, (int)pos.size(), (int)pos.size(), range(is), range(js), true_c);
+
+        /// @note update fathers of each vertex
+        std::vector<int> fas(pos.size());
+        union_find(pol, spmat, range(fas));
+
+        /// @note update ancestors, discretize connected components
+        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+
+        pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
+            auto fa = fas[vi];
+            while (fa != fas[fa])
+                fa = fas[fa];
+            fas[vi] = fa;
+            vtab.insert(fa);
+        });
+
+        auto &setids = prim->add_attr<int>(get_input2<std::string>("island_tag"));
+        pol(range(pos.size()), [&fas, &setids, vtab = view<space>(vtab)](int vi) mutable {
+            auto ancestor = fas[vi];
+            auto setNo = vtab.query(ancestor);
+            setids[vi] = setNo;
+        });
+        auto numSets = vtab.size();
+        fmt::print("{} islands in total.\n", numSets);
+
+        if (isTris) {
+            primTriangulate(prim.get(), true, false);
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveMarkIslands, {
+                                     {{"PrimitiveObject", "prim"}, {"string", "island_tag", "island_index"}},
+                                     {
+                                         {"PrimitiveObject", "prim"},
+                                     },
+                                     {},
+                                     {"zs_geom"},
+                                 });
 #endif
 
 struct ComputeAverageEdgeLength : INode {
@@ -473,7 +568,7 @@ struct ComputeAverageEdgeLength : INode {
         const auto &pos = prim->attr<vec3f>("pos");
 
         std::vector<float> els(0);
-        std::vector<float> sum(1);
+        std::vector<float> sum(1), minEl(1), maxEl(1);
 
         if (prim->polys.size()) {
             const auto &loops = prim->loops;
@@ -507,21 +602,33 @@ struct ComputeAverageEdgeLength : INode {
                 compute(prim->lines);
         }
 
+#if 0
+        CppTimer timer;
+        timer.tick();
         sum[0] = 0;
         pol(range(els.size()), [&sum, &els](int ei) { atomic_add(exec_omp, &sum[0], els[ei]); });
-#if 0
+        timer.tock("naive atomic");
         sum[0] = 0;
         for (auto el : els)
             sum[0] += el;
         fmt::print("deduced init: {}\n", deduce_identity<std::plus<float>, float>());
         fmt::print("ref sum edge lengths: {}, num edges: {}\n", sum[0], els.size());
         auto sz = els.size();
+        timer.tick();
         zs::reduce(pol, std::begin(els), std::end(els), std::begin(sum), 0);
+        timer.tock("target");
         fmt::print("sum edge lengths: {}, num edges: {}\n", sum[0], els.size());
 #endif
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(sum), 0);
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(minEl), zs::limits<float>::max(),
+                   zs::getmin<float>{});
+        zs::reduce(pol, std::begin(els), std::end(els), std::begin(maxEl), zs::limits<float>::min(),
+                   zs::getmax<float>{});
 
         set_output("prim", prim);
         set_output("average_edge_length", std::make_shared<NumericObject>(sum[0] / els.size()));
+        set_output("minimum_edge_length", std::make_shared<NumericObject>(minEl[0]));
+        set_output("maximum_edge_length", std::make_shared<NumericObject>(maxEl[0]));
     }
 };
 
@@ -532,15 +639,61 @@ ZENDEFNODE(ComputeAverageEdgeLength, {
                                          {
                                              {"PrimitiveObject", "prim"},
                                              {"NumericObject", "average_edge_length"},
+                                             {"NumericObject", "minimum_edge_length"},
+                                             {"NumericObject", "maximum_edge_length"},
                                          },
                                          {},
                                          {"zs_query"},
                                      });
 
+struct PrimitiveHasUV : INode {
+    void apply() override {
+
+        auto prim = get_input<PrimitiveObject>("prim");
+
+        auto ret = std::make_shared<NumericObject>(0);
+        if (prim->verts.has_attr("uv"))
+            ret = std::make_shared<NumericObject>(1);
+        if (prim->polys.size()) {
+            if (prim->loops.has_attr("uvs") && prim->uvs.size() > 0)
+                ret = std::make_shared<NumericObject>(1);
+        } else {
+            if (prim->quads.size()) {
+                if (prim->quads.has_attr("uv0") && prim->quads.has_attr("uv1") && prim->quads.has_attr("uv2") &&
+                    prim->quads.has_attr("uv3"))
+                    ret = std::make_shared<NumericObject>(1);
+            } else if (prim->tris.size()) {
+                if (prim->tris.has_attr("uv0") && prim->tris.has_attr("uv1") && prim->tris.has_attr("uv2"))
+                    ret = std::make_shared<NumericObject>(1);
+            } else if (prim->lines.size()) {
+                if (prim->lines.has_attr("uv0") && prim->lines.has_attr("uv1"))
+                    ret = std::make_shared<NumericObject>(1);
+            } else if (prim->points.size()) {
+                if (prim->points.has_attr("uv0"))
+                    ret = std::make_shared<NumericObject>(1);
+            }
+        }
+        set_output("prim", prim);
+        set_output("has_uv", ret);
+    }
+};
+ZENDEFNODE(PrimitiveHasUV, {
+                               {
+                                   {"PrimitiveObject", "prim"},
+                               },
+                               {
+                                   {"PrimitiveObject", "prim"},
+                                   {"NumericObject", "has_uv"},
+                               },
+                               {},
+                               {"zs_query"},
+                           });
+
 struct SurfacePointsInterpolation : INode {
     void apply() override {
         using namespace zs;
         auto prim = get_input<PrimitiveObject>("prim");
+        /// @note assume weight/index tag presence, attr tag can be constructed on-the-fly
         auto attrTag = get_input2<std::string>("attrTag");
         auto weightTag = get_input2<std::string>("weightTag");
         auto indexTag = get_input2<std::string>("indexTag");
@@ -548,13 +701,14 @@ struct SurfacePointsInterpolation : INode {
         auto &ws = prim->attr<vec3f>(weightTag);
         auto &triInds = prim->attr<float>(indexTag); // this in accordance with pnbvhw.cpp : QueryNearestPrimitive
 
-        auto refPrim = get_input<PrimitiveObject>("ref_prim");
+        const auto refPrim = get_input<PrimitiveObject>("ref_prim");
         auto refAttrTag = get_input2<std::string>("refAttrTag");
 
-        auto &refTris = refPrim->tris.values;
-        auto doWork = [&](auto &arr) -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
-            using T = RM_CVREF_T(arr[0]);
-            const auto &srcAttr = refPrim->attr<T>(refAttrTag);
+        const auto &refTris = refPrim->tris.values;
+        auto doWork = [&](const auto &srcAttr)
+            -> std::enable_if_t<variant_contains<RM_CVREF_T(srcAttr[0]), AttrAcceptAll>::value> {
+            using T = RM_CVREF_T(srcAttr[0]);
+            auto &arr = prim->add_attr<T>(attrTag);
             auto pol = omp_exec();
             pol(zip(arr, triInds, ws), [&refTris, &srcAttr](T &attr, int refTriNo, const vec3f &w) {
                 auto refTri = refTris[refTriNo];
@@ -562,10 +716,10 @@ struct SurfacePointsInterpolation : INode {
             });
         };
         if (attrTag == "pos") {
-            doWork(prim->attr<vec3f>("pos"));
+            doWork(refPrim->attr<vec3f>(refAttrTag));
         } else {
-            auto &dstAttr = prim->attr(attrTag);
-            match(doWork, [](...) {})(dstAttr);
+            // auto &dstAttr = prim->attr(attrTag);
+            match(doWork, [](...) {})(refPrim->attr(refAttrTag));
         }
 
         set_output("prim", prim);
@@ -1239,14 +1393,45 @@ struct PrimitiveProject : INode {
             limit = std::numeric_limits<float>::infinity();
 
         auto const &nrm = prim->attr<vec3f>(nrmAttr);
+        std::string distTag = "dist";
+        if (has_input("distTag"))
+            distTag = get_input2<std::string>("distTag");
+        auto &dists = prim->add_attr<float>(distTag);
+
+        float tol = 5e-6f;
+        if (has_input("threshold"))
+            tol = get_input2<float>("threshold");
 
         pol(range(pos.size()), [&, bvh = proxy<space>(targetBvh), sideNo](size_t i) {
             using vec3 = zs::vec<float, 3>;
             auto ro = vec3::from_array(pos[i]);
             auto rd = vec3::from_array(nrm[i]).normalized();
-            float dist{0};
-            if (sideNo == 1) {
-                bvh.ray_intersect(ro, rd, [&](int triNo) {
+            float dist{-1};
+
+            auto robustProcess = [&](auto &f) {
+                auto ro0 = ro;
+                auto tan = rd.orthogonal().normalized();
+                bvh.ray_intersect(ro, rd, f);
+                if (dist < -0.5) {
+                    ro = ro0 + tan * tol;
+                    bvh.ray_intersect(ro, rd, f);
+                }
+                if (dist < -0.5) {
+                    ro = ro0 - tan * tol;
+                    bvh.ray_intersect(ro, rd, f);
+                }
+                if (dist < -0.5) {
+                    tan = tan.cross(rd);
+                    ro = ro0 + tan * tol;
+                    bvh.ray_intersect(ro, rd, f);
+                }
+                if (dist < -0.5) {
+                    ro = ro0 - tan * tol;
+                    bvh.ray_intersect(ro, rd, f);
+                }
+            };
+            if (sideNo == 1) { // farthest
+                auto f = [&](int triNo) {
                     auto tri = tris[triNo];
                     auto t0 = vec3::from_array(targetPos[tri[0]]);
                     auto t1 = vec3::from_array(targetPos[tri[1]]);
@@ -1254,19 +1439,25 @@ struct PrimitiveProject : INode {
                     if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && d > dist) {
                         dist = d;
                     }
-                });
-            } else if (sideNo == 0) {
-                bvh.ray_intersect(ro, rd, [&](int triNo) {
+                };
+                robustProcess(f);
+                // bvh.ray_intersect(ro, rd, f);
+            } else if (sideNo == 0) { // closest
+                auto f = [&](int triNo) {
                     auto tri = tris[triNo];
                     auto t0 = vec3::from_array(targetPos[tri[0]]);
                     auto t1 = vec3::from_array(targetPos[tri[1]]);
                     auto t2 = vec3::from_array(targetPos[tri[2]]);
-                    if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && (d < dist || dist == 0)) {
+                    if (auto d = ray_tri_intersect(ro, rd, t0, t1, t2); d < limit && (d < dist || dist < -0.5)) {
                         dist = d;
                     }
-                });
+                };
+                robustProcess(f);
+                // bvh.ray_intersect(ro, rd, f);
             }
-            pos[i] = (ro + dist * rd).to_array();
+            if (dist > -0.5)
+                pos[i] = (ro + dist * rd).to_array();
+            dists[i] = dist;
         });
 
         set_output("prim", std::move(prim));
@@ -1279,6 +1470,8 @@ ZENDEFNODE(PrimitiveProject, {
                                      {"PrimitiveObject", "targetPrim"},
                                      {"string", "nrmAttr", "nrm"},
                                      {"float", "limit", "0"},
+                                     {"string", "distTag", "dist"},
+                                     {"float", "threshold", "5e-6"},
                                      {"enum closest farthest", "side", "farthest"},
                                  },
                                  {

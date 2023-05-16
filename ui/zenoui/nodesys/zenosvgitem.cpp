@@ -115,6 +115,11 @@ bool ZenoImageItem::isHovered() const
     return m_bHovered;
 }
 
+bool ZenoImageItem::isToggled() const
+{
+    return m_bToggled;
+}
+
 void ZenoImageItem::setCheckable(bool bCheckable)
 {
     m_bCheckable = bCheckable;
@@ -154,8 +159,8 @@ void ZenoImageItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void ZenoImageItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
-    emit clicked();
     toggle(!m_bToggled);
+    emit clicked();
 }
 
 void ZenoImageItem::hoverEnterEvent(QGraphicsSceneHoverEvent* event)

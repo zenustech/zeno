@@ -113,7 +113,10 @@ struct zs_erode_value2cond : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
+
         // 获取面板参数
         auto value = get_input2<float>("value");
         auto seed = get_input2<float>("seed");
@@ -181,7 +184,10 @@ struct zs_erode_smooth_flow : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
+
         // 获取面板参数
         auto smooth_rate = get_input2<float>("smoothRate");
         auto flowName = get_input2<std::string>("flowName");
@@ -270,7 +276,9 @@ struct zs_erode_tumble_material_v0 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -554,7 +562,9 @@ struct zs_erode_tumble_material_v2 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -849,7 +859,10 @@ struct zs_erode_tumble_material_v3 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
+
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -1172,7 +1185,9 @@ struct zs_erode_tumble_material_v4 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         // 侵蚀主参数
@@ -1246,7 +1261,7 @@ struct zs_erode_tumble_material_v4 : INode {
         constexpr auto space = execspace_e::cuda;
         auto pol = cuda_exec();
         /// @brief  copy host-side attribute
-        auto zs_height = to_device_vector(_height, false);
+        auto zs_height = to_device_vector(_height);
         auto zs_temp_height = to_device_vector(_temp_height);
         auto zs_material = to_device_vector(_material, false);
         auto zs_temp_material = to_device_vector(_temp_material);
@@ -1682,7 +1697,7 @@ struct zs_HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("HeightField");
         int nx, nz;
         auto &ud = terrain->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
@@ -1690,7 +1705,9 @@ struct zs_HF_maskByFeature : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto heightLayer = get_input2<std::string>("height_layer");
@@ -1814,11 +1831,11 @@ struct zs_HF_maskByFeature : INode {
         retrieve_device_vector(mask, zs_mask);
         retrieve_device_vector(_grad, zs_grad);
 
-        set_output("prim_2DGrid", std::move(terrain));
+        set_output("HeightField", std::move(terrain));
     }
 };
 ZENDEFNODE(zs_HF_maskByFeature, {/* inputs: */ {
-                                     "prim_2DGrid",
+                                     "HeightField",
                                      {"string", "height_layer", "height"},
                                      {"string", "mask_layer", "mask"},
                                      {"int", "smooth_radius", "1"},
@@ -1836,7 +1853,7 @@ ZENDEFNODE(zs_HF_maskByFeature, {/* inputs: */ {
                                  },
                                  /* outputs: */
                                  {
-                                     "prim_2DGrid",
+                                     "HeightField",
                                  },
                                  /* params: */
                                  {},

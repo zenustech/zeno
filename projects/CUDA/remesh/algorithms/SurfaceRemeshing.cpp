@@ -4,6 +4,7 @@
 #include "./SurfaceRemeshing.h"
 #include <Eigen/LU>
 #include <cmath>
+#include <limits>
 #include <set>
 #include <algorithm>
 
@@ -101,11 +102,14 @@ void SurfaceRemeshing::uniform_remeshing(float edge_length,
     preprocessing();
 
     for (unsigned int i = 0; i < iterations; ++i) {
-        split_long_edges();
+        if (split_long_edges() == PMP_MAX_INDEX) {
+            return;
+        }
         SurfaceNormals::compute_vertex_normals(mesh_);
         collapse_short_edges();
         flip_edges();
         tangential_smoothing(5);
+        check_triangles();
     }
 
     remove_caps();
@@ -132,34 +136,52 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length,
     preprocessing();
 
     for (unsigned int i = 0; i < iterations; ++i) {
-        split_long_edges();
+        if (split_long_edges() == PMP_MAX_INDEX) {
+            return;
+        }
         SurfaceNormals::compute_vertex_normals(mesh_);
         collapse_short_edges();
         flip_edges();
         tangential_smoothing(5);
+        check_triangles();
     }
     
     remove_caps();
     postprocessing();
 }
 
+void SurfaceRemeshing::check_triangles() {
+    auto& points = mesh_->prim_->attr<vec3f>("pos");
+    auto& fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
+
+    for (int t = 0; t < mesh_->faces_size_; ++t) {
+        if (mesh_->has_garbage_ && fdeleted[t])
+            continue;
+        auto tri = mesh_->prim_->tris[t];
+        auto area = length(cross(points[tri[1]] - points[tri[0]], points[tri[2]] - points[tri[0]]));
+        if (area < std::numeric_limits<float>::epsilon()) {
+            zeno::log_warn("remesh: Degenerate triangle detected!");
+        }
+    }
+}
+
 void SurfaceRemeshing::preprocessing() {
     // properties
     auto& vfeature = mesh_->prim_->verts.add_attr<int>("v_feature", 0);
-    auto& efeature = mesh_->prim_->lines.add_attr<int>("e_feature", 0);
+    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& vsizing = mesh_->prim_->verts.add_attr<float>("v_sizing");
     auto& vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
-    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto& elocked = mesh_->prim_->lines.add_attr<int>("e_locked", 0);
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
 
-    // lock vertices
+    // feature vertices
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
             continue;
-        if (elocked[e] == 1) {
-            vlocked[mesh_->prim_->lines[e][0]] = 1;
-            vlocked[mesh_->prim_->lines[e][1]] = 1;
+        if (efeature[e] == 1) {
+            vfeature[mesh_->prim_->lines[e][0]] = 1;
+            vfeature[mesh_->prim_->lines[e][1]] = 1;
         }
     }
 
@@ -169,12 +191,18 @@ void SurfaceRemeshing::preprocessing() {
             continue;
         if (vfeature[v]) {
             int c = 0;
-            for (auto h : mesh_->halfedges(v))
-                if (efeature[h >> 1])
+            for (auto h : mesh_->halfedges(v)) {
+                if (efeature[h >> 1]) {
                     ++c;
+                }
+                if (mesh_->hconn_[h].face_ == PMP_MAX_INDEX) {
+                    vlocked[v] = 1;
+                }
+            }
 
-            if (c != 2)
+            if (c != 2) {
                 vlocked[v] = 1;
+            }
         }
     }
 
@@ -296,8 +324,8 @@ void SurfaceRemeshing::postprocessing() {
 
     // remove properties
     mesh_->prim_->verts.erase_attr("v_feature");
-    mesh_->prim_->lines.erase_attr("e_feature");
     mesh_->prim_->verts.erase_attr("v_locked");
+    mesh_->prim_->lines.erase_attr("e_locked");
     mesh_->prim_->verts.erase_attr("v_sizing");
 }
 
@@ -353,7 +381,7 @@ void SurfaceRemeshing::project_to_reference(int v) {
     vsizing[v] = s;
 }
 
-void SurfaceRemeshing::split_long_edges() {
+int SurfaceRemeshing::split_long_edges() {
     int vnew, v0, v1;
     int enew, e0, e1;
     int f0, f1, f2, f3;
@@ -363,11 +391,11 @@ void SurfaceRemeshing::split_long_edges() {
     auto& points = mesh_->prim_->attr<vec3f>("pos");
     auto& vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
     auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
+    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto& elocked = mesh_->prim_->lines.attr<int>("e_locked");
     auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
     auto& vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
 
@@ -388,20 +416,92 @@ void SurfaceRemeshing::split_long_edges() {
                 is_boundary = mesh_->is_boundary_e(e);
 
                 vnew = mesh_->new_vertex((p0 + p1) * 0.5f);
-                int new_lines;
-                mesh_->split(e, vnew, new_lines);
+                if (vnew == PMP_MAX_INDEX) {
+                    return PMP_MAX_INDEX;
+                }
+
+                int new_lines, new_faces;
+                if (mesh_->split(e, vnew, new_lines, new_faces) == PMP_MAX_INDEX) {
+                    return PMP_MAX_INDEX;
+                }
                 for (int ii = 1; ii <= new_lines; ++ii) {
-                    efeature.push_back(0);
-                    elocked.push_back(0);
+                    mesh_->prim_->lines.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                        using T = std::decay_t<decltype(arr[0])>;
+                        if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                            arr.push_back(zeno::vec3f(0, 0, 0));
+                        } else if constexpr (std::is_same_v<T, float>) {
+                            arr.push_back(0);
+                        } else if constexpr (std::is_same_v<T, zeno::vec3i>) {
+                            arr.push_back(zeno::vec3i(0, 0, 0));
+                        } else if constexpr (std::is_same_v<T, int>) {
+                            arr.push_back(0);
+                        } else if constexpr (std::is_same_v<T, zeno::vec2f>) {
+                            arr.push_back(zeno::vec2f(0, 0));
+                        } else if constexpr (std::is_same_v<T, zeno::vec2i>) {
+                            arr.push_back(zeno::vec2i(0, 0));
+                        } else if constexpr (std::is_same_v<T, zeno::vec4f>) {
+                            arr.push_back(zeno::vec4f(0, 0, 0, 0));
+                        } else if constexpr (std::is_same_v<T, zeno::vec4i>) {
+                            arr.push_back(zeno::vec4i(0, 0, 0, 0));
+                        }
+                    });
+                }
+                for (int ii = 1; ii <= new_faces; ++ii) {
+                    mesh_->prim_->tris.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                        using T = std::decay_t<decltype(arr[0])>;
+                        if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                            arr.push_back(zeno::vec3f(0, 0, 0));
+                        } else if constexpr (std::is_same_v<T, float>) {
+                            arr.push_back(0);
+                        } else if constexpr (std::is_same_v<T, zeno::vec3i>) {
+                            arr.push_back(zeno::vec3i(0, 0, 0));
+                        } else if constexpr (std::is_same_v<T, int>) {
+                            arr.push_back(0);
+                        } else if constexpr (std::is_same_v<T, zeno::vec2f>) {
+                            arr.push_back(zeno::vec2f(0, 0));
+                        } else if constexpr (std::is_same_v<T, zeno::vec2i>) {
+                            arr.push_back(zeno::vec2i(0, 0));
+                        } else if constexpr (std::is_same_v<T, zeno::vec4f>) {
+                            arr.push_back(zeno::vec4f(0, 0, 0, 0));
+                        } else if constexpr (std::is_same_v<T, zeno::vec4i>) {
+                            arr.push_back(zeno::vec4i(0, 0, 0, 0));
+                        }
+                    });
                 }
 
                 // need normal or sizing for adaptive refinement
-                vnormal.push_back(SurfaceNormals::compute_vertex_normal(mesh_, vnew));
-                vsizing.push_back(0.5f * (vsizing[v0] + vsizing[v1]));
-                vfeature.push_back(0);
-                vlocked.push_back(0);
-                vdeleted.push_back(0);
-                vduplicate.push_back(vnew);
+                mesh_->prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                        if (key == "v_normal") {
+                            arr.push_back(SurfaceNormals::compute_vertex_normal(mesh_, vnew));
+                        } else {
+                            arr.push_back(zeno::vec3f(0, 0, 0));
+                        }
+                    } else if constexpr (std::is_same_v<T, float>) {
+                        if (key == "v_sizing") {
+                            arr.push_back(0.5f * (vsizing[v0] + vsizing[v1]));
+                        } else {
+                            arr.push_back(0);
+                        }
+                    } else if constexpr (std::is_same_v<T, zeno::vec3i>) {
+                        arr.push_back(zeno::vec3i(0, 0, 0));
+                    } else if constexpr (std::is_same_v<T, int>) {
+                        if (key == "v_duplicate") {
+                            arr.push_back(vnew);
+                        } else {
+                            arr.push_back(0);
+                        }
+                    } else if constexpr (std::is_same_v<T, zeno::vec2f>) {
+                        arr.push_back(zeno::vec2f(0, 0));
+                    } else if constexpr (std::is_same_v<T, zeno::vec2i>) {
+                        arr.push_back(zeno::vec2i(0, 0));
+                    } else if constexpr (std::is_same_v<T, zeno::vec4f>) {
+                        arr.push_back(zeno::vec4f(0, 0, 0, 0));
+                    } else if constexpr (std::is_same_v<T, zeno::vec4i>) {
+                        arr.push_back(zeno::vec4i(0, 0, 0, 0));
+                    }
+                });
 
                 if (is_feature) {
                     enew = is_boundary ? mesh_->lines_size_ - 2 : mesh_->lines_size_ - 3;
@@ -415,6 +515,7 @@ void SurfaceRemeshing::split_long_edges() {
             }
         }
     }
+    return 0;
 }
 
 void SurfaceRemeshing::collapse_short_edges() {
@@ -425,10 +526,10 @@ void SurfaceRemeshing::collapse_short_edges() {
     bool hcol01, hcol10;
 
     auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
+    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto& elocked = mesh_->prim_->lines.attr<int>("e_locked");
 
     for (ok = false, i = 0; !ok && i < 10; ++i) {
         ok = true;
@@ -555,11 +656,11 @@ void SurfaceRemeshing::flip_edges() {
     bool ok;
     int i;
 
-    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
+    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto& elocked = mesh_->prim_->lines.attr<int>("e_locked");
     // precompute valences
     auto valence = mesh_->prim_->verts.add_attr<int>("valence");
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -647,7 +748,7 @@ void SurfaceRemeshing::tangential_smoothing(unsigned int iterations) {
     auto& points = mesh_->prim_->attr<vec3f>("pos");
     auto& vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
     auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
+    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
     auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
     auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
@@ -711,10 +812,15 @@ void SurfaceRemeshing::tangential_smoothing(unsigned int iterations) {
                 } else {
                     vec3f p(0.0f);
                     bool flag;
+#if 1
                     p = minimize_squared_areas(v, flag);
                     if (!flag) {
                         p = weighted_centroid(v);
                     }
+#else
+                    flag = false;
+                    p = weighted_centroid(v);
+#endif
                     u = p - points[v];
 
                     n = vnormal[v];
@@ -761,9 +867,9 @@ void SurfaceRemeshing::remove_caps() {
 
     auto& points = mesh_->prim_->attr<vec3f>("pos");
     auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->lines.attr<int>("e_feature");
+    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto& elocked = mesh_->prim_->lines.attr<int>("e_locked");
     auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
-    auto& elocked = mesh_->prim_->lines.attr<int>(line_pick_tag_);
 
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
@@ -848,7 +954,7 @@ vec3f SurfaceRemeshing::minimize_squared_areas(int v, bool& inversable) {
 
     // compute minimizer
     float det = A.determinant();
-    if (fabs(det) < 1.0e-10 || std::isnan(det)) {
+    if (fabs(det) < std::numeric_limits<float>::epsilon() * 100 || std::isnan(det)) {
         inversable = false;
     } else {
         inversable = true;

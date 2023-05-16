@@ -116,7 +116,7 @@ struct ExtendList : zeno::INode {
 
 ZENDEFNODE(ExtendList, {
     {"list1", "list2"},
-    {"list1"},
+    {{"list", "list1"}},
     {},
     {"list"},
 });
@@ -193,6 +193,21 @@ struct MakeList : zeno::INode {
 
 ZENDEFNODE(MakeList, {
     {},
+    {"list"},
+    {},
+    {"list"},
+    });
+
+
+struct MultiMakeList : zeno::INode {
+    virtual void apply() override {
+        auto lst = get_input2<zeno::ListObject>("list");
+        set_output("list", std::move(lst));
+    }
+};
+
+ZENDEFNODE(MultiMakeList, {
+    {{"list","list"}},
     {"list"},
     {},
     {"list"},

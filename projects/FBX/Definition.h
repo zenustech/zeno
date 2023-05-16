@@ -59,6 +59,7 @@ struct SFBXReadOption {
     bool generate = false;
     bool triangulate = false;
     bool printTree = false;
+    std::string hintPath = "";
 };
 
 struct SFBXEvalOption {
@@ -417,8 +418,9 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         return tl;
     }
 
-    std::vector<std::string> getSimplestTexList(){
-        std::vector<std::string> tl;
+    void getSimplestTexList(std::vector<std::string>& texList, std::map<std::string, int>& texMap){
+        texList.clear();
+        texMap.clear();
 
         std::map<std::string, SMaterialProp> val_tmp;
         val_tmp.emplace("basecolor", val["basecolor"]);                             //0
@@ -452,11 +454,11 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
 
                       return l.first < r.first;
                   });
-        for (auto const &p: val_vec_tmp) {
-            tl.emplace_back(p.second.texPath);
+        for (int i=0; i<val_vec_tmp.size(); i++) {
+            auto& p = val_vec_tmp[i];
+            texList.emplace_back(p.second.texPath);
+            texMap[p.first] = i;
         }
-
-        return tl;
     }
 
     aiColor4D testColor;

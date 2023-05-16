@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cstdio>
 #include <vector>
+#include <filesystem>
 
 namespace zeno {
 
@@ -28,7 +29,8 @@ static bool file_exists(std::string const &path) {
 
 template <class Arr = std::vector<char>>
 static Arr file_get_binary(std::string const &path) {
-  char const *filename = path.c_str();
+  std::string native_path = std::filesystem::u8path(path).string();
+  char const *filename = native_path.c_str();
   FILE *fp = fopen(filename, "rb");
   if (!fp) {
     perror(filename);
@@ -88,4 +90,52 @@ static bool file_put_binary(Arr const &arr, std::string const &path) {
     return file_put_binary(std::data(arr), std::size(arr), path);
 }
 
+class BinaryReader {
+    size_t cur = 0;
+    std::vector<char> data;
+public:
+    BinaryReader(std::vector<char> data_) {
+        data = std::move(data_);
+    }
+    void skip(size_t step) {
+        // must use '>' rather than '>='
+        if (cur + step > data.size()) {
+            throw std::out_of_range("BinaryReader::read");
+        }
+        cur += step;
+    }
+    void seek_from_begin(size_t pos) {
+        // must use '>' rather than '>='
+        if (pos > data.size()) {
+            throw std::out_of_range("BinaryReader::read");
+        }
+        cur = pos;
+    }
+    template <class T>
+    T read_LE() {
+        // must use '>' rather than '>='
+        if (cur + sizeof(T) > data.size()) {
+            throw std::out_of_range("BinaryReader::read");
+        }
+        T &ret = *(T *)(data.data() + cur);
+        cur += sizeof(T);
+        return ret;
+    }
+
+    // just work for basic type, not work for vec
+    template <class T>
+    T read_BE() {
+        // must use '>' rather than '>='
+        if (cur + sizeof(T) > data.size()) {
+            throw std::out_of_range("BinaryReader::read");
+        }
+        T ret = *(T *)(data.data() + cur);
+        char* ptr = (char*)&ret;
+        for (auto i = 0; i < sizeof(T) / 2; i++) {
+            std::swap(ptr[i], ptr[sizeof(T) - 1 - i]);
+        }
+        cur += sizeof(T);
+        return ret;
+    }
+};
 }

@@ -1,10 +1,13 @@
 #include "zsgreader.h"
 #include <zenomodel/include/uihelper.h>
+#include <zenomodel/customui/customuirw.h>
 #include <zeno/utils/logger.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "zenoedit/util/log.h"
-#include <zenomodel/include/variantptr.h>
+#include "variantptr.h"
 #include "common.h"
+#include <zenomodel/customui/customuirw.h>
+#include "iotags.h"
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -75,7 +78,7 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     }
 
     ZASSERT_EXIT(doc.HasMember("descs"), false);
-    NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
+    NODE_DESCS nodesDescs = _parseDescs(doc["descs"], pAcceptor);
     ret = pAcceptor->setLegacyDescs(graph, nodesDescs);
     if (!ret) {
         return false;
@@ -87,13 +90,22 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
         if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
             return false;
     }
+    pAcceptor->EndGraphs();
     pAcceptor->switchSubGraph("main");
 
     if (doc.HasMember("views"))
     {
         _parseViews(doc["views"], pAcceptor);
     }
-
+    if (doc.HasMember("version"))
+    {
+        ZASSERT_EXIT(doc["version"].IsString(), false);
+        QString ver = doc["version"].GetString();
+        if (ver == "v2")
+            pAcceptor->setIOVersion(zenoio::VER_2);
+        else
+            pAcceptor->setIOVersion(zenoio::VER_2_5);
+    }
     return true;
 }
 
@@ -159,7 +171,13 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     const rapidjson::Value& nameValue = objValue["name"];
     const QString& name = nameValue.GetString();
 
-    bool bSucceed = pAcceptor->addNode(nodeid, name, legacyDescs);
+    QString customName;
+    if (objValue.HasMember("customName")) {
+        const QString &tmp = objValue["customName"].GetString();
+        customName = tmp;
+    }
+
+    bool bSucceed = pAcceptor->addNode(nodeid, name, customName, legacyDescs);
     if (!bSucceed) {
         return false;
     }
@@ -170,11 +188,20 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     {
         _parseInputs(nodeid, name, legacyDescs, objValue["inputs"], pAcceptor);
     }
-
     if (objValue.HasMember("params"))
     {
-        _parseParams(nodeid, name, objValue["params"], pAcceptor);
+        if (_parseParams2(nodeid, name, objValue["params"], pAcceptor) == false)
+			_parseParams(nodeid, name, objValue["params"], pAcceptor);
     }
+    if (objValue.HasMember("outputs"))
+    {
+        _parseOutputs(nodeid, name, objValue["outputs"], pAcceptor);
+    }
+    if (objValue.HasMember("customui-panel"))
+    {
+        _parseCustomPanel(nodeid, name, objValue["customui-panel"], pAcceptor);
+    }
+
     if (objValue.HasMember("uipos"))
     {
         auto uipos = objValue["uipos"].GetArray();
@@ -233,6 +260,30 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
+    else if (name == "Group") 
+    {
+        BLACKBOARD_INFO blackboard;
+        const rapidjson::Value &blackBoardValue = objValue.HasMember("blackboard") ? objValue["blackboard"] : objValue;
+
+        blackboard.title = blackBoardValue.HasMember("title") ? blackBoardValue["title"].GetString() : "";
+        blackboard.background = QColor(blackBoardValue.HasMember("background") ? blackBoardValue["background"].GetString() : "#3C4645");
+
+        if (blackBoardValue.HasMember("width") && blackBoardValue.HasMember("height")) {
+            qreal w = blackBoardValue["width"].GetFloat();
+            qreal h = blackBoardValue["height"].GetFloat();
+            blackboard.sz = QSizeF(w, h);
+        }
+        if (blackBoardValue.HasMember("items")) {
+            auto item_keys = blackBoardValue["items"].GetArray();
+            for (int i = 0; i < item_keys.Size(); i++) {
+                QString key = item_keys[i].GetString();
+                blackboard.items.append(key);
+            }
+        }
+
+        pAcceptor->setBlackboard(nodeid, blackboard);
+    }
+
     return true;
 }
 
@@ -299,21 +350,27 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
         const auto& inputObj = inObj.value;
         if (inputObj.IsArray())
         {
+            //legacy io format, like [xxx-node, xxx-socket, defl]
             const auto& arr = inputObj.GetArray();
-            //ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
+            ZASSERT_EXIT(arr.Size() >= 2 && arr.Size() <= 3);
 
             QString outId, outSock;
-            QVariant defaultValue;
-            if (arr.Size() > 0 && arr[0].IsString())
+            int n = arr.Size();
+            ZASSERT_EXIT(n == 3);
+
+            if (arr[0].IsString())
                 outId = arr[0].GetString();
-            if (arr.Size() > 1 && arr[1].IsString())
+            if (arr[1].IsString())
                 outSock = arr[1].GetString();
-            if (arr.Size() > 2)
-                pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
+            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2]);
         }
         else if (inputObj.IsNull())
         {
-            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value(), legacyDescs);
+            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value());
+        }
+        else if (inputObj.IsObject())
+        {
+            _parseSocket(id, nodeName, inSock, true, inputObj, pAcceptor);
         }
         else
         {
@@ -323,25 +380,111 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
     pAcceptor->endInputs(id, nodeName);
 }
 
-void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
+void ZsgReader::_parseSocket(
+        const QString& id,
+        const QString& nodeName,
+        const QString& inSock,
+        bool bInput,
+        const rapidjson::Value& sockObj,
+        IAcceptor* pAcceptor)
 {
-    if (jsonParams.IsObject())
+    int sockprop = SOCKPROP_NORMAL;
+    QString sockProp;
+    if (sockObj.HasMember("property"))
     {
-        for (const auto& paramObj : jsonParams.GetObject())
-        {
-            const QString& name = paramObj.name.GetString();
-            const rapidjson::Value& val = paramObj.value;
-            pAcceptor->setParamValue(id, nodeName, name, val);
-        }
-        pAcceptor->endParams(id, nodeName);
-    } else {
-        if (nodeName == "Blackboard" && jsonParams.IsArray())
-        {
-            //deprecate by zeno-old.
-            return;
-        }
-        zeno::log_warn("not object json param");
+        ZASSERT_EXIT(sockObj["property"].IsString());
+        sockProp = QString::fromUtf8(sockObj["property"].GetString());
     }
+    pAcceptor->addSocket(bInput, id, inSock, sockProp);
+
+    QString link;
+    if (sockObj.HasMember("link") && sockObj["link"].IsString())
+        link = QString::fromUtf8(sockObj["link"].GetString());
+
+    if (sockObj.HasMember("default-value"))
+    {
+        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);
+    }
+    else
+    {
+        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value());
+    }
+
+    if (sockObj.HasMember("dictlist-panel"))
+    {
+        _parseDictPanel(bInput, sockObj["dictlist-panel"], id, inSock, nodeName, pAcceptor);
+    }
+    if (sockObj.HasMember("control")) 
+	{
+        PARAM_CONTROL ctrl;
+        QVariant props;
+        bool bret = JsonHelper::importControl(sockObj["control"], ctrl, props);
+        if (bret){
+            pAcceptor->setControlAndProperties(nodeName, id, inSock, ctrl, props);
+        }
+    }
+
+    if (sockObj.HasMember("tooltip")) 
+    {
+        QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
+        pAcceptor->setToolTip(PARAM_INPUT, id, inSock, toolTip);
+    }
+}
+
+void ZsgReader::_parseDictPanel(
+            bool bInput,
+            const rapidjson::Value& dictPanelObj, 
+            const QString& id,
+            const QString& inSock,
+            const QString& nodeName,
+            IAcceptor* pAcceptor)
+{
+    if (dictPanelObj.HasMember("collasped") && dictPanelObj["collasped"].IsBool())
+    {
+        bool val = dictPanelObj["collasped"].GetBool();
+        pAcceptor->setDictPanelProperty(bInput, id, inSock, val);
+    }
+    if (dictPanelObj.HasMember("keys"))
+    {
+        const rapidjson::Value& dictKeys = dictPanelObj["keys"];
+        for (const auto& kv : dictKeys.GetObject())
+        {
+            const QString& keyName = kv.name.GetString();
+            const rapidjson::Value& inputObj = kv.value;
+
+            QString link;
+            if (inputObj.HasMember("link") && inputObj["link"].IsString())
+            {
+                link = QString::fromUtf8(inputObj["link"].GetString());
+            }
+            pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link);
+        }
+    }
+}
+
+void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const rapidjson::Value& outputs, IAcceptor *pAcceptor)
+{
+    for (const auto& outObj : outputs.GetObject())
+    {
+        const QString& outSock = outObj.name.GetString();
+        const auto& sockObj = outObj.value;
+        if (sockObj.IsObject())
+        {
+            if (sockObj.HasMember("dictlist-panel")) {
+                _parseDictPanel(false, sockObj["dictlist-panel"], id, outSock, nodeName, pAcceptor);
+            }
+            if (sockObj.HasMember("tooltip")) {
+                QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
+                pAcceptor->setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
+            }
+        }
+    }
+}
+
+void ZsgReader::_parseCustomPanel(const QString& id, const QString& nodeName, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor)
+{
+    VPARAM_INFO invisibleRoot = zenomodel::importCustomUI(jsonCutomUI);
+    pAcceptor->addCustomUI(id, invisibleRoot);
 }
 
 void ZsgReader::_parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor)
@@ -450,107 +593,155 @@ void ZsgReader::_parseCurveHandlers(const QString& id, const rapidjson::Value& j
     }
 }
 
-NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
+NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* pAcceptor)
 {
     NODE_DESCS _descs;
     for (const auto& node : jsonDescs.GetObject())
     {
-        const QString& name = node.name.GetString();
+        const QString& nodeCls = node.name.GetString();
         const auto& objValue = node.value;
 
         NODE_DESC desc;
-        desc.name = name;
-        if (objValue.HasMember("inputs") && objValue["inputs"].IsArray())
+        desc.name = nodeCls;
+        if (objValue.HasMember("inputs"))
         {
-            auto inputs = objValue["inputs"].GetArray();
-            for (int i = 0; i < inputs.Size(); i++)
+            if (objValue["inputs"].IsArray()) 
             {
-                if (inputs[i].IsArray())
+                auto inputs = objValue["inputs"].GetArray();
+                for (int i = 0; i < inputs.Size(); i++) 
                 {
-                    auto input_triple = inputs[i].GetArray();
-                    QString socketType, socketName, socketDefl;
-                    if (input_triple.Size() > 0 && input_triple[0].IsString())
-                        socketType = input_triple[0].GetString();
-                    if (input_triple.Size() > 1 && input_triple[1].IsString())
-                        socketName = input_triple[1].GetString();
-                    if (input_triple.Size() > 2 && input_triple[2].IsString())
-                        socketDefl = input_triple[2].GetString();
-
-                    //zeno::log_info("input_triple[2] = {}", input_triple[2].GetType());
-                    //Q_ASSERT(!socketName.isEmpty());
-                    if (!socketName.isEmpty())
+                    if (inputs[i].IsArray()) 
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlType(socketType, socketName);
-                        INPUT_SOCKET inputSocket;
-                        inputSocket.info = SOCKET_INFO("", socketName);
-                        inputSocket.info.type = socketType;
-                        inputSocket.info.control = ctrlType;
-                        inputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
-                        desc.inputs.insert(socketName, inputSocket);
+                        auto input_triple = inputs[i].GetArray();
+                        QString socketType, socketName, socketDefl;
+                        if (input_triple.Size() > 0 && input_triple[0].IsString())
+                            socketType = input_triple[0].GetString();
+                        if (input_triple.Size() > 1 && input_triple[1].IsString())
+                            socketName = input_triple[1].GetString();
+                        if (input_triple.Size() > 2 && input_triple[2].IsString())
+                            socketDefl = input_triple[2].GetString();
+
+                        //zeno::log_info("input_triple[2] = {}", input_triple[2].GetType());
+                        //Q_ASSERT(!socketName.isEmpty());
+                        if (!socketName.isEmpty())
+                        {
+                            CONTROL_INFO infos = UiHelper::getControlByType(nodeCls, PARAM_INPUT, socketName, socketType);
+
+                            INPUT_SOCKET inputSocket;
+                            inputSocket.info = SOCKET_INFO("", socketName);
+                            inputSocket.info.type = socketType;
+                            inputSocket.info.control = infos.control;
+                            inputSocket.info.ctrlProps = infos.controlProps.toMap();
+                            inputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
+                            desc.inputs.insert(socketName, inputSocket);
+                        }
+                    }
+                }
+            } 
+            else if (objValue["inputs"].IsObject()) 
+            {
+                auto inputs = objValue["inputs"].GetObject();
+                for (const auto &input : inputs)
+                {
+                    QString socketName = input.name.GetString();
+                    QVariant var = JsonHelper::importDescriptor(input.value, socketName,PARAM_INPUT, pAcceptor->currGraphObj());
+                    if (var.canConvert<INPUT_SOCKET>()) 
+                    {
+                        desc.inputs.insert(socketName, var.value<INPUT_SOCKET>());
                     }
                 }
             }
         }
-        if (objValue.HasMember("params") && objValue["params"].IsArray())
+        if (objValue.HasMember("params"))
         {
-            auto params = objValue["params"].GetArray();
-            for (int i = 0; i < params.Size(); i++)
+            if (objValue["params"].IsArray()) 
             {
-                if (params[i].IsArray())
+                auto params = objValue["params"].GetArray();
+                for (int i = 0; i < params.Size(); i++) 
                 {
-                    auto param_triple = params[i].GetArray();
-                    QString socketType, socketName, socketDefl;
+                    if (params[i].IsArray()) {
+                        auto param_triple = params[i].GetArray();
+                        QString socketType, socketName, socketDefl;
 
-                    if (param_triple.Size() > 0 && param_triple[0].IsString())
-                        socketType = param_triple[0].GetString();
-                    if (param_triple.Size() > 1 && param_triple[1].IsString())
-                        socketName = param_triple[1].GetString();
-                    if (param_triple.Size() > 2 && param_triple[2].IsString())
-                        socketDefl = param_triple[2].GetString();
+                        if (param_triple.Size() > 0 && param_triple[0].IsString())
+                            socketType = param_triple[0].GetString();
+                        if (param_triple.Size() > 1 && param_triple[1].IsString())
+                            socketName = param_triple[1].GetString();
+                        if (param_triple.Size() > 2 && param_triple[2].IsString())
+                            socketDefl = param_triple[2].GetString();
 
-                    //zeno::log_info("param_triple[2] = {}", param_triple[2].GetType());
-                    //Q_ASSERT(!socketName.isEmpty());
-                    if (!socketName.isEmpty())
+                        //zeno::log_info("param_triple[2] = {}", param_triple[2].GetType());
+                        //Q_ASSERT(!socketName.isEmpty());
+                        if (!socketName.isEmpty())
+                        {
+                            CONTROL_INFO infos = UiHelper::getControlByType(nodeCls, PARAM_PARAM, socketName, socketType);
+                            PARAM_INFO paramInfo;
+                            paramInfo.bEnableConnect = false;
+                            paramInfo.control = infos.control;
+                            paramInfo.controlProps = infos.controlProps.toMap();
+                            paramInfo.name = socketName;
+                            paramInfo.typeDesc = socketType;
+                            paramInfo.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
+                            desc.params.insert(socketName, paramInfo);
+                        }
+                    }
+                }
+            } 
+            else if (objValue["params"].IsObject()) 
+            {
+                auto params = objValue["params"].GetObject();
+                for (const auto &param : params) 
+                {
+                    QString socketName = param.name.GetString();
+                    QVariant var = JsonHelper::importDescriptor(param.value, socketName, PARAM_PARAM, pAcceptor->currGraphObj());
+                    if (var.canConvert<PARAM_INFO>()) 
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlType(socketType, socketName);
-                        PARAM_INFO paramInfo;
-                        paramInfo.bEnableConnect = false;
-                        paramInfo.control = ctrlType;
-                        paramInfo.name = socketName;
-                        paramInfo.typeDesc = socketType;
-                        paramInfo.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
-                        desc.params.insert(socketName, paramInfo);
+                        desc.params.insert(socketName, var.value<PARAM_INFO>());
                     }
                 }
             }
         }
-        if (objValue.HasMember("outputs") && objValue["outputs"].IsArray())
+        if (objValue.HasMember("outputs"))
         {
-            auto outputs = objValue["outputs"].GetArray();
-            for (int i = 0; i < outputs.Size(); i++)
+            if (objValue["outputs"].IsArray()) 
             {
-                if (outputs[i].IsArray())
+
+                auto outputs = objValue["outputs"].GetArray();
+                for (int i = 0; i < outputs.Size(); i++)
                 {
-                    auto output_triple = outputs[i].GetArray();
-                    QString socketType, socketName, socketDefl;
+                    if (outputs[i].IsArray()) {
+                        auto output_triple = outputs[i].GetArray();
+                        QString socketType, socketName, socketDefl;
 
-                    if (output_triple.Size() > 0 && output_triple[0].IsString())
-                        socketType = output_triple[0].GetString();
-                    if (output_triple.Size() > 1 && output_triple[1].IsString())
-                        socketName = output_triple[1].GetString();
-                    if (output_triple.Size() > 2 && output_triple[2].IsString())
-                        socketDefl = output_triple[2].GetString();
+                        if (output_triple.Size() > 0 && output_triple[0].IsString())
+                            socketType = output_triple[0].GetString();
+                        if (output_triple.Size() > 1 && output_triple[1].IsString())
+                            socketName = output_triple[1].GetString();
+                        if (output_triple.Size() > 2 && output_triple[2].IsString())
+                            socketDefl = output_triple[2].GetString();
 
-                    //Q_ASSERT(!socketName.isEmpty());
-                    if (!socketName.isEmpty())
+                        //Q_ASSERT(!socketName.isEmpty());
+                        if (!socketName.isEmpty())
+                        {
+                            OUTPUT_SOCKET outputSocket;
+                            outputSocket.info = SOCKET_INFO("", socketName);
+                            outputSocket.info.type = socketType;
+                            outputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
+                            desc.outputs.insert(socketName, outputSocket);
+                        }
+                    }
+                }
+            } 
+            else if (objValue["outputs"].IsObject()) 
+            {
+                auto outputs = objValue["outputs"].GetObject();
+                for (const auto &output : outputs) 
+                {
+                    QString socketName = output.name.GetString();
+                    QVariant var = JsonHelper::importDescriptor(output.value, socketName, PARAM_OUTPUT, pAcceptor->currGraphObj());
+                    if (var.canConvert<OUTPUT_SOCKET>()) 
                     {
-                        PARAM_CONTROL ctrlType = UiHelper::getControlType(socketType, socketName);
-                        OUTPUT_SOCKET outputSocket;
-                        outputSocket.info = SOCKET_INFO("", socketName);
-                        outputSocket.info.type = socketType;
-                        outputSocket.info.control = ctrlType;
-                        outputSocket.info.defaultValue = UiHelper::parseStringByType(socketDefl, socketType);
-                        desc.outputs.insert(socketName, outputSocket);
+                        desc.outputs.insert(socketName, var.value<OUTPUT_SOCKET>());
                     }
                 }
             }
@@ -564,9 +755,79 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
             }
         }
 
-        _descs.insert(name, desc);
+        _descs.insert(nodeCls, desc);
     }
     return _descs;
+}
+
+void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
+{
+    if (jsonParams.IsObject())
+    {
+        for (const auto& paramObj : jsonParams.GetObject())
+        {
+            const QString& name = paramObj.name.GetString();
+            const rapidjson::Value& val = paramObj.value;
+            pAcceptor->setParamValue(id, nodeName, name, val);
+        }
+        pAcceptor->endParams(id, nodeName);
+    } else {
+        if (nodeName == "Blackboard" && jsonParams.IsArray())
+        {
+            //deprecate by zeno-old.
+            return;
+        }
+        zeno::log_warn("not object json param");
+    }
+}
+
+bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor) 
+{
+    QObject *currGraph = pAcceptor->currGraphObj();
+    if (jsonParams.IsObject()) {
+        PARAMS_INFO params;
+        for (const auto &paramObj : jsonParams.GetObject()) {
+            const QString &name = paramObj.name.GetString();
+            const rapidjson::Value &value = paramObj.value;
+            if (!value.IsObject() || !value.HasMember(iotags::params::params_valueKey)) //compatible old version
+                return false;
+
+            PARAM_INFO paramData;
+            if (value.HasMember("type"))
+                paramData.typeDesc = value["type"].GetString();
+            QVariant var;
+            if (nodeCls == "SubInput" || nodeCls == "SubOutput")
+                var = UiHelper::parseJsonByValue(paramData.typeDesc, value[iotags::params::params_valueKey],nullptr); //dynamic type on SubInput defl.
+            else
+                var = UiHelper::parseJsonByType(paramData.typeDesc, value[iotags::params::params_valueKey], currGraph);
+
+            CONTROL_INFO ctrlInfo = UiHelper::getControlByType(nodeCls, PARAM_PARAM, name, paramData.typeDesc);
+            if (ctrlInfo.control != CONTROL_NONE && ctrlInfo.controlProps.isValid()) {
+                paramData.control = ctrlInfo.control;
+                paramData.controlProps = ctrlInfo.controlProps;
+            }
+            else if (value.HasMember("control")) {
+                PARAM_CONTROL ctrl;
+                QVariant props;
+                bool bret = JsonHelper::importControl(value["control"], ctrl, props);
+                if (bret) {
+                    paramData.control = ctrl;
+                    paramData.controlProps = props;
+                }
+            }
+            if (value.HasMember("tooltip")) 
+            {
+                QString toolTip = QString::fromUtf8(value["tooltip"].GetString());
+                paramData.toolTip = toolTip;
+            }
+            paramData.name = name;
+            paramData.bEnableConnect = false;
+            paramData.value = var;
+            params[name] = paramData;
+        }
+        pAcceptor->setParamValue2(id, nodeCls, params);
+    }
+    return true;
 }
 
 

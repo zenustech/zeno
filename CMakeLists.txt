@@ -104,6 +104,21 @@ macro (zeno_disable_warning)
 endmacro()
 ## --- end cihou pyb nowarn
 
+macro (zeno_dbg_msvc project)
+    if (WIN32)
+        target_compile_options(${project} PRIVATE /Zi /O2 /Ob2)
+        # Tell linker to include symbol data
+        set_target_properties(${project} PROPERTIES 
+            LINK_FLAGS "/INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF"
+        )
+        # Set file name & location
+        set_target_properties(${project} PROPERTIES 
+            COMPILE_PDB_NAME ${project}
+            COMPILE_PDB_OUTPUT_DIR ${project}
+        )
+    endif()
+endmacro()
+
 ## --- begin cihou wxl cuda
 if (ZENO_WITH_CUDA)        # must move enable_language ahead to here
     message(STATUS "CUDA_PATH: "$ENV{CUDA_PATH})

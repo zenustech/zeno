@@ -73,6 +73,10 @@ ZENO_API void Graph::loadGraph(const char *json) {
     Graph *g = this;
     std::stack<Graph *> gStack;
 
+    if (!d.IsArray()) {
+        throw GraphException { "None", nullptr };
+    }
+
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
         std::string cmd = di[0].GetString();

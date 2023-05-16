@@ -27,6 +27,7 @@ public:
     void setEditorData(QWidget* editor, const QModelIndex& index) const override;
     void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
     void updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const  QModelIndex& index) const override;
+    void setSelectedIndexs(const QModelIndexList& list);
 
     // painting
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
@@ -37,11 +38,14 @@ protected:
     bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option,
         const QModelIndex& index) override;
 
+public slots:
+    void onDelete();
 private slots:
-    void onDelete(const QModelIndex& index);
+    void onRename(const QModelIndex &index);
 
 private:
     IGraphsModel* m_model;
+    QModelIndexList m_selectedIndexs;
 };
 
 

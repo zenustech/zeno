@@ -13,7 +13,7 @@ public:
     int CameraPattern = 0;
 
 protected:
-    QGraphicsLinearLayout* initCustomParamWidgets() override;
+    ZGraphicsLayout* initCustomParamWidgets() override;
 
 private slots:
     void onEditClicked();
@@ -27,7 +27,7 @@ public:
     ~LightNode();
 
 protected:
-    QGraphicsLinearLayout* initCustomParamWidgets() override;
+    ZGraphicsLayout* initCustomParamWidgets() override;
 
 private slots:
     void onEditClicked();

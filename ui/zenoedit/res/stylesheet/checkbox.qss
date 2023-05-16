@@ -1,0 +1,33 @@
+QCheckBox::indicator 
+{
+	width:20px;
+	height:20px;
+}
+QCheckBox::indicator:unchecked 
+{
+	image:url(:/icons/checkbox-idle.svg);
+}
+QCheckBox::indicator:checked 
+{
+	image:url(:/icons/checkbox-light.svg);
+}
+
+QCheckBox[cssClass = "curve-timeline"] {
+    spacing: 8px;
+	font-size: 10pt;
+	font-weight: 500;
+	color: rgba(255, 255, 255, 0.7);
+}
+
+QCheckBox[cssClass = "curve-timeline"]::indicator {
+    width: 15px;
+    height: 15px;
+}
+
+QCheckBox[cssClass = "curve-timeline"]::indicator:unchecked {
+    image: url(:/icons/checkbox_unchecked.svg);
+}
+
+QCheckBox[cssClass = "curve-timeline"]::indicator:checked {
+    image: url(:/icons/checkbox_checked_normal.svg);
+}

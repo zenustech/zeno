@@ -4,13 +4,15 @@
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenomodel/include/nodesmgr.h>
-
+#include <zenomodel/include/uihelper.h>
+#include "zenomainwindow.h"
+#include "viewport/viewportwidget.h"
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 namespace zeno {
 
-FakeTransformer::FakeTransformer()
+FakeTransformer::FakeTransformer(ViewportWidget* viewport)
     : m_objects_center(0.0f)
       , m_trans(0.0f)
       , m_scale(1.0f)
@@ -20,12 +22,39 @@ FakeTransformer::FakeTransformer()
       , m_last_rotate({0, 0, 0, 1})
       , m_status(false)
       , m_operation(NONE)
-      , m_handler_scale(1.f) {}
+      , m_handler_scale(1.f)
+      , m_viewport(viewport)
+{
+}
+
+zenovis::Scene* FakeTransformer::scene() const
+{
+    ZASSERT_EXIT(m_viewport, nullptr);
+    auto session = m_viewport->getSession();
+    ZASSERT_EXIT(session, nullptr);
+    auto pScene = session->get_scene();
+    return pScene;
+}
+
+zenovis::Session* FakeTransformer::session() const
+{
+    ZASSERT_EXIT(m_viewport, nullptr);
+    auto session = m_viewport->getSession();
+    return session;
+}
 
 void FakeTransformer::addObject(const std::string& name) {
     if (name.empty()) return;
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
-    if (!scene->objectsMan->get(name).has_value()) return;
+
+    auto pZenovis = m_viewport->getZenoVis();
+    ZASSERT_EXIT(pZenovis);
+    auto sess = pZenovis->getSession();
+    ZASSERT_EXIT(sess);
+    auto scene = sess->get_scene();
+    ZASSERT_EXIT(scene);
+    if (!scene->objectsMan->get(name).has_value())
+        return;
+
     auto object = dynamic_cast<PrimitiveObject*>(scene->objectsMan->get(name).value());
     m_objects_center *= m_objects.size();
     auto& user_data = object->userData();
@@ -132,7 +161,14 @@ bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 
 
 void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D ray_dir, glm::vec3 front, glm::mat4 vp) {
     if (m_operation == NONE) return;
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+    auto pZenovis = m_viewport->getZenoVis();
+    ZASSERT_EXIT(pZenovis);
+    auto sess = pZenovis->getSession();
+    ZASSERT_EXIT(sess);
+    auto scene = sess->get_scene();
+    ZASSERT_EXIT(scene);
+
     auto ori = QVec3ToGLMVec3(camera_pos);
     auto dir = QVec3ToGLMVec3(ray_dir);
 
@@ -372,6 +408,16 @@ void FakeTransformer::endTransform(bool moved) {
         }
 
         // sync to node system
+        zeno::scope_exit sp([] {
+            IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
+            if (pGraphs)
+                pGraphs->setApiRunningEnable(true);
+        });
+        //only update nodes.
+        IGraphsModel *pGraphs = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphs);
+        pGraphs->setApiRunningEnable(false);
+
         for (auto &[obj_name, obj] : m_objects) {
             auto& node_sync = NodeSyncMgr::GetInstance();
             auto prim_node_location = node_sync.searchNodeOfPrim(obj_name);
@@ -412,44 +458,59 @@ void FakeTransformer::endTransform(bool moved) {
 
 void FakeTransformer::toTranslate() {
     if (m_objects.empty()) return;
+
+    auto session = this->session();
+    ZASSERT_EXIT(session);
+
     if (m_operation == TRANSLATE) {
         m_operation = NONE;
         m_handler = nullptr;
     }
     else {
         m_operation = TRANSLATE;
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
     }
-    Zenovis::GetInstance().getSession()->set_handler(m_handler);
+    session->set_handler(m_handler);
 }
 
 void FakeTransformer::toRotate() {
     if (m_objects.empty()) return;
+
+    auto session = this->session();
+    ZASSERT_EXIT(session);
+
     if (m_operation == ROTATE) {
         m_operation = NONE;
         m_handler = nullptr;
     }
     else {
         m_operation = ROTATE;
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
         m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
     }
-    Zenovis::GetInstance().getSession()->set_handler(m_handler);
+    session->set_handler(m_handler);
 }
 
 void FakeTransformer::toScale() {
     if (m_objects.empty()) return;
+
+    auto session = this->session();
+    ZASSERT_EXIT(session);
+
     if (m_operation == SCALE) {
         m_operation = NONE;
         m_handler = nullptr;
     }
     else {
         m_operation = SCALE;
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
     }
-    Zenovis::GetInstance().getSession()->set_handler(m_handler);
+    session->set_handler(m_handler);
 }
 
 void FakeTransformer::markObjectInteractive(const std::string& obj_name) {
@@ -500,23 +561,27 @@ void FakeTransformer::changeTransOpt() {
         m_operation = NONE;
     else
         ++m_operation;
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+    auto session = this->session();
+    ZASSERT_EXIT(session);
+    auto scene = this->scene();
+
     switch (m_operation) {
     case TRANSLATE:
-        m_handler = zenovis::makeTransHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        m_handler = zenovis::makeTransHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
         break;
     case ROTATE:
         m_handler = zenovis::makeRotateHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
         break;
     case SCALE:
-        m_handler = zenovis::makeScaleHandler(scene,zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
+        m_handler = zenovis::makeScaleHandler(scene, zeno::other_to_vec<3>(m_objects_center), m_handler_scale);
         break;
     case NONE:
         m_handler = nullptr;
     default:
         break;
     }
-    Zenovis::GetInstance().getSession()->set_handler(m_handler);
+    session->set_handler(m_handler);
 }
 
 void FakeTransformer::changeCoordSys() {
@@ -554,7 +619,10 @@ void FakeTransformer::clear() {
     m_last_rotate = {0, 0, 0, 1};
     m_operation = NONE;
     m_handler = nullptr;
-    Zenovis::GetInstance().getSession()->set_handler(m_handler);
+
+    auto session = this->session();
+    ZASSERT_EXIT(session);
+    session->set_handler(m_handler);
     m_objects_center = {0, 0, 0};
 }
 

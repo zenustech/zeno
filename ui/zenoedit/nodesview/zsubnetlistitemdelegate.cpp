@@ -54,20 +54,20 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     QRect rc = option.rect;
 
     //draw icon
-    int icon_xmargin = 20;
-    int icon_sz = 20;
+    int icon_xmargin = ZenoStyle::dpiScaled(20);
+    int icon_sz = rc.height() * 0.8;
     int icon_ymargin = (rc.height() - icon_sz) / 2;
-    int icon2text_xoffset = 12;
-    int button_rightmargin = 10;
-    int button_button = 12;
-    int text_yoffset = 12;
-    int text_xmargin = 12;
+    int icon2text_xoffset = ZenoStyle::dpiScaled(7);
+    int button_rightmargin = ZenoStyle::dpiScaled(10);
+    int button_button = ZenoStyle::dpiScaled(12);
+    int text_yoffset = ZenoStyle::dpiScaled(8);
+    int text_xmargin = ZenoStyle::dpiScaled(12);
 
     QColor bgColor, borderColor, textColor;
-    textColor = QColor(134, 130, 128);
+    textColor = QColor("#C3D2DF");
     if (opt.state & QStyle::State_Selected)
     {
-        bgColor = QColor(49, 49, 49);
+        bgColor = QColor(59, 64, 73);
         borderColor = QColor(27, 145, 225);
 
         painter->fillRect(rc, bgColor);
@@ -87,7 +87,8 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     }
 
     //draw text
-    QFont font("HarmonyOS Sans", 11);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     font.setBold(false);
     QFontMetricsF fontMetrics(font);
     int w = fontMetrics.horizontalAdvance(opt.text);
@@ -115,11 +116,11 @@ void ZSubnetListItemDelegate::initStyleOption(QStyleOptionViewItem* option, cons
 
 	if (option->text.compare("main", Qt::CaseInsensitive) == 0)
 	{
-		option->icon = QIcon(":/icons/home.svg");
+		option->icon = QIcon(":/icons/subnet-main.svg");
 	}
 	else
 	{
-        option->icon = QIcon(":/icons/subnet.svg");
+        option->icon = QIcon(":/icons/subnet-general.svg");
 	}
 }
 
@@ -131,14 +132,22 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
         if (me->button() == Qt::RightButton)
         {
             QMenu* menu = new QMenu(qobject_cast<QWidget*>(parent()));
-            QAction* pCopySubnet = new QAction("Copy subnet");
-            QAction* pPasteSubnet = new QAction("Paste subnet");
-            QAction* pRename = new QAction("Rename");
-            QAction* pDelete = new QAction("Delete");
+            QAction* pCopySubnet = new QAction(tr("Copy subnet"));
+            QAction* pPasteSubnet = new QAction(tr("Paste subnet"));
+            QAction* pRename = new QAction(tr("Rename"));
+            QAction* pDelete = new QAction(tr("Delete"));
 
+            if (m_selectedIndexs.size() > 1) 
+            {
+                pRename->setEnabled(false);
+            }
             connect(pDelete, &QAction::triggered, this, [=]() {
-                onDelete(index);
-                });
+                onDelete();
+             });
+
+            connect(pRename, &QAction::triggered, this, [=]() {
+                onRename(index);
+            });
 
             menu->addAction(pCopySubnet);
             menu->addAction(pPasteSubnet);
@@ -151,24 +160,37 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
     return QStyledItemDelegate::editorEvent(event, model, option, index);
 }
 
-void ZSubnetListItemDelegate::onDelete(const QModelIndex& index)
+void ZSubnetListItemDelegate::onDelete()
 {
-    QString subgName = index.data(ROLE_OBJNAME).toString();
-    if (subgName.compare("main", Qt::CaseInsensitive) == 0)
-    {
-        QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
-        msg.exec();
-        return;
+    int button = QMessageBox::question(nullptr, tr("Delete Subgraph"), tr("Do you want to delete the selected subgraphs"));
+    if (button == QMessageBox::Yes) {
+        QStringList nameList;
+        for (const QModelIndex &idx : m_selectedIndexs) {
+            QString subgName = idx.data(ROLE_OBJNAME).toString();
+            if (subgName.compare("main", Qt::CaseInsensitive) == 0) {
+                QMessageBox msg(QMessageBox::Warning, tr("Zeno"), tr("main graph is not allowed to be deleted"));
+                msg.exec();
+                continue;
+            }
+            nameList << subgName;
+        }
+        for (const QString &name : nameList)
+            m_model->removeSubGraph(name);
     }
-    m_model->removeSubGraph(subgName);
+}
+
+void ZSubnetListItemDelegate::onRename(const QModelIndex &index) 
+{
+    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"));
+    if (!name.isEmpty()) {
+        m_model->setData(index, name, Qt::EditRole);
+    }
 }
 
 QWidget* ZSubnetListItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
     QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(QStyledItemDelegate::createEditor(parent, option, index));
     ZASSERT_EXIT(pLineEdit, nullptr);
-    SubgEditValidator* pValidator = new SubgEditValidator;
-    pLineEdit->setValidator(pValidator);
     return pLineEdit;
 }
 
@@ -185,4 +207,8 @@ void ZSubnetListItemDelegate::setModelData(QWidget* editor, QAbstractItemModel* 
 void ZSubnetListItemDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const  QModelIndex& index) const
 {
     QStyledItemDelegate::updateEditorGeometry(editor, option, index);
+}
+void ZSubnetListItemDelegate::setSelectedIndexs(const QModelIndexList &list) 
+{
+    m_selectedIndexs = list;
 }

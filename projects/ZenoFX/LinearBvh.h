@@ -4,6 +4,13 @@
 #include <zeno/core/IObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/utils/vec.h>
+#include <zeno/zeno.h>
+#include <exception>
+#include <stdexcept>
+#include "SpatialUtils.hpp"
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 
 namespace zeno {
 
@@ -72,6 +79,73 @@ struct LBvh : IObjectClone<LBvh> {
   template <element_e et>
   TV find_nearest(TV const &pos, Ti &id, float &dist, element_t<et>) const;
   TV find_nearest(TV const &pos, Ti &id, float &dist) const;
+  template <typename SameGroupPred, element_e et = element_e::tri>
+  TV find_nearest_within_group(TV const &pos, Ti &id, float &dist, SameGroupPred &&pred, 
+                        element_t<et> = {}) const {
+  std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
+  if (!prim)
+    throw std::runtime_error(
+        "the primitive object referenced by lbvh not available anymore");
+  const auto &refpos = prim->attr<vec3f>("pos");
+
+  const Ti numNodes = sortedBvs.size();
+  Ti node = 0;
+  TV ws{0.f, 0.f, 0.f};
+  TV wsTmp{0.f, 0.f, 0.f};
+  while (node != -1 && node != numNodes) {
+    Ti level = levels[node];
+    // level and node are always in sync
+    for (; level; --level, ++node)
+      if (auto d = distance(sortedBvs[node], pos); d > dist)
+        break;
+    // leaf node check
+    if (level == 0) {
+      const auto eid = auxIndices[node];
+      float d = std::numeric_limits<float>::max();
+      if constexpr (et == element_e::point) {
+        auto pt = prim->points[eid];
+        if (pred(pt))
+          d = dist_pp(refpos[pt], pos, wsTmp);
+      } else if constexpr (et == element_e::line) {
+        auto line = prim->lines[eid];
+        if (pred(line[0]) && pred(line[1]))
+          d = dist_pe(pos, refpos[line[0]], refpos[line[1]], wsTmp);
+      } else if constexpr (et == element_e::tri) {
+        auto tri = prim->tris[eid];
+        if (pred(tri[0]) && pred(tri[1]) && pred(tri[2]))
+          d = dist_pt(pos, refpos[tri[0]], refpos[tri[1]], refpos[tri[2]], wsTmp);
+      } else if constexpr (et == element_e::tet) {
+        auto tet = prim->quads[eid];
+        if (pred(tet[0]) && pred(tet[1]) && pred(tet[2]) && pred(tet[3])) {
+          if (auto dd =
+                  dist_pt(pos, refpos[tet[0]], refpos[tet[1]], refpos[tet[2]], wsTmp);
+              dd < d)
+            d = dd;
+          if (auto dd =
+                  dist_pt(pos, refpos[tet[1]], refpos[tet[3]], refpos[tet[2]], wsTmp);
+              dd < d)
+            d = dd;
+          if (auto dd =
+                  dist_pt(pos, refpos[tet[0]], refpos[tet[3]], refpos[tet[2]], wsTmp);
+              dd < d)
+            d = dd;
+          if (auto dd =
+                  dist_pt(pos, refpos[tet[0]], refpos[tet[2]], refpos[tet[3]], wsTmp);
+              dd < d)
+            d = dd;
+        }
+      }
+      if (d < dist) {
+        id = eid;
+        dist = d;
+        ws = wsTmp;
+      }
+      node++;
+    } else // separate at internal nodes
+      node = auxIndices[node];
+  }
+  return ws;
+}
 
   std::shared_ptr<PrimitiveObject> retrievePrimitive(Ti eid) const;
   vec3f retrievePrimitiveCenter(Ti eid, const TV &w) const;

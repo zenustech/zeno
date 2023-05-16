@@ -15,20 +15,22 @@ struct VideoRecInfo
     int bitrate;
     int numMSAA = 0;
     int numOptix = 1;
-    int numSamples = 16;
-    bool bRecordRun;
     bool bExportVideo;
     bool exitWhenRecordFinish = false;
+    bool bLaunchRunByRecord;
     VideoRecInfo()
-        : bRecordRun(false)
-        , bExportVideo(false)
+        : bExportVideo(false)
         , fps(0)
         , bitrate(0)
+        , bLaunchRunByRecord(false)
     {
         res = { 0,0 };
         frameRange = { -1, -1 };
     }
 };
+Q_DECLARE_METATYPE(VideoRecInfo);
+
+class Zenovis;
 
 class RecordVideoMgr : public QObject
 {
@@ -39,21 +41,23 @@ public:
     void setRecordInfo(const VideoRecInfo& recInfo);
 
 public slots:
-    void recordFrame();
     void cancelRecord();
     void onFrameDrawn(int);
 
 signals:
     void frameFinished(int);
-    void recordFinished();
+    void recordFinished(QString);
     void recordFailed(QString);
 
+private slots:
+    void endRecToExportVideo();
+
 private:
-    void finishRecord();
+    Zenovis* getZenovis();
+    void disconnectSignal();
 
     VideoRecInfo m_recordInfo;
     QStringList m_pics;
-    QTimer* m_timer;
     int m_currFrame;
 };
 

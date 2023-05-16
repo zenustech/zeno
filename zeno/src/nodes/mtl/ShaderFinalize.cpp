@@ -56,6 +56,7 @@ struct ShaderFinalize : INode {
             {1, "mat_smoothness"},
             {1, "mat_emissionIntensity"},
             {3, "mat_emission"},
+            {3, "mat_reflectance"}, 
             {1,"mat_opacity"},
 
             {1, "vol_depth"},
@@ -97,6 +98,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("smoothness", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("emissionIntensity", std::make_shared<NumericObject>(float(1))),
             get_input<IObject>("emission", std::make_shared<NumericObject>(vec3f(0))),
+            get_input<IObject>("reflectance", std::make_shared<NumericObject>(vec3f(1))),
             get_input<IObject>("opacity", std::make_shared<NumericObject>(float(0.0))),
             
             get_input<IObject>("vol_depth", std::make_shared<NumericObject>((float)(99))),
@@ -215,6 +217,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "smoothness", "1.0"},
         {"float", "emissionIntensity", "1"},
         {"vec3f", "emission", "0,0,0"},
+        {"vec3f", "reflectance", "1,1,1"},
         {"float", "opacity", "0"},
         {"string", "commonCode"},
         {"string", "extensionsCode"},

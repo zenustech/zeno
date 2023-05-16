@@ -9,8 +9,8 @@
 BlackboardNode::BlackboardNode(const NodeUtilParam &params, QGraphicsItem *parent)
     : ZenoNode(params, parent)
     , m_bDragging(false)
-    , m_pTextEdit(nullptr)
     , m_pTitle(nullptr)
+    , m_pContent(nullptr)
 {
 }
 
@@ -27,7 +27,7 @@ void BlackboardNode::onUpdateParamsNotDesc()
 {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    m_pTextEdit->setText(info.content);
+    m_pContent->setText(info.content);
     m_pTitle->setPlainText(info.title);
     if (info.sz.isValid())
     {
@@ -35,31 +35,84 @@ void BlackboardNode::onUpdateParamsNotDesc()
     }
 }
 
-ZenoBackgroundWidget* BlackboardNode::initBodyWidget(ZenoSubGraphScene* pScene)
+ZLayoutBackground* BlackboardNode::initHeaderWidget(IGraphsModel*)
 {
-    ZenoBackgroundWidget *bodyWidget = new ZenoBackgroundWidget(this);
+    ZLayoutBackground* headerWidget = new ZLayoutBackground(this);
+    auto headerBg = m_renderParams.headerBg;
+    headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
+    headerWidget->setColors(headerBg.bAcceptHovers, headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
+    headerWidget->setBorder(headerBg.border_witdh, headerBg.clr_border);
 
-    bodyWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-    const auto &bodyBg = m_renderParams.bodyBg;
-    bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
-    bodyWidget->setColors(bodyBg.bAcceptHovers, bodyBg.clr_normal, bodyBg.clr_hovered, bodyBg.clr_selected);
-    bodyWidget->setBorder(bodyBg.border_witdh, bodyBg.clr_border);
-
-    QGraphicsLinearLayout *pVLayout = new QGraphicsLinearLayout(Qt::Vertical);
-    qreal border = m_renderParams.bodyBg.border_witdh;
-    pVLayout->setContentsMargins(border, border, border, border);
+    ZenoSpacerItem *pSpacerItem = new ZenoSpacerItem(true, 100);
 
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
 
-    m_pTextEdit = new ZenoParamBlackboard(blackboard.content, m_renderParams.lineEditParam);
-    pVLayout->addItem(m_pTextEdit);
-
-    connect(m_pTextEdit, &ZenoParamBlackboard::editingFinished, this, [=]() {
+    m_pTitle = new ZGraphicsTextItem(blackboard.title, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
+    m_pTitle->setText(blackboard.title);
+    m_pTitle->setTextInteractionFlags(Qt::TextEditorInteraction);
+    connect(m_pTitle->document(), &QTextDocument::contentsChanged, this, [=]() {
+        ZGraphicsLayout::updateHierarchy(m_pTitle);
+    });
+    connect(m_pTitle, &ZGraphicsTextItem::editingFinished, this, [=]() {
         PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
         BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        if (info.content != m_pTextEdit->text())
+        if (info.title != m_pTitle->toPlainText()) {
+            updateBlackboard();
+        }
+    });
+
+    ZGraphicsLayout* pNameLayout = new ZGraphicsLayout(Qt::Horizontal);
+    pNameLayout->addItem(m_pTitle);
+    pNameLayout->setContentsMargin(5, 5, 5, 5);
+
+    int options = index().data(ROLE_OPTIONS).toInt();
+
+    pHLayout->addLayout(pNameLayout);
+    pHLayout->addItem(pSpacerItem);
+    pHLayout->setSpacing(0);
+    pHLayout->setContentsMargin(0, 0, 0, 0);
+
+    headerWidget->setLayout(pHLayout);
+    headerWidget->setZValue(ZVALUE_BACKGROUND);
+    headerWidget->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    QColor clr(98, 108, 111);
+    headerWidget->setColors(false, clr, clr, clr);
+
+    return headerWidget;
+}
+
+ZLayoutBackground* BlackboardNode::initBodyWidget(ZenoSubGraphScene* pScene)
+{
+    ZLayoutBackground* bodyWidget = new ZLayoutBackground(this);
+
+    const auto &bodyBg = m_renderParams.bodyBg;
+    bodyWidget->setRadius(bodyBg.lt_radius, bodyBg.rt_radius, bodyBg.lb_radius, bodyBg.rb_radius);
+    bodyWidget->setColors(false, QColor("#000000"), QColor("#000000"), QColor("#000000"));
+    bodyWidget->setBorder(bodyBg.border_witdh, bodyBg.clr_border);
+
+    ZGraphicsLayout* pVLayout = new ZGraphicsLayout(true);
+    qreal border = m_renderParams.bodyBg.border_witdh;
+    pVLayout->setContentsMargin(border, border, border, border);
+
+    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
+
+    m_pContent = new ZGraphicsTextItem(blackboard.content, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
+    m_pContent->setTextInteractionFlags(Qt::TextEditorInteraction);
+
+    int h = m_pTitle->boundingRect().height();
+    QSize sz(blackboard.sz.width(), blackboard.sz.height() - h);
+    m_pContent->setData(GVKEY_SIZEHINT, sz);
+
+    pVLayout->addItem(m_pContent);
+
+    connect(m_pContent, &ZGraphicsTextItem::editingFinished, this, [=]() {
+        PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
+        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
+        if (info.content != m_pContent->toPlainText())
         {
             updateBlackboard();
         }
@@ -82,63 +135,14 @@ void BlackboardNode::updateBlackboard()
     {
         info.title = m_pTitle->toPlainText();
     }
-    if (m_pTextEdit)
+    if (m_pContent)
     {
-        info.content = m_pTextEdit->text();
+        info.content = m_pContent->toPlainText();
     }
-    info.sz = this->size();
+    info.sz = this->boundingRect().size();
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
-    pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), info, subGraphIndex(), true);
-}
-
-ZenoBackgroundWidget* BlackboardNode::initHeaderStyle()
-{
-    ZenoBackgroundWidget *headerWidget = new ZenoBackgroundWidget(this);
-    auto headerBg = m_renderParams.headerBg;
-    headerWidget->setRadius(headerBg.lt_radius, headerBg.rt_radius, headerBg.lb_radius, headerBg.rb_radius);
-    headerWidget->setColors(headerBg.bAcceptHovers, headerBg.clr_normal, headerBg.clr_hovered, headerBg.clr_selected);
-    headerWidget->setBorder(headerBg.border_witdh, headerBg.clr_border);
-
-    QGraphicsLinearLayout *pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-
-    ZenoSpacerItem *pSpacerItem = new ZenoSpacerItem(true, 100);
-
-    PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-    BLACKBOARD_INFO blackboard = params["blackboard"].value.value<BLACKBOARD_INFO>();
-
-    m_pTitle = new ZenoTextLayoutItem(blackboard.title, m_renderParams.nameFont, m_renderParams.nameClr.color(), this);
-    m_pTitle->setTextInteractionFlags(Qt::TextEditorInteraction);
-    connect(m_pTitle->document(), &QTextDocument::contentsChanged, this, [=]() {
-        m_pTitle->updateGeometry();
-        pHLayout->invalidate();
-    });
-    connect(m_pTitle, &ZenoTextLayoutItem::editingFinished, this, [=]() {
-        PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
-        BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-        if (info.title != m_pTitle->toPlainText()) {
-            updateBlackboard();
-        }
-    });
-
-    QGraphicsLinearLayout *pNameLayout = new QGraphicsLinearLayout(Qt::Horizontal);
-    pNameLayout->addItem(m_pTitle);
-    pNameLayout->setContentsMargins(5, 5, 5, 5);
-
-    int options = index().data(ROLE_OPTIONS).toInt();
-
-    pHLayout->addItem(pNameLayout);
-    pHLayout->addItem(pSpacerItem);
-    pHLayout->setSpacing(0);
-    pHLayout->setContentsMargins(0, 0, 0, 0);
-
-    headerWidget->setLayout(pHLayout);
-    headerWidget->setZValue(ZVALUE_BACKGROUND);
-    headerWidget->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
-    QColor clr(98, 108, 111);
-    headerWidget->setColors(false, clr, clr, clr);
-
-    return headerWidget;
+    pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), true);
 }
 
 void BlackboardNode::mousePressEvent(QGraphicsSceneMouseEvent* event)
@@ -158,17 +162,23 @@ void BlackboardNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 {
     if (m_bDragging)
     {
-        QPointF topLeft = m_bodyWidget->sceneBoundingRect().topLeft();
-        QPointF newPos = event->scenePos();
-        QPointF currPos = m_bodyWidget->sceneBoundingRect().bottomRight();
+        QRectF hRect = m_headerWidget->sceneBoundingRect();
+        QRectF bRect = m_bodyWidget->sceneBoundingRect();
+        QPointF btopLeft = bRect.topLeft();
+        qreal headerHeight = m_headerWidget->sceneBoundingRect().height();
+        qreal h = m_headerWidget->sceneBoundingRect().height();
+        qreal w = m_headerWidget->sceneBoundingRect().width();
 
-        qreal newWidth = newPos.x() - topLeft.x();
-        qreal newHeight = newPos.y() - topLeft.y() + m_headerWidget->size().height();
+        QPointF newBottomRight = event->scenePos();
+        QPointF oldBottomRight = bRect.bottomRight();
 
-        QSizeF oldSz = this->size();
+        QRectF newBodyBr = QRectF(btopLeft, newBottomRight);
+        QSizeF newBodySz = newBodyBr.size();
 
-        resize(QSizeF(newWidth, newHeight));
-        //updateWhole();
+        zeno::log_info("newBodySz, width = {}, height = {}", newBodySz.width(), newBodySz.height());
+
+        m_pContent->setData(GVKEY_SIZEHINT, newBodySz);
+        ZGraphicsLayout::updateHierarchy(this);
         return;
     }
 
@@ -179,7 +189,7 @@ void BlackboardNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     if (m_bDragging) {
         m_bDragging = false;
-        updateWhole();
+        ZGraphicsLayout::updateHierarchy(this);
         updateBlackboard();
         return;
     }

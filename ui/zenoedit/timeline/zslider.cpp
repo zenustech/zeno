@@ -1,5 +1,7 @@
 #include "zslider.h"
 #include <zenoui/style/zenostyle.h>
+#include <zenoedit/zenoapplication.h>
+#include "zassert.h"
 
 
 ZSlider::ZSlider(QWidget* parent)
@@ -7,13 +9,14 @@ ZSlider::ZSlider(QWidget* parent)
     , m_value(0)
     , m_from(0)
     , m_to(100)
+    , m_cellLength(0)
+    , m_sHMargin(ZenoStyle::dpiScaled(15))
+    , scaleH(ZenoStyle::dpiScaled(9))
+    , smallScaleH(ZenoStyle::dpiScaled(5))
+    , fontHeight(ZenoStyle::dpiScaled(15))
+    , fontScaleSpacing(ZenoStyle::dpiScaled(4))
 {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
-}
-
-QSize ZSlider::sizeHint() const
-{
-    return ZenoStyle::dpiScaledSize(QSize(0, 45));
 }
 
 void ZSlider::mousePressEvent(QMouseEvent* event)
@@ -63,12 +66,17 @@ int ZSlider::_posToFrame(int x)
 int ZSlider::_frameToPos(int frame)
 {
     qreal W = width() - 2 * m_sHMargin;
-    qreal distPerFrame = (qreal)(width() - 2 * m_sHMargin) / (m_to - m_from + 1);
-    return m_sHMargin + (frame - m_from) * distPerFrame;
+    qreal distPerFrame = (qreal)(width() - 2 * m_sHMargin) / ((m_to - m_from) == 0 ? 1 : (m_to - m_from));
+    return m_sHMargin + (frame ) * distPerFrame;
 }
 
 void ZSlider::setFromTo(int from, int to)
 {
+    if (m_from == from && m_to == to)
+        return;
+
+    ZASSERT_EXIT(from <= to);
+
     m_from = from;
     m_to = to;
     if (m_value < m_from)
@@ -81,6 +89,7 @@ void ZSlider::setFromTo(int from, int to)
         m_value = m_to;
         emit sliderValueChange(m_value);
     }
+    m_cellLength = getCellLength(m_to - m_from);
     update();
 }
 
@@ -114,77 +123,151 @@ int ZSlider::_getframes()
     return frames;
 }
 
+QSize ZSlider::sizeHint() const
+{
+    int h = ZenoStyle::dpiScaled(scaleH + fontHeight + fontScaleSpacing);
+    return QSize(0, h);
+}
+
 void ZSlider::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    int n = m_to - m_from + 1;
-    int frames = _getframes();
-
-    QFont font("HarmonyOS Sans", 10);
+    QFont font = zenoApp->font();
+    font.setPointSize(9);
+    font.setWeight(QFont::DemiBold);
     QFontMetrics metrics(font);
     painter.setFont(font);
+    painter.setPen(QPen(QColor("#5A646F"), 1));
 
-    for (int i = m_from; i <= m_to; i++)
-    {
-        int h = 0;
-        int x = _frameToPos(i);
-        QString scaleValue = QString::number(i);
-        painter.setPen(QPen(QColor(119, 119, 119), 2));
-
-        if (i % 5 == 0)
+    int cellNum = ((m_to - m_from) / m_cellLength) + 1;
+    int cellPixelLength = width() / cellNum;
+    if (!(150 < cellPixelLength && cellPixelLength < 250)) {
+        m_cellLength = getCellLength(m_to - m_from);
+    } 
+    int flag;
+    for (int i = 2; i > -1; i--) {
+        if (m_cellLength % m_lengthUnit[i] == 0) {
+            m_cellLength / m_lengthUnit[i];
+            flag = m_lengthUnit[i];
+            break;
+        }
+    }
+    int frameNum;
+    int smallCellLength = m_cellLength / flag;
+    int offset = 0;
+    if (m_from % m_cellLength == 0) {
+        //frameNum = ((m_to - m_from) / m_cellLength) * m_lengthUnit[i] + m_cellLength;
+        frameNum = (m_to - m_from) / smallCellLength;
+    } else {
+        int firstCell = m_cellLength - m_from % m_cellLength + m_from;
+        int smallCellNum = (firstCell - m_from) / smallCellLength;
+        int h = ZenoStyle::dpiScaled(smallScaleH);
+        int y = height() - h;
+        for (int i = smallCellNum; i > 0; i--)
         {
-            h = 16;
+            int x = _frameToPos(firstCell - smallCellLength * i - m_from);
+            painter.drawLine(QPointF(x, y), QPointF(x, y + h));
+        }
+        offset = firstCell - m_from;
+        frameNum = (m_to - m_from) / smallCellLength - smallCellNum - 1;
+    }
 
+    for (int i = 0; i <= frameNum; i++)
+    {
+        int cellScaleValue = (i / flag) * m_cellLength + offset;
+        QString scaleValue = QString::number(cellScaleValue);
+        int x = _frameToPos(smallCellLength * i + offset);
+
+        if (i % flag == 0)
+        {
             //draw time tick
-            int xpos = _frameToPos(i);
+            int h = ZenoStyle::dpiScaled(scaleH);
+            int xpos = _frameToPos(scaleValue.toInt());
             int textWidth = metrics.horizontalAdvance(scaleValue);
             //don't know the y value.
             int yText = height() * 0.4;
-            if (m_value != i)
-                painter.drawText(QPoint(xpos - textWidth / 2, yText), scaleValue);
+            if (m_value != (cellScaleValue + m_from))
+                painter.drawText(QPoint(xpos - textWidth / 2, yText), QString::number(cellScaleValue + m_from));
 
-            int y = height() - h - 2;
+            int y = height() - h;
             painter.drawLine(QPointF(x, y), QPointF(x, y + h));
         }
         else
         {
-            h = 8;
-            int y = height() - h - 2;
-            painter.drawLine(QPointF(x, y), QPointF(x, y + h - 3));
+            int h = ZenoStyle::dpiScaled(smallScaleH);
+            int y = height() - h;
+            painter.drawLine(QPointF(x, y), QPointF(x, y + h));
         }
     }
 
-    painter.setPen(QPen(QColor(58, 58, 58), 2));
-    painter.drawLine(QPointF(_frameToPos(m_from), height() - 2), QPointF(_frameToPos(m_to), height() - 2));
-    drawSlideHandle(&painter);
+    painter.setPen(QPen(QColor("#5A646F"), 1));
+
+    int left = _frameToPos(0);
+    int right = width() - m_sHMargin;
+    painter.drawLine(QPointF(left, height() - 1), QPointF(right, height() - 1));
+    drawSlideHandle(&painter, scaleH);
 }
 
-void ZSlider::drawSlideHandle(QPainter* painter)
+void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
 {
     //draw time slider
-    qreal xleftmost = _frameToPos(m_from);
-    qreal xrightmost = _frameToPos(m_to);
-    qreal xarrow_pos = _frameToPos(m_value);
-    qreal yarrow_pos = height() / 2 - 15. / 2;
+    qreal xleftmost = _frameToPos(0);
+    qreal xrightmost = _frameToPos(m_to - m_from);
+    qreal xarrow_pos = _frameToPos(m_value - m_from);
 
     painter->setPen(Qt::NoPen);
-    int y = height() - 10;
-    painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, height() - 2)), QColor(76, 159, 244, 128));
+    int y = height() - scaleH;
+    painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, y + scaleH)), QColor(76, 159, 244, 64));
 
     //draw handle.
-    y = height() - 20;
-    int w = 8;
-    qreal x = xarrow_pos - w / 2;
-    painter->fillRect(QRectF(QPointF(xarrow_pos - w / 2, y), QPointF(xarrow_pos + w / 2, height())), QColor(76, 159, 244));
+    static const int handleHeight = ZenoStyle::dpiScaled(12);
+    static const int handleWidth = ZenoStyle::dpiScaled(6);
+    y = height() - handleHeight;
+    qreal x = xarrow_pos - handleWidth / 2;
+    painter->fillRect(QRectF(QPointF(xarrow_pos - handleWidth / 2, y),
+                             QPointF(xarrow_pos + handleWidth / 2, y + handleHeight)),
+                      QColor(76, 159, 244));
 
-    QFont font("HarmonyOS Sans", 15);
-    font.setBold(true);
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
     QFontMetrics metrics(font);
     painter->setFont(font);
 
     QString numText = QString::number(m_value);
-    w = metrics.horizontalAdvance(numText);
+    int w = metrics.horizontalAdvance(numText);
     painter->setPen(QColor(76, 159, 244));
     painter->drawText(QPointF(xarrow_pos - w / 2, height() * 0.4), numText);
+}
+
+int ZSlider::getCellLength(int total) {
+    if (total < 20)
+    {
+        return 1;
+    }
+    int cellPixelLength = 0;
+    int times = 1;
+    int last = 0;
+    int len;
+    while (true)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            len = m_lengthUnit[i] * times;
+            cellPixelLength = width() / ((total / len) + 1);
+            if (150 < cellPixelLength && cellPixelLength <= 250)
+            {
+                return len;
+            } else if (cellPixelLength > 250)
+            {
+                return last;
+            }
+            last = len;
+        }
+        if (INT_MAX / 10 < times)
+        {
+            return last;
+        }
+        times *= 10;
+    }
 }

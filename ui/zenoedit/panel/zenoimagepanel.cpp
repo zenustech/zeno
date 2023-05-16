@@ -11,6 +11,12 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zenoui/comctrl/zcombobox.h>
 #include "zeno/utils/log.h"
+#include "zenoapplication.h"
+#include "zassert.h"
+#include "viewport/viewportwidget.h"
+#include "zenomainwindow.h"
+#include "viewport/displaywidget.h"
+
 
 const float ziv_wheelZoomFactor = 1.25;
 
@@ -63,8 +69,6 @@ public:
     }
 };
 
-
-
 void ZenoImagePanel::clear() {
     if (image_view) {
         image_view->clearImage();
@@ -74,11 +78,24 @@ void ZenoImagePanel::clear() {
 }
 
 void ZenoImagePanel::setPrim(std::string primid) {
-    pPrimName->setText(QString(primid.c_str()).split(':')[0]);
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    primid = primid.substr(0, primid.find(":"));
+    pPrimName->setText(primid.c_str());
+    zenovis::Scene* scene = nullptr;
+    auto mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    QVector<DisplayWidget*> wids = mainWin->viewports();
+    if (!wids.isEmpty())
+    {
+        auto session = wids[0]->getZenoVis()->getSession();
+        ZASSERT_EXIT(session);
+        scene = session->get_scene();
+    }
+    if (!scene)
+        return;
+
     bool found = false;
     for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
-        if (key != primid) {
+        if ((key.substr(0, key.find(":"))) != primid) {
             continue;
         }
         auto &ud = ptr->userData();
@@ -91,17 +108,43 @@ void ZenoImagePanel::setPrim(std::string primid) {
             int height = ud.get2<int>("h");
             if (image_view) {
                 QImage img(width, height, QImage::Format_RGB32);
-                for (auto i = 0; i < obj->verts.size(); i++) {
-                    int h = i / width;
-                    int w = i % width;
-                    auto c = obj->verts[i];
-                    int r = glm::clamp(int(c[0] * 255.99), 0, 255);
-                    int g = glm::clamp(int(c[1] * 255.99), 0, 255);
-                    int b = glm::clamp(int(c[2] * 255.99), 0, 255);
+                int gridSize = 50;
+                if (obj->verts.has_attr("alpha")) {
+                    auto &alpha = obj->verts.attr<float>("alpha");
+                    for (auto i = 0; i < obj->verts.size(); i++) {
+                        int h = i / width;
+                        int w = i % width;
+                        auto foreground = obj->verts[i];
+                        foreground = zeno::pow(foreground, 1.0f / 2.2f);
+                        zeno::vec3f background;
+                        if ((h / gridSize) % 2 == (w / gridSize) % 2) {
+                            background = {1, 1, 1};
+                        }
+                        else {
+                            background = {0.86, 0.86, 0.86};
+                        }
+                        zeno::vec3f c = zeno::mix(background, foreground, alpha[i]);
 
-                    img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                        int r = glm::clamp(int(c[0] * 255.99), 0, 255);
+                        int g = glm::clamp(int(c[1] * 255.99), 0, 255);
+                        int b = glm::clamp(int(c[2] * 255.99), 0, 255);
+
+                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                    }
                 }
+                else{
+                    for (auto i = 0; i < obj->verts.size(); i++) {
+                        int h = i / width;
+                        int w = i % width;
+                        auto c = obj->verts[i];
+                        c = zeno::pow(c, 1.0f / 2.2f);
+                        int r = glm::clamp(int(c[0] * 255.99), 0, 255);
+                        int g = glm::clamp(int(c[1] * 255.99), 0, 255);
+                        int b = glm::clamp(int(c[2] * 255.99), 0, 255);
 
+                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                    }
+                }
                 image_view->setImage(img);
             }
             QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
@@ -111,7 +154,6 @@ void ZenoImagePanel::setPrim(std::string primid) {
     if (found == false) {
         clear();
     }
-
 }
 
 ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
@@ -156,10 +198,25 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
 
 
     pMainLayout->addWidget(pStatusBar);
-    auto *zenovis = &Zenovis::GetInstance();
-    connect(zenovis, &Zenovis::objectsUpdated, this, [&](int frame) {
+
+    auto mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    QVector<DisplayWidget*> wids = mainWin->viewports();
+    if (wids.isEmpty())
+        return;
+
+    Zenovis* zenovis = wids[0]->getZenoVis();
+    if (!zenovis)
+        return;
+
+    connect(zenovis, &Zenovis::objectsUpdated, this, [=](int frame) {
         std::string prim_name = pPrimName->text().toStdString();
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
+        Zenovis* zenovis = wids[0]->getZenoVis();
+        ZASSERT_EXIT(zenovis);
+        auto session = zenovis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
         for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
             if (key.find(prim_name) == 0 && key.find(zeno::format(":{}:", frame)) != std::string::npos) {
                 setPrim(key);
@@ -167,3 +224,4 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         }
     });
 }
+

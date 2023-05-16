@@ -16,18 +16,13 @@ public:
         CC_ZenoComboBox,
         CC_ZenoCheckBoxBar,
     };
-    enum ZenoSubControl
-    {
-        SC_ZenoToolButtonIcon = SC_CustomBase + 1,
-        SC_ZenoToolButtonText,
-        SC_ZenoToolButtonArrow
-    };
     enum ZenoPixmetrics
     {
         PM_ButtonLeftMargin = PM_CustomBase + 1,
         PM_ButtonTopMargin,
         PM_ButtonRightMargin,
-        PM_ButtonBottomMargin
+        PM_ButtonBottomMargin,
+        PM_IconTextSpacing,
     };
     enum ZenoPrimitiveElement
     {
@@ -46,6 +41,10 @@ public:
 
     static qreal dpiScaled(qreal value);
     static QSize dpiScaledSize(const QSize &value);
+    static QSizeF dpiScaledSize(const QSizeF& sz);
+    static QMargins dpiScaledMargins(const QMargins& margins);
+    static QString dpiScaleSheet(const QString &sheet);
+    static qreal scaleWidth(qreal value);
 
     void drawComplexControl(ComplexControl control, const QStyleOptionComplex* option, QPainter* painter, const QWidget* widget = nullptr) const override;
     void drawPrimitive(PrimitiveElement pe, const QStyleOption* opt, QPainter* p,
@@ -65,6 +64,9 @@ private:
     void drawZenoToolButton(const ZStyleOptionToolButton* option, QPainter* painter, const QWidget* widget) const;
     void drawDropdownArrow(QPainter* painter, QRect downArrowRect, bool isDown) const;
     void drawCheckBox(QPainter* painter, QRect rect, bool bHover, Qt::CheckState state) const;
+    QRect rect_ZToolButtonIcon(const QStyleOptionComplex* opt, const QWidget* widget) const;
+    QRect rect_ZToolButtonText(const QStyleOptionComplex* opt, const QWidget* widget) const;
+    QRect rect_ZToolButtonArrow(const QStyleOptionComplex* opt, const QWidget* widget) const;
 };
 
 #endif

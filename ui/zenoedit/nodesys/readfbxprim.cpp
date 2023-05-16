@@ -16,6 +16,26 @@
 #include <filesystem>
 #include <vector>
 
+int my_sqrt(int x) {
+    // Base case
+    if (x == 0 || x == 1) {
+        return x;
+    }
+
+    // Initialize variables
+    int y = x;
+    int z = 1;
+
+    // Apply Babylonian method until convergence
+    while (y > z) {
+        y = (y + z) / 2;
+        z = x / y;
+    }
+
+    // Return the floor of the final square root
+    return y;
+}
+
 using Path = std::filesystem::path;
 
 ReadFBXPrim::ReadFBXPrim(const NodeUtilParam& params, QGraphicsItem* parent)
@@ -29,16 +49,25 @@ ReadFBXPrim::~ReadFBXPrim()
 
 }
 
-QGraphicsLinearLayout* ReadFBXPrim::initCustomParamWidgets()
+ZGraphicsLayout* ReadFBXPrim::initCustomParamWidgets()
 {
-    QGraphicsLinearLayout* pHLayout = new QGraphicsLinearLayout(Qt::Horizontal);
+    ZGraphicsLayout* pHLayout = new ZGraphicsLayout(true);
 
-    ZenoTextLayoutItem* pNameItem = new ZenoTextLayoutItem("node", m_renderParams.paramFont, m_renderParams.paramClr.color());
+    ZSimpleTextItem* pNameItem = new ZSimpleTextItem("node");
+    pNameItem->setBrush(m_renderParams.socketClr.color());
+    pNameItem->setFont(m_renderParams.socketFont);
+    pNameItem->updateBoundingRect();
     pHLayout->addItem(pNameItem);
 
     ZenoParamPushButton* pEditBtn = new ZenoParamPushButton("Generate", -1, QSizePolicy::Expanding);
     pHLayout->addItem(pEditBtn);
     connect(pEditBtn, SIGNAL(clicked()), this, SLOT(onEditClicked()));
+
+    _param_ctrl param;
+    param.param_name = pNameItem;
+    param.param_control = pEditBtn;
+    param.ctrl_layout = pHLayout;
+    addParam(param);
 
     return pHLayout;
 }
@@ -54,15 +83,25 @@ void ReadFBXPrim::onEditClicked()
 
     // Get FBX Path
     ZVARIANT path; std::string type;
-    Zeno_GetInputDefl(fbxNode, "path", path, type);
+    Zeno_GetInputDefl(hGraph, fbxNode, "path", path, type);
+
+    // Get FBX HintPath
+    ZVARIANT hintPath;
+    Zeno_GetInputDefl(hGraph, fbxNode, "hintPath", hintPath, type);
+
     std::string get_path = std::get<std::string>(path);
-    auto p = std::make_shared<zeno::StringObject>(); p->set(get_path);
+    std::string get_hintPath = std::get<std::string>(hintPath);
+
+    auto path_ = std::make_shared<zeno::StringObject>(); path_->set(get_path);
+    auto hintPath_ = std::make_shared<zeno::StringObject>(); hintPath_->set(get_hintPath);
+
     auto fbxFileName = Path(get_path).replace_extension("").filename().string();
 
     // Get basic information in FBX
     zeno::log_info("ReadFBXPrim TempNodeSimpleCaller FBX Name {}", fbxFileName);
     auto outs = zeno::TempNodeSimpleCaller("ReadFBXPrim")
-        .set("path", p)
+        .set("path", path_)
+        .set("hintPath", hintPath_)
         .set2<bool>("generate", true)
         .set2<std::string>("udim:", "DISABLE")
         .set2<bool>("invOpacity:", true)
@@ -74,7 +113,7 @@ void ReadFBXPrim::onEditClicked()
 
     // Get the position of current ReadFBXPrim node
     std::pair<float, float> fbxNodePos;
-    Zeno_GetPos(fbxNode, fbxNodePos);
+    Zeno_GetPos(hGraph, fbxNode, fbxNodePos);
 
     // Create nodes
     auto fbxObj = outs.get("prim");
@@ -86,77 +125,96 @@ void ReadFBXPrim::onEditClicked()
         ZENO_HANDLE fbxPartGraph = Zeno_GetGraph("FBXPart");
         ZASSERT_EXIT(fbxPartGraph);
 
+        int my_x = my_sqrt(matNum);
+        int my_i = 0;
+        float add_x_pos = 0.0f;
+        float add_y_pos = 0.0f;
+
         for (int i = 0; i < matNum; i++) {
             auto matName = fbxObj->userData().getLiterial<std::string>(std::to_string(i));
             zeno::log_info("Create with mat name {}, fbx name {}", matName, fbxName);
 
-            ZENO_HANDLE dictNode = Zeno_AddNode(hGraph, "DictGetItem");
-            std::pair<float, float> dictNodePos = {fbxNodePos.first + 500.0f, fbxNodePos.second + i * 300.0f};
-            Zeno_SetPos(dictNode, dictNodePos);
+            std::cout<<"total:"<<matNum<<", current:"<<i<<"\n";
 
-            Zeno_SetInputDefl(dictNode, "key", matName);
-            Zeno_AddLink(fbxNode, "mats", dictNode, "dict");
+            ZENO_HANDLE dictNode = Zeno_AddNode(hGraph, "DictGetItem");
+            add_y_pos = my_i * 300.0f;
+            my_i++;
+            if(i % my_x == 0){
+                add_x_pos += 1500.0f;
+                my_i = 0;
+                add_y_pos = 0.0f;
+            }
+
+            std::pair<float, float> dictNodePos = {fbxNodePos.first + 600.0f + add_x_pos, fbxNodePos.second + add_y_pos};
+            Zeno_SetPos(hGraph,dictNode, dictNodePos);
+
+            Zeno_SetInputDefl(hGraph, dictNode, "key", matName);
+            Zeno_AddLink(hGraph, fbxNode, "mats", dictNode, "dict");
 
             ZENO_HANDLE forkedSubg = 0;
             ZENO_HANDLE forkedNode = 0;
-            std::string fbxPartGraphName = fbxName+"_"+matName;
+            std::string concatname = matName;
+            if (matName.find(':') != std::string::npos) {
+                std::replace(concatname.begin(), concatname.end(), ':', '_');
+            }
+            std::string fbxPartGraphName = fbxName+"_"+concatname;
             ZENO_ERROR ret = Zeno_ForkGraph(hGraph, "FBXPart", forkedSubg, forkedNode);
             ZASSERT_EXIT(!ret);ZASSERT_EXIT(forkedSubg);ZASSERT_EXIT(forkedNode);
 
             // Add Texture2D node
-            ZENO_HANDLE listNode1 = Zeno_AddNode(forkedSubg, "MakeSmallList");
-            ZENO_HANDLE listNode2 = Zeno_AddNode(forkedSubg, "MakeSmallList");
-            ZENO_HANDLE listNode3 = Zeno_AddNode(forkedSubg, "MakeSmallList");
-            float yoff = 3000.0f;
-            Zeno_SetPos(listNode1, {-6000.0f, yoff+0.0f});
-            Zeno_SetPos(listNode2, {-6000.0f, yoff+200.0f});
-            Zeno_SetPos(listNode3, {-6000.0f, yoff+400.0f});
-            std::vector<ZENO_HANDLE> tex2dnodes;
+//            ZENO_HANDLE listNode1 = Zeno_AddNode(forkedSubg, "MakeSmallList");
+//            ZENO_HANDLE listNode2 = Zeno_AddNode(forkedSubg, "MakeSmallList");
+//            ZENO_HANDLE listNode3 = Zeno_AddNode(forkedSubg, "MakeSmallList");
+//            float yoff = 3000.0f;
+//            Zeno_SetPos(forkedSubg, listNode1, {-6000.0f, yoff + 0.0f});
+//            Zeno_SetPos(forkedSubg, listNode2, {-6000.0f, yoff + 200.0f});
+//            Zeno_SetPos(forkedSubg, listNode3, {-6000.0f, yoff + 400.0f});
+//            std::vector<ZENO_HANDLE> tex2dnodes;
 
-            for(int j=0;j<15;j++){
-                ZENO_HANDLE tmpTex2dNode = Zeno_AddNode(forkedSubg, "MakeTexture2D");
-                std::pair<float, float> tex2dnodePos = {-7000.0f, yoff+j*200.0f};
-                Zeno_SetPos(tmpTex2dNode, tex2dnodePos);
-                tex2dnodes.push_back(tmpTex2dNode);
-
-                auto texPath = fbxObj->userData().getLiterial<std::string>(
-                    std::to_string(i)+"_tex_"+std::to_string(j));
-                Zeno_SetInputDefl(tmpTex2dNode, "path", texPath);
-
-                if(j<6)
-                    Zeno_AddLink(tmpTex2dNode, "tex", listNode1, "obj"+std::to_string(j%6));
-                else if(j<12)
-                    Zeno_AddLink(tmpTex2dNode, "tex", listNode2, "obj"+std::to_string(j%6));
-                else
-                    Zeno_AddLink(tmpTex2dNode, "tex", listNode3, "obj"+std::to_string(j%6));
-            }
-
-            ZENO_HANDLE extendList1 = Zeno_AddNode(forkedSubg, "ExtendList");
-            ZENO_HANDLE extendList2 = Zeno_AddNode(forkedSubg, "ExtendList");
-            Zeno_SetPos(extendList1, {-5000.0f, yoff+0.0f});
-            Zeno_SetPos(extendList2, {-5000.0f, yoff+200.0f});
-            Zeno_AddLink(listNode1, "list", extendList1, "list1");
-            Zeno_AddLink(listNode2, "list", extendList1, "list2");
-            Zeno_AddLink(extendList1, "list1", extendList2, "list1");
-            Zeno_AddLink(listNode3, "list", extendList2, "list2");
-
-            ZENO_HANDLE texListsPortal = Zeno_AddNode(forkedSubg, "PortalIn");
-            Zeno_SetPos(texListsPortal, {-4000.0f, yoff+0.0f});
-            std::string stexLists("texLists");
-            Zeno_SetParam(texListsPortal, "name", stexLists);
-            Zeno_AddLink(extendList2, "list1", texListsPortal, "port");
+//            for(int j=0;j<15;j++){
+//                ZENO_HANDLE tmpTex2dNode = Zeno_AddNode(forkedSubg, "MakeTexture2D");
+//                std::pair<float, float> tex2dnodePos = {-7000.0f, yoff+j*200.0f};
+//                Zeno_SetPos(forkedSubg, tmpTex2dNode, tex2dnodePos);
+//                tex2dnodes.push_back(tmpTex2dNode);
+//
+//                auto texPath = fbxObj->userData().getLiterial<std::string>(
+//                    std::to_string(i)+"_tex_"+std::to_string(j));
+//                Zeno_SetInputDefl(forkedSubg, tmpTex2dNode, "path", texPath);
+//
+//                if(j<6)
+//                    Zeno_AddLink(forkedSubg, tmpTex2dNode, "tex", listNode1, "obj"+std::to_string(j%6));
+//                else if(j<12)
+//                    Zeno_AddLink(forkedSubg, tmpTex2dNode, "tex", listNode2, "obj"+std::to_string(j%6));
+//                else
+//                    Zeno_AddLink(forkedSubg, tmpTex2dNode, "tex", listNode3, "obj"+std::to_string(j%6));
+//            }
+//
+//            ZENO_HANDLE extendList1 = Zeno_AddNode(forkedSubg, "ExtendList");
+//            ZENO_HANDLE extendList2 = Zeno_AddNode(forkedSubg, "ExtendList");
+//            Zeno_SetPos(forkedSubg, extendList1, {-5000.0f, yoff + 0.0f});
+//            Zeno_SetPos(forkedSubg, extendList2, {-5000.0f, yoff + 200.0f});
+//            Zeno_AddLink(forkedSubg, listNode1, "list", extendList1, "list1");
+//            Zeno_AddLink(forkedSubg, listNode2, "list", extendList1, "list2");
+//            Zeno_AddLink(forkedSubg, extendList1, "list1", extendList2, "list1");
+//            Zeno_AddLink(forkedSubg, listNode3, "list", extendList2, "list2");
+//
+//            ZENO_HANDLE texListsPortal = Zeno_AddNode(forkedSubg, "PortalIn");
+//            Zeno_SetPos(forkedSubg, texListsPortal, {-4000.0f, yoff + 0.0f});
+//            std::string stexLists("texLists");
+//            Zeno_SetParam(forkedSubg, texListsPortal, "name", stexLists);
+//            Zeno_AddLink(forkedSubg, extendList2, "list1", texListsPortal, "port");
 
             Zeno_RenameGraph(forkedSubg, fbxPartGraphName);
 
             std::pair<float, float> fbxPartPos = {dictNodePos.first + 500.0f, dictNodePos.second};
 
-            Zeno_SetPos(forkedNode, fbxPartPos);
-            Zeno_AddLink(dictNode, "object", forkedNode, "data");
-            Zeno_SetView(forkedNode, true);
+            Zeno_SetPos(hGraph, forkedNode, fbxPartPos);
+            Zeno_AddLink(hGraph, dictNode, "object", forkedNode, "data");
+            Zeno_SetView(hGraph, forkedNode, true);
         }
 
-        Zeno_SetView(fbxNode, false);
-        Zeno_SetInputDefl(fbxNode, "generate", false);
+
+        Zeno_SetInputDefl(hGraph, fbxNode, "generate", false);
     }else{
         zeno::log_error("Not found ReadFBXPrim node in objectsMan");
     }

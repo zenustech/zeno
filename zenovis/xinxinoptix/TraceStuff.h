@@ -141,16 +141,16 @@ struct RadiancePRD
         attenuation *= multiplier;
     }
     
-    int pushMat(vec3 extinction, vec3 ss_alpha = vec3(1.0f))
+    int pushMat(vec3 extinction, vec3 ss_alpha = vec3(-1.0f))
     {
         vec3 d = abs(sigma_t_queue[curMatIdx] - extinction);
         float c = dot(d, vec3(1,1,1));
-        if(curMatIdx<=7 && c > 1e-6 )
+        if(curMatIdx<7 && c > 1e-6 )
         {
-            
+            curMatIdx++;
             sigma_t_queue[curMatIdx] = extinction;
             ss_alpha_queue[curMatIdx] = ss_alpha;
-            curMatIdx++;
+            
         }
 
         return curMatIdx;
@@ -166,9 +166,9 @@ struct RadiancePRD
 
     int popMat(vec3& sigma_t, vec3& ss_alpha)
     {
+        curMatIdx = clamp(--curMatIdx, 0, 7);
         sigma_t = sigma_t_queue[curMatIdx];
         ss_alpha = ss_alpha_queue[curMatIdx];
-        curMatIdx = clamp(--curMatIdx, 0, 7);
         return curMatIdx;
     }
     

@@ -1069,24 +1069,29 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         union_find(pol, spmat, range(fas));
         bht<int, 1, int> tab{spmat.get_allocator(), nrbs};
         tab.reset(pol, true);
-        pol(range(nrbs), [&fas, &isRbCompound, tab = proxy<space>(tab)](int vi) mutable {
+        pol(range(nrbs), [&fas, tab = proxy<space>(tab)](int vi) mutable {
             auto fa = fas[vi];
             while (fa != fas[fa])
                 fa = fas[fa];
             fas[vi] = fa;
-            if (tab.insert(fa) < 0) // already inserted
-                isRbCompound[vi] = true;
+            tab.insert(fa);
         });
+        auto ncompounds = tab.size();
+        std::vector<int> cpdSizes(ncompounds);
 
         // map rigid body indices to target compound indices
         std::vector<int> rbDstCompId(nrbs);
-        pol(range(nrbs), [&fas, &rbDstCompId, tab = proxy<space>(tab)](int rbi) mutable {
+        pol(range(nrbs), [&fas, &rbDstCompId, &cpdSizes, tab = proxy<space>(tab)](int rbi) mutable {
             auto fa = fas[rbi];
             auto compId = tab.query(fa);
             rbDstCompId[rbi] = compId;
+            atomic_add(exec_omp, &cpdSizes[compId], 1);
+        });
+        pol(range(nrbs), [&rbDstCompId, &cpdSizes, &isRbCompound](int rbi) {
+            auto compId = rbDstCompId[rbi];
+            isRbCompound[rbi] = cpdSizes[compId] > 1;
         });
 
-        auto ncompounds = tab.size();
         ///
         ///
         /// @brief maintain info
@@ -1110,9 +1115,10 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
             puts("previous rbs\' and compounds\' states");
 
             pol(prevGroups, [](auto cpd) {
+                auto v = cpd->body->getLinearVelocity();
                 auto w = cpd->body->getAngularVelocity();
-                fmt::print(fg(fmt::color::orange), "cpd to-be-dismembered [{}] w<{}, {}, {}>.\n", (void *)cpd.get(),
-                           w[0], w[1], w[2]);
+                fmt::print(fg(fmt::color::orange), "cpd to-be-dismembered [{}] v<{}, {}, {}>, w<{}, {}, {}>.\n",
+                           (void *)cpd.get(), v[0], v[1], v[2], w[0], w[1], w[2]);
             });
 #endif
             /// TBD: update rigid body transforms if exit the compounds
@@ -1129,13 +1135,16 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                         rbTransforms[rbi] = cpd->getWorldTransform() * chTrans;
 
                         /// @note linear vel
-                        rb->body->setLinearVelocity(cpd->body->getVelocityInLocalPoint(chTrans.getOrigin()));
+                        auto rel = rbTransforms[rbi].getOrigin() - cpd->getWorldTransform().getOrigin();
+                        rb->body->setLinearVelocity(cpd->body->getVelocityInLocalPoint(rel));
                         /// @note angular vel
                         rb->body->setAngularVelocity(cpd->body->getAngularVelocity());
 
 #if DEBUG_CPD
                         int rbi = cpd->locateChild(rb->body->getCollisionShape());
                         if (rbi < 2 && rbi >= 0) {
+                            // fmt::print(" chk [{}] world pos: <{}, {}, {}>\n", rbi, rbTransforms[rbi].getOrigin()[0],
+                            //           rbTransforms[rbi].getOrigin()[1], rbTransforms[rbi].getOrigin()[2]);
                             cpd->printChildDynamics(rbi, fmt::color::pink);
                         }
 #endif
@@ -1301,6 +1310,11 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
             b.setZero();
             c.setZero();
         });
+#if 0
+        fmt::print(fg(fmt::color::red), "tab status {}\n", tab._buildSuccess.getVal());
+        for (int i = 0; i != 2; ++i)
+            fmt::print(fg(fmt::color::red), "rb[{}] is cpd: {}, dst cpd no: {}\n", i, isRbCompound[i], rbDstCompId[i]);
+#endif
         pol(range(nrbs), [&](int rbi) {
             if (isRbCompound[rbi]) {
                 auto &rb = rbs[rbi];
@@ -1312,6 +1326,9 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
                 auto vi = body->getLinearVelocity();
                 for (int d = 0; d != 3; ++d)
                     atomic_add(exec_omp, &accumCpdVs[compId][d], mi * vi[d]);
+#if 0
+                fmt::print(fg(fmt::color::red), "rb[{}] mass {} lv <{}, {}, {}>\n", rbi, mi, vi[0], vi[1], vi[2]);
+#endif
 
                 {
                     const auto rbTrans = rb->getWorldTransform();

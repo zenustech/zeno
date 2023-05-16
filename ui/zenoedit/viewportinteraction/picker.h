@@ -11,6 +11,9 @@
 
 #define CMP(x, y) \
 	(fabsf(x - y) <= FLT_EPSILON * fmaxf(1.0f, fmaxf(fabsf(x), fabsf(y))))
+
+class ViewportWidget;
+
 namespace zeno {
 
 std::optional<float> ray_box_intersect(
@@ -29,12 +32,11 @@ bool test_in_selected_bounding(
     QVector3D down_normWS
 );
 
-class Picker {
-  public:
-    static Picker& GetInstance() {
-        static Picker instance;
-        return instance;
-    }
+class Picker
+{
+public:
+    Picker(ViewportWidget* pViewport);
+    void initialize();
     void pick(int x, int y);
     void pick(int x0, int y0, int x1, int y1);
     void pick_depth(int x, int y);
@@ -54,14 +56,12 @@ class Picker {
     bool is_draw_mode();
     void switch_draw_mode();
 
-  private:
-    Picker() : draw_mode(false) {
-        auto scene = Zenovis::GetInstance().getSession()->get_scene();
-        picker = zenovis::makeFrameBufferPicker(scene);
-        select_mode_context = -1;
-    };
+private:
+    zenovis::Scene* scene() const;
 
     std::unique_ptr<zenovis::IPicker> picker;
+    
+    ViewportWidget* m_pViewport;
 
     std::function<void(float, int, int)> picked_depth_callback;
     std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)> picked_elems_callback;

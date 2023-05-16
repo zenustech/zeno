@@ -385,7 +385,45 @@ struct Mesh{
         }
         return true;
     }
+    void StringSplitReverse(std::string str, const char split, std::vector<std::string> & ostrs)
+    {
+        std::istringstream iss(str);
+        std::string token;
+        std::vector<std::string> res(0);
+        while(getline(iss, token, split))
+        {
+            res.push_back(token);
+        }
+        ostrs.resize(0);
+        for(int i=res.size()-1; i>=0;i--)
+        {
+            ostrs.push_back(res[i]);
+        }
+    }
+    void formPath(std::vector<std::string> &tokens)
+    {
+        for(int i=1; i<tokens.size();i++)
+        {
+            tokens[i] = tokens[i] + '/' + tokens[i-1];
+        }
+    }
+    bool findFile(std::string HintPath, std::string origPath, std::string & oPath)
+    {
+        std::vector<std::string> paths;
+        StringSplitReverse(origPath, '/', paths);
+        formPath(paths);
+        for(int i=0; i<paths.size(); i++)
+        {
+            auto filename = HintPath + '/' + paths[i];
+            if(std::filesystem::exists(filename.c_str()))
+            {
+                oPath = filename;
+                return true;
+            }
+        }
+        return false;
 
+    }
     void readMaterial(aiMesh* mesh, std::string relMeshName, aiScene const* scene, float *uvscale){
         /*  assimp - v5.0.1
 
@@ -459,17 +497,29 @@ struct Mesh{
                 // TODO Support material multi-tex
                 // The first step - to find the texture
                 if(material->GetTextureCount(texType)){
-                    aiString str;
-                    material->GetTexture(texType, 0, &str);
-                    auto p = fbxPath;
-                    auto s = std::string(str.C_Str());
-                    auto c = (p += s).string();
-                    std::replace(c.begin(), c.end(), '\\', '/');
-                    zeno::log_info("FBX: Mat name {}, PropName {} RelTexPath {} TexType {} MerPath {}",matName,com.first, str.data, texType, c);
+                    aiString texPathGet;
+                    material->GetTexture(texType, 0, &texPathGet);
+                    auto fbxFilePath = fbxPath;
+                    auto texPathStr = std::string(texPathGet.C_Str());
+                    auto combinePath = (fbxFilePath += texPathStr).string();
+                    std::replace(combinePath.begin(), combinePath.end(), '\\', '/');
 
-                    Path file_full_path(c);
-                    std::string filename = Path(c).filename().string();
-                    Path file_path = Path(c).remove_filename();
+                    auto hintPath = m_readOption.hintPath;
+                    if(hintPath != "-1") {
+                        std::string truePath;
+                        findFile(hintPath, combinePath, truePath);
+                        //std::cout << "hintPath:" << hintPath << "\n";
+                        //std::cout << "truePath:" << truePath << "\n";
+                        //std::cout << "fbxPath:" << fbxPath << "\n";
+                        //std::cout << "combinePath:" << combinePath << "\n";
+                        combinePath = truePath;
+                    }
+
+                    zeno::log_info("FBX: Mat name {}, PropName {} RelTexPath {} TexType {} MerPath {}",matName,com.first, texPathGet.data, texType, combinePath);
+
+                    Path file_full_path(combinePath);
+                    std::string filename = Path(combinePath).filename().string();
+                    Path file_path = Path(combinePath).remove_filename();
 
                     // Check if it is UDIM
                     int pos = 0;
@@ -495,9 +545,9 @@ struct Mesh{
                         auto fn_replace = filename;
                         merged_path+= fn_replace.replace(index+1, 4, "MERGED_UDIM");
 
-                        if(std::filesystem::exists(Path(c))) {
+                        if(std::filesystem::exists(Path(combinePath))) {
 
-                            stbi_info(Path(c).string().c_str(), &sw, &sh, &comp);
+                            stbi_info(Path(combinePath).string().c_str(), &sw, &sh, &comp);
                             zeno::log_info("UDIM: Info {} {} {} {}", filename, sw, sh, comp);
 
                             // Find all udim tex
@@ -525,7 +575,7 @@ struct Mesh{
                                 int size = std::max(max_up, max_vp);
 
                                 if(std::filesystem::exists(merged_path)){
-                                    c = merged_path.string();
+                                    combinePath = merged_path.string();
                                     *uvscale = float(size);
                                     m_MatUdimSize[matName] = float(size);
 
@@ -540,8 +590,8 @@ struct Mesh{
 
                                     for (auto &ut : udim_texs) {
                                         int width, height, n;
-
-                                        uint8_t *data = stbi_load(ut.second.c_str(), &width, &height, &n, 4);
+                                        std::string native_path = std::filesystem::u8path(ut.second).string();
+                                        uint8_t *data = stbi_load(native_path.c_str(), &width, &height, &n, 4);
                                         zeno::log_info("UDIM: Read Tex {}, {} {} {}", Path(ut.second).filename().string(),
                                                        width, height, n);
                                         if (width != height) {
@@ -574,7 +624,7 @@ struct Mesh{
                                         stbi_write_png(merged_path.string().c_str(), fsize, fsize, channel_num, pixels,
                                                        fsize * channel_num);
 
-                                        c = merged_path.string();
+                                        combinePath = merged_path.string();
                                         *uvscale = float(size);
                                         m_MatUdimSize[matName] = float(size);
                                     }
@@ -583,12 +633,19 @@ struct Mesh{
                         }
                     }
 
-                    mat.val.at(com.first).texPath = c;
+                    mat.val.at(com.first).texPath = combinePath;
                     texfound = true;
 
                     break;  // for tex-types
                 }
             }
+
+            if(! texfound){
+                mat.val.at(com.first).texPath = "-1";
+            }
+
+            // TODO Get Material Value To Node
+            /*
             if(! texfound)
             // The second step - to find the material-prop and to generate a value-based texture
             {
@@ -655,6 +712,7 @@ struct Mesh{
                 mat.val.at(com.first).texPath = img_path;
                 //zeno::log_info("3N {} P `{}` F {} V `{} {} {} {}`", com.first, key, found, v.r, v.g, v.b, v.a);
             }
+            */
         }
 
         m_loadedMat[matName] = mat;
@@ -1104,6 +1162,9 @@ struct ReadFBXPrim : zeno::INode {
 
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
+        std::cout<<"before\n";
+        auto hintPath = get_input<zeno::StringObject>("hintPath")->get();
+        std::cout<<"hintPath:" <<hintPath<<"\n";
         std::shared_ptr<zeno::DictObject> datas = std::make_shared<zeno::DictObject>();
         auto nodeTree = std::make_shared<NodeTree>();
         auto animInfo = std::make_shared<AnimInfo>();
@@ -1139,6 +1200,7 @@ struct ReadFBXPrim : zeno::INode {
             readOption.triangulate = true;
         if(printTree)
             readOption.printTree = true;
+        readOption.hintPath = hintPath;
 
         zeno::log_info("FBX: UDIM {} PRIM {} INVERT {}", readOption.enableUDIM,readOption.makePrim,readOption.invertOpacity);
 
@@ -1152,11 +1214,10 @@ struct ReadFBXPrim : zeno::INode {
                 zeno::log_info("FBX: Setting user data {} {}", count, k);
                 prim->userData().setLiterial(std::to_string(count), k);
 
-                auto texLists = vc->getSimplestTexList();
-                for(int i=0;i<texLists.size();i++){
-                    prim->userData().setLiterial(
-                        std::to_string(count)+"_tex_"+std::to_string(i),
-                        texLists[i]);
+                std::vector<std::string> texList{}; std::map<std::string, int> texMap{};
+                vc->getSimplestTexList(texList, texMap);
+                for(int i=0;i<texList.size();i++){
+                    prim->userData().setLiterial(std::to_string(count) + "_tex_" + std::to_string(i), texList[i]);
                 }
 
                 count++;
@@ -1179,6 +1240,7 @@ ZENDEFNODE(ReadFBXPrim,
            {       /* inputs: */
                {
                    {"readpath", "path"},
+                   {"readpath", "hintPath", "-1"},
                    {"bool", "generate", "false"}
                },  /* outputs: */
                {

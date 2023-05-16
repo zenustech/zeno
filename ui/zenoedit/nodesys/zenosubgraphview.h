@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <zenoui/nodesys/nodesys_common.h>
+#include "dock/docktabcontent.h"
 
 class ZenoSubGraphScene;
 class ZenoNewnodeMenu;
@@ -19,6 +20,9 @@ public:
     void initScene(ZenoSubGraphScene* pScene);
     void setPath(const QString& path);
     qreal scaleFactor() const;
+    void setScale(qreal scale);
+    void gentle_zoom(qreal factor);
+    void showGrid(bool bShow);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -32,6 +36,7 @@ protected:
     void drawBackground(QPainter* painter, const QRectF& rect) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
     void scrollContentsBy(int dx, int dy) override;
+    void showEvent(QShowEvent *event) override;
 
 public slots:
     void redo();
@@ -43,17 +48,17 @@ public slots:
     void cameraFocus();
     void onSearchResult(SEARCH_RECORD rec);
     void focusOn(const QString& nodeId, const QPointF& pos, bool isError);
-    void onScrollControlAdded(ZenoParamWidget*);
+    void focusOnWithNoSelect(const QString& nodeId);
 
 signals:
     void zoomed(qreal);
     void viewChanged(qreal);
 
 private:
-    void gentle_zoom(qreal factor);
     void set_modifiers(Qt::KeyboardModifiers modifiers);
     void resetTransform();
     void drawGrid(QPainter* painter, const QRectF& rect);
+    void scaleBy(qreal scaleFactor);
 
     QPointF target_scene_pos, target_viewport_pos, m_startPos;
     QPoint m_mousePos;
@@ -63,7 +68,6 @@ private:
     const double m_factor_step = 0.1;
     Qt::KeyboardModifiers _modifiers;
     bool m_dragMove;
-    bool m_bControlActive;
 
     ZenoSubGraphScene* m_scene;
     ZenoNewnodeMenu* m_menu;
@@ -98,6 +102,15 @@ public:
 	void initScene(ZenoSubGraphScene* pScene);
     ZenoSubGraphScene* scene();
 	void resetPath(const QString& path, const QString& subGraphName, const QString& objId, bool isError = false);
+    void setZoom(const qreal& scale);
+    void focusOnWithNoSelect(const QString& nodeId);
+    void focusOn(const QString& nodeId);
+    void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
+    void selectNodes(const QModelIndexList &nodes);
+
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 signals:
 	void pathUpdated(QString);
@@ -106,6 +119,10 @@ signals:
 private:
     _ZenoSubGraphView* m_view;
     LayerPathWidget* m_pathWidget;
+
+    QModelIndex m_lastSelectedNode;
+    bool m_floatPanelShow;
+    DockContent_Parameter *m_prop;
 };
 
 

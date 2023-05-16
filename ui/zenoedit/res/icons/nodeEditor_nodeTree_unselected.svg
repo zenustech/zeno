@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="20px" height="20px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic/nodeToolbar/nodeTree/unselected</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/nodeToolbar/nodeTree/unselected">
+            <rect id="矩形" x="0" y="0" width="20" height="20"></rect>
+            <path d="M5.81588663,7.44663207 L5.81588663,9.87292516 L9.57659867,9.87292516 L9.57659867,8.90136502 L16.3374293,8.90136502 L16.3374293,11.9437388 L9.57659867,11.9437388 L9.57659867,11.1405809 L5.81504153,11.1405809 L5.81504153,13.929377 L9.57659867,13.9285784 L9.57659867,12.9576262 L16.3374293,12.9576262 L16.3374293,16 L9.57659867,16 L9.57659867,15.1962342 L4.54823089,15.1970328 L4.54823089,7.44663207 L5.81588663,7.44663207 Z M11.9001298,4 L11.9001298,7.04237378 L3.6625707,7.04237378 L3.6625707,4 L11.9001298,4 Z" id="形状" fill="#69727B"></path>
+        </g>
+    </g>
+</svg>

@@ -5,11 +5,10 @@
 #include <zenoui/nodesys/zenosvgitem.h>
 #include "../../nodesys/nodesys_common.h"
 
-class ZenoSocketItem : public ZenoImageItem
+class ZenoSocketItem : public QGraphicsObject
 {
     Q_OBJECT
-    typedef ZenoImageItem _base;
-
+    typedef QGraphicsObject _base;
 public:
     enum SOCK_STATUS
     {
@@ -21,27 +20,23 @@ public:
     };
 
     ZenoSocketItem(
-        const QString& sockName,
-        bool bInput,
-        QPersistentModelIndex nodeIdx,
-        const ImageElement &elem,
-        const QSizeF &sz,
+        const QPersistentModelIndex& viewSockIdx,
+        const QSizeF& sz,
         QGraphicsItem *parent = 0);
     enum { Type = ZTYPE_SOCKET };
     int type() const override;
-    void setOffsetToName(const QPointF& offsetToName);
     QRectF boundingRect() const override;
     QPointF center() const;
-    bool getSocketInfo(bool& bInput, QString& nodeid, QString& sockName);
-    void updateSockName(const QString& sockName);
+    QModelIndex paramIndex() const;
+    bool isInputSocket() const;
+    QString nodeIdent() const;
     void setSockStatus(SOCK_STATUS status);
+    void setHovered(bool bHovered);
+    SOCK_STATUS sockStatus() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
 signals:
     void clicked(bool bInput);
-
-public slots:
-    void socketNamePosition(const QPointF& nameScenePos);
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
@@ -51,21 +46,14 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
-    QPointF m_offsetToName;
     SOCK_STATUS m_status;
-    ZenoSvgItem* m_svgHover;
-    QString m_noHoverSvg;
-    QString m_hoverSvg;
-
-    const QPersistentModelIndex m_index;
-    QString m_name;         //should update when meet dynamic socket.
-
-    const int sHorLargeMargin;
-    const int sTopMargin;
-    const int sHorSmallMargin;
-    const int sBottomMargin;
-
-    const bool m_bInput;
+    const QPersistentModelIndex m_viewSockIdx;
+    QSizeF m_size;
+    int m_innerSockMargin;
+    int m_socketXOffset;
+    bool m_bInput;
+    bool m_bInnerSock;
+    bool m_bHovered;
 };
 
 #endif

@@ -11,7 +11,7 @@ class LiveMeshNode : public ZenoNode
     ~LiveMeshNode();
 
   protected:
-    QGraphicsLinearLayout* initCustomParamWidgets() override;
+    ZGraphicsLayout* initCustomParamWidgets() override;
 
   public slots:
     void onSyncClicked();

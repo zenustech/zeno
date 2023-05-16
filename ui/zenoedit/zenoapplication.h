@@ -29,6 +29,7 @@ public:
 
 private:
     QString readQss(const QString& qssPath);
+    void initMetaTypes();
 
     ZWidgetErrStream m_errSteam;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)

@@ -10,6 +10,8 @@
 #include "ZLightsModel.h"
 #include "comctrl/zlineedit.h"
 
+class DisplayWidget;
+
 class ZenoLights : public QWidget {
     Q_OBJECT
 public:
@@ -26,6 +28,7 @@ public:
     QPushButton* write_btn = new QPushButton("Write");
     QPushButton* write_all_btn = new QPushButton("Write ALL");
     QPushButton* procedural_sky_btn = new QPushButton("Procedural Sky");
+    QPushButton* sync_btn = new QPushButton("Sync Lights");
 
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
@@ -58,7 +61,10 @@ public:
 public:
     ZenoLights(QWidget* parent = nullptr);
     void updateLights();
-    std::vector<zeno::vec3f> computeLightPrim(zeno::vec3f position, zeno::vec3f rotate, zeno::vec3f scale);
+    static std::vector<zeno::vec3f> computeLightPrim(zeno::vec3f position, zeno::vec3f rotate, zeno::vec3f scale);
+
+private:
+    DisplayWidget* getViewportWithOptixFirst() const;
 };
 
 

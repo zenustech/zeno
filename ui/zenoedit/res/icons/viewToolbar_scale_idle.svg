@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="20px" height="20px" viewBox="0 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>viewToolbar_scale_idle</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/viewToolbar/scale/idle" fill="#69727B" fill-rule="nonzero">
+            <path d="M15.5,4 C15.7761424,4 16,4.22385763 16,4.5 L16,15.5 C16,15.7761424 15.7761424,16 15.5,16 L10.317,16 L10.317,14.6 L14.6,14.6 L14.6,5.4 L5.4,5.4 L5.4,9.712 L4,9.712 L4,4.5 C4,4.22385763 4.22385763,4 4.5,4 L15.5,4 Z" id="Combined-Shape"></path>
+            <path d="M11.6928921,12.8071079 L10.2928921,12.8071079 L10.2928921,9.70710795 L7.19289205,9.70710795 L7.19289205,8.30710795 L11.1928921,8.30710795 C11.4690344,8.30710795 11.6928921,8.53096557 11.6928921,8.80710795 L11.6928921,12.8071079 Z" id="Combined-Shape"></path>
+            <rect id="Rectangle" x="4" y="11.3071079" width="4.69289205" height="4.69289205" rx="0.5"></rect>
+        </g>
+    </g>
+</svg>

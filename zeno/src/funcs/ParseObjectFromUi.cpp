@@ -109,12 +109,19 @@ namespace {
 zany parseObjectFromUi(Value const& x)
 {
     bool bSucceed = false;
-    if (CurveData dat = parseCurve(x, bSucceed); bSucceed) {
-        auto curve = std::make_shared<zeno::CurveObject>();
-        curve->keys.insert({"x", dat});
-        return curve;
+    auto curve = std::make_shared<zeno::CurveObject>();
+    for (auto i = x.MemberBegin(); i != x.MemberEnd(); i++) {
+        if (i->value.IsObject())
+        {
+               CurveData dat = parseCurve(i->value, bSucceed);
+            if (!bSucceed) {
+                return nullptr;
+            } else {
+                curve->keys.insert({i->name.GetString(), dat});
+            }
+        }
     }
-    return nullptr;
+    return curve;
 }
 
 }

@@ -1,5 +1,8 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
 	<file>templates/node-example.xml</file>
+	<file>templates/DefaultLayout.txt</file>
+    <file>templates/offical-layout1.json</file>
+    <file>templates/offical-layout2.json</file>
 </qresource>
 </RCC>

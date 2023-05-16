@@ -1,10 +1,13 @@
 QPushButton[cssClass="grayButton"]
 {
-    border-width: 0px;
-    border-radius: 0px;
-	background-color: rgb(71,71,71);
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(168, 163, 160);
+	border-style: outset;
+    border-width: 2px;
+    border-radius: 1px;
+	border-color: #000000;
+	background-color: #343A42;
+	font-size: 10pt;;
+	font-weight: 500;
+	color: #737B85;
 }
 
 QPushButton[cssClass="grayButton"]:hover
@@ -12,18 +15,57 @@ QPushButton[cssClass="grayButton"]:hover
 	color: rgb(255, 255, 255);
 }
 
-QPushButton[cssClass="welcomepage"]
+QPushButton[cssClass="blueStyle"]
 {
-	border-style: solid;
-    border-width: 1px;
+	padding-top: 2.5px;
+	padding-left: 12px;
+	padding-right: 12px;
+	padding-bottom: 2.5px;
+
+    border-width: 0px;
     border-radius: 0px;
-    border-color: rgba(133,130,128,1);
-	background-color: transparent;
-	font: 14px 'HarmonyOS Sans';
-	color: rgb(156, 156, 156);
+	background-color: #4284F4;
+	font-size: 10pt;;
+	font-weight: 500;
+	color: rgb(208, 208, 208);
 }
 
-QPushButton[cssClass="welcomepage"]:hover
+QPushButton[cssClass="blueStyle"]:hover
+{
+	color: rgb(255, 255, 255);
+}
+
+QPushButton[cssClass="dictkeypanel"]
+{
+	padding-top: 2.5px;
+	padding-left: 48px;
+	padding-right: 48px;
+	padding-bottom: 2.5px;
+
+    border-width: 0px;
+    border-radius: 5px;
+	border-style: outset;
+	background-color: #5A616D;
+	font-size: 10pt;;
+	font-weight: bold;
+	color: #A3B1C0;
+}
+
+QPushButton[cssClass="dictkeypanel"]:hover
+{
+	color: #FFFFFF;
+}
+
+QToolButton[cssClass="welcomepage"]
+{
+    border: 0px;
+	background-color: transparent;
+	font-size: 10pt;;
+	font-weight: 500;
+	color: #4578AC;
+}
+
+QToolButton[cssClass="welcomepage"]:hover
 {
     border-color: rgb(255,255,255);
 	color: rgb(255, 255, 255);
@@ -38,7 +80,8 @@ QPushButton[cssClass="shadowButton"]
 	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 3px;
 	background-color: #2B2B2B;
-	font: 14px 'HarmonyOS Sans';
+	font-size: 10pt;;
+	font-weight: 500;
 	color: #8A8A8C;
 }
 
@@ -134,7 +177,7 @@ QPushButton[cssClass="curve-preset"]
 	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 3px;
 	background-color: #2B2B2B;
-	font: 12px 'HarmonyOS Sans';
+	font-weight: 500;
 	color: #8A8A8C;
 }
 
@@ -153,7 +196,8 @@ QPushButton[cssClass="timeline"]
 	border: 1px solid rgba(0,0,0,1);
     border-radius: 4px;
 	background-color: #2B2B2B;
-	font: bold 14px 'HarmonyOS Sans';
+	font-size: 10pt;;
+	font-weight: bold;
 	color: #8A8A8C;
 }
 
@@ -184,7 +228,8 @@ QPushButton#btnRun
 	border: 1px solid rgba(0,0,0,1);
     border-radius: 4px;
 	background-color: #2B2B2B;
-	font: bold 14px 'HarmonyOS Sans';
+	font-size: 10pt;;
+	font-weight: bold;
 	color: #8A8A8C;
 }
 
@@ -203,7 +248,8 @@ QPushButton#btnKill
 	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 4px;
 	background-color: #2B2B2B;
-	font: bold 14px 'HarmonyOS Sans';
+	font-size: 10pt;;
+	font-weight: bold;
 	color: rgb(145,47,48);
 }
 
@@ -222,11 +268,67 @@ QPushButton#btnAlways
    	border: 0.5px solid rgba(0,0,0,1);
     border-radius: 4px;
 	   background-color: #2B2B2B;
-	   font: bold 14px 'HarmonyOS Sans';
+	   font-size: 10pt;;
+	   font-weight: bold;
 	   color: #8A8A8C;
 }
 
 QPushButton#btnAlways:pressed, QPushButton#btnAlways:checked
 {
     color: rgb(247,74,6);
+}
+
+QPushButton#btnSimpleRender
+{
+    padding-top: 3px;
+    padding-left: 13px;
+    padding-right: 13px;
+   	padding-bottom: 4px;
+   	border: 0.5px solid rgba(0,0,0,1);
+    border-radius: 4px;
+	   background-color: #2B2B2B;
+	   font-size: 10pt;;
+	   font-weight: bold;
+	   color: #8A8A8C;
+}
+
+QPushButton#btnSimpleRender:pressed, QPushButton#btnSimpleRender:checked
+{
+    color: rgb(247,74,6);
+}
+
+QPushButton[cssClass="proppanel"]
+{
+    border-width: 0px;
+    border-radius: 0px;
+	background-color: #5A616D;
+	font-size: 10pt;;
+	font-weight: 500;
+	color: #FFFFFF;
+}
+
+QPushButton[cssClass="proppanel"]:hover
+{
+	color: #FFFFFF;
+}
+
+QPushButton[cssClass="color_button"]
+{
+	padding-top: 2.5px;
+	padding-left: 6px;
+	padding-right: 6px;
+	padding-bottom: 2.5px;
+	border: 0.5px solid rgba(0,0,0,1);
+	border-radius: 2px;
+	background-color: #2B2B2B;
+	font-size: 10pt;;
+	font-weight: 500;
+	color: #8A8A8C;
+}
+
+QPushButton[cssClass="CoreParam"]
+{
+	background-color: #5A616D;
+	color: #FFFFFF;
+	padding:3px 3px;
 }

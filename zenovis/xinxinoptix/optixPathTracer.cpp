@@ -310,6 +310,7 @@ struct InstData
 };
 static std::map<std::string, InstData> g_instLUT;
 std::unordered_map<std::string, std::vector<glm::mat4>> g_instMatsLUT;
+std::unordered_map<std::string, std::vector<float>> g_instScaleLUT;
 struct InstAttr
 {
     std::vector<float3> pos;
@@ -542,6 +543,8 @@ static void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sut
             framebuf_res_y,
             output_buffer.getPBO(),
             fbo);
+    //output_buffer.getBuffer();
+    //output_buffer_o.getHostPointer();
 }
 
 
@@ -928,6 +931,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         if (it != g_instMatsLUT.end())
         {
             const auto &instMats = it->second;
+            const auto &instScales = g_instScaleLUT[instID];
             const auto &instAttrs = g_instAttrsLUT[instID];
             for (std::size_t i = 0; i < instData.meshPieces.size(); ++i)
             {
@@ -935,10 +939,11 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 for (std::size_t k = 0; k < instMats.size(); ++k)
                 {
                     const auto &instMat = instMats[k];
+                    float scale = instScales[k];
                     float instMat4x4[12] = {
-                        instMat[0][0], instMat[1][0], instMat[2][0], instMat[3][0],
-                        instMat[0][1], instMat[1][1], instMat[2][1], instMat[3][1],
-                        instMat[0][2], instMat[1][2], instMat[2][2], instMat[3][2]};
+                        instMat[0][0] * scale, instMat[1][0] * scale, instMat[2][0] * scale, instMat[3][0],
+                        instMat[0][1] * scale, instMat[1][1] * scale, instMat[2][1] * scale, instMat[3][1],
+                        instMat[0][2] * scale, instMat[1][2] * scale, instMat[2][2] * scale, instMat[3][2]};
                     auto& optix_instance = optix_instances[instanceId];
                     optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
                     optix_instance.instanceId = static_cast<unsigned int>(instanceId);
@@ -1402,6 +1407,8 @@ static void createSBT( PathTracerState& state )
 
             HitGroupRecord rec = {};
 
+            rec.data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+
             if (OptixUtil::g_vdb_list_for_each_shader.count(j) == 0) {
                 continue;
             }
@@ -1528,7 +1535,11 @@ static void detectHuangrenxunHappiness() {
 //
 //------------------------------------------------------------------------------
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
+
+#ifdef OPTIX_BASE_GL
 std::optional<sutil::GLDisplay> gl_display_o;
+#endif
+
 sutil::CUDAOutputBufferType output_buffer_type = sutil::CUDAOutputBufferType::GL_INTEROP;
 void optixinit( int argc, char* argv[] )
 {
@@ -1577,6 +1588,9 @@ void optixinit( int argc, char* argv[] )
             printUsageAndExit( argv[0] );
         }
     }
+#ifndef OPTIX_BASE_GL
+    output_buffer_type = sutil::CUDAOutputBufferType::CUDA_DEVICE;
+#endif
 
     detectHuangrenxunHappiness();
         initCameraState();
@@ -1600,9 +1614,11 @@ void optixinit( int argc, char* argv[] )
                     );
             output_buffer_o->setStream( 0 );
         }
+#ifdef OPTIX_BASE_GL
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
         }
+#endif
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
                                        1.0, 0.0, 6500.0);
     xinxinoptix::using_hdr_sky(false);
@@ -2083,13 +2099,14 @@ static void addLightMesh(float3 corner, float3 v2, float3 v1, float3 normal, flo
     g_lightColor.push_back(make_float4(emission.x, emission.y, emission.z, 0.0f));
 }
 static int uniformBufferInitialized = false;
-void optixUpdateUniforms(std::vector<float4> & inConstants) {
+// void optixUpdateUniforms(std::vector<float4> & inConstants) 
+void optixUpdateUniforms(void *inConstants, std::size_t size) {
 
     CUDA_CHECK(cudaMalloc(reinterpret_cast<void**>( &state.d_uniforms.reset() ), sizeof(float4)*512));
 
     CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uniforms), 0, sizeof(float4)*512));
-    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), inConstants.data(),
-                          sizeof(float4)*inConstants.size(), cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(reinterpret_cast<void *>((CUdeviceptr)state.d_uniforms), (float4*)inConstants,
+                          sizeof(float4)*size, cudaMemcpyHostToDevice));
 
     uniformBufferInitialized = true;
 
@@ -2163,14 +2180,14 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
     OptixUtil::rtMaterialShaders.reserve(shaders.size());
 
     for (int i = 0; i < shaders.size(); i++) {
-        auto& shader_string = shaders[i].source_code;
+        auto& shader_string = shaders[i].source;
         if (shader_string.empty()) zeno::log_error("shader {} is empty", i);
         //OptixUtil::rtMaterialShaders.push_back(OptixUtil::rtMatShader(shaders[i].c_str(),"__closesthit__radiance", "__anyhit__shadow_cutout"));
 
         const static std::string default_macro = "#define _SPHERE_ 0";
         const static std::string sphere_macro  = "#define _SPHERE_ 1";
 
-        switch(shaders[i].shader_mark) {
+        switch(shaders[i].mark) {
             case(ShaderMaker::Mesh): {
 
                 auto macro_pos = shader_string.find(sphere_macro);
@@ -2233,7 +2250,7 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
             {
                 std::cout<<"program compile failed, using default"<<std::endl;
                 
-                OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[0].source_code.c_str();
+                OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[0].source.c_str();
                 OptixUtil::rtMaterialShaders[i].m_hittingEntry   = "";
                 OptixUtil::rtMaterialShaders[i].m_shadingEntry   = "__closesthit__radiance";
                 OptixUtil::rtMaterialShaders[i].m_occlusionEntry = "__anyhit__shadow_cutout";
@@ -2380,11 +2397,11 @@ void foreach_sphere_crowded(std::function<void( const std::string &mtlid, std::v
 }
 
 void cleanupSpheres() {
-    sphere_unique_mats.clear();
-    LutSpheresTransformed.clear();
 
     SpheresCrowded = {};
 
+    sphere_unique_mats.clear();
+    LutSpheresTransformed.clear();
     SpheresInstanceGroupMap.clear();
 }
 
@@ -3058,27 +3075,35 @@ void UpdateInst()
     for (auto &[key, instTrs] : instTrsLUT)
     {
         if ( SpheresInstanceGroupMap.count(instTrs.instID) > 0 ) {
+
             auto& sphereInstanceBase = SpheresInstanceGroupMap[instTrs.instID];
 
-            auto sia = std::make_shared<SphereInstanceAgent>(sphereInstanceBase);
-            
-            auto pos_float_count = instTrs.pos.size();
-            sia->radius_list = std::vector<float>(pos_float_count/3, sphereInstanceBase.radius);
+            auto float_count = instTrs.pos.size();
+            auto element_count = float_count/3u;
 
-            sia->center_list.resize(pos_float_count/3);
-            memcpy(sia->center_list.data(), instTrs.pos.data(), sizeof(float) * pos_float_count);
+            auto sia = std::make_shared<SphereInstanceAgent>(sphereInstanceBase);
+
+            sia->radius_list = std::vector<float>(element_count, sphereInstanceBase.radius);
+            for (size_t i=0; i<element_count; ++i) {
+                sia->radius_list[i] *= instTrs.tang[3*i +0];
+            }
+
+            sia->center_list.resize(element_count);
+            memcpy(sia->center_list.data(), instTrs.pos.data(), sizeof(float) * float_count);
 
             sphereInstanceGroupAgentList.push_back(sia);
-
             continue;
         } // only for sphere
 
         const auto& instID = instTrs.instID;
         auto& instMat = g_instMatsLUT[instID];
         auto& instAttr = g_instAttrsLUT[instID];
+        auto& instScale = g_instScaleLUT[instID];
+
 
         const auto& numInstMats = instTrs.pos.size() / 3;
         instMat.resize(numInstMats);
+        instScale.resize(numInstMats);
         instAttr.pos.resize(numInstMats);
         instAttr.nrm.resize(numInstMats);
         instAttr.uv.resize(numInstMats);
@@ -3091,6 +3116,7 @@ void UpdateInst()
 
             zeno::vec3f t0 = {instTrs.nrm[3 * i + 0], instTrs.nrm[3 * i + 1], instTrs.nrm[3 * i + 2]};
             zeno::vec3f t1 = {instTrs.clr[3 * i + 0], instTrs.clr[3 * i + 1], instTrs.clr[3 * i + 2]};
+            float pScale = instTrs.tang[3*i +0];
             t0 = normalizeSafe(t0);
             zeno::vec3f t2;
             zeno::guidedPixarONB(t0, t1, t2);
@@ -3170,6 +3196,7 @@ void UpdateInst()
 
             auto scaleMat = glm::scale(glm::vec3(1, 1, 1));
             instMat[i] = translateMat * rotateMat * scaleMat;
+            instScale[i] = pScale;
             instAttr.pos[i].x = instTrs.pos[3 * i + 0];
             instAttr.pos[i].y = instTrs.pos[3 * i + 1];
             instAttr.pos[i].z = instTrs.pos[3 * i + 2];
@@ -3232,7 +3259,9 @@ void optixrender(int fbo, int samples, bool simpleRender) {
     zeno::log_debug("rendering samples {}", samples);
     state.params.simpleRender = false;//simpleRender;
     if (!output_buffer_o) throw sutil::Exception("no output_buffer_o");
+#ifdef OPTIX_BASE_GL
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
+#endif
     updateState( *output_buffer_o, state.params );
     const int max_samples_once = 16;
 
@@ -3241,9 +3270,9 @@ void optixrender(int fbo, int samples, bool simpleRender) {
         launchSubframe( *output_buffer_o, state );
         state.params.subframe_index++;
     }
-
+#ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
-
+#endif
     auto &ud = zeno::getSession().userData();
     if (ud.has("optix_image_path")) {
         auto path = ud.get2<std::string>("optix_image_path");

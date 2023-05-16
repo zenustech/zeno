@@ -1012,7 +1012,7 @@ namespace DisneyBSDF{
         vec3 pdf = sss_rw_pdf(sigma_t, t, hit, transmittance);
 
         //printf("trans PDf= %f %f %f sigma_t= %f %f %f \n", pdf.x, pdf.y, pdf.z, sigma_t.x, sigma_t.y, sigma_t.z);
-        auto result = (hit? transmittance : (sigma_s * transmittance)) / (dot(pdf, channelPDF) + 1e-8);
+        auto result = hit? transmittance : ((sigma_s * transmittance) / (dot(pdf, channelPDF) + 1e-6));
         return result;
     }
 

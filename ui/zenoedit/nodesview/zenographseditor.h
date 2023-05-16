@@ -17,7 +17,7 @@ namespace Ui
 class ZenoGraphsEditor : public QWidget
 {
     Q_OBJECT
-
+  public:
     enum SideBarItem
     {
         Side_Subnet,
@@ -29,6 +29,8 @@ public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
     void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
+    void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
+    void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
 
 public slots:
 	void resetModel(IGraphsModel* pModel);
@@ -42,6 +44,13 @@ public slots:
     void onSearchOptionClicked();
     void onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx);
     void onLogInserted(const QModelIndex& parent, int first, int last);
+    void onSubnetListPanel(bool bShow, SideBarItem item);
+    void onAction(QAction* pAction, const QVariantList& args = QVariantList(), bool bChecked = false);
+    void onCommandDispatched(QAction* pAction, bool bTriggered);
+    void onTreeItemSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
+
+signals:
+    void zoomed(qreal);
 
 private slots:
 	void onSubGraphsToRemove(const QModelIndex&, int, int);
@@ -50,6 +59,7 @@ private slots:
 	void onSubGraphRename(const QString& oldName, const QString& newName);
     void onSearchEdited(const QString& content);
     void onMenuActionTriggered(QAction* pAction);
+    void onNewSubgraph();
 
 private:
     void initUI();

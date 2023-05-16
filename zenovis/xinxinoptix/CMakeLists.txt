@@ -10,6 +10,10 @@ target_sources(zenovis PRIVATE
   volume/optixVolume.h
   optixSphere.h
   
+
+  ies/ies_loader.cpp
+  ies/ies_loader.h
+
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
   SDK/sutil/Camera.h            SDK/sutil/Scene.cpp

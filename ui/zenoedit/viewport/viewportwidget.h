@@ -3,8 +3,6 @@
 
 #include <QtWidgets>
 #include <QtOpenGL>
-#include "comctrl/zmenubar.h"
-#include "comctrl/zmenu.h"
 #include "common.h"
 #include "recordvideomgr.h"
 
@@ -13,51 +11,10 @@
 
 class ZTimeline;
 class ZenoMainWindow;
-
-class CameraControl : public QWidget
-{
-    Q_OBJECT
-public:
-    CameraControl(QWidget* parent = nullptr);
-    void setRes(QVector2D res);
-    QVector2D res() const { return m_res; }
-    void setAperture(float aperture);
-    void setDisPlane(float disPlane);
-    void updatePerspective();
-    void setKeyFrame();
-
-    void fakeMousePressEvent(QMouseEvent* event);
-    void fakeMouseReleaseEvent(QMouseEvent* event);
-    void fakeMouseMoveEvent(QMouseEvent* event);
-    void fakeWheelEvent(QWheelEvent* event);
-     void fakeMouseDoubleClickEvent(QMouseEvent* event);
-    void focus(QVector3D center, float radius);
-    QVector3D realPos() const;
-    QVector3D screenToWorldRay(float x, float y) const;
-    QVariant hitOnFloor(float x, float y) const;
-    void lookTo(int dir);
-    void clearTransformer();
-    void changeTransformOperation(const QString& node);
-    void changeTransformOperation(int mode);
-    void changeTransformCoordSys();
-    void resizeTransformHandler(int dir);
-
-private:
-    bool m_mmb_pressed;
-    float m_theta;
-    float m_phi;
-    QPointF m_lastPos;
-    QPoint m_boundRectStartPos;
-    QVector3D  m_center;
-    bool m_ortho_mode;
-    float m_fov;
-    float m_radius;
-    float m_aperture;
-    float m_focalPlaneDistance;
-    QVector2D m_res;
-
-    QSet<int> m_pressedKeys;
-};
+class Zenovis;
+class ViewportWidget;
+class Picker;
+class CameraControl;
 
 class ViewportWidget : public QGLWidget
 {
@@ -66,10 +23,17 @@ class ViewportWidget : public QGLWidget
 public:
     ViewportWidget(QWidget* parent = nullptr);
     ~ViewportWidget();
+    void testCleanUp();
     void initializeGL() override;
     void resizeGL(int nx, int ny) override;
     void paintGL() override;
     QVector2D cameraRes() const;
+    Zenovis* getZenoVis() const;
+    std::shared_ptr<zeno::Picker> picker() const;
+    std::shared_ptr<zeno::FakeTransformer> fakeTransformer() const;
+    zenovis::Session* getSession() const;
+    bool isPlaying() const;
+    void startPlay(bool bPlaying);
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
@@ -96,60 +60,19 @@ protected:
     void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
-    std::shared_ptr<CameraControl> m_camera;
+    CameraControl* m_camera;
+    Zenovis* m_zenovis;
     QVector2D record_res;
     QPointF m_lastPos;
     QTimer* m_pauseRenderDally;
     QTimer* m_wheelEventDally;
+    std::shared_ptr<zeno::Picker> m_picker;
+    std::shared_ptr<zeno::FakeTransformer> m_fakeTrans;
 
 public:
     int simpleRenderTime;
     bool updateLightOnce;
     bool m_bMovingCamera;
-};
-
-class CameraKeyframeWidget;
-
-class DisplayWidget : public QWidget
-{
-    Q_OBJECT
-public:
-    DisplayWidget(ZenoMainWindow* parent = nullptr);
-    ~DisplayWidget();
-    void init();
-    QSize sizeHint() const override;
-    TIMELINE_INFO timelineInfo();
-    void resetTimeline(TIMELINE_INFO info);
-    ViewportWidget* getViewportWidget();
-    void runAndRecord(const VideoRecInfo& info);
-    ZTimeline* getTimelinePointer();
-
-public slots:
-    void updateFrame(const QString& action = "");
-    void onRun();
-    void onRecord();
-    void onKill();
-    void onModelDataChanged();
-    void onPlayClicked(bool);
-    void onSliderValueChanged(int);
-    void onFinished();
-    void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
-
-signals:
-    void frameUpdated(int new_frame);
-
-private:
-    bool isOptxRendering() const;
-
-    ViewportWidget* m_view;
-    ZTimeline* m_timeline;
-    ZenoMainWindow* m_mainWin;
-    CameraKeyframeWidget* m_camera_keyframe;
-    QTimer* m_pTimer;
-    RecordVideoMgr m_recordMgr;
-    bool m_bRecordRun;
-    static const int m_updateFeq = 16;
-    static const int m_sliderFeq = 16;
 };
 
 #endif

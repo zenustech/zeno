@@ -37,6 +37,7 @@ enum ErrorCode
     Err_ParamNotFound,
     Err_NoConnection,
     Err_SubgNotExist,
+    Err_NotImpl
 };
 
 
