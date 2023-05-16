@@ -701,6 +701,12 @@ struct SurfacePointsInterpolation : INode {
         auto &ws = prim->attr<vec3f>(weightTag);
         auto &triInds = prim->attr<float>(indexTag); // this in accordance with pnbvhw.cpp : QueryNearestPrimitive
 
+        const int *vlocked = nullptr;
+        if (has_input("vert_exclusion"))
+            if (get_input2<bool>("vert_exclusion"))
+                if (prim->has_attr("v_feature")) // generated during remesh
+                    vlocked = prim->attr<int>("v_feature").data();
+
         const auto refPrim = get_input<PrimitiveObject>("ref_prim");
         auto refAttrTag = get_input2<std::string>("refAttrTag");
 
@@ -710,10 +716,14 @@ struct SurfacePointsInterpolation : INode {
             using T = RM_CVREF_T(srcAttr[0]);
             auto &arr = prim->add_attr<T>(attrTag);
             auto pol = omp_exec();
-            pol(zip(arr, triInds, ws), [&refTris, &srcAttr](T &attr, int refTriNo, const vec3f &w) {
-                auto refTri = refTris[refTriNo];
-                attr = w[0] * srcAttr[refTri[0]] + w[1] * srcAttr[refTri[1]] + w[2] * srcAttr[refTri[2]];
-            });
+            pol(enumerate(arr, triInds, ws),
+                [&refTris, &srcAttr, vlocked](int vi, T &attr, int refTriNo, const vec3f &w) {
+                    if (vlocked)
+                        if (vlocked[vi])
+                            return; // do not overwrite these marked vertices
+                    auto refTri = refTris[refTriNo];
+                    attr = w[0] * srcAttr[refTri[0]] + w[1] * srcAttr[refTri[1]] + w[2] * srcAttr[refTri[2]];
+                });
         };
         if (attrTag == "pos") {
             doWork(refPrim->attr<vec3f>(refAttrTag));
@@ -734,6 +744,7 @@ ZENDEFNODE(SurfacePointsInterpolation, {
                                                {"string", "indexTag"},
                                                {"PrimitiveObject", "ref_prim"},
                                                {"string", "refAttrTag", "pos"},
+                                               {"bool", "vert_exclusion", "false"},
                                            },
                                            {
                                                {"PrimitiveObject", "prim"},
