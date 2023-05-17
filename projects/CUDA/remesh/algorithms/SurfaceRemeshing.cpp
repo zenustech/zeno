@@ -324,7 +324,7 @@ void SurfaceRemeshing::postprocessing() {
 
     // remove properties
     mesh_->prim_->verts.erase_attr("v_feature");
-    mesh_->prim_->verts.erase_attr("v_locked");
+    // mesh_->prim_->verts.erase_attr("v_locked");
     mesh_->prim_->lines.erase_attr("e_locked");
     mesh_->prim_->verts.erase_attr("v_sizing");
 }
