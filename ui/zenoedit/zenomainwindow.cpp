@@ -638,12 +638,6 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        QSettings settings(zsCompanyName, zsEditor);
-        if (settings.value("zencache-enable").toBool() && !QFileInfo(settings.value("zencache-rootdir").toString()).isDir()) {
-            QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
-            return;
-        }
-
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
         m_pTimeline->togglePlayButton(false);
