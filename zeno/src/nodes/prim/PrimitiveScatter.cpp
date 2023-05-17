@@ -1,4 +1,5 @@
 #include <zeno/zeno.h>
+#include <zeno/logger.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
@@ -22,6 +23,10 @@ struct PrimitiveScatter : INode {
         if (type == "tris" && prim->tris.size()) {
             float total = 0;
             std::vector<float> cdf(prim->tris.size());
+            if (prim->tris.size() < 3) {
+                zeno::log_error("[PrimitiveScatter] Prim size is less than 3.");
+                return;
+            }
             for (size_t i = 0; i < prim->tris.size(); i++) {
                 auto const &ind = prim->tris[i];
                 //std::cout << '?' << i << ' ' << ind[0] << std::endl;
