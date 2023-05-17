@@ -305,7 +305,7 @@ struct VisualizeSurfaceBinder : zeno::INode {
         const auto& kb_verts = kboundary->getParticles();
         auto binder_tag = get_param<std::string>("binder_tag");
         auto scale = get_param<float>("scale");
-        auto max_nm_binders = tris.getChannelSize(binder_tag);
+        auto max_nm_binders = tris.getPropertySize(binder_tag);
 
         dtiles_t tverts_buffer{tris.get_allocator(),
             {
@@ -1001,7 +1001,7 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                         if(kverts("k_fail",closest_ktri[i]) > (T)0.5)
                             return;
 
-                auto ori_bary = min_bary;
+                // auto ori_bary = min_bary;
 
                 min_bary[0] = min_bary[0] < 0 ? (T)0 : min_bary[0];
                 min_bary[1] = min_bary[1] < 0 ? (T)0 : min_bary[1];

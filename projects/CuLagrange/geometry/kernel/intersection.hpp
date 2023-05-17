@@ -821,7 +821,7 @@ int do_global_self_intersection_analysis_on_surface_mesh(Pol& pol,
         auto nm_insts = retrieve_triangulate_mesh_intersection_list(pol,
             verts,xtag,tris,verts,xtag,tris,ints_buffer,ints_types,true);
         
-        edge_topo_type dc_edge_topos{tris.get_allocator(),nm_insts * 6};
+        edge_topo_type dc_edge_topos{tris.get_allocator(),(std::size_t)nm_insts * 6};
         table_int_type tab{tris.get_allocator(),tris.size() * 8};
 
         // auto topo_tag = is_volume_surface ? "fp_inds" : "inds";

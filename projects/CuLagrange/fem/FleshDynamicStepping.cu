@@ -267,7 +267,7 @@ struct FleshDynamicStepping : INode {
             dtiles_t& gh_buffer) {
                 using namespace zs;
                 constexpr auto space = execspace_e::cuda;
-                int max_nm_binders = tris.getChannelSize(binderTag);
+                int max_nm_binders = tris.getPropertySize(binderTag);
                 // printf("max_nm_binders = %d\n",max_nm_binders);
 
                 cudaPol(zs::range(tris.size()),
@@ -1164,8 +1164,8 @@ struct FleshDynamicStepping : INode {
         auto gravity = zeno::vec<3,T>(0);
         if(has_input("gravity"))
             gravity = get_input2<zeno::vec<3,T>>("gravity");
-        T armijo = (T)1e-4;
-        T wolfe = (T)0.9;
+        // T armijo = (T)1e-4;
+        // T wolfe = (T)0.9;
         // T cg_res = (T)0.01;
         // T cg_res = (T)0.0001;
         // T cg_res = get_param<float>("cg_res");
@@ -1178,7 +1178,7 @@ struct FleshDynamicStepping : INode {
         // zs::Vector<vec3>(MAX_VERTS)
         // TileVec("pos","tag","deleted","")
 
-        if(eles.getChannelSize("inds") != 4)
+        if(eles.getPropertySize("inds") != 4)
             throw std::runtime_error("the input zsparticles is not a tetrahedra mesh");
         if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
             throw std::runtime_error("the input zsparticles has no surface tris");
@@ -1955,7 +1955,7 @@ struct FleshDynamicStepping : INode {
                 if(eg0 > 0)
                     throw std::runtime_error("invalid searching direction");
                 double armijo_condition;
-                int max_line_search = 5;
+                // int max_line_search = 5;
 
 
                 do {

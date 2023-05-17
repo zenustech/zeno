@@ -292,10 +292,10 @@ namespace zeno {
             }
             /// @brief compute ep neighbors
             {
-                if(!ses.hasProperty("inds") || ses.getChannelSize("inds") != 2)
+                if(!ses.hasProperty("inds") || ses.getPropertySize("inds") != 2)
                     throw std::runtime_error("ses has no valid inds");
 
-                if(!ses.hasProperty("ep_inds") || ses.getChannelSize("ep_inds") != 2)
+                if(!ses.hasProperty("ep_inds") || ses.getPropertySize("ep_inds") != 2)
                     throw std::runtime_error("ses has no valid ep_inds");
                 pol(range(ses.size()),[ptab = proxy<space>(ptab),ses = proxy<space>({},ses,"ses:retrieve_inds_set_ep_inds"),
                     svs = proxy<space>({},svs),spi = proxy<space>(spi)] __device__(int ei) mutable {
@@ -423,14 +423,14 @@ namespace zeno {
             auto& points = (*surf)[ZenoParticles::s_surfVertTag];
             auto& tets = surf->getQuadraturePoints();
 
-            if(!tris.hasProperty("inds") || tris.getChannelSize("inds") != 3){
+            if(!tris.hasProperty("inds") || tris.getPropertySize("inds") != 3){
                 throw std::runtime_error("the tris has no inds channel");
             }
 
-            if(!lines.hasProperty("inds") || lines.getChannelSize("inds") != 2) {
+            if(!lines.hasProperty("inds") || lines.getPropertySize("inds") != 2) {
                 throw std::runtime_error("the line has no inds channel");
             }
-            if(!points.hasProperty("inds") || points.getChannelSize("inds") != 1) {
+            if(!points.hasProperty("inds") || points.getPropertySize("inds") != 1) {
                 throw std::runtime_error("the point has no inds channel");
             }
 
@@ -452,7 +452,7 @@ namespace zeno {
 
             tris.append_channels(cudaExec,{{"ff_inds",3},{"fe_inds",3},{"fp_inds",3}});
             lines.append_channels(cudaExec,{{"fe_inds",2},{"ep_inds",2}});
-            if(tets.getChannelSize("inds") == 4){
+            if(tets.getPropertySize("inds") == 4){
                 tris.append_channels(cudaExec,{{"ft_inds",1}});
                 if(!compute_ft_neigh_topo(cudaExec,verts,tris,tets,"ft_inds",bvh_thickness))
                     throw std::runtime_error("ZSInitTopoConnect::compute_face_tet_neigh_topo fail");
@@ -698,7 +698,7 @@ namespace zeno {
             int ff_pair_count = nm_tris * 3;
             int fe_pair_count = nm_tris * 3;
             int fp_pair_count = nm_tris * 3;
-            int ep_pair_count = nm_lines * 1;
+            // int ep_pair_count = nm_lines * 1;
             int ft_pair_count = nm_tris;
 
             ff_verts.resize(ff_size);
@@ -811,7 +811,7 @@ namespace zeno {
             const auto& points  = (*zsparticles)[ZenoParticles::s_surfVertTag];
             const auto& verts = zsparticles->getParticles();
 
-            if(!tris.hasProperty("fp_inds") || tris.getChannelSize("fp_inds") != 3) {
+            if(!tris.hasProperty("fp_inds") || tris.getPropertySize("fp_inds") != 3) {
                 throw std::runtime_error("call ZSInitSurfaceTopology first before VisualizeSurfaceMesh");
             }
 
@@ -1057,7 +1057,7 @@ namespace zeno {
 
             const auto& verts = zsparticles->getParticles();
             auto cudaExec = cuda_exec();
-            constexpr auto space = zs::execspace_e::cuda;
+            // constexpr auto space = zs::execspace_e::cuda;
 
             if(!tris.hasProperty("nrm"))
                 tris.append_channels(cudaExec,{{"nrm",3}});

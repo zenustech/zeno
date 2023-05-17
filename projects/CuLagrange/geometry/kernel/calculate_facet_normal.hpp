@@ -19,9 +19,9 @@ namespace zeno {
             fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
             return false;
         }
-        if(tris.getChannelSize("inds") != 3){
+        if(tris.getPropertySize("inds") != 3){
             std::cout << "the tris has invalid 'inds' channel size {}\n" << std::endl;
-            fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getChannelSize("inds"));
+            fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getPropertySize("inds"));
             return false;
         }
         if(tris.size() != tri_nrm_buffer.size()) {
@@ -37,7 +37,7 @@ namespace zeno {
             return false;
         }
 
-        if(tri_nrm_buffer.getChannelSize(nrmTag) != 3) {
+        if(tri_nrm_buffer.getPropertySize(nrmTag) != 3) {
             // std::cout << "the tri_nrm_buffer has no " << nrmTag  << " channel" << std::endl;
             fmt::print(fg(fmt::color::red),"the tri_nrm_buffer has invalid {} channel, which should be vec3\n",nrmTag);
             return false;

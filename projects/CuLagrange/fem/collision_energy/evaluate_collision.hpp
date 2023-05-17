@@ -615,10 +615,10 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
 //         auto bvh_thickness = 5 * avgl;
 
 
-//         if(!sttemp.hasProperty("nrm") || sttemp.getChannelSize("nrm") != 3)
+//         if(!sttemp.hasProperty("nrm") || sttemp.getPropertySize("nrm") != 3)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid sttemp's \"nrm\" channel");
 
-//         if(!setemp.hasProperty("nrm") || setemp.getChannelSize("nrm") != 3)
+//         if(!setemp.hasProperty("nrm") || setemp.getPropertySize("nrm") != 3)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid setemp's \"nrm\" channel");
 
 //         if(setemp.size() != lines.size())
@@ -639,22 +639,22 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
 //         if(ee_collision_buffer.size() != lines.size())
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer size");
 
-//         if(!ee_collision_buffer.hasProperty("inds") || ee_collision_buffer.getChannelSize("inds") != 4)
+//         if(!ee_collision_buffer.hasProperty("inds") || ee_collision_buffer.getPropertySize("inds") != 4)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"inds\" channel");
 
-//         if(!ee_collision_buffer.hasProperty("inverted") || ee_collision_buffer.getChannelSize("inverted") != 1)
+//         if(!ee_collision_buffer.hasProperty("inverted") || ee_collision_buffer.getPropertySize("inverted") != 1)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"inverted\" channel");
 
-//         if(!ee_collision_buffer.hasProperty("abary") || ee_collision_buffer.getChannelSize("abary") != 2)
+//         if(!ee_collision_buffer.hasProperty("abary") || ee_collision_buffer.getPropertySize("abary") != 2)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"abary\" channel");
 
-//         if(!ee_collision_buffer.hasProperty("bbary") || ee_collision_buffer.getChannelSize("bbary") != 2)
+//         if(!ee_collision_buffer.hasProperty("bbary") || ee_collision_buffer.getPropertySize("bbary") != 2)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"bbary\" channel");
 
-//         if(!ee_collision_buffer.hasProperty("area") || ee_collision_buffer.getChannelSize("area") != 1)
+//         if(!ee_collision_buffer.hasProperty("area") || ee_collision_buffer.getPropertySize("area") != 1)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"area\" channel");
 
-//         if(!lines.hasProperty("area") || lines.getChannelSize("area") != 1)
+//         if(!lines.hasProperty("area") || lines.getPropertySize("area") != 1)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid lines's \"area\" channel");
 
 //         TILEVEC_OPS::fill<4>(cudaPol,ee_collision_buffer,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
@@ -662,9 +662,9 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
 //         // TILEVEC_OPS::fill(cudaPol,ee_collision_buffer,"abary",(T)0.0);
 //         // TILEVEC_OPS::fill(cudaPol,ee_collision_buffer,"bbary",(T)0.0);
 
-//         if(!verts.hasProperty("active") || verts.getChannelSize("active") != 1)
+//         if(!verts.hasProperty("active") || verts.getPropertySize("active") != 1)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid verts' \"active\" channel");
-//         if(!verts.hasProperty(xtag) || verts.getChannelSize(xtag) != 3)
+//         if(!verts.hasProperty(xtag) || verts.getPropertySize(xtag) != 3)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid verts' \"xtag\" channel");
 
 //         cudaPol(zs::range(lines.size()),[in_collisionEps = in_collisionEps,
@@ -925,7 +925,7 @@ void evaluate_fp_collision_grad_and_hessian(
         TILEVEC_OPS::fill_range(cudaPol,gh_buffer,"H",(T)0.0,start,fp_size);
         TILEVEC_OPS::fill_range(cudaPol,gh_buffer,"grad",(T)0.0,start,fp_size); 
 
-        // std::cout << "inds size compair : " << fp_collision_buffer.getChannelSize("inds") << "\t" << gh_buffer.getChannelSize("inds") << std::endl;
+        // std::cout << "inds size compair : " << fp_collision_buffer.getPropertySize("inds") << "\t" << gh_buffer.getPropertySize("inds") << std::endl;
 
         TILEVEC_OPS::copy(cudaPol,fp_collision_buffer,"inds",gh_buffer,"inds",start); 
 
