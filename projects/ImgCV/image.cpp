@@ -2376,7 +2376,6 @@ ZENDEFNODE(CompNormalMap, {
     { "comp" },
 });
 
-
 struct ImageEditGray : INode {
     void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -2899,7 +2898,98 @@ ZENDEFNODE(ImageDilateByColor, {
     {"deprecated"},
 });
 
-
+struct NormalMapOntoSphere : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto strength = get_input2<float>("strength");
+        auto InvertR = get_input2<bool>("InvertR");
+        auto InvertG = get_input2<bool>("InvertG");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        using normal =  std::tuple<float, float, float>;
+        normal n = {0, 0, 1};
+        float n0 = std::get<0>(n);
+        float n1 = std::get<1>(n);
+        float n2 = std::get<2>(n);
+        std::vector<normal> normalmap;
+        normalmap.resize(image->size());
+        float gx = 0;
+        float gy = 0;
+        float gz = 1;
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                int idx = i * w + j;
+                if (i == 0 || i == h || j == 0 || j == w) {
+                    normalmap[idx] = {0, 0, 1};
+                }
+            }
+        }
+        for (int i = 1; i < h-1; i++) {
+            for (int j = 1; j < w-1; j++) {
+                int idx = i * w + j;
+                gx = (image->verts[idx+1][0] - image->verts[idx-1][0])/2.0f * strength;
+                gy = (image->verts[idx+w][0] - image->verts[idx-w][0])/2.0f * strength;
+                float len = sqrt(gx * gx + gy * gy + gz * gz);
+                gx /= len;
+                gy /= len;
+                gz /= len;
+                // 计算光照值
+                if((!InvertG && !InvertR) || (InvertG && InvertR)){
+                    gx = 0.5f * (gx + 1.0f) ;
+                    gy = 0.5f * (-gy + 1.0f) ;
+                    gz = 0.5f * (gz + 1.0f) ;
+                    normalmap[i * w + j] = {gx,gy,gz};
+                }
+                else if((!InvertG && InvertR) || (InvertG && !InvertR)){
+                    gx = 0.5f * (gx + 1.0f) ;
+                    gy = 0.5f * (gy + 1.0f) ;
+                    gz = 0.5f * (gz + 1.0f) ;
+                    normalmap[i * w + j] = {gx,gy,gz};
+                }
+            }
+        }
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                int idx = i * w + j;
+                if(!InvertG && !InvertR){
+                    image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
+                    image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
+                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                }
+                if(!InvertG && InvertR){
+                    image->verts[i * w + j][0] = std::get<1>(normalmap[i * w + j]);
+                    image->verts[i * w + j][1] = std::get<0>(normalmap[i * w + j]);
+                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                }
+                if(InvertG && !InvertR){
+                    image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
+                    image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
+                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                }
+                if(InvertG && InvertR){
+                    image->verts[i * w + j][0] = std::get<1>(normalmap[i * w + j]);
+                    image->verts[i * w + j][1] = std::get<0>(normalmap[i * w + j]);
+                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                }
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(NormalMapOntoSphere, {
+    {
+        {"image"},
+        {"float", "strength", "25"},
+        {"bool", "InvertR", "0"},
+        {"bool", "InvertG", "0"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "deprecate" },
+});
 }
 }
 
