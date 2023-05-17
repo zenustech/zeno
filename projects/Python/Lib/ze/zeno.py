@@ -143,7 +143,7 @@ class ZenoObject:
     @classmethod
     def _newPrim(cls):
         return cls(cls.__create_key, cls._makePrimitive())
-
+    
     @classmethod
     def _makePrimitive(cls) -> int:
         object_ = ctypes.c_uint64(0)
@@ -715,4 +715,20 @@ def register_object_type(type_alias: str):
             return cls.fromHandle(self._handle)
         setattr(ZenoObject, f'as{type_alias}' , func)
         return cls 
+    return decorator
+
+def register_object_new(type_alias: str):
+    type_alias = type_alias[0].upper() + type_alias[1:]
+    def decorator(make_func: Callable):
+        @classmethod 
+        def cls_make_func(cls, *args, **kwargs):
+            return make_func(*args, **kwargs)
+        setattr(ZenoObject, f'_make{type_alias}', cls_make_func)
+        @classmethod
+        def func(cls, *args, **kwargs):
+            import sys 
+            print(f'zs cls: {cls}', file=sys.stderr)
+            # TODO: fix this 
+            return cls(getattr(cls, '_ZenoObject__create_key'), getattr(cls, f'_make{type_alias}')(*args, **kwargs))
+        setattr(ZenoObject, f'_new{type_alias}', func)
     return decorator
