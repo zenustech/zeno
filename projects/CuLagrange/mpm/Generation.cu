@@ -1444,8 +1444,8 @@ struct MakeZSLevelSet : INode {
             throw std::runtime_error(fmt::format("unknown levelset (grid) category [{}].", cateStr));
 
         zs::match([](const auto &lsPtr) {
-            if constexpr (zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>) {
                 using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
+            if constexpr (zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>) {
                 fmt::print("levelset [{}] of dx [{}, {}], side_length [{}], block_size [{}]\n", spls_t::category,
                            1.f / lsPtr->_i2wSinv(0, 0), lsPtr->_grid.dx, spls_t::side_length, spls_t::block_size);
             } else if constexpr (zs::is_same_v<typename RM_CVREF_T(lsPtr)::element_type,
