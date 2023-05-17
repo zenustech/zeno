@@ -573,13 +573,15 @@ namespace zeno {
             if(!strcmp(id,"CELLS")){
                 printf("reading cells\n");
                 int numberofcells = 0;
-                sscanf(line,"%s %d %d",id,&numberofcells,&simplex_size);
-                simplex_size = simplex_size/numberofcells - 1;
+                int numberofdofs = 0;
+                sscanf(line,"%s %d %d",id,&numberofcells,&numberofdofs);
+                simplex_size = numberofdofs/numberofcells - 1;
                 if(simplex_size == 4)
                     parsing_cells_topology<4>(fp,prim->quads,numberofcells,line_count);
                 else if(simplex_size == 3)
                     parsing_cells_topology<3>(fp,prim->tris,numberofcells,line_count);
                 else {
+                    printf("invalid simplex size = %d %d %d\n",simplex_size,numberofcells,numberofdofs);
                     throw std::runtime_error("INVALID SIMPLEX SIZE");
                 }
                 continue;
