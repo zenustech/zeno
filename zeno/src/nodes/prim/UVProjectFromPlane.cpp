@@ -380,6 +380,7 @@ struct WriteImageFile : INode {
         auto image = get_input<PrimitiveObject>("image");
         auto path = get_input2<std::string>("path");
         auto type = get_input2<std::string>("type");
+        auto boolgamma = get_input2<bool>("gamma");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -403,7 +404,10 @@ struct WriteImageFile : INode {
             alpha = mask->verts.attr<float>("alpha");
         }
         std::vector<char> data(w * h * n);
-        constexpr float gamma = 2.2f;
+        float gamma = 1;
+        if(boolgamma){
+            gamma = 2.2f;
+        }
         for (int i = 0; i < w * h; i++) {
             data[n * i + 0] = (char)(255 * powf(image->verts[i][0], 1.0f / gamma));
             data[n * i + 1] = (char)(255 * powf(image->verts[i][1], 1.0f / gamma));
@@ -481,6 +485,7 @@ ZENDEFNODE(WriteImageFile, {
         {"writepath", "path"},
         {"enum png jpg exr", "type", "png"},
         {"mask"},
+        {"bool", "gamma", "1"},
     },
     {
         {"image"},
