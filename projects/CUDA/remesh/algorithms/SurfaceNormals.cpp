@@ -6,7 +6,7 @@
 namespace zeno {
 namespace pmp {
 
-vec3f SurfaceNormals::compute_face_normal(const SurfaceMesh* mesh, int f) {
+vec3f SurfaceNormals::compute_face_normal(const SurfaceMesh *mesh, int f) {
     int h = mesh->fconn_[f].halfedge_;
     int hend = h;
 
@@ -37,11 +37,11 @@ vec3f SurfaceNormals::compute_face_normal(const SurfaceMesh* mesh, int f) {
     }
 }
 
-vec3f SurfaceNormals::compute_vertex_normal(const SurfaceMesh* mesh, int v) {
+vec3f SurfaceNormals::compute_vertex_normal(const SurfaceMesh *mesh, int v) {
     vec3f nn(0.0f);
 
     if (!mesh->is_isolated(v)) {
-        auto& vpoint = mesh->prim_->attr<vec3f>("pos");
+        auto &vpoint = mesh->prim_->attr<vec3f>("pos");
         const vec3f p0 = vpoint[v];
 
         vec3f n;
@@ -67,10 +67,8 @@ vec3f SurfaceNormals::compute_vertex_normal(const SurfaceMesh* mesh, int v) {
                     angle = acos(cosine);
 
                     // compute triangle or polygon normal
-                    is_triangle = (mesh->next_halfedge(mesh->next_halfedge(
-                                       mesh->next_halfedge(h))) == h);
-                    n = is_triangle ? normalize(cross(p1, p2))
-                                    : compute_face_normal(mesh, mesh->hconn_[h].face_);
+                    is_triangle = (mesh->next_halfedge(mesh->next_halfedge(mesh->next_halfedge(h))) == h);
+                    n = is_triangle ? normalize(cross(p1, p2)) : compute_face_normal(mesh, mesh->hconn_[h].face_);
 
                     n *= angle;
                     nn += n;
@@ -84,17 +82,16 @@ vec3f SurfaceNormals::compute_vertex_normal(const SurfaceMesh* mesh, int v) {
     return nn;
 }
 
-void SurfaceNormals::compute_vertex_normals(SurfaceMesh* mesh) {
-    auto& vnormal = mesh->prim_->verts.attr<vec3f>("v_normal");
-    auto& vdeleted = mesh->prim_->verts.attr<int>("v_deleted");
-    
+void SurfaceNormals::compute_vertex_normals(SurfaceMesh *mesh) {
+    auto &vnormal = mesh->prim_->verts.attr<vec3f>("v_normal");
+    auto &vdeleted = mesh->prim_->verts.attr<int>("v_deleted");
+
     for (int v = 0; v < mesh->vertices_size_; ++v) {
         if (mesh->has_garbage_ && vdeleted[v])
             continue;
         vnormal[v] = compute_vertex_normal(mesh, v);
     }
 }
-
 
 } // namespace pmp
 } // namespace zeno

@@ -13,6 +13,7 @@ namespace zeno {
 namespace pmp {
 
 #define PMP_MAX_INDEX INT_LEAST32_MAX
+#define PMP_ENABLE_PROFILE 0
 
 class SurfaceMesh {
 

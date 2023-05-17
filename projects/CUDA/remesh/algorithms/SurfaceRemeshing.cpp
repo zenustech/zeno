@@ -3,29 +3,29 @@
 
 #include "./SurfaceRemeshing.h"
 #include <Eigen/LU>
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <set>
-#include <algorithm>
 
-#include "./TriangleKdTree.h"
 #include "./SurfaceCurvature.h"
 #include "./SurfaceNormals.h"
+#include "./TriangleKdTree.h"
+
+#include "zensim/profile/CppTimers.hpp"
+#include "zensim/zpc_tpls/fmt/core.h"
 
 namespace zeno {
 namespace pmp {
 
-const vec3f barycentric_coordinates(const vec3f& p, const vec3f& u,
-                                    const vec3f& v, const vec3f& w) {
+const vec3f barycentric_coordinates(const vec3f &p, const vec3f &u, const vec3f &v, const vec3f &w) {
     vec3f result(1.0 / 3.0); // default: barycenter
 
     vec3f vu = v - u, wu = w - u, pu = p - u;
 
     // find largest absolute coodinate of normal
-    float nx = vu[1] * wu[2] - vu[2] * wu[1],
-           ny = vu[2] * wu[0] - vu[0] * wu[2],
-           nz = vu[0] * wu[1] - vu[1] * wu[0], ax = fabs(nx), ay = fabs(ny),
-           az = fabs(nz);
+    float nx = vu[1] * wu[2] - vu[2] * wu[1], ny = vu[2] * wu[0] - vu[0] * wu[2], nz = vu[0] * wu[1] - vu[1] * wu[0],
+          ax = fabs(nx), ay = fabs(ny), az = fabs(nz);
 
     unsigned char maxCoord;
 
@@ -45,39 +45,38 @@ const vec3f barycentric_coordinates(const vec3f& p, const vec3f& u,
 
     // solve 2D problem
     switch (maxCoord) {
-        case 0: {
-            if (1.0 + ax != 1.0) {
-                result[1] = 1.0 + (pu[1] * wu[2] - pu[2] * wu[1]) / nx - 1.0;
-                result[2] = 1.0 + (vu[1] * pu[2] - vu[2] * pu[1]) / nx - 1.0;
-                result[0] = 1.0 - result[1] - result[2];
-            }
-            break;
+    case 0: {
+        if (1.0 + ax != 1.0) {
+            result[1] = 1.0 + (pu[1] * wu[2] - pu[2] * wu[1]) / nx - 1.0;
+            result[2] = 1.0 + (vu[1] * pu[2] - vu[2] * pu[1]) / nx - 1.0;
+            result[0] = 1.0 - result[1] - result[2];
         }
+        break;
+    }
 
-        case 1: {
-            if (1.0 + ay != 1.0) {
-                result[1] = 1.0 + (pu[2] * wu[0] - pu[0] * wu[2]) / ny - 1.0;
-                result[2] = 1.0 + (vu[2] * pu[0] - vu[0] * pu[2]) / ny - 1.0;
-                result[0] = 1.0 - result[1] - result[2];
-            }
-            break;
+    case 1: {
+        if (1.0 + ay != 1.0) {
+            result[1] = 1.0 + (pu[2] * wu[0] - pu[0] * wu[2]) / ny - 1.0;
+            result[2] = 1.0 + (vu[2] * pu[0] - vu[0] * pu[2]) / ny - 1.0;
+            result[0] = 1.0 - result[1] - result[2];
         }
+        break;
+    }
 
-        case 2: {
-            if (1.0 + az != 1.0) {
-                result[1] = 1.0 + (pu[0] * wu[1] - pu[1] * wu[0]) / nz - 1.0;
-                result[2] = 1.0 + (vu[0] * pu[1] - vu[1] * pu[0]) / nz - 1.0;
-                result[0] = 1.0 - result[1] - result[2];
-            }
-            break;
+    case 2: {
+        if (1.0 + az != 1.0) {
+            result[1] = 1.0 + (pu[0] * wu[1] - pu[1] * wu[0]) / nz - 1.0;
+            result[2] = 1.0 + (vu[0] * pu[1] - vu[1] * pu[0]) / nz - 1.0;
+            result[0] = 1.0 - result[1] - result[2];
         }
+        break;
+    }
     }
 
     return result;
 }
 
-SurfaceRemeshing::SurfaceRemeshing(SurfaceMesh* mesh,
-                                   std::string line_pick_tag)
+SurfaceRemeshing::SurfaceRemeshing(SurfaceMesh *mesh, std::string line_pick_tag)
     : mesh_(mesh), line_pick_tag_(line_pick_tag), refmesh_(nullptr), kd_tree_(nullptr) {
 
     auto vnormal = mesh_->prim_->verts.add_attr<vec3f>("v_normal");
@@ -87,9 +86,7 @@ SurfaceRemeshing::SurfaceRemeshing(SurfaceMesh* mesh,
 
 SurfaceRemeshing::~SurfaceRemeshing() = default;
 
-void SurfaceRemeshing::uniform_remeshing(float edge_length,
-                                         unsigned int iterations,
-                                         bool use_projection) {
+void SurfaceRemeshing::uniform_remeshing(float edge_length, unsigned int iterations, bool use_projection) {
     if (mesh_->prim_->quads.size() > 0 || mesh_->prim_->polys.size() > 0) {
         zeno::log_error("Not a triangle mesh!");
         return;
@@ -114,14 +111,10 @@ void SurfaceRemeshing::uniform_remeshing(float edge_length,
 
     remove_caps();
     postprocessing();
-
 }
 
-void SurfaceRemeshing::adaptive_remeshing(float min_edge_length,
-                                          float max_edge_length,
-                                          float approx_error,
-                                          unsigned int iterations,
-                                          bool use_projection) {
+void SurfaceRemeshing::adaptive_remeshing(float min_edge_length, float max_edge_length, float approx_error,
+                                          unsigned int iterations, bool use_projection) {
     if (mesh_->prim_->quads.size() > 0 || mesh_->prim_->polys.size() > 0) {
         zeno::log_error("Not a triangle mesh!");
         return;
@@ -133,26 +126,85 @@ void SurfaceRemeshing::adaptive_remeshing(float min_edge_length,
     approx_error_ = approx_error;
     use_projection_ = use_projection;
 
+    zs::CppTimer timer;
+
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
     preprocessing();
+#if PMP_ENABLE_PROFILE
+    timer.tock("preprocessing");
+#endif
 
     for (unsigned int i = 0; i < iterations; ++i) {
         if (split_long_edges() == PMP_MAX_INDEX) {
             return;
         }
+#if PMP_ENABLE_PROFILE
+        fmt::print("start iteration [{}]\n", i);
+#endif
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
         SurfaceNormals::compute_vertex_normals(mesh_);
+#if PMP_ENABLE_PROFILE
+        timer.tock("compute_vertex_normals");
+#endif
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
         collapse_short_edges();
+#if PMP_ENABLE_PROFILE
+        timer.tock("collapse_short_edges");
+#endif
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
         flip_edges();
+#if PMP_ENABLE_PROFILE
+        timer.tock("flip_edges");
+#endif
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
         tangential_smoothing(5);
+#if PMP_ENABLE_PROFILE
+        timer.tock("tangential_smoothing");
+#endif
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
         check_triangles();
+#if PMP_ENABLE_PROFILE
+        timer.tock("check_triangles");
+#endif
     }
-    
+
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
     remove_caps();
+#if PMP_ENABLE_PROFILE
+    timer.tock("remove_caps");
+#endif
+
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
     postprocessing();
+#if PMP_ENABLE_PROFILE
+    timer.tock("postprocessing");
+#endif
 }
 
 void SurfaceRemeshing::check_triangles() {
-    auto& points = mesh_->prim_->attr<vec3f>("pos");
-    auto& fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
+    auto &points = mesh_->prim_->attr<vec3f>("pos");
+    auto &fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
 
     for (int t = 0; t < mesh_->faces_size_; ++t) {
         if (mesh_->has_garbage_ && fdeleted[t])
@@ -167,13 +219,13 @@ void SurfaceRemeshing::check_triangles() {
 
 void SurfaceRemeshing::preprocessing() {
     // properties
-    auto& vfeature = mesh_->prim_->verts.add_attr<int>("v_feature", 0);
-    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
-    auto& vsizing = mesh_->prim_->verts.add_attr<float>("v_sizing");
-    auto& vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
-    auto& elocked = mesh_->prim_->lines.add_attr<int>("e_locked", 0);
-    auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &vfeature = mesh_->prim_->verts.add_attr<int>("v_feature", 0);
+    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto &vsizing = mesh_->prim_->verts.add_attr<float>("v_sizing");
+    auto &vlocked = mesh_->prim_->verts.add_attr<int>("v_locked", 0);
+    auto &elocked = mesh_->prim_->lines.add_attr<int>("e_locked", 0);
+    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
 
     // feature vertices
     for (int e = 0; e < mesh_->lines_size_; ++e) {
@@ -184,6 +236,12 @@ void SurfaceRemeshing::preprocessing() {
             vfeature[mesh_->prim_->lines[e][1]] = 1;
         }
     }
+
+    zs::CppTimer timer;
+
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
 
     // lock feature corners
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -206,6 +264,10 @@ void SurfaceRemeshing::preprocessing() {
         }
     }
 
+#if PMP_ENABLE_PROFILE
+    timer.tock("lock feature corners");
+#endif
+
     // compute sizing field
     if (uniform_) {
         for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -214,6 +276,11 @@ void SurfaceRemeshing::preprocessing() {
             vsizing[v] = target_edge_length_;
         }
     } else {
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
+
         // compute curvature for all mesh vertices, using cotan or Cohen-Steiner
         // don't use two-ring neighborhood, since we otherwise compute
         // curvature over sharp features edges, leading to high curvatures.
@@ -222,6 +289,13 @@ void SurfaceRemeshing::preprocessing() {
         SurfaceCurvature curv(mesh_);
         curv.analyze_tensor(1);
 
+#if PMP_ENABLE_PROFILE
+        timer.tock("analyze_tensor");
+#endif
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
         // use vsizing_ to store/smooth curvatures to avoid another vertex property
 
         // curvature values for feature vertices and boundary vertices
@@ -234,6 +308,14 @@ void SurfaceRemeshing::preprocessing() {
             else
                 vsizing[v] = curv.max_abs_curvature(v);
         }
+
+#if PMP_ENABLE_PROFILE
+        timer.tock("compute curvature values");
+#endif
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
 
         // curvature values might be noisy. smooth them.
         // don't consider feature vertices' curvatures.
@@ -261,6 +343,14 @@ void SurfaceRemeshing::preprocessing() {
                 vsizing[v] = cc;
             }
         }
+
+#if PMP_ENABLE_PROFILE
+        timer.tock("smooth curvature values");
+#endif
+
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
 
         // now convert per-vertex curvature into target edge length
         for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -290,7 +380,9 @@ void SurfaceRemeshing::preprocessing() {
             // store target edge length
             vsizing[v] = h;
         }
-    
+#if PMP_ENABLE_PROFILE
+        timer.tock("convert per-vertex curvature into target edge length");
+#endif
     }
 
     if (use_projection_) {
@@ -300,7 +392,7 @@ void SurfaceRemeshing::preprocessing() {
 
         refpoints_ = refmesh_->prim_->attr<vec3f>("pos");
         refnormals_ = refmesh_->prim_->verts.add_attr<vec3f>("v_normal");
-        auto& refvdeleted = refmesh_->prim_->verts.attr<int>("v_deleted");
+        auto &refvdeleted = refmesh_->prim_->verts.attr<int>("v_deleted");
 
         // copy sizing field from prim_
         refsizing_ = refmesh_->prim_->verts.add_attr<float>("v_sizing");
@@ -310,8 +402,14 @@ void SurfaceRemeshing::preprocessing() {
             refsizing_[v] = vsizing[v];
         }
 
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
         // build kd-tree
         kd_tree_ = new TriangleKdTree(refmesh_, 0);
+#if PMP_ENABLE_PROFILE
+        timer.tock("build kd-tree");
+#endif
     }
 }
 
@@ -334,9 +432,9 @@ void SurfaceRemeshing::project_to_reference(int v) {
         return;
     }
 
-    auto& points = mesh_->prim_->attr<vec3f>("pos");
-    auto& vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
-    auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto &points = mesh_->prim_->attr<vec3f>("pos");
+    auto &vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
+    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
 
     // find closest triangle of reference mesh
     TriangleKdTree::NearestNeighbor nn = kd_tree_->nearest(points[v]);
@@ -388,16 +486,16 @@ int SurfaceRemeshing::split_long_edges() {
     bool ok, is_feature, is_boundary;
     int i;
 
-    auto& points = mesh_->prim_->attr<vec3f>("pos");
-    auto& vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
-    auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
-    auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
-    auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->lines.attr<int>("e_locked");
-    auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
-    auto& vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
+    auto &points = mesh_->prim_->attr<vec3f>("pos");
+    auto &vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
+    auto &vfeature = mesh_->prim_->verts.attr<int>("v_feature");
+    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
+    auto &elocked = mesh_->prim_->lines.attr<int>("e_locked");
+    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto &vduplicate = mesh_->prim_->verts.attr<int>("v_duplicate");
 
     for (ok = false, i = 0; !ok && i < 10; ++i) {
         ok = true;
@@ -409,8 +507,8 @@ int SurfaceRemeshing::split_long_edges() {
             v1 = mesh_->prim_->lines[e][1];
 
             if (!elocked[e] && is_too_long(v0, v1)) {
-                const vec3f& p0 = points[v0];
-                const vec3f& p1 = points[v1];
+                const vec3f &p0 = points[v0];
+                const vec3f &p1 = points[v1];
 
                 is_feature = efeature[e];
                 is_boundary = mesh_->is_boundary_e(e);
@@ -425,7 +523,7 @@ int SurfaceRemeshing::split_long_edges() {
                     return PMP_MAX_INDEX;
                 }
                 for (int ii = 1; ii <= new_lines; ++ii) {
-                    mesh_->prim_->lines.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                    mesh_->prim_->lines.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
                         using T = std::decay_t<decltype(arr[0])>;
                         if constexpr (std::is_same_v<T, zeno::vec3f>) {
                             arr.push_back(zeno::vec3f(0, 0, 0));
@@ -447,7 +545,7 @@ int SurfaceRemeshing::split_long_edges() {
                     });
                 }
                 for (int ii = 1; ii <= new_faces; ++ii) {
-                    mesh_->prim_->tris.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                    mesh_->prim_->tris.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
                         using T = std::decay_t<decltype(arr[0])>;
                         if constexpr (std::is_same_v<T, zeno::vec3f>) {
                             arr.push_back(zeno::vec3f(0, 0, 0));
@@ -470,7 +568,7 @@ int SurfaceRemeshing::split_long_edges() {
                 }
 
                 // need normal or sizing for adaptive refinement
-                mesh_->prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&] (auto const &key, auto &arr) {
+                mesh_->prim_->verts.foreach_attr<zeno::AttrAcceptAll>([&](auto const &key, auto &arr) {
                     using T = std::decay_t<decltype(arr[0])>;
                     if constexpr (std::is_same_v<T, zeno::vec3f>) {
                         if (key == "v_normal") {
@@ -525,11 +623,11 @@ void SurfaceRemeshing::collapse_short_edges() {
     int i;
     bool hcol01, hcol10;
 
-    auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
-    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
-    auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->lines.attr<int>("e_locked");
+    auto &vfeature = mesh_->prim_->verts.attr<int>("v_feature");
+    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
+    auto &elocked = mesh_->prim_->lines.attr<int>("e_locked");
 
     for (ok = false, i = 0; !ok && i < 10; ++i) {
         ok = true;
@@ -538,8 +636,8 @@ void SurfaceRemeshing::collapse_short_edges() {
             if (mesh_->has_garbage_ && edeleted[e])
                 continue;
             if (!edeleted[e] && !elocked[e]) {
-                h10 = e<<1;
-                h01 = e<<1|1;
+                h10 = e << 1;
+                h01 = e << 1 | 1;
                 v0 = mesh_->to_vertex(h10);
                 v1 = mesh_->to_vertex(h01);
 
@@ -557,8 +655,7 @@ void SurfaceRemeshing::collapse_short_edges() {
                     if (b0 && b1) {
                         if (!mesh_->is_boundary_e(e))
                             continue;
-                    }
-                    else if (b0)
+                    } else if (b0)
                         hcol01 = false;
                     else if (b1)
                         hcol10 = false;
@@ -587,8 +684,7 @@ void SurfaceRemeshing::collapse_short_edges() {
                         h1 = mesh_->next_halfedge(h01);
                         if (efeature[h0 >> 1] || efeature[h1 >> 1])
                             hcol10 = false;
-                    }
-                    else if (f0)
+                    } else if (f0)
                         hcol01 = false;
                     else if (f1)
                         hcol10 = false;
@@ -656,11 +752,11 @@ void SurfaceRemeshing::flip_edges() {
     bool ok;
     int i;
 
-    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
-    auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
-    auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& elocked = mesh_->prim_->lines.attr<int>("e_locked");
+    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
+    auto &elocked = mesh_->prim_->lines.attr<int>("e_locked");
     // precompute valences
     auto valence = mesh_->prim_->verts.add_attr<int>("valence");
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -676,15 +772,14 @@ void SurfaceRemeshing::flip_edges() {
             if (mesh_->has_garbage_ && edeleted[e])
                 continue;
             if (!elocked[e] && !efeature[e]) {
-                h = e<<1;
+                h = e << 1;
                 v0 = mesh_->to_vertex(h);
                 v2 = mesh_->to_vertex(mesh_->next_halfedge(h));
-                h = e<<1|1;
+                h = e << 1 | 1;
                 v1 = mesh_->to_vertex(h);
                 v3 = mesh_->to_vertex(mesh_->next_halfedge(h));
 
-                if (!vlocked[v0] && !vlocked[v1] && !vlocked[v2] &&
-                    !vlocked[v3]) {
+                if (!vlocked[v0] && !vlocked[v1] && !vlocked[v2] && !vlocked[v3]) {
                     val0 = valence[v0];
                     val1 = valence[v1];
                     val2 = valence[v2];
@@ -745,13 +840,13 @@ void SurfaceRemeshing::tangential_smoothing(unsigned int iterations) {
     float w, ww;
     vec3f u, n, t, b;
 
-    auto& points = mesh_->prim_->attr<vec3f>("pos");
-    auto& vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
-    auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
-    auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto& vlocked = mesh_->prim_->verts.attr<int>("v_locked");
-    auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto &points = mesh_->prim_->attr<vec3f>("pos");
+    auto &vnormal = mesh_->prim_->verts.attr<vec3f>("v_normal");
+    auto &vfeature = mesh_->prim_->verts.attr<int>("v_feature");
+    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto &vlocked = mesh_->prim_->verts.attr<int>("v_locked");
+    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
     // add property
     auto update = mesh_->prim_->verts.add_attr<vec3f>("update", vec3f(0.0f));
 
@@ -785,16 +880,14 @@ void SurfaceRemeshing::tangential_smoothing(unsigned int iterations) {
                             b += points[vv];
                             b *= 0.5;
 
-                            w = distance(points[v], points[vv]) /
-                                (0.5 * (vsizing[v] + vsizing[vv]));
+                            w = distance(points[v], points[vv]) / (0.5 * (vsizing[v] + vsizing[vv]));
                             ww += w;
                             u += w * b;
 
                             if (c == 0) {
                                 t += normalize(points[vv] - points[v]);
                                 ++c;
-                            }
-                            else {
+                            } else {
                                 ++c;
                                 t -= normalize(points[vv] - points[v]);
                             }
@@ -835,7 +928,7 @@ void SurfaceRemeshing::tangential_smoothing(unsigned int iterations) {
         for (int v = 0; v < mesh_->vertices_size_; ++v) {
             if (mesh_->has_garbage_ && vdeleted[v])
                 continue;
-            if (!mesh_->is_boundary_v(v) && !vlocked[v]){
+            if (!mesh_->is_boundary_v(v) && !vlocked[v]) {
                 points[v] += update[v];
             }
         }
@@ -865,11 +958,11 @@ void SurfaceRemeshing::remove_caps() {
     float a0, a1, amin, aa(::cos(170.0 * M_PI / 180.0));
     vec3f a, b, c, d;
 
-    auto& points = mesh_->prim_->attr<vec3f>("pos");
-    auto& vfeature = mesh_->prim_->verts.attr<int>("v_feature");
-    auto& efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
-    auto& elocked = mesh_->prim_->lines.attr<int>("e_locked");
-    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &points = mesh_->prim_->attr<vec3f>("pos");
+    auto &vfeature = mesh_->prim_->verts.attr<int>("v_feature");
+    auto &efeature = mesh_->prim_->lines.attr<int>(line_pick_tag_);
+    auto &elocked = mesh_->prim_->lines.attr<int>("e_locked");
+    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
 
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
@@ -916,7 +1009,7 @@ void SurfaceRemeshing::remove_caps() {
     }
 }
 
-vec3f SurfaceRemeshing::minimize_squared_areas(int v, bool& inversable) {
+vec3f SurfaceRemeshing::minimize_squared_areas(int v, bool &inversable) {
 
     Eigen::Matrix3f A;
     Eigen::Vector3f b, x;
@@ -924,8 +1017,7 @@ vec3f SurfaceRemeshing::minimize_squared_areas(int v, bool& inversable) {
     b.setZero();
     x.setZero();
 
-    auto& points = mesh_->prim_->attr<vec3f>("pos");
-
+    auto &points = mesh_->prim_->attr<vec3f>("pos");
 
     for (int h : mesh_->halfedges(v)) {
         assert(!mesh_->is_boundary(h));
@@ -969,8 +1061,8 @@ vec3f SurfaceRemeshing::weighted_centroid(int v) {
     vec3f p(0.0f);
     double ww = 0;
 
-    auto& points = mesh_->prim_->attr<vec3f>("pos");
-    auto& vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
+    auto &points = mesh_->prim_->attr<vec3f>("pos");
+    auto &vsizing = mesh_->prim_->verts.attr<float>("v_sizing");
 
     for (int h : mesh_->halfedges(v)) {
         int v1 = v;
@@ -982,16 +1074,14 @@ vec3f SurfaceRemeshing::weighted_centroid(int v) {
         b += points[v3];
         b *= (1.0 / 3.0);
 
-        double area =
-            length(cross(points[v2] - points[v1], points[v3] - points[v1]));
+        double area = length(cross(points[v2] - points[v1], points[v3] - points[v1]));
 
         // take care of degenerate faces to avoid all zero weights and division
         // by zero later on
         if (area == 0)
             area = 1.0;
 
-        double w =
-            area / pow((vsizing[v1] + vsizing[v2] + vsizing[v3]) / 3.0, 2.0);
+        double w = area / pow((vsizing[v1] + vsizing[v2] + vsizing[v3]) / 3.0, 2.0);
 
         p += w * b;
         ww += w;
