@@ -10,7 +10,34 @@ def init_zpc():
     define = zeno.init_zeno_lib.define
     define(ctypes.c_uint32, 'ZS_GetObjectZsVecData', ctypes.c_uint64, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(
         ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_size_t), ctypes.POINTER(ctypes.c_int))
+    for dtype in ['double', 'float', 'int']:
+        define(ctypes.c_uint32, f'ZS_CreateObjectZsSmallVec_{dtype}_scalar', ctypes.POINTER(ctypes.c_uint64))
+        for dim_x in range(1, 5):
+            define(ctypes.c_uint32, f'ZS_CreateObjectZsSmallVec_{dtype}_{dim_x}', ctypes.POINTER(ctypes.c_uint64))
+            for dim_y in range(1, 5):
+                define(ctypes.c_uint32, f'ZS_CreateObjectZsSmallVec_{dtype}_{dim_x}x{dim_y}', ctypes.POINTER(ctypes.c_uint64))
 
+ctypes2str = {
+    ctypes.c_int: 'int', 
+    ctypes.c_float: 'float', 
+    ctypes.c_double: 'double'
+}
+
+@register_object_new("zsVec")
+def makeZsVec(dtype, shape = None):
+    dtype_str = ctypes2str[dtype]
+    shape_str = None
+    if shape is None: 
+        shape_str = 'scalar' 
+    elif isinstance(shape, int):
+        shape_str = f'{shape}'
+    elif len(shape) == 1:
+        shape_str = f'{shape[0]}'
+    elif len(shape) == 2:
+        shape_str = f'{shape[0]}x{shape[1]}'
+    object_ = ctypes.c_uint64(0)
+    getattr(api, f'ZS_CreateObjectZsSmallVec_{dtype_str}_{shape_str}')(ctypes.pointer(object_))
+    return object_.value
 
 @register_object_type("zsVec")
 class ZsSmallVec(ZenoObject):
@@ -41,6 +68,10 @@ class ZsSmallVec(ZenoObject):
             raise Exception(f"unsupported dim {dims_ret_.value}")
         self._size = reduce(lambda a, b: a * b, self.shape)
 
+    @classmethod
+    def new(cls, *args, **kwargs):
+        return cls._newZsVec(*args, **kwargs).asZsVec()
+
     def __repr__(self) -> str:
         return '[zs small vec at {}, with size {} and type {}]'.format(self._handle, self.size, self.type)
 
@@ -52,6 +83,7 @@ class ZsSmallVec(ZenoObject):
             import numpy as np
         sizeinbytes = self.size * ctypes.sizeof(self._type)
         _dtypeLut = {
+            ctypes.c_double: np.float64, 
             ctypes.c_float: np.float32,
             ctypes.c_int: np.int32,
         }

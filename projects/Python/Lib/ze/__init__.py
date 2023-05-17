@@ -2,7 +2,7 @@
 Zeno Python API module
 '''
 
-
+from ctypes import c_int, c_float, c_double 
 from .zeno import *
 from .zpc import *
 
@@ -11,6 +11,9 @@ def initDLLPath(path: str):
     init_zeno_lib(path)
     init_zpc()
 
+int = c_int 
+float = c_float 
+double = c_double 
 
 __all__ = [
     'ZenoGraph',
@@ -25,5 +28,8 @@ __all__ = [
     'no',
     'args',
     'rets',
-    "initDLLPath"
+    'initDLLPath', 
+    'int', 
+    'float', 
+    'double'
 ]
