@@ -181,50 +181,116 @@ ZENDEFNODE(ImageResize, {
     {"comp"},
 });
 
+void rotateimage(std::shared_ptr<PrimitiveObject> src, std::shared_ptr<PrimitiveObject> & dst, float angle,bool balpha) {
+    // 计算旋转角度的弧度值
+    double radians = angle * 3.14159 / 180.0;
+    int width = src->userData().get2<int>("w");
+    int height = src->userData().get2<int>("h");
+
+    // 计算旋转中心点
+    int centerX = width / 2;
+    int centerY = height / 2;
+
+    // 计算旋转后的图像宽度和高度
+    int rotatedWidth = static_cast<int>(std::abs(width * cos(radians)) + std::abs(height * sin(radians)));
+    int rotatedHeight = static_cast<int>(std::abs(height * cos(radians)) + std::abs(width * sin(radians)));
+
+    dst->verts.resize(rotatedWidth * rotatedHeight);
+    dst->userData().set2("w", rotatedWidth);
+    dst->userData().set2("h", rotatedHeight);
+    if(src->verts.has_attr("alpha")){
+        dst->verts.add_attr<float>("alpha");
+        if(balpha){
+            for(int i = 0;i<dst->size();i++){
+                dst->verts.attr<float>("alpha")[i] = 0;
+            }
+        }
+        else{
+            for(int i = 0;i<dst->size();i++){
+                dst->verts.attr<float>("alpha")[i] = 1;
+            }
+        }
+        for (int y = 0; y < rotatedHeight; ++y) {
+            for (int x = 0; x < rotatedWidth; ++x) {
+                // 计算旋转前的坐标
+                int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
+                int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
+                // 检查坐标是否在旋转图像范围内
+                if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
+                    // 获取旋转前的像素值
+                    dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
+                    dst->verts.attr<float>("alpha")[y * rotatedWidth + x] = src->verts.attr<float>("alpha")[srcY * width + srcX];
+                }
+            }
+        }
+    }
+    else{
+        dst->verts.add_attr<float>("alpha");
+        if(balpha){
+            for(int i = 0;i<dst->size();i++){
+                dst->verts.attr<float>("alpha")[i] = 0;
+            }
+        }
+        else{
+            for(int i = 0;i<dst->size();i++){
+                dst->verts.attr<float>("alpha")[i] = 1;
+            }
+        }
+        for (int y = 0; y < rotatedHeight; ++y) {
+            for (int x = 0; x < rotatedWidth; ++x) {
+                // 计算旋转前的坐标
+                int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
+                int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
+                // 检查坐标是否在旋转图像范围内
+                if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
+                    // 获取旋转前的像素值
+                    dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
+                    dst->verts.attr<float>("alpha")[y * rotatedWidth + x] = 1;
+                }
+            }
+        }
+    }
+    // 遍历旋转后的图像像素
+    for (int y = 0; y < rotatedHeight; ++y) {
+        for (int x = 0; x < rotatedWidth; ++x) {
+            // 计算旋转前的坐标
+            int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
+            int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
+
+            // 检查坐标是否在旋转图像范围内
+            if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
+                // 获取旋转前的像素值
+                dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
+            }
+        }
+    }
+}
 struct ImageRotate: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        int width = get_input2<int>("width");
-        int height = get_input2<int>("height");
+        auto balpha = get_input2<bool>("alpha");
+        float rotate = get_input2<float>("rotate");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
         auto image2 = std::make_shared<PrimitiveObject>();
-        image2->verts.resize(width * height);
+        image2->verts.resize(w * h);
         image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", width);
-        image2->userData().set2("h", height);
-        if(image->has_attr("alpha")){
-            image2->verts.add_attr<float>("alpha");
-        }
-        // 计算尺寸比例
-        float scaleX = static_cast<float>(w) / width;
-        float scaleY = static_cast<float>(h) / height;
-        // 改变图像大小
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
-                int srcX = static_cast<int>(x * scaleX);
-                int srcY = static_cast<int>(y * scaleY);
-                image2->verts[y * width + x] = image->verts[srcY * w + srcX];
-                image2->verts.attr<float>("alpha")[y * width + x] = image->verts.attr<float>("alpha")[srcY * w + srcX];
-            }
-        }
+        rotateimage(image,image2,rotate,balpha);
         set_output("image", image2);
     }
 };
 ZENDEFNODE(ImageRotate, {
     {
         {"image"},
-        {"int", "width", "1024"},
-        {"int", "height", "1024"},
+        {"float", "rotate", "0.0"},
+        {"bool", "alpha", "0"},
     },
     {
         {"image"},
     },
     {},
-    {"deprecate"},
+    {"comp"},
 });
 
 struct Composite: INode {
@@ -1048,6 +1114,7 @@ ZENDEFNODE(ImageEditHSV, {
 struct ImageEdit: INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
+        auto size = get_input2<vec2f>("Size");
         auto RGBA = get_input2<std::string>("RGBA");
         auto Gray = get_input2<bool>("Gray");
         auto Invert = get_input2<bool>("Invert");
@@ -1340,6 +1407,7 @@ struct ImageEdit: INode {
 ZENDEFNODE(ImageEdit, {
     {
         {"image"},
+        {"vec2f", "Size", "1,1"},
         {"enum RGBA RGB RA GA BA R G B A", "RGBA", "RGB"},
         {"vec3f", "RGBLevel", "1,1,1"},
         {"float", "Saturation", "1"},
@@ -1483,7 +1551,7 @@ void bilateralFilter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<Pr
     image = imagetmp;
 }
 
-struct ImageEditBlur : INode {
+struct ImageBlur : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -1567,7 +1635,7 @@ struct ImageEditBlur : INode {
     }
 };
 
-ZENDEFNODE(ImageEditBlur, {
+ZENDEFNODE(ImageBlur, {
     {
         {"image"},
         {"enum Blur GaussianBlur MedianBlur BilateralBlur CVGaussianBlur CVMedianBlur CVBilateralBlur", "mode", "Blur"},
@@ -1785,7 +1853,7 @@ ZENDEFNODE(EdgeDetect2, {
     { "deprecate" },
 });
 
-struct CompExtractChanel_Gray: INode {
+struct CompExtractChanel_gray: INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto RGB = get_input2<bool>("RGB");
@@ -1848,7 +1916,7 @@ struct CompExtractChanel_Gray: INode {
         set_output("image", image2);
     }
 };
-ZENDEFNODE(CompExtractChanel_Gray, {
+ZENDEFNODE(CompExtractChanel_gray, {
     {
         {"image"},
         {"bool", "RGB", "0"},
@@ -2104,7 +2172,7 @@ ZENDEFNODE(CompImport, {
 });
 
 /* 创建颜色图层，可能需要的参数：颜色，分辨率，图层名称 */
-struct CreateColor : INode {
+struct CreateImage : INode {
     virtual void apply() override {
         auto RGB = get_input2<vec3f>("RGB");
         auto x = get_input2<int>("width");
@@ -2122,9 +2190,9 @@ struct CreateColor : INode {
     }
 };
 
-ZENDEFNODE(CreateColor, {
+ZENDEFNODE(CreateImage, {
     {
-        {"vec3f", "RGB", "0,0,255"},
+        {"vec3f", "RGB", "255,255,255"},
         {"int", "width", "1024"},
         {"int", "height", "1024"},
     },
@@ -2132,7 +2200,7 @@ ZENDEFNODE(CreateColor, {
         {"image"}
         },
     {},
-    { "comp" },
+    { "create" },
 });
 
 //对比度
