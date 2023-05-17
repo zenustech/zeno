@@ -9,7 +9,7 @@
 #include "DisneyBSDF.h"
 #include "IOMat.h"
 
-#define _SPHERE_ 1
+#define _SPHERE_ 0
 
 //COMMON_CODE
 
@@ -144,12 +144,6 @@ static __inline__ __device__ float3 sphereUV(float3 &direction) {
 
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
-    const auto PrimType = optixGetPrimitiveType();
-    if (PrimType == OPTIX_PRIMITIVE_TYPE_SPHERE) {
-        optixTerminateRay();
-        return;
-    }
-
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx        = optixGetPrimitiveIndex();
     const float3 ray_orig        = optixGetWorldRayOrigin();
@@ -410,14 +404,6 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->test_distance = false;
 
-    // const auto PrimType = optixGetPrimitiveType();
-    // if (PrimType == OPTIX_PRIMITIVE_TYPE_SPHERE) {
-    //     prd->radiance = make_float3(1, 0, 1);
-    //     prd->depth += 1;
-    //     prd->done = true;
-    //     //return;
-    // }
-
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx = optixGetPrimitiveIndex();
 
@@ -435,18 +421,9 @@ extern "C" __global__ void __closesthit__radiance()
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const unsigned int   sbtGASIndex = optixGetSbtGASIndex();
 
-    const auto PrimType = optixGetPrimitiveType();
-    if (PrimType != OPTIX_PRIMITIVE_TYPE_SPHERE) {
-        printf("Hit Wrong <><><><><><><><><><><><><><><><><> \n");
-    }
-    
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
     optixGetSphereData( gas, optixGetPrimitiveIndex(), sbtGASIndex, 0.0f, &q );
-
-    if (sbtGASIndex >=6) {
-        printf("sphere = %f %f %f %f \n", q.x, q.y, q.z, q.w);
-    }
 
     float3 _pos_world_      = ray_orig + optixGetRayTmax() * ray_dir;
     float3 _pos_object_     = optixTransformPointFromWorldToObjectSpace( _pos_world_ );
@@ -472,11 +449,6 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.instTang = {}; //rt_data->instTang[inst_idx2];
 
 #else
-
-    const auto PrimType = optixGetPrimitiveType();
-    if (PrimType != OPTIX_PRIMITIVE_TYPE_TRIANGLE) {
-        printf("Hit Wrong TR <><><><><><><><><><><><><><><><><> \n");
-    }
 
     int inst_idx2 = optixGetInstanceIndex();
     int inst_idx = rt_data->meshIdxs[inst_idx2];

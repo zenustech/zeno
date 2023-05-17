@@ -7,7 +7,6 @@
 
 #include <zeno/utils/vec.h>
 #include <glm/matrix.hpp>
-#include <cuda_runtime.h>
 
 enum ShaderMaker {
     Mesh = 0,
