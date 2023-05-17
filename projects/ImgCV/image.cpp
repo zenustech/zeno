@@ -5,12 +5,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
-#include "tinyexr.h"
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
 #include <cmath>
-#include "tinyexr.h"
-#include "stb_image_write.h"
 #include <zeno/utils/log.h>
 
 namespace zeno {
