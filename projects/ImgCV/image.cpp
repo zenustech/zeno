@@ -244,7 +244,7 @@ struct Composite: INode {
         auto maskmode1 = get_input2<std::string>("Mask1mode");
         auto maskmode2 = get_input2<std::string>("Mask2mode");
         int w1 = 1024 ;
-        int h1 = 500 ;
+        int h1 = 1024 ;
         auto image1 = std::make_shared<PrimitiveObject>();
         image1->verts.resize(w1 * h1);
         image1->userData().set2("isImage", 1);
@@ -346,7 +346,7 @@ struct Composite: INode {
         }
         if(has_input("Mask1")) {
             auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-            Mask1->verts.resize(A1->size());
+            Mask1->verts.resize(w1 * h1);
             Mask1->userData().set2("w", w1);
             Mask1->userData().set2("h", h1);
             if(maskmode1 == "R"){
@@ -383,24 +383,24 @@ struct Composite: INode {
             }
         }
         if(has_input("Mask2")) {
-            auto Mask2 = get_input2<PrimitiveObject>("Mask1");
-            Mask2->verts.resize(A2->size());
+            auto Mask2 = get_input2<PrimitiveObject>("Mask2");
+            Mask2->verts.resize(w1 * h1);
             Mask2->userData().set2("w", w1);
             Mask2->userData().set2("h", h1);
             if(maskmode2 == "R"){
-                for(int i = 0;i < A2->size();i++){
+                for(int i = 0;i < Mask2->size();i++){
                     Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][0];
                 }
                 alpha2 = Mask2->verts.attr<float>("alpha");
             }
             if(maskmode2 == "G"){
-                for(int i = 0;i < A2->size();i++){
+                for(int i = 0;i < Mask2->size();i++){
                     Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][1];
                 }
                 alpha2 = Mask2->verts.attr<float>("alpha");
             }
             if(maskmode2 == "B"){
-                for(int i = 0;i < A2->size();i++){
+                for(int i = 0;i < Mask2->size();i++){
                     Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][2];
                 }
                 alpha2 = Mask2->verts.attr<float>("alpha");
@@ -1824,17 +1824,17 @@ struct CompExtractChanel_Gray: INode {
         if(G && !RGB) {
             for (auto i = 0; i < image->verts.size(); i++) {
                 float G = image->verts[i][1];
-                image2->verts[i][0] += G;
-                image2->verts[i][1] += G;
-                image2->verts[i][2] += G;
+                zeno::clamp(image2->verts[i][0] += G,0,1);
+                zeno::clamp(image2->verts[i][1] += G,0,1);
+                zeno::clamp(image2->verts[i][2] += G,0,1);
             }
         }
         if(B && !RGB) {
             for (auto i = 0; i < image->verts.size(); i++) {
                 float B = image->verts[i][2];
-                image2->verts[i][0] += B;
-                image2->verts[i][1] += B;
-                image2->verts[i][2] += B;
+                zeno::clamp(image2->verts[i][0] += B,0,1);
+                zeno::clamp(image2->verts[i][1] += B,0,1);
+                zeno::clamp(image2->verts[i][2] += B,0,1);
             }
         }
         if(A) {
