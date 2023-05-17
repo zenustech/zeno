@@ -350,18 +350,21 @@ struct Composite: INode {
             Mask1->userData().set2("w", w1);
             Mask1->userData().set2("h", h1);
             if(maskmode1 == "R"){
+                Mask1->verts.add_attr<float>("alpha");
                 for(int i = 0;i < Mask1->size();i ++){
                     Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][0];
                 }
                 alpha1 = Mask1->verts.attr<float>("alpha");
             }
             if(maskmode1 == "G"){
+                Mask1->verts.add_attr<float>("alpha");
                 for(int i = 0;i < Mask1->size();i ++){
                     Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][1];
                 }
                 alpha1 = Mask1->verts.attr<float>("alpha");
             }
             if(maskmode1 == "B"){
+                Mask1->verts.add_attr<float>("alpha");
                 for(int i = 0;i < Mask1->size();i ++){
                     Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][2];
                 }
@@ -388,18 +391,21 @@ struct Composite: INode {
             Mask2->userData().set2("w", w1);
             Mask2->userData().set2("h", h1);
             if(maskmode2 == "R"){
+                Mask2->verts.add_attr<float>("alpha");
                 for(int i = 0;i < Mask2->size();i++){
                     Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][0];
                 }
                 alpha2 = Mask2->verts.attr<float>("alpha");
             }
             if(maskmode2 == "G"){
+                Mask2->verts.add_attr<float>("alpha");
                 for(int i = 0;i < Mask2->size();i++){
                     Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][1];
                 }
                 alpha2 = Mask2->verts.attr<float>("alpha");
             }
             if(maskmode2 == "B"){
+                Mask2->verts.add_attr<float>("alpha");
                 for(int i = 0;i < Mask2->size();i++){
                     Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][2];
                 }
