@@ -1,24 +1,16 @@
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
 #include <opencv2/core.hpp>
 #include <zeno/zeno.h>
-#include <zeno/utils/arrayindex.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
 #include "tinyexr.h"
-#include "zeno/utils/string.h"
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
 #include <cmath>
-#include <opencv2/imgproc.hpp>
-#include <tinygltf/stb_image.h>
 #include "tinyexr.h"
 #include "stb_image_write.h"
-#include "half.h"
-#include <filesystem>
 #include <zeno/utils/log.h>
 
 namespace zeno {
