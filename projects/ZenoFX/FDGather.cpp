@@ -222,7 +222,6 @@ T lerp(T a, T b, float c)
 template <class T>
 void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vector<T> &primAttr, int nx, int ny, float h,
               zeno::vec3f bmin) {
-    std::vector<T> temp(field.size());
 #pragma omp parallel for
     for(size_t tidx=0;tidx<coord.size();tidx++)
     {
@@ -233,12 +232,7 @@ void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vecto
         int j = uv2[2];
         float cx = uv2[0] - i, cy = uv2[2] - j;
         size_t idx00 = j*nx + i, idx01 = j*nx + i + 1, idx10 = (j+1)*nx + i, idx11 = (j+1)*nx + i + 1;
-        temp[tidx] = lerp<T>(lerp<T>(field[idx00], field[idx01], cx), lerp<T>(field[idx10], field[idx11], cx), cy);
-    }
-#pragma omp parallel for
-    for(size_t tidx=0;tidx<coord.size();tidx++)
-    {
-        primAttr[tidx]=temp[tidx];
+        primAttr[tidx] = lerp<T>(lerp<T>(field[idx00], field[idx01], cx), lerp<T>(field[idx10], field[idx11], cx), cy);
     }
 }
 struct Grid2DSample : zeno::INode {

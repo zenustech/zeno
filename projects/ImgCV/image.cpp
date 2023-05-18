@@ -1,24 +1,14 @@
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
 #include <opencv2/core.hpp>
 #include <zeno/zeno.h>
-#include <zeno/utils/arrayindex.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
-#include "tinyexr.h"
-#include "zeno/utils/string.h"
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
 #include <cmath>
-#include <opencv2/imgproc.hpp>
-#include <tinygltf/stb_image.h>
-#include "tinyexr.h"
-#include "stb_image_write.h"
-#include "half.h"
-#include <filesystem>
+#include <zeno/utils/log.h>
 
 namespace zeno {
 
@@ -116,73 +106,6 @@ static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int h
         }
     }
 }
-static void sobel2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height, int threshold) {
-    std::vector<int> gx(width * height);
-    std::vector<int> gy(width * height);
-    dst->verts.resize(width * height);
-
-    // Calculate gradients
-    for (int y = 1; y < height - 1; ++y) {
-        for (int x = 1; x < width - 1; ++x) {
-            int idx = y * width + x;
-            gx[idx] = (-1 * src->verts[(y - 1) * width + x - 1][0] - 2 * src->verts[y * width + x - 1][0] - 1 * src->verts[(y + 1) * width + x - 1][0] +
-                       1 * src->verts[(y - 1) * width + x + 1][0] + 2 * src->verts[y * width + x + 1][0] + 1 * src->verts[(y + 1) * width + x + 1][0]);
-            gy[idx] = (-1 * src->verts[(y - 1) * width + x - 1][0] - 2 * src->verts[(y - 1) * width + x][0] - 1 * src->verts[(y - 1) * width + x + 1][0] +
-                       1 * src->verts[(y + 1) * width + x - 1][0] + 2 * src->verts[(y + 1) * width + x][0] + 1 * src->verts[(y + 1) * width + x + 1][0]);
-        }
-    }
-    // Calculate gradient magnitude
-    for (int y = 1; y < height - 1; ++y) {
-        for (int x = 1; x < width - 1; ++x) {
-            int idx = y * width + x;
-
-            // Calculate gradient magnitude
-            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
-
-            // Apply thresholding
-            float g = mag < threshold ? 0: 1;
-            dst->verts[idx] = {g,g,g};
-        }
-    }
-}
-
-static void scharr2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height,int threshold) {
-    std::vector<int> gx(width * height);
-    std::vector<int> gy(width * height);
-    dst->verts.resize(width * height);
-
-    // Calculate gradients
-    for (int y = 1; y < height - 1; ++y) {
-        for (int x = 1; x < width - 1; ++x) {
-            int idx = y * width + x;
-            gx[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[y * width + x - 1][0] - 3 * src->verts[(y + 1) * width + x - 1][0] +
-                       3 * src->verts[(y - 1) * width + x + 1][0] + 10 * src->verts[y * width + x + 1][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
-            gy[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[(y - 1) * width + x][0] - 3 * src->verts[(y - 1) * width + x + 1][0] +
-                       3 * src->verts[(y + 1) * width + x - 1][0] + 10 * src->verts[(y + 1) * width + x][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
-        }
-    }
-    // Calculate gradient magnitude
-    for (int y = 1; y < height - 1; ++y) {
-        for (int x = 1; x < width - 1; ++x) {
-            int idx = y * width + x;
-
-            // Calculate gradient magnitude
-            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
-            // Apply threshold
-            if (mag * 255 > threshold) {
-                // Set to white
-                dst->verts[idx] = { 1, 1, 1 };
-            }
-            else {
-                // Set to black
-                dst->verts[idx] = {0, 0, 0};
-            }
-            // Clamp to [0, 255] and store in output image
-            float g = std::min(1, std::max(0, mag));
-            dst->verts[idx] = {g,g,g};
-        }
-    }
-}
 // 计算法向量
 static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, int height, std::vector<float>& normal)
 {
@@ -212,66 +135,362 @@ static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, in
     }
 }
 
+struct ImageResize: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        int width = get_input2<int>("width");
+        int height = get_input2<int>("height");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->verts.resize(width * height);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", width);
+        image2->userData().set2("h", height);
+        if(image->has_attr("alpha")){
+            image2->verts.add_attr<float>("alpha");
+        }
+        // 计算尺寸比例
+        float scaleX = static_cast<float>(w) / width;
+        float scaleY = static_cast<float>(h) / height;
+        // 改变图像大小
+        for (int y = 0; y < height; ++y)
+        {
+            for (int x = 0; x < width; ++x)
+            {
+                int srcX = static_cast<int>(x * scaleX);
+                int srcY = static_cast<int>(y * scaleY);
+                image2->verts[y * width + x] = image->verts[srcY * w + srcX];
+                image2->verts.attr<float>("alpha")[y * width + x] = image->verts.attr<float>("alpha")[srcY * w + srcX];
+            }
+        }
+        set_output("image", image2);
+    }
+};
+ZENDEFNODE(ImageResize, {
+    {
+        {"image"},
+        {"int", "width", "1024"},
+        {"int", "height", "1024"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
+void rotateimage(std::shared_ptr<PrimitiveObject> src, std::shared_ptr<PrimitiveObject> & dst, float angle,bool balpha) {
+    // 计算旋转角度的弧度值
+    double radians = angle * 3.14159 / 180.0;
+    int width = src->userData().get2<int>("w");
+    int height = src->userData().get2<int>("h");
+
+    // 计算旋转中心点
+    int centerX = width / 2;
+    int centerY = height / 2;
+
+    // 计算旋转后的图像宽度和高度
+    int rotatedWidth = static_cast<int>(std::abs(width * cos(radians)) + std::abs(height * sin(radians)));
+    int rotatedHeight = static_cast<int>(std::abs(height * cos(radians)) + std::abs(width * sin(radians)));
+
+    dst->verts.resize(rotatedWidth * rotatedHeight);
+    dst->userData().set2("w", rotatedWidth);
+    dst->userData().set2("h", rotatedHeight);
+    if(src->verts.has_attr("alpha")){
+        dst->verts.add_attr<float>("alpha");
+        if(balpha){
+            for(int i = 0;i<dst->size();i++){
+                dst->verts.attr<float>("alpha")[i] = 0;
+            }
+        }
+        else{
+            for(int i = 0;i<dst->size();i++){
+                dst->verts.attr<float>("alpha")[i] = 1;
+            }
+        }
+        for (int y = 0; y < rotatedHeight; ++y) {
+            for (int x = 0; x < rotatedWidth; ++x) {
+                // 计算旋转前的坐标
+                int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
+                int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
+                // 检查坐标是否在旋转图像范围内
+                if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
+                    // 获取旋转前的像素值
+                    dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
+                    dst->verts.attr<float>("alpha")[y * rotatedWidth + x] = src->verts.attr<float>("alpha")[srcY * width + srcX];
+                }
+            }
+        }
+    }
+    else{
+        dst->verts.add_attr<float>("alpha");
+        if(balpha){
+            for(int i = 0;i<dst->size();i++){
+                dst->verts.attr<float>("alpha")[i] = 0;
+            }
+        }
+        else{
+            for(int i = 0;i<dst->size();i++){
+                dst->verts.attr<float>("alpha")[i] = 1;
+            }
+        }
+        for (int y = 0; y < rotatedHeight; ++y) {
+            for (int x = 0; x < rotatedWidth; ++x) {
+                // 计算旋转前的坐标
+                int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
+                int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
+                // 检查坐标是否在旋转图像范围内
+                if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
+                    // 获取旋转前的像素值
+                    dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
+                    dst->verts.attr<float>("alpha")[y * rotatedWidth + x] = 1;
+                }
+            }
+        }
+    }
+    // 遍历旋转后的图像像素
+    for (int y = 0; y < rotatedHeight; ++y) {
+        for (int x = 0; x < rotatedWidth; ++x) {
+            // 计算旋转前的坐标
+            int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
+            int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
+
+            // 检查坐标是否在旋转图像范围内
+            if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
+                // 获取旋转前的像素值
+                dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
+            }
+        }
+    }
+}
+struct ImageRotate: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        auto balpha = get_input2<bool>("alpha");
+        float rotate = get_input2<float>("rotate");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->verts.resize(w * h);
+        image2->userData().set2("isImage", 1);
+        rotateimage(image,image2,rotate,balpha);
+        set_output("image", image2);
+    }
+};
+ZENDEFNODE(ImageRotate, {
+    {
+        {"image"},
+        {"float", "rotate", "0.0"},
+        {"bool", "alpha", "0"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
 struct Composite: INode {
     virtual void apply() override {
-        auto image1 = get_input2<PrimitiveObject>("Foreground");
-        auto image2 = get_input2<PrimitiveObject>("Background");
-        auto compmode = get_input2<std::string>("compmode");
-        auto &ud1 = image1->userData();
-        int w1 = ud1.get2<int>("w");
-        int h1 = ud1.get2<int>("h");
-        auto &ud2 = image2->userData();
-        int w2 = ud2.get2<int>("w");
-        int h2 = ud2.get2<int>("h");
+        auto compmode = get_input2<std::string>("Compmode");
+        auto maskmode1 = get_input2<std::string>("Mask1mode");
+        auto maskmode2 = get_input2<std::string>("Mask2mode");
+        int w1 = 1024 ;
+        int h1 = 1024 ;
+        auto image1 = std::make_shared<PrimitiveObject>();
+        image1->verts.resize(w1 * h1);
+        image1->userData().set2("isImage", 1);
+        image1->userData().set2("w", w1);
+        image1->userData().set2("h", h1);
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->verts.resize(w1 * h1);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w1);
+        image2->userData().set2("h", h1);
         auto A1 = std::make_shared<PrimitiveObject>();
-        A1->verts.resize(image1->size());
+        A1->verts.resize(w1 * h1);
+        A1->userData().set2("isImage", 1);
+        A1->userData().set2("w", w1);
+        A1->userData().set2("h", h1);
         A1->verts.add_attr<float>("alpha");
         for(int i = 0;i < w1 * h1;i++){
-            A1->verts.attr<float>("alpha")[i] = 1.0;
-        }
-        auto A2 = std::make_shared<PrimitiveObject>();
-        A2->verts.resize(image2->size());
-        A2->verts.add_attr<float>("alpha");
-        for(int i = 0;i < w2 * h2;i++){
-            A2->verts.attr<float>("alpha")[i] = 1.0;
+            A1->verts.attr<float>("alpha")[i] = 0.0;
         }
         std::vector<float> &alpha1 = A1->verts.attr<float>("alpha");
-        if(image1->verts.has_attr("alpha")){
-            alpha1 = image1->verts.attr<float>("alpha");
+        auto A2 = std::make_shared<PrimitiveObject>();
+        A2->verts.resize(w1 * h1);
+        A2->userData().set2("isImage", 1);
+        A2->userData().set2("w", w1);
+        A2->userData().set2("h", h1);
+        A2->verts.add_attr<float>("alpha");
+        for(int i = 0;i < w1 * h1;i++){
+            A2->verts.attr<float>("alpha")[i] = 0.0;
+        }
+        std::vector<float> &alpha2 = A2->verts.attr<float>("alpha");
+
+        if(has_input("Background")){
+            image2 = get_input2<PrimitiveObject>("Background");
+            auto &ud2 = image2->userData();
+            w1 = ud2.get2<int>("w");
+            h1 = ud2.get2<int>("h");
+            if(image2->verts.has_attr("alpha")){
+                alpha2 = image2->verts.attr<float>("alpha");
+            }
+            else{
+                image2->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w1 * h1;i++){
+                    image2->verts.attr<float>("alpha")[i] = 1.0;
+                }
+                alpha2 = image2->verts.attr<float>("alpha");
+            }
+            if(!has_input("Foreground")){
+                image1->verts.resize(image2->size());
+                image1->userData().set2("w", w1);
+                image1->userData().set2("h", h1);
+                image1->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w1 * h1;i++){
+                    image1->verts.attr<float>("alpha")[i] = 0.0;
+                }
+                alpha1 = image1->verts.attr<float>("alpha");
+            }
+        }
+        if(has_input("Foreground")){
+            image1 = get_input2<PrimitiveObject>("Foreground");
+            auto &ud1 = image1->userData();
+            w1 = ud1.get2<int>("w");
+            h1 = ud1.get2<int>("h");
+            if(image1->verts.has_attr("alpha")){
+                alpha1 = image1->verts.attr<float>("alpha");
+            }
+            else{
+                image1->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w1 * h1;i++){
+                    image1->verts.attr<float>("alpha")[i] = 1.0;
+                }
+                alpha1 = image1->verts.attr<float>("alpha");
+            }
+            if(!has_input("Background")){
+                image2->verts.resize(image1->size());
+                image2->userData().set2("w", w1);
+                image2->userData().set2("h", h1);
+                image2->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w1 * h1;i++){
+                    image2->verts.attr<float>("alpha")[i] = 0.0;
+                }
+                alpha2 = image2->verts.attr<float>("alpha");
+            }
+            if(has_input("Background")){
+                auto &ud2 = image2->userData();
+                int w2 = ud2.get2<int>("w");
+                int h2 = ud2.get2<int>("h");
+                if(image1->size() != image2->size() || w1 != w2 || h1 != h2){
+                    image2->verts.resize(image1->size());
+                    image2->userData().set2("w", w1);
+                    image2->userData().set2("h", h1);
+//todo： image1和image2大小不同的情况
+//                    for (int i = 0; i < h1; i++) {
+//                        for (int j = 0; j < w1; j++) {
+//
+//                        }
+//                    }
+                }
+            }
         }
         if(has_input("Mask1")) {
             auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-            Mask1->verts.add_attr<float>("alpha");
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    Mask1->verts.attr<float>("alpha")[i * w1 + j] = Mask1->verts[i * w1 + j][0];
+            Mask1->verts.resize(w1 * h1);
+            Mask1->userData().set2("w", w1);
+            Mask1->userData().set2("h", h1);
+            if(maskmode1 == "R"){
+                Mask1->verts.add_attr<float>("alpha");
+                for(int i = 0;i < Mask1->size();i ++){
+                    Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][0];
+                }
+                alpha1 = Mask1->verts.attr<float>("alpha");
+            }
+            if(maskmode1 == "G"){
+                Mask1->verts.add_attr<float>("alpha");
+                for(int i = 0;i < Mask1->size();i ++){
+                    Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][1];
+                }
+                alpha1 = Mask1->verts.attr<float>("alpha");
+            }
+            if(maskmode1 == "B"){
+                Mask1->verts.add_attr<float>("alpha");
+                for(int i = 0;i < Mask1->size();i ++){
+                    Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][2];
+                }
+                alpha1 = Mask1->verts.attr<float>("alpha");
+            }
+            if(maskmode1 == "A"){
+                if(Mask1->verts.has_attr("alpha")){
+                    alpha1 = Mask1->verts.attr<float>("alpha");
+                }
+                else{
+                    Mask1->verts.add_attr<float>("alpha");
+                    for (int i = 0; i < h1; i++) {
+                        for (int j = 0; j < w1; j++) {
+                            Mask1->verts.attr<float>("alpha")[i * w1 + j] = 1;
+                        }
+                    }
+                    alpha1 = Mask1->verts.attr<float>("alpha");
                 }
             }
-            alpha1 = Mask1->verts.attr<float>("alpha");
-        }
-        std::vector<float> &alpha2 = A2->verts.attr<float>("alpha");
-        if(image2->verts.has_attr("alpha")){
-            alpha2 = image2->verts.attr<float>("alpha");
         }
         if(has_input("Mask2")) {
             auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-            Mask2->verts.add_attr<float>("alpha");
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    Mask2->verts.attr<float>("alpha")[i * w1 + j] = Mask2->verts[i * w1 + j][0];
+            Mask2->verts.resize(w1 * h1);
+            Mask2->userData().set2("w", w1);
+            Mask2->userData().set2("h", h1);
+            if(maskmode2 == "R"){
+                Mask2->verts.add_attr<float>("alpha");
+                for(int i = 0;i < Mask2->size();i++){
+                    Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][0];
+                }
+                alpha2 = Mask2->verts.attr<float>("alpha");
+            }
+            if(maskmode2 == "G"){
+                Mask2->verts.add_attr<float>("alpha");
+                for(int i = 0;i < Mask2->size();i++){
+                    Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][1];
+                }
+                alpha2 = Mask2->verts.attr<float>("alpha");
+            }
+            if(maskmode2 == "B"){
+                Mask2->verts.add_attr<float>("alpha");
+                for(int i = 0;i < Mask2->size();i++){
+                    Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][2];
+                }
+                alpha2 = Mask2->verts.attr<float>("alpha");
+            }
+            if(maskmode2 == "A"){
+                if(Mask2->verts.has_attr("alpha")){
+                    alpha2 = Mask2->verts.attr<float>("alpha");
+                }
+                else{
+                    Mask2->verts.add_attr<float>("alpha");
+                    for (int i = 0; i < h1; i++) {
+                        for (int j = 0; j < w1; j++) {
+                            Mask2->verts.attr<float>("alpha")[i * w1 + j] = 1;
+                        }
+                    }
+                    alpha2 = Mask2->verts.attr<float>("alpha");
                 }
             }
-            alpha2 = Mask2->verts.attr<float>("alpha");
         }
-
-        if (compmode == "Over") {
+        if(compmode == "Over") {
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
                     vec3f rgb1 = image1->verts[i * w1 + j];
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * (l2 - ((l1 != 0) && (l2 != 0) ? l2 : 0));
+                    vec3f c = rgb1 * l1 + rgb2 * ((l1!=1 && l2!=0)? std::min((1-l1),l2) : 0);
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = ((l1!=0 || l2!=0)? zeno::max(l2,l1): 0);
                 }
             }
         }
@@ -282,7 +501,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb2 * l2 + rgb1 * (l1 - ((l1 != 0) && (l2 != 0) ? l1 : 0));
+                    vec3f c = rgb2 * l2 + rgb1 * ((l2!=1 && l1!=0)? std::min((1-l2),l1) : 0);
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = ((l1!=0 || l2!=0)? zeno::max(l2,l1): 0);
                 }
             }
         }
@@ -293,8 +514,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] =
-                            rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
+                    vec3f c = rgb1 * ((l1 != 0 && l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = (l1 !=0 && l2 !=0)? l1 : l2;
                 }
             }
         }
@@ -305,7 +527,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
+                    vec3f c = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = (l1 !=0 && l2 !=0)? l1 : 0;
                 }
             }
         }
@@ -316,7 +540,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
+                    vec3f c = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = (l1 != 0 && l2 == 0)? l1 : 0;
                 }
             }
         }
@@ -325,10 +551,12 @@ struct Composite: INode {
                 for (int j = 0; j < w1; j++) {
                     vec3f rgb1 = image1->verts[i * w1 + j];
                     vec3f rgb2 = image2->verts[i * w1 + j];
-                    float var = (image1->verts[i * w1 + j][0]+image1->verts[i * w1 + j][1]+image1->verts[i * w1 + j][2])/3;
+                    float l = zeno::min(zeno::min(image1->verts[i * w1 + j][0],image1->verts[i * w1 + j][1]),image1->verts[i * w1 + j][2]);
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb2 * l2 + rgb2 *((l1!=0 && l2!=0)? var: 0);
+                    vec3f c = rgb2 * l2 + rgb2 * ((l1!=0 && l2!=0)? l: 0);
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = l2;
                 }
             }
         }
@@ -339,7 +567,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 + rgb2 * l2;
+                    vec3f c = rgb2 * l2 + rgb1 * l1;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -350,7 +580,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 - rgb2 * l2;
+                    vec3f c = rgb1 * l1 - rgb2 * l2 ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -361,7 +593,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 * rgb2 * l2;
+                    vec3f c = rgb1 * l1 * rgb2 * l2 ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -372,7 +606,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb1 * l1 / (rgb2 * l2);
+                    vec3f c = rgb1 * l1 / (rgb2 * l2) ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -383,7 +619,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = abs(rgb1 * l1 - (rgb2 * l2));
+                    vec3f c = abs(rgb1 * l1 - (rgb2 * l2)) ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -394,7 +632,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = l1 <= l2 ? rgb1 * l1 : rgb2 * l2;
+                    vec3f c = l1 <= l2 ? rgb1 * l1 : rgb2 * l2 ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -405,7 +645,9 @@ struct Composite: INode {
                     vec3f rgb2 = image2->verts[i * w1 + j];
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = l1 >= l2 ? rgb1 * l1 : rgb2 * l2;
+                    vec3f c = l1 >= l2 ? rgb1 * l1 : rgb2 * l2 ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -417,7 +659,9 @@ struct Composite: INode {
                     vec3f rgb3 = (rgb1+rgb2)/2;
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * (l1+l2);
+                    vec3f c = rgb3 * (l1+l2) ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -429,7 +673,9 @@ struct Composite: INode {
                     vec3f rgb3 = {0, 0, 0};
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2);
+                    vec3f c = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2) ;
+                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -441,7 +687,8 @@ struct Composite: INode {
                     vec3f rgb3 = {1,1,1};
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 1 : 0);
+                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? zeno::clamp(l1 + l2, 0, 1) : 0);
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
                 }
             }
         }
@@ -453,7 +700,8 @@ struct Composite: INode {
                     vec3f rgb3 = {1,1,1};
                     float l1 = alpha1[i * w1 + j];
                     float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : 1);
+                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : zeno::clamp(l1 + l2, 0, 1));
+                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(1 - (l1 + l2), 0, 1);
                 }
             }
         }
@@ -467,7 +715,9 @@ ZENDEFNODE(Composite, {
         {"Background"},
         {"Mask1"},
         {"Mask2"},
-        {"enum Over Under Atop Inside Outside Screen Add Subtract Multiply Divide Diff Min Max Average Xor Alpha !Alpha", "compmode", "Over"},
+        {"enum Over Under Atop Inside Outside Screen Add Subtract Multiply Divide Diff Min Max Average Xor Alpha !Alpha", "Compmode", "Over"},
+        {"enum R G B A", "Mask1mode", "R"},
+        {"enum R G B A", "Mask2mode", "R"},
     },
     {
         {"image"}
@@ -475,6 +725,7 @@ ZENDEFNODE(Composite, {
     {},
     { "comp" },
 });
+
 
 //replaced by Composite
 /*
@@ -863,19 +1114,22 @@ ZENDEFNODE(ImageEditHSV, {
 struct ImageEdit: INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<std::string>("RGB");
+        auto size = get_input2<vec2f>("Size");
+        auto RGBA = get_input2<std::string>("RGBA");
         auto Gray = get_input2<bool>("Gray");
         auto Invert = get_input2<bool>("Invert");
-
-        float R = get_input2<float>("R");
-        float G = get_input2<float>("G");
-        float B = get_input2<float>("B");
+        auto RGBLevel = get_input2<vec3f>("RGBLevel");
+        float R = RGBLevel[0];
+        float G = RGBLevel[1];
+        float B = RGBLevel[2];
         float L = get_input2<float>("Luminace");
         float ContrastRatio = get_input2<float>("ContrastRatio");
         float Si = get_input2<float>("Saturation");
+        auto &ud1 = image->userData();
+        int w1 = ud1.get2<int>("w");
+        int h1 = ud1.get2<int>("h");
         float H = 0, S = 0, V = 0;
-
-        if(RGB == "RGB") {
+        if(RGBA == "RGBA") {
             for (auto i = 0; i < image->verts.size(); i++) {
                 float R1 = image->verts[i][0];
                 float G1 = image->verts[i][1];
@@ -891,15 +1145,54 @@ struct ImageEdit: INode {
                 image->verts[i][1] = G1;
                 image->verts[i][2] = B1;
             }
+            if(!image->verts.has_attr("alpha")){
+                image->verts.add_attr<float>("alpha");
+                for(int i = 0;i < image->size();i++){
+                    image->verts.attr<float>("alpha")[i] = 1;
+                }
+            }
         }
-        if(RGB == "R") {
+        if(RGBA == "RGB") {
+            if(image->verts.has_attr("alpha")){
+                auto image2 = std::make_shared<PrimitiveObject>();
+                image2->verts.resize(w1 * h1);
+                image2->userData().set2("isImage", 1);
+                image2->userData().set2("w", w1);
+                image2->userData().set2("h", h1);
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float R1 = image->verts[i][0] * R;
+                    float G1 = image->verts[i][1] * G;
+                    float B1 = image->verts[i][2] * B;
+                    zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                    S = S + (S - 0.5)*(Si-1);
+                    V = V + (V - 0.5)*(L-1);
+                    zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                    image2->verts[i][0] = R1;
+                    image2->verts[i][1] = G1;
+                    image2->verts[i][2] = B1;
+                }
+                image = image2;
+            }
+            else{
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float R1 = image->verts[i][0] * R;
+                    float G1 = image->verts[i][1] * G;
+                    float B1 = image->verts[i][2] * B;
+                    zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                    S = S + (S - 0.5)*(Si-1);
+                    V = V + (V - 0.5)*(L-1);
+                    zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                    image->verts[i][0] = R1;
+                    image->verts[i][1] = G1;
+                    image->verts[i][2] = B1;
+                }
+            }
+        }
+        if(RGBA == "RA") {
             for (auto i = 0; i < image->verts.size(); i++) {
-                float R1 = R * image->verts[i][0];
+                float R1 = image->verts[i][0] * R;
                 float G1 = 0;
                 float B1 = 0;
-                R1 *= R;
-                G1 *= G;
-                B1 *= B;
                 zeno::RGBtoHSV(R1, G1, B1, H, S, V);
                 S = S + (S - 0.5)*(Si-1);
                 V = V + (V - 0.5)*(L-1);
@@ -908,15 +1201,18 @@ struct ImageEdit: INode {
                 image->verts[i][1] = G1 ;
                 image->verts[i][2] = B1 ;
             }
+            if(!image->verts.has_attr("alpha")){
+                image->verts.add_attr<float>("alpha");
+                for(int i = 0;i < image->size();i++){
+                    image->verts.attr<float>("alpha")[i] = 1;
+                }
+            }
         }
-        if(RGB == "G") {
+        if(RGBA == "GA") {
             for (auto i = 0; i < image->verts.size(); i++) {
                 float R1 = 0;
                 float G1 = G * image->verts[i][1];
                 float B1 = 0;
-                R1 *= R;
-                G1 *= G;
-                B1 *= B;
                 zeno::RGBtoHSV(R1, G1, B1, H, S, V);
                 S = S + (S - 0.5)*(Si-1);
                 V = V + (V - 0.5)*(L-1);
@@ -925,15 +1221,18 @@ struct ImageEdit: INode {
                 image->verts[i][1] = G1 ;
                 image->verts[i][2] = B1 ;
             }
+            if(!image->verts.has_attr("alpha")){
+                image->verts.add_attr<float>("alpha");
+                for(int i = 0;i < image->size();i++){
+                    image->verts.attr<float>("alpha")[i] = 1;
+                }
+            }
         }
-        if(RGB == "B") {
+        if(RGBA == "BA") {
             for (auto i = 0; i < image->verts.size(); i++) {
                 float R1 = 0;
                 float G1 = 0;
                 float B1 = B * image->verts[i][2];
-                R1 *= R;
-                G1 *= G;
-                B1 *= B;
                 zeno::RGBtoHSV(R1, G1, B1, H, S, V);
                 S = S + (S - 0.5)*(Si-1);
                 V = V + (V - 0.5)*(L-1);
@@ -941,6 +1240,145 @@ struct ImageEdit: INode {
                 image->verts[i][0] = R1;
                 image->verts[i][1] = G1;
                 image->verts[i][2] = B1;
+            }
+            if(!image->verts.has_attr("alpha")){
+                image->verts.add_attr<float>("alpha");
+                for(int i = 0;i < image->size();i++){
+                    image->verts.attr<float>("alpha")[i] = 1;
+                }
+            }
+        }
+        if(RGBA == "R") {
+            if(image->verts.has_attr("alpha")){
+                auto image2 = std::make_shared<PrimitiveObject>();
+                image2->verts.resize(w1 * h1);
+                image2->userData().set2("isImage", 1);
+                image2->userData().set2("w", w1);
+                image2->userData().set2("h", h1);
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float R1 = image->verts[i][0] * R;
+                    float G1 = 0;
+                    float B1 = 0;
+                    zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                    S = S + (S - 0.5)*(Si-1);
+                    V = V + (V - 0.5)*(L-1);
+                    zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                    image2->verts[i][0] = R1;
+                    image2->verts[i][1] = G1;
+                    image2->verts[i][2] = B1;
+                }
+                image = image2;
+            }
+            else{
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float R1 = image->verts[i][0] * R;
+                    float G1 = 0;
+                    float B1 = 0;
+                    zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                    S = S + (S - 0.5)*(Si-1);
+                    V = V + (V - 0.5)*(L-1);
+                    zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                    image->verts[i][0] = R1 ;
+                    image->verts[i][1] = G1 ;
+                    image->verts[i][2] = B1 ;
+                }
+            }
+        }
+        if(RGBA == "G") {
+            if(image->verts.has_attr("alpha")){
+                auto image2 = std::make_shared<PrimitiveObject>();
+                image2->verts.resize(w1 * h1);
+                image2->userData().set2("isImage", 1);
+                image2->userData().set2("w", w1);
+                image2->userData().set2("h", h1);
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float R1 = 0;
+                    float G1 = image->verts[i][1] * G;
+                    float B1 = 0;
+                    zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                    S = S + (S - 0.5)*(Si-1);
+                    V = V + (V - 0.5)*(L-1);
+                    zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                    image2->verts[i][0] = R1;
+                    image2->verts[i][1] = G1;
+                    image2->verts[i][2] = B1;
+                }
+                image = image2;
+            }
+            else{
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float R1 = 0;
+                    float G1 = image->verts[i][1] * G;
+                    float B1 = 0;
+                    zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                    S = S + (S - 0.5)*(Si-1);
+                    V = V + (V - 0.5)*(L-1);
+                    zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                    image->verts[i][0] = R1 ;
+                    image->verts[i][1] = G1 ;
+                    image->verts[i][2] = B1 ;
+                }
+            }
+        }
+        if(RGBA == "B") {
+            if(image->verts.has_attr("alpha")){
+                auto image2 = std::make_shared<PrimitiveObject>();
+                image2->verts.resize(w1 * h1);
+                image2->userData().set2("isImage", 1);
+                image2->userData().set2("w", w1);
+                image2->userData().set2("h", h1);
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float R1 = 0;
+                    float G1 = 0;
+                    float B1 = image->verts[i][2] * B;
+                    zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                    S = S + (S - 0.5)*(Si-1);
+                    V = V + (V - 0.5)*(L-1);
+                    zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                    image2->verts[i][0] = R1;
+                    image2->verts[i][1] = G1;
+                    image2->verts[i][2] = B1;
+                }
+                image = image2;
+            }
+            else{
+                for (auto i = 0; i < image->verts.size(); i++) {
+                    float R1 = 0;
+                    float G1 = 0;
+                    float B1 = image->verts[i][2] * B;
+                    zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                    S = S + (S - 0.5)*(Si-1);
+                    V = V + (V - 0.5)*(L-1);
+                    zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                    image->verts[i][0] = R1 ;
+                    image->verts[i][1] = G1 ;
+                    image->verts[i][2] = B1 ;
+                }
+            }
+        }
+        if(RGBA == "A") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R1 = 1;
+                float G1 = 1;
+                float B1 = 1;
+                zeno::RGBtoHSV(R1, G1, B1, H, S, V);
+                S = S + (S - 0.5)*(Si-1);
+                V = V + (V - 0.5)*(L-1);
+                zeno::HSVtoRGB(H, S, V, R1, G1, B1);
+                image->verts[i][0] = R1;
+                image->verts[i][1] = G1;
+                image->verts[i][2] = B1;
+            }
+            if (image->verts.has_attr("alpha")) {
+                auto &Alpha = image->verts.attr<float>("alpha");
+                image->verts.add_attr<float>("alpha");
+                image->verts.attr<float>("alpha")=image->verts.attr<float>("alpha");
+            }
+            else{
+                image->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w1 * h1;i++){
+                    image->verts.attr<float>("alpha")[i] = 1.0;
+                }
             }
         }
         for (auto i = 0; i < image->verts.size(); i++) {
@@ -969,10 +1407,9 @@ struct ImageEdit: INode {
 ZENDEFNODE(ImageEdit, {
     {
         {"image"},
-        {"enum RGB R G B", "RGB", "RGB"},
-        {"float", "R", "1"},
-        {"float", "G", "1"},
-        {"float", "B", "1"},
+        {"vec2f", "Size", "1,1"},
+        {"enum RGBA RGB RA GA BA R G B A", "RGBA", "RGB"},
+        {"vec3f", "RGBLevel", "1,1,1"},
         {"float", "Saturation", "1"},
         {"float", "Luminace", "1"},
         {"float", "ContrastRatio", "1"},
@@ -1114,7 +1551,7 @@ void bilateralFilter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<Pr
     image = imagetmp;
 }
 
-struct ImageEditBlur : INode {
+struct ImageBlur : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -1198,7 +1635,7 @@ struct ImageEditBlur : INode {
     }
 };
 
-ZENDEFNODE(ImageEditBlur, {
+ZENDEFNODE(ImageBlur, {
     {
         {"image"},
         {"enum Blur GaussianBlur MedianBlur BilateralBlur CVGaussianBlur CVMedianBlur CVBilateralBlur", "mode", "Blur"},
@@ -1212,6 +1649,58 @@ ZENDEFNODE(ImageEditBlur, {
     { "comp" },
 });
 
+static void sobelcv(cv::Mat& src, cv::Mat& dst, int thresholdValue, int maxThresholdValue){
+
+    // 应用Sobel算子计算水平和垂直梯度
+    cv::Mat gradX, gradY;
+    cv::Sobel(src, gradX, CV_32F, 1, 0);
+    cv::Sobel(src, gradY, CV_32F, 0, 1);
+
+    // 计算梯度强度和方向
+    cv::Mat gradientMagnitude, gradientDirection;
+    cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
+
+    // 应用阈值
+    cv::threshold(gradientMagnitude, dst, thresholdValue, maxThresholdValue, cv::THRESH_BINARY);
+}
+
+static void scharr2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height,int threshold) {
+    std::vector<int> gx(width * height);
+    std::vector<int> gy(width * height);
+    dst->verts.resize(width * height);
+
+    // Calculate gradients
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+            gx[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[y * width + x - 1][0] - 3 * src->verts[(y + 1) * width + x - 1][0] +
+                       3 * src->verts[(y - 1) * width + x + 1][0] + 10 * src->verts[y * width + x + 1][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
+            gy[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[(y - 1) * width + x][0] - 3 * src->verts[(y - 1) * width + x + 1][0] +
+                       3 * src->verts[(y + 1) * width + x - 1][0] + 10 * src->verts[(y + 1) * width + x][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
+        }
+    }
+    // Calculate gradient magnitude
+    for (int y = 1; y < height - 1; ++y) {
+        for (int x = 1; x < width - 1; ++x) {
+            int idx = y * width + x;
+
+            // Calculate gradient magnitude
+            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
+            // Apply threshold
+            if (mag * 255 > threshold) {
+                // Set to white
+                dst->verts[idx] = { 1, 1, 1 };
+            }
+            else {
+                // Set to black
+                dst->verts[idx] = {0, 0, 0};
+            }
+            // Clamp to [0, 255] and store in output image
+            float g = std::min(1, std::max(0, mag));
+            dst->verts[idx] = {g,g,g};
+        }
+    }
+}
 //边缘检测
 struct EdgeDetect : INode {
     void apply() override {
@@ -1223,6 +1712,95 @@ struct EdgeDetect : INode {
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
 
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->resize(w * h);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w);
+        image2->userData().set2("h", h);
+
+        if(mode=="sobel"){
+            std::vector<float> dx,dy;
+            zeno::sobel(image, w, h, dx, dy);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    // 计算梯度幅值
+                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
+                    image->verts[i * w + j] = {gradient,gradient,gradient};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="sobelcv"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            zeno::sobelcv(imagecvin,imagecvout, low_threshold, high_threshold);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="cannycv"){
+            cv::Mat imagecvin(h, w, CV_8U);
+            cv::Mat imagecvout(h, w, CV_8U);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
+                }
+            }
+            cv::Canny(imagecvin,imagecvout,low_threshold, high_threshold);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="scharr"){
+            zeno::scharr2(image, image2, w, h, low_threshold);
+            set_output("image", image2);
+        }
+        if(mode=="laplacian"){
+
+        }
+    }
+};
+ZENDEFNODE(EdgeDetect, {
+   {
+       {"image"},
+       {"enum sobel sobelcv cannycv scharr", "mode", "sobel"},
+       {"int", "low_threshold", "100"},
+       {"int", "high_threshold", "150"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
+});
+
+struct EdgeDetect2 : INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        int low_threshold = get_input2<int>("low_threshold");
+        int high_threshold = get_input2<int>("high_threshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        int threshold = ud.get2<int>("threshold");
         auto image2 = std::make_shared<PrimitiveObject>();
         image2->resize(w * h);
         image2->userData().set2("isImage", 1);
@@ -1246,71 +1824,15 @@ struct EdgeDetect : INode {
             }
             set_output("image", image);
         }
-        if(mode=="sobel"){
-            std::vector<float> dx,dy;
-            zeno::sobel(image, w, h, dx, dy);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    // 计算梯度幅值
-                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
-                    image->verts[i * w + j] = {gradient,gradient,gradient};
-                }
-            }
-            set_output("image", image);
-        }
-        if(mode=="sobel2"){
-            std::vector<float> dx,dy;
-            zeno::sobel2(image, image2, w , h, low_threshold);
-            set_output("image", image2);
-        }
-
-        if(mode=="scharr"){
-            zeno::scharr2(image, image2, w, h, low_threshold);
-            set_output("image", image2);
-        }
-
-        if(mode=="laplacian"){
-
-        }
-    }
-};
-ZENDEFNODE(EdgeDetect, {
-   {
-       {"image"},
-       {"enum sobel canny scharr laplacian sobel2", "mode", "sobel"},
-       {"int", "low_threshold", "100"},
-       {"int", "high_threshold", "150"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-struct EdgeDetect2 : INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        int threshold = ud.get2<int>("threshold");
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->resize(w * h);
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w);
-        image2->userData().set2("h", h);
-        if(mode=="sobel"){
-            zeno::sobel2(image, image2, w, h,threshold);
-            set_output("image", image2);
-        }
-
         if(mode=="scharr"){
             zeno::scharr2(image, image2, w, h,threshold);
             set_output("image", image2);
         }
-
+        if(mode=="sobel"){
+            std::vector<float> dx,dy;
+            zeno::sobel(image, w , h, dx, dy);
+            set_output("image", image2);
+        }
         if(mode=="laplacian"){
 
         }
@@ -1321,6 +1843,87 @@ ZENDEFNODE(EdgeDetect2, {
         {"image"},
         {"enum sobel scharr laplacian", "mode", "sobel"},
         {"int", "threshold", "150"},
+        {"int", "low_threshold", "100"},
+        {"int", "high_threshold", "150"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "deprecate" },
+});
+
+struct CompExtractChanel_gray: INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto RGB = get_input2<bool>("RGB");
+        auto R = get_input2<bool>("R");
+        auto G = get_input2<bool>("G");
+        auto B = get_input2<bool>("B");
+        auto A = get_input2<bool>("A");
+        auto &ud1 = image->userData();
+        int w = ud1.get2<int>("w");
+        int h = ud1.get2<int>("h");
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w);
+        image2->userData().set2("h", h);
+        image2->verts.resize(image->size());
+
+        if(RGB){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float avr = (image->verts[i][0] + image->verts[i][1] + image->verts[i][2])/3;
+                image2->verts[i] = {avr,avr,avr};
+            }
+        }
+        if(R && !RGB) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float R = image->verts[i][0];
+                zeno::clamp(image2->verts[i][0] += R,0,1);
+                zeno::clamp(image2->verts[i][1] += R,0,1);
+                zeno::clamp(image2->verts[i][2] += R,0,1);
+            }
+        }
+        if(G && !RGB) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float G = image->verts[i][1];
+                zeno::clamp(image2->verts[i][0] += G,0,1);
+                zeno::clamp(image2->verts[i][1] += G,0,1);
+                zeno::clamp(image2->verts[i][2] += G,0,1);
+            }
+        }
+        if(B && !RGB) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                float B = image->verts[i][2];
+                zeno::clamp(image2->verts[i][0] += B,0,1);
+                zeno::clamp(image2->verts[i][1] += B,0,1);
+                zeno::clamp(image2->verts[i][2] += B,0,1);
+            }
+        }
+        if(A) {
+            if (image->verts.has_attr("alpha")) {
+                auto &Alpha = image->verts.attr<float>("alpha");
+                image2->verts.add_attr<float>("alpha");
+                image2->verts.attr<float>("alpha")=image->verts.attr<float>("alpha");
+            }
+            else{
+                image2->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w * h;i++){
+                    image2->verts.attr<float>("alpha")[i] = 1.0;
+                }
+            }
+        }
+        set_output("image", image2);
+    }
+};
+ZENDEFNODE(CompExtractChanel_gray, {
+    {
+        {"image"},
+        {"bool", "RGB", "0"},
+        {"bool", "R", "0"},
+        {"bool", "G", "0"},
+        {"bool", "B", "0"},
+        {"bool", "A", "0"},
     },
     {
         {"image"}
@@ -1332,145 +1935,61 @@ ZENDEFNODE(EdgeDetect2, {
 struct CompExtractChanel : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
-        auto RGBA = get_input2<std::string>("RGBA");
-        image->verts.add_attr<float>("alpha");
-        if(RGBA == "RGBA") {}
-        if(RGBA == "R") {
+        auto RGB = get_input2<bool>("RGB");
+        auto R = get_input2<bool>("R");
+        auto G = get_input2<bool>("G");
+        auto B = get_input2<bool>("B");
+        auto A = get_input2<bool>("A");
+        auto &ud1 = image->userData();
+        int w = ud1.get2<int>("w");
+        int h = ud1.get2<int>("h");
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w);
+        image2->userData().set2("h", h);
+        image2->verts.resize(image->size());
+        if(RGB){
             for (auto i = 0; i < image->verts.size(); i++) {
-                float R = image->verts[i][0];
-                image->verts[i][0] = R;
-                image->verts[i][1] = R;
-                image->verts[i][2] = R;
+                image2->verts[i][0] = image->verts[i][0];
+                image2->verts[i][1] = image->verts[i][1];
+                image2->verts[i][2] = image->verts[i][2];
             }
         }
-        if(RGBA == "G") {
+        if(R && !RGB) {
             for (auto i = 0; i < image->verts.size(); i++) {
-                float G = image->verts[i][1];
-                image->verts[i][0] = G;
-                image->verts[i][1] = G;
-                image->verts[i][2] = G;
+                image2->verts[i][0] = image->verts[i][0];
             }
         }
-        if(RGBA == "B") {
+        if(G && !RGB) {
             for (auto i = 0; i < image->verts.size(); i++) {
-                float B = image->verts[i][2];
-                image->verts[i][0] = B;
-                image->verts[i][1] = B;
-                image->verts[i][2] = B;
+                image2->verts[i][1] = image->verts[i][1];
             }
         }
-        if(RGBA == "A") {
+        if(B && !RGB) {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                image2->verts[i][2] = image->verts[i][2];
+            }
+        }
+        if(A) {
             if (image->verts.has_attr("alpha")) {
                 auto &Alpha = image->verts.attr<float>("alpha");
-                for (auto i = 0; i < image->verts.size(); i++) {
-                    float A = Alpha[i];
-                    image->verts[i][0] = A;
-                    image->verts[i][1] = A;
-                    image->verts[i][2] = A;
+                image2->verts.add_attr<float>("alpha");
+                image2->verts.attr<float>("alpha")=image->verts.attr<float>("alpha");
+            }
+            else{
+                image2->verts.add_attr<float>("alpha");
+                for(int i = 0;i < w * h;i++){
+                    image2->verts.attr<float>("alpha")[i] = 1.0;
                 }
             }
         }
-        set_output("image", image);
+        set_output("image", image2);
     }
 };
 ZENDEFNODE(CompExtractChanel, {
     {
         {"image"},
-        {"enum RGBA R G B A", "RGBA", "RGBA"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-struct CompExtractChanel_RGBA : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto RGBA = get_input2<bool>("RGBA");
-        auto R = get_input2<bool>("R");
-        auto G = get_input2<bool>("G");
-        auto B = get_input2<bool>("B");
-        auto A = get_input2<bool>("A");
-
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-//alpha=1
-        auto A11 = std::make_shared<PrimitiveObject>();
-        A11->verts.resize(image->size());
-        A11->userData().set2("isImage", 1);
-        A11->userData().set2("w", w);
-        A11->userData().set2("h", h);
-        A11->verts.add_attr<float>("alpha");
-        for(int i = 0;i < image->size();i++){
-            A11->verts.attr<float>("alpha")[i] = 1;
-        }
-        std::vector<float> &Alpha = A11->verts.attr<float>("alpha");
-
-//alpha=0
-        auto A1 = std::make_shared<PrimitiveObject>();
-        A1->verts.resize(image->size());
-        A1->userData().set2("isImage", 1);
-        A1->userData().set2("w", w);
-        A1->userData().set2("h", h);
-        A1->verts.add_attr<float>("alpha");
-        for(int i = 0;i < image->size();i++){
-            A1->verts.attr<float>("alpha")[i] = 0;
-        }
-
-        if(image->verts.has_attr("alpha")){
-            A1->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
-            Alpha = image->verts.attr<float>("alpha");
-        }
-
-        float R1=0,G1=0,B1=0;
-
-        if(RGBA) {
-            A1 = image;
-        }
-        if(R && !RGBA) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                R1 = image->verts[i][0];
-                A1->verts[i][0] = (Alpha[i] == 1) ? R1 : 0;
-                A1->verts.attr<float>("alpha")[i] = ((R1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
-            }
-        }
-
-        if(G && !RGBA) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                G1 = image->verts[i][1];
-                A1->verts[i][1] = (Alpha[i] == 1) ? G1 : 0;
-                A1->verts.attr<float>("alpha")[i] = ((G1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
-            }
-        }
-        if(B && !RGBA) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                B1 = image->verts[i][2];
-                A1->verts[i][2] = (Alpha[i] == 1) ? B1 : 0;
-                A1->verts.attr<float>("alpha")[i] = ((B1 != 0) ? 1 : A1->verts.attr<float>("alpha")[i]);
-            }
-        }
-        if(A && (!R&&!G&&!B) && !RGBA) {
-            if (image->verts.has_attr("alpha")) {
-                for (auto i = 0; i < image->verts.size(); i++) {
-                    float A = Alpha[i];
-                    A1->verts[i][0] = A;
-                    A1->verts[i][1] = A;
-                    A1->verts[i][2] = A;
-                    A1->verts.attr<float>("alpha")[i] = image->verts.attr<float>("alpha")[i];
-                }
-            }
-        }
-        set_output("image", A1);
-    }
-};
-ZENDEFNODE(CompExtractChanel_RGBA, {
-    {
-        {"image"},
-        {"bool", "RGBA", "0"},
+        {"bool", "RGB", "0"},
         {"bool", "R", "0"},
         {"bool", "G", "0"},
         {"bool", "B", "0"},
@@ -1653,7 +2172,7 @@ ZENDEFNODE(CompImport, {
 });
 
 /* 创建颜色图层，可能需要的参数：颜色，分辨率，图层名称 */
-struct CreateColor : INode {
+struct CreateImage : INode {
     virtual void apply() override {
         auto RGB = get_input2<vec3f>("RGB");
         auto x = get_input2<int>("width");
@@ -1665,23 +2184,23 @@ struct CreateColor : INode {
         image->userData().set2("w", x);
         image->userData().set2("isImage", 1);
         for (int i = 0; i < x * y; i++){
-            image->verts[i] = {RGB[0],RGB[1],RGB[2]};
+            image->verts[i] = {zeno::clamp(RGB[0]/255, 0, 255),zeno::clamp(RGB[1]/255, 0, 255),zeno::clamp(RGB[2]/255, 0, 255)};
         }
         set_output("image", image);
     }
 };
 
-ZENDEFNODE(CreateColor, {
+ZENDEFNODE(CreateImage, {
     {
-        {"vec3f", "RGB", "1,1,1"},
-        {"int", "width", "256"},
-        {"int", "height", "256"},
+        {"vec3f", "RGB", "255,255,255"},
+        {"int", "width", "1024"},
+        {"int", "height", "1024"},
     },
     {
         {"image"}
         },
     {},
-    { "comp" },
+    { "create" },
 });
 
 //对比度
@@ -1856,7 +2375,6 @@ ZENDEFNODE(CompNormalMap, {
     {},
     { "comp" },
 });
-
 
 struct ImageEditGray : INode {
     void apply() override {
@@ -2380,7 +2898,98 @@ ZENDEFNODE(ImageDilateByColor, {
     {"deprecated"},
 });
 
-
+struct NormalMapOntoSphere : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto strength = get_input2<float>("strength");
+        auto InvertR = get_input2<bool>("InvertR");
+        auto InvertG = get_input2<bool>("InvertG");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        using normal =  std::tuple<float, float, float>;
+        normal n = {0, 0, 1};
+        float n0 = std::get<0>(n);
+        float n1 = std::get<1>(n);
+        float n2 = std::get<2>(n);
+        std::vector<normal> normalmap;
+        normalmap.resize(image->size());
+        float gx = 0;
+        float gy = 0;
+        float gz = 1;
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                int idx = i * w + j;
+                if (i == 0 || i == h || j == 0 || j == w) {
+                    normalmap[idx] = {0, 0, 1};
+                }
+            }
+        }
+        for (int i = 1; i < h-1; i++) {
+            for (int j = 1; j < w-1; j++) {
+                int idx = i * w + j;
+                gx = (image->verts[idx+1][0] - image->verts[idx-1][0])/2.0f * strength;
+                gy = (image->verts[idx+w][0] - image->verts[idx-w][0])/2.0f * strength;
+                float len = sqrt(gx * gx + gy * gy + gz * gz);
+                gx /= len;
+                gy /= len;
+                gz /= len;
+                // 计算光照值
+                if((!InvertG && !InvertR) || (InvertG && InvertR)){
+                    gx = 0.5f * (gx + 1.0f) ;
+                    gy = 0.5f * (-gy + 1.0f) ;
+                    gz = 0.5f * (gz + 1.0f) ;
+                    normalmap[i * w + j] = {gx,gy,gz};
+                }
+                else if((!InvertG && InvertR) || (InvertG && !InvertR)){
+                    gx = 0.5f * (gx + 1.0f) ;
+                    gy = 0.5f * (gy + 1.0f) ;
+                    gz = 0.5f * (gz + 1.0f) ;
+                    normalmap[i * w + j] = {gx,gy,gz};
+                }
+            }
+        }
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                int idx = i * w + j;
+                if(!InvertG && !InvertR){
+                    image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
+                    image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
+                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                }
+                if(!InvertG && InvertR){
+                    image->verts[i * w + j][0] = std::get<1>(normalmap[i * w + j]);
+                    image->verts[i * w + j][1] = std::get<0>(normalmap[i * w + j]);
+                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                }
+                if(InvertG && !InvertR){
+                    image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
+                    image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
+                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                }
+                if(InvertG && InvertR){
+                    image->verts[i * w + j][0] = std::get<1>(normalmap[i * w + j]);
+                    image->verts[i * w + j][1] = std::get<0>(normalmap[i * w + j]);
+                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                }
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(NormalMapOntoSphere, {
+    {
+        {"image"},
+        {"float", "strength", "25"},
+        {"bool", "InvertR", "0"},
+        {"bool", "InvertG", "0"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "deprecate" },
+});
 }
 }
 

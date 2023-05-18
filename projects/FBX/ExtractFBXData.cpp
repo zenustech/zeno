@@ -165,7 +165,6 @@ struct ExtractMatData : zeno::INode {
 
     virtual void apply() override {
         auto data = get_input<MatData>("data");
-        auto texVer = get_param<std::string>("texVer");
         auto datas = std::make_shared<zeno::ListObject>();
         auto matName = std::make_shared<zeno::StringObject>();
 
@@ -175,21 +174,27 @@ struct ExtractMatData : zeno::INode {
         matName->set(data->sMaterial.matName);
 
         auto texLists = std::make_shared<zeno::ListObject>();
-        std::vector<std::string> tl;
-        if(texVer == "V1")
-            tl = data->sMaterial.getTexList();
-        else if(texVer == "V2")
-            tl = data->sMaterial.getSimplestTexList();
-        zeno::log_info("TexLists Length: {}", tl.size());
-        for(auto&p: tl){
+        auto texMaps = std::make_shared<zeno::DictObject>();
+
+        std::vector<std::string> texList{}; std::map<std::string, int> texMap{};
+
+            data->sMaterial.getSimplestTexList(texList, texMap);
+
+        for(auto&p: texList){
             auto s = std::make_shared<zeno::StringObject>();
             s->value = p;
             texLists->arr.emplace_back(s);
+        }
+        for(auto&[matName, index]: texMap){
+            auto numeric_obj = std::make_shared<zeno::NumericObject>();
+            numeric_obj->set(index);
+            texMaps->lut[matName] = std::move(numeric_obj);
         }
 
         set_output("datas", std::move(datas));
         set_output("matName", std::move(matName));
         set_output("texLists", std::move(texLists));
+        set_output("texMaps", std::move(texMaps));
     }
 };
 ZENDEFNODE(ExtractMatData,
@@ -198,10 +203,10 @@ ZENDEFNODE(ExtractMatData,
                 "data"
             },  /* outputs: */
             {
-                "datas", "matName", "texLists"
+                "datas", "matName", "texLists", "texMaps"
             },  /* params: */
             {
-                {"enum V1 V2", "texVer", "V1"}
+
             },  /* category: */
             {
                 "FBX",

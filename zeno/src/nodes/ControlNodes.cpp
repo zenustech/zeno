@@ -55,6 +55,9 @@ struct BeginFor : IBeginFor {
         m_index = 0;
         m_count = get_input<zeno::NumericObject>("count")->get<int>();
         set_output("FOR", std::make_shared<zeno::DummyObject>());
+        if (outputs.find("index") == outputs.end()) {
+            set_output("index", std::make_shared<zeno::NumericObject>());
+        }
     }
 
     virtual void update() override final {

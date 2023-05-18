@@ -316,7 +316,18 @@ ZPlainLogPanel::ZPlainLogPanel(QWidget* parent)
             verticalScrollBar()->setValue(verticalScrollBar()->maximum());
         }
     });
+    initMsgs();
 }
+
+void ZPlainLogPanel::initMsgs()
+{
+    QStandardItemModel *pModel = zenoApp->logModel();
+    for (int r = 0; r < pModel->rowCount(); r++) {
+        QString content = pModel->item(r)->text();
+        appendPlainText(content);
+    }
+}
+
 
 
 ZlogPanel::ZlogPanel(QWidget* parent)
@@ -370,6 +381,13 @@ ZlogPanel::ZlogPanel(QWidget* parent)
     m_ui->editSearch->setProperty("cssClass", "zeno2_2_lineedit");
     m_ui->editSearch->setPlaceholderText(tr("Search"));
 
+    m_ui->btnSyncLog->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
+    m_ui->btnSyncLog->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
+        ":/icons/logger-sync-idle.svg",
+        ":/icons/logger-sync-light.svg",
+        "",
+        "");
+
     m_ui->btnDelete->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
     m_ui->btnDelete->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
         ":/icons/toolbar_delete_idle.svg",
@@ -391,8 +409,9 @@ ZlogPanel::ZlogPanel(QWidget* parent)
 
 void ZlogPanel::initModel()
 {
+    m_logModel = new QStandardItemModel;
     m_pFilterModel = new CustomFilterProxyModel(this);
-    m_pFilterModel->setSourceModel(zenoApp->logModel());
+    m_pFilterModel->setSourceModel(m_logModel);
     m_pFilterModel->setFilterRole(ROLE_LOGTYPE);
     m_ui->listView->setModel(m_pFilterModel);
 }
@@ -439,13 +458,27 @@ void ZlogPanel::initSignals()
         onFilterChanged();
     });
 
+    connect(m_ui->btnSyncLog, &ZToolButton::clicked, this, [=]() {
+        onSyncLogs();
+    });
+
     connect(m_ui->btnDelete, &ZToolButton::clicked, this, [=]() {
-        zenoApp->logModel()->clear();
+        m_logModel->clear();
+        //zenoApp->logModel()->clear();
     });
 
     connect(m_ui->btnSetting, &ZToolButton::clicked, this, [=]() {
         onSettings();
     });
+}
+
+void ZlogPanel::onSyncLogs()
+{
+    QStandardItemModel* pModel = zenoApp->logModel();
+    for (int r = 0; r < pModel->rowCount(); r++)
+    {
+        m_logModel->appendRow(pModel->item(r)->clone());
+    }
 }
 
 void ZlogPanel::onFilterChanged()
