@@ -580,7 +580,8 @@ struct IObjectExtractor<remote::ESubjectType::HeightField> {
             RemappedHeightFieldData.reserve(PrimObj->verts.size());
             for (float Height : HeightAttrs) {
                 // Map height [-255, 255] in R to [0, UINT16_MAX] in Z
-                auto NewValue = static_cast<uint16_t>(((Height + 255.f) / (255.f * 2.f)) * std::numeric_limits<uint16_t>::max());
+                constexpr uint16_t uint16Max = std::numeric_limits<uint16_t>::max();
+                auto NewValue = static_cast<uint16_t>(((Height + 255.f) / (255.f * 2.f)) * uint16Max);
                 RemappedHeightFieldData.push_back(NewValue);
             }
             remote::HeightField HeightField { N, N, RemappedHeightFieldData };
