@@ -226,6 +226,8 @@
     <file>icons/logger_warning_unchecked.svg</file>
     <file>icons/logger-key-checked.svg</file>
     <file>icons/logger-key-unchecked.svg</file>
+    <file>icons/logger-sync-idle.svg</file>
+    <file>icons/logger-sync-light.svg</file>
     <file>icons/toolbar_delete_idle.svg</file>
     <file>icons/toolbar_delete_light.svg</file>
     <file>icons/nodeEditor_blackboard_selected.svg</file>

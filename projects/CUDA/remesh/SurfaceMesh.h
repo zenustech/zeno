@@ -13,6 +13,7 @@ namespace zeno {
 namespace pmp {
 
 #define PMP_MAX_INDEX INT_LEAST32_MAX
+#define PMP_ENABLE_PROFILE 0
 
 class SurfaceMesh {
 
@@ -174,7 +175,7 @@ public:
     bool is_collapse_ok(int v0v1);
     void collapse(int h);
     void garbage_collection();
-    int split(int e, int v, int& new_lines);
+    int split(int e, int v, int& new_lines, int& new_faces);
     bool is_flip_ok(int e) const;
     void flip(int e);
 
@@ -198,7 +199,7 @@ public:
         const vec3f p1 = pos[to_vertex(h1)];
 
         if (hconn_[h0].face_ != PMP_MAX_INDEX) {
-            const vec3f p2 = pos[next_halfedge(h0)];
+            const vec3f p2 = pos[to_vertex(next_halfedge(h0))];
             const vec3f d0 = p0 - p2;
             const vec3f d1 = p1 - p2;
             const float area = length(cross(d0, d1));
@@ -209,7 +210,7 @@ public:
         }
 
         if (hconn_[h1].face_ != PMP_MAX_INDEX) {
-            const vec3f p2 = pos[next_halfedge(h1)];
+            const vec3f p2 = pos[to_vertex(next_halfedge(h1))];
             const vec3f d0 = p0 - p2;
             const vec3f d1 = p1 - p2;
             const float area = length(cross(d0, d1));
@@ -326,7 +327,7 @@ public:
 
     int new_vertex(const vec3f& p) {
         if (vertices_size_ == PMP_MAX_INDEX - 1) {
-            zeno::log_error("new_vertex: cannot allocate vertex, max index reached");
+            zeno::log_error("remesh: cannot allocate vertex, max index reached");
             return PMP_MAX_INDEX;
         }
 
@@ -341,14 +342,12 @@ public:
     int new_edge(int start, int end) {
         assert(start != end);
 
-        if (halfedges_size_ == PMP_MAX_INDEX - 1) {
-            zeno::log_error("new_edge: cannot allocate edge, max index reached");
+        if (halfedges_size_ >= PMP_MAX_INDEX - 2) {
+            zeno::log_error("remesh: cannot allocate edge, max index reached");
             return PMP_MAX_INDEX;
         }
 
         prim_->lines.push_back(vec2i(start, end));
-        auto& edeleted = prim_->lines.attr<int>("e_deleted");
-        edeleted.push_back(0);
         ++lines_size_;
         
         halfedges_size_+=2;
@@ -366,6 +365,10 @@ public:
     }
 
     int new_halfedge(int start, int end, int line_id) {
+        if ((int)(line_id << 1) < 0) {
+            zeno::log_error("remesh: cannot allocate edge, max index reached");
+            return PMP_MAX_INDEX;
+        }
         assert(start != end);
         
         int h0 = line_id << 1;
@@ -379,13 +382,11 @@ public:
 
     int new_face(int v1, int v2, int v3) {
         if (faces_size_ == PMP_MAX_INDEX - 1) {
-            zeno::log_error("new_face: cannot allocate face, max index reached");
+            zeno::log_error("remesh: cannot allocate face, max index reached");
             return PMP_MAX_INDEX;
         }
 
         prim_->tris.push_back(vec3i(v1, v2, v3));
-        auto& fdeleted = prim_->tris.attr<int>("f_deleted");
-        fdeleted.push_back(0);
         
         ++faces_size_;
         if (faces_size_ > fconn_.size()) {

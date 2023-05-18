@@ -222,30 +222,84 @@ void ZenoParamLineEdit::keyReleaseEvent(QKeyEvent* event)
 
 ///////////////////////////////////////////////////////////////////////////
 ZenoParamPathEdit::ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem* parent)
-    : ZenoParamWidget(parent)
+    : ZEditableTextItem(path, parent)
+    , m_control(ctrl)
 {
-    m_pLineEdit = new ZPathEdit(path);
-    m_pLineEdit->setProperty("control", ctrl);
-    setWidget(m_pLineEdit);
-
-    //connect slot.
-    connect(m_pLineEdit, &ZPathEdit::textEditFinished, this, [=]() {
-        emit pathValueChanged(m_pLineEdit->text());
-    });
+    setAcceptHoverEvents(true);
 }
 
 QString ZenoParamPathEdit::path() const
 {
-    return m_pLineEdit->text();
+    return text();
 }
 
 void ZenoParamPathEdit::setPath(const QString& path)
 {
-    if (m_pLineEdit->text() != path)
+    setText(path);
+}
+
+void ZenoParamPathEdit::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
+{
+    QStyleOptionGraphicsItem opt = *option;
+    opt.exposedRect.adjust(0, 0, -ZenoStyle::dpiScaled(20), 0);
+    ZEditableTextItem::paint(painter, &opt, widget);
+    QSvgRenderer svgRender;    
+    QPoint globalPos = cursor().pos();
+    QGraphicsView *view = scene()->views().first();
+    QPoint viewPos = view->mapFromGlobal(globalPos);
+    QPointF pos = mapFromScene(view->mapToScene(viewPos));
+    QRectF rct = buttonArea();
+    if (rct.contains(pos))
+        svgRender.load(QString(":/icons/file-loader-on.svg"));
+    else
+        svgRender.load(QString(":/icons/file-loader.svg"));
+    svgRender.render(painter, rct);
+}
+
+QRectF ZenoParamPathEdit::buttonArea() 
+{
+    qreal width = ZenoStyle::dpiScaled(20);
+    qreal y = (boundingRect().height() - width) / 2;
+    return QRectF(boundingRect().right() - width, y, width, width);
+}
+
+void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event) 
+{
+    QPointF pos = event->pos();
+    if (buttonArea().contains(pos)) 
     {
-        m_pLineEdit->setText(path);
-        emit pathValueChanged(path);
+        QString path;
+        if (m_control == CONTROL_READPATH) {
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+        } else if (m_control == CONTROL_WRITEPATH) {
+            path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
+        } else {
+            path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
+        }
+        if (path.isEmpty()) {
+            return;
+        }
+        setText(path);
     }
+    ZEditableTextItem::mousePressEvent(event);
+}
+
+void ZenoParamPathEdit::hoverMoveEvent(QGraphicsSceneHoverEvent *event) 
+{
+    if (buttonArea().contains(event->pos())) 
+    {
+        if (cursor().shape() != Qt::ArrowCursor) 
+        {
+            setCursor(QCursor(Qt::ArrowCursor));
+            update();
+        }
+    } 
+    else if (cursor().shape() != Qt::IBeamCursor) 
+    {
+        setCursor(QCursor(Qt::IBeamCursor));
+        update();
+    }
+    ZEditableTextItem::hoverMoveEvent(event);
 }
 
 ///////////////////////////////////////////////////////////////////////////

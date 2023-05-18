@@ -34,8 +34,6 @@ public:
     zenovis::Session* getSession() const;
     bool isPlaying() const;
     void startPlay(bool bPlaying);
-    int getCurrentFrameId();
-    int setCurrentFrameId(int frameid);
     void setCameraRes(const QVector2D& res);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);

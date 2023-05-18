@@ -1,234 +1,198 @@
 #include "zeno/unreal/UnrealTool.h"
-#include "msgpack/msgpack.h"
-#include "zeno/types/DummyObject.h"
-#include "zeno/unreal/ZenoObjectExactor.h"
+#include "zeno/types/PrimitiveObject.h"
 
-#include <cstdarg>
-#include <iostream>
-#include <map>
-#include <zeno/core/Graph.h>
-#include <zeno/extra/SubnetNode.h>
-#include <zeno/types/PrimitiveObject.h>
+std::string zeno::remote::RandomString2(size_t Length) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 61);
+    const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    std::string str(Length,0);
+    std::generate_n( str.begin(), Length, [&](){ return charset[ dis(gen) ]; } );
+    return str;
+}
 
-#define PROC_INPUT_ARGS                                                      \
-    typedef std::pair<const char *, zeno::zany> ZPair;                       \
-                                                                             \
-    if (nullptr == graph) {                                                  \
-        return {0};                                                          \
-    }                                                                        \
-                                                                             \
-    std::map<std::string, zeno::zany> inputs;                                \
-                                                                             \
-    va_list vl;                                                              \
-    va_start(vl, argc);                                                      \
-    for (size_t i = 0; i < argc; ++i) {                                      \
-        const ZPair &pair = va_arg(vl, ZPair);                               \
-        inputs.insert(std::make_pair(std::string(pair.first), pair.second)); \
-    }                                                                        \
-    va_end(vl);
+std::string zeno::remote::RandomString(size_t Length) {
+    auto randchar = []() -> char
+    {
+      const char charset[] =
+          "0123456789"
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+          "abcdefghijklmnopqrstuvwxyz";
+      const size_t max_index = (sizeof(charset) - 1);
+      // Use C++ 11 random
+      return charset[ rand() % max_index ];
+    };
+    std::string str(Length,0);
+    std::generate_n( str.begin(), Length, randchar );
+    return str;
+}
+std::shared_ptr<zeno::PrimitiveObject>
+zeno::remote::ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField &InHeightData, int Nx, int Ny, const float Scale) {
+    std::shared_ptr<zeno::PrimitiveObject> Prim = std::make_shared<zeno::PrimitiveObject>();
+    Nx = std::max(Nx, InHeightData.Nx);
+    Ny = std::max(Ny, InHeightData.Ny);
+    float Dx = 1.f / std::max((float)Nx - 1.f, 1.f);
+    float Dy = 1.f / std::max((float)Ny - 1.f, 1.f);
+    vec3f ax {1, 0, 0};
+    vec3f ay {0, 0, 1};
+    vec3f o = -((ax + ay) / 2);
+    ax *= Dx; ay *= Dy;
+    ax *= Scale;
+    ay *= Scale;
+    Prim->resize(Nx * Ny);
 
-#define CONVERT_SIMPLE_LIST_OUTPUTS                                                                             \
-    zeno::SimpleList<std::pair<zeno::SimpleCharBuffer, zeno::zany>> result(output.size());                      \
-    for (const auto &pair : output) {                                                                           \
-        result.add(std::make_pair(zeno::SimpleCharBuffer{pair.first.c_str(), pair.first.size()}, pair.second)); \
-    }                                                                                                           \
-                                                                                                                \
-    return result;
-
-zeno::SubnetNode* zeno::GetSubnetNodeToCall(zeno::Graph* graph) {
-
-    if (nullptr != graph && !(graph->nodesToExec.empty())) {
-        const std::string& execNodeNameExt = *graph->nodesToExec.begin();
-        const auto splitPos = execNodeNameExt.find(':');
-        const std::string execNodeName = execNodeNameExt.substr(0, splitPos);
-        // Check node is a subnet node
-        if (graph->nodes.find(execNodeName) != graph->nodes.end()) {
-            auto* execNode = dynamic_cast<zeno::SubnetNode*>(graph->nodes[execNodeName].get());
-            return execNode;
+    auto &pos = Prim->add_attr<vec3f>("pos");
+#pragma omp parallel for collapse(2)
+    for (int32_t y = 0; y < Ny; y++)
+        for (int32_t x = 0; x < Nx; x++) {
+            vec3f p = o + x * ax + y * ay;
+            size_t i = x + y * Nx;
+            pos[i] = p;
         }
-    }
-
-    return nullptr;
-}
-
-zeno::SimpleList<std::pair<zeno::SimpleCharBuffer, zeno::zany>> zeno::CallTempNode(Graph *graph, const char *id,
-                                                                                   size_t argc, ...) {
-    PROC_INPUT_ARGS;
-
-    std::map<std::string, std::shared_ptr<zeno::IObject>> output = graph->callTempNode(id, inputs);
-
-    CONVERT_SIMPLE_LIST_OUTPUTS;
-}
-
-zeno::Graph *zeno::AddSubnetNode(Graph *graph, const char *id) {
-    if (nullptr != graph) {
-        return graph->addSubnetNode(id);
-    }
-    return nullptr;
-}
-
-zeno::SimpleList<std::pair<zeno::SimpleCharBuffer, zeno::zany>> zeno::CallSubnetNode(zeno::Graph *graph, const char *id,
-                                                                                     size_t argc, ...) {
-    PROC_INPUT_ARGS;
-
-    std::map<std::string, zany> output = graph->callSubnetNode(id, std::move(inputs));
-
-    CONVERT_SIMPLE_LIST_OUTPUTS;
-}
-
-bool zeno::LoadGraphChecked(zeno::Graph *graph, const char *json) {
-    if (nullptr == graph || nullptr == json) return false;
-    try {
-        graph->loadGraph(json);
-    } catch (...) {
-        return false;
-    }
-    return true;
-}
-
-bool zeno::IsValidZSL(const char *json) {
-    auto graph = zeno::getSession().createGraph();
-    if (!graph) return false;
-    if (!LoadGraphChecked(graph.get(), json)) return false;
-    // Check have nodes to exec
-    if (graph->nodesToExec.empty()) return false;
-
-    const zeno::SubnetNode* execNode = GetSubnetNodeToCall(graph.get());
-    if (nullptr == execNode || !execNode->subgraph) return false;
-
-    return true;
-}
-
-zeno::SimpleCharBuffer zeno::CallSubnetNode_Mesh(zeno::Graph *graph, const char *id, size_t argc, ...) {
-    PROC_INPUT_ARGS;
-
-    std::map<std::string, zany> output = graph->callSubnetNode(id, std::move(inputs));
-
-    for (const auto& pair : output) {
-        if (!pair.second) {
-            continue;
-        }
-        zeno::IObject* obj = pair.second.get();
-        auto* primitiveObject = dynamic_cast<zeno::PrimitiveObject*>(obj);
-        if (nullptr == primitiveObject) {
-            continue;
+    Prim->tris.resize((Nx - 1) * (Ny - 1) * 2);
+#pragma omp parallel for collapse(2)
+    for (int32_t y = 0; y < Ny - 1; y++)
+        for (int32_t x = 0; x < Nx - 1; x++) {
+            int32_t index = y * (Nx - 1) + x;
+            Prim->tris[index * 2][2] = y * Nx + x;
+            Prim->tris[index * 2][1] = y * Nx + x + 1;
+            Prim->tris[index * 2][0] = (y + 1) * Nx + x + 1;
+            Prim->tris[index * 2 + 1][2] = (y + 1) * Nx + x + 1;
+            Prim->tris[index * 2 + 1][1] = (y + 1) * Nx + x;
+            Prim->tris[index * 2 + 1][0] = y * Nx + x;
         }
 
-        zeno::unreal::Mesh mesh { primitiveObject->verts, primitiveObject->tris };
-        auto res = msgpack::pack(mesh);
-        return SimpleCharBuffer { reinterpret_cast<char*>(res.data()), res.size() };
+    auto& Arr = Prim->verts.add_attr<float>("height");
+//    size_t Idx = 0;
+//    for (const auto& Row : InHeightData.Data) {
+//        for (const uint16_t Height : Row) {
+//            Arr[Idx] = ((float)Height / std::numeric_limits<uint16_t>::max()) * (255.f * 2) - 255.f;
+//            Prim->verts[Idx] = { Prim->verts[Idx].at(0), Arr[Idx], Prim->verts[Idx].at(2) };
+//            Idx++;
+//        }
+//    }
+    size_t IdxX = 0;
+    size_t IdxY = 0;
+    for (const auto& Row : InHeightData.Data) {
+        IdxX = 0;
+        for (const uint16_t Height : Row) {
+            Arr[IdxX * Nx + IdxY] = ((float)Height / std::numeric_limits<uint16_t>::max()) * (255.f * 2) - 255.f;
+            Prim->verts[IdxX * Ny + IdxY] = { Prim->verts[IdxX * Ny + IdxY].at(0), Arr[IdxX * Ny + IdxY], Prim->verts[IdxX * Ny + IdxY].at(2) };
+            IdxX ++;
+        }
+        IdxY ++;
     }
 
-    return nullptr;
+    return Prim;
 }
 
-zeno::SimpleCharBuffer zeno::GetGraphInputParams(zeno::Graph *graph) {
-    zeno::unreal::SubnetNodeParamList list;
+std::string zeno::remote::Flags::GetCurrentSession() {
+    if (IsMainProcess()) {
+        std::string Result = CurrentSession;
+        return Result;
+    } else if (!CurrentSession.empty()) {
+        return CurrentSession;
+    } else {
+        // Request session key from main process
+        httplib::Client Cli { ZENO_TOOL_SERVER_ADDRESS };
+        auto Res = Cli.Get("/session/current", httplib::Headers { { ZENO_SESSION_HEADER_KEY, ZENO_LOCAL_TOKEN } });
+        if (Res && Res->status == 200) {
+            CurrentSession = Res->body;
+            return Res->body;
+        } else {
+            return "";
+        }
+    }
+}
+bool zeno::remote::Flags::IsMainProcess() const {
+    return IsMainProcess_;
+}
 
-    if (nullptr != graph) {
-        const zeno::SubnetNode* execNode = GetSubnetNodeToCall(graph);
-        if (execNode != nullptr && execNode->subgraph) {
-            for (const auto& inputNode : execNode->subgraph->subInputNodes) {
-                auto& info = execNode->subgraph->nodes[inputNode.second];
-                zeno::StringObject* typeObj = dynamic_cast<zeno::StringObject*>(info->inputs["type:"].get());
-                if (typeObj) {
-                    list.params.insert(std::make_pair(inputNode.first, (int8_t)zeno::unreal::ConvertStringToEParamType(typeObj->value)));
+void zeno::remote::Flags::SetIsMainProcess(bool isMainProcess) {
+    IsMainProcess_ = isMainProcess;
+}
+zeno::remote::Flags::Flags() : IsMainProcess_(false)
+{}
+
+void zeno::remote::SubjectRegistry::Push(const std::vector<SubjectContainer> &InitList, const std::string &SessionKey) {
+    if (StaticFlags.IsMainProcess()) {
+        std::set<std::string> ChangeList;
+        auto& ElementMap = GetOrCreateSessionElement(SessionKey);
+
+        for (const SubjectContainer& Value : InitList) {
+            ChangeList.emplace(Value.Name);
+            ElementMap.insert_or_assign(Value.Name, Value);
+        }
+        if (Callback) {
+            Callback(ChangeList, SessionKey);
+        }
+    } else {
+        // In child process, transfer data with http
+        httplib::Client Cli { ZENO_TOOL_SERVER_ADDRESS };
+        Cli.set_default_headers({ {ZENO_SESSION_HEADER_KEY, ZENO_LOCAL_TOKEN} });
+        SubjectContainerList List { InitList };
+        std::vector<uint8_t> Data = msgpack::pack(List);
+        const std::string& Url = StringFormat("/subject/push?session_key=%s", SessionKey);
+        Cli.Post(Url, reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
+    }
+}
+
+void zeno::remote::SubjectRegistry::SetParameter(const std::string &SessionKey, const std::string &Key,
+                                                 zeno::remote::ParamValue &Value) {
+    if (StaticFlags.IsMainProcess()) {
+        auto& ParamMapIter = GetOrCreate(SessionalParameters, SessionKey);
+
+        ParamMapIter.insert_or_assign(Key, Value);
+    } else {
+        // In child process, transfer data with http
+        httplib::Client Cli { ZENO_TOOL_SERVER_ADDRESS };
+        Cli.set_default_headers({ {ZENO_SESSION_HEADER_KEY, ZENO_LOCAL_TOKEN} });
+        httplib::Params Param;
+        Param.insert(std::make_pair("session_key", SessionKey));
+        Param.insert(std::make_pair("key", Key));
+        std::vector<uint8_t> Data = msgpack::pack(Value);
+        const httplib::Result Response = Cli.Post("/graph/param/push", reinterpret_cast<const char*>(Data.data()), Data.size(), "application/binary");
+    }
+}
+
+const zeno::remote::ParamValue *zeno::remote::SubjectRegistry::GetParameter(const std::string &SessionKey,
+                                                                            const std::string &Key) const {
+    static zeno::remote::ParamValue TempValue;
+    if (StaticFlags.IsMainProcess()) {
+        auto ParamMapIter = SessionalParameters.find(SessionKey);
+        if (ParamMapIter != SessionalParameters.end()) {
+            auto ParamIter = ParamMapIter->second.find(Key);
+            if (ParamIter != ParamMapIter->second.end()) {
+                TempValue = ParamIter->second;
+                return &TempValue;
+            }
+        }
+        return nullptr;
+    } else {
+        // In child process, transfer data with http
+        httplib::Client Cli{ZENO_TOOL_SERVER_ADDRESS};
+        Cli.set_default_headers({{ZENO_SESSION_HEADER_KEY, ZENO_LOCAL_TOKEN}});
+        httplib::Params Param;
+        Param.insert(std::make_pair("key", Key));
+        const httplib::Result Response =
+            Cli.Get("/graph/param/fetch", Param, httplib::Headers{}, httplib::Progress{});
+        if (Response) {
+            const std::string &Body = Response->body;
+            std::error_code Err;
+            auto List = msgpack::unpack<struct ParamValueBatch>(
+                reinterpret_cast<uint8_t *>(const_cast<char *>(Body.data())), Body.size(), Err);
+            if (!Err) {
+                for (const auto &Subject : List.Values) {
+                    // Alloc new memory and copy it
+                    // TODO [darc] : fix race condition(might be) :
+                    TempValue = Subject;
+                    return &TempValue;
                 }
             }
         }
+        return nullptr;
     }
-
-    auto data = msgpack::pack(list);
-    return { reinterpret_cast<char*>(data.data()), data.size() };
 }
-
-zeno::SimpleCharBuffer zeno::GetSubnetNodeIdToCall(zeno::Graph *graph) {
-    const std::string& execNodeNameExt = *graph->nodesToExec.begin();
-    const auto splitPos = execNodeNameExt.find(':');
-    const std::string execNodeName = execNodeNameExt.substr(0, splitPos);
-
-    return execNodeName.c_str();
-}
-
-zeno::SimpleCharBuffer zeno::Run_Mesh(zeno::Graph *graph, SimpleCharBuffer inputs) {
-    SimpleCharBuffer id = GetSubnetNodeIdToCall(graph);
-    std::error_code err;
-    auto data = msgpack::unpack<zeno::unreal::NodeParamInput>(reinterpret_cast<const uint8_t *>(inputs.data), inputs.length - 1, err);
-    std::map<std::string, zeno::zany> realInput;
-    for (const auto& pair : data.data) {
-        realInput.insert_or_assign(pair.first, std::make_shared<zeno::NumericObject>(pair.second.data()));
-        std::cout << pair.first << " " << pair.second.data_ <<std::endl;
-    }
-    auto output = graph->callSubnetNode( { id.data }, std::move(realInput));
-
-    for (const auto& pair : output) {
-        if (!pair.second) {
-            continue;
-        }
-        zeno::IObject* obj = pair.second.get();
-        auto* primitiveObject = dynamic_cast<zeno::PrimitiveObject*>(obj);
-        if (nullptr == primitiveObject) {
-            continue;
-        }
-
-        zeno::unreal::Mesh mesh { primitiveObject->verts, primitiveObject->tris };
-        auto res = msgpack::pack(mesh);
-        return SimpleCharBuffer { reinterpret_cast<char*>(res.data()), res.size() };
-    }
-
-    return nullptr;
-}
-
-zeno::unreal::ZenoObjectExactorManager &zeno::unreal::ZenoObjectExactorManager::Get() {
-    static ZenoObjectExactorManager sZenoObjectExactorManager;
-    return sZenoObjectExactorManager;
-}
-
-using EParamType = zeno::unreal::EParamType;
-
-void zeno::unreal::ZenoObjectExactorManager::Register(EParamType type,
-                                                      std::function<std::shared_ptr<IObject>(const std::any&)> provider)
-{
-    dispatchMap.try_emplace(type, provider);
-}
-
-std::shared_ptr<zeno::IObject> zeno::unreal::ZenoObjectExactorManager::Exact(EParamType type, const std::any &data) {
-    return dispatchMap[type](data);
-}
-
-template <EParamType Type>
-struct ZenoObjectExactor {};
-
-#define REGISTER_ZENO_OBJECT_EXACTOR(ParamType) static struct StaticInitForZenoObjectExactorWith##ParamType { \
-        StaticInitForZenoObjectExactorWith##ParamType() {                                                    \
-            zeno::unreal::ZenoObjectExactorManager::Get().Register(EParamType::ParamType, ZenoObjectExactor<EParamType::ParamType>::Exact);\
-        }\
-    } sStaticInitForZenoObjectExactorWith##ParamType;
-
-template <>
-struct ZenoObjectExactor<EParamType::Float> {
-    static std::shared_ptr<zeno::IObject> Exact(const std::any& value) {
-        const float data = std::any_cast<float>(value);
-        return std::make_shared<zeno::NumericObject>(data);
-    }
-};
-REGISTER_ZENO_OBJECT_EXACTOR(Float);
-
-template <>
-struct ZenoObjectExactor<EParamType::Integer> {
-    static std::shared_ptr<zeno::IObject> Exact(const std::any& value) {
-        const int32_t data = std::any_cast<int32_t>(value);
-        return std::make_shared<zeno::NumericObject>(data);
-    }
-};
-REGISTER_ZENO_OBJECT_EXACTOR(Integer);
-
-template <>
-struct ZenoObjectExactor<EParamType::Invalid> {
-    static std::shared_ptr<zeno::IObject> Exact(const std::any& value) {
-        return std::make_shared<zeno::DummyObject>();
-    }
-};
-REGISTER_ZENO_OBJECT_EXACTOR(Invalid);
-
-#undef REGISTER_ZENO_OBJECT_EXACTOR

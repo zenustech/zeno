@@ -69,8 +69,6 @@ public:
     }
 };
 
-
-
 void ZenoImagePanel::clear() {
     if (image_view) {
         image_view->clearImage();
@@ -110,18 +108,43 @@ void ZenoImagePanel::setPrim(std::string primid) {
             int height = ud.get2<int>("h");
             if (image_view) {
                 QImage img(width, height, QImage::Format_RGB32);
-                for (auto i = 0; i < obj->verts.size(); i++) {
-                    int h = i / width;
-                    int w = i % width;
-                    auto c = obj->verts[i];
-                    c = zeno::pow(c, 1.0f / 2.2f);
-                    int r = glm::clamp(int(c[0] * 255.99), 0, 255);
-                    int g = glm::clamp(int(c[1] * 255.99), 0, 255);
-                    int b = glm::clamp(int(c[2] * 255.99), 0, 255);
+                int gridSize = 50;
+                if (obj->verts.has_attr("alpha")) {
+                    auto &alpha = obj->verts.attr<float>("alpha");
+                    for (auto i = 0; i < obj->verts.size(); i++) {
+                        int h = i / width;
+                        int w = i % width;
+                        auto foreground = obj->verts[i];
+                        foreground = zeno::pow(foreground, 1.0f / 2.2f);
+                        zeno::vec3f background;
+                        if ((h / gridSize) % 2 == (w / gridSize) % 2) {
+                            background = {1, 1, 1};
+                        }
+                        else {
+                            background = {0.86, 0.86, 0.86};
+                        }
+                        zeno::vec3f c = zeno::mix(background, foreground, alpha[i]);
 
-                    img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                        int r = glm::clamp(int(c[0] * 255.99), 0, 255);
+                        int g = glm::clamp(int(c[1] * 255.99), 0, 255);
+                        int b = glm::clamp(int(c[2] * 255.99), 0, 255);
+
+                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                    }
                 }
+                else{
+                    for (auto i = 0; i < obj->verts.size(); i++) {
+                        int h = i / width;
+                        int w = i % width;
+                        auto c = obj->verts[i];
+                        c = zeno::pow(c, 1.0f / 2.2f);
+                        int r = glm::clamp(int(c[0] * 255.99), 0, 255);
+                        int g = glm::clamp(int(c[1] * 255.99), 0, 255);
+                        int b = glm::clamp(int(c[2] * 255.99), 0, 255);
 
+                        img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                    }
+                }
                 image_view->setImage(img);
             }
             QString statusInfo = QString(zeno::format("width: {}, height: {}", width, height).c_str());
@@ -131,7 +154,6 @@ void ZenoImagePanel::setPrim(std::string primid) {
     if (found == false) {
         clear();
     }
-
 }
 
 ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
@@ -202,3 +224,4 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         }
     });
 }
+

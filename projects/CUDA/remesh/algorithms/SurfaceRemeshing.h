@@ -39,12 +39,13 @@ private:
     void preprocessing();
     void postprocessing();
 
-    void split_long_edges();
+    int split_long_edges();
     void collapse_short_edges();
     void flip_edges();
     void tangential_smoothing(unsigned int iterations);
     void remove_caps();
 
+    void check_triangles();
     vec3f minimize_squared_areas(int v, bool& inversable);
     vec3f weighted_centroid(int v);
 

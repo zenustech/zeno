@@ -88,6 +88,7 @@ struct ZSSolveLaplacian : zeno::INode {
                     etemp.tuple<4>("inds",ei) = eles.pack<4>("inds",ei);
         });
         // compute preconditioner
+        TILEVEC_OPS::fill(cudaPol,vtemp,"P",(T)0.0);
         if(cdim == 4){
             TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
             PCG::prepare_block_diagonal_preconditioner<4,1>(cudaPol,"L",etemp,"P",vtemp);

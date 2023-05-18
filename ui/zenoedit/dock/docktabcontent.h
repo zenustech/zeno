@@ -44,7 +44,8 @@ protected:
 private:
     QMenu *menu;
     QAction *run;
-    QAction *runLightCameraMaterial;
+    QAction *runLightCamera;
+    QAction *runMaterial;
 };
 
 class DockToolbarWidget : public QWidget
@@ -107,6 +108,7 @@ private:
     ZToolBarButton *pShowGrid;
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
+    ZToolBarButton *pLinkLineShape;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
 

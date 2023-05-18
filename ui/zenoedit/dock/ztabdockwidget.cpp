@@ -377,7 +377,7 @@ void ZTabDockWidget::onSliderValueChanged(int frame)
     }
 }
 
-void ZTabDockWidget::onFinished()
+void ZTabDockWidget::onRunFinished()
 {
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
@@ -385,7 +385,7 @@ void ZTabDockWidget::onFinished()
         {
             DisplayWidget* pWid = pView->getDisplayWid();
             ZASSERT_EXIT(pWid);
-            pWid->onFinished();
+            pWid->onRunFinished();
         }
     }
 }

@@ -37,7 +37,7 @@ struct ZSMarkInvertedTet : zeno::INode {
         auto& verts = zsparticles->getParticles();
         auto& eles = zsparticles->getQuadraturePoints();
         auto use_append = get_param<bool>("append");
-        if(eles.getChannelSize("inds") != 4)
+        if(eles.getPropertySize("inds") != 4)
             throw std::runtime_error("the input zsparticles is not a tetrahedra mesh");
 
         if(!verts.hasProperty("is_inverted")){
