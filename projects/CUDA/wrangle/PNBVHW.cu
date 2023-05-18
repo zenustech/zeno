@@ -169,7 +169,7 @@ struct ZSParticleNeighborBvhWrangler : INode {
         /// supplement new properties
         auto checkDuplication = [](std::string_view tag, const auto &props) -> bool {
             for (auto &&[name, nchns] : props)
-                if (name == tag)
+                if (name == tag.data())
                     return true;
             return false;
         };
