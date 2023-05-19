@@ -59,7 +59,7 @@ struct HenyeyGreenstein {
 inline float PhaseHG(float cosTheta, float g) {
     float gg = g * g;
     float denom = 1 + gg + 2 * g * cosTheta;
-    return (0.25 / M_PIf) * (1 - gg) / (denom * sqrt(denom));
+    return (0.25f / M_PIf) * (1 - gg) / (denom * sqrtf(denom));
 }
 
 // HenyeyGreenstein Method Definitions
@@ -70,7 +70,7 @@ inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
 inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const {
     // Compute $\cos \theta$ for Henyey--Greenstein sample
     float cosTheta;
-    if (abs(g) < 1e-3)
+    if (abs(g) < 1e-3f)
         cosTheta = 1 - 2 * uu.x;
     else {
         float gg = g * g;

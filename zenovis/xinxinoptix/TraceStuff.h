@@ -145,7 +145,7 @@ struct RadiancePRD
     {
         vec3 d = abs(sigma_t_queue[curMatIdx] - extinction);
         float c = dot(d, vec3(1,1,1));
-        if(curMatIdx<7 && c > 1e-6 )
+        if(curMatIdx<7 && c > 1e-6f )
         {
             curMatIdx++;
             sigma_t_queue[curMatIdx] = extinction;

@@ -223,19 +223,19 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     vec3 bn0(an0);
     bn0 = meshMat3x3 * bn0;
     float3 n0 = make_float3(bn0.x, bn0.y, bn0.z);
-    n0 = dot(n0, N_0)>0.8?n0:N_0;
+    n0 = dot(n0, N_0)>0.8f?n0:N_0;
 
     float3 an1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
     vec3 bn1(an1);
     bn1 = meshMat3x3 * bn1;
     float3 n1 = make_float3(bn1.x, bn1.y, bn1.z);
-    n1 = dot(n1, N_0)>0.8?n1:N_0;
+    n1 = dot(n1, N_0)>0.8f?n1:N_0;
 
     float3 an2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
     vec3 bn2(an2);
     bn2 = meshMat3x3 * bn2;
     float3 n2 = make_float3(bn2.x, bn2.y, bn2.z);
-    n2 = dot(n2, N_0)>0.8?n2:N_0;
+    n2 = dot(n2, N_0)>0.8f?n2:N_0;
     float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
     float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
     float3 uv2 = make_float3(rt_data->uv[ vert_idx_offset+2 ] );
@@ -283,7 +283,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     }
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
-    mats.roughness = clamp(mats.roughness, 0.01,0.99);
+    mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
 
     /* MODME */
     auto basecolor = mats.basecolor;
@@ -311,7 +311,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         opacity = 0;
     //opacity = clamp(opacity, 0.0f, 0.99f);
     // Stochastic alpha test to get an alpha blend effect.
-    if (opacity >0.99 || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
+    if (opacity >0.99f || isLight == 1) // No need to calculate an expensive random number if the test is going to fail anyway.
     {
         optixIgnoreIntersection();
     }
@@ -323,7 +323,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         if (p < opacity){
             optixIgnoreIntersection();
         }else{
-            if(length(prd->shadowAttanuation) < 0.01){
+            if(length(prd->shadowAttanuation) < 0.01f){
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
                 return;
@@ -385,7 +385,7 @@ static __inline__ __device__
 vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
 {
     vec3 n = cross(u,v);
-    float a = 1.0 / dot(n,n);
+    float a = 1.0f / dot(n,n);
     vec3 w = p - q;
     vec3 o;
     o.z = dot(cross(u,w),n) * a;
@@ -530,7 +530,7 @@ extern "C" __global__ void __closesthit__radiance()
 
 #if _SPHERE_
 
-    if(mats.doubleSide>0.5||mats.thin>0.5){
+    if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N, -ray_dir, N );
         prd->geometryNormal = N;
     }
@@ -557,7 +557,7 @@ extern "C" __global__ void __closesthit__radiance()
     N_0 = normalize(interp(barys, n0, n1, n2));
     N = N_0;
 
-    if(mats.doubleSide>0.5||mats.thin>0.5){
+    if(mats.doubleSide>0.5f||mats.thin>0.5f){
         N = faceforward( N_0, -ray_dir, N_0 );
         prd->geometryNormal = faceforward( prd->geometryNormal, -ray_dir, prd->geometryNormal );
     }
@@ -566,7 +566,7 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.nrm = N;
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
-    mats.roughness = clamp(mats.roughness, 0.01,0.99);
+    mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
     if(length(attrs.tang)>0)
     {
         vec3 b = cross(attrs.tang, attrs.nrm);
@@ -656,7 +656,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->prob2 = prd->prob;
     prd->passed = false;
-    if(opacity>0.99)
+    if(opacity>0.99f)
     {
         prd->passed = true;
         prd->radiance = make_float3(0.0f);
@@ -751,7 +751,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->diffDepth++;
     }
     
-    if(opacity<=0.99)
+    if(opacity<=0.99f)
     {
         //we have some simple transparent thing
         //roll a dice to see if just pass
@@ -783,7 +783,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
     }
 
-    if(thin>0.5 || mats.doubleSide>0.5)
+    if(thin>0.5f || mats.doubleSide>0.5f)
     {
         if (prd->curMatIdx > 0) {
             vec3 sigma_t, ss_alpha;
@@ -804,7 +804,7 @@ extern "C" __global__ void __closesthit__radiance()
         //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         if(istransmission || flag == DisneyBSDF::diracEvent) {
             if(prd->next_ray_is_going_inside){
-                if(thin < 0.5 && mats.doubleSide < 0.5 ) 
+                if(thin < 0.5f && mats.doubleSide < 0.5f ) 
                 {
                     outToIn = true;
                     inToOut = false;
@@ -830,7 +830,7 @@ extern "C" __global__ void __closesthit__radiance()
                         vec3 channelPDF = vec3(1.0/3.0);
                         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, channelPDF);
                         //here is the place caused inf ray:fixed
-                        auto min_sg = max(min(min(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8);
+                        auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
                         //what should be the right value???
                         //prd->maxDistance = max(prd->maxDistance, 10/min_sg);
                         //printf("maxdist:%f\n",prd->maxDistance);
@@ -928,7 +928,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->medium = prd->next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
  
-    if(thin>0.5){
+    if(thin>0.5f){
         vec3 H = normalize(vec3(normalize(wi)) + vec3(-normalize(ray_dir)));
         attrs.N = N;
         attrs.T = cross(B,N);
@@ -968,14 +968,14 @@ extern "C" __global__ void __closesthit__radiance()
 
     }
     if(prd->depth>=3)
-        roughness = clamp(roughness, 0.5,0.99);
+        roughness = clamp(roughness, 0.5f,0.99f);
 
     RadiancePRD shadow_prd {};
     shadow_prd.seed = prd->seed;
     shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
 
-    if(rnd(prd->seed)<=0.5) {
+    if(rnd(prd->seed)<=0.5f) {
         bool computed = false;
         float ppl = 0;
         for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
@@ -983,7 +983,7 @@ extern "C" __global__ void __closesthit__radiance()
             float2 z = {rnd(prd->seed), rnd(prd->seed)};
             const float z1 = z.x;
             const float z2 = z.y;
-            float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
+            float3 light_tpos = light.corner + light.v1 * 0.5f + light.v2 * 0.5f;
             float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
             // Calculate properties of light sample (for area based pdf)
@@ -994,7 +994,7 @@ extern "C" __global__ void __closesthit__radiance()
             float tA = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
             ppl += length(light.emission) * tnDl * tLnDl * tA / (M_PIf * tLdist * tLdist) / sum;
             if (ppl > pl) {
-                float Ldist = length(light_pos - P) + 1e-6;
+                float Ldist = length(light_pos - P) + 1e-6f;
                 float3 L = normalize(light_pos - P);
                 float nDl = 1.0f; //clamp(dot(N, L), 0.0f, 1.0f);
                 float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
@@ -1025,7 +1025,7 @@ extern "C" __global__ void __closesthit__radiance()
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
                     dot(N, L));
                 MatOutput mat2;
-                if(thin>0.5){
+                if(thin>0.5f){
                     vec3 H = normalize(vec3(normalize(L)) + vec3(-normalize(inDir)));
                     attrs.N = N;
                     attrs.T = cross(B,N);
@@ -1036,7 +1036,7 @@ extern "C" __global__ void __closesthit__radiance()
                     attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
                     mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
                 }
-                prd->radiance = light_attenuation * weight * 2.0 * light.emission * (thin>0.5? float3(mat2.reflectance):lbrdf);
+                prd->radiance = light_attenuation * weight * 2.0f * light.emission * (thin>0.5f? float3(mat2.reflectance):lbrdf);
                 computed = true;
             }
         }
@@ -1047,7 +1047,7 @@ extern "C" __global__ void __closesthit__radiance()
 
         vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
         auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
-                                                   params.sunSoftness * 0.2); //perturb the sun to have some softness
+                                                   params.sunSoftness * 0.2f); //perturb the sun to have some softness
         sun_dir = normalize(sun_dir);
         prd->LP = P;
         prd->Ldir = sun_dir;
@@ -1067,9 +1067,9 @@ extern "C" __global__ void __closesthit__radiance()
         //if (fmaxf(light_attenuation) > 0.0f) {
             auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                           10, // be careful
-                                          .45, 15., 1.030725 * 0.3, params.elapsedTime));
+                                          .45, 15., 1.030725f * 0.3f, params.elapsedTime));
             MatOutput mat2;
-            if(thin>0.5){
+            if(thin>0.5f){
                     vec3 H = normalize(vec3(normalize(sun_dir)) + vec3(-normalize(inDir)));
                     attrs.N = N;
                     attrs.T = cross(B,N);
@@ -1080,12 +1080,12 @@ extern "C" __global__ void __closesthit__radiance()
                     attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
                     mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
             }
-            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * sky * (thin>0.5? float3(mat2.reflectance):lbrdf);
+            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0f * sky * (thin>0.5f? float3(mat2.reflectance):lbrdf);
     }
 
     P = P_OLD;
     prd->direction = normalize(wi);
-    if(thin<0.5 && mats.doubleSide<0.5){
+    if(thin<0.5f && mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (prd->next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
