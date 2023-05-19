@@ -7,6 +7,7 @@
 
 
 
+
 //todo implement full disney bsdf 
 //reference: https://schuttejoe.github.io/post/DisneyBsdf/
 //list of component:
@@ -463,14 +464,16 @@ namespace DisneyBSDF{
         float lambert = 1.0f;
         float rr = EvaluateDisneyRetroDiffuse(roughness, wi, wo);
         float retro = rr*(fl + fv + fl * fv * (rr - 1.0f));
-        return (retro + (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
+
+        return (retro + (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv))/M_PIf;
     }
 
     static __inline__ __device__
     float3 EvaluateDisney(
-        vec3 baseColor,
+        const vec3& baseColor,
         float metallic,
         float subsurface,
+        const vec3& sssColor,
         float specular,
         float roughness,
         float specularTint,
@@ -551,6 +554,18 @@ namespace DisneyBSDF{
             if(!thin && nDl<=0.0f)
                 diffuse = 0;
             reflectance += diffuseW * (diffuse * baseColor + lobeOfSheen);
+
+            if (subsurface > 0) {
+
+                vec3 color = mix(baseColor, sssColor, subsurface);
+                vec3 fr = abs(vec3(1.0) - 0.5f * BRDFBasics::fresnelSchlick(baseColor, abs(NoV)));
+                float w = max(dot(fr, vec3(1.0f,1.0f,1.0f)) , 0.0f);
+                float p_in = subsurface * w;
+                float ptotal = 1.0f + p_in ;
+
+                float psss = p_in/ptotal;
+                reflectance *= vec3(1.0f - psss);
+            }
         }
         // Transsmission
         if(transmissionW > 0.0f) {
@@ -903,13 +918,11 @@ namespace DisneyBSDF{
 
         flag = scatterEvent;
         
-        vec3 fr = abs(vec3(1.0) - 0.5 * BRDFBasics::fresnelSchlick(color, abs(NoV)));
-        //printf("fr: %f, %f, %f\n", fr.x, fr.y, fr.z);
+        vec3 fr = abs(vec3(1.0) - 0.5f * BRDFBasics::fresnelSchlick(color, abs(NoV)));
         float w = max(dot(fr, vec3(1.0f,1.0f,1.0f)) , 0.0f);
         float p_in = subsurface * w;
-        //printf("w: %f\n", w);
-
         float ptotal = 1.0f + p_in ;
+
         float psss = subsurface>0? p_in/ptotal : 0; // /ptotal;
         float prnd = rnd(seed);
         //printf("weight: %f, rnd: %f\n", weight,prnd);

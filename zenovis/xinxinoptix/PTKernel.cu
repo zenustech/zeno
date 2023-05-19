@@ -194,7 +194,7 @@ extern "C" __global__ void __raygen__rg()
             if(prd.depth>16){
                 //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
                 float RRprob = clamp(length(prd.attenuation),0.1f, 0.95f);
-                if(rnd(prd.seed) > RRprob || prd.depth>32){
+                if(rnd(prd.seed) > RRprob || prd.depth > 16){
                     prd.done=true;
                 } else {
                     prd.attenuation = prd.attenuation / (RRprob + 1e-5f);

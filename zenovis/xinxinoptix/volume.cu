@@ -266,9 +266,9 @@ extern "C" __global__ void __intersection__volume()
 
     auto iray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
                                      reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
-    auto fbox = nanovdb::BBox<nanovdb::Vec3f>(nanovdb::Vec3f(dbox.min()), nanovdb::Vec3f(dbox.max()));
+    // auto fbox = nanovdb::BBox<nanovdb::Vec3f>(nanovdb::Vec3f(dbox.min()), nanovdb::Vec3f(dbox.max()));
 
-    if( iray.intersects( fbox, t0, t1 )) // t0 >= 0
+    if( iray.intersects( dbox, t0, t1 )) // t0 >= 0
     {
         // report the entry-point as hit-point
         //auto kind = optixGetHitKind();
