@@ -1113,21 +1113,21 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     if (modifiers & Qt::AltModifier) {
         uKey += Qt::ALT;
     }
-    if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_SelectAllNodes)) 
+    if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_SelectAllNodes)) 
     {
         for (auto it : m_nodes) {
             it.second->setSelected(true);
         }
     } 
-    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Once)) 
+    else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Once)) 
     {
         updateNodeStatus(m_bOnceOn, OPT_ONCE);
     } 
-    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Bypass))
+    else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Bypass))
     {
         updateNodeStatus(m_bBypassOn, OPT_MUTE);
     } 
-    else if (uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
+    else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_View)) 
     {
         updateNodeStatus(m_bViewOn, OPT_VIEW);
     }
