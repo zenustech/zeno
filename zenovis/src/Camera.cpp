@@ -1,5 +1,6 @@
 #include <zenovis/Camera.h>
 #include <zenovis/opengl/shader.h>
+#include "zeno/utils/log.h"
 
 namespace zenovis {
 
@@ -37,7 +38,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
         //ZENO_P(front);
         //ZENO_P(up);
         m_view = glm::lookAt(pos, pos + front, up);
-        m_proj = glm::perspective(glm::radians(fov), getAspect(), fnear, ffar);
+        m_proj = glm::perspectiveZO(glm::radians(fov), getAspect(), ffar, fnear);
         //ZENO_P(m_view);
         //ZENO_P(m_proj);
     }
@@ -60,6 +61,7 @@ void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_fov, m_near, m_far);
 }
 void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance) {
+    zeno::log_info("radius {}", radius);
     m_zxx.cx = cx;
     m_zxx.cy = cy;
     m_zxx.cz = cz;
@@ -80,7 +82,8 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
 
     if (!(fov <= 0)) {
         auto fnear = 0.1f;
-        auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
+//        auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
+        auto ffar = 20000.0f;
         placeCamera(center - front * radius, front, up, fov, fnear, ffar);
     } else {
         placeCamera(center - front * radius * 0.4f, front, up, 0.f, -100.f, 100.f);
