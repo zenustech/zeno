@@ -51,9 +51,10 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void setAlways(bool bAlways);
-    void setAlwaysLightCameraMaterial(bool bAlways);
+    void setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial);
     bool isAlways() const;
-    bool isAlwaysLightCameraMaterial() const;
+    bool isAlwaysLightCamera() const;
+    bool isAlwaysMaterial() const;
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;
@@ -142,7 +143,7 @@ public:
 signals:
     void recentFilesChanged(const QObject *sender);
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
-    void visFrameUpdated(int);
+    void visFrameUpdated(bool bGLView, int frameid);
     void alwaysModeChanged(bool bAlways);
     void dockSeparatorMoving(bool bMoving);
 
@@ -171,10 +172,11 @@ public slots:
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
-    void onRunTriggered(bool applyLightAndCameraOnly = false);
+    void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
     void onDockSeparatorMoving(bool bMoving);
+    void onZenovisFrameUpdate(bool bGLView, int frameid);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -210,13 +212,14 @@ private:
     void initShortCut();
     void updateShortCut(QStringList keys);
     void shortCutDlg();
-
+    void killOptix();
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
     bool m_bAlways;
-    bool m_bAlwaysLightCameraMaterial;
+    bool m_bAlwaysLightCamera;
+    bool m_bAlwaysMaterial;
     int m_nResizeTimes;
     bool m_bMovingSeparator;    //dock separator.
     Ui::MainWindow* m_ui;

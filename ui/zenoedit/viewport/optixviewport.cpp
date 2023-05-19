@@ -4,8 +4,10 @@
 #include "zenomainwindow.h"
 #include "cameracontrol.h"
 #include <zenovis/DrawOptions.h>
+#include <zeno/extra/GlobalComm.h>
 #include "settings/zenosettingsmanager.h"
-
+#include "launch/corelaunch.h"
+#include <zeno/core/Session.h>
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
@@ -24,16 +26,43 @@ void OptixWorker::updateFrame()
         return;
 
     m_zenoVis->paintGL();
-    int w, h;
+    int w = 0, h = 0;
     void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
 
     m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
     m_renderImg = m_renderImg.mirrored(false, true);
+
     emit renderIterate(m_renderImg);
+}
+
+void OptixWorker::onPlayToggled(bool bToggled)
+{
+    //todo: priority.
+    m_zenoVis->startPlay(bToggled);
+    m_pTimer->start(16);
+}
+
+void OptixWorker::onFrameSwitched(int frame)
+{
+    //ui switch.
+    m_zenoVis->setCurrentFrameId(frame);
+    m_zenoVis->startPlay(false);
+}
+
+void OptixWorker::cancelRecording()
+{
+    m_bRecording = false;
+}
+
+void OptixWorker::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+    auto scene = m_zenoVis->getSession()->get_scene();
+    scene->drawOptions->updateLightCameraOnly = updateLightCameraOnly;
+    scene->drawOptions->updateMatlOnly = updateMatlOnly;
 }
 
 void OptixWorker::recordVideo(VideoRecInfo recInfo)
 {
+    //for the case about recording after run.
     zeno::scope_exit sp([=] {
         m_bRecording = false;
         m_pTimer->start(16);
@@ -42,41 +71,71 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
     m_bRecording = true;
     m_pTimer->stop();
 
-    for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second; frame++)
+    for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second;)
     {
-        auto record_file = zeno::format("{}/P/{:07d}.jpg", recInfo.record_path.toStdString(), frame);
-        auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
-
-        auto scene = m_zenoVis->getSession()->get_scene();
-        auto old_num_samples = scene->drawOptions->num_samples;
-        scene->drawOptions->num_samples = recInfo.numOptix;
-        //it seems that msaa is used by opengl, but opengl has been removed from optix.
-        scene->drawOptions->msaa_samples = recInfo.numMSAA;
-
-        auto [x, y] = m_zenoVis->getSession()->get_window_size();
-
-        int actualFrame = m_zenoVis->setCurrentFrameId(frame);
-        m_zenoVis->doFrameUpdate();
-        //todo: may be the frame has not been finished, in this case, we have to wait.
-
-        m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
-        m_zenoVis->getSession()->do_screenshot(record_file, extname);
-        m_zenoVis->getSession()->set_window_size(x, y);
-
-        scene->drawOptions->num_samples = old_num_samples;
-        //todo: emit some signal to main thread(ui)
-        emit sig_frameFinished(frame);
-
-        if (1) {
-            //update ui.
-            int w = 0, h = 0;
-            void* data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
-            m_renderImg = QImage((uchar*)data, w, h, QImage::Format_RGBA8888);
-            m_renderImg = m_renderImg.mirrored(false, true);
-            emit renderIterate(m_renderImg);
+        if (!m_bRecording)
+        {
+            emit sig_recordCanceled();
+            return;
+        }
+        bool bSucceed = recordFrame_impl(recInfo, frame);
+        if (bSucceed)
+        {
+            frame++;
+        }
+        else
+        {
+            QThread::sleep(0);
         }
     }
     emit sig_recordFinished();
+}
+
+bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
+{
+    auto record_file = zeno::format("{}/P/{:07d}.jpg", recInfo.record_path.toStdString(), frame);
+    auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
+
+    auto scene = m_zenoVis->getSession()->get_scene();
+    auto old_num_samples = scene->drawOptions->num_samples;
+    scene->drawOptions->num_samples = recInfo.numOptix;
+    //it seems that msaa is used by opengl, but opengl has been removed from optix.
+    scene->drawOptions->msaa_samples = recInfo.numMSAA;
+
+    auto [x, y] = m_zenoVis->getSession()->get_window_size();
+
+    auto &globalComm = zeno::getSession().globalComm;
+    int numOfFrames = globalComm->numOfFinishedFrame();
+    if (numOfFrames == 0)
+        return false;
+
+    std::pair<int, int> frameRg = globalComm->frameRange();
+    int beginFrame = frameRg.first;
+    int endFrame = frameRg.first + numOfFrames - 1;
+    if (frame < beginFrame || frame > endFrame)
+        return false;
+
+    int actualFrame = m_zenoVis->setCurrentFrameId(frame);
+    m_zenoVis->doFrameUpdate();
+    //todo: may be the frame has not been finished, in this case, we have to wait.
+
+    m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
+    m_zenoVis->getSession()->do_screenshot(record_file, extname);
+    m_zenoVis->getSession()->set_window_size(x, y);
+
+    scene->drawOptions->num_samples = old_num_samples;
+    //todo: emit some signal to main thread(ui)
+    emit sig_frameRecordFinished(frame);
+
+    if (1) {
+        //update ui.
+        int w = 0, h = 0;
+        void *data = m_zenoVis->getSession()->get_scene()->getOptixImg(w, h);
+        m_renderImg = QImage((uchar *)data, w, h, QImage::Format_RGBA8888);
+        m_renderImg = m_renderImg.mirrored(false, true);
+        emit renderIterate(m_renderImg);
+    }
+    return true;
 }
 
 void OptixWorker::stop()
@@ -121,14 +180,18 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         //    emit mainWin->visObjectsUpdated(this, frameid);
     });
 
+    //no need to notify timeline to update.
+    /*
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
         if (mainWin)
-            mainWin->visFrameUpdated(frameid);
-    });
+            emit mainWin->visFrameUpdated(false, frameid);
+    }, Qt::BlockingQueuedConnection);
+    */
 
     //fake GL
     m_zenovis->initializeGL();
+    m_zenovis->setCurrentFrameId(0);    //correct frame automatically.
 
     m_camera = new CameraControl(m_zenovis, nullptr, nullptr, this);
     m_zenovis->m_camera_control = m_camera;
@@ -150,9 +213,15 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
-    connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
-    connect(m_worker, &OptixWorker::sig_frameFinished, this, &ZOptixViewport::sig_frameFinished);
 
+    connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
+    connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
+
+    connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
+    connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
+    connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
+
+    setRenderSeparately(false, false);
     m_thdOptix.start();
 }
 
@@ -164,6 +233,10 @@ void ZOptixViewport::setSimpleRenderOption()
 {
     auto scene = m_zenovis->getSession()->get_scene();
     scene->drawOptions->simpleRender = true;
+}
+
+void ZOptixViewport::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+    emit sig_setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
 }
 
 void ZOptixViewport::cameraLookTo(int dir)
@@ -186,6 +259,13 @@ void ZOptixViewport::updateCamera()
     emit cameraAboutToRefresh();
 }
 
+void ZOptixViewport::killThread()
+{
+    stopRender();
+    m_thdOptix.quit();
+    m_thdOptix.wait();
+}
+
 void ZOptixViewport::stopRender()
 {
     emit stopRenderOptix();
@@ -199,6 +279,16 @@ void ZOptixViewport::resumeRender()
 void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 {
     emit sigRecordVideo(recInfo);
+}
+
+void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)
+{
+    m_worker->cancelRecording();
+}
+
+void ZOptixViewport::onFrameRunFinished(int frame)
+{
+    emit sig_frameRunFinished(frame);
 }
 
 void ZOptixViewport::updateCameraProp(float aperture, float disPlane)

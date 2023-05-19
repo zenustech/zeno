@@ -16,6 +16,7 @@
 #include <zenovis/DrawOptions.h>
 #include <iostream>
 
+
 //////////////////////////////////////////////
 ZTimeline::ZTimeline(QWidget* parent)
     : QWidget(parent)
@@ -89,16 +90,56 @@ void ZTimeline::initSignals()
     });
     connect(m_ui->editFrame, &QLineEdit::editingFinished, this, [=]() {
         int frame = m_ui->editFrame->text().toInt();
+        int frameFrom = m_ui->editFrom->text().toInt();
+        int frameTo = m_ui->editTo->text().toInt();
+        if (frame < frameFrom)
+        {
+            BlockSignalScope scope(m_ui->editFrame);
+            frame = frameFrom;
+            m_ui->editFrame->setText(QString::number(frame));
+            m_ui->timeliner->setSliderValue(frame);
+            return;
+        }
+        else if (frame > frameTo)
+        {
+            BlockSignalScope scope(m_ui->editFrame);
+            frame = frameTo;
+            m_ui->editFrame->setText(QString::number(frame));
+            m_ui->timeliner->setSliderValue(frame);
+            return;
+        }
         m_ui->timeliner->setSliderValue(frame);
     });
     connect(this, &ZTimeline::sliderValueChanged, this, [=]() {
         QString numText = QString::number(m_ui->timeliner->value());
         m_ui->editFrame->setText(numText);
     });
+}
 
-    ZenoMainWindow* pWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(pWin);
-    connect(pWin, SIGNAL(visFrameUpdated(int)), this, SLOT(onTimelineUpdate(int)));
+void ZTimeline::onFrameEditted()
+{
+    if (m_ui->editFrom->text().isEmpty() || m_ui->editTo->text().isEmpty())
+        return;
+
+    QObject* pSender = sender();
+    int frameFrom = m_ui->editFrom->text().toInt();
+    int frameTo = m_ui->editTo->text().toInt();
+    if (frameFrom > frameTo)
+    {
+        if (m_ui->editFrom == pSender)
+        {
+            frameTo = frameFrom;
+            BlockSignalScope scope(m_ui->editTo);
+            m_ui->editTo->setText(QString::number(frameTo));
+        }
+        else if (m_ui->editTo == pSender)
+        {
+            frameFrom = frameTo;
+            BlockSignalScope scope(m_ui->editFrom);
+            m_ui->editFrom->setText(QString::number(frameFrom));
+        }
+    }
+    m_ui->timeliner->setFromTo(frameFrom, frameTo);
 }
 
 void ZTimeline::initStyleSheet()
@@ -211,16 +252,6 @@ void ZTimeline::togglePlayButton(bool bOn)
     m_ui->btnPlay->toggle(bOn);
 }
 
-void ZTimeline::onFrameEditted()
-{
-    if (m_ui->editFrom->text().isEmpty() || m_ui->editTo->text().isEmpty())
-        return;
-    int frameFrom = m_ui->editFrom->text().toInt();
-    int frameTo = m_ui->editTo->text().toInt();
-    if (frameTo >= frameFrom)
-        m_ui->timeliner->setFromTo(frameFrom, frameTo);
-}
-
 QPair<int, int> ZTimeline::fromTo() const
 {
     bool bOk = false;
@@ -249,6 +280,11 @@ void ZTimeline::resetSlider()
 int ZTimeline::value() const
 {
     return m_ui->timeliner->value();
+}
+
+bool ZTimeline::isPlayToggled() const
+{
+    return m_ui->btnPlay->isChecked();
 }
 
 void ZTimeline::paintEvent(QPaintEvent* event)

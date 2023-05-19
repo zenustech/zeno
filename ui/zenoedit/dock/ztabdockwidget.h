@@ -13,7 +13,7 @@ class ZDockTabWidget;   //may confuse with ZTabDockWidget...
 enum PANEL_TYPE
 {
     PANEL_EMPTY,
-    PANEL_VIEW,
+    PANEL_GL_VIEW,
     PANEL_EDITOR,
     PANEL_NODE_PARAMS,
     PANEL_NODE_DATA,
@@ -49,7 +49,7 @@ public:
 public slots:
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
-    void onFinished();
+    void onRunFinished();
     void onAddTab(PANEL_TYPE type);
     void onMenuActionTriggered(QAction* pAction, bool bTriggered);
 

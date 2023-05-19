@@ -30,26 +30,29 @@ public:
     std::shared_ptr<zeno::Picker> picker() const;
     void updateCameraProp(float aperture, float disPlane);
     void setSimpleRenderOption();
+    void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     bool isCameraMoving() const;
     bool isPlaying() const;
     bool isGLViewport() const;
     ZOptixViewport* optixViewport() const;
+    void killOptix();
 
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
-    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false);
+    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void onRecord();
     void onScreenShoot();
     void onKill();
     void onPlayClicked(bool);
     void onSliderValueChanged(int);
-    void onFinished();
+    void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
 
 signals:
     void frameUpdated(int new_frame);
+    void frameRunFinished(int frame);
 
 private:
     bool isOptxRendering() const;

@@ -34,7 +34,7 @@ static int offline_start(const char *progJson) {
 
     if (chkfail()) return 1;
 
-    session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
+    session->globalComm->initFrameRange(graph->beginFrameNumber, graph->endFrameNumber);
     for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
         zeno::log_info("begin frame {}", frame);
         session->globalComm->newFrame();

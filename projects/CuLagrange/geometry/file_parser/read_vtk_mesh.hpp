@@ -233,7 +233,7 @@ namespace zeno {
             // printf("the buffer size %d does not match the input size %d and cols %d\n",attr.size(),rows,cols);
         // }
 
-        int nm_field_read = 0;
+        // int nm_field_read = 0;
         for(int i = 0;i != rows;++i) {
             attr[i] = (float)strtod(bufferp,&bufferp);
             if(i != rows-1)
@@ -256,7 +256,7 @@ namespace zeno {
         char *bufferp;
         char buffer[INPUTLINESIZE];
         char id[256],dummy_str[64],data_name[64],array_name[64],lookup_dummy[64];
-        int dummy;
+        // int dummy;
 
         // using EleIds = std::variant<std::monostate, AttrVector<vec3f>&, AttrVector<vec2i>&, AttrVector<vec3i>&, AttrVector<vec4i>&>;
         // EleIds attrv;
@@ -543,7 +543,7 @@ namespace zeno {
         char *bufferp;
         char line[INPUTLINESIZE];
         char id[256],dummy_str[64];
-        int dummy;
+        // int dummy;
 
         int simplex_size = 0;
 
@@ -573,13 +573,15 @@ namespace zeno {
             if(!strcmp(id,"CELLS")){
                 printf("reading cells\n");
                 int numberofcells = 0;
-                sscanf(line,"%s %d %d",id,&numberofcells,&simplex_size);
-                simplex_size = simplex_size/numberofcells - 1;
+                int numberofdofs = 0;
+                sscanf(line,"%s %d %d",id,&numberofcells,&numberofdofs);
+                simplex_size = numberofdofs/numberofcells - 1;
                 if(simplex_size == 4)
                     parsing_cells_topology<4>(fp,prim->quads,numberofcells,line_count);
                 else if(simplex_size == 3)
                     parsing_cells_topology<3>(fp,prim->tris,numberofcells,line_count);
                 else {
+                    printf("invalid simplex size = %d %d %d\n",simplex_size,numberofcells,numberofdofs);
                     throw std::runtime_error("INVALID SIMPLEX SIZE");
                 }
                 continue;

@@ -153,7 +153,7 @@ struct ZSParticlesTwoWrangler : zeno::INode {
             /// supplement new properties
             auto checkDuplication = [&props](std::string_view tag) -> bool {
                 for (auto &&[name, nchns] : props)
-                    if (name == tag)
+                    if (name == tag.data())
                         return true;
                 return false;
             };

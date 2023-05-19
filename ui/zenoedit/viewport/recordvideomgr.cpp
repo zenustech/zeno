@@ -11,6 +11,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenoedit/zenomainwindow.h>
+#include "launch/corelaunch.h"
 
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
@@ -34,11 +35,21 @@ Zenovis* RecordVideoMgr::getZenovis()
 void RecordVideoMgr::cancelRecord()
 {
     disconnectSignal();
-    //todo:
-    //Zenovis::GetInstance().blockSignals(false);
-    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-    if (mainWin)
-        mainWin->toggleTimelinePlay(false);
+
+    DisplayWidget* pWid = qobject_cast<DisplayWidget*>(parent());
+    ZASSERT_EXIT(pWid);
+    if (!pWid->isGLViewport())
+    {
+        ZOptixViewport* pView = pWid->optixViewport();
+        ZASSERT_EXIT(pView);
+        pView->cancelRecording(m_recordInfo);
+    }
+    else
+    {
+        ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+        if (mainWin)
+            mainWin->toggleTimelinePlay(false);
+    }
 }
 
 void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
@@ -68,12 +79,8 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
         //we can only record on another thread, the optix worker thread.
         ZOptixViewport *pView = pWid->optixViewport();
         ZASSERT_EXIT(pView);
-        bool ret = connect(pView, &ZOptixViewport::sig_frameFinished, this, [=](int frame) {
-            emit frameFinished(frame);
-        });
-        ret = connect(pView, &ZOptixViewport::sig_recordFinished, this, [=]() {
-            endRecToExportVideo();
-        });
+        bool ret = connect(pView, &ZOptixViewport::sig_frameRecordFinished, this, &RecordVideoMgr::frameFinished);
+        ret = connect(pView, &ZOptixViewport::sig_recordFinished, this, &RecordVideoMgr::endRecToExportVideo);
     }
     else
     {
@@ -129,14 +136,23 @@ void RecordVideoMgr::endRecToExportVideo()
     else
     {
         //todo get the error string from QProcess.
-        emit recordFailed(QString());
+        emit recordFailed(QString(tr("ffmpeg command failed, please whether check ffmpeg exists.")));
     }
 }
 
 void RecordVideoMgr::disconnectSignal()
 {
-    Zenovis* pVis = getZenovis();
-    bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+    DisplayWidget *pWid = qobject_cast<DisplayWidget *>(parent());
+    ZASSERT_EXIT(pWid);
+    if (pWid->isGLViewport()) {
+        Zenovis *pVis = getZenovis();
+        bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
+    } else {
+        ZOptixViewport *pView = pWid->optixViewport();
+        ZASSERT_EXIT(pView);
+        bool ret = disconnect(pView, &ZOptixViewport::sig_frameRecordFinished, this, &RecordVideoMgr::frameFinished);
+        ret = disconnect(pView, &ZOptixViewport::sig_recordFinished, this, &RecordVideoMgr::endRecToExportVideo);
+    }
 }
 
 void RecordVideoMgr::onFrameDrawn(int currFrame)

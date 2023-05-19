@@ -11,20 +11,12 @@
 
 namespace zeno {
 
-std::vector<std::filesystem::path> cachepath{std::filesystem::path(""), std::filesystem::path("")};
-std::unordered_set<std::string> renderNodes({
+std::vector<std::filesystem::path> cachepath(3);
+std::unordered_set<std::string> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
     "LightNode", "BindLight", "ProceduralSky", "HDRSky",
-    "BindMaterial", "ShaderFinalize"});
-
-bool isRenderObj(std::string key, std::shared_ptr<IObject> obj){
-    int idx = key.find("-") + 1;
-    if (renderNodes.count(key.substr(idx, key.find(":") - idx)))
-    {
-        return true;
-    }
-    return false;
-};
+    });
+std::string matlNode = "ShaderFinalize";
 
 static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs) {
     if (cachedir.empty()) return;
@@ -33,25 +25,32 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     {
         log_critical("can not create path: {}", dir);
     }
-    std::vector<std::vector<char>> bufCaches(2);
-    std::vector<std::vector<size_t>> poses(2);
-    std::vector<std::string> keys(2);
+    std::vector<std::vector<char>> bufCaches(3);
+    std::vector<std::vector<size_t>> poses(3);
+    std::vector<std::string> keys(3);
     for (auto const &[key, obj]: objs) {
-        if (isRenderObj(key, obj)) {
+        std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") -1);
+        if (lightCameraNodes.count(nodeName)) {
             keys[0].push_back('\a');
             keys[0].append(key);
             poses[0].push_back(bufCaches[0].size());
             encodeObject(obj.get(), bufCaches[0]);
-        } else {
+        } else if (matlNode == nodeName) {
             keys[1].push_back('\a');
             keys[1].append(key);
             poses[1].push_back(bufCaches[1].size());
             encodeObject(obj.get(), bufCaches[1]);
+        } else {
+            keys[2].push_back('\a');
+            keys[2].append(key);
+            poses[2].push_back(bufCaches[2].size());
+            encodeObject(obj.get(), bufCaches[2]);
         }
     }
-    cachepath[0] = std::filesystem::u8path(dir) / "renderObj.zencache";
-    cachepath[1] = std::filesystem::u8path(dir) / "normalObj.zencache";
-    for (int i = 0; i < 2; i++)
+    cachepath[0] = std::filesystem::u8path(dir) / "lightCameraObj.zencache";
+    cachepath[1] = std::filesystem::u8path(dir) / "materialObj.zencache";
+    cachepath[2] = std::filesystem::u8path(dir) / "normalObj.zencache";
+    for (int i = 0; i < 3; i++)
     {
         if (poses[i].size() == 0)
         {
@@ -75,8 +74,9 @@ static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
     if (cachedir.empty())
         return false;
     objs.clear();
-    cachepath[1] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "normalObj.zencache";
-    cachepath[0] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "renderObj.zencache";
+    cachepath[2] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "normalObj.zencache";
+    cachepath[1] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "materialObj.zencache";
+    cachepath[0] = std::filesystem::u8path(cachedir) / std::to_string(1000000 + frameid).substr(1) / "lightCameraObj.zencache";
     for (auto path : cachepath)
     {
         if (!std::filesystem::exists(path))
@@ -172,11 +172,13 @@ ZENO_API void GlobalComm::clearState() {
 }
 
 ZENO_API void GlobalComm::frameCache(std::string const &path, int gcmax) {
+    std::lock_guard lck(m_mtx);
     cacheFramePath = path;
     maxCachedFrames = gcmax;
 }
 
-ZENO_API void GlobalComm::frameRange(int beg, int end) {
+ZENO_API void GlobalComm::initFrameRange(int beg, int end) {
+    std::lock_guard lck(m_mtx);
     beginFrameNumber = beg;
     endFrameNumber = end;
 }
@@ -186,9 +188,19 @@ ZENO_API int GlobalComm::maxPlayFrames() {
     return m_maxPlayFrame + beginFrameNumber; // m_frames.size();
 }
 
-ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
-    int frameIdx = frameid - beginFrameNumber;
+ZENO_API int GlobalComm::numOfFinishedFrame() {
     std::lock_guard lck(m_mtx);
+    return m_maxPlayFrame;
+}
+
+ZENO_API std::pair<int, int> GlobalComm::frameRange() {
+    std::lock_guard lck(m_mtx);
+    return std::pair<int, int>(beginFrameNumber, endFrameNumber);
+}
+
+ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
+    std::lock_guard lck(m_mtx);
+    int frameIdx = frameid - beginFrameNumber;
     if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
     if (maxCachedFrames != 0) {
@@ -222,6 +234,7 @@ ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
 }
 
 ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
+    std::lock_guard lck(m_mtx);
     frameid -= beginFrameNumber;
     if (frameid < 0 || frameid >= m_frames.size())
         return false;

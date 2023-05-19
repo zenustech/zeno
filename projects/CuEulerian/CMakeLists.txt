@@ -25,7 +25,7 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   swe/FDGather.cu
   swe/Erode.cu
-  swe/SWE_dense.cpp
+  swe/SWE_dense.cu
 )
 
 # level set function

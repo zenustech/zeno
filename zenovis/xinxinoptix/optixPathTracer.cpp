@@ -1250,6 +1250,8 @@ static void createSBT( PathTracerState& state )
             sbt_idx = 2*j; 
             HitGroupRecord rec = {};
 
+            rec.data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
+
             if (OptixUtil::g_vdb_list_for_each_shader.count(j) == 0) {
                 continue;
             }

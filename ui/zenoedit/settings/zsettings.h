@@ -8,6 +8,7 @@ const char *const zsShowGrid = "ShowGrid";
 const char *const zsSnapGrid = "SnapGrid";
 const char *const zsTraceErrorNode = "TraceErrorNode";
 const char *const zsShortCut = "ShortCut";
+const char *const zsLinkLineShape = "LinkLineShape";
 
 //short cut
 const char *const ShortCut_Save = "Save";
@@ -48,5 +49,7 @@ const char *const ShortCut_UpwardView = "Upward View";
 const char *const ShortCut_CoordSys = "CoordSys";
 const char *const ShortCut_FloatPanel = "Float Panel";
 const char *const ShortCut_SelectAllNodes = "Select All Nodes";
-
+const char *const ShortCut_View = "View";
+const char *const ShortCut_Bypass = "Bypass";
+const char *const ShortCut_Once = "Once";
 #endif

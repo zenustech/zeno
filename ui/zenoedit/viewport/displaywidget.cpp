@@ -5,6 +5,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/Camera.h>
 #include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalState.h>
 #include <zeno/types/CameraObject.h>
 #include <zenomodel/include/uihelper.h>
 #include "settings/zenosettingsmanager.h"
@@ -18,13 +19,12 @@
 #include "timeline/ztimeline.h"
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
+#include "dialog/zrecframeselectdlg.h"
 
 
 using std::string;
 using std::unordered_set;
 using std::unordered_map;
-
-#define ENABLE_RECORD_PROGRESS_DIG
 
 
 DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
@@ -52,6 +52,7 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     {
         m_optixView = new ZOptixViewport;
         pLayout->addWidget(m_optixView);
+        connect(this, &DisplayWidget::frameRunFinished, m_optixView, &ZOptixViewport::onFrameRunFinished);
     }
 
     setLayout(pLayout);
@@ -148,6 +149,13 @@ void DisplayWidget::setSimpleRenderOption()
         m_glView->setSimpleRenderOption();
 }
 
+void DisplayWidget::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
+    if (m_optixView)
+    {
+        m_optixView->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+    }
+}
+
 bool DisplayWidget::isCameraMoving() const
 {
     if (m_glView)
@@ -173,18 +181,31 @@ ZOptixViewport* DisplayWidget::optixViewport() const
     return m_optixView;
 }
 
+void DisplayWidget::killOptix()
+{
+    if (m_optixView)
+        m_optixView->killThread();
+}
+
 void DisplayWidget::onPlayClicked(bool bChecked)
 {
-    if (bChecked)
+    if (m_bGLView)
     {
-        m_pTimer->start(m_sliderFeq);
+        if (bChecked)
+        {
+            m_pTimer->start(m_sliderFeq);
+        }
+        else
+        {
+            m_pTimer->stop();
+        }
+        if (getZenoVis())
+            getZenoVis()->startPlay(bChecked);
     }
     else
     {
-        m_pTimer->stop();
+        emit m_optixView->sig_togglePlayButton(bChecked);
     }
-    if (getZenoVis())
-        getZenoVis()->startPlay(bChecked);
 }
 
 void DisplayWidget::updateFrame(const QString &action) // cihou optix
@@ -206,6 +227,9 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
             //restore the timer, because it will be stopped by signal of new frame.
             m_pTimer->start(m_sliderFeq);
         }
+        int frame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+        frame = std::max(frame, 0);
+        emit frameRunFinished(frame);
     }
     else if (!action.isEmpty())
     {
@@ -214,10 +238,11 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
         return;
     }
     if (m_bGLView)
+    {
         m_glView->update();
+    }
     else
     {
-        m_optixView->updateCamera();
         m_optixView->update();
     }
 }
@@ -321,22 +346,8 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
     }
 }
 
-void DisplayWidget::onFinished()
+void DisplayWidget::onRunFinished()
 {
-    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-    ZTimeline *timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-    int frameid_ui = timeline->value();
-    Zenovis* pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    if (frameid_ui != pZenoVis->getCurrentFrameId())
-    {
-        pZenoVis->setCurrentFrameId(frameid_ui);
-        updateFrame();
-        onPlayClicked(false);
-        BlockSignalScope scope(timeline);
-        timeline->setPlayButtonChecked(false);
-    }
 }
 
 bool DisplayWidget::isOptxRendering() const
@@ -344,7 +355,8 @@ bool DisplayWidget::isOptxRendering() const
     return !m_bGLView;
 }
 
-void DisplayWidget::onSliderValueChanged(int frame) {
+void DisplayWidget::onSliderValueChanged(int frame)
+{
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     mainWin->clearErrorMark();
 
@@ -360,11 +372,19 @@ void DisplayWidget::onSliderValueChanged(int frame) {
     }
     else
     {
-        Zenovis *pZenoVis = getZenoVis();
-        ZASSERT_EXIT(pZenoVis);
-        pZenoVis->setCurrentFrameId(frame);
-        updateFrame();
-        onPlayClicked(false);
+        if (m_bGLView)
+        {
+            Zenovis *pZenoVis = getZenoVis();
+            ZASSERT_EXIT(pZenoVis);
+            pZenoVis->setCurrentFrameId(frame);
+            updateFrame();
+            onPlayClicked(false);
+        }
+        else
+        {
+            ZASSERT_EXIT(m_optixView);
+            emit m_optixView->sig_switchTimeFrame(frame);
+        }
         BlockSignalScope scope(timeline);
         timeline->setPlayButtonChecked(false);
     }
@@ -404,7 +424,7 @@ void DisplayWidget::afterRun()
     scene->objectsMan->lightObjects.clear();
 }
 
-void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly)
+void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -423,7 +443,7 @@ void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCamera
         m_glView->getSession()->get_scene()->selected.clear();
     }
 
-    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly);
+    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly, applyMaterialOnly);
 
     if (m_glView)
         m_glView->updateLightOnce = true;
@@ -505,100 +525,68 @@ void DisplayWidget::onScreenShoot() {
     }
 }
 
-void DisplayWidget::onRecord() {
+void DisplayWidget::onRecord()
+{
     auto &pGlobalComm = zeno::getSession().globalComm;
     ZASSERT_EXIT(pGlobalComm);
 
-    int frameLeft = 0, frameRight = 0;
-    if (pGlobalComm->maxPlayFrames() > 0) {
-        frameLeft = pGlobalComm->beginFrameNumber;
-        frameRight = pGlobalComm->endFrameNumber;
-    } else {
-        frameLeft = 0;
-        frameRight = 0;
-    }
+    //based on timeline value directory.
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
 
-    ZRecordVideoDlg dlg(frameLeft, frameRight, this);
-    if (QDialog::Accepted == dlg.exec()) {
+    ZRecordVideoDlg dlg(this);
+    if (QDialog::Accepted == dlg.exec())
+    {
         VideoRecInfo recInfo;
-        dlg.getInfo(recInfo.frameRange.first, recInfo.frameRange.second, recInfo.fps, recInfo.bitrate, recInfo.res[0],
+        dlg.getInfo(recInfo.fps, recInfo.bitrate, recInfo.res[0],
                     recInfo.res[1], recInfo.record_path, recInfo.videoname, recInfo.numOptix, recInfo.numMSAA,
-                    recInfo.bRecordAfterRun, recInfo.bExportVideo);
+                    recInfo.bExportVideo);
         //validation.
 
+        ZRecFrameSelectDlg frameDlg(this);
+        int ret = frameDlg.exec();
+        if (QDialog::Rejected == ret) {
+            return;
+        }
+
+        bool bRunBeforeRecord = false;
+        recInfo.frameRange = frameDlg.recordFrameRange(bRunBeforeRecord);
+
+        if (bRunBeforeRecord)
+        {
+            //clear cached objs.
+            zeno::getSession().globalComm->clearState();
+            onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+        }
+
+        //setup signals issues.
         m_recordMgr.setRecordInfo(recInfo);
 
-        bool bRun = !recInfo.bRecordAfterRun;
-
-        if (!bRun && pGlobalComm->maxPlayFrames() == 0) {
-            QMessageBox::information(nullptr, "Zeno", tr("Run the graph before recording"), QMessageBox::Ok);
-            return;
-        }
-
-        ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(mainWin);
-
-        int recStartFrame = recInfo.frameRange.first;
-        int recEndFrame = recInfo.frameRange.second;
-
-        if (!bRun && (recStartFrame < frameLeft || recEndFrame > frameRight))
-        {
-            QMessageBox::information(
-                nullptr, "Zeno",
-                tr("The available frame range is %1 - %2, please rerun first").arg(frameLeft).arg(frameRight),
-                QMessageBox::Ok);
-            return;
-        }
-
-#ifdef ENABLE_RECORD_PROGRESS_DIG
-        ZRecordProgressDlg dlgProc(recInfo);
+        ZRecordProgressDlg dlgProc(recInfo, this);
         connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
         connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
         connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
         connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
-#endif
+
         if (!m_bGLView)
         {
+            ZASSERT_EXIT(m_optixView);
             m_optixView->recordVideo(recInfo);
         }
         else
         {
-            if (bRun) {
-                //clear the global Comm first, to avoid play old frames.
-                zeno::getSession().globalComm->clearState();
-
-                //expand the timeline if necessary.
-                ZTimeline *timeline = mainWin->timeline();
-                auto pair = timeline->fromTo();
-                if (pair.first > recStartFrame || pair.second < recEndFrame) {
-                    //expand timeline
-                    timeline->initFromTo(qMin(pair.first, recStartFrame), qMax(recEndFrame, pair.second));
-                }
-
-                //reset the current frame on timeline.
-                moveToFrame(recStartFrame);
-
-                // and then toggle play.
-                mainWin->toggleTimelinePlay(true);
-
-                //and then run.
-                onRun(recInfo.frameRange.first, recInfo.frameRange.second);
-            } else {
-                // first, set the time frame start end.
-                moveToFrame(recStartFrame);
-                // and then play.
-                mainWin->toggleTimelinePlay(true);
-            }
+            moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
+            mainWin->toggleTimelinePlay(true);          // and then play.
+            //the recording implementation is RecordVideoMgr::onFrameDrawn.
         }
 
-#ifdef ENABLE_RECORD_PROGRESS_DIG
         if (QDialog::Accepted == dlgProc.exec()) {
+
         } else {
             m_recordMgr.cancelRecord();
         }
-#endif
     }
 }
 

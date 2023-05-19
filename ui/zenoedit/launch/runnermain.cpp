@@ -9,6 +9,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/extra/GraphException.h>
+#include <zeno/extra/EventCallbacks.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/zeno.h>
 #include <string>
@@ -106,7 +107,7 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
 
     std::vector<char> buffer;
 
-    session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
+    session->globalComm->initFrameRange(graph->beginFrameNumber, graph->endFrameNumber);
     send_packet("{\"action\":\"frameRange\",\"key\":\""
                 + std::to_string(graph->beginFrameNumber)
                 + ":" + std::to_string(graph->endFrameNumber)
@@ -190,6 +191,14 @@ int runner_main(int sessionid, int port, char* cachedir) {
     std::istreambuf_iterator<char> iit(std::cin.rdbuf()), eiit;
     std::back_insert_iterator<std::string> sit(progJson);
     std::copy(iit, eiit, sit);
+
+
+#ifdef ZENO_IPC_USE_TCP
+    // Notify this is runner process
+    static int calledOnce = ([]{
+      zeno::getSession().eventCallbacks->triggerEvent("preRunnerStart");
+    }(), 0);
+#endif
 
     return runner_start(progJson, sessionid, cachedir);
 }

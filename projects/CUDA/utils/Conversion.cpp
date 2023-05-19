@@ -3,8 +3,81 @@
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/funcs/PrimitiveUtils.h>
+#include <zeno/para/parallel_for.h>
+#include <zeno/para/parallel_scan.h>
+#include <zeno/utils/variantswitch.h>
 
 namespace zeno {
+
+// treat poly as lines (strands)
+void primLineify(PrimitiveObject *prim, bool with_uv) {
+
+    {
+        std::vector<int> scansum(prim->polys.size());
+        auto redsum = parallel_exclusive_scan_sum(prim->polys.begin(), prim->polys.end(), scansum.begin(),
+                                                  [&](auto &ind) { return ind[1] - 1; });
+        int linebase = prim->lines.size();
+        prim->lines.resize(linebase + redsum);
+
+        if (!prim->loops.has_attr("uvs") || !with_uv) {
+            parallel_for(prim->polys.size(), [&](size_t i) {
+                auto [start, len] = prim->polys[i];
+                int scanbase = linebase + scansum[i];
+                for (int j = 0; j + 1 < len; ++j) {
+                    prim->lines[scanbase++] = vec2i(prim->loops[start + j], prim->loops[start + j + 1]);
+                }
+            });
+
+        } else {
+            const auto &loop_uv = prim->loops.attr<int>("uvs");
+            const auto &uvs = prim->uvs;
+            auto &uv0 = prim->lines.add_attr<vec3f>("uv0");
+            auto &uv1 = prim->lines.add_attr<vec3f>("uv1");
+
+            parallel_for(prim->polys.size(), [&](size_t i) {
+                auto [start, len] = prim->polys[i];
+                int scanbase = linebase + scansum[i];
+                for (int j = 0; j + 1 < len; j++) {
+                    uv0[scanbase] = {uvs[loop_uv[start + j]][0], uvs[loop_uv[start + j]][1], 0};
+                    uv1[scanbase] = {uvs[loop_uv[start + j + 1]][0], uvs[loop_uv[start + j + 1]][1], 0};
+                    prim->lines[scanbase++] = vec2i(prim->loops[start + j], prim->loops[start + j + 1]);
+                }
+            });
+        }
+        prim->loops.clear();
+        prim->polys.clear();
+        prim->loops.erase_attr("uvs");
+        prim->uvs.clear();
+    }
+}
+
+struct PrimitiveLineify : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        if (get_param<bool>("from_poly")) {
+            primLineify(prim.get(), get_param<bool>("with_uv"));
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveLineify, {/* inputs: */
+                              {{"primitive", "prim"}},
+                              /* outputs: */
+                              {
+                                  {"primitive", "prim"},
+                              },
+                              /* params: */
+                              {
+                                  {"bool", "from_poly", "1"},
+                                  {"bool", "with_uv", "1"},
+                              },
+                              /* category: */
+                              {
+                                  "primitive",
+                              }});
+
 
 struct PointsToZSParticles : INode {
     void apply() override {

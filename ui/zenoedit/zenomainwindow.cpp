@@ -15,10 +15,13 @@
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/optixviewport.h"
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include <zeno/utils/log.h>
 #include <zeno/utils/envconfig.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/core/Session.h>
@@ -50,7 +53,8 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_bAlways(false)
-    , m_bAlwaysLightCameraMaterial(false)
+    , m_bAlwaysLightCamera(false)
+    , m_bAlwaysMaterial(false)
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
@@ -132,6 +136,7 @@ void ZenoMainWindow::initWindowProperty()
         updateNativeWinTitle(title);
     });
     connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
+    connect(this, &ZenoMainWindow::visFrameUpdated, this, &ZenoMainWindow::onZenovisFrameUpdate);
 }
 
 void ZenoMainWindow::updateNativeWinTitle(const QString& title)
@@ -643,9 +648,18 @@ void ZenoMainWindow::initTimelineDock()
                 mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
                 view->onRun(nFrame, nFrame);
             }
-            else if (m_bAlwaysLightCameraMaterial) {
+            else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
+                std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+                    QVector<DisplayWidget *> views = viewports();
+                    for (auto displayWid : views) {
+                        if (!displayWid->isGLViewport()) {
+                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                        }
+                    }
+                };
+                setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
                 mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
-                view->onRun(nFrame, nFrame, true);
+                view->onRun(nFrame, nFrame, m_bAlwaysLightCamera, m_bAlwaysMaterial);
             }
         }
     });
@@ -707,7 +721,7 @@ void ZenoMainWindow::toggleTimelinePlay(bool bOn)
     m_pTimeline->togglePlayButton(bOn);
 }
 
-void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly)
+void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
     QVector<DisplayWidget*> views = viewports();
 
@@ -728,7 +742,7 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly)
         IGraphsModel* pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, beginFrame, endFrame, applyLightAndCameraOnly);
+        launchProgram(pModel, beginFrame, endFrame, applyLightAndCameraOnly, applyMaterialOnly);
     }
 
     for (auto view : views)
@@ -800,6 +814,35 @@ void ZenoMainWindow::updateViewport(const QString& action)
     {
         view->updateFrame(action);
     }
+    if (action == "finishFrame")
+    {
+        updateLightList();
+        bool bPlayed = m_pTimeline->isPlayToggled();
+        if (!bPlayed)
+        {
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int ui_frame = m_pTimeline->value();
+            if (ui_frame == endFrame)
+            {
+                for (DisplayWidget *view : views)
+                {
+                    if (view->isGLViewport())
+                    {
+                        Zenovis* pZenovis = view->getZenoVis();
+                        ZASSERT_EXIT(pZenovis);
+                        pZenovis->setCurrentFrameId(ui_frame);
+                    }
+                    else
+                    {
+                        ZOptixViewport* pOptix = view->optixViewport();
+                        ZASSERT_EXIT(pOptix);
+                        emit pOptix->sig_switchTimeFrame(ui_frame);
+                    }
+                    view->updateFrame();
+                }
+            }
+        }
+    }
 }
 
 ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
@@ -821,7 +864,7 @@ void ZenoMainWindow::onRunFinished()
     auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     for (auto dock : docks2)
     {
-        dock->onFinished();
+        dock->onRunFinished();
     }
 }
 
@@ -927,9 +970,20 @@ std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
     return m_spCacheMgr;
 }
 
+void ZenoMainWindow::killOptix()
+{
+    DisplayWidget* pWid = this->getOptixWidget();
+    if (pWid)
+    {
+        pWid->killOptix();
+    }
+}
+
 void ZenoMainWindow::closeEvent(QCloseEvent *event)
 {
     killProgram();
+    killOptix();
+
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
@@ -1016,6 +1070,13 @@ void ZenoMainWindow::mouseMoveEvent(QMouseEvent* event)
 void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
 {
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
+{
+    if (!m_pTimeline)
+        return;
+    m_pTimeline->onTimelineUpdate(frameid);
 }
 
 void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
@@ -1461,8 +1522,12 @@ bool ZenoMainWindow::isAlways() const
     return m_bAlways;
 }
 
-bool ZenoMainWindow::isAlwaysLightCameraMaterial() const {
-    return m_bAlwaysLightCameraMaterial;
+bool ZenoMainWindow::isAlwaysLightCamera() const {
+    return m_bAlwaysLightCamera;
+}
+
+bool ZenoMainWindow::isAlwaysMaterial() const {
+    return m_bAlwaysMaterial;
 }
 
 void ZenoMainWindow::setAlways(bool bAlways)
@@ -1473,8 +1538,9 @@ void ZenoMainWindow::setAlways(bool bAlways)
         m_pTimeline->togglePlayButton(false);
 }
 
-void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlways) {
-    m_bAlwaysLightCameraMaterial = bAlways;
+void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial) {
+    m_bAlwaysLightCamera = bAlwaysLightCamera;
+    m_bAlwaysMaterial = bAlwaysMaterial;
 }
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)

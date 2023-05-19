@@ -33,8 +33,10 @@ Scene::Scene()
       objectsMan(std::make_unique<ObjectsManager>()),
       renderMan(std::make_unique<RenderManager>(this)) {
 
+    /* gl has been removed from optix scene.
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
+    */
 
     if (zeno::envconfig::get("OPTX"))
         switchRenderEngine("optx");
@@ -50,7 +52,11 @@ void Scene::switchRenderEngine(std::string const &name) {
 
 void* Scene::getOptixImg(int& w, int& h)
 {
+#ifdef ZENO_ENABLE_OPTIX
     return xinxinoptix::optixgetimg(w, h);
+#else
+    return nullptr;
+#endif
 }
 
 std::vector<float> Scene::getCameraProp(){
