@@ -4,28 +4,16 @@
 
 #include <zeno/zeno.h>
 
-#include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
-#include <zeno/types/StringObject.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
-#include <zeno/types/MatrixObject.h>
 #include <zeno/types/UserData.h>
-
-#include <zeno/utils/variantswitch.h>
-#include <zeno/utils/arrayindex.h>
-#include <zeno/utils/wangsrng.h>
-#include <zeno/utils/log.h>
 
 #include <zeno/core/Graph.h>
 #include <zeno/funcs/PrimitiveUtils.h>
 #include <zeno/para/parallel_for.h>
 #include <zeno/extra/GlobalState.h>
 
-#include <zfx/zfx.h>
-#include <zfx/x64.h>
-#include <glm/gtx/quaternion.hpp>
-#include <cmath>
 #include <sstream>
 #include <random>
 #include <numeric>

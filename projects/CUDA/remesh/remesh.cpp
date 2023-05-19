@@ -209,7 +209,6 @@ struct UniformRemeshing : INode {
         prim->verts.update();
 #endif
 
-
         set_output("prim", std::move(prim));
     }
 };
@@ -250,6 +249,8 @@ struct AdaptiveRemeshing : INode {
             vduplicate[i] = i;
         }
 
+        zs::CppTimer timer;
+
         std::set<std::pair<int, int>> marked_lines{};
 #if 1
         if (has_input("marked_lines")) {
@@ -276,6 +277,9 @@ struct AdaptiveRemeshing : INode {
         }
 #endif
 
+#if PMP_ENABLE_PROFILE
+        timer.tick();
+#endif
         // handle non-manifold edges
         std::map<std::pair<int, int>, int> lines_map{};
         int line_size = 0;
@@ -337,6 +341,9 @@ struct AdaptiveRemeshing : INode {
                 }
             }
         }
+#if PMP_ENABLE_PROFILE
+        timer.tock("handle non-manifold edges");
+#endif
 
         auto mesh = new zeno::pmp::SurfaceMesh(prim, line_pick_tag);
         auto bb = mesh->bounds().size();
@@ -388,7 +395,7 @@ struct AdaptiveRemeshing : INode {
                 [&k](auto &arr) -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
                     fmt::print("key [{}] type [{}] size {}\n", k, zs::get_var_type_str(arr), arr.size());
                 },
-                [](...) {})(arr);
+                [](...){})(arr);
         }
         prim->verts.update();
 #endif

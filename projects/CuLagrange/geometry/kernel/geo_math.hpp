@@ -689,22 +689,21 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
     }
 
 
-    constexpr REAL tri_intersect(VECTOR3 const &ro, VECTOR3 const &rd, VECTOR3 const &v0, VECTOR3 const &v1, VECTOR3 const &v2,
-             REAL& b,REAL& rtmp,REAL& dtmp,REAL& stmp, REAL& ttmp,VECTOR3 &bary,REAL& ip_dist) {
+    constexpr REAL tri_ray_intersect(VECTOR3 const &ro, VECTOR3 const &rd, VECTOR3 const &v0, VECTOR3 const &v1, VECTOR3 const &v2) {
         const REAL eps = (REAL)1e-6;
         VECTOR3 u = v1 - v0;
         VECTOR3 v = v2 - v0;
         VECTOR3 n = cross(u, v);
         n = n/n.norm();
-        // REAL b = dot(n, rd);
-        b = dot(n,rd);
+        REAL b = dot(n, rd);
+        // b = dot(n,rd);
         if (zs::abs(b) > eps) {
             REAL a = n.dot(v0 - ro);
             REAL r = a / b;
-            rtmp = r;
+            // rtmp = r;
             if (r > eps) {
                 VECTOR3 ip = ro + r * rd;
-                ip_dist = dot(ip - v0,n);
+                // ip_dist = dot(ip - v0,n);
                 REAL uu = dot(u, u);
                 REAL uv = dot(u, v);
                 REAL vv = dot(v, v);
@@ -726,13 +725,13 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
                 d = (REAL)1.0 / d;
                 s *= d;
                 t *= d;
-                dtmp = d;
-                stmp = s;
-                ttmp = t;
+                // dtmp = d;
+                // stmp = s;
+                // ttmp = t;
 
-                bary[0] = (REAL)1.0 - s - t;
-                bary[1] = s;
-                bary[2] = t;
+                // bary[0] = (REAL)1.0 - s - t;
+                // bary[1] = s;
+                // bary[2] = t;
                 if (-eps <= s && s <= 1 + eps && -eps <= t && s + t <= 1 + eps * 2)
                     return r;
             }
