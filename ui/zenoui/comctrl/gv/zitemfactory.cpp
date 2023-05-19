@@ -90,7 +90,6 @@ namespace zenoui
         switch (ctrl)
         {
             case CONTROL_INT:
-            case CONTROL_FLOAT:
             case CONTROL_STRING:
             {
                 const QString text = UiHelper::variantToString(value);
@@ -130,6 +129,43 @@ namespace zenoui
                 });
                 pItemWidget = pLineEdit;
 #endif
+                break;
+            }
+            case CONTROL_FLOAT: {
+                ZFloatEditableTextItem *pLineEdit = new ZFloatEditableTextItem;
+                QString text;
+                if (value.canConvert<CURVES_DATA>()) {
+                    CURVES_DATA data = value.value<CURVES_DATA>();
+                    if (!data.isEmpty()) {
+                        pLineEdit->setProperty(g_keyFrame, QVariant::fromValue(data.first()));
+                    }
+                } else {
+                    text = UiHelper::variantToString(value);
+                    pLineEdit->setText(text);
+                }
+                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
+                if (ctrl == CONTROL_INT) {
+                    pLineEdit->setValidator(new QIntValidator(pLineEdit));
+                } else if (ctrl == CONTROL_FLOAT) {
+                    pLineEdit->setValidator(new QDoubleValidator(pLineEdit));
+                }
+
+                QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
+                    // be careful about the dynamic type.
+                    QVariant newValue;
+                    CURVE_DATA curve;
+                    if (pLineEdit->getKeyFrame(curve)) {
+                        CURVES_DATA data;
+                        data.insert(curve.key, curve);
+                        newValue = QVariant::fromValue(data);
+                    } else {
+                        newValue = UiHelper::parseStringByType(pLineEdit->toPlainText(), type);
+                    }
+                    cbSet.cbEditFinished(newValue);
+                });
+                pItemWidget = pLineEdit;
                 break;
             }
             case CONTROL_BOOL:
@@ -232,14 +268,13 @@ namespace zenoui
                     vec.resize(dim);
                 }
 
-                ZVecEditorItem* pVecEditor = new ZVecEditorItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
+                ZVecEditorItem* pVecEditor = new ZVecEditorItem(value, bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);
 
                 QObject::connect(pVecEditor, &ZVecEditorItem::editingFinished, [=]() {
-                    UI_VECTYPE vec = pVecEditor->vec();
-                    const QVariant& newValue = QVariant::fromValue(vec);
+                    const QVariant &newValue = pVecEditor->vec();
                     cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pVecEditor;

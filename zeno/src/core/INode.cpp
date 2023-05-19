@@ -13,6 +13,7 @@
 #endif
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
+#include <zeno/extra/GlobalState.h>
 
 namespace zeno {
 
@@ -132,6 +133,10 @@ ZENO_API zany INode::get_input(std::string const &id) const {
 
 ZENO_API void INode::set_output(std::string const &id, zany obj) {
     outputs[id] = std::move(obj);
+}
+
+ZENO_API bool INode::has_keyframe(std::string const &id) const {
+    return kframes.find(id) != kframes.end();
 }
 
 ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {

@@ -348,11 +348,118 @@ struct CURVE_DATA {
         return key == rhs.key && cycleType == rhs.cycleType && visible == rhs.visible &&
                        timeline == rhs.timeline && rg == rhs.rg && points == rhs.points;
     }
+
+    QVector<int> pointBases() 
+    {
+        QVector<int> cpbases;
+        if (visible) {
+            for (auto point : points) {
+                cpbases << point.point.x();
+            }
+        }
+        return cpbases;
+    }
+    float eval(float cf) const {
+        QVector<qreal> cpbases;
+        for (auto point : points) {
+            cpbases << point.point.x();
+        }
+        if (cycleType != 0) {
+            auto delta = cpbases.back() - cpbases.front();
+            if (cycleType == 2) {
+                int cd;
+                if (delta != 0) {
+                    cd = int(std::floor((cf - cpbases.front()) / delta)) & 1;
+                    cf = std::fmod(cf - cpbases.front(), delta);
+                } else {
+                    cd = 0;
+                    cf = 0;
+                }
+                if (cd != 0) {
+                    if (cf < 0) {
+                        cf = -cf;
+                    } else {
+                        cf = delta - cf;
+                    }
+                }
+                if (cf < 0)
+                    cf = cpbases.back() + cf;
+                else
+                    cf = cpbases.front() + cf;
+            } else {
+                if (delta != 0)
+                    cf = std::fmod(cf - cpbases.front(), delta);
+                else
+                    cf = 0;
+                if (cf < 0)
+                    cf = cpbases.back() + cf;
+                else
+                    cf = cpbases.front() + cf;
+            }
+        }
+        auto moreit = std::lower_bound(cpbases.begin(), cpbases.end(), cf);
+        auto cp = cpbases.end();
+        if (moreit == cpbases.end())
+            return points.back().point.y();
+        else if (moreit == cpbases.begin())
+           return points.front().point.y();
+        auto lessit = std::prev(moreit);
+        CURVE_POINT p = points[lessit - cpbases.begin()];
+        CURVE_POINT n = points[moreit - cpbases.begin()];
+        float pf = *lessit;
+        float nf = *moreit;
+        float t = (cf - pf) / (nf - pf);
+        if (p.controlType != 2) {
+           QPointF p1 = QPointF(pf, p.point.y());
+           QPointF p2 = QPointF(nf, n.point.y());
+           QPointF h1 = QPointF(pf, p.point.y()) + p.rightHandler;
+           QPointF h2 = QPointF(nf, n.point.y()) + n.leftHandler;
+           return eval_bezier_value(p1, p2, h1, h2, cf);
+        } else {
+           return lerp(p.point.y(), n.point.y(), t);
+        }
+    }
+    static float lerp(float from, float to, float t) {
+        return from + (to - from) * t;
+    }
+
+    static QPointF lerp(QPointF from, QPointF to, float t) {
+        return {lerp(from.x(), to.x(), t), lerp(from.y(), to.y(), t)};
+    }
+
+    static QPointF bezier(QPointF p1, QPointF p2, QPointF h1, QPointF h2, float t) {
+        QPointF a = lerp(p1, h1, t);
+        QPointF b = lerp(h1, h2, t);
+        QPointF c = lerp(h2, p2, t);
+        QPointF d = lerp(a, b, t);
+        QPointF e = lerp(b, c, t);
+        QPointF f = lerp(d, e, t);
+        return f;
+    }
+
+    static float eval_bezier_value(QPointF p1, QPointF p2, QPointF h1, QPointF h2, float x) {
+        float lower = 0;
+        float upper = 1;
+        float t = (lower + upper) / 2;
+        QPointF np = bezier(p1, p2, h1, h2, t);
+        int left_calc_count = 100;
+        while (std::abs(np.x() - x) > 0.00001f && left_calc_count > 0) {
+            if (x < np.x()) {
+                upper = t;
+            } else {
+                lower = t;
+            }
+            t = (lower + upper) / 2;
+            np = bezier(p1, p2, h1, h2, t);
+            left_calc_count -= 1;
+        }
+        return np.y();
+    }
 };
 
 typedef QMap<QString, CURVE_DATA> CURVES_DATA;
 Q_DECLARE_METATYPE(CURVES_DATA);
-
+Q_DECLARE_METATYPE(CURVE_DATA);
 
 typedef QList<QPersistentModelIndex> PARAM_LINKS;
 Q_DECLARE_METATYPE(PARAM_LINKS)

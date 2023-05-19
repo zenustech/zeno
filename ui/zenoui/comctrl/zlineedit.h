@@ -2,8 +2,10 @@
 #define __ZLINEEDIT_H__
 
 #include <QtWidgets>
+#include <zenomodel/include/modeldata.h>
 
 class ZNumSlider;
+class ZTimeline;
 
 class ZLineEdit : public QLineEdit
 {
@@ -41,4 +43,26 @@ private:
     bool m_bIconHover;
 };
 
+struct CURVE_DATA;
+class ZFloatLineEdit : public ZLineEdit {
+    Q_OBJECT
+  public:
+    explicit ZFloatLineEdit(QWidget *parent = nullptr);
+    explicit ZFloatLineEdit(const QString &text, QWidget *parent = nullptr);
+    void getDelfCurveData(CURVE_DATA &val, bool bVisible = true);
+    void updateCurveData();
+    bool getKeyFrame(CURVE_DATA &curve);
+
+  protected:
+    bool event(QEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *) override;
+
+  private slots:
+    void updateBackgroundProp(int frame);
+
+  private:
+    ZTimeline *getTimeline();
+    bool isSetKeyFrame();
+};
+extern const char *g_keyFrame;
 #endif

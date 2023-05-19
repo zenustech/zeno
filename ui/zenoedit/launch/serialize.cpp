@@ -195,9 +195,13 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
                 QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
                 const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
-                defl = UiHelper::parseVarByType(sockType, defl, nullptr);
-                if (!defl.isNull())
-                    AddParams("setNodeInput", ident, inputName, defl, sockType, writer);
+                if ((sockType == "float" || sockType.startsWith("vec")) && defl.canConvert<CURVES_DATA>()) {
+                    AddParams("setKeyFrame", ident, inputName, defl, sockType, writer);
+                } else {
+                    defl = UiHelper::parseVarByType(sockType, defl, nullptr);
+                    if (!defl.isNull())
+                        AddParams("setNodeInput", ident, inputName, defl, sockType, writer);
+                }
             }
             else
             {

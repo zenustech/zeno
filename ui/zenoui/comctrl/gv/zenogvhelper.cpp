@@ -98,9 +98,8 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             }
             else if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pItem))
             {
-                UI_VECTYPE vec = value.value<UI_VECTYPE>();
                 bool bFloat = (CONTROL_VEC4_FLOAT == ctrl || CONTROL_VEC3_FLOAT == ctrl || CONTROL_VEC2_FLOAT == ctrl);
-                pEditor->setVec(vec, bFloat, pScene);
+                pEditor->setVec(value, bFloat, pScene);
             }
             else if (ZenoParamComboBox* pBtn = qobject_cast<ZenoParamComboBox*>(pItem))
             {
@@ -127,8 +126,17 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
         case QGraphicsTextItem::Type:
         {
             QGraphicsTextItem* pItem = qgraphicsitem_cast<QGraphicsTextItem*>(item);
-            if (ctrl == CONTROL_FLOAT)
-                pItem->setPlainText(QString::number(value.toFloat()));
+            if (ctrl == CONTROL_FLOAT) 
+            {
+                if (value.canConvert<CURVES_DATA>()) {
+                    CURVES_DATA curves = value.value<CURVES_DATA>();
+                    if (curves.isEmpty())
+                        return;
+                    pItem->setProperty(g_keyFrame, QVariant::fromValue(curves.first()));
+                } else {
+                    pItem->setPlainText(QString::number(value.toFloat()));
+                }
+            }
             else
                 pItem->setPlainText(value.toString());
             break;

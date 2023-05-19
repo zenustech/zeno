@@ -21,6 +21,7 @@
 #include <zenoedit/zenoapplication.h>
 #include "gv/zitemfactory.h"
 #include <zenoui/comctrl/zpathedit.h>
+#include <zenomodel/include/modeldata.h>
 
 namespace zenoui
 {
@@ -35,18 +36,49 @@ namespace zenoui
         switch (ctrl)
         {
             case CONTROL_INT:
-            case CONTROL_FLOAT:
             case CONTROL_STRING:
             {
-                ZLineEdit* pLineEdit = new ZLineEdit(UiHelper::variantToString(value));
+                QString text = UiHelper::variantToString(value);
+                ZLineEdit *pLineEdit = new ZLineEdit(text);
+
                 pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
                 pLineEdit->setNumSlider(UiHelper::getSlideStep("", ctrl));
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
-                    const QVariant& newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
+                    const QVariant &newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
                     cbSet.cbEditFinished(newValue);
                     });
+                return pLineEdit;
+            }
+            case CONTROL_FLOAT:
+            {
+                ZFloatLineEdit *pLineEdit = new ZFloatLineEdit;
+                if (value.canConvert<CURVES_DATA>()) {
+                    CURVES_DATA data = value.value<CURVES_DATA>();
+                    if (!data.isEmpty()) {
+                        pLineEdit->setProperty(g_keyFrame, QVariant::fromValue(data.first()));
+                    }
+                } else {
+                    QString text = UiHelper::variantToString(value);
+                    pLineEdit->setText(text);
+                }
+                pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
+                pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
+                pLineEdit->setNumSlider(UiHelper::getSlideStep("", ctrl));
+                QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
+                    // be careful about the dynamic type.
+                    QVariant newValue;
+                    CURVE_DATA curve;
+                    if (pLineEdit->getKeyFrame(curve)) {
+                        CURVES_DATA data;
+                        data.insert(curve.key, curve);
+                        newValue = QVariant::fromValue(data);
+                    } else {
+                        newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
+                    }
+                    cbSet.cbEditFinished(newValue);
+                });
                 return pLineEdit;
             }
             case CONTROL_BOOL:
@@ -131,7 +163,6 @@ namespace zenoui
             case CONTROL_VEC4_FLOAT:
             case CONTROL_VEC4_INT:
             {
-                UI_VECTYPE vec = value.value<UI_VECTYPE>();
                 int dim = -1;
                 bool bFloat = false;
                 if (ctrl == CONTROL_VEC2_INT || ctrl == CONTROL_VEC2_FLOAT)
@@ -150,11 +181,10 @@ namespace zenoui
                     bFloat = ctrl == CONTROL_VEC4_FLOAT;
                 }
 
-                ZVecEditor* pVecEdit = new ZVecEditor(vec, bFloat, dim, "zeno2_2_lineedit");
+                ZVecEditor* pVecEdit = new ZVecEditor(value, bFloat, dim, "zeno2_2_lineedit");
                 pVecEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 QObject::connect(pVecEdit, &ZVecEditor::editingFinished, [=]() {
-                    UI_VECTYPE vec = pVecEdit->vec();
-                    const QVariant& newValue = QVariant::fromValue(vec);
+                    const QVariant &newValue = pVecEdit->vec();
                     cbSet.cbEditFinished(newValue);
                 });
                 return pVecEdit;
@@ -402,7 +432,7 @@ namespace zenoui
         }
         else if (ZVecEditor* pVecEditor = qobject_cast<ZVecEditor*>(pControl))
         {
-            pVecEditor->setVec(value.value<UI_VECTYPE>(), pVecEditor->isFloat());
+            pVecEditor->setVec(value, pVecEditor->isFloat());
         }
         else if (ZTextEdit* pTextEdit = qobject_cast<ZTextEdit*>(pControl))
         {

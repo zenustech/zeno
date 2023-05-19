@@ -4,14 +4,14 @@
 #include "../../style/zenostyle.h"
 
 
-ZVecEditorItem::ZVecEditorItem(const UI_VECTYPE& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent, Qt::WindowFlags wFlags)
+ZVecEditorItem::ZVecEditorItem(const QVariant& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent, Qt::WindowFlags wFlags)
     : _base(parent)
     , m_bFloatVec(bFloat)
 {
     initUI(vec, bFloat, pScene);
 }
 
-void ZVecEditorItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pScene)
 {
     for (int i = 0; i < m_editors.size(); i++)
     {
@@ -22,10 +22,30 @@ void ZVecEditorItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* 
     ZGraphicsLayout* pLayout = new ZGraphicsLayout(true);
     pLayout->setContentsMargin(0, 0, 0, 0);
     pLayout->setSpacing(6);
-    for (int i = 0; i < vec.size(); i++)
+    int n = 0;
+    if (vec.canConvert<UI_VECTYPE>())
+        n = vec.value<UI_VECTYPE>().size();
+    else
+        n = vec.value<CURVES_DATA>().size();
+    for (int i = 0; i < n; i++)
     {
-        const QString& numText = QString::number(vec[i]);
-        ZEditableTextItem* pLineEdit = new ZEditableTextItem(numText);
+        ZEditableTextItem *pLineEdit = nullptr; 
+        if (bFloat)
+            pLineEdit = new ZFloatEditableTextItem;
+        else
+            pLineEdit = new ZEditableTextItem;
+
+        if (vec.canConvert<UI_VECTYPE>()) {
+            UI_VECTYPE tmp = vec.value<UI_VECTYPE>();
+            pLineEdit->setText(QString::number(vec.value<UI_VECTYPE>().at(i)));
+        } else if (vec.canConvert<CURVES_DATA>()) {
+            CURVES_DATA curves = vec.value<CURVES_DATA>();
+            QString key = UiHelper::getCurveKey(i);
+            if (curves.contains(key)) {
+                m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));
+            }
+        }
+
 
         pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(64, 24)));
         pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
@@ -44,42 +64,72 @@ void ZVecEditorItem::initUI(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* 
     setLayout(pLayout);
 }
 
-UI_VECTYPE ZVecEditorItem::vec() const
+QVariant ZVecEditorItem::vec() const
 {
+    QVariant value;
+    CURVES_DATA datas;
     UI_VECTYPE vec;
-    for (auto editor : m_editors)
+    bool bKeyFrame = false;
+    for (int i = 0; i < m_editors.size(); i++)
     {
         if (m_bFloatVec)
         {
-            vec.append(editor->text().toFloat());
+            if (m_editors[i]->property(g_keyFrame).canConvert<CURVE_DATA>()) {
+                bKeyFrame = true;
+                CURVE_DATA data = m_editors[i]->property(g_keyFrame).value<CURVE_DATA>();
+                datas.insert(data.key, data);
+            } else {
+                vec.append(m_editors[i]->text().toFloat());
+            }
         }
         else
         {
-            vec.append(editor->text().toInt());
+            vec.append(m_editors[i]->text().toInt());
         }
     }
-    return vec;
+    if (!bKeyFrame) {
+        value = QVariant::fromValue(vec);
+    } else {
+        value = QVariant::fromValue(datas);
+    }
+    return value;
 }
 
-void ZVecEditorItem::setVec(const UI_VECTYPE& vec, bool bFloat, QGraphicsScene* pScene)
+void ZVecEditorItem::setVec(const QVariant& vec, bool bFloat, QGraphicsScene* pScene)
 {
-    if (vec.size() != m_editors.size())
-        return;
+    /*if (vec.size() != m_editors.size())
+        return;*/
 
-    for (int i = 0; i < vec.size(); i++)
+    for (int i = 0; i < m_editors.size(); i++)
     {
-        m_editors[i]->setText(QString::number(vec[i]));
+        if (vec.canConvert<UI_VECTYPE>())
+            m_editors[i]->setText(QString::number(vec.value<UI_VECTYPE>().at(i)));
+        else if (vec.canConvert<CURVES_DATA>()) {
+            CURVES_DATA curves = vec.value<CURVES_DATA>();
+            QString key = UiHelper::getCurveKey(i);
+            if (curves.contains(key)) {
+                m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));
+            }
+        }
     }
 }
 
-void ZVecEditorItem::setVec(const UI_VECTYPE& vec)
+void ZVecEditorItem::setVec(const QVariant& vec)
 {
-    if (vec.size() != m_editors.size())
-        return;
+    //if (vec.size() != m_editors.size())
+    //    return;
 
-    for (int i = 0; i < vec.size(); i++)
+    for (int i = 0; i < m_editors.size(); i++)
     {
-        m_editors[i]->setText(QString::number(vec[i]));
+        if (vec.canConvert<UI_VECTYPE>())
+            m_editors[i]->setText(QString::number(vec.value<UI_VECTYPE>().at(i)));
+        else if (vec.canConvert<CURVES_DATA>()) {
+            CURVES_DATA curves = vec.value<CURVES_DATA>();
+            QString key = UiHelper::getCurveKey(i);
+            if (curves.contains(key)) {
+                m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));
+            }
+        }
     }
 }
 

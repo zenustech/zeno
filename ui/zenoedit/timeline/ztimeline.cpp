@@ -287,6 +287,11 @@ bool ZTimeline::isPlayToggled() const
     return m_ui->btnPlay->isChecked();
 }
 
+void ZTimeline::updateKeyFrames(QVector<int> keys) 
+{
+    m_ui->timeliner->updateKeyFrames(keys);
+}
+
 void ZTimeline::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);

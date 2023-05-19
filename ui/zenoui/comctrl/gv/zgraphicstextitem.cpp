@@ -7,6 +7,9 @@
 #include "zgraphicsnumslideritem.h"
 #include <zeno/utils/scope_exit.h>
 #include "zenoedit/zenoapplication.h"
+#include <zenoedit/timeline/ztimeline.h>
+#include <zenoedit/zenomainwindow.h>
+#include <zenomodel/include/curvemodel.h>
 
 
 qreal editor_factor = 1.0;
@@ -593,6 +596,88 @@ void ZEditableTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     _base::mouseReleaseEvent(event);
 }
 
+//float
+ZFloatEditableTextItem::ZFloatEditableTextItem(const QString &text, QGraphicsItem *parent):
+    _base(text, parent)
+{
+}
+ZFloatEditableTextItem::ZFloatEditableTextItem(QGraphicsItem *parent) :
+    _base(parent)
+{
+}
+
+bool ZFloatEditableTextItem::event(QEvent *event) 
+{
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, false);
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline, false);
+    CURVE_DATA curve;
+    if (getKeyFrame(curve)) {
+        if (event->type() == QEvent::DynamicPropertyChange) 
+        {
+            QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent *>(event);
+            if (evt->propertyName() == g_keyFrame) 
+            {
+                float currentFrame = timeline->value();
+                updateText(currentFrame);
+                connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatEditableTextItem::updateText, Qt::UniqueConnection);
+                connect(zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, [=](bool gl, int frame) { 
+                    updateText(frame); 
+                }, Qt::UniqueConnection);
+            }
+        }
+        if (event->type() == QEvent::FocusOut) {
+            updateCurveData();
+        } else if (event->type() == QEvent::FocusIn) {
+            timeline->updateKeyFrames(curve.pointBases());
+        }
+    }
+    return _base::event(event);
+}
+void ZFloatEditableTextItem::updateCurveData() {
+    CURVE_DATA val;
+    if (!getKeyFrame(val)) {
+        return;
+    }
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    float x = timeline->value();
+    float y = text().toFloat();
+    if (val.visible) {
+        for (auto &point : val.points) {
+            if (point.point.x() == x && point.point.y() != y) {
+                point.point.setY(y);
+                val.rg.yTo = val.rg.yTo > y ? val.rg.yTo : y;
+                val.rg.yFrom = val.rg.yFrom > y ? y : val.rg.yFrom;
+                setProperty(g_keyFrame, QVariant::fromValue(val));
+                break;
+            }
+        }
+    } else {
+        val.points.begin()->point = QPointF(x, y);
+        setProperty(g_keyFrame, QVariant::fromValue(val));
+    }
+}
+
+bool ZFloatEditableTextItem::getKeyFrame(CURVE_DATA & curve) 
+{
+    bool res = property(g_keyFrame).canConvert<CURVE_DATA>();
+    if (res)
+        curve = property(g_keyFrame).value<CURVE_DATA>();
+    return res;
+}
+
+void ZFloatEditableTextItem::updateText(int frame) 
+{
+    CURVE_DATA data;
+    if (getKeyFrame(data)) {
+        QString text = QString::number(data.eval(frame));
+        setText(text);
+    }
+}
 
 ZSocketEditableItem::ZSocketEditableItem(
         const QPersistentModelIndex& viewSockIdx,

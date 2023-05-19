@@ -596,11 +596,20 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             {
                 PARAM_CONTROL paramCtrl = (PARAM_CONTROL)param->data(ROLE_PARAM_CTRL).toInt();
                 QString literalNum;
-                if (paramCtrl == CONTROL_FLOAT)
-                    literalNum = QString::number(value.toFloat());
-                else
+                if (paramCtrl == CONTROL_FLOAT) {
+                    if (value.canConvert<CURVES_DATA>()) {
+                        CURVES_DATA curves = value.value<CURVES_DATA>();
+                        if (curves.isEmpty())
+                            return;
+                        pLineEdit->setProperty(g_keyFrame, QVariant::fromValue(curves.first()));
+                    } else {
+                        literalNum = QString::number(value.toFloat());
+                        pLineEdit->setText(literalNum);
+                    }
+                } else {
                     literalNum = value.toString();
-                pLineEdit->setText(literalNum);
+                    pLineEdit->setText(literalNum);
+                }
             }
             else if (QComboBox* pCombobox = qobject_cast<QComboBox*>(ctrl.pControl))
             {
@@ -612,7 +621,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             }
             else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
             {
-                pVecEdit->setVec(value.value<UI_VECTYPE>(), pVecEdit->isFloat());
+                pVecEdit->setVec(value, pVecEdit->isFloat());
             }
             else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
             {

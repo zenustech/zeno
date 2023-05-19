@@ -180,7 +180,7 @@ namespace JsonHelper
             }
             else if (value.userType() == QMetaTypeId<CURVES_DATA>::qt_metatype_id())
             {
-                if (type == "curve") {
+                if (type == "curve" || value.canConvert<CURVES_DATA>()) {
                     CURVES_DATA curves = value.value<CURVES_DATA>();
                     writer.StartObject();
                     writer.Key(key_objectType);

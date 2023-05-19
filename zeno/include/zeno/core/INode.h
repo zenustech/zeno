@@ -9,6 +9,8 @@
 #include <string>
 #include <set>
 #include <map>
+#include <zeno/types/CurveObject.h>
+#include <zeno/extra/GlobalState.h>
 
 namespace zeno {
 
@@ -28,6 +30,7 @@ public:
     std::map<std::string, std::pair<std::string, std::string>> inputBounds;
     std::map<std::string, zany> inputs;
     std::map<std::string, zany> outputs;
+    std::set<std::string> kframes;
     zany muted_output;
 
     ZENO_API INode();
@@ -57,6 +60,8 @@ protected:
     ZENO_API zany get_input(std::string const &id) const;
     ZENO_API void set_output(std::string const &id, zany obj);
 
+    ZENO_API bool has_keyframe(std::string const &id) const;
+
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {
         auto obj = get_input(id);
@@ -76,8 +81,53 @@ protected:
         return objectIsLiterial<T>(get_input(id));
     }
 
+    auto calculateKeyFrame(std::string const &id) const
+    {
+        auto curves = dynamic_cast<zeno::CurveObject*>(get_input(id).get());
+        auto value = get_input(id);
+        int frame = getGlobalState()->frameid;
+        if (curves->keys.size() == 1) {
+            auto val = curves->keys.begin()->second.eval(frame);
+            value = objectFromLiterial(val);
+        } else {
+            int size = curves->keys.size();
+            if (size == 2) {
+                zeno::vec2f vec2;
+                for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin();
+                     it != curves->keys.cend(); it++) {
+                    int index = it->first == "x" ? 0 : 1;
+                    vec2[index] = it->second.eval(frame);
+                }
+                value = objectFromLiterial(vec2);
+            }
+            else if (size == 3) {
+                zeno::vec3f vec3;
+                for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin();
+                     it != curves->keys.cend(); it++) {
+                    int index = it->first == "x" ? 0 : it->first == "y" ? 1 : 2;
+                    vec3[index] = it->second.eval(frame);
+                }
+                value = objectFromLiterial(vec3);
+            }
+            else if (size == 4) {
+                zeno::vec4f vec4;
+                for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin();
+                     it != curves->keys.cend(); it++) {
+                    int index = it->first == "x" ? 0 : it->first == "y" ? 1 : it->first == "z" ? 2 : 3;
+                    vec4[index] = it->second.eval(frame);
+                }
+                value = objectFromLiterial(vec4);
+            }
+        }
+        return value;
+    }
+
     template <class T>
     auto get_input2(std::string const &id) const {
+        if (has_keyframe(id)) {
+            auto value = calculateKeyFrame(id);
+            return objectToLiterial<T>(value, "input socket `" + id + "` of node `" + myname + "`");
+        }
         return objectToLiterial<T>(get_input(id), "input socket `" + id + "` of node `" + myname + "`");
     }
 
