@@ -469,6 +469,7 @@ namespace DisneyBSDF{
     static __inline__ __device__
     float3 EvaluateDisney(
         vec3 baseColor,
+        vec3 sssColor,
         float metallic,
         float subsurface,
         float specular,
@@ -543,14 +544,22 @@ namespace DisneyBSDF{
             float forwardDiffusePdfW = abs(wi.z);
             float reverseDiffusePdfW = abs(wo.z);
             float diffuse = EvaluateDisneyDiffuse(roughness,flatness, wi, wo, wm, thin);
+            auto c = mix(baseColor, sssColor, subsurface);
+            vec3 fr = abs(vec3(1.0) - 0.5 * BRDFBasics::fresnelSchlick(c, abs(wi.z)));
+            //printf("fr: %f, %f, %f\n", fr.x, fr.y, fr.z);
+            float w = max(dot(fr, vec3(1.0f,1.0f,1.0f)) , 0.0f);
+            float p_in = subsurface * w;
+            //printf("w: %f\n", w);
 
+            float ptotal = 1.0f + p_in ;
+            float psss = subsurface>0? p_in/ptotal : 0; // /ptotal;
             vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
 
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
             if(!thin && nDl<=0.0f)
                 diffuse = 0;
-            reflectance += diffuseW * (diffuse * baseColor + lobeOfSheen);
+            reflectance += diffuseW * ((1.0f - psss) * diffuse * baseColor + lobeOfSheen);
         }
         // Transsmission
         if(transmissionW > 0.0f) {
