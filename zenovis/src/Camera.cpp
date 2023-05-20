@@ -37,7 +37,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
         //ZENO_P(front);
         //ZENO_P(up);
         m_view = glm::lookAt(pos, pos + front, up);
-        m_proj = glm::perspective(glm::radians(fov), getAspect(), fnear, ffar);
+        m_proj = glm::perspectiveZO(glm::radians(fov), getAspect(), ffar, fnear);
         //ZENO_P(m_view);
         //ZENO_P(m_proj);
     }
