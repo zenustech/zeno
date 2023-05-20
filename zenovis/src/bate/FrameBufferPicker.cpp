@@ -355,7 +355,7 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == zenovis::PICK_LINE) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    CHECK_GL(glDepthFunc(GL_LESS));
+                    CHECK_GL(glDepthFunc(GL_GREATER));
                     // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                     // ----- draw lines -----
                     prim_shader->use();
@@ -404,7 +404,7 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == zenovis::PICK_MESH) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    CHECK_GL(glDepthFunc(GL_LESS));
+                    CHECK_GL(glDepthFunc(GL_GREATER));
                     // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                     // ----- draw triangles -----
                     prim_shader->use();
