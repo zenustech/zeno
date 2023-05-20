@@ -264,7 +264,6 @@ ZENDEFNODE(TrianglesWrangle, {
     {{"PrimitiveObject", "prim"},
      {"string", "zfxCode"}, {"DictObject:NumericObject", "params"},
      {"enum points lines tris quads loops polys", "faceType", "tris"}},
-    },
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},
