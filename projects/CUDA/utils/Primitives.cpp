@@ -558,7 +558,7 @@ ZENDEFNODE(PrimitiveMarkIslands, {
                                  });
 #endif
 
-struct PrimitiveCollapseVerts : INode {
+struct PrimitiveFuse : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
 
@@ -730,7 +730,7 @@ struct PrimitiveCollapseVerts : INode {
     }
 };
 
-ZENDEFNODE(PrimitiveCollapseVerts, {
+ZENDEFNODE(PrimitiveFuse, {
                                        {{"PrimitiveObject", "prim"}, {"float", "proximity_theshold", "0.00001"}},
                                        {
                                            {"PrimitiveObject", "prim"},
