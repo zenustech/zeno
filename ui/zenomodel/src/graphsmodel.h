@@ -139,6 +139,8 @@ public:
     void setApiRunningEnable(bool bEnable) override;
     bool isApiRunningEnable() const override;
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
+    void markNodeDataChanged(const QModelIndex& idx) override;
+    void clearNodeDataChanged() override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -185,6 +187,7 @@ private:
 
     //LinkModel* m_linkModel;
     QHash<QString, LinkModel*> m_linksGroup;
+    QList<QPersistentModelIndex> m_changedNodes;
 
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;

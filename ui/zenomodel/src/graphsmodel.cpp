@@ -1440,6 +1440,28 @@ bool GraphsModel::setCustomName(const QModelIndex &subgIdx, const QModelIndex &i
     return pModel->setData(index, value, ROLE_CUSTOM_OBJNAME);
 }
 
+void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx)
+{
+    if (IsIOProcessing())
+        return;
+
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+    ZASSERT_EXIT(pModel);
+    pModel->setData(nodeIdx, true, ROLE_NODE_DATACHANGED);
+    m_changedNodes.append(nodeIdx);
+}
+
+void GraphsModel::clearNodeDataChanged()
+{
+    for (auto nodeIdx : m_changedNodes)
+    {
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+        ZASSERT_EXIT(pModel);
+        pModel->setData(nodeIdx, false, ROLE_NODE_DATACHANGED);
+    }
+    m_changedNodes.clear();
+}
+
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
 {
     QModelIndex nodeIdx = index(nodeid, subgIdx);
