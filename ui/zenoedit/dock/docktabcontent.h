@@ -44,7 +44,8 @@ protected:
 private:
     QMenu *menu;
     QAction *run;
-    QAction *runLightCameraMaterial;
+    QAction *runLightCamera;
+    QAction *runMaterial;
 };
 
 class DockToolbarWidget : public QWidget
@@ -179,6 +180,7 @@ private:
     QStackedWidget* m_stack;
     ZToolBarButton* m_pBtnFilterLog;
     ZToolBarButton* m_pBtnPlainLog;
+    ZToolBarButton* m_pDeleteLog;
 };
 
 class DockContent_Image : public DockToolbarWidget {

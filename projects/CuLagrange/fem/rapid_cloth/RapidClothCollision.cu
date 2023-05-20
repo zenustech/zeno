@@ -535,23 +535,21 @@ void RapidClothSystem::consColoring(zs::CudaExecutionPolicy &pol)
     colorMinWeights.resize(nCons); 
     colorWeights.resize(nCons); 
     {
-        // bht<int, 1, int> tab{lcpTopMat.get_allocator(), (std::size_t)(nCons * 16)}; 
-        bcht<u32, int, true, zs::universal_hash<u32>, 32> tab{lcpTopMat.get_allocator(), (std::size_t)(nCons * 256)}; 
-        // tab.reset(pol, true); 
+        bht<int, 1, int> tab{lcpTopMat.get_allocator(), (std::size_t)(nCons * 16)}; 
+        tab.reset(pol, true); 
         u32 seed = 114514u; 
         pol(enumerate(colorWeights), 
-            [tab_view = view<space>(tab), 
+            [tab_view = proxy<space>(tab), 
             seed = seed, nCons = nCons] __device__ (int idx, u32& w) mutable {
                 using tab_t = RM_CVREF_T(tab_view); 
                 u32 uidx = idx; 
                 u32 v = combine_hash(simple_hash(seed++), simple_hash(uidx)) % (u32)4294967291u;
                 tab_view.insert(v);
-                // TODO: use hash table insert
-                // while (tab_view.insert(v) != tab_t::sentinel_v) {
-                //     u32 tmp = combine_hash(simple_hash(seed++), simple_hash(uidx));
-                //     printf("[%d]-th (%d) random number : %u -> %u\n", idx, (int)nCons, v, tmp);
-                //     v = tmp;
-                // }
+                while (tab_view.insert(v) != tab_t::sentinel_v) {
+                    u32 tmp = combine_hash(simple_hash(seed++), simple_hash(uidx));
+                    printf("[%d]-th (%d) random number : %u -> %u\n", idx, (int)nCons, v, tmp);
+                    v = tmp;
+                }
                 w = v; 
         }); 
         if (tab.size() != nCons) {

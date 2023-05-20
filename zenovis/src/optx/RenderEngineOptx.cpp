@@ -483,7 +483,11 @@ struct GraphicsManager {
 
         bool changelight = false;
         for (auto const &[key, obj] : objs) {
-            if (ins.may_emplace(key)) {
+            if (scene->drawOptions->updateMatlOnly && ins.may_emplace(key))
+            {
+                changelight = false;
+            }
+            else if(ins.may_emplace(key)) {
                 changelight = true;
             }
         }
@@ -560,9 +564,10 @@ struct GraphicsManager {
                 zeno::log_info("load_object: loading graphics [{}]", key);
                 changed = true;
 
-                if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
-                {
-                    scene->camera->setCamera(cam->get());     // pyb fix
+                if (!scene->drawOptions->updateMatlOnly) {
+                    if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
+                        scene->camera->setCamera(cam->get()); // pyb fix
+                    }
                 }
 
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
@@ -621,15 +626,25 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
             lightNeedUpdate = true;
             scene->objectsMan->needUpdateLight = false;
+            scene->drawOptions->needRefresh = true;
         }
 
         if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
             staticNeedUpdate = true;
         }
-        if (graphicsMan->load_objects(scene->objectsMan->pairs()) || 
-            scene->drawOptions->needUpdateGeo)
+        if (graphicsMan->load_objects(scene->objectsMan->pairs()))
         {
             meshNeedUpdate = matNeedUpdate = true;
+            if (scene->drawOptions->updateMatlOnly)
+            {
+                lightNeedUpdate = meshNeedUpdate = false;
+                matNeedUpdate = true;
+            }
+            if (scene->drawOptions->updateLightCameraOnly)
+            {
+                lightNeedUpdate = true;
+                matNeedUpdate = meshNeedUpdate = false;
+            }
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
@@ -739,9 +754,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if(scene->drawOptions->needRefresh){
             camNeedUpdate = true;
             scene->drawOptions->needRefresh = false;
-        }
-        if (scene->drawOptions->needUpdateGeo) {
-            scene->drawOptions->needUpdateGeo = false;
         }
 
         //std::cout << "Render Options: SimpleRender " << scene->drawOptions->simpleRender
@@ -951,27 +963,32 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     markers.push_back(has_vdb);
                 }
             }
-            std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
-            xinxinoptix::optixupdatematerial(markers, shaders, shader_tex_names);
-            
-            xinxinoptix::updateVolume();
+            if (matNeedUpdate)
+            {
+                std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
+                xinxinoptix::optixupdatematerial(markers, shaders, shader_tex_names);
+            }
+            if (meshNeedUpdate)
+            {
+                xinxinoptix::updateVolume();
 
-    OptixUtil::logInfoVRAM("Before update Mesh");
-            //zeno::log_debug("[zeno-optix] updating mesh");
-            // timer.tick();
-            if(staticNeedUpdate)
-                xinxinoptix::UpdateStaticMesh(mtlidlut);
-            // timer.tock("done static mesh update");
-            // timer.tick();
-            xinxinoptix::UpdateDynamicMesh(mtlidlut);
-            // timer.tock("done dynamic mesh update");
-    OptixUtil::logInfoVRAM("After update Mesh");
+        OptixUtil::logInfoVRAM("Before update Mesh");
+                //zeno::log_debug("[zeno-optix] updating mesh");
+                // timer.tick();
+                if(staticNeedUpdate)
+                    xinxinoptix::UpdateStaticMesh(mtlidlut);
+                // timer.tock("done static mesh update");
+                // timer.tick();
+                xinxinoptix::UpdateDynamicMesh(mtlidlut);
+                // timer.tock("done dynamic mesh update");
+        OptixUtil::logInfoVRAM("After update Mesh");
 
-            xinxinoptix::UpdateInst();
-            xinxinoptix::UpdateStaticInstMesh(mtlidlut);
-            xinxinoptix::UpdateDynamicInstMesh(mtlidlut);
-            xinxinoptix::CopyInstMeshToGlobalMesh();
-            xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
+                xinxinoptix::UpdateInst();
+                xinxinoptix::UpdateStaticInstMesh(mtlidlut);
+                xinxinoptix::UpdateDynamicInstMesh(mtlidlut);
+                xinxinoptix::CopyInstMeshToGlobalMesh();
+                xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
+            }
             
             xinxinoptix::optixupdateend();
             

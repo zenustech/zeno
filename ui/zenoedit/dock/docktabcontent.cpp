@@ -104,17 +104,23 @@ ZToolMenuButton::ZToolMenuButton() {
     setArrowOption(ZStyleOptionToolButton::DOWNARROW);
     menu = new QMenu(this);
     run = new QAction(icon(), tr("Run"), this);
-    runLightCameraMaterial = new QAction(icon(), tr("RunLightCameraMaterial"), this);
+    runLightCamera = new QAction(icon(), tr("RunLightCamera"), this);
+    runMaterial = new QAction(icon(), tr("RunMaterial"), this);
     connect(run, &QAction::triggered, this, [=]() {
         setText(tr("Run"));
         this->setMinimumWidth(sizeHint().width());
     });
-    connect(runLightCameraMaterial, &QAction::triggered, this, [=]() {
-        setText(tr("RunLightCameraMaterial"));
+    connect(runLightCamera, &QAction::triggered, this, [=]() {
+        setText(tr("RunLightCamera"));
+        this->setMinimumWidth(sizeHint().width());
+    });
+    connect(runMaterial, &QAction::triggered, this, [=]() {
+        setText(tr("RunMaterial"));
         this->setMinimumWidth(sizeHint().width());
     });
     menu->addAction(run);
-    menu->addAction(runLightCameraMaterial);
+    menu->addAction(runLightCamera);
+    menu->addAction(runMaterial);
 }
 
 
@@ -319,7 +325,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnKill->setShortcut(settings.getShortCut(ShortCut_Kill));
     m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
 
-    QStringList runList{tr("disable"), tr("alwaysAll"), tr("alwaysLightCameraMaterial")};
+    QStringList runList{tr("disable"), tr("alwaysAll"), tr("alwaysLightCamera"), tr("alwaysMaterial")};
     m_btnAlways = new ZComboBox(this);
     m_btnAlways->addItems(runList);
     m_btnAlways->setEditable(false);
@@ -327,46 +333,51 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnAlways->setFont(fnt);
     m_btnAlways->setProperty("focusBorder", "none");
     QFontMetrics fontMetrics(fnt);
-    m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCameraMaterial")) + ZenoStyle::dpiScaled(30));
+    m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCamera")) + ZenoStyle::dpiScaled(30));
     QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
-        static int lastItem = 0;
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
         std::function<void()> resetAlways = [=]() {
             m_btnAlways->setCurrentText(tr("disable"));
-            pMainWin->setAlwaysLightCameraMaterial(false);
-            lastItem = 0;
+            pMainWin->setAlwaysLightCameraMaterial(false, false);
         };
+        QVector<DisplayWidget *> views = pMainWin->viewports();
+        for (auto displayWid : views) {
+            if (!displayWid->isGLViewport()) {
+                displayWid->setRenderSeparately(false, false);
+            }
+        }
         connect(zenoApp->graphsManagment(), &GraphsManagment::fileOpened, this, resetAlways);
         connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
         if (text == tr("alwaysAll"))
         {
             mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
             pMainWin->setAlways(true);
-            pMainWin->setAlwaysLightCameraMaterial(false);
+            pMainWin->setAlwaysLightCameraMaterial(false, false);
             pMainWin->onRunTriggered();
-            lastItem = 1;
         }
-        else if (text == tr("alwaysLightCameraMaterial")) {
+        else if (text == tr("alwaysLightCamera") || text == tr("alwaysMaterial")) {
             QSettings settings(zsCompanyName, zsEditor);
             if (!settings.value("zencache-enable").toBool()) {
-                QMessageBox::warning(nullptr, tr("alwaysLightCameraMaterial"), tr("This function can only be used in cache mode."));
-                m_btnAlways->setCurrentIndex(lastItem);
+                QMessageBox::warning(nullptr, text, tr("This function can only be used in cache mode."));
+                m_btnAlways->setCurrentIndex(0);
             } else {
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
+                if (text == tr("alwaysLightCamera")) {
+                    pMainWin->setAlwaysLightCameraMaterial(true, false);
+                } else if (text == tr("alwaysMaterial")) {
+                    pMainWin->setAlwaysLightCameraMaterial(false, true);
+                }
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
                 pMainWin->setAlways(false);
-                pMainWin->setAlwaysLightCameraMaterial(true);
                 pMainWin->onRunTriggered();
-                lastItem = 2;
             }
         }
         else {
             mgr->setCacheOpt(ZCacheMgr::Opt_Undefined);
             pMainWin->setAlways(false);
-            pMainWin->setAlwaysLightCameraMaterial(false);
-            lastItem = 0;
+            pMainWin->setAlwaysLightCameraMaterial(false, false);
         }
         m_btnAlways->setFixedWidth(fontMetrics.horizontalAdvance(text) + ZenoStyle::dpiScaled(26));
     });
@@ -515,22 +526,38 @@ void DockContent_Editor::initConnections()
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
+        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+            QVector<DisplayWidget *> views = pMainWin->viewports();
+            for (auto displayWid : views) {
+                if (!displayWid->isGLViewport()) {
+                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                }
+            }
+        };
         if (m_btnRun->text() == tr("Run"))
         {
+            setOptixUpdateSeparately(false, false);
             mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
             pMainWin->onRunTriggered();
         }
-        else if (m_btnRun->text() == tr("RunLightCameraMaterial"))
-        {
+        else {
             QSettings settings(zsCompanyName, zsEditor);
             if (!settings.value("zencache-enable").toBool()) {
                 QMessageBox::warning(nullptr, tr("RunLightCamera"), tr("This function can only be used in cache mode."));
             } else {
                 mgr->setCacheOpt(ZCacheMgr::Opt_RunLightCameraMaterial);
-                pMainWin->onRunTriggered(true);
+                if (m_btnRun->text() == tr("RunLightCamera"))
+                {
+                    setOptixUpdateSeparately(true, false);
+                    pMainWin->onRunTriggered(true, false);
+                }
+                if (m_btnRun->text() == tr("RunMaterial"))
+                {
+                    setOptixUpdateSeparately(false, true);
+                    pMainWin->onRunTriggered(false, true);
+                }
             }
         }
-
     });
 
     connect(m_btnKill, &ZToolButton::clicked, this, [=]() {
@@ -849,17 +876,21 @@ void DockContent_Log::initToolbar(QHBoxLayout* pToolLayout)
 {
     m_pBtnFilterLog = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
     m_pBtnPlainLog = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
-    m_pBtnFilterLog->setChecked(true);
-    pToolLayout->addWidget(m_pBtnFilterLog);
+    m_pDeleteLog = new ZToolBarButton(false, ":/icons/toolbar_delete_idle.svg", ":/icons/toolbar_delete_light.svg");
+    m_pBtnPlainLog->setChecked(true);
+    m_pBtnFilterLog->setChecked(false);
+
     pToolLayout->addWidget(m_pBtnPlainLog);
+    pToolLayout->addWidget(m_pBtnFilterLog);
     pToolLayout->addStretch();
+    pToolLayout->addWidget(m_pDeleteLog);
 }
 
 QWidget* DockContent_Log::initWidget()
 {
     m_stack = new QStackedWidget;
-    m_stack->addWidget(new ZlogPanel);
     m_stack->addWidget(new ZPlainLogPanel);
+    m_stack->addWidget(new ZlogPanel);
     m_stack->setCurrentIndex(0);
 
     m_pWidget = m_stack;
@@ -871,14 +902,21 @@ void DockContent_Log::initConnections()
     connect(m_pBtnFilterLog, &ZToolBarButton::toggled, this, [=](bool isShow) {
         BlockSignalScope scope(m_pBtnPlainLog);
         m_pBtnPlainLog->setChecked(false);
-        m_stack->setCurrentIndex(0);
+        m_stack->setCurrentIndex(1);
     });
     connect(m_pBtnPlainLog, &ZToolBarButton::toggled, this, [=](bool isShow) {
         BlockSignalScope scope(m_pBtnFilterLog);
         m_pBtnFilterLog->setChecked(false);
-        m_stack->setCurrentIndex(1);
+        m_stack->setCurrentIndex(0);
+    });
+    connect(m_pDeleteLog, &ZToolButton::clicked, this, [=]() {
+        zenoApp->logModel()->clear();
+        ZPlainLogPanel *pLogger = qobject_cast<ZPlainLogPanel *>(m_stack->widget(0));
+        if (pLogger)
+            pLogger->clear();
     });
 }
+
 
 DockContent_Image::DockContent_Image(QWidget *parent)
     : DockToolbarWidget(parent)

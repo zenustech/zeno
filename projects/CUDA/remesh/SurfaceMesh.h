@@ -13,6 +13,7 @@ namespace zeno {
 namespace pmp {
 
 #define PMP_MAX_INDEX INT_LEAST32_MAX
+#define PMP_ENABLE_PROFILE 0
 
 class SurfaceMesh {
 
@@ -198,7 +199,7 @@ public:
         const vec3f p1 = pos[to_vertex(h1)];
 
         if (hconn_[h0].face_ != PMP_MAX_INDEX) {
-            const vec3f p2 = pos[next_halfedge(h0)];
+            const vec3f p2 = pos[to_vertex(next_halfedge(h0))];
             const vec3f d0 = p0 - p2;
             const vec3f d1 = p1 - p2;
             const float area = length(cross(d0, d1));
@@ -209,7 +210,7 @@ public:
         }
 
         if (hconn_[h1].face_ != PMP_MAX_INDEX) {
-            const vec3f p2 = pos[next_halfedge(h1)];
+            const vec3f p2 = pos[to_vertex(next_halfedge(h1))];
             const vec3f d0 = p0 - p2;
             const vec3f d1 = p1 - p2;
             const float area = length(cross(d0, d1));

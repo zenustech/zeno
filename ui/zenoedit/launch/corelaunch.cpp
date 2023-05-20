@@ -239,7 +239,7 @@ void killProgramJSON()
 
 }
 
-void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool applyLightAndCameraOnly)
+void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
 	rapidjson::StringBuffer s;
 	RAPIDJSON_WRITER writer(s);
@@ -247,7 +247,7 @@ void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool appl
         JsonArrayBatch batch(writer);
         JsonHelper::AddVariantList({"setBeginFrameNumber", beginFrame}, "int", writer);
         JsonHelper::AddVariantList({"setEndFrameNumber", endFrame}, "int", writer);
-        serializeScene(pModel, writer, applyLightAndCameraOnly);
+        serializeScene(pModel, writer, applyLightAndCameraOnly, applyMaterialOnly);
     }
     std::string progJson(s.GetString());
 #ifdef DEBUG_SERIALIZE

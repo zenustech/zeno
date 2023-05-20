@@ -108,9 +108,13 @@
         <source>Kill</source>
         <translation>终止</translation>
     </message>
-    <message>
-        <source>RunLightCameraMaterial</source>
-        <translation>运行灯光相机材质</translation>
+	<message>
+        <source>RunLightCamera</source>
+        <translation>运行灯光相机</translation>
+    </message>
+	<message>
+        <source>RunMaterial</source>
+        <translation>运行材质</translation>
     </message>
     <message>
         <source>This function can only be used in cache mode.</source>
@@ -125,8 +129,12 @@
         <translation>实时预览全部</translation>
     </message>
     <message>
-        <source>alwaysLightCameraMaterial</source>
-        <translation>仅实时预览灯光相机材质</translation>
+        <source>alwaysLightCamera</source>
+        <translation>实时预览灯光相机</translation>
+    </message>
+	<message>
+        <source>alwaysMaterial</source>
+        <translation>实时预览材质</translation>
     </message>
     <message>
         <source>RunLightCamera</source>
@@ -354,7 +362,7 @@
         <translation>曲线编辑器</translation>
     </message>
     <message>
-        <source>Tangent    Left X</source>
+        <source>Tan Left X</source>
         <translation>切线左侧X</translation>
     </message>
     <message>
@@ -362,7 +370,7 @@
         <translation>右侧X</translation>
     </message>
     <message>
-        <source>Tangent    Left Y</source>
+        <source>Tan Left Y</source>
         <translation>切线左侧Y</translation>
     </message>
     <message>
@@ -1619,8 +1627,12 @@
         <translation>运行</translation>
     </message>
     <message>
-        <source>RunLightCameraMaterial</source>
-        <translation>运行灯光相机材质</translation>
+        <source>RunLightCamera</source>
+        <translation>运行灯光相机</translation>
+    </message>
+	<message>
+        <source>RunMaterial</source>
+        <translation>运行材质</translation>
     </message>
 </context>
 <context>
