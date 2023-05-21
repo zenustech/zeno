@@ -364,6 +364,7 @@ struct StepGuidelines : INode {
         if (has_input("vdb_collider")) {
             auto collider = get_input2<zeno::VDBFloatGrid>("vdb_collider");
             auto sep_dist = get_input2<float>("sep_dist");
+            maxIters = get_input2<int>("collision_iters");
             auto grid = collider->m_grid;
             grid->tree().voxelizeActiveTiles();
             auto dx = collider->getVoxelSize()[0];
@@ -375,43 +376,24 @@ struct StepGuidelines : INode {
                 return openvdb::tools::BoxSampler::sample(gridGrad->getConstUnsafeAccessor(),
                                                           gridGrad->worldToIndex(p));
             };
-#if 0
-            pol(enumerate(prim->polys.values),
+            pol(loops.values,
                 /// @note cap [sep_dist] in case repel points outside the narrowband where grad is invalid
-                [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters, &roots, &nrm, &pos,
-                 numSegments, segLength = length / numSegments](int polyi, vec2i &tup) {
-                    auto offset = polyi * (numSegments + 1);
-                    tup[0] = offset;
-                    tup[1] = (numSegments + 1);
-
-                    auto rt = roots[polyi];
-                    pos[offset] = rt;
-
-                    auto p = zeno::vec_to_other<openvdb::Vec3R>(rt);
-                    auto lastStep = zeno::vec_to_other<openvdb::Vec3R>(nrm[polyi] * segLength);
-                    auto prevPos = p;
-                    for (int i = 0; i != numSegments; ++i) {
-                        p += lastStep;
-                        auto mi = maxIters;
-                        int cnt = 0;
-                        for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
-                            auto d = getGrad(p);
-                            d.normalize();
-                            if (sdf < 0)
-                                p += d * -sdf;
-                            // p += d * dx;
-                            else
-                                p += d * (sep_dist - sdf);
-                            // p += d * -dx;
-                        }
-                        lastStep = (p - prevPos);
-                        lastStep.normalize();
-                        lastStep *= segLength;
-                        prevPos = p;
-                        pos[++offset] = zeno::other_to_vec<3>(p);
+                [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters, &loops, &pos, &vel](
+                    int ptNo) {
+                    auto p = zeno::vec_to_other<openvdb::Vec3R>(pos[ptNo]);
+                    auto mi = maxIters;
+                    for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
+                        auto d = getGrad(p);
+                        d.normalize();
+                        if (sdf < 0)
+                            // p += d * -sdf;
+                            p += d * dx;
+                        else
+                            //p += d * (sep_dist - sdf);
+                            p += d * -dx;
                     }
+                    pos[ptNo] = zeno::other_to_vec<3>(p);
                 });
-#endif
         }
 
         set_output("guide_lines", std::move(gls));
@@ -428,6 +410,7 @@ ZENDEFNODE(StepGuidelines, {
                                    {"int", "num_substeps", "1"},
                                    {"vdb_collider"},
                                    {"float", "sep_dist", "0"},
+                                   {"int", "collision_iters", "5"},
                                },
                                {
                                    {"PrimitiveObject", "guide_lines"},
