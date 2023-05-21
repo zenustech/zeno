@@ -2108,10 +2108,12 @@ void optixupdateend() {
 }
 
 struct DrawDat {
+    std::vector<std::string>  mtlidList;
     std::string mtlid;
     std::string instID;
     std::vector<float> verts;
     std::vector<int> tris;
+    std::vector<int> triMats;
     std::map<std::string, std::vector<float>> vertattrs;
     auto const &getAttr(std::string const &s) const
     {
@@ -2172,11 +2174,18 @@ static void updateStaticDrawObjects() {
     n = 0;
     for (auto const &[key, dat]: drawdats) {
         if(key.find(":static:")!=key.npos && dat.instID == "Default") {
-            auto it = g_mtlidlut.find(dat.mtlid);
-            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+            //auto it = g_mtlidlut.find(dat.mtlid);
+            // mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
             //#pragma omp parallel for
             for (size_t i = 0; i < dat.tris.size() / 3; i++) {
+                int mtidx = dat.triMats[i];
+                int mtlindex = 0;
+                if(mtidx!=-1) {
+                    auto matName = dat.mtlidList[mtidx];
+                    auto it = g_mtlidlut.find(matName);
+                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+                }
                 g_mat_indices[n + i] = mtlindex;
                 g_lightMark[n + i] = 0;
                 g_vertices[(n + i) * 3 + 0] = {
@@ -2295,11 +2304,18 @@ static void updateDynamicDrawObjects() {
     n = 0;
     for (auto const &[key, dat]: drawdats) {
         if(key.find(":static:")==key.npos && dat.instID == "Default") {
-            auto it = g_mtlidlut.find(dat.mtlid);
-            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+//            auto it = g_mtlidlut.find(dat.mtlid);
+//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
             //#pragma omp parallel for
             for (size_t i = 0; i < dat.tris.size() / 3; i++) {
+                int mtidx = dat.triMats[i];
+                int mtlindex = 0;
+                if(mtidx!=-1) {
+                    auto matName = dat.mtlidList[mtidx];
+                    auto it = g_mtlidlut.find(matName);
+                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+                }
                 g_mat_indices[g_staticVertNum/3 + n + i] = mtlindex;
                 g_lightMark[g_staticVertNum/3 + n + i] = 0;
                 g_vertices[g_staticVertNum + (n + i) * 3 + 0] = {
@@ -2475,12 +2491,19 @@ static void updateStaticDrawInstObjects()
             auto &mat_indices = instData.mat_indices;
             auto &lightMark = instData.lightMark;
 
-            auto it = g_mtlidlut.find(dat.mtlid);
-            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+//            auto it = g_mtlidlut.find(dat.mtlid);
+//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
             //#pragma omp parallel for
             for (std::size_t i = 0; i < dat.tris.size() / 3; ++i)
             {
+                int mtidx = dat.triMats[i];
+                int mtlindex = 0;
+                if(mtidx!=-1) {
+                    auto matName = dat.mtlidList[mtidx];
+                    auto it = g_mtlidlut.find(matName);
+                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+                }
                 mat_indices[numVerts + i] = mtlindex;
                 lightMark[numVerts + i] = 0;
                 vertices[(numVerts + i) * 3 + 0] = {
@@ -2629,12 +2652,19 @@ static void updateDynamicDrawInstObjects()
             auto &lightMark = instData.lightMark;
             auto &staticVertNum = instData.staticVertNum;
 
-            auto it = g_mtlidlut.find(dat.mtlid);
-            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+//            auto it = g_mtlidlut.find(dat.mtlid);
+//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
             //#pragma omp parallel for
             for (std::size_t i = 0; i < dat.tris.size() / 3; ++i)
             {
+                int mtidx = dat.triMats[i];
+                int mtlindex = 0;
+                if(mtidx!=-1) {
+                    auto matName = dat.mtlidList[mtidx];
+                    auto it = g_mtlidlut.find(matName);
+                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+                }
                 mat_indices[staticVertNum / 3 + numVerts + i] = mtlindex;
                 lightMark[staticVertNum / 3 + numVerts + i] = 0;
                 vertices[staticVertNum + (numVerts + i) * 3 + 0] = {
@@ -2737,9 +2767,14 @@ static void updateDynamicDrawInstObjects()
     }
 }
 
-void load_object(std::string const &key, std::string const &mtlid, const std::string &instID, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
+void load_object(std::string const &key, std::string const &mtlid, const std::string &instID,
+                 float const *verts, size_t numverts, int const *tris, size_t numtris,
+                 std::map<std::string, std::pair<float const *, size_t>> const &vtab,
+                 int const *matids, std::vector<std::string> const &matNameList) {
     DrawDat &dat = drawdats[key];
     //ZENO_P(mtlid);
+    dat.triMats.assign(matids, matids + numtris);
+    dat.mtlidList = matNameList;
     dat.mtlid = mtlid;
     dat.instID = instID;
     dat.verts.assign(verts, verts + numverts * 3);
