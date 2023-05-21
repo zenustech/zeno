@@ -183,6 +183,259 @@ ZENDEFNODE(SpawnGuidelines, {
                                 {"zs_hair"},
                             });
 
+struct StepGuidelines : INode {
+    virtual void apply() override {
+        using namespace zs;
+        auto pol = omp_exec();
+        constexpr auto space = execspace_e::openmp;
+
+        auto gls = get_input<PrimitiveObject>("guide_lines");
+        auto dt = get_input2<float>("dt");
+        auto &pos = gls->attr<vec3f>("pos");
+        auto &vel = gls->attr<vec3f>("vel");
+        const auto &polys = gls->polys;
+        auto &loops = gls->loops;
+
+        auto numLines = polys.size();
+
+        {
+            auto weightTag = get_input2<std::string>("weightTag");
+            auto idTag = get_input2<std::string>("idTag");
+            auto &ws = gls->attr<vec3f>(weightTag);
+            auto &ids = gls->attr<float>(idTag); // ref: pnbvhw.cpp
+            const auto boundaryPrim = get_input<PrimitiveObject>("boundary_prim");
+            const auto &boundaryPos = boundaryPrim->attr<vec3f>("pos");
+            const auto &boundaryTris = boundaryPrim->tris.values;
+            /// move guideline roots
+            pol(polys, [&](vec2i poly) {
+                auto ptNo = loops[poly[0]];
+                auto tri = boundaryTris[(int)ids[ptNo]];
+                auto w = ws[ptNo];
+                pos[ptNo] = w[0] * boundaryPos[tri[0]] + w[1] * boundaryPos[tri[1]] + w[2] * boundaryPos[tri[2]];
+            });
+        }
+
+        /// setup solver
+        std::vector<float> grads;
+        zs::TileVector<float, 32> vtemp{
+            {
+                {"grad", 3},
+                {"dir", 3},
+                {"xn", 3},
+                {"vn", 3},
+                {"x0", 3},  // original model positions
+                {"xtilde", 3},
+                {"xhat", 3}, // initial positions at the current substep (constraint, extforce, velocity update)
+                {"temp", 3},
+                {"r", 3},
+                {"p", 3},
+                {"q", 3},
+            },
+            pos.size()},
+            etemp{{{"K", 9}}, loops.size()
+            };
+
+        /// @note physics properties
+        constexpr float mass = 1.f;
+        constexpr float vol = 1000.f;
+        constexpr float k = 1.e7f;
+        using V3 = zs::vec<float, 3>;
+        constexpr V3 grav{0, -9.8, 0};
+        // if "rl" prop not exist, record
+        if (!loops.has_attr("rl")) {
+            auto &rls = loops.add_attr<float>("rl");
+            pol(range(polys.size()), [&](int polyI) {
+                auto poly = polys[polyI];
+                auto i = poly[0];
+                for (int k = 1; k < poly[1]; ++k) {
+                    auto j = i + 1;
+                    auto xi = vec_to_other<V3>(pos[loops[i]]);
+                    auto xj = vec_to_other<V3>(pos[loops[j]]);
+                    rls[i] = (xi - xj).norm();
+                    i = j;
+                }
+            });
+        }
+        const auto &rls = loops.attr<float>("rl");
+
+        pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
+            auto ptNo = loops[loopI];
+            auto x = vec_to_other<V3>(pos[ptNo]);
+            auto v = vec_to_other<V3>(vel[ptNo]);
+            vtemp.tuple(dim_c<3>, "xn", ptNo) = x;
+            vtemp.tuple(dim_c<3>, "vn", ptNo) = v;
+        });
+
+        auto maxIters = get_input2<int>("num_substeps");
+        /// substeps
+        for (int subi = 0; subi != maxIters; ++subi) {
+            zeno::log_warn("begin substep");
+            /// @brief newton krylov
+            /// @note compute gradient
+            pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
+                auto ptNo = loops[loopI];
+                auto x = vtemp.pack(dim_c<3>, "xn", ptNo);
+                auto v = vtemp.pack(dim_c<3>, "vn", ptNo);
+                auto xtilde = x + v * dt; // inertia
+                xtilde += grav * dt * dt; // gravity
+                vtemp.tuple(dim_c<3>, "xtilde", ptNo) = xtilde;
+                vtemp.tuple(dim_c<3>, "xhat", ptNo) = x;
+                vtemp.tuple(dim_c<3>, "grad", ptNo) = V3::zeros(); // clear gradient
+            });
+            // elasticity + inertia
+            pol(range(polys.size()),
+                [&, etemp = proxy<space>({}, etemp), vtemp = proxy<space>({}, vtemp)](int polyI) mutable {
+                    auto poly = polys[polyI];
+                    auto i = poly[0];
+                    auto vi = loops[i];
+                    auto xi = vec_to_other<V3>(pos[vi]);
+                    // inertial
+                    vtemp.tuple(dim_c<3>, "grad", vi) =
+                        vtemp.pack(dim_c<3>, "grad", vi) -
+                        mass * (vtemp.pack(dim_c<3>, "xn", vi) - vtemp.pack(dim_c<3>, "xtilde", vi));
+
+                    for (int k = 1; k < poly[1]; ++k) {
+                        auto rl = rls[i];
+
+                        auto j = i + 1;
+                        auto vj = loops[j];
+                        auto xj = vec_to_other<V3>(pos[vj]);
+                        auto xij = xj - xi;
+                        auto lij = xij.norm();
+                        auto dij = xij / lij;
+                        auto gij = k * (lij - rl) * dij;
+                        auto vfdt2 = gij * (dt * dt) * vol;
+                        // elasticity
+                        vtemp.tuple(dim_c<3>, "grad", vi) = vtemp.pack(dim_c<3>, "grad", vi) + vfdt2;
+                        vtemp.tuple(dim_c<3>, "grad", vj) = vtemp.pack(dim_c<3>, "grad", vj) - vfdt2;
+
+                        // inertial
+                        vtemp.tuple(dim_c<3>, "grad", vj) =
+                            vtemp.pack(dim_c<3>, "grad", vj) -
+                            mass * (vtemp.pack(dim_c<3>, "xn", vj) - vtemp.pack(dim_c<3>, "xtilde", vj));
+
+                        // elasticity hessian component
+                        auto K = k * (zs::vec<float, 3, 3>::identity() -
+                                      rl / lij * (zs::vec<float, 3, 3>::identity() - dyadic_prod(dij, dij)));
+                        etemp.tuple(dim_c<3, 3>, "K", i) = K;
+
+                        // iterate
+                        i = j;
+                        vi = vj;
+                        xi = xj;
+                    }
+                });
+            // project gradient
+            pol(range(polys.size()),
+                [&, etemp = proxy<space>({}, etemp), vtemp = proxy<space>({}, vtemp)](int polyI) mutable {
+                    auto poly = polys[polyI];
+                    auto i = poly[0];
+                    auto vi = loops[i];
+                    vtemp.tuple(dim_c<3>, "grad", vi) = V3::zeros();
+                });
+            /// @note cg
+            {
+                // explicit integration
+                pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
+                    auto ptNo = loops[loopI];
+                    auto delta = (vtemp.pack(dim_c<3>, "grad", ptNo)) / mass;
+                    auto xnp1 = vtemp.pack(dim_c<3>, "xn", ptNo) + delta;
+                    vtemp.tuple(dim_c<3>, "xn", ptNo) = xnp1;
+                });
+            }
+
+            /// @note update velocity
+            pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
+                auto ptNo = loops[loopI];
+                auto vn = (vtemp.pack(dim_c<3>, "xn", ptNo) - vtemp.pack(dim_c<3>, "xhat", ptNo)) / dt;
+                vtemp.tuple(dim_c<3>, "vn", ptNo) = vn;
+            });
+        }
+         /// @note write back position and velocity
+        pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
+            auto ptNo = loops[loopI];
+            auto xn = vtemp.pack(dim_c<3>, "xn", ptNo);
+            auto vn = vtemp.pack(dim_c<3>, "vn", ptNo);
+            pos[ptNo] = other_to_vec<3>(xn);
+            vel[ptNo] = other_to_vec<3>(vn);
+        });
+
+        /// resolve collision
+        if (has_input("vdb_collider")) {
+            auto collider = get_input2<zeno::VDBFloatGrid>("vdb_collider");
+            auto sep_dist = get_input2<float>("sep_dist");
+            auto grid = collider->m_grid;
+            grid->tree().voxelizeActiveTiles();
+            auto dx = collider->getVoxelSize()[0];
+            openvdb::Vec3fGrid::Ptr gridGrad = openvdb::tools::gradient(*grid);
+            auto getSdf = [&grid](openvdb::Vec3R p) {
+                return openvdb::tools::BoxSampler::sample(grid->getConstUnsafeAccessor(), grid->worldToIndex(p));
+            };
+            auto getGrad = [&gridGrad](openvdb::Vec3R p) {
+                return openvdb::tools::BoxSampler::sample(gridGrad->getConstUnsafeAccessor(),
+                                                          gridGrad->worldToIndex(p));
+            };
+#if 0
+            pol(enumerate(prim->polys.values),
+                /// @note cap [sep_dist] in case repel points outside the narrowband where grad is invalid
+                [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters, &roots, &nrm, &pos,
+                 numSegments, segLength = length / numSegments](int polyi, vec2i &tup) {
+                    auto offset = polyi * (numSegments + 1);
+                    tup[0] = offset;
+                    tup[1] = (numSegments + 1);
+
+                    auto rt = roots[polyi];
+                    pos[offset] = rt;
+
+                    auto p = zeno::vec_to_other<openvdb::Vec3R>(rt);
+                    auto lastStep = zeno::vec_to_other<openvdb::Vec3R>(nrm[polyi] * segLength);
+                    auto prevPos = p;
+                    for (int i = 0; i != numSegments; ++i) {
+                        p += lastStep;
+                        auto mi = maxIters;
+                        int cnt = 0;
+                        for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
+                            auto d = getGrad(p);
+                            d.normalize();
+                            if (sdf < 0)
+                                p += d * -sdf;
+                            // p += d * dx;
+                            else
+                                p += d * (sep_dist - sdf);
+                            // p += d * -dx;
+                        }
+                        lastStep = (p - prevPos);
+                        lastStep.normalize();
+                        lastStep *= segLength;
+                        prevPos = p;
+                        pos[++offset] = zeno::other_to_vec<3>(p);
+                    }
+                });
+#endif
+        }
+
+        set_output("guide_lines", std::move(gls));
+    }
+};
+
+ZENDEFNODE(StepGuidelines, {
+                               {
+                                   {"PrimitiveObject", "guide_lines"},
+                                   {"PrimitiveObject", "boundary_prim"},
+                                   {"string", "weightTag", "bvh_ws"},
+                                   {"string", "idTag", "bvh_id"},
+                                   {"float", "dt", "0.05"},
+                                   {"int", "num_substeps", "1"},
+                                   {"vdb_collider"},
+                                   {"float", "sep_dist", "0"},
+                               },
+                               {
+                                   {"PrimitiveObject", "guide_lines"},
+                               },
+                               {},
+                               {"zs_hair"},
+                           });
+
 // after guideline simulation, mostly for rendering
 struct GenerateHairs : INode {
     virtual void apply() override {
