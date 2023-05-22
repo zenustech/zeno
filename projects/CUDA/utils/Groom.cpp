@@ -267,10 +267,11 @@ struct StepGuidelines : INode {
             vtemp.tuple(dim_c<3>, "vn", ptNo) = v;
         });
 
-        auto dot = [&, temp = zs::Vector<float>{vtemp.get_allocator(), vtemp.size() + 1}](
-                       zs::SmallString tag0, zs::SmallString tag1) mutable {
+        auto dot = [&, temp = zs::Vector<float>{vtemp.get_allocator(), vtemp.size() + 1},
+                    space_c = wrapv<space>{}](zs::SmallString tag0, zs::SmallString tag1) mutable {
+            constexpr auto space = RM_CVREF_T(space_c)::value;
             pol(range(vtemp.size()),
-                [vtemp = proxy<space>(vtemp), temp = proxy<space>(temp), offset0 = vtemp.getPropertyOffset(tag0),
+                [vtemp = proxy<space>({}, vtemp), temp = proxy<space>(temp), offset0 = vtemp.getPropertyOffset(tag0),
                  offset1 = vtemp.getPropertyOffset(tag1)](int vi) mutable {
                     temp[vi] = vtemp.pack(dim_c<3>, offset0, vi).dot(vtemp.pack(dim_c<3>, offset1, vi));
                 });
@@ -336,7 +337,9 @@ struct StepGuidelines : INode {
                     }
                 });
             // project gradient
-            auto project = [&pol, &vtemp, &polys_ = polys, &loops_ = loops](zs::SmallString tag) {
+            auto project = [&pol, &vtemp, &polys_ = polys, &loops_ = loops,
+                            space_c = wrapv<space>{}](zs::SmallString tag) {
+                constexpr auto space = RM_CVREF_T(space_c)::value;
                 auto &polys = polys_;
                 auto &loops = loops_;
                 pol(range(polys.size()), [&polys, &loops, vtemp = proxy<space>(vtemp),
@@ -359,14 +362,17 @@ struct StepGuidelines : INode {
                 });
 #else
                 // mass precondition
-                auto precondition = [&pol, &vtemp](zs::SmallString srcTag, zs::SmallString dstTag) {
+                auto precondition = [&pol, &vtemp, mass, space_c = wrapv<space>{}](zs::SmallString srcTag,
+                                                                                   zs::SmallString dstTag) {
+                    constexpr auto space = RM_CVREF_T(space_c)::value;
                     pol(range(vtemp.size()),
                         [vtemp = proxy<space>(vtemp), srcPropOffset = vtemp.getPropertyOffset(srcTag),
-                         dstPropOffset = vtemp.getPropertyOffset(dstTag)] ZS_LAMBDA(int vi) mutable {
+                         dstPropOffset = vtemp.getPropertyOffset(dstTag), mass] ZS_LAMBDA(int vi) mutable {
                             vtemp.tuple(dim_c<3>, dstPropOffset, vi) = vtemp.pack(dim_c<3>, srcPropOffset, vi) / mass;
                         });
                 };
-                auto multiply = [&](zs::SmallString srcTag, zs::SmallString dstTag) {
+                auto multiply = [&, space_c = wrapv<space>{}](zs::SmallString srcTag, zs::SmallString dstTag) {
+                    constexpr auto space = RM_CVREF_T(space_c)::value;
                     auto srcOffset = vtemp.getPropertyOffset(srcTag);
                     auto dstOffset = vtemp.getPropertyOffset(dstTag);
                     // inertia
@@ -490,7 +496,7 @@ struct StepGuidelines : INode {
             auto collider = get_input2<zeno::VDBFloatGrid>("vdb_collider");
             auto sep_dist = get_input2<float>("sep_dist");
             maxIters = get_input2<int>("collision_iters");
-            auto grid = collider->m_grid;
+            openvdb::FloatGrid::Ptr grid = collider->m_grid;
             grid->tree().voxelizeActiveTiles();
             auto dx = collider->getVoxelSize()[0];
             openvdb::Vec3fGrid::Ptr gridGrad = openvdb::tools::gradient(*grid);
