@@ -29,7 +29,7 @@ inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
 //        b = float3{0, a.z, -a.y} /
 //              sqrt(max(_FLT_EPL_, a.y * a.y + a.z * a.z));
     
-    if (abs(a.x) > abs(a.y))
+    if (fabs(a.x) > fabs(a.y))
         b = float3{-a.z, 0, a.x};
     else
         b = float3{0, a.z, -a.y};
@@ -44,7 +44,7 @@ inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi) {
 
 inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi,
                                  const float3 &x, const float3 &y, const float3 &z) {
-    return sinTheta * cos(phi) * x + sinTheta * sin(phi) * y + cosTheta * z;
+    return sinTheta * cosf(phi) * x + sinTheta * sinf(phi) * y + cosTheta * z;
 }
 
 struct HenyeyGreenstein {
@@ -59,7 +59,7 @@ struct HenyeyGreenstein {
 inline float PhaseHG(float cosTheta, float g) {
     float gg = g * g;
     float denom = 1 + gg + 2 * g * cosTheta;
-    return (0.25 / M_PIf) * (1 - gg) / (denom * sqrt(denom));
+    return (0.25f / M_PIf) * (1 - gg) / (denom * sqrtf(denom));
 }
 
 // HenyeyGreenstein Method Definitions
@@ -70,7 +70,7 @@ inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
 inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const {
     // Compute $\cos \theta$ for Henyey--Greenstein sample
     float cosTheta;
-    if (abs(g) < 1e-3)
+    if (fabs(g) < 1e-3f)
         cosTheta = 1 - 2 * uu.x;
     else {
         float gg = g * g;
@@ -79,7 +79,7 @@ inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const floa
     }
 
     // Compute direction _wi_ for Henyey--Greenstein sample
-    float sinTheta = sqrt(fmax(0.0f, 1.0f - cosTheta * cosTheta));
+    float sinTheta = sqrtf(fmax(0.0f, 1.0f - cosTheta * cosTheta));
     float phi = 2 * M_PIf * uu.y;
     
     float3 v1, v2;
