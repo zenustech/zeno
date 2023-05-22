@@ -1,3 +1,5 @@
+#include <cstdint>
+#include <sys/types.h>
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
@@ -77,8 +79,22 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
         auto dim = em->determineType(get_input("coord").get());
         auto method = get_input2<std::string>("method");
 
-        auto Order = std::to_string( (method == "LINEAR")? 1:0 );
-        em->emitCode(type + "(samplingVDB<"+ Order +","+ world_space +">(vdb_grids[" + std::to_string(texId) + "], vec3(" + coord + ")))");
+        static const auto sample_method_map = std::map<std::string, uint8_t> {
+            {"CLOSEST", 0},
+            {"LINEAR", 1},
+            {"CUBIC", 3}
+        }; 
+
+        std::string ORDER;
+
+        if (sample_method_map.count(method) > 0) {
+            auto order = sample_method_map.at(method);
+            ORDER = std::to_string( order );
+        } else {
+            ORDER = std::to_string( 1 );
+        }
+
+        em->emitCode(type + "(samplingVDB<"+ ORDER +","+ world_space +">(vdb_grids[" + std::to_string(texId) + "], vec3(" + coord + ")))");
     }
 };
 
@@ -104,7 +120,7 @@ ZENDEFNODE(ShaderTexture3D, {
         {"vec3f", "coord", "0,0,0"},
         {"enum World Local", "space", "World"},
         {"enum vec2", "type", "vec2"},
-        {"enum LINEAR CLOSEST", "method", "LINEAR"} 
+        {"enum CLOSEST LINEAR CUBIC", "method", "LINEAR"} 
     },
     {
         {"shader", "out"},
