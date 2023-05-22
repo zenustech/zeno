@@ -9,6 +9,8 @@
 #include "DisneyBSDF.h"
 #include "IOMat.h"
 
+#define _SPHERE_ 0
+
 //COMMON_CODE
 
 template<bool isDisplacement>
@@ -132,13 +134,60 @@ __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float
     return w0*a + w1*b + w2*c;
 }
 
+static __inline__ __device__ float3 sphereUV(float3 &direction) {
+    
+    return float3 {
+        atan2(direction.x, direction.z) / (2.0f*M_PIf) + 0.5f,
+        direction.y * 0.5f + 0.5f, 0.0f
+    };
+} 
+
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
-    RadiancePRD* prd = getPRD();
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     const int    prim_idx        = optixGetPrimitiveIndex();
+    const float3 ray_orig        = optixGetWorldRayOrigin();
     const float3 ray_dir         = optixGetWorldRayDirection();
 
+    const float3 P    = ray_orig + optixGetRayTmax() * ray_dir;
+    const auto zenotex = rt_data->textures;
+
+    RadiancePRD*  prd = getPRD();
+    MatInput attrs{};
+
+#if (_SPHERE_)
+
+    const OptixTraversableHandle gas = optixGetGASTraversableHandle();
+    const unsigned int   sbtGASIndex = optixGetSbtGASIndex();
+
+    float4 q;
+    // sphere center (q.x, q.y, q.z), sphere radius q.w
+    optixGetSphereData( gas, prim_idx, sbtGASIndex, 0.f, &q );
+
+    float3 _pos_world_      = ray_orig + optixGetRayTmax() * ray_dir;
+    float3 _pos_object_     = optixTransformPointFromWorldToObjectSpace( _pos_world_ );
+
+    float3 _normal_object_  = ( _pos_object_ - make_float3( q ) ) / q.w;
+    float3 _normal_world_   = normalize( optixTransformNormalFromObjectToWorldSpace( _normal_object_ ) );
+
+    //float3 P = _pos_world_;
+    float3 N = _normal_world_;
+    N = faceforward( N, -ray_dir, N );
+
+    attrs.pos = P;
+    attrs.nrm = N;
+    attrs.uv = sphereUV(_normal_object_);
+
+    attrs.clr = {};
+    attrs.tang = {};
+    attrs.instPos = {}; //rt_data->instPos[inst_idx2];
+    attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
+    attrs.instUv = {}; //rt_data->instUv[inst_idx2];
+    attrs.instClr = {}; //rt_data->instClr[inst_idx2];
+    attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+
+    unsigned short isLight = 0;
+#else
     int inst_idx2 = optixGetInstanceIndex();
     int inst_idx = rt_data->meshIdxs[inst_idx2];
     int vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
@@ -164,13 +213,8 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
     
-    const float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
-
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
     
-    auto zenotex = rt_data->textures;
-
-    MatInput attrs;
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
     
@@ -179,19 +223,19 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     vec3 bn0(an0);
     bn0 = meshMat3x3 * bn0;
     float3 n0 = make_float3(bn0.x, bn0.y, bn0.z);
-    n0 = dot(n0, N_0)>0.8?n0:N_0;
+    n0 = dot(n0, N_0)>0.8f?n0:N_0;
 
     float3 an1 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+1 ] ));
     vec3 bn1(an1);
     bn1 = meshMat3x3 * bn1;
     float3 n1 = make_float3(bn1.x, bn1.y, bn1.z);
-    n1 = dot(n1, N_0)>0.8?n1:N_0;
+    n1 = dot(n1, N_0)>0.8f?n1:N_0;
 
     float3 an2 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+2 ] ));
     vec3 bn2(an2);
     bn2 = meshMat3x3 * bn2;
     float3 n2 = make_float3(bn2.x, bn2.y, bn2.z);
-    n2 = dot(n2, N_0)>0.8?n2:N_0;
+    n2 = dot(n2, N_0)>0.8f?n2:N_0;
     float3 uv0 = make_float3(rt_data->uv[ vert_idx_offset+0 ] );
     float3 uv1 = make_float3(rt_data->uv[ vert_idx_offset+1 ] );
     float3 uv2 = make_float3(rt_data->uv[ vert_idx_offset+2 ] );
@@ -225,6 +269,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.instUv = rt_data->instUv[inst_idx2];
     attrs.instClr = rt_data->instClr[inst_idx2];
     attrs.instTang = rt_data->instTang[inst_idx2];
+
+    unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
+#endif
+
     MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
 
     if(length(attrs.tang)>0)
@@ -358,8 +406,50 @@ extern "C" __global__ void __closesthit__radiance()
     prd->test_distance = false;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    int    prim_idx        = optixGetPrimitiveIndex();
-    float3 ray_dir         = optixGetWorldRayDirection();
+    const int    prim_idx = optixGetPrimitiveIndex();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+
+    auto zenotex = rt_data->textures;
+
+    MatInput attrs{};
+
+#if (_SPHERE_)
+
+    unsigned short isLight = 0;
+
+    const OptixTraversableHandle gas = optixGetGASTraversableHandle();
+    const unsigned int   sbtGASIndex = optixGetSbtGASIndex();
+
+    float4 q;
+    // sphere center (q.x, q.y, q.z), sphere radius q.w
+    optixGetSphereData( gas, optixGetPrimitiveIndex(), sbtGASIndex, 0.0f, &q );
+
+    float3 _pos_world_      = ray_orig + optixGetRayTmax() * ray_dir;
+    float3 _pos_object_     = optixTransformPointFromWorldToObjectSpace( _pos_world_ );
+
+    float3 _normal_object_  = ( _pos_object_ - make_float3( q ) ) / q.w;
+    float3 _normal_world_   = normalize( optixTransformNormalFromObjectToWorldSpace( _normal_object_ ) );
+
+    float3 P = _pos_world_;
+    float3 N = _normal_world_;
+
+    prd->geometryNormal = N;
+
+    attrs.pos = P;
+    attrs.nrm = N;
+    attrs.uv = sphereUV(_normal_object_);
+
+    attrs.clr = {};
+    attrs.tang = {};
+    attrs.instPos = {}; //rt_data->instPos[inst_idx2];
+    attrs.instNrm = {}; //rt_data->instNrm[inst_idx2];
+    attrs.instUv = {}; //rt_data->instUv[inst_idx2];
+    attrs.instClr = {}; //rt_data->instClr[inst_idx2];
+    attrs.instTang = {}; //rt_data->instTang[inst_idx2];
+
+#else
 
     int inst_idx2 = optixGetInstanceIndex();
     int inst_idx = rt_data->meshIdxs[inst_idx2];
@@ -391,9 +481,6 @@ extern "C" __global__ void __closesthit__radiance()
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
 
-    auto zenotex = rt_data->textures;
-
-    MatInput attrs;
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
     
@@ -438,8 +525,19 @@ extern "C" __global__ void __closesthit__radiance()
     attrs.instClr = rt_data->instClr[inst_idx2];
     attrs.instTang = rt_data->instTang[inst_idx2];
 
+#endif
+
     MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
-    
+
+#if _SPHERE_
+
+    if(mats.doubleSide>0.5f||mats.thin>0.5f){
+        N = faceforward( N, -ray_dir, N );
+        prd->geometryNormal = N;
+    }
+
+#else
+
     float3 an0 = normalize(make_float3(rt_data->nrm[ vert_idx_offset+0 ] ));
     vec3 bn0(an0);
     bn0 = meshMat3x3 * bn0;

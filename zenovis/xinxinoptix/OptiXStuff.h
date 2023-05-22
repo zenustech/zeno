@@ -55,9 +55,10 @@ namespace OptixUtil
     using namespace xinxinoptix;
 ////these are all material independent stuffs;
 inline raii<OptixDeviceContext>             context                  ;
-inline OptixPipelineCompileOptions    pipeline_compile_options = {};
+inline OptixPipelineCompileOptions        pipeline_compile_options {};
 inline raii<OptixPipeline>                  pipeline                 ;
 inline raii<OptixModule>                    ray_module               ;
+inline raii<OptixModule>                    sphere_module            ;
 inline raii<OptixProgramGroup>              raygen_prog_group        ;
 inline raii<OptixProgramGroup>              radiance_miss_group      ;
 inline raii<OptixProgramGroup>              occlusion_miss_group     ;
@@ -80,9 +81,27 @@ inline void createContext()
     pipeline_compile_options.usesMotionBlur        = false;
     pipeline_compile_options.numPayloadValues      = 2;
     pipeline_compile_options.numAttributeValues    = 2;
-    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_DEBUG;
     pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
 
+    pipeline_compile_options.exceptionFlags = OPTIX_EXCEPTION_FLAG_STACK_OVERFLOW | OPTIX_EXCEPTION_FLAG_TRACE_DEPTH | OPTIX_EXCEPTION_FLAG_DEBUG;
+    pipeline_compile_options.usesPrimitiveTypeFlags = OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE | OPTIX_PRIMITIVE_TYPE_FLAGS_SPHERE | OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+
+    OptixModuleCompileOptions module_compile_options = {};
+    #if defined( NDEBUG )
+        module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
+        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
+    #else 
+        module_compile_options.optLevel   = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
+        module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+    #endif
+
+    OptixBuiltinISOptions builtin_is_options {};
+
+    builtin_is_options.usesMotionBlur      = false;
+    builtin_is_options.buildFlags          = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+    builtin_is_options.builtinISModuleType = OPTIX_PRIMITIVE_TYPE_SPHERE;
+    OPTIX_CHECK( optixBuiltinISModuleGet( context, &module_compile_options, &pipeline_compile_options,
+                            &builtin_is_options, &sphere_module ) );
 }
 
 #define COMPILE_WITH_TASKS_CHECK( call ) check( call, #call, __FILE__, __LINE__ )
@@ -114,17 +133,40 @@ inline void executeOptixTask(OptixTask theTask, tbb::task_group& _c_group) {
     }  
 }
 
+static std::vector<char> readData(std::string const& filename)
+{
+  std::ifstream inputData(filename, std::ios::binary);
+
+  if (inputData.fail())
+  {
+    std::cerr << "ERROR: readData() Failed to open file " << filename << '\n';
+    return std::vector<char>();
+  }
+
+  // Copy the input buffer to a char vector.
+  std::vector<char> data(std::istreambuf_iterator<char>(inputData), {});
+
+  if (inputData.fail())
+  {
+    std::cerr << "ERROR: readData() Failed to read file " << filename << '\n';
+    return std::vector<char>();
+  }
+
+  return data;
+}
+
 inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char *source, const char *location, tbb::task_group* _c_group = nullptr)
 {
     //OptixModule m;
     OptixModuleCompileOptions module_compile_options = {};
     module_compile_options.maxRegisterCount  = OPTIX_COMPILE_DEFAULT_MAX_REGISTER_COUNT;
-#if defined(NDEBUG)
+#if defined( NDEBUG )
     module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
     module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
 #else
-    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_DEFAULT;
-    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+    module_compile_options.optLevel          = OPTIX_COMPILE_OPTIMIZATION_LEVEL_0;
+    module_compile_options.debugLevel        = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
+
 #endif
 
     char log[2048];
@@ -133,7 +175,19 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     size_t      inputSize = 0;
     //TODO: the file path problem
     bool is_success=false;
-    const char* input     = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success, nullptr, {"-std=c++17", "-default-device"});
+
+    const std::vector<const char*> compilerOptions {
+        "-std=c++17", "-default-device", //"-extra-device-vectorization"
+  #if !defined( NDEBUG )      
+        "-lineinfo", "-G"//"--dopt=on",
+  #endif
+        //"--gpu-architecture=compute_60",
+        //"--relocatable-device-code=true"
+        //"--extensible-whole-program"
+    };
+
+    const char* input = sutil::getInputData( nullptr, nullptr, source, location, inputSize, is_success, nullptr, compilerOptions);
+
     if(is_success==false)
     {
         return false;
@@ -163,6 +217,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
         //COMPILE_WITH_TASKS_CHECK( //);
         _c_group->wait();  
     }
+
     return true;
 }
 
@@ -219,7 +274,7 @@ inline void createRenderGroups(OptixDeviceContext &context, OptixModule &_module
 }
 
 inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_module, 
-                std::string kind, std::string entry, std::string nameIS, 
+                std::string kind, std::string entry, std::string nameIS, OptixModule* moduleIS,
                 raii<OptixProgramGroup>& oGroup)
 {
     OptixProgramGroupOptions  program_group_options = {};
@@ -243,9 +298,14 @@ inline void createRTProgramGroups(OptixDeviceContext &context, OptixModule &_mod
         desc.hitgroup.entryFunctionNameAH = entry.c_str();
     }
 
-    if (!nameIS.empty()) {
-        desc.hitgroup.moduleIS            = _module;
-        desc.hitgroup.entryFunctionNameIS = nameIS.c_str();
+    if (moduleIS != nullptr) {
+        desc.hitgroup.moduleIS            = *moduleIS;
+        desc.hitgroup.entryFunctionNameIS = nullptr;
+    } else {
+        if (!nameIS.empty()) {
+            desc.hitgroup.moduleIS            = _module;
+            desc.hitgroup.entryFunctionNameIS = nameIS.c_str();
+        }
     }
 
     OPTIX_CHECK_LOG( optixProgramGroupCreate(
@@ -411,10 +471,12 @@ inline void logInfoVRAM(std::string info) {
         used_db/1024.0/1024.0, free_db/1024.0/1024.0, total_db/1024.0/1024.0);
 }
 
+inline std::map<std::string, uint> matIDtoShaderIndex;
+
 inline std::map<std::string, std::shared_ptr<VolumeWrapper>> g_vdb_cached_map;
 inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
 
-inline std::map<uint, std::vector<std::string> > g_vdb_list_for_each_shader;
+inline std::map<uint, std::vector<std::string>> g_vdb_list_for_each_shader;
 
 inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel, 
                        uint index_of_shader, uint index_inside_shader,
@@ -591,7 +653,7 @@ inline void addTexture(std::string path)
 struct rtMatShader
 {
     raii<OptixModule>                    m_ptx_module                ; 
-    
+    OptixModule*                         moduleIS = nullptr;
     //the below two things are just like vertex shader and frag shader in real time rendering
     //the two are linked to codes modeling the rayHit and occlusion test of an particular "Material"
     //of an Object.
@@ -665,11 +727,11 @@ struct rtMatShader
 
             createRTProgramGroups(context, m_ptx_module, 
                 "OPTIX_PROGRAM_GROUP_KIND_CLOSEHITGROUP", 
-                m_shadingEntry, m_hittingEntry, m_radiance_hit_group);
+                m_shadingEntry, m_hittingEntry, moduleIS, m_radiance_hit_group);
 
             createRTProgramGroups(context, m_ptx_module, 
                 "OPTIX_PROGRAM_GROUP_KIND_ANYHITGROUP", 
-                m_occlusionEntry, m_hittingEntry, m_occlusion_hit_group);
+                m_occlusionEntry, m_hittingEntry, moduleIS, m_occlusion_hit_group);
 
             //_c_group.wait();
             return true;
@@ -684,10 +746,10 @@ inline void createPipeline()
 {
     OptixPipelineLinkOptions pipeline_link_options = {};
     pipeline_link_options.maxTraceDepth            = 2;
-#if defined(NDEBUG)
+#if defined( NDEBUG )
     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MINIMAL;
 #else
-    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_MODERATE;
+    pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
 
     int num_progs = 3 + rtMaterialShaders.size() * 2;
