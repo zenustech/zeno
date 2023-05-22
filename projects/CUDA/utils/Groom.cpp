@@ -219,21 +219,22 @@ struct StepGuidelines : INode {
         std::vector<float> grads;
         zs::TileVector<float, 32> vtemp{
             {
+                // linear solve
                 {"grad", 3},
                 {"dir", 3},
-                {"xn", 3},
-                {"vn", 3},
-                {"x0", 3},  // original model positions
-                {"xtilde", 3},
-                {"xhat", 3}, // initial positions at the current substep (constraint, extforce, velocity update)
                 {"temp", 3},
                 {"r", 3},
                 {"p", 3},
                 {"q", 3},
+                // system state
+                {"xn", 3},
+                {"vn", 3},
+                {"x0", 3}, // original model positions
+                {"xtilde", 3},
+                {"xhat", 3}, // initial positions at the current substep (constraint, extforce, velocity update)
             },
             pos.size()},
-            etemp{{{"K", 9}}, loops.size()
-            };
+            etemp{{{"K", 9}}, loops.size()};
 
         /// @note physics properties
         constexpr float mass = 1.f;
@@ -266,13 +267,22 @@ struct StepGuidelines : INode {
             vtemp.tuple(dim_c<3>, "vn", ptNo) = v;
         });
 
+        auto dot = [&, temp = zs::Vector<float>{vtemp.get_allocator(), vtemp.size() + 1}](
+                       zs::SmallString tag0, zs::SmallString tag1) mutable {
+            pol(range(vtemp.size()),
+                [vtemp = proxy<space>(vtemp), temp = proxy<space>(temp), offset0 = vtemp.getPropertyOffset(tag0),
+                 offset1 = vtemp.getPropertyOffset(tag1)](int vi) mutable {
+                    temp[vi] = vtemp.pack(dim_c<3>, offset0, vi).dot(vtemp.pack(dim_c<3>, offset1, vi));
+                });
+            reduce(pol, temp.begin(), temp.end() - 1, temp.end() - 1);
+            return temp.getVal(vtemp.size());
+        };
         auto maxIters = get_input2<int>("num_substeps");
         /// substeps
         for (int subi = 0; subi != maxIters; ++subi) {
-            zeno::log_warn("begin substep");
             /// @brief newton krylov
             /// @note compute gradient
-            pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
+            pol(range(vtemp.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
                 auto ptNo = loops[loopI];
                 auto x = vtemp.pack(dim_c<3>, "xn", ptNo);
                 auto v = vtemp.pack(dim_c<3>, "vn", ptNo);
@@ -288,7 +298,7 @@ struct StepGuidelines : INode {
                     auto poly = polys[polyI];
                     auto i = poly[0];
                     auto vi = loops[i];
-                    auto xi = vec_to_other<V3>(pos[vi]);
+                    auto xi = vtemp.pack(dim_c<3>, "xn", vi);
                     // inertial
                     vtemp.tuple(dim_c<3>, "grad", vi) =
                         vtemp.pack(dim_c<3>, "grad", vi) -
@@ -299,7 +309,7 @@ struct StepGuidelines : INode {
 
                         auto j = i + 1;
                         auto vj = loops[j];
-                        auto xj = vec_to_other<V3>(pos[vj]);
+                        auto xj = vtemp.pack(dim_c<3>, "xn", vj);
                         auto xij = xj - xi;
                         auto lij = xij.norm();
                         auto dij = xij / lij;
@@ -317,7 +327,7 @@ struct StepGuidelines : INode {
                         // elasticity hessian component
                         auto K = k * (zs::vec<float, 3, 3>::identity() -
                                       rl / lij * (zs::vec<float, 3, 3>::identity() - dyadic_prod(dij, dij)));
-                        etemp.tuple(dim_c<3, 3>, "K", i) = K;
+                        etemp.tuple(dim_c<3, 3>, "K", i) = K * dt * dt * vol;
 
                         // iterate
                         i = j;
@@ -326,15 +336,20 @@ struct StepGuidelines : INode {
                     }
                 });
             // project gradient
-            pol(range(polys.size()),
-                [&, etemp = proxy<space>({}, etemp), vtemp = proxy<space>({}, vtemp)](int polyI) mutable {
+            auto project = [&pol, &vtemp, &polys_ = polys, &loops_ = loops](zs::SmallString tag) {
+                auto &polys = polys_;
+                auto &loops = loops_;
+                pol(range(polys.size()), [&polys, &loops, vtemp = proxy<space>(vtemp),
+                                          tagOffset = vtemp.getPropertyOffset(tag)](int polyI) mutable {
                     auto poly = polys[polyI];
-                    auto i = poly[0];
-                    auto vi = loops[i];
-                    vtemp.tuple(dim_c<3>, "grad", vi) = V3::zeros();
+                    auto vi = loops[poly[0]];
+                    vtemp.tuple(dim_c<3>, tagOffset, vi) = V3::zeros();
                 });
-            /// @note cg
+            };
+            project("grad");
+            /// @note solve
             {
+#if 0
                 // explicit integration
                 pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
                     auto ptNo = loops[loopI];
@@ -342,17 +357,127 @@ struct StepGuidelines : INode {
                     auto xnp1 = vtemp.pack(dim_c<3>, "xn", ptNo) + delta;
                     vtemp.tuple(dim_c<3>, "xn", ptNo) = xnp1;
                 });
+#else
+                // mass precondition
+                auto precondition = [&pol, &vtemp](zs::SmallString srcTag, zs::SmallString dstTag) {
+                    pol(range(vtemp.size()),
+                        [vtemp = proxy<space>(vtemp), srcPropOffset = vtemp.getPropertyOffset(srcTag),
+                         dstPropOffset = vtemp.getPropertyOffset(dstTag)] ZS_LAMBDA(int vi) mutable {
+                            vtemp.tuple(dim_c<3>, dstPropOffset, vi) = vtemp.pack(dim_c<3>, srcPropOffset, vi) / mass;
+                        });
+                };
+                auto multiply = [&](zs::SmallString srcTag, zs::SmallString dstTag) {
+                    auto srcOffset = vtemp.getPropertyOffset(srcTag);
+                    auto dstOffset = vtemp.getPropertyOffset(dstTag);
+                    // inertia
+                    pol(range(vtemp.size()),
+                        [vtemp = proxy<space>(vtemp), dstOffset, srcOffset, mass] ZS_LAMBDA(int vi) mutable {
+                            vtemp.tuple(dim_c<3>, dstOffset, vi) = vtemp.pack(dim_c<3>, srcOffset, vi) * mass;
+                        });
+                    // elasticity
+                    pol(range(polys.size()),
+                        [&, etemp = proxy<space>(etemp), vtemp = proxy<space>(vtemp),
+                         Koffset = etemp.getPropertyOffset("K"), dstOffset, srcOffset](int polyI) mutable {
+                            auto poly = polys[polyI];
+                            auto i = poly[0];
+                            auto vi = loops[i];
+                            auto diri = vtemp.pack(dim_c<3>, srcOffset, vi);
+                            for (int k = 1; k < poly[1]; ++k) {
+                                auto j = i + 1;
+                                auto vj = loops[j];
+                                auto dirj = vtemp.pack(dim_c<3>, srcOffset, vj);
+
+                                auto K = etemp.pack(dim_c<3, 3>, Koffset, i);
+                                auto deltai = K * diri - K * dirj;
+                                auto deltaj = -deltai;
+
+                                vtemp.tuple(dim_c<3>, dstOffset, vi) = vtemp.pack(dim_c<3>, dstOffset, vi) + deltai;
+                                vtemp.tuple(dim_c<3>, dstOffset, vj) = vtemp.pack(dim_c<3>, dstOffset, vj) + deltaj;
+
+                                // iterate
+                                i = j;
+                                vi = vj;
+                            }
+                        });
+                };
+                /// @note cg
+                constexpr float cgRel = 0.01;
+                constexpr int CGCap = 100;
+                auto dirOffset = vtemp.getPropertyOffset("dir");
+                auto gradOffset = vtemp.getPropertyOffset("grad");
+                auto tempOffset = vtemp.getPropertyOffset("temp");
+                auto rOffset = vtemp.getPropertyOffset("r");
+                auto pOffset = vtemp.getPropertyOffset("p");
+                auto qOffset = vtemp.getPropertyOffset("q");
+                auto vtempv = proxy<space>(vtemp);
+                pol(range(vtemp.size()),
+                    [vtemp = vtempv, dirOffset](int i) mutable { vtemp.tuple(dim_c<3>, dirOffset, i) = V3::zeros(); });
+                multiply("dir", "temp");
+                project("temp");
+                // r = grad - temp
+                pol(range(vtemp.size()), [vtemp = vtempv, rOffset, gradOffset, tempOffset](int i) mutable {
+                    vtemp.tuple(dim_c<3>, rOffset, i) =
+                        vtemp.pack(dim_c<3>, gradOffset, i) - vtemp.pack(dim_c<3>, tempOffset, i);
+                });
+                precondition("r", "q");
+                pol(range(vtemp.size()), [vtemp = vtempv, pOffset, qOffset](int i) mutable {
+                    vtemp.tuple(dim_c<3>, pOffset, i) = vtemp.pack(dim_c<3>, qOffset, i);
+                });
+                auto zTrk = dot("r", "q");
+                auto residualPreconditionedNorm2 = zTrk;
+                auto localTol2 = zs::sqr(cgRel) * residualPreconditionedNorm2;
+                int iter = 0;
+                for (; iter != CGCap; ++iter) {
+                    if (residualPreconditionedNorm2 <= localTol2)
+                        break;
+                    multiply("p", "temp");
+                    project("temp"); // project production
+
+                    auto alpha = zTrk / dot("temp", "p");
+                    pol(range(vtemp.size()),
+                        [vtemp = vtempv, dirOffset, pOffset, rOffset, tempOffset, alpha] ZS_LAMBDA(int vi) mutable {
+                            vtemp.tuple(dim_c<3>, dirOffset, vi) =
+                                vtemp.pack(dim_c<3>, dirOffset, vi) + alpha * vtemp.pack(dim_c<3>, pOffset, vi);
+                            vtemp.tuple(dim_c<3>, rOffset, vi) =
+                                vtemp.pack(dim_c<3>, rOffset, vi) - alpha * vtemp.pack(dim_c<3>, tempOffset, vi);
+                        });
+
+                    precondition("r", "q");
+
+                    auto zTrkLast = zTrk;
+                    zTrk = dot("q", "r");
+                    if (zs::isnan(zTrk, zs::exec_seq)) {
+                        iter = CGCap;
+                        residualPreconditionedNorm2 =
+                            (localTol2 / (cgRel * cgRel)) + std::max((localTol2 / (cgRel * cgRel)), (float)1);
+                        continue;
+                    }
+                    auto beta = zTrk / zTrkLast;
+                    pol(range(vtemp.size()), [vtemp = vtempv, beta, pOffset, qOffset] ZS_LAMBDA(int vi) mutable {
+                        vtemp.tuple(dim_c<3>, pOffset, vi) =
+                            vtemp.pack(dim_c<3>, qOffset, vi) + beta * vtemp.pack(dim_c<3>, pOffset, vi);
+                    });
+
+                    residualPreconditionedNorm2 = zTrk;
+                }
+                zeno::log_info(fmt::format("cg ends in {} iters.", iter));
+                pol(range(vtemp.size()),
+                    [vtemp = vtempv, xnOffset = vtemp.getPropertyOffset("xn"), dirOffset] ZS_LAMBDA(int vi) mutable {
+                        vtemp.tuple(dim_c<3>, xnOffset, vi) =
+                            vtemp.pack(dim_c<3>, xnOffset, vi) + vtemp.pack(dim_c<3>, dirOffset, vi);
+                    });
+#endif
             }
 
             /// @note update velocity
-            pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
+            pol(range(vtemp.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
                 auto ptNo = loops[loopI];
                 auto vn = (vtemp.pack(dim_c<3>, "xn", ptNo) - vtemp.pack(dim_c<3>, "xhat", ptNo)) / dt;
                 vtemp.tuple(dim_c<3>, "vn", ptNo) = vn;
             });
         }
-         /// @note write back position and velocity
-        pol(range(loops.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
+        /// @note write back position and velocity
+        pol(range(vtemp.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
             auto ptNo = loops[loopI];
             auto xn = vtemp.pack(dim_c<3>, "xn", ptNo);
             auto vn = vtemp.pack(dim_c<3>, "vn", ptNo);
@@ -378,8 +503,8 @@ struct StepGuidelines : INode {
             };
             pol(loops.values,
                 /// @note cap [sep_dist] in case repel points outside the narrowband where grad is invalid
-                [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters, &loops, &pos, &vel](
-                    int ptNo) {
+                [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters, &loops, &pos,
+                 &vel](int ptNo) {
                     auto p = zeno::vec_to_other<openvdb::Vec3R>(pos[ptNo]);
                     auto mi = maxIters;
                     for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
