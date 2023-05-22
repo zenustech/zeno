@@ -340,7 +340,7 @@ struct CURVE_POINT {
 struct CURVE_DATA {
     QString key;
     QVector<CURVE_POINT> points;
-    int cycleType;
+    int cycleType = 0;
     CURVE_RANGE rg;
     bool visible;
     bool timeline;

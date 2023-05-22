@@ -63,6 +63,7 @@ class ZFloatLineEdit : public ZLineEdit {
   private:
     ZTimeline *getTimeline();
     bool isSetKeyFrame();
+    void updateHandler(CURVE_DATA &curve);
 };
 extern const char *g_keyFrame;
 #endif

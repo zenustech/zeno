@@ -34,7 +34,6 @@ void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pS
             pLineEdit = new ZFloatEditableTextItem;
         else
             pLineEdit = new ZEditableTextItem;
-
         if (vec.canConvert<UI_VECTYPE>()) {
             UI_VECTYPE tmp = vec.value<UI_VECTYPE>();
             pLineEdit->setText(QString::number(vec.value<UI_VECTYPE>().at(i)));
@@ -42,7 +41,7 @@ void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pS
             CURVES_DATA curves = vec.value<CURVES_DATA>();
             QString key = UiHelper::getCurveKey(i);
             if (curves.contains(key)) {
-                m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));
+                pLineEdit->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));
             }
         }
 

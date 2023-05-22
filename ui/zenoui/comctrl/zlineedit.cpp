@@ -208,20 +208,11 @@ void ZFloatLineEdit::getDelfCurveData(CURVE_DATA &curve, bool bVisible)
         curve.cycleType = 0;
     }
     float x = timeline->value();
-    float handle = 0;
-    if (curve.points.size() == 1) {
-        CURVE_POINT &p1 = curve.points.first();
-        float distance = fabs(p1.point.x() - x);
-        if (p1.point.x() > x && p1.point.y() < y)
-            distance = -distance;
-        handle = distance * 0.2;
-        p1.leftHandler = QPointF(-handle, 0);
-        p1.rightHandler = QPointF(handle, 0);
-    }
-    CURVE_POINT point = {QPointF(x, y), QPointF(-handle, 0), QPointF(handle, 0), HDL_ALIGNED};
+    CURVE_POINT point = {QPointF(x, y), QPointF(0, 0), QPointF(0, 0), HDL_ALIGNED};
     if (!curve.points.contains(point))
         curve.points.append(point);
 
+    updateHandler(curve);
     setProperty(g_keyFrame, QVariant::fromValue(curve));
 }
 void ZFloatLineEdit::updateCurveData() 
@@ -298,11 +289,12 @@ void ZFloatLineEdit::contextMenuEvent(QContextMenuEvent *event)
     connect(&delAction, &QAction::triggered, this, [=]() {
         CURVE_DATA newVal = val;
         for (int i = 0; i < newVal.points.size(); i++) {
-            if (newVal.points.at(i).point == QPointF(text().toFloat(), getTimeline()->value())) {
+            if (newVal.points.at(i).point.x() == getTimeline()->value()) {
                 newVal.points.remove(i);
                 if (newVal.points.isEmpty()) {
                     setProperty(g_keyFrame, QVariant());
                 } else {
+                    updateHandler(newVal);
                     setProperty(g_keyFrame, QVariant::fromValue(newVal));
                 }
                 if (ZTimeline *timeline = getTimeline())
@@ -386,6 +378,30 @@ bool ZFloatLineEdit::isSetKeyFrame()
         }
     }
     return false;
+}
+
+void ZFloatLineEdit::updateHandler(CURVE_DATA &curve) 
+{
+    if (curve.points.size() > 1) {
+        qSort(curve.points.begin(), curve.points.end(),
+              [](const CURVE_POINT &p1, const CURVE_POINT &p2) { return p1.point.x() < p2.point.x(); });
+        float preX = curve.points.at(0).point.x();
+        for (int i = 1; i < curve.points.size(); i++) {
+            QPointF p1 = curve.points.at(i - 1).point;
+            QPointF p2 = curve.points.at(i).point;
+            float distance = fabs(p1.x() - p2.x());
+            float handle = distance * 0.2;
+            if (i == 1) {
+                curve.points[i - 1].leftHandler = QPointF(-handle, 0);
+                curve.points[i - 1].rightHandler = QPointF(handle, 0);
+            }
+            if (p2.y() < p1.y() && (curve.points[i-1].rightHandler.x() < 0)) {
+                handle = -handle;
+            }
+            curve.points[i].leftHandler = QPointF(-handle, 0);
+            curve.points[i].rightHandler = QPointF(handle, 0);
+        }
+    }
 }
 
 bool ZFloatLineEdit::getKeyFrame(CURVE_DATA &curve) 

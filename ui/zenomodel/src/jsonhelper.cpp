@@ -330,6 +330,10 @@ namespace JsonHelper
 
             curve.points.append(pt);
         }
+        if (jsonCurve.HasMember(key_visible)) 
+        {
+            curve.visible = jsonCurve[key_visible].GetBool();
+        }
         return curve;
     }
 
@@ -476,6 +480,8 @@ namespace JsonHelper
                 writer.Bool(bLockY);
             }
         }
+        writer.Key(key_visible);
+        writer.Bool(curve.visible);
     }
 
     void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer)
