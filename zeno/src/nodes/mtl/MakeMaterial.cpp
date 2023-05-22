@@ -139,9 +139,33 @@ struct ExtractMaterialShader : zeno::INode
   {
     virtual void apply() override
     {
-      auto obj = get_input<zeno::IObject>("object");
+      auto obj = get_input<zeno::PrimitiveObject>("object");
       auto mtlid = get_input2<std::string>("mtlid");
+      auto mtlid2 = get_input2<std::string>("mtlid");
+      int matNum = obj->userData().get2<int>("matNum",0);
+      for(int i=0; i<matNum; i++)
+      {
+          auto key = "Material_" + to_string(i);
+          obj->userData().erase(key);
+      }
+      obj->userData().set2("matNum", 1);
+      obj->userData().setLiterial("Material_0", std::move(mtlid2));
       obj->userData().setLiterial("mtlid", std::move(mtlid));
+      if(obj->tris.size()>0)
+      {
+          obj->tris.add_attr<int>("matid");
+          obj->tris.attr<int>("matid").assign(obj->tris.size(),0);
+      }
+      if(obj->quads.size()>0)
+      {
+          obj->quads.add_attr<int>("matid");
+          obj->quads.attr<int>("matid").assign(obj->quads.size(),0);
+      }
+      if(obj->polys.size()>0)
+      {
+          obj->polys.add_attr<int>("matid");
+          obj->polys.attr<int>("matid").assign(obj->polys.size(),0);
+      }
       set_output("object", std::move(obj));
     }
   };

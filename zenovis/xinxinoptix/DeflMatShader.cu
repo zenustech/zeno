@@ -726,7 +726,8 @@ extern "C" __global__ void __closesthit__radiance()
                     }
                     prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
-                        prd->maxDistance = 1e16;
+                        vec3 channelPDF = vec3(1.0/3.0);
+                        prd->maxDistance = scatterStep>0.5? DisneyBSDF::SampleDistance2(prd->seed, prd->sigma_t, prd->sigma_t, channelPDF) : 1e16;
                         prd->pushMat(extinction);
                     } else {
 
@@ -809,7 +810,8 @@ extern "C" __global__ void __closesthit__radiance()
                     }
                     else if (prd->ss_alpha.x<0.0f) { // Glass
                         trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-                        prd->maxDistance = 1e16;
+                        vec3 channelPDF = vec3(1.0/3.0);
+                        prd->maxDistance = scatterStep>0.5? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16;
                     } else { // SSS
                         trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                         prd->channelPDF = vec3(1.0/3.0);
@@ -923,7 +925,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->Lweight = weight;
 
                 float3 lbrdf = DisneyBSDF::EvaluateDisney(
-                    basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
+                    basecolor, sssColor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
                     clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
                     dot(N, L));
@@ -962,15 +964,15 @@ extern "C" __global__ void __closesthit__radiance()
                        1e16f, // tmax,
                        &shadow_prd);
         lbrdf = DisneyBSDF::EvaluateDisney(
-            basecolor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
+            basecolor, sssColor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
             clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
             thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));
         light_attenuation = shadow_prd.shadowAttanuation;
         //if (fmaxf(light_attenuation) > 0.0f) {
-            auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
-                                          10, // be careful
-                                          .45, 15., 1.030725 * 0.3, params.elapsedTime));
+//            auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+//                                          10, // be careful
+//                                          .45, 15., 1.030725 * 0.3, params.elapsedTime));
             MatOutput mat2;
             if(thin>0.5){
                     vec3 H = normalize(vec3(normalize(sun_dir)) + vec3(-normalize(inDir)));
@@ -983,7 +985,7 @@ extern "C" __global__ void __closesthit__radiance()
                     attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
                     mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
             }
-            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 * sky * (thin>0.5? float3(mat2.reflectance):lbrdf);
+            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 *  (thin>0.5? float3(mat2.reflectance):lbrdf);
     }
 
     P = P_OLD;
