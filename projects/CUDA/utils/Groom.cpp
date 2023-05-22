@@ -237,6 +237,12 @@ struct StepGuidelines : INode {
             pos.size()},
             etemp{{{"K", 9}}, loops.size()};
 
+        /// @note physics properties
+        constexpr float mass = 1.f;
+        constexpr float vol = 200.f;
+        constexpr float k = 1.e5f;
+        constexpr V3 grav{0, -9.8, 0};
+
         // collider
         openvdb::FloatGrid::Ptr grid;
         openvdb::Vec3fGrid::Ptr gridGrad;
@@ -259,14 +265,16 @@ struct StepGuidelines : INode {
             auto maxIters = get_input2<int>("collision_iters");
 
             resolveCollision = [&pol, &loops, &grid, &gridGrad, &getSdf, &getGrad, &vtemp, dx = grid->voxelSize()[0],
-                                sep_dist, maxIters, space_c = wrapv<space>{}]() {
+                                sep_dist, maxIters, mass, space_c = wrapv<space>{}]() {
                 constexpr auto space = RM_CVREF_T(space_c)::value;
 
                 /// @note cap [sep_dist] in case repel points outside the narrowband where grad is invalid
                 pol(loops.values, [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters,
-                                   vtemp = proxy<space>(vtemp), xnOffset = vtemp.getPropertyOffset("xn")](int ptNo) {
+                                   vtemp = proxy<space>(vtemp), xnOffset = vtemp.getPropertyOffset("xn"),
+                                   gradOffset = vtemp.getPropertyOffset("grad"), mass](int ptNo) {
                     auto p_ = vtemp.pack(dim_c<3>, xnOffset, ptNo);
                     auto p = openvdb::Vec3R(p_[0], p_[1], p_[2]);
+#if 0
                     auto mi = maxIters;
                     for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
                         auto d = getGrad(p);
@@ -279,15 +287,33 @@ struct StepGuidelines : INode {
                             p += d * -dx;
                     }
                     vtemp.tuple(dim_c<3>, xnOffset, ptNo) = V3{p[0], p[1], p[2]};
+#else
+                    auto sdf = getSdf(p);
+                    auto mi = maxIters;
+                    auto p0 = p;
+                    for (auto sdf = getSdf(p); sdf < 0 && mi-- > 0; sdf = getSdf(p)) {
+                        auto d = getGrad(p);
+                        d.normalize();
+                        if (sdf < 0)
+                            p += d * dx;
+                    }
+#if 0
+                    if (sdf < 0) {
+                        auto d = getGrad(p);
+                        d.normalize();
+                        p += d * -sdf;
+                    }
+#endif
+                    auto d_ = p - p0;
+                    auto delta = V3{d_[0], d_[1], d_[2]} * 0.1;
+                    vtemp.tuple(dim_c<3>, gradOffset, ptNo) = vtemp.pack(dim_c<3>, gradOffset, ptNo) + mass * delta;
+#endif
+                    // auto delta = (vtemp.pack(dim_c<3>, "grad", ptNo)) / mass;
+                    // auto xnp1 = vtemp.pack(dim_c<3>, "xn", ptNo) + delta;
                 });
             };
         }
 
-        /// @note physics properties
-        constexpr float mass = 1.f;
-        constexpr float vol = 1000.f;
-        constexpr float k = 1.e7f;
-        constexpr V3 grav{0, -9.8, 0};
         // if "rl" prop not exist, record
         if (!loops.has_attr("rl")) {
             auto &rls = loops.add_attr<float>("rl");
@@ -339,6 +365,9 @@ struct StepGuidelines : INode {
                 vtemp.tuple(dim_c<3>, "xhat", ptNo) = x;
                 vtemp.tuple(dim_c<3>, "grad", ptNo) = V3::zeros(); // clear gradient
             });
+            // collision
+            if (resolveCollision)
+                resolveCollision();
             // elasticity + inertia
             pol(range(polys.size()),
                 [&, etemp = proxy<space>({}, etemp), vtemp = proxy<space>({}, vtemp)](int polyI) mutable {
@@ -408,13 +437,13 @@ struct StepGuidelines : INode {
                 });
 #else
                 // mass precondition
-                auto precondition = [&pol, &vtemp, mass, space_c = wrapv<space>{}](zs::SmallString srcTag,
+                auto precondition = [&pol, &vtemp, mass, k, space_c = wrapv<space>{}](zs::SmallString srcTag,
                                                                                    zs::SmallString dstTag) {
                     constexpr auto space = RM_CVREF_T(space_c)::value;
                     pol(range(vtemp.size()),
                         [vtemp = proxy<space>(vtemp), srcPropOffset = vtemp.getPropertyOffset(srcTag),
-                         dstPropOffset = vtemp.getPropertyOffset(dstTag), mass] ZS_LAMBDA(int vi) mutable {
-                            vtemp.tuple(dim_c<3>, dstPropOffset, vi) = vtemp.pack(dim_c<3>, srcPropOffset, vi) / mass;
+                         dstPropOffset = vtemp.getPropertyOffset(dstTag), mass, k] ZS_LAMBDA(int vi) mutable {
+                            vtemp.tuple(dim_c<3>, dstPropOffset, vi) = vtemp.pack(dim_c<3>, srcPropOffset, vi) / (mass + k);
                         });
                 };
                 auto multiply = [&, space_c = wrapv<space>{}](zs::SmallString srcTag, zs::SmallString dstTag) {
@@ -454,7 +483,7 @@ struct StepGuidelines : INode {
                 };
                 /// @note cg
                 constexpr float cgRel = 0.01;
-                constexpr int CGCap = 100;
+                constexpr int CGCap = 1000;
                 auto dirOffset = vtemp.getPropertyOffset("dir");
                 auto gradOffset = vtemp.getPropertyOffset("grad");
                 auto tempOffset = vtemp.getPropertyOffset("temp");
@@ -520,8 +549,6 @@ struct StepGuidelines : INode {
                     });
 #endif
             }
-            /// post collision handling
-            resolveCollision();
 
             /// @note update velocity
             pol(range(vtemp.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
