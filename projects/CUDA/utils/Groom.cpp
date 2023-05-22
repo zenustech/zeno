@@ -186,6 +186,7 @@ ZENDEFNODE(SpawnGuidelines, {
 struct StepGuidelines : INode {
     virtual void apply() override {
         using namespace zs;
+        using V3 = zs::vec<float, 3>;
         auto pol = omp_exec();
         constexpr auto space = execspace_e::openmp;
 
@@ -236,11 +237,56 @@ struct StepGuidelines : INode {
             pos.size()},
             etemp{{{"K", 9}}, loops.size()};
 
+        // collider
+        openvdb::FloatGrid::Ptr grid;
+        openvdb::Vec3fGrid::Ptr gridGrad;
+        std::function<void()> resolveCollision;
+        bool hasCollider = has_input("vdb_collider");
+        if (hasCollider) {
+            auto collider = get_input2<zeno::VDBFloatGrid>("vdb_collider");
+            grid = collider->m_grid;
+            grid->tree().voxelizeActiveTiles();
+            gridGrad = openvdb::tools::gradient(*grid);
+        }
+        auto getSdf = [&grid](openvdb::Vec3R p) {
+            return openvdb::tools::BoxSampler::sample(grid->getConstUnsafeAccessor(), grid->worldToIndex(p));
+        };
+        auto getGrad = [&gridGrad](openvdb::Vec3R p) {
+            return openvdb::tools::BoxSampler::sample(gridGrad->getConstUnsafeAccessor(), gridGrad->worldToIndex(p));
+        };
+        if (hasCollider) {
+            auto sep_dist = get_input2<float>("sep_dist");
+            auto maxIters = get_input2<int>("collision_iters");
+
+            resolveCollision = [&pol, &loops, &grid, &gridGrad, &getSdf, &getGrad, &vtemp, dx = grid->voxelSize()[0],
+                                sep_dist, maxIters, space_c = wrapv<space>{}]() {
+                constexpr auto space = RM_CVREF_T(space_c)::value;
+
+                /// @note cap [sep_dist] in case repel points outside the narrowband where grad is invalid
+                pol(loops.values, [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters,
+                                   vtemp = proxy<space>(vtemp), xnOffset = vtemp.getPropertyOffset("xn")](int ptNo) {
+                    auto p_ = vtemp.pack(dim_c<3>, xnOffset, ptNo);
+                    auto p = openvdb::Vec3R(p_[0], p_[1], p_[2]);
+                    auto mi = maxIters;
+                    for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
+                        auto d = getGrad(p);
+                        d.normalize();
+                        if (sdf < 0)
+                            // p += d * -sdf;
+                            p += d * dx;
+                        else
+                            //p += d * (sep_dist - sdf);
+                            p += d * -dx;
+                    }
+                    vtemp.tuple(dim_c<3>, xnOffset, ptNo) = V3{p[0], p[1], p[2]};
+                });
+            };
+        }
+
         /// @note physics properties
         constexpr float mass = 1.f;
         constexpr float vol = 1000.f;
         constexpr float k = 1.e7f;
-        using V3 = zs::vec<float, 3>;
         constexpr V3 grav{0, -9.8, 0};
         // if "rl" prop not exist, record
         if (!loops.has_attr("rl")) {
@@ -474,6 +520,8 @@ struct StepGuidelines : INode {
                     });
 #endif
             }
+            /// post collision handling
+            resolveCollision();
 
             /// @note update velocity
             pol(range(vtemp.size()), [&, vtemp = proxy<space>({}, vtemp)](int loopI) mutable {
@@ -492,40 +540,6 @@ struct StepGuidelines : INode {
         });
 
         /// resolve collision
-        if (has_input("vdb_collider")) {
-            auto collider = get_input2<zeno::VDBFloatGrid>("vdb_collider");
-            auto sep_dist = get_input2<float>("sep_dist");
-            maxIters = get_input2<int>("collision_iters");
-            openvdb::FloatGrid::Ptr grid = collider->m_grid;
-            grid->tree().voxelizeActiveTiles();
-            auto dx = collider->getVoxelSize()[0];
-            openvdb::Vec3fGrid::Ptr gridGrad = openvdb::tools::gradient(*grid);
-            auto getSdf = [&grid](openvdb::Vec3R p) {
-                return openvdb::tools::BoxSampler::sample(grid->getConstUnsafeAccessor(), grid->worldToIndex(p));
-            };
-            auto getGrad = [&gridGrad](openvdb::Vec3R p) {
-                return openvdb::tools::BoxSampler::sample(gridGrad->getConstUnsafeAccessor(),
-                                                          gridGrad->worldToIndex(p));
-            };
-            pol(loops.values,
-                /// @note cap [sep_dist] in case repel points outside the narrowband where grad is invalid
-                [&getSdf, &getGrad, dx, sep_dist = std::min(sep_dist, grid->background()), maxIters, &loops, &pos,
-                 &vel](int ptNo) {
-                    auto p = zeno::vec_to_other<openvdb::Vec3R>(pos[ptNo]);
-                    auto mi = maxIters;
-                    for (auto sdf = getSdf(p); sdf < sep_dist && mi-- > 0; sdf = getSdf(p)) {
-                        auto d = getGrad(p);
-                        d.normalize();
-                        if (sdf < 0)
-                            // p += d * -sdf;
-                            p += d * dx;
-                        else
-                            //p += d * (sep_dist - sdf);
-                            p += d * -dx;
-                    }
-                    pos[ptNo] = zeno::other_to_vec<3>(p);
-                });
-        }
 
         set_output("guide_lines", std::move(gls));
     }
