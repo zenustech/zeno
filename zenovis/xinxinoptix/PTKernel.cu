@@ -257,7 +257,8 @@ extern "C" __global__ void __miss__radiance()
             .45,
             15.,
             1.030725 * 0.3,
-            params.elapsedTime
+            params.elapsedTime,
+            1.0
         );
         prd->done      = true;
         return;

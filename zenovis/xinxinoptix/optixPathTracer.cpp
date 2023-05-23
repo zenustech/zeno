@@ -196,6 +196,7 @@ struct PathTracerState
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
     raii<CUdeviceptr> lightsbuf_p;
+    raii<CUdeviceptr> sky_cdf_p;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
     CUdeviceptr                              d_params2=0;
@@ -2069,6 +2070,19 @@ void optixupdatematerial(std::vector<bool> const            &markers,
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
     if (OptixUtil::sky_tex.has_value()) {
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
+        state.params.skynx = OptixUtil::sky_nx;
+        state.params.skyny = OptixUtil::sky_ny;
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ), sizeof(float2)*OptixUtil::sky_cdf.size() ) );
+        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p),
+                   OptixUtil::sky_cdf.data(),
+                   sizeof(float)*OptixUtil::sky_cdf.size(),
+                   cudaMemcpyHostToDevice);
+        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p)+sizeof(float)*OptixUtil::sky_cdf.size(),
+                   OptixUtil::sky_pdf.data(),
+                   sizeof(float)*OptixUtil::sky_pdf.size(),
+                   cudaMemcpyHostToDevice);
+        state.params.skycdf = reinterpret_cast<float *>((CUdeviceptr)state.sky_cdf_p);
+
     }
 }
 

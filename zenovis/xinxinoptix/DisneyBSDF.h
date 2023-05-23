@@ -1441,16 +1441,17 @@ static __inline__ __device__ vec3 proceduralSky(
 }
 
 static __inline__ __device__ vec3 hdrSky(
-        vec3 dir
+        vec3 dir, float isclamp
 ){
-    dir = dir
-            .rotY(to_radians(params.sky_rot_y))
-            .rotX(to_radians(params.sky_rot_x))
-            .rotZ(to_radians(params.sky_rot_z));
-    float u = atan2(-dir.z, -dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+//    dir = dir
+//            .rotY(to_radians(params.sky_rot_y))
+//            .rotX(to_radians(params.sky_rot_x))
+//            .rotZ(to_radians(params.sky_rot_z));
+    float u = atan2(dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5; //  + 0.5 + params.sky_rot / 360;
     float v = asin(dir.y) / 3.1415926 + 0.5;
-    vec3 col = clamp((vec3)texture2D(params.sky_texture, vec2(u, v)), vec3(0.0f), vec3(1.0f));
-    return col * params.sky_strength;
+    vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v)) * params.sky_strength;
+    vec3 col2 = clamp(col, vec3(0.0f), vec3(1.0f));
+    return mix(col, col2, isclamp);
 }
 
 static __inline__ __device__ vec3 colorTemperatureToRGB(float temperatureInKelvins)
@@ -1489,7 +1490,8 @@ static __inline__ __device__ vec3 envSky(
     float coverage,
     float thickness,
     float absorption,
-    float t
+    float t,
+    float isclamp = 0.0f
 ){
     vec3 color;
     if (!params.usingHdrSky) {
@@ -1506,7 +1508,7 @@ static __inline__ __device__ vec3 envSky(
     }
     else {
         color = hdrSky(
-            dir
+            dir, isclamp
         );
     }
     if (params.colorTemperatureMix > 0) {
