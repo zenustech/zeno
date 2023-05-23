@@ -1,8 +1,29 @@
+#include <QTextEdit>
 #include "zfxhighlighter.h"
 #include "zfxkeywords.h"
 
-ZfxHighlighter::ZfxHighlighter(QTextDocument* parent)
-	: QSyntaxHighlighter(parent)
+ZfxHighlighter::ZfxHighlighter(QTextEdit* textEdit)
+	: QSyntaxHighlighter(textEdit)
+	, m_pTextEdit(textEdit)
+{
+	initRules();
+	connect(m_pTextEdit, &QTextEdit::cursorPositionChanged, this, &ZfxHighlighter::highlightCurrentLine);
+	connect(m_pTextEdit, &QTextEdit::selectionChanged, this, &ZfxHighlighter::onSelectionChanged);
+}
+
+void ZfxHighlighter::highlightBlock(const QString& text)
+{
+	if (text.size() == 0) return;
+	for (const HighlightingRule& rule : m_highlightingRules) {
+		QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
+		while (matchIterator.hasNext()) {
+			QRegularExpressionMatch match = matchIterator.next();
+			setFormat(match.capturedStart(), match.capturedLength(), rule.format);
+		}
+	}
+}
+
+void ZfxHighlighter::initRules()
 {
 	HighlightingRule rule;
 
@@ -12,7 +33,7 @@ ZfxHighlighter::ZfxHighlighter(QTextDocument* parent)
 	m_highlightingRules.append(rule);
 
 	// string, seems no need
-	
+
 	// local var
 	rule.pattern = QRegularExpression("\\@[a-zA-Z]+\\b");
 	rule.format = m_highlightTheme.format(ZfxTextStyle::C_LOCALVAR);
@@ -22,9 +43,9 @@ ZfxHighlighter::ZfxHighlighter(QTextDocument* parent)
 	rule.pattern = QRegularExpression("\\$[a-zA-Z]+\\b");
 	rule.format = m_highlightTheme.format(ZfxTextStyle::C_GLOBALVAR);
 	m_highlightingRules.append(rule);
-	
+
 	// keyword
-	
+
 	// func, only highlight supported
 	QStringList functionPatterns;
 	for (const auto& func : zfxFunction) {
@@ -43,14 +64,20 @@ ZfxHighlighter::ZfxHighlighter(QTextDocument* parent)
 	m_highlightingRules.append(rule);
 }
 
-void ZfxHighlighter::highlightBlock(const QString& text)
+void ZfxHighlighter::highlightCurrentLine()
 {
-	if (text.size() == 0) return;
-    for (const HighlightingRule& rule : m_highlightingRules) {
-        QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
-        while (matchIterator.hasNext()) {
-            QRegularExpressionMatch match = matchIterator.next();
-            setFormat(match.capturedStart(), match.capturedLength(), rule.format);
-        }
-    }
+	if (!m_pTextEdit || m_pTextEdit->isReadOnly()) return;
+
+	QList<QTextEdit::ExtraSelection> extraSelections;
+	QTextEdit::ExtraSelection selection;
+	selection.format = m_highlightTheme.format(ZfxTextStyle::C_CurrentLine);
+	selection.format.setProperty(QTextFormat::FullWidthSelection, true);
+	selection.cursor = m_pTextEdit->textCursor();
+	selection.cursor.clearSelection();
+	extraSelections.append(selection);
+	m_pTextEdit->setExtraSelections(extraSelections);
+}
+
+void ZfxHighlighter::onSelectionChanged()
+{
 }

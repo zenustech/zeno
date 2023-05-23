@@ -703,7 +703,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(QGraphicsItem* parent)
     pal.setColor(QPalette::Base, QColor(25, 29, 33));
     m_pTextEdit->setPalette(pal);
 
-    auto highlighter = new ZfxHighlighter(m_pTextEdit->document());
+    auto highlighter = new ZfxHighlighter(m_pTextEdit);
 }
 
 ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent)
@@ -731,7 +731,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     //pal.setColor(QPalette::Base, QColor(25, 29, 33));
     //m_pTextEdit->setPalette(pal);
 
-    auto highlighter = new ZfxHighlighter(m_pTextEdit->document());
+    auto highlighter = new ZfxHighlighter(m_pTextEdit);
 }
 
 void ZenoParamMultilineStr::setText(const QString& text)
@@ -749,6 +749,11 @@ bool ZenoParamMultilineStr::eventFilter(QObject* object, QEvent* event)
     if (object == m_pTextEdit && event->type() == QEvent::FocusOut)
     {
         emit editingFinished();
+        // clear selection
+        QTextCursor cursor = m_pTextEdit->textCursor();
+        cursor.clearSelection();
+        m_pTextEdit->setTextCursor(cursor);
+        m_pTextEdit->setExtraSelections(QList<QTextEdit::ExtraSelection>());
     }
     return ZenoParamWidget::eventFilter(object, event);
 }
