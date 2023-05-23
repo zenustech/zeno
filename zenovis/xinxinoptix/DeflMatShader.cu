@@ -345,7 +345,30 @@ vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
     o.x = 1.0 - o.y - o.z;
     return o;
 }
+vec3 ImportanceSampleEnv(float* env_cdf, int nx, int ny, float p, float &pdf)
+{
+    int start = 0; int end = nx*ny-1;
+    while(start<end-1)
+    {
+        int mid = (start + end)/2;
+        if(env_cdf[mid]<p)
+        {
+            start = mid;
+        }
+        else
+        {
+            end = mid;
+        }
+    }
+    int i = start%nx;
+    int j = start/nx;
+    float theta = ((float)i + 0.5f)/(float) nx * 2.0f * 3.1415926f - 3.1415926f;
+    float phi = ((float)j + 0.5f)/(float) ny * 3.1415926f;
+    float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sin(phi);
+    pdf =  twoPi2sinTheta / env_cdf[start + nx*ny];
+    return normalize(vec3(cos(theta), sin(phi - 0.5 * 3.1415926f), sin(theta)));
 
+}
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
@@ -946,14 +969,19 @@ extern "C" __global__ void __closesthit__radiance()
             }
         }
     } else {
-    
-        float3 lbrdf {};
+    for(int samples=0;samples<20;samples++) {
+        float3 lbrdf{};
         bool inside = false;
-
-        vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
+        float p = rnd(prd->seed);
+        //vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
+        float envpdf = 0;
+        vec3 sunLightDir = ImportanceSampleEnv(params.skycdf, params.skynx, params.skyny, p, envpdf);
         auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
-                                                   params.sunSoftness * 0.2); //perturb the sun to have some softness
-        sun_dir = normalize(sun_dir);
+                                                   params.sunSoftness * 0); //perturb the sun to have some softness
+        sun_dir = normalize(sunLightDir);
+        float3 illum = float3(envSky(sun_dir, sun_dir, make_float3(0., 0., 1.),
+                                     40, // be careful
+                                     .45, 15., 1.030725 * 0.3, params.elapsedTime));
         prd->LP = P;
         prd->Ldir = sun_dir;
         prd->nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
@@ -964,28 +992,32 @@ extern "C" __global__ void __closesthit__radiance()
                        1e16f, // tmax,
                        &shadow_prd);
         lbrdf = DisneyBSDF::EvaluateDisney(
-            basecolor, sssColor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
-            clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, sun_dir, -normalize(inDir), T, B, N,
-            thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
+            basecolor, sssColor, metallic, subsurface, specular, roughness, specularTint, anisotropic,
+            anisoRotation, sheen, sheenTint, clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance,
+            ior, flatness, sun_dir, -normalize(inDir), T, B, N, thin > 0.5f,
+            flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));
         light_attenuation = shadow_prd.shadowAttanuation;
         //if (fmaxf(light_attenuation) > 0.0f) {
-//            auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
-//                                          10, // be careful
-//                                          .45, 15., 1.030725 * 0.3, params.elapsedTime));
-            MatOutput mat2;
-            if(thin>0.5){
-                    vec3 H = normalize(vec3(normalize(sun_dir)) + vec3(-normalize(inDir)));
-                    attrs.N = N;
-                    attrs.T = cross(B,N);
-                    attrs.L = vec3(normalize(sun_dir));
-                    attrs.V = vec3(-normalize(inDir));
-                    attrs.H = normalize(H);
-                    attrs.reflectance = lbrdf;
-                    attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
-                    mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
-            }
-            prd->radiance = light_attenuation * params.sunLightIntensity * 2.0 *  (thin>0.5? float3(mat2.reflectance):lbrdf);
+        //            auto sky = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+        //                                          10, // be careful
+        //                                          .45, 15., 1.030725 * 0.3, params.elapsedTime));
+        MatOutput mat2;
+        if (thin > 0.5) {
+            vec3 H = normalize(vec3(normalize(sun_dir)) + vec3(-normalize(inDir)));
+            attrs.N = N;
+            attrs.T = cross(B, N);
+            attrs.L = vec3(normalize(sun_dir));
+            attrs.V = vec3(-normalize(inDir));
+            attrs.H = normalize(H);
+            attrs.reflectance = lbrdf;
+            attrs.fresnel = DisneyBSDF::DisneyFresnel(basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V),
+                                                      dot(attrs.H, attrs.L), false);
+            mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
+        }
+        prd->radiance += 1.0f/20.0f  *
+            light_attenuation * illum * envpdf * 2.0 * (thin > 0.5 ? float3(mat2.reflectance) : lbrdf);
+    }
     }
 
     P = P_OLD;
