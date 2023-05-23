@@ -12,8 +12,19 @@ ZVecEditor::ZVecEditor(const QVariant &vec, bool bFloat, int deflSize, QString s
     initUI(vec);
 }
 
-void ZVecEditor::initUI(const QVariant& vec)
-{
+bool ZVecEditor::eventFilter(QObject *watched, QEvent *event) {
+    if (event->type() == QEvent::ContextMenu) {
+        for (int i = 0; i < m_editors.size(); i++) {
+            if (m_editors[i] == watched) {
+                qApp->sendEvent(this, event);
+                return true;
+            }
+        }
+    }
+    return QWidget::eventFilter(watched, event);
+}
+
+void ZVecEditor::initUI(const QVariant &vec) {
     QHBoxLayout* pLayout = new QHBoxLayout;
     pLayout->setContentsMargins(0, 0, 0, 0);
     pLayout->setSpacing(5);
@@ -26,8 +37,10 @@ void ZVecEditor::initUI(const QVariant& vec)
     m_editors.resize(n);
     for (int i = 0; i < m_editors.size(); i++)
     {
-        if (m_bFloat)
+        if (m_bFloat) {
             m_editors[i] = new ZFloatLineEdit;
+            m_editors[i]->installEventFilter(this);
+        }
         else
             m_editors[i] = new ZLineEdit;
 
@@ -56,25 +69,31 @@ bool ZVecEditor::isFloat() const
     return m_bFloat;
 }
 
+UI_VECTYPE ZVecEditor::text() const 
+{
+    UI_VECTYPE vec;
+    for (int i = 0; i < m_editors.size(); i++) {
+        if (m_bFloat) 
+            vec.append(m_editors[i]->text().toFloat());
+        else
+            vec.append(m_editors[i]->text().toInt());
+    }
+    return vec;
+}
+
 QVariant ZVecEditor::vec() const
 {
 	QVariant value;
     CURVES_DATA datas;
     UI_VECTYPE vec;
-    bool bKeyFrame = false;
 	for (int i = 0; i < m_editors.size(); i++)
 	{
         if (m_bFloat) {
             if (m_editors[i]->property(g_keyFrame).canConvert<CURVE_DATA>()) 
             {
-                bKeyFrame = true;
                 CURVE_DATA data = m_editors[i]->property(g_keyFrame).value<CURVE_DATA>();
                 QString key = UiHelper::getCurveKey(i);
-                if (data.key != key) {
-                    data.key = key;
-                    m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(data));
-                }
-                datas.insert(data.key, data);
+                datas.insert(key, data);
             } 
             else 
             {
@@ -84,26 +103,12 @@ QVariant ZVecEditor::vec() const
         else
             vec.append(m_editors[i]->text().toInt());
 	}
-    if (!bKeyFrame) 
+    if (vec.size() == m_editors.size()) 
     {
         value = QVariant::fromValue(vec);
     }
     else 
     {
-        if (datas.size() != m_editors.size())
-        {
-            for (int i = 0; i < m_editors.size(); i++) {
-                QString key = UiHelper::getCurveKey(i);
-                if (datas.contains(key))
-                    continue;
-                CURVE_DATA data;
-                if (ZFloatLineEdit *lineEdit = qobject_cast<ZFloatLineEdit *>(m_editors[i])) {
-                    lineEdit->getDelfCurveData(data, false);
-                }
-                data.key = key;
-                datas.insert(data.key, data);
-            }
-        }
         value = QVariant::fromValue(datas);
     }
     return value;
@@ -145,4 +150,18 @@ void ZVecEditor::setText(const QVariant &value, ZLineEdit* lineEdit)
     } else {
         lineEdit->setText(QString::number(value.toInt()));
     }
+    lineEdit->setProperty(g_keyFrame, QVariant());
+}
+
+int ZVecEditor::getCurrentEditor() 
+{
+    QPoint pos = QCursor::pos();
+    pos = mapFromGlobal(pos);
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        if (m_editors.at(i)->geometry().contains(pos)) {
+            return i;
+        }
+    }
+    return -1;
 }

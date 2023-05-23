@@ -188,33 +188,7 @@ ZFloatLineEdit::ZFloatLineEdit(const QString &text, QWidget *parent) :
 {
     setProperty(g_setKey, "null");
 }
-void ZFloatLineEdit::getDelfCurveData(CURVE_DATA &curve, bool bVisible) 
-{
-    if (curve.visible == false && bVisible == true) {
-        curve.points.clear();
-    }
-    curve.visible = bVisible;
-    float y = text().toFloat();
-    CURVE_RANGE &rg = curve.rg;
-    rg.yFrom = rg.yFrom > y ? y : rg.yFrom;
-    rg.yTo = rg.yTo > y ? rg.yTo : y;
-    ZTimeline *timeline = getTimeline();
-    QPair<int, int> fromTo = timeline->fromTo();
-    rg.xFrom = fromTo.first;
-    rg.yFrom = 0;
-    rg.xTo = fromTo.second;
-    if (curve.points.isEmpty()) {
-        curve.key = "x";
-        curve.cycleType = 0;
-    }
-    float x = timeline->value();
-    CURVE_POINT point = {QPointF(x, y), QPointF(0, 0), QPointF(0, 0), HDL_ALIGNED};
-    if (!curve.points.contains(point))
-        curve.points.append(point);
 
-    updateHandler(curve);
-    setProperty(g_keyFrame, QVariant::fromValue(curve));
-}
 void ZFloatLineEdit::updateCurveData() 
 {
     CURVE_DATA val;
@@ -243,97 +217,30 @@ void ZFloatLineEdit::updateCurveData()
 
 bool ZFloatLineEdit::event(QEvent *event) 
 {
-    ZTimeline *timeline = getTimeline();
-    ZASSERT_EXIT(timeline, false);
     CURVE_DATA curve;
-    if (getKeyFrame(curve)) {
+    {
+        ZTimeline *timeline = getTimeline();
+        ZASSERT_EXIT(timeline, false);
         if (event->type() == QEvent::DynamicPropertyChange) {
             QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent*>(event); 
             if (evt->propertyName() == g_keyFrame) {
                 updateBackgroundProp(timeline->value());
-                connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatLineEdit::updateBackgroundProp, Qt::UniqueConnection);
-                connect( zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, [=](bool gl, int frame) { 
-                    updateBackgroundProp(frame); 
-                }, Qt::UniqueConnection);
+                if (getKeyFrame(curve)) {
+                    connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatLineEdit::updateBackgroundProp, Qt::UniqueConnection);
+                    connect( zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatLineEdit::onUpdate, Qt::UniqueConnection);
+                } else {
+                    disconnect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatLineEdit::updateBackgroundProp);
+                    disconnect( zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatLineEdit::onUpdate);
+                }
             }
         } 
         else if (event->type() == QEvent::FocusOut) {
             updateCurveData();
-        } else if (event->type() == QEvent::FocusIn) {
+        } else if (event->type() == QEvent::FocusIn && getKeyFrame(curve)) {
             timeline->updateKeyFrames(curve.pointBases());
         }
     }
     ZLineEdit::event(event);
-}
-void ZFloatLineEdit::contextMenuEvent(QContextMenuEvent *event) 
-{
-    CURVE_DATA val;
-    getKeyFrame(val);
-
-    QMenu *menu = new QMenu;
-    QAction setAction(tr("Set KeyFrame"));
-    QAction delAction(tr("Del KeyFrame"));
-    QAction kFramesAction(tr("KeyFrames"));
-    bool bKeyFrame = isSetKeyFrame();
-    delAction.setEnabled(bKeyFrame);
-    setAction.setEnabled(!bKeyFrame);
-    kFramesAction.setEnabled(val.visible);
-
-    connect(&setAction, &QAction::triggered, this, [=]() {
-        CURVE_DATA newVal = val;
-        getDelfCurveData(newVal);
-        if (ZTimeline *timeline = getTimeline())
-            timeline->updateKeyFrames(newVal.pointBases());
-        emit editingFinished();
-    });
-    connect(&delAction, &QAction::triggered, this, [=]() {
-        CURVE_DATA newVal = val;
-        for (int i = 0; i < newVal.points.size(); i++) {
-            if (newVal.points.at(i).point.x() == getTimeline()->value()) {
-                newVal.points.remove(i);
-                if (newVal.points.isEmpty()) {
-                    setProperty(g_keyFrame, QVariant());
-                } else {
-                    updateHandler(newVal);
-                    setProperty(g_keyFrame, QVariant::fromValue(newVal));
-                }
-                if (ZTimeline *timeline = getTimeline())
-                    timeline->updateKeyFrames(newVal.pointBases());
-                emit editingFinished();
-                break;
-            }
-        }
-    });
-
-    connect(&kFramesAction, &QAction::triggered, this, [=]() {
-        ZCurveMapEditor *pEditor = new ZCurveMapEditor(true);
-        connect(pEditor, &ZCurveMapEditor::finished, this, [=](int result) {
-            if (ZTimeline *timeline = getTimeline())
-                updateBackgroundProp(timeline->value());
-            CURVES_DATA curves = pEditor->curves();
-            QVector<int> points;
-            if (curves.isEmpty() || !curves.contains(val.key) || curves[val.key].pointBases().isEmpty()) {
-                setProperty(g_keyFrame, QVariant());
-            } else {
-                points = curves[val.key].pointBases();
-                setProperty(g_keyFrame, QVariant::fromValue(curves[val.key]));
-            }
-            if (ZTimeline *timeline = getTimeline())
-                    timeline->updateKeyFrames(points);
-            emit editingFinished();
-        });
-        CURVES_DATA datas;
-        datas.insert(val.key, val);
-        pEditor->setAttribute(Qt::WA_DeleteOnClose);
-        pEditor->addCurves(datas);
-        pEditor->exec();
-    });
-
-    menu->addAction(&setAction);
-    menu->addAction(&delAction);
-    menu->addAction(&kFramesAction);
-    menu->exec(QCursor::pos());
-    menu->deleteLater();
 }
 
 void ZFloatLineEdit::updateBackgroundProp(int frame) 
@@ -355,6 +262,10 @@ void ZFloatLineEdit::updateBackgroundProp(int frame)
     this->style()->unpolish(this);
     this->style()->polish(this);
     update();
+}
+void ZFloatLineEdit::onUpdate(bool gl, int frame) 
+{
+    updateBackgroundProp(frame);
 }
 ZTimeline *ZFloatLineEdit::getTimeline() 
 {
@@ -378,30 +289,6 @@ bool ZFloatLineEdit::isSetKeyFrame()
         }
     }
     return false;
-}
-
-void ZFloatLineEdit::updateHandler(CURVE_DATA &curve) 
-{
-    if (curve.points.size() > 1) {
-        qSort(curve.points.begin(), curve.points.end(),
-              [](const CURVE_POINT &p1, const CURVE_POINT &p2) { return p1.point.x() < p2.point.x(); });
-        float preX = curve.points.at(0).point.x();
-        for (int i = 1; i < curve.points.size(); i++) {
-            QPointF p1 = curve.points.at(i - 1).point;
-            QPointF p2 = curve.points.at(i).point;
-            float distance = fabs(p1.x() - p2.x());
-            float handle = distance * 0.2;
-            if (i == 1) {
-                curve.points[i - 1].leftHandler = QPointF(-handle, 0);
-                curve.points[i - 1].rightHandler = QPointF(handle, 0);
-            }
-            if (p2.y() < p1.y() && (curve.points[i-1].rightHandler.x() < 0)) {
-                handle = -handle;
-            }
-            curve.points[i].leftHandler = QPointF(-handle, 0);
-            curve.points[i].rightHandler = QPointF(handle, 0);
-        }
-    }
 }
 
 bool ZFloatLineEdit::getKeyFrame(CURVE_DATA &curve) 

@@ -20,7 +20,6 @@ signals:
 
 private:
     void initUI(const QVariant &vec, bool bFloat, QGraphicsScene *pScene);
-    void setText(const QVariant &value, ZEditableTextItem *);
 
     QVector<ZEditableTextItem*> m_editors;
     LineEditParam m_param;

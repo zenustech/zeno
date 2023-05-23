@@ -151,6 +151,7 @@ class ZFloatEditableTextItem : public ZEditableTextItem {
     void updateCurveData();
   private slots:
     void updateText(int frame);
+    void onUpdate(bool gl, int frame);
 };
 
 class ZenoSocketItem;

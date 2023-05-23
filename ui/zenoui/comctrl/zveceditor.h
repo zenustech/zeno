@@ -2,8 +2,10 @@
 #define __ZVEC_EDITOR_H__
 
 #include <QtWidgets>
+#include <zenomodel/include/modeldata.h>
 
 class ZLineEdit;
+
 
 class ZVecEditor : public QWidget
 {
@@ -12,6 +14,8 @@ public:
 	ZVecEditor(const QVariant& vec, bool bFloat, int deflSize, QString styleCls, QWidget* parent = nullptr);
 	QVariant vec() const;
 	bool isFloat() const;
+    UI_VECTYPE text() const;
+    int getCurrentEditor();
 
 signals:
     void valueChanged(QVariant);
@@ -19,6 +23,9 @@ signals:
 
 public slots:
 	void setVec(const QVariant& vec, bool bFloat);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event);
 
 private:
 	void initUI(const QVariant& vec);

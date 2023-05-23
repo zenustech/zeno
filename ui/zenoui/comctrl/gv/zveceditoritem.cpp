@@ -35,7 +35,7 @@ void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pS
         else
             pLineEdit = new ZEditableTextItem;
         if (vec.canConvert<UI_VECTYPE>()) {
-            UI_VECTYPE tmp = vec.value<UI_VECTYPE>();
+            pLineEdit->setProperty(g_keyFrame, QVariant());
             pLineEdit->setText(QString::number(vec.value<UI_VECTYPE>().at(i)));
         } else if (vec.canConvert<CURVES_DATA>()) {
             CURVES_DATA curves = vec.value<CURVES_DATA>();
@@ -68,13 +68,11 @@ QVariant ZVecEditorItem::vec() const
     QVariant value;
     CURVES_DATA datas;
     UI_VECTYPE vec;
-    bool bKeyFrame = false;
     for (int i = 0; i < m_editors.size(); i++)
     {
         if (m_bFloatVec)
         {
             if (m_editors[i]->property(g_keyFrame).canConvert<CURVE_DATA>()) {
-                bKeyFrame = true;
                 CURVE_DATA data = m_editors[i]->property(g_keyFrame).value<CURVE_DATA>();
                 datas.insert(data.key, data);
             } else {
@@ -86,7 +84,7 @@ QVariant ZVecEditorItem::vec() const
             vec.append(m_editors[i]->text().toInt());
         }
     }
-    if (!bKeyFrame) {
+    if (vec.size() == m_editors.size()) {
         value = QVariant::fromValue(vec);
     } else {
         value = QVariant::fromValue(datas);
@@ -101,8 +99,10 @@ void ZVecEditorItem::setVec(const QVariant& vec, bool bFloat, QGraphicsScene* pS
 
     for (int i = 0; i < m_editors.size(); i++)
     {
-        if (vec.canConvert<UI_VECTYPE>())
+        if (vec.canConvert<UI_VECTYPE>()) {
+            m_editors[i]->setProperty(g_keyFrame, QVariant());
             m_editors[i]->setText(QString::number(vec.value<UI_VECTYPE>().at(i)));
+        }
         else if (vec.canConvert<CURVES_DATA>()) {
             CURVES_DATA curves = vec.value<CURVES_DATA>();
             QString key = UiHelper::getCurveKey(i);
@@ -120,8 +120,10 @@ void ZVecEditorItem::setVec(const QVariant& vec)
 
     for (int i = 0; i < m_editors.size(); i++)
     {
-        if (vec.canConvert<UI_VECTYPE>())
+        if (vec.canConvert<UI_VECTYPE>()) {
+            m_editors[i]->setProperty(g_keyFrame, QVariant());
             m_editors[i]->setText(QString::number(vec.value<UI_VECTYPE>().at(i)));
+        }
         else if (vec.canConvert<CURVES_DATA>()) {
             CURVES_DATA curves = vec.value<CURVES_DATA>();
             QString key = UiHelper::getCurveKey(i);

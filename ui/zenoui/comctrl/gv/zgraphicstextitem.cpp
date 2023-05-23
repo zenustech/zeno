@@ -613,23 +613,26 @@ bool ZFloatEditableTextItem::event(QEvent *event)
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline, false);
     CURVE_DATA curve;
-    if (getKeyFrame(curve)) {
+    {
         if (event->type() == QEvent::DynamicPropertyChange) 
         {
             QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent *>(event);
             if (evt->propertyName() == g_keyFrame) 
             {
-                float currentFrame = timeline->value();
-                updateText(currentFrame);
-                connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatEditableTextItem::updateText, Qt::UniqueConnection);
-                connect(zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, [=](bool gl, int frame) { 
-                    updateText(frame); 
-                }, Qt::UniqueConnection);
+                if (getKeyFrame(curve)) {
+                    float currentFrame = timeline->value();
+                    updateText(currentFrame);
+                    connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatEditableTextItem::updateText, Qt::UniqueConnection);
+                    connect(zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatEditableTextItem::onUpdate, Qt::UniqueConnection);
+                } else {
+                    disconnect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatEditableTextItem::updateText);
+                    disconnect(zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatEditableTextItem::onUpdate);
+                }
             }
         }
         if (event->type() == QEvent::FocusOut) {
             updateCurveData();
-        } else if (event->type() == QEvent::FocusIn) {
+        } else if (event->type() == QEvent::FocusIn && getKeyFrame(curve)) {
             timeline->updateKeyFrames(curve.pointBases());
         }
     }
@@ -677,6 +680,10 @@ void ZFloatEditableTextItem::updateText(int frame)
         QString text = QString::number(data.eval(frame));
         setText(text);
     }
+}
+void ZFloatEditableTextItem::onUpdate(bool gl, int frame) 
+{
+    updateText(frame);
 }
 
 ZSocketEditableItem::ZSocketEditableItem(

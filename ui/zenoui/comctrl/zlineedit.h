@@ -49,21 +49,19 @@ class ZFloatLineEdit : public ZLineEdit {
   public:
     explicit ZFloatLineEdit(QWidget *parent = nullptr);
     explicit ZFloatLineEdit(const QString &text, QWidget *parent = nullptr);
-    void getDelfCurveData(CURVE_DATA &val, bool bVisible = true);
     void updateCurveData();
     bool getKeyFrame(CURVE_DATA &curve);
 
   protected:
     bool event(QEvent *event) override;
-    void contextMenuEvent(QContextMenuEvent *) override;
 
   private slots:
     void updateBackgroundProp(int frame);
+    void onUpdate(bool gl, int frame);
 
   private:
     ZTimeline *getTimeline();
     bool isSetKeyFrame();
-    void updateHandler(CURVE_DATA &curve);
 };
 extern const char *g_keyFrame;
 #endif
