@@ -20,7 +20,7 @@ void edgeLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const s
     const SmallString bTag = std::string("b") + channel;
     const SmallString tag = channel;
     prim.append_channels(
-        pol, {{lTag.asString(), nchn}, {rTag.asString(), nchn}, {tTag.asString(), nchn}, {bTag.asString(), nchn}});
+        pol, {{lTag, nchn}, {rTag, nchn}, {tTag, nchn}, {bTag, nchn}});
     pol(Collapse{(std::size_t)ny * (std::size_t)nx},
         [verts = proxy<space>({}, prim), nx, ny, lTag, rTag, tTag, bTag, tag] ZS_LAMBDA(size_t id) mutable {
             int i = id % nx;
@@ -161,7 +161,7 @@ void cornerLoop(typename ZenoParticles::particles_t &prim, int nx, int ny, const
     const SmallString rbTag = std::string("rb") + channel;
     const SmallString tag = channel;
     prim.append_channels(
-        pol, {{ltTag.asString(), nchn}, {rtTag.asString(), nchn}, {lbTag.asString(), nchn}, {rbTag.asString(), nchn}});
+        pol, {{ltTag, nchn}, {rtTag, nchn}, {lbTag, nchn}, {rbTag, nchn}});
     pol(Collapse{(size_t)ny * (size_t)nx},
         [verts = proxy<space>({}, prim), nx, ny, ltTag, rtTag, lbTag, rbTag, tag] ZS_LAMBDA(size_t id) mutable {
             int i = id % nx;

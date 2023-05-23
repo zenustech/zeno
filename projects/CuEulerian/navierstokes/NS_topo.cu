@@ -135,7 +135,7 @@ struct ZSMaintainSparseGrid : INode {
         auto &spg = zsgridPtr->getSparseGrid();
 
         if (!spg._grid.hasProperty(tag))
-            throw std::runtime_error(fmt::format("property [{}] not exist!", tag.asString()));
+            throw std::runtime_error(fmt::format("property [{}] not exist!", tag));
 
         auto nbs = spg.numBlocks();
         using Ti = RM_CVREF_T(nbs);

@@ -146,9 +146,9 @@ struct ZSParticleParticleWrangler : INode {
 
         opts.symdims.clear();
         for (auto &&[name, nchns] : props)
-            def_sym("@", name.asString(), nchns);
+            def_sym("@", std::string(name), nchns);
         for (auto &&[name, nchns] : neighborProps)
-            def_sym("@@", name.asString(), nchns);
+            def_sym("@@", std::string(name), nchns);
 
         auto &currentContext = Cuda::context(0);
         currentContext.setContext();

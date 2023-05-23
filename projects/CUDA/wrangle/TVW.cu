@@ -162,7 +162,7 @@ struct ZSTileVectorWrangler : zeno::INode {
             opts.symdims.clear();
             // PropertyTag can be used for structured binding automatically
             for (auto &&[name, nchns] : props)
-                def_sym(name.asString(), nchns);
+                def_sym(std::string(name), nchns);
 
             auto prog = compiler.compile(code, opts);
             auto jitCode = assembler.assemble(prog->assembly);

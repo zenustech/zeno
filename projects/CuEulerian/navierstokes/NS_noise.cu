@@ -37,7 +37,7 @@ struct ZSGridPerlinNoise : INode {
         auto block_cnt = spg.numBlocks();
 
         if (!spg.hasProperty(tag))
-            throw std::runtime_error(fmt::format("GridAttribute [{}] doesn't exist!", tag.asString()));
+            throw std::runtime_error(fmt::format("GridAttribute [{}] doesn't exist!", tag));
         const int nchns = spg.getPropertySize(tag);
 
         auto pol = zs::cuda_exec();
@@ -130,9 +130,9 @@ struct ZSGridCurlNoise : INode {
         auto block_cnt = spg.numBlocks();
 
         if (!spg.hasProperty(tag))
-            throw std::runtime_error(fmt::format("GridAttribute [{}] doesn't exist!", tag.asString()));
+            throw std::runtime_error(fmt::format("GridAttribute [{}] doesn't exist!", tag));
         if (spg.getPropertySize(tag) != 3)
-            throw std::runtime_error(fmt::format("GridAttribute [{}] must have 3 channels!", tag.asString()));
+            throw std::runtime_error(fmt::format("GridAttribute [{}] must have 3 channels!", tag));
 
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
