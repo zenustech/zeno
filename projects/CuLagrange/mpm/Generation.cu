@@ -1444,7 +1444,7 @@ struct MakeZSLevelSet : INode {
             throw std::runtime_error(fmt::format("unknown levelset (grid) category [{}].", cateStr));
 
         zs::match([](const auto &lsPtr) {
-                using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
+            using spls_t = typename RM_CVREF_T(lsPtr)::element_type;
             if constexpr (zs::is_spls_v<typename RM_CVREF_T(lsPtr)::element_type>) {
                 fmt::print("levelset [{}] of dx [{}, {}], side_length [{}], block_size [{}]\n", spls_t::category,
                            1.f / lsPtr->_i2wSinv(0, 0), lsPtr->_grid.dx, spls_t::side_length, spls_t::block_size);
@@ -1641,7 +1641,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                              // dst[pi] = zspars.pack<3>(name, pi);
                              dst[pi] = zspars.pack<3>(name, pi);
                          });
-                std::string propName = prop.name.asString();
+                std::string propName = std::string(prop.name);
                 if (propName == "x")
                     propName = "pos";
                 else if (propName == "v")
@@ -1653,7 +1653,7 @@ struct ZSParticlesToPrimitiveObject : INode {
                 cudaExec(zs::range(size),
                          [zspars = zs::proxy<execspace_e::cuda>({}, zspars), dst = zs::proxy<execspace_e::cuda>(dst),
                           name = prop.name] __device__(size_t pi) mutable { dst[pi] = zspars(name, pi); });
-                copy(zs::mem_device, prim->add_attr<float>(prop.name.asString()).data(), dst.data(),
+                copy(zs::mem_device, prim->add_attr<float>(std::string(prop.name)).data(), dst.data(),
                      sizeof(float) * size);
             }
         }

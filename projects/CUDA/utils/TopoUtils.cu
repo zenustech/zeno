@@ -133,15 +133,15 @@ void update_surface_cell_normals(zs::CudaExecutionPolicy &pol, ZenoParticles::pa
     constexpr auto space = execspace_e::cuda;
 
     if (!verts.hasProperty(xTag))
-        throw std::runtime_error(fmt::format("missing property [{}] for vertex positions.", xTag.asString()));
+        throw std::runtime_error(fmt::format("missing property [{}] for vertex positions.", xTag));
     if (!tris.hasProperty("inds"))
         throw std::runtime_error("missing property [inds] for surface triangles.");
     if (!lines.hasProperty("fe_inds") || !lines.hasProperty("inds"))
         throw std::runtime_error("missing property [fe_inds]/[inds] for surface edges.");
     if (!tris.hasProperty(triNrmTag))
-        throw std::runtime_error(fmt::format("missing property [{}] for surface triangles.", triNrmTag.asString()));
+        throw std::runtime_error(fmt::format("missing property [{}] for surface triangles.", triNrmTag));
     if (!lines.hasProperty(biNrmTag))
-        throw std::runtime_error(fmt::format("missing property [{}] for surface edges.", biNrmTag.asString()));
+        throw std::runtime_error(fmt::format("missing property [{}] for surface edges.", biNrmTag));
 
     pol(range(tris.size()), [verts = proxy<space>(verts), xOffset = verts.getPropertyOffset(xTag), vOffset = vOffset,
                              tris = proxy<space>({}, tris), triNrmTag] ZS_LAMBDA(int ti) mutable {

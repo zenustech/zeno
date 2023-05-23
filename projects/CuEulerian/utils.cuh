@@ -95,7 +95,7 @@ inline T reduce(zs::CudaExecutionPolicy &cudaPol, const zs::Vector<T> &res, Op o
 }
 
 inline auto src_tag(ZenoSparseGrid *spg, zs::SmallString attr_) {
-    std::string attr = attr_.asString();
+    std::string attr = std::string(attr_);
     std::string metaTag = attr + "_cur";
     if (spg->hasMeta(metaTag)) {
         int cur = spg->readMeta<int>(metaTag);
@@ -108,7 +108,7 @@ inline auto src_tag(std::shared_ptr<ZenoSparseGrid> spg, zs::SmallString attr_) 
 }
 
 inline auto dst_tag(ZenoSparseGrid *spg, zs::SmallString attr_) {
-    std::string attr = attr_.asString();
+    std::string attr = std::string(attr_);
     std::string metaTag = attr + "_cur";
     if (spg->hasMeta(metaTag)) {
         int cur = spg->readMeta<int>(metaTag);
@@ -122,7 +122,7 @@ inline auto dst_tag(std::shared_ptr<ZenoSparseGrid> spg, zs::SmallString attr_) 
 }
 
 inline void update_cur(ZenoSparseGrid *spg, zs::SmallString attr_) {
-    std::string attr = attr_.asString();
+    std::string attr = std::string(attr_);
     std::string metaTag = attr + "_cur";
     if (spg->hasMeta(metaTag)) {
         int &cur = spg->readMeta<int &>(metaTag);
