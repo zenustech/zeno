@@ -1816,7 +1816,6 @@ struct HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
@@ -1824,38 +1823,56 @@ struct HF_maskByFeature : INode {
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int idx = Pos2Idx(id_x, id_z, nx);
-                int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
+                int idx_xl, idx_xr, idx_zl, idx_zr;
+                int scale_x = 0;
+                int scale_z = 0;
 
                 if (id_x == 0) {
                     idx_xl = idx;
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 1;
+                    scale_x = 1;
                 } else if (id_x == nx - 1) {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = idx;
-                    scale = 1;
+                    scale_x = 1;
                 } else {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 2;
+                    scale_x = 2;
                 }
 
                 if (id_z == 0) {
                     idx_zl = idx;
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 1;
-                } else if (id_x == nz - 1) {
+                    scale_z = 1;
+                } else if (id_z == nz - 1) {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = idx;
-                    scale = 1;
+                    scale_z = 1;
                 } else {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 2;
+                    scale_z = 2;
                 }
 
-                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
-                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+                // debug
+//                if(id_x >= 570 && id_z >= 570)
+//                {
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                    printf("nx = %i, nz = %i\n", nx, nz);
+//                    printf("id_x = %i, id_z = %i\n", id_x, id_z);
+//                    printf("scale_x = %i, scale_z = %i, cellSize = %f\n", scale_x, scale_z, cellSize);
+//                    printf("-------------------\n");
+//                    printf("idx_xr = %i, idx_xl = %i\n", idx_xr, idx_xl);
+//                    printf("idx_zr = %i, idx_zl = %i\n", idx_zr, idx_zl);
+//                    printf("-------------------\n");
+//                    //printf("height[idx_xr] = %f, height[idx_xl] = %f\n", height[idx_xr], height[idx_xl]);
+//                    //printf("height[idx_zr] = %f, height[idx_zl] = %f\n", height[idx_zr], height[idx_zl]);
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                }
+
+                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (float(scale_x) * cellSize);
+                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (float(scale_z) * cellSize);
 
                 vec3f dx = normalizeSafe(vec3f(1, 0, _grad[idx][0]));
                 vec3f dy = normalizeSafe(vec3f(0, 1, _grad[idx][2]));
@@ -1895,7 +1912,7 @@ struct HF_maskByFeature : INode {
                 }
             }
         }
-
+        terrain->verts.erase_attr("_grad");
         set_output("HeightField", std::move(terrain));
     }
 };
