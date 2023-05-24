@@ -932,7 +932,7 @@ void ZenoPropPanel::setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &k
         bool visible = keys.contains(key);
         getDelfCurveData(newVal[key], vec.at(i), visible, key);
     }
-    updateRange(newVal);
+
     AppHelper::socketEditFinished(QVariant::fromValue(newVal), m_idx, ctrl.m_viewIdx);
     updateTimelineKeys(newVal);
 }
@@ -1029,6 +1029,8 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
         AppHelper::socketEditFinished(newVal, m_idx, ctrl.m_viewIdx);
     });
     CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
+    if (curves.size() > 1)
+        updateRange(curves);
     pEditor->setAttribute(Qt::WA_DeleteOnClose);
     pEditor->addCurves(curves);
     pEditor->exec();
