@@ -181,6 +181,12 @@ struct TrianglesWrangle : zeno::INode {
                         parvals.push_back(v);
                         parnames.emplace_back(key, 0);
                         return 1;
+                    } else if constexpr (std::is_convertible_v<T, vec2f>) {
+                        parvals.push_back(v[0]);
+                        parvals.push_back(v[1]);
+                        parnames.emplace_back(key, 0);
+                        parnames.emplace_back(key, 1);
+                        return 2;
                     } else {
                         printf("invalid parameter type encountered: `%s`\n",
                                 typeid(T).name());
@@ -205,9 +211,9 @@ struct TrianglesWrangle : zeno::INode {
 	    }
             auto key = name.substr(1);
             if (dim == 3) {
-                tris.add_attr<zeno::vec3f>(key);
+                tris.template add_attr<zeno::vec3f>(key);
             } else if (dim == 1) {
-                tris.add_attr<float>(key);
+                tris.template add_attr<float>(key);
             } else {
                 err_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
@@ -258,7 +264,6 @@ ZENDEFNODE(TrianglesWrangle, {
     {{"PrimitiveObject", "prim"},
      {"string", "zfxCode"}, {"DictObject:NumericObject", "params"},
      {"enum points lines tris quads loops polys", "faceType", "tris"}},
-    },
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},

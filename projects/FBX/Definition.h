@@ -58,11 +58,14 @@ struct SFBXReadOption {
     bool enableUDIM = false;
     bool generate = false;
     bool triangulate = false;
+    bool printTree = false;
+    std::string hintPath = "";
 };
 
 struct SFBXEvalOption {
     bool writeData = false;
     bool interAnimData = false;
+    bool printAnimData = false;
     float globalScale = 1.0f;
 };
 
@@ -415,8 +418,9 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         return tl;
     }
 
-    std::vector<std::string> getSimplestTexList(){
-        std::vector<std::string> tl;
+    void getSimplestTexList(std::vector<std::string>& texList, std::map<std::string, int>& texMap){
+        texList.clear();
+        texMap.clear();
 
         std::map<std::string, SMaterialProp> val_tmp;
         val_tmp.emplace("basecolor", val["basecolor"]);                             //0
@@ -450,11 +454,11 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
 
                       return l.first < r.first;
                   });
-        for (auto const &p: val_vec_tmp) {
-            tl.emplace_back(p.second.texPath);
+        for (int i=0; i<val_vec_tmp.size(); i++) {
+            auto& p = val_vec_tmp[i];
+            texList.emplace_back(p.second.texPath);
+            texMap[p.first] = i;
         }
-
-        return tl;
     }
 
     aiColor4D testColor;
@@ -595,25 +599,33 @@ struct IMatData : zeno::IObjectClone<IMatData>{
 
 struct Helper{
     static void printAiMatrix(aiMatrix4x4 m, bool transpose = false){
-        zeno::log_info("    {: f} {: f} {: f} {: f}", m.a1, m.a2, m.a3, m.a4);
-        zeno::log_info("    {: f} {: f} {: f} {: f}", m.b1, m.b2, m.b3, m.b4);
-        zeno::log_info("    {: f} {: f} {: f} {: f}", m.c1, m.c2, m.c3, m.c4);
-        zeno::log_info("    {: f} {: f} {: f} {: f}", m.d1, m.d2, m.d3, m.d4);
+
+        std::cout.precision(2);
+        std::cout << std::fixed;
+        std::cout << " ("<<m[0][0]<<","<<m[0][1]<<","<<m[0][2]<<","<<m[0][3]<<", "
+                         <<m[1][0]<<","<<m[1][1]<<","<<m[1][2]<<","<<m[1][3]<<", "
+                         <<m[2][0]<<","<<m[2][1]<<","<<m[2][2]<<","<<m[2][3]<<", "
+                         <<m[3][0]<<","<<m[3][1]<<","<<m[3][2]<<","<<m[3][3]
+                         <<")\n";
 
         aiVector3t<float> trans;
         aiQuaterniont<float> rotate;
         aiVector3t<float> scale;
         m.Decompose(scale, rotate, trans);
-        zeno::log_info("    T {: f} {: f} {: f}", trans.x, trans.y, trans.z);
-        zeno::log_info("    R {: f} {: f} {: f} {: f}", rotate.x, rotate.y, rotate.z, rotate.w);
-        zeno::log_info("    S {: f} {: f} {: f}", scale.x, scale.y, scale.z);
+        std::cout << std::fixed;
+        std::cout << " T ("<<trans.x<<","<<trans.y<<","<<trans.z<<")"
+                  << " R ("<<rotate.x<<","<<rotate.y<<","<<rotate.z<<","<<rotate.w<<")"
+                  << " S ("<<scale.x<<","<<scale.y<<","<<scale.z<<")"
+                <<")\n";
 
         aiMatrix3x3 r = rotate.GetMatrix();
         if (transpose)
             r = rotate.GetMatrix().Transpose();
-        zeno::log_info("    {: f} {: f} {: f}", r.a1, r.a2, r.a3);
-        zeno::log_info("    {: f} {: f} {: f}", r.b1, r.b2, r.b3);
-        zeno::log_info("    {: f} {: f} {: f}", r.c1, r.c2, r.c3);
+        std::cout << std::fixed;
+        std::cout << " ("<<r[0][0]<<","<<r[0][1]<<","<<r[0][2]<<", "
+                         <<r[1][0]<<","<<r[1][1]<<","<<r[1][2]<<", "
+                         <<r[2][0]<<","<<r[2][1]<<","<<r[2][2]
+                         <<")\n";
     }
 
     static void printNodeTree(NodeTree *root, int space){
@@ -625,8 +637,14 @@ struct Helper{
             printNodeTree(&root->children[i], space);
         }
         for (int i = c; i < space; i++)
-            std::cout << "\t";
-        std::cout << root->name <<"\n";
+            std::cout << " ";
+        auto t = root->transformation;
+        std::cout.precision(2);
+        std::cout << root->name <<" ("<<t[0][0]<<","<<t[0][1]<<","<<t[0][2]<<","<<t[0][3]<<", "
+                                      <<t[1][0]<<","<<t[1][1]<<","<<t[1][2]<<","<<t[1][3]<<", "
+                                      <<t[2][0]<<","<<t[2][1]<<","<<t[2][2]<<","<<t[2][3]<<", "
+                                      <<t[3][0]<<","<<t[3][1]<<","<<t[3][2]<<","<<t[3][3]
+                                <<")\n";
     }
 
     static std::vector<std::string> splitStr(std::string str, char c){

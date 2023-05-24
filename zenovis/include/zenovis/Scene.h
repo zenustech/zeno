@@ -41,6 +41,7 @@ struct Scene : zeno::disable_copy {
     bool cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius);
     static void loadGLAPI(void *procaddr);
     std::vector<float> getCameraProp();
+    void* getOptixImg(int &w, int &h);
 };
 
 } // namespace zenovis

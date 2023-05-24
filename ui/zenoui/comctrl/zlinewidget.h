@@ -10,5 +10,12 @@ public:
 	ZLineWidget(bool bHorizontal, const QColor& clr, QWidget* parent = nullptr);
 };
 
+class ZPlainLine : public QWidget
+{
+	Q_OBJECT
+public:
+	ZPlainLine(QWidget* parent = nullptr);
+	explicit ZPlainLine(int lineWidth, const QColor& clr, QWidget* parent = nullptr);
+};
 
 #endif

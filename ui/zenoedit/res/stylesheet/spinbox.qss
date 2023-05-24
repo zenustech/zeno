@@ -2,7 +2,8 @@ QSpinBox {
     border: 0.5px solid rgba(0,0,0,1);
 	background: #17171A;
 	color: #FFFFFF;
-	font: 10px "HarmonyOS Sans";
+	font-size: 10px;
+    font-weight: 500;
     padding-right: 0px;
 }
 
@@ -24,4 +25,96 @@ QSpinBox::down-button:hover
 QSpinBox::up-button:hover
 {
 	image: url(:/icons/spinbox-upbutton-hover.svg);
+}
+
+QSpinBox[cssClass = "control"] 
+{
+    background: #191D21;
+    height: 28px;
+    color: #C3D2DF;
+	font-size: 14px;
+    font-weight: 500;
+	border:0;
+}
+   
+QSpinBox[cssClass = "control"]:focus{
+    border: 2px solid #4B9EF4;
+}
+                 
+QSpinBox[cssClass = "control"]::down-button  
+{
+    subcontrol-origin: margin;
+    subcontrol-position: center left;
+    image: url(:/icons/leftArrow.svg);
+    background-color: #191D21;
+    height: 20px;
+    width: 20px;
+    margin-left:2px;
+}
+                    
+QSpinBox[cssClass = "control"]::down-button:hover 
+{
+    image: url(:/icons/leftArrow-on.svg);
+}
+                    
+QSpinBox[cssClass = "control"]::up-button  
+{
+     subcontrol-origin: margin;
+     subcontrol-position: center right;
+     image: url(:/icons/rightArrow.svg);
+     background-color: #191D21;
+     height: 20px;
+     width: 20px;
+     margin-right:2px;
+}
+  
+QSpinBox[cssClass = "control"]::up-button:hover 
+{
+     image: url(:/icons/rightArrow-on.svg);
+}
+                
+QDoubleSpinBox
+{
+    background: #191D21;
+    height: 28px;
+    color: #C3D2DF;
+    font-size: 14px;
+    font-weight: 500;
+    border:0;
+}
+   
+QDoubleSpinBox:focus{
+    border: 2px solid #4B9EF4;
+}
+                 
+QDoubleSpinBox::down-button  
+{
+    subcontrol-origin: margin;
+    subcontrol-position: center left;
+    image: url(:/icons/leftArrow.svg);
+    background-color: #191D21;
+    height: 20px;
+    width: 20px;
+    margin-left:2px;
+}
+                    
+QDoubleSpinBox::down-button:hover 
+{
+    image: url(:/icons/leftArrow-on.svg);
+}
+                    
+QDoubleSpinBox::up-button  
+{
+     subcontrol-origin: margin;
+     subcontrol-position: center right;
+     image: url(:/icons/rightArrow.svg);
+     background-color: #191D21;
+     height: 20px;
+     width: 20px;
+     margin-right:2px;
+}
+                    
+QDoubleSpinBox::up-button:hover 
+{
+     image: url(:/icons/rightArrow-on.svg);
 }

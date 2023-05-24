@@ -1,6 +1,7 @@
 #include "picker.h"
 #include "zenoapplication.h"
 #include "zenomainwindow.h"
+#include "viewport/viewportwidget.h"
 
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/modelrole.h>
@@ -16,6 +17,10 @@
 #include <regex>
 #include <utility>
 
+using std::string;
+using std::unordered_map;
+using std::unordered_set;
+using std::function;
 namespace zeno {
 
 //void Picker::pickWithRay(QVector3D ray_ori, QVector3D ray_dir,
@@ -75,8 +80,30 @@ namespace zeno {
 //    onPrimitiveSelected();
 //}
 
+Picker::Picker(ViewportWidget *pViewport) 
+    : select_mode_context(-1)
+    , m_pViewport(pViewport)
+    , draw_mode(false)
+{
+}
+
+void Picker::initialize()
+{
+    auto scene = this->scene();
+    ZASSERT_EXIT(scene);
+    picker = zenovis::makeFrameBufferPicker(scene);
+}
+
+zenovis::Scene* Picker::scene() const
+{
+    auto sess = m_pViewport->getSession();
+    ZASSERT_EXIT(sess, nullptr);
+    return sess->get_scene();
+}
+
 void Picker::pick(int x, int y) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto scene = this->scene();
+    ZASSERT_EXIT(scene);
     // qDebug() << scene->select_mode;
     // scene->select_mode = zenovis::PICK_MESH;
     auto selected = picker->getPicked(x, y);
@@ -119,7 +146,8 @@ void Picker::pick(int x, int y) {
 }
 
 void Picker::pick(int x0, int y0, int x1, int y1) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto scene = this->scene();
+    ZASSERT_EXIT(scene);
     auto selected = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "pick: " << selected.c_str();
     if (scene->select_mode == zenovis::PICK_OBJECT) {
@@ -131,12 +159,20 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
     }
 }
 
+void Picker::pick_depth(int x, int y) {
+    auto depth = picker->getDepth(x, y);
+    picked_depth_callback(depth, x, y);
+    qDebug() << "picker: " << depth;
+}
+
 void Picker::add(const string& prim_name) {
     selected_prims.insert(prim_name);
 }
 
 string Picker::just_pick_prim(int x, int y) {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto scene = this->scene();
+    ZASSERT_EXIT(scene, "");
+
     auto store_mode = scene->select_mode;
     scene->select_mode = zenovis::PICK_OBJECT;
     auto res = picker->getPicked(x, y);
@@ -145,7 +181,9 @@ string Picker::just_pick_prim(int x, int y) {
 }
 
 void Picker::sync_to_scene() {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto scene = this->scene();
+    ZASSERT_EXIT(scene);
+
     scene->selected.clear();
     for (const auto& s : selected_prims)
         scene->selected.insert(s);
@@ -204,7 +242,9 @@ string Picker::save_to_str(int mode) {
 }
 
 void Picker::save_context() {
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+    auto scene = this->scene();
+    ZASSERT_EXIT(scene);
+
     select_mode_context = scene->select_mode;
     selected_prims_context = std::move(selected_prims);
     selected_elements_context = std::move(selected_elements);
@@ -212,7 +252,10 @@ void Picker::save_context() {
 
 void Picker::load_context() {
     if (select_mode_context < 0) return;
-    auto scene = Zenovis::GetInstance().getSession()->get_scene();
+
+    auto scene = this->scene();
+    ZASSERT_EXIT(scene);
+
     scene->select_mode = select_mode_context;
     selected_prims = std::move(selected_prims_context);
     selected_elements = std::move(selected_elements_context);
@@ -229,8 +272,19 @@ void Picker::clear() {
     selected_elements.clear();
 }
 
+void Picker::set_picked_depth_callback(std::function<void(float, int, int)> callback) {
+    picked_depth_callback = std::move(callback);
+}
+
 void Picker::set_picked_elems_callback(function<void(unordered_map<string, unordered_set<int>>&)> callback) {
     picked_elems_callback = std::move(callback);
+}
+
+bool Picker::is_draw_mode() {
+    return draw_mode;
+}
+void Picker::switch_draw_mode() {
+    draw_mode = !draw_mode;
 }
 
 const unordered_set<string>& Picker::get_picked_prims() {

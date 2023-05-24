@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24px" height="20px" viewBox="0 0 24 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>ic/nodeToolbar/subnetManager/selected</title>
+    <g id="Symbol" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="ic/nodeToolbar/subnetManager/selected">
+            <rect id="矩形" x="0" y="0" width="24" height="20"></rect>
+            <g id="icon_package" transform="translate(4.000000, 2.000000)" fill-rule="nonzero">
+                <rect id="矩形" fill="#000000" opacity="0" x="0" y="0" width="16" height="16"></rect>
+                <path d="M7.5,4.99402786 L1,4.99402786 L1.7605,2.7120317 C1.90345068,2.28312338 2.30489689,1.99387262 2.757,1.99402786 L7.5,1.99402786 L7.5,4.99402786 Z M15,4.9940317 L8.5,4.9940317 L8.5,1.9940317 L13.243,1.9940317 C13.6949191,1.99408788 14.0961075,2.283298 14.239,2.7120317 L15,4.9940317 Z M15,5.9940317 L15,12.9559694 C15,13.5358684 14.529899,14.0059694 13.95,14.0059694 L13.95,14.0059694 L2.05,14.0059694 C1.47010101,14.0059694 1,13.5358684 1,12.9559694 L1,12.9559694 L1,5.9940317 L15,5.9940317 Z M7.28921876,11.3868726 L2.45288338,11.3868726 L2.45288338,12.4674992 L7.28921876,12.4674992 L7.28921876,11.3868726 Z" id="形状" fill="#DFE2E5"></path>
+            </g>
+        </g>
+    </g>
+</svg>

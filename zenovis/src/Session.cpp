@@ -103,7 +103,7 @@ void Session::do_screenshot(std::string path, std::string type) {
     ud.set2("optix_image_path", path);
     std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
 
-    if (!ud.has("optix_image_path")) {
+    if (!ud.has("optix_image_path") || pixels.empty()) {
         return;
     }
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);

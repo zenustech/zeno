@@ -9,15 +9,36 @@ namespace zeno {
 struct MakePrimitive : zeno::INode {
   virtual void apply() override {
     auto prim = std::make_shared<PrimitiveObject>();
-    auto size = get_input<NumericObject>("size")->get<int>();
-    prim->resize(size);
+    int size = get_input<NumericObject>("size")->get<int>();
+    if (size == 0) {
+        auto points = get_input<StringObject>("points")->get();
+        std::string num;
+        zeno::vec3f vert;
+        int idx = 0;
+        for (auto c : points) {
+            if (c == ' ') {
+                vert[idx++] = std::stof(num);
+                if (idx == 3) {
+                    idx = 0;
+                    prim->verts.push_back(vert);
+                }
+                num = "";
+            }
+            else
+                num.push_back(c);
+        }
+    }
+    else {
+        prim->resize(size);
+    }
     set_output("prim", std::move(prim));
   }
 };
 
 ZENDEFNODE(MakePrimitive,
     { /* inputs: */ {
-    {"int", "size", ""},
+    {"int", "size", "0"},
+    {"string", "points", ""},
     }, /* outputs: */ {
     "prim",
     }, /* params: */ {

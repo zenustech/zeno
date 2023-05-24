@@ -2,6 +2,7 @@
 #include "common_id.h"
 #include <stdexcept>
 #include <zenoui/style/zenostyle.h>
+#include <zenoedit/zenoapplication.h>
 
 ZtfUtil& ZtfUtil::GetInstance()
 {
@@ -456,12 +457,18 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.socketVMargin = ZenoStyle::dpiScaled(param.socketVMargin);
 
     //todo: parameterized.
-    param.nameFont = QFont("HarmonyOS Sans", 13);
+    QFont font = zenoApp->font();
+    font.setPointSize(13);
+
+    param.nameFont = font;
     param.nameFont.setBold(true);
-    param.socketFont = QFont("HarmonyOS Sans", 11);
-    param.socketFont.setBold(true);
-    param.paramFont = QFont("HarmonyOS Sans", 11);
-    param.paramFont.setBold(true);
+
+    font.setPointSize(11);
+    font.setWeight(QFont::DemiBold);
+    param.socketFont = font;
+
+    font.setPointSize(13);
+    param.paramFont = font;
 
     QColor clr(226, 226, 226);
     //clr.setAlphaF(0.4);
@@ -471,12 +478,14 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     clr.setAlphaF(0.7);
     param.paramClr = clr;
 
-    param.boardFont = QFont("Consolas", 17);
+    font.setPointSize(17);
+    param.boardFont = font;
     param.boardTextClr = QColor(255, 255, 255);
 
-    param.lineEditParam.font = QFont("HarmonyOS Sans SC", 10);
+    font.setPointSize(10);
+    param.lineEditParam.font = font;
     QPalette palette;
-    palette.setColor(QPalette::Base, QColor(37, 37, 37));
+    palette.setColor(QPalette::Base, QColor(25, 29, 33));
     //palette.setColor(QPalette::Active, QPalette::WindowText, QColor(228, 228, 228));
     //palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor(158, 158, 158));
     clr = QColor(255, 255, 255);
@@ -485,14 +494,15 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.lineEditParam.palette = palette;
     param.lineEditParam.margins = QMargins(ZenoStyle::dpiScaled(8), 0, 0, 0);
 
-    param.comboboxParam.font = QFont("HarmonyOS Sans SC", 13);
+    font.setPointSize(13);
+    param.comboboxParam.font = font;
     param.comboboxParam.textColor = QColor(255, 255, 255);
     param.comboboxParam.itemBgNormal = QColor(58, 58, 58);
     param.comboboxParam.itemBgHovered = QColor(23, 160, 252);
     param.comboboxParam.itemBgSelected = QColor(23, 160, 252);
     param.comboboxParam.margins = QMargins(ZenoStyle::dpiScaled(8), 0, 0, 0);
-    palette.setColor(QPalette::Base, QColor(37, 37, 37));
-    palette.setColor(QPalette::Window, QColor(37, 37, 37));
+    palette.setColor(QPalette::Base, QColor(25, 29, 33));
+    palette.setColor(QPalette::Window, QColor(25, 29, 33));
     palette.setColor(QPalette::Text, Qt::white);
     palette.setColor(QPalette::Active, QPalette::WindowText, QColor());
     palette.setColor(QPalette::Inactive, QPalette::WindowText, QColor());

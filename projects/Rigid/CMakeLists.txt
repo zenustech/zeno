@@ -8,6 +8,12 @@ add_subdirectory(bullet3)
 add_subdirectory(bullet3/HACD)
 
 file (GLOB ZEN_RIGID_SOURCE *.cpp *.h)
+
+list (REMOVE_ITEM ZEN_RIGID_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/RigidFracture.cpp)
+if (ZENO_WITH_CUDA)
+    list (APPEND ZEN_RIGID_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/RigidFracture.cpp)
+endif(ZENO_WITH_CUDA)
+
 target_sources(zeno PRIVATE ${ZEN_RIGID_SOURCE})
 zeno_disable_warning(${ZEN_RIGID_SOURCE})
 target_include_directories(zeno PRIVATE .)

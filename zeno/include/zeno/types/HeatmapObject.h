@@ -31,6 +31,7 @@ namespace zeno {
     void primSampleTexture(
         std::shared_ptr<PrimitiveObject> prim,
         const std::string &srcChannel,
+        const std::string &srcSource,
         const std::string &dstChannel,
         std::shared_ptr<PrimitiveObject> img,
         const std::string &wrap,

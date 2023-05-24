@@ -12,6 +12,7 @@
 #include <zenovis/opengl/buffer.h>
 #include <zenovis/opengl/common.h>
 #include <zenovis/opengl/scope.h>
+#include "../xinxinoptix/xinxinoptixapi.h"
 #include <cstdlib>
 #include <map>
 
@@ -32,8 +33,10 @@ Scene::Scene()
       objectsMan(std::make_unique<ObjectsManager>()),
       renderMan(std::make_unique<RenderManager>(this)) {
 
+    /* gl has been removed from optix scene.
     auto version = (const char *)glGetString(GL_VERSION);
     zeno::log_info("OpenGL version: {}", version ? version : "(null)");
+    */
 
     if (zeno::envconfig::get("OPTX"))
         switchRenderEngine("optx");
@@ -45,6 +48,15 @@ Scene::Scene()
 
 void Scene::switchRenderEngine(std::string const &name) {
     renderMan->switchDefaultEngine(name);
+}
+
+void* Scene::getOptixImg(int& w, int& h)
+{
+#ifdef ZENO_ENABLE_OPTIX
+    return xinxinoptix::optixgetimg(w, h);
+#else
+    return nullptr;
+#endif
 }
 
 std::vector<float> Scene::getCameraProp(){
@@ -100,9 +112,12 @@ bool Scene::loadFrameObjects(int frameid) {
 }
 
 void Scene::draw() {
-    //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-    CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
-    //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
+    if (renderMan->getDefaultEngineName() != "optx")
+    {
+        //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+        CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
+        //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
+    }
 
     zeno::log_trace("scene redraw {}x{}", camera->m_nx, camera->m_ny);
     renderMan->getEngine()->draw();
@@ -121,6 +136,13 @@ std::vector<char> Scene::record_frame_offline(int hdrSize, int rgbComps) {
         {3, GL_RGB},
         {4, GL_RGBA},
     }.at(rgbComps);
+
+    bool bOptix = renderMan->getDefaultEngineName() == "optx";
+    if (bOptix)
+    {
+        draw();
+        return std::vector<char>();
+    }
 
     std::vector<char> pixels(camera->m_nx * camera->m_ny * rgbComps * hdrSize);
 

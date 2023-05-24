@@ -50,6 +50,20 @@ target_sources(zeno PRIVATE
   fem/FastClothPipeline.cu
   fem/FastClothLinearSystem.cu
   fem/FastClothCollision.cu
+  fem/UpdateTargetFromMapping.cu 
+  fem/SetIsBCFromPrim.cu
+)
+
+# fem-rapid-cloth 
+target_sources(zeno PRIVATE 
+  fem/rapid_cloth/RapidCloth.cuh 
+  fem/rapid_cloth/RapidClothInit.cu
+  fem/rapid_cloth/RapidClothLinearSystem.cu
+  fem/rapid_cloth/RapidClothCollision.cu
+  fem/rapid_cloth/RapidClothPrimitives.cu
+  fem/rapid_cloth/RapidClothPipeline.cu 
+
+  fem/ZSParticlesConstraints.cu
 )
 
 # fem
@@ -59,9 +73,11 @@ target_sources(zeno PRIVATE
   fem/SolverLinearSystem.cu
   fem/SolverIPC.cu
 
+  fem/ipc/UnifiedPreconditioner.cu
   fem/ipc/UnifiedSolverInit.cu
   fem/ipc/UnifiedSolverPipeline.cu
   fem/ipc/UnifiedSolverLinearSystem.cu
+  fem/ipc/UnifiedSolverUtilities.cu
   fem/ipc/UnifiedSolverIPC.cu
 
   fem/BoundaryCondition.cu
@@ -70,19 +86,17 @@ target_sources(zeno PRIVATE
   # fem/Check.cu
   fem/Generation.cpp
 
-  # fem/test.cpp
-  # fem/QuasiStaticStepping.cu
-
-  # fem/FastQuasiStaticStepping.cu
-  fem/FleshQuasiStepping.cu
-
-  fem/FleshDynamicStepping.cu # CHECK THIS
+  # fem/FleshDynamicStepping.cu # CHECK THIS
   fem/collision_energy/vertex_face_collision.hpp
   fem/collision_energy/vertex_face_sqrt_collision.hpp
-  fem/collision_energy/edge_edge_collision.hpp
-  fem/collision_energy/edge_edge_sqrt_collition.hpp
+  # fem/collision_energy/edge_edge_collision.hpp
+  # fem/collision_energy/edge_edge_sqrt_collition.hpp
   fem/collision_energy/evaluate_collision.hpp
   fem/collision_energy/collision_utils.hpp
+  fem/TendonDynamicStepping.cu
+  # fem/FEMFleshDynamicFast.cu
+  # fem/StrainLimitRepulsion.cu
+  # fem/KinematicCollisionRepulsion.cu
 )
 
 # geometry
@@ -100,6 +114,7 @@ target_sources(zeno PRIVATE
   geometry/kernel/calculate_facet_normal.hpp
   geometry/kernel/calculate_bisector_normal.hpp
   geometry/kernel/tiled_vector_ops.hpp
+  geometry/kernel/intersection.hpp
   geometry/SolveLaplacian.cu
   geometry/VectorField.cu
   geometry/SetupSkinningWeight.cu
@@ -109,8 +124,12 @@ target_sources(zeno PRIVATE
   geometry/MeshIO.cu
   geometry/Jiggle.cu
   geometry/DeformationField.cu
-
-  geometry/CollisionVis.cu # CHECK THIS
+  # geometry/VectorField.cu
+  # geometry/CollisionVis.cu # CHECK THIS
   geometry/CalcSurfaceArea.cu
   geometry/MarkSurfaceTag.cu
+  geometry/SurfaceBinder.cu
+  geometry/MarkInversion.cu
+  geometry/Topology.cu
+  # geometry/MarkIntersection.cu # CHECK THIS
 )

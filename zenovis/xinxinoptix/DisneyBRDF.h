@@ -16,7 +16,8 @@ static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
 }
 static __inline__ __device__ float fresnelSchlick(float r0, float radians)
 {
-    return mix(1.0f, fresnel(radians), r0);
+    //previous : mix(1.0, fresnel(radians), r0); //wrong
+    return mix(fresnel(radians), 1.0, r0); //giving: (1 - r0) * pow(radians, 5) + r0, consistant with line 15
 }
 static __inline__ __device__ float SchlickWeight(float u)
 {
@@ -78,7 +79,7 @@ static __inline__ __device__  float GGX(float cosT, float a){
 
 static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
 {
-    float2 xy = sobolRnd2(seed);
+    float2 xy = {rnd(seed), rnd(seed)};
     const float x = xy.x;
     const float y = xy.y;
 

@@ -1,6 +1,8 @@
 #include "ztoolbar.h"
 #include <comctrl/ztoolbutton.h>
 #include <comctrl/zobjectbutton.h>
+#include <zenoui/style/zenostyle.h>
+#include "zenoapplication.h"
 
 
 ZShapeBar::ZShapeBar(QWidget* parent)
@@ -69,4 +71,22 @@ ZToolbar::ZToolbar(QWidget* parent)
     pLayout->addWidget(new ZMiniToolButton(QIcon(":/icons/magnet_point.png")));
     pLayout->addStretch();
     setLayout(pLayout);
+}
+
+
+FakeToolbar::FakeToolbar(bool bHor, QWidget *parent)
+    : QToolBar(parent)
+{
+    setMovable(false);
+    int w = zenoApp->style()->pixelMetric(QStyle::PM_DockWidgetSeparatorExtent);
+    if (bHor)
+        setFixedHeight(w);
+    else
+        setFixedWidth(w);
+}
+
+void FakeToolbar::paintEvent(QPaintEvent* event)
+{
+    QPainter painter(this);
+    painter.fillRect(event->rect(), QColor("#191D21"));
 }

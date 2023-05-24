@@ -18,6 +18,8 @@ namespace zeno
         std::string common;
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
+        std::vector<std::pair<std::string, std::string>> tex3Ds;
+        std::string transform;
         std::string mtlidkey;  // unused for now
 
         size_t serializeSize() const
@@ -41,8 +43,8 @@ namespace zeno
             size += commonLen;
 
             auto extensionsLen{extensions.size()};
-            size += sizeof(fragLen);
-            size += fragLen;
+            size += sizeof(extensionsLen);
+            size += extensionsLen;
 
             auto tex2DsSize{tex2Ds.size()};
             size += sizeof(tex2DsSize);
@@ -52,6 +54,26 @@ namespace zeno
                 size += sizeof(tex2DStrSize);
                 size += tex2DStrSize;
             }
+
+            auto tex3DsCount {tex3Ds.size()};
+            size += sizeof(tex3DsCount);
+
+            for (const auto &tex3D : tex3Ds) {
+                auto& key = tex3D.first;
+                auto& value = tex3D.second;
+
+                auto key_len = key.length();
+                auto value_len = value.length();
+
+                size += sizeof(key_len);
+                size += key.length();
+                size += sizeof(value_len);
+                size += value.length();
+            }
+
+            auto transformLen{transform.size()};
+            size += sizeof(transformLen);
+            size += transformLen;
 
             return size;
         }
@@ -109,6 +131,35 @@ namespace zeno
                 memcpy(str + i, tex2DStr.data(), tex2DStrSize);
                 i += tex2DStrSize;
             }
+
+            auto tex3DsCount {tex3Ds.size()};
+            memcpy(str + i, &tex3DsCount, sizeof(tex3DsCount));
+            i += sizeof(tex3DsCount);
+            
+            for (const auto &tex3D : tex3Ds) {
+                auto& key = tex3D.first;
+                auto& value = tex3D.second;
+
+                auto key_len = key.length();
+                auto value_len = value.length();
+
+                memcpy(str + i, &key_len, sizeof(key_len));
+                i += sizeof(key_len);
+                memcpy(str + i, key.c_str(), key_len);
+                i += key_len;
+
+                memcpy(str + i, &value_len, sizeof(value_len));
+                i += sizeof(value_len);
+                memcpy(str + i, value.c_str(), value_len);
+                i += value_len;
+            }
+
+            auto transformLen{transform.size()};
+            memcpy(str + i, &transformLen, sizeof(transformLen));
+            i += sizeof(transformLen);
+
+            transform.copy(str + i, transformLen);
+            i += transformLen;
         }
 
         std::vector<char> serialize() const
@@ -178,6 +229,42 @@ namespace zeno
                     Texture2DObject::deserialize(tex2DStr));
                 this->tex2Ds[j] = tex2D;
             }
+
+
+            size_t tex3DsCount;
+            memcpy(&tex3DsCount, str + i, sizeof(tex3DsCount));
+            i += sizeof(tex3DsCount);
+            this->tex3Ds.resize(tex3DsCount);
+            
+            for (size_t j=0; j < tex3DsCount; ++j) 
+            {
+                size_t key_len;
+                memcpy(&key_len, str + i, sizeof(key_len));
+                i += sizeof(key_len);
+                //std::vector<char> key_str;
+                //key_str.resize(key_len);
+                //memcpy(key_str.data(), str + i, key_len);
+                auto key = std::string{str + i, key_len};
+                i += key_len; 
+
+                size_t value_len;
+                memcpy(&value_len, str + i, sizeof(value_len));
+                i += sizeof(value_len);
+                //std::vector<char> value_str;
+                //value_str.resize(value_len);
+                //memcpy(value_str.data(), str + i, value_len);
+                auto value = std::string{str + i, value_len};
+                i += value_len; 
+
+                this->tex3Ds[j] = std::make_pair(key, value);;
+            }
+
+            size_t transformLen;
+            memcpy(&transformLen, str + i, sizeof(transformLen));
+            i += sizeof(transformLen);
+
+            this->transform = std::string{str + i, transformLen};
+            i += transformLen;
         }
 
         static MaterialObject deserialize(const std::vector<char> &str)

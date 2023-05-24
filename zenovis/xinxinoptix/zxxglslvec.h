@@ -35,6 +35,13 @@ struct vec4{
 
 struct vec3{
     float x, y, z;
+
+    __forceinline__ __device__ float operator[](unsigned int index) const {
+        auto ptr= &this->x;
+        ptr += index;
+        return *ptr;
+    }
+
     __forceinline__ __device__ vec3(const float3 &_v)
     {
         x = _v.x;
@@ -954,6 +961,12 @@ __forceinline__ __device__ vec4 texture2D(cudaTextureObject_t texObj, vec2 uv)
     float4 res = tex2D<float4>(texObj, uv.x, uv.y);
     return vec4(res.x, res.y, res.z, res.w);
 }
+
+// __forceinline__ __device__ float textureSparse3D(nanovdb *aaa, vec3 pos)
+// {
+
+// }
+
 /////////////end of geometry math/////////////////////////////////////////////////
 
 ////////////matrix operator...////////////////////////////////////////////////////
@@ -1030,3 +1043,133 @@ __forceinline__ __device__ vec4 operator*(mat4 a, vec4 b)
 //__forceinline__ __device__ float4 glsltocuda(vec4 a) {
     //return make_float4(a.x, a.y, a.z, a.w);
 //}
+
+__forceinline__ __device__ vec3 normalmap(vec3 norm, float scale) {
+    norm = norm * 2 - 1;
+    float x = norm.x * scale;
+    float y = norm.y * scale;
+    float z = 1 - sqrt(x * x + y * y);
+    norm.x = x;
+    norm.y = y;
+    norm.z = z;
+    return norm;
+}
+
+__forceinline__ __device__ vec3 hsvToRgb(vec3 hsv) {
+    // Reference for this technique: Foley & van Dam
+    float h = hsv.x; float s = hsv.y; float v = hsv.z;
+    if (s < 0.0001f) {
+        return vec3 (v, v, v);
+    } else {
+        h = 6.0f * (h - floor(h));  // expand to [0..6)
+        int hi = int(trunc(h));
+        float f = h - float(hi);
+        float p = v * (1.0f-s);
+        float q = v * (1.0f-s*f);
+        float t = v * (1.0f-s*(1.0f-f));
+        if (hi == 0)
+            return vec3 (v, t, p);
+        else if (hi == 1)
+            return vec3 (q, v, p);
+        else if (hi == 2)
+            return vec3 (p, v, t);
+        else if (hi == 3)
+            return vec3 (p, q, v);
+        else if (hi == 4)
+            return vec3 (t, p, v);
+        return vec3 (v, p, q);
+    }
+}
+
+__forceinline__ __device__ vec3 rgbToHsv(vec3 c) {
+    // See Foley & van Dam
+    float r = c.x; float g = c.y; float b = c.z;
+    float mincomp = min (r, min(g, b));
+    float maxcomp = max (r, max(g, b));
+    float delta = maxcomp - mincomp;  // chroma
+    float h, s, v;
+    v = maxcomp;
+    if (maxcomp > 0.0f)
+        s = delta / maxcomp;
+    else s = 0.0f;
+    if (s <= 0.0f)
+        h = 0.0f;
+    else {
+        if      (r >= maxcomp) h = (g-b) / delta;
+        else if (g >= maxcomp) h = 2.0f + (b-r) / delta;
+        else                   h = 4.0f + (r-g) / delta;
+        h *= (1.0f/6.0f);
+        if (h < 0.0f)
+            h += 1.0f;
+    }
+    return vec3(h, s, v);
+}
+
+__forceinline__ __device__ vec2 convertTo2(float v) {
+    return vec2(v, v);
+}
+__forceinline__ __device__ vec2 convertTo2(vec2 v) {
+    return v;
+}
+__forceinline__ __device__ vec2 convertTo2(vec3 v) {
+    return vec2(v.x, v.y);
+}
+__forceinline__ __device__ vec2 convertTo2(vec4 v) {
+    return vec2(v.x, v.y);
+}
+
+__forceinline__ __device__ vec3 convertTo3(float v) {
+    return vec3(v, v, v);
+}
+__forceinline__ __device__ vec3 convertTo3(vec2 v) {
+    return vec3(v.x, v.y, 1);
+}
+__forceinline__ __device__ vec3 convertTo3(vec3 v) {
+    return v;
+}
+__forceinline__ __device__ vec3 convertTo3(vec4 v) {
+    return vec3(v.x, v.y, v.z);
+}
+
+__forceinline__ __device__ vec4 convertTo4(float v) {
+    return vec4(v, v, v, v);
+}
+__forceinline__ __device__ vec4 convertTo4(vec2 v) {
+    return vec4(v.x, v.y, 1, 1);
+}
+__forceinline__ __device__ vec4 convertTo4(vec3 v) {
+    return vec4(v.x, v.y, v.z, 1);
+}
+__forceinline__ __device__ vec4 convertTo4(vec4 v) {
+    return v;
+}
+
+__forceinline__ __device__ float luminance(vec3 c) {
+    return dot(c, vec3(0.2722287, 0.6740818, 0.0536895));
+}
+
+__forceinline__ __device__ float safepower(float in1, float in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+
+__forceinline__ __device__ vec2 safepower(vec2 in1, vec2 in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+__forceinline__ __device__ vec2 safepower(vec2 in1, float in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+
+__forceinline__ __device__ vec3 safepower(vec3 in1, vec3 in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+__forceinline__ __device__ vec3 safepower(vec3 in1, float in2) {
+    return sign(in1) * pow(abs(in1), in2);
+}
+
+__forceinline__ __device__ vec3 hsvAdjust(vec3 c, vec3 amount) {
+    vec3 hsv = rgbToHsv(c);
+    hsv.x = fract(hsv.x + amount.x);
+    hsv.y = hsv.y * amount.y;
+    hsv.z = hsv.z * amount.z;
+    return hsvToRgb(hsv);
+}

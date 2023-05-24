@@ -3,9 +3,13 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <random>
 #include <zeno/types/DummyObject.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/types/UserData.h>
+#include <zeno/utils/log.h>
 #include <zeno/utils/parallel_reduce.h>
 #include <zeno/utils/vec.h>
 #include <zeno/zeno.h>
@@ -27,7 +31,8 @@ constexpr auto warp_mask(int i, int n) noexcept {
     return zs::make_tuple(((unsigned)(1ull << k) - 1), k);
 }
 
-template <typename T, typename Op> __forceinline__ __device__ void reduce_to(int i, int n, T val, T &dst, Op op) {
+template <typename T, typename Op>
+__forceinline__ __device__ void reduce_to(int i, int n, T val, T &dst, Op op) {
     auto [mask, numValid] = warp_mask(i, n);
     __syncwarp(mask);
     auto locid = threadIdx.x & 31;
@@ -71,12 +76,14 @@ float prim_reduce(typename ZenoParticles::particles_t &verts, float e, TransOp t
 
 struct ZSPrimitiveReduction : zeno::INode {
     struct pass_on {
-        template <typename T> constexpr T operator()(T v) const noexcept {
+        template <typename T>
+        constexpr T operator()(T v) const noexcept {
             return v;
         }
     };
     struct getabs {
-        template <typename T> constexpr T operator()(T v) const noexcept {
+        template <typename T>
+        constexpr T operator()(T v) const noexcept {
             return zs::abs(v);
         }
     };
@@ -130,8 +137,8 @@ struct ZSGetUserData : zeno::INode {
     virtual void apply() override {
         auto object = get_input<ZenoParticles>("object");
         auto key = get_param<std::string>("key");
-        auto hasValue = object->userData().has(key);
-        auto data = hasValue ? object->userData().get(key) : std::make_shared<DummyObject>();
+        auto hasValue = object->zsUserData().has(key);
+        auto data = hasValue ? object->zsUserData().get(key) : std::make_shared<DummyObject>();
         set_output2("hasValue", hasValue);
         set_output("data", std::move(data));
     }

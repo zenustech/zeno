@@ -117,7 +117,7 @@ struct ProgramRunData {
         if (chkfail()) return;
         if (g_state == kQuiting) return;
 
-        session->globalComm->frameRange(graph->beginFrameNumber, graph->endFrameNumber);
+        session->globalComm->initFrameRange(graph->beginFrameNumber, graph->endFrameNumber);
         for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
             zeno::log_debug("begin frame {}", frame);
             session->globalState->frameid = frame;
@@ -239,7 +239,7 @@ void killProgramJSON()
 
 }
 
-void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame)
+void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
 	rapidjson::StringBuffer s;
 	RAPIDJSON_WRITER writer(s);
@@ -247,7 +247,7 @@ void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame)
         JsonArrayBatch batch(writer);
         JsonHelper::AddVariantList({"setBeginFrameNumber", beginFrame}, "int", writer);
         JsonHelper::AddVariantList({"setEndFrameNumber", endFrame}, "int", writer);
-        serializeScene(pModel, writer);
+        serializeScene(pModel, writer, applyLightAndCameraOnly, applyMaterialOnly);
     }
     std::string progJson(s.GetString());
 #ifdef DEBUG_SERIALIZE

@@ -71,6 +71,16 @@ public:
         return 1;
     }
 
+    void swap(int left, int right) {
+        FuckQPair lItem = mother[left];
+        mother[left] = mother[right];
+        mother[right] = lItem;
+    }
+
+    void move(int from, int to) {
+        mother.move(from, to);
+    }
+
     bool contains(const K &key) const { return std::find_if(mother.begin(), mother.end(), [&] (auto &&a) { return a.first == key; }) != mother.end(); }
     const K key(const T &value, const K &defaultKey = K()) const;
     const T value(const K &key, const T &defaultValue = T()) const;

@@ -9,6 +9,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 
+#include "zensim/container/Bcht.hpp"
+#include "kernel/tiled_vector_ops.hpp"
+
 #include <iostream>
 
 namespace zeno{
@@ -19,6 +22,18 @@ using vec4 = zs::vec<T,4>;
 using mat3 = zs::vec<T,3,3>;
 using mat4 = zs::vec<T,4,4>;
 
+
+// 给定一个四面网格与一组点，计算每个点在四面体网格单元中的质心坐标
+struct ZSComputeBaryCentricWeights2 : INode {
+    void apply() override {
+        using namespace zs;
+
+
+    }
+};
+
+
+
 struct ZSComputeBaryCentricWeights : INode {
     void apply() override {
         using namespace zs;
@@ -28,48 +43,48 @@ struct ZSComputeBaryCentricWeights : INode {
 
         auto zsvolume = get_input<ZenoParticles>("zsvolume");
         auto zssurf = get_input<ZenoParticles>("zssurf");
+        auto mark_embed_elm = get_input2<int>("mark_elm");
         // the bvh of zstets
         // auto lbvh = get_input<zeno::LBvh>("lbvh");
         auto thickness = get_param<float>("bvh_thickness");
         auto fitting_in = get_param<int>("fitting_in");
 
         auto bvh_channel = get_param<std::string>("bvh_channel");
-        auto tag = get_param<std::string>("tag");
+        auto tag = get_input2<std::string>("tag");
 
-        const auto& verts = zsvolume->getParticles();
-        const auto& eles = zsvolume->getQuadraturePoints();
+        auto& verts = zsvolume->getParticles();
+        auto& eles = zsvolume->getQuadraturePoints();
 
         const auto& everts = zssurf->getParticles();
-        const auto& e_eles = zssurf->getQuadraturePoints();
+        // const auto& e_eles = zssurf->getQuadraturePoints();
 
         auto &bcw = (*zsvolume)[tag];
-        bcw = typename ZenoParticles::particles_t({{"inds",1},{"w",4},{"cnorm",1}},everts.size(),zs::memsrc_e::device,0);
+
+        bcw = typename ZenoParticles::particles_t({
+            {"X",3},
+            {"inds",1},
+            {"w",4},
+            {"strength",1},
+            {"cnorm",1}},everts.size(),zs::memsrc_e::device,0);
+        
+
+        // auto topo_tag = tag + std::string("_topo");
+        // auto &bcw_topo = (*zsvolume)[topo_tag];
+
+        // auto e_dim = e_eles.getPropertySize("inds");
+        // bcw_topo = typename ZenoParticles::particles_t({{"inds",e_dim}},e_eles.size(),zs::memsrc_e::device,0);
+
 
         auto cudaExec = zs::cuda_exec();
         const auto numFEMVerts = verts.size();
         const auto numFEMEles = eles.size();
         const auto numEmbedVerts = bcw.size();
-        const auto numEmbedEles = e_eles.size();
+        // const auto numEmbedEles = e_eles.size();
         constexpr auto space = zs::execspace_e::cuda;
 
-        // fmt::print("TRY COMPUTE BARYCENTRIC WEIGHTS\n");
-
-        // std::cout << "TRY COMPUTE BARYCENTRIC WEIGHTS" << std::endl;
-
-
-        // cudaExec(zs::range(eles.size()),
-        //     [eles = proxy<space>({},eles)] __device__(int ei) mutable {
-        //         auto quad = eles.template pack<4>("inds", ei).template reinterpret_bits<int>();
-        //         if(quad[0] < 0 || quad[1] < 0 || quad[2] < 0 || quad[3] < 0)
-        //             printf("invalid quad : %d %d %d %d\n",quad[0],quad[1],quad[2],quad[3]);
-        //         if(quad[0] > 13572 || quad[1] > 13572 || quad[2] > 13572 || quad[3] > 13572)
-        //             printf("invalid quad : %d %d %d %d\n",quad[0],quad[1],quad[2],quad[3]);
-        // });
+        TILEVEC_OPS::copy<3>(cudaExec,everts,"x",bcw,"X");
 
         compute_barycentric_weights(cudaExec,verts,eles,everts,"x",bcw,"inds","w",thickness,fitting_in);
-        // set_output("zsvolume", zsvolume);return;
-
-        // fmt::print("FINISH COMPUTING BARYCENTRIC WEIGHTS\n");
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw),fitting_in] ZS_LAMBDA(int vi) mutable {
@@ -79,7 +94,13 @@ struct ZSComputeBaryCentricWeights : INode {
             }
         );
 
-        auto e_dim = e_eles.getPropertySize("inds");
+
+        // cudaExec(zs::range(e_eles.size()),[e_dim = e_dim,
+        //     e_eles = proxy<space>({},e_eles),bcw_topo = proxy<space>({},bcw_topo)] ZS_LAMBDA(int ei) mutable {
+        //         for(int i = 0;i != e_dim;++i)
+        //             bcw_topo("inds",i,ei) = e_eles("inds",i,ei);
+        // });
+
 
         cudaExec(zs::range(numEmbedVerts),
             [bcw = proxy<space>({},bcw)] ZS_LAMBDA (int vi) mutable {
@@ -94,41 +115,143 @@ struct ZSComputeBaryCentricWeights : INode {
                 nmEmbedVerts[ei] = (T)0.;
         });
 
-        if(e_dim !=3 && e_dim !=4) {
-            throw std::runtime_error("INVALID EMBEDDED PRIM TOPO");
+        // if(e_dim !=3 && e_dim !=4) {
+        //     throw std::runtime_error("INVALID EMBEDDED PRIM TOPO");
+        // }  
+
+        if(mark_embed_elm && everts.hasProperty("tag")){
+            eles.append_channels(cudaExec,{{"nmBones",1},{"bdw",1}});
+
+            cudaExec(zs::range(eles.size()),
+                [eles = proxy<space>({},eles)] ZS_LAMBDA(int elm_id) mutable{
+                    eles("nmBones",elm_id) = (T)0.0;
+                    eles("bdw",elm_id) = (T)1.0;
+            });  
+
+
+            auto nmBones = get_input2<int>("nmCpns");
+            using vec2i = zs::vec<int,2>;
+            using vec3i = zs::vec<int,3>;
+            bcht<vec2i, int, true, universal_hash<vec2i>, 32> ebtab{eles.get_allocator(), eles.size() * nmBones};
+            cudaExec(zs::range(bcw.size()),
+                [bcw = proxy<space>({},bcw),ebtab = proxy<space>(ebtab),everts = proxy<space>({},everts)] 
+                    ZS_LAMBDA(int vi) mutable{
+                        auto ei = reinterpret_bits<int>(bcw("inds",vi));
+                        if(ei < 0)
+                            return;
+                        else{
+                            int tag = (int)everts("tag",vi);
+                            ebtab.insert(vec2i{ei,tag});
+                        }
+            });
+
+            cudaExec(zs::range(eles.size()),
+                [eles = proxy<space>({},eles),ebtab = proxy<space>(ebtab),nmBones] ZS_LAMBDA(int ei) mutable {
+                    for(int i = 0;i != nmBones;++i) {
+                        auto res = ebtab.query(vec2i{ei,i});
+                        if(res < 0)
+                            continue;
+                        eles("nmBones",ei) += (T)1.0;
+                    }
+                    // if(eles("nmBones",ei) > 0)
+                        // printf("nmEmbedCmps[%d] : [%d]\n",ei,(int)eles("nmBones",ei));
+            });
+        }else {
+            eles.append_channels(cudaExec,{{"nmBones",1},{"bdw",1}});
+            cudaExec(zs::range(eles.size()),[
+                eles = proxy<space>({},eles)] ZS_LAMBDA(int ei) mutable {
+                    eles("bdw",ei) = (T)1.0;
+                    eles("nmBones",ei) = (T)1.0;
+            });
         }
 
         cudaExec(zs::range(bcw.size()),
-            [everts = proxy<space>({},everts),bcw = proxy<space>({},bcw),execTag = wrapv<space>{},nmEmbedVerts = proxy<space>(nmEmbedVerts)]
+            [everts = proxy<space>({},everts),
+                    bcw = proxy<space>({},bcw),
+                    execTag = wrapv<space>{},
+                    nmEmbedVerts = proxy<space>(nmEmbedVerts),
+                    eles = proxy<space>({},eles),
+                    verts = proxy<space>({},verts)]
                 ZS_LAMBDA (int vi) mutable {
                     using T = typename RM_CVREF_T(bcw)::value_type;
                     auto ei = reinterpret_bits<int>(bcw("inds",vi));
                     if(ei < 0)
                         return;
+                    auto tet = eles.pack(dim_c<3>,"inds",ei).reinterpret_bits(int_c);
                     atomic_add(execTag,&nmEmbedVerts[ei],(T)1.0);                  
         });
 
         cudaExec(zs::range(bcw.size()),
-            [bcw = proxy<space>({},bcw),nmEmbedVerts = proxy<space>(nmEmbedVerts)] 
+            [bcw = proxy<space>({},bcw),nmEmbedVerts = proxy<space>(nmEmbedVerts),eles = proxy<space>({},eles),everts = proxy<space>({},everts)] 
                 ZS_LAMBDA(int vi) mutable{
                     auto ei = reinterpret_bits<int>(bcw("inds",vi));
-                    if(ei < 0)
-                        bcw("cnorm",vi) = (T)0.0;
+                    if(everts.hasProperty("strength"))
+                        bcw("strength",vi) = everts("strength",vi);
                     else
-                        bcw("cnorm",vi) = (T)1.0/(T)nmEmbedVerts[ei];
+                        bcw("strength",vi) = (T)1.0;
+                    if(ei >= 0){
+                        auto alpha = (T)1.0/(T)nmEmbedVerts[ei];
+                        bcw("cnorm",vi) = (T)alpha;
+                        // if(eles("nmBones",ei) > (T)1.5)
+                        //     eles("bdw",ei) = (T)0.0;
+                    }
+
+                    // if(ei < 0 || eles("nmBones",ei) > (T)1.5){
+                    //     // bcw("strength",vi) = (T)0.0;
+                    //     bcw("cnorm",vi) = (T)0.0;
+                    //     if(ei >= 0)
+                    //         eles("bdw",ei) = (T)0.0;
+                    // }
+                    // else{
+
+                    //     // bcw("cnorm",vi) = (T)1.0;
+                    // }
         });
 
+        
+        // we might also do some smoothing on cnorm
 
         set_output("zsvolume", zsvolume);
     }
 };
 
-ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"}},
+ZENDEFNODE(ZSComputeBaryCentricWeights, {{{"interpolator","zsvolume"}, {"embed surf", "zssurf"},{"int","mark_elm","0"},{"int","nmCpns","1"},{"string","tag","skin"}},
                             {{"interpolator on gpu", "zsvolume"}},
-                            {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","tag","skin_bw"},{"string","bvh_channel","x"}},
+                            {{"float","bvh_thickness","0"},{"int","fitting_in","1"},{"string","bvh_channel","x"}},
                             {"ZSGeometry"}});
 
+struct VisualizeInterpolator : zeno::INode {
+    void apply() override {
+        using namespace zs;
+        auto zsvolume = get_input<ZenoParticles>("zsvolume");
+        auto tag = get_input2<std::string>("interpolator_name");
+        const auto& bcw = (*zsvolume)[tag].clone({zs::memsrc_e::host});
+        auto topo_tag = tag + std::string("_topo");
+        const auto &bcw_topo = (*zsvolume)[topo_tag].clone({zs::memsrc_e::host});
 
+        auto bcw_vis = std::make_shared<zeno::PrimitiveObject>();
+        bcw_vis->resize(bcw.size());
+        auto& bcw_X = bcw_vis->verts;
+        auto& bcw_cnorm = bcw_vis->add_attr<float>("cnorm");
+        auto& bcw_strength = bcw_vis->add_attr<float>("strength");
+
+        auto ompPol = omp_exec();  
+        constexpr auto omp_space = execspace_e::openmp;        
+        ompPol(zs::range(bcw.size()),
+            [&bcw_X,&bcw_cnorm,&bcw_strength,bcw = proxy<omp_space>({},bcw)] (int vi) mutable {
+                bcw_X[vi] = bcw.pack(dim_c<3>,"X",vi).to_array();
+                bcw_cnorm[vi] = bcw("cnorm",vi);
+                bcw_strength[vi] = bcw("strength",vi);
+        });
+
+        set_output("bcw_vis",std::move(bcw_vis));
+    }
+};
+
+ZENDEFNODE(VisualizeInterpolator, {{{"interpolator","zsvolume"},{"string","interpolator_name","skin"}},
+                            {{"visual bcw", "bcw_vis"}},
+                            {},
+                            {"ZSGeometry"}});
 
 struct ZSSampleEmbedVectorField : zeno::INode {
     void apply() override {
@@ -322,7 +445,7 @@ struct ZSInterpolateEmbedAttr : zeno::INode {
 
         auto srcAttr = get_param<std::string>("srcAttr");
         auto dstAttr = get_param<std::string>("dstAttr");
-        auto bcw_tag = get_param<std::string>("bcw_tag");
+        auto bcw_tag = get_input2<std::string>("bcw_tag");
         auto strategy = get_param<std::string>("strategy");
         const auto& bcw = (*source)[bcw_tag];
         auto& dest_pars = dest->getParticles();
@@ -378,12 +501,11 @@ struct ZSInterpolateEmbedAttr : zeno::INode {
 };
 
 
-ZENDEFNODE(ZSInterpolateEmbedAttr, {{{"source"}, {"dest"}},
+ZENDEFNODE(ZSInterpolateEmbedAttr, {{{"source"}, {"dest"},{"string","bcw_tag","skin_bw"}},
                             {{"dest"}},
                             {
                                 {"string","srcAttr","x"},
                                 {"string","dstAttr","x"},
-                                {"string","bcw_tag","skin_bw"},
                                 {"enum p2p q2p","strategy","p2p"}
 
                             },
@@ -484,12 +606,12 @@ struct ZSInterpolateEmbedPrim : zeno::INode {
                         auto idx = inds[i];
                         everts.tuple<3>(outAttr,vi) = everts.pack<3>(outAttr,vi) + w[i] * verts.pack<3>(inAttr, idx);
                     }
-#if 0
-                    if(vi == 100){
-                        auto vert = everts.pack<3>(outAttr,vi);
-                        printf("V<%d>->E<%d>(%f,%f,%f,%f) :\t%f\t%f\t%f\n",vi,ei,w[0],w[1],w[2],w[3],vert[0],vert[1],vert[2]);
-                    }
-#endif
+// #if 0
+//                     if(vi == 100){
+//                         auto vert = everts.pack<3>(outAttr,vi);
+//                         printf("V<%d>->E<%d>(%f,%f,%f,%f) :\t%f\t%f\t%f\n",vi,ei,w[0],w[1],w[2],w[3],vert[0],vert[1],vert[2]);
+//                     }
+// #endif
 
                 // }
         });

@@ -44,6 +44,7 @@ namespace curve_util
 	QModelIndex findUniqueItem(QAbstractItemModel* pModel, int role, QVariant value);
 	QPair<int, int> numframes(qreal scaleX, qreal scaleY);
 	CurveModel* deflModel(QObject* parent);
+	CURVES_DATA deflCurves();
 }
 
 #endif

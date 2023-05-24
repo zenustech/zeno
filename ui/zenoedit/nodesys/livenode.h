@@ -11,24 +11,11 @@ class LiveMeshNode : public ZenoNode
     ~LiveMeshNode();
 
   protected:
-    QGraphicsLinearLayout* initCustomParamWidgets() override;
+    ZGraphicsLayout* initCustomParamWidgets() override;
 
-  private slots:
+  public slots:
     void onSyncClicked();
-};
-
-class LiveCameraNode : public ZenoNode
-{
-    Q_OBJECT
-  public:
-    LiveCameraNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
-    ~LiveCameraNode();
-
-  protected:
-    QGraphicsLinearLayout* initCustomParamWidgets() override;
-
-  private slots:
-    void onSyncClicked();
+    void onCleanClicked();
 };
 
 #endif //ZENO_LIVENODE_H

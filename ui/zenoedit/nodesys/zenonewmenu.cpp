@@ -20,14 +20,16 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     m_searchEdit = new ZenoGvLineEdit;
     m_searchEdit->setAutoFillBackground(false);
     m_searchEdit->setTextMargins(QMargins(8, 0, 0, 0));
+    m_searchEdit->installEventFilter(this);
 
     QPalette palette;
-    palette.setColor(QPalette::Base, QColor(37, 37, 37));
+    palette.setColor(QPalette::Base, QColor(25, 29, 33));
     QColor clr = QColor(255, 255, 255);
     palette.setColor(QPalette::Text, clr);
 
     m_searchEdit->setPalette(palette);
-    m_searchEdit->setFont(QFont("HarmonyOS Sans SC", 10));
+    QFont font = zenoApp->font();
+    m_searchEdit->setFont(font);
     m_pWAction->setDefaultWidget(m_searchEdit);
     addAction(m_pWAction);
 
@@ -51,9 +53,9 @@ bool ZenoNewnodeMenu::eventFilter(QObject* watched, QEvent* event)
 {
     if (event->type() == QEvent::KeyPress)
     {
+        QKeyEvent *pKeyEvent = static_cast<QKeyEvent *>(event);
         if (QMenu* pMenu = qobject_cast<QMenu*>(watched))
         {
-            QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(event);
             int ch = pKeyEvent->key();
             QChar c(ch);
             QString text = m_searchEdit->text();
@@ -62,6 +64,14 @@ bool ZenoNewnodeMenu::eventFilter(QObject* watched, QEvent* event)
             pMenu->hide();
             return true;
         }
+        else if (watched == m_searchEdit && pKeyEvent->key() == Qt::Key_Down) 
+		{
+            focusNextPrevChild(true);
+        }
+    }
+    else if (watched == m_searchEdit && event->type() == QEvent::Show) 
+	{
+        m_searchEdit->activateWindow();
     }
     return QMenu::eventFilter(watched, event);
 }

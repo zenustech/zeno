@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>402</width>
-    <height>120</height>
+    <height>112</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,6 +23,16 @@
    </item>
    <item>
     <widget class="QProgressBar" name="progressBar">
+     <property name="styleSheet">
+      <string notr="true">QProgressBar {
+    border: none;
+}
+
+QProgressBar::chunk {
+    background-color: #05B8CC;
+    width: 20px;
+}</string>
+     </property>
      <property name="value">
       <number>24</number>
      </property>
@@ -60,9 +70,16 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="btn">
+      <widget class="QPushButton" name="pauseBtn">
        <property name="text">
-        <string>PushButton</string>
+        <string>Pause</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnCancel">
+       <property name="text">
+        <string>Cancel</string>
        </property>
       </widget>
      </item>

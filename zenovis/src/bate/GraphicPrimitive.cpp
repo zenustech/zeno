@@ -299,6 +299,8 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     //std::unique_ptr<Buffer> tris_ebo;
     size_t tris_count;
 
+    bool invisible;
+
     ZhxxDrawObject pointObj;
     ZhxxDrawObject lineObj;
     ZhxxDrawObject triObj;
@@ -309,6 +311,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
         : scene(scene_), primUnique(std::make_shared<zeno::PrimitiveObject>(*primArg)) {
         prim = primUnique.get();
+        invisible = prim->userData().get2<bool>("invisible", 0);
         zeno::log_trace("rendering primitive size {}", prim->size());
 
         if (!prim->attr_is<zeno::vec3f>("pos")) {
@@ -498,12 +501,19 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
 
         draw_all_points = !points_count && !lines_count && !tris_count;
+        auto& ud = prim->userData();
+        if (ud.get2<int>("isImage", 0)) {
+            draw_all_points = false;
+        }
         if (draw_all_points) {
             pointObj.prog = get_points_program();
         }
     }
 
     virtual void draw() override {
+        if (scene->drawOptions->show_grid == false && invisible) {
+            return;
+        }
         int id = 0;
         for (id = 0; id < textures.size(); id++) {
             textures[id]->bind_to(id);

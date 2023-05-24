@@ -1,10 +1,12 @@
 #ifndef __ZENO_DOCKWIDGET_H__
 #define __ZENO_DOCKWIDGET_H__
 
+#if 0
 #include <unordered_set>
 #include <QtWidgets>
 
 class ZenoMainWindow;
+class ZDockTabWidget;
 
 #define TEST_ZENO_API_TRIGGER
 
@@ -15,6 +17,7 @@ enum DOCK_TYPE
 	DOCK_EDITOR,
 	DOCK_NODE_PARAMS,
 	DOCK_NODE_DATA,
+    DOCK_IMAGE,
     DOCK_LOG,
     DOCK_LIGHTS,
 };
@@ -62,8 +65,9 @@ private:
     DOCK_TYPE m_type;
     Qt::WindowFlags m_oldFlags;
     Qt::WindowFlags m_newFlags;
+    ZDockTabWidget* m_tabWidget;
 };
 
-
+#endif
 
 #endif

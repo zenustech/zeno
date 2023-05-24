@@ -53,7 +53,12 @@ struct PrimitiveDelAttr : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto name = get_param<std::string>("name");
+
+
         prim->verts.attrs.erase(name);
+        prim->tris.attrs.erase(name);
+        prim->quads.attrs.erase(name);
+        prim->loops.attrs.erase(name);
 
         set_output("prim", get_input("prim"));
     }

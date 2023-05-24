@@ -5,6 +5,13 @@ target_sources(zenovis PRIVATE
   optixPathTracer.cpp
   optixPathTracer.h
   OptiXStuff.h
+
+  volume/optixVolume.cpp
+  volume/optixVolume.h
+
+  ies/ies_loader.cpp
+  ies/ies_loader.h
+
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
   SDK/sutil/Camera.h            SDK/sutil/Scene.cpp
@@ -25,7 +32,21 @@ target_sources(zenovis PRIVATE
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvrtc REQUIRED)
 target_link_libraries(zenovis PRIVATE CUDA::cudart CUDA::nvrtc)
 
+if (ZENO_SYSTEM_OPENVDB)
+    message(FATAL_ERROR "Zeno Optix requires OpenVDB/nanoVDB as submodule, system installed OpenVDB is not supported. Please set ZENO_SYSTEM_OPENVDB=OFF, then run: git submodule update --init --recursive")
+else() # ../../projects/zenvdb/openvdb/nanovdb
+    get_filename_component(NVDB_PATH ${OPTIX_PATH}/../../projects/zenvdb/openvdb/nanovdb ABSOLUTE)
+    message(${NVDB_PATH})
+endif()
+
+target_include_directories(zenovis PRIVATE volume)
+target_include_directories(zenovis PRIVATE ${NVDB_PATH})
+
+find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
+target_link_libraries(zenovis PRIVATE TBB::tbb TBB::tbbmalloc)
+
 target_include_directories(zenovis PRIVATE ${OPTIX_PATH}/include)
+
 target_include_directories(zenovis PRIVATE SDK)
 target_include_directories(zenovis PRIVATE SDK/sutil)
 target_include_directories(zenovis PRIVATE SDK/sdk_cuda)
@@ -41,7 +62,6 @@ if (NOT DEFINED CUDAToolkit_BIN_DIR)
 endif()
 set(CUDA_PATH ${CUDAToolkit_BIN_DIR}/..)
 
-
 set(FILE_LIST
     ${OPTIX_PATH}/include/@optix.h
     ${OPTIX_PATH}/include/@optix_device.h
@@ -50,11 +70,17 @@ set(FILE_LIST
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl.h
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl_exception.h
     ${OPTIX_PATH}/include/@internal/optix_7_device_impl_transformations.h
+
+    ${CUDA_PATH}/include/@cuda_fp16.h
+    ${CUDA_PATH}/include/@cuda_fp16.hpp  
+    # ${CUDA_PATH}/include/@nvfunctional 
+    ${CUDA_PATH}/include/@math_constants.h
     ${CUDA_PATH}/include/@vector_types.h
     ${CUDA_PATH}/include/@vector_functions.h
+
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/random.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
@@ -64,7 +90,17 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h
+
+    ${NVDB_PATH}/@nanovdb/NanoVDB.h
+    ${NVDB_PATH}/@nanovdb/util/Ray.h
+    ${NVDB_PATH}/@nanovdb/util/HDDA.h
+    # ${NVDB_PATH}/@nanovdb/util/Stencils.h
+    ${NVDB_PATH}/@nanovdb/util/SampleFromVoxels.h
     )
+
 foreach (FILE_INFO IN ITEMS ${FILE_LIST})
     #string(REPLACE "/" "_" ESCAPED_FILE_NAME "${FILE_NAME}")
     string(MD5 ENCODED_FILE "${FILE_INFO}")

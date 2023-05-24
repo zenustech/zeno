@@ -4,29 +4,47 @@
 ZTextEdit::ZTextEdit(QWidget* parent)
     : QTextEdit(parent)
 {
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    //connect(this, &QTextEdit::textC)
+    initUI();
 }
 
 ZTextEdit::ZTextEdit(const QString& text, QWidget* parent)
     : QTextEdit(text, parent)
 {
-    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    initUI();
+}
+
+void ZTextEdit::initUI()
+{
+    setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
+    QTextDocument *pTextDoc = document();
+    connect(pTextDoc, &QTextDocument::contentsChanged, this, [=]() {
+        QSize s(document()->size().toSize());
+        updateGeometry();
+        emit geometryUpdated();
+    });
+}
+
+QSize ZTextEdit::minimumSizeHint() const
+{
+    QSize minSz = QTextEdit::minimumSizeHint();
+    return minSz;
 }
 
 QSize ZTextEdit::sizeHint() const
 {
-    QSize s(document()->size().toSize());
-    /*
-     * Make sure width and height have `usable' values.
-     */
-    s.rwidth() = std::max(100, s.width());
-    s.rheight() = std::max(100, s.height());
-    return s;
+    QSize sz = QTextEdit::sizeHint();
+    return sz;
+}
+
+QSize ZTextEdit::viewportSizeHint() const
+{
+    QSize sz = document()->size().toSize();
+    return sz;
+}
+
+void ZTextEdit::focusInEvent(QFocusEvent* e)
+{
+    QTextEdit::focusInEvent(e);
 }
 
 void ZTextEdit::focusOutEvent(QFocusEvent* e)
@@ -37,6 +55,8 @@ void ZTextEdit::focusOutEvent(QFocusEvent* e)
 
 void ZTextEdit::resizeEvent(QResizeEvent* event)
 {
-    updateGeometry();
+    QSize s(document()->size().toSize());
     QTextEdit::resizeEvent(event);
+    updateGeometry();
+    emit geometryUpdated();
 }

@@ -523,7 +523,10 @@ struct point_to_counter_reducer2 {
     auto vnaxr{m_center_solidveln.getConstUnsafeAccessor()};
 
     std::function<void(openvdb::Vec3f & ipos, const openvdb::Vec3f &V0)>
-        movefunc;
+        movefunc, movefunc_euler;
+    movefunc_euler = [&](openvdb::Vec3f &ipos, const openvdb::Vec3f &V0) {
+      m_integrator->integrate1(ipos, V0);
+    };
 
     switch (m_rk_order) {
     case 1:
@@ -665,7 +668,10 @@ struct point_to_counter_reducer2 {
         particle_vel = carried_vel + flip_component * (-old_vel + particle_vel);
 
         pItpos = pIspos;
-        movefunc(pItpos, adv_vel);
+        if (p_liquidsdf >= -m_surfacedist)
+          movefunc_euler(pItpos, adv_vel);
+        else
+          movefunc(pItpos, adv_vel);
         ptCoord = openvdb::Coord{floorVec3(pItpos + openvdb::Vec3f{0.5f})};
 
         float new_pos_solid_sdf = openvdb::tools::BoxSampler::sample(
@@ -3039,7 +3045,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	auto lhs_matrix = simd_uaamg::LaplacianWithLevel::
 		createPressurePoissonLaplacian(liquid_sdf, face_weight, dt);
 	auto simd_solver = simd_uaamg::PoissonSolver(lhs_matrix);
-	simd_solver.mRelativeTolerance = 1e-6;
+	simd_solver.mRelativeTolerance = 1e-5;
 	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::ScheduledRelaxedJacobi;
 
   if (enable_tension) {
@@ -3078,7 +3084,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
   else{
     std::cout<<"MGPCG failed, begin pure MG solver\n";
     lhs_matrix->mDofLeafManager->foreach(set_warm_pressure);
-    simd_solver.mMaxIteration = 200;
+    simd_solver.mMaxIteration = 100;
     simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::RedBlackGaussSeidel;
     simd_solver.solvePureMultigrid(pressure, rhsgrid);
     curr_pressure.swap(pressure);

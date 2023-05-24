@@ -1,3 +1,4 @@
+#if 0
 #include "zenodockwidget.h"
 #include "zenodocktitlewidget.h"
 #include "zenomainwindow.h"
@@ -10,10 +11,19 @@
 #include <zenomodel/include/modelrole.h>
 #include "util/log.h"
 #include "panel/zenospreadsheet.h"
+#include "panel/zenoimagepanel.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/zenovis.h"
 #include "panel/zenolights.h"
 #include <zenovis/ObjectsManager.h>
+#include <zenoui/comctrl/zlabel.h>
+#include <zenoui/style/zenostyle.h>
+#include <zenoui/comctrl/zdocktabwidget.h>
+#include "nodesview/zenographseditor.h"
+#include "../panel/zenodatapanel.h"
+#include "panel/zenoproppanel.h"
+#include "../panel/zenospreadsheet.h"
+#include "../panel/zlogpanel.h"
 #include <zenomodel/include/api.h>
 
 
@@ -105,10 +115,7 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         }
         panel->reset(pModel, subgIdx, nodes, select);
     }
-    else if (m_type == DOCK_NODE_DATA) {
-        ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
-        ZASSERT_EXIT(panel);
-
+    else if (m_type == DOCK_NODE_DATA || m_type == DOCK_IMAGE) {
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (select) {
             const QModelIndex& idx = nodes[0];
@@ -126,7 +133,16 @@ void ZenoDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             zenoApp->getMainWindow()->updateViewport();
         }
         else {
-            panel->clear();
+            if (m_type == DOCK_NODE_DATA) {
+                ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
+                ZASSERT_EXIT(panel);
+                panel->clear();
+            }
+            else if (m_type == DOCK_IMAGE) {
+                ZenoImagePanel* panel = qobject_cast<ZenoImagePanel*>(widget());
+                ZASSERT_EXIT(panel);
+                panel->clear();
+            }
         }
     }
     else if (m_type == DOCK_VIEW) {
@@ -179,18 +195,18 @@ void ZenoDockWidget::init(ZenoMainWindow* pMainWin)
     palette.setBrush(QPalette::Window, QColor(38, 38, 38));
     palette.setBrush(QPalette::WindowText, QColor());
     setPalette(palette);
-    ZenoDockTitleWidget* pTitleWidget = new ZenoDockTitleWidget;
+    ZenoDockTitleWidget *pTitleWidget = new ZenoDockTitleWidget;
     pTitleWidget->setupUi();
     setTitleBarWidget(pTitleWidget);
-	connect(pTitleWidget, SIGNAL(dockOptionsClicked()), this, SLOT(onDockOptionsClicked()));
-	connect(pTitleWidget, SIGNAL(dockSwitchClicked(DOCK_TYPE)), this, SIGNAL(dockSwitchClicked(DOCK_TYPE)));
+    connect(pTitleWidget, SIGNAL(dockOptionsClicked()), this, SLOT(onDockOptionsClicked()));
+    connect(pTitleWidget, SIGNAL(dockSwitchClicked(DOCK_TYPE)), this, SIGNAL(dockSwitchClicked(DOCK_TYPE)));
     connect(this, SIGNAL(dockSwitchClicked(DOCK_TYPE)), pMainWin, SLOT(onDockSwitched(DOCK_TYPE)));
 }
 
 void ZenoDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font("HarmonyOS Sans", 12);
+    QFont font = zenoApp->font();
     font.setBold(false);
     menu->setFont(font);
     QAction* pSplitHor = new QAction("Split Left/Right");
@@ -302,16 +318,25 @@ void ZenoDockWidget::onFloatTriggered()
 
 
 void ZenoDockWidget::onPrimitiveSelected(const std::unordered_set <std::string> &primids) {
-    if (m_type != DOCK_NODE_DATA) {
-        return;
+    if (m_type == DOCK_NODE_DATA) {
+        ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
+        ZASSERT_EXIT(panel);
+        if (primids.size() == 1) {
+            panel->setPrim(*primids.begin());
+        }
+        else {
+            panel->clear();
+        }
     }
-    ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(widget());
-    ZASSERT_EXIT(panel);
-    if (primids.size() == 1) {
-        panel->setPrim(*primids.begin());
-    }
-    else {
-        panel->clear();
+    else if (m_type == DOCK_IMAGE) {
+        ZenoImagePanel* panel = qobject_cast<ZenoImagePanel*>(widget());
+        ZASSERT_EXIT(panel);
+        if (primids.size() == 1) {
+            panel->setPrim(*primids.begin());
+        }
+        else {
+            panel->clear();
+        }
     }
 }
 
@@ -321,3 +346,4 @@ void ZenoDockWidget::newFrameUpdate() {
         panel->updateLights();
     }
 }
+#endif

@@ -33,8 +33,10 @@ set(ZENO_EXTENSIONS
     ImgCV
     GUI
     PBD
+    USD
     Python
     Parameterization
+	UnrealTool
     ViewUI
     )
 

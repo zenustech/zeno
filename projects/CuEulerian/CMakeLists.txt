@@ -21,9 +21,11 @@ target_sources(zeno PRIVATE
 )
 ]]
 
-# shallow water
+# shallow water & terrain
 target_sources(zeno PRIVATE
   swe/FDGather.cu
+  swe/Erode.cu
+  swe/SWE_dense.cu
 )
 
 # level set function

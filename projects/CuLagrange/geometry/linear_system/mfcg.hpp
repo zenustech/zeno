@@ -9,6 +9,7 @@ namespace zeno { namespace PCG {
     // the interface the equation should have:
     using T = float;
 
+
     template<int width,typename Pol,typename SrcTileVec,typename DstTileVec>
     void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag,int offset = 0) {
         using namespace zs;
@@ -102,19 +103,25 @@ namespace zeno { namespace PCG {
     }    
 
     template<int simplex_dim,int space_dim,typename Pol,typename VBufTileVec,typename EBufTileVec>
-    void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool use_block = true) {
+    void prepare_block_diagonal_preconditioner(Pol &pol,const zs::SmallString& HTag,const EBufTileVec& etemp,const zs::SmallString& PTag,VBufTileVec& vtemp,bool take_inverse = true,bool use_block = true) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
-        pol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
-                constexpr int block_size = space_dim * space_dim;
-                vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
-        });
+        // pol(zs::range(vtemp.size()),
+        //     [vtemp = proxy<space>({}, vtemp),PTag] ZS_LAMBDA (int vi) mutable {
+        //         constexpr int block_size = space_dim * space_dim;
+        //         vtemp.template tuple<block_size>(PTag, vi) = zs::vec<T,space_dim,space_dim>::zeros();
+        // });
+        // TILEVEC_OPS::fill(pol,vtemp,PTag,(T)0.0);
+
         pol(zs::range(etemp.size()),
                     [vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),HTag,PTag,use_block]
                         ZS_LAMBDA(int ei) mutable{
             constexpr int h_width = space_dim * simplex_dim;
             auto inds = etemp.template pack<simplex_dim>("inds",ei).template reinterpret_bits<int>();
+            for(int i = 0;i != simplex_dim;++i)
+                if(inds[i] < 0)
+                    return;
+
             auto H = etemp.template pack<h_width,h_width>(HTag,ei);
 
             for(int vi = 0;vi != simplex_dim;++vi)
@@ -126,10 +133,12 @@ namespace zeno { namespace PCG {
                         atomic_add(exec_cuda,&vtemp(PTag,j*space_dim + j,inds[vi]),(T)H(vi*space_dim + j,vi*space_dim + j));
                 }
         });
-        pol(zs::range(vtemp.size()),
-            [vtemp = proxy<space>({},vtemp),PTag] ZS_LAMBDA(int vi) mutable{
-                vtemp.template tuple<space_dim * space_dim>(PTag,vi) = inverse(vtemp.template pack<space_dim,space_dim>(PTag,vi).template cast<double>());
-        });            
+        if(take_inverse) {
+            pol(zs::range(vtemp.size()),
+                [vtemp = proxy<space>({},vtemp),PTag] ZS_LAMBDA(int vi) mutable{
+                    vtemp.template tuple<space_dim * space_dim>(PTag,vi) = inverse(vtemp.template pack<space_dim,space_dim>(PTag,vi).template cast<double>());
+            });       
+        }     
     }
 
 
@@ -279,21 +288,75 @@ namespace zeno { namespace PCG {
     }
 #endif
 
+
+    template<typename Pol,typename VTileVec,typename SpMat>
+    void multiply(Pol& pol,VTileVec& vtemp,const SpMat& spmat,const zs::SmallString dxTag,const zs::SmallString bTag,bool do_cuda_profile = false,bool clear_res = true) {
+        using namespace zs;
+        constexpr execspace_e space = execspace_e::cuda;
+        constexpr auto execTag = wrapv<space>{};     
+
+        // fill<space_dim>(pol,vtemp,bTag,zs::vec<T,space_dim>::zeros());   
+        if(clear_res)
+            TILEVEC_OPS::fill(pol,vtemp,bTag,(T)0.0);
+if(do_cuda_profile)
+    pol.profile(true);
+        pol(range(spmat.outerSize() * 8),
+            [vtemp = view<space>(vtemp), dxOffset = vtemp.getPropertyOffset(dxTag),
+             bOffset = vtemp.getPropertyOffset(bTag), spmat = proxy<space>(spmat)] ZS_LAMBDA(int tid) mutable {
+                auto tile = cg::tiled_partition<8>(cg::this_thread_block());
+                auto laneId = tile.thread_rank();
+                auto laneR = laneId / 3;
+                auto laneC = laneId % 3;
+                auto row = tid / tile.num_threads();
+                auto bg = spmat._ptrs[row];
+                auto ed = spmat._ptrs[row + 1];
+                // for upper part
+                typename RM_CVREF_T(spmat)::value_type::value_type rowSum = 0;
+                // for lower part
+                auto dx = vtemp(dxOffset + laneR, row);
+                for (auto i = bg; i < ed; ++i) {
+                    auto col = spmat._inds[i];
+                    auto He = spmat._vals[i](laneR, laneC);
+                    // upper part
+                    rowSum += He * vtemp(dxOffset + laneC, col);
+                    // lower part
+                    if (i != bg)
+                        atomic_add(exec_cuda, &vtemp(bOffset + laneC, col), He * dx);
+                    if (laneId == 7) {
+                        He = spmat._vals[i].val(8);
+                        // upper part
+                        rowSum += He * vtemp(dxOffset + 2, col);
+                        // lower part
+                        if (i != bg)
+                            atomic_add(exec_cuda, &vtemp(bOffset + 2, col), He * dx);
+                    }
+                }
+                auto v1 = tile.shfl_down(rowSum, 1);
+                if (laneC == 0)
+                    rowSum += v1;
+                auto v2 = tile.shfl_down(rowSum, 2);
+                if (laneC == 0 && laneR != 2)
+                    rowSum += v2;
+                /// @note must use atomic version now that it's all mixed up
+                if (laneC == 0)
+                    atomic_add(exec_cuda, &vtemp(bOffset + laneR, row), rowSum);
+            });        
+if(do_cuda_profile)
+    pol.profile(false);
+    }
+
     template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec>
-    void multiply(Pol& pol,VTileVec& vtemp,const ETileVec& etemp,const zs::SmallString& H_tag,const zs::SmallString& inds_tag,const zs::SmallString& x_tag,const zs::SmallString& y_tag){
+    void multiply(Pol& pol,VTileVec& vtemp,const ETileVec& etemp,
+            const zs::SmallString& H_tag,const zs::SmallString& inds_tag,const zs::SmallString& x_tag,const zs::SmallString& y_tag,
+            bool do_cuda_profile = false,bool clear_res = true){
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         constexpr auto execTag = wrapv<space>{};
 
-        // pol(range(vtemp.size()),
-        //     [vtemp = proxy<space>({},vtemp),y_tag] __device__(int vi) mutable {
-        //         vtemp.template tuple<space_dim>(y_tag,vi) = zs::vec<T,space_dim>::zeros();
-        // });
-        fill<space_dim>(pol,vtemp,y_tag,zs::vec<T,space_dim>::zeros());
-        // zs::memset(zs::mem_device, res.data(), 0,
-        //             sizeof(T) * count_warps(vtemp.size() * space_dim));
+        
+        if(clear_res)
+            fill<space_dim>(pol,vtemp,y_tag,zs::vec<T,space_dim>::zeros());
 
-        // pol.profile(true);
 #if 0
         pol(Collapse{etemp.size(), 32 * 4},
               [execTag, etemp = proxy<space>({}, etemp),
@@ -390,6 +453,8 @@ namespace zeno { namespace PCG {
                              rdata);
               });
 #else
+if(do_cuda_profile)
+    pol.profile(true);
         pol(range(etemp.size()),
             [execTag,vtemp = proxy<space>({},vtemp),etemp = proxy<space>({},etemp),
                     inds_tag,H_tag,x_tag,y_tag] __device__(int ei) mutable {    
@@ -411,9 +476,13 @@ namespace zeno { namespace PCG {
                     for(int j = 0;j != space_dim;++j)
                         atomic_add(execTag,&vtemp(y_tag,j,inds[i]),temp[i*space_dim + j]);
         });
+if(do_cuda_profile)
+    pol.profile(false);
 #endif
         // pol.profile(false);
     }
+
+
 
 
 
@@ -588,6 +657,327 @@ namespace zeno { namespace PCG {
         });
     }
 
+
+
+    // initialize the boundary values and tags, hessian, rhs and block diagonal preconditioner before apply this function
+    template<int space_dim,typename Pol,typename VTileVec,typename SpMat>
+    int pcg_with_fixed_sol_solve(
+        Pol& pol,
+        VTileVec& vert_buffer,
+        const SpMat& spmat,
+        const zs::SmallString& xtag,
+        const zs::SmallString& bou_tag,
+        const zs::SmallString& btag,
+        const zs::SmallString& Ptag,
+        const zs::SmallString& inds_tag,
+        const zs::SmallString& Htag,
+        T rel_accuracy,
+        int max_iters,
+        int recal_iter = 50,
+        bool do_cuda_profile = false
+    ) /*-> std::enable_if_t<std::is_same_v<decltype(Equa.project(pol,vtemp,etemp,xtag,btag)), int>, void> 
+        decltype((void)Equa.project(pol,vtemp,etemp,const zs::SmallString& tag,btag), 
+                 (void)Equa.rhs(pol,vtemp,xtag,rtag),
+                 (void)Equa.precondition(pol,const zs::SmallString& P_tag,const zs::SmallString& src_tag,const zs::SmallString& dst_tag)
+                 ) */{
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        VTileVec vtemp{vert_buffer.get_allocator(),{
+            {"x",space_dim},
+            {"btag",1},
+            {"b",space_dim},
+            {"r",space_dim},
+            {"P",space_dim * space_dim},
+            {"temp",space_dim},
+            {"p",space_dim},
+            {"q",space_dim}
+            // {"H",space_dim * space_dim},
+            // {"inds",1}
+        },vert_buffer.size()};
+        vtemp.resize(vert_buffer.size());
+
+        // fmt::print("check point 0\n");
+
+        copy<space_dim>(pol,vert_buffer,xtag,vtemp,"x");
+        copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
+        copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
+        copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
+        // copy<space_dim*space_dim>(pol,vert_buffer,Htag,vtemp,"H");
+        // copy<1>(pol,vert_buffer,"inds",vtemp,"inds");
+        // fmt::print("check point 1\n");
+        // ETileVec etemp{elm_buffer.get_allocator(),{
+        //     {"inds",simplex_dim},
+        //     {"H",simplex_dim*space_dim*simplex_dim*space_dim}
+        // },elm_buffer.size()};
+        // etemp.resize(elm_buffer.size());
+        // copy<simplex_dim>(pol,elm_buffer,inds_tag,etemp,"inds");
+        // copy<space_dim * simplex_dim * space_dim * simplex_dim>(pol,elm_buffer,Htag,etemp,"H");
+
+        TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+        multiply(pol,vtemp,spmat,"x","temp",do_cuda_profile);
+        // multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
+        // multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp");
+        // compute initial residual : b - Hx -> r
+        add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
+        project<space_dim>(pol,vtemp,"r","btag");
+        // P * r -> q
+        precondition<space_dim>(pol,vtemp,"P","r","q");
+        // q -> p
+        copy<space_dim>(pol,vtemp,"q",vtemp,"p");
+
+        T zTrk = dot<space_dim>(pol,vtemp,"r","q");
+        if(zTrk < 0) {
+            std::cout << "negative zTrk detected = " << zTrk << std::endl;
+            fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
+            throw std::runtime_error("negative zTrk detected");
+        }
+        if(std::isnan(zTrk)) {
+            // std::cout << "nan zTrk detected = " << zTrk << std::endl;
+            auto rn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"r","r");
+            auto qn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"q","q");
+            auto Pn = TILEVEC_OPS::dot<9>(cudaPol,vtemp,"P","P");
+            auto bn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"b","b");
+            auto xn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"x","x");
+            auto tempn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"temp","temp");
+            fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected = {} qn = {} rn = {} Pn = {} bn = {} tempn = {} xn = {}\n",zTrk,qn,rn,Pn,bn,tempn,xn);
+            throw std::runtime_error("nan zTrk detected");
+        }
+        T residualPreconditionedNorm = std::sqrt(std::abs(zTrk));
+        T localTol = rel_accuracy * residualPreconditionedNorm;
+        // fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
+
+        int iter = 0;
+        for(;iter != max_iters;++iter){
+
+            if(residualPreconditionedNorm < localTol)
+                break;
+            // H * p -> tmp
+            // pol.profile(true);
+            // CppTimer timer;
+            // timer.tick();
+            TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+            multiply(pol,vtemp,spmat,"p","temp",do_cuda_profile);
+            // multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","p","temp");
+            // multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","p","temp");
+            // timer.tock("multiply time");
+            // timer.tick();
+            project<space_dim>(pol,vtemp,"temp","btag");
+            // timer.tock("project0 time");
+            // alpha = zTrk / (pHp)
+            // timer.tick();
+            T alpha = zTrk / dot<space_dim>(pol,vtemp,"temp","p");
+            // timer.tock("dot time");
+            // x += alpha * p
+            // timer.tick();
+            add<space_dim>(pol,vtemp,"x",(T)1.0,"p",alpha,"x");
+            // r -= alpha * Hp
+            add<space_dim>(pol,vtemp,"r",(T)1.0,"temp",-alpha,"r");
+            // timer.tock("add time");
+            // recalculate the residual to fix floating point error accumulation
+            if(iter % (recal_iter + 1) == recal_iter){
+                // r = b - Hx
+                TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+                multiply(pol,vtemp,spmat,"x","temp",do_cuda_profile);
+                // multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
+                // multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp");
+                add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
+                project<space_dim>(pol,vtemp,"r","btag");
+            }
+            // P * r -> q
+            // timer.tick();
+            precondition<space_dim>(pol,vtemp,"P","r","q");
+            // timer.tock("precondition time");
+            project<space_dim>(pol,vtemp,"q","btag");
+            auto zTrkLast = zTrk;
+            zTrk = dot<space_dim>(pol,vtemp,"q","r");
+            if(zTrk < 0) {
+                std::cout << "negative zTrk detected Here = " << zTrk << std::endl;
+                fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
+                throw std::runtime_error("negative zTrk detected");
+            }
+            if(std::isnan(zTrk)) {
+                std::cout << "nan zTrk detected Here = " << zTrk << std::endl;
+                fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected = {}\n",zTrk);
+                throw std::runtime_error("nan zTrk detected");
+            }
+            auto beta = zTrk / zTrkLast;
+            // q + beta * p -> p
+            add<space_dim>(pol,vtemp,"q",(T)(1.0),"p",beta,"p");
+            residualPreconditionedNorm = std::sqrt(std::abs(zTrk));
+            // pol.profile(false);
+
+            ++iter;
+        }
+        copy<space_dim>(pol,vtemp,"x",vert_buffer,xtag);
+
+        return iter;
+    }
+
+    // initialize the boundary values and tags, hessian, rhs and block diagonal preconditioner before apply this function
+    template<int space_dim,typename Pol,typename VTileVec,typename ETileVec,typename SpMat>
+    int pcg_with_fixed_sol_solve(
+        Pol& pol,
+        VTileVec& vert_buffer,
+        const SpMat& spmat,
+        const ETileVec& dyn_buffer,
+        const zs::SmallString& xtag,
+        const zs::SmallString& bou_tag,
+        const zs::SmallString& btag,
+        const zs::SmallString& Ptag,
+        const zs::SmallString& inds_tag,
+        const zs::SmallString& Htag,
+        T rel_accuracy,
+        int max_iters,
+        int recal_iter = 50,
+        bool do_cuda_profile = false
+    ) /*-> std::enable_if_t<std::is_same_v<decltype(Equa.project(pol,vtemp,etemp,xtag,btag)), int>, void> 
+        decltype((void)Equa.project(pol,vtemp,etemp,const zs::SmallString& tag,btag), 
+                 (void)Equa.rhs(pol,vtemp,xtag,rtag),
+                 (void)Equa.precondition(pol,const zs::SmallString& P_tag,const zs::SmallString& src_tag,const zs::SmallString& dst_tag)
+                 ) */{
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        VTileVec vtemp{vert_buffer.get_allocator(),{
+            {"x",space_dim},
+            {"btag",1},
+            {"b",space_dim},
+            {"r",space_dim},
+            {"P",space_dim * space_dim},
+            {"temp",space_dim},
+            {"p",space_dim},
+            {"q",space_dim}
+            // {"H",space_dim * space_dim},
+            // {"inds",1}
+        },vert_buffer.size()};
+        vtemp.resize(vert_buffer.size());
+
+        // fmt::print("check point 0\n");
+
+        copy<space_dim>(pol,vert_buffer,xtag,vtemp,"x");
+        copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
+        copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
+        copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
+        // copy<space_dim*space_dim>(pol,vert_buffer,Htag,vtemp,"H");
+        // copy<1>(pol,vert_buffer,"inds",vtemp,"inds");
+        // fmt::print("check point 1\n");
+        // ETileVec etemp{elm_buffer.get_allocator(),{
+        //     {"inds",simplex_dim},
+        //     {"H",simplex_dim*space_dim*simplex_dim*space_dim}
+        // },elm_buffer.size()};
+        // etemp.resize(elm_buffer.size());
+        // copy<simplex_dim>(pol,elm_buffer,inds_tag,etemp,"inds");
+        // copy<space_dim * simplex_dim * space_dim * simplex_dim>(pol,elm_buffer,Htag,etemp,"H");
+
+        TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+        multiply(pol,vtemp,spmat,"x","temp",do_cuda_profile,true);
+        multiply<space_dim,4>(pol,vtemp,dyn_buffer,"H","inds","x","temp",do_cuda_profile,false);
+        // compute initial residual : b - Hx -> r
+        add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
+        project<space_dim>(pol,vtemp,"r","btag");
+        // P * r -> q
+        precondition<space_dim>(pol,vtemp,"P","r","q");
+        // q -> p
+        copy<space_dim>(pol,vtemp,"q",vtemp,"p");
+
+        T zTrk = dot<space_dim>(pol,vtemp,"r","q");
+        if(zTrk < 0) {
+            std::cout << "negative zTrk detected = " << zTrk << std::endl;
+            fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
+            throw std::runtime_error("negative zTrk detected");
+        }
+        if(std::isnan(zTrk)) {
+            // std::cout << "nan zTrk detected = " << zTrk << std::endl;
+            auto rn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"r","r");
+            auto qn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"q","q");
+            auto Pn = TILEVEC_OPS::dot<9>(cudaPol,vtemp,"P","P");
+            auto bn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"b","b");
+            auto xn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"x","x");
+            auto tempn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"temp","temp");
+            fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected = {} qn = {} rn = {} Pn = {} bn = {} tempn = {} xn = {}\n",zTrk,qn,rn,Pn,bn,tempn,xn);
+            throw std::runtime_error("nan zTrk detected");
+        }
+        T residualPreconditionedNorm = std::sqrt(std::abs(zTrk));
+        T localTol = rel_accuracy * residualPreconditionedNorm;
+        // fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
+
+        int iter = 0;
+        for(;iter != max_iters;++iter){
+
+            if(residualPreconditionedNorm < localTol)
+                break;
+            // H * p -> tmp
+            // pol.profile(true);
+            // CppTimer timer;
+            // timer.tick();
+            TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+            multiply(pol,vtemp,spmat,"p","temp",do_cuda_profile,true);
+            multiply<space_dim,4>(pol,vtemp,dyn_buffer,"H","inds","p","temp",do_cuda_profile,false);
+            // multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","p","temp");
+            // multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","p","temp");
+            // timer.tock("multiply time");
+            // timer.tick();
+            project<space_dim>(pol,vtemp,"temp","btag");
+            // timer.tock("project0 time");
+            // alpha = zTrk / (pHp)
+            // timer.tick();
+            T alpha = zTrk / dot<space_dim>(pol,vtemp,"temp","p");
+            // timer.tock("dot time");
+            // x += alpha * p
+            // timer.tick();
+            add<space_dim>(pol,vtemp,"x",(T)1.0,"p",alpha,"x");
+            // r -= alpha * Hp
+            add<space_dim>(pol,vtemp,"r",(T)1.0,"temp",-alpha,"r");
+            // timer.tock("add time");
+            // recalculate the residual to fix floating point error accumulation
+            // if(iter % (recal_iter + 1) == recal_iter){
+            //     // r = b - Hx
+            //     TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+            //     multiply(pol,vtemp,spmat,"x","temp",do_cuda_profile,true);
+            //     multiply<space_dim,4>(pol,vtemp,dyn_buffer,"H","inds","p","temp",do_cuda_profile,false);
+            //     // multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
+            //     // multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp");
+            //     add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
+            //     project<space_dim>(pol,vtemp,"r","btag");
+            // }
+            // P * r -> q
+            // timer.tick();
+            precondition<space_dim>(pol,vtemp,"P","r","q");
+            // timer.tock("precondition time");
+            project<space_dim>(pol,vtemp,"q","btag");
+            auto zTrkLast = zTrk;
+            zTrk = dot<space_dim>(pol,vtemp,"q","r");
+            if(zTrk < 0) {
+                std::cout << "negative zTrk detected Here = " << zTrk << std::endl;
+                fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
+                throw std::runtime_error("negative zTrk detected");
+            }
+            if(std::isnan(zTrk)) {
+                auto rn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"r","r");
+                auto qn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"q","q");
+                auto Pn = TILEVEC_OPS::dot<9>(cudaPol,vtemp,"P","P");
+                auto bn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"b","b");
+                auto xn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"x","x");
+                auto tempn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"temp","temp");
+                fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected Here = {} qn = {} rn = {} Pn = {} bn = {} tempn = {} xn = {}\n",zTrk,qn,rn,Pn,bn,tempn,xn);
+                throw std::runtime_error("nan zTrk detected");
+            }
+            auto beta = zTrk / zTrkLast;
+            // q + beta * p -> p
+            add<space_dim>(pol,vtemp,"q",(T)(1.0),"p",beta,"p");
+            residualPreconditionedNorm = std::sqrt(std::abs(zTrk));
+            // pol.profile(false);
+
+            ++iter;
+        }
+        copy<space_dim>(pol,vtemp,"x",vert_buffer,xtag);
+
+        return iter;
+    }
+
     // initialize the boundary values and tags, hessian, rhs and block diagonal preconditioner before apply this function
     template<int space_dim,int simplex_dim,typename Pol,typename VTileVec,typename ETileVec>
     int pcg_with_fixed_sol_solve(
@@ -621,6 +1011,8 @@ namespace zeno { namespace PCG {
             {"temp",space_dim},
             {"p",space_dim},
             {"q",space_dim},
+            {"H",space_dim * space_dim},
+            {"inds",1}
         },vert_buffer.size()};
         vtemp.resize(vert_buffer.size());
 
@@ -630,6 +1022,13 @@ namespace zeno { namespace PCG {
         copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
         copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
         copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
+        if(vert_buffer.hasProperty("H") && vert_buffer.hasProperty("inds")) {
+            copy<space_dim*space_dim>(pol,vert_buffer,Htag,vtemp,"H");
+            copy<1>(pol,vert_buffer,"inds",vtemp,"inds");
+        }else {
+            TILEVEC_OPS::fill(pol,vtemp,"H",(T)0.0);
+            TILEVEC_OPS::fill(pol,vtemp,"inds",zs::reinterpret_bits<T>((int)-1));
+        }
         // fmt::print("check point 1\n");
         ETileVec etemp{elm_buffer.get_allocator(),{
             {"inds",simplex_dim},
@@ -639,7 +1038,9 @@ namespace zeno { namespace PCG {
         copy<simplex_dim>(pol,elm_buffer,inds_tag,etemp,"inds");
         copy<space_dim * simplex_dim * space_dim * simplex_dim>(pol,elm_buffer,Htag,etemp,"H");
 
-        multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
+        TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+        multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp",false,true);
+        multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp",false,false);
         // compute initial residual : b - Hx -> r
         add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
         project<space_dim>(pol,vtemp,"r","btag");
@@ -653,6 +1054,17 @@ namespace zeno { namespace PCG {
         T localTol = rel_accuracy * residualPreconditionedNorm;
         // fmt::print("initial residual : {}\t{}\n",residualPreconditionedNorm,zTrk);
 
+        if(std::isnan(zTrk)) {
+            auto rn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"r","r");
+            auto qn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"q","q");
+            auto Pn = TILEVEC_OPS::dot<9>(cudaPol,vtemp,"P","P");
+            auto bn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"b","b");
+            auto xn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"x","x");
+            auto tempn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"temp","temp");
+            fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected = {} qn = {} rn = {} Pn = {} bn = {} tempn = {} xn = {}\n",zTrk,qn,rn,Pn,bn,tempn,xn);
+            throw std::runtime_error("nan zTrk detected");
+        }
+
         int iter = 0;
         for(;iter != max_iters;++iter){
             if(zTrk < 0) {
@@ -660,13 +1072,16 @@ namespace zeno { namespace PCG {
                 fmt::print(fg(fmt::color::dark_cyan),"negative zTrk detected = {}\n",zTrk);
                 throw std::runtime_error("negative zTrk detected");
             }
+
             if(residualPreconditionedNorm < localTol)
                 break;
             // H * p -> tmp
             // pol.profile(true);
             // CppTimer timer;
             // timer.tick();
-            multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","p","temp");
+            TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+            multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","p","temp",false,true);
+            multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","p","temp",false,false);
             // timer.tock("multiply time");
             // timer.tick();
             project<space_dim>(pol,vtemp,"temp","btag");
@@ -682,12 +1097,14 @@ namespace zeno { namespace PCG {
             add<space_dim>(pol,vtemp,"r",(T)1.0,"temp",-alpha,"r");
             // timer.tock("add time");
             // recalculate the residual to fix floating point error accumulation
-            if(iter % (recal_iter + 1) == recal_iter){
-                // r = b - Hx
-                multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp");
-                add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
-                project<space_dim>(pol,vtemp,"r","btag");
-            }
+            // if(iter % (recal_iter + 1) == recal_iter){
+            //     // r = b - Hx
+            //     TILEVEC_OPS::fill(pol,vtemp,"temp",(T)0.0);
+            //     multiply<space_dim,simplex_dim>(pol,vtemp,etemp,"H","inds","x","temp",false,true);
+            //     multiply<space_dim,1>(pol,vtemp,vtemp,"H","inds","x","temp",false,false);
+            //     add<space_dim>(pol,vtemp,"b",(T)1.0,"temp",(T)(-1.0),"r");
+            //     project<space_dim>(pol,vtemp,"r","btag");
+            // }
             // P * r -> q
             // timer.tick();
             precondition<space_dim>(pol,vtemp,"P","r","q");
@@ -695,6 +1112,23 @@ namespace zeno { namespace PCG {
             project<space_dim>(pol,vtemp,"q","btag");
             auto zTrkLast = zTrk;
             zTrk = dot<space_dim>(pol,vtemp,"q","r");
+
+            if(std::isnan(zTrk)) {
+                auto rn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"r","r");
+                auto qn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"q","q");
+                auto Pn = TILEVEC_OPS::dot<9>(cudaPol,vtemp,"P","P");
+                auto pn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"p","p");
+                auto bn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"b","b");
+                auto xn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"x","x");
+                auto Hn = TILEVEC_OPS::dot<12 * 12>(cudaPol,etemp,"H","H");
+                auto vHn = TILEVEC_OPS::dot<3 * 3>(cudaPol,vtemp,"H","H");
+                auto tempn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"temp","temp");
+                fmt::print(fg(fmt::color::dark_cyan),
+                    "nan zTrk detected Here[{}] = {} qn = {} rn = {} pn = {} Pn = {} bn = {} tempn = {} xn = {} Hn = {} vHn = {} alpha = {}\n",
+                    iter,zTrk,qn,rn,pn,Pn,bn,tempn,xn,Hn,vHn,alpha);
+                throw std::runtime_error("nan zTrk detected");
+            }
+
             auto beta = zTrk / zTrkLast;
             // q + beta * p -> p
             add<space_dim>(pol,vtemp,"q",(T)(1.0),"p",beta,"p");
@@ -724,7 +1158,8 @@ namespace zeno { namespace PCG {
         const zs::SmallString& Htag,
         T rel_accuracy,
         int max_iters,
-        int recal_iter = 50
+        int recal_iter = 50,
+        bool do_cuda_profile = false
     ) /*-> std::enable_if_t<std::is_same_v<decltype(Equa.project(pol,vtemp,etemp,xtag,btag)), int>, void> 
         decltype((void)Equa.project(pol,vtemp,etemp,const zs::SmallString& tag,btag), 
                  (void)Equa.rhs(pol,vtemp,xtag,rtag),
@@ -743,6 +1178,7 @@ namespace zeno { namespace PCG {
             {"temp",space_dim},
             {"p",space_dim},
             {"q",space_dim},
+            {"H",space_dim * space_dim}
         },vert_buffer.size()};
         vtemp.resize(vert_buffer.size());
 
@@ -752,6 +1188,7 @@ namespace zeno { namespace PCG {
         copy<1>(pol,vert_buffer,bou_tag,vtemp,"btag");
         copy<space_dim>(pol,vert_buffer,btag,vtemp,"b");
         copy<space_dim*space_dim>(pol,vert_buffer,Ptag,vtemp,"P");
+        copy<space_dim*space_dim>(pol,vert_buffer,Htag,vtemp,"H");
         // fmt::print("check point 1\n");
         ETileVec etemp{elm_buffer.get_allocator(),{
             {"inds",simplex_dim},

@@ -7,11 +7,27 @@ class CameraNode : public ZenoNode
 {
     Q_OBJECT
 public:
-    CameraNode(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+    CameraNode(const NodeUtilParam& params, int pattern = 0, QGraphicsItem* parent = nullptr);
     ~CameraNode();
 
+    int CameraPattern = 0;
+
 protected:
-    QGraphicsLinearLayout* initCustomParamWidgets() override;
+    ZGraphicsLayout* initCustomParamWidgets() override;
+
+private slots:
+    void onEditClicked();
+};
+
+class LightNode : public ZenoNode
+{
+    Q_OBJECT
+public:
+    LightNode(const NodeUtilParam& params, int pattern = 0, QGraphicsItem* parent = nullptr);
+    ~LightNode();
+
+protected:
+    ZGraphicsLayout* initCustomParamWidgets() override;
 
 private slots:
     void onEditClicked();

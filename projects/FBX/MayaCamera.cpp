@@ -30,60 +30,12 @@
 #include <regex>
 
 #define SET_CAMERA_DATA                         \
-    out_pos->set(n->pos);                       \
-    out_up->set(n->up);                         \
-    out_view->set(n->view);                     \
-    out_fov->set(n->fov);                       \
-    out_aperture->set(n->aperture);             \
-    out_focalPlaneDistance->set(n->focalPlaneDistance); \
-
-#define BEZIER_VEC3_COMPUTE(VAR_NAME) \
-        float VAR_NAME##_x_diff = std::abs(n->##VAR_NAME[0] - nm->##VAR_NAME[0]);        \
-        float VAR_NAME##_y_diff = std::abs(n->##VAR_NAME[1] - nm->##VAR_NAME[1]);        \
-        float VAR_NAME##_z_diff = std::abs(n->##VAR_NAME[2] - nm->##VAR_NAME[2]);        \
-        float VAR_NAME##_xs = (n->##VAR_NAME[0] - nm->##VAR_NAME[0]) > 0?1.0f:-1.0f;     \
-        float VAR_NAME##_ys = (n->##VAR_NAME[1] - nm->##VAR_NAME[1]) > 0?1.0f:-1.0f;     \
-        float VAR_NAME##_zs = (n->##VAR_NAME[2] - nm->##VAR_NAME[2]) > 0?1.0f:-1.0f;     \
-        std::vector<zeno::vec3f> tp_##VAR_NAME;                                          \
-        zeno::vec3f diff_##VAR_NAME = {                                                  \
-                            percent*VAR_NAME##_x_diff*VAR_NAME##_xs,                    \
-                            percent*VAR_NAME##_y_diff*VAR_NAME##_ys,                    \
-                            percent*VAR_NAME##_z_diff*VAR_NAME##_zs };                  \
-        tp_##VAR_NAME.push_back(nm->##VAR_NAME);                                           \
-        tp_##VAR_NAME.push_back(nm->##VAR_NAME + diff_##VAR_NAME);                         \
-        tp_##VAR_NAME.push_back(n->##VAR_NAME);                                            \
-        tp_##VAR_NAME.push_back(n->##VAR_NAME - diff_##VAR_NAME);
-
-
-#define BEZIER_VEC3_COMPUTE2(VAR_NAME)      \
-    std::vector<zeno::vec3f> tp_##VAR_NAME##_x;      \
-    std::vector<zeno::vec3f> tp_##VAR_NAME##_y;      \
-    std::vector<zeno::vec3f> tp_##VAR_NAME##_z;      \
-    tp_##VAR_NAME##_x.push_back(zeno::vec3f(0.0f, nm->##VAR_NAME[0], 0.0f));        \
-    tp_##VAR_NAME##_x.push_back(zeno::vec3f(c1of, nm->##VAR_NAME[0], 0.0f));         \
-    tp_##VAR_NAME##_x.push_back(zeno::vec3f(c2of, n->##VAR_NAME[0], 0.0f));          \
-    tp_##VAR_NAME##_x.push_back(zeno::vec3f(1.0f, n->##VAR_NAME[0], 0.0f));         \
-    tp_##VAR_NAME##_y.push_back(zeno::vec3f(0.0f, nm->##VAR_NAME[1], 0.0f));        \
-    tp_##VAR_NAME##_y.push_back(zeno::vec3f(c1of, nm->##VAR_NAME[1], 0.0f));         \
-    tp_##VAR_NAME##_y.push_back(zeno::vec3f(c2of, n->##VAR_NAME[1], 0.0f));          \
-    tp_##VAR_NAME##_y.push_back(zeno::vec3f(1.0f, n->##VAR_NAME[1], 0.0f));         \
-    tp_##VAR_NAME##_z.push_back(zeno::vec3f(0.0f, nm->##VAR_NAME[2], 0.0f));        \
-    tp_##VAR_NAME##_z.push_back(zeno::vec3f(c1of, nm->##VAR_NAME[2], 0.0f));         \
-    tp_##VAR_NAME##_z.push_back(zeno::vec3f(c2of, n->##VAR_NAME[2], 0.0f));          \
-    tp_##VAR_NAME##_z.push_back(zeno::vec3f(1.0f, n->##VAR_NAME[2], 0.0f));         \
-    auto b_##VAR_NAME##_x = BezierCompute::bezier(tp_##VAR_NAME##_x, factor);         \
-    auto b_##VAR_NAME##_y = BezierCompute::bezier(tp_##VAR_NAME##_y, factor);         \
-    auto b_##VAR_NAME##_z = BezierCompute::bezier(tp_##VAR_NAME##_z, factor);         \
-    auto b_##VAR_NAME = zeno::vec3f(b_##VAR_NAME##_x[1], b_##VAR_NAME##_y[1], b_##VAR_NAME##_z[1]);
-
-#define BEZIER_FLOAT_COMPUTE(VAR_NAME)              \
-    std::vector<zeno::vec3f> tp_##VAR_NAME;                                 \
-    tp_##VAR_NAME.push_back(zeno::vec3f(0.0f, nm->##VAR_NAME, 0.0f));    \
-    tp_##VAR_NAME.push_back(zeno::vec3f(c1of, nm->##VAR_NAME, 0.0f));    \
-    tp_##VAR_NAME.push_back(zeno::vec3f(c2of, n->##VAR_NAME, 0.0f));     \
-    tp_##VAR_NAME.push_back(zeno::vec3f(1.0f, n->##VAR_NAME, 0.0f));     \
-    auto b_##VAR_NAME##_v = BezierCompute::bezier(tp_##VAR_NAME, factor);   \
-    auto b_##VAR_NAME = b_##VAR_NAME##_v[1];
+    out_pos = (n->pos);                       \
+    out_up = (n->up);                         \
+    out_view = (n->view);                     \
+    out_fov = (n->fov);                       \
+    out_aperture = (n->aperture);             \
+    out_focalPlaneDistance = (n->focalPlaneDistance); \
 
 namespace zeno {
 namespace {
@@ -180,6 +132,20 @@ ZENO_DEFNODE(CameraNode)({
 });
 
 struct CameraEval: zeno::INode {
+
+    glm::quat to_quat(zeno::vec3f up, zeno::vec3f view){
+        auto glm_view = -1.0f * glm::normalize(glm::vec3(view[0], view[1], view[2]));
+        auto _up = glm::normalize(glm::vec3(up[0], up[1], up[2]));
+        auto _view = glm::normalize(glm_view);
+        auto _right = glm::normalize(glm::cross(_up, _view));
+        glm::mat3 _rotate;
+        _rotate[0][0] = _right[0]; _rotate[0][1] = _up[0]; _rotate[0][2] = _view[0];
+        _rotate[1][0] = _right[1]; _rotate[1][1] = _up[1]; _rotate[1][2] = _view[1];
+        _rotate[2][0] = _right[2]; _rotate[2][1] = _up[2]; _rotate[2][2] = _view[2];
+        glm::quat rotation = glm::quat_cast(_rotate);
+        return rotation;
+    }
+
     virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
@@ -190,117 +156,70 @@ struct CameraEval: zeno::INode {
 
         auto nodelist = get_input<zeno::ListObject>("nodelist")->get<zeno::CameraObject>();
 
-        auto out_pos = std::make_unique<zeno::NumericObject>();
-        auto out_up = std::make_unique<zeno::NumericObject>();
-        auto out_view = std::make_unique<zeno::NumericObject>();
-        auto out_fov = std::make_unique<zeno::NumericObject>();
-        auto out_aperture = std::make_unique<zeno::NumericObject>();
-        auto out_focalPlaneDistance = std::make_unique<zeno::NumericObject>();
-        std::string inter_mode;
-        auto inter = get_param<std::string>("inter");
-        if (inter == "Bezier"){
-            inter_mode = "Bezier";
-        }else if(inter == "Linear"){
-            inter_mode = "Linear";
-        }
-
-        //zeno::log_info("CameraEval frame {}", frameid);
-
-        // TODO sort CameraObject by (frameId)
+        zeno::vec3f out_pos;
+        zeno::vec3f out_up;
+        zeno::vec3f out_view;
+        float out_fov;
+        float out_aperture;
+        float out_focalPlaneDistance;
 
         if(nodelist.size() == 1){
             auto n = nodelist[0];
             SET_CAMERA_DATA
-            //zeno::log_info("CameraEval size 1");
         }else{
             int ff = (int)nodelist[0]->userData().get2<float>("frame");
             int lf = (int)nodelist[nodelist.size()-1]->userData().get2<float>("frame");
             if(frameid <= ff){
                 auto n = nodelist[0];
                 SET_CAMERA_DATA
-                //zeno::log_info("CameraEval first frame");
             }else if(frameid >= lf) {
                 auto n = nodelist[nodelist.size()-1];
                 SET_CAMERA_DATA
-                //zeno::log_info("CameraEval last frame");
             }else{
                 for(int i=1;i<nodelist.size();i++){
-                    auto const & n = nodelist[i];
-                    auto const & nm = nodelist[i-1];
-                    int cf = (int)n->userData().get2<float>("frame");
-                    if(frameid < cf){
-                        zeno::vec3f pos;
-                        zeno::vec3f up;
-                        zeno::vec3f view;
-                        float fov;
-                        float aperture;
-                        float focalPlaneDistance;
+                    auto const & next_node = nodelist[i];
+                    auto const & pre_node = nodelist[i-1];
+                    int next_frame = (int)next_node->userData().get2<float>("frame");
+                    int pre_frame = (int)pre_node->userData().get2<float>("frame");
+                    int total_frame = next_frame - pre_frame;
+                    float r = ((float)frameid - pre_frame) / total_frame;
 
-                        float factor = (float)(frameid - (int)nm->userData().get2<float>("frame"))
-                                       / (float)((int)n->userData().get2<float>("frame")
-                                           - (int)nm->userData().get2<float>("frame"));
+                    if(frameid <= next_frame){
+                        auto pos = pre_node->pos + (next_node->pos - pre_node->pos) * r;
+                        auto fov = pre_node->fov + (next_node->fov - pre_node->fov) * r;
+                        auto aperture = pre_node->aperture + (next_node->aperture - pre_node->aperture) * r;
+                        auto focalPlane = pre_node->focalPlaneDistance + (next_node->focalPlaneDistance - pre_node->focalPlaneDistance) * r;
 
-                        // linear interpolation
-                        if(inter_mode == "Linear"){
-                            pos = n->pos * factor + nm->pos*(1.0f-factor);
-                            up = n->up * factor + nm->up*(1.0f-factor);
-                            view = n->view * factor + nm->view*(1.0f-factor);
-                            fov = n->fov * factor + nm->fov*(1.0f-factor);
-                            aperture = n->aperture * factor + nm->aperture*(1.0f-factor);
-                            focalPlaneDistance = n->focalPlaneDistance * factor + nm->focalPlaneDistance*(1.0f-factor);
+                        auto pre_quat = to_quat(pre_node->up, pre_node->view);
+                        auto next_quat = to_quat(next_node->up, next_node->view);
+                        auto quat_lerp = glm::slerp(pre_quat, next_quat, r);
+                        glm::mat3 matrix_lerp = glm::toMat3(quat_lerp); // Convert quaternion to 3x3 matrix
+                        auto right = zeno::vec3f(matrix_lerp[0][0], matrix_lerp[1][0], matrix_lerp[2][0]);
+                        auto up = zeno::vec3f(matrix_lerp[0][1], matrix_lerp[1][1], matrix_lerp[2][1]);
+                        auto view = zeno::vec3f(matrix_lerp[0][2], matrix_lerp[1][2], matrix_lerp[2][2]);
 
-                        }
-                        // Bezier interpolation
-                        else if(inter_mode == "Bezier"){
-                            // TODO The control points consider the front and back frame trends
-
-                            float c1of = 0.4f;
-                            float c2of = 0.6f;
-
-                            //BEZIER_VEC3_COMPUTE(pos)
-                            //auto p = BezierCompute::bezier(tp_pos, factor);
-                            //BEZIER_VEC3_COMPUTE(up)
-                            //auto u = BezierCompute::bezier(tp_up, factor);
-                            //BEZIER_VEC3_COMPUTE(view)
-                            //auto v = BezierCompute::bezier(tp_view, factor);
-
-                            //BEZIER_VEC3_COMPUTE2(pos)
-                            //BEZIER_VEC3_COMPUTE2(up)
-                            //BEZIER_VEC3_COMPUTE2(view)
-                            //BEZIER_FLOAT_COMPUTE(aperture)
-                            //BEZIER_FLOAT_COMPUTE(fov)
-                            //BEZIER_FLOAT_COMPUTE(focalPlaneDistance)
-
-                            pos = BezierCompute::compute(c1of, c2of, factor, n->pos, nm->pos);
-                            up = BezierCompute::compute(c1of, c2of, factor, n->up, nm->up);
-                            view = BezierCompute::compute(c1of, c2of, factor, n->view, nm->view);
-                            fov = BezierCompute::compute(c1of, c2of, factor, n->fov, nm->fov);
-                            aperture = BezierCompute::compute(c1of, c2of, factor, n->aperture, nm->aperture);
-                            focalPlaneDistance = BezierCompute::compute(c1of, c2of, factor, n->focalPlaneDistance, nm->focalPlaneDistance);
-                        }
-
-                        //zeno::log_info("Inter Pos {} {} {}", pos[0], pos[1], pos[2]);
-                        //zeno::log_info("Inter Up {} {} {}", up[0], up[1], up[2]);
-                        //zeno::log_info("Inter View {} {} {}", view[0], view[1], view[2]);
-
-                        out_pos->set(pos);
-                        out_up->set(up);
-                        out_view->set(view);
-                        out_fov->set(fov);
-                        out_aperture->set(aperture);
-                        out_focalPlaneDistance->set(focalPlaneDistance);
+                        out_pos = (pos);
+                        out_up = (up);
+                        out_view = (-view);
+                        out_fov = (fov);
+                        out_aperture = (aperture);
+                        out_focalPlaneDistance = (focalPlane);
                         break;
                     }
                 }
             }
         }
 
-        set_output("pos", std::move(out_pos));
-        set_output("up", std::move(out_up));
-        set_output("view", std::move(out_view));
-        set_output("fov", std::move(out_fov));
-        set_output("aperture", std::move(out_aperture));
-        set_output("focalPlaneDistance", std::move(out_focalPlaneDistance));
+        auto camera = std::make_unique<zeno::CameraObject>();
+
+        camera->pos = out_pos;
+        camera->up = out_up;
+        camera->view = out_view;
+        camera->fov = out_fov;
+        camera->aperture = out_aperture;
+        camera->focalPlaneDistance = out_focalPlaneDistance;
+
+        set_output("camera", std::move(camera));
     }
 };
 
@@ -310,15 +229,9 @@ ZENO_DEFNODE(CameraEval)({
         {"nodelist"}
     },
     {
-        {"vec3f", "pos"},
-        {"vec3f", "up"},
-        {"vec3f", "view"},
-        {"float", "fov"},
-        {"float", "aperture"},
-        {"float", "focalPlaneDistance"},
+        {"CameraObject", "camera"},
     },
     {
-        {"enum Bezier Linear ", "inter", "Bezier"},
     },
     {"FBX"},
 });
@@ -330,47 +243,44 @@ struct LightNode : INode {
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scale");
         auto rotate = get_input2<zeno::vec3f>("rotate");
+        auto quaternion = get_input2<zeno::vec4f>("quaternion");
         auto intensity = get_input2<float>("intensity");
         auto color = get_input2<zeno::vec3f>("color");
-        auto shapeParam = get_param<std::string>("Shape");
-        std::string shape;
-        if (shapeParam == "Disk"){
-            shape = "Disk";
-        }else if(shapeParam == "Plane"){
-            shape = "Plane";
-        }
+        std::string shape = "Plane";
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto &verts = prim->verts;
         auto &tris = prim->tris;
-
-        // Rotate
-        float ax = rotate[0] * (3.14159265358979323846 / 180.0);
-        float ay = rotate[1] * (3.14159265358979323846 / 180.0);
-        float az = rotate[2] * (3.14159265358979323846 / 180.0);
-        glm::mat3 mx = glm::mat3(1, 0, 0, 0, cos(ax), -sin(ax), 0, sin(ax), cos(ax));
-        glm::mat3 my = glm::mat3(cos(ay), 0, sin(ay), 0, 1, 0, -sin(ay), 0, cos(ay));
-        glm::mat3 mz = glm::mat3(cos(az), -sin(az), 0, sin(az), cos(az), 0, 0, 0, 1);
 
         if(shape == "Plane"){
             auto start_point = zeno::vec3f(0.5, 0, 0.5);
             float rm = 1.0f;
             float cm = 1.0f;
 
+            glm::mat4 rotation = glm::mat4(1.0f);
+            glm::vec3 euler = glm::vec3(rotate[0], rotate[1], rotate[2]);
+            rotation = glm::rotate(rotation, euler.z, glm::vec3(0.0f, 0.0f, 1.0f));
+            rotation = glm::rotate(rotation, euler.y, glm::vec3(0.0f, 1.0f, 0.0f));
+            rotation = glm::rotate(rotation, euler.x, glm::vec3(1.0f, 0.0f, 0.0f));
+
             // Plane Verts
             for(int i=0; i<=1; i++){
+
                 auto rp = start_point - zeno::vec3f(i*rm, 0, 0);
                 for(int j=0; j<=1; j++){
                     auto p = rp - zeno::vec3f(0, 0, j*cm);
-                    // S R T
-                    p = p * scale;
+                    // S R Q T
+                    p = p * scale;  // Scale
                     auto gp = glm::vec3(p[0], p[1], p[2]);
-                    gp = mz * my * mx * gp;
+                    glm::vec4 result = rotation * glm::vec4(gp, 1.0f);  // Rotate
+                    gp = glm::vec3(result.x, result.y, result.z);
+                    glm::quat rotation(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+                    gp = glm::rotate(rotation, gp);
                     p = zeno::vec3f(gp.x, gp.y, gp.z);
-                    auto zcp = zeno::vec3f(p[0], p[1], p[2]);
-                    zcp = zcp + position;
+                    auto zp = zeno::vec3f(p[0], p[1], p[2]);
+                    zp = zp + position;  // Translate
 
-                    verts.push_back(zcp);
+                    verts.push_back(zp);
                 }
             }
 
@@ -378,24 +288,6 @@ struct LightNode : INode {
             tris.emplace_back(zeno::vec3i(0, 3, 1));
             tris.emplace_back(zeno::vec3i(3, 0, 2));
 
-        }else if(shape == "Disk"){
-            int divisions = 13;
-            verts.emplace_back(zeno::vec3f(0, 0, 0)+position);
-
-            for (int i = 0; i < divisions; i++) {
-                float rad = 2 * 3.14159265358979323846 * i / divisions;
-                auto p = zeno::vec3f(cos(rad), 0, -sin(rad));
-                // S R T
-                p = p * scale;
-                auto gp = glm::vec3(p[0], p[1], p[2]);
-                gp = mz * my * mx * gp;
-                p = zeno::vec3f(gp.x, gp.y, gp.z);
-                p+= position;
-
-                verts.emplace_back(p);
-                tris.emplace_back(i+1, 0, i+2);
-            }
-            tris[tris.size()-1] = zeno::vec3i(divisions, 0, 1);
         }
 
         auto &clr = prim->verts.add_attr<zeno::vec3f>("clr");
@@ -418,6 +310,7 @@ struct LightNode : INode {
         prim->userData().set2("pos", std::move(position));
         prim->userData().set2("scale", std::move(scale));
         prim->userData().set2("rotate", std::move(rotate));
+        prim->userData().set2("quaternion", std::move(quaternion));
         prim->userData().set2("shape", std::move(shape));
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
@@ -431,6 +324,7 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "position", "0, 0, 0"},
         {"vec3f", "scale", "1, 1, 1"},
         {"vec3f", "rotate", "0, 0, 0"},
+        {"vec4f", "quaternion", "1, 0, 0, 0"},
         {"vec3f", "color", "1, 1, 1"},
         {"float", "intensity", "1"},
         {"bool", "islight", "1"},
@@ -440,17 +334,19 @@ ZENO_DEFNODE(LightNode)({
         "prim"
     },
     {
-        {"enum Disk Plane", "Shape", "Plane"},
+
     },
     {"shader"},
 });
 
 struct LiveMeshNode : INode {
+    typedef std::vector<std::vector<float>> UVS;
     typedef std::vector<std::vector<float>> VERTICES;
     typedef std::vector<int> VERTEX_COUNT;
     typedef std::vector<int> VERTEX_LIST;
 
     struct PrimIngredient{
+        UVS uvs;
         VERTICES vertices;
         VERTEX_COUNT vertexCount;
         VERTEX_LIST vertexList;
@@ -460,62 +356,194 @@ struct LiveMeshNode : INode {
         auto& vert = primObject->verts;
         auto& loops = primObject->loops;
         auto& polys = primObject->polys;
+
         for(int i=0; i<ingredient.vertices.size(); i++){
             auto& v = ingredient.vertices[i];
             vert.emplace_back(v[0], v[1], v[2]);
         }
+
         int start = 0;
         for(int i=0; i<ingredient.vertexCount.size(); i++){
             auto count = ingredient.vertexCount[i];
             for(int j=start; j<start+count; j++){
                 loops.emplace_back(ingredient.vertexList[j]);
             }
-            polys.emplace_back(i * count, count);
+            polys.emplace_back(start, count);
 
             start += count;
+        }
+
+        primObject->uvs.resize(loops.size());
+        for (auto i = 0; i < loops.size(); i++) {
+            primObject->uvs[i] = vec2f(ingredient.uvs[i][0], ingredient.uvs[i][1]);
+        }
+        auto& loopuvs = primObject->loops.add_attr<int>("uvs");
+        for (auto i = 0; i < loops.size(); i++) {
+            loopuvs[i] = i;
         }
     }
 
     virtual void apply() override {
-        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        auto outDict = get_input2<bool>("outDict");
+        auto prims_list = std::make_shared<zeno::ListObject>();
+        auto prims_dict = std::make_shared<zeno::DictObject>();
         auto vertSrc = get_input2<std::string>("vertSrc");
 
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = get_input<zeno::NumericObject>("frameid")->get<int>();
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+
         if(! vertSrc.empty()){
-            std::cout << "src vert " << vertSrc.size() << "\n";
             using json = nlohmann::json;
 
-            //std::fstream file;
-            //file.open("sample_file.txt", std::ios_base::out);
-            //if(!file.is_open())
-            //    std::cout<<"Unable to open the file.\n";
-            //file<<vertSrc;
-            //file.close();
-
             json parseData = json::parse(vertSrc);
-            int vertices_size = parseData["vertices"].size();
-            int vertexCount_size = parseData["vertexCount"].size();
-            int vertexList_size = parseData["vertexList"].size();
-            PrimIngredient ingredient;
-            ingredient.vertices = parseData["vertices"].get<VERTICES>();
-            ingredient.vertexCount = parseData["vertexCount"].get<VERTEX_COUNT>();
-            ingredient.vertexList = parseData["vertexList"].get<VERTEX_LIST>();
-            std::cout << " vertices_size " << vertices_size << " vertexCount_size " << vertexCount_size
-                      << " vertexList_size " << vertexList_size << "\n";
-            GeneratePrimitiveObject(ingredient, prim);
 
-        }else{
+            /*
+            auto& frameData = parseData[std::to_string(frameid)];
+            auto frameDataSize = frameData["DATA"].size();
 
+            std::cout << "src size " << vertSrc.size()
+                      << " data size " << frameDataSize
+                      << " frame " << frameid
+                      << "\n";
+
+            auto& AllMeshData = frameData["DATA"];
+            for(auto& mapItem: AllMeshData.items()){
+                auto prim = std::make_shared<zeno::PrimitiveObject>();
+                std::cout << "iter map key " << mapItem.key() << "\n";
+                auto& mapData = mapItem.value();
+                int vertices_size = mapData["MESH_POINTS"].size();
+                int vertexCount_size = mapData["MESH_VERTEX_COUNTS"].size();
+                int vertexList_size = mapData["MESH_VERTEX_LIST"].size();
+                PrimIngredient ingredient;
+                ingredient.vertices = mapData["MESH_POINTS"].get<VERTICES>();
+                ingredient.vertexCount = mapData["MESH_VERTEX_COUNTS"].get<VERTEX_COUNT>();
+                ingredient.vertexList = mapData["MESH_VERTEX_LIST"].get<VERTEX_LIST>();
+                std::cout << "Vertices Size " << vertices_size << " " << vertexCount_size << " " << vertexList_size << "\n";
+                GeneratePrimitiveObject(ingredient, prim);
+
+                prims->arr.emplace_back(prim);
+            }
+             */
+
+            auto& parsedFrameData = parseData[std::to_string(frameid)];
+            if(! parsedFrameData.empty()){
+                auto bPathI = parsedFrameData["BPATHI"].get<std::string>();
+                auto bPath = parsedFrameData["BPATH"].get<std::string>();
+                std::cout<< "bPath info " << bPathI << "\n";
+                std::ifstream t(bPathI);
+                std::stringstream buffer;
+                buffer << t.rdbuf();
+
+                auto& sizesData = parsedFrameData["SIZES"];
+
+                json infoData = json::parse(buffer.str());
+                for(auto& mapItem: infoData.items()){
+                    auto& key = mapItem.key();
+                    auto& value = mapItem.value();
+
+                    auto sizes = sizesData[key].get<std::vector<int>>();
+
+                    auto u = value["UV"].get<std::string>();
+                    auto v = value["VERTEX"].get<std::string>();
+                    auto i = value["INDICES"].get<std::string>();
+                    auto c = value["COUNTS"].get<std::string>();
+
+                    std::cout << "sync info " << key << " sizes " << sizes.size() << "\n";
+                    std::cout << " u " << u << "\n";
+                    std::cout << " v " << v << "\n";
+                    std::cout << " i " << i << "\n";
+                    std::cout << " c " << c << "\n";
+
+                    auto pu = bPath+"/"+u;
+                    auto pv = bPath+"/"+v;
+                    auto pi = bPath+"/"+i;
+                    auto pc = bPath+"/"+c;
+
+                    std::cout << " u.p " << pu << " u.s " << sizes[0] << "\n";
+                    std::cout << " v.p " << pv << " v.s " << sizes[1] << "\n";
+                    std::cout << " i.p " << pi << " i.s " << sizes[2] << "\n";
+                    std::cout << " c.p " << pc << " c.s " << sizes[3] << "\n";
+
+                    FILE *fp_u = fopen(pu.c_str(), "rb");
+                    FILE *fp_v = fopen(pv.c_str(), "rb");
+                    FILE *fp_i = fopen(pi.c_str(), "rb");
+                    FILE *fp_c = fopen(pc.c_str(), "rb");
+
+                    float *_u = new float[sizes[0]];
+                    float *_v = new float[sizes[1]];
+                    int   *_i = new int[sizes[2]];
+                    int   *_c = new int[sizes[3]];
+
+                    fread((void*)(_u), sizeof(float), sizes[0], fp_u);
+                    fread((void*)(_v), sizeof(float), sizes[1], fp_v);
+                    fread((void*)(_i), sizeof(int), sizes[2], fp_i);
+                    fread((void*)(_c), sizeof(int), sizes[3], fp_c);
+
+                    UVS _vu{};
+                    VERTICES _vv{};
+                    VERTEX_LIST _vi{};
+                    VERTEX_COUNT _vc{};
+
+                    for(int s = 0; s < sizes[0]; s+=2){
+                        _vu.push_back({_u[s], _u[s+1]});
+                    }
+                    for(int s = 0; s < sizes[1]; s+=3){
+                        _vv.push_back({_v[s], _v[s+1], _v[s+2]});
+                    }
+                    for(int s = 0; s < sizes[2]; ++s){
+                        _vi.push_back(_i[s]);
+                    }
+                    for(int s = 0; s < sizes[3]; ++s){
+                        _vc.push_back(_c[s]);
+                    }
+
+                    delete [] _u;
+                    delete [] _v;
+                    delete [] _c;
+                    delete [] _i;
+
+                    fclose(fp_u);
+                    fclose(fp_v);
+                    fclose(fp_i);
+                    fclose(fp_c);
+
+                    PrimIngredient ingredient;
+                    ingredient.uvs = _vu;
+                    ingredient.vertices = _vv;
+                    ingredient.vertexCount = _vc;
+                    ingredient.vertexList = _vi;
+                    auto prim = std::make_shared<zeno::PrimitiveObject>();
+                    GeneratePrimitiveObject(ingredient, prim);
+                    if(outDict) {
+                        prims_dict->lut[key] = prim;
+                    }else{
+                        prims_list->arr.emplace_back(prim);
+                    }
+                }
+            }else{
+                std::cout << "not parsed frame " << frameid << "\n";
+            }
         }
-        set_output("prim", std::move(prim));
+        if(outDict) {
+            set_output("prims", std::move(prims_dict));
+        }else{
+            set_output("prims", std::move(prims_list));
+        }
     }
 };
 
 ZENO_DEFNODE(LiveMeshNode)({
     {
+        {"frameid"},
         {"string", "vertSrc", ""},
+        {"bool", "outDict", "false"}
     },
     {
-        "prim"
+        "prims"
     },
     {
     },
@@ -583,17 +611,17 @@ struct LiveCameraNode : INode{
     }
 };
 
-ZENO_DEFNODE(LiveCameraNode)({
-    {
-        {"string", "camSrc", ""},
-    },
-    {
-        "camera"
-    },
-    {
-    },
-    {"FBX"},
-});
+//ZENO_DEFNODE(LiveCameraNode)({
+//    {
+//        {"string", "camSrc", ""},
+//    },
+//    {
+//        "camera"
+//    },
+//    {
+//    },
+//    {"FBX"},
+//});
 
 }
 }

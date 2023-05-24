@@ -11,10 +11,6 @@ public:
     SubnetNode(bool bInput, const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
     ~SubnetNode();
 
-protected:
-    void onParamEditFinished(const QString& paramName, const QVariant& textValue) override;
-    QValidator* validateForParams(PARAM_INFO info) override;
-
 private:
     bool m_bInput;
 };

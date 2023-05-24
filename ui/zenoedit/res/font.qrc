@@ -1,7 +1,14 @@
 <RCC>
   <qresource prefix="/">
-    <file>font/HarmonyOS_Sans/HarmonyOS_Sans_Black.ttf</file>
-	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Bold.ttf</file>
-	<file>font/HarmonyOS_Sans/HarmonyOS_Sans_Regular.ttf</file>
+    <file>font/MiSans/MiSans-Thin.ttf</file>
+    <file>font/MiSans/MiSans-Semibold.ttf</file>
+    <file>font/MiSans/MiSans-Regular.ttf</file>
+    <file>font/MiSans/MiSans-Normal.ttf</file>
+    <file>font/MiSans/MiSans-Medium.ttf</file>
+	<file>font/MiSans/MiSans-Light.ttf</file>
+    <file>font/MiSans/MiSans-Heavy.ttf</file>
+    <file>font/MiSans/MiSans-ExtraLight.ttf</file>
+	<file>font/MiSans/MiSans-Demibold.ttf</file>
+    <file>font/MiSans/MiSans-Bold.ttf</file>
   </qresource>
 </RCC>

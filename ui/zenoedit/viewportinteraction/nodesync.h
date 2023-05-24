@@ -87,7 +87,7 @@ class NodeSyncMgr {
     const NodeSyncMgr &operator=(const NodeSyncMgr &) = delete;
 
   private:
-    IGraphsModel *m_graph_model;
+    IGraphsModel *m_graph_model;    //bug: the currentmodel will be invalidated after the current graph has been closed.
     std::unordered_map<std::string, std::string> m_prim_sock_map;
     NodeSyncMgr() {
         m_graph_model = zenoApp->graphsManagment()->currentModel();

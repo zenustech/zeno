@@ -878,9 +878,9 @@ struct ToZSSurfaceMesh : INode {
         constexpr auto space = zs::execspace_e::openmp;
         std::variant<std::true_type, std::false_type> tag;
         if (useDouble)
-            tag = true_c;
+            tag = std::true_type{};
         else
-            tag = false_c;
+            tag = std::false_type{};
 
         match([&](auto tag) {
             using namespace zs;
@@ -1007,9 +1007,11 @@ struct ToZSSurfaceMesh : INode {
                 for (int k = 0; k != 3; ++k) {
                     auto e0 = tri[k];
                     auto e1 = tri[(k + 1) % 3];
-                    if (edge2tri.find(vec2i{e0, e1}) != edge2tri.end())
-                        throw std::runtime_error(
-                            fmt::format("the same edge <{}, {}> is being shared by multiple triangles!", e0, e1));
+                    if (withBending) {
+                        if (edge2tri.find(vec2i{e0, e1}) != edge2tri.end())
+                            throw std::runtime_error(
+                                fmt::format("the same edge <{}, {}> is being shared by multiple triangles!", e0, e1));
+                    }
                     edge2tri[vec2i{e0, e1}] = i;
                 }
             }

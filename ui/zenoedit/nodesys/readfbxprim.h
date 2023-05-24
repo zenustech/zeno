@@ -6,14 +6,14 @@
 class ReadFBXPrim : public ZenoNode
 {
     Q_OBJECT
-  public:
+public:
     ReadFBXPrim(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
     ~ReadFBXPrim();
 
-  protected:
-    QGraphicsLinearLayout* initCustomParamWidgets() override;
+protected:
+    ZGraphicsLayout* initCustomParamWidgets() override;
 
-  private slots:
+private slots:
     void onEditClicked();
 };
 

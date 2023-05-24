@@ -2,6 +2,7 @@
 #define __ZTIMESILDER_H__
 
 #include <QtWidgets>
+#include <zenoui/style/zenostyle.h>
 
 class ZSlider : public QWidget
 {
@@ -27,11 +28,20 @@ private:
     int _posToFrame(int x);
     int _frameToPos(int frame);
     int _getframes();
-    void drawSlideHandle(QPainter* painter);
-    const int m_sHMargin = 13;
+    void drawSlideHandle(QPainter* painter, int scaleH);
+
+    const int m_sHMargin;
+    const int scaleH;
+    const int smallScaleH;
+    const int fontHeight;
+    const int fontScaleSpacing;
 
     int m_from, m_value, m_to;
     QTransform m_transform;
+
+    int m_cellLength;
+    int m_lengthUnit[3] = {1, 2, 5};
+    int getCellLength(int total);
 };
 
 #endif

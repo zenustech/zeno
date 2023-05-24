@@ -17,12 +17,14 @@ struct DrawOptions {
     bool normal_check = false;
     bool simpleRender = false;
     bool needRefresh = false;
+    bool updateMatlOnly = false;
+    bool updateLightCameraOnly = false;
     int num_samples = 1;
     int msaa_samples = 0;
 
     std::shared_ptr<IGraphicHandler> handler;
 
-    glm::vec3 bgcolor{0.23f, 0.23f, 0.23f};
+    glm::vec3 bgcolor{0.18f, 0.20f, 0.22f};
 };
 
 }

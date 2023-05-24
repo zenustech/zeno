@@ -31,7 +31,7 @@ struct ZSSparseGridToPrimitive : INode {
              tagDstOffset = pars.getPropertyOffset(parTag), nchns, isAccumulate] __device__(std::size_t pi) mutable {
                 auto pos = pars.pack(dim_c<3>, "x", pi);
                 for (int d = 0; d < nchns; ++d) { // 0, 1, 2
-                    auto arena = spgv.wArena(pos, d, wrapv<kernel_e::quadratic>{});
+                    auto arena = spgv.wArena(pos, d, wrapv<knl>{});
 
                     float val = 0;
                     for (auto loc : ndrange<3>(RM_CVREF_T(arena)::width)) {
@@ -65,9 +65,9 @@ struct ZSSparseGridToPrimitive : INode {
             [spgv = proxy<space>(spg), pars = proxy<space>({}, pars), tagSrcOffset = spg.getPropertyOffset(srcTag),
              tagDstOffset = pars.getPropertyOffset(parTag), nchns, isAccumulate] __device__(std::size_t pi) mutable {
                 auto pos = pars.pack(dim_c<3>, "x", pi);
-                auto arena = spgv.wArena(pos, wrapv<kernel_e::quadratic>{});
+                auto arena = spgv.wArena(pos, wrapv<knl>{});
 
-                float val[144];
+                float val[3];
                 for (int d = 0; d < nchns; ++d)
                     val[d] = 0;
 
@@ -112,7 +112,8 @@ struct ZSSparseGridToPrimitive : INode {
         using namespace zs;
         auto cudaPol = cuda_exec().device(0);
 
-        using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>>;
+        using kt_t = std::variant<wrapv<kernel_e::linear>, wrapv<kernel_e::quadratic>, wrapv<kernel_e::cubic>,
+                                  wrapv<kernel_e::delta2>, wrapv<kernel_e::delta3>, wrapv<kernel_e::delta4>>;
         kt_t knl;
         if (kernel == "linear")
             knl = wrapv<kernel_e::linear>{};
@@ -120,6 +121,12 @@ struct ZSSparseGridToPrimitive : INode {
             knl = wrapv<kernel_e::quadratic>{};
         else if (kernel == "cubic")
             knl = wrapv<kernel_e::cubic>{};
+        else if (kernel == "delta2")
+            knl = wrapv<kernel_e::delta2>{};
+        else if (kernel == "delta3")
+            knl = wrapv<kernel_e::delta3>{};
+        else if (kernel == "delta4")
+            knl = wrapv<kernel_e::delta4>{};
         else
             throw std::runtime_error(fmt::format("Kernel function [{}] not found!", kernel));
 
@@ -145,8 +152,8 @@ struct ZSSparseGridToPrimitive : INode {
                     g2p_staggered<knt>(cudaPol, zsSPG.get(), parObjPtr, tag, parTag, nchns, isAccumulate);
                 })(knl);
             } else {
-                if (nchns > 144)
-                    throw std::runtime_error("# of chns of property cannot exceed 144.");
+                if (nchns > 3)
+                    throw std::runtime_error("# of chns of property cannot exceed 3.");
 
                 match([&](auto knlTag) {
                     constexpr auto knt = decltype(knlTag)::value;
@@ -165,7 +172,7 @@ ZENDEFNODE(ZSSparseGridToPrimitive, {/* inputs: */
                                       {"string", "GridAttribute"},
                                       {"string", "ParticleAttribute", ""},
                                       {"enum replace accumulate", "OpType", "replace"},
-                                      {"enum linear quadratic cubic", "Kernel", "quadratic"},
+                                      {"enum linear quadratic cubic delta2 delta3 delta4", "Kernel", "quadratic"},
                                       {"bool", "staggered", "0"}},
                                      /* outputs: */
                                      {"ZSParticles"},

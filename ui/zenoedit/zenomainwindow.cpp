@@ -1,9 +1,13 @@
+#include "launch/livehttpserver.h"
+#include "launch/livetcpserver.h"
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
+#include "dock/ztabdockwidget.h"
+#include "dock/docktabcontent.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
 #include "panel/zenospreadsheet.h"
@@ -11,10 +15,13 @@
 #include "timeline/ztimeline.h"
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
+#include "viewport/optixviewport.h"
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include <zeno/utils/log.h>
 #include <zeno/utils/envconfig.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
 #include <zeno/core/Session.h>
@@ -29,55 +36,130 @@
 #include "panel/zenolights.h"
 #include "nodesys/zenosubgraphscene.h"
 #include "viewport/recordvideomgr.h"
+#include "viewport/displaywidget.h"
+#include "ui_zenomainwindow.h"
+#include <QJsonDocument>
+#include "dialog/zdocklayoutmangedlg.h"
+#include "panel/zenoimagepanel.h"
+#include "dialog/zshortcutsettingdlg.h"
+#include "settings/zenosettingsmanager.h"
+#include "util/apphelper.h"
+#include "dialog/zaboutdlg.h"
 
+
+const QString g_latest_layout = "LatestLayout";
 
 ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
-    , m_pEditor(nullptr)
-    , m_viewDock(nullptr)
     , m_bInDlgEventloop(false)
-    , m_logger(nullptr)
+    , m_bAlways(false)
+    , m_bAlwaysLightCamera(false)
+    , m_bAlwaysMaterial(false)
+    , m_pTimeline(nullptr)
+    , m_layoutRoot(nullptr)
+    , m_nResizeTimes(0)
+    , m_spCacheMgr(nullptr)
+    , m_bMovingSeparator(false)
 {
+    liveTcpServer = new LiveTcpServer;
+    liveHttpServer = new LiveHttpServer;
+    liveSignalsBridge = new LiveSignalsBridge;
+
     init();
     setContextMenuPolicy(Qt::NoContextMenu);
-    setWindowTitle("Zeno Editor (" + QString::fromStdString(getZenoVersion()) + ")");
+    setFocusPolicy(Qt::ClickFocus);
+
 //#ifdef __linux__
     if (char *p = zeno::envconfig::get("OPEN")) {
         zeno::log_info("ZENO_OPEN: {}", p);
         openFile(p);
     }
 //#endif
+    m_spCacheMgr = std::make_shared<ZCacheMgr>();
 }
 
 ZenoMainWindow::~ZenoMainWindow()
 {
+    delete liveTcpServer;
+    delete liveHttpServer;
+    delete liveSignalsBridge;
 }
 
 void ZenoMainWindow::init()
 {
+    m_ui = new Ui::MainWindow;
+    m_ui->setupUi(this);
+
     initMenu();
     initLive();
     initDocks();
-    verticalLayout();
-    //onlyEditorLayout();
+    initWindowProperty();
+
+    addToolBar(Qt::LeftToolBarArea, new FakeToolbar(false));
+    addToolBar(Qt::RightToolBarArea, new FakeToolbar(false));
+    addToolBar(Qt::BottomToolBarArea, new FakeToolbar(true));
+    addToolBar(Qt::TopToolBarArea, new FakeToolbar(true));
 
     QPalette pal = palette();
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
+
+    m_ui->statusbar->showMessage(tr("Status Bar"));
+    connect(this, &ZenoMainWindow::recentFilesChanged, this, [=](const QObject *sender) {
+        if (sender != this)
+            loadRecentFiles();
+    });
+}
+
+void ZenoMainWindow::initWindowProperty()
+{
+    auto pGraphsMgm = zenoApp->graphsManagment();
+    setWindowTitle(AppHelper::nativeWindowTitle(""));
+    connect(pGraphsMgm, &GraphsManagment::fileOpened, this, [=](QString fn) {
+        QFileInfo info(fn);
+        QString path = info.filePath();
+        QString title = AppHelper::nativeWindowTitle(path);
+        updateNativeWinTitle(title);
+    });
+    connect(pGraphsMgm, &GraphsManagment::modelInited, this, [=]() {
+        //new file
+        QString title = AppHelper::nativeWindowTitle(tr("new file"));
+        updateNativeWinTitle(title);
+    });
+    connect(pGraphsMgm, &GraphsManagment::fileClosed, this, [=]() { 
+        QString title = AppHelper::nativeWindowTitle("");
+        updateNativeWinTitle(title);
+    });
+    connect(pGraphsMgm, &GraphsManagment::fileSaved, this, [=](QString path) {
+        QString title = AppHelper::nativeWindowTitle(path);
+        updateNativeWinTitle(title);
+    });
+    connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
+    connect(this, &ZenoMainWindow::visFrameUpdated, this, &ZenoMainWindow::onZenovisFrameUpdate);
+}
+
+void ZenoMainWindow::updateNativeWinTitle(const QString& title)
+{
+    QWidgetList lst = QApplication::topLevelWidgets();
+    for (auto wid : lst)
+    {
+        if (qobject_cast<ZTabDockWidget*>(wid) ||
+            qobject_cast<ZenoMainWindow*>(wid))
+        {
+            wid->setWindowTitle(title);
+        }
+    }
 }
 
 void ZenoMainWindow::initLive() {
 
 }
 
-void ZenoMainWindow::initMenu() {
-    QMenuBar *pMenuBar = new QMenuBar(this);
-    if (!pMenuBar)
-        return;
-
-    QMenu *pFile = new QMenu(tr("File"));
-    {
+void ZenoMainWindow::initMenu()
+{
+    //to merge:
+/*
         QAction *pAction = new QAction(tr("New"), pFile);
         pAction->setCheckable(false);
         pAction->setShortcut(QKeySequence(("Ctrl+N")));
@@ -85,251 +167,514 @@ void ZenoMainWindow::initMenu() {
         //QMenu *pNewMenu = new QMenu;
         //QAction *pNewGraph = pNewMenu->addAction("New Scene");
         connect(pAction, SIGNAL(triggered()), this, SLOT(onNewFile()));
+ */
+    setActionProperty();
 
-        //pAction->setMenu(pNewMenu);
+    QSettings settings(zsCompanyName, zsEditor);
+    QVariant use_chinese = settings.value("use_chinese");
+    m_ui->actionEnglish_Chinese->setChecked(use_chinese.isNull() || use_chinese.toBool());
 
-        pFile->addAction(pAction);
+    QActionGroup *actionGroup = new QActionGroup(this);
+    actionGroup->addAction(m_ui->actionShading);
+    actionGroup->addAction(m_ui->actionSolid);
+    actionGroup->addAction(m_ui->actionOptix);
+    m_ui->actionSolid->setChecked(true);
 
-        pAction = new QAction(tr("Open"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+O")));
-        pAction->setShortcutContext(Qt::ApplicationShortcut);
-        connect(pAction, SIGNAL(triggered()), this, SLOT(openFileDialog()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Save"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+S")));
-        pAction->setShortcutContext(Qt::ApplicationShortcut);
-        connect(pAction, SIGNAL(triggered()), this, SLOT(save()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Save As"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+Shift+S")));
-        pAction->setShortcutContext(Qt::ApplicationShortcut);
-        connect(pAction, SIGNAL(triggered()), this, SLOT(saveAs()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Import"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+Shift+O")));
-        connect(pAction, SIGNAL(triggered()), this, SLOT(importGraph()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Export"), pFile);
-        pAction->setCheckable(false);
-        pAction->setShortcut(QKeySequence(("Ctrl+Shift+E")));
-        connect(pAction, SIGNAL(triggered()), this, SLOT(exportGraph()));
-        pFile->addAction(pAction);
-
-        pAction = new QAction(tr("Close"), pFile);
-        connect(pAction, SIGNAL(triggered()), this, SLOT(saveQuit()));
-        pFile->addAction(pAction);
+    auto actions = findChildren<QAction*>(QString(), Qt::FindDirectChildrenOnly);
+    for (QAction* action : actions)
+    {
+        connect(action, SIGNAL(triggered(bool)), this, SLOT(onMenuActionTriggered(bool)));  
+        setActionIcon(action);
     }
 
-    QMenu *pEdit = new QMenu(tr("Edit"));
+    m_ui->menubar->setProperty("cssClass", "mainWin");
+    //qt bug: qss font is not valid on menubar.
+    QFont font = zenoApp->font();
+    font.setPointSize(10);
+    font.setWeight(QFont::Medium);
+    m_ui->menubar->setFont(font);
+
+    //default layout
+    QJsonObject obj = readDefaultLayout();
+    QStringList lst = obj.keys();
+    initCustomLayoutAction(lst, true);
+    //check user saved layout.
+    loadSavedLayout();
+    //init recent files
+    loadRecentFiles();
+    initShortCut();
+}
+
+void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
+{
+    QAction* pAction = qobject_cast<QAction*>(sender());
+    QVariant var = pAction->property("ActionType");
+    int actionType = -1;
+    if (var.type() == QVariant::Int)
+        actionType = pAction->property("ActionType").toInt();
+    if (actionType == ACTION_SHADING || actionType == ACTION_SOLID || actionType == ACTION_OPTIX) 
     {
-        QAction *pAction = new QAction(tr("Undo"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
-
-        pAction = new QAction(tr("Redo"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
-
-        pAction = new QAction(tr("Cut"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
-
-        pAction = new QAction(tr("Copy"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
-
-        pAction = new QAction(tr("Paste"), pEdit);
-        pAction->setCheckable(false);
-        pEdit->addAction(pAction);
+        setActionIcon(m_ui->actionShading);
+        setActionIcon(m_ui->actionSolid);
+        setActionIcon(m_ui->actionOptix);
+    } 
+    else 
+    {
+        setActionIcon(pAction);
     }
-
-    //QMenu *pRender = new QMenu(tr("Render"));
-
-    QMenu *pView = new QMenu(tr("View"));
+    switch (actionType)
     {
-        QAction *pViewAct = new QAction(tr("view"));
-        pViewAct->setCheckable(true);
-        pViewAct->setChecked(true);
-        connect(pViewAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_VIEW, pViewAct->isChecked()); });
-        pView->addAction(pViewAct);
+    case ACTION_NEWFILE: {
+        onNewFile();
+        break;
+    }
+    case ACTION_OPEN: {
+        openFileDialog();
+        break;
+    }
+    case ACTION_SAVE: {
+        save();
+        break;
+    }
+    case ACTION_SAVE_AS: {
+        saveAs();
+        break;
+    }
+    case ACTION_IMPORT: {
+        importGraph();
+        break;
+    }
+    case ACTION_EXPORT_GRAPH: {
+        exportGraph();
+        break;
+    }
+    case ACTION_CLOSE: {
+        saveQuit();
+        break;
+    }
+    case ACTION_SAVE_LAYOUT: {
+        saveDockLayout();
+        break;
+    }
+    case ACTION_LAYOUT_MANAGE: {
+        manageCustomLayout();
+        break;
+    }
+    case ACTION_LANGUAGE: {
+        onLangChanged(bTriggered);
+        break;
+    }
+    case ACTION_SHORTCUTLIST: {
+        QDesktopServices::openUrl(QUrl("http://doc.zenustech.com/project-3/doc-135/"));
+        break;
+    }
+    case ACTION_SCREEN_SHOOT: {
+        screenShoot();
+        break;
+    }
+    case ACTION_SET_SHORTCUT: {
+        shortCutDlg();
+        break;
+    }
+    case ACTION_ABOUT: {
+        ZAboutDlg dlg(this);
+        dlg.exec();
+        break;
+    }
+    case ACTION_FEEDBACK: {
+        onFeedBack();
+        break;
+    }
+    case ACTION_CHECKUPDATE: {
+        break;
+    }
+    default: {
+        dispatchCommand(pAction, bTriggered);
+        break;
+    }
+    }
+}
 
-        QAction* pEditorAct = new QAction(tr("editor"));
-        pEditorAct->setCheckable(true);
-        pEditorAct->setChecked(true);
-        connect(pEditorAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_EDITOR, pEditorAct->isChecked()); });
-        pView->addAction(pEditorAct);
+void ZenoMainWindow::dispatchCommand(QAction* pAction, bool bTriggered)
+{
+    if (!pAction)
+        return;
 
-        QAction* pPropAct = new QAction(tr("property"));
-        pPropAct->setCheckable(true);
-        pPropAct->setChecked(true);
-        connect(pPropAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_NODE_PARAMS, pPropAct->isChecked()); });
-        pView->addAction(pPropAct);
-
-        QAction* pLoggerAct = new QAction(tr("logger"));
-        pLoggerAct->setCheckable(true);
-        pLoggerAct->setChecked(true);
-        connect(pLoggerAct, &QAction::triggered, this, [=]() { onToggleDockWidget(DOCK_LOG, pLoggerAct->isChecked()); });
-        pView->addAction(pLoggerAct);
-
-        connect(pView, &QMenu::aboutToShow, this, [=]() {
-            auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-            for (ZenoDockWidget *dock : docks)
+    //dispatch to every panel.
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    DisplayWidget* pViewport = nullptr;
+    ZenoGraphsEditor* pEditor = nullptr;
+    for (ZTabDockWidget* pDock : docks)
+    {
+        if (!pViewport)
+            pViewport = pDock->getUniqueViewport();
+        if (!pEditor)
+            pEditor = pDock->getAnyEditor();
+        for (int i = 0; i < pDock->count(); i++)
+        {
+            DisplayWidget* pDisplay = qobject_cast<DisplayWidget*>(pDock->widget(i));
+            if (pDisplay)
             {
-                DOCK_TYPE type = dock->type();
-                switch (type)
-                {
-                    case DOCK_VIEW:     pViewAct->setChecked(dock->isVisible());    break;
-                    case DOCK_EDITOR:   pEditorAct->setChecked(dock->isVisible());  break;
-                    case DOCK_NODE_PARAMS: pPropAct->setChecked(dock->isVisible()); break;
-                    case DOCK_LOG:      pLoggerAct->setChecked(dock->isVisible()); break;
-                }
+                int actionType = pAction->property("ActionType").toInt();
+                //pDisplay->onCommandDispatched(actionType, bTriggered);
             }
-        });
+        }
+    }
+    if (pEditor)
+    {
+        pEditor->onCommandDispatched(pAction, bTriggered);
+    }
+    if (pViewport)
+    {
+        int actionType = pAction->property("ActionType").toInt();
+        pViewport->onCommandDispatched(actionType, bTriggered);
+    }
+}
 
-        pView->addSeparator();
+void ZenoMainWindow::loadSavedLayout()
+{
+    m_ui->menuCustom_Layout->clear();
+    //custom layout
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("layout");
+    QStringList lst = settings.childGroups();
+    settings.endGroup();
+    if (!lst.isEmpty()) {
+        initCustomLayoutAction(lst, false);
+    }
+}
 
-        QAction* pSaveLayout = new QAction(tr("Save Layout"));
-        connect(pSaveLayout, &QAction::triggered, this, [=]() {
-            bool bOk = false;
-            QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
-                                                        QLineEdit::Normal, "layout_1", &bOk);
-            if (bOk) {
-                QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-                settings.beginGroup("layout");
-                if (settings.childGroups().indexOf(name) != -1) {
-                    QMessageBox msg(QMessageBox::Warning, "", tr("alreday has same layout"));
-                    msg.exec();
-                    settings.endGroup();
-                    return;
-                }
-
-                settings.beginGroup(name);
-                settings.setValue("geometry", saveGeometry());
-                settings.setValue("state", saveState());
-                settings.endGroup();
-                settings.endGroup();
-            }
-        });
-        pView->addAction(pSaveLayout);
-
-        //check user saved layout.
+void ZenoMainWindow::saveDockLayout()
+{
+    bool bOk = false;
+    QString name = QInputDialog::getText(this, tr("Save Layout"), tr("layout name:"),
+        QLineEdit::Normal, "layout_1", &bOk);
+    if (bOk)
+    {
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");
-        QStringList lst = settings.childGroups();
-        if (!lst.isEmpty())
+        if (settings.childGroups().indexOf(name) != -1)
         {
-            QMenu* pCustomLayout = new QMenu(tr("Custom Layout"));
-
-            for (QString name : lst)
+            QMessageBox msg(QMessageBox::Question, "", tr("alreday has same layout, override?"),
+                QMessageBox::Ok | QMessageBox::Cancel);
+            int ret = msg.exec();
+            if (ret == QMessageBox::Cancel)
             {
-                QAction *pCustomLayout_ = new QAction(name);
-                connect(pCustomLayout_, &QAction::triggered, this, [=]() {
-                    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
-                    settings.beginGroup("layout");
-                    settings.beginGroup(name);
-                    restoreGeometry(settings.value("geometry").toByteArray());
-                    restoreState(settings.value("state").toByteArray());
-                    settings.endGroup();
-                    settings.endGroup();
-                });
-                pCustomLayout->addAction(pCustomLayout_);
+                settings.endGroup();
+                return;
             }
-            pView->addMenu(pCustomLayout);
         }
+
+        QString layoutInfo = exportLayout(m_layoutRoot, size());
+        settings.beginGroup(name);
+        settings.setValue("content", layoutInfo);
+        settings.endGroup();
+        settings.endGroup();
+        loadSavedLayout();
+    }
+}
+
+void ZenoMainWindow::saveLayout2()
+{
+    DlgInEventLoopScope;
+    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "JSON file(*.json);;");
+    writeLayout(m_layoutRoot, size(), path);
+}
+
+void ZenoMainWindow::onLangChanged(bool bChecked)
+{
+    QSettings settings(zsCompanyName, zsEditor);
+    settings.setValue("use_chinese", bChecked);
+    QMessageBox msg(QMessageBox::Information, tr("Language"),
+        tr("Please restart Zeno to apply changes."),
+        QMessageBox::Ok, this);
+    msg.exec();
+}
+
+void ZenoMainWindow::resetDocks(PtrLayoutNode root)
+{
+    if (root == nullptr)
+        return;
+
+    m_layoutRoot.reset();
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget *pDock : docks) {
+        pDock->close();
+        //pDock->testCleanupGL();
+        //delete pDock;
     }
 
-    //QMenu *pWindow = new QMenu(tr("Window"));
+    m_layoutRoot = root;
+    ZTabDockWidget* cake = new ZTabDockWidget(this);
+    addDockWidget(Qt::TopDockWidgetArea, cake);
+    initDocksWidget(cake, m_layoutRoot);
+    m_nResizeTimes = 2;
+}
 
-    QMenu *pHelp = new QMenu(tr("Help"));
+void ZenoMainWindow::_resizeDocks(PtrLayoutNode root)
+{
+    if (!root)
+        return;
+
+    if (root->type == NT_ELEM)
     {
-        QAction *pAction = new QAction(tr("Send this File"));
-        connect(pAction, SIGNAL(triggered(bool)), this, SLOT(onFeedBack()));
-        pHelp->addAction(pAction);
-
-        pHelp->addSeparator();
-
-        pAction = new QAction(tr("English / Chinese"), this);
-        pAction->setCheckable(true);
-        {
-            QSettings settings(zsCompanyName, zsEditor);
-            QVariant use_chinese = settings.value("use_chinese");
-            pAction->setChecked(use_chinese.isNull() || use_chinese.toBool());
+        if (root->geom.width() > 0) {
+            int W = size().width() * root->geom.width();
+            resizeDocks({root->pWidget}, {W}, Qt::Horizontal);
         }
-        pHelp->addAction(pAction);
-        connect(pAction, &QAction::triggered, this, [=]() {
-            QSettings settings(zsCompanyName, zsEditor);
-            settings.setValue("use_chinese", pAction->isChecked());
-            QMessageBox msg(QMessageBox::Information, "Language",
-                        tr("Please restart Zeno to apply changes."),
-                        QMessageBox::Ok, this);
-            msg.exec();
-        });
+        if (root->geom.height() > 0){
+            int H = size().height() * root->geom.height();
+            resizeDocks({root->pWidget}, {H}, Qt::Vertical);
+        }
     }
+    else
+    {
+        _resizeDocks(root->pLeft);
+        _resizeDocks(root->pRight);
+    }
+}
 
-    pMenuBar->addMenu(pFile);
-    pMenuBar->addMenu(pEdit);
-    //pMenuBar->addMenu(pRender);
-    pMenuBar->addMenu(pView);
-    //pMenuBar->addMenu(pWindow);
-    pMenuBar->addMenu(pHelp);
-    pMenuBar->setProperty("cssClass", "mainWin");
+void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
+{
+    if (!root)
+        return;
 
-    setMenuBar(pMenuBar);
+    if (root->type == NT_HOR || root->type == NT_VERT)
+    {
+        ZTabDockWidget* pRight = new ZTabDockWidget(this);
+        Qt::Orientation ori = root->type == NT_HOR ? Qt::Horizontal : Qt::Vertical;
+        splitDockWidget(pLeft, pRight, ori);
+        initDocksWidget(pLeft, root->pLeft);
+        initDocksWidget(pRight, root->pRight);
+    }
+    else if (root->type == NT_ELEM)
+    {
+        root->pWidget = pLeft;
+        for (QString tab : root->tabs)
+        {
+            PANEL_TYPE type = ZTabDockWidget::title2Type(tab);
+            if (type != PANEL_EMPTY)
+            {
+                pLeft->onAddTab(type);
+            }
+        }
+    }
+}
+
+void ZenoMainWindow::initCustomLayoutAction(const QStringList &list, bool isDefault) {
+    QList<QAction *> actions;
+    for (QString name : list) {
+        if (name == g_latest_layout) {
+            continue;
+        }
+        QAction *pCustomLayout_ = new QAction(name);
+        connect(pCustomLayout_, &QAction::triggered, this, [=]() { 
+            loadDockLayout(name, isDefault); 
+            updateLatestLayout(name);
+        });
+        actions.append(pCustomLayout_);
+    }
+    if (isDefault) {
+        m_ui->menuWindow->insertActions(m_ui->actionSave_Layout, actions);
+        m_ui->menuWindow->insertSeparator(m_ui->actionSave_Layout);
+    } else {
+        m_ui->menuCustom_Layout->addActions(actions);
+    }
+}
+
+void ZenoMainWindow::loadDockLayout(QString name, bool isDefault) 
+{
+    QString content;
+    if (isDefault) 
+	{
+        QJsonObject obj = readDefaultLayout();
+        bool isSuccess = false;
+        if (!name.isEmpty()) 
+        {
+            for (QJsonObject::const_iterator it = obj.constBegin(); it != obj.constEnd(); it++) 
+            {
+                if (it.key() == name) 
+                {
+                    QJsonObject layout = it.value().toObject();
+                    QJsonDocument doc(layout);
+                    content = doc.toJson();
+                    isSuccess = true;
+                    break;
+                }
+            }
+        } 
+        if (!isSuccess) 
+        {
+            QJsonObject layout = obj.constBegin().value().toObject();
+            QJsonDocument doc(layout);
+            content = doc.toJson();
+        }
+    } 
+	else 
+	{
+        QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+        settings.beginGroup("layout");
+        settings.beginGroup(name);
+        if (settings.allKeys().indexOf("content") != -1) 
+		{
+            content = settings.value("content").toString();
+            settings.endGroup();
+            settings.endGroup();
+        } 
+		else
+		{
+            loadDockLayout(name, true);
+            return;
+        }
+    }
+    if (!content.isEmpty()) 
+	{
+        PtrLayoutNode root = readLayout(content);
+        resetDocks(root);
+    } 
+	else 
+	{
+        QMessageBox msg(QMessageBox::Warning, "", tr("layout format is invalid."));
+        msg.exec();
+    }
+}
+
+QJsonObject ZenoMainWindow::readDefaultLayout() 
+{
+    QString filename = ":/templates/DefaultLayout.txt";
+    QFile file(filename);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        return QJsonObject();
+    }
+    QByteArray byteArray = file.readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(byteArray);
+    if (doc.isObject()) {
+        return doc.object();
+    }
+    return QJsonObject();
+}
+
+void ZenoMainWindow::manageCustomLayout() 
+{
+    ZDockLayoutMangeDlg dlg(this);
+    connect(&dlg, &ZDockLayoutMangeDlg::layoutChangedSignal, this, &ZenoMainWindow::loadSavedLayout);
+    dlg.exec();
+}
+
+void ZenoMainWindow::updateLatestLayout(const QString &layout) 
+{
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("layout");
+    settings.beginGroup(g_latest_layout);
+    settings.setValue(g_latest_layout, layout);
+    settings.endGroup();
+    settings.endGroup();
 }
 
 void ZenoMainWindow::initDocks() {
-    QWidget *p = takeCentralWidget();
-    if (p)
-        delete p;
+    /*m_layoutRoot = std::make_shared<LayerOutNode>();
+    m_layoutRoot->type = NT_ELEM;
 
-    setDockNestingEnabled(true);
+    ZTabDockWidget* viewDock = new ZTabDockWidget(this);
+    viewDock->setCurrentWidget(PANEL_VIEW);
+    viewDock->setObjectName("viewDock");
 
-    m_viewDock = new ZenoDockWidget("view", this);
-    m_viewDock->setObjectName(uniqueDockObjName(DOCK_VIEW));
-    m_viewDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    DisplayWidget *view = new DisplayWidget(this);
-    m_viewDock->setWidget(DOCK_VIEW, view);
+    ZTabDockWidget *logDock = new ZTabDockWidget(this);
+    logDock->setCurrentWidget(PANEL_LOG);
+    logDock->setObjectName("logDock");
 
-    m_parameter = new ZenoDockWidget("parameter", this);
-    m_parameter->setObjectName(uniqueDockObjName(DOCK_NODE_PARAMS));
-    m_parameter->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_parameter->setWidget(DOCK_NODE_PARAMS, new ZenoPropPanel);
+    ZTabDockWidget *paramDock = new ZTabDockWidget(this);
+    paramDock->setCurrentWidget(PANEL_NODE_PARAMS);
+    paramDock->setObjectName("paramDock");
 
-    m_editor = new ZenoDockWidget("", this);
-    m_editor->setObjectName(uniqueDockObjName(DOCK_EDITOR));
-    m_editor->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_pEditor = new ZenoGraphsEditor(this);
-    m_editor->setWidget(DOCK_EDITOR, m_pEditor);
-    // m_editor->setWidget(DOCK_EDITOR, new ZenoGraphsEditor(this));
+    ZTabDockWidget* editorDock = new ZTabDockWidget(this);
+    editorDock->setCurrentWidget(PANEL_EDITOR);
+    editorDock->setObjectName("editorDock");
 
-    m_logger = new ZenoDockWidget("logger", this);
-    m_logger->setObjectName(uniqueDockObjName(DOCK_LOG));
-    m_logger->setObjectName(QString::fromUtf8("dock_logger"));
-    m_logger->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
-    m_logger->setWidget(DOCK_LOG, new ZlogPanel);
+    addDockWidget(Qt::TopDockWidgetArea, viewDock);
+    m_layoutRoot->type = NT_ELEM;
+    m_layoutRoot->pWidget = viewDock;
 
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *pDock : docks)
-    {
-        connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
-        connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
-    }
+    SplitDockWidget(viewDock, editorDock, Qt::Vertical);
+    SplitDockWidget(viewDock, logDock, Qt::Horizontal);
+    SplitDockWidget(editorDock, paramDock, Qt::Horizontal);
+
+    //paramDock->hide();
+    logDock->hide();*/
+
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("layout");
+    settings.beginGroup(g_latest_layout);
+    QString name;
+    if (settings.allKeys().indexOf(g_latest_layout) != -1) {
+        name = settings.value(g_latest_layout).toString();
+    } 
+    settings.endGroup();
+    settings.endGroup();
+	loadDockLayout(name, false);
+
+    initTimelineDock();
+}
+
+void ZenoMainWindow::initTimelineDock()
+{
+    m_pTimeline = new ZTimeline;
+    setCentralWidget(m_pTimeline);
+
+    connect(m_pTimeline, &ZTimeline::playForward, this, [=](bool bPlaying) {
+        QVector<DisplayWidget*> views = viewports();
+        for (DisplayWidget* view : views) {
+            view->onPlayClicked(bPlaying);
+        }
+    });
+
+    connect(m_pTimeline, &ZTimeline::sliderValueChanged, this, [=](int frame) {
+        QVector<DisplayWidget*> views = viewports();
+        for (DisplayWidget* view : views) {
+            view->onSliderValueChanged(frame);
+        }
+    });
+
+    auto graphs = zenoApp->graphsManagment();
+    connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        ZASSERT_EXIT(mgr);
+        m_pTimeline->togglePlayButton(false);
+        int nFrame = m_pTimeline->value();
+        QVector<DisplayWidget *> views = viewports();
+        for (DisplayWidget *view : views) {
+            if (m_bAlways) {
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
+                view->onRun(nFrame, nFrame);
+            }
+            else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
+                std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+                    QVector<DisplayWidget *> views = viewports();
+                    for (auto displayWid : views) {
+                        if (!displayWid->isGLViewport()) {
+                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                        }
+                    }
+                };
+                setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
+                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
+                view->onRun(nFrame, nFrame, m_bAlwaysLightCamera, m_bAlwaysMaterial);
+            }
+        }
+    });
+}
+
+ZTimeline* ZenoMainWindow::timeline() const
+{
+    return m_pTimeline;
 }
 
 void ZenoMainWindow::onMaximumTriggered()
 {
-    ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());
-
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *pDock : docks)
+    ZTabDockWidget* pDockWidget = qobject_cast<ZTabDockWidget*>(sender());
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* pDock : docks)
     {
         if (pDock != pDockWidget)
         {
@@ -338,9 +683,77 @@ void ZenoMainWindow::onMaximumTriggered()
     }
 }
 
+DisplayWidget *ZenoMainWindow::getOptixWidget() const
+{
+    auto views = viewports();
+    for (auto view : views)
+    {
+        if (!view->isGLViewport())
+            return view;
+    }
+    return nullptr;
+}
+
+QVector<DisplayWidget*> ZenoMainWindow::viewports() const
+{
+    QVector<DisplayWidget*> views;
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* pDock : docks)
+    {
+        if (pDock->isVisible())
+            views.append(pDock->viewports());
+    }
+
+    //top level floating windows.
+    QWidgetList lst = QApplication::topLevelWidgets();
+    for (auto wid : lst)
+    {
+        if (ZTabDockWidget* pFloatWin = qobject_cast<ZTabDockWidget*>(wid))
+        {
+            views.append(pFloatWin->viewports());
+        }
+    }
+    return views;
+}
+
+void ZenoMainWindow::toggleTimelinePlay(bool bOn)
+{
+    m_pTimeline->togglePlayButton(bOn);
+}
+
+void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMaterialOnly)
+{
+    QVector<DisplayWidget*> views = viewports();
+
+    clearErrorMark();
+
+    for (auto view : views)
+    {
+        view->beforeRun();
+    }
+
+    ZASSERT_EXIT(m_pTimeline);
+    QPair<int, int> fromTo = m_pTimeline->fromTo();
+    int beginFrame = fromTo.first;
+    int endFrame = fromTo.second;
+    if (endFrame >= beginFrame && beginFrame >= 0)
+    {
+        auto pGraphsMgr = zenoApp->graphsManagment();
+        IGraphsModel* pModel = pGraphsMgr->currentModel();
+        if (!pModel)
+            return;
+        launchProgram(pModel, beginFrame, endFrame, applyLightAndCameraOnly, applyMaterialOnly);
+    }
+
+    for (auto view : views)
+    {
+        view->afterRun();
+    }
+}
 
 void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
 {
+#if 0
     ZASSERT_EXIT(m_viewDock);
     DisplayWidget* viewWidget = qobject_cast<DisplayWidget *>(m_viewDock->widget());
     ZASSERT_EXIT(viewWidget);
@@ -391,88 +804,302 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
     bool ret = openFile(param.sZsgPath);
     ZASSERT_EXIT(ret);
     viewWidget->runAndRecord(recInfo);
+#endif
 }
 
 void ZenoMainWindow::updateViewport(const QString& action)
 {
-    //todo: temp code for single view.
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    if (view)
+    QVector<DisplayWidget*> views = viewports();
+    for (DisplayWidget* view : views)
+    {
         view->updateFrame(action);
+    }
+    if (action == "finishFrame")
+    {
+        updateLightList();
+        bool bPlayed = m_pTimeline->isPlayToggled();
+        if (!bPlayed)
+        {
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            int ui_frame = m_pTimeline->value();
+            if (ui_frame == endFrame)
+            {
+                for (DisplayWidget *view : views)
+                {
+                    if (view->isGLViewport())
+                    {
+                        Zenovis* pZenovis = view->getZenoVis();
+                        ZASSERT_EXIT(pZenovis);
+                        pZenovis->setCurrentFrameId(ui_frame);
+                    }
+                    else
+                    {
+                        ZOptixViewport* pOptix = view->optixViewport();
+                        ZASSERT_EXIT(pOptix);
+                        emit pOptix->sig_switchTimeFrame(ui_frame);
+                    }
+                    view->updateFrame();
+                }
+            }
+        }
+    }
 }
-DisplayWidget* ZenoMainWindow::getDisplayWidget()
+
+ZenoGraphsEditor* ZenoMainWindow::getAnyEditor() const
 {
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    if (view)
-        return view;
+    auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (auto dock : docks2)
+    {
+        if (!dock->isVisible())
+            continue;
+        ZenoGraphsEditor* pEditor = dock->getAnyEditor();
+        if (pEditor)
+            return pEditor;
+    }
     return nullptr;
 }
 
 void ZenoMainWindow::onRunFinished()
 {
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    if (view)
-        view->onFinished();
+    auto docks2 = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (auto dock : docks2)
+    {
+        dock->onRunFinished();
+    }
+}
+
+void ZenoMainWindow::onCloseDock()
+{
+    ZTabDockWidget *pDockWidget = qobject_cast<ZTabDockWidget *>(sender());
+    ZASSERT_EXIT(pDockWidget);
+    pDockWidget->close();
+    //pDockWidget->testCleanupGL();
+
+    PtrLayoutNode spParent = findParent(m_layoutRoot, pDockWidget);
+    if (spParent)
+    {
+        if (spParent->pLeft->pWidget == pDockWidget)
+        {
+            PtrLayoutNode right = spParent->pRight;
+            spParent->pWidget = right->pWidget;
+            spParent->pLeft = right->pLeft;
+            spParent->pRight = right->pRight;
+            spParent->type = right->type;
+        }
+        else if (spParent->pRight->pWidget == pDockWidget)
+        {
+            PtrLayoutNode left = spParent->pLeft;
+            spParent->pWidget = left->pWidget;
+            spParent->pLeft = left->pLeft;
+            spParent->pRight = left->pRight;
+            spParent->type = left->type;
+        }
+    }
+    else
+    {
+        m_layoutRoot = nullptr;
+    }
+}
+
+void ZenoMainWindow::SplitDockWidget(ZTabDockWidget* after, ZTabDockWidget* dockwidget, Qt::Orientation orientation)
+{
+    splitDockWidget(after, dockwidget, orientation);
+
+    PtrLayoutNode spRoot = findNode(m_layoutRoot, after);
+    ZASSERT_EXIT(spRoot);
+
+    spRoot->type = (orientation == Qt::Vertical ? NT_VERT : NT_HOR);
+    spRoot->pWidget = nullptr;
+
+    spRoot->pLeft = std::make_shared<LayerOutNode>();
+    spRoot->pLeft->pWidget = after;
+    spRoot->pLeft->type = NT_ELEM;
+
+    spRoot->pRight = std::make_shared<LayerOutNode>();
+    spRoot->pRight->pWidget = dockwidget;
+    spRoot->pRight->type = NT_ELEM;
 }
 
 void ZenoMainWindow::onSplitDock(bool bHorzontal)
 {
-    ZenoDockWidget *pDockWidget = qobject_cast<ZenoDockWidget *>(sender());
-    ZenoDockWidget *pDock = new ZenoDockWidget("", this);
-    pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    ZTabDockWidget* pDockWidget = qobject_cast<ZTabDockWidget*>(sender());
+    ZTabDockWidget* pDock = new ZTabDockWidget(this);
 
-    if (ZenoGraphsEditor *pEditor = qobject_cast<ZenoGraphsEditor *>(pDockWidget->widget()))
-    {
-        ZenoGraphsEditor *pEditor2 = new ZenoGraphsEditor(this);
-        pDock->setWidget(DOCK_EDITOR, pEditor2);
-        //only one model.
-        pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
-        splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
-    }
-    else
-    {
-        splitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
-    }
-    connect(pDock, SIGNAL(maximizeTriggered()), this, SLOT(onMaximumTriggered()));
-    connect(pDock, SIGNAL(splitRequest(bool)), this, SLOT(onSplitDock(bool)));
+    //QLayout* pLayout = this->layout();
+    //QMainWindowLayout* pWinLayout = qobject_cast<QMainWindowLayout*>(pLayout);
+
+    pDock->setObjectName("editorDock233");
+    pDock->setCurrentWidget(PANEL_EDITOR);
+    //pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
+    SplitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);
 }
 
-void ZenoMainWindow::openFileDialog() {
+void ZenoMainWindow::openFileDialog()
+{
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    mgr->setNewCacheDir(true);
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
 
     //todo: path validation
-    saveQuit();
-    openFile(filePath);
+    if (saveQuit()) 
+    {
+        openFile(filePath);
+    }
 }
 
 void ZenoMainWindow::onNewFile() {
-    saveQuit();
-    zenoApp->graphsManagment()->newFile();
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    mgr->setNewCacheDir(true);
+    if (saveQuit()) 
+    {
+        zenoApp->graphsManagment()->newFile();
+    }
 }
 
-void ZenoMainWindow::resizeEvent(QResizeEvent *event) {
+void ZenoMainWindow::resizeEvent(QResizeEvent *event)
+{
     QMainWindow::resizeEvent(event);
-
-    adjustDockSize();
 }
 
-void ZenoMainWindow::closeEvent(QCloseEvent *event) {
-    this->saveQuit();
+std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
+{
+    return m_spCacheMgr;
+}
+
+void ZenoMainWindow::killOptix()
+{
+    DisplayWidget* pWid = this->getOptixWidget();
+    if (pWid)
+    {
+        pWid->killOptix();
+    }
+}
+
+void ZenoMainWindow::closeEvent(QCloseEvent *event)
+{
+    killProgram();
+    killOptix();
+
+    bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
-    QMainWindow::closeEvent(event);
+    if (isClose) 
+    {
+		//save latest layout
+        QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+        settings.beginGroup("layout");
+        QString layoutInfo = exportLayout(m_layoutRoot, size());
+        settings.beginGroup(g_latest_layout);
+        settings.setValue("content", layoutInfo);
+        settings.endGroup();
+        settings.endGroup();
+
+        //clean up opengl components.
+
+        auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget *pDock : docks) {
+            pDock->close();
+            try {
+                //pDock->testCleanupGL();
+            } catch (...) {
+                //QString errMsg = QString::fromLatin1(e.what());
+                int j;
+                j = 0;
+            }
+            //delete pDock;
+        }
+
+        QMainWindow::closeEvent(event);
+    } 
+    else 
+    {
+        event->ignore();
+    }
 }
 
-void ZenoMainWindow::adjustDockSize() {
-    //temp: different layout
-    float height = size().height();
-    int dockHeightA = 0.50 * height;
-    int dockHeightB = 0.50 * height;
+bool ZenoMainWindow::event(QEvent* event)
+{
+    if (QEvent::LayoutRequest == event->type())
+    {
+        //resizing have to be done after fitting layout, which follows by LayoutRequest.
+        //it seems that after `m_nResizeTimes` times, the resize action can be valid...
+        if (m_nResizeTimes > 0 && m_layoutRoot)
+        {
+            --m_nResizeTimes;
+            if (m_nResizeTimes == 0)
+            {
+                _resizeDocks(m_layoutRoot);
+                return true;
+            }
+        }
+    }
+    bool ret = QMainWindow::event(event);
+    if (ret) {
+        if (event->type() == QEvent::MouseMove && event->isAccepted()) {
+            QMouseEvent* pMouse = static_cast<QMouseEvent*>(event);
+            if (isSeparator(pMouse->pos())) {
+                m_bMovingSeparator = true;
+                emit dockSeparatorMoving(true);
+            }
+        }
+        else if (m_bMovingSeparator && event->type() == QEvent::Timer)
+        {
+            emit dockSeparatorMoving(true);
+        }
+        else if (m_bMovingSeparator && event->type() == QEvent::MouseButtonRelease)
+        {
+            emit dockSeparatorMoving(false);
+        }
+    }
+    return ret;
+}
 
-    QList<QDockWidget *> docks = {m_viewDock, m_editor};
-    QList<int> dockSizes = {dockHeightA, dockHeightB};
-    resizeDocks(docks, dockSizes, Qt::Vertical);
+void ZenoMainWindow::mousePressEvent(QMouseEvent* event)
+{
+    QMainWindow::mousePressEvent(event);
+}
+
+void ZenoMainWindow::mouseMoveEvent(QMouseEvent* event)
+{
+    QMainWindow::mouseMoveEvent(event);
+}
+
+void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
+{
+    QMainWindow::mouseReleaseEvent(event);
+}
+
+void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
+{
+    if (!m_pTimeline)
+        return;
+    m_pTimeline->onTimelineUpdate(frameid);
+}
+
+void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
+{
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget *pDock : docks)
+    {
+        for (int i = 0; i < pDock->count(); i++)
+        {
+            DockContent_View* pView = qobject_cast<DockContent_View*>(pDock->widget(i));
+            if (!pView)
+                continue;
+            QSize sz = pView->viewportSize();
+            QString str = QString("size: %1x%2").arg(QString::number(sz.width())).arg(QString::number(sz.height()));
+            QPoint pt = pView->mapToGlobal(QPoint(0, 10));
+            if (bMoving) {
+                QToolTip::showText(pt, str);
+            }
+            else {
+                QToolTip::hideText();
+            }
+        }
+    }
 }
 
 void ZenoMainWindow::importGraph() {
@@ -502,7 +1129,7 @@ static bool saveContent(const QString &strContent, QString filePath) {
 
 void ZenoMainWindow::exportGraph() {
     DlgInEventLoopScope;
-    QString path = QFileDialog::getSaveFileName(this, "Path to Save", "",
+    QString path = QFileDialog::getSaveFileName(this, "Path to Export", "",
                                                 "C++ Source File(*.cpp);; JSON file(*.json);; All Files(*);;");
     if (path.isEmpty()) {
         return;
@@ -540,12 +1167,127 @@ bool ZenoMainWindow::openFile(QString filePath)
     return true;
 }
 
+void ZenoMainWindow::loadRecentFiles() 
+{
+    m_ui->menuRecent_Files->clear();
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    settings.beginGroup("Recent File List");
+    QStringList lst = settings.childKeys();
+    sortRecentFile(lst);
+    for (int i = 0; i < lst.size(); i++) {
+        const QString &key = lst[i];
+        const QString &path = settings.value(key).toString();
+        if (!path.isEmpty()) {
+            QAction *action = new QAction(path);
+            m_ui->menuRecent_Files->addAction(action);
+            connect(action, &QAction::triggered, this, [=]() {
+                if (saveQuit()) {
+                    if (!QFileInfo::exists(path)) {
+                        int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+                        if (flag & QMessageBox::Yes) {
+                            QSettings _settings(QSettings::UserScope, zsCompanyName, zsEditor);
+                            _settings.beginGroup("Recent File List");
+                            _settings.remove(key);
+                            m_ui->menuRecent_Files->removeAction(action);
+                            emit recentFilesChanged(this);
+                        }
+                    } else {
+                        openFile(path);
+                    }
+                }
+            });
+        }
+    }
+}
+
+void ZenoMainWindow::initShortCut() 
+{
+    QStringList lst;
+    lst << ShortCut_Open << ShortCut_Save << ShortCut_SaveAs << ShortCut_Import 
+        << ShortCut_Export_Graph << ShortCut_Solid << ShortCut_Optix << ShortCut_NormalCheck
+        << ShortCut_Undo << ShortCut_Redo << ShortCut_SmoothShading << ShortCut_WireFrame
+        << ShortCut_ShowGrid << ShortCut_Shading << ShortCut_ScreenShoot << ShortCut_RecordVideo
+        << ShortCut_NewSubgraph << ShortCut_New_File;
+    updateShortCut(lst);
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString key) {
+        updateShortCut(QStringList(key));
+    });
+}
+
+void ZenoMainWindow::updateShortCut(QStringList keys)
+{
+    ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
+    if (keys.contains(ShortCut_Open))
+        m_ui->action_Open->setShortcut(settings.getShortCut(ShortCut_Open));
+    if (keys.contains(ShortCut_New_File))
+        m_ui->actionNew_File->setShortcut(settings.getShortCut(ShortCut_New_File));
+    if (keys.contains(ShortCut_Save))
+        m_ui->action_Save->setShortcut(settings.getShortCut(ShortCut_Save));
+    if (keys.contains(ShortCut_SaveAs))
+        m_ui->action_Save_As->setShortcut(settings.getShortCut(ShortCut_SaveAs));
+    if (keys.contains(ShortCut_Import))
+        m_ui->action_Import->setShortcut(settings.getShortCut(ShortCut_Import));
+    if (keys.contains(ShortCut_Export_Graph))
+        m_ui->actionExportGraph->setShortcut(settings.getShortCut(ShortCut_Export_Graph));
+    if (keys.contains(ShortCut_Optix))
+        m_ui->actionOptix->setShortcut(settings.getShortCut(ShortCut_Optix));
+    if (keys.contains(ShortCut_Solid))
+        m_ui->actionSolid->setShortcut(settings.getShortCut(ShortCut_Solid));
+     if (keys.contains(ShortCut_Undo))
+        m_ui->actionUndo->setShortcut(settings.getShortCut(ShortCut_Undo));
+    if (keys.contains(ShortCut_Redo))
+        m_ui->actionRedo->setShortcut(settings.getShortCut(ShortCut_Redo));
+    if (keys.contains(ShortCut_SmoothShading))
+        m_ui->actionSmooth_Shading->setShortcut(settings.getShortCut(ShortCut_SmoothShading));
+    if (keys.contains(ShortCut_NormalCheck))
+        m_ui->actionNormal_Check->setShortcut(settings.getShortCut(ShortCut_NormalCheck));
+    if (keys.contains(ShortCut_WireFrame))
+        m_ui->actionWireFrame->setShortcut(settings.getShortCut(ShortCut_WireFrame));
+    if (keys.contains(ShortCut_ShowGrid))
+        m_ui->actionShow_Grid->setShortcut(settings.getShortCut(ShortCut_ShowGrid));
+    if (keys.contains(ShortCut_Shading))
+        m_ui->actionShading->setShortcut(settings.getShortCut(ShortCut_Shading));
+    if (keys.contains(ShortCut_ScreenShoot))
+        m_ui->actionScreen_Shoot->setShortcut(settings.getShortCut(ShortCut_ScreenShoot));
+    if (keys.contains(ShortCut_RecordVideo))
+        m_ui->actionRecord_Video->setShortcut(settings.getShortCut(ShortCut_RecordVideo));
+    if (keys.contains(ShortCut_NewSubgraph))
+        m_ui->actionNew_Subgraph->setShortcut(settings.getShortCut(ShortCut_NewSubgraph));
+}
+
+void ZenoMainWindow::shortCutDlg() 
+{
+    ZShortCutSettingDlg dlg;
+    dlg.exec();
+}
+
+void ZenoMainWindow::sortRecentFile(QStringList &lst) 
+{
+    qSort(lst.begin(), lst.end(), [](const QString &s1, const QString &s2) {
+        static QRegExp rx("File (\\d+)");
+        int num1 = 0;
+        if (rx.indexIn(s1) != -1) {
+            QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2)
+                num1 = caps[1].toInt();
+        }
+        int num2 = 0;
+        if (rx.indexIn(s2) != -1) {
+            QStringList caps = rx.capturedTexts();
+            if (caps.length() == 2)
+                num2 = caps[1].toInt();
+        }
+        return num1 > num2;
+    });
+}
+
 void ZenoMainWindow::recordRecentFile(const QString& filePath)
 {
     QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
     settings.beginGroup("Recent File List");
 
     QStringList keys = settings.childKeys();
+    sortRecentFile(keys);
     QStringList paths;
     for (QString key : keys) {
         QString path = settings.value(key).toString();
@@ -566,31 +1308,102 @@ void ZenoMainWindow::recordRecentFile(const QString& filePath)
     if (keys.isEmpty()) {
         idx = 0;
     } else {
-        QString fn = keys[keys.length() - 1];
+        QString key = keys.first();
         static QRegExp rx("File (\\d+)");
-        if (rx.indexIn(fn) != -1) {
+        if (rx.indexIn(key) != -1) 
+        {
             QStringList caps = rx.capturedTexts();
-            if (caps.length() == 2)
+            if (caps.length() == 2 && idx < caps[1].toInt())
                 idx = caps[1].toInt();
-        } else {
-            //todo
         }
     }
 
     settings.setValue(QString("File %1").arg(idx + 1), filePath);
+    //limit 5
+    while (settings.childKeys().size() > 5) {
+        settings.remove(keys.last());
+        keys.removeLast();
+    }
+    loadRecentFiles();
+    emit recentFilesChanged(this);
 }
 
-void ZenoMainWindow::onToggleDockWidget(DOCK_TYPE type, bool bShow)
+void ZenoMainWindow::setActionProperty() 
 {
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks)
-    {
-        DOCK_TYPE _type = dock->type();
-        if (_type == type)
-            dock->setVisible(bShow);
+    m_ui->actionNew_File->setProperty("ActionType", ACTION_NEWFILE);
+    m_ui->actionNew_Subgraph->setProperty("ActionType", ACTION_NEW_SUBGRAPH);
+    m_ui->action_Open->setProperty("ActionType", ACTION_OPEN);
+    m_ui->action_Save->setProperty("ActionType", ACTION_SAVE);
+    m_ui->action_Save_As->setProperty("ActionType", ACTION_SAVE_AS);
+    m_ui->action_Import->setProperty("ActionType", ACTION_IMPORT);
+    m_ui->actionExportGraph->setProperty("ActionType", ACTION_EXPORT_GRAPH);
+    m_ui->actionScreen_Shoot->setProperty("ActionType", ACTION_SCREEN_SHOOT);
+    m_ui->actionRecord_Video->setProperty("ActionType", ACTION_RECORD_VIDEO);
+    m_ui->action_Close->setProperty("ActionType", ACTION_CLOSE);
+    m_ui->actionUndo->setProperty("ActionType", ACTION_UNDO);
+    m_ui->actionRedo->setProperty("ActionType", ACTION_REDO);
+    m_ui->action_Copy->setProperty("ActionType", ACTION_COPY);
+    m_ui->action_Paste->setProperty("ActionType", ACTION_PASTE);
+    m_ui->action_Cut->setProperty("ActionType", ACTION_CUT);
+    m_ui->actionCollaspe->setProperty("ActionType", ACTION_COLLASPE);
+    m_ui->actionExpand->setProperty("ActionType", ACTION_EXPAND);
+    m_ui->actionEasy_Graph->setProperty("ActionType", ACTION_EASY_GRAPH);
+    m_ui->actionOpen_View->setProperty("ActionType", ACTION_OPEN_VIEW);
+    m_ui->actionClear_View->setProperty("ActionType", ACTION_CLEAR_VIEW);
+    m_ui->actionSmooth_Shading->setProperty("ActionType", ACTION_SMOOTH_SHADING);
+    m_ui->actionNormal_Check->setProperty("ActionType", ACTION_NORMAL_CHECK);
+    m_ui->actionWireFrame->setProperty("ActionType", ACTION_WIRE_FRAME);
+    m_ui->actionShow_Grid->setProperty("ActionType", ACTION_SHOW_GRID);
+    m_ui->actionBackground_Color->setProperty("ActionType", ACTION_BACKGROUND_COLOR);
+    m_ui->actionSolid->setProperty("ActionType", ACTION_SOLID);
+    m_ui->actionShading->setProperty("ActionType", ACTION_SHADING);
+    m_ui->actionOptix->setProperty("ActionType", ACTION_OPTIX);
+    m_ui->actionBlackWhite->setProperty("ActionType", ACTION_BLACK_WHITE);
+    m_ui->actionCreek->setProperty("ActionType", ACTION_GREEK);
+    m_ui->actionDay_Light->setProperty("ActionType", ACTION_DAY_LIGHT);
+    m_ui->actionDefault->setProperty("ActionType", ACTION_DEFAULT);
+    m_ui->actionFootballField->setProperty("ActionType", ACTION_FOOTBALL_FIELD);
+    m_ui->actionForest->setProperty("ActionType", ACTION_FOREST);
+    m_ui->actionLake->setProperty("ActionType", ACTION_LAKE);
+    m_ui->actionSee->setProperty("ActionType", ACTION_SEA);
+    m_ui->actionNode_Camera->setProperty("ActionType", ACTION_NODE_CAMERA);
+    m_ui->actionSave_Layout->setProperty("ActionType", ACTION_SAVE_LAYOUT);
+    m_ui->actionLayout_Manager->setProperty("ActionType", ACTION_LAYOUT_MANAGE);
+    m_ui->actionEnglish_Chinese->setProperty("ActionType", ACTION_LANGUAGE);
+    m_ui->actionShortcutList->setProperty("ActionType", ACTION_SHORTCUTLIST);
+    m_ui->actionSet_NASLOC->setProperty("ActionType", ACTION_SET_NASLOC);
+    m_ui->actionSet_ZENCACHE->setProperty("ActionType", ACTION_ZENCACHE);
+    m_ui->actionSet_ShortCut->setProperty("ActionType", ACTION_SET_SHORTCUT);
+    m_ui->actionFeedback->setProperty("ActionType", ACTION_FEEDBACK);
+    m_ui->actionAbout->setProperty("ActionType", ACTION_ABOUT);
+    m_ui->actionCheck_Update->setProperty("ActionType", ACTION_CHECKUPDATE);
+}
+
+void ZenoMainWindow::screenShoot() 
+{
+    QString path = QFileDialog::getSaveFileName(
+        nullptr, tr("Path to Save"), "",
+        tr("PNG images(*.png);;JPEG images(*.jpg);;BMP images(*.bmp);;EXR images(*.exr);;HDR images(*.hdr);;"));
+    QString ext = QFileInfo(path).suffix();
+    if (!path.isEmpty()) {
+
+        ZenoMainWindow *pWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(pWin);
+        QVector<DisplayWidget*> views = pWin->viewports();
+        if (!views.isEmpty())
+        {
+            //todo: ask the user to select a viewport to screenshot.
+            DisplayWidget* pWid = views[0];
+            ZASSERT_EXIT(pWid);
+            auto pZenovis = pWid->getZenoVis();
+            ZASSERT_EXIT(pZenovis);
+            pZenovis->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+        }
     }
 }
 
+#if 0
+//todo: resolve conflict.
 QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
 {
     switch (type)
@@ -603,56 +1416,34 @@ QString ZenoMainWindow::uniqueDockObjName(DOCK_TYPE type)
     case DOCK_LIGHTS: return UiHelper::generateUuid("dock_lights_");
     default:
         return UiHelper::generateUuid("dock_empty_");
-    }
 }
+#endif
 
-void ZenoMainWindow::onDockSwitched(DOCK_TYPE type)
+void ZenoMainWindow::setActionIcon(QAction *action) 
 {
-    ZenoDockWidget *pDock = qobject_cast<ZenoDockWidget *>(sender());
-    switch (type)
+    if (!action->isCheckable() || !action->isChecked()) 
     {
-        case DOCK_EDITOR: {
-            ZenoGraphsEditor *pEditor2 = new ZenoGraphsEditor(this);
-            pEditor2->resetModel(zenoApp->graphsManagment()->currentModel());
-            pDock->setWidget(type, pEditor2);
-            break;
-        }
-        case DOCK_VIEW: {
-            //complicated opengl framework.
-            DisplayWidget* view = new DisplayWidget;
-            pDock->setWidget(type, view);
-            break;
-        }
-        case DOCK_NODE_PARAMS: {
-            ZenoPropPanel *pWidget = new ZenoPropPanel;
-            pDock->setWidget(type, pWidget);
-            break;
-        }
-        case DOCK_NODE_DATA: {
-            ZenoSpreadsheet *pWidget = new ZenoSpreadsheet;
-            pDock->setWidget(type, pWidget);
-            break;
-        }
-        case DOCK_LOG: {
-            ZlogPanel* pPanel = new ZlogPanel;
+        action->setIcon(QIcon());
+#if 0
+        case DOCK_IMAGE: {
+            ZenoImagePanel* pPanel = new ZenoImagePanel;
             pDock->setWidget(type, pPanel);
             break;
         }
-        case DOCK_LIGHTS: {
-            ZenoLights* pPanel = new ZenoLights;
-            pDock->setWidget(type, pPanel);
-            break;
-        }
+#endif
     }
-    pDock->setObjectName(uniqueDockObjName(type));
+    if (action->isChecked()) 
+    {
+        action->setIcon(QIcon("://icons/checked.png"));
+    }
 }
 
-void ZenoMainWindow::saveQuit() {
+bool ZenoMainWindow::saveQuit() {
     auto pGraphsMgm = zenoApp->graphsManagment();
-    ZASSERT_EXIT(pGraphsMgm);
+    ZASSERT_EXIT(pGraphsMgm, true);
     IGraphsModel *pModel = pGraphsMgm->currentModel();
     if (!zeno::envconfig::get("OPEN") /* <- don't annoy me when I'm debugging via ZENO_OPEN */ && pModel && pModel->isDirty()) {
-        QMessageBox msgBox(QMessageBox::Question, tr("Save"), tr("Save changes?"), QMessageBox::Yes | QMessageBox::No, this);
+        QMessageBox msgBox(QMessageBox::Question, tr("Save"), tr("Save changes?"), QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel, this);
         QPalette pal = msgBox.palette();
         pal.setBrush(QPalette::WindowText, QColor(0, 0, 0));
         msgBox.setPalette(pal);
@@ -660,22 +1451,41 @@ void ZenoMainWindow::saveQuit() {
         if (ret & QMessageBox::Yes) {
             save();
         }
+        if (ret & QMessageBox::Cancel) {
+            return false;
+        }
     }
     pGraphsMgm->clear();
     //clear timeline info.
     resetTimeline(TIMELINE_INFO());
+    return true;
 }
 
 void ZenoMainWindow::save()
 {
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
-    IGraphsModel *pModel = pGraphsMgm->currentModel();
-    if (pModel) {
-        QString currFilePath = pModel->filePath();
-        if (currFilePath.isEmpty())
-            return saveAs();
-        saveFile(currFilePath);
+    IGraphsModel* pModel = pGraphsMgm->currentModel();
+    zenoio::ZSG_VERSION ver = pModel->ioVersion();
+    if (zenoio::VER_2 == ver)
+    {
+        QMessageBox msgBox(QMessageBox::Information, "", tr("The format of current zsg is old. To keep this file data trackable, we recommand you choose \"Save As\" to save it, as the format of new zsg"));
+        msgBox.exec();
+        bool ret = saveAs();
+        if (ret) {
+            pModel->setIOVersion(zenoio::VER_2_5);
+        }
+    }
+    else
+    {
+        if (pModel)
+        {
+            QString currFilePath = pModel->filePath();
+            if (currFilePath.isEmpty())
+                saveAs();
+            else
+                saveFile(currFilePath);
+        }
     }
 }
 
@@ -699,27 +1509,48 @@ void ZenoMainWindow::setInDlgEventLoop(bool bOn) {
 
 TIMELINE_INFO ZenoMainWindow::timelineInfo()
 {
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
     TIMELINE_INFO info;
-    if (view)
-    {
-        info = view->timelineInfo();
-    }
+    ZASSERT_EXIT(m_pTimeline, info);
+    info.bAlways = m_bAlways;
+    info.beginFrame = m_pTimeline->fromTo().first;
+    info.endFrame = m_pTimeline->fromTo().second;
     return info;
+}
+
+bool ZenoMainWindow::isAlways() const
+{
+    return m_bAlways;
+}
+
+bool ZenoMainWindow::isAlwaysLightCamera() const {
+    return m_bAlwaysLightCamera;
+}
+
+bool ZenoMainWindow::isAlwaysMaterial() const {
+    return m_bAlwaysMaterial;
+}
+
+void ZenoMainWindow::setAlways(bool bAlways)
+{
+    m_bAlways = bAlways;
+    emit alwaysModeChanged(bAlways);
+    if (m_bAlways)
+        m_pTimeline->togglePlayButton(false);
+}
+
+void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial) {
+    m_bAlwaysLightCamera = bAlwaysLightCamera;
+    m_bAlwaysMaterial = bAlwaysMaterial;
 }
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
-    DisplayWidget* view = qobject_cast<DisplayWidget*>(m_viewDock->widget());
-    if (view)
-    {
-        view->resetTimeline(info);
-    }
+    setAlways(info.bAlways);
+    m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
 }
 
 void ZenoMainWindow::onFeedBack()
 {
-    /*
     ZFeedBackDlg dlg(this);
     if (dlg.exec() == QDialog::Accepted)
     {
@@ -731,18 +1562,16 @@ void ZenoMainWindow::onFeedBack()
             if (!pModel) {
                 return;
             }
-            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel);
+            APP_SETTINGS settings;
+            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
             dlg.sendEmail("bug feedback", content, strContent);
         }
     }
-    */
 }
 
 void ZenoMainWindow::clearErrorMark()
 {
     //clear all error mark at every scene.
-    auto docks = findChildren<ZenoDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
-
     auto graphsMgm = zenoApp->graphsManagment();
     IGraphsModel* pModel = graphsMgm->currentModel();
     if (!pModel) {
@@ -752,11 +1581,11 @@ void ZenoMainWindow::clearErrorMark()
     for (const QModelIndex& idx : lst)
     {
         ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(idx));
-        if (!pScene) {
-            pScene = new ZenoSubGraphScene(graphsMgm);
-            graphsMgm->addScene(idx, pScene);
-            pScene->initModel(idx);
-        }
+//         if (!pScene) {
+//             pScene = new ZenoSubGraphScene(graphsMgm);
+//             graphsMgm->addScene(idx, pScene);
+//             pScene->initModel(idx);
+//         }
 
         if (pScene) {
             pScene->clearMark();
@@ -764,12 +1593,13 @@ void ZenoMainWindow::clearErrorMark()
     }
 }
 
-void ZenoMainWindow::saveAs() {
+bool ZenoMainWindow::saveAs() {
     DlgInEventLoopScope;
     QString path = QFileDialog::getSaveFileName(this, "Path to Save", "", "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
-        saveFile(path);
+        return saveFile(path);
     }
+    return false;
 }
 
 QString ZenoMainWindow::getOpenFileByDialog() {
@@ -785,46 +1615,56 @@ QString ZenoMainWindow::getOpenFileByDialog() {
     return filePath;
 }
 
-void ZenoMainWindow::verticalLayout()
-{
-    addDockWidget(Qt::TopDockWidgetArea, m_viewDock);
-    splitDockWidget(m_viewDock, m_editor, Qt::Vertical);
-    splitDockWidget(m_editor, m_parameter, Qt::Horizontal);
-    splitDockWidget(m_viewDock, m_logger, Qt::Horizontal);
-}
-
-void ZenoMainWindow::onlyEditorLayout()
-{
-    verticalLayout();
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks)
-    {
-        if (dock->type() != DOCK_EDITOR)
-        {
-            dock->close();
-        }
-    }
-}
-
 void ZenoMainWindow::onNodesSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
     //dispatch to all property panel.
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks) {
-        dock->onNodesSelected(subgIdx, nodes, select);
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks) {
+        if (dock->isVisible())
+            dock->onNodesSelected(subgIdx, nodes, select);
     }
 }
 
 void ZenoMainWindow::onPrimitiveSelected(const std::unordered_set<std::string>& primids) {
     //dispatch to all property panel.
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks) {
-        dock->onPrimitiveSelected(primids);
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks) {
+        if (dock->isVisible())
+            dock->onPrimitiveSelected(primids);
     }
 }
 
 void ZenoMainWindow::updateLightList() {
-    auto docks = findChildren<ZenoDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZenoDockWidget *dock : docks) {
-        dock->newFrameUpdate();
+    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* dock : docks) {
+        if (dock->isVisible())
+            dock->updateLights();
+    }
+}
+void ZenoMainWindow::doFrameUpdate(int frame) {
+    if(liveHttpServer->clients.empty())
+        return;
+
+    std::cout << "====== Frame " << frame << "\n";
+
+    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+    for (auto displayWid : views)
+    {
+        ZASSERT_EXIT(displayWid);
+        bool bMovingCamera = displayWid->isCameraMoving();
+        std::cout << "====== CameraMoving " << bMovingCamera << "\n";
+
+        // Sync Camera
+        if (bMovingCamera) {
+
+        }
+        // Sync Frame
+        else {
+            int count = liveHttpServer->frameMeshDataCount(frame);
+            std::string data = "FRAME " + std::to_string(frame) + " SYNCMESH " + std::to_string(count);
+            for(auto& c: liveHttpServer->clients) {
+                auto r = liveTcpServer->sendData({c.first, c.second, data});
+                std::cout << "\tClient " << c.first << ":" << c.second << " Receive " << r.data << "\n";
+            }
+        }
     }
 }

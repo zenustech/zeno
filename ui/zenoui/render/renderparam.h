@@ -118,6 +118,7 @@ struct LineEditParam
     QFont font;
     QPalette palette;
     QMargins margins;
+    QString propertyParam;
 };
 
 struct ComboBoxParam

@@ -1,6 +1,12 @@
 // this part of code is modified from nvidia's optix example
 #pragma once
 
+#ifndef __CUDACC_RTC__ 
+    #include "optixVolume.h"
+#else
+    #include "volume.h"
+#endif
+
 enum RayType
 {
     RAY_TYPE_RADIANCE  = 0,
@@ -8,6 +14,19 @@ enum RayType
     RAY_TYPE_COUNT
 };
 
+enum VisibilityMask {
+    NothingMask = 0u,
+    DefaultMatMask = 1u,
+    VolumeMatMask = 2u,
+    EverythingMask = 255u
+}; 
+
+enum RayLaunchSource {
+    DefaultMatSource = 0u,
+    VolumeEdgeSource = 1u,
+    VolumeEmptySource = 1u << 1,
+    VolumeScatterSource = 1u << 2
+};
 
 struct ParallelogramLight
 {
@@ -47,6 +66,13 @@ struct Params
 
     int usingHdrSky;
     cudaTextureObject_t sky_texture;
+
+    float* skycdf;
+
+
+    int skynx;
+    int skyny;
+
     float sky_rot;
     float sky_rot_x;
     float sky_rot_y;
@@ -91,7 +117,20 @@ struct HitGroupData
     unsigned short* lightMark;
     int* meshIdxs;
     float* meshMats;
+    float3* instPos;
+    float3* instNrm;
+    float3* instUv;
+    float3* instClr;
+    float3* instTang;
     float4* uniforms;
     cudaTextureObject_t textures[32];
 
+    unsigned long long vdb_grids[8];
+    float vdb_max_v[8];
+
+    // cihou nanovdb
+    float opacityHDDA;
+
+    float sigma_a, sigma_s;
+    float greenstein; // -1 ~ 1
 };

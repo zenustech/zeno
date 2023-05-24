@@ -315,6 +315,10 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == zenovis::PICK_OBJECT) {
                     pick_particle = prim->tris->empty() && prim->quads->empty() && prim->polys->empty() && prim->loops->empty();
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
+
                     // shader uniform
                     obj_shader->use();
                     scene->camera->set_program_uniforms(obj_shader);
@@ -329,7 +333,9 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == zenovis::PICK_VERTEX || pick_particle) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    CHECK_GL(glDepthFunc(GL_LEQUAL));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
                     // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
                     // ----- draw points -----
@@ -355,7 +361,9 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == zenovis::PICK_LINE) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    CHECK_GL(glDepthFunc(GL_LESS));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
                     // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                     // ----- draw lines -----
                     prim_shader->use();
@@ -404,7 +412,9 @@ struct FrameBufferPicker : IPicker {
                 if (scene->select_mode == zenovis::PICK_MESH) {
                     // ----- enable depth test -----
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    CHECK_GL(glDepthFunc(GL_LESS));
+                    CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+                    glDepthFunc(GL_GREATER);
+                    CHECK_GL(glClearDepth(0.0));
                     // CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
                     // ----- draw triangles -----
                     prim_shader->use();
@@ -556,6 +566,24 @@ struct FrameBufferPicker : IPicker {
         destroy_buffers();
 
         return result;
+    }
+
+    virtual float getDepth(int x, int y) override {
+        generate_buffers();
+        draw();
+
+        if (!fbo->complete()) return 0;
+        CHECK_GL(glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo->fbo));
+        // CHECK_GL(glReadBuffer(GL_DEPTH_ATTACHMENT));
+
+        float depth;
+        CHECK_GL(glReadPixels(x, h - y - 1, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth));
+
+        // CHECK_GL(glReadBuffer(GL_NONE));
+        fbo->unbind();
+        destroy_buffers();
+
+        return depth;
     }
 
     virtual void focus(const std::string& prim_name) override {

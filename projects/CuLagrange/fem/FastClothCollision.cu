@@ -125,7 +125,6 @@ void FastClothSystem::findConstraints(zs::CudaExecutionPolicy &pol, T dHat, cons
 
 void FastClothSystem::lightCD(zs::CudaExecutionPolicy &pol, T dHat, const zs::SmallString &tag) {
     using namespace zs;
-    constexpr auto space = execspace_e::cuda;
 
     zs::CppTimer timer;
     if (enableContact) {

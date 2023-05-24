@@ -30,6 +30,10 @@ public:
 signals:
     void modelInited(IGraphsModel*);
     void modelDataChanged();
+    void fileOpened(QString);
+    void fileClosed();
+    void fileSaved(QString);
+    void dirtyChanged(bool);
 
 private slots:
     void onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
@@ -41,7 +45,7 @@ private:
     IGraphsModel* m_model;
     QAbstractItemModel* m_pTreeModel;
     QStandardItemModel* m_logModel;     //connection with scene.
-    mutable QMutex m_mutex;
+    mutable std::mutex m_mtx;
     QString m_currFile;
     TIMELINE_INFO m_timerInfo;
     QMap<QString, QGraphicsScene*> m_scenes;

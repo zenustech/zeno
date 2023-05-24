@@ -4,10 +4,13 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
-#include <zenovis/opengl/shader.h>
 #include <zeno/types/CameraObject.h>
 
 namespace zenovis {
+
+namespace opengl {
+    class Program;
+}
 
 struct Camera {
     int m_nx{512}, m_ny{512};

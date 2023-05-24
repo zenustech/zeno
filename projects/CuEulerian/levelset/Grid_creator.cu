@@ -76,12 +76,59 @@ struct ZSGridTopoCopy : INode {
         grid._transform = topo._transform;
         grid._grid.resize(topo.numBlocks() * topo.block_size);
 
+        if (get_input2<bool>("multigrid")) {
+            auto pol = zs::cuda_exec();
+            constexpr auto space = zs::execspace_e::cuda;
+
+            size_t curNumBlocks = grid.numBlocks();
+
+            /// @brief adjust multigrid accordingly
+            // grid
+            auto &spg1 = zs_grid->spg1;
+            spg1.resize(pol, curNumBlocks);
+            auto &spg2 = zs_grid->spg2;
+            spg2.resize(pol, curNumBlocks);
+            auto &spg3 = zs_grid->spg3;
+            spg3.resize(pol, curNumBlocks);
+            // table
+            {
+                const auto &table = grid._table;
+                auto &table1 = spg1._table;
+                auto &table2 = spg2._table;
+                auto &table3 = spg3._table;
+                table1.reset(true);
+                table1._cnt.setVal(curNumBlocks);
+                table2.reset(true);
+                table2._cnt.setVal(curNumBlocks);
+                table3.reset(true);
+                table3._cnt.setVal(curNumBlocks);
+
+                table1._buildSuccess.setVal(1);
+                table2._buildSuccess.setVal(1);
+                table3._buildSuccess.setVal(1);
+                pol(zs::range(curNumBlocks),
+                    [table = zs::proxy<space>(table), tab1 = zs::proxy<space>(table1), tab2 = zs::proxy<space>(table2),
+                     tab3 = zs::proxy<space>(table3)] __device__(std::size_t i) mutable {
+                        auto bcoord = table._activeKeys[i];
+                        tab1.insert(bcoord / 2, i, true);
+                        tab2.insert(bcoord / 4, i, true);
+                        tab3.insert(bcoord / 8, i, true);
+                    });
+
+                int tag1 = table1._buildSuccess.getVal();
+                int tag2 = table2._buildSuccess.getVal();
+                int tag3 = table3._buildSuccess.getVal();
+                if (tag1 == 0 || tag2 == 0 || tag3 == 0)
+                    zeno::log_error("check TopoCopy multigrid activate success state: {}, {}, {}\n", tag1, tag2, tag3);
+            }
+        }
+
         set_output("Grid", zs_grid);
     }
 };
 
 ZENDEFNODE(ZSGridTopoCopy, {/* inputs: */
-                            {"Grid", "TopologyGrid"},
+                            {"Grid", "TopologyGrid", {"bool", "multigrid", "0"}},
                             /* outputs: */
                             {"Grid"},
                             /* params: */
@@ -263,6 +310,41 @@ ZENDEFNODE(ZSGridAppendAttribute, {/* inputs: */
                                    {},
                                    /* category: */
                                    {"Eulerian"}});
+
+struct ZSMultiGridAppendAttribute : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+        auto attrTag = get_input2<std::string>("Attribute");
+        auto nchns = get_input2<int>("ChannelNumber");
+
+        auto &spg1 = zs_grid->spg1;
+        auto &spg2 = zs_grid->spg2;
+        auto &spg3 = zs_grid->spg3;
+        auto pol = zs::cuda_exec();
+
+        if (!spg1.hasProperty(attrTag)) {
+            spg1.append_channels(pol, {{attrTag, nchns}});
+            spg2.append_channels(pol, {{attrTag, nchns}});
+            spg3.append_channels(pol, {{attrTag, nchns}});
+        } else {
+            int m_nchns = spg1.getPropertySize(attrTag);
+            if (m_nchns != nchns)
+                throw std::runtime_error(
+                    fmt::format("the SparseGrid already has [{}] with [{}] channels!", attrTag, m_nchns));
+        }
+
+        set_output("SparseGrid", zs_grid);
+    }
+};
+
+ZENDEFNODE(ZSMultiGridAppendAttribute, {/* inputs: */
+                                        {"SparseGrid", {"string", "Attribute", ""}, {"int", "ChannelNumber", "1"}},
+                                        /* outputs: */
+                                        {"SparseGrid"},
+                                        /* params: */
+                                        {},
+                                        /* category: */
+                                        {"Eulerian"}});
 
 struct ZSCombineSparseGrid : INode {
     template <int OpId>

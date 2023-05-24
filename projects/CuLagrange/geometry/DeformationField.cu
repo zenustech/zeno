@@ -144,66 +144,228 @@ ZENDEFNODE(ZSIsotropicTensionField, {
                             {{"string","ref_channel","X"},{"string","def_channel","x"},{"string","tension_channel"," tension"}},
                             {"ZSGeometry"}});
 
-struct ZSEvalDeformationGradient : zeno::INode {
+struct ZSEvalAffineTransform : zeno::INode {
     virtual void apply() override {
         using namespace zs;
-        auto zsvolume = get_input<ZenoParticles>("zsvolume");
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
         auto defShapeTag = get_param<std::string>("defShapeTag");
+        auto restShapeTag = get_param<std::string>("restShapeTag");
         auto gradientTag = get_param<std::string>("defGradientTag");
+        auto transTag = get_param<std::string>("defTransTag");
 
-        const auto& verts = zsvolume->getParticles();
+        const auto& verts = zsparticles->getParticles();
         if(!verts.hasProperty(defShapeTag)) {
-            fmt::print("the input zsvolume has no {} channel\n",defShapeTag);
-            throw std::runtime_error("the input zsvolume has no specified defShapeTag");
+            fmt::print("the input zsparticles has no {} channel\n",defShapeTag);
+            throw std::runtime_error("the input zsparticles has no specified defShapeTag");
+        }
+        if(!verts.hasProperty(restShapeTag)) {
+            fmt::print("the input zsparticles has no {} channels\n",restShapeTag);
+            throw std::runtime_error("the input zsparticles has no specified restShapeTag");
         }
 
-        auto& quads = zsvolume->getQuadraturePoints();
-        if(quads.getPropertySize("inds") != 4) {
-            fmt::print("the input zsvolume should be a tetrahedra mesh\n");
-            throw std::runtime_error("the input zsvolume should be a tetrahedra mesh");
+        auto& elms = zsparticles->getQuadraturePoints();
+        if(elms.getPropertySize("inds") != 4 && elms.getPropertySize("inds") != 3) {
+            fmt::print("the input zsparticles should be a tetrahedra or tri mesh\n");
+            throw std::runtime_error("the input zsparticles should be a tetrahedra or tri mesh");
         }
 
-        if(!quads.hasProperty("IB")) {
-            fmt::print("the input zsvolume should contain IB channel\n");
-            throw std::runtime_error("the input zsvolume should contain IB channel\n"); 
+        if(!elms.hasProperty("IB")) {
+            fmt::print("the input zsparticles should contain IB channel\n");
+            throw std::runtime_error("the input zsparticles should contain IB channel\n"); 
         }
 
         auto cudaExec = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
 
-        if(!quads.hasProperty(gradientTag)) {
-            quads.append_channels(cudaExec,{{gradientTag,9}});
-        }else if(quads.getPropertySize(gradientTag) != 9) {
+        if(!elms.hasProperty(gradientTag)) {
+            elms.append_channels(cudaExec,{{gradientTag,9}});
+        }else if(elms.getPropertySize(gradientTag) != 9) {
             fmt::print("the size of F channel {} is not 9\n",gradientTag);
             throw std::runtime_error("the size of F channel is not 9");
         }
+        if(!elms.hasProperty(transTag)) {
+            elms.append_channels(cudaExec,{{transTag,3}});
+        }else if(elms.getPropertySize(transTag) != 3) {
+            fmt::print("the size of b channel {} is not 3\n",transTag);
+            throw std::runtime_error("the size of b channel is not 3");
+        }
 
-        cudaExec(zs::range(quads.size()),
-            [quads = proxy<space>({},quads),verts = proxy<space>({},verts),
+        cudaExec(zs::range(elms.size()),
+            [elms = proxy<space>({},elms),verts = proxy<space>({},verts),
+                transTag = zs::SmallString(transTag),
+                restShapeTag = zs::SmallString(restShapeTag),
                 defShapeTag = zs::SmallString(defShapeTag),
                 gradientTag = zs::SmallString(gradientTag)] ZS_LAMBDA(int ei) mutable {
             using T = typename RM_CVREF_T(verts)::value_type;
-            const auto& inds = quads.template pack<4>("inds",ei).template reinterpret_bits<int>();
+            zs::vec<T,3,3> F{};
+            zs::vec<T,3> b{};
+            if(elms.propertySize("inds") == 4) {
+                const auto& inds = elms.template pack<4>("inds",ei).template reinterpret_bits<int>();
+                F = LSL_GEO::deformation_gradient(
+                    verts.template pack<3>(defShapeTag,inds[0]),
+                    verts.template pack<3>(defShapeTag,inds[1]),
+                    verts.template pack<3>(defShapeTag,inds[2]),
+                    verts.template pack<3>(defShapeTag,inds[3]),
+                    elms.template pack<3,3>("IB",ei));
+                auto Xc = zs::vec<T,3>::zeros();
+                auto xc = zs::vec<T,3>::zeros();
 
-            zs::vec<T,3,3> F = LSL_GEO::deformation_gradient(
-                verts.template pack<3>(defShapeTag,inds[0]),
-                verts.template pack<3>(defShapeTag,inds[1]),
-                verts.template pack<3>(defShapeTag,inds[2]),
-                verts.template pack<3>(defShapeTag,inds[3]),
-                quads.template pack<3,3>("IB",ei));
+                for(int i = 0;i != 4;++i){
+                    Xc += verts.pack(dim_c<3>,restShapeTag,inds[i])/4.0;
+                    xc += verts.pack(dim_c<3>,defShapeTag,inds[i])/4.0;
+                }
 
-            quads.template tuple<9>(gradientTag,ei) = F;
+                b = xc - Xc;
+            }else {
+                const auto& inds = elms.pack(dim_c<3>,"inds",ei).reinterpret_bits(int_c);
+                auto X0 = verts.template pack<3>(restShapeTag,inds[0]);
+                auto X1 = verts.template pack<3>(restShapeTag,inds[1]);
+                auto X2 = verts.template pack<3>(restShapeTag,inds[2]);
+
+                auto X10 = X1 - X0;
+                auto X20 = X2 - X0;
+                auto X30 = X10.cross(X20).normalized();
+                auto X3 = X30 + X0;
+
+                auto x0 = verts.template pack<3>(defShapeTag,inds[0]);
+                auto x1 = verts.template pack<3>(defShapeTag,inds[1]);
+                auto x2 = verts.template pack<3>(defShapeTag,inds[2]);
+
+                auto x10 = x1 - x0;
+                auto x20 = x2 - x0;
+                auto x30 = x10.cross(x20).normalized();
+                auto x3 = x30 + x0;         
+
+                LSL_GEO::deformation_xform(X0,X1,X2,X3,x0,x1,x2,x3,F,b);
+
+                // auto tF = LSL_GEO::deformation_gradient(
+                //     verts.template pack<3>(defShapeTag,inds[0]),
+                //     verts.template pack<3>(defShapeTag,inds[1]),
+                //     verts.template pack<3>(defShapeTag,inds[2]),
+                //     elms.template pack<2,2>("IB",ei));
+                // for(int row = 0;row != 3;++row)
+                //     for(int col = 0;col != 2;++col)
+                //         F(row,col) = tF(row,col);
+                // auto tF0 = col(tF,0);
+                // auto tF1 = col(tF,1);
+                // auto tF2 = tF0.cross(tF1);
+                // tF2 = tF2/(tF2.norm() + (T)1e-6);
+                // for(int row = 0;row != 3;++row)
+                //     F(row,2) = tF2[row];
+
+                // auto Xc = zs::vec<T,3>::zeros();
+                // auto xc = zs::vec<T,3>::zeros();
+
+                // for(int i = 0;i != 3;++i){
+                //     Xc += verts.pack(dim_c<3>,restShapeTag,inds[i])/3.0;
+                //     xc += verts.pack(dim_c<3>,defShapeTag,inds[i])/3.0;
+                // }
+                // b = xc - Xc;
+            }
+            elms.tuple(dim_c<3>,transTag,ei) = b;
+            elms.template tuple<9>(gradientTag,ei) = F;
+            // if(ei == 0) {
+            //     printf("F : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+            //         (float)F(0,0),(float)F(0,1),(float)F(0,2),
+            //         (float)F(1,0),(float)F(1,1),(float)F(1,2),
+            //         (float)F(2,0),(float)F(2,1),(float)F(2,2));
+            //     printf("b : %f\t%f\t%f\n",
+            //         (float)b[0],(float)b[1],(float)b[2]);
+            // }
         });
         // // auto refShapeTag = get_param<std::string>("refShapeTag");
 
-        set_output("zsvolume",zsvolume);
+        set_output("zsparticles",zsparticles);
     }
 };
 
-ZENDEFNODE(ZSEvalDeformationGradient, {
-            {"zsvolume"},
-            {"zsvolume"},
-            {{"string","defShapeTag","x"},{"string","defGradientTag","F"}},
+ZENDEFNODE(ZSEvalAffineTransform, {
+            {"zsparticles"},
+            {"zsparticles"},
+            {
+                {"string","defShapeTag","x"},
+                {"string","defGradientTag","F"},
+                {"string","restShapeTag","X"},
+                {"string","defTransTag","b"}
+            },
+            {"ZSGeometry"}});
+
+
+struct ZSApplyAffineTransform : zeno::INode {
+    virtual void apply() override {
+        using namespace zs;
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto restShapeTag = get_param<std::string>("restShapeTag");
+        auto defShapeTag = get_param<std::string>("defShapeTag");
+        auto gradientTag = get_param<std::string>("defGradientTag");
+        auto transTag = get_param<std::string>("defTransTag");
+        auto skipTag = get_param<std::string>("skipTag");
+        
+        auto& verts = zsparticles->getParticles();
+        if(!verts.hasProperty(defShapeTag)) {
+            fmt::print("the input zsparticles has no {} channel\n",defShapeTag);
+            throw std::runtime_error("the input zsparticles has no specified defShapeTag");
+        }
+        if(!verts.hasProperty(restShapeTag)) {
+            fmt::print("the input zsparticles has no {} channels\n",restShapeTag);
+            throw std::runtime_error("the input zsparticles has no specified restShapeTag");
+        }
+        if(!verts.hasProperty(gradientTag)) {
+            fmt::print("the input zsparticles has no {} channel\n",gradientTag);
+            throw std::runtime_error("the input zsparticles has no nodal-wise deformation gradient");
+        }
+        if(!verts.hasProperty(transTag)) {
+            fmt::print("the input zsparticles has no {} channel\n",transTag);
+            throw std::runtime_error("the input zsparticles has no nodal-wise translation");
+        }
+        if(!verts.hasProperty(skipTag)) {
+            fmt::print("the input zsparticles has no {} channel\n",skipTag);
+            throw std::runtime_error("the input zsparticles has no nodal-wise skipTag");
+        }
+
+        auto cudaExec = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        cudaExec(zs::range(verts.size()),
+            [verts = proxy<space>({},verts),
+                restShapeTag = zs::SmallString(restShapeTag),
+                defShapeTag = zs::SmallString(defShapeTag),
+                gradientTag = zs::SmallString(gradientTag),
+                transTag = zs::SmallString(transTag),
+                skipTag = zs::SmallString(skipTag)] ZS_LAMBDA(int vi) mutable {
+            auto X = verts.pack(dim_c<3>,restShapeTag,vi);
+            auto F = verts.pack(dim_c<3,3>,gradientTag,vi);
+            auto b = verts.pack(dim_c<3>,transTag,vi);
+
+            if(verts(skipTag,vi) > 0.5)
+                return;
+            verts.tuple(dim_c<3>,defShapeTag,vi) = F * X + b;
+            // if(vi == 0){
+            //     printf("F : \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f\n",
+            //         (float)F(0,0),(float)F(0,1),(float)F(0,2),
+            //         (float)F(1,0),(float)F(1,1),(float)F(1,2),
+            //         (float)F(2,0),(float)F(2,1),(float)F(2,2));
+            // }
+            // if(vi == 0) {
+            //     auto v = verts.pack(dim_c<3>,restShapeTag,vi);
+            //     printf("resulting x : %f %f %f\n",(float)v[0],(float)v[1],(float)v[2]);
+            // }
+        });
+
+        set_output("zsparticles",zsparticles);
+    }
+};
+
+ZENDEFNODE(ZSApplyAffineTransform, {
+            {"zsparticles"},
+            {"zsparticles"},
+            {
+                {"string","skipTag","skipTag"},
+                {"string","defShapeTag","x"},
+                {"string","defGradientTag","F"},
+                {"string","restShapeTag","X"},
+                {"string","defTransTag","b"}
+            },
             {"ZSGeometry"}});
 
 };

@@ -33,4 +33,14 @@ public:
     ZToolbar(QWidget* parent = nullptr);
 };
 
+class FakeToolbar : public QToolBar
+{
+    Q_OBJECT
+public:
+    FakeToolbar(bool bHor, QWidget* parent = nullptr);
+
+protected:
+    void paintEvent(QPaintEvent* event) override;
+};
+
 #endif

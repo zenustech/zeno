@@ -5,7 +5,7 @@
 #include <zenomodel/include/uihelper.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
-#include <zenoui/util/cihou.h>
+#include "common_def.h"
 #include <zenoio/writer/zsgwriter.h>
 
 
@@ -65,6 +65,9 @@ void GraphsManagment::setCurrentModel(IGraphsModel* model)
     connect(m_model, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
     connect(m_model, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
         this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
+    connect(m_model, &IGraphsModel::dirtyChanged, this, [=]() {
+        emit dirtyChanged(m_model->isDirty());
+    });
 }
 
 QAbstractItemModel* GraphsManagment::treeModel()
@@ -87,6 +90,7 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 
     pModel->clearDirty();
     setCurrentModel(pModel);
+    emit fileOpened(fn);
     return pModel;
 }
 
@@ -113,6 +117,9 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
 
     m_model->setFilePath(filePath);
     m_model->clearDirty();
+
+    QFileInfo info(filePath);
+    emit fileSaved(filePath);
     return true;
 }
 
@@ -156,6 +163,7 @@ void GraphsManagment::clear()
         }
         m_scenes.clear();
     }
+    emit fileClosed();
 }
 
 void GraphsManagment::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
@@ -222,12 +230,6 @@ void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
     if (msg.trimmed().isEmpty())
         return;
 
-    bool ret = m_mutex.tryLock(0);
-    if (!ret)
-        return;
-
-    zeno::scope_exit sp([=]() { m_mutex.unlock(); });
-
     QStandardItem* item = new QStandardItem(msg);
     item->setData(QtFatalMsg, ROLE_LOGTYPE);
     item->setData(nodeName, ROLE_NODE_IDENT);
@@ -240,12 +242,6 @@ void GraphsManagment::appendLog(QtMsgType type, QString fileName, int ln, const 
 {
     if (msg.trimmed().isEmpty())
         return;
-
-    bool ret = m_mutex.tryLock(0);
-    if (!ret)
-        return;
-
-    zeno::scope_exit sp([=]() { m_mutex.unlock(); });
 
     QStandardItem *item = new QStandardItem(msg);
     item->setData(type, ROLE_LOGTYPE);
