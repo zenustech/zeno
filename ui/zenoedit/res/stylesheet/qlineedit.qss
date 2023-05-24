@@ -91,11 +91,11 @@ QLineEdit[cssClass="zeno2_2_lineedit"][setKey="null"] {
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"][setKey="true"] {
-    background-color: #496D81;
+    background-color: #3A6E64;
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"][setKey="false"] {
-    background-color: #3A6E64;
+    background-color: #496DA0;
 }
 
 QLineEdit[cssClass="zeno2_2_lineedit"]:focus {

@@ -282,7 +282,8 @@ bool ZFloatLineEdit::isSetKeyFrame()
         if (getKeyFrame(data)) {
             int x = timeline->value();
             for (auto p : data.points) {
-                if ((p.point.x() == x) && data.visible) {
+                int px = p.point.x();
+                if ((px == x) && data.visible) {
                     return true;
                 }
             }
