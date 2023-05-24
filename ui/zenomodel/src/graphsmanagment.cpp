@@ -230,8 +230,6 @@ void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
     if (msg.trimmed().isEmpty())
         return;
 
-    std::lock_guard lck(m_mtx);
-
     QStandardItem* item = new QStandardItem(msg);
     item->setData(QtFatalMsg, ROLE_LOGTYPE);
     item->setData(nodeName, ROLE_NODE_IDENT);
@@ -244,8 +242,6 @@ void GraphsManagment::appendLog(QtMsgType type, QString fileName, int ln, const 
 {
     if (msg.trimmed().isEmpty())
         return;
-
-    std::lock_guard lck(m_mtx);
 
     QStandardItem *item = new QStandardItem(msg);
     item->setData(type, ROLE_LOGTYPE);

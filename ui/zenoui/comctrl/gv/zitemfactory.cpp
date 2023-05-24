@@ -195,9 +195,9 @@ namespace zenoui
                 pPathEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pPathEditor->setData(GVKEY_TYPE, type);
                 
-                QObject::connect(pPathEditor, &ZenoParamPathEdit::pathValueChanged, [=](QString newPath) {
-                    cbSet.cbEditFinished(newPath);
-                    });
+                QObject::connect(pPathEditor, &ZenoParamPathEdit::editingFinished, [=]() {
+                    cbSet.cbEditFinished(pPathEditor->text());
+                });
                 pItemWidget = pPathEditor;
                 break;
             }

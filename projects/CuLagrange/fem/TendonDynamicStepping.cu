@@ -250,7 +250,7 @@ struct TendonDynamicStepping : INode {
             dtiles_t& gh_buffer) {
                 using namespace zs;
                 constexpr auto space = execspace_e::cuda;
-                int max_nm_binders = tris.getChannelSize(binderTag);
+                int max_nm_binders = tris.getPropertySize(binderTag);
                 // printf("max_nm_binders = %d\n",max_nm_binders);
 
                 cudaPol(zs::range(tris.size()),
@@ -336,7 +336,7 @@ struct TendonDynamicStepping : INode {
             dtiles_t& gh_buffer) {
                 using namespace zs;
                 constexpr auto space = execspace_e::cuda;
-                int offset = 0;
+                // int offset = 0;
                 auto stBvh = bvh_t{};
                 // std::cout << "try retrieve bounding volumes" << std::endl;
                 auto bvs = retrieve_bounding_volumes(cudaPol,kverts,ktris,wrapv<3>{},(T)0.0,"x");
@@ -531,7 +531,7 @@ struct TendonDynamicStepping : INode {
             dtiles_t& gh_buffer) {
                 using namespace zs;
                 constexpr auto space = execspace_e::cuda;
-                int offset = 0;
+                // int offset = 0;
                 // building the bounding volumes of surface mesh
                 auto stBvh = bvh_t{};
                 auto bvs = retrieve_bounding_volumes(cudaPol,vtemp,tris,wrapv<3>{},(T)0.0,"xn");
@@ -652,10 +652,10 @@ struct TendonDynamicStepping : INode {
                     auto cH = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps,true);
 
                     for(int i = 3;i != 12;++i){
-                        int d0 = i % 3;
+                        // int d0 = i % 3;
                         atomic_add(exec_cuda,&gh_buffer("grad",i-3,inds[1]),cgrad[i]);
                         for(int j = 3;j != 12;++j){
-                            int d1 = j % 3;
+                            // int d1 = j % 3;
                             atomic_add(exec_cuda,&gh_buffer("H",(i-3)*9 + (j-3),inds[1]),cH(i,j));
                         }
                     }
@@ -702,15 +702,15 @@ struct TendonDynamicStepping : INode {
         auto gravity = zeno::vec<3,T>(0);
         if(has_input("gravity"))
             gravity = get_input2<zeno::vec<3,T>>("gravity");
-        T armoji = (T)1e-4;
-        T wolfe = (T)0.9;
+        // T armoji = (T)1e-4;
+        // T wolfe = (T)0.9;
 
         T cg_res = get_param<float>("cg_res");
         auto models = zssurf->getModel();
         auto& verts = zssurf->getParticles();
         auto& tris = zssurf->getQuadraturePoints();
 
-        if(tris.getChannelSize("inds") != 3){
+        if(tris.getPropertySize("inds") != 3){
             fmt::print(fg(fmt::color::red),"only tris mesh is supported");
             throw std::runtime_error("the tendon must be a trimesh");
         }

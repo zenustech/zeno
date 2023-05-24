@@ -56,25 +56,37 @@ void ZCurveMapEditor::initUI()
 
     initStylesheet();
     initButtonShadow();
-    //initSize();
+    initSize();
     initSignals();
 }
 
 void ZCurveMapEditor::initSize()
 {
     //qt designer doesn't support dpi scaled size.
-    m_ui->editXFrom->setFixedSize(ZenoStyle::dpiScaledSize(QSize(36, 20)));
-    m_ui->editXTo->setFixedSize(ZenoStyle::dpiScaledSize(QSize(36, 20)));
-    m_ui->editYFrom->setFixedSize(ZenoStyle::dpiScaledSize(QSize(36, 20)));
-    m_ui->editYTo->setFixedSize(ZenoStyle::dpiScaledSize(QSize(36, 20)));
+    m_ui->editXFrom->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(60, 24)));
+    m_ui->editXTo->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(60, 24)));
+    m_ui->editYFrom->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(60, 24)));
+    m_ui->editYTo->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(60, 24)));
 
-    m_ui->editPtX->setFixedSize(ZenoStyle::dpiScaledSize(QSize(60, 20)));
-    m_ui->editPtY->setFixedSize(ZenoStyle::dpiScaledSize(QSize(60, 20)));
+    m_ui->editPtX->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(60, 24)));
+    m_ui->editPtY->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(60, 24)));
+    m_ui->editFrame->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(60, 24)));
+    m_ui->editValue->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(60, 24)));
 
-    m_ui->editTanLeftX->setFixedSize(ZenoStyle::dpiScaledSize(QSize(60, 20)));
-    m_ui->editTanLeftY->setFixedSize(ZenoStyle::dpiScaledSize(QSize(60, 20)));
-    m_ui->editTanRightX->setFixedSize(ZenoStyle::dpiScaledSize(QSize(60, 20)));
-    m_ui->editTanRightY->setFixedSize(ZenoStyle::dpiScaledSize(QSize(60, 20)));
+    m_ui->editTanLeftX->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(65, 24)));
+    m_ui->editTanLeftY->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(65, 24)));
+    m_ui->editTanRightX->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(65, 24)));
+    m_ui->editTanRightY->setMinimumSize(ZenoStyle::dpiScaledSize(QSize(65, 24)));
+
+    QSize size = ZenoStyle::dpiScaledSize(QSize(35, 24));
+    m_ui->btnVector->setFixedSize(size);
+    m_ui->btnAsymmetry->setFixedSize(size);
+    m_ui->btnAligned->setFixedSize(size);
+    m_ui->btnFree->setFixedSize(size);
+
+    m_ui->widget->setFixedWidth(ZenoStyle::dpiScaled(180));
+    size = QSize(ZenoStyle::dpiScaled(1000), ZenoStyle::dpiScaled(500));
+    resize(size);
 }
 
 void ZCurveMapEditor::initStylesheet()

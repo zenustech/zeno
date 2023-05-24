@@ -51,9 +51,10 @@ public:
     void setInDlgEventLoop(bool bOn);
     TIMELINE_INFO timelineInfo();
     void setAlways(bool bAlways);
-    void setAlwaysLightCameraMaterial(bool bAlways);
+    void setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool bAlwaysMaterial);
     bool isAlways() const;
-    bool isAlwaysLightCameraMaterial() const;
+    bool isAlwaysLightCamera() const;
+    bool isAlwaysMaterial() const;
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;
@@ -171,7 +172,7 @@ public slots:
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
-    void onRunTriggered(bool applyLightAndCameraOnly = false);
+    void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
     void onDockSeparatorMoving(bool bMoving);
@@ -217,7 +218,8 @@ private:
     PtrLayoutNode m_layoutRoot;
     bool m_bInDlgEventloop;
     bool m_bAlways;
-    bool m_bAlwaysLightCameraMaterial;
+    bool m_bAlwaysLightCamera;
+    bool m_bAlwaysMaterial;
     int m_nResizeTimes;
     bool m_bMovingSeparator;    //dock separator.
     Ui::MainWindow* m_ui;

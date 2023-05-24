@@ -23,7 +23,7 @@
 #include <variant>
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
-
+#include <zeno/types/StringObject.h>
 #include <string>
 #include <string_view>
 
@@ -245,6 +245,27 @@ struct GraphicsManager {
                 }
                 else if (isRealTimeObject == 0 && isUniformCarrier == 0)
                 {
+                    //first init matidx attr
+                    int matNum = prim_in->userData().get2<int>("matNum",0);
+                    if(matNum==0)
+                    {
+                        //assign -1 to "matid" attr
+                        if(prim_in->tris.size()>0) {
+                            prim_in->tris.add_attr<int>("matid");
+                            prim_in->tris.attr<int>("matid").assign(prim_in->tris.size(), -1);
+                        }
+                        if(prim_in->quads.size()>0) {
+                            prim_in->quads.add_attr<int>("matid");
+                            prim_in->quads.attr<int>("matid").assign(prim_in->quads.size(), -1);
+                        }
+                        if(prim_in->polys.size()>0) {
+                            prim_in->polys.add_attr<int>("matid");
+                            prim_in->polys.attr<int>("matid").assign(prim_in->polys.size(), -1);
+                        }
+                    }
+
+
+
         det = DetPrimitive{prim_in_lslislSp};
         if (int subdlevs = prim_in->userData().get2<int>("delayedSubdivLevels", 0)) {
             // todo: zhxx, should comp normal after subd or before????
@@ -367,11 +388,22 @@ struct GraphicsManager {
                         vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
                     });
                     auto ts = (int const *)prim->tris.data();
+                    auto matids = (int const *)prim_in->tris.attr<int>("matid").data();
+                    std::vector<std::string> matNameList(0);
+                    if(matNum>0)
+                    {
+                        for(int i=0;i<matNum;i++)
+                        {
+                            auto matIdx = "Material_" + std::to_string(i);
+                            auto matName = prim_in->userData().get2<std::string>(matIdx, "Default");
+                            matNameList.emplace_back(matName);
+                        }
+                    }
                     auto nvs = prim->verts.size();
                     auto nts = prim->tris.size();
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
                     auto instID = prim_in->userData().get2<std::string>("instID", "Default");
-                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab);
+                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab, matids, matNameList);
                 }
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))
@@ -483,7 +515,11 @@ struct GraphicsManager {
 
         bool changelight = false;
         for (auto const &[key, obj] : objs) {
-            if (ins.may_emplace(key)) {
+            if (scene->drawOptions->updateMatlOnly && ins.may_emplace(key))
+            {
+                changelight = false;
+            }
+            else if(ins.may_emplace(key)) {
                 changelight = true;
             }
         }
@@ -560,9 +596,10 @@ struct GraphicsManager {
                 zeno::log_info("load_object: loading graphics [{}]", key);
                 changed = true;
 
-                if (auto cam = dynamic_cast<zeno::CameraObject *>(obj))
-                {
-                    scene->camera->setCamera(cam->get());     // pyb fix
+                if (!scene->drawOptions->updateMatlOnly) {
+                    if (auto cam = dynamic_cast<zeno::CameraObject *>(obj)) {
+                        scene->camera->setCamera(cam->get()); // pyb fix
+                    }
                 }
 
                 auto ig = std::make_unique<ZxxGraphic>(key, obj);
@@ -621,15 +658,25 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             graphicsMan->load_light_objects(scene->objectsMan->lightObjects);
             lightNeedUpdate = true;
             scene->objectsMan->needUpdateLight = false;
+            scene->drawOptions->needRefresh = true;
         }
 
         if (graphicsMan->load_static_objects(scene->objectsMan->pairs())) {
             staticNeedUpdate = true;
         }
-        if (graphicsMan->load_objects(scene->objectsMan->pairs()) || 
-            scene->drawOptions->needUpdateGeo)
+        if (graphicsMan->load_objects(scene->objectsMan->pairs()))
         {
             meshNeedUpdate = matNeedUpdate = true;
+            if (scene->drawOptions->updateMatlOnly)
+            {
+                lightNeedUpdate = meshNeedUpdate = false;
+                matNeedUpdate = true;
+            }
+            if (scene->drawOptions->updateLightCameraOnly)
+            {
+                lightNeedUpdate = true;
+                matNeedUpdate = meshNeedUpdate = false;
+            }
         }
         graphicsMan->load_shader_uniforms(scene->objectsMan->pairs());
     }
@@ -739,9 +786,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         if(scene->drawOptions->needRefresh){
             camNeedUpdate = true;
             scene->drawOptions->needRefresh = false;
-        }
-        if (scene->drawOptions->needUpdateGeo) {
-            scene->drawOptions->needUpdateGeo = false;
         }
 
         //std::cout << "Render Options: SimpleRender " << scene->drawOptions->simpleRender
@@ -951,27 +995,32 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     markers.push_back(has_vdb);
                 }
             }
-            std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
-            xinxinoptix::optixupdatematerial(markers, shaders, shader_tex_names);
-            
-            xinxinoptix::updateVolume();
+            if (matNeedUpdate)
+            {
+                std::cout<<"shaders size "<<shaders.size()<<" shader tex name size "<<shader_tex_names.size()<<std::endl;
+                xinxinoptix::optixupdatematerial(markers, shaders, shader_tex_names);
+            }
+            if (meshNeedUpdate)
+            {
+                xinxinoptix::updateVolume();
 
-    OptixUtil::logInfoVRAM("Before update Mesh");
-            //zeno::log_debug("[zeno-optix] updating mesh");
-            // timer.tick();
-            if(staticNeedUpdate)
-                xinxinoptix::UpdateStaticMesh(mtlidlut);
-            // timer.tock("done static mesh update");
-            // timer.tick();
-            xinxinoptix::UpdateDynamicMesh(mtlidlut);
-            // timer.tock("done dynamic mesh update");
-    OptixUtil::logInfoVRAM("After update Mesh");
+        OptixUtil::logInfoVRAM("Before update Mesh");
+                //zeno::log_debug("[zeno-optix] updating mesh");
+                // timer.tick();
+                if(staticNeedUpdate)
+                    xinxinoptix::UpdateStaticMesh(mtlidlut);
+                // timer.tock("done static mesh update");
+                // timer.tick();
+                xinxinoptix::UpdateDynamicMesh(mtlidlut);
+                // timer.tock("done dynamic mesh update");
+        OptixUtil::logInfoVRAM("After update Mesh");
 
-            xinxinoptix::UpdateInst();
-            xinxinoptix::UpdateStaticInstMesh(mtlidlut);
-            xinxinoptix::UpdateDynamicInstMesh(mtlidlut);
-            xinxinoptix::CopyInstMeshToGlobalMesh();
-            xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
+                xinxinoptix::UpdateInst();
+                xinxinoptix::UpdateStaticInstMesh(mtlidlut);
+                xinxinoptix::UpdateDynamicInstMesh(mtlidlut);
+                xinxinoptix::CopyInstMeshToGlobalMesh();
+                xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
+            }
             
             xinxinoptix::optixupdateend();
             

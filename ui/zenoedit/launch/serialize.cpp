@@ -11,11 +11,11 @@
 
 using namespace JsonHelper;
 
-QSet<QString> renderNodes({
-    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera", "MakeCamera", 
+QSet<QString> lightCameraNodes({
+    "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
     "LightNode", "BindLight", "ProceduralSky", "HDRSky",
-    "BindMaterial", "ShaderFinalize"
     });
+QString matlNode = "ShaderFinalize";
 
 static QString nameMangling(const QString& prefix, const QString& ident) {
     if (prefix.isEmpty())
@@ -64,7 +64,7 @@ void resolveOutputSocket(
 }
 
 
-static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false)
+static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
@@ -261,7 +261,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                if (applyLightAndCameraOnly && !renderNodes.contains(name))
+                if (applyLightAndCameraOnly && !lightCameraNodes.contains(name) || applyMaterialOnly && name != matlNode)
                 {
                     continue;
                 }
@@ -282,9 +282,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 	}
 }
 
-void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly)
+void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
-    serializeGraph(pModel, pModel->index("main"), "", true, writer, true, applyLightAndCameraOnly);
+    serializeGraph(pModel, pModel->index("main"), "", true, writer, true, applyLightAndCameraOnly, applyMaterialOnly);
 }
 
 static void serializeSceneOneGraph(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, QString subgName)

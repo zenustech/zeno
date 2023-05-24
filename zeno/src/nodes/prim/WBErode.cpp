@@ -54,7 +54,9 @@ struct erode_value2cond : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto value = get_input<NumericObject>("value")->get<float>();
@@ -233,7 +235,9 @@ struct erode_tumble_material_v0 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -507,7 +511,9 @@ struct erode_tumble_material_v2 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto& pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -795,7 +801,9 @@ struct erode_tumble_material_v3 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
@@ -1099,7 +1107,9 @@ struct erode_smooth_flow : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto smooth_rate = get_input<NumericObject>("smoothRate")->get<float>();
@@ -1195,7 +1205,9 @@ struct erode_tumble_material_v4 : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         // 侵蚀主参数
@@ -1730,7 +1742,6 @@ ZENDEFNODE(erode_terrainHiMeLo,
         } });
 
 
-
 float fit(const float data, const float ss, const float se, const float ds, const float de) {
     float b = std::numeric_limits<float>::epsilon();
     b = max(abs(se - ss), b);
@@ -1761,7 +1772,7 @@ struct HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("HeightField");
         int nx, nz;
         auto &ud = terrain->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
@@ -1769,7 +1780,9 @@ struct HF_maskByFeature : INode {
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
         auto &pos = terrain->verts;
-        float cellSize = std::abs(pos[0][0] - pos[1][0]);
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
 
         // 获取面板参数
         auto heightLayer = get_input2<std::string>("height_layer");
@@ -1803,7 +1816,6 @@ struct HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
@@ -1811,38 +1823,56 @@ struct HF_maskByFeature : INode {
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int idx = Pos2Idx(id_x, id_z, nx);
-                int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
+                int idx_xl, idx_xr, idx_zl, idx_zr;
+                int scale_x = 0;
+                int scale_z = 0;
 
                 if (id_x == 0) {
                     idx_xl = idx;
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 1;
+                    scale_x = 1;
                 } else if (id_x == nx - 1) {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = idx;
-                    scale = 1;
+                    scale_x = 1;
                 } else {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 2;
+                    scale_x = 2;
                 }
 
                 if (id_z == 0) {
                     idx_zl = idx;
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 1;
-                } else if (id_x == nz - 1) {
+                    scale_z = 1;
+                } else if (id_z == nz - 1) {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = idx;
-                    scale = 1;
+                    scale_z = 1;
                 } else {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 2;
+                    scale_z = 2;
                 }
 
-                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
-                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+                // debug
+//                if(id_x >= 570 && id_z >= 570)
+//                {
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                    printf("nx = %i, nz = %i\n", nx, nz);
+//                    printf("id_x = %i, id_z = %i\n", id_x, id_z);
+//                    printf("scale_x = %i, scale_z = %i, cellSize = %f\n", scale_x, scale_z, cellSize);
+//                    printf("-------------------\n");
+//                    printf("idx_xr = %i, idx_xl = %i\n", idx_xr, idx_xl);
+//                    printf("idx_zr = %i, idx_zl = %i\n", idx_zr, idx_zl);
+//                    printf("-------------------\n");
+//                    //printf("height[idx_xr] = %f, height[idx_xl] = %f\n", height[idx_xr], height[idx_xl]);
+//                    //printf("height[idx_zr] = %f, height[idx_zl] = %f\n", height[idx_zr], height[idx_zl]);
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                }
+
+                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (float(scale_x) * cellSize);
+                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (float(scale_z) * cellSize);
 
                 vec3f dx = normalizeSafe(vec3f(1, 0, _grad[idx][0]));
                 vec3f dy = normalizeSafe(vec3f(0, 1, _grad[idx][2]));
@@ -1882,13 +1912,13 @@ struct HF_maskByFeature : INode {
                 }
             }
         }
-
-        set_output("prim_2DGrid", std::move(terrain));
+        terrain->verts.erase_attr("_grad");
+        set_output("HeightField", std::move(terrain));
     }
 };
 ZENDEFNODE(HF_maskByFeature,
         {/* inputs: */ {
-            "prim_2DGrid",
+            "HeightField",
             {"string", "height_layer", "height"},
             {"string", "mask_layer", "mask"},
             {"int", "smooth_radius", "1"},
@@ -1906,7 +1936,7 @@ ZENDEFNODE(HF_maskByFeature,
         },
         /* outputs: */
         {
-            "prim_2DGrid",
+            "HeightField",
         },
         /* params: */
         {
@@ -1915,7 +1945,6 @@ ZENDEFNODE(HF_maskByFeature,
         {
             "erode",
         }});
-
 
 
 } // namespace

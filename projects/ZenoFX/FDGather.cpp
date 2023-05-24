@@ -222,23 +222,22 @@ T lerp(T a, T b, float c)
 template <class T>
 void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vector<T> &primAttr, int nx, int ny, float h,
               zeno::vec3f bmin) {
-    std::vector<T> temp(field.size());
+    std::vector<T> temp(coord.size());
 #pragma omp parallel for
-    for(size_t tidx=0;tidx<coord.size();tidx++)
-    {
+    for (size_t tidx = 0; tidx < coord.size(); tidx++) {
         auto uv = coord[tidx];
         auto uv2 = (uv - bmin) / h;
-        uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.01,0.0,0.01)), zeno::vec3f((float)nx-1.01, 0.0, (float)ny-1.01));
+        uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.01, 0.0, 0.01)),
+                        zeno::vec3f((float)nx - 1.01, 0.0, (float)ny - 1.01));
         int i = uv2[0];
         int j = uv2[2];
         float cx = uv2[0] - i, cy = uv2[2] - j;
-        size_t idx00 = j*nx + i, idx01 = j*nx + i + 1, idx10 = (j+1)*nx + i, idx11 = (j+1)*nx + i + 1;
+        size_t idx00 = j * nx + i, idx01 = j * nx + i + 1, idx10 = (j + 1) * nx + i, idx11 = (j + 1) * nx + i + 1;
         temp[tidx] = lerp<T>(lerp<T>(field[idx00], field[idx01], cx), lerp<T>(field[idx10], field[idx11], cx), cy);
     }
 #pragma omp parallel for
-    for(size_t tidx=0;tidx<coord.size();tidx++)
-    {
-        primAttr[tidx]=temp[tidx];
+    for (size_t tidx = 0; tidx < coord.size(); tidx++) {
+        primAttr[tidx] = temp[tidx];
     }
 }
 struct Grid2DSample : zeno::INode {
