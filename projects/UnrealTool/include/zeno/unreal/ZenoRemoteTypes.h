@@ -13,6 +13,8 @@
 #define CONSTEXPR
 #endif
 
+#define UE_LANDSCAPE_ZSCALE_INV 128.f
+
 namespace zeno::remote {
 
 enum class ESubjectType : int16_t {
