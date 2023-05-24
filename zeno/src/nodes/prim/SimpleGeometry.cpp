@@ -1003,21 +1003,19 @@ struct CreateTorus : zeno::INode {
         for (auto i = 0; i < prim->polys.size(); i++) {
             prim->polys[i] = {i * 4, 4};
         }
-
+        auto position = get_input2<zeno::vec3f>("position");
+        auto rotate = get_input2<zeno::vec3f>("rotate");
+        glm::mat4 transform = glm::mat4 (1.0);
+        transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
+        transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
+        transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
+        transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
+        auto n_transform = glm::transpose(glm::inverse(transform));
         for(int i = 0; i < prim->verts.size(); i++){
             auto p = prim->verts[i];
-            auto position = get_input2<zeno::vec3f>("position");
-            auto rotate = get_input2<zeno::vec3f>("rotate");
-            glm::mat4 transform = glm::mat4 (1.0);
-            transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
-            transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
-            transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
-            transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
             auto gp = transform * glm::vec4(p[0], p[1], p[2], 1);
             prim->verts[i] = zeno::vec3f(gp.x, gp.y, gp.z);
-
             auto n = nrm[i];
-            auto n_transform = glm::transpose(glm::inverse(transform));
             auto gn = n_transform * glm::vec4 (n[0], n[1], n[2], 0);
             nrm[i] = zeno::vec3f (gn.x, gn.y, gn.z);
         }
@@ -1173,20 +1171,19 @@ struct CreateSphere : zeno::INode {
         }
 
         nors.resize(verts.size());
+        glm::mat4 transform = glm::mat4 (1.0);
+        auto rotate = get_input2<zeno::vec3f>("rotate");
+        transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
+        transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
+        transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
+        transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
+        transform = glm::scale(transform, glm::vec3(scale[0],scale[1],scale[2]) * radius);
+        auto n_transform = glm::transpose(glm::inverse(transform));
         for(int i = 0; i < verts.size(); i++){
             auto n = verts[i];
             auto p = verts[i];
-            auto rotate = get_input2<zeno::vec3f>("rotate");
-            glm::mat4 transform = glm::mat4 (1.0);
-            transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
-            transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
-            transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
-            transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
-            transform = glm::scale(transform, glm::vec3(scale[0],scale[1],scale[2]) * radius);
             auto gp = transform * glm::vec4(p[0], p[1], p[2], 1);
             verts[i] = zeno::vec3f(gp.x, gp.y, gp.z);
-
-            auto n_transform = glm::transpose(glm::inverse(transform));
             auto gn = n_transform * glm::vec4 (n[0], n[1], n[2], 0);
             nors[i] = zeno::vec3f (gn.x, gn.y, gn.z);
         }
