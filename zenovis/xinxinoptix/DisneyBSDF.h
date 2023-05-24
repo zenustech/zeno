@@ -463,12 +463,13 @@ namespace DisneyBSDF{
         float lambert = 1.0f;
         float rr = EvaluateDisneyRetroDiffuse(roughness, wi, wo);
         float retro = rr*(fl + fv + fl * fv * (rr - 1.0f));
-        return (retro + (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
+        return 1.0f/M_PIf * (retro + (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
     }
 
     static __inline__ __device__
     float3 EvaluateDisney(
         vec3 baseColor,
+        vec3 sssColor,
         float metallic,
         float subsurface,
         float specular,
@@ -543,14 +544,22 @@ namespace DisneyBSDF{
             float forwardDiffusePdfW = abs(wi.z);
             float reverseDiffusePdfW = abs(wo.z);
             float diffuse = EvaluateDisneyDiffuse(roughness,flatness, wi, wo, wm, thin);
+            auto c = mix(baseColor, sssColor, subsurface);
+            vec3 fr = abs(vec3(1.0) - 0.5 * BRDFBasics::fresnelSchlick(c, abs(wi.z)));
+            //printf("fr: %f, %f, %f\n", fr.x, fr.y, fr.z);
+            float w = max(dot(fr, vec3(1.0f,1.0f,1.0f)) , 0.0f);
+            float p_in = subsurface * w;
+            //printf("w: %f\n", w);
 
+            float ptotal = 1.0f + p_in ;
+            float psss = subsurface>0? p_in/ptotal : 0; // /ptotal;
             vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
 
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
             if(!thin && nDl<=0.0f)
                 diffuse = 0;
-            reflectance += diffuseW * (diffuse * baseColor + lobeOfSheen);
+            reflectance += diffuseW * ((1.0f - psss) * diffuse * baseColor + lobeOfSheen);
         }
         // Transsmission
         if(transmissionW > 0.0f) {
@@ -889,8 +898,8 @@ namespace DisneyBSDF{
             rPdf = 0.0f;
             reflectance = vec3(0.0f);
             wi = vec3(0.0f);
-            return false;
-            //wi.z = 1e-5;
+            //return false;
+            wi.z = 1e-5;
         }
 
         float NoV = wo.z;
@@ -960,7 +969,7 @@ namespace DisneyBSDF{
 
         float HoL = dot(wm,wo);
         vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
-        float diff = EvaluateDisneyDiffuse(roughness, flatness, wi, wo, wm, thin);
+        float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
         if(wi.z<0)
             diff = 1.0;
         
@@ -1432,16 +1441,17 @@ static __inline__ __device__ vec3 proceduralSky(
 }
 
 static __inline__ __device__ vec3 hdrSky(
-        vec3 dir
+        vec3 dir, float isclamp
 ){
-    dir = dir
-            .rotY(to_radians(params.sky_rot_y))
-            .rotX(to_radians(params.sky_rot_x))
-            .rotZ(to_radians(params.sky_rot_z));
-    float u = atan2(-dir.z, -dir.x)  / 3.1415926 * 0.5 + 0.5 + params.sky_rot / 360;
+//    dir = dir
+//            .rotY(to_radians(params.sky_rot_y))
+//            .rotX(to_radians(params.sky_rot_x))
+//            .rotZ(to_radians(params.sky_rot_z));
+    float u = atan2(dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5; //  + 0.5 + params.sky_rot / 360;
     float v = asin(dir.y) / 3.1415926 + 0.5;
-    vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v));
-    return col * params.sky_strength;
+    vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v)) * params.sky_strength;
+    vec3 col2 = clamp(col, vec3(0.0f), vec3(1.0f));
+    return mix(col, col2, isclamp);
 }
 
 static __inline__ __device__ vec3 colorTemperatureToRGB(float temperatureInKelvins)
@@ -1480,7 +1490,8 @@ static __inline__ __device__ vec3 envSky(
     float coverage,
     float thickness,
     float absorption,
-    float t
+    float t,
+    float isclamp = 0.0f
 ){
     vec3 color;
     if (!params.usingHdrSky) {
@@ -1497,7 +1508,7 @@ static __inline__ __device__ vec3 envSky(
     }
     else {
         color = hdrSky(
-            dir
+            dir, isclamp
         );
     }
     if (params.colorTemperatureMix > 0) {
