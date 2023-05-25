@@ -27,6 +27,7 @@ namespace zeno {
             float remapMin,
             float remapMax
     );
+    std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path);
     std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path);
     void primSampleTexture(
         std::shared_ptr<PrimitiveObject> prim,
@@ -35,6 +36,18 @@ namespace zeno {
         const std::string &dstChannel,
         std::shared_ptr<PrimitiveObject> img,
         const std::string &wrap,
+        vec3f borderColor,
+        float remapMin,
+        float remapMax
+    );
+    void primSampleTexture(
+        std::shared_ptr<PrimitiveObject> prim,
+        const std::string &srcChannel,
+        const std::string &uvSource,
+        const std::string &dstChannel,
+        std::shared_ptr<PrimitiveObject> img,
+        const std::string &wrap,
+        const std::string &filter,
         vec3f borderColor,
         float remapMin,
         float remapMax
