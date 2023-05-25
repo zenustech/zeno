@@ -15,6 +15,7 @@ public:
 
 protected:
     void highlightBlock(const QString &text) override;
+    bool eventFilter(QObject* object, QEvent* event) override;
 
 private:
     void initRules();

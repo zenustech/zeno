@@ -7,6 +7,8 @@ ZfxHighlighter::ZfxHighlighter(QTextEdit* textEdit)
 	, m_pTextEdit(textEdit)
 {
 	initRules();
+	if (!m_pTextEdit) return;
+	m_pTextEdit->installEventFilter(this);
 	connect(m_pTextEdit, &QTextEdit::cursorPositionChanged, this, &ZfxHighlighter::highlightCurrentLine);
 	connect(m_pTextEdit, &QTextEdit::selectionChanged, this, &ZfxHighlighter::onSelectionChanged);
 }
@@ -80,4 +82,21 @@ void ZfxHighlighter::highlightCurrentLine()
 
 void ZfxHighlighter::onSelectionChanged()
 {
+}
+
+bool ZfxHighlighter::eventFilter(QObject* object, QEvent* event)
+{
+	if (object == m_pTextEdit) {
+		if (event->type() == QEvent::FocusOut) {
+			// clear selection
+			QTextCursor cursor = m_pTextEdit->textCursor();
+			cursor.clearSelection();
+			m_pTextEdit->setTextCursor(cursor);
+			m_pTextEdit->setExtraSelections(QList<QTextEdit::ExtraSelection>());
+		}
+		else if (event->type() == QEvent::FocusIn) {
+			highlightCurrentLine();
+		}
+	}
+	return QSyntaxHighlighter::eventFilter(object, event);
 }

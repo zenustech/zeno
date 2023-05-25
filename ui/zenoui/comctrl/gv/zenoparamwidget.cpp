@@ -749,11 +749,6 @@ bool ZenoParamMultilineStr::eventFilter(QObject* object, QEvent* event)
     if (object == m_pTextEdit && event->type() == QEvent::FocusOut)
     {
         emit editingFinished();
-        // clear selection
-        QTextCursor cursor = m_pTextEdit->textCursor();
-        cursor.clearSelection();
-        m_pTextEdit->setTextCursor(cursor);
-        m_pTextEdit->setExtraSelections(QList<QTextEdit::ExtraSelection>());
     }
     return ZenoParamWidget::eventFilter(object, event);
 }
