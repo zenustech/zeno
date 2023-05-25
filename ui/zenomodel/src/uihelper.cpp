@@ -695,6 +695,16 @@ QString UiHelper::getSockNode(const QString& sockPath)
     return "";
 }
 
+QString UiHelper::getNodePath(const QString& sockPath)
+{
+    //legacy format.
+    QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
+    if (lst.size() > 1) {
+        return lst[0] + cPathSeperator + lst[1];
+    }
+    return "";
+}
+
 QString UiHelper::getParamPath(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
@@ -1793,6 +1803,30 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
 
         outLinks.append(EdgeInfo(newOutSock, newInSock));
     }
+}
+
+QString UiHelper::getPathFromItem(QStandardItem* pItem)
+{
+    QString path;
+    while (pItem) {
+        // the objid of `main` subgraph is main.
+        path = "/" + pItem->data(ROLE_OBJID).toString() + path;
+        pItem = pItem->parent();
+    }
+    return path;
+}
+
+EdgeInfo UiHelper::exportLink(const QModelIndex& linkIdx)
+{
+    EdgeInfo link;
+
+    QModelIndex outSock = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    QModelIndex inSock = linkIdx.data(ROLE_INSOCK_IDX).toModelIndex();
+    ZASSERT_EXIT(outSock.isValid() && inSock.isValid(), link);
+
+    link.outSockPath = outSock.data(ROLE_OBJPATH).toString();
+    link.inSockPath = inSock.data(ROLE_OBJPATH).toString();
+    return link;
 }
 
 static std::string getZenoVersion()

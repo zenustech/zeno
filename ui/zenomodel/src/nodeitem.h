@@ -8,9 +8,18 @@
 
 class PanelParamModel;
 class NodeParamModel;
+class IGraphsModel;
+class TreeNodeItem;
 
-struct NodeItem
+//base QObject?
+class NodeItem : public QObject
 {
+    Q_OBJECT
+public:
+    NodeItem(QObject *parent = nullptr);
+    QModelIndex nodeIdx() const;
+
+public:
     QString objid;
     QString objCls;
     QString customName;
@@ -21,32 +30,39 @@ struct NodeItem
 
     PanelParamModel* panelParams;
     NodeParamModel* nodeParams;
+    TreeNodeItem *treeItem;     //when apply tree layout
 
     bool bCollasped;
-
-    NodeItem()
-        : options(0)
-        , bCollasped(false)
-        , type(NORMAL_NODE)
-        , panelParams(nullptr)
-        , nodeParams(nullptr)
-    {
-    }
 };
 
 struct TreeNodeItem : public QStandardItem
 {
-    TreeNodeItem(const TreeNodeItem &);
+    TreeNodeItem(const NODE_DATA& nodeData, IGraphsModel* pGraphsModel);
     ~TreeNodeItem();
 
     QVariant data(int role = Qt::UserRole + 1) const override;
     void setData(const QVariant &value, int role) override;
+    int id2Row(const QString& ident) const {
+        if (m_ident2row.find(ident) == m_ident2row.end())
+            return -1;
+        return m_ident2row[ident];
+    }
+    void addNode(const NODE_DATA& nodeData, IGraphsModel* pModel);
+    void appendRow(TreeNodeItem* pChildItem);
+    void removeNode(const QString& ident, IGraphsModel* pModel);
+    NODE_DATA expData() const;
+    QString objClass() const;
+    QString objName() const;
+    QModelIndex childIndex(const QString& ident) const;
+    TreeNodeItem* childItem(const QString& ident);
 
 private:
     static NODE_DATA item2NodeData(const NodeItem& item);
     bool checkCustomName(const QString& name);
 
-    NodeItem m_item;
+    NodeItem* m_item;
+
+    QHash<QString, int> m_ident2row;
 };
 
 #endif

@@ -9,17 +9,51 @@
 #include "variantptr.h"
 
 
-
-SubGraphModel::SubGraphModel(GraphsModel* pGraphsModel, QObject *parent)
+SubGraphModel::SubGraphModel(IGraphsModel* pGraphsModel, QObject *parent)
     : QAbstractItemModel(pGraphsModel)
     , m_pGraphsModel(pGraphsModel)
     , m_stack(new QUndoStack(this))
 {
-	connect(this, &QAbstractItemModel::dataChanged, m_pGraphsModel, &GraphsModel::on_subg_dataChanged);
-	connect(this, &QAbstractItemModel::rowsAboutToBeInserted, m_pGraphsModel, &GraphsModel::on_subg_rowsAboutToBeInserted);
-	connect(this, &QAbstractItemModel::rowsInserted, m_pGraphsModel, &GraphsModel::on_subg_rowsInserted);
-	connect(this, &QAbstractItemModel::rowsAboutToBeRemoved, m_pGraphsModel, &GraphsModel::on_subg_rowsAboutToBeRemoved);
-	connect(this, &QAbstractItemModel::rowsRemoved, m_pGraphsModel, &GraphsModel::on_subg_rowsRemoved);
+    connect(this, &QAbstractItemModel::dataChanged, this,
+            [=](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
+    {
+        if (m_pGraphsModel) {
+            const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
+            emit m_pGraphsModel->_dataChanged(subgIdx, topLeft, roles[0]);
+        }
+    });
+
+    connect(this, &QAbstractItemModel::rowsAboutToBeInserted, m_pGraphsModel,
+            [=](const QModelIndex &parent, int first, int last) {
+            if (m_pGraphsModel) {
+                const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
+                emit m_pGraphsModel->_rowsAboutToBeInserted(subgIdx, first, last);
+            }
+    });
+
+    connect(this, &QAbstractItemModel::rowsInserted, m_pGraphsModel, 
+            [=](const QModelIndex &parent, int first, int last) {
+            if (m_pGraphsModel) {
+                const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
+                emit m_pGraphsModel->_rowsInserted(subgIdx, parent, first, last);
+            }
+    });
+
+    connect(this, &QAbstractItemModel::rowsAboutToBeRemoved, m_pGraphsModel,
+            [=](const QModelIndex &parent, int first, int last) {
+            if (m_pGraphsModel) {
+                const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
+                emit m_pGraphsModel->_rowsAboutToBeRemoved(subgIdx, parent, first, last);
+            }
+    });
+
+    connect(this, &QAbstractItemModel::rowsRemoved, m_pGraphsModel,
+            [=](const QModelIndex &parent, int first, int last) {
+            if (m_pGraphsModel) {
+                const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
+                emit m_pGraphsModel->_rowsRemoved(parent, first, last);
+            }
+    });
 }
 
 SubGraphModel::~SubGraphModel()
@@ -62,7 +96,7 @@ bool SubGraphModel::checkCustomName(const QString &name)
     if (name.isEmpty())
         return true;
     for (auto node : m_nodes) {
-        if (node.customName == name)
+        if (node->customName == name)
             return false;
     }
     return true;
@@ -73,67 +107,72 @@ void SubGraphModel::clear()
     m_nodes.clear();
     m_key2Row.clear();
     m_row2Key.clear();
-    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
+
+    const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
     emit m_pGraphsModel->clearLayout(subgIdx);
 }
 
-NODE_DATA SubGraphModel::item2NodeData(const NodeItem& item) const
+NODE_DATA SubGraphModel::item2NodeData(const NodeItem* item) const
 {
     NODE_DATA data;
-    data[ROLE_OBJID] = item.objid;
-    data[ROLE_OBJNAME] = item.objCls;
-    data[ROLE_CUSTOM_OBJNAME] = item.customName;
-    data[ROLE_OBJPOS] = item.viewpos;
-    data[ROLE_COLLASPED] = item.bCollasped;
-    data[ROLE_OPTIONS] = item.options;
-    data[ROLE_NODETYPE] = item.type;
+    data[ROLE_OBJID] = item->objid;
+    data[ROLE_OBJNAME] = item->objCls;
+    data[ROLE_CUSTOM_OBJNAME] = item->customName;
+    data[ROLE_OBJPOS] = item->viewpos;
+    data[ROLE_COLLASPED] = item->bCollasped;
+    data[ROLE_OPTIONS] = item->options;
+    data[ROLE_NODETYPE] = item->type;
 
     INPUT_SOCKETS inputs;
     OUTPUT_SOCKETS outputs;
     PARAMS_INFO params;
 
-    item.nodeParams->getInputSockets(inputs);
-    item.nodeParams->getParams(params);
-    item.nodeParams->getOutputSockets(outputs);
+    item->nodeParams->getInputSockets(inputs);
+    item->nodeParams->getParams(params);
+    item->nodeParams->getOutputSockets(outputs);
 
     data[ROLE_INPUTS] = QVariant::fromValue(inputs);
     data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     data[ROLE_PARAMETERS] = QVariant::fromValue(params);
-    data[ROLE_PANEL_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
-    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(item.paramNotDesc);
+    data[ROLE_PANEL_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(item->panelParams);
+    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(item->paramNotDesc);
 
     return data;
 }
 
-void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, NodeItem& ret)
+NodeItem* SubGraphModel::importNodeItem(const NODE_DATA& data)
 {
-    ret.objid = data[ROLE_OBJID].toString();
-    ret.objCls = data[ROLE_OBJNAME].toString();
-    ret.customName = data[ROLE_CUSTOM_OBJNAME].toString();
-    ret.viewpos = data[ROLE_OBJPOS].toPointF();
-    ret.bCollasped = data[ROLE_COLLASPED].toBool();
-    ret.options = data[ROLE_OPTIONS].toInt();
-    ret.type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
-    ret.paramNotDesc = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
+    NodeItem* pItem = new NodeItem(this);
 
-    QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
+    pItem->objid = data[ROLE_OBJID].toString();
+    pItem->objCls = data[ROLE_OBJNAME].toString();
+    pItem->customName = data[ROLE_CUSTOM_OBJNAME].toString();
+    pItem->viewpos = data[ROLE_OBJPOS].toPointF();
+    pItem->bCollasped = data[ROLE_COLLASPED].toBool();
+    pItem->options = data[ROLE_OPTIONS].toInt();
+    pItem->type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
+    pItem->paramNotDesc = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
 
-    ret.nodeParams = new NodeParamModel(subgIdx, nodeIdx, m_pGraphsModel, false, this);
+    const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
+
+    pItem->nodeParams = new NodeParamModel(m_pGraphsModel, false, pItem);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
     OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
 
-    ret.nodeParams->setInputSockets(inputs);
-    ret.nodeParams->setParams(params);
-    ret.nodeParams->setOutputSockets(outputs);
+    pItem->nodeParams->setInputSockets(inputs);
+    pItem->nodeParams->setParams(params);
+    pItem->nodeParams->setOutputSockets(outputs);
 
     VPARAM_INFO panelInfo;
     if (data.find(ROLE_CUSTOMUI_PANEL_IO) != data.end())
     {
         panelInfo = data[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>();
     }
-    ret.panelParams = new PanelParamModel(ret.nodeParams, panelInfo, nodeIdx, m_pGraphsModel, this);
+    pItem->panelParams = new PanelParamModel(pItem->nodeParams, panelInfo, m_pGraphsModel, pItem);
+
+    return pItem;
 }
 
 QModelIndex SubGraphModel::index(int row, int column, const QModelIndex& parent) const
@@ -201,29 +240,29 @@ bool SubGraphModel::removeRows(int row, int count, const QModelIndex& parent)
 bool SubGraphModel::_removeRow(const QModelIndex& index)
 {
     //remove node by id and update params from other node.
-    NodeItem item;
-    if (!itemFromIndex(index, item))
+    NodeItem* item = itemFromIndex(index);
+    if (!item)
         return false;
 
     QString currNode = index.data(ROLE_OBJID).toString();
-    const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(this);
+    const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
 
-    if (item.panelParams)
+    if (item->panelParams)
     {
-        item.panelParams->clear();
-        delete item.panelParams;
-        item.panelParams = nullptr;
+        item->panelParams->clear();
+        delete item->panelParams;
+        item->panelParams = nullptr;
     }
-    if (item.nodeParams)
+    if (item->nodeParams)
     {
-        item.nodeParams->clearParams();
-        delete item.nodeParams;
-        item.nodeParams = nullptr;
+        item->nodeParams->clearParams();
+        delete item->nodeParams;
+        item->nodeParams = nullptr;
     }
 
     int row = index.row();
     QString id = m_row2Key[row];
-    QString name = m_nodes[id].objCls;
+    QString name = m_nodes[id]->objCls;
     ZASSERT_EXIT(!id.isEmpty(), false);
     for (int r = row + 1; r < rowCount(); r++)
     {
@@ -280,80 +319,80 @@ int SubGraphModel::columnCount(const QModelIndex& parent) const
 
 QModelIndex SubGraphModel::nodeParamIndex(const QModelIndex &nodeIdx, PARAM_CLASS cls, const QString &paramName) const
 {
-    NodeItem item;
-    if (!itemFromIndex(nodeIdx, item))
+    NodeItem* item = itemFromIndex(nodeIdx);
+    if (!item)
         return QModelIndex();
-    return item.nodeParams->getParam(cls, paramName);
-    }
+    return item->nodeParams->getParam(cls, paramName);
+}
 
 ViewParamModel* SubGraphModel::viewParams(const QModelIndex& index)
 {
-    NodeItem item;
-    if (!itemFromIndex(index, item))
+    NodeItem* item = itemFromIndex(index);
+    if (!item)
         return nullptr;
-    return item.panelParams;
+    return item->panelParams;
 }
 
 ViewParamModel* SubGraphModel::nodeParams(const QModelIndex& index)
 {
-    NodeItem item;
-    if (!itemFromIndex(index, item))
+    NodeItem* item = itemFromIndex(index);
+    if (!item)
         return nullptr;
-    return item.nodeParams;
+    return item->nodeParams;
 }
 
 QVariant SubGraphModel::data(const QModelIndex& index, int role) const
 {
-    NodeItem item;
-    if (!itemFromIndex(index, item))
+    NodeItem* item = itemFromIndex(index);
+    if (!item)
         return QVariant();
 
     switch (role)
     {
-        case ROLE_OBJID:    return item.objid;
-        case ROLE_OBJNAME:  return item.objCls;
-        case ROLE_CUSTOM_OBJNAME: return item.customName;
+        case ROLE_OBJID:    return item->objid;
+        case ROLE_OBJNAME:  return item->objCls;
+        case ROLE_CUSTOM_OBJNAME: return item->customName;
         case ROLE_OBJDATA:  return QVariant::fromValue(nodeData(index));
-        case ROLE_NODETYPE: return item.type;
+        case ROLE_NODETYPE: return item->type;
         case ROLE_INPUTS:
         {
             //legacy interface.
-            if (!item.nodeParams)
+            if (!item->nodeParams)
                 return QVariant();
 
             INPUT_SOCKETS inputs;
-            item.nodeParams->getInputSockets(inputs);
+            item->nodeParams->getInputSockets(inputs);
             return QVariant::fromValue(inputs);
         }
         case ROLE_OUTPUTS:
         {
-            if (!item.nodeParams)
+            if (!item->nodeParams)
                 return QVariant();
 
             OUTPUT_SOCKETS outputs;
-            item.nodeParams->getOutputSockets(outputs);
+            item->nodeParams->getOutputSockets(outputs);
             return QVariant::fromValue(outputs);
         }
         case ROLE_PARAMETERS:
         {
-            if (!item.nodeParams)
+            if (!item->nodeParams)
                 return QVariant();
 
             PARAMS_INFO params;
-            item.nodeParams->getParams(params);
+            item->nodeParams->getParams(params);
             return QVariant::fromValue(params);
         }
         case ROLE_COLLASPED:
         {
-            return item.bCollasped;
+            return item->bCollasped;
         }
         case ROLE_OPTIONS:
         {
-            return item.options;
+            return item->options;
         }
         case ROLE_OBJPOS:
         {
-            return item.viewpos;
+            return item->viewpos;
         }
         case ROLE_INPUT_MODEL:
         {
@@ -369,31 +408,31 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         }
         case ROLE_PANEL_PARAMS:
         {
-            return QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
+            return QVariantPtr<ViewParamModel>::asVariant(item->panelParams);
         }
         case ROLE_NODE_PARAMS:
         {
-            return QVariantPtr<QStandardItemModel>::asVariant(item.nodeParams);
+            return QVariantPtr<QStandardItemModel>::asVariant(item->nodeParams);
         }
         case ROLE_OBJPATH:
         {
-            const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(const_cast<SubGraphModel*>(this));
+            const QModelIndex &subgIdx = m_pGraphsModel->index(m_name);
             const QString& subgPath = subgIdx.data(ROLE_OBJPATH).toString();
-            const QString& path = subgPath + cPathSeperator + item.objid;
+            const QString& path = subgPath + cPathSeperator + item->objid;
             return path;
         }
         case ROLE_CUSTOMUI_PANEL_IO:
         {
-            VPARAM_INFO root = item.panelParams->exportParams();
+            VPARAM_INFO root = item->panelParams->exportParams();
             return QVariant::fromValue(root);
         }
         case ROLE_PARAMS_NO_DESC: 
         {
-            return QVariant::fromValue(item.paramNotDesc);
+            return QVariant::fromValue(item->paramNotDesc);
         }
         case ROLE_SUBGRAPH_IDX:
         {
-            const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(const_cast<SubGraphModel*>(this));
+            const QModelIndex &subgIdx = m_pGraphsModel->index(m_name);
             return subgIdx;
         }
         default:
@@ -407,20 +446,20 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
     QString id = m_row2Key[index.row()];
     if (m_nodes.find(id) != m_nodes.end())
     {
-        NodeItem& item = m_nodes[id];
+        auto item = m_nodes[id];
 
         switch (role)
         {
             case ROLE_OBJNAME: 
             {
-                item.objCls = value.toString();
+                item->objCls = value.toString();
                 break;
             }
             case ROLE_CUSTOM_OBJNAME: 
             {
                 bool isValid = checkCustomName(value.toString());
                 if (isValid)
-                    item.customName = value.toString();
+                    item->customName = value.toString();
                 else
                     return isValid;
                 break;
@@ -431,11 +470,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (inputs.empty())
                     return false;
 
-                ZASSERT_EXIT(item.nodeParams, false);
+                ZASSERT_EXIT(item->nodeParams, false);
                 for (QString name : inputs.keys())
                 {
                     const INPUT_SOCKET& inSocket = inputs[name];
-                    item.nodeParams->setAddParam(
+                    item->nodeParams->setAddParam(
                                 PARAM_INPUT, 
                                 name,
                                 inSocket.info.type,
@@ -455,11 +494,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (outputs.empty())
                     return false;
 
-                ZASSERT_EXIT(item.nodeParams, false);
+                ZASSERT_EXIT(item->nodeParams, false);
                 for (QString name : outputs.keys())
                 {
                     const OUTPUT_SOCKET& outSocket = outputs[name];
-                    item.nodeParams->setAddParam(
+                    item->nodeParams->setAddParam(
                                 PARAM_OUTPUT,
                                 name,
                                 outSocket.info.type,
@@ -470,7 +509,7 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                                 outSocket.info.dictpanel,
                                 outSocket.info.toolTip
                     );
-                    }
+                }
                 break;
             }
             case ROLE_PARAMETERS:
@@ -479,11 +518,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
                 if (params.empty())
                     return false;
 
-                ZASSERT_EXIT(item.nodeParams, false);
+                ZASSERT_EXIT(item->nodeParams, false);
                 for (QString name : params.keys())
                 {
                     const PARAM_INFO& param = params[name];
-                    item.nodeParams->setAddParam(
+                    item->nodeParams->setAddParam(
                                 PARAM_PARAM,
                                 name,
                                 param.typeDesc,
@@ -499,30 +538,30 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             case ROLE_CUSTOMUI_PANEL_IO:
             {
                 const VPARAM_INFO& invisibleRoot = value.value<VPARAM_INFO>();
-                ZASSERT_EXIT(item.panelParams, false);
-                item.panelParams->importPanelParam(invisibleRoot);
+                ZASSERT_EXIT(item->panelParams, false);
+                item->panelParams->importPanelParam(invisibleRoot);
                 break;
             }
             case ROLE_COLLASPED:
             {
-                item.bCollasped = value.toBool();
+                item->bCollasped = value.toBool();
                 break;
             }
             case ROLE_OPTIONS:
             {
-                item.options = value.toInt();
+                item->options = value.toInt();
                 break;
             }
             case ROLE_OBJPOS:
             {
-                item.viewpos = value.toPointF();
+                item->viewpos = value.toPointF();
                 #if 0
-                qDebug() << id << item.viewpos;     //Debug item pos.
+                qDebug() << id << item->viewpos;     //Debug item pos.
                 #endif
                 break;
             }
             case ROLE_PARAMS_NO_DESC: {
-                item.paramNotDesc = value.value<PARAMS_INFO>();
+                item->paramNotDesc = value.value<PARAMS_INFO>();
                 break;
             }
         }
@@ -546,12 +585,12 @@ bool SubGraphModel::setParamValue(
         PARAM_CONTROL ctrl,
         SOCKET_PROPERTY sockProp)
 {
-    NodeItem item;
-    if (!itemFromIndex(idx, item))
+    NodeItem* item = itemFromIndex(idx);
+    if (!item)
         return false;
 
     //todo: control properties
-    item.nodeParams->setAddParam(cls, sockName, type, value, ctrl, QVariant(), sockProp);
+    item->nodeParams->setAddParam(cls, sockName, type, value, ctrl, QVariant(), sockProp);
     return false;
 }
 
@@ -566,8 +605,8 @@ QVariant SubGraphModel::getParamValue(const QString& nodeid, const QString& para
 {
     if (m_nodes.find(nodeid) == m_nodes.end())
         return QVariant();
-    return m_nodes[nodeid].nodeParams->getValue(PARAM_PARAM, paramName);
-    }
+    return m_nodes[nodeid]->nodeParams->getValue(PARAM_PARAM, paramName);
+}
 
 void SubGraphModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info)
 {
@@ -575,12 +614,12 @@ void SubGraphModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO i
     if (it == m_nodes.end())
         return;
 
-    NodeItem& item = m_nodes[nodeid];
+    auto item = m_nodes[nodeid];
     switch (info.role)
     {
-    case ROLE_COLLASPED: item.bCollasped = info.newValue.toBool(); break;
-    case ROLE_OPTIONS: item.options = info.newValue.toInt(); break;
-    case ROLE_OBJPOS: item.viewpos = info.newValue.toPointF(); break;
+    case ROLE_COLLASPED: item->bCollasped = info.newValue.toBool(); break;
+    case ROLE_OPTIONS: item->options = info.newValue.toInt(); break;
+    case ROLE_OBJPOS: item->viewpos = info.newValue.toPointF(); break;
     default:
         ZASSERT_EXIT(false);
         break;
@@ -595,12 +634,13 @@ bool SubGraphModel::hasChildren(const QModelIndex& parent) const
     return false;
 }
 
-NODE_DATA SubGraphModel::nodeData(const QModelIndex &index) const
+NODE_DATA SubGraphModel::nodeData(const QModelIndex &idx) const
 {
-    NodeItem item;
-    if (!itemFromIndex(index, item))
-        return NODE_DATA();
-    return item2NodeData(item);
+    if (NodeItem* item = itemFromIndex(idx))
+    {
+        return item2NodeData(item);
+    }
+    return NODE_DATA();
 }
 
 QModelIndexList SubGraphModel::match(const QModelIndex& start, int role, const QVariant& value, int hits, Qt::MatchFlags flags) const
@@ -623,25 +663,24 @@ QModelIndexList SubGraphModel::getNodesByCls(const QString& nodeCls)
     return nodes;
 }
 
-bool SubGraphModel::itemFromIndex(const QModelIndex &index, NodeItem& retNode) const
+NodeItem* SubGraphModel::itemFromIndex(const QModelIndex &index) const
 {
     if (!index.isValid())
-        return false;
+        return nullptr;
 
     auto iter1 = m_row2Key.find(index.row());
     if (iter1 == m_row2Key.end())
-        return false;
+        return nullptr;
 
     QString id = iter1.value();
     auto iter2 = m_nodes.find(id);
     if (iter2 != m_nodes.end())
     {
-        retNode = iter2.value();
-        return true;
+        return iter2.value();
     }
     else
     {
-        return false;
+        return nullptr;
     }
 }
 
@@ -686,11 +725,9 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
 
     m_name2identLst[name].insert(id);
 
-    NodeItem& item = m_nodes[id];
-    QModelIndex nodeIdx = index(row, 0, QModelIndex());
-    QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
-
-    importNodeItem(nodeData, nodeIdx, item);
+    NodeItem *pItem = importNodeItem(nodeData);
+    m_nodes.insert(id, pItem);
+    const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
 
     m_pGraphsModel->markDirty();
     return true;

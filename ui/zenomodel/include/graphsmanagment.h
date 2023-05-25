@@ -11,9 +11,9 @@ public:
     static GraphsManagment& instance();
     ~GraphsManagment();
 
-    void setCurrentModel(IGraphsModel* model);
+    void setGraphsModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphsModel);
     IGraphsModel* currentModel();
-    QAbstractItemModel* treeModel();
+    IGraphsModel* sharedSubgraphs();
     QStandardItemModel* logModel() const;
     IGraphsModel* openZsgFile(const QString &fn);
     bool saveFile(const QString& filePath, APP_SETTINGS settings);
@@ -28,7 +28,7 @@ public:
     TIMELINE_INFO timeInfo() const;
 
 signals:
-    void modelInited(IGraphsModel*);
+    void modelInited(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs);
     void modelDataChanged();
     void fileOpened(QString);
     void fileClosed();
@@ -42,8 +42,8 @@ private slots:
 private:
     GraphsManagment(QObject *parent = nullptr);
 
-    IGraphsModel* m_model;
-    QAbstractItemModel* m_pTreeModel;
+    IGraphsModel* m_pNodeModel;
+    IGraphsModel* m_pSharedGraphs;
     QStandardItemModel* m_logModel;     //connection with scene.
     mutable std::mutex m_mtx;
     QString m_currFile;

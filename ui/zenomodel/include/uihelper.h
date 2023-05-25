@@ -6,7 +6,6 @@
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenomodel/include/globalcontrolmgr.h>
 
-
 class BlockSignalScope
 {
 public:
@@ -53,6 +52,7 @@ public:
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName);
     static QString constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath);
     static QString getSockNode(const QString& sockPath);
+    static QString getNodePath(const QString& sockPath);
     static QString getSockName(const QString& sockPath);
     static QString getParamPath(const QString& sockPath);
     static QString getSockSubgraph(const QString& sockPath);
@@ -92,6 +92,8 @@ public:
                                const LINKS_DATA& inLinks,
                                NODES_DATA& outNodes,
                                LINKS_DATA& outLinks);
+    static QString getPathFromItem(QStandardItem* pItem);
+    static EdgeInfo exportLink(const QModelIndex &linkIdx);
 
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);

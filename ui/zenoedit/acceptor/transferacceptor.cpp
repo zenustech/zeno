@@ -565,3 +565,7 @@ void TransferAcceptor::getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeIn
 void TransferAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)
 {
 }
+
+void TransferAcceptor::resolveAllLinks()
+{
+}

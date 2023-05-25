@@ -57,13 +57,12 @@ void ZenoSubGraphScene::onViewTransformChanged(qreal factor)
 {
 }
 
-void ZenoSubGraphScene::initModel(const QModelIndex& index)
+void ZenoSubGraphScene::initModel(IGraphsModel* pGraphsModel, const QModelIndex& index)
 {
+    //pGraphsModel can be a shared subgraph or tree node model.
     m_subgIdx = index;
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
 
-    disconnect(pGraphsModel, SIGNAL(reloaded(const QModelIndex&)), this, SLOT(reload(const QModelIndex&)));
     disconnect(pGraphsModel, SIGNAL(clearLayout(const QModelIndex&)), this, SLOT(clearLayout(const QModelIndex&)));
 
     //todo: better to connect _dataChanged to global managment, and dispatch to specify scene.
@@ -147,7 +146,6 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
     }
 
     //a more effecient way is collect scene togther and send msg to specific scene.
-	connect(pGraphsModel, SIGNAL(reloaded(const QModelIndex&)), this, SLOT(reload(const QModelIndex&)));
     connect(pGraphsModel, SIGNAL(clearLayout(const QModelIndex&)), this, SLOT(clearLayout(const QModelIndex&)));
     connect(pGraphsModel, SIGNAL(_dataChanged(const QModelIndex&, const QModelIndex&, int)), this, SLOT(onDataChanged(const QModelIndex&, const QModelIndex&, int)));
     connect(pGraphsModel, SIGNAL(_rowsAboutToBeRemoved(const QModelIndex&, const QModelIndex&, int, int)), this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, const QModelIndex&, int, int)));
@@ -525,15 +523,6 @@ void ZenoSubGraphScene::paste(QPointF pos)
             ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
             m_nodes[ident]->setSelected(true);
         }
-    }
-}
-
-void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
-{
-    if (subGpIdx != m_subgIdx)
-    {
-        clear();
-        initModel(subGpIdx);
     }
 }
 

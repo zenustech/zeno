@@ -12,12 +12,10 @@ public:
     explicit PanelParamModel(
         NodeParamModel* nodeParams,
         VPARAM_INFO root,
-        const QModelIndex& nodeIdx,
         IGraphsModel* pModel,
         QObject* parent = nullptr);
 
     explicit PanelParamModel(
-        const QModelIndex& nodeIdx,
         IGraphsModel* pModel,
         QObject* parent = nullptr);
 

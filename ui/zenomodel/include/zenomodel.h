@@ -6,9 +6,8 @@
 
 namespace zeno_model
 {
-    IGraphsModel* createModel(QObject* parent);
-    IAcceptor* createIOAcceptor(IGraphsModel* pModel, bool bImport);
-    QAbstractItemModel* treeModel(IGraphsModel* pModel, QObject* parent);
+    IGraphsModel* createModel(bool bSharedModel, QObject* parent);
+    IAcceptor* createIOAcceptor(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphModel, bool bImport);
 }
 
 #endif

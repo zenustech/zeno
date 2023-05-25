@@ -11,6 +11,8 @@ class IGraphsModel;
 class IAcceptor
 {
 public:
+    //ident can be a obj path like /main/subgA/xxx-wrangle
+
     virtual bool setLegacyDescs(const rapidjson::Value& graphObj, const NODE_DESCS &legacyDescs) = 0;
     virtual void BeginSubgraph(const QString& name) = 0;
     virtual void EndSubgraph() = 0;
@@ -23,7 +25,6 @@ public:
     virtual void setSocketKeys(const QString& id, const QStringList& keys) = 0;
     virtual void initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs) = 0;
     virtual void addDictKey(const QString& id, const QString& keyName, bool bInput) = 0;
-
     virtual void addSocket(bool bInput, const QString& ident, const QString& sockName, const QString& sockProperty) = 0;
 
     //legacy:
@@ -79,6 +80,7 @@ public:
     virtual QObject* currGraphObj() = 0;
     virtual void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) = 0;
     virtual void setIOVersion(zenoio::ZSG_VERSION version) = 0;
+    virtual void resolveAllLinks() = 0;
     virtual ~IAcceptor() = default;
 };
 

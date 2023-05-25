@@ -8,6 +8,7 @@
 #include "zassert.h"
 #include "graphsmodel.h"
 
+
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
     zeno::log_debug("onNewNodeCreated");

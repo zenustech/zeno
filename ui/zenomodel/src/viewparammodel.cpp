@@ -9,12 +9,12 @@
 #include "vparamitem.h"
 #include "common_def.h"
 #include "iotags.h"
+#include "nodeitem.h"
 
 
-ViewParamModel::ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
+ViewParamModel::ViewParamModel(bool bNodeUI, IGraphsModel* pModel, QObject* parent)
     : QStandardItemModel(parent)
     , m_bNodeUI(bNodeUI)
-    , m_nodeIdx(nodeIdx)
     , m_model(pModel)
     , m_bDirty(false)
 {
@@ -426,11 +426,6 @@ VPARAM_INFO ViewParamModel::exportParams() const
     return rootItem->exportParamInfo();
 }
 
-QPersistentModelIndex ViewParamModel::nodeIdx() const
-{
-    return m_nodeIdx;
-}
-
 IGraphsModel* ViewParamModel::graphsModel() const
 {
     return m_model;
@@ -440,9 +435,17 @@ QVariant ViewParamModel::data(const QModelIndex& index, int role) const
 {
     switch (role)
     {
-        case ROLE_OBJID:    return m_nodeIdx.isValid() ? m_nodeIdx.data(role) : "";
+        case ROLE_OBJID:
+        {
+            NodeItem *pNodeItem = qobject_cast<NodeItem *>(this->parent());
+            ZASSERT_EXIT(pNodeItem, "");
+            return pNodeItem->objid;
+        }
         case ROLE_OBJPATH:
         {
+            NodeItem *pNodeItem = qobject_cast<NodeItem *>(this->parent());
+            ZASSERT_EXIT(pNodeItem, "");
+
             QString path;
             QStandardItem* pItem = itemFromIndex(index);
             do
@@ -457,22 +460,27 @@ QVariant ViewParamModel::data(const QModelIndex& index, int role) const
             else {
                 path = "[panel]" + path;
             }
-            path = m_nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
+            QModelIndex nodeIdx = pNodeItem->nodeIdx();
+            ZASSERT_EXIT(nodeIdx.isValid(), "");
+            path = nodeIdx.data(ROLE_OBJPATH).toString() + cPathSeperator + path;
             return path;
         }
         case ROLE_INPUT_MODEL:
         case ROLE_PARAM_MODEL:
         case ROLE_OUTPUT_MODEL:
-            if (m_nodeIdx.isValid())
-                return m_nodeIdx.data(role);
-            break;
+        {
+            //deprecated.
+            return QVariant();
+        }
         case ROLE_NODE_IDX:
-            return m_nodeIdx;
+        {
+            NodeItem* pNodeItem = qobject_cast<NodeItem*>(this->parent());
+            ZASSERT_EXIT(pNodeItem, QModelIndex());
+            return pNodeItem->nodeIdx();
+        }
     }
     return QStandardItemModel::data(index, role);
 }
-
-
 
 bool ViewParamModel::isNodeModel() const
 {
@@ -530,7 +538,10 @@ bool ViewParamModel::isEditable(const QModelIndex &current)
     } 
     else if (type == VPARAM_PARAM) 
     {
-        if (!m_model->IsSubGraphNode(m_nodeIdx))
+        NodeItem *pNodeItem = qobject_cast<NodeItem *>(this->parent());
+        ZASSERT_EXIT(pNodeItem, "");
+        QModelIndex nodeIdx = pNodeItem->nodeIdx();
+        if (!m_model->IsSubGraphNode(nodeIdx))
             return isEditable(current.parent());
     }
     return true;

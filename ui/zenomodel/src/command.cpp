@@ -33,7 +33,7 @@ void AddNodeCommand::undo()
 }
 
 
-RemoveNodeCommand::RemoveNodeCommand(int row, NODE_DATA data, GraphsModel* pModel, QPersistentModelIndex subgIdx)
+RemoveNodeCommand::RemoveNodeCommand(int row, NODE_DATA data, IGraphsModel* pModel, QPersistentModelIndex subgIdx)
     : QUndoCommand()
     , m_data(data)
     , m_model(pModel)
@@ -73,7 +73,7 @@ void RemoveNodeCommand::undo()
 }
 
 
-LinkCommand::LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EdgeInfo& link, GraphsModel* pModel)
+LinkCommand::LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EdgeInfo& link, IGraphsModel* pModel)
     : QUndoCommand()
     , m_bAdd(bAddLink)
     , m_link(link)
@@ -111,7 +111,7 @@ UpdateBlackboardCommand::UpdateBlackboardCommand(
         const QString& nodeid,
         BLACKBOARD_INFO newInfo,
         BLACKBOARD_INFO oldInfo,
-        GraphsModel* pModel,
+        IGraphsModel* pModel,
         QPersistentModelIndex subgIdx) 
     : m_nodeid(nodeid)
     , m_oldInfo(oldInfo)
@@ -136,7 +136,7 @@ ImportNodesCommand::ImportNodesCommand(
                 const QMap<QString, NODE_DATA>& nodes,
                 const QList<EdgeInfo>& links,
                 QPointF pos,
-                GraphsModel* pModel,
+                IGraphsModel* pModel,
                 QPersistentModelIndex subgIdx)
     : m_nodes(nodes)
     , m_links(links)
@@ -232,8 +232,6 @@ void UpdateSubgDescCommand::undo()
 {
     m_model->updateSubgDesc(m_subgName, m_oldDesc);
 }
-
-
 
 
 static QStandardItem* getParentPath(IGraphsModel* pGraphsModel, const QString& parentPath)

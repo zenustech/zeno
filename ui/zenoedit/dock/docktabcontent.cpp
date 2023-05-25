@@ -448,7 +448,7 @@ QWidget* DockContent_Editor::initWidget()
     ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     m_pEditor = new ZenoGraphsEditor(pMainWin);
     m_pWidget = m_pEditor;
-    m_pEditor->onSubnetListPanel(false, ZenoGraphsEditor::Side_Subnet);     //cihou caofei:
+    m_pEditor->onSubnetListPanel(false, ZenoGraphsEditor::Side_Tree); //cihou caofei:
     return m_pEditor;
 }
 

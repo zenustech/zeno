@@ -1,155 +1,536 @@
 #include "graphstreemodel.h"
+#include "graphstreemodel_impl.h"
 #include "graphsmodel.h"
 #include "modelrole.h"
 #include "zassert.h"
+#include "apilevelscope.h"
+#include "graphsmanagment.h"
 
 
 GraphsTreeModel::GraphsTreeModel(QObject* parent)
-	: QStandardItemModel(parent)
-	, m_model(nullptr)
+    : IGraphsModel(parent)
+    , m_impl(new GraphsTreeModel_impl(this))
+    , m_stack(new QUndoStack(this))
+    , m_apiLevel(0)
+    , m_dirty(false)
+    , m_bIOProcessing(false)
+    , m_bApiEnableRun(true)
+    , m_version(zenoio::VER_2_5)
+    , m_pSubgraphs(nullptr)
 {
-
+    connect(m_impl, &QAbstractItemModel::rowsAboutToBeRemoved, this,
+        [=](const QModelIndex &parent, int first, int last) {
+            emit _rowsAboutToBeRemoved(parent, parent, first, last);
+    });
+    connect(m_impl, &QAbstractItemModel::rowsInserted, this,
+        [=](const QModelIndex &parent, int first, int last) {
+            emit _rowsInserted(parent, parent, first, last);
+    });
+    connect(m_impl, &QAbstractItemModel::dataChanged, this,
+        [=](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles) {
+            ZASSERT_EXIT(!roles.isEmpty());
+            emit _dataChanged(topLeft.parent(), topLeft, roles[0]);
+    });
 }
 
 GraphsTreeModel::~GraphsTreeModel()
 {
-
 }
 
-void GraphsTreeModel::init(IGraphsModel* pModel)
+void GraphsTreeModel::initSubgraphs(IGraphsModel* pSubgraphs)
 {
-    clear();
-	m_model = qobject_cast<GraphsModel*>(pModel);
-    ZASSERT_EXIT(m_model);
-    SubGraphModel* pSubModel = m_model->subGraph("main");
-    QStandardItem* pItem = appendSubModel(pSubModel);
-    appendRow(pItem);
-
-	connect(m_model, &QAbstractItemModel::rowsAboutToBeRemoved, this, &GraphsTreeModel::on_graphs_rowsAboutToBeRemoved);
+    m_pSubgraphs = pSubgraphs;
 }
 
-QStandardItem* GraphsTreeModel::appendSubModel(SubGraphModel* pModel)
+QUndoStack* GraphsTreeModel::stack() const
 {
-	connect(pModel, &QAbstractItemModel::dataChanged, this, &GraphsTreeModel::on_subg_dataChanged);
-	connect(pModel, &QAbstractItemModel::rowsAboutToBeInserted, this, &GraphsTreeModel::on_subg_rowsAboutToBeInserted);
-	connect(pModel, &QAbstractItemModel::rowsInserted, this, &GraphsTreeModel::on_subg_rowsInserted);
-	connect(pModel, &QAbstractItemModel::rowsAboutToBeRemoved, this, &GraphsTreeModel::on_subg_rowsAboutToBeRemoved);
-	connect(pModel, &QAbstractItemModel::rowsRemoved, this, &GraphsTreeModel::on_subg_rowsRemoved);
-
-	QStandardItem* pItem = new QStandardItem(pModel->name());
-	pItem->setEditable(true);
-	for (int r = 0; r < pModel->rowCount(); r++)
-	{
-		const QModelIndex& idx = pModel->index(r, 0);
-		const QString& objName = pModel->data(idx, ROLE_OBJNAME).toString();
-		const QString& objId = pModel->data(idx, ROLE_OBJID).toString();
-		QStandardItem* pSubItem = nullptr;
-		if (SubGraphModel* pSubModel = m_model->subGraph(objName))
-		{
-			pSubItem = appendSubModel(pSubModel);
-		}
-		else
-		{
-			pSubItem = new QStandardItem(objName);
-			pSubItem->setEditable(false);
-		}
-		pSubItem->setData(objName, ROLE_OBJNAME);
-		pSubItem->setData(objId, ROLE_OBJID);
-		pItem->appendRow(pSubItem);
-	}
-	pItem->setData(pModel->name(), ROLE_OBJNAME);
-	return pItem;
+    return m_stack;
 }
 
-void GraphsTreeModel::on_subg_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
+QModelIndex GraphsTreeModel::index(int row, int column, const QModelIndex& parent) const
 {
-    return;
-	if (roles[0] == ROLE_OBJNAME)
-	{
-		SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
-		const QString& nodeId = topLeft.data(ROLE_OBJID).toString();
-		const QModelIndex& modelIdx = pModel->index(nodeId);
-		QModelIndexList lst = match(index(0, 0), ROLE_OBJID, nodeId, 1, Qt::MatchRecursive);
-		ZASSERT_EXIT(lst.size() == 1);
-		QModelIndex treeIdx = lst[0];
-
-		const QString& oldName = treeIdx.data(ROLE_OBJNAME).toString();
-		const QString& newName = modelIdx.data(ROLE_OBJNAME).toString();
-		if (oldName != newName)
-		{
-			setData(treeIdx, newName, ROLE_OBJNAME);
-			setData(treeIdx, newName, Qt::DisplayRole);
-		}
-	}
+    return m_impl->index(row, column, parent);
 }
 
-void GraphsTreeModel::on_subg_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
+QModelIndex GraphsTreeModel::index(const QString& subGraphName) const
 {
+    if (subGraphName == "main")
+    {
+        //legacy case
+        return m_impl->mainIndex();
+    }
+    //shared subgraph has been moved out of this model impl, except main.
+    return QModelIndex();
 }
 
-void GraphsTreeModel::on_subg_rowsInserted(const QModelIndex& parent, int first, int last)
+QModelIndex GraphsTreeModel::index(const QString &id, const QModelIndex &subGpIdx)
 {
-	return;
-
-	SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
-	QModelIndex itemIdx = pModel->index(first, 0, parent);
-	ZASSERT_EXIT(itemIdx.isValid());
-
-	const QString& subName = pModel->name();
-	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subName, -1, Qt::MatchRecursive);
-	ZASSERT_EXIT(!lst.isEmpty());
-	//Q_ASSERT(lst.size() == 1);
-	//todo: multiple case.
-	QModelIndex subgIdx = lst[0];
-	QStandardItem* pSubgItem = itemFromIndex(subgIdx);
-
-	const QString& objId = itemIdx.data(ROLE_OBJID).toString();
-	const QString& objName = itemIdx.data(ROLE_OBJNAME).toString();
-	//objName may be a subgraph.
-	QStandardItem* pSubItem = nullptr;
-	if (SubGraphModel* pSubModel = m_model->subGraph(objName))
-	{
-		pSubItem = appendSubModel(pSubModel);
-	}
-	else
-	{
-		pSubItem = new QStandardItem(objName);
-	}
-	pSubItem->setData(objId, ROLE_OBJID);
-	pSubItem->setData(objName, ROLE_OBJNAME);
-
-	pSubgItem->insertRow(first, pSubItem);
+    return m_impl->index(id, subGpIdx);
 }
 
-void GraphsTreeModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+QModelIndex GraphsTreeModel::index(int r, const QModelIndex &subGpIdx)
 {
-	SubGraphModel* pModel = qobject_cast<SubGraphModel*>(sender());
-	QModelIndex itemIdx = pModel->index(first, 0, parent);
-	ZASSERT_EXIT(itemIdx.isValid());
-
-	const QString& subName = pModel->name();
-	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subName, -1, Qt::MatchRecursive);
-	//Q_ASSERT(lst.size() == 1);
-	if (lst.size() == 1)
-	{
-		QModelIndex subgIdx = lst[0];
-		removeRow(first, subgIdx);
-	}
+    return m_impl->index(r, subGpIdx);
 }
 
-void GraphsTreeModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, int last)
+QModelIndex GraphsTreeModel::mainIndex() const
 {
+    return m_impl->mainIndex();
 }
 
-void GraphsTreeModel::on_graphs_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+QModelIndex GraphsTreeModel::nodeIndex(const QString &ident)
 {
-	QModelIndex subgIdx = m_model->index(first, 0, parent);
-	ZASSERT_EXIT(subgIdx.isValid());
+    return m_impl->index(ident);
+}
 
-	const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
-	QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, subgName, -1, Qt::MatchRecursive);
-	for (QModelIndex idx : lst)
-	{
-		removeRow(idx.row(), idx.parent());
-	}
+/* end: node index: */
+
+QModelIndex GraphsTreeModel::nodeIndex(uint32_t sid, uint32_t nodeid)
+{
+    return m_impl->index(sid, nodeid);
+}
+
+QModelIndex GraphsTreeModel::subgIndex(uint32_t sid)
+{
+    return m_impl->subgIndex(sid);
+}
+
+QModelIndex GraphsTreeModel::parent(const QModelIndex &child) const
+{
+    return m_impl->parent(child);
+}
+
+int GraphsTreeModel::rowCount(const QModelIndex& parent) const
+{
+    return m_impl->rowCount(parent);
+}
+
+int GraphsTreeModel::columnCount(const QModelIndex&) const
+{
+    return 1;
+}
+
+QVariant GraphsTreeModel::data(const QModelIndex& index, int role) const
+{
+    return m_impl->data(index, role);
+}
+
+bool GraphsTreeModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    return m_impl->setData(index, value, role);
+}
+
+int GraphsTreeModel::itemCount(const QModelIndex &subGpIdx) const
+{
+    return m_impl->itemCount(subGpIdx);
+}
+
+QModelIndex GraphsTreeModel::linkIndex(const QModelIndex &subgIdx, int r)
+{
+    return m_impl->linkIndex(subgIdx, r);
+}
+
+QModelIndex GraphsTreeModel::linkIndex(
+                        const QModelIndex &subgIdx,
+                        const QString &outNode,
+                        const QString &outSock,
+                        const QString &inNode,
+                        const QString &inSock)
+{
+    return m_impl->linkIndex(subgIdx, outNode, outSock, inNode, inSock);
+}
+
+void GraphsTreeModel::addNode(const NODE_DATA &nodeData, const QModelIndex &subGpIdx, bool enableTransaction)
+{
+    m_impl->addNode(nodeData, subGpIdx, enableTransaction);
+}
+
+void GraphsTreeModel::setNodeData(
+                        const QModelIndex& nodeIndex,
+                        const QModelIndex& subGpIdx,
+                        const QVariant& value,
+                        int role)
+{
+    m_impl->setNodeData(nodeIndex, subGpIdx, value, role);
+}
+
+void GraphsTreeModel::importNodes(
+                        const QMap<QString, NODE_DATA>& nodes,
+                        const QList<EdgeInfo>& links,
+                        const QPointF& pos,
+                        const QModelIndex& subGpIdx,
+                        bool enableTransaction)
+{
+    m_impl->importNodes(nodes, links, pos, subGpIdx, enableTransaction);
+}
+
+void GraphsTreeModel::removeNode(const QString &nodeid, const QModelIndex &subGpIdx, bool enableTransaction)
+{
+    m_impl->removeNode(nodeid, subGpIdx, enableTransaction);
+}
+
+
+QModelIndex GraphsTreeModel::addLink(
+                        const QModelIndex &subgIdx,
+                        const QModelIndex &fromSock,
+                        const QModelIndex &toSock,
+                        bool enableTransaction)
+{
+    return m_impl->addLink(subgIdx, fromSock, toSock, enableTransaction);
+}
+
+QModelIndex GraphsTreeModel::addLink(
+                        const QModelIndex &subgIdx,
+                        const EdgeInfo& info,
+                        bool enableTransaction)
+{
+    return m_impl->addLink(info, enableTransaction);
+}
+
+void GraphsTreeModel::removeLink(const QModelIndex &linkIdx, bool enableTransaction)
+{
+    m_impl->removeLink(linkIdx, enableTransaction);
+}
+
+void GraphsTreeModel::removeLink(const QModelIndex &subgIdx, const EdgeInfo &linkIdx, bool enableTransaction)
+{
+    m_impl->removeLink(subgIdx, linkIdx, enableTransaction);
+}
+
+void GraphsTreeModel::removeSubGraph(const QString &name)
+{
+    ZASSERT_EXIT(m_pSubgraphs);
+    m_pSubgraphs->removeSubGraph(name);
+}
+
+QModelIndex GraphsTreeModel::extractSubGraph(
+                            const QModelIndexList &nodes,
+                            const QModelIndexList &links,
+                            const QModelIndex &fromSubg,
+                            const QString &toSubg,
+                            bool enableTrans)
+{
+    ZASSERT_EXIT(m_pSubgraphs, QModelIndex());
+    return m_pSubgraphs->extractSubGraph(nodes, links, fromSubg, toSubg, enableTrans);
+}
+
+bool GraphsTreeModel::IsSubGraphNode(const QModelIndex &nodeIdx) const
+{
+    return m_impl->IsSubGraphNode(nodeIdx);
+}
+
+QModelIndex GraphsTreeModel::fork(const QModelIndex &subgIdx, const QModelIndex &subnetNodeIdx)
+{
+    //no need to fork anymore.
+    return QModelIndex();
+}
+
+QList<EdgeInfo> GraphsTreeModel::addSubnetNode(
+            IGraphsModel *pSubgraphs,
+            const QString &subnetName,
+            const QString &ident,
+            const QString &customName)
+{
+    return m_impl->addSubnetNode(pSubgraphs, subnetName, ident, customName);
+}
+
+void GraphsTreeModel::updateParamInfo(
+                        const QString &id,
+                        PARAM_UPDATE_INFO info,
+                        const QModelIndex &subGpIdx,
+                        bool enableTransaction)
+{
+    return m_impl->updateParamInfo(id, info, subGpIdx, enableTransaction);
+}
+
+void GraphsTreeModel::updateSocketDefl(
+                        const QString& id,
+                        PARAM_UPDATE_INFO info,
+                        const QModelIndex& subGpIdx,
+                        bool enableTransaction)
+{
+    return m_impl->updateSocketDefl(id, info, subGpIdx, enableTransaction);
+}
+
+void GraphsTreeModel::updateNodeStatus(
+                        const QString &nodeid,
+                        STATUS_UPDATE_INFO info,
+                        const QModelIndex &subgIdx,
+                        bool enableTransaction)
+{
+    return m_impl->updateNodeStatus(nodeid, info, subgIdx, enableTransaction);
+}
+
+void GraphsTreeModel::updateBlackboard(
+                        const QString &id,
+                        const QVariant &blackboard,
+                        const QModelIndex &subgIdx,
+                        bool enableTransaction)
+{
+    return m_impl->updateBlackboard(id, blackboard, subgIdx, enableTransaction);
+}
+
+NODE_DATA GraphsTreeModel::itemData(const QModelIndex &index, const QModelIndex &subGpIdx) const
+{
+    return m_impl->itemData(index, subGpIdx);
+}
+
+void GraphsTreeModel::setName(const QString &name, const QModelIndex &subGpIdx)
+{
+    return m_impl->setName(name, subGpIdx);
+}
+
+NODE_DESCS GraphsTreeModel::descriptors() const
+{
+    ZASSERT_EXIT(m_pSubgraphs, NODE_DESCS());
+    return m_pSubgraphs->descriptors();
+}
+
+bool GraphsTreeModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets)
+{
+    ZASSERT_EXIT(m_pSubgraphs, false);
+    return m_pSubgraphs->appendSubnetDescsFromZsg(zsgSubnets);
+}
+
+bool GraphsTreeModel::getDescriptor(const QString &descName, NODE_DESC &desc)
+{
+    ZASSERT_EXIT(m_pSubgraphs, false);
+    return m_pSubgraphs->getDescriptor(descName, desc);
+}
+
+bool GraphsTreeModel::updateSubgDesc(const QString &descName, const NODE_DESC &desc)
+{
+    ZASSERT_EXIT(m_pSubgraphs, false);
+    return m_pSubgraphs->updateSubgDesc(descName, desc);
+}
+
+void GraphsTreeModel::clearSubGraph(const QModelIndex &subGpIdx)
+{
+    ZASSERT_EXIT(m_pSubgraphs);
+    m_pSubgraphs->clearSubGraph(subGpIdx);
+}
+
+void GraphsTreeModel::clear()
+{
+    m_impl->clear();
+    emit modelClear();
+}
+
+void GraphsTreeModel::undo()
+{
+    ApiLevelScope batch(this);
+    m_stack->undo();
+}
+
+void GraphsTreeModel::redo()
+{
+    ApiLevelScope batch(this);
+    m_stack->redo();
+}
+
+void GraphsTreeModel::newSubgraph(const QString &graphName)
+{
+    ZASSERT_EXIT(m_pSubgraphs);
+    m_pSubgraphs->newSubgraph(graphName);
+}
+
+void GraphsTreeModel::initMainGraph()
+{
+    m_impl->initMainGraph();
+}
+
+void GraphsTreeModel::renameSubGraph(const QString &oldName, const QString &newName)
+{
+    ZASSERT_EXIT(m_pSubgraphs);
+    m_pSubgraphs->renameSubGraph(oldName, newName);
+}
+
+bool GraphsTreeModel::isDirty() const
+{
+    return m_dirty;
+}
+
+NODE_CATES GraphsTreeModel::getCates()
+{
+    ZASSERT_EXIT(m_pSubgraphs, NODE_CATES());
+    return m_pSubgraphs->getCates();
+}
+
+QModelIndexList GraphsTreeModel::searchInSubgraph(const QString &objName, const QModelIndex &idx)
+{
+    return m_impl->searchInSubgraph(objName, idx);
+}
+
+QModelIndexList GraphsTreeModel::subgraphsIndice() const
+{
+    return QModelIndexList();
+}
+
+QList<SEARCH_RESULT> GraphsTreeModel::search(
+                            const QString &content,
+                            int searchType,
+                            int searchOpts,
+                            QVector<SubGraphModel *> vec)
+{
+    return m_impl->search(content, searchType, searchOpts, vec);
+}
+
+void GraphsTreeModel::removeGraph(int idx)
+{
+    //todo:
+}
+
+QString GraphsTreeModel::fileName() const
+{
+    QString fn;
+    return fn;
+}
+
+QString GraphsTreeModel::filePath() const
+{
+    return "";
+}
+
+void GraphsTreeModel::setFilePath(const QString &fn)
+{
+    m_filePath = fn;
+    emit pathChanged(m_filePath);
+}
+
+QRectF GraphsTreeModel::viewRect(const QModelIndex &subgIdx)
+{
+    return m_impl->viewRect(subgIdx);
+}
+
+void GraphsTreeModel::markDirty()
+{
+    m_dirty = true;
+    emit dirtyChanged();
+}
+
+void GraphsTreeModel::clearDirty()
+{
+    m_dirty = false;
+    emit dirtyChanged();
+}
+
+void GraphsTreeModel::collaspe(const QModelIndex &subgIdx)
+{
+    return m_impl->collaspe(subgIdx);
+}
+
+void GraphsTreeModel::expand(const QModelIndex &subgIdx)
+{
+    return m_impl->expand(subgIdx);
+}
+
+void GraphsTreeModel::setIOProcessing(bool bIOProcessing)
+{
+    m_bIOProcessing = bIOProcessing;
+}
+
+bool GraphsTreeModel::IsIOProcessing() const
+{
+    return m_bIOProcessing;
+}
+
+void GraphsTreeModel::beginTransaction(const QString& name)
+{
+    m_stack->beginMacro(name);
+    beginApiLevel();
+}
+
+void GraphsTreeModel::endTransaction()
+{
+    m_stack->endMacro();
+    endApiLevel();
+}
+
+void GraphsTreeModel::beginApiLevel()
+{
+    if (IsIOProcessing() || !isApiRunningEnable())
+        return;
+
+    //todo: Thread safety
+    m_apiLevel++;
+}
+
+void GraphsTreeModel::endApiLevel()
+{
+    if (IsIOProcessing() || !isApiRunningEnable())
+        return;
+
+    m_apiLevel--;
+    if (m_apiLevel == 0) {
+        emit apiBatchFinished();
+    }
+}
+
+LinkModel* GraphsTreeModel::linkModel(const QModelIndex &subgIdx) const
+{
+    return m_impl->linkModel(subgIdx);
+}
+
+QModelIndexList GraphsTreeModel::findSubgraphNode(const QString& subgName)
+{
+    return QModelIndexList();
+}
+
+int GraphsTreeModel::ModelSetData(
+                        const QPersistentModelIndex &idx,
+                        const QVariant &value,
+                        int role,
+                        const QString &comment)
+{
+    return m_impl->ModelSetData(idx, value, role, comment);
+}
+
+QAbstractItemModel *GraphsTreeModel::implModel() {
+    return m_impl;
+}
+
+int GraphsTreeModel::undoRedo_updateSubgDesc(const QString &descName, const NODE_DESC &desc)
+{
+    ZASSERT_EXIT(m_pSubgraphs, 0);
+    return m_pSubgraphs->undoRedo_updateSubgDesc(descName, desc);
+}
+
+QModelIndex GraphsTreeModel::indexFromPath(const QString &path)
+{
+    //subgraph need path?
+    return m_impl->indexFromPath(path);
+}
+
+bool GraphsTreeModel::addExecuteCommand(QUndoCommand *pCommand)
+{
+    //toask: need level?
+    if (!pCommand)
+        return false;
+    m_stack->push(pCommand);
+    return 1;
+}
+
+void GraphsTreeModel::setIOVersion(zenoio::ZSG_VERSION ver)
+{
+    m_version = ver;
+}
+
+zenoio::ZSG_VERSION GraphsTreeModel::ioVersion() const
+{
+    return m_version;
+}
+
+void GraphsTreeModel::setApiRunningEnable(bool bEnable)
+{
+    m_bApiEnableRun = bEnable;
+}
+
+bool GraphsTreeModel::isApiRunningEnable() const
+{
+    return m_bApiEnableRun;
+}
+
+bool GraphsTreeModel::setCustomName(const QModelIndex &subgIdx, const QModelIndex &idx, const QString &value)
+{
+    return m_impl->setCustomName(subgIdx, idx, value);
 }

@@ -1433,7 +1433,7 @@ bool GraphsModel::isApiRunningEnable() const
     return m_bApiEnableRun;
 }
 
-bool GraphsModel::setCustomName(const QModelIndex &subgIdx, const QModelIndex &index, const QString &value) const 
+bool GraphsModel::setCustomName(const QModelIndex &subgIdx, const QModelIndex &index, const QString &value)
 {
     QString name = data(subgIdx, Qt::DisplayRole).toString();
     SubGraphModel *pModel = subGraph(name);
@@ -1530,7 +1530,8 @@ QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QMod
 
 QModelIndexList GraphsModel::subgraphsIndice() const
 {
-    return persistentIndexList();
+    //todo: deprecated
+    return QModelIndexList();
 }
 
 LinkModel* GraphsModel::linkModel(const QModelIndex& subgIdx) const
@@ -1541,49 +1542,6 @@ LinkModel* GraphsModel::linkModel(const QModelIndex& subgIdx) const
     LinkModel *pLinkModel = iterGroup.value();
     ZASSERT_EXIT(pLinkModel, nullptr);
     return pLinkModel;
-}
-
-void GraphsModel::on_subg_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles)
-{
-    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
-
-    ZASSERT_EXIT(pSubModel && roles.size() == 1);
-    QModelIndex subgIdx = indexBySubModel(pSubModel);
-    emit _dataChanged(subgIdx, topLeft, roles[0]);
-}
-
-void GraphsModel::on_subg_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
-{
-    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
-
-    ZASSERT_EXIT(pSubModel);
-    QModelIndex subgIdx = indexBySubModel(pSubModel);
-    emit _rowsAboutToBeInserted(subgIdx, first, last);
-}
-
-void GraphsModel::on_subg_rowsInserted(const QModelIndex& parent, int first, int last)
-{
-    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
-    ZASSERT_EXIT(pSubModel);
-    QModelIndex subgIdx = indexBySubModel(pSubModel);
-    emit _rowsInserted(subgIdx, parent, first, last);
-}
-
-void GraphsModel::on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
-{
-    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
-    ZASSERT_EXIT(pSubModel);
-    QModelIndex subgIdx = indexBySubModel(pSubModel);
-    emit _rowsAboutToBeRemoved(subgIdx, parent, first, last);
-}
-
-void GraphsModel::on_subg_rowsRemoved(const QModelIndex& parent, int first, int last)
-{
-    SubGraphModel* pSubModel = qobject_cast<SubGraphModel*>(sender());
-
-    ZASSERT_EXIT(pSubModel);
-    QModelIndex subgIdx = indexBySubModel(pSubModel);
-    emit _rowsRemoved(parent, first, last);
 }
 
 QModelIndex GraphsModel::getSubgraphIndex(const QModelIndex& linkIdx)

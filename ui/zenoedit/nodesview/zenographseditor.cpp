@@ -27,9 +27,9 @@
 
 
 ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
-	: QWidget(nullptr)
-	, m_mainWin(pMainWin)
-    , m_model(nullptr)
+    : QWidget(nullptr)
+    , m_mainWin(pMainWin)
+    , m_pNodeModel(nullptr)
     , m_searchOpts(SEARCHALL)
 {
     initUI();
@@ -40,7 +40,7 @@ ZenoGraphsEditor::ZenoGraphsEditor(ZenoMainWindow* pMainWin)
     if (graphsMgm) {
         IGraphsModel* pModel = graphsMgm->currentModel();
         if (pModel) {
-            resetModel(pModel);
+            resetModel(pModel, graphsMgm->sharedSubgraphs());
         }
     }
 }
@@ -51,8 +51,8 @@ ZenoGraphsEditor::~ZenoGraphsEditor()
 
 void ZenoGraphsEditor::initUI()
 {
-	m_ui = new Ui::GraphsEditor;
-	m_ui->setupUi(this);
+    m_ui = new Ui::GraphsEditor;
+    m_ui->setupUi(this);
 
     int _margin = ZenoStyle::dpiScaled(10);
     QMargins margins(_margin, _margin, _margin, _margin);
@@ -81,7 +81,7 @@ void ZenoGraphsEditor::initModel()
     m_sideBarModel = new QStandardItemModel;
 
     QStandardItem* pItem = new QStandardItem;
-	pItem->setData(Side_Subnet);
+    pItem->setData(Side_Subnet);
     m_sideBarModel->appendRow(pItem);
 
     pItem = new QStandardItem;
@@ -97,8 +97,9 @@ void ZenoGraphsEditor::initModel()
 
 void ZenoGraphsEditor::initSignals()
 {
-	auto graphsMgr = zenoApp->graphsManagment();
-	connect(&*graphsMgr, SIGNAL(modelInited(IGraphsModel*)), this, SLOT(resetModel(IGraphsModel*)));
+    auto graphsMgr = zenoApp->graphsManagment();
+    connect(graphsMgr, SIGNAL(modelInited(IGraphsModel*, IGraphsModel*)),
+            this, SLOT(resetModel(IGraphsModel*, IGraphsModel*)));
     connect(graphsMgr->logModel(), &QStandardItemModel::rowsInserted, this, &ZenoGraphsEditor::onLogInserted);
 
     connect(m_selection, &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onSideBtnToggleChanged);
@@ -107,8 +108,8 @@ void ZenoGraphsEditor::initSignals()
     //connect(m_ui->subnetList, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onListItemActivated(const QModelIndex&)));
     //connect(m_ui->subnetTree, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onTreeItemActivated(const QModelIndex&)));
 
-	connect(m_ui->welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
-	connect(m_ui->welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
+    connect(m_ui->welcomePage, SIGNAL(newRequest()), m_mainWin, SLOT(onNewFile()));
+    connect(m_ui->welcomePage, SIGNAL(openRequest()), m_mainWin, SLOT(openFileDialog()));
 
     connect(m_ui->moreBtn, SIGNAL(clicked()), this, SLOT(onSubnetOptionClicked()));
     connect(m_ui->btnSearchOpt, SIGNAL(clicked()), this, SLOT(onSearchOptionClicked()));
@@ -132,25 +133,25 @@ void ZenoGraphsEditor::initRecentFiles()
     m_ui->welcomePage->initRecentFiles();
 }
 
-void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
+void ZenoGraphsEditor::resetModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs)
 {
-    if (!pModel)
+    if (!pNodeModel)
     {
         onModelCleared();
         return;
     }
 
-    auto mgr = zenoApp->graphsManagment();
-    m_model = pModel;
-    ZASSERT_EXIT(m_model);
+    m_pNodeModel = pNodeModel;
+    m_pSubgraphs = pSubgraphs;
+    ZASSERT_EXIT(m_pNodeModel);
 
-    m_ui->subnetTree->setModel(mgr->treeModel());
-    m_ui->subnetList->setModel(pModel);
+    m_ui->subnetTree->setModel(pNodeModel->implModel());
     m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_ui->subnetList->setModel(pSubgraphs);
     m_ui->subnetList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
 
-    ZSubnetListItemDelegate *delegate = new ZSubnetListItemDelegate(m_model, this);
+    ZSubnetListItemDelegate *delegate = new ZSubnetListItemDelegate(m_pNodeModel, this);
     m_ui->subnetList->setItemDelegate(delegate);
     connect(m_ui->subnetList->selectionModel(), &QItemSelectionModel::selectionChanged, this, [=]() {
         QModelIndexList lst = m_ui->subnetList->selectionModel()->selectedIndexes();
@@ -164,12 +165,17 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->mainEditor);
     m_ui->graphsViewTab->clear();
 
-    connect(pModel, &IGraphsModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
-	connect(pModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)), this, SLOT(onSubGraphsToRemove(const QModelIndex&, int, int)));
-	connect(pModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
-	connect(pModel, SIGNAL(graphRenamed(const QString&, const QString&)), this, SLOT(onSubGraphRename(const QString&, const QString&)));
+    connect(m_pNodeModel, &IGraphsModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
+    connect(m_pNodeModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex &, int, int)), this,
+            SLOT(onSubGraphsToRemove(const QModelIndex &, int, int)));
+    connect(m_pSubgraphs, SIGNAL(rowsAboutToBeRemoved(const QModelIndex &, int, int)), this,
+            SLOT(onSubGraphsToRemove(const QModelIndex &, int, int)));
 
-    activateTab("main");
+    connect(m_pNodeModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
+    connect(m_pSubgraphs, SIGNAL(graphRenamed(const QString&, const QString &)), this,
+            SLOT(onSubGraphRename(const QString &, const QString &)));
+
+    activateTabOfTree("/main");
 }
 
 void ZenoGraphsEditor::onModelCleared()
@@ -179,86 +185,86 @@ void ZenoGraphsEditor::onModelCleared()
 
 void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)
 {
-	for (int r = first; r <= last; r++)
-	{
-		QModelIndex subgIdx = m_model->index(r, 0);
-		const QString& name = subgIdx.data(ROLE_OBJNAME).toString();
-		int idx = tabIndexOfName(name);
-		m_ui->graphsViewTab->removeTab(idx);
-	}
+    for (int r = first; r <= last; r++)
+    {
+        QModelIndex subgIdx = m_pNodeModel->index(r, 0);
+        const QString& name = subgIdx.data(ROLE_OBJNAME).toString();
+        int idx = tabIndexOfName(name);
+        m_ui->graphsViewTab->removeTab(idx);
+    }
 }
 
 void ZenoGraphsEditor::onModelReset()
 {
-	m_ui->graphsViewTab->clear();
-    m_model = nullptr;
+    m_ui->graphsViewTab->clear();
+    m_pNodeModel = nullptr;
 }
 
 void ZenoGraphsEditor::onSubGraphRename(const QString& oldName, const QString& newName)
 {
-	int idx = tabIndexOfName(oldName);
-	if (idx != -1)
-	{
-		QTabBar* pTabBar = m_ui->graphsViewTab->tabBar();
-		pTabBar->setTabText(idx, newName);
-	}
+    int idx = tabIndexOfName(oldName);
+    if (idx != -1)
+    {
+        QTabBar* pTabBar = m_ui->graphsViewTab->tabBar();
+        pTabBar->setTabText(idx, newName);
+    }
 }
 
 void ZenoGraphsEditor::onSearchOptionClicked()
 {
-	QMenu* pOptionsMenu = new QMenu;
+    QMenu* pOptionsMenu = new QMenu;
 
-	QAction* pNode = new QAction(tr("Node"));
+    QAction* pNode = new QAction(tr("Node"));
     pNode->setCheckable(true);
     pNode->setChecked(m_searchOpts & SEARCH_NODECLS);
 
-	QAction* pSubnet = new QAction(tr("Subnet"));
+    QAction* pSubnet = new QAction(tr("Subnet"));
     pSubnet->setCheckable(true);
     pSubnet->setChecked(m_searchOpts & SEARCH_SUBNET);
 
-	QAction* pAnnotation = new QAction(tr("Annotation"));
+    QAction* pAnnotation = new QAction(tr("Annotation"));
     pAnnotation->setCheckable(true);
     pAnnotation->setEnabled(false);
 
-	QAction* pWrangle = new QAction(tr("Parameter"));
+    QAction* pWrangle = new QAction(tr("Parameter"));
     pWrangle->setCheckable(true);
     pWrangle->setChecked(m_searchOpts & SEARCH_ARGS);
 
-	pOptionsMenu->addAction(pNode);
-	pOptionsMenu->addAction(pSubnet);
-	pOptionsMenu->addAction(pAnnotation);
-	pOptionsMenu->addAction(pWrangle);
+    pOptionsMenu->addAction(pNode);
+    pOptionsMenu->addAction(pSubnet);
+    pOptionsMenu->addAction(pAnnotation);
+    pOptionsMenu->addAction(pWrangle);
 
-	connect(pNode, &QAction::triggered, this, [=](bool bChecked) {
+    connect(pNode, &QAction::triggered, this, [=](bool bChecked) {
         if (bChecked)
             m_searchOpts |= SEARCH_NODECLS;
         else
             m_searchOpts &= (~(int)SEARCH_NODECLS);
-	});
+    });
 
-	connect(pSubnet, &QAction::triggered, this, [=](bool bChecked) {
-		if (bChecked)
-			m_searchOpts |= SEARCH_SUBNET;
-		else
-			m_searchOpts &= (~(int)SEARCH_SUBNET);
-		});
+    connect(pSubnet, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+            m_searchOpts |= SEARCH_SUBNET;
+        else
+            m_searchOpts &= (~(int)SEARCH_SUBNET);
+        });
 
-	connect(pAnnotation, &QAction::triggered, this, [=](bool bChecked) {
-		if (bChecked)
-			m_searchOpts |= SEARCH_ANNO;
-		else
-			m_searchOpts &= (~(int)SEARCH_ANNO);
-		});
+    connect(pAnnotation, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+            m_searchOpts |= SEARCH_ANNO;
+        else
+            m_searchOpts &= (~(int)SEARCH_ANNO);
+        });
 
-	connect(pWrangle, &QAction::triggered, this, [=](bool bChecked) {
-		if (bChecked)
-			m_searchOpts |= SEARCH_ARGS;
-		else
-			m_searchOpts &= (~(int)SEARCH_ARGS);
-		});
+    connect(pWrangle, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+            m_searchOpts |= SEARCH_ARGS;
+        else
+            m_searchOpts &= (~(int)SEARCH_ARGS);
+        });
 
-	pOptionsMenu->exec(QCursor::pos());
-	pOptionsMenu->deleteLater();
+    pOptionsMenu->exec(QCursor::pos());
+    pOptionsMenu->deleteLater();
 }
 
 void ZenoGraphsEditor::onNewSubgraph()
@@ -275,7 +281,7 @@ void ZenoGraphsEditor::onNewSubgraph()
     }
 
     if (bOk) {
-        m_model->newSubgraph(newSubgName);
+        m_pSubgraphs->newSubgraph(newSubgName);
     }
 }
 
@@ -341,23 +347,23 @@ void ZenoGraphsEditor::onSideBtnToggleChanged(const QItemSelection& selected, co
 
 void ZenoGraphsEditor::onCurrentChanged(const QModelIndex& current, const QModelIndex& previous)
 {
-	if (previous.isValid())
-	{
+    if (previous.isValid())
+    {
         int sideBar = current.data(Qt::UserRole + 1).toInt();
-		switch (previous.data(Qt::UserRole + 1).toInt())
-		{
+        switch (previous.data(Qt::UserRole + 1).toInt())
+        {
         /*
-		case Side_Subnet: m_ui->subnetBtn->setChecked(false); break;
-		case Side_Tree: m_ui->treeviewBtn->setChecked(false); break;
-		case Side_Search: m_ui->searchBtn->setChecked(false); break;
+        case Side_Subnet: m_ui->subnetBtn->setChecked(false); break;
+        case Side_Tree: m_ui->treeviewBtn->setChecked(false); break;
+        case Side_Search: m_ui->searchBtn->setChecked(false); break;
         */
-		}
-	}
+        }
+    }
 
-	if (current.isValid())
-	{
+    if (current.isValid())
+    {
         m_ui->stackedWidget->show();
-		int sideBar = current.data(Qt::UserRole + 1).toInt();
+        int sideBar = current.data(Qt::UserRole + 1).toInt();
         switch (sideBar)
         {
             case Side_Subnet:
@@ -379,7 +385,7 @@ void ZenoGraphsEditor::onCurrentChanged(const QModelIndex& current, const QModel
                 break;
             }
         }
-	}
+    }
     else
     {
         m_ui->stackedWidget->hide();
@@ -388,21 +394,22 @@ void ZenoGraphsEditor::onCurrentChanged(const QModelIndex& current, const QModel
 
 int ZenoGraphsEditor::tabIndexOfName(const QString& subGraphName)
 {
-	for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
-	{
-		if (m_ui->graphsViewTab->tabText(i) == subGraphName)
-		{
-			return i;
-		}
-	}
-	return -1;
+    for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
+    {
+        if (m_ui->graphsViewTab->tabText(i) == subGraphName)
+        {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void ZenoGraphsEditor::onListItemActivated(const QModelIndex& index)
 {
-	const QString& subgraphName = index.data().toString();
+    const QString& subgraphName = index.data().toString();
     activateTab(subgraphName);
 }
+
 void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& path, std::vector<QString> & objIds)
 {
     auto graphsMgm = zenoApp->graphsManagment();
@@ -421,7 +428,7 @@ void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& pat
         {
             pScene = new ZenoSubGraphScene(graphsMgm);
             graphsMgm->addScene(subgIdx, pScene);
-            pScene->initModel(subgIdx);
+            pScene->initModel(m_pSubgraphs, subgIdx);
         }
 
         pScene->select(objIds);
@@ -432,59 +439,104 @@ void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& pat
     {
         pScene = new ZenoSubGraphScene(graphsMgm);
         graphsMgm->addScene(subgIdx, pScene);
-        pScene->initModel(subgIdx);
+        pScene->initModel(m_pSubgraphs, subgIdx);
     }
 
     pScene->select(objIds);
 }
+
+void ZenoGraphsEditor::activateTabOfTree(const QString& path, const QString& nodeid)
+{
+    auto graphsMgm = zenoApp->graphsManagment();
+    IGraphsModel *pNodeModel = graphsMgm->currentModel();
+    ZASSERT_EXIT(pNodeModel);
+    QModelIndex subgIdx = pNodeModel->indexFromPath(path);
+
+    int idx = tabIndexOfName(path);
+    if (idx == -1)
+    {
+        ZenoSubGraphScene *pScene = qobject_cast<ZenoSubGraphScene *>(graphsMgm->gvScene(subgIdx));
+        if (!pScene) {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(subgIdx, pScene);
+            pScene->initModel(pNodeModel, subgIdx);
+        }
+
+        ZenoSubGraphView *pView = new ZenoSubGraphView;
+        connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
+        connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
+        pView->initScene(pScene);
+
+        idx = m_ui->graphsViewTab->addTab(pView, path);
+
+        QString tabIcon;
+        if (path.compare("/main", Qt::CaseInsensitive) == 0)
+            tabIcon = ":/icons/subnet-main.svg";
+        else
+            tabIcon = ":/icons/subnet-general.svg";
+        m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
+    }
+    m_ui->graphsViewTab->setCurrentIndex(idx);
+
+    if (!nodeid.isEmpty())
+    {
+        ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
+        ZASSERT_EXIT(pView);
+
+        QString subgPath = subgIdx.data(ROLE_OBJPATH).toString();
+        pView->resetPath(pNodeModel, path, subgPath, nodeid, false);
+        m_mainWin->onNodesSelected(subgIdx, pView->scene()->selectNodesIndice(), true);
+    }
+}
+
 void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId, bool isError)
 {
-	auto graphsMgm = zenoApp->graphsManagment();
-	IGraphsModel* pModel = graphsMgm->currentModel();
-
-    if (!pModel->index(subGraphName).isValid())
+    auto graphsMgm = zenoApp->graphsManagment();
+    IGraphsModel* pSubgraphs = graphsMgm->sharedSubgraphs();
+    ZASSERT_EXIT(pSubgraphs);
+    if (!pSubgraphs->index(subGraphName).isValid())
         return;
 
-	int idx = tabIndexOfName(subGraphName);
-	if (idx == -1)
-	{
-		const QModelIndex& subgIdx = pModel->index(subGraphName);
+    int idx = tabIndexOfName(subGraphName);
+    if (idx == -1)
+    {
+        const QModelIndex& subgIdx = pSubgraphs->index(subGraphName);
 
-            ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
-            if (!pScene)
-            {
-                pScene = new ZenoSubGraphScene(graphsMgm);
-                graphsMgm->addScene(subgIdx, pScene);
-                pScene->initModel(subgIdx);
-            }
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+        if (!pScene)
+        {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(subgIdx, pScene);
+            pScene->initModel(pSubgraphs, subgIdx);
+        }
 
-            ZenoSubGraphView* pView = new ZenoSubGraphView;
-            connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
-            connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
-            pView->initScene(pScene);
+        ZenoSubGraphView* pView = new ZenoSubGraphView;
+        connect(pView, &ZenoSubGraphView::zoomed, pScene, &ZenoSubGraphScene::onZoomed);
+        connect(pView, &ZenoSubGraphView::zoomed, this, &ZenoGraphsEditor::zoomed);
+        pView->initScene(pScene);
 
-            idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
+        idx = m_ui->graphsViewTab->addTab(pView, subGraphName);
 
-            QString tabIcon;
-            if (subGraphName.compare("main", Qt::CaseInsensitive) == 0)
-                tabIcon = ":/icons/subnet-main.svg";
-            else
-                tabIcon = ":/icons/subnet-general.svg";
-            m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
+        QString tabIcon;
+        if (subGraphName.compare("main", Qt::CaseInsensitive) == 0)
+            tabIcon = ":/icons/subnet-main.svg";
+        else
+            tabIcon = ":/icons/subnet-general.svg";
+        m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
 
-            connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
-                QStringList L = newPath.split("/", QtSkipEmptyParts);
-                QString subgName = L.last();
-                activateTab(subgName, newPath);
-            });
-	}
-	m_ui->graphsViewTab->setCurrentIndex(idx);
+        connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
+            QStringList L = newPath.split("/", QtSkipEmptyParts);
+            QString subgName = L.last();
+            activateTab(subgName, newPath);
+        });
+    }
+    m_ui->graphsViewTab->setCurrentIndex(idx);
 
     ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
     ZASSERT_EXIT(pView);
-    pView->resetPath(path, subGraphName, objId, isError);
+    pView->resetPath(pSubgraphs, path, subGraphName, objId, isError);
 
-    m_mainWin->onNodesSelected(pModel->index(subGraphName), pView->scene()->selectNodesIndice(), true);
+    m_mainWin->onNodesSelected(pSubgraphs->index(subGraphName), pView->scene()->selectNodesIndice(), true);
 }
 
 void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes) {
@@ -497,40 +549,26 @@ void ZenoGraphsEditor::showFloatPanel(const QModelIndex &subgIdx, const QModelIn
 
 void ZenoGraphsEditor::onTreeItemActivated(const QModelIndex& index)
 {
-	QModelIndex idx = index;
-
-	const QString& objId = idx.data(ROLE_OBJID).toString();
-	QString path, subgName;
-	if (!idx.parent().isValid())
-	{
-        subgName = idx.data(ROLE_OBJNAME).toString();
-		path = "/" + subgName;
-	}
-	else
-	{
-		idx = idx.parent();
-        subgName = idx.data(ROLE_OBJNAME).toString();
-
-		while (idx.isValid())
-		{
-			QString objName = idx.data(ROLE_OBJNAME).toString();
-			path = "/" + objName + path;
-			idx = idx.parent();
-		}
-	}
-
-    activateTab(subgName, path, objId);
+    QModelIndex idx = index;
+    QModelIndex subgIdx = idx.parent();
+    if (subgIdx.isValid())
+    {
+        const QString& subgPath = subgIdx.data(ROLE_OBJPATH).toString();
+        const QString& nodeid = idx.data(ROLE_OBJID).toString();
+        activateTabOfTree(subgPath, nodeid);
+        return;
+    }
 }
 
 void ZenoGraphsEditor::onPageActivated(const QPersistentModelIndex& subgIdx, const QPersistentModelIndex& nodeIdx)
 {
-    const QString& subgName = nodeIdx.data(ROLE_OBJNAME).toString();
-    activateTab(subgName);
+    const QString& subgPath = nodeIdx.data(ROLE_OBJPATH).toString();
+    activateTabOfTree(subgPath);
 }
 
 void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int last)
 {
-    if (!m_model)
+    if (!m_pNodeModel)
         return;
     QStandardItemModel* logModel = qobject_cast<QStandardItemModel*>(sender());
     const QModelIndex& idx = logModel->index(first, 0, parent);
@@ -547,7 +585,7 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 objId = lst.last();
             }
 
-            QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
+            QList<SEARCH_RESULT> results = m_pNodeModel->search(objId, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
             for (int i = 0; i < results.length(); i++)
             {
                 const SEARCH_RESULT& res = results[i];
@@ -575,13 +613,13 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 }
                 else
                 {
-                    const QModelIndex& subgIdx = m_model->index(subgName);
+                    const QModelIndex& subgIdx = m_pNodeModel->index(subgName);
                     auto graphsMgm = zenoApp->graphsManagment();
                     ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
                     if (!pScene) {
                         pScene = new ZenoSubGraphScene(graphsMgm);
                         graphsMgm->addScene(subgIdx, pScene);
-                        pScene->initModel(subgIdx);
+                        pScene->initModel(m_pNodeModel, subgIdx);
                     }
                     pScene->markError(objId);
                 }
@@ -592,7 +630,13 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
 
 void ZenoGraphsEditor::onSearchEdited(const QString& content)
 {
-    QList<SEARCH_RESULT> results = m_model->search(content, m_searchOpts, SEARCH_FUZZ);
+    QList<SEARCH_RESULT> results = m_pNodeModel->search(content, m_searchOpts, SEARCH_FUZZ);
+    QList<SEARCH_RESULT> subgResults;
+    if (m_pSubgraphs)
+    {
+        subgResults = m_pSubgraphs->search(content, m_searchOpts, SEARCH_FUZZ);
+        results.append(subgResults);
+    }
 
     QStandardItemModel* pModel = new QStandardItemModel(this);
 
@@ -681,7 +725,7 @@ void ZenoGraphsEditor::toggleViewForSelected(bool bOn)
             }
             info.role = ROLE_OPTIONS;
             info.newValue = options;
-            m_model->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
+            m_pNodeModel->updateNodeStatus(idx.data(ROLE_OBJID).toString(), info, subgIdx);
         }
     }
 }
@@ -743,14 +787,14 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         ZASSERT_EXIT(pView);
         QModelIndex subgIdx = pView->scene()->subGraphIndex();
-        m_model->collaspe(subgIdx);
+        m_pNodeModel->collaspe(subgIdx);
     }
     else if (actionType == ZenoMainWindow::ACTION_EXPAND) 
-	{
-		ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+    {
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
         ZASSERT_EXIT(pView);
-		QModelIndex subgIdx = pView->scene()->subGraphIndex();
-		m_model->expand(subgIdx);
+        QModelIndex subgIdx = pView->scene()->subGraphIndex();
+        m_pNodeModel->expand(subgIdx);
     }
     else if (actionType == ZenoMainWindow::ACTION_OPEN_VIEW) 
     {
@@ -771,14 +815,14 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             {
                 QModelIndex nodeIdx = nodes[0];
                 //only subgraph node
-                if (!m_model->IsSubGraphNode(nodeIdx)) 
+                if (!m_pNodeModel->IsSubGraphNode(nodeIdx)) 
                 {
                     QMessageBox::information(this, tr("Info"), tr("Cannot edit parameters!"));
                     return;
                 }
                 QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
                 ZASSERT_EXIT(viewParams);
-                ZEditParamLayoutDlg dlg(viewParams, true, nodeIdx, m_model, this);
+                ZEditParamLayoutDlg dlg(viewParams, true, nodeIdx, m_pNodeModel, this);
                 dlg.exec();
             }
         }
@@ -789,7 +833,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         if (pView) 
         {
             ZenoSubGraphScene *pScene = pView->scene();
-            NodesMgr::createNewNode(m_model, pScene->subGraphIndex(), "Group", QPointF());
+            NodesMgr::createNewNode(m_pNodeModel, pScene->subGraphIndex(), "Group", QPointF());
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_EASY_GRAPH) 
@@ -805,7 +849,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             if (bOk)
             {
                 QModelIndex fromSubgIdx = pView->scene()->subGraphIndex();
-                QModelIndex toSubgIdx = m_model->extractSubGraph(nodes, links, fromSubgIdx, newSubgName, true);
+                QModelIndex toSubgIdx = m_pNodeModel->extractSubGraph(nodes, links, fromSubgIdx, newSubgName, true);
                 if (toSubgIdx.isValid())
                 {
                     activateTab(toSubgIdx.data(ROLE_OBJNAME).toString());

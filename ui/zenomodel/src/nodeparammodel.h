@@ -9,7 +9,7 @@ class NodeParamModel : public ViewParamModel
 {
     Q_OBJECT
 public:
-    explicit NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, bool bTempModel = false, QObject* parent = nullptr);
+    explicit NodeParamModel(IGraphsModel* pModel, bool bTempModel = false, QObject* parent = nullptr);
     ~NodeParamModel();
 
     void clearParams();
@@ -65,7 +65,6 @@ private:
     void checkExtractDict(QString &name);
 
     IGraphsModel* m_pGraphsModel;
-    const QPersistentModelIndex m_subgIdx;
 
     VParamItem* m_inputs;
     VParamItem* m_params;

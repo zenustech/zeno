@@ -9,15 +9,15 @@
 #include "iotags.h"
 #include "dictkeymodel.h"
 #include "common_def.h"
+#include "nodeitem.h"
 
 
-NodeParamModel::NodeParamModel(const QPersistentModelIndex& subgIdx, const QModelIndex& nodeIdx, IGraphsModel* pModel, bool bTempModel, QObject* parent)
-    : ViewParamModel(true, nodeIdx, pModel, parent)
+NodeParamModel::NodeParamModel(IGraphsModel* pModel, bool bTempModel, QObject* parent)
+    : ViewParamModel(true, pModel, parent)
     , m_inputs(nullptr)
     , m_params(nullptr)
     , m_outputs(nullptr)
     , m_pGraphsModel(pModel)
-    , m_subgIdx(subgIdx)
     , m_bTempModel(bTempModel)
 {
     initUI();
@@ -84,7 +84,6 @@ bool NodeParamModel::getInputSockets(INPUT_SOCKETS& inputs)
 
         INPUT_SOCKET inSocket;
         inSocket.info.defaultValue = param->data(ROLE_PARAM_VALUE);
-        inSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
         inSocket.info.name = param->m_name;
         inSocket.info.type = param->data(ROLE_PARAM_TYPE).toString();
         inSocket.info.sockProp = param->m_sockProp;
@@ -115,7 +114,6 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         outSocket.retIdx = param->index();
 
         outSocket.info.defaultValue = param->data(ROLE_PARAM_VALUE);
-        outSocket.info.nodeid = m_nodeIdx.data(ROLE_OBJID).toString();
         outSocket.info.name = name;
         outSocket.info.type = param->data(ROLE_PARAM_TYPE).toString();
         outSocket.info.sockProp = param->m_sockProp;
@@ -322,8 +320,6 @@ void NodeParamModel::setAddParam(
                 const QString& toolTip)
 {
     VParamItem *pItem = nullptr;
-    const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
-
     VParamItem* pGroup = nullptr;
     switch (cls) {
     case PARAM_INPUT: pGroup = m_inputs; break;
@@ -674,7 +670,9 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dic
     if (!pItem || pItem->vType != VPARAM_PARAM)
         return;
 
-    const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    NodeItem* pNodeItem = qobject_cast<NodeItem*>(this->parent());
+    ZASSERT_EXIT(pNodeItem);
+    const QString &nodeCls = pNodeItem->objCls;
     NODE_DESC desc;
     m_model->getDescriptor(nodeCls, desc);
 
@@ -760,7 +758,9 @@ void NodeParamModel::exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel)
 
 void NodeParamModel::checkExtractDict(QString &name)
 {
-    QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    NodeItem *pNodeItem = qobject_cast<NodeItem *>(this->parent());
+    ZASSERT_EXIT(pNodeItem);
+    const QString& nodeCls = pNodeItem->objCls;
     QStringList lst = name.split(",");
     if (nodeCls == "ExtractDict" && lst.size() > 1) 
     {
@@ -816,11 +816,16 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
     if (m_pGraphsModel->IsIOProcessing() || m_bTempModel)
         return;
 
-    const QString& nodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    NodeItem* pNodeItem = qobject_cast<NodeItem*>(this->parent());
+    ZASSERT_EXIT(pNodeItem);
+    const QString& nodeName = pNodeItem->objCls;
     if (nodeName == "SubInput" || nodeName == "SubOutput")
     {
         bool bInput = nodeName == "SubInput";
-        const QString& subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
+        QModelIndex nodeIdx = pNodeItem->nodeIdx();
+        ZASSERT_EXIT(nodeIdx.isValid());
+        QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+        const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
 
         VParamItem* deflItem = m_params->getItem("defl");
         VParamItem* nameItem = m_params->getItem("name");
@@ -970,7 +975,9 @@ void NodeParamModel::onLinkAdded(const VParamItem* pItem)
         return;
 
     //dynamic socket from MakeList/Dict and ExtractDict
-    QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+    NodeItem *pNodeItem = qobject_cast<NodeItem*>(this->parent());
+    ZASSERT_EXIT(pNodeItem);
+    QString nodeCls = pNodeItem->objCls;
     QStringList lst;
     if (nodeCls == "ExtractDict") {
         lst = sockNames(PARAM_OUTPUT);

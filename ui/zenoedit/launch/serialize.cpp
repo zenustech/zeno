@@ -11,6 +11,8 @@
 
 using namespace JsonHelper;
 
+#define BASE_TREEMODEL
+
 QSet<QString> lightCameraNodes({
     "CameraEval", "CameraNode", "CihouMayaCameraFov", "ExtractCameraData", "GetAlembicCamera","MakeCamera",
     "LightNode", "BindLight", "ProceduralSky", "HDRSky",
@@ -64,7 +66,15 @@ void resolveOutputSocket(
 }
 
 
-static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false)
+static void serializeGraph(
+                IGraphsModel* pGraphsModel,
+                const QModelIndex& subgIdx,
+                QString const &graphIdPrefix,
+                bool bView,
+                RAPIDJSON_WRITER& writer,
+                bool bNestedSubg = true,
+                bool applyLightAndCameraOnly = false,
+                bool applyMaterialOnly = false)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
@@ -106,9 +116,15 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             {
                 AddStringList({"addSubnetNode", name, ident}, writer);
                 AddStringList({"pushSubnetScope", ident}, writer);
+
+#ifdef BASE_TREEMODEL
+                bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
+                serializeGraph(pGraphsModel, idx, "", _bView, writer, true, applyLightAndCameraOnly);
+#else
                 const QString& prefix = nameMangling(graphIdPrefix, idx.data(ROLE_OBJID).toString());
                 bool _bView = bView && (idx.data(ROLE_OPTIONS).toInt() & OPT_VIEW);
                 serializeGraph(pGraphsModel, pGraphsModel->index(name), prefix, _bView, writer, true, applyLightAndCameraOnly);
+#endif
                 AddStringList({"popSubnetScope", ident}, writer);
             }
         }

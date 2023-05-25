@@ -2,15 +2,17 @@
 #define __TREEMODEL_ACCEPTOR_H__
 
 #include <zenoio/acceptor/iacceptor.h>
+#include "modelacceptor.h"
 #include "modeldata.h"
 
+class GraphsModel;
 class GraphsTreeModel;
 class SubGraphModel;
 
 class TreeAcceptor : public IAcceptor
 {
 public:
-    TreeAcceptor(GraphsTreeModel *pModel, bool bImport);
+    TreeAcceptor(GraphsTreeModel* pModel, GraphsModel* pSubgraphs, bool bImport);
 
     //IAcceptor
     bool setLegacyDescs(const rapidjson::Value &graphObj, const NODE_DESCS &nodesParams) override;
@@ -23,10 +25,10 @@ public:
     bool addNode(const QString &nodeid, const QString &name, const QString &customName,
                  const NODE_DESCS &descriptors) override;
     void setViewRect(const QRectF &rc) override;
-    void setSocketKeys(const QString &id, const QStringList &keys) override;
-    void initSockets(const QString &id, const QString &name, const NODE_DESCS &descs) override;
-    void addDictKey(const QString &id, const QString &keyName, bool bInput) override;
-    void addSocket(bool bInput, const QString &ident, const QString &sockName, const QString &sockProperty) override;
+    void setSocketKeys(const QString& nodePath, const QStringList& keys) override;
+    void initSockets(const QString& nodePath, const QString& name, const NODE_DESCS& descs) override;
+    void addDictKey(const QString& nodePath, const QString& keyName, bool bInput) override;
+    void addSocket(bool bInput, const QString& nodePath, const QString& sockName, const QString& sockProperty) override;
 
     void setInputSocket2(
             const QString &nodeCls,
@@ -69,14 +71,19 @@ public:
     void endParams(const QString &id, const QString &nodeCls) override;
     void addCustomUI(const QString &id, const VPARAM_INFO &invisibleRoot) override;
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
+    void resolveAllLinks() override;
 
 private:
-    void resolveAllLinks();
+    QModelIndex _getNodeIdx(const QString& identOrObjPath);
+    QModelIndex _getSockIdx(const QString& inNode, const QString& sockName, bool bInput);
 
     TIMELINE_INFO m_timeInfo;
-    SubGraphModel* m_currentGraph;
-    GraphsTreeModel* m_pModel;
+    GraphsTreeModel* m_pNodeModel;
+    GraphsModel* m_pSubgraphs;
+    std::shared_ptr<ModelAcceptor> m_pSubgAcceptor;
+    QList<EdgeInfo> m_links;
     bool m_bImport;
+    bool m_bImportMain;        //whether importing main Subgraph right now
 };
 
 

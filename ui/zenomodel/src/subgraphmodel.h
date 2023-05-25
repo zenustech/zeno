@@ -12,7 +12,7 @@
 #include "panelparammodel.h"
 #include "nodeitem.h"
 
-class GraphsModel;
+class IGraphsModel;
 
 class SubGraphModel : public QAbstractItemModel
 {
@@ -21,7 +21,7 @@ class SubGraphModel : public QAbstractItemModel
     friend class AddNodeCommand;
 
 public:
-	explicit SubGraphModel(GraphsModel* pGraphsModel, QObject* parent = nullptr);
+	explicit SubGraphModel(IGraphsModel* pGraphsModel, QObject* parent = nullptr);
 	~SubGraphModel();
 
 	//QAbstractItemModel
@@ -54,7 +54,6 @@ public:
 
     void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info);
     SubGraphModel* clone(GraphsModel* parent);
-    GraphsModel* getGraphsModel() const { return m_pGraphsModel; }
     QModelIndex nodeParamIndex(const QModelIndex &nodeIdx, PARAM_CLASS cls, const QString &paramName) const;;
     ViewParamModel* viewParams(const QModelIndex& index);
     ViewParamModel* nodeParams(const QModelIndex& index);
@@ -87,16 +86,16 @@ private:
     SubGraphModel(const SubGraphModel& rhs);
 
     bool _insertNode(int row, const NODE_DATA& nodeData, const QModelIndex &parent = QModelIndex());
-    bool itemFromIndex(const QModelIndex& index, NodeItem& retNode) const;
+    NodeItem* itemFromIndex(const QModelIndex& index) const;
     bool _removeRow(const QModelIndex &index);
-    NODE_DATA item2NodeData(const NodeItem& item) const;
-    void importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, NodeItem& ret);
+    NODE_DATA item2NodeData(const NodeItem* item) const;
+    NodeItem* importNodeItem(const NODE_DATA &data);
     bool checkCustomName(const QString &name);
 
     QString m_name;
     QHash<QString, int> m_key2Row;
     QHash<int, QString> m_row2Key;
-    QHash<QString, NodeItem> m_nodes;
+    QHash<QString, NodeItem*> m_nodes;
 
     QHash<QString, QSet<QString>> m_name2identLst;
 
@@ -104,7 +103,7 @@ private:
     QHash<QString, uint32_t> m_str2numId;
 
     QRectF m_rect;
-    GraphsModel* m_pGraphsModel;
+    IGraphsModel* m_pGraphsModel;
     QUndoStack* m_stack;
 };
 

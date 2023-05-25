@@ -1291,10 +1291,10 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     }
     else if (wtf.contains(m_bodyWidget))
     {
-        const QString& name = nodeName();
+        const QString& objPath = m_index.data(ROLE_OBJPATH).toString();
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-        QModelIndex subgIdx = pModel->index(name);
-        if (subgIdx.isValid())
+        QModelIndex subgIdx = pModel->indexFromPath(objPath);
+        if (subgIdx.isValid() && pModel->IsSubGraphNode(subgIdx))
         {
             ZenoGraphsEditor* pEditor = getEditorViewByViewport(event->widget());
             if (pEditor)
@@ -1303,7 +1303,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
             }
         }
         // for temp support to show handler via transform node
-        else if (name.contains("TransformPrimitive"))
+        else if (objPath.contains("TransformPrimitive"))
         {
             QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
             for (auto pDisplay : views)

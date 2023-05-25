@@ -217,6 +217,7 @@ void ModelAcceptor::addSocket(bool bInput, const QString& ident, const QString& 
         return;
 
     QModelIndex idx = m_currentGraph->index(ident);
+
     const QString& nodeCls = idx.data(ROLE_OBJNAME).toString();
 
     PARAM_CONTROL ctrl = CONTROL_NONE;
@@ -461,6 +462,7 @@ void ModelAcceptor::setToolTip(PARAM_CLASS cls, const QString &inNode, const QSt
     ZASSERT_EXIT(pModel);
     pModel->setData(sockIdx, toolTip, ROLE_VPARAM_TOOLTIP);
 }
+
 void ModelAcceptor::addInnerDictKey(
             bool bInput,
             const QString& ident,

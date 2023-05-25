@@ -145,11 +145,11 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     if (bNodeUI)
     {
         m_ui->m_coreMappingWidget->hide();
-        m_proxyModel = new NodeParamModel(m_subgIdx, m_model->nodeIdx(), m_pGraphsModel, true, this);
+        m_proxyModel = new NodeParamModel(m_pGraphsModel, true, this);
     }
     else
     {
-        m_proxyModel = new PanelParamModel(m_model->nodeIdx(), m_pGraphsModel, this);
+        m_proxyModel = new PanelParamModel(m_pGraphsModel, this);
     }
 
     m_proxyModel->clone(m_model);
@@ -1040,7 +1040,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 }
                 if (!m_model->isNodeModel()) 
                 {
-                    PanelParamModel *panelParams = QVariantPtr<PanelParamModel>::asPtr(m_model->nodeIdx().data(ROLE_PANEL_PARAMS));
+                    PanelParamModel *panelParams = QVariantPtr<PanelParamModel>::asPtr(m_nodeIdx.data(ROLE_PANEL_PARAMS));
                     ZASSERT_EXIT(panelParams);
                     QModelIndex parent = pTarget->parent()->index();
                     panelParams->moveRow(parent, srcRow, parent, dstRow);

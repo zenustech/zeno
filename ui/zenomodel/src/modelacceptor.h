@@ -81,10 +81,9 @@ public:
 	void endParams(const QString& id, const QString& nodeCls) override;
 	void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) override;
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
+    void resolveAllLinks() override;
 
 private:
-    void resolveAllLinks();
-
 	TIMELINE_INFO m_timeInfo;
 	QList<EdgeInfo> m_subgLinks;	//collected links for m_currentGraph.
 	SubGraphModel* m_currentGraph;

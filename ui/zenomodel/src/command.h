@@ -31,7 +31,7 @@ private:
 class RemoveNodeCommand : public QUndoCommand
 {
 public:
-    RemoveNodeCommand(int row, NODE_DATA data, GraphsModel* pModel, QPersistentModelIndex subgIdx);
+    RemoveNodeCommand(int row, NODE_DATA data, IGraphsModel* pModel, QPersistentModelIndex subgIdx);
     ~RemoveNodeCommand();
     void redo() override;
     void undo() override;
@@ -40,21 +40,21 @@ private:
     QString m_id;
     NODE_DATA m_data;
     QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_model;
+    IGraphsModel* m_model;
     int m_row;
 };
 
 class LinkCommand : public QUndoCommand
 {
 public:
-    LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EdgeInfo& link, GraphsModel *pModel);
+    LinkCommand(const QModelIndex& subgIdx, bool bAddLink, const EdgeInfo& link, IGraphsModel *pModel);
     void redo() override;
     void undo() override;
 
 private:
     const bool m_bAdd;
     const EdgeInfo m_link;
-    GraphsModel* m_model;
+    IGraphsModel* m_model;
     QPersistentModelIndex m_subgIdx;
 };
 
@@ -62,7 +62,7 @@ class UpdateBlackboardCommand : public QUndoCommand
 {
 public:
     UpdateBlackboardCommand(const QString &nodeid, BLACKBOARD_INFO newInfo, BLACKBOARD_INFO oldInfo,
-                            GraphsModel *pModel, QPersistentModelIndex subgIdx);
+                            IGraphsModel *pModel, QPersistentModelIndex subgIdx);
     void redo() override;
     void undo() override;
 
@@ -71,13 +71,13 @@ private:
     BLACKBOARD_INFO m_newInfo;
     QString m_nodeid;
     QPersistentModelIndex m_subgIdx;
-    GraphsModel *m_pModel;
+    IGraphsModel *m_pModel;
 };
 
 class ImportNodesCommand : public QUndoCommand
 {
 public:
-    ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, const QList<EdgeInfo>& links, QPointF pos, GraphsModel *pModel, QPersistentModelIndex subgIdx);
+    ImportNodesCommand(const QMap<QString, NODE_DATA>& nodes, const QList<EdgeInfo>& links, QPointF pos, IGraphsModel *pModel, QPersistentModelIndex subgIdx);
     void redo() override;
     void undo() override;
 
@@ -85,7 +85,7 @@ private:
     const QMap<QString, NODE_DATA> m_nodes;
     const QList<EdgeInfo> m_links;
     QPersistentModelIndex m_subgIdx;
-    GraphsModel* m_model;
+    IGraphsModel* m_model;
     QPointF m_pos;
 };
 

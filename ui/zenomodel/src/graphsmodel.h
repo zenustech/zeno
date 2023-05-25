@@ -138,20 +138,14 @@ public:
     zenoio::ZSG_VERSION ioVersion() const override;
     void setApiRunningEnable(bool bEnable) override;
     bool isApiRunningEnable() const override;
-    bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
-
-signals:
-    void graphRenamed(const QString& oldName, const QString& newName);
+    bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) override;
+    QAbstractItemModel *implModel() override {
+        return nullptr;
+    }
 
 public slots:
     void onCurrentIndexChanged(int);
     void onRemoveCurrentItem();
-
-    void on_subg_dataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
-    void on_subg_rowsAboutToBeInserted(const QModelIndex& parent, int first, int last);
-    void on_subg_rowsInserted(const QModelIndex& parent, int first, int last);
-    void on_subg_rowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
-    void on_subg_rowsRemoved(const QModelIndex& parent, int first, int last);
 
     void on_linkDataChanged(const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles = QVector<int>());
 	void on_linkAboutToBeInserted(const QModelIndex& parent, int first, int last);

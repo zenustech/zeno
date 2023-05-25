@@ -15,10 +15,9 @@ class ViewParamModel : public QStandardItemModel
 {
     Q_OBJECT
 public:
-    explicit ViewParamModel(bool bNodeUI, const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent = nullptr);
+    explicit ViewParamModel(bool bNodeUI, IGraphsModel* pModel, QObject* parent = nullptr);
     ~ViewParamModel();
     virtual void clone(ViewParamModel* pModel);
-    QPersistentModelIndex nodeIdx() const;
     IGraphsModel* graphsModel() const;
     virtual QModelIndex indexFromPath(const QString& path);
     QModelIndex indexFromName(PARAM_CLASS cls, const QString& coreParam);
@@ -47,7 +46,6 @@ signals:
 protected:
     virtual void initUI();
 
-    const QPersistentModelIndex m_nodeIdx;
     IGraphsModel* m_model;
     const bool m_bNodeUI;
     bool m_bDirty;

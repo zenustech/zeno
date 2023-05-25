@@ -12,6 +12,7 @@ class ZenoFullLink;
 class ZenoTempLink;
 class ZenoSocketItem;
 class NodeGridItem;
+class IGraphsModel;
 
 class ZenoSubGraphScene : public QGraphicsScene
 {
@@ -19,7 +20,7 @@ class ZenoSubGraphScene : public QGraphicsScene
 public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     ~ZenoSubGraphScene();
-    void initModel(const QModelIndex& index);
+    void initModel(IGraphsModel* pGraphsModel, const QModelIndex& index);
     void undo();
     void redo();
     void copy();
@@ -61,7 +62,6 @@ public slots:
     void onLinkAboutToBeRemoved(const QModelIndex&, int first, int last);
 
 private slots:
-    void reload(const QModelIndex& subGpIdx);
     void clearLayout(const QModelIndex& subGpIdx);
     void onSocketClicked(ZenoSocketItem* pSocketItem);
     void onNodePosChanged();

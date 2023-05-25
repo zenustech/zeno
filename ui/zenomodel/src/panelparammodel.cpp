@@ -9,10 +9,9 @@
 PanelParamModel::PanelParamModel(
             NodeParamModel* nodeParams,
             VPARAM_INFO root,
-            const QModelIndex& nodeIdx,
             IGraphsModel *pModel,
             QObject *parent)
-    : ViewParamModel(false, nodeIdx, pModel, parent)
+    : ViewParamModel(false, pModel, parent)
 {
     if (!root.children.isEmpty())
         importPanelParam(root);
@@ -22,8 +21,8 @@ PanelParamModel::PanelParamModel(
     connect(nodeParams, &NodeParamModel::rowsAboutToBeRemoved, this, &PanelParamModel::onNodeParamsAboutToBeRemoved);
 }
 
-PanelParamModel::PanelParamModel(const QModelIndex& nodeIdx, IGraphsModel* pModel, QObject* parent)
-    : ViewParamModel(false, nodeIdx, pModel, parent)
+PanelParamModel::PanelParamModel(IGraphsModel* pModel, QObject* parent)
+    : ViewParamModel(false, pModel, parent)
 {
 }
 
@@ -134,7 +133,7 @@ void PanelParamModel::importPanelParam(const VPARAM_INFO& invisibleRoot)
                 if (!coreparam.isEmpty() && (param.m_cls == PARAM_INPUT || param.m_cls == PARAM_OUTPUT))
                 {
                     //register subnet param control.
-                    const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
+                    //const QString &objCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
                     //store control info on desc.
                     //GlobalControlMgr::instance().onParamUpdated(objCls, param.m_cls, coreparam,
                     //                                            paramItem->m_ctrl);

@@ -2,26 +2,31 @@
 #include "graphsmodel.h"
 #include "graphstreemodel.h"
 #include "modelacceptor.h"
+#include "treeacceptor.h"
 
 namespace zeno_model
 {
-    IGraphsModel* createModel(QObject* parent)
+    IGraphsModel* createModel(bool bSharedModel, QObject* parent)
     {
-        return new GraphsModel(parent);
+        if (bSharedModel)
+            return new GraphsModel(parent);
+        else
+            return new GraphsTreeModel(parent);
     }
 
-    IAcceptor* createIOAcceptor(IGraphsModel* pModel, bool bImport)
+    IAcceptor* createIOAcceptor(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphModel, bool bImport)
     {
-        if (GraphsModel* model = qobject_cast<GraphsModel*>(pModel))
+        if (GraphsModel *model = qobject_cast<GraphsModel *>(pNodeModel))
+        {
             return new ModelAcceptor(model, bImport);
+        }
+        else if (GraphsTreeModel *model = qobject_cast<GraphsTreeModel *>(pNodeModel))
+        {
+            GraphsModel* pSubgraphs = qobject_cast<GraphsModel*>(pSubgraphModel);
+            ZASSERT_EXIT(pSubgraphs, nullptr);
+            return new TreeAcceptor(model, pSubgraphs, bImport);
+        }
         else
             return nullptr;
-    }
-
-    QAbstractItemModel* treeModel(IGraphsModel* pModel, QObject* parent)
-    {
-        GraphsTreeModel* pTreeModel = new GraphsTreeModel(parent);
-        pTreeModel->init(pModel);
-        return pTreeModel;
     }
 }

@@ -7,6 +7,7 @@
 #include <zeno/utils/scope_exit.h>
 #include "common_def.h"
 #include <zenoio/writer/zsgwriter.h>
+#include "graphstreemodel.h"
 
 
 class IOBreakingScope
@@ -29,8 +30,7 @@ private:
 
 GraphsManagment::GraphsManagment(QObject* parent)
     : QObject(parent)
-    , m_model(nullptr)
-    , m_pTreeModel(nullptr)
+    , m_pNodeModel(nullptr)
     , m_logModel(nullptr)
 {
      m_logModel = new QStandardItemModel(this);
@@ -47,7 +47,12 @@ GraphsManagment& GraphsManagment::instance() {
 
 IGraphsModel* GraphsManagment::currentModel()
 {
-    return m_model;
+    return m_pNodeModel;
+}
+
+IGraphsModel* GraphsManagment::sharedSubgraphs()
+{
+    return m_pSharedGraphs;
 }
 
 QStandardItemModel* GraphsManagment::logModel() const
@@ -55,53 +60,50 @@ QStandardItemModel* GraphsManagment::logModel() const
     return m_logModel;
 }
 
-void GraphsManagment::setCurrentModel(IGraphsModel* model)
+void GraphsManagment::setGraphsModel(IGraphsModel* model, IGraphsModel* pSubgraphsModel)
 {
     clear();
-    m_model = model;
-    m_pTreeModel = zeno_model::treeModel(m_model, this);
+    m_pNodeModel = model;
+    m_pSharedGraphs = pSubgraphsModel;
 
-    emit modelInited(m_model);
-    connect(m_model, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
-    connect(m_model, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
+    emit modelInited(m_pNodeModel, m_pSharedGraphs);
+    connect(m_pNodeModel, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
+    connect(m_pNodeModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
         this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
-    connect(m_model, &IGraphsModel::dirtyChanged, this, [=]() {
-        emit dirtyChanged(m_model->isDirty());
+    connect(m_pNodeModel, &IGraphsModel::dirtyChanged, this, [=]() {
+        emit dirtyChanged(m_pNodeModel->isDirty());
     });
-}
-
-QAbstractItemModel* GraphsManagment::treeModel()
-{
-    return m_pTreeModel;
 }
 
 IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
 {
-    IGraphsModel* pModel = zeno_model::createModel(this);
-
+    IGraphsModel* pNodeModel = zeno_model::createModel(false, this);
+    //todo: when the io version is 2.5, should reuse the io code to init subgraph model.
+    IGraphsModel *pSubgraphsModel = zeno_model::createModel(true, this);
     {
-        IOBreakingScope batch(pModel);
-        std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
+        IOBreakingScope batch(pNodeModel);
+        std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pNodeModel, pSubgraphsModel, false));
+        ZASSERT_EXIT(acceptor, nullptr);
         bool ret = ZsgReader::getInstance().openFile(fn, acceptor.get());
         m_timerInfo = acceptor->timeInfo();
         if (!ret)
             return nullptr;
     }
 
-    pModel->clearDirty();
-    setCurrentModel(pModel);
+    pNodeModel->clearDirty();
+    setGraphsModel(pNodeModel, pSubgraphsModel);
     emit fileOpened(fn);
-    return pModel;
+    return pNodeModel;
 }
 
 bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
 {
-    if (m_model == nullptr) {
+    if (m_pNodeModel == nullptr) {
         zeno::log_error("The current model is empty.");
         return false;
     }
 
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(m_model, settings);
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(m_pNodeModel, settings);
     QFile f(filePath);
     zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());
     if (!f.open(QIODevice::WriteOnly)) {
@@ -115,8 +117,8 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
     f.close();
     zeno::log_debug("saved successfully");
 
-    m_model->setFilePath(filePath);
-    m_model->clearDirty();
+    m_pNodeModel->setFilePath(filePath);
+    m_pNodeModel->clearDirty();
 
     QFileInfo info(filePath);
     emit fileSaved(filePath);
@@ -125,37 +127,41 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
 
 IGraphsModel* GraphsManagment::newFile()
 {
-    IGraphsModel* pModel = zeno_model::createModel(this);
+    IGraphsModel *pSubgrahsModel = zeno_model::createModel(true, this);
+    IGraphsModel* pModel = zeno_model::createModel(false, this);
     pModel->initMainGraph();
-    setCurrentModel(pModel);
+
+    GraphsTreeModel *pNodeModel = qobject_cast<GraphsTreeModel *>(pModel);
+    ZASSERT_EXIT(pNodeModel, nullptr);
+    pNodeModel->initSubgraphs(pSubgrahsModel);
+
+    setGraphsModel(pModel, pSubgrahsModel);
     return pModel;
 }
 
 void GraphsManagment::importGraph(const QString& fn)
 {
-    if (!m_model)
+    if (!m_pSharedGraphs)
         return;
 
-    IOBreakingScope batch(m_model);
-    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_model, true));
-	if (!ZsgReader::getInstance().openFile(fn, acceptor.get()))
-	{
-		zeno::log_error("failed to open zsg file: {}", fn.toStdString());
-		return;
-	}
+    IOBreakingScope batch(m_pSharedGraphs);
+    std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(m_pSharedGraphs, nullptr, true));
+    ZASSERT_EXIT(acceptor);
+    if (!ZsgReader::getInstance().openFile(fn, acceptor.get()))
+    {
+        zeno::log_error("failed to open zsg file: {}", fn.toStdString());
+        return;
+    }
 }
 
 void GraphsManagment::clear()
 {
-    if (m_model)
+    if (m_pNodeModel)
     {
-        m_model->clear();
+        m_pNodeModel->clear();
 
-        delete m_model;
-        m_model = nullptr;
-
-        delete m_pTreeModel;
-        m_pTreeModel = nullptr;
+        delete m_pNodeModel;
+        m_pNodeModel = nullptr;
 
         for (auto scene : m_scenes)
         {
@@ -163,12 +169,18 @@ void GraphsManagment::clear()
         }
         m_scenes.clear();
     }
+    if (m_pSharedGraphs)
+    {
+        m_pSharedGraphs->clear();
+        delete m_pSharedGraphs;
+        m_pSharedGraphs = nullptr;
+    }
     emit fileClosed();
 }
 
 void GraphsManagment::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
 {
-    const QModelIndex& idx = m_model->index(first, 0);
+    const QModelIndex& idx = m_pNodeModel->index(first, 0);
     if (idx.isValid())
     {
         const QString& subgName = idx.data(ROLE_OBJNAME).toString();
@@ -195,7 +207,7 @@ void GraphsManagment::onModelDataChanged(const QModelIndex& subGpIdx, const QMod
 
 void GraphsManagment::removeCurrent()
 {
-    if (m_model) {
+    if (m_pNodeModel) {
         
     }
 }
@@ -205,16 +217,15 @@ QGraphicsScene* GraphsManagment::gvScene(const QModelIndex& subgIdx) const
     if (!subgIdx.isValid())
         return nullptr;
 
-    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& subgName = subgIdx.data(ROLE_OBJPATH).toString();
     if (m_scenes.find(subgName) == m_scenes.end())
         return nullptr;
-
     return m_scenes[subgName];
 }
 
 void GraphsManagment::addScene(const QModelIndex& subgIdx, QGraphicsScene* scene)
 {
-    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+    const QString& subgName = subgIdx.data(ROLE_OBJPATH).toString();
     if (m_scenes.find(subgName) != m_scenes.end() || !scene)
         return;
     m_scenes.insert(subgName, scene);

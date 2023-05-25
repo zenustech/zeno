@@ -28,12 +28,13 @@ class ZenoGraphsEditor : public QWidget
 public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
+    void activateTabOfTree(const QString& path, const QString& nodeid = "");
     void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
     void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
 
 public slots:
-	void resetModel(IGraphsModel* pModel);
+	void resetModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs);
     void sideButtonToggled(bool bToggled);
     void onSideBtnToggleChanged(const QItemSelection& selected, const QItemSelection& deselected);
     void onCurrentChanged(const QModelIndex& current, const QModelIndex& previous);
@@ -71,7 +72,8 @@ private:
 
     ZenoMainWindow* m_mainWin;
     Ui::GraphsEditor* m_ui;
-    IGraphsModel* m_model;
+    IGraphsModel* m_pNodeModel;
+    IGraphsModel* m_pSubgraphs;
     QItemSelectionModel* m_selection;
     QStandardItemModel* m_sideBarModel;
     int m_searchOpts;

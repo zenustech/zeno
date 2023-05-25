@@ -56,7 +56,6 @@ public:
 	 */
 	virtual QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) = 0;
 
-
 	virtual void updateParamInfo(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateSocketDefl(const QString& id, PARAM_UPDATE_INFO info, const QModelIndex& subGpIdx, bool enableTransaction = false) = 0;
 	virtual void updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction = false) = 0;
@@ -115,16 +114,19 @@ public:
 	virtual zenoio::ZSG_VERSION ioVersion() const = 0;
     virtual void setApiRunningEnable(bool bEnable) = 0;
     virtual bool isApiRunningEnable() const = 0;
-    virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) const = 0;
+    virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) = 0;
+	//temp:
+    virtual QAbstractItemModel *implModel() = 0;
+
 
 signals:
 	void clearLayout2();
 	void modelClear();
 	void dirtyChanged();
 	void pathChanged(const QString& path);
-	void reloaded(const QModelIndex& subGpIdx);
 	void clearLayout(const QModelIndex& subGpIdx);
 	void apiBatchFinished(/*todo: yield msg*/);
+	void graphRenamed(const QString &oldName, const QString &newName);
 	void _dataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
 	void _rowsAboutToBeInserted(const QModelIndex& parent, int first, int last);
 	void _rowsInserted(const QModelIndex& subGpIdx, const QModelIndex&, int, int);
