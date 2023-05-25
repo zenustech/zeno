@@ -246,6 +246,56 @@ void primSampleTexture(
 ) {
     return primSampleTexture(prim, srcChannel, uvSource, dstChannel, img, wrap, "nearest", borderColor, remapMin, remapMax);;
 }
+
+static vec2i uv_to_tex(vec2f texCoord, int w, int h) {
+    int x = (int)(texCoord[0] * w - 0.5f) % w;
+    int y = (int)(texCoord[1] * h - 0.5f) % h;
+    x = x < 0 ? w + x : x;
+    y = y < 0 ? h + y : y;
+    return {x, y};
+}
+
+static vec3f getColor(vec2i tex, vec3f* data, int w, int h) {
+    tex[0] = tex[0] % w;
+    tex[1] = tex[1] % h;
+    int index = tex[1] * w + tex[0];
+    return data[index];
+}
+
+static vec3f getColorClamp(vec2i tex, vec3f* data, int w, int h) {
+    tex[0] = zeno::clamp(tex[0], 0, w-1);
+    tex[1] = zeno::clamp(tex[1], 0, h-1);
+    int index = tex[1] * w + tex[0];
+    return data[index];
+}
+
+static vec3f Sample2DLinear(vec2f texCoord, vec3f* data, int w, int h) {
+    texCoord = texCoord * vec2f(w, h) - vec2f(0.5f);
+    vec2f f = fract(texCoord);
+    int x = (int)(texCoord[0]) % w;
+    int y = (int)(texCoord[1]) % h;
+    x = x < 0 ? w + x : x;
+    y = y < 0 ? h + y : y;
+    vec3f s1 = getColor(vec2i(x,y), data, w, h);
+    vec3f s2 = getColor(vec2i(x+1,y), data, w, h);
+    vec3f s3 = getColor(vec2i(x,y+1), data, w, h);
+    vec3f s4 = getColor(vec2i(x+1,y+1), data, w, h);
+    return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
+}
+
+static vec3f Sample2DLinearClamp(vec2f texCoord, vec3f* data, int w, int h) {
+    texCoord = texCoord * vec2f(w, h) - vec2f(0.5f);
+    vec2f f = fract(texCoord);
+    int x = (int)(texCoord[0]) % w;
+    int y = (int)(texCoord[1]) % h;
+    x = x < 0 ? w + x : x;
+    y = y < 0 ? h + y : y;
+    vec3f s1 = getColorClamp(vec2i(x,y), data, w, h);
+    vec3f s2 = getColorClamp(vec2i(x+1,y), data, w, h);
+    vec3f s3 = getColorClamp(vec2i(x,y+1), data, w, h);
+    vec3f s4 = getColorClamp(vec2i(x+1,y+1), data, w, h);
+    return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
+}
 struct PrimSample2D : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
@@ -256,9 +306,66 @@ struct PrimSample2D : zeno::INode {
         auto wrap = get_input2<std::string>("wrap");
         auto filter = get_input2<std::string>("filter");
         auto borderColor = get_input2<vec3f>("borderColor");
-        auto remapMin = get_input2<float>("remapMin");
-        auto remapMax = get_input2<float>("remapMax");
-        primSampleTexture(prim, srcChannel, srcSource, dstChannel, image, wrap, filter, borderColor, remapMin, remapMax);
+
+        if (!image->userData().has("isImage")) {
+            throw zeno::Exception("not an image");
+        }
+        auto w = image->userData().get2<int>("w");
+        auto h = image->userData().get2<int>("h");
+
+        auto &uvs = prim->attr<zeno::vec3f>(srcChannel);
+        auto &clrs = prim->add_attr<zeno::vec3f>(dstChannel);
+        std::function<zeno::vec3f(vec3f, const vec3f*, int, int, vec3f)> queryColor;
+        if (filter == "nearest") {
+            for (auto i = 0; i < uvs.size(); i++) {
+                if (wrap == "REPEAT") {
+                    vec2f uv = {uvs[i][0], uvs[i][1]};
+                    vec2i texuv = uv_to_tex(uv, w, h);
+                    clrs[i] = getColor(texuv, image->verts->data(), w, h);
+                }
+                else if (wrap == "CLAMP_TO_EDGE") {
+                    vec2f uv = {uvs[i][0], uvs[i][1]};
+                    uv = zeno::clamp(uv, 0, 1);
+                    vec2i texuv = uv_to_tex(uv, w, h);
+                    clrs[i] = getColor(texuv, image->verts->data(), w, h);
+                }
+                else if (wrap == "CLAMP_TO_BORDER") {
+                    vec2f uv = {uvs[i][0], uvs[i][1]};
+                    uv = zeno::clamp(uv, 0, 1);
+                    vec2i texuv = uv_to_tex(uv, w, h);
+                    if (uv[0] != uvs[i][0] || uv[1] != uvs[i][1]) {
+                        clrs[i] = borderColor;
+                    }
+                    else {
+                        clrs[i] = getColor(texuv, image->verts->data(), w, h);
+                    }
+                }
+            }
+        }
+        else {
+            for (auto i = 0; i < uvs.size(); i++) {
+                vec2f uv = {uvs[i][0], uvs[i][1]};
+                if (wrap == "REPEAT") {
+                    vec2f uv = {uvs[i][0], uvs[i][1]};
+                    clrs[i] = Sample2DLinear(uv, image->verts->data(), w, h);
+                }
+                else if (wrap == "CLAMP_TO_EDGE") {
+                    vec2f uv = {uvs[i][0], uvs[i][1]};
+                    uv = zeno::clamp(uv, 0, 1);
+                    clrs[i] = Sample2DLinearClamp(uv, image->verts->data(), w, h);
+                }
+                else if (wrap == "CLAMP_TO_BORDER") {
+                    vec2f uv = {uvs[i][0], uvs[i][1]};
+                    uv = zeno::clamp(uv, 0, 1);
+                    if ((uv[0] != uvs[i][0] || uv[1] != uvs[i][1])) {
+                        clrs[i] = borderColor;
+                    }
+                    else {
+                        clrs[i] = Sample2DLinearClamp(uv, image->verts->data(), w, h);
+                    }
+                }
+            }
+        }
 
         set_output("outPrim", std::move(prim));
     }
