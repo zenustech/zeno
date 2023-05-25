@@ -12,7 +12,7 @@ public:
     virtual QSize sizeHint() const override;
     void setFromTo(int from, int to);
     int value() const;
-    void updateKeyFrames(QVector<int> keys);
+    void updateKeyFrames(const QVector<int> &keys);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

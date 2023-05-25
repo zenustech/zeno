@@ -112,6 +112,7 @@ void ZenoPropPanel::clearLayout()
     setUpdatesEnabled(true);
     m_tabWidget = nullptr;
     m_controls.clear();
+    m_floatColtrols.clear();
 
     if (m_idx.isValid())
     {
@@ -1016,7 +1017,6 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
                 }
             }
             newVal = QVariant::fromValue(val);
-            updateTimelineKeys(val);
         } else
         {
             if (ZLineEdit *lineEdit = qobject_cast<ZLineEdit *>(ctrl.pControl)) {
@@ -1024,9 +1024,10 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
             } else if (ZVecEditor *lineEdit = qobject_cast<ZVecEditor *>(ctrl.pControl)) {
                 newVal = QVariant::fromValue(lineEdit->text());
             }
-            updateTimelineKeys(CURVES_DATA());
+            val = CURVES_DATA();
         }
         AppHelper::socketEditFinished(newVal, m_idx, ctrl.m_viewIdx);
+        updateTimelineKeys(val);
     });
     CURVES_DATA curves = getCurvesData(ctrl.m_viewIdx, keys);
     if (curves.size() > 1)
@@ -1096,18 +1097,10 @@ CURVES_DATA ZenoPropPanel::getCurvesData(const QPersistentModelIndex &perIdx, co
 }
 void ZenoPropPanel::updateTimelineKeys(const CURVES_DATA &curves) 
 {
-    QVector<int> keys;
-    for (auto curve : curves) {
-        for (auto key : curve.pointBases()) {
-            if (!keys.contains(key)) {
-                keys << key;
-            }
-        }
-
-    }
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
+    QVector<int> keys = m_idx.data(ROLE_KEYFRAMES).value<QVector<int>>();
     timeline->updateKeyFrames(keys);
 }

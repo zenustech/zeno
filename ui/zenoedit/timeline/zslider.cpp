@@ -98,7 +98,7 @@ int ZSlider::value() const
     return m_value;
 }
 
-void ZSlider::updateKeyFrames(QVector<int> keys) 
+void ZSlider::updateKeyFrames(const QVector<int> &keys) 
 {
     m_keyframes = keys;
     update();

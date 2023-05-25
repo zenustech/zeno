@@ -236,8 +236,6 @@ bool ZFloatLineEdit::event(QEvent *event)
         } 
         else if (event->type() == QEvent::FocusOut) {
             updateCurveData();
-        } else if (event->type() == QEvent::FocusIn && getKeyFrame(curve)) {
-            timeline->updateKeyFrames(curve.pointBases());
         }
     }
     ZLineEdit::event(event);

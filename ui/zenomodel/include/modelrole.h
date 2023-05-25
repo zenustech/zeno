@@ -67,6 +67,8 @@ enum MODEL_ROLE
 	ROLE_VPARAM_CTRL_PROPERTIES,
 	ROLE_VPARAM_LINK_MODEL,     // a qstandarditem model to represent the collection of the links for a socket.
     ROLE_VPARAM_TOOLTIP,
+
+    ROLE_KEYFRAMES,
 };
 
 enum LOG_ROLE

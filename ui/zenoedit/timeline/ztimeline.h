@@ -21,7 +21,7 @@ public:
     void resetSlider();
     int value() const;
     bool isPlayToggled() const;
-    void updateKeyFrames(QVector<int> keys);
+    void updateKeyFrames(const QVector<int>& keys);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

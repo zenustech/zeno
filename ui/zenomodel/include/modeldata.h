@@ -360,6 +360,8 @@ struct CURVE_DATA {
         return cpbases;
     }
     float eval(float cf) const {
+        if (points.isEmpty())
+            return 0;
         QVector<qreal> cpbases;
         for (auto point : points) {
             cpbases << point.point.x();
