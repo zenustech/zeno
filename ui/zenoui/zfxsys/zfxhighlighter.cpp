@@ -66,7 +66,7 @@ void ZfxHighlighter::initRules()
 
 void ZfxHighlighter::highlightCurrentLine()
 {
-	if (!m_pTextEdit || m_pTextEdit->isReadOnly()) return;
+	if (!m_pTextEdit || m_pTextEdit->isReadOnly() || !m_pTextEdit->hasFocus()) return;
 
 	QList<QTextEdit::ExtraSelection> extraSelections;
 	QTextEdit::ExtraSelection selection;
