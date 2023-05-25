@@ -310,6 +310,14 @@ std::shared_ptr<PrimitiveObject> flipimage(std::shared_ptr<PrimitiveObject> src,
         imagefxy->verts.attr<float>("alpha") = src->verts.attr<float>("alpha");
     }
     if(flipX && flipY){
+        if(imagefxy->verts.has_attr("alpha")){
+            for(int i = 0;i < h;i++){
+                for(int j = 0;j < w;j++){
+                    imagefxy->verts[i * w + j] = src->verts[(h-i-1) * w + (w-j-1)];
+                    imagefxy->verts.attr<float>("alpha")[i * w + j] = src->verts.attr<float>("alpha")[(h-i-1) * w + (w-j-1)];
+                }
+            }
+        }
         for(int i = 0;i < h;i++){
             for(int j = 0;j < w;j++){
                 imagefxy->verts[i * w + j] = src->verts[(h-i-1) * w + (w-j-1)];
@@ -317,6 +325,14 @@ std::shared_ptr<PrimitiveObject> flipimage(std::shared_ptr<PrimitiveObject> src,
         }
     }
     else if(flipX && !flipY){
+        if(imagefxy->verts.has_attr("alpha")){
+            for(int i = 0;i < h;i++){
+                for(int j = 0;j < w;j++){
+                    imagefxy->verts[i * w + j] = src->verts[(h-i-1) * w + j];
+                    imagefxy->verts.attr<float>("alpha")[i * w + j] = src->verts.attr<float>("alpha")[(h-i-1) * w + j];
+                }
+            }
+        }
         for(int i = 0;i < h;i++){
             for(int j = 0;j < w;j++){
                 imagefxy->verts[i * w + j] = src->verts[(h-i-1) * w + j];
@@ -324,6 +340,14 @@ std::shared_ptr<PrimitiveObject> flipimage(std::shared_ptr<PrimitiveObject> src,
         }
     }
     else if(!flipX && flipY){
+        if(imagefxy->verts.has_attr("alpha")){
+            for(int i = 0;i < h;i++){
+                for(int j = 0;j < w;j++){
+                    imagefxy->verts[i * w + j] = src->verts[i * w + (w-j-1)];
+                    imagefxy->verts.attr<float>("alpha")[i * w + j] = src->verts.attr<float>("alpha")[i * w + (w-j-1)];
+                }
+            }
+        }
         for(int i = 0;i < h;i++){
             for(int j = 0;j < w;j++){
                 imagefxy->verts[i * w + j] = src->verts[i * w + (w-j-1)];
@@ -794,84 +818,82 @@ ZENDEFNODE(Composite, {
     { "comp" },
 });
 
-
-//replaced by Composite
 /*
 struct CompositeCV: INode {
-virtual void apply() override {
-auto image1 = get_input<PrimitiveObject>("Foreground");
-auto image2 = get_input<PrimitiveObject>("Background");
-auto mode = get_input2<std::string>("mode");
-auto Alpha1 = get_input2<float>("Alpha1");
-auto Alpha2 = get_input2<float>("Alpha2");
-auto &a1 = image1->verts.attr<float>("alpha");
-auto &a2 = image2->verts.attr<float>("alpha");
+    virtual void apply() override {
+        auto image1 = get_input<PrimitiveObject>("Foreground");
+        auto image2 = get_input<PrimitiveObject>("Background");
+        auto mode = get_input2<std::string>("mode");
+        auto Alpha1 = get_input2<float>("Alpha1");
+        auto Alpha2 = get_input2<float>("Alpha2");
+        auto &a1 = image1->verts.attr<float>("alpha");
+        auto &a2 = image2->verts.attr<float>("alpha");
 
-auto &ud1 = image1->userData();
-int w1 = ud1.get2<int>("w");
-int h1 = ud1.get2<int>("h");
-auto &ud2 = image2->userData();
-int w2 = ud2.get2<int>("w");
-int h2 = ud2.get2<int>("h");
+        auto &ud1 = image1->userData();
+        int w1 = ud1.get2<int>("w");
+        int h1 = ud1.get2<int>("h");
+        auto &ud2 = image2->userData();
+        int w2 = ud2.get2<int>("w");
+        int h2 = ud2.get2<int>("h");
 
-cv::Mat imagecvin1(h1, w1, CV_32FC3);
-cv::Mat imagecvin2(h2, w2, CV_32FC3);
-cv::Mat imagecvadd(h1, w1, CV_32FC3);
-cv::Mat imagecvsub(h1, w1, CV_32FC3);
-cv::Mat imagecvout(h1, w1, CV_32FC3);
+        cv::Mat imagecvin1(h1, w1, CV_32FC3);
+        cv::Mat imagecvin2(h2, w2, CV_32FC3);
+        cv::Mat imagecvadd(h1, w1, CV_32FC3);
+        cv::Mat imagecvsub(h1, w1, CV_32FC3);
+        cv::Mat imagecvout(h1, w1, CV_32FC3);
 
-for (int i = 0; i < h1; i++) {
-    for (int j = 0; j < w1; j++) {
-        vec3f rgb = image1->verts[i * w1 + j];
-        imagecvin1.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+        for (int i = 0; i < h1; i++) {
+            for (int j = 0; j < w1; j++) {
+                vec3f rgb = image1->verts[i * w1 + j];
+                imagecvin1.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        for (int i = 0; i < h2; i++) {
+            for (int j = 0; j < w2; j++) {
+                vec3f rgb = image2->verts[i * w2 + j];
+                imagecvin2.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        cv::resize(imagecvin2, imagecvin2,imagecvin1.size());
+        if(mode == "Add"){
+            cv::addWeighted(imagecvin1, Alpha1, imagecvin2, Alpha2, 0, imagecvout);
+        }
+        if(mode == "Subtract"){
+            cv::subtract(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
+        }
+        if(mode == "Multiply"){
+            cv::multiply(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
+        }
+        if(mode == "Divide"){
+            cv::divide(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout, 1,  -1);
+        }
+        if(mode == "Diff"){
+            cv::absdiff(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
+        }
+
+        for (int i = 0; i < h1; i++) {
+            for (int j = 0; j < w1; j++) {
+                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
+                image1->verts[i * w1 + j] = {rgb[0], rgb[1], rgb[2]};
+            }
+        }
+        set_output("image", image1);
     }
-}
-for (int i = 0; i < h2; i++) {
-    for (int j = 0; j < w2; j++) {
-        vec3f rgb = image2->verts[i * w2 + j];
-        imagecvin2.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-    }
-}
-cv::resize(imagecvin2, imagecvin2,imagecvin1.size());
-if(mode == "Add"){
-    cv::addWeighted(imagecvin1, Alpha1, imagecvin2, Alpha2, 0, imagecvout);
-}
-if(mode == "Subtract"){
-    cv::subtract(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
-}
-if(mode == "Multiply"){
-    cv::multiply(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
-}
-if(mode == "Divide"){
-    cv::divide(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout, 1,  -1);
-}
-if(mode == "Diff"){
-    cv::absdiff(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
-}
-
-for (int i = 0; i < h1; i++) {
-    for (int j = 0; j < w1; j++) {
-        cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-        image1->verts[i * w1 + j] = {rgb[0], rgb[1], rgb[2]};
-    }
-}
-set_output("image", image1);
-}
 };
 
 ZENDEFNODE(CompositeCV, {
-{
-{"Foreground"},
-{"Background"},
-{"enum Add Subtract Multiply Divide Diff", "mode", "Add"},
-{"float", "Alpha1", "1"},
-{"float", "Alpha2", "1"},
-},
-{
-{"image"}
-},
-{},
-{ "comp" },
+    {
+        {"Foreground"},
+        {"Background"},
+        {"enum Add Subtract Multiply Divide Diff", "mode", "Add"},
+        {"float", "Alpha1", "1"},
+        {"float", "Alpha2", "1"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "comp" },
 });
 */
 
@@ -1933,7 +1955,6 @@ ZENDEFNODE(EdgeDetect, {
     {},
     { "comp" },
 });
-
 
 struct EdgeDetect_sobel : INode {
     void apply() override {
