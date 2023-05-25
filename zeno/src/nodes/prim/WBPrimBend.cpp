@@ -12,13 +12,12 @@
 #include <zeno/utils/orthonormal.h>
 #include <zeno/utils/variantswitch.h>
 #include <zeno/utils/arrayindex.h>
-#include <zeno/utils/wangsrng.h>
 #include <zeno/utils/log.h>
 
 #include <glm/gtx/quaternion.hpp>
 #include <random>
-#include <numeric>
 #include <sstream>
+#include <ctime>
 
 namespace zeno
 {
@@ -129,43 +128,6 @@ ZENDEFNODE(WBPrimBend,
                    "primitive",
                }});
 
-struct PrintPrimInfo : INode {
-    void apply() override
-    {
-        auto prim = get_input<PrimitiveObject>("prim");
-
-        if (get_param<bool>("printInfo"))
-        {
-            const std::vector<std::string>& myKeys = prim->attr_keys();
-            printf("--------------------------------\n");
-            printf("wb-Debug ==> vert has attr :\n");
-            for (const std::string& i : myKeys)
-            {
-                printf("wb-Debug ==> vertAttr.%s\n", i.c_str());
-            }
-            printf("--------------------------------\n");
-            printf("wb-Debug ==> vertsCount = %i\n", int(prim->verts.size()));
-            printf("wb-Debug ==> pointsCount = %i\n", int(prim->points.size()));
-            printf("wb-Debug ==> linesCount = %i\n", int(prim->lines.size()));
-            printf("wb-Debug ==> trisCount = %i\n", int(prim->tris.size()));
-            printf("wb-Debug ==> quadsCount = %i\n", int(prim->quads.size()));
-            printf("--------------------------------\n");
-        }
-
-        set_output("prim", std::move(prim));
-    }
-};
-ZENDEFNODE(PrintPrimInfo,
-           { /* inputs: */ {
-                   "prim",
-               }, /* outputs: */ {
-                   "prim",
-               }, /* params: */ {
-                   {"int", "printInfo", "1"},
-               }, /* category: */ {
-                   "primitive",
-               } });
-
 struct CreateCircle : INode {
     void apply() override
     {
@@ -202,7 +164,7 @@ ZENDEFNODE(CreateCircle,
 struct ParameterizeLine : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        if(! prim->lines.has_attr("parameterization")) {
+        if(!prim->lines.has_attr("parameterization")) {
             prim->lines.add_attr<float>("parameterization");
             float total = 0;
             std::vector<float> linesLen(prim->lines.size());
@@ -239,7 +201,7 @@ struct LineResample : INode {
         auto segments = get_input<NumericObject>("segments")->get<int>();
         if (segments < 1) { segments = 1; }
         std::vector<float> linesLen(prim->lines.size());
-        if(! prim->lines.has_attr("parameterization")) {
+        if(!prim->lines.has_attr("parameterization")) {
             prim->lines.add_attr<float>("parameterization");
             float total = 0;
             for (size_t i = 0; i < prim->lines.size(); i++) {
@@ -300,10 +262,12 @@ struct LineResample : INode {
 #pragma omp parallel for
         for(size_t i=0; i<retprim->size();i++) {
             float insertU = retprim->attr<float>("t")[i];
-            auto it = std::lower_bound(linesLen.begin(), linesLen.end(), insertU);
+            auto it = std::upper_bound(linesLen.begin(), linesLen.end(), insertU);
             size_t index = it - linesLen.begin();
             index = std::min(index, prim->lines.size() - 1);
-            if (index <= 0) continue;
+
+            // if (index <= 0) continue;
+
             auto const& ind = prim->lines[index];
             auto a = prim->verts[ind[0]];
             auto b = prim->verts[ind[1]];
@@ -649,43 +613,47 @@ ZENDEFNODE(TracePositionOneStep,
                    "visualize",
                }});
 
-struct PrimCopyFloatAttr : INode {
+struct PrimCopyAttr : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-
         auto sourceName = get_input<StringObject>("sourceName")->get();
-        if (!prim->verts.has_attr(sourceName))
-        {
-            zeno::log_error("no such attr named '{}'.", sourceName);
-        }
-        auto& sourceAttr = prim->verts.attr<float>(sourceName); // 源属性
-
         auto targetName = get_input<StringObject>("targetName")->get();
-        if (!prim->verts.has_attr(targetName))
-        {
-            prim->verts.add_attr<float>(targetName);
-        }
-        auto& targetAttr = prim->verts.attr<float>(targetName); // 目标属性
+        auto type = get_input2<std::string>("type");
 
+        if (!prim->verts.has_attr(sourceName))
+            zeno::log_error("no such attr named '{}'.", sourceName);
+        if (prim->verts.has_attr(targetName))
+            zeno::log_warn("already has such attr named '{}'.", targetName);
+
+        std::visit(
+            [&](auto ty) {
+              using T = decltype(ty);
+
+              auto &sourceAttr = prim->verts.attr<T>(sourceName);     // 源属性
+              auto &targetAttr = prim->verts.add_attr<T>(targetName); // 目标属性
 #pragma omp parallel for
-        for (intptr_t i = 0; i < prim->verts.size(); i++)
-        {
-            targetAttr[i] = sourceAttr[i];
-        }
+              for (intptr_t i = 0; i < prim->verts.size(); i++) {
+                  targetAttr[i] = sourceAttr[i];
+              }
+            },
+            enum_variant<std::variant<float, vec2f, vec3f, vec4f, int, vec2i, vec3i, vec4i>>(
+                array_index({"float", "vec2f", "vec3f", "vec4f", "int", "vec2i", "vec3i", "vec4i"}, type)));
 
+//        prim->verts.erase_attr(sourceName);
         set_output("prim", std::move(prim));
     }
 };
-ZENDEFNODE(PrimCopyFloatAttr,
+ZENDEFNODE(PrimCopyAttr,
            { /* inputs: */ {
                    "prim",
                    {"string", "sourceName", "s"},
                    {"string", "targetName", "t"},
+                   {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "float"},
                }, /* outputs: */ {
                    "prim",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "erode",
                }});
 
 
@@ -856,7 +824,7 @@ ZENDEFNODE(HeightStarPattern,
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// 2023.01.05 节点图中自撸循环，遍历 prim 设置/获取属性
+// 2023.01.05 节点图中自撸循环，遍历 prim 设置 /获取属性
 ///////////////////////////////////////////////////////////////////////////////
 // Set Attr
 struct PrimSetAttr : INode {
@@ -914,7 +882,7 @@ ZENDEFNODE(PrimSetAttr,
                    "prim",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "erode",
                }});
 
 // Get Attr
@@ -963,23 +931,36 @@ ZENDEFNODE(PrimGetAttr,
                    "value",
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive",
+                   "erode",
                }});
 
 // 删除多个属性
 struct PrimitiveDelAttrs : zeno::INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        auto name = get_param<std::string>("name");
+        auto invert = get_input2<bool>("invert");
+        auto nameString = get_input2<std::string>("names");
 
-        std::istringstream sname(name);
         std::vector<std::string> names;
-        std::string aname;
-        while(sname >> aname) {
-            prim->verts.attrs.erase(aname);
-            prim->tris.attrs.erase(aname);
-            prim->quads.attrs.erase(aname);
-            prim->loops.attrs.erase(aname);
+        std::istringstream ss(nameString);
+        std::string name;
+        while(ss >> name) {
+            names.push_back(name);
+        }
+
+        if (!invert) {
+            for(std::string attr : names)
+                prim->verts.attrs.erase(attr);
+        } else {
+            std::vector<std::string> myKeys = prim->verts.attr_keys();
+
+            auto reserve_attr = std::remove_if(myKeys.begin(), myKeys.end(), [&](const auto &item) {
+              return std::find(names.begin(), names.end(), item) != names.end();
+            });
+            myKeys.erase(reserve_attr, myKeys.end());
+
+            for(std::string attr : myKeys)
+                prim->verts.attrs.erase(attr);
         }
 
         set_output("prim", get_input("prim"));
@@ -988,12 +969,13 @@ struct PrimitiveDelAttrs : zeno::INode {
 ZENDEFNODE(PrimitiveDelAttrs,
            { /* inputs: */ {
                    "prim",
+                   {"bool", "invert", "0"},
+                   {"string", "names", "name_1 name_2"},
                }, /* outputs: */ {
                    "prim",
                }, /* params: */ {
-                   {"string", "name", "nrm"},
                }, /* category: */ {
-                   "primitive",
+                   "erode",
                } });
 
 
@@ -1239,7 +1221,7 @@ struct PrimAttribBlur : INode {
         auto attr_name = get_input2<std::string>("attributes");
         auto attr_type = get_input2<std::string>("attributesType");
 
-        auto useEdgeLength = get_input<NumericObject>("useEdgeLengthWeight")->get<int>();
+        auto useEdgeLength = get_input<NumericObject>("useEdgeLengthWeight")->get<bool>();
 
         auto iterations = get_input<NumericObject>("blurringIterations")->get<int>();
 
@@ -1322,9 +1304,18 @@ struct PrimAttribBlur : INode {
         std::fill(edgeweight_6.begin(), edgeweight_6.end(), 0);
         std::fill(edgeweight_7.begin(), edgeweight_7.end(), 0);
 
+        //========================================
+//        LARGE_INTEGER t1_0,t2_0,tc_0;
+//        LARGE_INTEGER t1_1,t2_1,tc_1;
+//        LARGE_INTEGER t1_2,t2_2,tc_2;
+        //========================================
+
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//        QueryPerformanceFrequency(&tc_0);
+//        QueryPerformanceCounter(&t1_0);
+
 #pragma omp parallel for
         for (size_t point_idx = 0; point_idx < prim->verts.size(); point_idx++) {   // 遍历所有点，找它的邻居
-
             std::map<std::string, int> neighborVertID;
             std::map<std::string, float> neighborEdgeLength;
             for(int i = 0; i < 8; i++) {
@@ -1363,6 +1354,14 @@ struct PrimAttribBlur : INode {
             } else if (prim_type == "tri") {
                 std::vector<int> pointNeighborSign(prim->verts.size());
                 std::fill(pointNeighborSign.begin(), pointNeighborSign.end(), 0);
+
+                //========================================
+//                if (point_idx == 50000) {
+//                    QueryPerformanceFrequency(&tc_1);
+//                    QueryPerformanceCounter(&t1_1);
+//                }
+                //========================================
+
 #pragma omp parallel for
                 for (size_t tri_idx = 0; tri_idx < prim->tris.size(); tri_idx++) {
                     auto const &ind = prim->tris[tri_idx];
@@ -1393,6 +1392,14 @@ struct PrimAttribBlur : INode {
                     if (find_neighbor_count >= 7)
                         flag = true;
                 }
+
+                //========================================
+//                if (point_idx == 50000) {
+//                    QueryPerformanceCounter(&t2_1);
+//                    double time_1 = (double)(t2_1.QuadPart - t1_1.QuadPart)/(double)tc_1.QuadPart;
+//                    printf("time_1 = %f s\n", time_1);
+//                }
+                //========================================
             }
 
             neighbor_0[point_idx] = neighborVertID["neighbor_0"];
@@ -1438,7 +1445,15 @@ struct PrimAttribBlur : INode {
                 edgeweight_6[point_idx] = neighborEdgeLength["edgeweight_6"];
                 edgeweight_7[point_idx] = neighborEdgeLength["edgeweight_7"];
             }
+
         }
+
+//        QueryPerformanceCounter(&t2_0);
+//        double time_0 = (double)(t2_0.QuadPart - t1_0.QuadPart)/(double)tc_0.QuadPart;
+//        printf("time_0 = %f s\n", time_0);
+//        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//        QueryPerformanceFrequency(&tc_2);
+//        QueryPerformanceCounter(&t1_2);
 
         // 平滑属性计算
         std::visit(
@@ -1514,6 +1529,11 @@ struct PrimAttribBlur : INode {
             enum_variant<std::variant<float, vec3f>>(
                 array_index({"float", "vec3f"}, attr_type)));
 
+//        QueryPerformanceCounter(&t2_2);
+//        double time_2 = (double)(t2_2.QuadPart - t1_2.QuadPart)/(double)tc_2.QuadPart;
+//        printf("time_2 = %f s\n", time_2);
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
         prim->verts.erase_attr("_neighbor_0");
         prim->verts.erase_attr("_neighbor_1");
         prim->verts.erase_attr("_neighbor_2");
@@ -1537,11 +1557,11 @@ struct PrimAttribBlur : INode {
 ZENDEFNODE(PrimAttribBlur,
            {/* inputs: */ {
                    "prim",
-                   {"enum line tri", "primType", "line"},
+                   {"enum line tri", "primType", "tri"},
 //                   {"string", "group", "mask"},
                    {"string", "attributes", "ratio"},
                    {"enum float vec3f ", "attributesType", "float"},
-                   {"int", "useEdgeLengthWeight", "0"},
+                   {"bool", "useEdgeLengthWeight", "false"},
                    {"int", "blurringIterations", "0"},
                    {"enum laplacian VolumePreserving custom", "mode", "laplacian"},
                    {"float", "stepSize", "0.683"},
@@ -1579,7 +1599,6 @@ ZENDEFNODE(PrimCurveFromVerts,
                }, /* category: */ {
                    "primCurve",
                }});
-
 
 /**
  * @brief _CreateBezierCurve 生成N阶贝塞尔曲线点
@@ -1694,6 +1713,30 @@ ZENDEFNODE(CreatePrimCurve,
                    "primCurve",
                }});
 
+struct PrimHasAttr : INode {
+    void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto attrName = get_input2<std::string>("attrName");
+
+        bool x = false;
+        if (prim->verts.has_attr(attrName))
+            x = true;
+
+        auto hasAttr = std::make_shared<NumericObject>();
+        hasAttr->set<bool>(x);
+        set_output("hasAttr", hasAttr);
+    }
+};
+ZENDEFNODE(PrimHasAttr,
+           { /* inputs: */ {
+                   "prim",
+                   {"string", "attrName", "attr_x"},
+               }, /* outputs: */ {
+                   "hasAttr",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "erode",
+               }});
 
 
 } // namespace

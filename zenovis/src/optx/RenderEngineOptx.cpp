@@ -23,7 +23,7 @@
 #include <variant>
 #include "../../xinxinoptix/OptiXStuff.h"
 #include <zeno/types/PrimitiveTools.h>
-
+#include <zeno/types/StringObject.h>
 #include <string>
 #include <string_view>
 
@@ -245,6 +245,27 @@ struct GraphicsManager {
                 }
                 else if (isRealTimeObject == 0 && isUniformCarrier == 0)
                 {
+                    //first init matidx attr
+                    int matNum = prim_in->userData().get2<int>("matNum",0);
+                    if(matNum==0)
+                    {
+                        //assign -1 to "matid" attr
+                        if(prim_in->tris.size()>0) {
+                            prim_in->tris.add_attr<int>("matid");
+                            prim_in->tris.attr<int>("matid").assign(prim_in->tris.size(), -1);
+                        }
+                        if(prim_in->quads.size()>0) {
+                            prim_in->quads.add_attr<int>("matid");
+                            prim_in->quads.attr<int>("matid").assign(prim_in->quads.size(), -1);
+                        }
+                        if(prim_in->polys.size()>0) {
+                            prim_in->polys.add_attr<int>("matid");
+                            prim_in->polys.attr<int>("matid").assign(prim_in->polys.size(), -1);
+                        }
+                    }
+
+
+
         det = DetPrimitive{prim_in_lslislSp};
         if (int subdlevs = prim_in->userData().get2<int>("delayedSubdivLevels", 0)) {
             // todo: zhxx, should comp normal after subd or before????
@@ -367,11 +388,22 @@ struct GraphicsManager {
                         vtab[key] = {(float const *)arr.data(), sizeof(arr[0]) / sizeof(float)};
                     });
                     auto ts = (int const *)prim->tris.data();
+                    auto matids = (int const *)prim_in->tris.attr<int>("matid").data();
+                    std::vector<std::string> matNameList(0);
+                    if(matNum>0)
+                    {
+                        for(int i=0;i<matNum;i++)
+                        {
+                            auto matIdx = "Material_" + std::to_string(i);
+                            auto matName = prim_in->userData().get2<std::string>(matIdx, "Default");
+                            matNameList.emplace_back(matName);
+                        }
+                    }
                     auto nvs = prim->verts.size();
                     auto nts = prim->tris.size();
                     auto mtlid = prim_in->userData().get2<std::string>("mtlid", "Default");
                     auto instID = prim_in->userData().get2<std::string>("instID", "Default");
-                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab);
+                    xinxinoptix::load_object(key, mtlid, instID, vs, nvs, ts, nts, vtab, matids, matNameList);
                 }
             }
             else if (auto mtl = dynamic_cast<zeno::MaterialObject *>(obj))

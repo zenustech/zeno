@@ -19,9 +19,9 @@ namespace zeno {
             fmt::print(fg(fmt::color::red),"the tris has no 'inds' channel\n");
             return false;
         }
-        if(tris.getChannelSize("inds") != 3){
+        if(tris.getPropertySize("inds") != 3){
             std::cout << "the tris has invalid 'inds' channel size {}\n" << std::endl;
-            fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getChannelSize("inds"));
+            fmt::print(fg(fmt::color::red),"the tris has invalid 'inds' channel size {}\n",tris.getPropertySize("inds"));
             return false;
         }
         if(tris.size() != tri_nrm_buffer.size()) {
@@ -37,7 +37,7 @@ namespace zeno {
             return false;
         }
 
-        if(tri_nrm_buffer.getChannelSize(nrmTag) != 3) {
+        if(tri_nrm_buffer.getPropertySize(nrmTag) != 3) {
             // std::cout << "the tri_nrm_buffer has no " << nrmTag  << " channel" << std::endl;
             fmt::print(fg(fmt::color::red),"the tri_nrm_buffer has invalid {} channel, which should be vec3\n",nrmTag);
             return false;
@@ -67,36 +67,6 @@ namespace zeno {
 
         return true;
     } 
-
-
-    // template<typename Pol,typename VTileVec,typename TTileVec>
-    // constexpr bool calculate_point_normal(Pol& pol,const VTileVec& verts,const TTileVec& tris,const zs::SmallString& nrmTag) {
-    //     using namespace zs;
-    //     if(!tris.hasProperty("inds") || tris.getChannelSize("inds") != 3) 
-    //         return false;
-
-    //     constexpr auto space = execspace_e::cuda;
-    //     pol(zs::range(tris.size()),
-    //         [verts = proxy<space>({},verts),tris = proxy<space>({},tris),nrmTag] ZS_LAMBDA(int ti) mutable {
-    //             auto tri = tris.template pack<3>("inds",ti).template reinterpret_bits<int>();
-    //             auto v0 = verts.template pack<3>("x",tris[0]);
-    //             auto v1 = verts.template pack<3>("x",tris[1]);
-    //             auto v2 = verts.template pack<3>("x",tris[2]);
-
-    //             auto e01 = v1 - v0;
-    //             auto e02 = v2 - v0;
-
-    //             auto nrm = e01.cross(e02);
-    //             auto nrm_norm = nrm.norm();
-    //             if(nrm_norm < 1e-8)
-    //                 nrm = vec<T,3>::zeros();
-    //             else
-    //                 nrm = nrm / nrm_norm;
-
-    //             tris.template tuple<3>(nrmTag,ti) = nrm;
-    //     });
-
-    // }
 
 
 

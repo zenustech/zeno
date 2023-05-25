@@ -90,20 +90,24 @@ private:
 
 class ZPathEdit;
 
-class ZenoParamPathEdit : public ZenoParamWidget
+class ZenoParamPathEdit : public ZEditableTextItem
 {
     Q_OBJECT
 public:
     ZenoParamPathEdit(const QString& path, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent = nullptr);
     QString path() const;
     void setPath(const QString& path);
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
-signals:
-    void pathValueChanged(QString);
-    void clicked();     //due the bug of rendering when open dialog, we have to move out this signal.
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
 
 private:
-    ZPathEdit *m_pLineEdit;
+    QRectF buttonArea();
+
+private:
+    PARAM_CONTROL m_control;
 };
 
 

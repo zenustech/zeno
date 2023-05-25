@@ -4,10 +4,13 @@
 #include "./SurfaceCurvature.h"
 #include "./SurfaceNormals.h"
 
+#include "zensim/profile/CppTimers.hpp"
+#include "zensim/zpc_tpls/fmt/color.h"
+
 namespace zeno {
 namespace pmp {
 
-SurfaceCurvature::SurfaceCurvature(SurfaceMesh* mesh) : mesh_(mesh) {
+SurfaceCurvature::SurfaceCurvature(SurfaceMesh *mesh) : mesh_(mesh) {
     vertice_num_ = mesh_->prim_->verts.size();
     edge_num_ = mesh_->prim_->lines.size();
     min_curvature_ = mesh_->prim_->verts.add_attr<float>("curv_min");
@@ -36,25 +39,76 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
     std::vector<int> neighborhood;
     neighborhood.reserve(15);
 
-    auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    zs::CppTimer timer, timer0;
+
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
+    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
     // precompute Voronoi area per vertex
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
         if (mesh_->has_garbage_ && vdeleted[v])
             continue;
         area[v] = mesh_->voronoi_area(v);
     }
+#if PMP_ENABLE_PROFILE
+    timer.tock("    voronoi are per vertex");
+#endif
 
-    auto& fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
+    auto &fdeleted = mesh_->prim_->tris.attr<int>("f_deleted");
+#if 0
     // precompute face normals
-    for (int f = 0; f < mesh_->faces_size_; ++f) {
-        if (mesh_->has_garbage_ && fdeleted[f])
-            continue;
-        normal[f] = (vec3f)SurfaceNormals::compute_face_normal(mesh_, f);
+    if (!mesh_->has_garbage_)
+#pragma omp parallel for
+        for (int f = 0; f < mesh_->faces_size_; ++f) {
+            if (fdeleted[f])
+                continue;
+            normal[f] = (vec3f)SurfaceNormals::compute_face_normal(mesh_, f);
+        }
+#else
+    {
+        auto &pos = mesh_->prim_->attr<vec3f>("pos");
+        if (!mesh_->has_garbage_)
+#pragma omp parallel for
+            for (int v = 0; v < mesh_->vertices_size_; ++v) {
+                int h0, h1, h2;
+                vec3f p, q, r, pq, qr, pr;
+                for (auto h : mesh_->halfedges(v)) {
+                    auto f = mesh_->hconn_[h].face_;
+                    if (f != PMP_MAX_INDEX && !fdeleted[f]) {
+                        h0 = h;
+                        h1 = mesh_->next_halfedge(h0);
+                        h2 = mesh_->next_halfedge(h1);
+                        // three vertex positions
+                        auto p = pos[mesh_->to_vertex(h2)];
+                        auto q = pos[mesh_->to_vertex(h0)];
+                        auto r = pos[mesh_->to_vertex(h1)];
+
+                        // edge vectors
+                        (pq = q) -= p;
+                        (qr = r) -= q;
+                        (pr = r) -= p;
+
+                        normal[f] = normalize(cross(pq, pr));
+                        // normal[h] = normalize(cross(p2 - p1, p0 - p1));
+                    }
+                }
+            }
     }
+#endif
+#if PMP_ENABLE_PROFILE
+    timer.tock("    compute_face_normal");
+#endif
 
-    auto& pos = mesh_->prim_->attr<vec3f>("pos");
-    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &pos = mesh_->prim_->attr<vec3f>("pos");
+    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
 
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
     // precompute dihedralAngle*edge_length*edge per edge
     for (int e = 0; e < mesh_->lines_size_; ++e) {
         if (mesh_->has_garbage_ && edeleted[e])
@@ -75,6 +129,15 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
             evec[e] = sqrt(l) * ev;
         }
     }
+#if PMP_ENABLE_PROFILE
+    timer.tock("    compute_dihedral_angle...");
+#endif
+
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
+
+    double accum = 0.;
 
     // compute curvature tensor for each vertex
     for (int v = 0; v < mesh_->vertices_size_; ++v) {
@@ -110,9 +173,16 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
             // normalize tensor by accumulated
             tensor /= A;
 
+#if PMP_ENABLE_PROFILE
+            timer0.tick();
+#endif
             // Eigen-decomposition
-            bool ok = symmetric_eigendecomposition(tensor, eval1, eval2, eval3,
-                                                   evec1, evec2, evec3);
+            bool ok = symmetric_eigendecomposition(tensor, eval1, eval2, eval3, evec1, evec2, evec3);
+#if PMP_ENABLE_PROFILE
+            timer0.tock();
+            accum += timer0.elapsed();
+#endif
+
             if (ok) {
                 // curvature values:
                 //   normal vector -> eval with smallest absolute value
@@ -150,14 +220,25 @@ void SurfaceCurvature::analyze_tensor(unsigned int post_smoothing_steps) {
         max_curvature_[v] = kmax;
     }
 
+#if PMP_ENABLE_PROFILE
+    timer.tock("    compute curvature tensor for each vertex");
+    fmt::print(fg(fmt::color::green), "     symmetric_decomp takes {}\n", accum);
+#endif
+
     // clean-up properties
     mesh_->prim_->verts.erase_attr("curv_area");
     mesh_->prim_->lines.erase_attr("curv_evec");
     mesh_->prim_->lines.erase_attr("curv_angle");
     mesh_->prim_->tris.erase_attr("curv_normal");
 
+#if PMP_ENABLE_PROFILE
+    timer.tick();
+#endif
     // smooth curvature values
     smooth_curvatures(post_smoothing_steps);
+#if PMP_ENABLE_PROFILE
+    timer.tock("    smooth curvature values");
+#endif
 }
 
 void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
@@ -167,8 +248,8 @@ void SurfaceCurvature::smooth_curvatures(unsigned int iterations) {
     // properties
     auto vfeature = mesh_->prim_->verts.attr<int>("v_feature");
     auto cotan = mesh_->prim_->lines.add_attr<float>("curv_cotan");
-    auto& vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
-    auto& edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
+    auto &vdeleted = mesh_->prim_->verts.attr<int>("v_deleted");
+    auto &edeleted = mesh_->prim_->lines.attr<int>("e_deleted");
 
     // cotan weight per edge
     for (int e = 0; e < mesh_->lines_size_; ++e) {

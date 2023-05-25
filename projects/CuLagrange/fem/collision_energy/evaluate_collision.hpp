@@ -40,6 +40,159 @@ using bv_t = zs::AABBBox<3, T>;
 using vec3 = zs::vec<T, 3>;
 
 
+
+template<typename Pol,
+            typename PosTileVec,
+            typename SurfPointTileVec,
+            typename SurfTriTileVec,
+            typename SurfTriNrmTileVec> 
+void do_facet_point_collsion_detection_and_compute_surface_normal(Pol& cudaPol,
+    const PosTileVec& verts,const zs::SmallString& xtag,
+    const SurfPointTileVec& points,
+    const SurfTriTileVec& tris,
+    SurfTriNrmTileVec& triNrmBuffer,
+    zs::Vector<zs::vec<int,4>>& csPT,
+    int& nm_collisions,T in_collisionEps,T out_collisionEps) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        auto avgl = compute_average_edge_length(cudaPol,verts,xtag,tris);
+        auto bvh_thickness = 3 * avgl;
+        if(!calculate_facet_normal(cudaPol,verts,xtag,tris,triNrmBuffer,"nrm")){
+            throw std::runtime_error("fail updating facet normal");
+        } 
+
+        auto spBvh = bvh_t{};
+        auto bvs = retrieve_bounding_volumes(cudaPol,verts,points,wrapv<1>{},(T)bvh_thickness,xtag);
+        spBvh.build(cudaPol,bvs);
+
+        zs::Vector<int> nm_csPT{points.get_allocator(),1};
+        nm_csPT.setVal(0);
+
+        cudaPol(zs::range(tris.size()),[in_collisionEps = in_collisionEps,
+            out_collisionEps = out_collisionEps,
+            verts = proxy<space>({},verts),
+            points = proxy<space>({},points),
+            tris = proxy<space>({},tris),
+            triNrmBuffer = proxy<space>({},triNrmBuffer),
+            nm_csPT = proxy<space>(nm_csPT),
+            xtag = xtag,
+            csPT = proxy<space>(csPT),
+            spBvh = proxy<space>(spBvh),thickness = bvh_thickness] ZS_LAMBDA(int stI) {
+                auto tri = tris.pack(dim_c<3>,"inds",stI,int_c);
+                if(verts.hasProperty("active"))
+                    for(int i = 0;i != 3;++i)
+                        if(verts("active",tri[i]) < 1e-6)
+                            return;
+                
+                auto cp = vec3::zeros();
+                for(int i = 0;i != 3;++i)
+                    cp += verts.pack(dim_c<3>,xtag,tri[i]) / (T)3.0;
+                auto bv = bv_t{get_bounding_box(cp - thickness,cp + thickness)};
+            
+                auto tnrm = triNrmBuffer.pack(dim_c<3>,"nrm",stI);
+                vec3 tvs[3] = {};
+                for(int i = 0;i != 3;++i)
+                    tvs[i] = verts.pack(dim_c<3>,xtag,tri[i]);
+
+                auto ntris = tris.pack(dim_c<3>,"ff_inds",stI,int_c);
+                vec3 bnrms[3] = {};
+                for(int i = 0;i != 3;++i){
+                    auto nti = ntris[i];
+                    auto edge_normal = vec3::zeros();
+                    if(nti < 0)
+                        edge_normal = tnrm;
+                    else{
+                        edge_normal = tnrm + triNrmBuffer.pack(dim_c<3>,"nrm",nti);
+                        edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
+                    }
+                    auto e01 = tvs[(i + 1) % 3] - tvs[(i + 0) % 3];
+                    bnrms[i] = edge_normal.cross(e01).normalized();
+                }  
+
+                auto process_vertex_face_collision_pairs = [&](int spI) {
+                    auto vi = reinterpret_bits<int>(points("inds",spI));
+                    if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
+                        return;
+                    if(verts.hasProperty("active"))
+                        if(verts("active",vi) < 1e-6)
+                            return;
+
+                    auto p = verts.pack(dim_c<3>,xtag,vi);
+                    auto seg = p - tvs[0];
+                    auto dist = seg.dot(tnrm);
+                    if(dist < 0 && verts.hasProperty("ring_mask")) {
+                        int RING_MASK = zs::reinterpret_bits<int>(verts("ring_mask",vi));
+                        if(RING_MASK == 0)
+                            return;
+                        // bool is_same_ring = false;
+                        int TRING_MASK = 0;
+                        for(int i = 0;i != 3;++i) {
+                            // auto TGIA_TAG = reinterpret_bits<int>(verts("ring_mask",tri[i]));
+                            TRING_MASK |= zs::reinterpret_bits<int>(verts("ring_mask",tri[i]));
+                            // if((TGIA_TAG | GIA_TAG) > 0)
+                            //     is_same_ring = true;
+                        }
+                        RING_MASK = RING_MASK & TRING_MASK;
+                        // the point and the tri should belong to the same ring
+                        if(RING_MASK == 0)
+                            return;
+
+                        // now the two pair belong to the same ring, check whether they belong black-white loop, and have different colors 
+
+                        // {
+#if 1
+                        auto COLOR_MASK = reinterpret_bits<int>(verts("color_mask",vi));
+                        auto TYPE_MASK = reinterpret_bits<int>(verts("type_mask",vi));
+
+                        // only check the common type-1(white-black loop) rings
+                        int TTYPE_MASK = 0;
+                        for(int i = 0;i != 3;++i)
+                            TTYPE_MASK |= reinterpret_bits<int>(verts("type_mask",tri[i]));
+                        
+                        RING_MASK &= (TYPE_MASK & TTYPE_MASK);
+                        // int nm_common_rings = 0;
+                        // while()
+                        // as long as there is one ring in which the pair have different colors, neglect the pair
+                        int curr_ri_mask = 1;
+                        for(;RING_MASK > 0;RING_MASK = RING_MASK >> 1,curr_ri_mask = curr_ri_mask << 1) {
+                            if(RING_MASK & 1) {
+                                for(int i = 0;i != 3;++i) {
+                                    auto TCOLOR_MASK = reinterpret_bits<int>(verts("color_mask",tri[i])) & curr_ri_mask;
+                                    auto VCOLOR_MASK = reinterpret_bits<int>(verts("color_mask",vi)) & curr_ri_mask;
+                                    if(TCOLOR_MASK == VCOLOR_MASK)
+                                        return;
+                                }
+                            }
+                        }
+#endif
+                        // }
+                    }
+
+                    auto collisionEps = dist > 0 ? out_collisionEps : in_collisionEps;
+
+                    auto barySum = (T)1.0;
+                    T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],p,barySum);
+
+                    if(distance > collisionEps)
+                        return;
+
+                    if(barySum > (T)(1.0 + 1e-6)) {
+                        for(int i = 0;i != 3;++i){
+                            seg = p - tvs[i];
+                            if(bnrms[i].dot(seg) < 0)
+                                return;
+                        }
+                    }
+
+                    csPT[atomic_add(exec_cuda,&nm_csPT[0],(int)1)] = zs::vec<int,4>{vi,tri[0],tri[1],tri[2]};
+                };
+                spBvh.iter_neighbors(bv,process_vertex_face_collision_pairs);
+        });
+
+        nm_collisions = nm_csPT.getVal(0);
+}
+
 template<int MAX_FP_COLLISION_PAIRS,typename Pol,
             typename PosTileVec,
             typename SurfPointTileVec,
@@ -72,14 +225,14 @@ void do_facet_point_collision_detection(Pol& cudaPol,
         if(!calculate_facet_normal(cudaPol,verts,xtag,tris,sttemp,"nrm")){
             throw std::runtime_error("fail updating facet normal");
         }       
-        if(!COLLISION_UTILS::calculate_cell_bisector_normal(cudaPol,
-            verts,xtag,
-            lines,
-            tris,
-            sttemp,"nrm",
-            setemp,"nrm")){
-                throw std::runtime_error("fail calculate cell bisector normal");
-        }       
+        // if(!COLLISION_UTILS::calculate_cell_bisector_normal(cudaPol,
+        //     verts,xtag,
+        //     lines,
+        //     tris,
+        //     sttemp,"nrm",
+        //     setemp,"nrm")){
+        //         throw std::runtime_error("fail calculate cell bisector normal");
+        // }       
         TILEVEC_OPS::fill<4>(cudaPol,fp_collision_buffer,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
         TILEVEC_OPS::fill(cudaPol,fp_collision_buffer,"inverted",reinterpret_bits<T>((int)0));
         cudaPol(zs::range(points.size()),[in_collisionEps = in_collisionEps,
@@ -100,11 +253,18 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 return;
             }
 
-            if(verts.hasProperty("is_verted")) {
-                auto is_inverted =reinterpret_bits<int>(verts("is_inverted",vi));
-                if(is_inverted)
-                    return;
-            }
+// EDIT CANCEL INVERSION
+            // if(verts.hasProperty("is_verted")) {
+            //     auto is_inverted =reinterpret_bits<int>(verts("is_inverted",vi));
+            //     if(is_inverted)
+            //         return;
+            // }
+
+            // if(verts.hasProperty("gia_tag")) {
+            //     auto gia_tag = verts("gia_tag",vi);
+            //     if(gia_tag < (T)0.5)
+            //         return;
+            // }
 
             auto p = verts.template pack<3>(xtag,vi);
             auto bv = bv_t{get_bounding_box(p - thickness, p + thickness)};
@@ -118,14 +278,24 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
                     return;
 
+// EDIT CANCEL INVERSION
+                // if(verts.hasProperty("is_verted")) {
 
-                if(verts.hasProperty("is_verted")) {
+                //     for(int i = 0;i != 3;++i)
+                //         if(reinterpret_bits<int>(verts("is_inverted",tri[i])))
+                //             return;
 
-                    for(int i = 0;i != 3;++i)
-                        if(reinterpret_bits<int>(verts("is_inverted",tri[i])))
-                            return;
+                // }
 
-                }
+                // if(verts.hasProperty("gia_tag")) {
+                //     for(int i = 0;i != 3;++i)
+                //         if(verts("gia_tag",tri[i]) < (T)0.5)
+                //             return;
+                //     // auto gia_tag = verts("gia_tag",vi);
+                //     // if(gia_tag < (T)0.5)
+                //     //     return;
+                // }
+
 
                 bool is_active_tri = true;
                 for(int i = 0;i != 3;++i)
@@ -135,62 +305,120 @@ void do_facet_point_collision_detection(Pol& cudaPol,
                 T dist = (T)0.0;
 
                 // we should also neglect over deformed facet
-                auto triRestArea = tris("area",stI);
+                // auto triRestArea = tris("area",stI);
 
-                if(triRestArea < 1e-8)
-                    return;
+                // if(triRestArea < 1e-8)
+                //     return;
 
-                auto triDeformedArea = LSL_GEO::area(
-                    verts.template pack<3>(xtag,tri[0]),
-                    verts.template pack<3>(xtag,tri[1]),
-                    verts.template pack<3>(xtag,tri[2]));
+                // auto triDeformedArea = LSL_GEO::area(
+                //     verts.template pack<3>(xtag,tri[0]),
+                //     verts.template pack<3>(xtag,tri[1]),
+                //     verts.template pack<3>(xtag,tri[2]));
 
 
-                auto areaDeform = triDeformedArea / triRestArea;
-                if(areaDeform < 1e-1)
-                    return;
+                // auto areaDeform = triDeformedArea / triRestArea;
+                // if(areaDeform < 1e-1)
+                //     return;
 
                 auto nrm = sttemp.template pack<3>("nrm",stI);
                 
                 auto seg = p - verts.template pack<3>(xtag,tri[0]);    
 
                 // evaluate the avg edge length
-                auto t0 = verts.template pack<3>(xtag,tri[0]);
-                auto t1 = verts.template pack<3>(xtag,tri[1]);
-                auto t2 = verts.template pack<3>(xtag,tri[2]);
+                // auto t0 = verts.template pack<3>(xtag,tri[0]);
+                // auto t1 = verts.template pack<3>(xtag,tri[1]);
+                // auto t2 = verts.template pack<3>(xtag,tri[2]);
+                vec3 tvs[3] = {};
+                for(int i = 0;i != 3;++i)
+                    tvs[i] = verts.template pack<3>(xtag,tri[i]);
 
-                auto e01 = (t0 - t1).norm();
-                auto e02 = (t0 - t2).norm();
-                auto e12 = (t1 - t2).norm();
+                auto e01 = (tvs[0] - tvs[1]).norm();
+                auto e02 = (tvs[0] - tvs[2]).norm();
+                auto e12 = (tvs[1] - tvs[2]).norm();
 
                 // auto avge = (e01 + e02 + e12)/(T)3.0;
 
                 T barySum = (T)1.0;
-                T distance = LSL_GEO::pointTriangleDistance(t0,t1,t2,p,barySum);
+                T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],p,barySum);
                 // auto max_ratio = inset_ratio > outset_ratio ? inset_ratio : outset_ratio;
                 // collisionEps = avge * max_ratio;
-                auto collisionEps = seg.dot(nrm) > 0 ? out_collisionEps : in_collisionEps;
-
-                if(barySum > 5)
-                    return;
-
+                dist = seg.dot(nrm);
+                auto collisionEps = dist > 0 ? out_collisionEps : in_collisionEps;
                 if(distance > collisionEps)
                     return;
-                dist = seg.dot(nrm);
-                // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
+
+                if(dist < 0 && verts.hasProperty("gia_tag")) {  
+                    auto GIA_TAG = reinterpret_bits<int>(verts("gia_tag",vi));
+                    if(GIA_TAG == 0)
+                        return;
+                    
+                    // for(int i = 0;i != 3;++i)
+                    //     if(verts("gia_tag",tri[i]) < (T)0.5)
+                    //         return;
+
+                    bool is_same_ring = false;
+                    for(int i = 0;i != 3;++i){
+                        auto TGIA_TAG = reinterpret_bits<int>(verts("gia_tag",tri[i]));
+                        if((TGIA_TAG | GIA_TAG) > 0)
+                            is_same_ring = true;
+                    }
+                    if(!is_same_ring)
+                        return;
+                }
+
+
+                // if()
+
+#if 0
+
+                if(barySum > 1.01){
                 //     return;
+                // else {
 
-                // if the triangle cell is too degenerate
-                if(!LSL_GEO::pointProjectsInsideTriangle(t0,t1,t2,p))
-                    for(int i = 0;i != 3;++i) {
-                            auto bisector_normal = get_bisector_orient(lines,tris,setemp,"nrm",stI,i);
-                            // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
 
-                            seg = p - verts.template pack<3>(xtag,tri[i]);
-                            if(bisector_normal.dot(seg) < 0)
-                                return;
+                    // if(dist < -(avge * inset_ratio + 1e-6) || dist > (outset_ratio * avge + 1e-6))
+                    //     return;
 
+                    // if the triangle cell is too degenerate
+                    // if(!LSL_GEO::pointProjectsInsideTriangle(t0,t1,t2,p))
+                        for(int i = 0;i != 3;++i) {
+                                auto bisector_normal = get_bisector_orient(lines,tris,setemp,"nrm",stI,i);
+                                // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
+
+                                seg = p - verts.template pack<3>(xtag,tri[i]);
+                                if(bisector_normal.dot(seg) < 0)
+                                    return;
+
+                            }
+                }
+#else
+                if(barySum > 1.01) {
+                    auto ntris = tris.pack(dim_c<3>,"ff_inds",stI,int_c);
+                    vec3 bnrms[3] = {};
+                    for(int i = 0;i != 3;++i){
+                        auto nti = ntris[i];
+                        auto edge_normal = vec3::zeros();
+                        if(nti < 0)
+                            edge_normal = nrm;
+                        else{
+                            edge_normal = nrm + sttemp.pack(dim_c<3>,"nrm",nti);
+                            edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
                         }
+                        auto e01 = tvs[(i + 1) % 3] - tvs[(i + 0) % 3];
+                        bnrms[i] = edge_normal.cross(e01).normalized();
+                    }  
+
+                    for(int i = 0;i != 3;++i) {
+                        // auto bisector_normal = get_bisector_orient(lines,tris,setemp,"nrm",stI,i);
+                        // auto test = bisector_normal.cross(nrm).norm() < 1e-2;
+
+                        seg = p - tvs[i];
+                        if(bnrms[i].dot(seg) < 0)
+                            return;
+
+                    }
+                }
+#endif
         
                 // now the points is inside the cell
 
@@ -387,10 +615,10 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
 //         auto bvh_thickness = 5 * avgl;
 
 
-//         if(!sttemp.hasProperty("nrm") || sttemp.getChannelSize("nrm") != 3)
+//         if(!sttemp.hasProperty("nrm") || sttemp.getPropertySize("nrm") != 3)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid sttemp's \"nrm\" channel");
 
-//         if(!setemp.hasProperty("nrm") || setemp.getChannelSize("nrm") != 3)
+//         if(!setemp.hasProperty("nrm") || setemp.getPropertySize("nrm") != 3)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid setemp's \"nrm\" channel");
 
 //         if(setemp.size() != lines.size())
@@ -411,22 +639,22 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
 //         if(ee_collision_buffer.size() != lines.size())
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer size");
 
-//         if(!ee_collision_buffer.hasProperty("inds") || ee_collision_buffer.getChannelSize("inds") != 4)
+//         if(!ee_collision_buffer.hasProperty("inds") || ee_collision_buffer.getPropertySize("inds") != 4)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"inds\" channel");
 
-//         if(!ee_collision_buffer.hasProperty("inverted") || ee_collision_buffer.getChannelSize("inverted") != 1)
+//         if(!ee_collision_buffer.hasProperty("inverted") || ee_collision_buffer.getPropertySize("inverted") != 1)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"inverted\" channel");
 
-//         if(!ee_collision_buffer.hasProperty("abary") || ee_collision_buffer.getChannelSize("abary") != 2)
+//         if(!ee_collision_buffer.hasProperty("abary") || ee_collision_buffer.getPropertySize("abary") != 2)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"abary\" channel");
 
-//         if(!ee_collision_buffer.hasProperty("bbary") || ee_collision_buffer.getChannelSize("bbary") != 2)
+//         if(!ee_collision_buffer.hasProperty("bbary") || ee_collision_buffer.getPropertySize("bbary") != 2)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"bbary\" channel");
 
-//         if(!ee_collision_buffer.hasProperty("area") || ee_collision_buffer.getChannelSize("area") != 1)
+//         if(!ee_collision_buffer.hasProperty("area") || ee_collision_buffer.getPropertySize("area") != 1)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid ee_colliision_buffer's \"area\" channel");
 
-//         if(!lines.hasProperty("area") || lines.getChannelSize("area") != 1)
+//         if(!lines.hasProperty("area") || lines.getPropertySize("area") != 1)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid lines's \"area\" channel");
 
 //         TILEVEC_OPS::fill<4>(cudaPol,ee_collision_buffer,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>());
@@ -434,9 +662,9 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
 //         // TILEVEC_OPS::fill(cudaPol,ee_collision_buffer,"abary",(T)0.0);
 //         // TILEVEC_OPS::fill(cudaPol,ee_collision_buffer,"bbary",(T)0.0);
 
-//         if(!verts.hasProperty("active") || verts.getChannelSize("active") != 1)
+//         if(!verts.hasProperty("active") || verts.getPropertySize("active") != 1)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid verts' \"active\" channel");
-//         if(!verts.hasProperty(xtag) || verts.getChannelSize(xtag) != 3)
+//         if(!verts.hasProperty(xtag) || verts.getPropertySize(xtag) != 3)
 //             throw std::runtime_error("do_edge_edge_collision_detection::invalid verts' \"xtag\" channel");
 
 //         cudaPol(zs::range(lines.size()),[in_collisionEps = in_collisionEps,
@@ -632,6 +860,52 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
 
 template<typename Pol,
     typename PosTileVec,
+    typename GradHessianTileVec>
+void evaluate_fp_collision_grad_and_hessian(
+    Pol& cudaPol,
+    const PosTileVec& verts,const zs::SmallString& xtag,
+    const zs::Vector<zs::vec<int,4>>& csPT,
+    int nm_csPT,
+    GradHessianTileVec& gh_buffer,
+    T in_collisionEps,T out_collisionEps,
+    T collisionStiffness,
+    T mu,T lambda) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+
+        gh_buffer.resize(nm_csPT);
+        cudaPol(zs::range(nm_csPT),[
+            gh_buffer = proxy<space>({},gh_buffer),
+            in_collisionEps = in_collisionEps,
+            out_collisionEps = out_collisionEps,
+            verts = proxy<space>({},verts),
+            csPT = proxy<space>(csPT),
+            mu = mu,lam = lambda,
+            stiffness = collisionStiffness,
+            xtag = xtag] ZS_LAMBDA(int ci) mutable {
+                auto inds = csPT[ci];
+                gh_buffer.tuple(dim_c<4>,"inds",ci) = inds.reinterpret_bits(float_c);
+                vec3 cv[4] = {};
+                for(int i = 0;i != 4;++i)
+                    cv[i] = verts.pack(dim_c<3>,xtag,inds[i]);
+
+                auto ceps = out_collisionEps;
+                auto alpha = stiffness;
+                auto beta = (T)1.0;
+
+                auto cforce = -alpha * beta * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,ceps);
+                auto K = alpha * beta * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,ceps);
+
+                gh_buffer.tuple(dim_c<12>,"grad",ci) = cforce/* + dforce*/;
+                gh_buffer.tuple(dim_c<12 * 12>,"H",ci) = K/* + C/dt*/;
+                if(isnan(K.norm())){
+                    printf("nan cK detected : %d\n",ci);
+                }
+        });
+}
+
+template<typename Pol,
+    typename PosTileVec,
     typename FPCollisionBuffer,
     typename GradHessianTileVec>
 void evaluate_fp_collision_grad_and_hessian(
@@ -651,7 +925,7 @@ void evaluate_fp_collision_grad_and_hessian(
         TILEVEC_OPS::fill_range(cudaPol,gh_buffer,"H",(T)0.0,start,fp_size);
         TILEVEC_OPS::fill_range(cudaPol,gh_buffer,"grad",(T)0.0,start,fp_size); 
 
-        // std::cout << "inds size compair : " << fp_collision_buffer.getChannelSize("inds") << "\t" << gh_buffer.getChannelSize("inds") << std::endl;
+        // std::cout << "inds size compair : " << fp_collision_buffer.getPropertySize("inds") << "\t" << gh_buffer.getPropertySize("inds") << std::endl;
 
         TILEVEC_OPS::copy(cudaPol,fp_collision_buffer,"inds",gh_buffer,"inds",start); 
 
