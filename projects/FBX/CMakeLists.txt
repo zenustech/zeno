@@ -17,6 +17,11 @@ target_link_libraries(zeno PRIVATE assimp)
 #target_link_libraries(zeno PRIVATE assimp::assimp)
 
 if(ZENO_FBXSDK)
+    # 1. Set `-DZENO_FBXSDK=ON`
+    # 2. On Windows: Download FBXSDK from `https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-archives`
+    # 3. Install FBXSDK to `projects/FBX/FBXSDK/windows/2020.3.1`
+    # 4. Set `-DFBX_SDK_DIR="C:\src\zeno2\projects\FBX\FBXSDK"`
+
     message(STATUS "FBX_SDK_DIR: ${FBX_SDK_DIR}")
     target_compile_definitions(zeno PRIVATE -DZENO_FBXSDK)
     if(WIN32)
