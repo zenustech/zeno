@@ -429,6 +429,7 @@ struct EvalFBXAnim : zeno::INode {
 
         SFBXEvalOption evalOption;
         auto fbxData = get_input<FBXData>("data");
+
         //auto fps = get_input2<float>("fps");
         auto unit = get_param<std::string>("unit");
         auto interAnimData = get_param<std::string>("interAnimData");
@@ -461,6 +462,33 @@ struct EvalFBXAnim : zeno::INode {
         auto matName = std::make_shared<zeno::StringObject>();
         auto pathName = std::make_shared<zeno::StringObject>();
         auto outMeshName = std::make_shared<zeno::StringObject>();
+        auto isVisibility = std::make_shared<zeno::NumericObject>();
+
+        auto path = fbxData->iPathName.value;
+        if(! fbxData->iVisibility.lut.empty()){
+            if(fbxData->iVisibility.lut.find(path) != fbxData->iVisibility.lut.end()){
+                auto visibilityData = fbxData->iVisibility.lut[path];
+                auto listVisData = zeno::safe_dynamic_cast<zeno::ListObject>(visibilityData);
+                bool is_visibility;
+                auto length_m1 = listVisData->arr.size() - 1;
+                if(frameid <=0){
+                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->arr[0])->get<int>();
+                }else if(frameid >= (length_m1)){
+                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->arr[length_m1])->get<int>();
+                }else{
+                    is_visibility = zeno::safe_dynamic_cast<zeno::NumericObject>(listVisData->arr[frameid])->get<int>();
+                }
+                isVisibility->set(is_visibility);
+            }else{
+                std::cout << " Visibility Not Found " << path << "\n";
+                isVisibility->set(1);
+            }
+        }else{
+            isVisibility->set(1);
+        }
+
+
+        //std::cout << " Visibility " << is_visibility << " Path " << fbxData->iPathName.value << "\n";
 
         EvalAnim anim;
         anim.m_evalOption = evalOption;
@@ -550,9 +578,7 @@ struct EvalFBXAnim : zeno::INode {
                 zeno::log_info("BlendShape NotFound MorphKey {}", meshName);
             }
         }
-
         //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, bsPrims->arr.size(), meshName);
-
         auto data2write = std::make_shared<SFBXData>();
         *data2write = anim.m_FbxData;
 
@@ -568,6 +594,7 @@ struct EvalFBXAnim : zeno::INode {
         set_output("quatDict", std::move(quatDict));
         set_output("scaleDict", std::move(scaleDict));
         set_output("writeData", std::move(data2write));
+        set_output("visibility", std::move(isVisibility));
     }
 };
 ZENDEFNODE(EvalFBXAnim,
@@ -580,7 +607,7 @@ ZENDEFNODE(EvalFBXAnim,
                {
                    "prim", "camera", "light", "matName", "meshName", "pathName", "bsPrims", "bsPrimsOrigin",
                    "transDict", "quatDict", "scaleDict",
-                   "writeData"
+                   "writeData", "visibility"
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},

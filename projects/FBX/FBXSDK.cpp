@@ -234,7 +234,7 @@ ZENDEFNODE(FBXSDKVisibility,
                 {"readpath", "path"},
             },  /* outputs: */
             {
-                "visibility",
+                {"DictObject", "visibility", ""},
             },  /* params: */
             {
                 {"enum e24 e30", "fps", "e24"},

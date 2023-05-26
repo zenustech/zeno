@@ -1244,6 +1244,8 @@ struct ReadFBXPrim : zeno::INode {
         zeno::log_info("FBX: File path {}, Replaced FBXName {}", path,fbxFileName);
 
         SFBXReadOption readOption;
+        std::shared_ptr<zeno::DictObject> visibility;
+
         auto udim = get_param<std::string>("udim");
         auto primitive = get_param<bool>("primitive");
         auto generate = get_input2<bool>("generate");
@@ -1251,6 +1253,12 @@ struct ReadFBXPrim : zeno::INode {
         auto invOpacity = get_param<bool>("invOpacity");
         auto triangulate = get_param<bool>("triangulate");
         auto printTree = get_param<bool>("printTree");
+
+        if(has_input("visibility")){
+            visibility = get_input2<zeno::DictObject>("visibility");
+        }else {
+            visibility = std::make_shared<zeno::DictObject>();
+        }
 
         readOption.offsetInSeconds = offsetInSeconds;
         if (udim == "ENABLE")
@@ -1290,6 +1298,13 @@ struct ReadFBXPrim : zeno::INode {
             prim->userData().setLiterial("matNum", count);
             prim->userData().setLiterial("fbxName", fbxFileName);
         }
+
+        data->iVisibility = *visibility;
+        for(auto&[key, value]: datas->lut){
+            auto data = zeno::safe_dynamic_cast<FBXData>(value);
+            data->iVisibility = *visibility;
+        }
+
         set_output("data", std::move(data));
         set_output("datas", std::move(datas));
         set_output("animinfo", std::move(animInfo));
@@ -1307,7 +1322,8 @@ ZENDEFNODE(ReadFBXPrim,
                    {"readpath", "path"},
                    {"readpath", "hintPath", "-1"},
                    {"bool", "generate", "false"},
-                   {"float", "offset", "0.0"}
+                   {"float", "offset", "0.0"},
+                   {"DictObject", "visibility", ""}
                },  /* outputs: */
                {
                     "prim",

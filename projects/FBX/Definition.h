@@ -626,6 +626,8 @@ struct FBXData : zeno::IObjectClone<FBXData>{
     ICamera iCamera;
     ILight iLight;
 
+    zeno::DictObject iVisibility;
+
     std::shared_ptr<BoneTree> boneTree;
     std::shared_ptr<NodeTree> nodeTree;
     std::shared_ptr<AnimInfo> animInfo;
