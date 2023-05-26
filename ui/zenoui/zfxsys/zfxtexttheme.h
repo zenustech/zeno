@@ -13,7 +13,8 @@ enum ZfxTextStyle
 	C_KEYWORD,
 	C_FUNCTION,
 	C_COMMENT,
-	C_CurrentLine
+	C_CURRENTLINE,
+	C_PARENTHESES
 };
 
 class ZfxTextTheme

@@ -19,7 +19,9 @@ protected:
 
 private:
     void initRules();
-    void highlightCurrentLine();
+    void highlightCurrentLine(QList<QTextEdit::ExtraSelection>& extraSelections);
+    void highlightParenthesis(QList<QTextEdit::ExtraSelection>& extraSelections);
+    void onCursorPositionChanged();
     void onSelectionChanged();
 
     struct HighlightingRule {

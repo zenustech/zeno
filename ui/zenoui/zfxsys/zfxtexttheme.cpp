@@ -25,7 +25,8 @@ void ZfxTextTheme::initDefaultTheme()
 		{ZfxTextStyle::C_KEYWORD, {"#569cd6", ""}},
 		{ZfxTextStyle::C_NUMBER, {"#ae81ff", ""}},
 		{ZfxTextStyle::C_STRING, {"#ce9178", ""}},
-		{ZfxTextStyle::C_CurrentLine, {"", "#383b4c"}}
+		{ZfxTextStyle::C_CURRENTLINE, {"", "#383b4c"}},
+		{ZfxTextStyle::C_PARENTHESES, {"#f1a119", "#264f78"}}
 	};
 
 	for (const auto& [category, color] : colors) {
