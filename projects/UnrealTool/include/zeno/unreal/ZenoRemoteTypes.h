@@ -340,5 +340,6 @@ struct PointSet : public ZenoSubject<ESubjectType::PointSet> {
 };
 
 inline const static std::string NAME_LandscapeInfoSimple = "__Internal_Reserved_LandscapeInfo";
+inline const static std::string NAME_SurfaceSample = "__Internal_Reserved_SurfaceSample";
 
 }
