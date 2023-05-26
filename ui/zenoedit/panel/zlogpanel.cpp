@@ -10,6 +10,7 @@
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
 #include "settings/zenosettingsmanager.h"
+#include "common.h"
 
 
 LogItemDelegate::LogItemDelegate(QObject* parent)
@@ -241,16 +242,23 @@ bool LogItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, cons
                 ZASSERT_EXIT(graphsMgm, false);
                 IGraphsModel* pModel = graphsMgm->currentModel();
                 ZASSERT_EXIT(pModel, false);
-                QModelIndex idx = pModel->nodeIndex(ident);
+
+                QModelIndex idx, subgIdx;
+                auto search_result = pModel->search(ident, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
+                if (!search_result.isEmpty())
+                {
+                    idx = search_result[0].targetIdx;
+                    subgIdx = search_result[0].subgIdx;
+                }
                 if (idx.isValid())
                 {
-                    QModelIndex subgIdx = idx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
                     const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
                     ZenoMainWindow* pWin = zenoApp->getMainWindow();
                     ZASSERT_EXIT(pWin, false);
                     ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
                     if (pEditor) {
-                        pEditor->activateTab(subgName, "", ident, false);
+                        const QString& objPath = subgIdx.data(ROLE_OBJPATH).toString();
+                        pEditor->activateTabOfTree(objPath, ident);
                     }
                 }
             }
