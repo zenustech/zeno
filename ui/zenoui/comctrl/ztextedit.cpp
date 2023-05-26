@@ -96,8 +96,8 @@ void ZTextEdit::keyPressEvent(QKeyEvent* e)
             }
             // if ()) : auto delete right
             else if (right == e->text()) {
-                auto symbol = textUnderCursor();
-                if (symbol.right(1) == right) {
+                auto symbol = document()->characterAt(textCursor().position());
+                if (symbol == right) {
                     textCursor().deletePreviousChar();
                     moveCursor(QTextCursor::MoveOperation::Right);
                 }
