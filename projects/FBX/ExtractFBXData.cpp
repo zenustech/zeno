@@ -203,7 +203,10 @@ ZENDEFNODE(ExtractMatData,
                 "data"
             },  /* outputs: */
             {
-                "datas", "matName", "texLists", "texMaps"
+                {"ListObject", "datas", ""},
+                "matName",
+                {"ListObject", "texLists", ""},
+                {"DictObject", "texMaps", ""}
             },  /* params: */
             {
 

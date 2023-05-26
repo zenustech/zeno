@@ -47,10 +47,11 @@ struct Mesh{
     FBXData fbxData;
     std::filesystem::path fbxPath;
     std::unordered_map<std::string, std::vector<unsigned int>> m_VerticesSlice;
+    std::unordered_map<std::string, std::string> m_MeshNamePath;
+    std::unordered_map<std::string, std::string> m_OrigMeshNamePath;
     std::unordered_map<std::string, std::vector<std::string>> m_MatMeshNames;
     std::unordered_map<std::string, std::string> m_MeshCorsName;
     std::unordered_map<std::string, std::string> m_LoadedMeshName;
-    std::unordered_map<std::string, aiMatrix4x4> m_TransMatrix;
     std::unordered_map<std::string, SMaterial> m_loadedMat;
     std::unordered_map<std::string, float> m_MatUdimSize;
     std::unordered_map<std::string, std::vector<std::string>> m_BSName;
@@ -76,9 +77,9 @@ struct Mesh{
         fbxData.iMeshName.value = "__root__";
         fbxData.iMeshName.value_relName = "__root__";
 
-        createTexDir("valueTex");
-        readTrans(scene->mRootNode, aiMatrix4x4());
-        processNode(scene->mRootNode, scene);
+        //createTexDir("valueTex");
+        readTrans(scene->mRootNode, aiMatrix4x4(), "");
+        processNode(scene->mRootNode, scene, "");
         // TODO read Animation of Camera property and Light property,
         // e.g. FocalLength LightIntensity
         processCamera(scene);
@@ -111,23 +112,27 @@ struct Mesh{
         }
     }
 
-    void readTrans(const aiNode * parentNode, aiMatrix4x4 parentTransform){
+    void readTrans(const aiNode * parentNode, aiMatrix4x4 parentTransform, std::string parent_path){
         unsigned int childrenCount = parentNode->mNumChildren;
         aiMatrix4x4 transformation = parentNode->mTransformation;
 
-        std::string name( parentNode->mName.data ) ;
-        if (m_TransMatrix.find(name) == m_TransMatrix.end() && parentNode->mNumMeshes){
-            m_TransMatrix[name] = aiMatrix4x4();
-        }
+        auto pathName = parent_path + "/" + std::string(parentNode->mName.C_Str());
+
+        std::string name(parentNode->mName.data) ;
+        //if (m_TransMatrix.find(name) == m_TransMatrix.end() && parentNode->mNumMeshes){
+        //    m_TransMatrix[name] = aiMatrix4x4();
+        //}
+        //transformation = parentTransform * transformation;
+        //if(parentNode->mNumMeshes){
+        //    m_TransMatrix[name] = transformation * m_TransMatrix[name];
+        //}
 
         transformation = parentTransform * transformation;
-
-        if(parentNode->mNumMeshes){
-            m_TransMatrix[name] = transformation * m_TransMatrix[name];
-        }
+        fbxData.iPathTrans.value[pathName] = transformation;
+        //std::cout << "FBX: Node " << name << "\n";
 
         for (int i = 0; i < childrenCount; i++) {
-            readTrans(parentNode->mChildren[i], transformation);
+            readTrans(parentNode->mChildren[i], transformation, pathName);
         }
     }
 
@@ -137,6 +142,7 @@ struct Mesh{
         if(m_LoadedMeshName.find(meshName) != m_LoadedMeshName.end()){
             std::string newMeshName = meshName + "_" +std::to_string(m_MeshNameIncrease);
             m_MeshCorsName[newMeshName] = meshName;
+            std::cout << "FBX: fact-mat Name: " << meshName << " -> " << newMeshName << "\n";
             meshName = newMeshName;
 
             m_MeshNameIncrease++;
@@ -148,13 +154,42 @@ struct Mesh{
         return meshName;
     }
 
-    void processMesh(aiMesh *mesh, const aiScene *scene) {
-        std::string meshName = getFixedMeshName(mesh);
+    std::string reconstructionPathName(std::string path){
+        std::vector<std::string> parts;
+        std::istringstream iss(path);
+        std::string token;
+        while (std::getline(iss, token, '/')) {
+            if (!token.empty()) {
+                parts.push_back(token);
+            }
+        }
 
+        std::vector<std::string> results;
+        for (const auto& part : parts) {
+            size_t subStrEndPos = part.find("$AssimpFbx$");
+            if(subStrEndPos == std::string::npos){
+                results.emplace_back(part);
+            }
+        }
+
+        std::string repath = "/";
+        for (const auto& result : results) {
+            repath = repath + result + "/";
+        }
+        // Remove the last '/'
+        repath.pop_back();
+
+        return repath;
+    }
+
+    void processMesh(aiMesh *mesh, const aiScene *scene, std::string pathName) {
+        std::string meshName = getFixedMeshName(mesh);
         auto numAnimMesh = mesh->mNumAnimMeshes;
         float uv_scale = 1.0f;
-
-        zeno::log_info("FBX: Mesh name {}, vert count {} NumAnimMesh {}", meshName, mesh->mNumVertices, numAnimMesh);
+        auto origPathName = pathName;
+        pathName = reconstructionPathName(pathName);
+        ED_COUT << "FBX: Mesh name " << meshName << " VertCount " << mesh->mNumVertices << " NumAnimMesh " << numAnimMesh << " NumBone " << mesh->mNumBones << "\n";
+        ED_COUT << "FBX: Path name " << pathName << "\n";
 
         // Material
         if(mesh->mNumVertices)
@@ -283,19 +318,23 @@ struct Mesh{
                  m_PolysIncrease,  // Mesh Polys Count Start
                  m_PolysIncrease + polysCount  // Mesh Polys Count End
                  };
+        m_MeshNamePath[meshName] = pathName;
+        m_OrigMeshNamePath[meshName] = origPathName;
 
         m_IndicesIncrease += offsetIndices;
         m_PolysIncrease += polysCount;
         m_VerticesIncrease += mesh->mNumVertices;
     }
 
-    void processNode(aiNode *node, const aiScene *scene){
+    void processNode(aiNode *node, const aiScene *scene, std::string parent_path){
+        auto path = parent_path + "/" + std::string(node->mName.C_Str());
+        auto transform = node->mTransformation;
 
         //zeno::log_info("Node: Name {}", node->mName.data);
         for(unsigned int i = 0; i < node->mNumMeshes; i++)
-            processMesh(scene->mMeshes[node->mMeshes[i]], scene);
+            processMesh(scene->mMeshes[node->mMeshes[i]], scene, path);
         for(unsigned int i = 0; i < node->mNumChildren; i++)
-            processNode(node->mChildren[i], scene);
+            processNode(node->mChildren[i], scene, path);
     }
 
     void processNodeMat(aiNode *node, const aiScene *scene){
@@ -323,31 +362,31 @@ struct Mesh{
             aiMatrix4x4 camMatrix;
             cam->GetCameraMatrix(camMatrix);
 
-            SCamera sCam{cam->mHorizontalFOV,
-                         cam->mFocalLength,
-                         cam->mAspect,
-                         cam->mFilmWidth * 25.4f,  // inch to mm
-                         cam->mFilmHeight * 25.4f,
-                         cam->mClipPlaneNear,
-                         cam->mClipPlaneFar,
-                         zeno::vec3f(cam->mInterestPosition.x, cam->mInterestPosition.y, cam->mInterestPosition.z),
-                // TODO The following data that is all default, we use Cam-Anim TRS instead of them
-                /*zeno::vec3f(cam->mLookAt.x, cam->mLookAt.y, cam->mLookAt.z),*/
-                /*zeno::vec3f(cam->mPosition.x, cam->mPosition.y, cam->mPosition.z),*/
-                /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
-                /*camMatrix*/
-            };
-
-            zeno::log_info("{} hfov {} fl {} ap {} n {} f {}\n\tfw {} fh {} x {} y {} z {}",
-                           camName, sCam.hFov, sCam.focL, sCam.aspect, sCam.pNear, sCam.pFar,
-                           sCam.filmW, sCam.filmH,
-                           /*sCam.lookAt[0], sCam.lookAt[1], sCam.lookAt[2],  // default is 1,0,0*/
-                           /*sCam.pos[0], sCam.pos[1], sCam.pos[2], // default is 0,0,0*/
-                           /*sCam.up[0], sCam.up[1], sCam.up[2],  // default is 0,1,0*/
-                           sCam.interestPos[0], sCam.interestPos[1], sCam.interestPos[2]
-                           );
-
-            fbxData.iCamera.value[camName] = sCam;
+//            SCamera sCam{cam->mHorizontalFOV,
+//                         cam->mFocalLength,
+//                         cam->mAspect,
+//                         cam->mFilmWidth * 25.4f,  // inch to mm
+//                         cam->mFilmHeight * 25.4f,
+//                         cam->mClipPlaneNear,
+//                         cam->mClipPlaneFar,
+//                         zeno::vec3f(cam->mInterestPosition.x, cam->mInterestPosition.y, cam->mInterestPosition.z),
+//                // TODO The following data that is all default, we use Cam-Anim TRS instead of them
+//                /*zeno::vec3f(cam->mLookAt.x, cam->mLookAt.y, cam->mLookAt.z),*/
+//                /*zeno::vec3f(cam->mPosition.x, cam->mPosition.y, cam->mPosition.z),*/
+//                /*zeno::vec3f(cam->mUp.x, cam->mUp.y, cam->mUp.z),*/
+//                /*camMatrix*/
+//            };
+//
+//            zeno::log_info("{} hfov {} fl {} ap {} n {} f {}\n\tfw {} fh {} x {} y {} z {}",
+//                           camName, sCam.hFov, sCam.focL, sCam.aspect, sCam.pNear, sCam.pFar,
+//                           sCam.filmW, sCam.filmH,
+//                           /*sCam.lookAt[0], sCam.lookAt[1], sCam.lookAt[2],  // default is 1,0,0*/
+//                           /*sCam.pos[0], sCam.pos[1], sCam.pos[2], // default is 0,0,0*/
+//                           /*sCam.up[0], sCam.up[1], sCam.up[2],  // default is 0,1,0*/
+//                           sCam.interestPos[0], sCam.interestPos[1], sCam.interestPos[2]
+//                           );
+//
+//            fbxData.iCamera.value[camName] = sCam;
         }
     }
 
@@ -467,9 +506,9 @@ struct Mesh{
         SMaterial mat;
         mat.matName = matName;
 
-        std::string tmpMatName = matName;
-        std::replace(tmpMatName.begin(), tmpMatName.end(), ':', '_');
-        std::string vmPath = createTexDir("valueTex/" + tmpMatName);
+        //std::string tmpMatName = matName;
+        //std::replace(tmpMatName.begin(), tmpMatName.end(), ':', '_');
+        //std::string vmPath = createTexDir("valueTex/" + tmpMatName);
 
         zeno::log_info("FBX: Mesh name {} Mat name {}", relMeshName, matName);
 
@@ -760,6 +799,8 @@ struct Mesh{
 
         for(auto& iter: m_VerticesSlice) {
             std::string meshName = iter.first;
+            std::string pathName = m_MeshNamePath[iter.first];
+            std::string origPathName = m_OrigMeshNamePath[iter.first];
             std::string relMeshName = m_MeshCorsName[iter.first];
 
             std::vector<unsigned int> verSlice = iter.second;
@@ -782,20 +823,32 @@ struct Mesh{
             }
              */
 
+            bool applied = false;
+            bool verBone = false;
             for(unsigned int i=verStart; i<verEnd; i++){
                 if(verBoneNum == 0){
                     auto & vertex = fbxData.iVertices.value[i];
 
-                    if(foundMeshBone){
-                        //vertex.boneIds[0] = meshBoneId;
-                        //vertex.boneWeights[0] = meshBoneWeight;
-                    }else
-                    {
-                        // XXX processing model transformation
-                        vertex.position = m_TransMatrix[relMeshName] * fbxData.iVertices.value[i].position;
-                    }
+                    //if(foundMeshBone){
+                    //    //vertex.boneIds[0] = meshBoneId;
+                    //    //vertex.boneWeights[0] = meshBoneWeight;
+                    //}else
+                    //{
+                    //    // XXX processing model transformation
+                    //    vertex.position = m_TransMatrix[relMeshName] * fbxData.iVertices.value[i].position;
+                    //    applied = true;
+                    //}
+
+                    // Apply trans by eval node
+                    //vertex.position = fbxData.iPathTrans.value[relMeshName] * fbxData.iVertices.value[i].position;
+                    //vertex.position = fbxData.iPathTrans.value[origPathName] * fbxData.iVertices.value[i].position;
+
+                    applied = true;
+                }else{
+                    verBone = true;
                 }
             }
+            ED_COUT << "FBX: applied " << verBone << " " << applied << " " << meshName << "\n";
 
             // Sub-prims (applied node transform)
             auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
@@ -838,12 +891,15 @@ struct Mesh{
             sub_data->iIndices.valueLoops = sub_LoopsIndices;
             sub_data->iIndices.valuePolys = sub_PolysIndices;
             sub_data->iVertices.value = sub_vertices;
+            sub_data->iPathName.value = pathName;
+            sub_data->iPathName.value_oriPath = origPathName;
             sub_data->iMeshName.value = meshName;
             sub_data->iMeshName.value_relName = relMeshName;
             sub_data->iMeshName.value_matName = fbxData.iMaterial.value[meshName].matName;
             // TODO Currently it is the sub-data that has all the data
             sub_data->iBoneOffset = fbxData.iBoneOffset;
             sub_data->iBlendSData = fbxData.iBlendSData;
+            sub_data->iPathTrans = fbxData.iPathTrans;
             sub_data->iKeyMorph.value = morph;
             sub_data->iMeshInfo.value_corsName = m_MeshCorsName;
 
@@ -917,6 +973,7 @@ struct Anim{
     AnimInfo m_animInfo;
 
     void initAnim(aiScene const*scene, Mesh* model){
+        zeno::log_info("FBX: Init Animation");
 
         m_animInfo.duration = 0.0f;
         m_animInfo.tick = 0.0f;
@@ -934,14 +991,18 @@ struct Anim{
                 auto animation = scene->mAnimations[i];
                 m_animInfo.duration = animation->mDuration;
                 m_animInfo.tick = animation->mTicksPerSecond;
-                zeno::log_info("FBX: AniName {} NC {} NMC {} NMMC {} D {} T {}",
-                               animation->mName.data,
-                               animation->mNumChannels,
-                               animation->mNumMeshChannels,
-                               animation->mNumMorphMeshChannels,
-                               animation->mDuration,
-                               animation->mTicksPerSecond
-                               );
+                //zeno::log_info("FBX: AniName {} NC {} NMC {} NMMC {} D {} T {}",
+                //               animation->mName.data,
+                //               animation->mNumChannels,
+                //               animation->mNumMeshChannels,
+                //               animation->mNumMorphMeshChannels,
+                //               animation->mDuration,
+                //               animation->mTicksPerSecond
+                //               );
+
+                std::cout << "FBX Anim: Name " << animation->mName.data << " NumChannel " << animation->mNumChannels << "\n";
+                std::cout << "FBX Anim: NumMeshChannel " << animation->mNumMeshChannels << " NumMorphMeshChannel " << animation->mNumMorphMeshChannels << "\n";
+                std::cout << "FBX Anim: Duration " << animation->mDuration << " TicksPerSecond " << animation->mTicksPerSecond << "\n";
 
                 setupBones(animation);
                 setupBlendShape(animation);
@@ -968,14 +1029,16 @@ struct Anim{
     void setupBones(const aiAnimation *animation) {
         int size = animation->mNumChannels;
         //zeno::log_info("SetupBones: Num Channels {}", size);
+        double tickOffset = m_readOption.offsetInSeconds * animation->mTicksPerSecond;
 
         for (int i = 0; i < size; i++) {
             auto channel = animation->mChannels[i];
             std::string boneName(channel->mNodeName.data);
             //zeno::log_info("----- Name {}", boneName);
+            ED_COUT << " Anim Bone Name: " << boneName << " tickOffset " << tickOffset << "\n";
 
             SAnimBone bone;
-            bone.initBone(boneName, channel);
+            bone.initBone(boneName, channel, tickOffset);
 
             m_Bones.AnimBoneMap[boneName] = bone;
 
@@ -984,8 +1047,7 @@ struct Anim{
         }
         // XXX -5 ~ 18  ---> 5 -> 28
         //zeno::log_info("SetupBones: Num AnimBoneMap: {}", m_Bones.AnimBoneMap.size());
-        //std::cout << "FBX: MinTimeStamp " << m_animInfo.minTimeStamp
-        //          << " MaxTimeStamp " << m_animInfo.maxTimeStamp << std::endl;
+        std::cout << "FBX: MinTimeStamp " << m_animInfo.minTimeStamp << " MaxTimeStamp " << m_animInfo.maxTimeStamp << std::endl;
     }
 
     void setupBlendShape(const aiAnimation *animation){
@@ -1068,7 +1130,7 @@ void readFBXFile(
             return;
         }
 
-        mesh.createTexDir("valueTex");
+        //mesh.createTexDir("valueTex");
         mesh.processNodeMat(scene->mRootNode, scene);
         for(auto const&[key, value]:mesh.m_loadedMat){
             mats->lut[key] = value.clone();
@@ -1115,7 +1177,7 @@ void readFBXFile(
                                                                      aiProcess_GenSmoothNormals		   | // generate smooth normal vectors if not existing
                                                                      aiProcess_SplitLargeMeshes         | // split large, unrenderable meshes into submeshes
                                                                      aiProcess_Triangulate			   | // triangulate polygons with more than 3 edges
-                                                                     aiProcess_ConvertToLeftHanded	   | // convert everything to D3D left handed space
+                                                                     //aiProcess_ConvertToLeftHanded	   | // convert everything to D3D left handed space
                                                                      aiProcess_SortByPType              | // make 'clean' meshes which consist of a single typ of primitives
                                                                      0,
                                                                  nullptr,
@@ -1185,9 +1247,12 @@ struct ReadFBXPrim : zeno::INode {
         auto udim = get_param<std::string>("udim");
         auto primitive = get_param<bool>("primitive");
         auto generate = get_input2<bool>("generate");
+        auto offsetInSeconds = get_input2<float>("offset");
         auto invOpacity = get_param<bool>("invOpacity");
         auto triangulate = get_param<bool>("triangulate");
         auto printTree = get_param<bool>("printTree");
+
+        readOption.offsetInSeconds = offsetInSeconds;
         if (udim == "ENABLE")
             readOption.enableUDIM = true;
         if(invOpacity)
@@ -1241,11 +1306,16 @@ ZENDEFNODE(ReadFBXPrim,
                {
                    {"readpath", "path"},
                    {"readpath", "hintPath", "-1"},
-                   {"bool", "generate", "false"}
+                   {"bool", "generate", "false"},
+                   {"float", "offset", "0.0"}
                },  /* outputs: */
                {
-                   "prim", "prims", "data", "datas", "mats",
-                   "animinfo", "nodetree", "bonetree",
+                    "prim",
+                    {"DictObject", "prims", ""},
+                    "data",
+                    {"DictObject", "datas", ""},
+                    {"DictObject", "mats", ""},
+                "animinfo", "nodetree", "bonetree",
                },  /* params: */
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},

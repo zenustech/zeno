@@ -27,8 +27,11 @@ struct EvalAnim{
     NodeTree m_RootNode;
     SFBXData m_FbxData;
     AnimInfo m_animInfo;
+    IMeshName m_meshName;
+    IPathName m_pathName;
+    IPathTrans m_PathTrans;
 
-    std::unordered_map<std::string, aiMatrix4x4> m_Transforms;
+    std::unordered_map<std::string, aiMatrix4x4> m_BoneTransforms;
     std::unordered_map<std::string, aiMatrix4x4> m_LazyTransforms;
     std::unordered_map<std::string, SBoneOffset> m_BoneOffset;
     std::unordered_map<std::string, SAnimBone> m_AnimBones;
@@ -51,6 +54,10 @@ struct EvalAnim{
         m_IndicesPolys = fbxData->iIndices.valuePolys;
         m_IndicesLoops = fbxData->iIndices.valueLoops;
 
+        m_meshName = fbxData->iMeshName;
+        m_pathName = fbxData->iPathName;
+        m_PathTrans = fbxData->iPathTrans;
+
         m_RootNode = *nodeTree;
         m_AnimBones = boneTree->AnimBoneMap;
         m_BoneOffset = fbxData->iBoneOffset.value;
@@ -58,16 +65,17 @@ struct EvalAnim{
         m_CurrentFrame = 0.0f;
     }
 
-    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim, float fps) {
+    void updateAnimation(int fi, std::shared_ptr<zeno::PrimitiveObject>& prim) {
         // TODO Use the actual frame number
-        float dt = fi / fps;
+        auto tick_fps = m_animInfo.tick;
+        float dt = (float)fi / tick_fps;
         m_DeltaTime = dt;
-        m_CurrentFrame += m_animInfo.tick * dt;
-        m_CurrentFrame = fmod(m_CurrentFrame, m_animInfo.duration);
+        m_CurrentFrame += tick_fps * dt;
+        //m_CurrentFrame = fmod(m_CurrentFrame, m_animInfo.duration);
 
         //zeno::log_info("Update: F {} D {} C {}", fi, dt, m_CurrentFrame);
-        //std::cout << "FBX: CurrentFrame " << m_CurrentFrame << " Duration "
-        //          << m_animInfo.duration << " DeltaTime " << m_DeltaTime << std::endl;
+        ED_COUT << "FBX: Frame " << m_CurrentFrame << " Duration " << m_animInfo.duration << " " << m_pathName.value << std::endl;
+        ED_COUT << "FBX: FrameID " << fi << " Tick " << m_animInfo.tick << " DeltaTime " << dt << std::endl;
 
         if(m_evalOption.writeData){
             expandBoneTransform(&m_RootNode, "", aiMatrix4x4());
@@ -79,15 +87,21 @@ struct EvalAnim{
             }
         }
 
-        calculateBoneTransform(&m_RootNode, aiMatrix4x4());
+        if(m_evalOption.printAnimData) {
+            std::cout << "----- >" << m_pathName.value << "\n";
+        }
+        calculateBoneTransform(&m_RootNode, aiMatrix4x4(), "");
         calculateFinal(prim);
+        if(m_evalOption.printAnimData) {
+            std::cout << "===== <" << m_pathName.value << "\n";
+        }
     }
 
     void decomposeAnimation(std::shared_ptr<zeno::DictObject> &t,
                             std::shared_ptr<zeno::DictObject> &r,
                             std::shared_ptr<zeno::DictObject> &s){
 
-        for(auto& m:m_Transforms){
+        for(auto& m:m_BoneTransforms){
             //zeno::log_info("A {}", m.first);
             aiVector3t<float> trans;
             aiQuaterniont<float> rotate;
@@ -158,16 +172,17 @@ struct EvalAnim{
         if (m_BoneOffset.find(nodeName) != m_BoneOffset.end()) {  // found
             std::string boneName = m_BoneOffset[nodeName].name;
             aiMatrix4x4 boneOffset = m_BoneOffset[nodeName].offset;
-            m_Transforms[boneName] = globalTransformation * boneOffset;
+            m_BoneTransforms[boneName] = globalTransformation * boneOffset;
         }
 
         for (int i = 0; i < node->childrenCount; i++)
             expandBoneTransform(&node->children[i], cName, globalTransformation);
     }
 
-    void calculateBoneTransform(const NodeTree *node, aiMatrix4x4 parentTransform) {
+    void calculateBoneTransform(const NodeTree *node, aiMatrix4x4 parentTransform, std::string parent_path) {
         std::string nodeName = node->name;
         aiMatrix4x4 nodeTransform = node->transformation;
+        auto pathName = parent_path + "/" + nodeName;
 
         if(m_evalOption.printAnimData) {
             std::cout << "---------- ---------- ----------\n";
@@ -187,7 +202,7 @@ struct EvalAnim{
 
             if(m_evalOption.printAnimData) {
                 std::cout << "FBX: Anim Node Name " << nodeName << std::endl;
-                Helper::printAiMatrix(nodeTransform);
+                //Helper::printAiMatrix(nodeTransform);
             }
         }
         aiMatrix4x4 globalTransformation = parentTransform * nodeTransform;
@@ -199,32 +214,36 @@ struct EvalAnim{
 
             if(m_evalOption.printAnimData) {
                 std::cout << "FBX: Bone Node Name " << nodeName << std::endl;
-                Helper::printAiMatrix(boneOffset);
+                //Helper::printAiMatrix(boneOffset);
             }
 
-            m_Transforms[boneName] = globalTransformation * boneOffset;
+            m_BoneTransforms[boneName] = globalTransformation * boneOffset;
             if(m_evalOption.printAnimData) {
-                std::cout << "FBX: Transform " << boneName << "\n";
-                Helper::printAiMatrix(m_Transforms[boneName]);
-            }
-        }else{
-            // The child is already applied the parent transformation by the tree struct.
-            m_LazyTransforms[nodeName] = globalTransformation;
-            if(m_evalOption.printAnimData) {
-                std::cout << std::fixed << "FBX: Lazy Node Name " << nodeName << std::endl;
+                //std::cout << "FBX: Transform " << boneName << "\n";
+                //Helper::printAiMatrix(m_BoneTransforms[boneName]);
             }
         }
 
+            // The child is already applied the parent transformation by the tree struct.
+            m_LazyTransforms[pathName] = globalTransformation;
+
+            if(m_evalOption.printAnimData) {
+                std::cout << std::fixed << "FBX: Lazy Node Name " << nodeName << std::endl;
+                Helper::printAiMatrix(globalTransformation);
+            }
+
         for (int i = 0; i < node->childrenCount; i++)
-            calculateBoneTransform(&node->children[i], globalTransformation);
+            calculateBoneTransform(&node->children[i], globalTransformation, pathName);
     }
 
     void updateCameraAndLight(std::shared_ptr<FBXData>& fbxData,
                               std::shared_ptr<ICamera>& iCamera,
                               std::shared_ptr<ILight>& iLight)
     {
-        float s = m_evalOption.globalScale;
+        float gscale = m_evalOption.globalScale;
+        // TODO We didn't consider that the camera might be in the hierarchy
         for(auto& m: m_LazyTransforms){
+            //std::cout << " ===== " << m.first << "\n";
             if(fbxData->iCamera.value.find(m.first) != fbxData->iCamera.value.end()){
                 //zeno::log_info("----- LT Camera {}", m.first);
                 //Helper::printAiMatrix(m.second, true);
@@ -235,7 +254,7 @@ struct EvalAnim{
                 aiQuaterniont<float> rotate;
                 aiVector3t<float> scale;
                 m.second.Decompose(scale, rotate, trans);
-                cam.pos = zeno::vec3f(trans.x*s, trans.y*s, trans.z*s);
+                cam.pos = zeno::vec3f(trans.x * gscale, trans.y * gscale, trans.z * gscale);
                 aiMatrix3x3 r = rotate.GetMatrix().Transpose();
                 cam.view = zeno::vec3f(r.a1, r.a2, r.a3);
                 cam.up = zeno::vec3f(r.b1, r.b2, r.b3);
@@ -258,6 +277,13 @@ struct EvalAnim{
         auto &posb = prim->verts.add_attr<zeno::vec3f>("posb");
         auto &clr0 = prim->verts.add_attr<zeno::vec3f>("clr0");
         bool isTris = false;
+
+        //std::cout << "Eval name: " << m_meshName.value << "\n";
+        //std::cout << "Eval name: " << m_meshName.value_matName << "\n";
+        //std::cout << "Eval name: " << m_meshName.value_relName << "\n";
+        //std::cout << "Eval name: " << m_pathName.value << "\n";
+        //std::cout << "Eval name: " << m_pathName.value_oriPath << "\n";
+
         if(m_IndicesLoops.size() == 0){
             isTris = true;
         }else{
@@ -270,7 +296,43 @@ struct EvalAnim{
         }
         int jie = m_FbxData.jointIndices_elementSize;
         prim->userData().set2("jointIndicesElementSize", std::move(jie));
-        float s = m_evalOption.globalScale;
+        float gscale = m_evalOption.globalScale;
+
+        // Trans
+        glm::mat4 pathTrans{};
+        auto pathName = m_pathName.value_oriPath;
+        int tranType = -1;
+        if(m_LazyTransforms.find(pathName) != m_LazyTransforms.end()){
+            auto& tr = m_LazyTransforms[pathName];
+            pathTrans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
+                                  tr.a2,tr.b2,tr.c2,tr.d2,
+                                  tr.a3,tr.b3,tr.c3,tr.d3,
+                                  tr.a4,tr.b4,tr.c4,tr.d4);
+            if(m_evalOption.printAnimData) {
+                std::cout << "Eval Lazy Trans\n";
+                Helper::printAiMatrix(tr);
+                std::cout << "===============\n";
+            }
+            tranType = 0;
+
+        }else if(m_PathTrans.value.find(pathName) != m_PathTrans.value.end()) {
+            auto& tr = m_PathTrans.value[pathName];
+            pathTrans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
+                                  tr.a2,tr.b2,tr.c2,tr.d2,
+                                  tr.a3,tr.b3,tr.c3,tr.d3,
+                                  tr.a4,tr.b4,tr.c4,tr.d4);
+            if(m_evalOption.printAnimData) {
+                std::cout << "Eval Path Trans\n";
+                Helper::printAiMatrix(tr);
+                std::cout << "===============\n";
+            }
+            tranType = 1;
+        }else{
+            tranType = 2;
+        }
+        if(m_evalOption.printAnimData) {
+            std::cout << "Eval: Trans Type " << tranType << "\n";
+        }
 
         for(unsigned int i=0; i<m_Vertices.size(); i++){
             auto& bwe = m_Vertices[i].boneWeights;
@@ -283,7 +345,9 @@ struct EvalAnim{
 
             bool infd = false;
             int bCount = 0;
+            // Influence
             for(auto& b: bwe){
+                // e.g. b.first -> joint1
                 if(jie){
                     float bIndex = (float)m_JointCorrespondingIndex[b.first];
                     prim->verts.attr<float>("jointIndice_" + std::to_string(bCount)).push_back(bIndex);
@@ -291,7 +355,7 @@ struct EvalAnim{
                 }
                 //std::cout << "FBX: Vert " << i << " name " << b.first << " bIndex " << bIndex << std::endl;
                 infd = true;
-                auto& tr = m_Transforms[b.first];
+                auto& tr = m_BoneTransforms[b.first];
                 glm::mat4 trans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
                                             tr.a2,tr.b2,tr.c2,tr.d2,
                                             tr.a3,tr.b3,tr.c3,tr.d3,
@@ -300,17 +364,21 @@ struct EvalAnim{
                 tpos += lpos * b.second;
                 bCount += 1;
             }
+
             // Supplement, joint index supplement 0, weight 0
             for(int z=bCount; z<m_FbxData.jointIndices_elementSize; z++){
                 prim->verts.attr<float>("jointIndice_" + std::to_string(bCount)).push_back(0);
                 prim->verts.attr<float>("jointWeight_" + std::to_string(bCount)).push_back(0.0f);
             }
-            if(! infd)
-                tpos = glm::vec4(pos.x, pos.y, pos.z, 1.0f);
+
+            // Transform
+            if(! infd) {
+                tpos = pathTrans * glm::vec4(pos.x, pos.y, pos.z, 1.0f);
+            }
 
             glm::vec3 fpos = glm::vec3(tpos.x/tpos.w, tpos.y/tpos.w, tpos.z/tpos.w);
 
-            ver.emplace_back(fpos.x*s, fpos.y*s, fpos.z*s);
+            ver.emplace_back(fpos.x * gscale, fpos.y * gscale, fpos.z * gscale);
             posb.emplace_back(0.0f, 0.0f, 0.0f);
             uv.emplace_back(uvw.x, uvw.y, uvw.z);
             norm.emplace_back(nor.x, nor.y, nor.z);
@@ -361,7 +429,7 @@ struct EvalFBXAnim : zeno::INode {
 
         SFBXEvalOption evalOption;
         auto fbxData = get_input<FBXData>("data");
-        auto fps = get_input2<float>("fps");
+        //auto fps = get_input2<float>("fps");
         auto unit = get_param<std::string>("unit");
         auto interAnimData = get_param<std::string>("interAnimData");
         auto writeData = get_param<bool>("writeData");
@@ -391,12 +459,13 @@ struct EvalFBXAnim : zeno::INode {
         auto iCamera = std::make_shared<ICamera>();
         auto iLight = std::make_shared<ILight>();
         auto matName = std::make_shared<zeno::StringObject>();
+        auto pathName = std::make_shared<zeno::StringObject>();
         auto outMeshName = std::make_shared<zeno::StringObject>();
 
         EvalAnim anim;
         anim.m_evalOption = evalOption;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
-        anim.updateAnimation(frameid, prim, fps);
+        anim.updateAnimation(frameid, prim);
         anim.updateCameraAndLight(fbxData, iCamera, iLight);
         anim.decomposeAnimation(transDict, quatDict, scaleDict);
 
@@ -405,6 +474,7 @@ struct EvalFBXAnim : zeno::INode {
         auto& meshName = fbxData->iMeshName.value_relName;
 
         matName->set(fbxData->iMeshName.value_matName);
+        pathName->set(fbxData->iPathName.value);
         outMeshName->set(meshName);
 
         auto& kmValue = fbxData->iKeyMorph.value;
@@ -492,6 +562,7 @@ struct EvalFBXAnim : zeno::INode {
         set_output("camera", std::move(iCamera));
         set_output("light", std::move(iLight));
         set_output("matName", std::move(matName));
+        set_output("pathName", std::move(pathName));
         set_output("meshName", std::move(outMeshName));
         set_output("transDict", std::move(transDict));
         set_output("quatDict", std::move(quatDict));
@@ -503,11 +574,11 @@ ZENDEFNODE(EvalFBXAnim,
            {       /* inputs: */
                {
                    {"frameid"},
-                   {"float", "fps", "24.0"},
+                   //{"float", "fps", "24.0"},
                    "data", "animinfo", "nodetree", "bonetree",
                },  /* outputs: */
                {
-                   "prim", "camera", "light", "matName", "meshName", "bsPrims", "bsPrimsOrigin",
+                   "prim", "camera", "light", "matName", "meshName", "pathName", "bsPrims", "bsPrimsOrigin",
                    "transDict", "quatDict", "scaleDict",
                    "writeData"
                },  /* params: */

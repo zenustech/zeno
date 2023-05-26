@@ -11,8 +11,25 @@ set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT FALSE CACHE BOOL "GUN TMD ASS" FORCE)
 set(ASSIMP_BUILD_FBX_IMPORTER TRUE CACHE BOOL "CIHOU FBX" FORCE)
 set(ASSIMP_BUILD_FBX_EXPORTER TRUE CACHE BOOL "CIHOU FBX" FORCE)
 add_subdirectory(assimp)
-
 target_link_libraries(zeno PRIVATE assimp)
+
+#find_package(assimp CONFIG REQUIRED)
+#target_link_libraries(zeno PRIVATE assimp::assimp)
+
+if(ZENO_FBXSDK)
+    message(STATUS "FBX_SDK_DIR: ${FBX_SDK_DIR}")
+    target_compile_definitions(zeno PRIVATE -DZENO_FBXSDK)
+    if(WIN32)
+        target_include_directories(zeno PRIVATE ${FBX_SDK_DIR}/windows/2020.3.1/include)
+
+        target_link_libraries(zeno PRIVATE ${FBX_SDK_DIR}/windows/2020.3.1/lib/vs2019/x64/release/libfbxsdk-md.lib)
+        target_link_libraries(zeno PRIVATE ${FBX_SDK_DIR}/windows/2020.3.1/lib/vs2019/x64/release/libxml2-md.lib)
+    else()
+        target_include_directories(zeno PRIVATE ${FBX_SDK_DIR}/linux/include)
+
+        target_link_libraries(zeno PRIVATE ${FBX_SDK_DIR}/linux/lib/gcc/x64/release/libfbxsdk.a)
+endif()
+endif()
 
 set(DEM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/dem-bones-bin/bin/${CMAKE_SYSTEM_NAME})
 if (NOT EXISTS ${DEM_DIR})
