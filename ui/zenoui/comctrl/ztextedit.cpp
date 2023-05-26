@@ -77,14 +77,21 @@ void ZTextEdit::resizeEvent(QResizeEvent* e)
 
 void ZTextEdit::keyPressEvent(QKeyEvent* e)
 {
+    auto selectedText = textCursor().selectedText();
     QTextEdit::keyPressEvent(e);
 
     if (m_autoParentheses) {
         for (const auto& [left, right] : parentheses) {
             // if ( : auto add right
             if (left == e->text()) {
-                insertPlainText(right);
-                moveCursor(QTextCursor::MoveOperation::Left);
+                if (selectedText.isEmpty()) {
+                    insertPlainText(right);
+                    moveCursor(QTextCursor::MoveOperation::Left);
+                }
+                else {
+                    insertPlainText(selectedText);
+                    insertPlainText(right);
+                }
                 break;
             }
             // if ()) : auto delete right
