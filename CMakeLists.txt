@@ -60,8 +60,6 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 if (WIN32)
     # get rid of 'min', 'max' macros; get back 'M_PI', 'M_E'
     add_definitions(-DNOMINMAX -D_USE_MATH_DEFINES)
-    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 endif()
 
 if (ZENO_USE_CCACHE AND NOT MSVC)  # speed up compilation by cache (https://ccache.dev)
@@ -187,6 +185,9 @@ endif()
 
 add_subdirectory(zeno)
 
+target_compile_options(zeno
+            PUBLIC $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /utf-8, >>
+            )
 if (ZENO_BUILD_EDITOR OR ZENO_BUILD_DESIGNER)
     message(STATUS "Building Zeno UI Library")
     add_subdirectory(ui/zenoui)
