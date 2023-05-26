@@ -13,43 +13,6 @@
 
 namespace zeno {
 
-/// credits: du wenxin
-template <typename T = float, typename Ti = int> struct CsrMatrix {
-    using value_type = T;
-    using index_type = std::make_signed_t<Ti>;
-    using size_type = std::make_unsigned_t<Ti>;
-    using table_type = zs::bcht<zs::vec<int, 2>, index_type, true, zs::universal_hash<zs::vec<int, 2>>, 16>;
-    size_type nrows = 0, ncols = 0; // for square matrix, nrows = ncols
-    zs::Vector<size_type> ap{};
-    zs::Vector<int> aj{};
-    zs::Vector<value_type> ax{};
-    // for build
-    table_type tab{};
-    zs::Vector<size_type> nnz{}; // non-zero entries per row
-};
-
-template <typename CsrMatrixT> struct CsrView {
-    static constexpr bool is_const_structure = std::is_const_v<CsrMatrixT>;
-    using value_type = typename CsrMatrixT::value_type;
-    using index_type = typename CsrMatrixT::index_type;
-    using size_type = typename CsrMatrixT::size_type;
-    CsrView(CsrMatrixT &mat)
-        : nrows{mat.nrows}, ncols{mat.ncols}, ap{mat.ap.data()}, aj{mat.aj.data()}, ax{mat.ax.data()} {
-    }
-
-    size_type nrows, ncols;
-    zs::conditional_t<is_const_structure, const size_type *, size_type *> ap;
-    zs::conditional_t<is_const_structure, const int *, int *> aj;
-    zs::conditional_t<is_const_structure, const value_type *, value_type *> ax;
-};
-
-template <zs::execspace_e space, typename T, typename Ti> auto proxy(CsrMatrix<T, Ti> &csr) {
-    return CsrView<CsrMatrix<T, Ti>>{csr};
-}
-template <zs::execspace_e space, typename T, typename Ti> auto proxy(const CsrMatrix<T, Ti> &csr) {
-    return CsrView<const CsrMatrix<T, Ti>>{csr};
-}
-
 /// for cell-based collision detection
 
 struct ClothSystem : IObject {

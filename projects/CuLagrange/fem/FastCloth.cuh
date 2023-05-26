@@ -48,7 +48,7 @@ struct FastClothSystem : IObject {
     using sh_t = zs::SpatialHash<3, int, T>;
     using bv_t = typename bvh_t::Box;
 #if !s_debugRemoveHashTable
-    using etab_t = typename zs::bcht<ivec2, int, true, zs::universal_hash<ivec2>, 32>;
+    using etab_t = typename zs::bht<int, 2, int, 32>;
 #endif
     static constexpr T s_constraint_residual = 1e-3;
     static constexpr T boundaryKappa = 1e1;

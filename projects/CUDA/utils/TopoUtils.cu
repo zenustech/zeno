@@ -1,6 +1,6 @@
 #include "TopoUtils.hpp"
-#include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/container/Bht.hpp"
+#include "zensim/cuda/execution/ExecutionPolicy.cuh"
 
 namespace zeno {
 
@@ -102,7 +102,7 @@ void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, ZenoParticles::part
     /// @brief compute fp neighbors
     /// @note  surface vertex index is not necessarily consecutive, thus hashing
     {
-        bcht<int, int, true, universal_hash<int>, 32> vtab{svs.get_allocator(), svs.size()};
+        bht<int, 1, int, 32> vtab{svs.get_allocator(), svs.size()};
         Vector<int> svi{etab.get_allocator(), svs.size()}; // surftri indices corresponding to edges in the table
         // svs
         pol(range(svs.size()), [vtab = proxy<space>(vtab), svs = proxy<space>({}, svs),
