@@ -356,11 +356,6 @@ NODE_CATES GraphsTreeModel::getCates()
     return m_pSubgraphs->getCates();
 }
 
-QModelIndexList GraphsTreeModel::searchInSubgraph(const QString &objName, const QModelIndex &idx)
-{
-    return m_impl->searchInSubgraph(objName, idx);
-}
-
 QModelIndexList GraphsTreeModel::subgraphsIndice() const
 {
     return QModelIndexList();
@@ -369,10 +364,16 @@ QModelIndexList GraphsTreeModel::subgraphsIndice() const
 QList<SEARCH_RESULT> GraphsTreeModel::search(
                             const QString &content,
                             int searchType,
-                            int searchOpts,
-                            QVector<SubGraphModel *> vec)
+                            int searchOpts)
 {
-    return m_impl->search(content, searchType, searchOpts, vec);
+    return m_impl->search(content, searchType, searchOpts);
+}
+
+QModelIndexList GraphsTreeModel::searchInSubgraph(
+                            const QString& objName,
+                            const QModelIndex& idx)
+{
+    return m_impl->searchInSubgraph(objName, idx);
 }
 
 void GraphsTreeModel::removeGraph(int idx)

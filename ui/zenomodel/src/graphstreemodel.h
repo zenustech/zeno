@@ -86,8 +86,7 @@ public:
     NODE_CATES getCates() override;
     QModelIndexList searchInSubgraph(const QString &objName, const QModelIndex &idx) override;
     QModelIndexList subgraphsIndice() const override;
-    QList<SEARCH_RESULT> search(const QString &content, int searchType, int searchOpts,
-                                        QVector<SubGraphModel *> vec = QVector<SubGraphModel *>()) override;
+    QList<SEARCH_RESULT> search(const QString &content, int searchType, int searchOpts) override;
     void removeGraph(int idx) override;
     QString fileName() const override;
     QString filePath() const override;

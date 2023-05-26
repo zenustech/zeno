@@ -779,21 +779,65 @@ bool GraphsTreeModel_impl::setCustomName(const QModelIndex& subgIdx, const QMode
     return setData(idx, value, ROLE_CUSTOM_OBJNAME);
 }
 
-QModelIndexList GraphsTreeModel_impl::searchInSubgraph(const QString& objName, const QModelIndex& idx)
+QModelIndexList GraphsTreeModel_impl::searchInSubgraph(const QString& objName, const QModelIndex& subgIdx)
 {
-    //todo:
+    QList<SEARCH_RESULT> results = search_impl(subgIdx, objName, SEARCHALL, SEARCH_FUZZ, false);
     QModelIndexList list;
+    for (auto res : results) {
+        list.append(res.targetIdx);
+    }
     return list;
 }
 
 QList<SEARCH_RESULT> GraphsTreeModel_impl::search(
                             const QString& content,
                             int searchType,
-                            int searchOpts,
-                            QVector<SubGraphModel*> vec)
+                            int searchOpts)
 {
+    const QModelIndex& mainIdx = m_main->index();
+    return search_impl(mainIdx, content, searchType, searchOpts, true);
+}
+
+QList<SEARCH_RESULT> GraphsTreeModel_impl::search_impl(
+            const QModelIndex& root,
+            const QString &content,
+            int searchType,
+            int searchOpts,
+            bool bRecursivly)
+{
+    QList<SEARCH_RESULT> results;
+    if (content.isEmpty())
+        return results;
+
+    TreeNodeItem* pRootItem = static_cast<TreeNodeItem*>(itemFromIndex(root));
+    ZASSERT_EXIT(pRootItem, results);
+
+    if (SEARCH_NODEID == searchType)
+    {
+        TreeNodeItem* pChildItem = pRootItem->childItem(content);
+        if (pChildItem)
+        {
+            SEARCH_RESULT result;
+            result.targetIdx = pChildItem->index();
+            result.subgIdx = root;
+            result.type = SEARCH_NODEID;
+            results.append(result);
+        }
+        if (bRecursivly && results.isEmpty())
+        {
+            for (int r = 0; r < pChildItem->rowCount(); r++)
+            {
+                pChildItem = static_cast<TreeNodeItem*>(pChildItem->child(r));
+                if (pChildItem->rowCount() > 0)
+                    results.append(search_impl(pChildItem->index(), content, searchType, searchOpts, bRecursivly));
+                if (!results.isEmpty())
+                    break;
+            }
+        }
+        return results;
+    }
+
     //todo:
-    return QList<SEARCH_RESULT>();
 }
 
 QRectF GraphsTreeModel_impl::viewRect(const QModelIndex &subgIdx)

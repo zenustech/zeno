@@ -1514,20 +1514,6 @@ void GraphsModel::clear()
     emit modelClear();
 }
 
-QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QModelIndex& subgIdx)
-{
-    SubGraphModel* pModel = subGraph(subgIdx.row());
-    QVector<SubGraphModel *> vec;
-    vec << pModel;
-    QList<SEARCH_RESULT> results = search(objName, SEARCH_ARGS | SEARCH_NODECLS | SEARCH_NODEID | SEARCH_CUSTOM_NAME, SEARCH_FUZZ, vec);
-    QModelIndexList list;
-    for (auto res : results) 
-    {
-        list.append(res.targetIdx);
-    }
-    return list;
-}
-
 QModelIndexList GraphsModel::subgraphsIndice() const
 {
     //todo: deprecated
@@ -1762,7 +1748,33 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     }
 }
 
-QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType, int searchOpts, QVector<SubGraphModel*> vec)
+QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType, int searchOpts)
+{
+    return search_impl(content, searchType, searchOpts);
+}
+
+QModelIndexList GraphsModel::searchInSubgraph(const QString& objName, const QModelIndex& subgIdx)
+{
+    SubGraphModel* pModel = subGraph(subgIdx.row());
+    QVector<SubGraphModel *> vec;
+    vec << pModel;
+    QList<SEARCH_RESULT> results = search_impl(
+                    objName,
+                    SEARCH_ARGS | SEARCH_NODECLS | SEARCH_NODEID | SEARCH_CUSTOM_NAME, SEARCH_FUZZ,
+                    vec);
+    QModelIndexList list;
+    for (auto res : results) 
+    {
+        list.append(res.targetIdx);
+    }
+    return list;
+}
+
+QList<SEARCH_RESULT> GraphsModel::search_impl(
+                    const QString &content,
+                    int searchType,
+                    int searchOpts,
+                    QVector<SubGraphModel *> vec)
 {
     QList<SEARCH_RESULT> results;
     if (content.isEmpty())
@@ -1886,7 +1898,7 @@ void GraphsModel::collaspe(const QModelIndex& subgIdx)
 
 void GraphsModel::expand(const QModelIndex& subgIdx)
 {
-	SubGraphModel* pModel = subGraph(subgIdx.row());
+    SubGraphModel* pModel = subGraph(subgIdx.row());
     ZASSERT_EXIT(pModel);
     pModel->expand();
 }

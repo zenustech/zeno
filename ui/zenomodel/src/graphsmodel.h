@@ -114,8 +114,7 @@ public:
     QList<SEARCH_RESULT> search(
                         const QString &content,
                         int searchType,
-                        int searchOpts,
-                        QVector<SubGraphModel*> vec = QVector<SubGraphModel *>()) override;
+                        int searchOpts) override;
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
 
@@ -154,6 +153,11 @@ public slots:
 	void on_linkRemoved(const QModelIndex& parent, int first, int last);
 
 private:
+    QList<SEARCH_RESULT> search_impl(
+            const QString &content,
+            int searchType,
+            int searchOpts,
+            QVector<SubGraphModel*> vec = QVector<SubGraphModel *>());
     NODE_DESCS getCoreDescs();
     void parseDescStr(const QString& descStr, QString& name, QString& type, QVariant& defl);
     void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);

@@ -70,9 +70,8 @@ public:
     NODE_DATA itemData(const QModelIndex &index, const QModelIndex &subGpIdx) const;
     void setName(const QString &name, const QModelIndex &subGpIdx);
 
-    QModelIndexList searchInSubgraph(const QString &objName, const QModelIndex &idx);
-    QList<SEARCH_RESULT> search(const QString &content, int searchType, int searchOpts,
-                                QVector<SubGraphModel *> vec = QVector<SubGraphModel *>());
+    QModelIndexList searchInSubgraph(const QString &objName, const QModelIndex &subgIdx);
+    QList<SEARCH_RESULT> search(const QString &content, int searchType, int searchOpts);
     QRectF viewRect(const QModelIndex &subgIdx);
     void collaspe(const QModelIndex &subgIdx);
     void expand(const QModelIndex &subgIdx);
@@ -93,6 +92,12 @@ private:
                         const QString &subnetName,
                         const NODE_DATA &nodeData,
                         QList<EdgeInfo>& newLinks);
+    QList<SEARCH_RESULT> search_impl(
+            const QModelIndex& root,
+            const QString &content,
+            int searchType,
+            int searchOpts,
+            bool bRecursivly);
 
     TreeNodeItem* m_main;       //not invisible root.
     LinkModel* m_linkModel;
