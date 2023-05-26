@@ -220,7 +220,7 @@ struct PrimitiveConnectedComponents : INode {
         std::vector<int> elementOffsets(elementMarks.size());
 
         using IV = zs::vec<int, 2>;
-        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{expectedLinks};
+        zs::bht<int, 2, int, 16> tab{expectedLinks};
         std::vector<int> is, js;
 
         if (hasTris) {
@@ -267,7 +267,7 @@ struct PrimitiveConnectedComponents : INode {
         union_find(pol, spmat, range(fas));
 
         /// @note update ancestors, discretize connected components
-        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+        zs::bht<int, 1, int, 16> vtab{pos.size()};
 
         pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
             auto fa = fas[vi];
@@ -498,8 +498,7 @@ struct PrimitiveMarkIslands : INode {
         const auto &loops = prim->loops;
         const auto &polys = prim->polys;
         using IV = zs::vec<int, 2>;
-        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{
-            (std::size_t)(polys.values.back()[0] + polys.values.back()[1])};
+        zs::bht<int, 2, int, 16> tab{(std::size_t)(polys.values.back()[0] + polys.values.back()[1])};
         std::vector<int> is, js;
         pol(range(polys), [&, tab = view<space>(tab)](const auto &poly) mutable {
             auto offset = poly[0];
@@ -531,7 +530,7 @@ struct PrimitiveMarkIslands : INode {
         union_find(pol, spmat, range(fas));
 
         /// @note update ancestors, discretize connected components
-        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+        zs::bht<int, 1, int, 16> vtab{pos.size()};
 
         pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
             auto fa = fas[vi];
@@ -815,7 +814,6 @@ struct PrimitiveFuse : INode {
         union_find(pol, spmat, range(fas));
 
         bht<int, 1, int> vtab{pos.size() * 3 / 2};
-        vtab.reset(pol, true);
         pol(range(pos.size()), [&fas, vtab = proxy<space>(vtab)](int vi) mutable {
             auto fa = fas[vi];
             while (fa != fas[fa])
@@ -1223,7 +1221,7 @@ struct ParticleCluster : zeno::INode {
         std::vector<int> fas(pos.size());
         union_find(pol, spmat, range(fas));
         /// @note update ancestors, discretize connected components
-        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{pos.size()};
+        zs::bht<int, 1, int, 16> vtab{pos.size()};
         pol(range(pos.size()), [&fas, vtab = view<space>(vtab)](int vi) mutable {
             auto fa = fas[vi];
             while (fa != fas[fa])
@@ -1531,7 +1529,7 @@ struct PrimitiveBFS : INode {
         const auto &quads = prim->quads.values;
 
         using IV = zs::vec<int, 2>;
-        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
+        zs::bht<int, 2, int, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
         std::vector<int> is, js;
         auto buildTopo = [&](const auto &eles) mutable {
             pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
@@ -1640,7 +1638,7 @@ struct PrimitiveColoring : INode {
         const auto &quads = prim->quads.values;
 
         using IV = zs::vec<int, 2>;
-        zs::bcht<IV, int, true, zs::universal_hash<IV>, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
+        zs::bht<int, 2, int, 16> tab{lines.size() * 2 + tris.size() * 3 + quads.size() * 4};
         std::vector<int> is, js;
         auto buildTopo = [&](const auto &eles) mutable {
             pol(range(eles), [tab = view<execspace_e::openmp>(tab)](const auto &ele) mutable {
@@ -1694,7 +1692,6 @@ struct PrimitiveColoring : INode {
         std::vector<u32> weights(pos.size());
         {
             bht<int, 1, int> tab{spmat.get_allocator(), pos.size() * 2};
-            tab.reset(pol, true);
             pol(enumerate(weights), [tab1 = proxy<space>(tab)](int seed, u32 &w) mutable {
                 using tab_t = RM_CVREF_T(tab);
                 std::mt19937 rng;

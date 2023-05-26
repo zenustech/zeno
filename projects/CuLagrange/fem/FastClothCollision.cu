@@ -272,7 +272,7 @@ void FastClothSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T d
                 auto pj = vtemp.pack(dim_c<3>, "xn", vj);
             // skip edges for point-point lower-bound constraints
 #if !s_debugRemoveHashTable
-                if (!withBoundary && (eTab.single_query(ivec2{vi, vj}) >= 0 || eTab.single_query(ivec2{vj, vi}) >= 0))
+                if (!withBoundary && (eTab.query(ivec2{vi, vj}) >= 0 || eTab.query(ivec2{vj, vi}) >= 0))
                     return;
 #endif
                 if (auto d2 = dist2_pp(pi, pj); d2 <= dHat2) {
@@ -398,7 +398,7 @@ void FastClothSystem::lightFindCollisionConstraints(zs::CudaExecutionPolicy &pol
             // edge or not
             // TODO: use query
 #if !s_debugRemoveHashTable
-                if (eTab.single_query(ivec2{vi, vj}) >= 0 || eTab.single_query(ivec2{vj, vi}) >= 0)
+                if (eTab.query(ivec2{vi, vj}) >= 0 || eTab.query(ivec2{vj, vi}) >= 0)
                     return;
 #endif
                 if (auto d2 = dist2_pp(pi, pj); d2 <= dHat2) {
@@ -906,22 +906,21 @@ typename FastClothSystem::T FastClothSystem::constraintEnergy(zs::CudaExecutionP
             auto xn = vtemp.pack(dim_c<3>, "xn", i);
             reduce_to(i, n, (xinit - xn).l2NormSqr(), energy[0]);
         });
-    pol(range(npp),
-        [vtemp = view<space>({}, vtemp), PP = view<space>(PP), energy = view<space>(temp), n = npp, mu = mu,
-         Btot2 = (B + Btight) * (B + Btight), eps = epsSlack, a3 = a3, a2 = a2] __device__(int i) mutable {
-            auto pp = PP[i];
-            zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", pp[0]), vtemp.pack(dim_c<3>, "xn", pp[1])};
-            T cij = (vs[1] - vs[0]).l2NormSqr() - Btot2;
-            T f = eps;
-            if (cij <= 0)
-                printf("\n\n\nthis should not happen! pp constraint <%d, %d> cij: %f\n", (int)pp[0], (int)pp[1], cij);
-            if (cij <= eps) {
-                auto x2 = cij * cij;
-                f = a3 * x2 * cij + a2 * x2 + cij;
-            }
-            T E = -mu * zs::log(f);
-            reduce_to(i, n, E, energy[0]);
-        });
+    pol(range(npp), [vtemp = view<space>({}, vtemp), PP = view<space>(PP), energy = view<space>(temp), n = npp, mu = mu,
+                     Btot2 = (B + Btight) * (B + Btight), eps = epsSlack, a3 = a3, a2 = a2] __device__(int i) mutable {
+        auto pp = PP[i];
+        zs::vec<T, 3> vs[2] = {vtemp.pack(dim_c<3>, "xn", pp[0]), vtemp.pack(dim_c<3>, "xn", pp[1])};
+        T cij = (vs[1] - vs[0]).l2NormSqr() - Btot2;
+        T f = eps;
+        if (cij <= 0)
+            printf("\n\n\nthis should not happen! pp constraint <%d, %d> cij: %f\n", (int)pp[0], (int)pp[1], cij);
+        if (cij <= eps) {
+            auto x2 = cij * cij;
+            f = a3 * x2 * cij + a2 * x2 + cij;
+        }
+        T E = -mu * zs::log(f);
+        reduce_to(i, n, E, energy[0]);
+    });
     pol(range(ne), [vtemp = view<space>({}, vtemp), E = view<space>(E), energy = view<space>(temp), n = ne, mu = mu,
                     L2 = L * L, eps = epsSlack, a3 = a3, a2 = a2] __device__(int i) mutable {
         auto e = E[i];

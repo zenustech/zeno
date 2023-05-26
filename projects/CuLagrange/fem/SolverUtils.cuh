@@ -6,21 +6,6 @@
 namespace zeno {
 
 /// credits: du wenxin
-template <typename T = float, typename Ti = int>
-struct CsrMatrix {
-    using value_type = T;
-    using index_type = std::make_signed_t<Ti>;
-    using size_type = std::make_unsigned_t<Ti>;
-    using table_type = zs::bcht<zs::vec<int, 2>, index_type, true, zs::universal_hash<zs::vec<int, 2>>, 16>;
-    size_type nrows = 0, ncols = 0; // for square matrix, nrows = ncols
-    zs::Vector<size_type> ap{};
-    zs::Vector<int> aj{};
-    zs::Vector<value_type> ax{};
-    // for build
-    table_type tab{};
-    zs::Vector<size_type> nnz{}; // non-zero entries per row
-};
-
 template <int n = 1, typename T_ = float>
 struct HessianPiece {
     using T = T_;
