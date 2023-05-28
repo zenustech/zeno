@@ -3,6 +3,7 @@
 #include "zgraphicsnumslideritem.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
+#include <zenoui/zfxsys/zfxhighlighter.h>
 #include <zeno/utils/log.h>
 #include <zenomodel/include/uihelper.h>
 #include "../view/zcomboboxitemdelegate.h"
@@ -701,6 +702,8 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(QGraphicsItem* parent)
     QPalette pal;
     pal.setColor(QPalette::Base, QColor(25, 29, 33));
     m_pTextEdit->setPalette(pal);
+
+    auto highlighter = new ZfxHighlighter(m_pTextEdit->document());
 }
 
 ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent)
@@ -727,6 +730,8 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     //QPalette pal = param.palette;
     //pal.setColor(QPalette::Base, QColor(25, 29, 33));
     //m_pTextEdit->setPalette(pal);
+
+    auto highlighter = new ZfxHighlighter(m_pTextEdit->document());
 }
 
 void ZenoParamMultilineStr::setText(const QString& text)

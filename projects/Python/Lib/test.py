@@ -21,4 +21,5 @@ def on_update(state):
         theBox = ze.no.PortalOut(name_='theBox').port
         ze.no.PrimTranslate(prim=theBox, offset=offset)
 
+# ze.rets.out1 = ze.no.PrimTrans(prim=ze.args.arg1).prim
 ze.rets.on_update = ze.ZenoObject.fromFunc(on_update)

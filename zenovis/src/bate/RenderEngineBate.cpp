@@ -43,6 +43,9 @@ struct RenderEngineBate : RenderEngine {
 
     void draw() override {
         auto guard = setupState();
+        CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+        glDepthFunc(GL_GREATER);
+        CHECK_GL(glClearDepth(0.0));
         CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
                               scene->drawOptions->bgcolor.b, 0.0f));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));

@@ -131,7 +131,8 @@ extern "C" __global__ void __raygen__rg()
         prd.direction = ray_direction;
         prd.curMatIdx = 0;
         prd.test_distance = false;
-
+        prd.ss_alpha_queue[0] = vec3(-1.0f);
+        prd.minSpecRough = 0.01;
         auto tmin = prd.trace_tmin;
         auto ray_mask = prd._mask_;
 
@@ -170,7 +171,9 @@ extern "C" __global__ void __raygen__rg()
             // }
 
             if(prd.countEmitted==false || prd.depth>0) {
-                result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
+                auto temp_radiance = prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
+                float upperBound = prd.diffDepth==1?1.0f:100.0f;
+                result +=  prd.done? float3(clamp(vec3(temp_radiance), vec3(0.0f), vec3(upperBound))) : temp_radiance;
                 // fire without smoke requires this line to work.
             }
 
@@ -249,7 +252,9 @@ extern "C" __global__ void __miss__radiance()
     prd->countEmitted = false;
     prd->CH = 0.0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
-        prd->radiance = envSky(
+        float upperBound = 100.0f;
+        prd->radiance =
+            envSky(
             normalize(prd->direction),
             sunLightDir,
             make_float3(0., 0., 1.),
@@ -257,21 +262,42 @@ extern "C" __global__ void __miss__radiance()
             .45,
             15.,
             1.030725 * 0.3,
-            params.elapsedTime
+            params.elapsedTime,
+            upperBound,
+            1.0
         );
         prd->done      = true;
         return;
     }
 
-    vec3 transmittance = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+    vec3 sigma_t, ss_alpha;
+    //vec3 sigma_t, ss_alpha;
+    prd->readMat(sigma_t, ss_alpha);
+
+
+    vec3 transmittance;
+    if (ss_alpha.x < 0.0f) { // is inside Glass
+        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+    } else {
+        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+    }
+
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->attenuation2 *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 
     vec3 channelPDF = vec3(1.0/3.0);
-    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, channelPDF);
-    prd->channelPDF= channelPDF;
+    prd->channelPDF = channelPDF;
+    if (ss_alpha.x < 0.0f) { // is inside Glass
+        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
+    } else
+    {
+        prd->maxDistance =
+            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
+        prd->channelPDF = channelPDF;
+    }
+
     prd->depth++;
 
     if(length(prd->attenuation)<1e-7f){

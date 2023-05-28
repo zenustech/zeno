@@ -151,6 +151,7 @@ struct SubjectContainerList {
 struct HeightField : public ZenoSubject<ESubjectType::HeightField> {
     int32_t Nx = 0, Ny = 0;
     std::vector<std::vector<uint16_t>> Data;
+    float LandscapeScale = .0f;
 
     HeightField() = default;
 
@@ -184,7 +185,7 @@ struct HeightField : public ZenoSubject<ESubjectType::HeightField> {
     template <class T>
     void pack(T& pack) {
         ZenoSubject::pack(pack);
-        pack(Nx, Ny, Data);
+        pack(Nx, Ny, Data, LandscapeScale);
     }
 };
 

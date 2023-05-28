@@ -13,7 +13,8 @@ struct RemoteLandscapeInput : public INode {
         std::string SubjectName = get_input2<std::string>("SubjectName");
         std::optional<remote::HeightField> Data = remote::StaticRegistry.Get<remote::HeightField>(SubjectName, zeno::remote::StaticFlags.GetCurrentSession(), true);
         if (Data.has_value()) {
-            std::shared_ptr<zeno::PrimitiveObject> Prim = remote::ConvertHeightDataToPrimitiveObject(Data.value());
+            const float Scale = Data->LandscapeScale == .0f ? 100.f : Data->LandscapeScale;
+            std::shared_ptr<zeno::PrimitiveObject> Prim = remote::ConvertHeightDataToPrimitiveObject(Data.value(), 0, 0, Scale);
             set_output2("prim", Prim);
         } else {
             zeno::log_error("Prim data not found.");

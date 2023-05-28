@@ -1168,6 +1168,7 @@ void UnifiedIPCSystem::findCCDConstraintsImplEE(zs::CudaExecutionPolicy &pol, T 
     /// ee
     if (enableContactEE) {
         const auto &sebvs = seBvs;
+        snapshot(csEE);
 
         zs::CppTimer timer;
         timer.tick();
@@ -1363,8 +1364,8 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
             pol(range(svs.size()),
                 [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
                  svtemp = proxy<space>({}, primHandle.svtemp), kappa = kappa, xi2 = xi * xi, activeGap2,
-                 gn = s_groundNormal, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                    const auto vi = svs("inds", svi, int_c) + svOffset;
+                 gn = s_groundNormal, vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                    const auto vi = svs("inds", svi, int_c) + vOffset;
                     auto x = vtemp.pack<3>("xn", vi);
                     auto dist = gn.dot(x);
                     auto dist2 = dist * dist;
@@ -1789,8 +1790,8 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                 es.reset(0);
                 pol(range(svs.size()), [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
                                         es = proxy<space>(es), gn = s_groundNormal, dHat2 = dHat * dHat, n = svs.size(),
-                                        svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                    const auto vi = svs("inds", svi, int_c) + svOffset;
+                                        vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                    const auto vi = svs("inds", svi, int_c) + vOffset;
                     auto x = vtemp.pack<3>("xn", vi);
                     auto dist = gn.dot(x);
                     auto dist2 = dist * dist;
@@ -1811,8 +1812,8 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                             [vtemp = proxy<space>({}, vtemp), svtemp = proxy<space>({}, primHandle.svtemp),
                              svs = proxy<space>({}, svs), es = proxy<space>(es), gn = s_groundNormal, dHat = dHat,
                              epsvh = epsv * dt, fricMu = fricMu, n = svs.size(),
-                             svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                                const auto vi = svs("inds", svi, int_c) + svOffset;
+                             vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                                const auto vi = svs("inds", svi, int_c) + vOffset;
                                 auto fn = svtemp("fn", svi);
                                 T E = 0;
                                 if (fn != 0) {

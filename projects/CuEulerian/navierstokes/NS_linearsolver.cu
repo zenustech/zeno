@@ -1172,10 +1172,12 @@ struct ZSNSPressureProject : INode {
         return rhs_max;
     }
 
-    void projection(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, float rho, float dt) {
+    void projection(zs::CudaExecutionPolicy &pol, ZenoSparseGrid *NSGrid, ZenoSparseGrid *SolidSDF, float rho,
+                    float dt) {
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
 
         auto &spg = NSGrid->spg;
+        auto &sdf = SolidSDF->spg;
         auto block_cnt = spg.numBlocks();
         auto dx = spg.voxelSize()[0];
 
@@ -1189,9 +1191,9 @@ struct ZSNSPressureProject : INode {
         pol.shmem(arena_size * sizeof(value_type) * tpb);
 
         pol(zs::Collapse{(block_cnt + tpb - 1) / tpb, cuda_block_size},
-            [spgv = zs::proxy<space>(spg), ts_c = zs::wrapv<bucket_size>{}, tpb_c = zs::wrapv<tpb>{},
-             dtOverRhoDx = dt / rho / dx, blockCnt = block_cnt, vSrcTag = src_tag(NSGrid, "v"),
-             vDstTag = dst_tag(NSGrid, "v"),
+            [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), ts_c = zs::wrapv<bucket_size>{},
+             tpb_c = zs::wrapv<tpb>{}, dtOverRhoDx = dt / rho / dx, blockCnt = block_cnt,
+             vSrcTag = src_tag(NSGrid, "v"), vDstTag = dst_tag(NSGrid, "v"),
              pOffset = spg.getPropertyOffset("p")] __device__(value_type * shmem, int bid, int tid) mutable {
                 // load halo
                 using vec3i = zs::vec<int, 3>;
@@ -1285,12 +1287,17 @@ struct ZSNSPressureProject : INode {
                     float p_this = shmem[idx];
 
                     for (int ch = 0; ch < 3; ++ch) {
-                        float u = spgv.value(vSrcTag, ch, blockno, cellno);
-                        float p_m = shmem[idx - offset[ch]];
+                        auto wcoord_face = spgv.wStaggeredCoord(blockno, cellno, ch);
+                        float sdf_f = sdfv.wSample("sdf", wcoord_face);
 
-                        u -= (p_this - p_m) * dtOverRhoDx;
+                        if (sdf_f > 0) {
+                            float u = spgv.value(vSrcTag, ch, blockno, cellno);
+                            float p_m = shmem[idx - offset[ch]];
 
-                        spgv(vDstTag, ch, blockno, cellno) = u;
+                            u -= (p_this - p_m) * dtOverRhoDx;
+
+                            spgv(vDstTag, ch, blockno, cellno) = u;
+                        }
                     }
                 }
             });
@@ -1376,6 +1383,7 @@ struct ZSNSPressureProject : INode {
 
     void apply() override {
         auto NSGrid = get_input<ZenoSparseGrid>("NSGrid");
+        auto SolidSDF = get_input<ZenoSparseGrid>("SolidSDF");
         auto rho = get_input2<float>("Density");
         auto dt = get_input2<float>("dt");
         auto tolerance = get_input2<float>("Tolerance");
@@ -1463,7 +1471,7 @@ struct ZSNSPressureProject : INode {
 
 #if 1
         // pressure projection
-        projection(pol, NSGrid.get(), rho, dt);
+        projection(pol, NSGrid.get(), SolidSDF.get(), rho, dt);
 #else
         // pressure projection
         pol(zs::range(block_cnt * spg.block_size),
@@ -1492,15 +1500,19 @@ struct ZSNSPressureProject : INode {
     }
 };
 
-ZENDEFNODE(
-    ZSNSPressureProject,
-    {/* inputs: */
-     {"NSGrid", "dt", {"float", "Density", "1.0"}, {"float", "Tolerance", "1e-4"}, {"int", "MaxIterations", "10"}, {"bool", "hasDivergence", "0"}},
-     /* outputs: */
-     {"NSGrid"},
-     /* params: */
-     {},
-     /* category: */
-     {"Eulerian"}});
+ZENDEFNODE(ZSNSPressureProject, {/* inputs: */
+                                 {"NSGrid",
+                                  "SolidSDF",
+                                  "dt",
+                                  {"float", "Density", "1.0"},
+                                  {"float", "Tolerance", "1e-4"},
+                                  {"int", "MaxIterations", "10"},
+                                  {"bool", "hasDivergence", "0"}},
+                                 /* outputs: */
+                                 {"NSGrid"},
+                                 /* params: */
+                                 {},
+                                 /* category: */
+                                 {"Eulerian"}});
 
 } // namespace zeno
