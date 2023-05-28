@@ -12,7 +12,9 @@ enum ZfxTextStyle
 	C_GLOBALVAR,
 	C_KEYWORD,
 	C_FUNCTION,
-	C_COMMENT
+	C_COMMENT,
+	C_CURRENTLINE,
+	C_PARENTHESES
 };
 
 class ZfxTextTheme

@@ -1,14 +1,23 @@
 #include "ztextedit.h"
 
+static QVector<QPair<QString, QString>> parentheses = {
+    {"(", ")"},
+    {"{", "}"},
+    {"[", "]"},
+    {"\"", "\""},
+    {"'", "'"}
+};
 
 ZTextEdit::ZTextEdit(QWidget* parent)
     : QTextEdit(parent)
+    , m_autoParentheses(true)
 {
     initUI();
 }
 
 ZTextEdit::ZTextEdit(const QString& text, QWidget* parent)
     : QTextEdit(text, parent)
+    , m_autoParentheses(true)
 {
     initUI();
 }
@@ -42,6 +51,11 @@ QSize ZTextEdit::viewportSizeHint() const
     return sz;
 }
 
+void ZTextEdit::setAutoParentheses(bool enabled)
+{
+    m_autoParentheses = enabled;
+}
+
 void ZTextEdit::focusInEvent(QFocusEvent* e)
 {
     QTextEdit::focusInEvent(e);
@@ -53,10 +67,49 @@ void ZTextEdit::focusOutEvent(QFocusEvent* e)
     emit editFinished();
 }
 
-void ZTextEdit::resizeEvent(QResizeEvent* event)
+void ZTextEdit::resizeEvent(QResizeEvent* e)
 {
     QSize s(document()->size().toSize());
-    QTextEdit::resizeEvent(event);
+    QTextEdit::resizeEvent(e);
     updateGeometry();
     emit geometryUpdated();
+}
+
+void ZTextEdit::keyPressEvent(QKeyEvent* e)
+{
+    auto selectedText = textCursor().selectedText();
+    QTextEdit::keyPressEvent(e);
+
+    if (m_autoParentheses) {
+        for (const auto& [left, right] : parentheses) {
+            // if ( : auto add right
+            if (left == e->text()) {
+                if (selectedText.isEmpty()) {
+                    insertPlainText(right);
+                    moveCursor(QTextCursor::MoveOperation::Left);
+                }
+                else {
+                    insertPlainText(selectedText);
+                    insertPlainText(right);
+                }
+                break;
+            }
+            // if ()) : auto delete right
+            else if (right == e->text()) {
+                auto symbol = document()->characterAt(textCursor().position());
+                if (symbol == right) {
+                    textCursor().deletePreviousChar();
+                    moveCursor(QTextCursor::MoveOperation::Right);
+                }
+                break;
+            }
+        }
+    }
+}
+
+QString ZTextEdit::textUnderCursor()
+{
+    QTextCursor tc = textCursor();
+    tc.select(QTextCursor::WordUnderCursor);
+    return tc.selectedText();
 }

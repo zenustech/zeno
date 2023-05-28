@@ -3,6 +3,7 @@
 #include "zgraphicsnumslideritem.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
+#include <zenoui/comctrl/ztextedit.h>
 #include <zenoui/zfxsys/zfxhighlighter.h>
 #include <zeno/utils/log.h>
 #include <zenomodel/include/uihelper.h>
@@ -691,7 +692,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(QGraphicsItem* parent)
     : ZenoParamWidget(parent)
     , m_pTextEdit(nullptr)
 {
-    m_pTextEdit = new QTextEdit;
+    m_pTextEdit = new ZTextEdit;
     setWidget(m_pTextEdit);
     connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
     m_pTextEdit->installEventFilter(this);
@@ -703,7 +704,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(QGraphicsItem* parent)
     pal.setColor(QPalette::Base, QColor(25, 29, 33));
     m_pTextEdit->setPalette(pal);
 
-    auto highlighter = new ZfxHighlighter(m_pTextEdit->document());
+    auto highlighter = new ZfxHighlighter(m_pTextEdit);
 }
 
 ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent)
@@ -711,7 +712,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     , m_value(value)
     , m_pTextEdit(nullptr)
 {
-    m_pTextEdit = new QTextEdit;
+    m_pTextEdit = new ZTextEdit;
     setWidget(m_pTextEdit);
     connect(m_pTextEdit, SIGNAL(textChanged()), this, SIGNAL(textChanged()));
     //m_pTextEdit->setProperty("cssClass", "proppanel");
@@ -731,7 +732,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     //pal.setColor(QPalette::Base, QColor(25, 29, 33));
     //m_pTextEdit->setPalette(pal);
 
-    auto highlighter = new ZfxHighlighter(m_pTextEdit->document());
+    auto highlighter = new ZfxHighlighter(m_pTextEdit);
 }
 
 void ZenoParamMultilineStr::setText(const QString& text)

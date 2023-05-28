@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QString>
+#include <QVector>
 
 inline QStringList zfxGlobalVar = {"$F", "$PI", "$DT", "$T"};
 
@@ -11,3 +12,7 @@ inline QStringList zfxFunction = {"exp", "sin", "cos", "tan", "asin", "acos", "a
 };
 
 inline QStringList zfxAttr = { "clr", "pos", "nrm", "rad", "val" };
+
+inline QVector<QPair<QString, QString>> zfxParentheses = {{"(", ")"}};
+
+inline QString zfxComment = "#";
