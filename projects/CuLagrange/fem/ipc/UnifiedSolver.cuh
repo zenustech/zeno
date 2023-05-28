@@ -19,6 +19,7 @@
 #endif
 
 #define USE_MAS 0
+#define ENABLE_STQ 0
 
 namespace zeno {
 
@@ -202,7 +203,9 @@ struct UnifiedIPCSystem : IObject {
     void precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat, T xi = 0); // called per optimization
     void findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha, T xi = 0);
     void findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi, bool withBoundary = false);
+#if ENABLE_STQ
     void findCCDConstraintsImplEE(zs::CudaExecutionPolicy &pol, T alpha, T xi);
+#endif
     void findBoundaryCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T alpha, T xi);
     // linear system setup
     void computeInertialPotentialGradient(zs::CudaExecutionPolicy &cudaPol,
@@ -239,7 +242,7 @@ struct UnifiedIPCSystem : IObject {
     void lineSearch(zs::CudaExecutionPolicy &cudaPol, T &alpha);
 
     // sim params
-    std::size_t estNumCps = 1000000;
+    std::size_t estNumCps = 100000;
     bool enableGround = false;
     bool enableContact = true;
     bool enableMollification = true;
@@ -546,9 +549,11 @@ struct UnifiedIPCSystem : IObject {
     bvh_t stBvh, seBvh;       // for simulated objects
     bvh_t bouStBvh, bouSeBvh; // for collision objects
 
+#if ENABLE_STQ
     int principalAxis;
     bvs_t stBvs, seBvs;
     bvs_t bouStBvs, bouSeBvs;
+#endif
 
     std::optional<bv_t> wholeBv;
     T dt, framedt;
