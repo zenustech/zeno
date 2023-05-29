@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <stack>
 
 #include <zeno/zeno.h>
@@ -19,13 +20,50 @@ namespace FBX{
         path += node->GetName();
     }
 
-    bool CheckInherit(std::vector<std::string>& paths, std::string check, std::string& find_path){
+
+    std::string GetLastComponent(const std::string& str, char delimiter) {
+        std::stringstream ss(str);
+        std::string item;
+        std::vector<std::string> components;
+
+        while (std::getline(ss, item, delimiter)) {
+            components.push_back(item);
+        }
+
+        if (!components.empty()) {
+            return components.back();
+        }
+
+        return "";
+    }
+
+    std::string GetDifference(const std::string& str1, const std::string& str2) {
+        if (str1.size() >= str2.size() && str1.compare(0, str2.size(), str2) == 0) {
+            // Extract the difference from str1
+            return str1.substr(str2.size());
+        }
+
+        // No common prefix or str2 is longer than str1
+        return "";
+    }
+
+    bool CheckInherit(std::vector<std::string>& mayInherits, std::string check, std::string& find_path){
         // Check if the substring is found in the string
-        for(auto& path: paths) {
-            if (path != check && check.find(path) != std::string::npos) {
-                //std::cout << "Substring found." << std::endl;
-                find_path = path;
-                return true;
+        for(auto& may: mayInherits) {
+            if (may != check && check.find(may) != std::string::npos) {
+
+                auto diff = GetDifference(check, may);
+                char delimiter = '/';
+                std::string lastComponent = GetLastComponent(check, delimiter);
+                std::string pathedLast = "/" + lastComponent;
+                //std::cout << "  Check: " << check << "\n";
+                //std::cout << "  Maybe: " << may << "\n";
+                //std::cout << "  Diff: " << diff << " last " << pathedLast << "\n";
+
+                if(pathedLast == diff) {
+                    find_path = may;
+                    return true;
+                }
             }
         }
         return false;
@@ -67,7 +105,7 @@ namespace FBX{
             FbxAnimCurveKey key = visCurve->KeyGet(keyIndex);
 
             bool visibility = key.GetValue();  // Retrieve visibility value (true/false)
-            //std::cout << "  visibility: " << visibility << " time: " << frameNumber << "\n";
+            std::cout << "  visibility: " << visibility << " time: " << frameNumber << "\n";
             // Process visibility keyframe at keyTime
             // ...
         }
