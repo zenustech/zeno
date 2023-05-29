@@ -46,7 +46,7 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
     QApplication::clipboard()->setMimeData(pMimeData);
 }
 
-QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
+QString ZsgWriter::_dumpZsg2_5(IGraphsModel* pModel, APP_SETTINGS settings)
 {
     QString strJson;
     if (!pModel)
@@ -89,6 +89,60 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
     return strJson;
 }
 
+QString ZsgWriter::_dumpZsg3_0(IGraphsModel* pModel, IGraphsModel* pSubgraphs, APP_SETTINGS settings)
+{
+    QString strJson;
+    if (!pModel || !pSubgraphs)
+        return strJson;
+
+    rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+
+    {
+        JsonObjBatch batch(writer);
+
+        writer.Key("main");
+        {
+            QModelIndex mainIdx = pModel->index("main");
+            _dumpSubGraph(pModel, mainIdx, writer);
+        }
+
+        writer.Key("subgraphs");
+        {
+            JsonObjBatch _batch(writer);
+            for (int i = 0; i < pSubgraphs->rowCount(); i++)
+            {
+                const QModelIndex &subgIdx = pSubgraphs->index(i, 0);
+                const QString &subgName = subgIdx.data(ROLE_OBJNAME).toString();
+                writer.Key(subgName.toUtf8());
+                _dumpSubGraph(pSubgraphs, subgIdx, writer);
+            }
+        }
+
+        writer.Key("views");
+        {
+            writer.StartObject();
+            dumpTimeline(settings.timeline, writer);
+            writer.EndObject();
+        }
+
+        NODE_DESCS descs = pModel->descriptors();
+        writer.Key("descs");
+        _dumpDescriptors(descs, writer);
+
+        writer.Key("version");
+        writer.String("v3.0");  //distinguish the new version ui from the stable zeno2.
+    }
+
+    strJson = QString::fromUtf8(s.GetString());
+    return strJson;
+}
+
+QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel,IGraphsModel* pSubgraphs, APP_SETTINGS settings)
+{
+    return _dumpZsg3_0(pModel, pSubgraphs, settings);
+}
+
 void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, RAPIDJSON_WRITER& writer)
 {
     JsonObjBatch batch(writer);
@@ -107,18 +161,6 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
             const QString& id = node.ident;
             writer.Key(id.toUtf8());
             dumpNode(node, writer);
-        }
-    }
-    {
-        writer.Key("view_rect");
-        JsonObjBatch _batch(writer);
-        QRectF viewRc = pModel->viewRect(subgIdx);
-        if (!viewRc.isNull())
-        {
-            writer.Key("x"); writer.Double(viewRc.x());
-            writer.Key("y"); writer.Double(viewRc.y());
-            writer.Key("width"); writer.Double(viewRc.width());
-            writer.Key("height"); writer.Double(viewRc.height());
         }
     }
 }
@@ -401,6 +443,23 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
     {
         writer.Key("customui-panel");
         zenomodel::exportCustomUI(data.customPanel, writer);
+    }
+
+    if (!data.children.isEmpty())
+    {
+        writer.Key("children");
+        JsonObjBatch _batch(writer);
+        {
+            writer.Key("nodes");
+            JsonObjBatch __batch(writer);
+
+            for (QString ident : data.children.keys())
+            {
+                writer.Key(ident.toUtf8());
+                const NODE_DATA &dat = data.children[ident];
+                dumpNode(dat, writer);
+            }
+        }
     }
 }
 

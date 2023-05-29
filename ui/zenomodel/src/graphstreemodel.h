@@ -142,7 +142,6 @@ private:
     bool m_bIOProcessing;
     bool m_bApiEnableRun;
     zenoio::ZSG_VERSION m_version;
-
 };
 
 #endif

@@ -292,6 +292,8 @@ struct NODE_DATA {
     VPARAM_INFO customPanel;
     PARAMS_INFO parmsNotDesc; //todo: deprecated
 
+    QMap<QString, NODE_DATA> children;
+
     QPointF pos;
     int options = 0;
     NODE_TYPE type = NORMAL_NODE;

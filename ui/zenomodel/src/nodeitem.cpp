@@ -258,6 +258,13 @@ NODE_DATA TreeNodeItem::expData() const
 
     data.customPanel = m_item->panelParams->exportParams();
     data.parmsNotDesc = m_item->paramNotDesc;
+
+    for (int r = 0; r < rowCount(); r++)
+    {
+        TreeNodeItem* pChild = static_cast<TreeNodeItem*>(child(r));
+        const QString& ident = pChild->m_item->objid;
+        data.children.insert(ident, pChild->expData());
+    }
     return data;
 }
 

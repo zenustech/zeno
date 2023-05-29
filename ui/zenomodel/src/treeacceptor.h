@@ -82,6 +82,7 @@ private:
     GraphsModel* m_pSubgraphs;
     std::shared_ptr<ModelAcceptor> m_pSubgAcceptor;
     QList<EdgeInfo> m_links;
+    zenoio::ZSG_VERSION m_ioVer;
     bool m_bImport;
     bool m_bImportMain;        //whether importing main Subgraph right now
 };

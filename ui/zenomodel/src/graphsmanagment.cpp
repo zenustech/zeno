@@ -103,7 +103,7 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
         return false;
     }
 
-    QString strContent = ZsgWriter::getInstance().dumpProgramStr(m_pNodeModel, settings);
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(m_pNodeModel, m_pSharedGraphs, settings);
     QFile f(filePath);
     zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());
     if (!f.open(QIODevice::WriteOnly)) {

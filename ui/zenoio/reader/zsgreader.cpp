@@ -68,10 +68,33 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);
 
-    if (!doc.IsObject() || !doc.HasMember("graph"))
-        return false;
+    zenoio::ZSG_VERSION ioVer = zenoio::VER_3;
+    if (doc.HasMember("version"))
+    {
+        ZASSERT_EXIT(doc["version"].IsString(), false);
+        QString ver = doc["version"].GetString();
+        if (ver == "v2")
+            ioVer = zenoio::VER_2;
+        else if (ver == "v2.5")
+            ioVer = zenoio::VER_2_5;
+        else if (ver == "v3.0")
+            ioVer = zenoio::VER_3;
+    }
+    pAcceptor->setIOVersion(ioVer);
 
-    const rapidjson::Value& graph = doc["graph"];
+    if (!doc.IsObject())
+    {
+        zeno::log_error("");
+        return false;
+    }
+
+    if ((ioVer != zenoio::VER_3 && !doc.HasMember("graph")) ||
+        (ioVer == zenoio::VER_3 && (!doc.HasMember("main") || !doc.HasMember("subgraphs"))))
+    {
+        return false;
+    }
+
+    const rapidjson::Value &graph = doc.HasMember("graph") ? doc["graph"] : doc["subgraphs"];
     if (graph.IsNull()) {
         zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
         return false;
@@ -93,8 +116,8 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
             return false;
     }
 
-    ZASSERT_EXIT(graph.HasMember("main"), false);
-    if (!_parseSubGraph("main", graph["main"], nodesDescs, pAcceptor))
+    const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
+    if (!_parseSubGraph("main", mainGraph, nodesDescs, pAcceptor))
         return false;
 
     pAcceptor->EndGraphs();
@@ -103,15 +126,6 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     if (doc.HasMember("views"))
     {
         _parseViews(doc["views"], pAcceptor);
-    }
-    if (doc.HasMember("version"))
-    {
-        ZASSERT_EXIT(doc["version"].IsString(), false);
-        QString ver = doc["version"].GetString();
-        if (ver == "v2")
-            pAcceptor->setIOVersion(zenoio::VER_2);
-        else
-            pAcceptor->setIOVersion(zenoio::VER_2_5);
     }
     return true;
 }
@@ -143,31 +157,6 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
         _parseNode(nodeid, node.value, descriptors, pAcceptor);
     }
 
-    //view rect
-    QRectF viewRect;
-    if (subgraph.HasMember("view_rect"))
-    {
-        const auto& obj = subgraph["view_rect"];
-        if (obj.HasMember("x") && obj.HasMember("y") && obj.HasMember("width") && obj.HasMember("height"))
-            viewRect = QRectF(obj["x"].GetFloat(), obj["y"].GetFloat(), obj["width"].GetFloat(), obj["height"].GetFloat());
-    } 
-    else if (subgraph.HasMember("view"))
-    {
-        const auto& obj = subgraph["view"];
-        if (obj.HasMember("scale") && obj.HasMember("trans_x") && obj.HasMember("trans_y"))
-        {
-            qreal scale = obj["scale"].GetFloat();
-            qreal trans_x = obj["trans_x"].GetFloat();
-            qreal trans_y = obj["trans_y"].GetFloat();
-            qreal x = trans_x;
-            qreal y = trans_y;
-            qreal width = 1200. / scale;
-            qreal height = 1000. / scale;
-            viewRect = QRectF(x, y, width, height);
-        }
-    }
-
-    pAcceptor->setViewRect(viewRect);
     pAcceptor->EndSubgraph();
     return true;
 }
@@ -243,6 +232,11 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
     {
         _parseLegacyCurves(nodeid, objValue["points"], objValue["handlers"], pAcceptor);
     }
+    if (objValue.HasMember("children"))
+    {
+        _parseChildNodes(nodeid, objValue["children"], pAcceptor);
+    }
+
     if (name == "Blackboard")
     {
         BLACKBOARD_INFO blackboard;
@@ -436,6 +430,17 @@ void ZsgReader::_parseSocket(
         QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
         pAcceptor->setToolTip(PARAM_INPUT, id, inSock, toolTip);
     }
+}
+
+QMap<QString, NODE_DATA> ZsgReader::_parseChildren(const rapidjson::Value& jsonNodes)
+{
+    QMap<QString, NODE_DATA> children;
+    return children;
+}
+
+void ZsgReader::_parseChildNodes(const QString& id, const rapidjson::Value& jsonNodes, IAcceptor* pAcceptor)
+{
+    
 }
 
 void ZsgReader::_parseDictPanel(

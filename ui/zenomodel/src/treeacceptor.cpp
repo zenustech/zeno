@@ -18,6 +18,7 @@ TreeAcceptor::TreeAcceptor(GraphsTreeModel* pModel, GraphsModel* pSubgraphs, boo
     , m_pSubgraphs(pSubgraphs)
     , m_bImport(bImport)
     , m_pSubgAcceptor(std::make_shared<ModelAcceptor>(m_pSubgraphs, bImport))
+    , m_ioVer(zenoio::VER_3)
 {
     ZASSERT_EXIT(m_pNodeModel && m_pSubgraphs);
     m_pNodeModel->initSubgraphs(m_pSubgraphs);
@@ -152,7 +153,7 @@ bool TreeAcceptor::addNode(const QString &nodeid, const QString &name, const QSt
 
     //is current node a subgraph node?
     SubGraphModel* pSubgraph = m_pSubgraphs->subGraph(name);
-    if (pSubgraph)
+    if (pSubgraph && zenoio::VER_3 != m_ioVer)
     {
         //recursivly fork.
         //input: 
@@ -746,6 +747,7 @@ void TreeAcceptor::addCustomUI(const QString &id, const VPARAM_INFO &invisibleRo
 
 void TreeAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)
 {
+    m_ioVer = versio;
     m_pSubgAcceptor->setIOVersion(versio);
     m_pNodeModel->setIOVersion(versio);
 }

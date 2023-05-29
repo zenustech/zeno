@@ -1467,7 +1467,7 @@ void ZenoMainWindow::save()
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel* pModel = pGraphsMgm->currentModel();
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
-    if (zenoio::VER_2 == ver)
+    if (zenoio::VER_3 != ver)
     {
         QMessageBox msgBox(QMessageBox::Information, "", tr("The format of current zsg is old. To keep this file data trackable, we recommand you choose \"Save As\" to save it, as the format of new zsg"));
         msgBox.exec();
@@ -1559,11 +1559,12 @@ void ZenoMainWindow::onFeedBack()
         if (isSend)
         {
             IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
-            if (!pModel) {
+            IGraphsModel *pSubgraphs = zenoApp->graphsManagment()->sharedSubgraphs();
+            if (!pModel || !pSubgraphs) {
                 return;
             }
             APP_SETTINGS settings;
-            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, settings);
+            QString strContent = ZsgWriter::getInstance().dumpProgramStr(pModel, pSubgraphs, settings);
             dlg.sendEmail("bug feedback", content, strContent);
         }
     }

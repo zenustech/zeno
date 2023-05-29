@@ -14,11 +14,14 @@ class ZsgWriter
 {
 public:
     static ZsgWriter& getInstance();
-    QString dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings);
+    QString dumpProgramStr(IGraphsModel* pModel, IGraphsModel* pSubgraphs, APP_SETTINGS settings);
     void dumpToClipboard(const QMap<QString, NODE_DATA>& nodes);
 
 private:
     ZsgWriter();
+    QString _dumpZsg2_5(IGraphsModel *pModel, APP_SETTINGS settings);
+    QString _dumpZsg3_0(IGraphsModel *pModel, IGraphsModel* pSubgraphs, APP_SETTINGS settings);
+
     void dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer);
     void dumpSocket(SOCKET_INFO info, bool bInput, RAPIDJSON_WRITER& writer, bool isDesc);
     void _dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, RAPIDJSON_WRITER& writer);
