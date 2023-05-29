@@ -519,7 +519,7 @@ namespace DisneyBSDF{
         float lambert = 1.0f;
         float rr = EvaluateDisneyRetroDiffuse(roughness, wi, wo);
         float retro = rr*(fl + fv + fl * fv * (rr - 1.0f));
-        return 1.0f/M_PIf;// * (retro + (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
+        return 1.0f/M_PIf * (retro + (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
     }
 
     static __inline__ __device__
@@ -610,13 +610,14 @@ namespace DisneyBSDF{
 
             float ptotal = 1.0f + p_in ;
             float psss = subsurface>0? p_in/ptotal : 0; // /ptotal;
-            vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
+            vec3 lobeOfSheen =  clamp(EvaluateSheen(baseColor,sheen,sheenTint, HoL),
+                                      vec3(0.0f), vec3(1.0f));
 
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
             if(!thin && nDl<=0.0f)
                 diffuse = 0;
-            vec3 lighting = vec3((1.0f - psss) * diffuse * baseColor + lobeOfSheen);
+            vec3 lighting = (1.0f - psss) * (diffuse * baseColor + lobeOfSheen);
             lighting = clamp(lighting * illum, vec3(0.0f), vec3(50.0f));
             reflectance += diffuseW * float3(lighting);
         }
@@ -1307,12 +1308,29 @@ namespace DisneyBSDF{
         }
 
         float HoL = dot(wm,wo);
-        vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
-        float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
+        vec3 diffpart = vec3(0.0f);
+        if(!trans)
+        {
+            float pDiffPlusSheen = sheen + 1.0f;
+            float psheen = sheen / pDiffPlusSheen;
+
+
+            if(rnd(seed)<psheen)
+            {
+                diffpart = clamp(
+                EvaluateSheen(baseColor, 1.0, sheenTint, HoL) ,
+                vec3(0.0f), vec3(1.0f)) * M_PIf * pDiffPlusSheen;
+            } else
+            {
+                diffpart = color * vec3(EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin)) * M_PIf * pDiffPlusSheen;
+            }
+        }
+        //vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
+        //float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
         if(wi.z<0)
-            diff = 1.0;
-        
-        reflectance = ( sheen + color * (trans? 1.0 : diff * M_PIf));
+            diffpart =  vec3(1.0f);
+        //vec3 diffpart = color * diff * M_PIf;
+        reflectance = trans? color * vec3(1.0) : diffpart;
         //fPdf = abs(NoL) * pdf;
         //rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
