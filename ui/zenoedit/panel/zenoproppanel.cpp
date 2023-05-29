@@ -828,13 +828,23 @@ void ZenoPropPanel::updateHandler(CURVE_DATA &curve) {
 }
 
 void ZenoPropPanel::updateRange(CURVES_DATA &curves) {
+    qreal xFrom = 0;
+    qreal xTo = 0;
     qreal yFrom = 0;
     qreal yTo = 0;
     for (auto curve : curves) {
+        xFrom = curve.rg.xFrom > xFrom ? xFrom : curve.rg.xFrom;
+        xTo = curve.rg.xTo > xTo ? curve.rg.xTo : xTo;
         yFrom = curve.rg.yFrom > yFrom ? yFrom : curve.rg.yFrom;
         yTo = curve.rg.yTo > yTo ? curve.rg.yTo : yTo;
     }
+    if (fabs(xFrom - xTo) < 0.00000001)
+        xTo = xFrom + 1;
+    if (fabs(yFrom - yTo) < 0.00000001)
+        yTo = yFrom + 1;
     for (auto &curve : curves) {
+        curve.rg.xFrom = xFrom;
+        curve.rg.xTo = xTo;
         curve.rg.yFrom = yFrom;
         curve.rg.yTo = yTo;
     }
@@ -1034,6 +1044,12 @@ void ZenoPropPanel::editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &
         updateRange(curves);
     pEditor->setAttribute(Qt::WA_DeleteOnClose);
     pEditor->addCurves(curves);
+    CURVES_MODEL models = pEditor->getModel();
+    for (auto model :models) {
+        for (int i = 0; i < model->rowCount(); i++) {
+            model->setData(model->index(i, 0), true, ROLE_LOCKX);
+        }
+    }
     pEditor->exec();
 }
 bool ZenoPropPanel::isSetKeyFrame(const CURVES_DATA &curves) 
