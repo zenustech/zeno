@@ -76,6 +76,8 @@ struct Mesh{
         m_VerticesIncrease = 0;
         fbxData.iMeshName.value = "__root__";
         fbxData.iMeshName.value_relName = "__root__";
+        fbxData.iPathName.value = "/__path__";
+        fbxData.iPathName.value_oriPath = "/__path__";
 
         //createTexDir("valueTex");
         readTrans(scene->mRootNode, aiMatrix4x4(), "");
@@ -142,7 +144,7 @@ struct Mesh{
         if(m_LoadedMeshName.find(meshName) != m_LoadedMeshName.end()){
             std::string newMeshName = meshName + "_" +std::to_string(m_MeshNameIncrease);
             m_MeshCorsName[newMeshName] = meshName;
-            std::cout << "FBX: fact-mat Name: " << meshName << " -> " << newMeshName << "\n";
+            ED_COUT << "FBX: fact-mat Name: " << meshName << " -> " << newMeshName << "\n";
             meshName = newMeshName;
 
             m_MeshNameIncrease++;
@@ -248,32 +250,36 @@ struct Mesh{
             // So let's take the first one
             unsigned int bsNumVert = mesh->mAnimMeshes[0]->mNumVertices;
 
-            zeno::log_info("FBX: BS MeshName {} NumAnim {}", meshName, numAnimMesh);
+            std::cout << "FBX: BS MeshName "<<meshName<<" NumAnim " <<numAnimMesh << "\n";
 
             std::vector<std::vector<SBSVertex>> blendShapeData;
             blendShapeData.resize(numAnimMesh);
 
             for(unsigned int a=0; a<numAnimMesh; a++){
                 auto& animMesh = mesh->mAnimMeshes[a];
+                auto animMeshName = std::string(animMesh->mName.C_Str());
                 unsigned int aNumV = animMesh->mNumVertices;
-                zeno::log_info("FBX: BSName {}", animMesh->mName.C_Str());
+                std::cout << "FBX: BSName " << animMeshName << "\n";
                 blendShapeData[a].resize(aNumV);
 
                 for(unsigned int i=0; i<aNumV; i++){
                     SBSVertex sbsVertex;
 
+                    // assimp ignore the transformation of this mesh. we need apply those transformation in eval node.
                     sbsVertex.position = animMesh->mVertices[i];
                     sbsVertex.normal = animMesh->mNormals[i];
                     sbsVertex.deltaPosition = sbsVertex.position
                             - fbxData.iVertices.value[i+m_VerticesIncrease].position;
                     sbsVertex.deltaNormal = sbsVertex.normal
                             - fbxData.iVertices.value[i+m_VerticesIncrease].normal;
-                    sbsVertex.weight = animMesh->mWeight;
-
+                    //sbsVertex.weight = animMesh->mWeight;
+                    //std::cout << " i " << i << " " <<animMesh->mWeight<<" - ("
+                    //          <<sbsVertex.deltaPosition.x<<","<<sbsVertex.deltaPosition.y<<","<<sbsVertex.deltaPosition.z<<")"
+                    //          << "\n";
                     blendShapeData[a][i] = sbsVertex;
                 }
 
-                m_BSName[meshName].push_back(std::string(animMesh->mName.C_Str()));
+                m_BSName[meshName].emplace_back(animMesh->mName.C_Str());
             }
             fbxData.iBlendSData.value[meshName] = blendShapeData;
         }
@@ -986,19 +992,12 @@ struct Anim{
             Helper::printNodeTree(&m_RootNode, 0);
 
         if(scene->mNumAnimations){
-            // TODO handle more animation if have
+            // TODO Handle more animation if have
+            // TODO Blend Shape Initial Key data. e.g. 0.6, not animated.
             for(unsigned int i=0; i<scene->mNumAnimations; i++){
                 auto animation = scene->mAnimations[i];
                 m_animInfo.duration = animation->mDuration;
                 m_animInfo.tick = animation->mTicksPerSecond;
-                //zeno::log_info("FBX: AniName {} NC {} NMC {} NMMC {} D {} T {}",
-                //               animation->mName.data,
-                //               animation->mNumChannels,
-                //               animation->mNumMeshChannels,
-                //               animation->mNumMorphMeshChannels,
-                //               animation->mDuration,
-                //               animation->mTicksPerSecond
-                //               );
 
                 std::cout << "FBX Anim: Name " << animation->mName.data << " NumChannel " << animation->mNumChannels << "\n";
                 std::cout << "FBX Anim: NumMeshChannel " << animation->mNumMeshChannels << " NumMorphMeshChannel " << animation->mNumMorphMeshChannels << "\n";
@@ -1051,44 +1050,49 @@ struct Anim{
     }
 
     void setupBlendShape(const aiAnimation *animation){
+        double tickOffset = m_readOption.offsetInSeconds * animation->mTicksPerSecond;
+
         auto NumMorphChannel = animation->mNumMorphMeshChannels;
-        zeno::log_info("FBX: BlendShape NumMorphChannel {}", NumMorphChannel);
+        std::cout << "FBX: BlendShape NumMorphChannel " << NumMorphChannel << "\n";
         if(NumMorphChannel){
             for(int j=0; j<NumMorphChannel; j++){
                 aiMeshMorphAnim* channel = animation->mMorphMeshChannels[j];
                 std::string channelName(channel->mName.data);  // pPlane1*0 with *0
                 channelName = channelName.substr(0, channelName.find_last_of('*'));
-                zeno::log_info("FBX: BS Channel Name {}", channelName);
+                std::cout << "FBX: BS Channel Name " << channelName << "\n";
                 std::vector<SKeyMorph> keyMorph;
 
                 if(channel->mNumKeys) {
-                    zeno::log_info("FBX: BS NumKeys {} NumVal&Wei {}", channel->mNumKeys,
-                                   channel->mKeys[0].mNumValuesAndWeights);
+                    std::cout << "FBX: BS NumKeys " << channel->mNumKeys << " NumVal&Wei " << channel->mKeys[0].mNumValuesAndWeights << "\n";
 
                     for (int i = 0; i < channel->mNumKeys; ++i) {
                         SKeyMorph morph{};
                         auto &key = channel->mKeys[i];
-                        morph.m_NumValuesAndWeights = key.mNumValuesAndWeights; // e.g. pPlane2 pPlane3...
-                        morph.m_Time = key.mTime;  // Frame
+                        morph.m_NumValuesAndWeights = key.mNumValuesAndWeights; // e.g. blendShape pPlane1 -> pPlane2 pPlane3...
+                        morph.m_Time = key.mTime + tickOffset;  // Frame
                         morph.m_Weights = new double[key.mNumValuesAndWeights];
                         morph.m_Values = new unsigned int[key.mNumValuesAndWeights]; // Which one is that
                         // Deep copy
                         std::copy(key.mWeights, key.mWeights + key.mNumValuesAndWeights, morph.m_Weights);
                         std::copy(key.mValues, key.mValues + key.mNumValuesAndWeights, morph.m_Values);
                         keyMorph.push_back(morph);
+
+                        std::cout << "BlendShape idx " << i << " Time " << morph.m_Time << "\n";
                     }
 
                     m_Morph[channelName] = keyMorph;
                 }else{
+                    std::cout << "FBX: BS Channel " << channelName << "\n";
                     if(m_MeshBSName.find(channelName) != m_MeshBSName.end()){
                         auto& bsData = m_MeshBSName[channelName];
 
                         for(int i=0; i<bsData.size(); i++){
                             SKeyMorph morph{};
-                            morph.m_Time = (float)i;
+                            morph.m_Time = 0.0;
                             morph.m_Weights = new double[bsData.size()];
                             morph.m_Values = new unsigned int[bsData.size()];
-                            morph.m_Weights[i] = 0.0; morph.m_Values[i] = 0;
+                            morph.m_Weights[i] = 0.0;
+                            morph.m_Values[i] = 0;
                             keyMorph.push_back(morph);
                         }
                         m_Morph[channelName] = keyMorph;
@@ -1250,7 +1254,7 @@ struct ReadFBXPrim : zeno::INode {
         auto primitive = get_param<bool>("primitive");
         auto generate = get_input2<bool>("generate");
         auto offsetInSeconds = get_input2<float>("offset");
-        auto invOpacity = get_param<bool>("invOpacity");
+        //auto invOpacity = get_param<bool>("invOpacity");
         auto triangulate = get_param<bool>("triangulate");
         auto printTree = get_param<bool>("printTree");
 
@@ -1263,8 +1267,8 @@ struct ReadFBXPrim : zeno::INode {
         readOption.offsetInSeconds = offsetInSeconds;
         if (udim == "ENABLE")
             readOption.enableUDIM = true;
-        if(invOpacity)
-            readOption.invertOpacity = true;
+        //if(invOpacity)
+        //    readOption.invertOpacity = true;
         if(primitive)
             readOption.makePrim = true;
         if(generate)
@@ -1335,7 +1339,7 @@ ZENDEFNODE(ReadFBXPrim,
                },  /* params: */
                {
                 {"enum ENABLE DISABLE", "udim", "DISABLE"},
-                {"bool", "invOpacity", "true"},
+                //{"bool", "invOpacity", "true"},
                 {"bool", "primitive", "false"},
                 {"bool", "triangulate", "true"},
                 {"bool", "printTree", "false"},

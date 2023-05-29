@@ -78,6 +78,7 @@ struct SFBXEvalOption {
     bool writeData = false;
     bool interAnimData = false;
     bool printAnimData = false;
+    bool evalBlendShape = false;
     float globalScale = 1.0f;
 };
 
@@ -306,7 +307,6 @@ struct SVertex{
     aiVector3D bitangent;
     aiColor4D vectexColor;
     std::unordered_map<std::string, float> boneWeights;
-    float numAnimMesh;
 };
 
 struct SBSVertex{
@@ -314,7 +314,7 @@ struct SBSVertex{
     aiVector3D deltaPosition;
     aiVector3D normal;
     aiVector3D deltaNormal;
-    float weight;
+    //float weight;
 };
 
 struct SMaterialProp{

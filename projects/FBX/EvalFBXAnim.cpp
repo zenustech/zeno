@@ -267,6 +267,42 @@ struct EvalAnim{
         }
     }
 
+    void getPathTrans(std::string pathName, glm::mat4& pathTrans, int& tranType){
+
+        if(m_LazyTransforms.find(pathName) != m_LazyTransforms.end()){
+            auto& tr = m_LazyTransforms[pathName];
+            pathTrans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
+                                  tr.a2,tr.b2,tr.c2,tr.d2,
+                                  tr.a3,tr.b3,tr.c3,tr.d3,
+                                  tr.a4,tr.b4,tr.c4,tr.d4);
+            if(m_evalOption.printAnimData) {
+                std::cout << "Eval Lazy Trans\n";
+                Helper::printAiMatrix(tr);
+                std::cout << "===============\n";
+            }
+            tranType = 0;
+
+        }else if(m_PathTrans.value.find(pathName) != m_PathTrans.value.end()) {
+            auto& tr = m_PathTrans.value[pathName];
+            pathTrans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
+                                  tr.a2,tr.b2,tr.c2,tr.d2,
+                                  tr.a3,tr.b3,tr.c3,tr.d3,
+                                  tr.a4,tr.b4,tr.c4,tr.d4);
+            if(m_evalOption.printAnimData) {
+                std::cout << "Eval Path Trans\n";
+                Helper::printAiMatrix(tr);
+                std::cout << "===============\n";
+            }
+            tranType = 1;
+        }else{
+            std::cout << "Eval: Trans None " << pathName << "\n";
+            tranType = 2;
+        }
+        //if(m_evalOption.printAnimData) {
+        //    std::cout << "Eval: Trans Type " << tranType << "\n";
+        //}
+    }
+
     void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim){
         auto &ver = prim->verts;
         auto &trisInd = prim->tris;
@@ -294,45 +330,15 @@ struct EvalAnim{
             prim->verts.add_attr<float>("jointIndice_" + std::to_string(i));
             prim->verts.add_attr<float>("jointWeight_" + std::to_string(i));
         }
-        int jie = m_FbxData.jointIndices_elementSize;
-        prim->userData().set2("jointIndicesElementSize", std::move(jie));
+        int elemSize = m_FbxData.jointIndices_elementSize;
+        prim->userData().set2("jointIndicesElementSize", elemSize);
         float gscale = m_evalOption.globalScale;
 
         // Trans
-        glm::mat4 pathTrans{};
+        glm::mat4 pathTrans(1.0);
         auto pathName = m_pathName.value_oriPath;
         int tranType = -1;
-        if(m_LazyTransforms.find(pathName) != m_LazyTransforms.end()){
-            auto& tr = m_LazyTransforms[pathName];
-            pathTrans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
-                                  tr.a2,tr.b2,tr.c2,tr.d2,
-                                  tr.a3,tr.b3,tr.c3,tr.d3,
-                                  tr.a4,tr.b4,tr.c4,tr.d4);
-            if(m_evalOption.printAnimData) {
-                std::cout << "Eval Lazy Trans\n";
-                Helper::printAiMatrix(tr);
-                std::cout << "===============\n";
-            }
-            tranType = 0;
-
-        }else if(m_PathTrans.value.find(pathName) != m_PathTrans.value.end()) {
-            auto& tr = m_PathTrans.value[pathName];
-            pathTrans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
-                                  tr.a2,tr.b2,tr.c2,tr.d2,
-                                  tr.a3,tr.b3,tr.c3,tr.d3,
-                                  tr.a4,tr.b4,tr.c4,tr.d4);
-            if(m_evalOption.printAnimData) {
-                std::cout << "Eval Path Trans\n";
-                Helper::printAiMatrix(tr);
-                std::cout << "===============\n";
-            }
-            tranType = 1;
-        }else{
-            tranType = 2;
-        }
-        if(m_evalOption.printAnimData) {
-            std::cout << "Eval: Trans Type " << tranType << "\n";
-        }
+        getPathTrans(pathName, pathTrans, tranType);
 
         for(unsigned int i=0; i<m_Vertices.size(); i++){
             auto& bwe = m_Vertices[i].boneWeights;
@@ -343,24 +349,26 @@ struct EvalAnim{
 
             glm::vec4 tpos(0.0f, 0.0f, 0.0f, 0.0f);
 
-            bool infd = false;
+            bool boneInflued = false;
             int bCount = 0;
             // Influence
             for(auto& b: bwe){
                 // e.g. b.first -> joint1
-                if(jie){
+                if(elemSize){
                     float bIndex = (float)m_JointCorrespondingIndex[b.first];
                     prim->verts.attr<float>("jointIndice_" + std::to_string(bCount)).push_back(bIndex);
                     prim->verts.attr<float>("jointWeight_" + std::to_string(bCount)).push_back(b.second);
                 }
                 //std::cout << "FBX: Vert " << i << " name " << b.first << " bIndex " << bIndex << std::endl;
-                infd = true;
+                boneInflued = true;
                 auto& tr = m_BoneTransforms[b.first];
                 glm::mat4 trans = glm::mat4(tr.a1,tr.b1,tr.c1,tr.d1,
                                             tr.a2,tr.b2,tr.c2,tr.d2,
                                             tr.a3,tr.b3,tr.c3,tr.d3,
                                             tr.a4,tr.b4,tr.c4,tr.d4);
+
                 glm::vec4 lpos = trans * glm::vec4(pos.x, pos.y, pos.z, 1.0f);
+
                 tpos += lpos * b.second;
                 bCount += 1;
             }
@@ -371,8 +379,9 @@ struct EvalAnim{
                 prim->verts.attr<float>("jointWeight_" + std::to_string(bCount)).push_back(0.0f);
             }
 
-            // Transform
-            if(! infd) {
+            // TODO (Bone Influence) Skeleton + Transform
+            //  If remove follow `if`, we will get full transform animation, but the skel animation is gone
+            if(! boneInflued) {
                 tpos = pathTrans * glm::vec4(pos.x, pos.y, pos.z, 1.0f);
             }
 
@@ -429,18 +438,20 @@ struct EvalFBXAnim : zeno::INode {
 
         SFBXEvalOption evalOption;
         auto fbxData = get_input<FBXData>("data");
-
         //auto fps = get_input2<float>("fps");
         auto unit = get_param<std::string>("unit");
         auto interAnimData = get_param<std::string>("interAnimData");
         auto writeData = get_param<bool>("writeData");
         auto printAnimData = get_param<bool>("printAnimData");
+        auto evalBlendShape = get_param<bool>("evalBlendShape");
         unit == "FROM_MAYA" ? evalOption.globalScale = 0.01f : evalOption.globalScale = 1.0f;
         interAnimData == "TRUE" ? evalOption.interAnimData = true : evalOption.interAnimData = false;
         if(writeData)
             evalOption.writeData = true;
         if(printAnimData)
             evalOption.printAnimData = true;
+        if(evalBlendShape)
+            evalOption.evalBlendShape = true;
 
         auto nodeTree = evalOption.interAnimData ? fbxData->nodeTree : get_input<NodeTree>("nodetree");
         auto boneTree = evalOption.interAnimData ? fbxData->boneTree : get_input<BoneTree>("bonetree");
@@ -487,8 +498,7 @@ struct EvalFBXAnim : zeno::INode {
             isVisibility->set(1);
         }
 
-
-        //std::cout << " Visibility " << is_visibility << " Path " << fbxData->iPathName.value << "\n";
+        ED_COUT << " Visibility " << isVisibility->get<int>() << " Path " << fbxData->iPathName.value << "\n";
 
         EvalAnim anim;
         anim.m_evalOption = evalOption;
@@ -499,35 +509,50 @@ struct EvalFBXAnim : zeno::INode {
 
         auto bsPrims = std::make_shared<zeno::ListObject>();
         auto bsPrimsOrigin = std::make_shared<zeno::ListObject>();
-        auto& meshName = fbxData->iMeshName.value_relName;
+        auto meshName = fbxData->iMeshName.value_relName;
 
         matName->set(fbxData->iMeshName.value_matName);
         pathName->set(fbxData->iPathName.value);
         outMeshName->set(meshName);
 
-        auto& kmValue = fbxData->iKeyMorph.value;
-        auto& bsValue = fbxData->iBlendSData.value;
+        auto bsValue = fbxData->iBlendSData.value;
         float gScale = evalOption.globalScale;
 
-        for(auto const& [bsName, bss]: bsValue){
+        for(auto & [bsName, nameOfBlendShapes]: bsValue){
+            glm::mat4 pathTrans(1.0);
+            auto pathName = fbxData->iPathName.value_oriPath;
+            int tranType = -1;
+            anim.getPathTrans(pathName, pathTrans, tranType);
+
             std::cout << "BlendShape Key " << bsName << "\n";
-            for(int i=0; i< bss.size(); i++){
+            for(int i=0; i< nameOfBlendShapes.size(); i++){
                 auto bsprim = std::make_shared<zeno::PrimitiveObject>();
                 auto &verAttr = bsprim->verts;
                 auto &indAttr = bsprim->tris;
                 auto &nrmAttr = bsprim->verts.add_attr<zeno::vec3f>("nrm");
                 auto &dnrmAttr = bsprim->verts.add_attr<zeno::vec3f>("dnrm");
                 auto &dposAttr = bsprim->verts.add_attr<zeno::vec3f>("dpos");
-                auto& bs = bss[i];
-                for(unsigned int j=0; j<bs.size(); j++){ // Mesh Vert
-                    auto& vdata = bs[j];
+                auto& blendShapeData = nameOfBlendShapes[i];
+                std::cout << " BlendShape " << i << "\n";
+
+                auto pathTransScale = glm::vec3(glm::length(glm::vec3(pathTrans[0])),
+                                                glm::length(glm::vec3(pathTrans[1])),
+                                                glm::length(glm::vec3(pathTrans[2])));
+
+                for(unsigned int j=0; j<blendShapeData.size(); j++){ // Mesh Vert
+                    auto& vdata = blendShapeData[j];
                     auto& pos = vdata.position;
                     auto& nrm = vdata.normal;
                     auto& dpos = vdata.deltaPosition;
                     auto& dnrm = vdata.deltaNormal;
+
+                    // TODO BlendShape Normal Compute
+                    glm::vec4 adpos = glm::vec4(pathTransScale, 1.0f) * glm::vec4(dpos.x, dpos.y, dpos.z, 1.0f);
+                    dpos = aiVector3D(adpos.x/adpos.w, adpos.y/adpos.w, adpos.z/adpos.w);
+
                     verAttr.emplace_back(pos.x * gScale, pos.y * gScale, pos.z * gScale);
                     nrmAttr.emplace_back(nrm.x, nrm.y, nrm.z);
-                    dposAttr.emplace_back(dpos.x * gScale, dpos.y * gScale, dpos.z * gScale);
+                    dposAttr.emplace_back(adpos.x * gScale, adpos.y * gScale, adpos.z * gScale);
                     dnrmAttr.emplace_back(dnrm.x, dnrm.y, dnrm.z);
                 }
 
@@ -537,47 +562,78 @@ struct EvalFBXAnim : zeno::INode {
 
         // TODO FBXData Write BlendShape
         if(bsValue.find(meshName) != bsValue.end()){
-            auto& b = bsValue[meshName];
+            if(fbxData->iKeyMorph.value.find(meshName) != fbxData->iKeyMorph.value.end()){
 
-            if(kmValue.find(meshName) != kmValue.end()){
-                auto& k = kmValue[meshName];
-                unsigned int ki = 0;
-                unsigned int kin;
-                for(unsigned int i=0; i<k.size()-1; i++){  // Find keyMorph index
-                    if(anim.m_CurrentFrame < k[i+1].m_Time){ // Animation must occur between at least two frames
-                        ki = i;
+                auto blendShapeData = bsValue[meshName];
+                auto keyMorphs = fbxData->iKeyMorph.value[meshName];
+
+                unsigned int kstart = 0;
+                unsigned int kend;
+                bool found = false;
+                for(unsigned int i=0; i<keyMorphs.size()-1; i++){
+                    //std::cout << " i " << i << " " << keyMorphs[i+1].m_Time << " current " << anim.m_CurrentFrame << "\n";
+                    if(anim.m_CurrentFrame <= keyMorphs[i+1].m_Time){
+                        kstart = i;
+                        found = true;
+                        break;
                     }
                 }
-                kin = ki+1;
+                kend = kstart+1;
+                if(! found){
+                    kstart = keyMorphs.size()-2;
+                    kend = kstart+1;
+                }
 
-                auto& kd = k[ki];
-                auto& kdn = k[kin];
-                float factor = (anim.m_CurrentFrame - kd.m_Time) / (kdn.m_Time - kd.m_Time);
-                for(unsigned int i=0; i<b.size(); i++){ // Anim Mesh & Same as BlendShape WeightsAndValues
+                auto& kdstart = keyMorphs[kstart];
+                auto& kdend = keyMorphs[kend];
+                float factor = (anim.m_CurrentFrame - kdstart.m_Time) / (kdend.m_Time - kdstart.m_Time);
+                std::cout << "Eval BlendShape " << meshName << " Factor " << factor << "\n";
+                std::cout << "Eval BlendShape Index " << kstart << " " << kend << "\n";
+                std::cout << "Eval BlendShape Time " << kdstart.m_Time << " " << kdend.m_Time << " " << anim.m_CurrentFrame << "\n";
+
+                if(factor < 0.0){
+                    factor = 0.0;
+                }
+                if(factor > 1.0){
+                    factor = 1.0;
+                }
+
+                for(unsigned int i=0; i<blendShapeData.size(); i++){ // Anim Mesh & Same as BlendShape WeightsAndValues
                     auto bsprim = std::make_shared<zeno::PrimitiveObject>();
-                    auto &ver = bsprim->verts;
-                    auto &ind = bsprim->tris;
-                    auto &norm = bsprim->verts.add_attr<zeno::vec3f>("nrm");
+                    auto &verAttr = bsprim->verts;
+                    auto &nrmAttr = bsprim->verts.add_attr<zeno::vec3f>("nrm");
+                    auto &norb = bsprim->verts.add_attr<zeno::vec3f>("nrmb");
                     auto &posb = bsprim->verts.add_attr<zeno::vec3f>("posb");
                     auto &bsw = bsprim->verts.add_attr<float>("bsw");
-                    double w = kd.m_Weights[i] * (1.0f - factor) + kdn.m_Weights[i] * factor;
-                    auto& v = b[i];
-                    for(unsigned int j=0; j<v.size(); j++){ // Mesh Vert
-                        auto& vpos = v[j].deltaPosition;
-                        //v[j].position;
-                        auto& vnor = v[j].deltaNormal;
-                        ver.emplace_back(vpos.x*gScale, vpos.y*gScale, vpos.z*gScale);
-                        posb.emplace_back(0.0f, 0.0f, 0.0f);
+                    double w = kdstart.m_Weights[i] * (1.0f - factor) + kdend.m_Weights[i] * factor;
+                    auto& bsdata = blendShapeData[i];
+                    for(unsigned int j=0; j<bsdata.size(); j++){
+                        auto& pos = bsdata[j].position;
+                        auto& nrm = bsdata[j].normal;
+                        auto& dpos = bsdata[j].deltaPosition;
+                        auto& dnor = bsdata[j].deltaNormal;
+
+                        verAttr.emplace_back(pos.x * gScale, pos.y * gScale, pos.z * gScale);
+                        nrmAttr.emplace_back(nrm.x, nrm.y, nrm.z);
+                        posb.emplace_back(dpos.x * gScale, dpos.y * gScale, dpos.z * gScale);
+                        norb.emplace_back(dnor.x, dnor.y, dnor.z);
                         bsw.emplace_back((float)w);
-                        norm.emplace_back(vnor.x, vnor.y, vnor.z);
+                    }
+
+                    if(evalBlendShape){
+                        for(unsigned int j=0; j<bsdata.size(); j++) {
+                            //std::cout << " " << j << " " << posb[j][0] << ","<<posb[j][1] <<","<<posb[j][2] << " - " << w << "\n";
+                            prim->verts[j] = prim->verts[j] + posb[j] * w;
+                        }
                     }
 
                     bsPrims->arr.emplace_back(bsprim);
                 }
             }else{
-                zeno::log_info("BlendShape NotFound MorphKey {}", meshName);
+                std::cout << "BlendShape NotFound MorphKey " << meshName << "\n";
             }
         }
+
         //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, bsPrims->arr.size(), meshName);
         auto data2write = std::make_shared<SFBXData>();
         *data2write = anim.m_FbxData;
@@ -605,15 +661,19 @@ ZENDEFNODE(EvalFBXAnim,
                    "data", "animinfo", "nodetree", "bonetree",
                },  /* outputs: */
                {
-                   "prim", "camera", "light", "matName", "meshName", "pathName", "bsPrims", "bsPrimsOrigin",
+                   "prim",
+                   {"ListObject", "prims", ""},
+                   "camera", "light", "matName", "meshName", "pathName", "bsPrimsOrigin",
+                   {"ListObject", "bsPrims", ""},
                    "transDict", "quatDict", "scaleDict",
                    "writeData", "visibility"
                },  /* params: */
                {
                    {"enum FROM_MAYA DEFAULT", "unit", "FROM_MAYA"},
-                   {"enum TRUE FALSE", "interAnimData", "FALSE"},
+                   {"enum TRUE FALSE", "interAnimData", "TRUE"},
                    {"bool", "writeData", "false"},
                    {"bool", "printAnimData", "false"},
+                   {"bool", "evalBlendShape", "true"},
                },  /* category: */
                {
                    "FBX",
