@@ -531,5 +531,5 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 //STATUS_UPDATE_INFO info;
 //info.role = ROLE_OPTIONS;
 //info.newValue = OPT_VIEW;
-//pModel->updateNodeStatus(tmpNodeInfo[ROLE_OBJID].toString(), info, subgIdx, true);
+//pModel->updateNodeStatus(tmpNodeInfo.ident, info, subgIdx, true);
 //}

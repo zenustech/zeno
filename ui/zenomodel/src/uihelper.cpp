@@ -1665,8 +1665,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
     for (auto idx : nodeIndice)
     {
         NODE_DATA node = idx.data(ROLE_OBJDATA).value<NODE_DATA>();
-        INPUT_SOCKETS inputs = node[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET& inSocket : inputs)
+        for (INPUT_SOCKET& inSocket : node.inputs)
         {
             for (QList<EdgeInfo>::iterator it = inSocket.info.links.begin(); it != inSocket.info.links.end(); )
             {
@@ -1696,8 +1695,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
             }
         }
 
-        OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (OUTPUT_SOCKET& outSocket : outputs)
+        for (OUTPUT_SOCKET& outSocket : node.outputs)
         {
             for (QList<EdgeInfo>::iterator it = outSocket.info.links.begin();
                  it != outSocket.info.links.end();)
@@ -1728,11 +1726,7 @@ QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeInd
             }
         }
 
-        node[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        node[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-
-        const QString& oldId = node[ROLE_OBJID].toString();
-        nodes.insert(oldId, node);
+        nodes.insert(node.ident, node);
     }
 
     return QPair<NODES_DATA, LINKS_DATA>(nodes, links);
@@ -1748,11 +1742,11 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
     for (QString key : inNodes.keys())
     {
         const NODE_DATA data = inNodes[key];
-        const QString& oldId = data[ROLE_OBJID].toString();
-        const QString& name = data[ROLE_OBJNAME].toString();
+        const QString& oldId = data.ident;
+        const QString& name = data.nodeCls;
         const QString& newId = UiHelper::generateUuid(name);
         NODE_DATA newData = data;
-        newData[ROLE_OBJID] = newId;
+        newData.ident = newId;
         outNodes.insert(newId, newData);
         old2new.insert(oldId, newId);
     }
@@ -1760,8 +1754,7 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
     for (QString newId : outNodes.keys())
     {
         NODE_DATA& data = outNodes[newId];
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        for (INPUT_SOCKET inputSocket : inputs)
+        for (INPUT_SOCKET& inputSocket : data.inputs)
         {
             inputSocket.info.nodeid = newId;
             inputSocket.info.links.clear();
@@ -1770,9 +1763,7 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
                 key.links.clear();
             }
         }
-
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        for (OUTPUT_SOCKET outputSocket : outputs)
+        for (OUTPUT_SOCKET& outputSocket : data.outputs)
         {
             outputSocket.info.nodeid = newId;
             outputSocket.info.links.clear();
@@ -1781,9 +1772,6 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
                 key.links.clear();
             }
         }
-
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     }
 
     for (const EdgeInfo& link : inLinks)

@@ -14,7 +14,7 @@ QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const
     zeno::log_debug("onNewNodeCreated");
     NODE_DATA node = newNodeData(pModel, descName, pt);
     pModel->addNode(node, subgIdx, true);
-    return node[ROLE_OBJID].toString();
+    return node.ident;
 }
 
 QString NodesMgr::createExtractDictNode(IGraphsModel *pModel, QModelIndex subgIdx, const QString &infos) 
@@ -22,19 +22,17 @@ QString NodesMgr::createExtractDictNode(IGraphsModel *pModel, QModelIndex subgId
     zeno::log_debug("onExtractDictCreated");
     NODE_DATA node = newNodeData(pModel, "ExtractDict", QPointF());
     if (!infos.isEmpty()) {
-        OUTPUT_SOCKETS outputs = node[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         QStringList lst = infos.split(",");
         for (auto name : lst) {
             OUTPUT_SOCKET newSocket;
             newSocket.info.name = name;
             newSocket.info.control = CONTROL_NONE;
             newSocket.info.sockProp = SOCKPROP_EDITABLE;
-            outputs.insert(name, newSocket);
+            node.outputs.insert(name, newSocket);
         }
-        node[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     }
     pModel->addNode(node, subgIdx, true);
-    return node[ROLE_OBJID].toString();
+    return node.ident;
 }
 
 NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, const QPointF& pt)
@@ -45,18 +43,15 @@ NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, c
     ZASSERT_EXIT(ret, node);
 
     const QString &nodeid = UiHelper::generateUuid(descName);
-    node[ROLE_OBJID] = nodeid;
-    node[ROLE_OBJNAME] = descName;
-    node[ROLE_NODETYPE] = nodeType(descName);
-    initInputSocks(pModel, nodeid, desc.inputs, desc.is_subgraph);
-    node[ROLE_INPUTS] = QVariant::fromValue(desc.inputs);
-    initOutputSocks(pModel, nodeid, desc.outputs);
-    node[ROLE_OUTPUTS] = QVariant::fromValue(desc.outputs);
-    initParams(descName, pModel, desc.params);
-    node[ROLE_PARAMETERS] = QVariant::fromValue(desc.params);
-    node[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(initParamsNotDesc(descName));
-    node[ROLE_OBJPOS] = pt;
-    node[ROLE_COLLASPED] = false;
+    node.ident = nodeid;
+    node.nodeCls = descName;
+    node.type = nodeType(descName);
+    initInputSocks(pModel, nodeid, node.inputs, desc.is_subgraph);
+    initOutputSocks(pModel, nodeid, node.outputs);
+    initParams(descName, pModel, node.params);
+    node.parmsNotDesc = initParamsNotDesc(descName);
+    node.pos = pt;
+    node.bCollasped = false;
     return node;
 }
 

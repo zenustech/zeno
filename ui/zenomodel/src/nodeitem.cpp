@@ -36,28 +36,20 @@ TreeNodeItem::TreeNodeItem(const NODE_DATA& nodeData, IGraphsModel* pGraphsModel
 {
     m_item = new NodeItem;
     m_item->treeItem = this;
-    m_item->objid = nodeData[ROLE_OBJID].toString();
-    m_item->objCls = nodeData[ROLE_OBJNAME].toString();
-    m_item->customName = nodeData[ROLE_CUSTOM_OBJNAME].toString();
-    m_item->viewpos = nodeData[ROLE_OBJPOS].toPointF();
-    m_item->bCollasped = nodeData[ROLE_COLLASPED].toBool();
-    m_item->options = nodeData[ROLE_OPTIONS].toInt();
-    m_item->type = (NODE_TYPE)nodeData[ROLE_NODETYPE].toInt();
-    m_item->paramNotDesc = nodeData[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
+    m_item->objid = nodeData.ident;
+    m_item->objCls = nodeData.nodeCls;
+    m_item->customName = nodeData.customName;
+    m_item->viewpos = nodeData.pos;
+    m_item->bCollasped = nodeData.bCollasped;
+    m_item->options = nodeData.options;
+    m_item->type = nodeData.type;
+    m_item->paramNotDesc = nodeData.parmsNotDesc;
     m_item->nodeParams = new NodeParamModel(pGraphsModel, false, m_item);
+    m_item->nodeParams->setInputSockets(nodeData.inputs);
+    m_item->nodeParams->setParams(nodeData.params);
+    m_item->nodeParams->setOutputSockets(nodeData.outputs);
 
-    INPUT_SOCKETS inputs = nodeData[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    PARAMS_INFO params = nodeData[ROLE_PARAMETERS].value<PARAMS_INFO>();
-    OUTPUT_SOCKETS outputs = nodeData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-
-    m_item->nodeParams->setInputSockets(inputs);
-    m_item->nodeParams->setParams(params);
-    m_item->nodeParams->setOutputSockets(outputs);
-
-    VPARAM_INFO panelInfo;
-    if (nodeData.find(ROLE_CUSTOMUI_PANEL_IO) != nodeData.end()) {
-        panelInfo = nodeData[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>();
-    }
+    VPARAM_INFO panelInfo = nodeData.customPanel;
     m_item->panelParams = new PanelParamModel(m_item->nodeParams, panelInfo, pGraphsModel, m_item);
 }
 
@@ -70,28 +62,24 @@ TreeNodeItem::~TreeNodeItem()
 NODE_DATA TreeNodeItem::item2NodeData(const NodeItem& item)
 {
     NODE_DATA data;
-    data[ROLE_OBJID] = item.objid;
-    data[ROLE_OBJNAME] = item.objCls;
-    data[ROLE_CUSTOM_OBJNAME] = item.customName;
-    data[ROLE_OBJPOS] = item.viewpos;
-    data[ROLE_COLLASPED] = item.bCollasped;
-    data[ROLE_OPTIONS] = item.options;
-    data[ROLE_NODETYPE] = item.type;
+    data.ident = item.objid;
+    data.nodeCls = item.objCls;
+    data.customName = item.customName;
+    data.pos = item.viewpos;
+    data.bCollasped = item.bCollasped;
+    data.options = item.options;
+    data.type = item.type;
 
     INPUT_SOCKETS inputs;
     OUTPUT_SOCKETS outputs;
     PARAMS_INFO params;
 
-    item.nodeParams->getInputSockets(inputs);
-    item.nodeParams->getParams(params);
-    item.nodeParams->getOutputSockets(outputs);
+    item.nodeParams->getInputSockets(data.inputs);
+    item.nodeParams->getParams(data.params);
+    item.nodeParams->getOutputSockets(data.outputs);
 
-    data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-    data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-    data[ROLE_PARAMETERS] = QVariant::fromValue(params);
-    data[ROLE_PANEL_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(item.panelParams);
-    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(item.paramNotDesc);
-
+    data.customPanel = item.panelParams->exportParams();
+    data.parmsNotDesc = item.paramNotDesc;
     return data;
 }
 
@@ -256,28 +244,20 @@ void TreeNodeItem::removeNode(const QString& ident, IGraphsModel* pModel)
 NODE_DATA TreeNodeItem::expData() const
 {
     NODE_DATA data;
-    data[ROLE_OBJID] = m_item->objid;
-    data[ROLE_OBJNAME] = m_item->objCls;
-    data[ROLE_CUSTOM_OBJNAME] = m_item->customName;
-    data[ROLE_OBJPOS] = m_item->viewpos;
-    data[ROLE_COLLASPED] = m_item->bCollasped;
-    data[ROLE_OPTIONS] = m_item->options;
-    data[ROLE_NODETYPE] = m_item->type;
+    data.ident = m_item->objid;
+    data.nodeCls = m_item->objCls;
+    data.customName = m_item->customName;
+    data.pos = m_item->viewpos;
+    data.bCollasped = m_item->bCollasped;
+    data.options = m_item->options;
+    data.type = m_item->type;
 
-    INPUT_SOCKETS inputs;
-    OUTPUT_SOCKETS outputs;
-    PARAMS_INFO params;
+    m_item->nodeParams->getInputSockets(data.inputs);
+    m_item->nodeParams->getParams(data.params);
+    m_item->nodeParams->getOutputSockets(data.outputs);
 
-    m_item->nodeParams->getInputSockets(inputs);
-    m_item->nodeParams->getParams(params);
-    m_item->nodeParams->getOutputSockets(outputs);
-
-    data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-    data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-    data[ROLE_PARAMETERS] = QVariant::fromValue(params);
-    data[ROLE_PANEL_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(m_item->panelParams);
-    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(m_item->paramNotDesc);
-
+    data.customPanel = m_item->panelParams->exportParams();
+    data.parmsNotDesc = m_item->paramNotDesc;
     return data;
 }
 

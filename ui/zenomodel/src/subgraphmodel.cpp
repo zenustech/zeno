@@ -115,27 +115,24 @@ void SubGraphModel::clear()
 NODE_DATA SubGraphModel::item2NodeData(const NodeItem* item) const
 {
     NODE_DATA data;
-    data[ROLE_OBJID] = item->objid;
-    data[ROLE_OBJNAME] = item->objCls;
-    data[ROLE_CUSTOM_OBJNAME] = item->customName;
-    data[ROLE_OBJPOS] = item->viewpos;
-    data[ROLE_COLLASPED] = item->bCollasped;
-    data[ROLE_OPTIONS] = item->options;
-    data[ROLE_NODETYPE] = item->type;
+    data.ident = item->objid;
+    data.nodeCls = item->objCls;
+    data.customName = item->customName;
+    data.pos = item->viewpos;
+    data.bCollasped = item->bCollasped;
+    data.options = item->options;
+    data.type = item->type;
 
     INPUT_SOCKETS inputs;
     OUTPUT_SOCKETS outputs;
     PARAMS_INFO params;
 
-    item->nodeParams->getInputSockets(inputs);
-    item->nodeParams->getParams(params);
-    item->nodeParams->getOutputSockets(outputs);
+    item->nodeParams->getInputSockets(data.inputs);
+    item->nodeParams->getParams(data.params);
+    item->nodeParams->getOutputSockets(data.outputs);
 
-    data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-    data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-    data[ROLE_PARAMETERS] = QVariant::fromValue(params);
-    data[ROLE_PANEL_PARAMS] = QVariantPtr<ViewParamModel>::asVariant(item->panelParams);
-    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(item->paramNotDesc);
+    data.customPanel = item->panelParams->exportParams();
+    data.parmsNotDesc = item->paramNotDesc;
 
     return data;
 }
@@ -144,33 +141,27 @@ NodeItem* SubGraphModel::importNodeItem(const NODE_DATA& data)
 {
     NodeItem* pItem = new NodeItem(this);
 
-    pItem->objid = data[ROLE_OBJID].toString();
-    pItem->objCls = data[ROLE_OBJNAME].toString();
-    pItem->customName = data[ROLE_CUSTOM_OBJNAME].toString();
-    pItem->viewpos = data[ROLE_OBJPOS].toPointF();
-    pItem->bCollasped = data[ROLE_COLLASPED].toBool();
-    pItem->options = data[ROLE_OPTIONS].toInt();
-    pItem->type = (NODE_TYPE)data[ROLE_NODETYPE].toInt();
-    pItem->paramNotDesc = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
+    pItem->objid = data.ident;
+    pItem->objCls = data.nodeCls;
+    pItem->customName = data.customName;
+    pItem->viewpos = data.pos;
+    pItem->bCollasped = data.bCollasped;
+    pItem->options = data.options;
+    pItem->type = data.type;
+    pItem->paramNotDesc = data.parmsNotDesc;
 
     const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
 
     pItem->nodeParams = new NodeParamModel(m_pGraphsModel, false, pItem);
 
-    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
-    OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+    INPUT_SOCKETS inputs = data.inputs;
+    PARAMS_INFO params = data.params;
+    OUTPUT_SOCKETS outputs = data.outputs;
 
     pItem->nodeParams->setInputSockets(inputs);
     pItem->nodeParams->setParams(params);
     pItem->nodeParams->setOutputSockets(outputs);
-
-    VPARAM_INFO panelInfo;
-    if (data.find(ROLE_CUSTOMUI_PANEL_IO) != data.end())
-    {
-        panelInfo = data[ROLE_CUSTOMUI_PANEL_IO].value<VPARAM_INFO>();
-    }
-    pItem->panelParams = new PanelParamModel(pItem->nodeParams, panelInfo, m_pGraphsModel, pItem);
+    pItem->panelParams = new PanelParamModel(pItem->nodeParams, data.customPanel, m_pGraphsModel, pItem);
 
     return pItem;
 }
@@ -687,8 +678,8 @@ NodeItem* SubGraphModel::itemFromIndex(const QModelIndex &index) const
 bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModelIndex &parent)
 {
     //pure insert logic, without transaction and notify stuffs.
-    const QString& id = nodeData[ROLE_OBJID].toString();
-    const QString& name = nodeData[ROLE_OBJNAME].toString();
+    const QString& id = nodeData.ident;
+    const QString& name = nodeData.nodeCls;
 
     ZASSERT_EXIT(!id.isEmpty() && !name.isEmpty() && m_nodes.find(id) == m_nodes.end(), false);
     int nRows = m_nodes.size();

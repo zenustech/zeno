@@ -699,8 +699,8 @@ void ZenoLights::write_param_into_node(const QString& primid) {
             int n = pIGraphsModel->itemCount(subGpIdx);
             for (int i = 0; i < n; i++) {
                 const NODE_DATA& item = pIGraphsModel->itemData(pIGraphsModel->index(i, subGpIdx), subGpIdx);
-                if (item[ROLE_OBJID].toString().contains(primid.split(':').front())) {
-                    auto inputs = item[ROLE_INPUTS].value<INPUT_SOCKETS>();
+                if (item.ident.contains(primid.split(':').front())) {
+                    auto inputs = item.inputs;
                     if (ud.get2<int>("isL", 0)) {
                         auto p = ud.get2<zeno::vec3f>("pos");
                         auto s = ud.get2<zeno::vec3f>("scale");
@@ -724,7 +724,7 @@ void ZenoLights::write_param_into_node(const QString& primid) {
                         inputs["colorTemperatureMix"].info.defaultValue = (double)ud.get2<float>("colorTemperatureMix");
                         inputs["colorTemperature"].info.defaultValue = (double)ud.get2<float>("colorTemperature");
                     }
-                    auto nodeIndex = pIGraphsModel->index(item[ROLE_OBJID].toString(), subGpIdx);
+                    auto nodeIndex = pIGraphsModel->index(item.ident, subGpIdx);
                     pIGraphsModel->setNodeData(nodeIndex, subGpIdx, QVariant::fromValue(inputs), ROLE_INPUTS);
                 }
             }

@@ -1194,15 +1194,13 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
 
                         NODE_DATA node =
                             NodesMgr::newNodeData(m_pGraphsModel, bSubInput ? "SubInput" : "SubOutput", pos);
-                        PARAMS_INFO params = node[ROLE_PARAMETERS].value<PARAMS_INFO>();
-                        params["name"].value = name;
-                        params["name"].toolTip = m_ui->editLabel->text();
-                        params["type"].value = typeDesc;
-                        params["defl"].typeDesc = typeDesc;
-                        params["defl"].value = defl;
-                        params["defl"].control = ctrl;
-                        params["defl"].controlProps = pCurrent->data(ROLE_VPARAM_CTRL_PROPERTIES);
-                        node[ROLE_PARAMETERS] = QVariant::fromValue(params);
+                        node.params["name"].value = name;
+                        node.params["name"].toolTip = m_ui->editLabel->text();
+                        node.params["type"].value = typeDesc;
+                        node.params["defl"].typeDesc = typeDesc;
+                        node.params["defl"].value = defl;
+                        node.params["defl"].control = ctrl;
+                        node.params["defl"].controlProps = pCurrent->data(ROLE_VPARAM_CTRL_PROPERTIES);
 
                         m_pGraphsModel->addNode(node, subgIdx, true);
 

@@ -59,11 +59,11 @@ bool TransferAcceptor::addNode(const QString& nodeid, const QString& name, const
         return false;
 
     NODE_DATA data;
-    data[ROLE_OBJID] = nodeid;
-    data[ROLE_OBJNAME] = name;
-    data[ROLE_CUSTOM_OBJNAME] = customName;
-    data[ROLE_COLLASPED] = false;
-    data[ROLE_NODETYPE] = NodesMgr::nodeType(name);
+    data.ident = nodeid;
+    data.nodeCls = name;
+    data.customName = customName;
+    data.bCollasped = false;
+    data.type = NodesMgr::nodeType(name);
 
     m_nodes.insert(nodeid, data);
     return true;
@@ -78,15 +78,15 @@ void TransferAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
 {
     ZASSERT_EXIT(m_nodes.find(id) == m_nodes.end());
     NODE_DATA& data = m_nodes[id];
-    const QString& nodeName = data[ROLE_OBJNAME].toString();
+    const QString& nodeName = data.nodeCls;
     if (nodeName == "MakeDict")
     {
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        INPUT_SOCKETS inputs = data.inputs;
         for (auto keyName : keys) {
             addDictKey(id, keyName, true);
         }
     } else if (nodeName == "ExtractDict") {
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        OUTPUT_SOCKETS outputs = data.outputs;
         for (auto keyName : keys) {
             addDictKey(id, keyName, false);
         }
@@ -100,10 +100,7 @@ void TransferAcceptor::initSockets(const QString& id, const QString& name, const
     ZASSERT_EXIT(ret);
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 
-    //params
-    INPUT_SOCKETS inputs;
-    PARAMS_INFO params;
-    OUTPUT_SOCKETS outputs;
+    NODE_DATA &data = m_nodes[id];
 
     for (PARAM_INFO descParam : desc.params)
     {
@@ -112,7 +109,7 @@ void TransferAcceptor::initSockets(const QString& id, const QString& name, const
         param.control = descParam.control;
         param.typeDesc = descParam.typeDesc;
         param.defaultValue = descParam.defaultValue;
-        params.insert(param.name, param);
+        data.params.insert(param.name, param);
     }
     for (INPUT_SOCKET descInput : desc.inputs)
     {
@@ -122,7 +119,7 @@ void TransferAcceptor::initSockets(const QString& id, const QString& name, const
         input.info.type = descInput.info.type;
         input.info.name = descInput.info.name;
         input.info.defaultValue = descInput.info.defaultValue;
-        inputs.insert(input.info.name, input);
+        data.inputs.insert(input.info.name, input);
     }
     for (OUTPUT_SOCKET descOutput : desc.outputs)
     {
@@ -131,14 +128,9 @@ void TransferAcceptor::initSockets(const QString& id, const QString& name, const
         output.info.control = descOutput.info.control;
         output.info.type = descOutput.info.type;
         output.info.name = descOutput.info.name;
-        outputs[output.info.name] = output;
+        data.outputs[output.info.name] = output;
     }
-
-    NODE_DATA& data = m_nodes[id];
-    data[ROLE_INPUTS] = QVariant::fromValue(inputs);
-    data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
-    data[ROLE_PARAMETERS] = QVariant::fromValue(params);
-    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(NodesMgr::initParamsNotDesc(name));
+    data.parmsNotDesc = NodesMgr::initParamsNotDesc(name);
 }
 
 void TransferAcceptor::addSocket(bool bInput, const QString& ident, const QString& sockName, const QString& sockProperty)
@@ -153,8 +145,7 @@ void TransferAcceptor::addDictKey(const QString& id, const QString& keyName, boo
     NODE_DATA &data = m_nodes[id];
     if (bInput)
     {
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        if (inputs.find(keyName) == inputs.end())
+        if (data.inputs.find(keyName) == data.inputs.end())
         {
             INPUT_SOCKET inputSocket;
             inputSocket.info.name = keyName;
@@ -162,14 +153,12 @@ void TransferAcceptor::addDictKey(const QString& id, const QString& keyName, boo
             inputSocket.info.control = CONTROL_NONE;
             inputSocket.info.sockProp = SOCKPROP_EDITABLE;
             inputSocket.info.type = "";
-            inputs[keyName] = inputSocket;
-            data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+            data.inputs[keyName] = inputSocket;
         }
     }
     else
     {
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        if (outputs.find(keyName) == outputs.end())
+        if (data.outputs.find(keyName) == data.outputs.end())
         {
             OUTPUT_SOCKET outputSocket;
             outputSocket.info.name = keyName;
@@ -177,8 +166,7 @@ void TransferAcceptor::addDictKey(const QString& id, const QString& keyName, boo
             outputSocket.info.control = CONTROL_NONE;
             outputSocket.info.sockProp = SOCKPROP_EDITABLE;
             outputSocket.info.type = "";
-            outputs[keyName] = outputSocket;
-            data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+            data.outputs[keyName] = outputSocket;
         }
     }
 }
@@ -206,11 +194,9 @@ void TransferAcceptor::setDictPanelProperty(
     NODE_DATA& data = m_nodes[ident];
 
     //standard inputs desc by latest descriptors.
-    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    if (inputs.find(sockName) != inputs.end())
+    if (data.inputs.find(sockName) != data.inputs.end())
     {
-        inputs[sockName].info.dictpanel.bCollasped = bCollasped;
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        data.inputs[sockName].info.dictpanel.bCollasped = bCollasped;
     }
 }
 
@@ -226,10 +212,9 @@ void TransferAcceptor::addInnerDictKey(
     NODE_DATA& data = m_nodes[inNode];
 
     //standard inputs desc by latest descriptors.
-    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    if (inputs.find(sockName) != inputs.end())
+    if (data.inputs.find(sockName) != data.inputs.end())
     {
-        INPUT_SOCKET& inSocket = inputs[sockName];
+        INPUT_SOCKET& inSocket = data.inputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
 
@@ -243,20 +228,17 @@ void TransferAcceptor::addInnerDictKey(
             m_links.append(edge);
         }
         inSocket.info.dictpanel.keys.append(item);
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
     }
 
-    OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-    if (outputs.find(sockName) != outputs.end())
+    if (data.outputs.find(sockName) != data.outputs.end())
     {
-        OUTPUT_SOCKET& outSocket = outputs[sockName];
+        OUTPUT_SOCKET& outSocket = data.outputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
 
         QString newKeyPath = "[node]/outputs/" + sockName + "/" + keyName;
         outSocket.info.dictpanel.keys.append(item);
         //no need to import link here.
-        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
     }
 }
 
@@ -287,20 +269,18 @@ void TransferAcceptor::setInputSocket2(
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
     NODE_DATA& data = m_nodes[inNode];
 
-    //standard inputs desc by latest descriptors. 
-    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    if (inputs.find(inSock) != inputs.end())
+    //standard inputs desc by latest descriptors.
+    if (data.inputs.find(inSock) != data.inputs.end())
     {
         if (!defaultValue.isNull())
-            inputs[inSock].info.defaultValue = defaultValue;
+            data.inputs[inSock].info.defaultValue = defaultValue;
         if (!outLinkPath.isEmpty())
         {
             const QString& inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, "[node]/inputs/", inSock);
             EdgeInfo info(outLinkPath, inSockPath);
-            inputs[inSock].info.links.append(info);
+            data.inputs[inSock].info.links.append(info);
             m_links.append(info);
         }
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
     }
     else
     {
@@ -314,16 +294,15 @@ void TransferAcceptor::setInputSocket2(
                 inSocket.info.control = CONTROL_NONE;
                 inSocket.info.sockProp = SOCKPROP_EDITABLE;
             }
-            inputs[inSock] = inSocket;
+            data.inputs[inSock] = inSocket;
 
             if (!outLinkPath.isEmpty())
             {
                 const QString& inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, "[node]/inputs/", inSock);
                 EdgeInfo info(outLinkPath, inSockPath);
-                inputs[inSock].info.links.append(info);
+                data.inputs[inSock].info.links.append(info);
                 m_links.append(info);
             }
-            data[ROLE_INPUTS] = QVariant::fromValue(inputs);
         }
         else
         {
@@ -338,11 +317,9 @@ void TransferAcceptor::setControlAndProperties(const QString& nodeCls, const QSt
     NODE_DATA &data = m_nodes[inNode];
 
     //standard inputs desc by latest descriptors.
-    INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    if (inputs.find(inSock) != inputs.end()) {
-        inputs[inSock].info.control = control;
-        inputs[inSock].info.ctrlProps = ctrlProperties.toMap();
-        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    if (data.inputs.find(inSock) != data.inputs.end()) {
+        data.inputs[inSock].info.control = control;
+        data.inputs[inSock].info.ctrlProps = ctrlProperties.toMap();
     }
 }
 
@@ -353,23 +330,20 @@ void TransferAcceptor::setToolTip(PARAM_CLASS cls, const QString & inNode, const
     
     if (cls == PARAM_INPUT) 
     {
-        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-        if (inputs.find(inSock) != inputs.end()) 
+        if (data.inputs.find(inSock) != data.inputs.end()) 
         {
-            inputs[inSock].info.toolTip = toolTip;
-            data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+            data.inputs[inSock].info.toolTip = toolTip;
         }
     } 
     else if (cls == PARAM_OUTPUT) 
     {
-        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-        if (outputs.find(inSock) != outputs.end()) 
+        if (data.outputs.find(inSock) != data.outputs.end()) 
         {
-            outputs[inSock].info.toolTip = toolTip;
-            data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+            data.outputs[inSock].info.toolTip = toolTip;
         }
     } 
 }
+
 void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, const QString &name,const rapidjson::Value &value) {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA& data = m_nodes[id];
@@ -392,12 +366,10 @@ void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, 
             var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, nullptr);
     }
 
-    PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
-    if (params.find(name) != params.end())
+    if (data.params.find(name) != data.params.end())
     {
         zeno::log_trace("found param name {}", name.toStdString());
-        params[name].value = var;
-        data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+        data.params[name].value = var;
     }
     else
     {
@@ -408,8 +380,7 @@ void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, 
             paramData.name = name;
             paramData.bEnableConnect = false;
             paramData.value = var;
-            params[name] = paramData;
-            data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+            data.params[name] = paramData;
             return;
         }
         if (nodeCls == "MakeHeatmap" && name == "_RAMPS")
@@ -419,14 +390,11 @@ void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, 
             paramData.name = name;
             paramData.bEnableConnect = false;
             paramData.value = var;
-            params[name] = paramData;
-            data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+            data.params[name] = paramData;
             return;
         }
 
-        PARAMS_INFO _params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
-        _params[name].value = var;
-        data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(_params);
+        data.parmsNotDesc[name].value = var;
         zeno::log_warn("not found param name {}", name.toStdString());
     }
 }
@@ -438,14 +406,14 @@ void TransferAcceptor::setParamValue2(const QString &id, const QString &noCls,co
 
 	if (!params.isEmpty()) 
 	{
-        data[ROLE_PARAMETERS] = QVariant::fromValue(params);
+        data.params = params;
     }
 }
 
 void TransferAcceptor::setPos(const QString& id, const QPointF& pos)
 {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-    m_nodes[id][ROLE_OBJPOS] = pos;
+    m_nodes[id].pos = pos;
 }
 
 void TransferAcceptor::setOptions(const QString& id, const QStringList& options)
@@ -474,10 +442,10 @@ void TransferAcceptor::setOptions(const QString& id, const QStringList& options)
         }
         else if (optName == "collapsed")
         {
-            data[ROLE_COLLASPED] = true;
+            data.bCollasped = true;
         }
     }
-    data[ROLE_OPTIONS] = opts;
+    data.options = opts;
 }
 
 void TransferAcceptor::setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps)
@@ -489,10 +457,8 @@ void TransferAcceptor::setBlackboard(const QString& id, const BLACKBOARD_INFO& b
 {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA &data = m_nodes[id];
-    PARAMS_INFO paramsNotDesc;
-    paramsNotDesc["blackboard"].name = "blackboard";
-    paramsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
-    data[ROLE_PARAMS_NO_DESC] = QVariant::fromValue(paramsNotDesc);
+    data.parmsNotDesc["blackboard"].name = "blackboard";
+    data.parmsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
 }
 
 void TransferAcceptor::setTimeInfo(const TIMELINE_INFO& info)
@@ -526,24 +492,22 @@ void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
     if (nodeCls == "SubInput" || nodeCls == "SubOutput")
     {
         NODE_DATA& data = m_nodes[id];
-        PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
-        ZASSERT_EXIT(params.find("name") != params.end() &&
-            params.find("type") != params.end() &&
-            params.find("defl") != params.end());
+        ZASSERT_EXIT(data.params.find("name") != data.params.end() &&
+            data.params.find("type") != data.params.end() &&
+            data.params.find("defl") != data.params.end());
 
-        const QString& descType = params["type"].value.toString();
-        PARAM_INFO& defl = params["defl"];
+        const QString& descType = data.params["type"].value.toString();
+        PARAM_INFO& defl = data.params["defl"];
         defl.control = UiHelper::getControlByType(descType);
         defl.value = UiHelper::parseVarByType(descType, defl.value, nullptr);
         defl.typeDesc = descType;
-        data[ROLE_PARAMETERS] = QVariant::fromValue(params);
     }
 }
 
 void TransferAcceptor::addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot)
 {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
-    m_nodes[id][ROLE_CUSTOMUI_PANEL_IO] = QVariant::fromValue(invisibleRoot);
+    m_nodes[id].customPanel = invisibleRoot;
 }
 
 QMap<QString, NODE_DATA> TransferAcceptor::nodes() const

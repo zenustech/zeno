@@ -11,6 +11,7 @@ namespace zenomodel
 {
     void exportItem(const VParamItem* pItem, RAPIDJSON_WRITER& writer);
     void exportCustomUI(ViewParamModel* pModel, RAPIDJSON_WRITER& writer);
+    void exportCustomUI(VPARAM_INFO root, RAPIDJSON_WRITER& writer);
     VPARAM_INFO importParam(const QString& paramName, const rapidjson::Value& paramVal);
     VPARAM_INFO importCustomUI(const rapidjson::Value& jsonCutomUI);
     

@@ -104,7 +104,7 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
         {
             const QModelIndex& idx = pModel->index(i, subgIdx);
             const NODE_DATA& node = pModel->itemData(idx, subgIdx);
-            const QString& id = node[ROLE_OBJID].toString();
+            const QString& id = node.ident;
             writer.Key(id.toUtf8());
             dumpNode(node, writer);
         }
@@ -223,19 +223,19 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
     JsonObjBatch batch(writer);
 
     writer.Key("name");
-    const QString& name = data[ROLE_OBJNAME].toString();
+    const QString& name = data.nodeCls;
     writer.String(name.toUtf8());
 
-    const QString &customName = data[ROLE_CUSTOM_OBJNAME].toString();
+    const QString &customName = data.customName;
     if (!customName.isEmpty()) 
     {
         writer.Key("customName");
         writer.String(customName.toUtf8());
     }
 
-    const INPUT_SOCKETS& inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    const OUTPUT_SOCKETS& outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-    const PARAMS_INFO& params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
+    const INPUT_SOCKETS& inputs = data.inputs;
+    const OUTPUT_SOCKETS& outputs = data.outputs;
+    const PARAMS_INFO& params = data.params;
 
     writer.Key("inputs");
     {
@@ -288,7 +288,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
     }
     writer.Key("uipos");
     {
-        QPointF pos = data[ROLE_OBJPOS].toPointF();
+        QPointF pos = data.pos;
         writer.StartArray();
         writer.Double(pos.x());
         writer.Double(pos.y());
@@ -298,7 +298,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
     writer.Key("options");
     {
         QStringList options;
-        int opts = data[ROLE_OPTIONS].toInt();
+        int opts = data.options;
         if (opts & OPT_ONCE) {
             options.push_back("ONCE");
         }
@@ -311,7 +311,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         if (opts & OPT_VIEW) {
             options.push_back("VIEW");
         }
-        if (data[ROLE_COLLASPED].toBool())
+        if (data.bCollasped)
         {
             options.push_back("collapsed");
         }
@@ -355,7 +355,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
 
 	if (name == "Blackboard") {
         // do not compatible with zeno1
-        PARAMS_INFO params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
+        PARAMS_INFO params = data.parmsNotDesc;
         BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
         writer.Key("blackboard");
         {
@@ -375,7 +375,7 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
     } 
     else if (name == "Group") {
         // do not compatible with zeno1
-        PARAMS_INFO params = data[ROLE_PARAMS_NO_DESC].value<PARAMS_INFO>();
+        PARAMS_INFO params = data.parmsNotDesc;
         BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
         writer.Key("blackboard");
         {
@@ -397,19 +397,10 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
         }
     }
     //custom ui for panel
-    ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_PANEL_PARAMS]);
-    if (viewParams && viewParams->isDirty())
+    if (!data.customPanel.m_bDefault)
     {
         writer.Key("customui-panel");
-        zenomodel::exportCustomUI(viewParams, writer);
-    }
-
-    //custom ui for node
-    ViewParamModel* viewNodeParams = QVariantPtr<ViewParamModel>::asPtr(data[ROLE_NODE_PARAMS]);
-    if (viewNodeParams && viewNodeParams->isDirty())
-    {
-        writer.Key("customui-node");
-        zenomodel::exportCustomUI(viewNodeParams, writer);
+        zenomodel::exportCustomUI(data.customPanel, writer);
     }
 }
 

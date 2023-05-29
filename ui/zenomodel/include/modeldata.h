@@ -224,8 +224,9 @@ struct VPARAM_INFO
     QVector<VPARAM_INFO> children;
     QVariant controlInfos;
     uint m_uuid;
+    bool m_bDefault;        //default layout.
 
-    VPARAM_INFO() : vType(VPARAM_PARAM), m_cls(PARAM_UNKNOWN) {}
+    VPARAM_INFO() : vType(VPARAM_PARAM), m_cls(PARAM_UNKNOWN), m_bDefault(true) {}
 };
 Q_DECLARE_METATYPE(VPARAM_INFO);
 
@@ -275,7 +276,27 @@ struct NODE_CATE {
 };
 typedef QMap<QString, NODE_CATE> NODE_CATES;
 
-typedef QMap<int, QVariant> NODE_DATA;
+class ViewParamModel;
+
+struct NODE_DATA {
+    QString ident;
+    QString nodeCls;
+    QString customName;
+
+    //node params
+    INPUT_SOCKETS inputs;
+    PARAMS_INFO params;
+    OUTPUT_SOCKETS outputs;
+
+    //panel params
+    VPARAM_INFO customPanel;
+    PARAMS_INFO parmsNotDesc; //todo: deprecated
+
+    QPointF pos;
+    int options = 0;
+    NODE_TYPE type = NORMAL_NODE;
+    bool bCollasped = false;
+};
 Q_DECLARE_METATYPE(NODE_DATA)
 
 

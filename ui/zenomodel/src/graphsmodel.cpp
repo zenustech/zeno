@@ -761,7 +761,7 @@ QModelIndex GraphsModel::fork(const QModelIndex& subgIdx, const QModelIndex &sub
     SubGraphModel *pCurrentModel = subGraph(subgIdx.row());
     pCurrentModel->appendItem(subnetData, false);
 
-    QModelIndex newForkNodeIdx = pCurrentModel->index(subnetData[ROLE_OBJID].toString());
+    QModelIndex newForkNodeIdx = pCurrentModel->index(subnetData.ident);
     return newForkNodeIdx;
 }
 
@@ -785,7 +785,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
             SubGraphModel* psSubModel = subGraph(ssubnetName);
             ZASSERT_EXIT(psSubModel, NODE_DATA());
             nodeData = _fork(ssubnetName);
-            const QString& subgNewNodeId = nodeData[ROLE_OBJID].toString();
+            const QString& subgNewNodeId = nodeData.ident;
 
             nodes.insert(snodeId, pModel->nodeData(idx));
             oldGraphsToNew.insert(snodeId, nodeData);
@@ -814,12 +814,12 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
             QString outSockPath = outSockIdx.data(ROLE_OBJPATH).toString();
             QString inSockPath = inSockIdx.data(ROLE_OBJPATH).toString();
             if (oldGraphsToNew.find(inNode) != oldGraphsToNew.end()) {
-                QString newId = oldGraphsToNew[inNode][ROLE_OBJID].toString();
+                QString newId = oldGraphsToNew[inNode].ident;
                 QString oldId = UiHelper::getSockNode(inSockPath);
                 inSockPath.replace(oldId, newId);
             }
             if (oldGraphsToNew.find(outNode) != oldGraphsToNew.end()) {
-                QString newId = oldGraphsToNew[outNode][ROLE_OBJID].toString();
+                QString newId = oldGraphsToNew[outNode].ident;
                 QString oldId = UiHelper::getSockNode(outSockPath);
                 outSockPath.replace(oldId, newId);
             }
@@ -831,13 +831,13 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
         if (nodes.find(ident) != nodes.end()) {
             NODE_DATA newData = it.value();
             NODE_DATA oldData = nodes[ident];
-            oldData[ROLE_OBJID] = newData[ROLE_OBJID];
-            oldData[ROLE_OBJNAME] = newData[ROLE_OBJNAME];
+            oldData.ident = newData.ident;
+            oldData.nodeCls = newData.nodeCls;
 
             newData = oldData;
 
             nodes.remove(ident);
-            nodes.insert(newData[ROLE_OBJID].toString(), newData);
+            nodes.insert(newData.ident, newData);
         }
     }
 
@@ -858,23 +858,20 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
 
     //create the new fork subnet node at outter layer.
     NODE_DATA subnetData = NodesMgr::newNodeData(this, forkSubgName);
-    subnetData[ROLE_OBJID] = UiHelper::generateUuid(forkName);
-    subnetData[ROLE_OBJNAME] = forkName;
+    subnetData.ident = UiHelper::generateUuid(forkName);
+    subnetData.nodeCls = forkName;
     //clear the link.
-    OUTPUT_SOCKETS outputs = subnetData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
-    for (auto it = outputs.begin(); it != outputs.end(); it++) {
+    for (auto it = subnetData.outputs.begin(); it != subnetData.outputs.end(); it++) {
         it->second.info.links.clear();
     }
-    INPUT_SOCKETS inputs = subnetData[ROLE_INPUTS].value<INPUT_SOCKETS>();
-    for (auto it = inputs.begin(); it != inputs.end(); it++) {
+    for (auto it = subnetData.inputs.begin(); it != subnetData.inputs.end(); it++) {
         it->second.info.links.clear();
     }
-    subnetData[ROLE_INPUTS] = QVariant::fromValue(inputs);
-    subnetData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+
     //temp code: node pos.
-    QPointF pos = subnetData[ROLE_OBJPOS].toPointF();
+    QPointF pos = subnetData.pos;
     pos.setY(pos.y() + 100);
-    subnetData[ROLE_OBJPOS] = pos;
+    subnetData.pos = pos;
     return subnetData;
 }
 
@@ -1033,7 +1030,7 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
 
     if (enableTransaction)
     {
-        QString id = nodeData[ROLE_OBJID].toString();
+        QString id = nodeData.ident;
         AddNodeCommand* pCmd = new AddNodeCommand(id, nodeData, this, subGpIdx);
         m_stack->push(pCmd);
     }
@@ -1596,23 +1593,21 @@ void GraphsModel::on_linkRemoved(const QModelIndex& parent, int first, int last)
 
 bool GraphsModel::onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2)
 {
-    const QString& descName = nodeData2[ROLE_OBJNAME].toString();
+    const QString& descName = nodeData2.nodeCls;
     if (descName != "SubInput" && descName != "SubOutput")
         return false;
 
     bool bInput = descName == "SubInput";
 
-    PARAMS_INFO params = nodeData2[ROLE_PARAMETERS].value<PARAMS_INFO>();
-    ZASSERT_EXIT(params.find("name") != params.end(), false);
-    PARAM_INFO& param = params["name"];
+    ZASSERT_EXIT(nodeData2.params.find("name") != nodeData2.params.end(), false);
+    PARAM_INFO& param = nodeData2.params["name"];
     QString newSockName = UiHelper::correctSubIOName(this, pGraph->name(), param.value.toString(), bInput);
     param.value = newSockName;
-    nodeData2[ROLE_PARAMETERS] = QVariant::fromValue(params);
     pGraph->appendItem(nodeData2);
 
     if (!IsIOProcessing())
     {
-        const QModelIndex& nodeIdx = pGraph->index(nodeData2[ROLE_OBJID].toString());
+        const QModelIndex& nodeIdx = pGraph->index(nodeData2.ident);
         onSubIOAddRemove(pGraph, nodeIdx, bInput, true);
     }
     return true;
@@ -1620,14 +1615,13 @@ bool GraphsModel::onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2)
 
 bool GraphsModel::onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2)
 {
-    const QString& descName = nodeData2[ROLE_OBJNAME].toString();
+    const QString& descName = nodeData2.nodeCls;
     if (descName == "MakeList" || descName == "MakeDict")
     {
-        INPUT_SOCKETS inputs = nodeData2[ROLE_INPUTS].value<INPUT_SOCKETS>();
         INPUT_SOCKET inSocket;
-        inSocket.info.nodeid = nodeData2[ROLE_OBJID].toString();
+        inSocket.info.nodeid = nodeData2.ident;
 
-        int maxObjId = UiHelper::getMaxObjId(inputs.keys());
+        int maxObjId = UiHelper::getMaxObjId(nodeData2.inputs.keys());
         if (maxObjId == -1)
         {
             inSocket.info.name = "obj0";
@@ -1636,26 +1630,23 @@ bool GraphsModel::onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2)
                 inSocket.info.control = CONTROL_NONE;
                 inSocket.info.sockProp = SOCKPROP_EDITABLE;
             }
-            inputs.insert(inSocket.info.name, inSocket);
-            nodeData2[ROLE_INPUTS] = QVariant::fromValue(inputs);
+            nodeData2.inputs.insert(inSocket.info.name, inSocket);
         }
         pGraph->appendItem(nodeData2);
         return true;
     }
     else if (descName == "ExtractDict")
     {
-        OUTPUT_SOCKETS outputs = nodeData2[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         OUTPUT_SOCKET outSocket;
-        outSocket.info.nodeid = nodeData2[ROLE_OBJID].toString();
+        outSocket.info.nodeid = nodeData2.ident;
 
-        int maxObjId = UiHelper::getMaxObjId(outputs.keys());
+        int maxObjId = UiHelper::getMaxObjId(nodeData2.outputs.keys());
         if (maxObjId == -1)
         {
             outSocket.info.name = "obj0";
             outSocket.info.control = CONTROL_NONE;
             outSocket.info.sockProp = SOCKPROP_EDITABLE;
-            outputs.insert(outSocket.info.name, outSocket);
-            nodeData2[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+            nodeData2.outputs.insert(outSocket.info.name, outSocket);
         }
         pGraph->appendItem(nodeData2);
         return true;

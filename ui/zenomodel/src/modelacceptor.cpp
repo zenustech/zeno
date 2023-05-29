@@ -162,11 +162,11 @@ bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const QS
     }
 
     NODE_DATA data;
-    data[ROLE_OBJID] = nodeid;
-    data[ROLE_OBJNAME] = name;
-    data[ROLE_CUSTOM_OBJNAME] = customName;
-    data[ROLE_COLLASPED] = false;
-    data[ROLE_NODETYPE] = UiHelper::nodeType(name);
+    data.ident = nodeid;
+    data.nodeCls = name;
+    data.customName = customName;
+    data.bCollasped = false;
+    data.type = UiHelper::nodeType(name);
 
     //zeno::log_warn("zsg has Inputs {}", data.find(ROLE_PARAMETERS) != data.end());
     m_currentGraph->appendItem(data, false);

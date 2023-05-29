@@ -19,9 +19,9 @@ GraphsTreeModel_impl::GraphsTreeModel_impl(GraphsTreeModel* pModel, QObject *par
     , m_pModel(pModel)
 {
     NODE_DATA dat;
-    dat[ROLE_OBJNAME] = "main";
-    dat[ROLE_NODETYPE] = SUBGRAPH_NODE;
-    dat[ROLE_OBJID] = "main";
+    dat.nodeCls = "main";
+    dat.type = SUBGRAPH_NODE;
+    dat.ident = "main";
     m_main = new TreeNodeItem(dat, m_pModel);
     m_linkModel = new LinkModel(this);
     appendRow(m_main);
@@ -167,23 +167,25 @@ void GraphsTreeModel_impl::onSubIOAddRemove(
 
 bool GraphsTreeModel_impl::onSubIOAdd(TreeNodeItem *pSubgraph, NODE_DATA nodeData)
 {
-    const QString& descName = nodeData[ROLE_OBJNAME].toString();
+    //todo: SubInput socket init on `main` graph.
+    if (m_pModel->IsIOProcessing())
+        return false;
+
+    const QString& descName = nodeData.nodeCls;
     if (descName != "SubInput" && descName != "SubOutput")
         return false;
 
     bool bInput = descName == "SubInput";
 
-    PARAMS_INFO params = nodeData[ROLE_PARAMETERS].value<PARAMS_INFO>();
-    ZASSERT_EXIT(params.find("name") != params.end(), false);
-    PARAM_INFO& param = params["name"];
+    ZASSERT_EXIT(nodeData.params.find("name") != nodeData.params.end(), false);
+    PARAM_INFO& param = nodeData.params["name"];
     QString newSockName = UiHelper::correctSubIOName(m_pModel, pSubgraph->objClass(), param.value.toString(), bInput);
     param.value = newSockName;
-    nodeData[ROLE_PARAMETERS] = QVariant::fromValue(params);
 
     pSubgraph->addNode(nodeData, m_pModel);
 
     if (!m_pModel->IsIOProcessing()) {
-        const QString& ident = nodeData[ROLE_OBJID].toString();
+        const QString& ident = nodeData.ident;
         const QModelIndex& nodeIdx = pSubgraph->childIndex(ident);
         onSubIOAddRemove(pSubgraph, nodeIdx, bInput, true);
     }
@@ -192,14 +194,13 @@ bool GraphsTreeModel_impl::onSubIOAdd(TreeNodeItem *pSubgraph, NODE_DATA nodeDat
 
 bool GraphsTreeModel_impl::onListDictAdd(TreeNodeItem* pSubgraph, NODE_DATA nodeData)
 {
-    const QString& descName = nodeData[ROLE_OBJNAME].toString();
+    const QString& descName = nodeData.nodeCls;
     if (descName == "MakeList" || descName == "MakeDict")
     {
-        INPUT_SOCKETS inputs = nodeData[ROLE_INPUTS].value<INPUT_SOCKETS>();
         INPUT_SOCKET inSocket;
-        inSocket.info.nodeid = nodeData[ROLE_OBJID].toString();
+        inSocket.info.nodeid = nodeData.ident;
 
-        int maxObjId = UiHelper::getMaxObjId(inputs.keys());
+        int maxObjId = UiHelper::getMaxObjId(nodeData.inputs.keys());
         if (maxObjId == -1)
         {
             inSocket.info.name = "obj0";
@@ -207,25 +208,22 @@ bool GraphsTreeModel_impl::onListDictAdd(TreeNodeItem* pSubgraph, NODE_DATA node
                 inSocket.info.control = CONTROL_NONE;
                 inSocket.info.sockProp = SOCKPROP_EDITABLE;
             }
-            inputs.insert(inSocket.info.name, inSocket);
-            nodeData[ROLE_INPUTS] = QVariant::fromValue(inputs);
+            nodeData.inputs.insert(inSocket.info.name, inSocket);
         }
         pSubgraph->addNode(nodeData, m_pModel);
         return true;
     }
     else if (descName == "ExtractDict")
     {
-        OUTPUT_SOCKETS outputs = nodeData[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         OUTPUT_SOCKET outSocket;
-        outSocket.info.nodeid = nodeData[ROLE_OBJID].toString();
+        outSocket.info.nodeid = nodeData.ident;
 
-        int maxObjId = UiHelper::getMaxObjId(outputs.keys());
+        int maxObjId = UiHelper::getMaxObjId(nodeData.outputs.keys());
         if (maxObjId == -1) {
             outSocket.info.name = "obj0";
             outSocket.info.control = CONTROL_NONE;
             outSocket.info.sockProp = SOCKPROP_EDITABLE;
-            outputs.insert(outSocket.info.name, outSocket);
-            nodeData[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+            nodeData.outputs.insert(outSocket.info.name, outSocket);
         }
         pSubgraph->addNode(nodeData, m_pModel);
         return true;
@@ -241,7 +239,7 @@ void GraphsTreeModel_impl::addNode(const NODE_DATA& nodeData, const QModelIndex&
 
     if (enableTransaction)
     {
-        QString id = nodeData[ROLE_OBJID].toString();
+        QString id = nodeData.ident;
         AddNodeCommand *pCmd = new AddNodeCommand(id, nodeData, m_pModel, subGpIdx);
         m_pModel->stack()->push(pCmd);
     }
@@ -272,11 +270,11 @@ QList<EdgeInfo> GraphsTreeModel_impl::addSubnetNode(
     ZASSERT_EXIT(idxSharedSubg.isValid(), newLinks);
 
     NODE_DATA nodeData;
-    nodeData[ROLE_OBJID] = ident;
-    nodeData[ROLE_OBJNAME] = subnetName;
-    nodeData[ROLE_CUSTOM_OBJNAME] = customName;
-    nodeData[ROLE_COLLASPED] = false;
-    nodeData[ROLE_NODETYPE] = SUBGRAPH_NODE;
+    nodeData.ident = ident;
+    nodeData.nodeCls = subnetName;
+    nodeData.customName = customName;
+    nodeData.bCollasped = false;
+    nodeData.type = SUBGRAPH_NODE;
 
     TreeNodeItem *pNewSubnetItem = _fork("/main/" + ident, pSubgraphs, subnetName, nodeData, newLinks);
     ZASSERT_EXIT(pNewSubnetItem, newLinks);
@@ -306,7 +304,7 @@ TreeNodeItem* GraphsTreeModel_impl::_fork(
         QModelIndex nodeIdx = pSubgraphs->index(r, sharedSubg);
         NODE_DATA nodeData = nodeIdx.data(ROLE_OBJDATA).value<NODE_DATA>();
         const QString &snodeId = nodeIdx.data(ROLE_OBJID).toString();
-        const QString &name = nodeData[ROLE_OBJNAME].toString();
+        const QString &name = nodeData.nodeCls;
         const QString &newId = UiHelper::generateUuid(name);
         old2new.insert(snodeId, newId);
 
@@ -314,14 +312,14 @@ TreeNodeItem* GraphsTreeModel_impl::_fork(
         if (pSubgraphs->IsSubGraphNode(nodeIdx))
         {
             const QString &ssubnetName = nodeIdx.data(ROLE_OBJNAME).toString();
-            nodeData[ROLE_OBJID] = newId;
-            nodeData[ROLE_NODETYPE] = SUBGRAPH_NODE;
+            nodeData.ident = newId;
+            nodeData.type = SUBGRAPH_NODE;
             newNodeItem = _fork(currentPath + "/" + newId, pSubgraphs, ssubnetName, nodeData, newLinks);
             nodes.insert(snodeId, nodeData);
         }
         else
         {
-            nodeData[ROLE_OBJID] = newId;
+            nodeData.ident = newId;
             newNodeItem = new TreeNodeItem(nodeData, m_pModel);
         }
         pSubnetNode->appendRow(newNodeItem);

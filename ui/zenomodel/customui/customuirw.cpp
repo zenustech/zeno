@@ -130,6 +130,11 @@ namespace zenomodel
         }
     }
 
+    void exportCustomUI(VPARAM_INFO root, RAPIDJSON_WRITER& writer)
+    {
+        //todo
+    }
+
     VPARAM_INFO importParam(const QString& paramName, const rapidjson::Value& paramVal)
     {
         VPARAM_INFO param;
