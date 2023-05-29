@@ -8,6 +8,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
 #include <random>
+#include <vector>
 
 namespace zeno
 {
@@ -1763,6 +1764,62 @@ float chramp(const float inputData) {
     return outputData;
 }
 
+// 计算图像的梯度
+void computeGradient(std::shared_ptr<PrimitiveObject> & hf, std::vector<std::vector<float>>& gradientX, std::vector<std::vector<float>>& gradientY) {
+    auto &ud = hf->userData();
+    int height  = ud.get2<int>("nx");
+    int width = ud.get2<int>("nx");
+
+    gradientX.resize(height, std::vector<float>(width));
+    gradientY.resize(height, std::vector<float>(width));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (x > 0 && x < width - 1) {
+                gradientX[y][x] = (hf->verts.attr<float>("heightLayer")[y * width + x + 1] - hf->verts.attr<float>("heightLayer")[y * width + x  - 1]) / 2.0f;
+            } else {
+                gradientX[y][x] = 0.0f;
+            }
+            if (y > 0 && y < height - 1) {
+                gradientY[y][x] = (hf->verts.attr<float>("heightLayer")[(y+1) * width + x] - hf->verts.attr<float>("heightLayer")[(y - 1) * width + x]) / 2.0f;
+            } else {
+                gradientY[y][x] = 0.0f;
+            }
+        }
+    }
+}
+
+// 计算图像的曲率
+void computeCurvature(const std::vector<std::vector<float>>& gradientX, const std::vector<std::vector<float>>& gradientY, std::vector<std::vector<float>>& curvature) {
+    int height = gradientX.size();
+    int width = gradientX[0].size();
+
+    curvature.resize(height, std::vector<float>(width));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            float dx = gradientX[y][x];
+            float dy = gradientY[y][x];
+            float dxx = 0.0f;
+            float dyy = 0.0f;
+            float dxy = 0.0f;
+
+            if (x > 0 && x < width - 1) {
+                dxx = gradientX[y][x + 1] - 2.0f * dx + gradientX[y][x - 1];
+            }
+
+            if (y > 0 && y < height - 1) {
+                dyy = gradientY[y + 1][x] - 2.0f * dy + gradientY[y - 1][x];
+            }
+
+            if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
+                dxy = (gradientX[y + 1][x + 1] - gradientX[y + 1][x - 1] - gradientX[y - 1][x + 1] + gradientX[y - 1][x - 1]) / 4.0f;
+            }
+
+            curvature[y][x] = (dxx * dyy - dxy * dxy) / ((dxx + dyy) * (dxx + dyy) + 1e-6f);
+        }
+    }
+}
 struct HF_maskByFeature : INode {
     void apply() override {
 
@@ -1798,8 +1855,8 @@ struct HF_maskByFeature : INode {
         auto angleSpread = get_input2<float>("angle_spread");
 
         auto useHeight = get_input2<bool>("use_height");
-        auto minHeight = get_input2<float>("min_height");
-        auto maxHeight = get_input2<float>("max_height");
+        auto minCur = get_input2<float>("min_curvature");
+        auto maxCur = get_input2<float>("max_curvature");
 
         // 初始化网格属性
         if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
@@ -1907,8 +1964,23 @@ struct HF_maskByFeature : INode {
 
                 if (useHeight)
                 {
-                    float h = fit(height[idx], minHeight, maxHeight, 0, 1);
-                    mask[idx] *= chramp(h);
+//                    float h = fit(height[idx], minHeight, maxHeight, 0, 1);
+                    std::vector<std::vector<float>> gx(nx, std::vector<float>(nx, 0));
+                    std::vector<std::vector<float>> gy(nx, std::vector<float>(nx, 0));
+                    std::vector<std::vector<float>> cur(nx, std::vector<float>(nx, 0));
+                    computeGradient(terrain,gx, gy);
+                    computeCurvature(gx,gy,cur);
+                    for(int i = 0 ; i < nx ;i++){
+                        for(int j = 0;j < nx;j++){
+                            if(minCur < cur[i][j] &&  cur[i][j] < maxCur){
+                                mask[i * nx +j] = 1;
+                            }
+                            else{
+                                mask[i * nx +j] = 0;
+                            }
+                        }
+                    }
+//                    mask[idx] *= chramp(h);
                 }
             }
         }
@@ -1931,8 +2003,8 @@ ZENDEFNODE(HF_maskByFeature,
             {"float", "angle_spread", "30"},
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             {"bool", "use_height", "0"},
-            {"float", "min_height", "0"},
-            {"float", "max_height", "1"},
+            {"float", "min_curvature", "0.5"},
+            {"float", "max_curvature", "1"},
         },
         /* outputs: */
         {
