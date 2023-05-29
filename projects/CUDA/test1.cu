@@ -261,6 +261,11 @@ struct ZSTestIterator : INode {
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
+
+        auto &&bb = 1;
+        fmt::print("check \"a\" size: {}\n", sizeof("a"));
+        fmt::print("[{}]\n[{}]\n", get_type_str<decltype(bb)>(), detail::get_type_str_helper<decltype(bb)>());
+
         TileVector<float, 32> tv{{{"w", 1}, {"id", 1}, {"v", 3}, {"var", 1}}, 100};
         auto ompExec = omp_exec();
         // initialize
