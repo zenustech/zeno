@@ -613,6 +613,10 @@ inline void addTexture(std::string path)
             }
         }
         assert(rgba);
+        if(sky_tex.value() == path)//if this is a loading of a sky texture
+        {
+            calc_sky_cdf_map(nx, ny, nc, rgba);
+        }
         g_tex[path] = makeCudaTexture(rgba, nx, ny, nc);
         free(rgba);
     }
@@ -649,60 +653,7 @@ inline void addTexture(std::string path)
         assert(img);
         if(sky_tex.value() == path)//if this is a loading of a sky texture
         {
-            auto &sky_nx = sky_nx_map[sky_tex.value()];
-            auto &sky_ny = sky_ny_map[sky_tex.value()];
-            auto &sky_cdf = sky_cdf_map[sky_tex.value()];
-            auto &sky_pdf = sky_pdf_map[sky_tex.value()];
-            auto &sky_start = sky_start_map[sky_tex.value()];
-            sky_nx = nx;
-            sky_ny = ny;
-
-
-            //we need to recompute cdf
-            sky_cdf.resize(nx*ny);
-            sky_cdf.assign(nx*ny, 0);
-            sky_pdf.resize(nx*ny);
-            sky_pdf.assign(nx*ny, 0);
-            sky_start.resize(nx*ny);
-            sky_start.assign(nx*ny, 0);
-            std::vector<double> skypdf(nx*ny);
-            skypdf.assign(nx*ny,0);
-            for(int jj=0; jj<ny;jj++)
-            {
-                for(int ii=0;ii<nx;ii++)
-                {
-                    size_t idx2 = jj*nx*nc + ii*nc;
-                    size_t idx = jj*nx + ii;
-                    float illum = 0.0f;
-                    auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
-                    illum = zeno::dot(color, zeno::vec3f(0.2126f,0.7152f, 0.0722f));
-                    //illum = illum > 0.5? illum : 0.0f;
-                    illum = abs(illum) * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
-
-                    sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
-                    skypdf[idx] = illum;
-                }
-            }
-            float total_illum = sky_cdf[sky_cdf.size()-1];
-            for(int ii=0;ii<sky_cdf.size();ii++)
-            {
-                sky_cdf[ii] /= total_illum;
-                skypdf[ii] = skypdf[ii] * (double)nx * (double)ny / (double)total_illum;
-                sky_pdf[ii] = skypdf[ii];
-                if(ii>0)
-                {
-                    if(sky_cdf[ii]>sky_cdf[ii-1])
-                    {
-                        sky_start[ii] = ii;
-                    }
-                    else
-                    {
-                        sky_start[ii] = sky_start[ii-1];
-                    }
-                }
-
-            }
-
+            calc_sky_cdf_map(nx, ny, nc, img);
         }
         g_tex[path] = makeCudaTexture(img, nx, ny, nc);
         stbi_image_free(img);
