@@ -12,8 +12,16 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
     prim->polys.reserve(prim->polys.size() + prim->tris.size() +
                         prim->quads.size() + prim->lines.size() +
                         prim->points.size());
+    bool tri_has_mat = prim->tris.has_attr("matid");
+    bool quad_has_mat = prim->quads.has_attr("matid");
+    std::vector<int> matid;
+    matid.resize(prim->polys.size() + prim->tris.size() +
+                 prim->quads.size() + prim->lines.size() +
+                 prim->points.size());
+    matid.assign(matid.size(), -1);
 
     int old_loop_base = prim->loops.size();
+    int polynum = prim->polys.size();
     if (prim->tris.size()) {
         int base = prim->loops.size();
         for (int i = 0; i < prim->tris.size(); i++) {
@@ -22,6 +30,8 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->loops.push_back(ind[1]);
             prim->loops.push_back(ind[2]);
             prim->polys.push_back({base + i * 3, 3});
+            if(tri_has_mat)
+                matid[polynum + i] = prim->tris.attr<int>("matid")[i];
         }
 
         prim->tris.foreach_attr([&](auto const &key, auto const &arr) {
@@ -31,6 +41,7 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
         });
     }
 
+    polynum = prim->polys.size();
     if (prim->quads.size()) {
         int base = prim->loops.size();
         for (int i = 0; i < prim->quads.size(); i++) {
@@ -40,6 +51,8 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
             prim->loops.push_back(ind[2]);
             prim->loops.push_back(ind[3]);
             prim->polys.push_back({base + i * 4, 4});
+            if(quad_has_mat)
+                matid[polynum + i] = prim->quads.attr<int>("matid")[i];
         }
 
         prim->quads.foreach_attr([&](auto const &key, auto const &arr) {
@@ -110,6 +123,11 @@ ZENO_API void primPolygonate(PrimitiveObject *prim, bool with_uv) {
                 loopsuv[i] = mapping[{uv[0], uv[1]}];
             }
         }
+    }
+    prim->polys.add_attr<int>("matid");
+    for(int i=0;i<matid.size();i++)
+    {
+        prim->polys.attr<int>("matid")[i] = matid[i];
     }
 
     prim->tris.clear();

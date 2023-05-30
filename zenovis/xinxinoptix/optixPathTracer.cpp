@@ -197,6 +197,7 @@ struct PathTracerState
     raii<CUdeviceptr> accum_buffer_p;
     raii<CUdeviceptr> lightsbuf_p;
     raii<CUdeviceptr> sky_cdf_p;
+    raii<CUdeviceptr> sky_start;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
     CUdeviceptr                              d_params2=0;
@@ -2070,20 +2071,32 @@ void optixupdatematerial(std::vector<bool> const            &markers,
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
     if (OptixUtil::sky_tex.has_value()) {
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
-        state.params.skynx = OptixUtil::sky_nx;
-        state.params.skyny = OptixUtil::sky_ny;
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ), sizeof(float2)*OptixUtil::sky_cdf.size() ) );
+        state.params.skynx = OptixUtil::sky_nx_map[OptixUtil::sky_tex.value()];
+        state.params.skyny = OptixUtil::sky_ny_map[OptixUtil::sky_tex.value()];
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
+                              sizeof(float2)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size() ) );
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_start.reset() ),
+                              sizeof(int)*OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].size() ) );
         cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p),
-                   OptixUtil::sky_cdf.data(),
-                   sizeof(float)*OptixUtil::sky_cdf.size(),
+                   OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].data(),
+                   sizeof(float)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size(),
                    cudaMemcpyHostToDevice);
-        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p)+sizeof(float)*OptixUtil::sky_cdf.size(),
-                   OptixUtil::sky_pdf.data(),
-                   sizeof(float)*OptixUtil::sky_pdf.size(),
+        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p)+sizeof(float)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size(),
+                   OptixUtil::sky_pdf_map[OptixUtil::sky_tex.value()].data(),
+                   sizeof(float)*OptixUtil::sky_pdf_map[OptixUtil::sky_tex.value()].size(),
+                   cudaMemcpyHostToDevice);
+        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_start),
+                   OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].data(),
+                   sizeof(int)*OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].size(),
                    cudaMemcpyHostToDevice);
         state.params.skycdf = reinterpret_cast<float *>((CUdeviceptr)state.sky_cdf_p);
+        state.params.sky_start = reinterpret_cast<int *>((CUdeviceptr)state.sky_start);
 
+    } else {
+        state.params.skynx = 0;
+        state.params.skyny = 0;
     }
+
 }
 
 void optixupdateend() {

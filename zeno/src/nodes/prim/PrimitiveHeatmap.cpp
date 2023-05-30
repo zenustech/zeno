@@ -3,6 +3,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/HeatmapObject.h>
+#include <zeno/types/UserData.h>
 #include <sstream>
 
 namespace zeno {
@@ -57,6 +58,40 @@ ZENDEFNODE(MakeHeatmap,
         "visualize",
         }});
 
+struct HeatmapFromImage : zeno::INode {
+    virtual void apply() override {
+        auto image = get_input<zeno::PrimitiveObject>("image");
+        int w = image->userData().get2<int>("w");
+        auto heatmap = std::make_shared<HeatmapObject>();
+
+        auto spos = get_input<NumericObject>("startPos")->get<int>();
+        auto epos = get_input<NumericObject>("endPos")->get<int>();
+        int start = 0;
+        int end = w;
+        if ( spos >= 0 && spos < epos && epos <= w)
+        {
+            start = spos;
+            end = epos;
+        }
+
+        for (auto i = start; i < end; i++) {
+            heatmap->colors.push_back(image->verts[i]);
+        }
+        set_output("heatmap", std::move(heatmap));
+    }
+};
+
+ZENDEFNODE(HeatmapFromImage,
+{ /* inputs: */ {
+    "image",
+    {"int", "startPos", "0"},
+    {"int", "endPos", "-1"},
+}, /* outputs: */ {
+    "heatmap",
+}, /* params: */ {
+}, /* category: */ {
+    "visualize",
+}});
 
 struct PrimitiveColorByHeatmap : zeno::INode {
     virtual void apply() override {

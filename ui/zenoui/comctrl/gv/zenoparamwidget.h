@@ -226,7 +226,10 @@ public:
 signals:
     void clicked(bool checked = false);
 
-private:
+protected:
+    bool event(QEvent *event) override;
+
+  private:
     int m_width;
     QPushButton* m_pBtn;
 };
