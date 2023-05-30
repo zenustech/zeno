@@ -427,6 +427,8 @@ void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, cons
 
 void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties) 
 {
+    //init control by descriptor
+    return;
     if (!m_currentGraph)
         return;
     if (m_pModel->hasDescriptor(nodeCls))
