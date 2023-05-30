@@ -302,7 +302,7 @@ ZENDEFNODE(Grid2DSample, {
                               {"int", "ny", "1"},
                               {"float", "h", "1"},
                               {"vec3f", "bmin", "0,0,0"},
-                              {"string", "channel", "vel"},
+                              {"string", "channel", "*"},
                               {"string", "sampleBy", "pos"}},
                              {{"PrimitiveObject", "prim"}},
                              {},
