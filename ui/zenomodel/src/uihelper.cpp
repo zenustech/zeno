@@ -1382,6 +1382,10 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
         float fVal = parseJsonNumeric(val, true, bSucc);
         if (bSucc)
             return fVal;
+
+        if (type == "color")
+            return QVariant::fromValue(QColor(val.GetString()));
+
         return val.GetString();
     }
     else if (val.GetType() == rapidjson::kNumberType)
