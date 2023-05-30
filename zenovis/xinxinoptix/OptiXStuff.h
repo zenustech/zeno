@@ -513,13 +513,13 @@ inline std::vector<float> IES2HDR(const std::string& path)
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
 inline std::optional<std::string> sky_tex;
-inline int sky_nx;
-inline int sky_ny;
+inline std::map<std::string, int> sky_nx_map;
+inline std::map<std::string, int> sky_ny_map;
 
 
-inline std::vector<float> sky_cdf(0);
-inline std::vector<float> sky_pdf(0);
-
+inline std::map<std::string, std::vector<float>> sky_cdf_map;
+inline std::map<std::string, std::vector<float>> sky_pdf_map;
+inline std::map<std::string, std::vector<int>>   sky_start_map;
 inline void addTexture(std::string path)
 {
     zeno::log_debug("loading texture :{}", path);
@@ -575,15 +575,24 @@ inline void addTexture(std::string path)
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         assert(img);
-        if(sky_tex == path)//if this is a loading of a sky texture
+        if(sky_tex.value() == path)//if this is a loading of a sky texture
         {
+            auto &sky_nx = sky_nx_map[sky_tex.value()];
+            auto &sky_ny = sky_ny_map[sky_tex.value()];
+            auto &sky_cdf = sky_cdf_map[sky_tex.value()];
+            auto &sky_pdf = sky_pdf_map[sky_tex.value()];
+            auto &sky_start = sky_start_map[sky_tex.value()];
             sky_nx = nx;
             sky_ny = ny;
+
+
             //we need to recompute cdf
             sky_cdf.resize(nx*ny);
             sky_cdf.assign(nx*ny, 0);
             sky_pdf.resize(nx*ny);
             sky_pdf.assign(nx*ny, 0);
+            sky_start.resize(nx*ny);
+            sky_start.assign(nx*ny, 0);
             std::vector<double> skypdf(nx*ny);
             skypdf.assign(nx*ny,0);
             for(int jj=0; jj<ny;jj++)
@@ -595,8 +604,8 @@ inline void addTexture(std::string path)
                     float illum = 0.0f;
                     auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
                     illum = zeno::dot(color, zeno::vec3f(0.2126f,0.7152f, 0.0722f));
-
-                    illum = illum * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
+                    //illum = illum > 0.5? illum : 0.0f;
+                    illum = abs(illum) * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
 
                     sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
                     skypdf[idx] = illum;
@@ -608,6 +617,18 @@ inline void addTexture(std::string path)
                 sky_cdf[ii] /= total_illum;
                 skypdf[ii] = skypdf[ii] * (double)nx * (double)ny / (double)total_illum;
                 sky_pdf[ii] = skypdf[ii];
+                if(ii>0)
+                {
+                    if(sky_cdf[ii]>sky_cdf[ii-1])
+                    {
+                        sky_start[ii] = ii;
+                    }
+                    else
+                    {
+                        sky_start[ii] = sky_start[ii-1];
+                    }
+                }
+
             }
 
         }
@@ -624,15 +645,24 @@ inline void addTexture(std::string path)
         nx = std::max(nx, 1);
         ny = std::max(ny, 1);
         assert(img);
-        if(sky_tex == path)//if this is a loading of a sky texture
+        if(sky_tex.value() == path)//if this is a loading of a sky texture
         {
+            auto &sky_nx = sky_nx_map[sky_tex.value()];
+            auto &sky_ny = sky_ny_map[sky_tex.value()];
+            auto &sky_cdf = sky_cdf_map[sky_tex.value()];
+            auto &sky_pdf = sky_pdf_map[sky_tex.value()];
+            auto &sky_start = sky_start_map[sky_tex.value()];
             sky_nx = nx;
             sky_ny = ny;
+
+
             //we need to recompute cdf
             sky_cdf.resize(nx*ny);
             sky_cdf.assign(nx*ny, 0);
             sky_pdf.resize(nx*ny);
             sky_pdf.assign(nx*ny, 0);
+            sky_start.resize(nx*ny);
+            sky_start.assign(nx*ny, 0);
             std::vector<double> skypdf(nx*ny);
             skypdf.assign(nx*ny,0);
             for(int jj=0; jj<ny;jj++)
@@ -644,8 +674,8 @@ inline void addTexture(std::string path)
                     float illum = 0.0f;
                     auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
                     illum = zeno::dot(color, zeno::vec3f(0.2126f,0.7152f, 0.0722f));
-
-                    illum = illum * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
+                    //illum = illum > 0.5? illum : 0.0f;
+                    illum = abs(illum) * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
 
                     sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
                     skypdf[idx] = illum;
@@ -657,6 +687,18 @@ inline void addTexture(std::string path)
                 sky_cdf[ii] /= total_illum;
                 skypdf[ii] = skypdf[ii] * (double)nx * (double)ny / (double)total_illum;
                 sky_pdf[ii] = skypdf[ii];
+                if(ii>0)
+                {
+                    if(sky_cdf[ii]>sky_cdf[ii-1])
+                    {
+                        sky_start[ii] = ii;
+                    }
+                    else
+                    {
+                        sky_start[ii] = sky_start[ii-1];
+                    }
+                }
+
             }
 
         }

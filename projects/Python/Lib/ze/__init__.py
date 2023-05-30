@@ -671,11 +671,11 @@ def set_output2(key: str, value: Union[Literial, 'ZenoObject']):
 
 class _TempNodeWrapper:
     def __getattr__(self, key: str):
-        def wrapped(**args: dict[str, Union[Literial, ZenoObject]]):
+        def wrapped(**args: dict[str, Optional[Union[Literial, ZenoObject]]]):
             currGraph = ZenoGraph.current()
             def fixParamKey(k):
                 return k[:-1] + ':' if k.endswith('_') else k
-            store_args : dict[str, ZenoObject] = {fixParamKey(k): ZenoObject.fromLiterial(v) for k, v in args.items()}  # type: ignore
+            store_args : dict[str, ZenoObject] = {fixParamKey(k): ZenoObject.fromLiterial(v) for k, v in args.items() if v is not None}  # type: ignore
             inputs : dict[str, int] = {k: ZenoObject.toHandle(v) for k, v in store_args.items()}
             outputs : dict[str, int] = currGraph.callTempNode(key, inputs)
             rets : dict[str, Union[Literial, ZenoObject]] = {k: ZenoObject.toLiterial(ZenoObject.fromHandle(v)) for k, v in outputs.items()}

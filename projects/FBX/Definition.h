@@ -1,6 +1,17 @@
 #ifndef ZENO_FBX_DEFINITION_H
 #define ZENO_FBX_DEFINITION_H
 
+#define ED_EMPTY
+//#define ED_DEFINE_COUT
+
+#ifdef ED_DEFINE_COUT
+#define ED_COUT             std::cout
+#define ED_CERR             std::cerr
+#else
+#define ED_COUT             /ED_EMPTY/
+#define ED_CERR             /ED_EMPTY/
+#endif
+
 #include <limits>
 #include <iostream>
 #include <algorithm>
@@ -60,12 +71,14 @@ struct SFBXReadOption {
     bool triangulate = false;
     bool printTree = false;
     std::string hintPath = "";
+    float offsetInSeconds = 0.0f;
 };
 
 struct SFBXEvalOption {
     bool writeData = false;
     bool interAnimData = false;
     bool printAnimData = false;
+    bool evalBlendShape = false;
     float globalScale = 1.0f;
 };
 
@@ -105,49 +118,61 @@ struct SAnimBone {
     float m_MaxTimeStamp = std::numeric_limits<float>::min();
     float m_MinTimeStamp = std::numeric_limits<float>::max();
 
-#define GET_TIME_STAMP \
-m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp); \
-m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
-
-    void initBone(std::string name, const aiNodeAnim* channel){
+    void initBone(std::string name, const aiNodeAnim* channel, double tickOffset){
         m_Name = name;
         m_NumPositions = channel->mNumPositionKeys;
         for (int positionIndex = 0; positionIndex < m_NumPositions; ++positionIndex) {
             aiVector3D aiPosition = channel->mPositionKeys[positionIndex].mValue;
-            float timeStamp = channel->mPositionKeys[positionIndex].mTime;
+            float timeStamp = channel->mPositionKeys[positionIndex].mTime + tickOffset;
 
             SKeyPosition data;
             data.position = aiPosition;
             data.timeStamp = timeStamp;
             m_Positions.push_back(data);
 
-            GET_TIME_STAMP
+            //std::cout << " BoneAnim: index " << positionIndex << " " << timeStamp << "\n";
+            //std::cout << "  Position: (" << aiPosition.x << ", " << aiPosition.y << ", " << aiPosition.z << ")\n";
+
+            m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp);
+            m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp);
         }
+
+        //std::cout << " -----\n";
 
         m_NumRotations = channel->mNumRotationKeys;
         for (int rotationIndex = 0; rotationIndex < m_NumRotations; ++rotationIndex) {
             aiQuaternion aiOrientation = channel->mRotationKeys[rotationIndex].mValue;
-            float timeStamp = channel->mRotationKeys[rotationIndex].mTime;
+            float timeStamp = channel->mRotationKeys[rotationIndex].mTime + tickOffset;
 
             SKeyRotation data;
             data.orientation = aiOrientation;
             data.timeStamp = timeStamp;
             m_Rotations.push_back(data);
 
-            GET_TIME_STAMP
+            //std::cout << " BoneAnim: index " << rotationIndex << " " << timeStamp << "\n";
+            //std::cout << "  Rotation: (" << aiOrientation.x << ", " << aiOrientation.y << ", " << aiOrientation.z << ", " << aiOrientation.w << ")\n";
+
+            m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp);
+            m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp);
         }
 
+        //std::cout << " -----\n";
+
         m_NumScalings = channel->mNumScalingKeys;
-        for (int keyIndex = 0; keyIndex < m_NumScalings; ++keyIndex) {
-            aiVector3D scale = channel->mScalingKeys[keyIndex].mValue;
-            float timeStamp = channel->mScalingKeys[keyIndex].mTime;
+        for (int scaleIndex = 0; scaleIndex < m_NumScalings; ++scaleIndex) {
+            aiVector3D scale = channel->mScalingKeys[scaleIndex].mValue;
+            float timeStamp = channel->mScalingKeys[scaleIndex].mTime + tickOffset;
 
             SKeyScale data;
             data.scale = scale;
             data.timeStamp = timeStamp;
             m_Scales.push_back(data);
 
-            GET_TIME_STAMP
+            //std::cout << " BoneAnim: index " << scaleIndex << " " << timeStamp << "\n";
+            //std::cout << "  Scale: (" << scale.x << ", " << scale.y << ", " << scale.z << ")\n";
+
+            m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp);
+            m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp);
         }
 
         //zeno::log_info("----- N {} NP {} NR {} NS {}",
@@ -164,33 +189,26 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
         m_LocalTransform = translation * rotation * scale;
     }
 
-    void _getIndexWarn(float animationTime){
-        zeno::log_warn("Failed to get index, time {}", animationTime);
-    }
-
     int getPositionIndex(float animationTime) {
         for (int index = 0; index < m_NumPositions - 1; ++index) {
             if (animationTime <= m_Positions[index + 1].timeStamp)
                 return index;
         }
-        _getIndexWarn(animationTime);
-        return 0;
+        return m_NumPositions-1;
     }
     int getRotationIndex(float animationTime) {
         for (int index = 0; index < m_NumRotations - 1; ++index) {
             if (animationTime <= m_Rotations[index + 1].timeStamp)
                 return index;
         }
-        _getIndexWarn(animationTime);
-        return 0;
+        return m_NumRotations-1;
     }
     int getScaleIndex(float animationTime) {
         for (int index = 0; index < m_NumScalings - 1; ++index) {
             if (animationTime <= m_Scales[index + 1].timeStamp)
                 return index;
         }
-        _getIndexWarn(animationTime);
-        return 0;
+        return m_NumScalings-1;
     }
 
     aiMatrix4x4 interpolatePosition(float animationTime) {
@@ -203,10 +221,14 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
 
         int p0Index = getPositionIndex(animationTime);
         int p1Index = p0Index + 1;
+        if(p1Index == m_NumPositions){
+            p1Index = p0Index;
+        }
         float scaleFactor = getScaleFactor(
                 m_Positions[p0Index].timeStamp,
                 m_Positions[p1Index].timeStamp,
                 animationTime);
+        //std::cout << "Interpolate Position: Index " << p0Index << " time " << animationTime << " factor " << scaleFactor << "\n";
         aiVector3D finalPosition = m_Positions[p0Index].position * (1.0f - scaleFactor) + m_Positions[p1Index].position * scaleFactor;
         aiMatrix4x4::Translation(finalPosition, result);
 
@@ -223,10 +245,14 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
 
         int p0Index = getRotationIndex(animationTime);
         int p1Index = p0Index + 1;
+        if(p1Index == m_NumRotations){
+            p1Index = p0Index;
+        }
         float scaleFactor = getScaleFactor(
                 m_Rotations[p0Index].timeStamp,
                 m_Rotations[p1Index].timeStamp,
                 animationTime);
+        //std::cout << "Interpolate Rotation: Index " << p0Index << " time " << animationTime << " factor " << scaleFactor << "\n";
         aiQuaternion finalRotation;
         aiQuaternion::Interpolate(finalRotation, m_Rotations[p0Index].orientation, m_Rotations[p1Index].orientation, scaleFactor);
         result = result * aiMatrix4x4(finalRotation.GetMatrix());
@@ -243,10 +269,14 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
 
         int p0Index = getScaleIndex(animationTime);
         int p1Index = p0Index + 1;
+        if(p1Index == m_NumScalings){
+            p1Index = p0Index;
+        }
         float scaleFactor = getScaleFactor(
                 m_Scales[p0Index].timeStamp,
                 m_Scales[p1Index].timeStamp,
                 animationTime);
+        //std::cout << "Interpolate Scaling : Index " << p0Index << " time " << animationTime << " factor " << scaleFactor << "\n";
         aiVector3D finalScale = m_Scales[p0Index].scale *  (1.0f - scaleFactor) + m_Scales[p1Index].scale * scaleFactor;
         aiMatrix4x4::Scaling(finalScale, result);
 
@@ -254,6 +284,13 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
     }
 
     float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float animationTime) {
+        //std::cout << " Stamp Factor " << lastTimeStamp << " " << nextTimeStamp << " " << animationTime << "\n";
+        if(animationTime <= lastTimeStamp){
+            return 0.0f;
+        }else if(animationTime >= nextTimeStamp){
+            return 1.0f;
+        }
+
         // e.g. last: 1, next: 2, time: 1.5  -> (1.5-1)/(2-1)=0.5
         float midWayLength = animationTime - lastTimeStamp;
         float framesDiff = nextTimeStamp - lastTimeStamp;
@@ -270,7 +307,6 @@ struct SVertex{
     aiVector3D bitangent;
     aiColor4D vectexColor;
     std::unordered_map<std::string, float> boneWeights;
-    float numAnimMesh;
 };
 
 struct SBSVertex{
@@ -278,7 +314,7 @@ struct SBSVertex{
     aiVector3D deltaPosition;
     aiVector3D normal;
     aiVector3D deltaNormal;
-    float weight;
+    //float weight;
 };
 
 struct SMaterialProp{
@@ -529,6 +565,10 @@ struct IBoneOffset : zeno::IObjectClone<IBoneOffset>{
     std::unordered_map<std::string, SBoneOffset> value;
 };
 
+struct IPathTrans : zeno::IObjectClone<IPathTrans>{
+    std::unordered_map<std::string, aiMatrix4x4> value;
+};
+
 struct ICamera : zeno::IObjectClone<ICamera>{
     std::unordered_map<std::string, SCamera> value;
 };
@@ -562,22 +602,31 @@ struct IMeshName : zeno::IObjectClone<IMeshName>{
     std::string value_matName;
 };
 
+struct IPathName : zeno::IObjectClone<IMeshName>{
+    std::string value;
+    std::string value_oriPath;
+};
+
 struct IMeshInfo : zeno::IObjectClone<IMeshInfo>{
     std::unordered_map<std::string, std::string> value_corsName;
 };
 
 struct FBXData : zeno::IObjectClone<FBXData>{
     IMeshName iMeshName;
+    IPathName iPathName;
     IMeshInfo iMeshInfo;
     IVertices iVertices;
     IIndices iIndices;
     IBlendSData iBlendSData;
     IKeyMorph iKeyMorph;
     IBoneOffset iBoneOffset;
+    IPathTrans iPathTrans;
 
     IMaterial iMaterial;
     ICamera iCamera;
     ILight iLight;
+
+    zeno::DictObject iVisibility;
 
     std::shared_ptr<BoneTree> boneTree;
     std::shared_ptr<NodeTree> nodeTree;
@@ -600,7 +649,7 @@ struct IMatData : zeno::IObjectClone<IMatData>{
 struct Helper{
     static void printAiMatrix(aiMatrix4x4 m, bool transpose = false){
 
-        std::cout.precision(2);
+        std::cout.precision(4);
         std::cout << std::fixed;
         std::cout << " ("<<m[0][0]<<","<<m[0][1]<<","<<m[0][2]<<","<<m[0][3]<<", "
                          <<m[1][0]<<","<<m[1][1]<<","<<m[1][2]<<","<<m[1][3]<<", "
@@ -639,7 +688,7 @@ struct Helper{
         for (int i = c; i < space; i++)
             std::cout << " ";
         auto t = root->transformation;
-        std::cout.precision(2);
+        std::cout.precision(4);
         std::cout << root->name <<" ("<<t[0][0]<<","<<t[0][1]<<","<<t[0][2]<<","<<t[0][3]<<", "
                                       <<t[1][0]<<","<<t[1][1]<<","<<t[1][2]<<","<<t[1][3]<<", "
                                       <<t[2][0]<<","<<t[2][1]<<","<<t[2][2]<<","<<t[2][3]<<", "
