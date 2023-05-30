@@ -79,7 +79,7 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
     if (!(fov <= 0)) {
-        auto fnear = 0.001f;
+        auto fnear = 0.01f;
         auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
         placeCamera(center - front * radius, front, up, fov, fnear, ffar);
     } else {
