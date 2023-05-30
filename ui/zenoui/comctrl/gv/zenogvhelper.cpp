@@ -90,6 +90,9 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             else if (ZenoParamPushButton* pBtn = qobject_cast<ZenoParamPushButton*>(pItem))
             {
                 //nothing need to be done.
+                if (value.canConvert<QColor>()) {
+                    pBtn->setProperty("color", value.value<QColor>().name());
+                }
             }
             else if (ZenoVecEditItem* pBtn = qobject_cast<ZenoVecEditItem*>(pItem))
             {
