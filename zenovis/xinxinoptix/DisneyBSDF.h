@@ -519,7 +519,7 @@ namespace DisneyBSDF{
         float lambert = 1.0f;
         float rr = EvaluateDisneyRetroDiffuse(roughness, wi, wo);
         float retro = rr*(fl + fv + fl * fv * (rr - 1.0f));
-        return 1.0f/M_PIf * (retro + (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
+        return 1.0f/M_PIf ;
     }
 
     static __inline__ __device__
@@ -610,14 +610,15 @@ namespace DisneyBSDF{
 
             float ptotal = 1.0f + p_in ;
             float psss = subsurface>0? p_in/ptotal : 0; // /ptotal;
-            vec3 lobeOfSheen =  clamp(EvaluateSheen(baseColor,sheen,sheenTint, HoL),
+            vec3 lobeOfSheen =  clamp(EvaluateSheen(baseColor,1.0,sheenTint, HoL),
                                       vec3(0.0f), vec3(1.0f));
-
+            float sheenW = sheen / (1.0f + sheen);
+            vec3 diffusepart = mix(diffuse * baseColor, lobeOfSheen, sheenW);
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
             if(!thin && nDl<=0.0f)
                 diffuse = 0;
-            vec3 lighting = (1.0f - psss) * (diffuse * baseColor + lobeOfSheen);
+            vec3 lighting = (1.0f - psss) * diffusepart;
             lighting = clamp(lighting * illum, vec3(0.0f), vec3(50.0f));
             reflectance += diffuseW * float3(lighting);
         }
@@ -651,7 +652,7 @@ namespace DisneyBSDF{
 
         reflectance = reflectance * abs(NoL);
 
-        return reflectance / totalp;
+        return reflectance ;/// totalp;
 
     }
 
@@ -1307,22 +1308,22 @@ namespace DisneyBSDF{
             }
         }
 
-        float HoL = dot(wm,wo);
+        float HoL = dot(wm,wi);
         vec3 diffpart = vec3(0.0f);
         if(!trans)
         {
-            float pDiffPlusSheen = sheen + 1.0f;
-            float psheen = sheen / pDiffPlusSheen;
+
+            float psheen = sheen / (1.0f + sheen);
 
 
             if(rnd(seed)<psheen)
             {
                 diffpart = clamp(
-                EvaluateSheen(baseColor, 1.0, sheenTint, HoL) ,
-                vec3(0.0f), vec3(1.0f)) * M_PIf * pDiffPlusSheen;
+                EvaluateSheen(baseColor, 1.0f, sheenTint, HoL) ,
+                vec3(0.0f), vec3(1.0f))* M_PIf  ;
             } else
             {
-                diffpart = color * vec3(EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin)) * M_PIf * pDiffPlusSheen;
+                diffpart = color * vec3(EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin)) * M_PIf;
             }
         }
         //vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
@@ -1330,7 +1331,7 @@ namespace DisneyBSDF{
         if(wi.z<0)
             diffpart =  vec3(1.0f);
         //vec3 diffpart = color * diff * M_PIf;
-        reflectance = trans? color * vec3(1.0) : diffpart;
+        reflectance = trans? color * vec3(1.0) * M_PIf : diffpart;
         //fPdf = abs(NoL) * pdf;
         //rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
@@ -1501,7 +1502,7 @@ namespace DisneyBSDF{
                 wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
             }
         }
-        reflectance = reflectance / totalp;
+        reflectance = reflectance ;/// totalp;
         //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
         if(pLobe > 0.0f){
             //pLobe = clamp(pLobe, 0.001f, 0.999f);
