@@ -45,7 +45,7 @@ class ZenoMainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
+    ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags(), PANEL_TYPE onlyView = PANEL_EMPTY);
     ~ZenoMainWindow();
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
@@ -68,8 +68,8 @@ public:
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
-    LiveTcpServer* liveTcpServer;
-    LiveHttpServer* liveHttpServer;
+    LiveTcpServer* liveTcpServer = nullptr;
+    std::shared_ptr<LiveHttpServer> liveHttpServer;
     LiveSignalsBridge* liveSignalsBridge;
 
     enum ActionType {
@@ -187,10 +187,10 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 
 private:
-    void init();
+    void init(PANEL_TYPE onlyView);
     void initMenu();
     void initLive();
-    void initDocks();
+    void initDocks(PANEL_TYPE onlyView);
     void initWindowProperty();
     void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);

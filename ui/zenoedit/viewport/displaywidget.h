@@ -29,6 +29,9 @@ public:
     void resizeViewport(QSize sz);
     std::shared_ptr<zeno::Picker> picker() const;
     void updateCameraProp(float aperture, float disPlane);
+    void updatePerspective();
+    void setNumSamples(int samples);
+    void setCameraRes(const QVector2D& res);
     void setSimpleRenderOption();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     bool isCameraMoving() const;

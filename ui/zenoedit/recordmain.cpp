@@ -7,7 +7,7 @@
 #include "zenomainwindow.h"
 #include "settings/zsettings.h"
 
-//#define DEBUG_DIRECTLY
+#define DEBUG_DIRECTLY
 
 
 static int calcFrameCountByAudio(std::string path, int fps) {
@@ -117,8 +117,8 @@ int record_main(const QCoreApplication& app)
     param.iBitrate = cmdParser.isSet("bitrate") ? cmdParser.value("bitrate").toInt() : 20000;
     param.iFps = cmdParser.isSet("fps") ? cmdParser.value("fps").toInt() : 24;
 #else
-    param.sZsgPath = "E:\\zeno-fixbug\\once-bug.zsg";
-    param.sPath = "E:\\zeno-fixbug\\recordpath";
+    param.sZsgPath = "C:\\zeno\\framenum.zsg";
+    param.sPath = "C:\\recordpath";
     param.iFps = 24;
     param.iBitrate = 200000;
     param.iSFrame = 0;
@@ -126,7 +126,7 @@ int record_main(const QCoreApplication& app)
     param.sPixel = "1200x800";
 #endif
 
-    ZenoMainWindow tempWindow;
+    ZenoMainWindow tempWindow(nullptr, 0, PANEL_GL_VIEW);
     tempWindow.showMaximized();
     tempWindow.directlyRunRecord(param);
     return app.exec();

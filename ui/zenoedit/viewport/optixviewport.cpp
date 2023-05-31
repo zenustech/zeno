@@ -298,6 +298,24 @@ void ZOptixViewport::updateCameraProp(float aperture, float disPlane)
     m_camera->updatePerspective();
 }
 
+void ZOptixViewport::updatePerspective()
+{
+    m_camera->updatePerspective();
+}
+
+void ZOptixViewport::setCameraRes(const QVector2D& res)
+{
+    m_camera->setRes(res);
+}
+
+void ZOptixViewport::setNumSamples(int samples)
+{
+    auto scene = m_zenovis->getSession()->get_scene();
+    if (scene) {
+        scene->drawOptions->num_samples = samples;
+    }
+}
+
 void ZOptixViewport::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
