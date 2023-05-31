@@ -49,7 +49,7 @@
 
 const QString g_latest_layout = "LatestLayout";
 
-ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
+ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYPE onlyView)
     : QMainWindow(parent, flags)
     , m_bInDlgEventloop(false)
     , m_bAlways(false)
@@ -61,11 +61,11 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
     , m_spCacheMgr(nullptr)
     , m_bMovingSeparator(false)
 {
-    liveTcpServer = new LiveTcpServer;
-    liveHttpServer = new LiveHttpServer;
-    liveSignalsBridge = new LiveSignalsBridge;
+    liveTcpServer = new LiveTcpServer(this);
+    liveHttpServer = std::make_shared<LiveHttpServer>();
+    liveSignalsBridge = new LiveSignalsBridge(this);
 
-    init();
+    init(onlyView);
     setContextMenuPolicy(Qt::NoContextMenu);
     setFocusPolicy(Qt::ClickFocus);
 
@@ -80,19 +80,16 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags)
 
 ZenoMainWindow::~ZenoMainWindow()
 {
-    delete liveTcpServer;
-    delete liveHttpServer;
-    delete liveSignalsBridge;
 }
 
-void ZenoMainWindow::init()
+void ZenoMainWindow::init(PANEL_TYPE onlyView)
 {
     m_ui = new Ui::MainWindow;
     m_ui->setupUi(this);
 
     initMenu();
     initLive();
-    initDocks();
+    initDocks(onlyView);
     initWindowProperty();
 
     addToolBar(Qt::LeftToolBarArea, new FakeToolbar(false));
@@ -572,7 +569,24 @@ void ZenoMainWindow::updateLatestLayout(const QString &layout)
     settings.endGroup();
 }
 
-void ZenoMainWindow::initDocks() {
+void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
+{
+    if (onlyView != PANEL_EMPTY)
+    {
+        m_layoutRoot = std::make_shared<LayerOutNode>();
+        m_layoutRoot->type = NT_ELEM;
+
+        ZTabDockWidget* onlyWid = new ZTabDockWidget(this);
+        onlyWid->setCurrentWidget(onlyView);
+
+        addDockWidget(Qt::TopDockWidgetArea, onlyWid);
+        m_layoutRoot->type = NT_ELEM;
+        m_layoutRoot->pWidget = onlyWid;
+
+        initTimelineDock();
+
+        return;
+    }
     /*m_layoutRoot = std::make_shared<LayerOutNode>();
     m_layoutRoot->type = NT_ELEM;
 
@@ -753,17 +767,19 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
 
 void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
 {
-#if 0
-    ZASSERT_EXIT(m_viewDock);
-    DisplayWidget* viewWidget = qobject_cast<DisplayWidget *>(m_viewDock->widget());
-    ZASSERT_EXIT(viewWidget);
-    ViewportWidget* pViewport = viewWidget->getViewportWidget();
-    ZASSERT_EXIT(pViewport);
+    ZASSERT_EXIT(m_layoutRoot->pWidget);
 
-    //hide other component
-    if (m_editor) m_editor->hide();
-    if (m_logger) m_logger->hide();
-    if (m_parameter) m_parameter->hide();
+    ZTabDockWidget* pTabWid = qobject_cast<ZTabDockWidget*>(m_layoutRoot->pWidget);
+    ZASSERT_EXIT(pTabWid);
+    QVector<DisplayWidget*> wids = pTabWid->viewports();
+    if (wids.isEmpty())
+    {
+        zeno::log_error("no viewport found.");
+        return;
+    }
+
+    DisplayWidget* viewWidget = wids[0];
+    ZASSERT_EXIT(viewWidget);
 
     VideoRecInfo recInfo;
     recInfo.bitrate = param.iBitrate;
@@ -771,10 +787,8 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.frameRange = {param.iSFrame, param.iSFrame + param.iFrame - 1};
     recInfo.numMSAA = 0;
     recInfo.numOptix = 1;
-    recInfo.numSamples = param.iSample;
     recInfo.audioPath = param.audioPath;
     recInfo.record_path = param.sPath;
-    recInfo.bRecordRun = true;
     recInfo.videoname = "output.mp4";
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
@@ -785,26 +799,19 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
         int pixh = tmpsPix.at(1).toInt();
         recInfo.res = {(float)pixw, (float)pixh};
 
-        pViewport->setFixedSize(pixw, pixh);
-        pViewport->setCameraRes(QVector2D(pixw, pixh));
-        pViewport->updatePerspective();
+        viewWidget->setFixedSize(pixw, pixh);
+        viewWidget->setCameraRes(QVector2D(pixw, pixh));
+        viewWidget->updatePerspective();
     } else {
         recInfo.res = {(float)1000, (float)680};
-        pViewport->setMinimumSize(1000, 680);
+        viewWidget->setMinimumSize(1000, 680);
     }
 
-    auto sess = Zenovis::GetInstance().getSession();
-    if (sess) {
-        auto scene = sess->get_scene();
-        if (scene) {
-            scene->drawOptions->num_samples = param.bRecord ? param.iSample : 16;
-        }
-    }
+    viewWidget->setNumSamples(param.bRecord ? param.iSample : 16);
 
-    bool ret = openFile(param.sZsgPath);
-    ZASSERT_EXIT(ret);
-    viewWidget->runAndRecord(recInfo);
-#endif
+    //bool ret = openFile(param.sZsgPath);
+    //ZASSERT_EXIT(ret);
+    //viewWidget->runAndRecord(recInfo);
 }
 
 void ZenoMainWindow::updateViewport(const QString& action)
@@ -928,7 +935,6 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
     //QLayout* pLayout = this->layout();
     //QMainWindowLayout* pWinLayout = qobject_cast<QMainWindowLayout*>(pLayout);
 
-    pDock->setObjectName("editorDock233");
     pDock->setCurrentWidget(PANEL_EDITOR);
     //pDock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetFloatable);
     SplitDockWidget(pDockWidget, pDock, bHorzontal ? Qt::Horizontal : Qt::Vertical);

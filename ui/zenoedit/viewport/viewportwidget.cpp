@@ -276,6 +276,14 @@ void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
     updatePerspective();
 }
 
+void ViewportWidget::setNumSamples(int samples)
+{
+    auto scene = getSession()->get_scene();
+    if (scene) {
+        scene->drawOptions->num_samples = samples;
+    }
+}
+
 void ViewportWidget::keyPressEvent(QKeyEvent *event)
 {
     _base::keyPressEvent(event);
