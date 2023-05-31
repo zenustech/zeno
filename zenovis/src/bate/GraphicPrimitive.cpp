@@ -25,7 +25,7 @@ namespace {
 using namespace opengl;
 
 struct ZhxxDrawObject {
-    std::unique_ptr<Buffer> vbo;
+    std::vector<std::unique_ptr<Buffer>> vbos;
     std::unique_ptr<Buffer> ebo;
     size_t count = 0;
     Program *prog{};
@@ -38,8 +38,8 @@ static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &o
     auto const &uv = prim->attr<zeno::vec3f>("uv");
     auto const &tang = prim->attr<zeno::vec3f>("tang");
     obj.count = prim->size();
-
-    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    obj.vbos.resize(1);
+    obj.vbos[0] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 5);
     for (int i = 0; i < obj.count; i++) {
         mem[5 * i + 0] = pos[i];
@@ -48,7 +48,7 @@ static void parsePointsDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &o
         mem[5 * i + 3] = uv[i];
         mem[5 * i + 4] = tang[i];
     }
-    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    obj.vbos[0]->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
     size_t points_count = prim->points.size();
     if (points_count) {
@@ -66,7 +66,8 @@ static void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &ob
     auto const &lines = prim->lines;
     bool has_uv = lines.has_attr("uv0") && lines.has_attr("uv1");
     obj.count = prim->lines.size();
-    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    obj.vbos.resize(1);
+    obj.vbos[0] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 2 * 5);
     std::vector<zeno::vec2i> linesdata(obj.count);
 #pragma omp parallel for
@@ -85,7 +86,7 @@ static void parseLinesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject &ob
         mem[10 * i + 9] = tang[lines[i][1]];
         linesdata[i] = zeno::vec2i(i * 2, i * 2 + 1);
     }
-    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    obj.vbos[0]->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
     if (obj.count) {
         obj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
         obj.ebo->bind_data(&(linesdata[0]), obj.count * sizeof(linesdata[0]));
@@ -205,7 +206,8 @@ static void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim, ZhxxDr
 
     //end compressed tri assign
     obj.count = tris1.size();
-    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    obj.vbos.resize(1);
+    obj.vbos[0] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(pos1.size() * 5);
     std::vector<zeno::vec3i> trisdata(obj.count);
 #pragma omp parallel for
@@ -222,7 +224,7 @@ static void parseTrianglesDrawBufferCompress(zeno::PrimitiveObject *prim, ZhxxDr
     }
 
     /* TICK(bindvbo); */
-    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    obj.vbos[0]->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
     /* TOCK(bindvbo); */
     /* TICK(bindebo); */
     if (obj.count) {
@@ -241,7 +243,8 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
     bool has_uv =
         tris.has_attr("uv0") && tris.has_attr("uv1") && tris.has_attr("uv2");
     obj.count = tris.size();
-    obj.vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+    obj.vbos.resize(5);
+    obj.vbos[0] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3f> mem(obj.count * 3 * 5);
     std::vector<zeno::vec3i> trisdata(obj.count);
     auto &tang = prim->tris.attr<zeno::vec3f>("tang");
@@ -271,7 +274,7 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
     /* TOCK(parse); */
 
     /* TICK(bindvbo); */
-    obj.vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+    obj.vbos[0]->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
     /* TOCK(bindvbo); */
     /* TICK(bindebo); */
     if (obj.count) {
@@ -283,7 +286,7 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
 
 struct ZhxxGraphicPrimitive final : IGraphicDraw {
     Scene *scene;
-    std::unique_ptr<Buffer> vbo;
+    std::vector<std::unique_ptr<Buffer>> vbos = std::vector<std::unique_ptr<Buffer>>(1);
     size_t vertex_count;
     bool draw_all_points;
 
@@ -444,7 +447,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         auto const &tang = prim->attr<zeno::vec3f>("tang");
         vertex_count = prim->size();
 
-        vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+        vbos[0] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
         std::vector<zeno::vec3f> mem(vertex_count * 5);
         for (int i = 0; i < vertex_count; i++) {
             mem[5 * i + 0] = pos[i];
@@ -453,7 +456,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             mem[5 * i + 3] = uv[i];
             mem[5 * i + 4] = tang[i];
         }
-        vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+        vbos[0]->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
 
         points_count = prim->points.size();
         if (points_count) {
@@ -474,7 +477,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 lineObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
                 lineObj.ebo->bind_data(prim->lines.data(),
                                        lines_count * sizeof(prim->lines[0]));
-                lineObj.vbo = nullptr;
             } else {
                 parseLinesDrawBuffer(&*prim, lineObj);
             }
@@ -489,7 +491,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 triObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
                 triObj.ebo->bind_data(prim->tris.data(),
                                       tris_count * sizeof(prim->tris[0]));
-                triObj.vbo = nullptr;
 
             } else {
                 computeTrianglesTangent(&*prim);
@@ -519,40 +520,40 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             textures[id]->bind_to(id);
         }
 
-        auto vbobind = [&](auto &vbo) {
-            vbo->bind();
-            vbo->attribute(/*index=*/0,
+        auto vbobind = [](auto &vbos) {
+            vbos[0]->bind();
+            vbos[0]->attribute(/*index=*/0,
                            /*offset=*/sizeof(float) * 0,
                            /*stride=*/sizeof(float) * 15, GL_FLOAT,
                            /*count=*/3);
-            vbo->attribute(/*index=*/1,
+            vbos[0]->attribute(/*index=*/1,
                            /*offset=*/sizeof(float) * 3,
                            /*stride=*/sizeof(float) * 15, GL_FLOAT,
                            /*count=*/3);
-            vbo->attribute(/*index=*/2,
+            vbos[0]->attribute(/*index=*/2,
                            /*offset=*/sizeof(float) * 6,
                            /*stride=*/sizeof(float) * 15, GL_FLOAT,
                            /*count=*/3);
-            vbo->attribute(/*index=*/3,
+            vbos[0]->attribute(/*index=*/3,
                            /*offset=*/sizeof(float) * 9,
                            /*stride=*/sizeof(float) * 15, GL_FLOAT,
                            /*count=*/3);
-            vbo->attribute(/*index=*/4,
+            vbos[0]->attribute(/*index=*/4,
                            /*offset=*/sizeof(float) * 12,
                            /*stride=*/sizeof(float) * 15, GL_FLOAT,
                            /*count=*/3);
         };
-        auto vbounbind = [&](auto &vbo) {
-            vbo->disable_attribute(0);
-            vbo->disable_attribute(1);
-            vbo->disable_attribute(2);
-            vbo->disable_attribute(3);
-            vbo->disable_attribute(4);
-            vbo->unbind();
+        auto vbounbind = [](auto &vbos) {
+            vbos[0]->disable_attribute(0);
+            vbos[0]->disable_attribute(1);
+            vbos[0]->disable_attribute(2);
+            vbos[0]->disable_attribute(3);
+            vbos[0]->disable_attribute(4);
+            vbos[0]->unbind();
         };
 
         if (draw_all_points || points_count)
-            vbobind(vbo);
+            vbobind(vbos);
 
         if (draw_all_points) {
             //printf("ALLPOINTS\n");
@@ -574,14 +575,14 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         }
 
         if (draw_all_points || points_count)
-            vbounbind(vbo);
+            vbounbind(vbos);
 
         if (lines_count) {
             //printf("LINES\n");
-            if (lineObj.vbo) {
-                vbobind(lineObj.vbo);
+            if (lineObj.vbos.size()) {
+                vbobind(lineObj.vbos);
             } else {
-                vbobind(vbo);
+                vbobind(vbos);
             }
             lineObj.prog->use();
             scene->camera->set_program_uniforms(lineObj.prog);
@@ -589,19 +590,19 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             CHECK_GL(glDrawElements(GL_LINES, /*count=*/lineObj.count * 2,
                                     GL_UNSIGNED_INT, /*first=*/0));
             lineObj.ebo->unbind();
-            if (lineObj.vbo) {
-                vbounbind(lineObj.vbo);
+            if (lineObj.vbos.size()) {
+                vbounbind(lineObj.vbos);
             } else {
-                vbounbind(vbo);
+                vbounbind(vbos);
             }
         }
 
         if (tris_count) {
             //printf("TRIS\n");
-            if (triObj.vbo) {
-                vbobind(triObj.vbo);
+            if (triObj.vbos.size()) {
+                vbobind(triObj.vbos);
             } else {
-                vbobind(vbo);
+                vbobind(vbos);
             }
 
             triObj.prog->use();
@@ -631,10 +632,10 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
             }
             triObj.ebo->unbind();
-            if (triObj.vbo) {
-                vbounbind(triObj.vbo);
+            if (triObj.vbos.size()) {
+                vbounbind(triObj.vbos);
             } else {
-                vbounbind(vbo);
+                vbounbind(vbos);
             }
         }
     }
