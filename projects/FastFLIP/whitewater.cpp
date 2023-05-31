@@ -47,16 +47,21 @@ struct WhitewaterSource : INode {
 
         float dx = static_cast<float>(Velocity->voxelSize()[0]);
 
-        auto Normal = openvdb::tools::gradient(*Liquid_sdf);
-        auto Curvature = openvdb::tools::meanCurvature(*Liquid_sdf);
-        auto Vorticity = openvdb::tools::curl(*Velocity);
-
+        openvdb::Vec3fGrid::Ptr Normal, Vorticity;
+        openvdb::FloatGrid::Ptr Curvature;
+        if (curv_emit > 0) {
+            Normal = openvdb::tools::gradient(*Liquid_sdf);
+            Curvature = openvdb::tools::meanCurvature(*Liquid_sdf);
+        }
+        if (vor_emit > 0) {
+            Vorticity = openvdb::tools::curl(*Velocity);
+        }
         auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
         auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
-        auto norm_axr = Normal->getConstUnsafeAccessor();
-        auto curv_axr = Curvature->getConstUnsafeAccessor();
         auto vel_axr = Velocity->getConstUnsafeAccessor();
         auto pre_vel_axr = Pre_vel->getConstUnsafeAccessor();
+        auto norm_axr = Normal->getConstUnsafeAccessor();
+        auto curv_axr = Curvature->getConstUnsafeAccessor();
         auto vor_axr = Vorticity->getConstUnsafeAccessor();
 
         std::random_device rd;
@@ -91,7 +96,7 @@ struct WhitewaterSource : INode {
             if (vor_emit > 0) {
                 openvdb::Vec3f m_vor_vec = openvdb::tools::BoxSampler::sample(vor_axr, Vorticity->worldToIndex(wcoord));
                 float m_vor = m_vor_vec.length();
-                generates += acc_emit * clamp_map(m_vor, vor_range);
+                generates += vor_emit * clamp_map(m_vor, vor_range);
             }
 
             float m_speed = m_vel.length();
