@@ -154,8 +154,15 @@ struct USDSimpleTraverse : zeno::INode {
             // Geom Mesh
             for(auto & [key, value]: ImportedData.PathToFrameToMeshImportData){
                 auto prim = std::make_shared<zeno::PrimitiveObject>();
-                int kf = Helper::GetImportedAnimMeshDataKey(frameid, value);
-                imported_mesh_data_to_prim(prim, value[kf]);
+                int key_mesh = Helper::GetImportedAnimMeshDataKey(frameid, value);
+
+                if(ImportedData.PathToFrameToTransform.find(key) != ImportedData.PathToFrameToTransform.end()){
+                    auto FrameToTransform = ImportedData.PathToFrameToTransform[key];
+                    int key_trans = Helper::GetImportedAnimMeshDataKey(frameid, FrameToTransform);
+                    value[key_mesh].ApplyTransform(FrameToTransform[key_trans], stageinfo);
+                }
+
+                imported_mesh_data_to_prim(prim, value[key_mesh]);
                 prims->arr.emplace_back(prim);
             }
 

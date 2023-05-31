@@ -8,6 +8,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
 #include <random>
+#include <vector>
 
 namespace zeno
 {
@@ -1763,6 +1764,62 @@ float chramp(const float inputData) {
     return outputData;
 }
 
+// 计算图像的梯度
+void computeGradient(std::shared_ptr<PrimitiveObject> & hf, std::vector<std::vector<float>>& gradientX, std::vector<std::vector<float>>& gradientY) {
+    auto &ud = hf->userData();
+    int height  = ud.get2<int>("nx");
+    int width = ud.get2<int>("nx");
+
+    gradientX.resize(height, std::vector<float>(width));
+    gradientY.resize(height, std::vector<float>(width));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (x > 0 && x < width - 1) {
+                gradientX[y][x] = (hf->verts.attr<float>("heightLayer")[y * width + x + 1] - hf->verts.attr<float>("heightLayer")[y * width + x  - 1]) / 2.0f;
+            } else {
+                gradientX[y][x] = 0.0f;
+            }
+            if (y > 0 && y < height - 1) {
+                gradientY[y][x] = (hf->verts.attr<float>("heightLayer")[(y+1) * width + x] - hf->verts.attr<float>("heightLayer")[(y - 1) * width + x]) / 2.0f;
+            } else {
+                gradientY[y][x] = 0.0f;
+            }
+        }
+    }
+}
+
+// 计算图像的曲率
+void computeCurvature(const std::vector<std::vector<float>>& gradientX, const std::vector<std::vector<float>>& gradientY, std::vector<std::vector<float>>& curvature) {
+    int height = gradientX.size();
+    int width = gradientX[0].size();
+
+    curvature.resize(height, std::vector<float>(width));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            float dx = gradientX[y][x];
+            float dy = gradientY[y][x];
+            float dxx = 0.0f;
+            float dyy = 0.0f;
+            float dxy = 0.0f;
+
+            if (x > 0 && x < width - 1) {
+                dxx = gradientX[y][x + 1] - 2.0f * dx + gradientX[y][x - 1];
+            }
+
+            if (y > 0 && y < height - 1) {
+                dyy = gradientY[y + 1][x] - 2.0f * dy + gradientY[y - 1][x];
+            }
+
+            if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
+                dxy = (gradientX[y + 1][x + 1] - gradientX[y + 1][x - 1] - gradientX[y - 1][x + 1] + gradientX[y - 1][x - 1]) / 4.0f;
+            }
+
+            curvature[y][x] = (dxx * dyy - dxy * dxy) / ((dxx + dyy) * (dxx + dyy) + 1e-6f);
+        }
+    }
+}
 struct HF_maskByFeature : INode {
     void apply() override {
 
@@ -1798,8 +1855,8 @@ struct HF_maskByFeature : INode {
         auto angleSpread = get_input2<float>("angle_spread");
 
         auto useHeight = get_input2<bool>("use_height");
-        auto minHeight = get_input2<float>("min_height");
-        auto maxHeight = get_input2<float>("max_height");
+        auto minCur = get_input2<float>("min_curvature");
+        auto maxCur = get_input2<float>("max_curvature");
 
         // 初始化网格属性
         if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
@@ -1816,7 +1873,6 @@ struct HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
@@ -1824,38 +1880,56 @@ struct HF_maskByFeature : INode {
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int idx = Pos2Idx(id_x, id_z, nx);
-                int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
+                int idx_xl, idx_xr, idx_zl, idx_zr;
+                int scale_x = 0;
+                int scale_z = 0;
 
                 if (id_x == 0) {
                     idx_xl = idx;
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 1;
+                    scale_x = 1;
                 } else if (id_x == nx - 1) {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = idx;
-                    scale = 1;
+                    scale_x = 1;
                 } else {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 2;
+                    scale_x = 2;
                 }
 
                 if (id_z == 0) {
                     idx_zl = idx;
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 1;
-                } else if (id_x == nz - 1) {
+                    scale_z = 1;
+                } else if (id_z == nz - 1) {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = idx;
-                    scale = 1;
+                    scale_z = 1;
                 } else {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 2;
+                    scale_z = 2;
                 }
 
-                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
-                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+                // debug
+//                if(id_x >= 570 && id_z >= 570)
+//                {
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                    printf("nx = %i, nz = %i\n", nx, nz);
+//                    printf("id_x = %i, id_z = %i\n", id_x, id_z);
+//                    printf("scale_x = %i, scale_z = %i, cellSize = %f\n", scale_x, scale_z, cellSize);
+//                    printf("-------------------\n");
+//                    printf("idx_xr = %i, idx_xl = %i\n", idx_xr, idx_xl);
+//                    printf("idx_zr = %i, idx_zl = %i\n", idx_zr, idx_zl);
+//                    printf("-------------------\n");
+//                    //printf("height[idx_xr] = %f, height[idx_xl] = %f\n", height[idx_xr], height[idx_xl]);
+//                    //printf("height[idx_zr] = %f, height[idx_zl] = %f\n", height[idx_zr], height[idx_zl]);
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                }
+
+                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (float(scale_x) * cellSize);
+                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (float(scale_z) * cellSize);
 
                 vec3f dx = normalizeSafe(vec3f(1, 0, _grad[idx][0]));
                 vec3f dy = normalizeSafe(vec3f(0, 1, _grad[idx][2]));
@@ -1890,12 +1964,27 @@ struct HF_maskByFeature : INode {
 
                 if (useHeight)
                 {
-                    float h = fit(height[idx], minHeight, maxHeight, 0, 1);
-                    mask[idx] *= chramp(h);
+//                    float h = fit(height[idx], minHeight, maxHeight, 0, 1);
+                    std::vector<std::vector<float>> gx(nx, std::vector<float>(nx, 0));
+                    std::vector<std::vector<float>> gy(nx, std::vector<float>(nx, 0));
+                    std::vector<std::vector<float>> cur(nx, std::vector<float>(nx, 0));
+                    computeGradient(terrain,gx, gy);
+                    computeCurvature(gx,gy,cur);
+                    for(int i = 0 ; i < nx ;i++){
+                        for(int j = 0;j < nx;j++){
+                            if(minCur < cur[i][j] &&  cur[i][j] < maxCur){
+                                mask[i * nx +j] = 1;
+                            }
+                            else{
+                                mask[i * nx +j] = 0;
+                            }
+                        }
+                    }
+//                    mask[idx] *= chramp(h);
                 }
             }
         }
-
+        terrain->verts.erase_attr("_grad");
         set_output("HeightField", std::move(terrain));
     }
 };
@@ -1914,8 +2003,8 @@ ZENDEFNODE(HF_maskByFeature,
             {"float", "angle_spread", "30"},
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             {"bool", "use_height", "0"},
-            {"float", "min_height", "0"},
-            {"float", "max_height", "1"},
+            {"float", "min_curvature", "0.5"},
+            {"float", "max_curvature", "1"},
         },
         /* outputs: */
         {

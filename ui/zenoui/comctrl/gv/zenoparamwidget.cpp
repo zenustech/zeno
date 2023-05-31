@@ -665,6 +665,16 @@ void ZenoParamPushButton::setText(const QString& text)
     m_pBtn->setText(text);
 }
 
+bool ZenoParamPushButton::event(QEvent *event) {
+    if (event->type() == QEvent::DynamicPropertyChange) {
+        QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent*>(event);
+        if (evt->propertyName() == "color") {
+            m_pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(property("color").toString()));
+        }
+    }
+    return ZenoParamWidget::event(event);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 ZenoParamOpenPath::ZenoParamOpenPath(const QString &filename, QGraphicsItem *parent)

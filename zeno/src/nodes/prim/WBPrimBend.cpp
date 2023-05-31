@@ -949,8 +949,13 @@ struct PrimitiveDelAttrs : zeno::INode {
         }
 
         if (!invert) {
-            for(std::string attr : names)
+            for(std::string attr : names) {
                 prim->verts.attrs.erase(attr);
+                prim->tris.attrs.erase(attr);
+                prim->quads.attrs.erase(attr);
+                prim->loops.attrs.erase(attr);
+                prim->polys.attrs.erase(attr);
+            }
         } else {
             std::vector<std::string> myKeys = prim->verts.attr_keys();
 
@@ -959,8 +964,13 @@ struct PrimitiveDelAttrs : zeno::INode {
             });
             myKeys.erase(reserve_attr, myKeys.end());
 
-            for(std::string attr : myKeys)
+            for(std::string attr : myKeys){
                 prim->verts.attrs.erase(attr);
+                prim->tris.attrs.erase(attr);
+                prim->quads.attrs.erase(attr);
+                prim->loops.attrs.erase(attr);
+                prim->polys.attrs.erase(attr);
+            }
         }
 
         set_output("prim", get_input("prim"));

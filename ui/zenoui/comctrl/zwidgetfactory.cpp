@@ -108,11 +108,9 @@ namespace zenoui
                 });
                 return pBtn;
             }
-            case CONTROL_COLOR_NORMAL: {
+            case CONTROL_PURE_COLOR: {
                 QPushButton *pBtn = new QPushButton;
-                QPalette palette = pBtn->palette();
                 pBtn->setFixedSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(30));
-                palette.setColor(QPalette::Window, value.value<QColor>());
                 pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
                     QColor color = QColorDialog::getColor(pBtn->palette().window().color());

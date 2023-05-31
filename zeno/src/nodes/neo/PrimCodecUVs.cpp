@@ -67,6 +67,46 @@ ZENO_DEFNODE(PrimLoopUVsToVerts)({
     {"primitive"},
 });
 
+struct PrimUVVertsToLoopsuv : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto &vuv = prim->verts.attr<vec3f>("uv");
+        if (prim->loops.size()) {
+            auto &uvs = prim->loops.add_attr<int>("uvs");
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                uvs[i] = prim->loops[i];
+            }
+            prim->uvs.resize(prim->verts.size());
+            for (auto i = 0; i < prim->verts.size(); i++) {
+                vec3f uv = vuv[i];
+                prim->uvs[i] = {uv[0], uv[1]};
+            }
+        }
+        else if (prim->tris.size()) {
+            auto &uv0 = prim->tris.add_attr<vec3f>("uv0");
+            auto &uv1 = prim->tris.add_attr<vec3f>("uv1");
+            auto &uv2 = prim->tris.add_attr<vec3f>("uv2");
+            for (auto i = 0; i < prim->tris.size(); i++) {
+                uv0[i] = vuv[prim->tris[i][0]];
+                uv1[i] = vuv[prim->tris[i][1]];
+                uv2[i] = vuv[prim->tris[i][2]];
+            }
+        }
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENO_DEFNODE(PrimUVVertsToLoopsuv)({
+    {
+        "prim",
+    },
+    {
+        "prim",
+    },
+    {},
+    {"primitive"},
+});
+
 struct PrimUVEdgeDuplicate : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");

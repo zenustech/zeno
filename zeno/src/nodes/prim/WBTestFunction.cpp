@@ -14,6 +14,10 @@
 #include <zeno/para/parallel_for.h>
 #include <zeno/extra/GlobalState.h>
 
+/* #include <zfx/zfx.h> */
+/* #include <zfx/x64.h> */
+#include <glm/gtx/quaternion.hpp>
+#include <cmath>
 #include <sstream>
 #include <random>
 #include <numeric>
