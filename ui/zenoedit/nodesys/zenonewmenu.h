@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include <zenomodel/include/modeldata.h>
+#include <QSet>
 
 class ZenoGvLineEdit;
 class IGraphsModel;
@@ -29,6 +30,7 @@ private:
 	const QPointF m_scenePos;
 	ZenoGvLineEdit* m_searchEdit;
 	QWidgetAction* m_pWAction;
+	QSet<QString> deprecatedNodes;
 };
 
 #endif
