@@ -200,7 +200,7 @@ extern "C" __global__ void __raygen__rg()
                 if(rnd(prd.seed) > RRprob || prd.depth>32){
                     prd.done=true;
                 } else {
-                    prd.attenuation = prd.attenuation / (RRprob + 1e-5);
+                    prd.attenuation = prd.attenuation / RRprob;
                 }
             }
             if(prd.countEmitted == true)
