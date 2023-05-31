@@ -103,15 +103,21 @@ void writeObjFile(
     size_t vatWidth = std::min(vertices.size(), (size_t)8192);
     auto rowsPerFrame = static_cast<int32_t>(std::ceil((float)vertices.size() / (float)vatWidth));
     size_t vatHeight = rowsPerFrame * (frameNum - 1);
-    fprintf(fp, "# VATWidth %d\n", vatWidth);
-    fprintf(fp, "# RowsPerFrame %d\n", rowsPerFrame);
-    fprintf(fp, "# FrameNum %d\n", frameNum);
-    fprintf(fp, "# VATHeight %d\n", vatHeight);
-    fprintf(fp, "# BMin %f %f %f\n", bbox.first[0], bbox.first[1], bbox.first[2]);
-    fprintf(fp, "# BMax %f %f %f\n", bbox.second[0], bbox.second[1], bbox.second[2]);
+    fprintf(fp, "# metadata VATWidth %d\n", vatWidth);
+    fprintf(fp, "# metadata RowsPerFrame %d\n", rowsPerFrame);
+    fprintf(fp, "# metadata FrameNum %d\n", frameNum);
+    fprintf(fp, "# metadata VATHeight %d\n", vatHeight);
+    fprintf(fp, "# metadata BMin %f %f %f\n", bbox.first[0], bbox.first[1], bbox.first[2]);
+    fprintf(fp, "# metadata BMax %f %f %f\n", bbox.second[0], bbox.second[1], bbox.second[2]);
+
+    const auto map_into_bbox = [&bbox](const zeno::vec3f& v) {
+//        return normalized_vec3f(v, bbox.first, bbox.second);
+        return v;
+    };
 
     for (auto const &vert: vertices) {
-        fprintf(fp, "v %f %f %f\n", vert[0], vert[1], vert[2]);
+        const auto v = map_into_bbox(vert);
+        fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
     }
 
     auto& triangle = primitive->tris;
@@ -127,9 +133,9 @@ void writeObjFile(
         fprintf(fp, "vt %f %f\n", uv0[count][0], uv0[count][1]);
         fprintf(fp, "vt %f %f\n", uv1[count][0], uv1[count][1]);
         fprintf(fp, "vt %f %f\n", uv2[count][0], uv2[count][1]);
-        fprintf(fp, "vn %f %f %f\n", (v0 % vatWidth) / vatWidth, std::floor(v0 / vatWidth) / vatHeight, 0.0f);
-        fprintf(fp, "vn %f %f %f\n", (v1 % vatWidth) / vatWidth, std::floor(v1 / vatWidth) / vatHeight, 0.0f);
-        fprintf(fp, "vn %f %f %f\n", (v2 % vatWidth) / vatWidth, std::floor(v2 / vatWidth) / vatHeight, 0.0f);
+        fprintf(fp, "vn %f %f %f\n", (float)(v0 % vatWidth) / (float)vatWidth, ((float)v0 / (float)vatWidth) / (float)vatHeight, 0.0f);
+        fprintf(fp, "vn %f %f %f\n", (float)(v1 % vatWidth) / (float)vatWidth, ((float)v1 / (float)vatWidth) / (float)vatHeight, 0.0f);
+        fprintf(fp, "vn %f %f %f\n", (float)(v2 % vatWidth) / (float)vatWidth, ((float)v2 / (float)vatWidth) / (float)vatHeight, 0.0f);
         fprintf(fp, "f %d/%d/%d %d/%d/%d %d/%d/%d\n",
             v0 + 1, ui0, ui0,
             v1 + 1, ui1, ui1,
