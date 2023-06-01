@@ -14,6 +14,8 @@
 struct ZENO_RECORD_RUN_INITPARAM {
     QString sZsgPath = "";
     bool bRecord = false;
+    bool bOptix = false;    //is optix view.
+    bool isExportVideo = false;
     int iFrame = 0;
     int iSFrame = 0;
     int iSample = 0;
@@ -23,6 +25,7 @@ struct ZENO_RECORD_RUN_INITPARAM {
     QString sPath = "";
     QString audioPath = "";
     QString configFilePath = "";
+    QString videoName = "";
     bool exitWhenRecordFinish = false;
 };
 
@@ -171,7 +174,7 @@ public slots:
     void saveDockLayout();
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
-    void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
+    void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, bool bIsOptix);
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
