@@ -1,8 +1,8 @@
 #include <openvdb/tools/GridOperators.h>
 #include <openvdb/tools/Interpolation.h>
 #include <zeno/VDBGrid.h>
-#include <zeno/ZenoInc.h>
 #include <zeno/zeno.h>
+#include <zeno/types/PrimitiveObject.h>
 
 namespace zeno {
 struct WhitewaterSource : INode {
@@ -121,6 +121,7 @@ struct WhitewaterSource : INode {
                 par_life.push_back(Lifespan);
             }
         }
+        pars->verts.update();
 
         set_output("Primitive", pars);
     }
