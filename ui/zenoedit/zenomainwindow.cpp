@@ -823,6 +823,12 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, b
 	RecordVideoMgr* recordMgr = new RecordVideoMgr(this);
 	recordMgr->setParent(viewWidget);
 	recordMgr->setRecordInfo(recInfo);
+    connect(recordMgr, &RecordVideoMgr::recordFailed, this, []() {
+        QApplication::exit(-1);
+        });
+    connect(recordMgr, &RecordVideoMgr::recordFinished, this, []() {
+        QApplication::exit(0);
+        });
     if (bIsOptix)
     {
         if (viewWidget->optixViewport()) {
