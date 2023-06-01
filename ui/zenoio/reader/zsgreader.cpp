@@ -7,15 +7,15 @@
 #include "variantptr.h"
 #include "common.h"
 #include <zenomodel/customui/customuirw.h>
+#include <zenomodel/include/nodesmgr.h>
 #include "iotags.h"
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
 
+namespace zenoio {
 
-ZsgReader::ZsgReader()
-{
-}
+ZsgReader::ZsgReader() : m_bDiskReading(true), m_ioVer(VER_3) {}
 
 ZsgReader& ZsgReader::getInstance()
 {
@@ -23,8 +23,14 @@ ZsgReader& ZsgReader::getInstance()
     return reader;
 }
 
-bool ZsgReader::importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& nodeJson, const QPointF& targetPos, IAcceptor* pAcceptor)
+bool ZsgReader::importNodes(
+            IGraphsModel* pModel,
+            const QModelIndex& subgIdx,
+            const QString& nodeJson,
+            const QPointF& targetPos,
+            SUBGRAPH_DATA& subgraph)
 {
+    m_bDiskReading = false;
     rapidjson::Document doc;
     QByteArray bytes = nodeJson.toUtf8();
     doc.Parse(bytes);
@@ -36,23 +42,25 @@ bool ZsgReader::importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, co
     if (nodes.IsNull())
         return false;
 
-    bool ret = pAcceptor->setCurrentSubGraph(pModel, subgIdx);
-    if (!ret)
-        return false;
+    QString subgPath = subgIdx.data(ROLE_OBJPATH).toString();
 
     QStringList idents;
+    NODES_DATA nodeDatas;
     for (const auto &node : nodes.GetObject())
     {
         const QString &nodeid = node.name.GetString();
         idents.append(nodeid);
-        ret = _parseNode(nodeid, node.value, NODE_DESCS(), pAcceptor);
-        if (!ret)
+        NODE_DATA& nodeData = subgraph.nodes[nodeid];
+        if (!_parseNode(subgPath, nodeid, node.value, NODE_DESCS(), QMap<QString, SUBGRAPH_DATA>(), nodeData,
+            subgraph.links))
+        {
             return false;
+        }
     }
     return true;
 }
 
-bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
+bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -62,25 +70,22 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
         return false;
     }
 
-    pAcceptor->setFilePath(fn);
-
     rapidjson::Document doc;
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);
 
-    zenoio::ZSG_VERSION ioVer = zenoio::VER_3;
+    m_ioVer = zenoio::VER_3;
     if (doc.HasMember("version"))
     {
         ZASSERT_EXIT(doc["version"].IsString(), false);
         QString ver = doc["version"].GetString();
         if (ver == "v2")
-            ioVer = zenoio::VER_2;
+            m_ioVer = zenoio::VER_2;
         else if (ver == "v2.5")
-            ioVer = zenoio::VER_2_5;
+            m_ioVer = zenoio::VER_2_5;
         else if (ver == "v3.0")
-            ioVer = zenoio::VER_3;
+            m_ioVer = zenoio::VER_3;
     }
-    pAcceptor->setIOVersion(ioVer);
 
     if (!doc.IsObject())
     {
@@ -88,8 +93,8 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
         return false;
     }
 
-    if ((ioVer != zenoio::VER_3 && !doc.HasMember("graph")) ||
-        (ioVer == zenoio::VER_3 && (!doc.HasMember("main") || !doc.HasMember("subgraphs"))))
+    if ((m_ioVer != zenoio::VER_3 && !doc.HasMember("graph")) ||
+        (m_ioVer == zenoio::VER_3 && (!doc.HasMember("main") || !doc.HasMember("subgraphs"))))
     {
         return false;
     }
@@ -101,42 +106,55 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     }
 
     ZASSERT_EXIT(doc.HasMember("descs"), false);
-    NODE_DESCS nodesDescs = _parseDescs(doc["descs"], pAcceptor);
-    ret = pAcceptor->setLegacyDescs(graph, nodesDescs);
+    NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
     if (!ret) {
         return false;
     }
 
+    QMap<QString, SUBGRAPH_DATA> subgraphDatas;
     for (const auto& subgraph : graph.GetObject())
     {
         const QString& graphName = subgraph.name.GetString();
         if ("main" == graphName)
             continue;
-        if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
+        if (!_parseSubGraph(graphName,
+                    subgraph.value,
+                    nodesDescs,
+                    QMap<QString, SUBGRAPH_DATA>(),
+                    subgraphDatas[graphName]))
+        {
             return false;
+        }
     }
 
     const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
-    if (!_parseSubGraph("main", mainGraph, nodesDescs, pAcceptor))
+    SUBGRAPH_DATA mainData;
+    if (!_parseSubGraph("/main", mainGraph, nodesDescs, subgraphDatas, mainData))
         return false;
-
-    pAcceptor->EndGraphs();
-    pAcceptor->switchSubGraph("main");
 
     if (doc.HasMember("views"))
     {
-        _parseViews(doc["views"], pAcceptor);
+        _parseViews(doc["views"], result);
     }
+
+    result.ver = m_ioVer;
+    result.descs = nodesDescs;
+    result.mainGraph = mainData;
+    result.subgraphs = subgraphDatas;
     return true;
 }
 
-bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)
+bool ZsgReader::_parseSubGraph(
+            const QString& subgPath,
+            const rapidjson::Value& subgraph,
+            const NODE_DESCS& descriptors,
+            const QMap<QString, SUBGRAPH_DATA>& subgraphDatas,
+            SUBGRAPH_DATA& subgData)
 {
     if (!subgraph.IsObject() || !subgraph.HasMember("nodes"))
         return false;
 
-    //todo: should consider descript info. some info of outsock without connection show in descript info.
-    pAcceptor->BeginSubgraph(name);
+    //todo: should consider descript info. some info of outsock without connection show in descript info?
 
     const auto& nodes = subgraph["nodes"];
     if (nodes.IsNull())
@@ -154,87 +172,119 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     for (const auto& node : nodes.GetObject())
     {
         const QString& nodeid = node.name.GetString();
-        _parseNode(nodeid, node.value, descriptors, pAcceptor);
+        NODE_DATA& nodeData = subgData.nodes[nodeid];
+        _parseNode(subgPath, nodeid, node.value, descriptors, subgraphDatas, nodeData, subgData.links);
     }
 
-    pAcceptor->EndSubgraph();
     return true;
 }
 
-bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
+bool ZsgReader::_parseNode(
+                    const QString& subgPath,
+                    const QString& nodeid,
+                    const rapidjson::Value& nodeObj,
+                    const NODE_DESCS& legacyDescs,
+                    const QMap<QString, SUBGRAPH_DATA>& subgraphDatas,
+                    NODE_DATA& ret,
+                    LINKS_DATA& links)
 {
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
     const QString& name = nameValue.GetString();
+
+    ret.ident = nodeid;
+    ret.nodeCls = name;
+    ret.type = UiHelper::nodeType(name);
+    if (subgraphDatas.contains(name))
+        ret.type = SUBGRAPH_NODE;
 
     QString customName;
     if (objValue.HasMember("customName")) {
         const QString &tmp = objValue["customName"].GetString();
         customName = tmp;
     }
+    ret.customName = customName;
 
-    bool bSucceed = pAcceptor->addNode(nodeid, name, customName, legacyDescs);
-    if (!bSucceed) {
-        return false;
+    //legacy case, should expand the subgraph node recursively.
+    if (zenoio::VER_3 != m_ioVer)
+    {
+        if (subgraphDatas.find(name) != subgraphDatas.end())
+        {
+            ret.type = SUBGRAPH_NODE;
+            ret.children = _fork(subgPath + "/" + nodeid, subgraphDatas, name, links);
+        }
     }
 
-    pAcceptor->initSockets(nodeid, name, legacyDescs);
+    initSockets(name, legacyDescs, ret);
 
     if (objValue.HasMember("inputs"))
     {
-        _parseInputs(nodeid, name, legacyDescs, objValue["inputs"], pAcceptor);
+        _parseInputs(subgPath, nodeid, name, legacyDescs, objValue["inputs"], ret, links);
     }
     if (objValue.HasMember("params"))
     {
-        if (_parseParams2(nodeid, name, objValue["params"], pAcceptor) == false)
-            _parseParams(nodeid, name, objValue["params"], pAcceptor);
+        if (_parseParams2(nodeid, name, objValue["params"], ret) == false)
+            _parseParams(nodeid, name, objValue["params"], legacyDescs, ret);
     }
     if (objValue.HasMember("outputs"))
     {
-        _parseOutputs(nodeid, name, objValue["outputs"], pAcceptor);
+        _parseOutputs(nodeid, name, objValue["outputs"], ret);
     }
     if (objValue.HasMember("customui-panel"))
     {
-        _parseCustomPanel(nodeid, name, objValue["customui-panel"], pAcceptor);
+        _parseCustomPanel(nodeid, name, objValue["customui-panel"], ret);
     }
 
     if (objValue.HasMember("uipos"))
     {
         auto uipos = objValue["uipos"].GetArray();
         QPointF pos = QPointF(uipos[0].GetFloat(), uipos[1].GetFloat());
-        pAcceptor->setPos(nodeid, pos);
+        ret.pos = pos;
     }
     if (objValue.HasMember("options"))
     {
         auto optionsArr = objValue["options"].GetArray();
-        QStringList options;
+        int opts = 0;
         for (int i = 0; i < optionsArr.Size(); i++)
         {
             ZASSERT_EXIT(optionsArr[i].IsString(), false);
             const QString& optName = optionsArr[i].GetString();
-            options.append(optName);
+            if (optName == "ONCE") {
+                opts |= OPT_ONCE;
+            } else if (optName == "PREP") {
+                opts |= OPT_PREP;
+            } else if (optName == "VIEW") {
+                opts |= OPT_VIEW;
+            } else if (optName == "MUTE") {
+                opts |= OPT_MUTE;
+            } else if (optName == "collapsed") {
+                ret.bCollasped = true;
+            }
         }
-        pAcceptor->setOptions(nodeid, options);
+        ret.options = opts;
     }
     if (objValue.HasMember("dict_keys"))
     {
-        _parseDictKeys(nodeid, objValue["dict_keys"], pAcceptor);
+        _parseDictKeys(nodeid, objValue["dict_keys"], ret);
     }
     if (objValue.HasMember("socket_keys"))
     {
-        _parseBySocketKeys(nodeid, objValue, pAcceptor);
+        _parseBySocketKeys(nodeid, objValue, ret);
     }
     if (objValue.HasMember("color_ramps"))
     {
-        _parseColorRamps(nodeid, objValue["color_ramps"], pAcceptor);
+        _parseColorRamps(nodeid, objValue["color_ramps"], ret);
     }
     if (objValue.HasMember("points") && objValue.HasMember("handlers"))
     {
-        _parseLegacyCurves(nodeid, objValue["points"], objValue["handlers"], pAcceptor);
+        _parseLegacyCurves(nodeid, objValue["points"], objValue["handlers"], ret);
     }
     if (objValue.HasMember("children"))
     {
-        _parseChildNodes(nodeid, objValue["children"], pAcceptor);
+        SUBGRAPH_DATA subg;
+        _parseSubGraph(subgPath + '/' + nodeid, objValue["children"], legacyDescs, subgraphDatas, subg);
+        ret.children = subg.nodes;
+        links.append(subg.links);
     }
 
     if (name == "Blackboard")
@@ -259,7 +309,8 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
             //todo
         }
 
-        pAcceptor->setBlackboard(nodeid, blackboard);
+        ret.parmsNotDesc["blackboard"].name = "blackboard";
+        ret.parmsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
     }
     else if (name == "Group") 
     {
@@ -282,44 +333,153 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
             }
         }
 
-        pAcceptor->setBlackboard(nodeid, blackboard);
+        ret.parmsNotDesc["blackboard"].name = "blackboard";
+        ret.parmsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
     }
 
     return true;
 }
 
-void ZsgReader::_parseViews(const rapidjson::Value& jsonViews, IAcceptor* pAcceptor)
+NODES_DATA ZsgReader::_fork(
+            const QString& currentPath,
+            const QMap<QString, SUBGRAPH_DATA>& subgraphDatas,
+            const QString& subnetName,
+            LINKS_DATA& newLinks)
+{
+    NODES_DATA newDatas;
+
+    QMap<QString, NODE_DATA> nodes;
+    QHash<QString, QString> old2new;
+    QHash<QString, QString> old2new_nodePath;
+    LINKS_DATA oldLinks;
+
+    ZASSERT_EXIT(subgraphDatas.find(subnetName) != subgraphDatas.end(), newDatas);
+    const SUBGRAPH_DATA& subgraph = subgraphDatas[subnetName];
+
+    for (QString ident : subgraph.nodes.keys())
+    {
+        NODE_DATA nodeData = subgraph.nodes[ident];
+        const QString snodeId = nodeData.ident;
+        const QString& name = nodeData.nodeCls;
+        const QString& newId = UiHelper::generateUuid(name);
+        old2new.insert(snodeId, newId);
+
+        if (subgraphDatas.find(name) != subgraphDatas.end())
+        {
+            const QString &ssubnetName = name;
+            nodeData.ident = newId;
+            nodeData.type = SUBGRAPH_NODE;
+
+            LINKS_DATA childLinks;
+            nodeData.children = _fork(currentPath + "/" + newId, subgraphDatas, ssubnetName, childLinks);
+            newDatas.insert(newId, nodeData);
+            newLinks.append(childLinks);
+        }
+        else
+        {
+            nodeData.ident = newId;
+            newDatas.insert(newId, nodeData);
+        }
+
+        //apply legacy format `subnet:nodeid`.
+        const QString &oldNodePath = QString("%1:%2").arg(subnetName).arg(snodeId);
+        const QString &newNodePath = currentPath + "/" + newId;
+        old2new_nodePath.insert(oldNodePath, newNodePath);
+
+        //only collect links from input socket.
+        /*
+        for (const INPUT_SOCKET& socket : nodeData.inputs)
+        {
+            const QString& inSock = socket.info.name;
+            const int inSockProp = socket.info.sockProp;
+            LINKS_DATA links = socket.info.links;
+            if (!links.isEmpty())
+            {
+                oldLinks.append(links);
+            }
+            else if (inSockProp & SOCKPROP_DICTLIST_PANEL)
+            {
+                for (DICTKEY_INFO keyInfo : socket.info.dictpanel.keys)
+                {
+                    oldLinks.append(keyInfo.links);
+                }
+            }
+        }
+        */
+    }
+
+    for (EdgeInfo oldLink : subgraph.links)
+    {
+        //oldLink format: subg:xxx-objid:sockid
+        QString outputNode = UiHelper::getNodePath(oldLink.outSockPath);
+        QString outParamPath = UiHelper::getParamPath(oldLink.outSockPath);
+        QString inputNode = UiHelper::getNodePath(oldLink.inSockPath);
+        QString inParamPath = UiHelper::getParamPath(oldLink.inSockPath);
+
+        ZASSERT_EXIT(old2new_nodePath.find(outputNode) != old2new_nodePath.end() &&
+                     old2new_nodePath.find(inputNode) != old2new_nodePath.end(),
+                     newDatas);
+
+        const QString &newInSock = old2new_nodePath[inputNode] + cPathSeperator + inParamPath;
+        const QString &newOutSock = old2new_nodePath[outputNode] + cPathSeperator + outParamPath;
+        newLinks.append(EdgeInfo(newOutSock, newInSock));
+    }
+    return newDatas;
+}
+
+void ZsgReader::_parseChildNodes(
+                    const QString& rootPath,
+                    const rapidjson::Value& jsonNodes,
+                    const NODE_DESCS& descriptors,
+                    NODE_DATA& ret)
+{
+    if (!jsonNodes.HasMember("nodes"))
+        return;
+}
+
+void ZsgReader::initSockets(const QString& name, const NODE_DESCS& legacyDescs, NODE_DATA& ret)
+{
+    ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
+    const NODE_DESC& desc = legacyDescs[name];
+    ret.inputs = desc.inputs;
+    ret.params = desc.params;
+    ret.outputs = desc.outputs;
+    ret.parmsNotDesc = NodesMgr::initParamsNotDesc(name);
+}
+
+void ZsgReader::_parseViews(const rapidjson::Value& jsonViews, ZSG_PARSE_RESULT& res)
 {
     if (jsonViews.HasMember("timeline"))
     {
-        _parseTimeline(jsonViews["timeline"], pAcceptor);
+        _parseTimeline(jsonViews["timeline"], res);
     }
 }
 
-void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* pAcceptor)
+void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, ZSG_PARSE_RESULT& res)
 {
     ZASSERT_EXIT(jsonTimeline.HasMember(timeline::start_frame) && jsonTimeline[timeline::start_frame].IsInt());
     ZASSERT_EXIT(jsonTimeline.HasMember(timeline::end_frame) && jsonTimeline[timeline::end_frame].IsInt());
     ZASSERT_EXIT(jsonTimeline.HasMember(timeline::curr_frame) && jsonTimeline[timeline::curr_frame].IsInt());
     ZASSERT_EXIT(jsonTimeline.HasMember(timeline::always) && jsonTimeline[timeline::always].IsBool());
 
-    TIMELINE_INFO info;
-    info.beginFrame = jsonTimeline[timeline::start_frame].GetInt();
-    info.endFrame = jsonTimeline[timeline::end_frame].GetInt();
-    info.currFrame = jsonTimeline[timeline::curr_frame].GetInt();
-    info.bAlways = jsonTimeline[timeline::always].GetBool();
-
-    pAcceptor->setTimeInfo(info);
+    res.timeline.beginFrame = jsonTimeline[timeline::start_frame].GetInt();
+    res.timeline.endFrame = jsonTimeline[timeline::end_frame].GetInt();
+    res.timeline.currFrame = jsonTimeline[timeline::curr_frame].GetInt();
+    res.timeline.bAlways = jsonTimeline[timeline::always].GetBool();
 }
 
-void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
+void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, NODE_DATA& ret)
 {
     ZASSERT_EXIT(objValue.HasMember("inputs") && objValue["inputs"].IsArray());
     auto input_keys = objValue["inputs"].GetArray();
     for (int i = 0; i < input_keys.Size(); i++)
     {
         QString key = input_keys[i].GetString();
-        pAcceptor->addDictKey(id, key, true);
+        ret.inputs[key].info.name = key;
+        ret.inputs[key].info.nodeid = id;
+        ret.inputs[key].info.control = CONTROL_NONE;
+        ret.inputs[key].info.sockProp = SOCKPROP_EDITABLE;
+        ret.inputs[key].info.type = "";
     }
 
     ZASSERT_EXIT(objValue.HasMember("outputs") && objValue["outputs"].IsArray());
@@ -327,12 +487,16 @@ void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objVal
     for (int i = 0; i < output_keys.Size(); i++)
     {
         QString key = output_keys[i].GetString();
-        pAcceptor->addDictKey(id, key, false);
+        ret.outputs[key].info.name = key;
+        ret.outputs[key].info.control = CONTROL_NONE;
+        ret.outputs[key].info.sockProp = SOCKPROP_EDITABLE;
+        ret.outputs[key].info.type = "";
     }
 }
 
-void ZsgReader::_parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
+void ZsgReader::_parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, NODE_DATA& ret)
 {
+    //deprecated.
     auto socket_keys = objValue["socket_keys"].GetArray();
     QStringList socketKeys;
     for (int i = 0; i < socket_keys.Size(); i++)
@@ -340,10 +504,49 @@ void ZsgReader::_parseBySocketKeys(const QString& id, const rapidjson::Value& ob
         QString key = socket_keys[i].GetString();
         socketKeys.append(key);
     }
-    pAcceptor->setSocketKeys(id, socketKeys);
 }
 
-void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const NODE_DESCS& legacyDescs, const rapidjson::Value& inputs, IAcceptor* pAcceptor)
+QVariant ZsgReader::_parseDeflValue(
+                const QString &nodeCls,
+                const NODE_DESCS &legacyDescs,
+                const QString& sockName,
+                PARAM_CLASS cls,
+                const rapidjson::Value &defaultValue)
+{
+    ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end(), QVariant());
+    NODE_DESC desc = legacyDescs[nodeCls];
+
+    QVariant defl;
+    if (cls == PARAM_INPUT)
+    {
+        if (!defaultValue.IsNull()) {
+            SOCKET_INFO descInfo;
+            if (desc.inputs.find(sockName) != desc.inputs.end()) {
+                descInfo = desc.inputs[sockName].info;
+            }
+            defl = UiHelper::parseJsonByType(descInfo.type, defaultValue);
+        }
+    } else if (cls == PARAM_PARAM) {
+        if (!defaultValue.IsNull()) {
+            PARAM_INFO paramInfo;
+            if (desc.params.find(sockName) != desc.params.end()) {
+                paramInfo = desc.params[sockName];
+            }
+            //todo: need to consider SubInput/SubOutput?
+            defl = UiHelper::parseJsonByType(paramInfo.typeDesc, defaultValue);
+        }
+    }
+    return defl;
+}
+
+void ZsgReader::_parseInputs(
+                const QString& subgPath,
+                const QString& id,
+                const QString& nodeName,
+                const NODE_DESCS& legacyDescs,
+                const rapidjson::Value& inputs,
+                NODE_DATA& ret,
+                LINKS_DATA& links)
 {
     for (const auto& inObj : inputs.GetObject())
     {
@@ -363,31 +566,51 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
                 outId = arr[0].GetString();
             if (arr[1].IsString())
                 outSock = arr[1].GetString();
-            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2]);
+
+            INPUT_SOCKET socket;
+            socket.info.defaultValue = _parseDeflValue(id, legacyDescs, inSock, PARAM_INPUT, arr[2]);
+
+            if (subgPath.startsWith("/main"))
+            {
+                QString outLinkPath = QString("%1/%2:[node]/outputs/%3").arg(subgPath).arg(outId).arg(outSock);
+                QString inLinkPath = QString("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(inSock);
+                links.append(EdgeInfo(outLinkPath, inLinkPath));
+            }
+            else
+            {
+                QString outLinkPath = QString("%1:%2:[node]/outputs/%3").arg(subgPath).arg(outId).arg(outSock);
+                QString inLinkPath = QString("%1:%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(inSock);
+                links.append(EdgeInfo(outLinkPath, inLinkPath));
+            }
+
+            ret.inputs.insert(inSock, socket);
         }
         else if (inputObj.IsNull())
         {
-            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value());
+            INPUT_SOCKET socket;
+            ret.inputs.insert(inSock, socket);
         }
         else if (inputObj.IsObject())
         {
-            _parseSocket(id, nodeName, inSock, true, inputObj, pAcceptor);
+            _parseSocket(subgPath, id, nodeName, inSock, true, inputObj, legacyDescs, ret, links);
         }
         else
         {
             Q_ASSERT(false);
         }
     }
-    pAcceptor->endInputs(id, nodeName);
 }
 
 void ZsgReader::_parseSocket(
+        const QString& subgPath,
         const QString& id,
-        const QString& nodeName,
-        const QString& inSock,
+        const QString& nodeCls,
+        const QString& sockName,
         bool bInput,
         const rapidjson::Value& sockObj,
-        IAcceptor* pAcceptor)
+        const NODE_DESCS& descriptors,
+        NODE_DATA& ret,
+        LINKS_DATA& links)
 {
     int sockprop = SOCKPROP_NORMAL;
     QString sockProp;
@@ -396,24 +619,60 @@ void ZsgReader::_parseSocket(
         ZASSERT_EXIT(sockObj["property"].IsString());
         sockProp = QString::fromUtf8(sockObj["property"].GetString());
     }
-    pAcceptor->addSocket(bInput, id, inSock, sockProp);
 
-    QString link;
-    if (sockObj.HasMember("link") && sockObj["link"].IsString())
-        link = QString::fromUtf8(sockObj["link"].GetString());
+    PARAM_CONTROL ctrl = CONTROL_NONE;
+    SOCKET_PROPERTY prop = SOCKPROP_NORMAL;
+    if (sockProp == "dict-panel")
+        prop = SOCKPROP_DICTLIST_PANEL;
+    else if (sockProp == "editable")
+        prop = SOCKPROP_EDITABLE;
+    else if (sockProp == "group-line")
+        prop = SOCKPROP_GROUP_LINE;
+
+    SOCKET_INFO& socket = bInput ? ret.inputs[sockName].info : ret.outputs[sockName].info;
+    socket.sockProp = prop;
+    socket.name = sockName;
+
+    if (m_bDiskReading &&
+        (prop == SOCKPROP_EDITABLE || nodeCls == "MakeList" || nodeCls == "MakeDict" || nodeCls == "ExtractDict"))
+    {
+        if (prop == SOCKPROP_EDITABLE) {
+            //like extract dict.
+            socket.type = "string";
+        } else {
+            socket.type = "";
+        }
+    }
+
+    PARAM_CLASS cls = bInput ? PARAM_INPUT : PARAM_OUTPUT;
 
     if (sockObj.HasMember("default-value"))
     {
-        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);
+        socket.defaultValue = _parseDeflValue(nodeCls, descriptors, sockName, cls, sockObj["default-value"]);
     }
-    else
+
+    //link:
+    if (bInput && sockObj.HasMember("link") && sockObj["link"].IsString())
     {
-        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value());
+        QString outLinkPath = QString::fromUtf8(sockObj["link"].GetString());
+
+        if (subgPath.startsWith("/main"))
+        {
+            QString inLinkPath = QString("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(sockName);
+            EdgeInfo fullLink(outLinkPath, inLinkPath);
+            links.append(fullLink);
+        }
+        else
+        {
+            QString inLinkPath = QString("%1:%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(sockName);
+            EdgeInfo fullLink(outLinkPath, inLinkPath);
+            links.append(fullLink);
+        }
     }
 
     if (sockObj.HasMember("dictlist-panel"))
     {
-        _parseDictPanel(bInput, sockObj["dictlist-panel"], id, inSock, nodeName, pAcceptor);
+        _parseDictPanel(subgPath, bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, ret, links);
     }
     if (sockObj.HasMember("control")) 
 	{
@@ -421,40 +680,47 @@ void ZsgReader::_parseSocket(
         QVariant props;
         bool bret = JsonHelper::importControl(sockObj["control"], ctrl, props);
         if (bret){
-            pAcceptor->setControlAndProperties(nodeName, id, inSock, ctrl, props);
+            //init by desc.
+            //socket.control = ctrl;
+            //socket.ctrlProps = props.toMap();
         }
     }
 
     if (sockObj.HasMember("tooltip")) 
     {
-        QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
-        pAcceptor->setToolTip(PARAM_INPUT, id, inSock, toolTip);
+        socket.toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
     }
 }
 
-QMap<QString, NODE_DATA> ZsgReader::_parseChildren(const rapidjson::Value& jsonNodes)
+NODES_DATA ZsgReader::_parseChildren(const rapidjson::Value& jsonNodes)
 {
-    QMap<QString, NODE_DATA> children;
+    NODES_DATA children;
+    //_parseSubGraph(, , , children);
     return children;
 }
 
-void ZsgReader::_parseChildNodes(const QString& id, const rapidjson::Value& jsonNodes, IAcceptor* pAcceptor)
-{
-    
-}
-
 void ZsgReader::_parseDictPanel(
+            const QString& subgPath,
             bool bInput,
             const rapidjson::Value& dictPanelObj, 
             const QString& id,
-            const QString& inSock,
+            const QString& sockName,
             const QString& nodeName,
-            IAcceptor* pAcceptor)
+            NODE_DATA& ret,
+            LINKS_DATA& links)
 {
     if (dictPanelObj.HasMember("collasped") && dictPanelObj["collasped"].IsBool())
     {
-        bool val = dictPanelObj["collasped"].GetBool();
-        pAcceptor->setDictPanelProperty(bInput, id, inSock, val);
+        bool bCollasped = dictPanelObj["collasped"].GetBool();
+        if (bInput) {
+            if (ret.inputs.find(sockName) != ret.inputs.end()) {
+                ret.inputs[sockName].info.dictpanel.bCollasped = bCollasped;
+            }
+        } else {
+            if (ret.outputs.find(sockName) != ret.outputs.end()) {
+                ret.outputs[sockName].info.dictpanel.bCollasped = bCollasped;
+            }
+        }
     }
     if (dictPanelObj.HasMember("keys"))
     {
@@ -469,12 +735,49 @@ void ZsgReader::_parseDictPanel(
             {
                 link = QString::fromUtf8(inputObj["link"].GetString());
             }
-            pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link);
+
+            //standard inputs desc by latest descriptors.
+            if (ret.inputs.find(sockName) != ret.inputs.end())
+            {
+                INPUT_SOCKET &inSocket = ret.inputs[sockName];
+                DICTKEY_INFO item;
+                item.key = keyName;
+
+                QString outSockPath = link;
+                if (!outSockPath.isEmpty())
+                {
+                    if (subgPath.startsWith("/main"))
+                    {
+                        QString inSockPath = QString("%1/%2:[node]/inputs/%3/%4").arg(subgPath).arg(id).arg(sockName).arg(keyName);
+                        EdgeInfo edge(outSockPath, inSockPath);
+                        links.append(edge);
+                        //item.links.append(edge);
+                    }
+                    else
+                    {
+                        QString inSockPath = QString("%1:%2:[node]/inputs/%3/%4").arg(subgPath).arg(id).arg(sockName).arg(keyName);
+                        EdgeInfo edge(outSockPath, inSockPath);
+                        links.append(edge);
+                        //item.links.append(edge);
+                    }
+                }
+                inSocket.info.dictpanel.keys.append(item);
+            }
+            if (ret.outputs.find(sockName) != ret.outputs.end())
+            {
+                OUTPUT_SOCKET &outSocket = ret.outputs[sockName];
+                DICTKEY_INFO item;
+                item.key = keyName;
+
+                QString newKeyPath = "[node]/outputs/" + sockName + "/" + keyName;
+                outSocket.info.dictpanel.keys.append(item);
+                //no need to import link here.
+            }
         }
     }
 }
 
-void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const rapidjson::Value& outputs, IAcceptor *pAcceptor)
+void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const rapidjson::Value& outputs, NODE_DATA& ret)
 {
     for (const auto& outObj : outputs.GetObject())
     {
@@ -483,24 +786,24 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
         if (sockObj.IsObject())
         {
             if (sockObj.HasMember("dictlist-panel")) {
-                _parseDictPanel(false, sockObj["dictlist-panel"], id, outSock, nodeName, pAcceptor);
+                _parseDictPanel("", false, sockObj["dictlist-panel"], id, outSock, nodeName, ret, LINKS_DATA());
             }
             if (sockObj.HasMember("tooltip")) {
-                QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
-                pAcceptor->setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
+                ret.outputs[outSock].info.toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
             }
         }
     }
 }
 
-void ZsgReader::_parseCustomPanel(const QString& id, const QString& nodeName, const rapidjson::Value& jsonCutomUI, IAcceptor* pAcceptor)
+void ZsgReader::_parseCustomPanel(const QString& id, const QString& nodeName, const rapidjson::Value& jsonCutomUI, NODE_DATA& ret)
 {
     VPARAM_INFO invisibleRoot = zenomodel::importCustomUI(jsonCutomUI);
-    pAcceptor->addCustomUI(id, invisibleRoot);
+    ret.customPanel = invisibleRoot;
 }
 
-void ZsgReader::_parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, IAcceptor* pAcceptor)
+void ZsgReader::_parseColorRamps(const QString& id, const rapidjson::Value& jsonColorRamps, NODE_DATA& ret)
 {
+    //deprecated
     if (jsonColorRamps.IsNull())
         return;
 
@@ -521,14 +824,14 @@ void ZsgReader::_parseColorRamps(const QString& id, const rapidjson::Value& json
         clrRamp.b = rgb[2].GetFloat();
         colorRamps.push_back(clrRamp);
     }
-    pAcceptor->setColorRamps(id, colorRamps);
 }
 
 void ZsgReader::_parseLegacyCurves(const QString& id,
                                    const rapidjson::Value& jsonPoints,
                                    const rapidjson::Value& jsonHandlers,
-                                   IAcceptor* pAcceptor)
+                                   NODE_DATA& ret)
 {
+    //deprecated
     if (jsonPoints.IsNull() || jsonHandlers.IsNull())
         return;
 
@@ -560,52 +863,9 @@ void ZsgReader::_parseLegacyCurves(const QString& id,
 
         hdls.append(QPair(leftHdl, rightHdl));
     }
-
-    pAcceptor->setLegacyCurve(id, pts, hdls);
 }
 
-void ZsgReader::_parseCurvePoints(const QString& id, const rapidjson::Value& jsonPoints, IAcceptor* pAcceptor)
-{
-    if (jsonPoints.IsNull())
-        return;
-
-    QVector<QPointF> pts;
-    RAPIDJSON_ASSERT(jsonPoints.IsArray());
-    const auto& arr = jsonPoints.GetArray();
-    for (int i = 0; i < arr.Size(); i++)
-    {
-        const auto& pointObj = arr[i];
-        bool bSucceed = false;
-        QPointF pt = UiHelper::parsePoint(pointObj, bSucceed);
-        ZASSERT_EXIT(bSucceed);
-        pts.append(pt);
-    }
-}
-
-void ZsgReader::_parseCurveHandlers(const QString& id, const rapidjson::Value& jsonHandlers, IAcceptor* pAcceptor)
-{
-    if (jsonHandlers.IsNull())
-        return;
-
-    RAPIDJSON_ASSERT(jsonHandlers.IsArray());
-    const auto& arr = jsonHandlers.GetArray();
-    QVector<QPair<QPointF, QPointF>> hdls;
-    for (int i = 0; i < arr.Size(); i++)
-    {
-        RAPIDJSON_ASSERT(arr[i].IsArray() && arr[i].Size() == 2);
-        const auto& arr_ = arr[i].GetArray();
-
-        bool bSucceed = false;
-        QPointF leftHdl = UiHelper::parsePoint(arr_[0], bSucceed);
-        ZASSERT_EXIT(bSucceed);
-        QPointF rightHdl = UiHelper::parsePoint(arr_[1], bSucceed);
-        ZASSERT_EXIT(bSucceed);
-
-        hdls.append(QPair(leftHdl, rightHdl));
-    }
-}
-
-NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* pAcceptor)
+NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
 {
     NODE_DESCS _descs;
     for (const auto& node : jsonDescs.GetObject())
@@ -656,7 +916,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* 
                 for (const auto &input : inputs)
                 {
                     QString socketName = input.name.GetString();
-                    QVariant var = JsonHelper::importDescriptor(input.value, socketName,PARAM_INPUT, pAcceptor->currGraphObj());
+                    QVariant var = JsonHelper::importDescriptor(input.value, socketName,PARAM_INPUT);
                     if (var.canConvert<INPUT_SOCKET>()) 
                     {
                         desc.inputs.insert(socketName, var.value<INPUT_SOCKET>());
@@ -705,7 +965,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* 
                 for (const auto &param : params) 
                 {
                     QString socketName = param.name.GetString();
-                    QVariant var = JsonHelper::importDescriptor(param.value, socketName, PARAM_PARAM, pAcceptor->currGraphObj());
+                    QVariant var = JsonHelper::importDescriptor(param.value, socketName, PARAM_PARAM);
                     if (var.canConvert<PARAM_INFO>()) 
                     {
                         desc.params.insert(socketName, var.value<PARAM_INFO>());
@@ -750,7 +1010,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* 
                 for (const auto &output : outputs) 
                 {
                     QString socketName = output.name.GetString();
-                    QVariant var = JsonHelper::importDescriptor(output.value, socketName, PARAM_OUTPUT, pAcceptor->currGraphObj());
+                    QVariant var = JsonHelper::importDescriptor(output.value, socketName, PARAM_OUTPUT);
                     if (var.canConvert<OUTPUT_SOCKET>()) 
                     {
                         desc.outputs.insert(socketName, var.value<OUTPUT_SOCKET>());
@@ -772,7 +1032,12 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* 
     return _descs;
 }
 
-void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
+void ZsgReader::_parseParams(
+            const QString& id,
+            const QString& nodeCls,
+            const rapidjson::Value& jsonParams,
+            const NODE_DESCS& legacyDescs,
+            NODE_DATA& ret)
 {
     if (jsonParams.IsObject())
     {
@@ -780,11 +1045,75 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
         {
             const QString& name = paramObj.name.GetString();
             const rapidjson::Value& val = paramObj.value;
-            pAcceptor->setParamValue(id, nodeName, name, val);
+
+            ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
+            NODE_DESC desc = legacyDescs[nodeCls];
+            QVariant var;
+            if (!val.IsNull()) {
+                PARAM_INFO paramInfo;
+                if (desc.params.find(name) != desc.params.end()) {
+                    paramInfo = desc.params[name];
+                }
+                if (nodeCls == "SubInput" || nodeCls == "SubOutput")
+                    var = UiHelper::parseJsonByValue(paramInfo.typeDesc, val); //dynamic type on SubInput defl.
+                else
+                    var = UiHelper::parseJsonByType(paramInfo.typeDesc, val);
+            }
+            if (ret.params.find(name) != ret.params.end())
+            {
+                zeno::log_trace("found param name {}", name.toStdString());
+                ret.params[name].value = var;
+            } else {
+                ret.parmsNotDesc[name].value = var;
+
+                if (name == "_KEYS" && (nodeCls == "MakeDict" || nodeCls == "ExtractDict" || nodeCls == "MakeList")) {
+                    //parse by socket_keys in zeno2.
+                    return;
+                }
+                if (nodeCls == "MakeCurvemap" && (name == "_POINTS" || name == "_HANDLERS")) {
+                    PARAM_INFO paramData;
+                    paramData.control = CONTROL_NONVISIBLE;
+                    paramData.name = name;
+                    paramData.bEnableConnect = false;
+                    paramData.value = var;
+                    ret.params[name] = paramData;
+                    return;
+                }
+                if (nodeCls == "MakeHeatmap" && name == "_RAMPS") {
+                    PARAM_INFO paramData;
+                    paramData.control = CONTROL_COLOR;
+                    paramData.name = name;
+                    paramData.bEnableConnect = false;
+                    paramData.value = var;
+                    ret.params[name] = paramData;
+                    return;
+                }
+                if (nodeCls == "DynamicNumber" && (name == "_CONTROL_POINTS" || name == "_TMP")) {
+                    PARAM_INFO paramData;
+                    paramData.control = CONTROL_NONVISIBLE;
+                    paramData.name = name;
+                    paramData.bEnableConnect = false;
+                    paramData.value = var;
+                    ret.params[name] = paramData;
+                    return;
+                }
+                zeno::log_warn("not found param name {}", name.toStdString());
+            }
         }
-        pAcceptor->endParams(id, nodeName);
+
+        if (nodeCls == "SubInput" || nodeCls == "SubOutput") {
+            ZASSERT_EXIT(ret.params.find("name") != ret.params.end() &&
+                         ret.params.find("type") != ret.params.end() &&
+                         ret.params.find("defl") != ret.params.end());
+
+            const QString &descType = ret.params["type"].value.toString();
+            PARAM_INFO &defl = ret.params["defl"];
+            defl.control = UiHelper::getControlByType(descType);
+            defl.value = UiHelper::parseVarByType(descType, defl.value);
+            defl.typeDesc = descType;
+        }
     } else {
-        if (nodeName == "Blackboard" && jsonParams.IsArray())
+        if (nodeCls == "Blackboard" && jsonParams.IsArray())
         {
             //deprecate by zeno-old.
             return;
@@ -793,11 +1122,10 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
     }
 }
 
-bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const rapidjson::Value &jsonParams, IAcceptor* pAcceptor) 
+bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const rapidjson::Value &jsonParams, NODE_DATA& ret) 
 {
-    QObject *currGraph = pAcceptor->currGraphObj();
     if (jsonParams.IsObject()) {
-        PARAMS_INFO params;
+        //PARAMS_INFO params;
         for (const auto &paramObj : jsonParams.GetObject()) {
             const QString &name = paramObj.name.GetString();
             const rapidjson::Value &value = paramObj.value;
@@ -809,9 +1137,9 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
                 paramData.typeDesc = value["type"].GetString();
             QVariant var;
             if (nodeCls == "SubInput" || nodeCls == "SubOutput")
-                var = UiHelper::parseJsonByValue(paramData.typeDesc, value[iotags::params::params_valueKey],nullptr); //dynamic type on SubInput defl.
+                var = UiHelper::parseJsonByValue(paramData.typeDesc, value[iotags::params::params_valueKey]); //dynamic type on SubInput defl.
             else
-                var = UiHelper::parseJsonByType(paramData.typeDesc, value[iotags::params::params_valueKey], currGraph);
+                var = UiHelper::parseJsonByType(paramData.typeDesc, value[iotags::params::params_valueKey]);
 
             CONTROL_INFO ctrlInfo = UiHelper::getControlByType(nodeCls, PARAM_PARAM, name, paramData.typeDesc);
             if (ctrlInfo.control != CONTROL_NONE && ctrlInfo.controlProps.isValid()) {
@@ -835,11 +1163,10 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
             paramData.name = name;
             paramData.bEnableConnect = false;
             paramData.value = var;
-            params[name] = paramData;
+            ret.params[name] = paramData;
         }
-        pAcceptor->setParamValue2(id, nodeCls, params);
     }
     return true;
 }
 
-
+}

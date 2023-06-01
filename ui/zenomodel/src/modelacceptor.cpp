@@ -1,7 +1,7 @@
 #include <QObject>
 #include <QtWidgets>
 #include <rapidjson/document.h>
-
+#include "graphsmanagment.h"
 #include "modelacceptor.h"
 #include "graphsmodel.h"
 #include "modelrole.h"
@@ -40,8 +40,8 @@ bool ModelAcceptor::setLegacyDescs(const rapidjson::Value& graphObj, const NODE_
         }
         subnetDescs.append(legacyDescs[name]);
     }
-    bool ret = m_pModel->appendSubnetDescsFromZsg(subnetDescs);
-    return ret;
+    //bool ret = m_pModel->appendSubnetDescsFromZsg(subnetDescs);
+    return false;
 }
 
 void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
@@ -156,7 +156,9 @@ bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const QS
     if (!m_currentGraph)
         return false;
 
-    if (!m_pModel->hasDescriptor(name)) {
+    NODE_DESC desc;
+    auto &inst = GraphsManagment::instance();
+    if (!inst.getDescriptor(name, desc)) {
         zeno::log_warn("no node class named [{}]", name.toStdString());
         return false;
     }
@@ -260,7 +262,8 @@ void ModelAcceptor::initSockets(const QString& id, const QString& name, const NO
         return;
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(name, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(name, desc);
     ZASSERT_EXIT(ret);
 
     //params
@@ -339,7 +342,8 @@ void ModelAcceptor::setInputSocket2(
         return;
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
 
     //parse default value.
@@ -350,7 +354,7 @@ void ModelAcceptor::setInputSocket2(
         if (desc.inputs.find(inSock) != desc.inputs.end()) {
             descInfo = desc.inputs[inSock].info;
         }
-        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, m_currentGraph);
+        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal);
     }
 
     QString subgName, paramCls;
@@ -525,7 +529,7 @@ void ModelAcceptor::endParams(const QString& id, const QString& nodeCls)
 
         const QString& type = typeIdx.data(ROLE_PARAM_VALUE).toString();
         QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE).toString();
-        deflVal = UiHelper::parseVarByType(type, deflVal, nullptr);
+        deflVal = UiHelper::parseVarByType(type, deflVal);
         PARAM_CONTROL control = UiHelper::getControlByType(type);
         m_currentGraph->setParamValue(PARAM_PARAM, idx, "defl", deflVal, type, control);
     }
@@ -537,7 +541,8 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
         return;
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
 
     QVariant var;
@@ -548,9 +553,9 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
             paramInfo = desc.params[name];
         }
         if (nodeCls == "SubInput" || nodeCls == "SubOutput")
-            var = UiHelper::parseJsonByValue(paramInfo.typeDesc, value, nullptr);   //dynamic type on SubInput defl.
+            var = UiHelper::parseJsonByValue(paramInfo.typeDesc, value);   //dynamic type on SubInput defl.
         else
-            var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, m_currentGraph);
+            var = UiHelper::parseJsonByType(paramInfo.typeDesc, value);
     }
 
     QModelIndex idx = m_currentGraph->index(id);

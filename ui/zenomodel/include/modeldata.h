@@ -340,6 +340,12 @@ struct LINK_UPDATE_INFO {
 typedef QMap<QString, NODE_DATA> NODES_DATA;
 typedef QList<EdgeInfo> LINKS_DATA;
 
+struct SUBGRAPH_DATA
+{
+    NODES_DATA nodes;
+    LINKS_DATA links;
+};
+
 struct CURVE_RANGE {
     qreal xFrom;
     qreal xTo;

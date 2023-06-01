@@ -6,7 +6,6 @@
 #include <QObject>
 #include <memory>
 #include "command.h"
-#include "parammodel.h"
 #include "viewparammodel.h"
 #include "nodeparammodel.h"
 #include "panelparammodel.h"

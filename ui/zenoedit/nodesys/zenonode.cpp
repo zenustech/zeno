@@ -27,7 +27,6 @@
 #include "viewport/displaywidget.h"
 #include <zenoui/comctrl/gv/zgraphicstextitem.h>
 #include <zenoui/comctrl/gv/zenogvhelper.h>
-#include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/viewparammodel.h>
 #include "iotags.h"
 #include "groupnode.h"
@@ -194,7 +193,8 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     const QString& name = m_index.data(ROLE_OBJNAME).toString();
     NODE_DESC desc;
-    pGraphsModel->getDescriptor(name, desc);
+    auto &mgr = GraphsManagment::instance();
+    mgr.getDescriptor(name, desc);
     QString category;
     if (!desc.categories.isEmpty())
         category = desc.categories[0];
@@ -1267,7 +1267,7 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     }
     else
     {
-        NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+        NODE_CATES cates = zenoApp->graphsManagment()->getCates();
         QPointF pos = event->screenPos();
         ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, pos);
         menu->setEditorFocus();

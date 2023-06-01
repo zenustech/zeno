@@ -26,6 +26,14 @@ public:
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
     TIMELINE_INFO timeInfo() const;
+    bool getDescriptor(const QString &descName, NODE_DESC &desc);
+    bool getSubgDesc(const QString& subgName, NODE_DESC& desc);
+    bool updateSubgDesc(const QString &descName, const NODE_DESC &desc);
+    void renameSubGraph(const QString& oldName, const QString& newName);
+    void removeGraph(const QString& subgName);
+    void appendSubGraph(const NODE_DESC& desc);
+    NODE_DESCS descriptors();
+    NODE_CATES getCates();
 
 signals:
     void modelInited(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs);
@@ -41,6 +49,16 @@ private slots:
 
 private:
     GraphsManagment(QObject *parent = nullptr);
+    void onParseResult(const zenoio::ZSG_PARSE_RESULT& res, IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs);
+    NODE_DESCS getCoreDescs();
+    void parseDescStr(const QString& descStr, QString& name, QString& type, QVariant& defl);
+    void registerCate(const NODE_DESC& desc);
+    void initCoreDescriptors();
+    void initSubnetDescriptors(const QList<QString>& subgraphs, const zenoio::ZSG_PARSE_RESULT& res);
+
+    NODE_DESCS m_nodesDesc;
+    NODE_DESCS m_subgsDesc;
+    NODE_CATES m_nodesCate;
 
     IGraphsModel* m_pNodeModel;
     IGraphsModel* m_pSharedGraphs;

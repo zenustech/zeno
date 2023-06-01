@@ -69,10 +69,6 @@ public:
     NODE_DATA itemData(const QModelIndex &index, const QModelIndex &subGpIdx) const override;
     void setName(const QString &name, const QModelIndex &subGpIdx) override;
 
-    NODE_DESCS descriptors() const override;
-    bool appendSubnetDescsFromZsg(const QList<NODE_DESC> &descs) override;
-    bool getDescriptor(const QString &descName, NODE_DESC &desc) override;
-    bool updateSubgDesc(const QString &descName, const NODE_DESC &desc) override;
     void clearSubGraph(const QModelIndex &subGpIdx) override;
     void clear() override;
     void undo() override;
@@ -83,7 +79,6 @@ public:
     void initMainGraph() override;
     void renameSubGraph(const QString &oldName, const QString &newName) override;
     bool isDirty() const override;
-    NODE_CATES getCates() override;
     QModelIndexList searchInSubgraph(const QString &objName, const QModelIndex &idx) override;
     QModelIndexList subgraphsIndice() const override;
     QList<SEARCH_RESULT> search(const QString &content, int searchType, int searchOpts) override;

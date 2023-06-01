@@ -62,10 +62,6 @@ public:
 	virtual NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const = 0;
 	virtual void setName(const QString& name, const QModelIndex& subGpIdx) = 0;
 
-	virtual NODE_DESCS descriptors() const = 0;
-    virtual bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) = 0;
-	virtual bool getDescriptor(const QString& descName, NODE_DESC& desc) = 0;
-	virtual bool updateSubgDesc(const QString& descName, const NODE_DESC& desc) = 0;
 	virtual void clearSubGraph(const QModelIndex& subGpIdx) = 0;
 	virtual void clear() = 0;
 	virtual void undo() = 0;
@@ -75,7 +71,6 @@ public:
 	virtual void initMainGraph() = 0;
 	virtual void renameSubGraph(const QString& oldName, const QString& newName) = 0;
 	virtual bool isDirty() const = 0;
-	virtual NODE_CATES getCates() = 0;
 	virtual QModelIndexList searchInSubgraph(const QString& objName, const QModelIndex& subgIdx) = 0;
 	virtual QModelIndexList subgraphsIndice() const = 0;
 	virtual QList<SEARCH_RESULT> search(

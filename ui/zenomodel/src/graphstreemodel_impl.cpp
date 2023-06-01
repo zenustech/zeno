@@ -296,7 +296,7 @@ TreeNodeItem* GraphsTreeModel_impl::_fork(
     QHash<QString, QString> old2new;
     QHash<QString, QString> old2new_nodePath;
     QVector<EdgeInfo> oldLinks;
-    
+
     QModelIndex sharedSubg = pSubgraphs->index(subnetName);
     ZASSERT_EXIT(sharedSubg.isValid(), nullptr);
     for (int r = 0; r < pSubgraphs->itemCount(sharedSubg); r++)
@@ -508,7 +508,7 @@ QModelIndex GraphsTreeModel_impl::addLink(
         QModelIndex inParamIdx = indexFromPath(info.inSockPath);
         QModelIndex outParamIdx = indexFromPath(info.outSockPath);
         if (!inParamIdx.isValid() || !outParamIdx.isValid()) {
-            zeno::log_warn("there is not valid input or output sockets.");
+            zeno::log_error("there is not valid input or output sockets.");
             return QModelIndex();
         }
 

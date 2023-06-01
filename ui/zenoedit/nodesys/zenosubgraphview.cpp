@@ -496,7 +496,7 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
     }
     else
     {
-        NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+        NODE_CATES cates = zenoApp->graphsManagment()->getCates();
         QPoint pos = event->pos();
         m_menu = new ZenoNewnodeMenu(m_scene->subGraphIndex(), cates, mapToScene(pos), this);
         m_menu->setEditorFocus();

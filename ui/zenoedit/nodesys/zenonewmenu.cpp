@@ -99,7 +99,8 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(IGraphsModel* pModel, QModel
     if (!pModel)
         return QList<QAction*>();
 
-    NODE_CATES cates = pModel->getCates();
+    auto &mgr = GraphsManagment::instance();
+    NODE_CATES cates = mgr.getCates();
     QList<QAction*> acts;
     if (cates.isEmpty())
     {

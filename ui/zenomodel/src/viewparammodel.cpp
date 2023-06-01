@@ -1,5 +1,4 @@
 #include "viewparammodel.h"
-#include "parammodel.h"
 #include "zassert.h"
 #include "modelrole.h"
 #include <zenomodel/include/uihelper.h>

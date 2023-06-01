@@ -280,30 +280,6 @@ void GraphsTreeModel::setName(const QString &name, const QModelIndex &subGpIdx)
     return m_impl->setName(name, subGpIdx);
 }
 
-NODE_DESCS GraphsTreeModel::descriptors() const
-{
-    ZASSERT_EXIT(m_pSubgraphs, NODE_DESCS());
-    return m_pSubgraphs->descriptors();
-}
-
-bool GraphsTreeModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets)
-{
-    ZASSERT_EXIT(m_pSubgraphs, false);
-    return m_pSubgraphs->appendSubnetDescsFromZsg(zsgSubnets);
-}
-
-bool GraphsTreeModel::getDescriptor(const QString &descName, NODE_DESC &desc)
-{
-    ZASSERT_EXIT(m_pSubgraphs, false);
-    return m_pSubgraphs->getDescriptor(descName, desc);
-}
-
-bool GraphsTreeModel::updateSubgDesc(const QString &descName, const NODE_DESC &desc)
-{
-    ZASSERT_EXIT(m_pSubgraphs, false);
-    return m_pSubgraphs->updateSubgDesc(descName, desc);
-}
-
 void GraphsTreeModel::clearSubGraph(const QModelIndex &subGpIdx)
 {
     ZASSERT_EXIT(m_pSubgraphs);
@@ -348,12 +324,6 @@ void GraphsTreeModel::renameSubGraph(const QString &oldName, const QString &newN
 bool GraphsTreeModel::isDirty() const
 {
     return m_dirty;
-}
-
-NODE_CATES GraphsTreeModel::getCates()
-{
-    ZASSERT_EXIT(m_pSubgraphs, NODE_CATES());
-    return m_pSubgraphs->getCates();
 }
 
 QModelIndexList GraphsTreeModel::subgraphsIndice() const

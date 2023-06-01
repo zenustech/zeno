@@ -11,6 +11,7 @@
 #include <QUuid>
 #include "common_def.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include "graphsmanagment.h"
 
 
 using namespace zeno::iotags;
@@ -1099,7 +1100,8 @@ QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName
     ZASSERT_EXIT(pModel, "");
 
     NODE_DESC desc;
-    bool ret = pModel->getDescriptor(subgName, desc);
+    auto& mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(subgName, desc);
     if (!ret)
         return "";
 
@@ -1124,7 +1126,7 @@ QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName
     return finalName;
 }
 
-QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, QObject* parentRef)
+QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var)
 {
     const QVariant::Type varType = var.type();
     if (descType == "int" ||
@@ -1247,7 +1249,7 @@ QVariant UiHelper::parseVarByType(const QString& descType, const QVariant& var, 
     return var;
 }
 
-QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Value& val, QObject* parentRef)
+QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Value& val)
 {
     QVariant res;
     auto jsonType = val.GetType();
@@ -1366,12 +1368,12 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
             return QVariant();
         }
         // unregisted or new type, convert by json value.
-        return parseJsonByValue(descType, val, parentRef);
+        return parseJsonByValue(descType, val);
     }
     return res;
 }
 
-QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value& val, QObject* parentRef)
+QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value& val)
 {
     if (val.GetType() == rapidjson::kStringType)
     {
@@ -1444,7 +1446,7 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
     return QVariant();
 }
 
-QVariant UiHelper::parseJson(const rapidjson::Value& val, QObject* parentRef)
+QVariant UiHelper::parseJson(const rapidjson::Value& val)
 {
     if (val.GetType() == rapidjson::kStringType)
     {

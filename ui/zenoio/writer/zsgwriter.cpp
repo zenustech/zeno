@@ -6,6 +6,7 @@
 #include "variantptr.h"
 #include <zenomodel/include/viewparammodel.h>
 #include <zenomodel/customui/customuirw.h>
+#include <zenomodel/include/graphsmanagment.h>
 
 using namespace zeno::iotags;
 
@@ -77,9 +78,9 @@ QString ZsgWriter::_dumpZsg2_5(IGraphsModel* pModel, APP_SETTINGS settings)
             writer.EndObject();
         }
 
-        NODE_DESCS descs = pModel->descriptors();
+        auto &mgr = GraphsManagment::instance();
         writer.Key("descs");
-        _dumpDescriptors(descs, writer);
+        _dumpDescriptors(mgr.descriptors(), writer);
 
         writer.Key("version");
         writer.String("v2.5");  //distinguish the new version ui from the stable zeno2.
@@ -126,9 +127,9 @@ QString ZsgWriter::_dumpZsg3_0(IGraphsModel* pModel, IGraphsModel* pSubgraphs, A
             writer.EndObject();
         }
 
-        NODE_DESCS descs = pModel->descriptors();
+        auto &mgr = GraphsManagment::instance();
         writer.Key("descs");
-        _dumpDescriptors(descs, writer);
+        _dumpDescriptors(mgr.descriptors(), writer);
 
         writer.Key("version");
         writer.String("v3.0");  //distinguish the new version ui from the stable zeno2.

@@ -297,7 +297,8 @@ void ZEditParamLayoutDlg::initDescValueForProxy() {
     {
         NODE_DESC desc;
         const QString& subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        m_pGraphsModel->getDescriptor(subnetNodeName, desc);
+        auto &mgr = GraphsManagment::instance();
+        mgr.getDescriptor(subnetNodeName, desc);
         NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(m_proxyModel);
         ZASSERT_EXIT(nodeParams);
         VParamItem* inputs = nodeParams->getInputs();
@@ -651,7 +652,8 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
 {
     NODE_DESC desc;
     QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-    m_pGraphsModel->getDescriptor(subnetNodeName, desc);
+    auto &mgr = GraphsManagment::instance();
+    mgr.getDescriptor(subnetNodeName, desc);
     SOCKET_INFO info;
     info.control = ctrl;
     info.name = name;
@@ -662,7 +664,7 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
     } else {
         desc.outputs[name].info = info;
     }
-    m_pGraphsModel->updateSubgDesc(subnetNodeName, desc);
+    mgr.updateSubgDesc(subnetNodeName, desc);
     //sync to all subgraph nodes.
     QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
     for (QModelIndex subgNode : subgNodes) 
@@ -679,7 +681,8 @@ void ZEditParamLayoutDlg::delControlGroup(bool bInput, const QString &name)
 {
     NODE_DESC desc;
     QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-    m_pGraphsModel->getDescriptor(subnetNodeName, desc);
+    auto &mgr = GraphsManagment::instance();
+    mgr.getDescriptor(subnetNodeName, desc);
     if (bInput) {
         ZASSERT_EXIT(desc.inputs.find(name) != desc.inputs.end());
         desc.inputs.remove(name);
@@ -687,7 +690,7 @@ void ZEditParamLayoutDlg::delControlGroup(bool bInput, const QString &name)
         ZASSERT_EXIT(desc.outputs.find(name) != desc.outputs.end());
         desc.outputs.remove(name);
     }
-    m_pGraphsModel->updateSubgDesc(subnetNodeName, desc);
+    mgr.updateSubgDesc(subnetNodeName, desc);
 
     QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
     for (QModelIndex subgNode : subgNodes) 
@@ -703,7 +706,8 @@ void ZEditParamLayoutDlg::updateControlGroup(bool bInput, const QString &newName
 {
     NODE_DESC desc;
     QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-    m_pGraphsModel->getDescriptor(subnetNodeName, desc);
+    auto &mgr = GraphsManagment::instance();
+    mgr.getDescriptor(subnetNodeName, desc);
     SOCKET_INFO info;
     info.control = ctrl;
     info.name = newName;
@@ -721,7 +725,7 @@ void ZEditParamLayoutDlg::updateControlGroup(bool bInput, const QString &newName
         if (desc.outputs.size() - 1 != row)
             desc.outputs.move(desc.outputs.size() - 1, row);
     }
-    m_pGraphsModel->updateSubgDesc(subnetNodeName, desc);
+    mgr.updateSubgDesc(subnetNodeName, desc);
 
     QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
     for (QModelIndex subgNode : subgNodes) 
@@ -1009,21 +1013,22 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
 
                 //update desc.
                 NODE_DESC desc;
-                bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+                auto &mgr = GraphsManagment::instance();
+                bool ret = mgr.getDescriptor(subgName, desc);
                 if (bApplySubnetParam)
                 {
                     if (bSubInput) {
                         int sz = desc.inputs.size();
                         if (sz > srcRow && sz > dstRow) {
                             desc.inputs.move(srcRow, dstRow);
-                            m_pGraphsModel->updateSubgDesc(subgName, desc);
+                            mgr.updateSubgDesc(subgName, desc);
                         }
                     }
                     else {
                         int sz = desc.outputs.size();
                         if (sz > srcRow && sz > dstRow) {
                             desc.outputs.move(srcRow, dstRow);
-                            m_pGraphsModel->updateSubgDesc(subgName, desc);
+                            mgr.updateSubgDesc(subgName, desc);
                         }
                     }
                 }

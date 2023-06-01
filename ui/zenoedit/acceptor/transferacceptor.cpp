@@ -1,6 +1,7 @@
 #include <QtWidgets>
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
+#include <zenomodel/include/graphsmanagment.h>
 #include "transferacceptor.h"
 #include <zeno/utils/logger.h>
 #include "util/log.h"
@@ -96,7 +97,8 @@ void TransferAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
 void TransferAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs)
 {
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(name, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(name, desc);
     ZASSERT_EXIT(ret);
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 
@@ -251,7 +253,8 @@ void TransferAcceptor::setInputSocket2(
                 const rapidjson::Value& defaultVal)
 {
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
 
     //parse default value.
@@ -263,7 +266,7 @@ void TransferAcceptor::setInputSocket2(
             descInfo = desc.inputs[inSock].info;
         }
 
-        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, nullptr);
+        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal);
     }
 
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
@@ -349,7 +352,8 @@ void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, 
     NODE_DATA& data = m_nodes[id];
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
 
     QVariant var;
@@ -361,9 +365,9 @@ void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, 
         }
         //todo: parentRef;
         if (nodeCls == "SubInput" || nodeCls == "SubOutput")
-            var = UiHelper::parseJsonByValue(paramInfo.typeDesc, value, nullptr);
+            var = UiHelper::parseJsonByValue(paramInfo.typeDesc, value);
         else
-            var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, nullptr);
+            var = UiHelper::parseJsonByType(paramInfo.typeDesc, value);
     }
 
     if (data.params.find(name) != data.params.end())
@@ -499,7 +503,7 @@ void TransferAcceptor::endParams(const QString& id, const QString& nodeCls)
         const QString& descType = data.params["type"].value.toString();
         PARAM_INFO& defl = data.params["defl"];
         defl.control = UiHelper::getControlByType(descType);
-        defl.value = UiHelper::parseVarByType(descType, defl.value, nullptr);
+        defl.value = UiHelper::parseVarByType(descType, defl.value);
         defl.typeDesc = descType;
     }
 }

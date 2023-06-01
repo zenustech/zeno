@@ -68,11 +68,11 @@ public:
     static QString nthSerialNumName(QString name);
     static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
 
-    static QVariant parseJsonByType(const QString& type, const rapidjson::Value& val, QObject* parentRef);
-    static QVariant parseVarByType(const QString& type, const QVariant& var, QObject* parentRef);
+    static QVariant parseJsonByType(const QString& type, const rapidjson::Value& val);
+    static QVariant parseVarByType(const QString& type, const QVariant& var);
     static QVariant parseStringByType(const QString &defaultValue, const QString &type);
-    static QVariant parseJsonByValue(const QString &type, const rapidjson::Value &val, QObject *parentRef);
-    static QVariant parseJson(const rapidjson::Value& val, QObject* parentRef = nullptr);
+    static QVariant parseJsonByValue(const QString &type, const rapidjson::Value &val);
+    static QVariant parseJson(const rapidjson::Value& val);
 
     static QString gradient2colorString(const QLinearGradient& grad);
     static QVariant getParamValue(const QModelIndex& idx, const QString& name);

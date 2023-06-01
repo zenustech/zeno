@@ -211,7 +211,7 @@ static void serializeGraph(
 
                 QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
                 const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
-                defl = UiHelper::parseVarByType(sockType, defl, nullptr);
+                defl = UiHelper::parseVarByType(sockType, defl);
                 if (!defl.isNull())
                     AddParams("setNodeInput", ident, inputName, defl, sockType, writer);
             }
@@ -230,12 +230,12 @@ static void serializeGraph(
         }
 
         const PARAMS_INFO& params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-		for (PARAM_INFO param_info : params)
-		{
+        for (PARAM_INFO param_info : params)
+        {
             //todo: validation on param value.
             //bool bValid = UiHelper::validateVariant(param_info.value, param_info.typeDesc);
             //ZASSERT_EXIT(bValid);
-            QVariant paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+            QVariant paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value);
             if (paramValue.isNull())
                 continue;
             AddParams("setNodeParam", ident, param_info.name, paramValue, param_info.typeDesc, writer);
@@ -325,7 +325,8 @@ QString serializeSceneCpp(IGraphsModel* pModel)
 namespace {
 )RAW");
 
-    decltype(auto) descs = model->descriptors();
+    auto &mgr = GraphsManagment::instance();
+    decltype(auto) descs = mgr.descriptors();
     for (int i = 0; i < model->rowCount(); i++) {
         auto key = model->index(i, 0).data(ROLE_OBJNAME).toString();
         if (key == "main") continue;

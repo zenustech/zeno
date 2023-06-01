@@ -18,7 +18,6 @@
 #include <zeno/utils/log.h>
 #include "util/log.h"
 #include "blackboardnode.h"
-#include "acceptor/transferacceptor.h"
 #include "variantptr.h"
 #include <zenomodel/include/linkmodel.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
@@ -505,13 +504,13 @@ void ZenoSubGraphScene::paste(QPointF pos)
     if (pMimeData->hasText() && pGraphsModel)
     {
         const QString& strJson = pMimeData->text();
-        TransferAcceptor acceptor(pGraphsModel);
-        ZsgReader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, &acceptor);
+        SUBGRAPH_DATA subgraph;
+        zenoio::ZsgReader::getInstance().importNodes(pGraphsModel, m_subgIdx, strJson, pos, subgraph);
 
         QMap<QString, NODE_DATA> nodes;
         QList<EdgeInfo> links;
         QString subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
-        UiHelper::reAllocIdents(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
+        UiHelper::reAllocIdents(subgName, subgraph.nodes, subgraph.links, nodes, links);
 
         //todo: ret value for api.
         pGraphsModel->importNodes(nodes, links, pos, m_subgIdx, true);

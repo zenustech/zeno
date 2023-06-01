@@ -10,6 +10,7 @@
 #include "dictkeymodel.h"
 #include "common_def.h"
 #include "nodeitem.h"
+#include "graphsmanagment.h"
 
 
 NodeParamModel::NodeParamModel(IGraphsModel* pModel, bool bTempModel, QObject* parent)
@@ -673,8 +674,10 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dic
     NodeItem* pNodeItem = qobject_cast<NodeItem*>(this->parent());
     ZASSERT_EXIT(pNodeItem);
     const QString &nodeCls = pNodeItem->objCls;
+
+    auto &mgr = GraphsManagment::instance();
     NODE_DESC desc;
-    m_model->getDescriptor(nodeCls, desc);
+    mgr.getDescriptor(nodeCls, desc);
 
     const QString& paramType = pItem->data(ROLE_PARAM_TYPE).toString();
 
@@ -847,7 +850,8 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
 
             //update desc.
             NODE_DESC desc;
-            bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+            auto& inst = GraphsManagment::instance();
+            bool ret = inst.getDescriptor(subgName, desc);
             ZASSERT_EXIT(ret);
             if (bInput)
             {
@@ -860,7 +864,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                 ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
                 desc.outputs[sockName].info.type = newType;
             }
-            m_pGraphsModel->updateSubgDesc(subgName, desc);
+            inst.updateSubgDesc(subgName, desc);
 
             //update type of port. output need this?
             if (nodeName == "SubInput") {
@@ -889,7 +893,8 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
             const QString& oldName = oldValue.toString();
 
             NODE_DESC desc;
-            bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+            auto &mgr = GraphsManagment::instance();
+            bool ret = mgr.getDescriptor(subgName, desc);
             ZASSERT_EXIT(ret && newName != oldName);
             if (bInput)
             {
@@ -903,7 +908,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                 desc.outputs[newName].info.name = newName;
                 desc.outputs.remove(oldName);
             }
-            m_pGraphsModel->updateSubgDesc(subgName, desc);
+            mgr.updateSubgDesc(subgName, desc);
 
             //2.update all sockets for all subgraph node.
             QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
@@ -919,7 +924,8 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
         {
             const QVariant& deflVal = pItem->data(ROLE_PARAM_VALUE);
             NODE_DESC desc;
-            bool ret = m_pGraphsModel->getDescriptor(subgName, desc);
+            auto &mgr = GraphsManagment::instance();
+            bool ret = mgr.getDescriptor(subgName, desc);
             ZASSERT_EXIT(ret);
             bool isUpdate = false;
             if (bInput)
@@ -943,7 +949,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                 ZASSERT_EXIT(desc.outputs.find(sockName) != desc.outputs.end());
                 desc.outputs[sockName].info.defaultValue = deflVal;
             }
-            m_pGraphsModel->updateSubgDesc(subgName, desc);
+            mgr.updateSubgDesc(subgName, desc);
             //no need to update all subgraph node because it causes disturbance.
             //update all subgraph when ctrl properties changed
             if (isUpdate) 

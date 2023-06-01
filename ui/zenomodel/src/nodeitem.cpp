@@ -51,6 +51,12 @@ TreeNodeItem::TreeNodeItem(const NODE_DATA& nodeData, IGraphsModel* pGraphsModel
 
     VPARAM_INFO panelInfo = nodeData.customPanel;
     m_item->panelParams = new PanelParamModel(m_item->nodeParams, panelInfo, pGraphsModel, m_item);
+
+    for (QString ident : nodeData.children.keys())
+    {
+        const NODE_DATA& dat = nodeData.children[ident];
+        appendRow(new TreeNodeItem(dat, pGraphsModel));
+    }
 }
 
 TreeNodeItem::~TreeNodeItem()
@@ -58,31 +64,6 @@ TreeNodeItem::~TreeNodeItem()
     delete m_item;
     m_item = nullptr;
 }
-
-NODE_DATA TreeNodeItem::item2NodeData(const NodeItem& item)
-{
-    NODE_DATA data;
-    data.ident = item.objid;
-    data.nodeCls = item.objCls;
-    data.customName = item.customName;
-    data.pos = item.viewpos;
-    data.bCollasped = item.bCollasped;
-    data.options = item.options;
-    data.type = item.type;
-
-    INPUT_SOCKETS inputs;
-    OUTPUT_SOCKETS outputs;
-    PARAMS_INFO params;
-
-    item.nodeParams->getInputSockets(data.inputs);
-    item.nodeParams->getParams(data.params);
-    item.nodeParams->getOutputSockets(data.outputs);
-
-    data.customPanel = item.panelParams->exportParams();
-    data.parmsNotDesc = item.paramNotDesc;
-    return data;
-}
-
 
 QVariant TreeNodeItem::data(int role) const
 {
@@ -92,7 +73,7 @@ QVariant TreeNodeItem::data(int role) const
         case ROLE_OBJID:            return m_item->objid;
         case ROLE_OBJNAME:          return m_item->objCls;
         case ROLE_CUSTOM_OBJNAME:   return m_item->customName;
-        case ROLE_OBJDATA:          return QVariant::fromValue(TreeNodeItem::item2NodeData(m_item));
+        case ROLE_OBJDATA:          return QVariant::fromValue(expData());
         case ROLE_NODETYPE:         return m_item->type;
         case ROLE_INPUTS:
         {

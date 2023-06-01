@@ -5,7 +5,6 @@
 #include <zeno/utils/log.h>
 #include "uihelper.h"
 #include "zassert.h"
-#include "parammodel.h"
 #include "variantptr.h"
 
 

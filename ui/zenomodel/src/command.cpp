@@ -7,6 +7,7 @@
 #include "viewparammodel.h"
 #include "vparamitem.h"
 #include "variantptr.h"
+#include "graphsmanagment.h"
 
 
 AddNodeCommand::AddNodeCommand(const QString& id, const NODE_DATA& data, IGraphsModel* pModel, QPersistentModelIndex subgIdx)
@@ -216,17 +217,20 @@ UpdateSubgDescCommand::UpdateSubgDescCommand(IGraphsModel *pModel, const QString
     , m_subgName(subgraphName)
     , m_newDesc(newDesc)
 {
-    m_model->getDescriptor(m_subgName, m_oldDesc);
+    auto &mgr = GraphsManagment::instance();
+    mgr.getDescriptor(m_subgName, m_oldDesc);
 }
 
 void UpdateSubgDescCommand::redo()
 {
-    m_model->updateSubgDesc(m_subgName, m_newDesc);
+    auto &mgr = GraphsManagment::instance();
+    mgr.updateSubgDesc(m_subgName, m_newDesc);
 }
 
 void UpdateSubgDescCommand::undo()
 {
-    m_model->updateSubgDesc(m_subgName, m_oldDesc);
+    auto &mgr = GraphsManagment::instance();
+    mgr.updateSubgDesc(m_subgName, m_oldDesc);
 }
 
 

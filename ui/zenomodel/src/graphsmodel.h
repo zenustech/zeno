@@ -36,18 +36,12 @@ public:
     void initMainGraph() override;
     void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
-    NODE_DESCS descriptors() const override;
-    bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) override;
-    bool getDescriptor(const QString& descName, NODE_DESC& desc) override;
-    bool updateSubgDesc(const QString& descName, const NODE_DESC& desc) override;
-    //NODE_DESC
     void appendSubGraph(SubGraphModel* pGraph);
     QModelIndex fork(const QModelIndex& subgIdx, const QModelIndex& subnetNodeIdx) override;
     void removeGraph(int idx) override;
     bool isDirty() const override;
     void markDirty() override;
     void clearDirty() override;
-    NODE_CATES getCates() override;
     QString filePath() const override;
     QString fileName() const override;
     void setFilePath(const QString& fn) override;
@@ -118,7 +112,6 @@ public:
 	void collaspe(const QModelIndex& subgIdx) override;
 	void expand(const QModelIndex& subgIdx) override;
 
-    bool hasDescriptor(const QString& nodeName) const;
     void beginTransaction(const QString& name) override;
 	void endTransaction() override;
     void beginApiLevel() override;
@@ -165,9 +158,7 @@ private:
     bool onListDictAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
 
     QModelIndex _createIndex(SubGraphModel* pSubModel) const;
-    void initDescriptors();
     NODE_DESC getSubgraphDesc(SubGraphModel* pModel);
-    void registerCate(const NODE_DESC& desc);
     NODE_DATA _fork(const QString& forkSubgName);
     QString uniqueSubgraph(QString orginName);
 
@@ -184,9 +175,6 @@ private:
     //LinkModel* m_linkModel;
     QHash<QString, LinkModel*> m_linksGroup;
 
-    NODE_DESCS m_nodesDesc;
-    NODE_DESCS m_subgsDesc;
-    NODE_CATES m_nodesCate;
     QString m_filePath;
     QUndoStack* m_stack;
     std::stack<bool> m_retStack;

@@ -190,7 +190,7 @@ namespace zenomodel
 
         if (paramVal.HasMember("value"))
         {
-            param.m_info.value = UiHelper::parseJson(paramVal["value"], nullptr);
+            param.m_info.value = UiHelper::parseJson(paramVal["value"]);
         }
 
         if (paramVal.HasMember("tooltip")) 

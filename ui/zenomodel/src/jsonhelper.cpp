@@ -557,7 +557,7 @@ namespace JsonHelper
         }
     }
 
-    QVariant importDescriptor(const rapidjson::Value &value, const QString &socketName, int type, QObject *parentRef) 
+    QVariant importDescriptor(const rapidjson::Value &value, const QString &socketName, int type) 
     {
         QVariant var;
         QString socketType;
@@ -570,7 +570,7 @@ namespace JsonHelper
         {
             if (!value["default-value"].IsNull()) 
             {
-                defaultValue = UiHelper::parseJsonByType(socketType, value["default-value"], parentRef);
+                defaultValue = UiHelper::parseJsonByType(socketType, value["default-value"]);
             }
         }
         PARAM_CONTROL ctrl = CONTROL_NONE;

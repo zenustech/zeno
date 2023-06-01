@@ -57,11 +57,9 @@ struct TreeNodeItem : public QStandardItem
     TreeNodeItem* childItem(const QString& ident);
 
 private:
-    static NODE_DATA item2NodeData(const NodeItem& item);
     bool checkCustomName(const QString& name);
 
     NodeItem* m_item;
-
     QHash<QString, int> m_ident2row;
 };
 

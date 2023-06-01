@@ -39,7 +39,8 @@ NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, c
 {
     NODE_DATA node;
     NODE_DESC desc;
-    bool ret = pModel->getDescriptor(descName, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(descName, desc);
     ZASSERT_EXIT(ret, node);
 
     const QString &nodeid = UiHelper::generateUuid(descName);

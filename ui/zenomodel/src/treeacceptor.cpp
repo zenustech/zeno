@@ -11,6 +11,7 @@
 #include "uihelper.h"
 #include "variantptr.h"
 #include "dictkeymodel.h"
+#include "graphsmanagment.h"
 
 
 TreeAcceptor::TreeAcceptor(GraphsTreeModel* pModel, GraphsModel* pSubgraphs, bool bImport)
@@ -167,7 +168,9 @@ bool TreeAcceptor::addNode(const QString &nodeid, const QString &name, const QSt
     }
     else
     {
-        if (!m_pSubgraphs->hasDescriptor(name)) {
+        NODE_DESC desc;
+        auto &inst = GraphsManagment::instance();
+        if (!inst.getDescriptor(name, desc)) {
             zeno::log_warn("no node class named [{}]", name.toStdString());
             return false;
         }
@@ -218,7 +221,8 @@ void TreeAcceptor::initSockets(const QString &nodePath, const QString &name, con
         return m_pSubgAcceptor->initSockets(nodePath, name, descs);
 
     NODE_DESC desc;
-    bool ret = m_pSubgraphs->getDescriptor(name, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(name, desc);
     ZASSERT_EXIT(ret);
 
     //params
@@ -349,7 +353,8 @@ void TreeAcceptor::setInputSocket2(
     }
 
     NODE_DESC desc;
-    bool ret = m_pSubgraphs->getDescriptor(nodeCls, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
 
     //parse default value.
@@ -360,7 +365,7 @@ void TreeAcceptor::setInputSocket2(
         if (desc.inputs.find(inSock) != desc.inputs.end()) {
             descInfo = desc.inputs[inSock].info;
         }
-        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, m_pNodeModel);
+        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal);
     }
 
     //inNode may be a obj path or ident on main subgraph.
@@ -544,7 +549,8 @@ void TreeAcceptor::setParamValue(const QString &id, const QString &nodeCls, cons
     }
 
     NODE_DESC desc;
-    bool ret = m_pSubgraphs->getDescriptor(nodeCls, desc);
+    auto &mgr = GraphsManagment::instance();
+    bool ret = mgr.getDescriptor(nodeCls, desc);
     ZASSERT_EXIT(ret);
 
     QVariant var;
@@ -554,9 +560,9 @@ void TreeAcceptor::setParamValue(const QString &id, const QString &nodeCls, cons
             paramInfo = desc.params[name];
         }
         if (nodeCls == "SubInput" || nodeCls == "SubOutput")
-            var = UiHelper::parseJsonByValue(paramInfo.typeDesc, value, nullptr); //dynamic type on SubInput defl.
+            var = UiHelper::parseJsonByValue(paramInfo.typeDesc, value); //dynamic type on SubInput defl.
         else
-            var = UiHelper::parseJsonByType(paramInfo.typeDesc, value, m_pNodeModel);
+            var = UiHelper::parseJsonByType(paramInfo.typeDesc, value);
     }
 
     QModelIndex nodeIdx = _getNodeIdx(id);  //id can be a objpath, like /main/subgA/subgB/xxx-wrangle.
@@ -729,7 +735,7 @@ void TreeAcceptor::endParams(const QString &id, const QString &nodeCls)
         ZASSERT_EXIT(nameIdx.isValid() && typeIdx.isValid() && deflIdx.isValid());
         const QString& type = typeIdx.data(ROLE_PARAM_VALUE).toString();
         QVariant deflVal = deflIdx.data(ROLE_PARAM_VALUE).toString();
-        deflVal = UiHelper::parseVarByType(type, deflVal, nullptr);
+        deflVal = UiHelper::parseVarByType(type, deflVal);
         PARAM_CONTROL control = UiHelper::getControlByType(type);
 
         nodeParams->setAddParam(PARAM_PARAM, "defl", type, deflVal, control, QVariant());
