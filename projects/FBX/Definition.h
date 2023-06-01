@@ -1,19 +1,18 @@
 #ifndef ZENO_FBX_DEFINITION_H
 #define ZENO_FBX_DEFINITION_H
 
-#define ED_EMPTY
-//#define ED_DEFINE_COUT
+#include <ios>
+#include <iostream>
 
-#ifdef ED_DEFINE_COUT
-#define ED_COUT             std::cout
-#define ED_CERR             std::cerr
-#else
-#define ED_COUT             /ED_EMPTY/
-#define ED_CERR             /ED_EMPTY/
-#endif
+namespace FBX {
+    static bool failMsg = true;
+}
+
+#define ED_COUT \
+if(FBX::failMsg)                \
+std::cout.setstate(std::ios::failbit); std::cout \
 
 #include <limits>
-#include <iostream>
 #include <algorithm>
 #include <zeno/utils/log.h>
 #include <zeno/utils/vec.h>
