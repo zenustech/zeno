@@ -124,10 +124,7 @@ int record_main(const QCoreApplication& app)
 	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
 
     ZenoMainWindow tempWindow(nullptr, 0, param.bOptix ? PANEL_OPTIX_VIEW : PANEL_GL_VIEW);
-    if (!param.bOptix)
-    {
-		tempWindow.showMaximized();
-    }
+	tempWindow.showMaximized();
     tempWindow.directlyRunRecord(param, param.bOptix);
     return app.exec();
 }
