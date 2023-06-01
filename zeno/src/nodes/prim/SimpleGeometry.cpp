@@ -1040,6 +1040,7 @@ struct CreateTorus : zeno::INode {
 ZENDEFNODE(CreateTorus, {
 {
         {"vec3f", "position", "0, 0, 0"},
+        {"vec3f", "rotate", "0, 0, 0"},
         {"float", "MajorRadius", "1"},
         {"float", "MinorRadius", "0.25"},
         {"bool", "hasNormal", "0"},

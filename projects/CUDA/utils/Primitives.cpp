@@ -623,6 +623,8 @@ struct PrimitiveFuse : INode {
             // if (fa > vi)
             //    printf("should not happen!!! fa: %d, self: %d\n", fa, vi);
         });
+        if (vtab._buildSuccess.getVal() == 0)
+            throw std::runtime_error("PrimitiveFuse hash failed!!");
 
         auto numNewVerts = vtab.size();
         newVerts.resize(numNewVerts);

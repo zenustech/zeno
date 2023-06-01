@@ -105,7 +105,7 @@ namespace FBX{
             FbxAnimCurveKey key = visCurve->KeyGet(keyIndex);
 
             bool visibility = key.GetValue();  // Retrieve visibility value (true/false)
-            std::cout << "  visibility: " << visibility << " time: " << frameNumber << "\n";
+            //std::cout << "  visibility: " << visibility << " time: " << frameNumber << "\n";
             // Process visibility keyframe at keyTime
             // ...
         }
