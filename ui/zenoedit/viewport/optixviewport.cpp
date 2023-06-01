@@ -227,6 +227,9 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
 ZOptixViewport::~ZOptixViewport()
 {
+    m_thdOptix.quit();
+    m_thdOptix.deleteLater();
+    m_thdOptix.wait();
 }
 
 void ZOptixViewport::setSimpleRenderOption()

@@ -765,8 +765,11 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
     }
 }
 
-void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
+void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, bool bIsOptix)
 {
+	auto& pGlobalComm = zeno::getSession().globalComm;
+	ZASSERT_EXIT(pGlobalComm);
+
     ZASSERT_EXIT(m_layoutRoot->pWidget);
 
     ZTabDockWidget* pTabWid = qobject_cast<ZTabDockWidget*>(m_layoutRoot->pWidget);
@@ -786,10 +789,11 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.fps = param.iFps;
     recInfo.frameRange = {param.iSFrame, param.iSFrame + param.iFrame - 1};
     recInfo.numMSAA = 0;
-    recInfo.numOptix = 1;
+    recInfo.numOptix = param.iSample;
     recInfo.audioPath = param.audioPath;
     recInfo.record_path = param.sPath;
-    recInfo.videoname = "output.mp4";
+    recInfo.videoname = param.videoName;
+    recInfo.bExportVideo = param.isExportVideo;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
     if (!param.sPixel.isEmpty())
@@ -808,10 +812,32 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param)
     }
 
     viewWidget->setNumSamples(param.bRecord ? param.iSample : 16);
+    bool ret = openFile(param.sZsgPath);
+    ZASSERT_EXIT(ret);
+	zeno::getSession().globalComm->clearState();
+	viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
 
-    //bool ret = openFile(param.sZsgPath);
     //ZASSERT_EXIT(ret);
     //viewWidget->runAndRecord(recInfo);
+
+	RecordVideoMgr* recordMgr = new RecordVideoMgr(this);
+	recordMgr->setParent(viewWidget);
+	recordMgr->setRecordInfo(recInfo);
+    if (bIsOptix)
+    {
+        if (viewWidget->optixViewport()) {
+			viewWidget->optixViewport()->recordVideo(recInfo);
+            connect(viewWidget->optixViewport(), &ZOptixViewport::sig_recordFinished, this, [=]() {
+				    delete recordMgr;
+    			    QApplication::exit(0);
+				});
+        }
+    }
+    else {
+		viewWidget->moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
+	    this->toggleTimelinePlay(true);          // and then play.
+        viewWidget->onPlayClicked(true);
+    }
 }
 
 void ZenoMainWindow::updateViewport(const QString& action)

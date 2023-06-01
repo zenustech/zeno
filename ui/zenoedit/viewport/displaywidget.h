@@ -39,6 +39,7 @@ public:
     bool isGLViewport() const;
     ZOptixViewport* optixViewport() const;
     void killOptix();
+	void moveToFrame(int frame);
 
 public slots:
     void updateFrame(const QString& action = "");
@@ -60,7 +61,6 @@ signals:
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
-    void moveToFrame(int frame);
 
     ViewportWidget* m_glView;
     ZOptixViewport* m_optixView;
