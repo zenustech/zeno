@@ -239,7 +239,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
     if (copyFaceAttrs) { // make zhxx very happy
         size_t offsetred = 0;
         size_t shift = 2 * (levels - 1);
-        size_t finred = prim->tris.size() * (3 << shift) + prim->quads.size() * (3 << shift);
+        size_t finred = prim->tris.size() * (3 << shift) + prim->quads.size() * (4 << shift);
             for (size_t i = 0; i < prim->polys.size(); i++) {
                 size_t stride = prim->polys[i][1] << shift;
                 finred += stride;
@@ -622,7 +622,7 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
                             if (arr.size() != nfaces) {
                                 zeno::log_warn("copyFaceAttrs estimated face count mismatch {} {}", arr.size(), nfaces);
                             }
-                                zeno::log_warn("{}", key);
+                                /* zeno::log_warn("{}", key); */
                             prim->quads.add_attr<T>(key) = std::move(arr);
                         },
                         atta);
@@ -630,6 +630,8 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
             }
 
         } else {
+            prim->polys.resize(nfaces);
+            prim->loops.resize(nfaces * 4);
 
             if (copyFaceAttrs) {
                 for (auto const &[key_, atta] : oldpolyattrs) {
@@ -644,9 +646,6 @@ static void osdPrimSubdiv(PrimitiveObject *prim, int levels, std::string edgeCre
                         atta);
                 }
             }
-
-            prim->polys.resize(nfaces);
-            prim->loops.resize(nfaces * 4);
 
             for (int face = 0; face < nfaces; ++face) {
 

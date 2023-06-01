@@ -37,6 +37,14 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     QList<QAction*> actions = getCategoryActions(pModel, m_subgIdx, "", m_scenePos);
     addActions(actions);
 
+	if (!m_cates.isEmpty())
+	{
+		for (auto i : m_cates["deprecated"].nodes)
+		{
+			deprecatedNodes.insert(i);
+		}
+	}
+
     connect(m_searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
 }
 
@@ -101,6 +109,7 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(IGraphsModel* pModel, QModel
 
     NODE_CATES cates = pModel->getCates();
     QList<QAction*> acts;
+    int nodesNum = 0;
     if (cates.isEmpty())
     {
         QAction* pAction = new QAction("ERROR: no descriptors loaded!");
@@ -113,19 +122,25 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(IGraphsModel* pModel, QModel
     {
         QList<QString> condidates;
         for (const NODE_CATE& cate : cates) {
-            if (cate.name == "deprecated") {
-                continue;
-            }
             for (const QString& name : cate.nodes) {
                 condidates.push_back(name);
             }
         }
         for(const QString& name: fuzzy_search(filter, condidates)) {
-            QAction* pAction = new QAction(name);
+            QAction* pAction = new QAction();
             connect(pAction, &QAction::triggered, [=]() {
                 NodesMgr::createNewNode(pModel, subgIdx, name, scenePos);
             });
-            acts.push_back(pAction);
+            if (deprecatedNodes.contains(name))
+            {
+                pAction->setText(name + " (deprecated)");
+				acts.push_back(pAction);
+            }
+            else {
+				pAction->setText(name);
+				acts.insert(nodesNum, pAction);
+				nodesNum++;
+            }
         }
         return acts;
     }

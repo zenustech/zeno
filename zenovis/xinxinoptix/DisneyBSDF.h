@@ -519,7 +519,7 @@ namespace DisneyBSDF{
         float lambert = 1.0f;
         float rr = EvaluateDisneyRetroDiffuse(roughness, wi, wo);
         float retro = rr*(fl + fv + fl * fv * (rr - 1.0f));
-        return 1.0f/M_PIf;// * (retro + (1.0f - 0.5f * fl) * (1.0f - 0.5f * fv));
+        return 1.0f/M_PIf ;
     }
 
     static __inline__ __device__
@@ -610,13 +610,15 @@ namespace DisneyBSDF{
 
             float ptotal = 1.0f + p_in ;
             float psss = subsurface>0? p_in/ptotal : 0; // /ptotal;
-            vec3 lobeOfSheen =  EvaluateSheen(baseColor,sheen,sheenTint, HoL);
-
+            vec3 lobeOfSheen =  clamp(EvaluateSheen(baseColor,1.0,sheenTint, HoL),
+                                      vec3(0.0f), vec3(1.0f));
+            float sheenW = sheen / (1.0f + sheen);
+            vec3 diffusepart = mix(diffuse * baseColor, lobeOfSheen, sheenW);
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
             if(!thin && nDl<=0.0f)
                 diffuse = 0;
-            vec3 lighting = vec3((1.0f - psss) * diffuse * baseColor + lobeOfSheen);
+            vec3 lighting = (1.0f - psss) * diffusepart;
             lighting = clamp(lighting * illum, vec3(0.0f), vec3(50.0f));
             reflectance += diffuseW * float3(lighting);
         }
@@ -650,7 +652,7 @@ namespace DisneyBSDF{
 
         reflectance = reflectance * abs(NoL);
 
-        return reflectance / totalp;
+        return reflectance ;/// totalp;
 
     }
 
@@ -1306,13 +1308,30 @@ namespace DisneyBSDF{
             }
         }
 
-        float HoL = dot(wm,wo);
-        vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
-        float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
+        float HoL = dot(wm,wi);
+        vec3 diffpart = vec3(0.0f);
+        if(!trans)
+        {
+
+            float psheen = sheen / (1.0f + sheen);
+
+
+            if(rnd(seed)<psheen)
+            {
+                diffpart = clamp(
+                EvaluateSheen(baseColor, 1.0f, sheenTint, HoL) ,
+                vec3(0.0f), vec3(1.0f))* M_PIf  ;
+            } else
+            {
+                diffpart = color * vec3(EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin)) * M_PIf;
+            }
+        }
+        //vec3 sheenTerm = EvaluateSheen(baseColor, sheen, sheenTint, HoL);
+        //float diff = EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin);
         if(wi.z<0)
-            diff = 1.0;
-        
-        reflectance = ( sheen + color * (trans? 1.0 : diff * M_PIf));
+            diffpart =  vec3(1.0f);
+        //vec3 diffpart = color * diff * M_PIf;
+        reflectance = trans? color * vec3(1.0) * M_PIf : diffpart;
         //fPdf = abs(NoL) * pdf;
         //rPdf = abs(NoV) * pdf;
         Onb  tbn = Onb(N);
@@ -1483,7 +1502,7 @@ namespace DisneyBSDF{
                 wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
             }
         }
-        reflectance = reflectance / totalp;
+        reflectance = reflectance ;/// totalp;
         //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
         if(pLobe > 0.0f){
             //pLobe = clamp(pLobe, 0.001f, 0.999f);
@@ -1792,11 +1811,12 @@ static __inline__ __device__ vec3 proceduralSky(
 static __inline__ __device__ vec3 hdrSky(
         vec3 dir, float upperBound,  float isclamp
 ){
-//    dir = dir
-//            .rotY(to_radians(params.sky_rot_y))
-//            .rotX(to_radians(params.sky_rot_x))
-//            .rotZ(to_radians(params.sky_rot_z));
-    float u = atan2(dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5; //  + 0.5 + params.sky_rot / 360;
+    dir = dir
+            .rotY(to_radians(params.sky_rot_y))
+            .rotX(to_radians(params.sky_rot_x))
+            .rotZ(to_radians(params.sky_rot_z))
+            .rotY(to_radians(params.sky_rot));
+    float u = atan2(dir.z, dir.x)  / 3.1415926 * 0.5 + 0.5;
     float v = asin(dir.y) / 3.1415926 + 0.5;
     vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v)) * params.sky_strength;
     vec3 col2 = clamp(col, vec3(0.0f), vec3(upperBound));

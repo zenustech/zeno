@@ -372,7 +372,12 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
     float phi = ((float)j + 0.5f)/(float) ny * 3.1415926f;
     float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sin(phi);
     pdf =  twoPi2sinTheta / env_cdf[start + nx*ny];
-    return normalize(vec3(cos(theta), sin(phi - 0.5 * 3.1415926f), sin(theta)));
+    vec3 dir = normalize(vec3(cos(theta), sin(phi - 0.5 * 3.1415926f), sin(theta)));
+    dir = dir.rotY(to_radians(-params.sky_rot))
+            .rotZ(to_radians(-params.sky_rot_z))
+            .rotX(to_radians(-params.sky_rot_x))
+            .rotY(to_radians(-params.sky_rot_y));
+    return dir;
 
 }
 extern "C" __global__ void __closesthit__radiance()

@@ -274,7 +274,7 @@ struct GraphicsManager {
                 .set("prim", prim_in_lslislSp)
                 .set2<int>("levels", subdlevs)
                 .set2<std::string>("edgeCreaseAttr", "")
-                .set2<bool>("triangulate", false)
+                .set2<bool>("triangulate", true)
                 .set2<bool>("asQuadFaces", true)
                 .set2<bool>("hasLoopUVs", true)
                 .set2<bool>("delayTillIpc", false)
