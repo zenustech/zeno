@@ -6,7 +6,7 @@
 
 namespace zeno {
 struct WhitewaterSource : INode {
-    float eps = 10 * std::numeric_limits<float>::epsilon();
+    static constexpr float eps = 10 * std::numeric_limits<float>::epsilon();
 
     bool checkAngle(const openvdb::Vec3f vel, const openvdb::Vec3f norm, float max_angle) {
         float dotProduct = vel.dot(norm);
@@ -51,20 +51,17 @@ struct WhitewaterSource : INode {
 
         openvdb::Vec3fGrid::Ptr Normal, Vorticity;
         openvdb::FloatGrid::Ptr Curvature;
-        if (curv_emit > 0) {
+        if (curv_emit > eps) {
             Normal = openvdb::tools::gradient(*Liquid_sdf);
             Curvature = openvdb::tools::meanCurvature(*Liquid_sdf);
         }
-        if (vor_emit > 0) {
+        if (vor_emit > eps) {
             Vorticity = openvdb::tools::curl(*Velocity);
         }
         auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
         auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
         auto vel_axr = Velocity->getConstUnsafeAccessor();
         auto pre_vel_axr = Pre_vel->getConstUnsafeAccessor();
-        auto norm_axr = Normal->getConstUnsafeAccessor();
-        auto curv_axr = Curvature->getConstUnsafeAccessor();
-        auto vor_axr = Vorticity->getConstUnsafeAccessor();
 
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -81,21 +78,26 @@ struct WhitewaterSource : INode {
             float generates = 0;
 
             openvdb::Vec3f m_vel = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
-            if (curv_emit > 0) {
+            if (curv_emit > eps) {
+                auto norm_axr = Normal->getConstUnsafeAccessor();
+                auto curv_axr = Curvature->getConstUnsafeAccessor();
+
                 float m_curv = openvdb::tools::BoxSampler::sample(curv_axr, Curvature->worldToIndex(wcoord));
                 openvdb::Vec3f m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord));
                 if (!checkAngle(m_vel, m_norm, max_angle))
                     m_curv = 0;
                 generates += curv_emit * clamp_map(m_curv, curv_range);
             }
-            if (acc_emit > 0) {
+            if (acc_emit > eps) {
                 openvdb::Vec3f m_pre_vel =
                     openvdb::tools::StaggeredBoxSampler::sample(pre_vel_axr, Pre_vel->worldToIndex(wcoord));
                 auto m_acc_vec = (m_vel - m_pre_vel) / dt;
                 float m_acc = m_acc_vec.length();
                 generates += acc_emit * clamp_map(m_acc, acc_range);
             }
-            if (vor_emit > 0) {
+            if (vor_emit > eps) {
+                auto vor_axr = Vorticity->getConstUnsafeAccessor();
+
                 openvdb::Vec3f m_vor_vec = openvdb::tools::BoxSampler::sample(vor_axr, Vorticity->worldToIndex(wcoord));
                 float m_vor = m_vor_vec.length();
                 generates += vor_emit * clamp_map(m_vor, vor_range);
@@ -164,6 +166,7 @@ struct WhitewaterSolver : INode {
 
         auto &par_pos = pars->verts.values;
         auto &par_vel = pars->attr<vec3f>("vel");
+        auto &par_life = pars->attr<float>("life");
 
         auto Normal = openvdb::tools::gradient(*Solid_sdf);
 
@@ -188,6 +191,7 @@ struct WhitewaterSolver : INode {
             } else {
                 // foam
                 m_vel = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
+                par_life[idx] -= dt;
             }
             auto wcoord_new = wcoord + dt * m_vel;
             float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord));
@@ -201,6 +205,8 @@ struct WhitewaterSolver : INode {
             par_pos[idx] = other_to_vec<3>(wcoord_new);
             par_vel[idx] = other_to_vec<3>(m_vel);
         }
+
+        set_output("Primitive", pars);
     }
 };
 
