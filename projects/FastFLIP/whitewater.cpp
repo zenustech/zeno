@@ -25,6 +25,7 @@ struct WhitewaterSource : INode {
             pars = get_input<PrimitiveObject>("Primitive");
         }
         auto dt = get_input2<float>("dt");
+        auto Lifespan = get_input2<float>("Lifespan");
         auto &Liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF")->m_grid;
         auto &Solid_sdf = get_input<VDBFloatGrid>("SolidSDF")->m_grid;
         auto &Velocity = get_input<VDBFloat3Grid>("Velocity")->m_grid;
@@ -32,6 +33,7 @@ struct WhitewaterSource : INode {
 
         auto &par_pos = pars->verts.values;
         auto &par_vel = pars->add_attr<vec3f>("vel");
+        auto &par_life = pars->add_attr<float>("life");
         // pars->verts.values.push_back(vec3f{});
         // vel.push_back();
 
@@ -112,8 +114,9 @@ struct WhitewaterSource : INode {
                 openvdb::Vec3f m_par_pos{disX(gen), disY(gen), disZ(gen)};
                 openvdb::Vec3f m_par_vel =
                     openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(m_par_pos));
-                par_pos.push_back(vec3f{m_par_pos[0], m_par_pos[1], m_par_pos[2]});
-                par_vel.push_back(vec3f{m_par_vel[0], m_par_vel[1], m_par_vel[2]});
+                par_pos.push_back(other_to_vec<3>(m_par_pos));
+                par_vel.push_back(other_to_vec<3>(m_par_vel));
+                par_life.push_back(Lifespan);
             }
         }
 
@@ -124,6 +127,7 @@ struct WhitewaterSource : INode {
 ZENDEFNODE(WhitewaterSource, {/* inputs: */
                               {"Primitive",
                                {"float", "dt", "0.04"},
+                               {"float", "Lifespan", "0.8"},
                                "LiquidSDF",
                                "SolidSDF",
                                "Velocity",
@@ -143,4 +147,77 @@ ZENDEFNODE(WhitewaterSource, {/* inputs: */
                               {},
                               /* category: */
                               {"FLIPSolver"}});
+
+struct WhitewaterSolver : INode {
+    void apply() override {
+        auto pars = get_input<PrimitiveObject>("Primitive");
+        auto dt = get_input2<float>("dt");
+        auto &Liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF")->m_grid;
+        auto &Solid_sdf = get_input<VDBFloatGrid>("SolidSDF")->m_grid;
+        auto &Velocity = get_input<VDBFloat3Grid>("Velocity")->m_grid;
+
+        auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<vec3f>("Gravity"));
+        auto air_drag = get_input2<float>("AirDrag");
+        auto buoyancy = get_input2<float>("Buoyancy");
+
+        float dx = static_cast<float>(Velocity->voxelSize()[0]);
+
+        auto &par_pos = pars->verts.values;
+        auto &par_vel = pars->attr<vec3f>("vel");
+
+        auto Normal = openvdb::tools::gradient(*Solid_sdf);
+
+        auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
+        auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
+        auto vel_axr = Velocity->getConstUnsafeAccessor();
+        auto norm_axr = Normal->getConstUnsafeAccessor();
+
+#pragma omp parallel for
+        for (size_t idx = 0; idx < pars->size(); ++idx) {
+            auto m_vel = vec_to_other<openvdb::Vec3f>(par_vel[idx]);
+            auto wcoord = vec_to_other<openvdb::Vec3f>(par_pos[idx]);
+            float m_liquid_sdf = openvdb::tools::BoxSampler::sample(liquid_sdf_axr, Liquid_sdf->worldToIndex(wcoord));
+            if (m_liquid_sdf > dx) {
+                // spray
+                m_vel += gravity * dt - air_drag * m_vel;
+            } else if (m_liquid_sdf < -dx) {
+                // bubble
+                auto m_liquid_vel =
+                    openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
+                m_vel += -buoyancy * gravity * dt + air_drag * (m_liquid_vel - m_vel);
+            } else {
+                // foam
+                m_vel = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
+            }
+            auto wcoord_new = wcoord + dt * m_vel;
+            float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord));
+            if (m_solid_sdf < 0) {
+                auto m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord));
+                m_norm.normalize();
+                m_vel = -m_solid_sdf * m_norm / dt;
+                wcoord_new += m_vel * dt;
+            }
+
+            par_pos[idx] = other_to_vec<3>(wcoord_new);
+            par_vel[idx] = other_to_vec<3>(m_vel);
+        }
+    }
+};
+
+ZENDEFNODE(WhitewaterSolver, {/* inputs: */
+                              {"Primitive",
+                               {"float", "dt", "0.04"},
+                               "LiquidSDF",
+                               "SolidSDF",
+                               "Velocity",
+                               {"vec3f", "Gravity", "0, -9.8, 0"},
+                               {"float", "AirDrag", "0.05"},
+                               {"float", "Buoyancy", "100"}},
+                              /* outputs: */
+                              {"Primitive"},
+                              /* params: */
+                              {},
+                              /* category: */
+                              {"FLIPSolver"}});
+
 } // namespace zeno
