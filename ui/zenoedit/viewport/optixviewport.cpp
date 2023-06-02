@@ -19,6 +19,24 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 }
 
+OptixWorker::OptixWorker(QObject* parent)
+    : QObject(parent)
+    , m_zenoVis(nullptr)
+    , m_pTimer(nullptr)
+    , m_bRecording(false)
+{
+    //used by offline worker.
+    m_pTimer = new QTimer(this);
+    m_zenoVis = new Zenovis(this);
+
+    //fake GL
+    m_zenoVis->initializeGL();
+    m_zenoVis->setCurrentFrameId(0);    //correct frame automatically.
+
+    m_zenoVis->m_camera_control = new CameraControl(m_zenoVis, nullptr, nullptr, this);
+    m_zenoVis->getSession()->set_render_engine("optx");
+}
+
 void OptixWorker::updateFrame()
 {
     //avoid conflict.

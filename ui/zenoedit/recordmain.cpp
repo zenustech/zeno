@@ -52,7 +52,7 @@ static int calcFrameCountByAudio(std::string path, int fps) {
 int record_main(const QCoreApplication& app)
 {
     ZENO_RECORD_RUN_INITPARAM param;
-
+#ifndef DEBUG_DIRECTLY
     QCommandLineParser cmdParser;
     cmdParser.addHelpOption();
     cmdParser.addOptions({
@@ -122,12 +122,26 @@ int record_main(const QCoreApplication& app)
 	param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
 	param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
 	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
+#else
+    param.sZsgPath = "C:\\zeno\\framenum.zsg";
+    param.sPath = "C:\\recordpath";
+    param.iFps = 24;
+    param.iBitrate = 200000;
+    param.iSFrame = 0;
+    param.iFrame = 10;
+    param.iSample = 1;
+    param.bOptix = true;
+    param.sPixel = "1200x800";
+#endif
 
     ZenoMainWindow tempWindow(nullptr, 0, param.bOptix ? PANEL_OPTIX_VIEW : PANEL_GL_VIEW);
     if (!param.bOptix)
     {
-		tempWindow.showMaximized();
+        tempWindow.showMaximized();
+        tempWindow.directlyRunRecord(param, param.bOptix);
     }
-    tempWindow.directlyRunRecord(param, param.bOptix);
+    else {
+        tempWindow.optixRunRender(param);
+    }
     return app.exec();
 }

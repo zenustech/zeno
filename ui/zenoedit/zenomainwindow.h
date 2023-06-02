@@ -149,6 +149,7 @@ signals:
     void visFrameUpdated(bool bGLView, int frameid);
     void alwaysModeChanged(bool bAlways);
     void dockSeparatorMoving(bool bMoving);
+    void runFinished();
 
 public slots:
     void openFileDialog();
@@ -175,6 +176,7 @@ public slots:
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, bool bIsOptix);
+    void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);

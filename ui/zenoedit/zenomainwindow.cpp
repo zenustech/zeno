@@ -37,6 +37,7 @@
 #include "nodesys/zenosubgraphscene.h"
 #include "viewport/recordvideomgr.h"
 #include "viewport/displaywidget.h"
+#include "viewport/optixviewport.h"
 #include "ui_zenomainwindow.h"
 #include <QJsonDocument>
 #include "dialog/zdocklayoutmangedlg.h"
@@ -577,7 +578,8 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
         m_layoutRoot->type = NT_ELEM;
 
         ZTabDockWidget* onlyWid = new ZTabDockWidget(this);
-        onlyWid->setCurrentWidget(onlyView);
+        if (onlyView == PANEL_GL_VIEW)
+            onlyWid->setCurrentWidget(onlyView);
 
         addDockWidget(Qt::TopDockWidgetArea, onlyWid);
         m_layoutRoot->type = NT_ELEM;
@@ -763,6 +765,60 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
     {
         view->afterRun();
     }
+}
+
+void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
+{
+    VideoRecInfo recInfo;
+    recInfo.bitrate = param.iBitrate;
+    recInfo.fps = param.iFps;
+    recInfo.frameRange = { param.iSFrame, param.iSFrame + param.iFrame - 1 };
+    recInfo.numMSAA = 0;
+    recInfo.numOptix = param.iSample;
+    recInfo.audioPath = param.audioPath;
+    recInfo.record_path = param.sPath;
+    recInfo.videoname = param.videoName;
+    recInfo.bExportVideo = param.isExportVideo;
+    recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
+
+    QDir dir(recInfo.record_path);
+    ZASSERT_EXIT(dir.exists());
+    dir.mkdir("P"); //optix worker need this directory
+
+    if (!param.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = param.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        recInfo.res = { (float)pixw, (float)pixh };
+
+        //viewWidget->setFixedSize(pixw, pixh);
+        //viewWidget->setCameraRes(QVector2D(pixw, pixh));
+        //viewWidget->updatePerspective();
+    }
+    else {
+        recInfo.res = { (float)1000, (float)680 };
+        //viewWidget->setMinimumSize(1000, 680);
+    }
+
+    connect(this, &ZenoMainWindow::runFinished, this, [=]() {
+        OptixWorker worker;
+        worker.recordVideo(recInfo);
+        QApplication::exit(0);
+    });
+
+    bool ret = openFile(param.sZsgPath);
+    ZASSERT_EXIT(ret);
+    zeno::getSession().globalComm->clearState();
+
+    auto pGraphsMgr = zenoApp->graphsManagment();
+    ZASSERT_EXIT(pGraphsMgr);
+    IGraphsModel* pModel = pGraphsMgr->currentModel();
+    ZASSERT_EXIT(pModel);
+
+    launchProgram(pModel, recInfo.frameRange.first, recInfo.frameRange.second, false, false);
+
+    //viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
 }
 
 void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, bool bIsOptix)
