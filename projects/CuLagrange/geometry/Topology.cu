@@ -26,42 +26,25 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 		using vec3i = zs::vec<int, 3>;
 
 		auto zsparticles = get_input<ZenoParticles>("zsparticles");
-            // if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
-            //     throw std::runtime_error("the input zsparticles has no surface tris");
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
-                throw std::runtime_error("the input zsparticles has no surface lines");
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag))
-                throw std::runtime_error("the input zsparticles has no surface lines");
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag) && zsparticles->category == ZenoParticles::category_e::tet)
+                throw std::runtime_error("the input tet zsparticles has no surface tris");
+            // if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
+            //     throw std::runtime_error("the input zsparticles has no surface lines");
+            if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag) && zsparticles->category == ZenoParticles::category_e::tet)
+                throw std::runtime_error("the input tet zsparticles has no surface points");
 
 			auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfTriTag] : zsparticles->getQuadraturePoints();
-			auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
-			auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
+			// auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+			auto& points = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfVertTag] : zsparticles->getParticles();
 			
 			auto& halfEdge = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
-			halfEdge = typename ZenoParticles::particles_t({{"to_vertex",1},{"to_face",1},{"to_edge",1},{"opposite_he",1},{"next_he",1}},
+			halfEdge = typename ZenoParticles::particles_t({{"local_vertex_id",1},{"to_face",1},{"opposite_he",1},{"next_he",1}},
 				tris.size() * 3,zs::memsrc_e::device,0);
 
 			auto cudaPol = zs::cuda_exec();
 
-
-            // if(!tris.hasProperty("ff_inds") || tris.getPropertySize("ff_inds") != 3){
-            //     throw std::runtime_error("no valid ff_inds detected in tris");
-            // }            
-
-            // if(!tris.hasProperty("fe_inds") || tris.getPropertySize("fe_inds") != 3) {
-            //     throw std::runtime_error("no valid fe_inds detected in tris");
-            // }
-
-			// if(!tris.hasProperty("fp_inds") || tris.getPropertySize("fp_inds") != 3){
-			// 	throw std::runtime_error("no valid fp_inds detected in tris");
-			// }
-
-            // if(!lines.hasProperty("fe_inds") || lines.getPropertySize("fe_inds") != 2) {
-            //     throw std::runtime_error("no valid fe_inds detected in lines");
-            // }
-
 			points.append_channels(cudaPol,{{"he_inds",1}});
-			lines.append_channels(cudaPol,{{"he_inds",1}});
+			// lines.append_channels(cudaPol,{{"he_inds",1}});
 			tris.append_channels(cudaPol,{{"he_inds",1}});
 
 #if 0
@@ -162,7 +145,7 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 					}
 			});
 #else
-			if(!build_surf_half_edge(cudaPol,tris,lines,points,halfEdge))
+			if(!build_surf_half_edge(cudaPol,tris,points,halfEdge))
 				throw std::runtime_error("fail building surf half edge");
 #endif
 
@@ -177,6 +160,133 @@ ZENDEFNODE(BuildSurfaceHalfEdgeStructure, {{{"zsparticles"}},
 							{{"zsparticles"}},
 							{},
 							{"ZSGeometry"}});
+
+struct BuildTetrahedraHalfFacet : zeno::INode {
+	using T = float;
+	virtual void apply() override {
+		using namespace zs;
+		auto cudaPol = zs::cuda_exec();
+
+		auto zsparticles = get_input<ZenoParticles>("zsparticles");
+
+		auto& tets = zsparticles->getQuadraturePoints();
+		tets.append_channels(cudaPol,{{"hf_inds",1}});
+
+		auto& halfFacet = (*zsparticles)[ZenoParticles::s_tetHalfFacetTag];
+		halfFacet = typename ZenoParticles::particles_t({{"opposite_hf",1},{"next_hf",1},{"to_tet",1},{"local_idx",1}},
+				tets.size() * 4,zs::memsrc_e::device,0);
+
+		build_tetrahedra_half_facet(cudaPol,tets,halfFacet);
+
+		set_output("zsparticles",zsparticles);
+	}
+};
+
+ZENDEFNODE(BuildTetrahedraHalfFacet, {{{"zsparticles"}},
+							{{"zsparticles"}},
+							{},
+							{"ZSGeometry"}});
+
+struct VisualTetrahedraHalfFacet : zeno::INode {
+	using T = float;
+	// using dtiles_t = zs::TileVector<T,32>;
+	virtual void apply() override {
+		using namespace zs;
+		auto cudaPol = zs::cuda_exec();
+		constexpr auto space = zs::execspace_e::cuda;
+
+		auto zsparticles = get_input<ZenoParticles>("zsparticles");
+		const auto& tets = zsparticles->getQuadraturePoints();
+		const auto& verts = zsparticles->getParticles();
+		const auto& halfFacet = (*zsparticles)[ZenoParticles::s_tetHalfFacetTag];
+		
+		auto tet_centers = typename ZenoParticles::particles_t({{"x",3}},tets.size(),zs::memsrc_e::device,0);
+		auto neighbor_centers = typename ZenoParticles::particles_t({{"x",3}},tets.size() * 4,zs::memsrc_e::device,0);
+
+		cudaPol(zs::range(tets.size()),[
+			tets = proxy<space>({},tets),
+			verts = proxy<space>({},verts),
+			tet_centers = proxy<space>({},tet_centers)] ZS_LAMBDA(int ti) mutable {
+				// tet_centers.tuple(dim_c<3>,"x",ti) = zs::vec<T,3>::zeros();
+				auto tet_center = zs::vec<T,3>::zeros();
+				auto tet = tets.pack(dim_c<4>,"inds",ti,int_c);
+				for(int i = 0;i != 4;++i)
+					tet_center += verts.pack(dim_c<3>,"x",tet[i]) / (T)4.0;
+				tet_centers.tuple(dim_c<3>,"x",ti) = tet_center;
+		});
+
+		cudaPol(zs::range(tets.size()),[
+			tets = proxy<space>({},tets),
+			verts = proxy<space>({},verts),
+			tet_centers = proxy<space>({},tet_centers),
+			neighbor_centers = proxy<space>({},neighbor_centers),
+			halfFacet = proxy<space>({},halfFacet)] ZS_LAMBDA(int ti) mutable {
+				auto hf_idx = zs::reinterpret_bits<int>(tets("hf_inds",ti));
+				if(hf_idx < 0) {
+					printf("invalid hf_idx : %d\n",hf_idx);
+					return;
+				}
+				auto tet = tets.pack(dim_c<3>,"inds",ti,int_c);
+				// zs::vec<T,3> ncenters[4] = {};
+				for(int i = 0;i != 4;++i) {
+					auto opposite_hf_idx = zs::reinterpret_bits<int>(halfFacet("opposite_hf",hf_idx));
+					if(opposite_hf_idx >= 0) {
+						if(opposite_hf_idx >= halfFacet.size()) {
+							printf("opposite_hf_idx = %d exceeding size of halfFacet : %d\n",opposite_hf_idx,halfFacet.size());
+							return;
+						}
+						auto nti = zs::reinterpret_bits<int>(halfFacet("to_tet",opposite_hf_idx));
+						if(nti >= tet_centers.size() || nti < 0) {
+							printf("invalid nti : %d\n",nti);
+							return;
+						}
+						neighbor_centers.tuple(dim_c<3>,"x",ti * 4 + i) = tet_centers.pack(dim_c<3>,"x",nti);
+					}else {
+						auto tcenter = zs::vec<T,3>::zeros();
+						for(int j = 0;j != 3;++j) {
+							tcenter += verts.pack(dim_c<3>,"x",tet[(j + 1) % 3]) /  (T)3.0;
+						}
+						neighbor_centers.tuple(dim_c<3>,"x",ti * 4 + i) = tcenter;
+					}
+					hf_idx = zs::reinterpret_bits<int>(halfFacet("next_hf",hf_idx));
+				}
+		});
+
+		constexpr auto omp_space = execspace_e::openmp;
+		auto ompPol = omp_exec();  
+		tet_centers = tet_centers.clone({zs::memsrc_e::host});
+		neighbor_centers = neighbor_centers.clone({zs::memsrc_e::host});
+
+		auto tf_vis = std::make_shared<zeno::PrimitiveObject>();
+		auto& tf_verts = tf_vis->verts;
+		auto& tf_lines = tf_vis->lines;
+		tf_verts.resize(tets.size() * 5);
+		tf_lines.resize(tets.size() * 4);
+
+		ompPol(zs::range(tets.size()),[
+			tet_centers = proxy<omp_space>({},tet_centers),
+			neighbor_centers = proxy<omp_space>({},neighbor_centers),
+			&tf_verts,&tf_lines] (int ti) mutable {
+				auto tc = tet_centers.pack(dim_c<3>,"x",ti);
+				tf_verts[ti * 5 + 0] = tc.to_array();
+				for(int i = 0;i != 4;++i) {
+					auto ntc = neighbor_centers.pack(dim_c<3>,"x",ti * 4 + i);
+					tf_verts[ti * 5 + i + 1] = ntc.to_array();
+					tf_lines[ti * 4 + i] = zeno::vec2i(ti * 5 + 0,ti * 5 + i + 1);
+				}
+		});
+
+		set_output("halfFacet_vis",std::move(tf_vis));
+	}
+};
+
+ZENDEFNODE(VisualTetrahedraHalfFacet, {{{"zsparticles"}},
+							{
+								{"halfFacet_vis"}
+							},
+							{},
+							{"ZSGeometry"}});
+
 
 #define MAX_NEIGHS 32
 
@@ -265,7 +375,7 @@ struct VisualizeOneRingNeighbors : zeno::INode {
 
 			auto he_idx = reinterpret_bits<int>(points("he_inds",pi));
 
-			zs::vec<int,MAX_NEIGHS> pneighs = get_one_ring_neigh_points<MAX_NEIGHS>(he_idx,half_edges);
+			zs::vec<int,MAX_NEIGHS> pneighs = get_one_ring_neigh_points<MAX_NEIGHS>(he_idx,half_edges,tris);
 			// printf("one_ring_neighbors[%d] : %d %d %d %d %d %d\n",(int)pi,
 			// 	(int)pneighs[0],(int)pneighs[1],(int)pneighs[2],(int)pneighs[3],(int)pneighs[4],(int)pneighs[5]);
 			for(int i = 0;i != MAX_NEIGHS;++i){
@@ -278,28 +388,28 @@ struct VisualizeOneRingNeighbors : zeno::INode {
 
 		});
 
-		cudaPol(zs::range(points.size()),[
-				verts = proxy<space>({},verts),
-				one_ring_lines = proxy<space>({},one_ring_lines),
-				points = proxy<space>({},points),
-				lines = proxy<space>({},lines),
-				// MAX_NEIGHS_V = wrapv<MAX_NEIGHS>{},
-				half_edges = proxy<space>({},half_edges)] ZS_LAMBDA(int pi) mutable {
-					// constexpr int MAX_NEIGHS = RM_CVREF_T(MAX_NEIGHS_V)::value;
-					auto he_idx = reinterpret_bits<int>(points("he_inds",pi));
-					zs::vec<int,MAX_NEIGHS> pneighs = get_one_ring_neigh_edges<MAX_NEIGHS>(he_idx,half_edges);
-					// printf("one_ring_line_neighbors[%d] : %d %d %d %d %d %d\n",(int)pi,
-					// 	(int)pneighs[0],(int)pneighs[1],(int)pneighs[2],(int)pneighs[3],(int)pneighs[4],(int)pneighs[5]);
-					for(int i = 0;i != MAX_NEIGHS;++i) {
-						if(pneighs[i] < 0)
-							break;
-						one_ring_lines("active",pi * (2 * MAX_NEIGHS) + 2 * i + 0) = (T)1.0;
-						one_ring_lines("active",pi * (2 * MAX_NEIGHS) + 2 * i + 1) = (T)1.0;
-						auto ne = lines.pack(dim_c<2>,"inds",pneighs[i]).reinterpret_bits(int_c);
-						one_ring_lines.tuple(dim_c<3>,"x",pi * (2 * MAX_NEIGHS) + 2 * i + 0) = verts.pack(dim_c<3>,"x",ne[0]);
-						one_ring_lines.tuple(dim_c<3>,"x",pi * (2 * MAX_NEIGHS) + 2 * i + 1) = verts.pack(dim_c<3>,"x",ne[1]);
-					}
-		});
+		// cudaPol(zs::range(points.size()),[
+		// 		verts = proxy<space>({},verts),
+		// 		one_ring_lines = proxy<space>({},one_ring_lines),
+		// 		points = proxy<space>({},points),
+		// 		lines = proxy<space>({},lines),
+		// 		// MAX_NEIGHS_V = wrapv<MAX_NEIGHS>{},
+		// 		half_edges = proxy<space>({},half_edges)] ZS_LAMBDA(int pi) mutable {
+		// 			// constexpr int MAX_NEIGHS = RM_CVREF_T(MAX_NEIGHS_V)::value;
+		// 			auto he_idx = reinterpret_bits<int>(points("he_inds",pi));
+		// 			zs::vec<int,MAX_NEIGHS> pneighs = get_one_ring_neigh_edges<MAX_NEIGHS>(he_idx,half_edges);
+		// 			// printf("one_ring_line_neighbors[%d] : %d %d %d %d %d %d\n",(int)pi,
+		// 			// 	(int)pneighs[0],(int)pneighs[1],(int)pneighs[2],(int)pneighs[3],(int)pneighs[4],(int)pneighs[5]);
+		// 			for(int i = 0;i != MAX_NEIGHS;++i) {
+		// 				if(pneighs[i] < 0)
+		// 					break;
+		// 				one_ring_lines("active",pi * (2 * MAX_NEIGHS) + 2 * i + 0) = (T)1.0;
+		// 				one_ring_lines("active",pi * (2 * MAX_NEIGHS) + 2 * i + 1) = (T)1.0;
+		// 				auto ne = lines.pack(dim_c<2>,"inds",pneighs[i]).reinterpret_bits(int_c);
+		// 				one_ring_lines.tuple(dim_c<3>,"x",pi * (2 * MAX_NEIGHS) + 2 * i + 0) = verts.pack(dim_c<3>,"x",ne[0]);
+		// 				one_ring_lines.tuple(dim_c<3>,"x",pi * (2 * MAX_NEIGHS) + 2 * i + 1) = verts.pack(dim_c<3>,"x",ne[1]);
+		// 			}
+		// });
 
 		one_ring_points = one_ring_points.clone({zs::memsrc_e::host});
 		auto pn_prim = std::make_shared<zeno::PrimitiveObject>();
@@ -337,38 +447,38 @@ struct VisualizeOneRingNeighbors : zeno::INode {
 		set_output("pn_prim",std::move(pn_prim));
 
 
-		one_ring_lines = one_ring_lines.clone({zs::memsrc_e::host});
-		auto en_prim = std::make_shared<zeno::PrimitiveObject>();
-		auto& en_verts = en_prim->verts;
-		auto& en_lines = en_prim->lines;
+		// one_ring_lines = one_ring_lines.clone({zs::memsrc_e::host});
+		// auto en_prim = std::make_shared<zeno::PrimitiveObject>();
+		// auto& en_verts = en_prim->verts;
+		// auto& en_lines = en_prim->lines;
 
-		en_verts.resize(points.size() * (MAX_NEIGHS * 2));
-		en_lines.resize(points.size() * MAX_NEIGHS);
+		// en_verts.resize(points.size() * (MAX_NEIGHS * 2));
+		// en_lines.resize(points.size() * MAX_NEIGHS);
 
-		ompPol(zs::range(points.size()),
-			[one_ring_lines = proxy<omp_space>({},one_ring_lines),&en_verts,&en_lines] (int pi) {
-				// constexpr int MAX_NEIGHS = RM_CVREF_T(MAX_NEIGHS_V)::value;
-				int nm_active = 0;
-				for(int i = 0;i != 2*MAX_NEIGHS;++i) {
-					if(one_ring_lines("active",pi * MAX_NEIGHS * 2 + i) > 0)
-						nm_active++;
-					else
-						 break;
-					en_verts[pi * MAX_NEIGHS * 2 + i] = one_ring_lines.pack(dim_c<3>,"x",pi * MAX_NEIGHS * 2 + i).to_array();
-				}
-				int nm_active_edges = nm_active / 2;
-				for(int i = 0;i != nm_active_edges;++i)
-					en_lines[pi * MAX_NEIGHS + i] = zeno::vec2i(pi * MAX_NEIGHS * 2 + i * 2 + 0,pi * MAX_NEIGHS * 2 + i * 2 + 1);
-		});
+		// ompPol(zs::range(points.size()),
+		// 	[one_ring_lines = proxy<omp_space>({},one_ring_lines),&en_verts,&en_lines] (int pi) {
+		// 		// constexpr int MAX_NEIGHS = RM_CVREF_T(MAX_NEIGHS_V)::value;
+		// 		int nm_active = 0;
+		// 		for(int i = 0;i != 2*MAX_NEIGHS;++i) {
+		// 			if(one_ring_lines("active",pi * MAX_NEIGHS * 2 + i) > 0)
+		// 				nm_active++;
+		// 			else
+		// 				 break;
+		// 			en_verts[pi * MAX_NEIGHS * 2 + i] = one_ring_lines.pack(dim_c<3>,"x",pi * MAX_NEIGHS * 2 + i).to_array();
+		// 		}
+		// 		int nm_active_edges = nm_active / 2;
+		// 		for(int i = 0;i != nm_active_edges;++i)
+		// 			en_lines[pi * MAX_NEIGHS + i] = zeno::vec2i(pi * MAX_NEIGHS * 2 + i * 2 + 0,pi * MAX_NEIGHS * 2 + i * 2 + 1);
+		// });
 
-		set_output("en_prim",std::move(en_prim));
+		// set_output("en_prim",std::move(en_prim));
 	}
 };
 
 
 ZENDEFNODE(VisualizeOneRingNeighbors, {{{"zsparticles"}},
 							{{"pn_prim"}
-								,{"en_prim"}
+								// ,{"en_prim"}
 							},
 							{},
 							{"ZSGeometry"}});
