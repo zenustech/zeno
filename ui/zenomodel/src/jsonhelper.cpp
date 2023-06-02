@@ -178,6 +178,19 @@ namespace JsonHelper
                     writer.EndArray();
                 }
             }
+            else if (value.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()) {
+                UI_VECSTRING vec = value.value<UI_VECSTRING>();
+                if (!vec.isEmpty()) {
+                    writer.StartArray();
+
+                    for (int i = 0; i < vec.size(); i++) {
+                        auto s = vec[i].toStdString();
+                        writer.String(s.data(), s.size());
+                    }
+
+                    writer.EndArray();
+                }
+            }
             else if (value.userType() == QMetaTypeId<CURVES_DATA>::qt_metatype_id())
             {
                 if (type == "curve" || value.canConvert<CURVES_DATA>()) {

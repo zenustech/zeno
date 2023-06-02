@@ -112,14 +112,6 @@ namespace zenoui
                 pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
 
-                if (ctrl == CONTROL_INT)
-                {
-                    pLineEdit->setValidator(new QIntValidator(pLineEdit));
-                }
-                else if (ctrl == CONTROL_FLOAT)
-                {
-                    pLineEdit->setValidator(new QDoubleValidator(pLineEdit));
-                }
 
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
                     // be careful about the dynamic type.
@@ -146,11 +138,6 @@ namespace zenoui
                 pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
                 pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
-                if (ctrl == CONTROL_INT) {
-                    pLineEdit->setValidator(new QIntValidator(pLineEdit));
-                } else if (ctrl == CONTROL_FLOAT) {
-                    pLineEdit->setValidator(new QDoubleValidator(pLineEdit));
-                }
 
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
                     // be careful about the dynamic type.

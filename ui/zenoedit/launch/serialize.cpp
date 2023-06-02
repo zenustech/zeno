@@ -195,13 +195,32 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
                 QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
                 const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
-                if ((sockType == "float" || sockType.startsWith("vec")) && defl.canConvert<CURVES_DATA>()) {
-                    AddParams("setKeyFrame", ident, inputName, defl, sockType, writer);
-                } else {
-                    defl = UiHelper::parseVarByType(sockType, defl, nullptr);
-                    if (!defl.isNull())
-                        AddParams("setNodeInput", ident, inputName, defl, sockType, writer);
+                QString opStr = "setNodeInput";
+                if ((sockType == "int" || sockType == "float" || sockType.startsWith("vec"))) {
+                    if (defl.canConvert<CURVES_DATA>())
+                        opStr = "setKeyFrame";
+                    else if (defl.type() == QVariant::String) {
+                        opStr = "setFormula";
+                    } else if (defl.canConvert<UI_VECSTRING>()) {
+                        UI_VECSTRING vec = defl.value<UI_VECSTRING>();
+                        QString code = "vec3(";
+                        for (int i = 0; i < vec.size(); i++)
+                        {
+                            code += vec.at(i);
+                            if (i < vec.size() - 1)
+                                code += ",";
+                            else
+                                code += ")";
+                        }
+                        defl = code;
+                        opStr = "setFormula";
+                    }
                 }
+                if (opStr == "setNodeInput") {
+                    defl = UiHelper::parseVarByType(sockType, defl, nullptr);
+                }
+                if (!defl.isNull())
+                    AddParams(opStr, ident, inputName, defl, sockType, writer);
             }
             else
             {

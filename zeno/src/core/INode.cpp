@@ -130,6 +130,8 @@ ZENO_API bool INode::has_input(std::string const &id) const {
 ZENO_API zany INode::get_input(std::string const &id) const {
     if (has_keyframe(id)) {
         return get_keyframe(id);
+    } else if (has_formula(id)) {
+        return get_formula(id);
     }
     return safe_at(inputs, id, "input socket of node `" + myname + "`");
 }
@@ -178,6 +180,29 @@ ZENO_API zany INode::get_keyframe(std::string const &id) const
             value = objectFromLiterial(vec4);
         }
     }
+    return value;
+}
+
+ZENO_API bool INode::has_formula(std::string const &id) const {
+    return formulas.find(id) != formulas.end();
+}
+
+ZENO_API zany INode::get_formula(std::string const &id) const 
+{
+    auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
+    if (auto formulas = dynamic_cast<zeno::StringObject *>(value.get())) 
+    {
+        std::string code = formulas->get();
+        std::string prefix = "vec3";
+        std::string resType;
+        if (code.substr(0, prefix.size()) == prefix) {
+            resType = "vec3f";
+        } else {
+            resType = "float";
+        }
+        auto res = getThisGraph()->callTempNode("NumericEval", {{"zfxCode", objectFromLiterial(code)}, {"resType", objectFromLiterial(resType)}}).at("result");
+        value = objectFromLiterial(std::move(res));
+    }     
     return value;
 }
 

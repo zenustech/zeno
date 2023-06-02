@@ -31,6 +31,7 @@ public:
     std::map<std::string, zany> inputs;
     std::map<std::string, zany> outputs;
     std::set<std::string> kframes;
+    std::set<std::string> formulas;
     zany muted_output;
 
     ZENO_API INode();
@@ -62,6 +63,9 @@ protected:
 
     ZENO_API bool has_keyframe(std::string const &id) const;
     ZENO_API zany get_keyframe(std::string const &id) const;
+
+    ZENO_API bool has_formula(std::string const &id) const;
+    ZENO_API zany get_formula(std::string const &id) const;
 
     template <class T>
     std::shared_ptr<T> get_input(std::string const &id) const {

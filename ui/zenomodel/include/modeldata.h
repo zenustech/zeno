@@ -245,6 +245,10 @@ typedef QVector<qreal> UI_VECTYPE;
 
 Q_DECLARE_METATYPE(UI_VECTYPE);
 
+typedef QVector<QString> UI_VECSTRING;
+
+Q_DECLARE_METATYPE(UI_VECSTRING);
+
 struct BLACKBOARD_INFO
 {
     QSizeF sz;

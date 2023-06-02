@@ -613,12 +613,13 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                         else
                             pLineEdit->setProperty(g_keyFrame, QVariant::fromValue(curves.first()));
                     } else {
-                        literalNum = QString::number(value.toFloat());
+
+                        literalNum = UiHelper::variantToString(value);
                         pLineEdit->setText(literalNum);
                         pLineEdit->setProperty(g_keyFrame, QVariant());
                     }
                 } else {
-                    literalNum = value.toString();
+                    literalNum = UiHelper::variantToString(value);
                     pLineEdit->setText(literalNum);
                 }
             }

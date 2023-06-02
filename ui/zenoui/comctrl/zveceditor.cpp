@@ -31,6 +31,8 @@ void ZVecEditor::initUI(const QVariant &vec) {
     int n = m_deflSize;
     if (vec.canConvert<UI_VECTYPE>())
         n = vec.value<UI_VECTYPE>().size();
+    else if (vec.canConvert<UI_VECSTRING>())
+        n = vec.value<UI_VECSTRING>().size();
     else
         n = vec.value<CURVES_DATA>().size();
 
@@ -49,6 +51,8 @@ void ZVecEditor::initUI(const QVariant &vec) {
         m_editors[i]->setProperty("cssClass", m_styleCls);
         if (vec.canConvert<UI_VECTYPE>())
             setText(vec.value<UI_VECTYPE>().at(i), m_editors[i]);
+        else if (vec.canConvert<UI_VECSTRING>())
+            setText(vec.value<UI_VECSTRING>().at(i), m_editors[i]);
         else if (vec.canConvert<CURVES_DATA>()) {
             CURVES_DATA curves = vec.value<CURVES_DATA>();
             QString key = UiHelper::getCurveKey(i);
@@ -86,6 +90,7 @@ QVariant ZVecEditor::vec() const
 	QVariant value;
     CURVES_DATA datas;
     UI_VECTYPE vec;
+    UI_VECSTRING vecStr;
 	for (int i = 0; i < m_editors.size(); i++)
 	{
         if (m_bFloat) {
@@ -97,15 +102,40 @@ QVariant ZVecEditor::vec() const
             } 
             else 
             {
-                vec.append(m_editors[i]->text().toFloat());
+                bool bOK = false;
+                float val = m_editors[i]->text().toFloat(&bOK);
+                if (bOK && vecStr.isEmpty())
+                    vec.append(val);
+                else {
+                    for (auto data : vec) {
+                        vecStr.append(QString::number(data));
+                    }
+                    vec.clear();
+                    vecStr.append(m_editors[i]->text());
+                }
             }
         }
-        else
-            vec.append(m_editors[i]->text().toInt());
+        else {
+            bool bOK = false;
+            float val = m_editors[i]->text().toInt(&bOK);
+            if (bOK && vecStr.isEmpty())
+                vec.append(val);
+            else {
+                for (auto data : vec) {
+                    vecStr.append(QString::number(data));
+                }
+                vec.clear();
+                vecStr.append(m_editors[i]->text());
+            }
+        }
 	}
     if (vec.size() == m_editors.size()) 
     {
         value = QVariant::fromValue(vec);
+    } 
+    else if (vecStr.size() == m_editors.size()) 
+    {
+        value = QVariant::fromValue(vecStr);
     }
     else 
     {
@@ -119,6 +149,8 @@ void ZVecEditor::setVec(const QVariant& vec, bool bFloat)
     int size = m_editors.size();
     if (vec.canConvert<UI_VECTYPE>())
         size = vec.value<UI_VECTYPE>().size();
+    else if (vec.canConvert<UI_VECSTRING>())
+        size = vec.value<UI_VECSTRING>().size();
     else
         size = vec.value<CURVES_DATA>().size();
     if (bFloat != m_bFloat || size != m_editors.size())
@@ -131,6 +163,8 @@ void ZVecEditor::setVec(const QVariant& vec, bool bFloat)
         {
             if (vec.canConvert<UI_VECTYPE>())
                 setText(vec.value<UI_VECTYPE>().at(i), m_editors[i]);
+            else if (vec.canConvert<UI_VECSTRING>())
+                setText(vec.value<UI_VECSTRING>().at(i), m_editors[i]);
             else if (vec.canConvert<CURVES_DATA>()) {
                 CURVES_DATA curves = vec.value<CURVES_DATA>();
                 QString key = UiHelper::getCurveKey(i);
@@ -145,11 +179,8 @@ void ZVecEditor::setVec(const QVariant& vec, bool bFloat)
 
 void ZVecEditor::setText(const QVariant &value, ZLineEdit* lineEdit) 
 {
-    if (m_bFloat) {
-        lineEdit->setText(QString::number(value.toFloat()));
-    } else {
-        lineEdit->setText(QString::number(value.toInt()));
-    }
+    QString text = UiHelper::variantToString(value);
+    lineEdit->setText(text);
     lineEdit->setProperty(g_keyFrame, QVariant());
 }
 

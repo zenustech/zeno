@@ -134,12 +134,12 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
                         return;
                     pItem->setProperty(g_keyFrame, QVariant::fromValue(curves.first()));
                 } else {
-                    pItem->setPlainText(QString::number(value.toFloat()));
+                    pItem->setPlainText(UiHelper::variantToString(value));
                     pItem->setProperty(g_keyFrame, QVariant());
                 }
             }
             else
-                pItem->setPlainText(value.toString());
+                pItem->setPlainText(UiHelper::variantToString(value));
             break;
         }
         case QGraphicsWidget::Type:
