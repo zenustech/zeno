@@ -1,8 +1,8 @@
 #include <openvdb/tools/GridOperators.h>
 #include <openvdb/tools/Interpolation.h>
 #include <zeno/VDBGrid.h>
-#include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
 struct WhitewaterSource : INode {
@@ -67,12 +67,14 @@ struct WhitewaterSource : INode {
         std::mt19937 gen(rd());
 
         for (auto iter = Liquid_sdf->cbeginValueOn(); iter.test(); ++iter) {
+            float m_sdf = *iter;
+            if (m_sdf < limit_depth || m_sdf > eps)
+                continue;
+
             auto icoord = iter.getCoord();
             auto wcoord = Liquid_sdf->indexToWorld(icoord);
-
-            float m_sdf = *iter;
             float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord));
-            if (m_sdf < limit_depth || m_solid_sdf < 0)
+            if (m_solid_sdf < 0)
                 continue;
 
             float generates = 0;
