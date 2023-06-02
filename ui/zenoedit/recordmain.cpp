@@ -7,7 +7,7 @@
 #include "zenomainwindow.h"
 #include "settings/zsettings.h"
 
-#define DEBUG_DIRECTLY
+//#define DEBUG_DIRECTLY
 
 
 static int calcFrameCountByAudio(std::string path, int fps) {
