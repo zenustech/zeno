@@ -66,63 +66,109 @@ struct WhitewaterSource : INode {
         std::random_device rd;
         std::mt19937 gen(rd());
 
-        for (auto iter = Liquid_sdf->cbeginValueOn(); iter.test(); ++iter) {
-            float m_sdf = *iter;
-            if (m_sdf < limit_depth || m_sdf > eps)
-                continue;
+        using MapT = std::map<std::thread::id, std::vector<vec3f>>;
+        MapT new_pars_pos, new_pars_vel;
+        std::mutex mutex;
 
-            auto icoord = iter.getCoord();
-            auto wcoord = Liquid_sdf->indexToWorld(icoord);
-            float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord));
-            if (m_solid_sdf < 0)
-                continue;
-
-            float generates = 0;
-
-            openvdb::Vec3f m_vel = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
-            if (curv_emit > eps) {
-                auto norm_axr = Normal->getConstUnsafeAccessor();
-                auto curv_axr = Curvature->getConstUnsafeAccessor();
-
-                float m_curv = openvdb::tools::BoxSampler::sample(curv_axr, Curvature->worldToIndex(wcoord));
-                openvdb::Vec3f m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord));
-                if (!checkAngle(m_vel, m_norm, max_angle))
-                    m_curv = 0;
-                generates += curv_emit * clamp_map(m_curv, curv_range);
+        auto particle_emitter = [&](openvdb::FloatTree::LeafNodeType &leaf, openvdb::Index leafpos) {
+            // auto &new_pos = new_pars_pos[std::this_thread::get_id()];
+            // auto &new_vel = new_pars_vel[std::this_thread::get_id()];
+            typename MapT::iterator posIter, velIter;
+            {
+                std::lock_guard<std::mutex> lk(mutex);
+                bool tag;
+                std::tie(posIter, tag) =
+                    new_pars_pos.insert(std::make_pair(std::this_thread::get_id(), std::vector<vec3f>{}));
+                std::tie(velIter, tag) =
+                    new_pars_vel.insert(std::make_pair(std::this_thread::get_id(), std::vector<vec3f>{}));
             }
-            if (acc_emit > eps) {
-                openvdb::Vec3f m_pre_vel =
-                    openvdb::tools::StaggeredBoxSampler::sample(pre_vel_axr, Pre_vel->worldToIndex(wcoord));
-                auto m_acc_vec = (m_vel - m_pre_vel) / dt;
-                float m_acc = m_acc_vec.length();
-                generates += acc_emit * clamp_map(m_acc, acc_range);
+            auto &new_pos = posIter->second;
+            auto &new_vel = velIter->second;
+
+            for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
+                float m_sdf = *iter;
+                if (m_sdf < limit_depth || m_sdf > eps)
+                    continue;
+
+                auto icoord = iter.getCoord();
+                auto wcoord = Liquid_sdf->indexToWorld(icoord);
+                float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord));
+                if (m_solid_sdf < 0)
+                    continue;
+
+                float generates = 0;
+
+                openvdb::Vec3f m_vel =
+                    openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
+                if (curv_emit > eps) {
+                    auto norm_axr = Normal->getConstUnsafeAccessor();
+                    auto curv_axr = Curvature->getConstUnsafeAccessor();
+
+                    float m_curv = openvdb::tools::BoxSampler::sample(curv_axr, Curvature->worldToIndex(wcoord));
+                    openvdb::Vec3f m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord));
+                    if (!checkAngle(m_vel, m_norm, max_angle))
+                        m_curv = 0;
+                    generates += curv_emit * clamp_map(m_curv, curv_range);
+                }
+                if (acc_emit > eps) {
+                    openvdb::Vec3f m_pre_vel =
+                        openvdb::tools::StaggeredBoxSampler::sample(pre_vel_axr, Pre_vel->worldToIndex(wcoord));
+                    auto m_acc_vec = (m_vel - m_pre_vel) / dt;
+                    float m_acc = m_acc_vec.length();
+                    generates += acc_emit * clamp_map(m_acc, acc_range);
+                }
+                if (vor_emit > eps) {
+                    auto vor_axr = Vorticity->getConstUnsafeAccessor();
+
+                    openvdb::Vec3f m_vor_vec =
+                        openvdb::tools::BoxSampler::sample(vor_axr, Vorticity->worldToIndex(wcoord));
+                    float m_vor = m_vor_vec.length();
+                    generates += vor_emit * clamp_map(m_vor, vor_range);
+                }
+
+                float m_speed = m_vel.length();
+                generates *= clamp_map(m_speed, speed_range);
+
+                int m_new_pars = std::round(generates);
+
+                std::uniform_real_distribution<float> disX(wcoord[0] - 0.5f * dx, wcoord[0] + 0.5f * dx);
+                std::uniform_real_distribution<float> disY(wcoord[1] - 0.5f * dx, wcoord[1] + 0.5f * dx);
+                std::uniform_real_distribution<float> disZ(wcoord[2] - 0.5f * dx, wcoord[2] + 0.5f * dx);
+
+                new_pos.reserve(new_pos.size() + m_new_pars);
+                new_vel.reserve(new_vel.size() + m_new_pars);
+
+                for (int n = 0; n < m_new_pars; ++n) {
+                    openvdb::Vec3f m_par_pos{disX(gen), disY(gen), disZ(gen)};
+                    openvdb::Vec3f m_par_vel =
+                        openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(m_par_pos));
+
+                    new_pos.push_back(other_to_vec<3>(m_par_pos));
+                    new_vel.push_back(other_to_vec<3>(m_par_vel));
+                }
             }
-            if (vor_emit > eps) {
-                auto vor_axr = Vorticity->getConstUnsafeAccessor();
+        };
 
-                openvdb::Vec3f m_vor_vec = openvdb::tools::BoxSampler::sample(vor_axr, Vorticity->worldToIndex(wcoord));
-                float m_vor = m_vor_vec.length();
-                generates += vor_emit * clamp_map(m_vor, vor_range);
-            }
+        auto leafman = openvdb::tree::LeafManager<openvdb::FloatTree>(Liquid_sdf->tree());
+        leafman.foreach (particle_emitter);
 
-            float m_speed = m_vel.length();
-            generates *= clamp_map(m_speed, speed_range);
-
-            int m_new_pars = std::round(generates);
-
-            std::uniform_real_distribution<float> disX(wcoord[0] - 0.5f * dx, wcoord[0] + 0.5f * dx);
-            std::uniform_real_distribution<float> disY(wcoord[1] - 0.5f * dx, wcoord[1] + 0.5f * dx);
-            std::uniform_real_distribution<float> disZ(wcoord[2] - 0.5f * dx, wcoord[2] + 0.5f * dx);
-
-            for (int n = 0; n < m_new_pars; ++n) {
-                openvdb::Vec3f m_par_pos{disX(gen), disY(gen), disZ(gen)};
-                openvdb::Vec3f m_par_vel =
-                    openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(m_par_pos));
-                par_pos.push_back(other_to_vec<3>(m_par_pos));
-                par_vel.push_back(other_to_vec<3>(m_par_vel));
-                par_life.push_back(Lifespan);
-            }
+        size_t new_size = 0;
+        for (const auto &p : new_pars_pos) {
+            new_size += p.second.size();
         }
+
+        par_pos.reserve(pars->verts.size() + new_size);
+        par_vel.reserve(pars->verts.size() + new_size);
+        par_life.reserve(pars->verts.size() + new_size);
+        for (const auto &p : new_pars_pos) {
+            const auto &pos = p.second;
+            const auto &vel = new_pars_vel[p.first];
+
+            par_pos.insert(par_pos.end(), pos.begin(), pos.end());
+            par_vel.insert(par_vel.end(), vel.begin(), vel.end());
+        }
+        par_life.insert(par_life.end(), new_size, Lifespan);
+
         pars->verts.update();
 
         set_output("Primitive", pars);
@@ -220,8 +266,8 @@ ZENDEFNODE(WhitewaterSolver, {/* inputs: */
                                "SolidSDF",
                                "Velocity",
                                {"vec3f", "Gravity", "0, -9.8, 0"},
-                               {"float", "AirDrag", "0.05"},
-                               {"float", "Buoyancy", "100"}},
+                               {"float", "AirDrag", "0.1"},
+                               {"float", "Buoyancy", "10"}},
                               /* outputs: */
                               {"Primitive"},
                               /* params: */
