@@ -53,7 +53,7 @@ namespace zeno {
         using T = typename VTileVec::value_type;
         using bv_t = AABBBox<3,T>;
 
-        if(!tris.hasProperty(neighTag) || tris.getPropertySize(neighTag) != 1)
+        if(!tris.hasProperty(neighTag) || tris.getChannelSize(neighTag) != 1)
             return false;
         
         constexpr auto space = zs::execspace_e::cuda;
@@ -110,7 +110,7 @@ namespace zeno {
         using T = typename VTileVec::value_type;
         using bv_t = AABBBox<3,T>;
 
-        if(!tris.hasProperty(neighTag) || (tris.getPropertySize(neighTag) != 3)){
+        if(!tris.hasProperty(neighTag) || (tris.getChannelSize(neighTag) != 3)){
             return false;
         }
 
@@ -186,7 +186,7 @@ namespace zeno {
         using T = typename VTileVec::value_type;
         using bv_t = AABBBox<3,T>;
 
-        if(!tris.hasProperty(neighTag) || tris.getPropertySize(neighTag) != 3) 
+        if(!tris.hasProperty(neighTag) || tris.getChannelSize(neighTag) != 3) 
             return false;
 
         constexpr auto space = zs::execspace_e::cuda;
@@ -223,7 +223,7 @@ namespace zeno {
     //     using T = typename VTileVec::value_type;
     //     using bv_t = AABBBox<3,T>;
 
-    //     if(!edges.hasProperty(neighTag) || edges.getPropertySize(neighTag) != 2)
+    //     if(!edges.hasProperty(neighTag) || edges.getChannelSize(neighTag) != 2)
     //         return false;
 
     //     constexpr auto space = zs::execspace_e::cuda;
@@ -252,10 +252,10 @@ namespace zeno {
         using T = typename VTileVec::value_type;
         using bv_t = AABBBox<3,T>;
 
-        if(!edges.hasProperty(neighTag) || edges.getPropertySize(neighTag) != 2)
+        if(!edges.hasProperty(neighTag) || edges.getChannelSize(neighTag) != 2)
             return false;
 
-        if(!tris.hasProperty(neighTag) || tris.getPropertySize(neighTag) != 3)
+        if(!tris.hasProperty(neighTag) || tris.getChannelSize(neighTag) != 3)
             return false;
 
         constexpr auto space = zs::execspace_e::cuda;
@@ -553,12 +553,15 @@ namespace zeno {
         using vec2i = zs::vec<int,2>;
         using vec3i = zs::vec<int,3>;
         using vec4i = zs::vec<int,4>;
-
+        using table_vec2i_type = zs::bht<int,2,int>;
+        // using table_int_type = zs::bcht<int,int,true,zs::universal_hash<int>,16>;
+        using table_int_type = zs::bht<int,1,int>;
         using IV = zs::vec<int,2>;
 
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;    
 
-        zs::bcht<IV,int,true,zs::universal_hash<IV>,16> tab{topo.get_allocator(),topo.size() * 2};
+        table_vec2i_type tab{topo.get_allocator(),topo.size() * 2};
+        tab.reset(pol,true);
         zs::Vector<int> is{topo.get_allocator(),0},js{topo.get_allocator(),0};
         // bool use_disable = topo_disable_buffer.size() == fasBuffer.size();
 
@@ -571,11 +574,15 @@ namespace zeno {
                 auto b = topo[ei][1];
 
                 auto setNo = disable_points.query(a);
-                if(setNo >= 0)
+                if(setNo >= 0){
+                    // printf("skip line [%d %d] due to corner point[%d]\n",a,b,a);
                     return;
+                }
                 setNo = disable_points.query(b);
-                if(setNo >= 0)
+                if(setNo >= 0){
+                    // printf("skip line [%d %d] due to corner point[%d]\n",a,b,b);
                     return;
+                }
 
                 if(a < 0 || b < 0)
                     return;
@@ -587,6 +594,85 @@ namespace zeno {
                 setNo = disable_lines.query(vec2i{a,b});
                 if(setNo >= 0)
                     return;
+                // setNo = disable_lines.query(vec2i{b,a});
+                // if(setNo >= 0)
+                //     return;
+
+                tab.insert(IV{a,b});                    
+        });
+
+        auto nmEntries = tab.size();
+        // std::cout << "nmEntries of Topo : " << nmEntries << std::endl;
+        is.resize(nmEntries);
+        js.resize(nmEntries);
+
+        pol(zip(is,js,range(tab._activeKeys)),[] ZS_LAMBDA(int &i,int &j,const auto& ij){
+            i = ij[0];
+            j = ij[1];
+        });
+
+        zs::SparseMatrix<int,true> spmat{topo.get_allocator(),(int)fasBuffer.size(),(int)fasBuffer.size()};
+        spmat.build(pol,(int)fasBuffer.size(),(int)fasBuffer.size(),range(is),range(js),true_c);
+
+        return mark_disconnected_island(pol,spmat,fasBuffer);    
+    }
+
+
+    template<typename Pol>
+    int mark_disconnected_island(Pol& pol,
+            const zs::Vector<zs::vec<int,2>>& topo,
+            const zs::bht<int,1,int>& disable_points,
+            const zs::bht<int,2,int>& disable_lines,
+            zs::Vector<int>& fasBuffer,
+            zs::bht<int,2,int>& tab) {
+        using namespace zs;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using table_vec2i_type = zs::bht<int,2,int>;
+        // using table_int_type = zs::bcht<int,int,true,zs::universal_hash<int>,16>;
+        using table_int_type = zs::bht<int,1,int>;
+        using IV = zs::vec<int,2>;
+
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;    
+
+        // table_vec2i_type tab{topo.get_allocator(),topo.size() * 2};
+        tab.reset(pol,true);
+        zs::Vector<int> is{topo.get_allocator(),0},js{topo.get_allocator(),0};
+        // bool use_disable = topo_disable_buffer.size() == fasBuffer.size();
+
+        pol(range(topo.size()),[
+            topo = proxy<space>(topo),
+            disable_points = proxy<space>(disable_points),
+            disable_lines = proxy<space>(disable_lines),
+            tab = proxy<space>(tab)] ZS_LAMBDA(int ei) mutable {
+                auto a = topo[ei][0];
+                auto b = topo[ei][1];
+
+                auto setNo = disable_points.query(a);
+                if(setNo >= 0){
+                    // printf("skip line [%d %d] due to corner point[%d]\n",a,b,a);
+                    return;
+                }
+                setNo = disable_points.query(b);
+                if(setNo >= 0){
+                    // printf("skip line [%d %d] due to corner point[%d]\n",a,b,b);
+                    return;
+                }
+
+                if(a < 0 || b < 0)
+                    return;
+                if(a > b){
+                    auto tmp = a;
+                    a = b;
+                    b = tmp;
+                }
+                setNo = disable_lines.query(vec2i{a,b});
+                if(setNo >= 0)
+                    return;
+                // setNo = disable_lines.query(vec2i{b,a});
+                // if(setNo >= 0)
+                //     return;
 
                 tab.insert(IV{a,b});                    
         });
@@ -607,136 +693,6 @@ namespace zeno {
         return mark_disconnected_island(pol,spmat,fasBuffer);    
     }
 
-    template<typename Pol>
-    int mark_disconnected_island(Pol& pol,
-            const zs::Vector<zs::vec<int,2>>& topo,
-            const zs::Vector<zs::vec<int,2>>& distopo,
-            // const zs::Vector<bool>& topo_disable_buffer,
-            zs::Vector<int>& fasBuffer) {
-        using namespace zs;
-        using vec2i = zs::vec<int,2>;
-        using vec3i = zs::vec<int,3>;
-        using vec4i = zs::vec<int,4>;
-
-        using IV = zs::vec<int,2>;
-
-        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
-
-        // setup the incident matrix
-        // auto simplex_size = topo.getPropertySize("inds");
-        constexpr int simplex_size = 2;
-
-        zs::bcht<IV,int,true,zs::universal_hash<IV>,16> distab{distopo.get_allocator(),distopo.size() * simplex_size};
-        pol(range(distopo.size()),[
-            distopo = proxy<space>(distopo),
-            distab = proxy<space>(distab)] ZS_LAMBDA(int di) mutable {
-                auto a = distopo[di][0];
-                auto b = distopo[di][1];
-                if(a < 0 || b < 0)
-                    return;
-                if(a > b){
-                    auto tmp = a;
-                    a = b;
-                    b = tmp;
-                }
-                distab.insert(IV{a,b});                
-        });
-
-
-        zs::bcht<IV,int,true,zs::universal_hash<IV>,16> tab{topo.get_allocator(),topo.size() * simplex_size};
-        zs::Vector<int> is{topo.get_allocator(),0},js{topo.get_allocator(),0};
-        // bool use_disable = topo_disable_buffer.size() == fasBuffer.size();
-        // auto build_topo = [&](const auto& eles) mutable {
-        // fmt::print("initialize incident matrix topo\n");
-        std::cout << "initialize incident matrix topo" << std::endl;
-        pol(range(topo.size()),[
-            topo = proxy<space>(topo),
-            distab = proxy<space>(distab),
-            // use_disable = use_disable,
-            // topo_disable_buffer = proxy<space>(topo_disable_buffer),
-            // simplex_size = simplex_size,
-            tab = proxy<space>(tab)] ZS_LAMBDA(int ei) mutable {
-                // if(use_disable)
-                //     if(topo_disable_buffer[ei])
-                //         return;
-                // for(int i = 0;i != simplex_size;++i) {
-                //     auto a = reinterpret_bits<int>(eles("inds",(i + 0) % simplex_size,ei));
-                //     auto b = reinterpret_bits<int>(eles("inds",(i + 1) % simplex_size,ei));
-                //     if(a > b){
-                //         auto tmp = a;
-                //         a = b;
-                //         b = tmp;
-                //     }
-
-                //     tab.insert(IV{a,b});
-                // }
-                auto a = topo[ei][0];
-                auto b = topo[ei][1];
-                if(a < 0 || b < 0)
-                    return;
-                if(a > b){
-                    auto tmp = a;
-                    a = b;
-                    b = tmp;
-                }
-                auto setNo = distab.query(vec2i{a,b});
-                if(setNo >= 0)
-                    return;
-                // setNo = distab.query(vec2i{b,a});
-                // if(setNo >= 0)
-                //     return;
-
-                tab.insert(IV{a,b});                    
-        });
-
-        auto nmEntries = tab.size();
-        std::cout << "nmEntries of Topo : " << nmEntries << std::endl;
-        is.resize(nmEntries);
-        js.resize(nmEntries);
-
-        pol(zip(is,js,range(tab._activeKeys)),[] ZS_LAMBDA(int &i,int &j,const auto& ij){
-            i = ij[0];
-            j = ij[1];
-        });
-        // {
-        //     int offset = is.size();
-        //     is.resize(offset + fasBuffer.size());
-        //     js.resize(offset + fasBuffer.size());
-        //     pol(range(fasBuffer.size()),[is = proxy<space>(is),js = proxy<space>(js),offset] ZS_LAMBDA(int i) mutable {
-        //         is[offset + i] = i;
-        //         js[offset + i] = i;
-        //     });
-        // }
-
-        zs::SparseMatrix<int,true> spmat{topo.get_allocator(),(int)fasBuffer.size(),(int)fasBuffer.size()};
-        spmat.build(pol,(int)fasBuffer.size(),(int)fasBuffer.size(),range(is),range(js),true_c);
-
-        return mark_disconnected_island(pol,spmat,fasBuffer);
-
-        // union_find(pol,spmat,range(fasBuffer));
-        // zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{fasBuffer.get_allocator(),fasBuffer.size()};        
-        // pol(range(fasBuffer.size()),[
-        //     vtab = proxy<space>(vtab),
-        //     fasBuffer = proxy<space>(fasBuffer)] ZS_LAMBDA(int vi) mutable {
-        //         auto fa = fasBuffer[vi];
-        //         while(fa != fasBuffer[fa])
-        //             fa = fasBuffer[fa];
-        //         fasBuffer[vi] = fa;
-        //         vtab.insert(fa);
-        // });
-
-        // pol(range(fasBuffer.size()),[
-        //     fasBuffer = proxy<space>(fasBuffer),vtab = proxy<space>(vtab)] ZS_LAMBDA(int vi) mutable {
-        //         auto ancestor = fasBuffer[vi];
-        //         auto setNo = vtab.query(ancestor);
-        //         fasBuffer[vi] = setNo;
-        // });
-
-        // auto nmSets = vtab.size();
-        // return nmSets;
-        // fmt::print("{} disjoint sets in total.\n",nmSets);
-    }
-
     template<typename Pol,typename SurfTriTileVec,typename PosTileVec>
     void eval_intersection_ring_of_surf_tris(Pol& pol,
             const SurfTriTileVec& tris0,
@@ -755,11 +711,112 @@ namespace zeno {
 
     }
 
+    template<typename Pol,typename TetTileVec,typename HalfFacetTileVec>
+    bool build_tetrahedra_half_facet(Pol& pol,
+            TetTileVec& tets,
+            HalfFacetTileVec& halfFacet) {
+        using namespace zs;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using T = typename TetTileVec::value_type;
+
+        constexpr auto space = Pol::exec_tag::value;
+        halfFacet.resize(tets.size() * 4);
+
+        TILEVEC_OPS::fill(pol,halfFacet,"opposite_hf",reinterpret_bits<T>((int)-1));
+        TILEVEC_OPS::fill(pol,halfFacet,"next_hf",reinterpret_bits<T>((int)-1));
+        TILEVEC_OPS::fill(pol,halfFacet,"to_tet",reinterpret_bits<T>((int)-1));
+        TILEVEC_OPS::fill(pol,halfFacet,"local_idx",reinterpret_bits<T>((int)-1));
+
+        bcht<vec3i,int,true,universal_hash<vec3i>,32> hftab{tets.get_allocator(),tets.size() * 4};
+
+        zs::vec<int,3 * 4> facet_indices{
+            1,3,2,
+            0,2,3,
+            0,3,1,
+            0,1,2
+        };
+        pol(zs::range(tets.size()),[
+            tets = proxy<space>({},tets),
+            halfFacet = proxy<space>({},halfFacet),
+            facet_indices = facet_indices,
+            hftab = proxy<space>(hftab)] ZS_LAMBDA(int ti) mutable {
+                auto tet = tets.pack(dim_c<4>,"inds",ti,int_c);
+                vec4i hinds{};
+                for(int i = 0;i != 4;++i) {
+                    auto facet = vec3i{
+                        tet[facet_indices[i * 3 + 0]],
+                        tet[facet_indices[i * 3 + 1]],
+                        tet[facet_indices[i * 3 + 2]]};
+                    int min_idx = 0;
+                    int min_id = facet[i];
+                    for(int i = 1;i != 3;++i)
+                        if(facet[i] < min_id){
+                            min_idx = i;
+                            min_id = facet[i];
+                        }
+                    for(int i = 0;i != min_idx;++i) {
+                        auto tmp = facet[0];
+                        facet[0] = facet[1];
+                        facet[1] = facet[2];
+                        facet[2] = tmp;
+                    }
+
+                    if(hinds[i] = hftab.insert(facet);hinds[i] >= 0){
+                        halfFacet("to_tet",hinds[i]) = zs::reinterpret_bits<T>(ti);
+                        halfFacet("local_idx",hinds[i]) = zs::reinterpret_bits<T>(i);
+                    }
+
+                    if(i == 0) {
+                        tets("hf_inds",ti) = zs::reinterpret_bits<T>((int)hinds[i]);
+                    }
+                }
+                for(int i = 0;i != 4;++i)
+                    halfFacet("next_hf",hinds[i]) = zs::reinterpret_bits<T>((int)hinds[(i + 1) % 3]);
+        });
+
+        pol(zs::range(halfFacet.size()),[
+            tets = proxy<space>({},tets),
+            halfFacet = proxy<space>({},halfFacet),
+            facet_indices = facet_indices,
+            hftab = proxy<space>(hftab)] ZS_LAMBDA(int hi) mutable {
+                auto ti = zs::reinterpret_bits<int>(halfFacet("to_tet",hi));
+                auto tet = tets.pack(dim_c<4>,"inds",ti,int_c);
+                auto local_idx = zs::reinterpret_bits<int>(halfFacet("local_idx",hi));
+                auto facet = vec3i{
+                        tet[facet_indices[local_idx * 3 + 0]],
+                        tet[facet_indices[local_idx * 3 + 1]],
+                        tet[facet_indices[local_idx * 3 + 2]]};
+                int min_idx = 0;
+                int min_id = facet[0];
+                for(int i = 1;i != 3;++i)
+                    if(facet[i] < min_id){
+                        min_idx = i;
+                        min_id = facet[i];
+                    }
+                for(int i = 0;i != min_idx;++i) {
+                    auto tmp = facet[0];
+                    facet[0] = facet[1];
+                    facet[1] = facet[2];
+                    facet[2] = tmp;
+                }
+                auto tmp = facet[1];
+                facet[1] = facet[2];
+                facet[2] = tmp;
+                if(auto no = hftab.query(facet);no >= 0) {
+                    halfFacet("opposite_hf",hi) = zs::reinterpret_bits<T>((int)no);
+                }
+        });
+
+        return true;
+    }
+
     // the input mesh should be a manifold
-    template<typename Pol,typename TriTileVec,typename EdgeTileVec,typename PointTileVec,typename HalfEdgeTileVec>
+    template<typename Pol,typename TriTileVec,typename PointTileVec,typename HalfEdgeTileVec>
     bool build_surf_half_edge(Pol& pol,
             TriTileVec& tris,
-            EdgeTileVec& lines,
+            // EdgeTileVec& lines,
             PointTileVec& points,
             HalfEdgeTileVec& halfEdge) {
         using namespace zs;
@@ -771,9 +828,9 @@ namespace zeno {
 
         halfEdge.resize(tris.size() * 3);
 
-        TILEVEC_OPS::fill(pol,halfEdge,"to_vertex",reinterpret_bits<T>((int)-1));
+        TILEVEC_OPS::fill(pol,halfEdge,"local_vertex_id",reinterpret_bits<T>((int)-1));
         TILEVEC_OPS::fill(pol,halfEdge,"to_face",reinterpret_bits<T>((int)-1));
-        TILEVEC_OPS::fill(pol,halfEdge,"to_edge",reinterpret_bits<T>((int)-1));
+        // TILEVEC_OPS::fill(pol,halfEdge,"to_edge",reinterpret_bits<T>((int)-1));
         TILEVEC_OPS::fill(pol,halfEdge,"opposite_he",reinterpret_bits<T>((int)-1));
         TILEVEC_OPS::fill(pol,halfEdge,"next_he",reinterpret_bits<T>((int)-1));      
         // we might also need a space hash structure here, map from [i1,i2]->[ej]
@@ -781,27 +838,6 @@ namespace zeno {
         // surface tri edges' indexing the halfedge list
         bcht<vec2i,int,true,universal_hash<vec2i>,32> hetab{tris.get_allocator(),tris.size() * 3};
         // Vector<int> sfi{tris.get_allocator(),tris.size() * 3};
-
-
-        bcht<vec2i,int,true,universal_hash<vec2i>,32> etab{halfEdge.get_allocator(),halfEdge.size()};
-        Vector<int> sei(lines.get_allocator(),lines.size());
-        pol(range(lines.size()),[etab = proxy<space>(etab),
-            lines = proxy<space>({},lines),
-            sei = proxy<space>(sei)] ZS_LAMBDA(int ei) mutable {
-                auto edge = lines.pack(dim_c<2>,"inds",ei,int_c);
-                auto a = edge[0];
-                auto b = edge[1];
-                if(a > b){
-                    auto tmp = a;
-                    a = b;
-                    b = tmp;
-                }
-                if(int no = etab.insert(vec2i{a,b});no >= 0)
-                    sei[no] = ei;
-                else{
-                    printf("same edge [%d %d] has been inserted twice\n",a,b);
-                }
-        });
 
         // surface points' indexing one of the connected half-edge
         bcht<int,int,true,universal_hash<int>,32> ptab{points.get_allocator(),points.size()};
@@ -821,9 +857,9 @@ namespace zeno {
                 points = proxy<space>({},points),
                 ptab = proxy<space>(ptab),
                 spi = proxy<space>(spi),
-                lines = proxy<space>({},lines),
-                etab = proxy<space>(etab),
-                sei = proxy<space>(sei),
+                // lines = proxy<space>({},lines),
+                // etab = proxy<space>(etab),
+                // sei = proxy<space>(sei),
                 halfEdge = proxy<space>({},halfEdge),
                 tris = proxy<space>({},tris)] ZS_LAMBDA(int ti) mutable {
                     auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
@@ -832,7 +868,7 @@ namespace zeno {
                         if(hinds[i] = hetab.insert(vec2i{tri[i],tri[(i+1)%3]});hinds[i] >= 0){
                             int no = hinds[i];
                             auto pno = spi[ptab.query(tri[i])];
-                            halfEdge("to_vertex",no) = reinterpret_bits<T>((int)tri[i]);
+                            halfEdge("local_vertex_id",no) = reinterpret_bits<T>((int)i);
                             points("he_inds",pno) = reinterpret_bits<T>(no);
 
                             // if(tri[i] < tri[(i+1)%3]){
@@ -843,9 +879,9 @@ namespace zeno {
                                 a = b;
                                 b = tmp;
                             }
-                            int eno = sei[etab.query(vec2i{a,b})];
-                            halfEdge("to_edge",no) = reinterpret_bits<T>(eno);
-                            lines("he_inds",eno) = reinterpret_bits<T>(no);
+                            // int eno = sei[etab.query(vec2i{a,b})];
+                            // halfEdge("to_edge",no) = reinterpret_bits<T>(eno);
+                            // lines("he_inds",eno) = reinterpret_bits<T>(no);
                             // }
                             halfEdge("to_face",no) = reinterpret_bits<T>(ti);
                             if(i == 0)
@@ -864,10 +900,13 @@ namespace zeno {
         });
 
         pol(range(halfEdge.size()),
-            [halfEdge = proxy<space>({},halfEdge),hetab = proxy<space>(hetab)] ZS_LAMBDA(int hi) mutable {
-                auto a = reinterpret_bits<int>(halfEdge("to_vertex",hi));
-                auto nxtHalfEdgeIdx = reinterpret_bits<int>(halfEdge("next_he",hi));
-                auto b = reinterpret_bits<int>(halfEdge("to_vertex",nxtHalfEdgeIdx));
+            [halfEdge = proxy<space>({},halfEdge),hetab = proxy<space>(hetab),tris = proxy<space>({},tris)] ZS_LAMBDA(int hi) mutable {
+                auto ti = zs::reinterpret_bits<int>(halfEdge("to_face",hi));
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                auto local_vidx = reinterpret_bits<int>(halfEdge("local_vertex_id",hi));
+                auto a = tri[local_vidx];
+                // auto nxtHalfEdgeIdx = reinterpret_bits<int>(halfEdge("next_he",hi));
+                auto b = tri[(local_vidx + 1) % 3];
                 auto key = vec2i{b,a};
 
                 // printf("half_edge[%d] = [%d %d]\n",hi,a,b);
@@ -898,31 +937,35 @@ namespace zeno {
         return hei;
     }
 
-    template<typename HalfEdgeTileVec>
-    constexpr int half_edge_get_another_vertex(int hei,const HalfEdgeTileVec& half_edges) {
+    template<typename HalfEdgeTileVec,typename TriTileVec>
+    constexpr int half_edge_get_another_vertex(int hei,const HalfEdgeTileVec& half_edges,const TriTileVec& tris) {
         using namespace zs;
         // hei = reinterpret_bits<int>(half_edges("next_he",hei));
         hei = get_next_half_edge(hei,half_edges,1,false);
-        return reinterpret_bits<int>(half_edges("to_vertex",hei));
+        auto ti = zs::reinterpret_bits<int>(half_edges("to_face",hei));
+        auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+        return tri[reinterpret_bits<int>(half_edges("local_vertex_id",hei))];
     }
 
     // some operation with half edge structure
-    template<int MAX_NEIGHS,typename HalfEdgeTileVec>
-    constexpr zs::vec<int,MAX_NEIGHS> get_one_ring_neigh_points(int hei,const HalfEdgeTileVec& half_edges) {
+    template<int MAX_NEIGHS,typename HalfEdgeTileVec,typename TriTileVec>
+    constexpr zs::vec<int,MAX_NEIGHS> get_one_ring_neigh_points(int hei,const HalfEdgeTileVec& half_edges,const TriTileVec& tris) {
         using namespace zs;
         auto res = zs::vec<int,MAX_NEIGHS>::uniform(-1);
         auto hei0 = hei;
         int i = 0;
         // res[0] = half_edge_get_another_vertex(hei,half_edges);
         for(i = 0;i != MAX_NEIGHS;++i) {
-            res[i] = half_edge_get_another_vertex(hei,half_edges);
+            res[i] = half_edge_get_another_vertex(hei,half_edges,tris);
             auto nhei = get_next_half_edge(hei,half_edges,2,true);
             if(nhei == hei0)
                 break;
             if(nhei < 0 && (i+1) < MAX_NEIGHS) {
                 nhei = get_next_half_edge(hei,half_edges,2,false);
                 if(nhei > 0){
-                    res[i + 1] = reinterpret_bits<int>(half_edges("to_vertex",nhei));
+                    auto ti = zs::reinterpret_bits<int>(half_edges("to_face",nhei));
+                    auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                    res[i + 1] = tri[reinterpret_bits<int>(half_edges("local_vertex_id",nhei))];
                     break;
                 }
             }

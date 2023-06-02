@@ -736,7 +736,7 @@ struct ToZSTriMesh : INode {
 
         bool include_customed_properties = get_param<int>("add_customed_attr");
 
-        std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3}};
+        std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3},{"inds",1}};
         std::vector<zs::PropertyTag> eleTags{{"inds", 3}, {"area", 1}};
 
         std::vector<zs::PropertyTag> auxVertAttribs{};
@@ -798,6 +798,7 @@ struct ToZSTriMesh : INode {
         ompExec(Collapse{pars.size()},
                 [pars = proxy<space>({}, pars), &pos, prim, &auxVertAttribs, velsPtr](int vi) mutable {
                     pars.template tuple<3>("x", vi) = vec3::from_array(pos[vi]);
+                    pars("inds",vi) = zs::reinterpret_bits<float>(vi);
                     auto vel = vec3::zeros();
                     if (velsPtr != nullptr)
                         vel = vec3::from_array(velsPtr[vi]);
@@ -830,6 +831,7 @@ struct ToZSTriMesh : INode {
                     eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
             }
         });
+
 
         pars = pars.clone({zs::memsrc_e::device, 0});
         eles = eles.clone({zs::memsrc_e::device, 0});
