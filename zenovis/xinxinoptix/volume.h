@@ -1,21 +1,22 @@
 #pragma once
 
+#include <nanovdb/NanoVDB.h>
+
+#define _DELTA_TRACKING_ true
+
+#ifdef __CUDACC_RTC__
+#else
+#endif
+
 #include <optix.h>
+
 #include <cuda/random.h>
 #include <cuda/helpers.h>
 #include <sutil/vec_math.h>
-#include "zxxglslvec.h"
-#include <math_constants.h>
 
-#ifdef __CUDACC_RTC__ 
-    #define _CPU_GPU_ __device__ __host__
-#else
-    #define _CPU_GPU_ /* Nothing */
-#endif
-
-#define _FLT_EPL_ 1.19209290e-7F
-
-#define _DELTA_TRACKING_ true
+namespace nanovdb {
+    using Fp32 = float;
+};
 
 namespace pbrt {
 

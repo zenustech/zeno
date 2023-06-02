@@ -1,8 +1,9 @@
 #pragma once
 
 #include <optix.h>
-#include "optixPathTracer.h"
+
 #include "zxxglslvec.h"
+#include "optixPathTracer.h"
 
 #define _FLT_EPL_ 1.19209290e-7F
 
@@ -111,7 +112,6 @@ struct RadiancePRD
     // cihou nanovdb
     float vol_t0=0, vol_t1=0;
 
-    float3 vol_tr = make_float3(1.0f);
     unsigned int vol_depth = 0;
     bool test_distance = false;
     bool origin_inside_vdb = false;

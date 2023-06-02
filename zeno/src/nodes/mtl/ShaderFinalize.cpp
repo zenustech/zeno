@@ -8,7 +8,10 @@
 #include <zeno/utils/string.h>
 #include <zeno/types/UserData.h>
 
+#include <memory>
 #include <string>
+#include <iostream>
+#include "magic_enum.hpp"
 
 namespace zeno {
 
@@ -57,7 +60,7 @@ struct ShaderFinalize : INode {
             {1, "mat_emissionIntensity"},
             {3, "mat_emission"},
             {3, "mat_reflectance"}, 
-            {1,"mat_opacity"},
+            {1, "mat_opacity"},
 
             {1, "vol_depth"},
             {1, "vol_extinction"},
@@ -112,17 +115,9 @@ struct ShaderFinalize : INode {
         });
         auto commonCode = em.getCommonCode();
 
-        int   vol_depth = (int)get_input2<float>("vol_depth");
-        float vol_extinction = get_input2<float>("vol_extinction");
-
-        vol_depth = clamp(vol_depth, 9, 99);
-
-        commonCode += "static const int   _vol_depth = " + std::to_string(vol_depth) + ";\n";
-        commonCode += "static const float _vol_extinction = " + std::to_string(vol_extinction) + ";\n";
-
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
-        mtl->common = std::move(commonCode);
+
         if (has_input("extensionsCode"))
             mtl->extensions = get_input<zeno::StringObject>("extensionsCode")->get();
 
@@ -141,9 +136,24 @@ struct ShaderFinalize : INode {
 
         if (has_input("tex3dList"))
         {
-            auto tex3dList = get_input<ListObject>("tex3dList")->get<zeno::StringObject>();
+            int   vol_depth = (int)get_input2<float>("vol_depth");
+            float vol_extinction = get_input2<float>("vol_extinction");
 
-            for (const auto& ele : tex3dList) {
+            vol_depth = clamp(vol_depth, 9, 99);
+
+            commonCode += "static const int   _vol_depth = " + std::to_string(vol_depth) + ";\n";
+            commonCode += "static const float _vol_extinction = " + std::to_string(vol_extinction) + ";\n";
+
+            auto tex3dList = get_input<ListObject>("tex3dList")->getRaw(); //get<zeno::StringObject>();
+
+            for (const auto& tex3d : tex3dList) {
+
+                const auto ele = dynamic_cast<zeno::StringObject*>(tex3d);
+                if (ele == nullptr) {
+                    auto texObject = std::dynamic_pointer_cast<zeno::TextureObjectVDB>(tex3d->clone());
+                    mtl->tex3Ds.push_back(texObject); 
+                    continue;
+                }
 
                 auto path = ele->get();
                 auto ud = ele->userData();
@@ -160,13 +170,34 @@ struct ShaderFinalize : INode {
                     } else if (ud.isa<zeno::NumericObject>(_key_)) {
                         auto channel_number = ud.get2<int>(_key_);
                         channel_number = max(0, channel_number);
-
                         channel_string = std::to_string(channel_number);
                     } 
                 }
-                mtl->tex3Ds.push_back(std::make_pair(path, channel_string)); 
+
+                auto toVDB = std::make_shared<TextureObjectVDB>();
+                toVDB->path = path;
+                toVDB->channel = channel_string;
+                toVDB->eleType = TextureObjectVDB::ElementType::Fp32;
+
+                mtl->tex3Ds.push_back(std::move(toVDB)); 
             }
 
+            std::stringstream type_string;
+
+            // using DataTypeNVDB = float; nanovdb::Fp32;
+            // using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
+
+            for (size_t i=0; i<mtl->tex3Ds.size(); ++i) {
+                auto& tex3d = mtl->tex3Ds.at(i);
+                auto idx = std::to_string(i);
+
+                auto nano_type = magic_enum::enum_name(tex3d->eleType);
+
+                type_string << "using DataTypeNVDB" << idx << " = nanovdb::" << nano_type << "; \n";
+                type_string << "using GridTypeNVDB" << idx << " = nanovdb::NanoGrid<DataTypeNVDB" << idx + ">; \n";
+            }
+            commonCode += type_string.str();
+            //std::cout << commonCode << std::endl; 
             auto ud = get_input<ListObject>("tex3dList")->userData();
 
             if ( ud.has("transform") ) {
@@ -176,6 +207,7 @@ struct ShaderFinalize : INode {
             }
         }
 
+        mtl->common = std::move(commonCode);
         //if (has_input("mtlid"))
         //{
             mtl->mtlidkey = get_input2<std::string>("mtlid");

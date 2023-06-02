@@ -1,17 +1,10 @@
 #include "optixVolume.h"
 
-#include "vec_math.h"
-// #include "OptiXStuff.h"
-
-#include <cstdint>
+#include <iostream>
 #include <filesystem>
-
-#include <sutil/Exception.h>
 #include <nanovdb/util/IO.h>
 #include <nanovdb/util/GridStats.h>
 #include <nanovdb/util/OpenToNanoVDB.h>
-
-#include <glm/gtx/matrix_decompose.hpp>
 
 #include <optix_stubs.h>
 #include <optix_function_table_definition.h>
@@ -20,7 +13,7 @@
 // Functions for manipulating Volume instances
 // ----------------------------------------------------------------------------
 
-void fetchGridName( const std::string& path, std::string& name) {
+void checkGridName( const std::string& path, std::string& name) {
     openvdb::initialize();
     openvdb::io::File file(path);
     
@@ -108,7 +101,7 @@ void loadVolumeNVDB( VolumeWrapper& volume, const std::string& path) {
 
     for (uint i=0; i<list.size(); ++i) {
         volume.tasks.emplace_back([&volume, path, i] {
-            loadGrid( volume.grids[i], path, i);
+            loadGrid( *volume.grids[i], path, i);
         });
     }
 }
@@ -156,7 +149,7 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     }
 
     assert(tmp_grids.size() != 0);
-    auto& baseGrid = tmp_grids.front();
+    auto baseGrid = tmp_grids.front();
     
     file.close();
 
@@ -185,32 +178,34 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     auto result_transform = openvdb::math::Transform::createLinearTransform(vdb_matrix);
 
     volume.grids.clear();
-    volume.grids.resize(tmp_grids.size());
+    volume.grids.reserve(tmp_grids.size());
 
     volume.tasks.clear();
-
-        auto parsing = [](openvdb::GridBase::Ptr& grid_ptr, nanovdb::GridHandle<>& result) {
-            openvdb::FloatGrid::Ptr srcGrid = openvdb::gridPtrCast<openvdb::FloatGrid>(grid_ptr);
-            result = nanovdb::openToNanoVDB(*srcGrid, nanovdb::StatsMode::All); 
-        };
+    volume.tasks.reserve(tmp_grids.size());
 
     for (uint i=0; i<grid_count; ++i) {
         auto grid = tmp_grids[i];
         grid->setTransform(result_transform);
+         
+        //volume.grids.push_back(GridWrapper());
+        //parsing(grid, volume.grids[i].handle);
 
-        parsing(grid, volume.grids[i].handle);
+        makeTypedGridWrapper(volume.type, volume.grids);
+        volume.grids[i]->parsing(grid);
 
         if (picking) {
             auto name = volume.selected[i];
             volume.tasks.emplace_back([&volume, path, name, i] {
-                loadGrid(volume.grids[i], path, name);
+                loadGrid(*volume.grids[i], path, name);
             });
         } else {
             volume.tasks.emplace_back([&volume, path, i] {
-                loadGrid(volume.grids[i], path, i);
+                loadGrid(*volume.grids[i], path, i);
             });
         } // else 
     };
+
+    std::cout << "-----------------------------------------------" << std::endl;
 }
 
 void processGrid(GridWrapper& grid, const std::string& path) 
@@ -225,29 +220,13 @@ void processGrid(GridWrapper& grid, const std::string& path)
 
     if (grid.deviceptr != 0) { return; }
 
-    // auto x = gridHdl.grid<nanovdb::Fp16>();
-    // const nanovdb::Map& map = gridHdl.grid<float>()->map();
-
     // NanoVDB files represent the sparse data-structure as flat arrays that can be
     // uploaded to the device "as-is".
     assert( gridHdl.size() != 0 );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &grid.deviceptr ), gridHdl.size() ) );
     CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( grid.deviceptr ), gridHdl.data(), gridHdl.size(), cudaMemcpyHostToDevice ) );
 
-        auto* tmp_grid = gridHdl.grid<float>(); //.grid<nanovdb::FloatGrid>();
-
-        auto mini = tmp_grid->tree().root().minimum();
-        auto maxi = tmp_grid->tree().root().maximum();
-
-        auto average = tmp_grid->tree().root().average();
-        auto variance = tmp_grid->tree().root().variance();
-        auto deviation = tmp_grid->tree().root().stdDeviation();
-
-        grid.max_value = maxi;
-
-    auto gridname = meta->shortGridName();
-
-    std::cout << "max value is " << maxi << " in " << path << " {" << gridname << "}." << std::endl;
+    grid.max_value = grid.analysis(path);
 }
 
 void loadGrid( GridWrapper& grid, const std::string& path, const uint index ) 
@@ -293,8 +272,8 @@ void unloadGrid(GridWrapper& grid) {
 void cleanupVolume( VolumeWrapper& volume )
 {
     // OptiX cleanup
-    for (auto& grid : volume.grids) {
-        unloadGrid(grid);
+    for (auto grid : volume.grids) {
+        unloadGrid(*grid);
     }
 }
 
@@ -305,10 +284,8 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
     // For Optix the NanoVDB volume is represented as a 3D box in index coordinate space. The volume's
     // GAS is created from a single AABB. Because the index space is by definition axis aligned with the
     // volume's voxels, this AABB is the bounding-box of the volume's "active voxels".
-
     {
-        auto& baseGrid = volume.grids.front();
-        auto grid_handle = baseGrid.handle.grid<float>();
+        auto baseGrid = volume.grids.front();
 
 		// get this grid's aabb
         sutil::Aabb aabb;
@@ -316,7 +293,7 @@ void buildVolumeAccel( VolumeAccel& accel, const VolumeWrapper& volume, const Op
             // indexBBox returns the extrema of the (integer) voxel coordinates.
             // Thus the actual bounds of the space covered by those voxels extends
             // by one unit (or one "voxel size") beyond those maximum indices.
-            auto bbox = grid_handle->indexBBox();
+            auto bbox = baseGrid->indexedBox();
             nanovdb::Coord boundsMin( bbox.min() );
             nanovdb::Coord boundsMax( bbox.max() + nanovdb::Coord( 1 ) ); // extend by one unit
 
@@ -414,10 +391,9 @@ void getOptixTransform( const VolumeWrapper& volume, float transform[] )
 {
     // Extract the index-to-world-space affine transform from the Grid and convert
     // to 3x4 row-major matrix for Optix.
-    auto& baseGrid = volume.grids.front();
+    auto baseGrid = volume.grids.front();
+    const nanovdb::Map& map = baseGrid->nanoMAP();
 
-	auto* grid_handle = baseGrid.handle.grid<float>();
-	const nanovdb::Map& map = grid_handle->map();
 	transform[0] = map.mMatF[0]; transform[1] = map.mMatF[1]; transform[2]  = map.mMatF[2]; transform[3]  = map.mVecF[0];
 	transform[4] = map.mMatF[3]; transform[5] = map.mMatF[4]; transform[6]  = map.mMatF[5]; transform[7]  = map.mVecF[1];
 	transform[8] = map.mMatF[6]; transform[9] = map.mMatF[7]; transform[10] = map.mMatF[8]; transform[11] = map.mVecF[2];
@@ -425,8 +401,8 @@ void getOptixTransform( const VolumeWrapper& volume, float transform[] )
 
 sutil::Aabb worldAabb( const VolumeWrapper& volume )
 {
-    auto& baseGrid = volume.grids.front();
-	auto* meta = baseGrid.handle.gridMetaData();
+    auto baseGrid = volume.grids.front();
+	auto* meta = baseGrid->handle.gridMetaData();
 
 	auto bbox = meta->worldBBox();
 	float3 min = { static_cast<float>( bbox.min()[0] ),

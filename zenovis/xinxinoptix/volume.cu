@@ -4,10 +4,11 @@
 
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
+#include "zxxglslvec.h"
 
 // #include <cuda_fp16.h>
 // #include "nvfunctional"
-
+#include <math_constants.h>
 #include <nanovdb/NanoVDB.h>
 #include <nanovdb/util/Ray.h>
 #include <nanovdb/util/HDDA.h>
@@ -16,8 +17,11 @@
 //PLACEHOLDER
 static const int   _vol_depth = 99;
 static const float _vol_extinction = 1.0f;
+using DataTypeNVDB0 = nanovdb::Fp32;
+using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 //PLACEHOLDER
 
+#define USING_VDB 1
 //COMMON_CODE
 
 /* w0, w1, w2, and w3 are the four cubic B-spline basis functions. */
@@ -96,12 +100,18 @@ inline __device__ float _LERP_(float t, float s1, float s2)
     return fma(t, s2, fma(-t, s1, s1));
 }
 
-template <typename Acc, int Order>
-inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
+template <typename Acc, typename DataTypeNVDB, uint8_t Order>
+inline __device__ float nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
+    
+    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
-        using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, Order, true>;
+    if constexpr(3 == Order) {
+        nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, true> s(acc);
+        return interp_tricubic_nanovdb(s, point_indexd[0], point_indexd[1], point_indexd[2]);
+    } else {
+        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, Order, true>;
         return Sampler(acc)(point_indexd);
-
+    }
         //nanovdb::BaseStencil<typename DerivedType, int SIZE, typename GridT>
         //auto bs = nanovdb::BoxStencil<nanovdb::FloatGrid*>(grid);
 
@@ -136,11 +146,12 @@ struct VolumeIn {
     vec3 _local_pos_ = vec3(CUDART_NAN_F);
     __inline__ __device__ vec3 localPosLazy() {
         if ( isnan(_local_pos_.x) ) {
+            using GridTypeNVDB = GridTypeNVDB0;
 
             const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
             const auto grid_ptr = sbt_data->vdb_grids[0];
-            const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
+            const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
             //const auto& _acc = _grid->tree().getAccessor();
             auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(pos);
             pos_indexed = _grid->worldToIndexF(pos_indexed);
@@ -153,11 +164,12 @@ struct VolumeIn {
     vec3 _uniform_pos_ = vec3(CUDART_NAN_F);
     __inline__ __device__ vec3 uniformPosLazy() {
         if ( isnan(_uniform_pos_.x) ) {
+            using GridTypeNVDB = GridTypeNVDB0;
 
             const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
             const auto grid_ptr = sbt_data->vdb_grids[0];
-            const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
+            const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
 
             auto bbox = _grid->indexBBox();
 
@@ -176,6 +188,11 @@ struct VolumeIn {
             auto local_pos = localPosLazy();
 
             _uniform_pos_ = (local_pos - min) / (max - min);
+            _uniform_pos_ = clamp(_uniform_pos_, vec3(0.0f), vec3(1.0f));
+
+            assert(_uniform_pos_.x >= 0);
+            assert(_uniform_pos_.y >= 0);
+            assert(_uniform_pos_.z >= 0);
         }
         return _uniform_pos_;
     }
@@ -190,12 +207,11 @@ struct VolumeOut {
     vec3 albedo;
 };
 
-#define USING_VDB 1
-
-template <int Order, bool WorldSpace>
+template <uint8_t Order, bool WorldSpace, typename DataTypeNVDB>
 static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos) {
+    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
-    const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
+    const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
     const auto& _acc = _grid->tree().getAccessor();
 
     auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
@@ -205,7 +221,7 @@ static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr,
         pos_indexed = _grid->worldToIndexF(pos_indexed);
     } //_grid->tree().root().maximum();
 
-    return vec2 { linearSampling<decltype(_acc), Order>(_acc, pos_indexed), _grid->tree().root().maximum() };
+    return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed), _grid->tree().root().maximum() };
 }
 
 static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn &attrs) {
@@ -324,7 +340,7 @@ inline __device__ float transmittanceHDDA(
 extern "C" __global__ void __intersection__volume()
 {
     const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
-    const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>( sbt_data->vdb_grids[0] );
+    const auto* grid = reinterpret_cast<const GridTypeNVDB0*>( sbt_data->vdb_grids[0] );
     assert( grid );
 
     const float3 ray_orig = optixGetWorldRayOrigin(); //optixGetObjectRayOrigin();
@@ -332,7 +348,7 @@ extern "C" __global__ void __intersection__volume()
 
     auto dbox = grid->worldBBox(); //grid->indexBBox();
     float t0 = optixGetRayTmin();
-    float t1 = optixGetRayTmax();
+    float t1 = _FLT_MAX_; //optixGetRayTmax();
 
     auto iray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
                                      reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
@@ -360,7 +376,7 @@ extern "C" __global__ void __intersection__volume()
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->test_distance) { return; }
+    //if(prd->test_distance) { return; }
     
     prd->countEmitted = false;
     prd->radiance = make_float3(0);
@@ -373,8 +389,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float3 ray_orig = optixGetWorldRayOrigin();
     float3 ray_dir  = optixGetWorldRayDirection();
 
-          float t0 = prd->vol_t0; // world space
-          float t1 = prd->vol_t1; // world space
+        float t0 = prd->vol_t0; // world space
+        float t1 = prd->vol_t1; // world space
 
     RadiancePRD testPRD {};
     testPRD.vol_t1 = _FLT_MAX_;
@@ -444,7 +460,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     auto level = _vol_depth;
     while(--level > 0) {
         auto prob = rnd(prd->seed);
-        t_ele -= log(prob) / (sigma_t);
+        t_ele -= log(1.0f-prob) / (sigma_t);
 
         if (t_ele >= t_max) {
 
@@ -474,8 +490,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
         
         vol_out = evalVolume(sbt_data->uniforms, vol_in);
         v_density = vol_out.density;
-
-        //prd->vol_tr *= exp(-sigma_t * t_ele);
         
         float s_prob = vol_out.density;
         float n_prob = 1.0f - s_prob;
@@ -489,10 +503,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         float3 le = vol_out.emission;
 
         if ( length(le) > 0.0f ) {
-            //le *= exp(-sigma_t * t_ele);
-        
-            float3 emission_prob = a_prob_rgb / _prob_rgb; // scale by emission prob
-
+            //float3 emission_prob = a_prob_rgb / _prob_rgb; // scale by emission prob
             //le *= emission_prob; 
             emitting += le;
         }
@@ -505,11 +516,9 @@ extern "C" __global__ void __closesthit__radiance_volume()
             float2 uu = {rnd(prd->seed), rnd(prd->seed)};
             auto prob = hg.Sample_p(-ray_dir, new_dir, uu);              
             //auto relative_prob = prob * (CUDART_PI_F * 4);
-            new_dir = normalize(new_dir);
+            ray_dir = normalize(new_dir);;
 
             scattering = s_prob_rgb * (_prob_rgb - a_prob_rgb) / _prob_rgb; // scattering prob
-                
-            ray_dir = new_dir;
             break;
         } else {
             v_density = 0; 
@@ -683,7 +692,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     while(--level > 0) {
 
         auto prob = rnd(prd->seed);
-        t_ele -= log(prob) / (sigma_t);
+        t_ele -= log(1.0f-prob) / (sigma_t);
 
         test_point = ray_orig + (t0+t_ele) * ray_dir;
 
