@@ -102,7 +102,7 @@ void writeObjFile(
 
     size_t vatWidth = std::min(vertices.size(), (size_t)8192);
     auto rowsPerFrame = static_cast<int32_t>(std::ceil((float)vertices.size() / (float)vatWidth));
-    size_t vatHeight = rowsPerFrame * (frameNum - 1);
+    size_t vatHeight = rowsPerFrame * frameNum;
     fprintf(fp, "# metadata VATWidth %d\n", vatWidth);
     fprintf(fp, "# metadata RowsPerFrame %d\n", rowsPerFrame);
     fprintf(fp, "# metadata FrameNum %d\n", frameNum);
@@ -214,27 +214,26 @@ struct AlembicToSoftBodyVAT: public INode {
                 if (frameIndex == 0) {
                     vatWidth = std::min(mergedPrim->verts.size(), (size_t)8192);
                     rowsPerFrame = static_cast<int32_t>(std::ceil((float)mergedPrim->verts.size() / (float)vatWidth));
-                    vatHeight = rowsPerFrame * (frameNum - 1);
+                    vatHeight = rowsPerFrame * frameNum
                     spaceToAlign = vatWidth * rowsPerFrame - mergedPrim->verts.size();
                     std::string objPath = writePath + ".obj";
                     if (std::filesystem::exists(objPath)) {
                         std::filesystem::remove(objPath);
                     }
                     writeObjFile(mergedPrim, objPath.c_str(), frameNum, bbox);
-                } else {
-                    // Save other frames to vat
-                    // Position
-                    for (auto& vert : mergedPrim->verts) {
-                        auto vec = normalized_vec3f(vert, bbox.first, bbox.second);
-                        pos_f32.push_back(vec[0]);
-                        pos_f32.push_back(vec[1]);
-                        pos_f32.push_back(vec[2]);
-                    }
-                    for (size_t idx = 0; idx < spaceToAlign; ++idx) {
-                        pos_f32.push_back(0.0f);
-                        pos_f32.push_back(0.0f);
-                        pos_f32.push_back(0.0f);
-                    }
+                }
+                // Save other frames to vat
+                // Position
+                for (auto& vert : mergedPrim->verts) {
+                    auto vec = normalized_vec3f(vert, bbox.first, bbox.second);
+                    pos_f32.push_back(vec[0]);
+                    pos_f32.push_back(vec[1]);
+                    pos_f32.push_back(vec[2]);
+                }
+                for (size_t idx = 0; idx < spaceToAlign; ++idx) {
+                    pos_f32.push_back(0.0f);
+                    pos_f32.push_back(0.0f);
+                    pos_f32.push_back(0.0f);
                 }
                 zeno::primCalcNormal(mergedPrim.get());
                 auto& nrm_ref = mergedPrim->verts.attr<vec3f>("nrm");
@@ -258,7 +257,7 @@ struct AlembicToSoftBodyVAT: public INode {
                 std::filesystem::remove(nrmPath);
             }
             SaveEXR(pos_f32.data(), vatWidth, vatHeight, posPath.c_str());
-            SaveEXR(nrm_f32.data(), vatWidth, vatHeight + rowsPerFrame, nrmPath.c_str());
+            SaveEXR(nrm_f32.data(), vatWidth, vatHeight, nrmPath.c_str());
         }
     }
 };
