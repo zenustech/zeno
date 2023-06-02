@@ -9,12 +9,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <zeno/utils/log.h>
-#include <opencv2/videoio.hpp>
-#include <filesystem>
-#include <opencv2/features2d.hpp>
 #include <opencv2/opencv.hpp>
-//#include <opencv2/xfeatures2d.hpp>
-
 
 using namespace cv;
 
@@ -99,6 +94,7 @@ static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int h
 {
     dx.resize(width * height);
     dy.resize(width * height);
+#pragma omp parallel for
     for (int y = 1; y < height - 1; y++) {
         for (int x = 1; x < width - 1; x++) {
             float gx = -grayImage->verts[(y - 1) * width + x - 1][0] + grayImage->verts[(y - 1) * width + x + 1][0]
@@ -120,7 +116,7 @@ static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, in
     std::vector<float> dx, dy;
     sobel(grayImage, width, height, dx, dy);
     normal.resize(width * height * 3);
-
+#pragma omp parallel for
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             int i = y * width + x;
@@ -387,522 +383,6 @@ ZENDEFNODE(ImageFlip, {
     {},
     {"image"},
 });
-
-struct Composite: INode {
-    virtual void apply() override {
-        auto compmode = get_input2<std::string>("Compmode");
-        auto maskmode1 = get_input2<std::string>("Mask1mode");
-        auto maskmode2 = get_input2<std::string>("Mask2mode");
-        int w1 = 1024 ;
-        int h1 = 1024 ;
-        auto image1 = std::make_shared<PrimitiveObject>();
-        image1->verts.resize(w1 * h1);
-        image1->userData().set2("isImage", 1);
-        image1->userData().set2("w", w1);
-        image1->userData().set2("h", h1);
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->verts.resize(w1 * h1);
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w1);
-        image2->userData().set2("h", h1);
-        auto A1 = std::make_shared<PrimitiveObject>();
-        A1->verts.resize(w1 * h1);
-        A1->userData().set2("isImage", 1);
-        A1->userData().set2("w", w1);
-        A1->userData().set2("h", h1);
-        A1->verts.add_attr<float>("alpha");
-        for(int i = 0;i < w1 * h1;i++){
-            A1->verts.attr<float>("alpha")[i] = 0.0;
-        }
-        std::vector<float> &alpha1 = A1->verts.attr<float>("alpha");
-        auto A2 = std::make_shared<PrimitiveObject>();
-        A2->verts.resize(w1 * h1);
-        A2->userData().set2("isImage", 1);
-        A2->userData().set2("w", w1);
-        A2->userData().set2("h", h1);
-        A2->verts.add_attr<float>("alpha");
-        for(int i = 0;i < w1 * h1;i++){
-            A2->verts.attr<float>("alpha")[i] = 0.0;
-        }
-        std::vector<float> &alpha2 = A2->verts.attr<float>("alpha");
-
-        if(has_input("Background")){
-            image2 = get_input2<PrimitiveObject>("Background");
-            auto &ud2 = image2->userData();
-            w1 = ud2.get2<int>("w");
-            h1 = ud2.get2<int>("h");
-            if(image2->verts.has_attr("alpha")){
-                alpha2 = image2->verts.attr<float>("alpha");
-            }
-            else{
-                image2->verts.add_attr<float>("alpha");
-                for(int i = 0;i < w1 * h1;i++){
-                    image2->verts.attr<float>("alpha")[i] = 1.0;
-                }
-                alpha2 = image2->verts.attr<float>("alpha");
-            }
-            if(!has_input("Foreground")){
-                image1->verts.resize(image2->size());
-                image1->userData().set2("w", w1);
-                image1->userData().set2("h", h1);
-                image1->verts.add_attr<float>("alpha");
-                for(int i = 0;i < w1 * h1;i++){
-                    image1->verts.attr<float>("alpha")[i] = 0.0;
-                }
-                alpha1 = image1->verts.attr<float>("alpha");
-            }
-        }
-        if(has_input("Foreground")){
-            image1 = get_input2<PrimitiveObject>("Foreground");
-            auto &ud1 = image1->userData();
-            w1 = ud1.get2<int>("w");
-            h1 = ud1.get2<int>("h");
-            if(image1->verts.has_attr("alpha")){
-                alpha1 = image1->verts.attr<float>("alpha");
-            }
-            else{
-                image1->verts.add_attr<float>("alpha");
-                for(int i = 0;i < w1 * h1;i++){
-                    image1->verts.attr<float>("alpha")[i] = 1.0;
-                }
-                alpha1 = image1->verts.attr<float>("alpha");
-            }
-            if(!has_input("Background")){
-                image2->verts.resize(image1->size());
-                image2->userData().set2("w", w1);
-                image2->userData().set2("h", h1);
-                image2->verts.add_attr<float>("alpha");
-                for(int i = 0;i < w1 * h1;i++){
-                    image2->verts.attr<float>("alpha")[i] = 0.0;
-                }
-                alpha2 = image2->verts.attr<float>("alpha");
-            }
-            if(has_input("Background")){
-                auto &ud2 = image2->userData();
-                int w2 = ud2.get2<int>("w");
-                int h2 = ud2.get2<int>("h");
-                if(image1->size() != image2->size() || w1 != w2 || h1 != h2){
-                    image2->verts.resize(image1->size());
-                    image2->userData().set2("w", w1);
-                    image2->userData().set2("h", h1);
-//todo： image1和image2大小不同的情况
-//                    for (int i = 0; i < h1; i++) {
-//                        for (int j = 0; j < w1; j++) {
-//
-//                        }
-//                    }
-                }
-            }
-        }
-        if(has_input("Mask1")) {
-            auto Mask1 = get_input2<PrimitiveObject>("Mask1");
-            Mask1->verts.resize(w1 * h1);
-            Mask1->userData().set2("w", w1);
-            Mask1->userData().set2("h", h1);
-            if(maskmode1 == "R"){
-                Mask1->verts.add_attr<float>("alpha");
-                for(int i = 0;i < Mask1->size();i ++){
-                    Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][0];
-                }
-                alpha1 = Mask1->verts.attr<float>("alpha");
-            }
-            if(maskmode1 == "G"){
-                Mask1->verts.add_attr<float>("alpha");
-                for(int i = 0;i < Mask1->size();i ++){
-                    Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][1];
-                }
-                alpha1 = Mask1->verts.attr<float>("alpha");
-            }
-            if(maskmode1 == "B"){
-                Mask1->verts.add_attr<float>("alpha");
-                for(int i = 0;i < Mask1->size();i ++){
-                    Mask1->verts.attr<float>("alpha")[i] = Mask1->verts[i][2];
-                }
-                alpha1 = Mask1->verts.attr<float>("alpha");
-            }
-            if(maskmode1 == "A"){
-                if(Mask1->verts.has_attr("alpha")){
-                    alpha1 = Mask1->verts.attr<float>("alpha");
-                }
-                else{
-                    Mask1->verts.add_attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            Mask1->verts.attr<float>("alpha")[i * w1 + j] = 1;
-                        }
-                    }
-                    alpha1 = Mask1->verts.attr<float>("alpha");
-                }
-            }
-        }
-        if(has_input("Mask2")) {
-            auto Mask2 = get_input2<PrimitiveObject>("Mask2");
-            Mask2->verts.resize(w1 * h1);
-            Mask2->userData().set2("w", w1);
-            Mask2->userData().set2("h", h1);
-            if(maskmode2 == "R"){
-                Mask2->verts.add_attr<float>("alpha");
-                for(int i = 0;i < Mask2->size();i++){
-                    Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][0];
-                }
-                alpha2 = Mask2->verts.attr<float>("alpha");
-            }
-            if(maskmode2 == "G"){
-                Mask2->verts.add_attr<float>("alpha");
-                for(int i = 0;i < Mask2->size();i++){
-                    Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][1];
-                }
-                alpha2 = Mask2->verts.attr<float>("alpha");
-            }
-            if(maskmode2 == "B"){
-                Mask2->verts.add_attr<float>("alpha");
-                for(int i = 0;i < Mask2->size();i++){
-                    Mask2->verts.attr<float>("alpha")[i] = Mask2->verts[i][2];
-                }
-                alpha2 = Mask2->verts.attr<float>("alpha");
-            }
-            if(maskmode2 == "A"){
-                if(Mask2->verts.has_attr("alpha")){
-                    alpha2 = Mask2->verts.attr<float>("alpha");
-                }
-                else{
-                    Mask2->verts.add_attr<float>("alpha");
-                    for (int i = 0; i < h1; i++) {
-                        for (int j = 0; j < w1; j++) {
-                            Mask2->verts.attr<float>("alpha")[i * w1 + j] = 1;
-                        }
-                    }
-                    alpha2 = Mask2->verts.attr<float>("alpha");
-                }
-            }
-        }
-        if(compmode == "Over") {
-//            for (auto a = 0; a < h1 * w1; a++){
-//                int i = a / w1;
-//                int j = a % w1;
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb1 * l1 + rgb2 * ((l1 != 1 && l2 != 0) ? std::min((1 - l1), l2) : 0);
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = ((l1 != 0 || l2 != 0) ? zeno::max(l2, l1) : 0);
-                }
-            }
-        }
-        if (compmode == "Under") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb2 * l2 + rgb1 * ((l2!=1 && l1!=0)? std::min((1-l2),l1) : 0);
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = ((l1!=0 || l2!=0)? zeno::max(l2,l1): 0);
-                }
-            }
-        }
-        if (compmode == "Atop") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb1 * ((l1 != 0 && l2 != 0) ? l1 : 0) + rgb2 * ((l1 == 0) && (l2 != 0) ? l2 : 0);
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = (l1 !=0 && l2 !=0)? l1 : l2;
-                }
-            }
-        }
-        if (compmode == "Inside") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb1 * ((l1 != 0) && (l2 != 0) ? l1 : 0);
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = (l1 !=0 && l2 !=0)? l1 : 0;
-                }
-            }
-        }
-        if (compmode == "Outside") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb1 * ((l1 != 0) && (l2 == 0) ? l1 : 0);
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = (l1 != 0 && l2 == 0)? l1 : 0;
-                }
-            }
-        }
-        if(compmode == "Screen"){
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l = zeno::min(zeno::min(image1->verts[i * w1 + j][0],image1->verts[i * w1 + j][1]),image1->verts[i * w1 + j][2]);
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb2 * l2 + rgb2 * ((l1!=0 && l2!=0)? l: 0);
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = l2;
-                }
-            }
-        }
-        if (compmode == "Add") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb2 * l2 + rgb1 * l1;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Subtract") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb1 * l1 - rgb2 * l2 ;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Multiply") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb1 * l1 * rgb2 * l2 ;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Divide") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb1 * l1 / (rgb2 * l2) ;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Diff") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = abs(rgb1 * l1 - (rgb2 * l2)) ;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Min") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = l1 <= l2 ? rgb1 * l1 : rgb2 * l2 ;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Max") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = l1 >= l2 ? rgb1 * l1 : rgb2 * l2 ;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Average") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = (rgb1+rgb2)/2;
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = rgb3 * (l1+l2) ;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Xor") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = {0, 0, 0};
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    vec3f c = (((l1 != 0) && (l2 != 0)) ? rgb3 : rgb1 * l1 + rgb2 * l2) ;
-                    image1->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "Alpha") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = {1,1,1};
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? zeno::clamp(l1 + l2, 0, 1) : 0);
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(l1 + l2, 0, 1);
-                }
-            }
-        }
-        if (compmode == "!Alpha") {
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb1 = image1->verts[i * w1 + j];
-                    vec3f rgb2 = image2->verts[i * w1 + j];
-                    vec3f rgb3 = {1,1,1};
-                    float l1 = alpha1[i * w1 + j];
-                    float l2 = alpha2[i * w1 + j];
-                    image1->verts[i * w1 + j] = rgb3 * ((l1 != 0) || (l2 != 0) ? 0 : zeno::clamp(l1 + l2, 0, 1));
-                    image1->verts.attr<float>("alpha")[i * w1 + j] = zeno::clamp(1 - (l1 + l2), 0, 1);
-                }
-            }
-        }
-        set_output("image", image1);
-    }
-};
-
-ZENDEFNODE(Composite, {
-    {
-        {"Foreground"},
-        {"Background"},
-        {"Mask1"},
-        {"Mask2"},
-        {"enum Over Under Atop Inside Outside Screen Add Subtract Multiply Divide Diff Min Max Average Xor Alpha !Alpha", "Compmode", "Over"},
-        {"enum R G B A", "Mask1mode", "R"},
-        {"enum R G B A", "Mask2mode", "R"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-
-/*
-struct CompositeCV: INode {
-    virtual void apply() override {
-        auto image1 = get_input<PrimitiveObject>("Foreground");
-        auto image2 = get_input<PrimitiveObject>("Background");
-        auto mode = get_input2<std::string>("mode");
-        auto Alpha1 = get_input2<float>("Alpha1");
-        auto Alpha2 = get_input2<float>("Alpha2");
-        auto &a1 = image1->verts.attr<float>("alpha");
-        auto &a2 = image2->verts.attr<float>("alpha");
-
-        auto &ud1 = image1->userData();
-        int w1 = ud1.get2<int>("w");
-        int h1 = ud1.get2<int>("h");
-        auto &ud2 = image2->userData();
-        int w2 = ud2.get2<int>("w");
-        int h2 = ud2.get2<int>("h");
-
-        cv::Mat imagecvin1(h1, w1, CV_32FC3);
-        cv::Mat imagecvin2(h2, w2, CV_32FC3);
-        cv::Mat imagecvadd(h1, w1, CV_32FC3);
-        cv::Mat imagecvsub(h1, w1, CV_32FC3);
-        cv::Mat imagecvout(h1, w1, CV_32FC3);
-
-        for (int i = 0; i < h1; i++) {
-            for (int j = 0; j < w1; j++) {
-                vec3f rgb = image1->verts[i * w1 + j];
-                imagecvin1.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
-        for (int i = 0; i < h2; i++) {
-            for (int j = 0; j < w2; j++) {
-                vec3f rgb = image2->verts[i * w2 + j];
-                imagecvin2.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
-        cv::resize(imagecvin2, imagecvin2,imagecvin1.size());
-        if(mode == "Add"){
-            cv::addWeighted(imagecvin1, Alpha1, imagecvin2, Alpha2, 0, imagecvout);
-        }
-        if(mode == "Subtract"){
-            cv::subtract(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
-        }
-        if(mode == "Multiply"){
-            cv::multiply(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
-        }
-        if(mode == "Divide"){
-            cv::divide(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout, 1,  -1);
-        }
-        if(mode == "Diff"){
-            cv::absdiff(imagecvin1*Alpha1, imagecvin2*Alpha2, imagecvout);
-        }
-
-        for (int i = 0; i < h1; i++) {
-            for (int j = 0; j < w1; j++) {
-                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-                image1->verts[i * w1 + j] = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
-        set_output("image", image1);
-    }
-};
-
-ZENDEFNODE(CompositeCV, {
-    {
-        {"Foreground"},
-        {"Background"},
-        {"enum Add Subtract Multiply Divide Diff", "mode", "Add"},
-        {"float", "Alpha1", "1"},
-        {"float", "Alpha2", "1"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-*/
 
 struct ImageRGB2HSV : INode {
     virtual void apply() override {
@@ -1517,7 +997,7 @@ ZENDEFNODE(ImageEdit, {
         {"image"}
     },
     {},
-    { "comp" },
+    { "image" },
 });
 
 // 高斯函数
@@ -1820,630 +1300,7 @@ ZENDEFNODE(ImageBilateralBlur, {
     {},
     { "image" },
 });
-// 自定义卷积核
-std::vector<std::vector<float>> createKernel(float blurValue,
-                                             float l_blurValue, float r_blurValue,
-                                             float t_blurValue, float b_blurValue,
-                                             float lt_blurValue, float rt_blurValue,
-                                             float lb_blurValue, float rb_blurValue) {
-    std::vector<std::vector<float>> kernel;
-//    if (isBounded) {
-//        kernel = {{blurValue}};
-//    }
-    kernel = {{lt_blurValue, t_blurValue, rt_blurValue},
-              {l_blurValue, blurValue, r_blurValue},
-              {lb_blurValue, b_blurValue, rb_blurValue}};
-    return kernel;
-}
-struct CompBlur : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto s = get_input2<float>("strength");
-        auto ktop = get_input2<vec3f>("kerneltop");
-        auto kmid = get_input2<vec3f>("kernelmid");
-        auto kbot = get_input2<vec3f>("kernelbot");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        auto blurredImage = std::make_shared<PrimitiveObject>();
-        blurredImage->verts.resize(w * h);
-        blurredImage->userData().set2("h", h);
-        blurredImage->userData().set2("w", w);
-        blurredImage->userData().set2("isImage", 1);
-        if(image->has_attr("alpha")){
-            blurredImage->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
-        }
-        std::vector<std::vector<float>>k = createKernel(kmid[1],kmid[0],kmid[2],ktop[1],kbot[1],ktop[0],ktop[2],kbot[0],kbot[2]);
-        int kernelSize = s * k.size();
-        int kernelRadius = kernelSize / 2;
 
-// 计算卷积核的中心坐标
-        int anchorX = 3 / 2;
-        int anchorY = 3 / 2;
-        for (int iter = 0; iter < s; iter++) {
-            // 对每个像素进行卷积操作
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    float sum0 = 0.0f;
-                    float sum1 = 0.0f;
-                    float sum2 = 0.0f;
-                    for (int i = 0; i < 3; i++) {
-                        for (int j = 0; j < 3; j++) {
-                            int kernelX = x + j - anchorX;
-                            int kernelY = y + i - anchorY;
-
-                            if (kernelX >= 0 && kernelX < w && kernelY >= 0 && kernelY < h) {
-
-                                sum0 += image->verts[kernelY * h + kernelX][0] * k[i][j];
-                                sum1 += image->verts[kernelY * h + kernelX][1] * k[i][j];
-                                sum2 += image->verts[kernelY * h + kernelX][2] * k[i][j];
-                            }
-                        }
-                    }
-                    // 将结果赋值给输出图像
-                    blurredImage->verts[y * w + x] = {static_cast<float>(sum0), static_cast<float>(sum1),
-                                                      static_cast<float>(sum2)};
-                }
-            }
-            image = blurredImage;
-        }
-        set_output("image", blurredImage);
-    }
-};
-
-ZENDEFNODE(CompBlur, {
-    {
-        {"image"},
-        {"float", "strength", "5"},
-        {"vec3f", "kerneltop", "0.075,0.124,0.075"},
-        {"vec3f", "kernelmid", "0.124,0.204,0.124"},
-        {"vec3f", "kernelbot", "0.075,0.124,0.075"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "image" },
-});
-static void sobelcv(cv::Mat& src, cv::Mat& dst, int thresholdValue, int maxThresholdValue){
-
-    // 应用Sobel算子计算水平和垂直梯度
-    cv::Mat gradX, gradY;
-    cv::Sobel(src, gradX, CV_32F, 1, 0);
-    cv::Sobel(src, gradY, CV_32F, 0, 1);
-
-    // 计算梯度强度和方向
-    cv::Mat gradientMagnitude, gradientDirection;
-    cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
-
-    // 应用阈值
-    cv::threshold(gradientMagnitude, dst, thresholdValue, maxThresholdValue, cv::THRESH_BINARY);
-}
-
-static void scharr2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height,int threshold) {
-    std::vector<int> gx(width * height);
-    std::vector<int> gy(width * height);
-    dst->verts.resize(width * height);
-
-    // Calculate gradients
-    for (int y = 1; y < height - 1; ++y) {
-        for (int x = 1; x < width - 1; ++x) {
-            int idx = y * width + x;
-            gx[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[y * width + x - 1][0] - 3 * src->verts[(y + 1) * width + x - 1][0] +
-                       3 * src->verts[(y - 1) * width + x + 1][0] + 10 * src->verts[y * width + x + 1][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
-            gy[idx] = (-3 * src->verts[(y - 1) * width + x - 1][0] - 10 * src->verts[(y - 1) * width + x][0] - 3 * src->verts[(y - 1) * width + x + 1][0] +
-                       3 * src->verts[(y + 1) * width + x - 1][0] + 10 * src->verts[(y + 1) * width + x][0] + 3 * src->verts[(y + 1) * width + x + 1][0]);
-        }
-    }
-    // Calculate gradient magnitude
-    for (int y = 1; y < height - 1; ++y) {
-        for (int x = 1; x < width - 1; ++x) {
-            int idx = y * width + x;
-
-            // Calculate gradient magnitude
-            int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
-            // Apply threshold
-            if (mag * 255 > threshold) {
-                // Set to white
-                dst->verts[idx] = { 1, 1, 1 };
-            }
-            else {
-                // Set to black
-                dst->verts[idx] = {0, 0, 0};
-            }
-            // Clamp to [0, 255] and store in output image
-            float g = std::min(1, std::max(0, mag));
-            dst->verts[idx] = {g,g,g};
-        }
-    }
-}
-//边缘检测
-struct EdgeDetect : INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        int low_threshold = get_input2<int>("low_threshold");
-        int high_threshold = get_input2<int>("high_threshold");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->resize(w * h);
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w);
-        image2->userData().set2("h", h);
-
-        if(mode=="sobel"){
-            std::vector<float> dx,dy;
-            zeno::sobel(image, w, h, dx, dy);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    // 计算梯度幅值
-                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
-                    image->verts[i * w + j] = {gradient,gradient,gradient};
-                }
-            }
-            set_output("image", image);
-        }
-        if(mode=="sobelcv"){
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
-                    imagecvin.at<float>(i, j) = var;
-                }
-            }
-            zeno::sobelcv(imagecvin,imagecvout, low_threshold, high_threshold);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-        if(mode=="cannycv"){
-            cv::Mat imagecvin(h, w, CV_8U);
-            cv::Mat imagecvout(h, w, CV_8U);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
-                }
-            }
-            cv::Canny(imagecvin,imagecvout,low_threshold, high_threshold);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
-                }
-            }
-            set_output("image", image);
-        }
-        if(mode=="scharr"){
-            zeno::scharr2(image, image2, w, h, low_threshold);
-            set_output("image", image2);
-        }
-        if(mode=="laplacian"){
-
-        }
-    }
-};
-ZENDEFNODE(EdgeDetect, {
-    {
-        {"image"},
-        {"enum sobel sobelcv cannycv scharr", "mode", "sobel"},
-        {"int", "low_threshold", "100"},
-        {"int", "high_threshold", "150"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-struct EdgeDetect_sobel : INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        int thresholdValue = get_input2<int>("thresholdValue");
-        int maxValue = get_input2<int>("maxValue");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-
-        if(mode=="sobel"){
-            std::vector<float> dx,dy;
-            zeno::sobel(image, w, h, dx, dy);
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    // 计算梯度幅值
-                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
-                    image->verts[i * w + j] = {gradient,gradient,gradient};
-                }
-            }
-            set_output("image", image);
-        }
-        if(mode=="sobelcv"){
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (auto a = 0; a < image->verts.size(); a++){
-                int i = a / w;
-                int j = a % w;
-                vec3f rgb = image->verts[i * w + j];
-                var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
-                imagecvin.at<float>(i, j) = var;
-            }
-            zeno::sobelcv(imagecvin,imagecvout, thresholdValue, maxValue);
-            for (auto a = 0; a < image->verts.size(); a++){
-                int i = a / w;
-                int j = a % w;
-                float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                image->verts[i * w + j] = {r, r, r};
-            }
-            set_output("image", image);
-        }
-        if(mode=="sobelcv2"){
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (auto a = 0; a < image->verts.size(); a++){
-                int i = a / w;
-                int j = a % w;
-                vec3f rgb = image->verts[i * w + j];
-                var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
-                imagecvin.at<float>(i, j) = var;
-            }
-            cv::Sobel(imagecvin, imagecvout, CV_8U, 1, 1);
-            cv::threshold(imagecvin, imagecvout, thresholdValue, maxValue, cv::THRESH_BINARY);
-            for (auto a = 0; a < image->verts.size(); a++){
-                int i = a / w;
-                int j = a % w;
-                float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                image->verts[i * w + j] = {r, r, r};
-            }
-            set_output("image", image);
-        }
-    }
-};
-ZENDEFNODE(EdgeDetect_sobel, {
-    {
-        {"image"},
-        {"enum sobel sobelcv sobelcv2", "mode", "sobel"},
-        {"int", "thresholdValue", "100"},
-        {"int", "maxValue", "255"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-
-struct CompExtractChanel_gray: INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<bool>("RGB");
-        auto R = get_input2<bool>("R");
-        auto G = get_input2<bool>("G");
-        auto B = get_input2<bool>("B");
-        auto A = get_input2<bool>("A");
-        auto &ud1 = image->userData();
-        int w = ud1.get2<int>("w");
-        int h = ud1.get2<int>("h");
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w);
-        image2->userData().set2("h", h);
-        image2->verts.resize(image->size());
-
-        if(RGB){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float avr = (image->verts[i][0] + image->verts[i][1] + image->verts[i][2])/3;
-                image2->verts[i] = {avr,avr,avr};
-            }
-        }
-        if(R && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float R = image->verts[i][0];
-                zeno::clamp(image2->verts[i][0] += R,0,1);
-                zeno::clamp(image2->verts[i][1] += R,0,1);
-                zeno::clamp(image2->verts[i][2] += R,0,1);
-            }
-        }
-        if(G && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float G = image->verts[i][1];
-                zeno::clamp(image2->verts[i][0] += G,0,1);
-                zeno::clamp(image2->verts[i][1] += G,0,1);
-                zeno::clamp(image2->verts[i][2] += G,0,1);
-            }
-        }
-        if(B && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                float B = image->verts[i][2];
-                zeno::clamp(image2->verts[i][0] += B,0,1);
-                zeno::clamp(image2->verts[i][1] += B,0,1);
-                zeno::clamp(image2->verts[i][2] += B,0,1);
-            }
-        }
-        if(A) {
-            if (image->verts.has_attr("alpha")) {
-                auto &Alpha = image->verts.attr<float>("alpha");
-                image2->verts.add_attr<float>("alpha");
-                image2->verts.attr<float>("alpha")=image->verts.attr<float>("alpha");
-            }
-            else{
-                image2->verts.add_attr<float>("alpha");
-                for(int i = 0;i < w * h;i++){
-                    image2->verts.attr<float>("alpha")[i] = 1.0;
-                }
-            }
-        }
-        set_output("image", image2);
-    }
-};
-ZENDEFNODE(CompExtractChanel_gray, {
-    {
-        {"image"},
-        {"bool", "RGB", "0"},
-        {"bool", "R", "0"},
-        {"bool", "G", "0"},
-        {"bool", "B", "0"},
-        {"bool", "A", "0"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-struct CompExtractChanel : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<bool>("RGB");
-        auto R = get_input2<bool>("R");
-        auto G = get_input2<bool>("G");
-        auto B = get_input2<bool>("B");
-        auto A = get_input2<bool>("A");
-        auto &ud1 = image->userData();
-        int w = ud1.get2<int>("w");
-        int h = ud1.get2<int>("h");
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w);
-        image2->userData().set2("h", h);
-        image2->verts.resize(image->size());
-        if(RGB){
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i][0] = image->verts[i][0];
-                image2->verts[i][1] = image->verts[i][1];
-                image2->verts[i][2] = image->verts[i][2];
-            }
-        }
-        if(R && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i][0] = image->verts[i][0];
-            }
-        }
-        if(G && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i][1] = image->verts[i][1];
-            }
-        }
-        if(B && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i][2] = image->verts[i][2];
-            }
-        }
-        if(A) {
-            if (image->verts.has_attr("alpha")) {
-                auto &Alpha = image->verts.attr<float>("alpha");
-                image2->verts.add_attr<float>("alpha");
-                image2->verts.attr<float>("alpha")=image->verts.attr<float>("alpha");
-            }
-            else{
-                image2->verts.add_attr<float>("alpha");
-                for(int i = 0;i < w * h;i++){
-                    image2->verts.attr<float>("alpha")[i] = 1.0;
-                }
-            }
-        }
-        set_output("image", image2);
-    }
-};
-ZENDEFNODE(CompExtractChanel, {
-    {
-        {"image"},
-        {"bool", "RGB", "0"},
-        {"bool", "R", "0"},
-        {"bool", "G", "0"},
-        {"bool", "B", "0"},
-        {"bool", "A", "0"},
-    },
-    {
-        {"image"}
-    },
-    {},
-    { "comp" },
-});
-
-struct ImageInRange : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto mode = get_input2<std::string>("mode");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        vec3i lb = get_input2<vec3i>("low_threshold");
-        vec3i ub = get_input2<vec3i>("high_threshold");
-
-        auto A11 = std::make_shared<PrimitiveObject>();
-        A11->verts.resize(image->size());
-        A11->userData().set2("isImage", 1);
-        A11->userData().set2("w", w);
-        A11->userData().set2("h", h);
-        A11->verts.add_attr<float>("alpha");
-        for(int i = 0;i < image->size();i++){
-            A11->verts.attr<float>("alpha")[i] = 1;
-        }
-        std::vector<float> &Alpha = A11->verts.attr<float>("alpha");
-        if(image->verts.has_attr("alpha")){
-            A11->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
-        }
-
-        if(mode == "Transparent"){
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
-                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
-                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
-                        A11->verts[i * w + j] = image->verts[i * w + j];
-                    }
-                    else{
-
-                        A11->verts.attr<float>("alpha")[i * w + j] = 0;
-                    }
-                }
-            }
-        }
-        else if(mode == "Black"){
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
-                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
-                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
-                        A11->verts[i * w + j] = image->verts[i * w + j];
-                    }
-                    else{
-                        A11->verts[i * w + j] = {0,0,0};
-                    }
-                }
-            }
-        }
-        else if(mode == "White"){
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
-                       ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
-                       ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
-                        A11->verts[i * w + j] = image->verts[i * w + j];
-                    }
-                    else{
-                        A11->verts[i * w + j] = {1,1,1};
-                    }
-                }
-            }
-        }
-        set_output("image", A11);
-    }
-};
-ZENDEFNODE(ImageInRange, {
-    {
-        {"image"},
-        {"enum Transparent Black White", "mode", "Transparent"},
-        {"vec3i", "high_threshold", "255,255,255"},
-        {"vec3i", "low_threshold", "0,0,0"},
-    },
-    {
-        {"image"},
-    },
-    {},
-    { "image" },
-});
-
-struct ImageInRange_black : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto &ud = image->userData();
-        int w = ud.get2<int>("w");
-        int h = ud.get2<int>("h");
-        vec3i lb = get_input2<vec3i>("low_threshold");
-        vec3i ub = get_input2<vec3i>("high_threshold");
-
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                if(((lb[0] <= 255 * image->verts[i * w + j][0]) && (255 * image->verts[i * w + j][0] <= ub[0])) &&
-                   ((lb[1] <= 255 * image->verts[i * w + j][1]) && (255 * image->verts[i * w + j][1] <= ub[1])) &&
-                   ((lb[2] <= 255 * image->verts[i * w + j][2]) && (255 * image->verts[i * w + j][2] <= ub[2]))){
-                    image->verts[i * w + j] = {1,1,1};
-                }
-                else{
-                    image->verts[i * w + j] = {0,0,0};
-                }
-            }
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(ImageInRange_black, {
-    {
-        {"image"},
-        {"vec3i", "high_threshold", "255,255,255"},
-        {"vec3i", "low_threshold", "0,0,0"},
-    },
-    {
-        {"image"},
-    },
-    {},
-    { "deprecated" },
-});
-
-/* 导入地形网格的属性，可能会有多个属性。它将地形的属性转换为图
-像，每个属性对应一个图层。
-可能需要的参数：outRemapRange，分辨率，属性名称，属性数据
-类型为float32 */
-struct CompImport : INode {
-    virtual void apply() override {
-        auto prim = get_input<PrimitiveObject>("prim");
-        auto &ud = prim->userData();
-        int nx = ud.get2<int>("nx");
-        int ny = ud.get2<int>("ny");
-        auto attrName = get_input2<std::string>("attrName");
-
-        auto image = std::make_shared<PrimitiveObject>();
-        image->resize(nx * ny);
-        image->userData().set2("isImage", 1);
-        image->userData().set2("w", nx);
-        image->userData().set2("h", ny);
-
-        if (prim->verts.attr_is<float>(attrName)) {
-            auto &attr = prim->attr<float>(attrName);
-            for (auto i = 0; i < nx * ny; i++) {
-                float v = attr[i];
-                image->verts[i] = {v, v, v};
-            }
-        }
-        else if (prim->verts.attr_is<vec3f>(attrName)) {
-            auto &attr = prim->attr<vec3f>(attrName);
-            for (auto i = 0; i < nx * ny; i++) {
-                image->verts[i] = attr[i];
-            }
-        }
-        set_output("image", image);
-    }
-};
-
-ZENDEFNODE(CompImport, {
-    {
-        {"prim"},
-        {"string", "attrName", ""},
-    },
-    {
-        {"image"},
-    },
-    {},
-    { "comp" },
-});
 
 /* 创建颜色图层，可能需要的参数：颜色，分辨率，图层名称 */
 struct CreateImage : INode {
@@ -2803,12 +1660,11 @@ void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vecto
     int image_width = image->userData().get2<int>("w");
     int kernel_height = kernel.size();
     int kernel_width = kernel[0].size();
-
     // 计算卷积核的中心点
     int center_y = kernel_height / 2;
     int center_x = kernel_width / 2;
 
-    // 对每个像素进行膨胀操作,迭代
+#pragma omp parallel for
     for (int iter = 0; iter < iterations; iter++){
         auto imagetmp = std::make_shared<PrimitiveObject>();
         imagetmp->resize(image_width * image_height);
@@ -2845,7 +1701,6 @@ void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vecto
         image = imagetmp;
     }
 }
-
 
 // 图像膨胀函数
 void dilateImage(cv::Mat& src, cv::Mat& dst, int kheight, int kwidth, int Strength) {
@@ -2901,7 +1756,7 @@ void imageerode(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector
     int image_width = image->userData().get2<int>("w");
     int kernel_height = kernel.size();
     int kernel_width = kernel[0].size();
-
+#pragma omp parallel for
     for (int iter = 0; iter < iterations; iter++) {
         auto imagetmp = std::make_shared<PrimitiveObject>();
         imagetmp->resize(image_width * image_height);
@@ -2978,274 +1833,433 @@ ZENDEFNODE(ImageErode, {
     {"image"},
 });
 
-struct ReadImageFromVideo : INode {
+struct ImageExtractColor : INode {
     virtual void apply() override {
-        auto path = get_input2<std::string>("path");
-        auto frame = get_input2<int>("frame");
-        std::string native_path = std::filesystem::u8path(path).string();
-        cv::VideoCapture videoCapture(native_path.c_str());
-        int w = static_cast<int>(videoCapture.get(cv::CAP_PROP_FRAME_WIDTH));
-        int h = static_cast<int>(videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT));
+        auto image = get_input<PrimitiveObject>("image");
+        auto background = get_input2<std::string>("background");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        vec3f up = get_input2<vec3f>("high_threshold");
+        vec3f low = get_input2<vec3f>("low_threshold");
+        float upr = up[0]/255, upg = up[1]/255, upb = up[2]/255;
+        float lr = low[0]/255,lg = low[1]/255,lb = low[2]/255;
+        zeno::log_info("up:{}, {}, {}",upr,upg,upb);
+        zeno::log_info("low:{}, {}, {}",lr,lg,lb);
+        if(background == "transparent"){
+            if(!image->has_attr("alpha")){
+                image->verts.add_attr<float>("alpha");
+                for(int i = 0; i < image->verts.size();i++){
+                    image->verts.attr<float>("alpha")[i] = 1;
+                }
+            }
+            for (auto i = 0; i < image->verts.size(); i++) {
+                if(((upr < image->verts[i][0]) || (image->verts[i][0] < lr)) ||
+                   ((upg < image->verts[i][1]) || (image->verts[i][1] < lg)) ||
+                   ((upb < image->verts[i][2]) || (image->verts[i][2] < lb))){
+                    image->verts.attr<float>("alpha")[i] = 0;
+                }
+            }
+        }
+        else if(background == "black"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                if(((upr < image->verts[i][0]) || (image->verts[i][0] < lr)) ||
+                   ((upg < image->verts[i][1]) || (image->verts[i][1] < lg)) ||
+                   ((upb < image->verts[i][2]) || (image->verts[i][2] < lb))){
+                    image->verts[i] = {0,0,0};
 
-        videoCapture.set(cv::CAP_PROP_POS_FRAMES, frame);
-        cv::Mat frameimage(h, w, CV_32FC3);
-        bool success = videoCapture.read(frameimage);
+                }
+            }
+        }
+        else if(background == "white"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                if(((upr < image->verts[i][0]) || (image->verts[i][0] < lr)) ||
+                   ((upg < image->verts[i][1]) || (image->verts[i][1] < lg)) ||
+                   ((upb < image->verts[i][2]) || (image->verts[i][2] < lb))){
+                    image->verts[i] = {1,1,1};
+                }
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageExtractColor, {
+    {
+        {"image"},
+        {"vec3f", "high_threshold", "255,255,255"},
+        {"vec3f", "low_threshold", "0,0,0"},
+        {"enum transparent black white", "background", "transparent"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "image" },
+});
 
-
-        auto image = std::make_shared<PrimitiveObject>();
-        image->verts.resize(w * h);
-
-        image->userData().set2("isImage", 1);
-        image->userData().set2("w", w);
-        image->userData().set2("h", h);
-//        zeno::log_info("w:{},h:{}",w,h);
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                cv::Vec3f rgb = frameimage.at<cv::Vec3b>(i, j);
-                image->verts[(h-i-1) * w + j] = {rgb[0]/255, rgb[1]/255, rgb[2]/255};
+struct ImageDelColor: INode {
+    void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto background = get_input2<std::string>("background");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        vec3f up = get_input2<vec3f>("high_threshold");
+        vec3f low = get_input2<vec3f>("low_threshold");
+        float upr = up[0]/255, upg = up[1]/255, upb = up[2]/255;
+        float lr = low[0]/255,lg = low[1]/255,lb = low[2]/255;
+        if(background == "transparent"){
+            if(!image->has_attr("alpha")){
+                image->verts.add_attr<float>("alpha");
+                for(int i = 0; i < image->verts.size();i++){
+                    image->verts.attr<float>("alpha")[i] = 1;
+                }
+            }
+            for (auto i = 0; i < image->verts.size(); i++) {
+                if(((lr <= image->verts[i][0]) && (image->verts[i][0] <= upr)) &&
+                   ((lg <= image->verts[i][1]) && (image->verts[i][1] <= upg)) &&
+                   ((lb <= image->verts[i][2]) && (image->verts[i][2] <= upb))){
+                    image->verts.attr<float>("alpha")[i] = 0;
+                }
+            }
+        }
+        else if(background == "black"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                if(((lr <= image->verts[i][0]) && (image->verts[i][0] <= upr)) &&
+                   ((lg <= image->verts[i][1]) && (image->verts[i][1] <= upg)) &&
+                   ((lb <= image->verts[i][2]) && (image->verts[i][2] <= upb))){
+                    image->verts[i] = {0,0,0};
+                }
+            }
+        }
+        else if(background == "white"){
+            for (auto i = 0; i < image->verts.size(); i++) {
+                if(((lr <= image->verts[i][0]) && (image->verts[i][0] <= upr)) &&
+                   ((lg <= image->verts[i][1]) && (image->verts[i][1] <= upg)) &&
+                   ((lb <= image->verts[i][2]) && (image->verts[i][2] <= upb))){
+                    image->verts[i] = {1,1,1};
+                }
             }
         }
         set_output("image", image);
     }
 };
 
-ZENDEFNODE(ReadImageFromVideo, {
+ZENDEFNODE(ImageDelColor, {
     {
-        {"readpath", "path"},
-        {"int", "frame", "1"},
+        {"image"},
+        {"vec3f", "high_threshold", "255,255,255"},
+        {"vec3f", "low_threshold", "0,0,0"},
+        {"enum transparent black white", "background", "transparent"},
     },
     {
-        {"PrimitiveObject", "image"},
+        {"image"},
     },
     {},
-    { "image" },
+    {"image"},
 });
-// 计算图像的梯度
-void computeGradient(std::shared_ptr<PrimitiveObject> & image, std::vector<std::vector<float>>& gradientX, std::vector<std::vector<float>>& gradientY) {
-    auto &ud = image->userData();
-    int height  = ud.get2<int>("h");
-    int width = ud.get2<int>("w");
 
-    gradientX.resize(height, std::vector<float>(width));
-    gradientY.resize(height, std::vector<float>(width));
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            if (x > 0 && x < width - 1) {
-                gradientX[y][x] = (image->verts[y * width + x + 1][0] - image->verts[y * width + x  - 1])[0] / 2.0f;
-            } else {
-                gradientX[y][x] = 0.0f;
-            }
-            if (y > 0 && y < height - 1) {
-                gradientY[y][x] = (image->verts[(y+1) * width + x][0] - image->verts[(y - 1) * width + x])[0] / 2.0f;
-            } else {
-                gradientY[y][x] = 0.0f;
-            }
-        }
-    }
-}
-
-// 计算图像的曲率
-void computeCurvature(const std::vector<std::vector<float>>& gradientX, const std::vector<std::vector<float>>& gradientY, std::vector<std::vector<float>>& curvature) {
-    int height = gradientX.size();
-    int width = gradientX[0].size();
-
-    curvature.resize(height, std::vector<float>(width));
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            float dx = gradientX[y][x];
-            float dy = gradientY[y][x];
-            float dxx = 0.0f;
-            float dyy = 0.0f;
-            float dxy = 0.0f;
-
-            if (x > 0 && x < width - 1) {
-                dxx = gradientX[y][x + 1] - 2.0f * dx + gradientX[y][x - 1];
-            }
-
-            if (y > 0 && y < height - 1) {
-                dyy = gradientY[y + 1][x] - 2.0f * dy + gradientY[y - 1][x];
-            }
-
-            if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
-                dxy = (gradientX[y + 1][x + 1] - gradientX[y + 1][x - 1] - gradientX[y - 1][x + 1] + gradientX[y - 1][x - 1]) / 4.0f;
-            }
-
-            curvature[y][x] = (dxx * dyy - dxy * dxy) / ((dxx + dyy) * (dxx + dyy) + 1e-6f);
-        }
-    }
-}
-struct CompCurvature: INode {
-    void apply() override {
-        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        auto threshold = get_input2<float>("threshold");
-        auto channel = get_input2<std::string>("channel");
+struct ImageMatting: INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        cv::Mat imagecvgray(h, w, CV_32F);
-        cv::Mat imagecvcurvature(h, w, CV_32F);
-        if(channel == "R"){
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvgray.at<float>(i, j) = rgb[0];
+        auto imagemode = get_input2<std::string>("imagemode");
+        auto maskmode = get_input2<std::string>("maskmode");
+
+        if(imagemode == "origin"){
+            if (!image->has_attr("alpha")) {
+                image->verts.add_attr<float>("alpha");
+                for (int i = 0; i < image->verts.size(); i++) {
+                    image->verts.attr<float>("alpha")[i] = 1;
                 }
             }
         }
-        else if(channel == "G"){
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvgray.at<float>(i, j) = rgb[1];
+        else if(imagemode == "deleteblack"){
+            if (!image->has_attr("alpha")) {
+                image->verts.add_attr<float>("alpha");
+                for (int i = 0; i < image->verts.size(); i++) {
+                    image->verts.attr<float>("alpha")[i] = 1;
                 }
             }
-        }
-        else if(channel == "B"){
-            for (int i = 0; i < h; i++) {
-                for (int j = 0; j < w; j++) {
-                    vec3f rgb = image->verts[i * w + j];
-                    imagecvgray.at<float>(i, j) = rgb[2];
-                }
-            }
-        }
-        // 计算图像的梯度
-        cv::Mat dx, dy;
-        cv::Sobel(imagecvgray, dx, CV_32F, 1, 0);
-        cv::Sobel(imagecvgray, dy, CV_32F, 0, 1);
-        // 计算梯度的二阶导数
-        cv::Mat dxx, dyy, dxy;
-        cv::Sobel(dx, dxx, CV_32F, 1, 0);
-        cv::Sobel(dy, dyy, CV_32F, 0, 1);
-        cv::Sobel(dx, dxy, CV_32F, 0, 1);
-        // 计算曲率
-        imagecvcurvature = (dxx.mul(dyy) - dxy.mul(dxy)) / ((dxx + dyy).mul(dxx + dyy));
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                float cur = imagecvcurvature.at<float>(i, j);
-                if(cur > threshold){
-                    image->verts[i * w + j] = {1,1,1};
+            for (int i = 0; i < image->verts.size(); i++) {
+                if(image->verts[i][0] <= 0.01 && image->verts[i][1] <= 0.01 &&
+                   image->verts[i][2] <= 0.01 && image->verts.attr<float>("alpha")[i] != 0){
+                    image->verts.attr<float>("alpha")[i] = 0;
                 }
                 else{
-                    image->verts[i * w + j] = {0,0,0};
+//                    image->verts.attr<float>("alpha")[i] = 1;
                 }
             }
         }
+        else if(imagemode == "deletewhite"){
+            if (!image->has_attr("alpha")) {
+                image->verts.add_attr<float>("alpha");
+                for (int i = 0; i < image->verts.size(); i++) {
+                    image->verts.attr<float>("alpha")[i] = 1;
+                }
+            }
+            for (int i = 0; i < image->verts.size(); i++) {
+                if(image->verts[i][0] >= 0.99 && image->verts[i][1] >= 0.99 &&
+                   image->verts[i][2] >= 0.99 && image->verts.attr<float>("alpha")[i] != 0){
+                    image->verts.attr<float>("alpha")[i] = 0;
+                }
+                else{
+//                    image->verts.attr<float>("alpha")[i] = 1;
+                }
+            }
+        }
+        if (has_input("mask")) {
+            auto gimage = get_input2<PrimitiveObject>("mask");
+            auto &gud = gimage->userData();
+            int wg = gud.get2<int>("w");
+            int hg = gud.get2<int>("h");
+            if (wg == w && hg == h) {
+                if (maskmode == "black") {
+                    if (gimage->verts.has_attr("alpha")) {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
+                                    image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    if (gimage->verts[i][0] <= 0.01 && gimage->verts[i][1] <= 0.01 &&
+                                        gimage->verts[i][2] <= 0.01) {
+                                        image->verts.attr<float>("alpha")[i * w + j] = 1;
+                                    } else {
+                                        image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                    }
+                                } else {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                }
+                            }
+                        }
+                    } else {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    if (gimage->verts[i * w + j][0] == 0 && gimage->verts[i * w + j][1] == 0 &&
+                                        gimage->verts[i * w + j][2] == 0) {
+                                        image->verts.attr<float>("alpha")[i * w + j] = 1;
+                                    } else {
+                                        image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (maskmode == "white") {
+                    if (gimage->verts.has_attr("alpha")) {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
+                                    image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    if (gimage->verts[i][0] >= 0.99 && gimage->verts[i][1] >= 0.99 &&
+                                        gimage->verts[i][2] >= 0.99) {
+                                        image->verts.attr<float>("alpha")[i * w + j] = 1;
+                                    } else {
+                                        image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                    }
+                                } else {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                }
+                            }
+                        }
+                    } else {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    if (gimage->verts[i * w + j][0] == 0 && gimage->verts[i * w + j][1] == 0 &&
+                                        gimage->verts[i * w + j][2] == 0) {
+                                        image->verts.attr<float>("alpha")[i * w + j] = 1;
+                                    } else {
+                                        image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (maskmode == "gray_black") {
+                    if (gimage->verts.has_attr("alpha")) {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
+                                    image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 1 - gimage->verts[i * w + j][0];
+                                } else {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                }
+                            }
+                        }
+                    } else {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 1 - gimage->verts[i * w + j][0];
+                                }
+                            }
+                        }
+                    }
+                } else if (maskmode == "gray_white") {
+                    if (gimage->verts.has_attr("alpha")) {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
+                                    image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = gimage->verts[i * w + j][0];
+                                } else {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                }
+                            }
+                        }
+                    } else {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = gimage->verts[i * w + j][0];
+                                }
+                            }
+                        }
+                    }
+                } else if (maskmode == "alpha") {
+                    if (gimage->verts.has_attr("alpha")) {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
+                                    image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = gimage->verts.attr<float>("alpha")[
+                                            i * w + j];
+                                } else {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 1;
+                                }
+                            }
+                        }
+                    } else {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if (wg < w && hg < h) {
+
+            }
+//            for (int i = (hg < h ? (h - hg) / 2 : 0); i < (hg < h ? h - (h - hg) / 2 : h); i++) {
+//                for (int j = (wg < w ? (w - wg) / 2 : 0); j < (wg < w ? w - (w - wg) / 2 : w); j++) {
+        }
         set_output("image", image);
     }
 };
-ZENDEFNODE(CompCurvature, {
+
+ZENDEFNODE(ImageMatting, {
     {
         {"image"},
-        {"float","threshold","0"},
-        {"enum R G B","channel","R"}
+        {"mask"},
+        {"enum origin deleteblack deletewhite", "imagemode", "origin"},
+        {"enum gray_black gray_white black white alpha", "maskmode", "gray_black"},
     },
     {
-        {"image"},
+        {"image"}
     },
     {},
-    {"Comp"},
+    { "image" },
 });
-
-struct ImageExtractFeature_ORB : INode {
+struct ImageDelAlpha: INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        cv::Ptr<cv::ORB> orb = cv::ORB::create(500, 1.2f, 8, 31, 0, 2, cv::ORB::HARRIS_SCORE, 31, 20);
-//        cv::Ptr<cv::ORB> orb = cv::ORB::create();
-        cv::Mat imagecvin(h, w, CV_8UC3);
-        cv::Mat imagecvgray(h, w, CV_8U);
-        cv::Mat imagecvdetect(h, w, CV_8U);
-        cv::Mat imagecvout(h, w, CV_8UC3);
-        std::vector<cv::KeyPoint> keypoints;
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                vec3f rgb = image->verts[i * w + j];
-//                imagecvin.at<uchar>(i, j) = 255 * (rgb[0]+rgb[1]+rgb[2])/3;
-                imagecvin.at<cv::Vec3b>(i, j) = (255 * rgb[0],255 * rgb[1],255 * rgb[2]);
-            }
-        }
-        cv::cvtColor(imagecvin, imagecvgray, cv::COLOR_BGR2GRAY);
-//        imagecvin.convertTo(imagecvgray, CV_8U);
-        orb->detect(imagecvgray, keypoints);
-        zeno::log_info("orb->detect (imagecvin keypoints:{})",keypoints.size());
-        orb->compute(imagecvgray, keypoints, imagecvdetect);
-        zeno::log_info("orb->compute(imagecvin, keypoints, imagecvout)");
-//        cv::drawKeypoints(imagecvin, keypoints, imagecvout, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT | cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
 
-        cv::drawKeypoints(imagecvin, keypoints, imagecvout, cv::Scalar(0, 0, 255),cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS | cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
-        zeno::log_info("cv::drawKeypoints(imagecvin, keypoints, imagecvout, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);");
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-//                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-//                image->verts[i * w + j] = {rgb/255, rgb/255, rgb/255};
-//                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-                image->verts[i * w + j][0] = imagecvin.at<cv::Vec3b>(i, j)[0] ;
-                image->verts[i * w + j][1] = imagecvin.at<cv::Vec3b>(i, j)[1] ;
-                image->verts[i * w + j][2] = imagecvin.at<cv::Vec3b>(i, j)[2] ;
-
-            }
+        if(image->verts.has_attr("alpha")){
+            image->verts.erase_attr("alpha");
         }
+        for(int i = 0;i<image->verts.size();i++){
+            image->verts.attr<float>("alpha")[i] = 1;
+        }
+
         set_output("image", image);
     }
 };
 
-ZENDEFNODE(ImageExtractFeature_ORB, {
+ZENDEFNODE(ImageDelAlpha, {
     {
         {"image"},
+        {"mask"},
     },
     {
-        {"image"},
+        {"image"}
     },
     {},
     { "image" },
 });
-
-struct ImageExtractFeature_SIFT : INode {
-    virtual void apply() override {
-        auto image = get_input<PrimitiveObject>("image");
-        auto &ud = image->userData();
+struct ImageCut: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        auto tilemode = get_input2<std::string>("tilemode");
+        auto rows = get_input2<int>("rows");
+        auto cols = get_input2<int>("cols");
+        UserData &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-//        cv::Ptr<cv::SIFT> sift = cv::SIFT::create();
-//        cv::Ptr<cv::xfeatures2d::SIFT> sift = cv::xfeatures2d::SIFT::create();
-        cv::Mat imagecvin(h, w, CV_8U);
-        cv::Mat imagecvout(h, w, CV_8U);
-        std::vector<cv::KeyPoint> keypoints;
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                vec3f rgb = image->verts[i * w + j];
-                imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
-//        zeno::log_info("imageftok");
-//        feature_detector->setContrastThreshold(0.03);  // 设置特征点阈值为0.03
-//        sift->setEdgeThreshold(5.0);       // 设置关键点间距阈值为5.0
-//        sift->detectAndCompute(imagecvin, cv::noArray(), keypoints, imagecvout);
-
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                cv::Vec3f rgb = imagecvout.at<cv::Vec3b>(i, j);
-                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-            }
-        }
+        int w1 = w * cols;
+        int h1 = h * rows;
+        auto image2 = std::make_shared<PrimitiveObject>();
+        image2->resize(w1 * h1);
+        image2->userData().set2("isImage", 1);
+        image2->userData().set2("w", w1);
+        image2->userData().set2("h", h1);
+        set_output("image", image2);
+    }
+};
+ZENDEFNODE(ImageCut, {
+    {
+        {"image"},
+        {"enum normal mirror", "tilemode", "normal"},
+        {"int", "rows", "2"},
+        {"int", "cols", "2"},
+    },
+    {
+        {"deprecated"},
+    },
+    {},
+    {"image"},
+});
+struct ImageShape: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        auto rows = get_input2<int>("rows");
+        auto cols = get_input2<int>("cols");
+        UserData &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
         set_output("image", image);
     }
 };
-
-ZENDEFNODE(ImageExtractFeature_SIFT, {
+ZENDEFNODE(ImageShape, {
+    {
+        {"image"},
+        {"int", "rows", "2"},
+        {"int", "cols", "2"},
+    },
     {
         {"image"},
     },
-    {
-        {"PrimitiveObject", "image"},
-    },
     {},
-    { "image" },
+    {"deprecated"},
 });
-
 }
 }
