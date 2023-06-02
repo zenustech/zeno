@@ -45,8 +45,30 @@ struct ShaderTexture2D : ShaderNodeClone<ShaderTexture2D>
     }
 };
 
+
+
 struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 {
+    enum struct SamplingMethod {
+        Closest, Trilinear, Triquadratic, Tricubic
+    };
+
+    static std::string methodDefaultString() {
+        auto name = magic_enum::enum_name(SamplingMethod::Trilinear);
+        return std::string(name);
+    }
+
+    static std::string methodListString() {
+        auto list = magic_enum::enum_names<SamplingMethod>();
+
+        std::string result;
+        for (auto& ele : list) {
+            result += " ";
+            result += ele;
+        }
+        return result;
+    }
+
     virtual int determineType(EmissionPass *em) override {
         auto texId = get_input2<int>("texId");
         auto coord = em->determineType(get_input("coord").get());
@@ -79,11 +101,7 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
         auto dim = em->determineType(get_input("coord").get());
         auto method = get_input2<std::string>("method");
 
-        static const auto sample_method_map = std::map<std::string, uint8_t> {
-            {"CLOSEST", 0},
-            {"LINEAR", 1},
-            {"CUBIC", 3}
-        }; 
+	    auto casted = magic_enum::enum_cast<SamplingMethod>(method).value_or(SamplingMethod::Trilinear);
 
         std::string ORDER;
 
@@ -120,7 +138,7 @@ ZENDEFNODE(ShaderTexture3D, {
         {"vec3f", "coord", "0,0,0"},
         {"enum World Local", "space", "World"},
         {"enum vec2", "type", "vec2"},
-        {"enum CLOSEST LINEAR CUBIC", "method", "LINEAR"} 
+        {"enum " + ShaderTexture3D::methodListString(), "method", ShaderTexture3D::methodDefaultString()} 
     },
     {
         {"shader", "out"},

@@ -20,6 +20,76 @@ static const float _vol_extinction = 1.0f;
 
 //COMMON_CODE
 
+/* w0, w1, w2, and w3 are the four cubic B-spline basis functions. */
+inline __device__ float cubic_w0(float a)
+{
+  return (1.0f / 6.0f) * (a * (a * (-a + 3.0f) - 3.0f) + 1.0f);
+}
+inline __device__ float cubic_w1(float a)
+{
+  return (1.0f / 6.0f) * (a * a * (3.0f * a - 6.0f) + 4.0f);
+}
+inline __device__ float cubic_w2(float a)
+{
+  return (1.0f / 6.0f) * (a * (a * (-3.0f * a + 3.0f) + 3.0f) + 1.0f);
+}
+inline __device__ float cubic_w3(float a)
+{
+  return (1.0f / 6.0f) * (a * a * a);
+}
+
+/* g0 and g1 are the two amplitude functions. */
+inline __device__ float cubic_g0(float a)
+{
+  return cubic_w0(a) + cubic_w1(a);
+}
+inline __device__ float cubic_g1(float a)
+{
+  return cubic_w2(a) + cubic_w3(a);
+}
+
+/* h0 and h1 are the two offset functions */
+inline __device__ float cubic_h0(float a)
+{
+  return (cubic_w1(a) / cubic_g0(a)) - 1.0f;
+}
+inline __device__ float cubic_h1(float a)
+{
+  return (cubic_w3(a) / cubic_g1(a)) + 1.0f;
+}
+
+template<typename S>
+inline __device__ float interp_tricubic_nanovdb(S &s, float x, float y, float z)
+{
+  float px = floorf(x);
+  float py = floorf(y);
+  float pz = floorf(z);
+  float fx = x - px;
+  float fy = y - py;
+  float fz = z - pz;
+
+  float g0x = cubic_g0(fx);
+  float g1x = cubic_g1(fx);
+  float g0y = cubic_g0(fy);
+  float g1y = cubic_g1(fy);
+  float g0z = cubic_g0(fz);
+  float g1z = cubic_g1(fz);
+
+  float x0 = px + cubic_h0(fx);
+  float x1 = px + cubic_h1(fx);
+  float y0 = py + cubic_h0(fy);
+  float y1 = py + cubic_h1(fy);
+  float z0 = pz + cubic_h0(fz);
+  float z1 = pz + cubic_h1(fz);
+
+  using namespace nanovdb;
+
+  return g0z * (g0y * (g0x * s(Vec3f(x0, y0, z0)) + g1x * s(Vec3f(x1, y0, z0))) +
+                g1y * (g0x * s(Vec3f(x0, y1, z0)) + g1x * s(Vec3f(x1, y1, z0)))) +
+         g1z * (g0y * (g0x * s(Vec3f(x0, y0, z1)) + g1x * s(Vec3f(x1, y0, z1))) +
+                g1y * (g0x * s(Vec3f(x0, y1, z1)) + g1x * s(Vec3f(x1, y1, z1))));
+}
+
 inline __device__ float _LERP_(float t, float s1, float s2)
 {
     //return (1 - t) * s1 + t * s2;
