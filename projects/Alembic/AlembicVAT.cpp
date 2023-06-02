@@ -214,7 +214,7 @@ struct AlembicToSoftBodyVAT: public INode {
                 if (frameIndex == 0) {
                     vatWidth = std::min(mergedPrim->verts.size(), (size_t)8192);
                     rowsPerFrame = static_cast<int32_t>(std::ceil((float)mergedPrim->verts.size() / (float)vatWidth));
-                    vatHeight = rowsPerFrame * frameNum
+                    vatHeight = rowsPerFrame * frameNum;
                     spaceToAlign = vatWidth * rowsPerFrame - mergedPrim->verts.size();
                     std::string objPath = writePath + ".obj";
                     if (std::filesystem::exists(objPath)) {
