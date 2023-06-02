@@ -265,6 +265,9 @@ struct LineResample : INode {
             auto it = std::upper_bound(linesLen.begin(), linesLen.end(), insertU);
             size_t index = it - linesLen.begin();
             index = std::min(index, prim->lines.size() - 1);
+
+            // if (index <= 0) continue;
+
             auto const& ind = prim->lines[index];
             auto a = prim->verts[ind[0]];
             auto b = prim->verts[ind[1]];
@@ -946,8 +949,13 @@ struct PrimitiveDelAttrs : zeno::INode {
         }
 
         if (!invert) {
-            for(std::string attr : names)
+            for(std::string attr : names) {
                 prim->verts.attrs.erase(attr);
+                prim->tris.attrs.erase(attr);
+                prim->quads.attrs.erase(attr);
+                prim->loops.attrs.erase(attr);
+                prim->polys.attrs.erase(attr);
+            }
         } else {
             std::vector<std::string> myKeys = prim->verts.attr_keys();
 
@@ -956,8 +964,13 @@ struct PrimitiveDelAttrs : zeno::INode {
             });
             myKeys.erase(reserve_attr, myKeys.end());
 
-            for(std::string attr : myKeys)
+            for(std::string attr : myKeys){
                 prim->verts.attrs.erase(attr);
+                prim->tris.attrs.erase(attr);
+                prim->quads.attrs.erase(attr);
+                prim->loops.attrs.erase(attr);
+                prim->polys.attrs.erase(attr);
+            }
         }
 
         set_output("prim", get_input("prim"));

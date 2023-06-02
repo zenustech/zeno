@@ -180,6 +180,7 @@ private:
     QStackedWidget* m_stack;
     ZToolBarButton* m_pBtnFilterLog;
     ZToolBarButton* m_pBtnPlainLog;
+    ZToolBarButton* m_pDeleteLog;
 };
 
 class DockContent_Image : public DockToolbarWidget {

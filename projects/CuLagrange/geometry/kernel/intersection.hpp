@@ -1536,7 +1536,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
         });
 
 
-        table_vec2i_type incidentItsTab{tris.get_allocator(),nm_insts * 2};
+        table_vec2i_type incidentItsTab{tris.get_allocator(), (std::size_t)nm_insts * 2};
         incidentItsTab.reset(pol,true);
         pol(zs::range(nm_insts),[
             ints_buffer = proxy<space>({},ints_buffer),
@@ -1927,7 +1927,7 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
         }); 
 
 
-        zs::Vector<int> ringTag{tris.get_allocator(),nm_insts};
+        zs::Vector<int> ringTag{tris.get_allocator(),(std::size_t)nm_insts};
         auto nm_rings = mark_disconnected_island(pol,conn_topo,ringTag);
         zs::Vector<int> ringSize(tris.get_allocator(),nm_rings);
         pol(zs::range(ringSize.size()),[
@@ -1961,8 +1961,8 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                 printf("ring[%d] Size : %d\n",ri,rsize);
 
             // edge_topo_type dc_edge_topos{tris.get_allocator(),rsize * 6};
-            table_int_type disable_points{tris.get_allocator(),rsize * 8};
-            table_vec2i_type disable_lines{tris.get_allocator(),rsize * 6};
+            table_int_type disable_points{tris.get_allocator(),(std::size_t)rsize * 8};
+            table_vec2i_type disable_lines{tris.get_allocator(),(std::size_t)rsize * 6};
             disable_points.reset(pol,true);
             disable_lines.reset(pol,true);
 

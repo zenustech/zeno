@@ -66,6 +66,14 @@ struct Params
 
     int usingHdrSky;
     cudaTextureObject_t sky_texture;
+
+    float* skycdf;
+    int* sky_start;
+
+
+    int skynx;
+    int skyny;
+
     float sky_rot;
     float sky_rot_x;
     float sky_rot_y;

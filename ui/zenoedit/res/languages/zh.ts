@@ -362,7 +362,7 @@
         <translation>曲线编辑器</translation>
     </message>
     <message>
-        <source>Tangent    Left X</source>
+        <source>Tan Left X</source>
         <translation>切线左侧X</translation>
     </message>
     <message>
@@ -370,7 +370,7 @@
         <translation>右侧X</translation>
     </message>
     <message>
-        <source>Tangent    Left Y</source>
+        <source>Tan Left Y</source>
         <translation>切线左侧Y</translation>
     </message>
     <message>

@@ -432,8 +432,8 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
             cudaPol(range(svs.size()),
                     [vtemp = proxy<space>({}, vtemp), svtemp = proxy<space>({}, primHandle.svtemp),
                      spmat = view<space>(linsys.spmat), svs = proxy<space>({}, svs), gn = s_groundNormal,
-                     dHat2 = dHat * dHat, kappa = kappa, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                        const auto vi = svs("inds", svi, int_c) + svOffset;
+                     dHat2 = dHat * dHat, kappa = kappa, vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                        const auto vi = svs("inds", svi, int_c) + vOffset;
                         auto x = vtemp.pack<3>("xn", vi);
                         auto dist = gn.dot(x);
                         auto dist2 = dist * dist;
@@ -464,8 +464,8 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
                             [vtemp = proxy<space>({}, vtemp), svtemp = proxy<space>({}, primHandle.svtemp),
                              spmat = view<space>(linsys.spmat), svs = proxy<space>({}, svs), epsvh = epsv * dt,
                              gn = s_groundNormal, fricMu = fricMu,
-                             svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                                const auto vi = svs("inds", svi, int_c) + svOffset;
+                             vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                                const auto vi = svs("inds", svi, int_c) + vOffset;
                                 auto dx = vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
                                 auto fn = svtemp("fn", svi);
                                 if (fn == 0) {
@@ -761,8 +761,8 @@ void UnifiedIPCSystem::computeBoundaryBarrierGradient(zs::CudaExecutionPolicy &p
         const auto &svs = primHandle.getSurfVerts();
         pol(range(svs.size()),
             [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs), gn = s_groundNormal, dHat2 = dHat * dHat,
-             kappa = kappa, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                const auto vi = svs("inds", svi, int_c) + svOffset;
+             kappa = kappa, vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                const auto vi = svs("inds", svi, int_c) + vOffset;
                 auto x = vtemp.pack<3>("xn", vi);
                 auto dist = gn.dot(x);
                 auto dist2 = dist * dist;
@@ -780,8 +780,8 @@ void UnifiedIPCSystem::computeBoundaryBarrierGradient(zs::CudaExecutionPolicy &p
             if (fricMu != 0) {
                 pol(range(svs.size()), [vtemp = proxy<space>({}, vtemp), svtemp = proxy<space>({}, primHandle.svtemp),
                                         svs = proxy<space>({}, svs), epsvh = epsv * dt, gn = s_groundNormal,
-                                        fricMu = fricMu, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                    const auto vi = svs("inds", svi, int_c) + svOffset;
+                                        fricMu = fricMu, vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                    const auto vi = svs("inds", svi, int_c) + vOffset;
                     auto dx = vtemp.pack<3>("xn", vi) - vtemp.pack<3>("xhat", vi);
                     auto fn = svtemp("fn", svi);
                     if (fn == 0) {

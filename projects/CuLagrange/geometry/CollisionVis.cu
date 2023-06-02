@@ -2496,7 +2496,7 @@ struct VisualizeSelfIntersections : zeno::INode {
         dtiles_t st_pair_buffer{tris.get_allocator(),{
             {"x0",3},
             {"x1",3}
-        },nm_insts};    
+        },(std::size_t)nm_insts};    
         cudaPol(zs::range(nm_insts),[
             inst_buffer_info = proxy<cuda_space>({},inst_buffer_info),
             // instBuffer = proxy<cuda_space>(instBuffer),
