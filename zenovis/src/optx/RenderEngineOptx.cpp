@@ -6,6 +6,7 @@
 #include <zeno/types/UserData.h>
 #include <zenovis/DrawOptions.h>
 #include <zeno/types/MaterialObject.h>
+#include <zeno/types/TextureObject.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/MatrixObject.h>
 #include <zenovis/ObjectsManager.h>
@@ -59,7 +60,7 @@ struct GraphicsManager {
 
         struct DetMaterial {
             std::vector<std::shared_ptr<zeno::Texture2DObject>> tex2Ds;
-            std::vector<std::pair<std::string, std::string>> tex3Ds;
+            std::vector<std::shared_ptr<zeno::TextureObjectVDB>> tex3Ds;
             std::string common;
             std::string shader;
             std::string mtlidkey;
@@ -899,7 +900,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         for (uint k=0; k<mtldet->tex3Ds.size(); ++k) 
                         {
                             auto& tex = mtldet->tex3Ds.at(k);
-                            auto vdb_path = tex.first;
+                            auto vdb_path = tex->path;
 
                             static const auto extension = std::string("vdb");
                             auto found_vdb = hasEnding(vdb_path, extension);
@@ -908,7 +909,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                             auto index_of_shader = _volume_shader_list.size();
                             std::string combined_key;
 
-                            auto loaded = OptixUtil::preloadVDB(tex, index_of_shader, k, linear_transform, combined_key); 
+                            auto loaded = OptixUtil::preloadVDB(*tex, index_of_shader, k, linear_transform, combined_key); 
                             has_vdb = has_vdb || loaded;
 
                             g_vdb_list_for_this_shader.push_back(combined_key);

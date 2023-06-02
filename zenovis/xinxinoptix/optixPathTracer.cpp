@@ -1423,8 +1423,8 @@ static void createSBT( PathTracerState& state )
                 auto vdb_key = vdb_list[t];
                 auto vdb_ptr = OptixUtil::g_vdb_cached_map.at(vdb_key);
 
-                rec.data.vdb_grids[t] = vdb_ptr->grids.front().deviceptr;
-                rec.data.vdb_max_v[t] = vdb_ptr->grids.front().max_value;
+                rec.data.vdb_grids[t] = vdb_ptr->grids.front()->deviceptr;
+                rec.data.vdb_max_v[t] = vdb_ptr->grids.front()->max_value;
             }
 
              for(uint t=0;t<32;t++)

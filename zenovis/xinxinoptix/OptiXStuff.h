@@ -24,6 +24,7 @@
 #include <optix_stack_size.h>
 #include "optixVolume.h"
 #include "raiicuda.h"
+#include "zeno/types/TextureObject.h"
 #include "zeno/utils/string.h"
 #include "tinyexr.h"
 #include <filesystem>
@@ -478,13 +479,13 @@ inline std::map<std::string, std::pair<uint, uint>> g_vdb_indice_visible;
 
 inline std::map<uint, std::vector<std::string>> g_vdb_list_for_each_shader;
 
-inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel, 
+inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB, 
                        uint index_of_shader, uint index_inside_shader,
                        const glm::f64mat4& transform, 
                        std::string& combined_key)
 {
-    auto path = path_channel.first;
-    auto channel = path_channel.second;
+    auto path = texVDB.path;
+    auto channel = texVDB.channel;
 
     std::filesystem::path filePath = path;
 
@@ -514,7 +515,7 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
         auto channel_index = (uint)std::stoi(channel);
         channel = fetchGridName(path, channel_index);
     } else {
-        fetchGridName(path, channel);
+        checkGridName(path, channel);
     }
 
     const auto vdb_key = path + "{" + channel + "}";
@@ -526,7 +527,7 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
 
         auto& cached = g_vdb_cached_map[vdb_key];
 
-        if (transform == g_vdb_cached_map[vdb_key]->transform && fileTime == cached->file_time) {
+        if (transform == g_vdb_cached_map[vdb_key]->transform && fileTime == cached->file_time && texVDB.eleType == cached->type) {
 
             g_vdb_indice_visible[vdb_key] = std::make_pair(index_of_shader, index_inside_shader);
             return true;
@@ -539,6 +540,7 @@ inline bool preloadVDB(const std::pair<std::string, std::string>& path_channel,
     volume_ptr->file_time = fileTime;
     volume_ptr->transform = transform;
     volume_ptr->selected = {channel};
+    volume_ptr->type = texVDB.eleType;
     
     auto succ = loadVolume(*volume_ptr, path); 
     

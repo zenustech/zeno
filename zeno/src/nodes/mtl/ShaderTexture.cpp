@@ -1,11 +1,12 @@
-#include <cstdint>
-#include <sys/types.h>
 #include <zeno/zeno.h>
 #include <zeno/extra/ShaderNode.h>
 #include <zeno/types/ShaderObject.h>
 #include <zeno/utils/string.h>
 #include <algorithm>
 #include "zeno/utils/format.h"
+
+#include <string>
+#include "magic_enum.hpp"
 
 namespace zeno
 {
@@ -103,16 +104,17 @@ struct ShaderTexture3D : ShaderNodeClone<ShaderTexture3D>
 
 	    auto casted = magic_enum::enum_cast<SamplingMethod>(method).value_or(SamplingMethod::Trilinear);
 
-        std::string ORDER;
+        auto order = magic_enum::enum_integer(casted);
+        std::string ORDER = std::to_string( order );
 
-        if (sample_method_map.count(method) > 0) {
-            auto order = sample_method_map.at(method);
-            ORDER = std::to_string( order );
-        } else {
-            ORDER = std::to_string( 1 );
-        }
+        //using DataTypeNVDB0 = float; //nanovdb::Fp32;
+        //using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
+        std::string sid = std::to_string(texId);
 
-        em->emitCode(type + "(samplingVDB<"+ ORDER +","+ world_space +">(vdb_grids[" + std::to_string(texId) + "], vec3(" + coord + ")))");
+        std::string DataTypeNVDB = "DataTypeNVDB" + sid;
+        std::string GridTypeNVDB = "GridTypeNVDB" + sid;
+
+        em->emitCode(type + "(samplingVDB<"+ ORDER +","+ world_space + "," + DataTypeNVDB +">(vdb_grids[" + sid + "], vec3(" + coord + ")))");
     }
 };
 
