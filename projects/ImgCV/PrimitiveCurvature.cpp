@@ -225,5 +225,77 @@ ZENDEFNODE(MaskByCurvature, {
     {},
     {"erode"},
 });
+
+//struct CompCurvature: INode {
+//    void apply() override {
+//        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+//        auto threshold = get_input2<float>("threshold");
+//        auto channel = get_input2<std::string>("channel");
+//        auto &ud = image->userData();
+//        int w = ud.get2<int>("w");
+//        int h = ud.get2<int>("h");
+//        cv::Mat imagecvgray(h, w, CV_32F);
+//        cv::Mat imagecvcurvature(h, w, CV_32F);
+//        if(channel == "R"){
+//            for (int i = 0; i < h; i++) {
+//                for (int j = 0; j < w; j++) {
+//                    vec3f rgb = image->verts[i * w + j];
+//                    imagecvgray.at<float>(i, j) = rgb[0];
+//                }
+//            }
+//        }
+//        else if(channel == "G"){
+//            for (int i = 0; i < h; i++) {
+//                for (int j = 0; j < w; j++) {
+//                    vec3f rgb = image->verts[i * w + j];
+//                    imagecvgray.at<float>(i, j) = rgb[1];
+//                }
+//            }
+//        }
+//        else if(channel == "B"){
+//            for (int i = 0; i < h; i++) {
+//                for (int j = 0; j < w; j++) {
+//                    vec3f rgb = image->verts[i * w + j];
+//                    imagecvgray.at<float>(i, j) = rgb[2];
+//                }
+//            }
+//        }
+//        // 计算图像的梯度
+//        cv::Mat dx, dy;
+//        cv::Sobel(imagecvgray, dx, CV_32F, 1, 0);
+//        cv::Sobel(imagecvgray, dy, CV_32F, 0, 1);
+//        // 计算梯度的二阶导数
+//        cv::Mat dxx, dyy, dxy;
+//        cv::Sobel(dx, dxx, CV_32F, 1, 0);
+//        cv::Sobel(dy, dyy, CV_32F, 0, 1);
+//        cv::Sobel(dx, dxy, CV_32F, 0, 1);
+//        // 计算曲率
+//        imagecvcurvature = (dxx.mul(dyy) - dxy.mul(dxy)) / ((dxx + dyy).mul(dxx + dyy));
+//        for (int i = 0; i < h; i++) {
+//            for (int j = 0; j < w; j++) {
+//                float cur = imagecvcurvature.at<float>(i, j);
+//                if(cur > threshold){
+//                    image->verts[i * w + j] = {1,1,1};
+//                }
+//                else{
+//                    image->verts[i * w + j] = {0,0,0};
+//                }
+//            }
+//        }
+//        set_output("image", image);
+//    }
+//};
+//ZENDEFNODE(CompCurvature, {
+//    {
+//        {"image"},
+//        {"float","threshold","0"},
+//        {"enum R G B","channel","R"}
+//    },
+//    {
+//        {"image"},
+//    },
+//    {},
+//    {"Comp"},
+//});
 }
 }
