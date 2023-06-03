@@ -2211,6 +2211,106 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
         // return 0;
 }
 
+
+
+template<typename Pol,typename PosTileVec,typename TriTileVec,typename HETileVec>
+int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
+    const PosTileVec& verts_A, const zs::SmallString& xtag_A,
+    const TriTileVec& tris_A,
+    const HETileVec& halfedges_A,
+    const PosTileVec& verts_B, const zs::SmallString& xtag_B,
+    const TriTileVec& tris_B,
+    // const HETileVec& halfedges_B,
+    zs::bht<int,2,int>& res) {
+        using namespace zs;
+        using vec2i = zs::vec<int,2>;
+        using bv_t = typename ZenoParticles::lbvh_t::Box;
+        using vec3 = zs::vec<T,3>;
+        using table_vec2i_type = zs::bht<int,2,int>;
+
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        constexpr auto exec_tag = wrapv<space>{};
+        
+        // zs::Vector<int> nmIts{verts_A.get_allocator(),1};
+        // nmIts.setVal(0);
+
+        auto bvs = retrieve_bounding_volumes(pol,verts_B,tris_B,wrapv<3>{},0,xtag_B);
+        auto tri_B_bvh = LBvh<3,int,T>{};
+        tri_B_bvh.build(pol,bvs);
+
+        auto cnorm_A = compute_average_edge_length(pol,verts_A,xtag_A,tris_A);
+        auto cnorm_B = compute_average_edge_length(pol,verts_B,xtag_B,tris_B);
+        auto cnorm = cnorm_A > cnorm_B ? cnorm_A : cnorm_B;
+        cnorm *= 3;
+
+        pol(zs::range(halfedges_A.size()),[
+                halfedges_A = proxy<space>({},halfedges_A),
+                tris_A = proxy<space>({},tris_A),
+                verts_A = proxy<space>({},verts_A),
+                verts_B = proxy<space>({},verts_B),
+                tris_B = proxy<space>({},tris_B),
+                xtag_A = xtag_A,
+                xtag_B = xtag_B,
+                exec_tag,
+                tab = proxy<space>(res),
+                // nmIts = proxy<space>(nmIts),
+                thickness = cnorm,
+                tri_B_bvh = proxy<space>(tri_B_bvh)] ZS_LAMBDA(int hei_A) mutable {
+            vec2i edge_A{};
+            auto ti_A = zs::reinterpret_bits<int>(halfedges_A("to_face",hei_A));
+            auto tri_A = tris_A.pack(dim_c<3>,"inds",ti_A,int_c);
+
+            auto local_vert_id_A = zs::reinterpret_bits<int>(halfedges_A("local_vertex_id",hei_A));
+            edge_A[0] = tri_A[(local_vert_id_A + 0) % 3];
+            edge_A[1] = tri_A[(local_vert_id_A + 1) % 3];
+
+            auto ohei_A = zs::reinterpret_bits<int>(halfedges_A("opposite_he",hei_A));
+
+            if(edge_A[0] > edge_A[1] && ohei_A >= 0)
+                return;
+
+            vec3 eV_A[2] = {};
+            auto edgeCenter_A = vec3::zeros();
+            for(int i = 0;i != 2;++i) {
+                eV_A[i] = verts_A.pack(dim_c<3>,xtag_A,edge_A[i]);
+                edgeCenter_A += eV_A[i] / (T)2.0;
+            }
+
+            auto dir_A = eV_A[1] - eV_A[0];
+            auto bv_A = bv_t{get_bounding_box(edgeCenter_A - thickness,edgeCenter_A + thickness)};
+
+            auto process_potential_he_tri_intersection_pairs = [&](int ti_B) {
+                auto tri_B = tris_B.pack(dim_c<3>,"inds",ti_B,int_c);
+                // might need an accurate predicate here for floating-point intersection testing
+                {
+                    vec3 tV_B[3] = {};
+                    for(int i = 0;i != 3;++i)
+                        tV_B[i] = verts_B.pack(dim_c<3>,xtag_B,tri_B[i]);
+                    // auto dir = eV[1] - tV[0];
+                    auto r = LSL_GEO::tri_ray_intersect(eV_A[0],dir_A,tV_B[0],tV_B[1],tV_B[2]);
+                    if(r < (T)1.0) {
+                        // auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                        auto intp = r * dir_A + eV_A[0];
+                        tab.insert(vec2i{hei_A,ti_B});
+                        // intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{hei_A,ti_B}.reinterpret_bits(float_c);
+                        // intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
+                        // make sure the opposite he - tri pairs are also inserted
+                        auto opposite_hei_A = zs::reinterpret_bits<int>(halfedges_A("opposite_he",hei_A));
+                        if(opposite_hei_A >= 0) {
+                            // offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                            tab.insert(vec2i{opposite_hei_A,ti_B});
+                            // intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{opposite_hei_A,ti_B}.reinterpret_bits(float_c);
+                            // intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
+                        }
+                    }
+                }                    
+            };
+            tri_B_bvh.iter_neighbors(bv_A,process_potential_he_tri_intersection_pairs);
+        });
+        return res.size();
+        // return 0;
+}
+
 template<typename Pol,typename PosTileVec,typename TriTileVec,typename HalfEdgeTileVec,typename GIA_TILEVEC,typename IntsTileVec>
 int do_global_intersection_analysis(Pol& pol,
     const PosTileVec& verts_A,const zs::SmallString& xtag_A,
@@ -2587,6 +2687,340 @@ int do_global_intersection_analysis(Pol& pol,
         TILEVEC_OPS::copy(pol,gia_res_A,"ring_mask",gia_res,"ring_mask",0);
         TILEVEC_OPS::copy(pol,gia_res_B,"ring_mask",gia_res,"ring_mask",gia_res_A.size());
 
+        return nm_rings;
+}
+
+
+
+template<typename Pol,typename PosTileVec,typename TriTileVec,typename HalfEdgeTileVec,typename GIA_TILEVEC>
+int do_global_intersection_analysis(Pol& pol,
+    const PosTileVec& verts_A,const zs::SmallString& xtag_A,
+    const TriTileVec& tris_A,
+    const HalfEdgeTileVec& halfedges_A,
+    const PosTileVec& verts_B,const zs::SmallString& xtag_B,
+    const TriTileVec& tris_B,
+    const HalfEdgeTileVec& halfedges_B,
+    GIA_TILEVEC& gia_res,
+    GIA_TILEVEC& tris_gia_res) {
+        using namespace zs;
+        using T = typename PosTileVec::value_type;
+        using dtiles_t = zs::TileVector<T, 32>;
+        using table_vec2i_type = zs::bht<int,2,int>;
+        using table_int_type = zs::bht<int,1,int>;
+        using vec2i = zs::vec<int,2>;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        constexpr auto exec_tag = wrapv<space>{};
+
+        constexpr int MAX_NM_INTERSECTIONS = 10000;
+
+        // std::cout << "begin gia_test" << std::endl;
+
+        table_vec2i_type A_2_B_tab{gia_res.get_allocator(),(size_t)MAX_NM_INTERSECTIONS};
+        A_2_B_tab.reset(pol,true);
+
+        table_vec2i_type B_2_A_tab{gia_res.get_allocator(),(size_t)MAX_NM_INTERSECTIONS};
+        B_2_A_tab.reset(pol,true);
+
+        auto nm_A_2_B_ints = retrieve_intersection_tri_halfedge_info_of_two_meshes(pol,verts_A,xtag_A,tris_A,halfedges_A,verts_B,xtag_B,tris_B,A_2_B_tab);
+        auto nm_B_2_A_ints = retrieve_intersection_tri_halfedge_info_of_two_meshes(pol,verts_B,xtag_B,tris_B,halfedges_B,verts_A,xtag_A,tris_A,B_2_A_tab);
+
+        auto total_nm_verts = verts_A.size() + verts_B.size();
+        gia_res.resize(total_nm_verts);
+        TILEVEC_OPS::fill(pol,gia_res,"ring_mask",zs::reinterpret_bits<T>((int)0));
+
+        auto total_nm_tris = tris_A.size() + tris_B.size();
+        tris_gia_res.resize(total_nm_tris);
+        TILEVEC_OPS::fill(pol,tris_gia_res,"ring_mask",zs::reinterpret_bits<T>((int)0));
+
+        auto total_nm_ints = nm_A_2_B_ints + nm_B_2_A_ints;
+        if(total_nm_ints == 0)
+            return 0;
+
+        //we order the all collision-pairs as [A_2_B,B_2_A]
+        table_vec2i_type incidentItsTab{gia_res.get_allocator(),(size_t)total_nm_ints * 2};
+        incidentItsTab.reset(pol,true);
+
+        auto establish_connections = [&](
+            const zs::bht<int,2,int>& _A_2_B_tab,const HalfEdgeTileVec& _A_halfedges,const TriTileVec& _A_tris,int _A_offset,
+            const zs::bht<int,2,int>& _B_2_A_tab,const HalfEdgeTileVec& _B_halfedges,const TriTileVec& _B_tris,int _B_offset) mutable {
+                auto nn = _A_2_B_tab.size();
+                pol(zip(zs::range(nn),zs::range(_A_2_B_tab._activeKeys)),[
+                    _A_2_B_tab = proxy<space>(_A_2_B_tab),
+                    _A_halfedges = proxy<space>({},_A_halfedges),
+                    _A_tris = proxy<space>({},_A_tris),
+                    _A_offset = _A_offset,
+                    _B_2_A_tab = proxy<space>(_B_2_A_tab),
+                    _B_halfedges = proxy<space>({},_B_halfedges),
+                    _B_tris = proxy<space>({},_B_tris),
+                    _B_offset = _B_offset,
+                    incidentItsTab = proxy<space>(incidentItsTab)] ZS_LAMBDA(auto,const auto& a2b) mutable {
+                        auto a2b_no = _A_2_B_tab.query(a2b);
+                        auto ha = a2b[0];
+                        auto tb = a2b[1];
+                        auto oha = zs::reinterpret_bits<int>(_A_halfedges("opposite_he",ha));
+                        if(oha >= 0) {
+                            if(auto na2b_no = _A_2_B_tab.query(vec2i{oha,tb});na2b_no >= 0) {
+                                // as it is symmtric, we only need to establish this connectivity once
+                                if(a2b_no + _A_offset > na2b_no + _A_offset)
+                                    incidentItsTab.insert(vec2i{a2b_no + _A_offset,na2b_no + _A_offset});
+                            }else {
+                                printf("impossible reaching here, the hi and ohi should both have been inserted\n");
+                            }
+                        }
+                        auto nha = ha;
+                        for(int i = 0;i != 2;++i) {
+                            nha = zs::reinterpret_bits<int>(_A_halfedges("next_he",nha));
+                            if(auto na2b_no = _A_2_B_tab.query(vec2i{nha,tb});na2b_no >= 0) {
+                                // as it is symmtric, we only need to establish this connectivity once
+                                if(a2b_no + _A_offset > na2b_no + _A_offset)
+                                    incidentItsTab.insert(vec2i{a2b_no + _A_offset,na2b_no + _A_offset});
+                                return;
+                            }
+                        }
+                        auto ta = zs::reinterpret_bits<int>(_A_halfedges("to_face",ha));
+                        auto hb = zs::reinterpret_bits<int>(_B_tris("he_inds",tb));
+                        for(int i = 0;i != 3;++i) {
+                            if(auto nb2a_no = _B_2_A_tab.query(vec2i{hb,ta});nb2a_no >= 0) {
+                                if(a2b_no + _A_offset > nb2a_no + _B_offset)
+                                    incidentItsTab.insert(vec2i{a2b_no + _A_offset,nb2a_no + _B_offset});
+                                return;
+                            }
+                            hb = zs::reinterpret_bits<int>(_B_halfedges("next_he",hb));
+                        }
+                        printf("impossible reaching here, the intersection ring seems to be broken\n");
+                });
+        };
+
+        int A_offset = 0;
+        int B_offset = A_2_B_tab.size();
+        establish_connections(A_2_B_tab,halfedges_A,tris_A,A_offset,B_2_A_tab,halfedges_B,tris_B,B_offset);
+        establish_connections(B_2_A_tab,halfedges_B,tris_B,B_offset,A_2_B_tab,halfedges_A,tris_A,A_offset);
+
+        auto nmEmtries = incidentItsTab.size();
+
+        zs::Vector<zs::vec<int,2>> conn_topo{gia_res.get_allocator(),nmEmtries};
+        pol(zip(conn_topo,range(incidentItsTab._activeKeys)),[] ZS_LAMBDA(zs::vec<int,2> &ij,const auto& key) mutable {ij = key;});
+        zs::Vector<int> ringTag{gia_res.get_allocator(),total_nm_ints};
+        auto nm_rings = mark_disconnected_island(pol,conn_topo,ringTag);
+
+        // std::cout << "nmEmtris of incidentItsTab : " << nmEmtries << std::endl;
+        // std::cout << "nmRings = " << nm_rings << std::endl;
+
+        zs::Vector<int> ringSize(gia_res.get_allocator(),nm_rings);
+        pol(zs::range(ringSize.size()),[
+            ringSize = proxy<space>(ringSize)] ZS_LAMBDA(int ri) mutable {
+                ringSize[ri] = 0;
+        });
+        pol(zs::range(ringTag.size()),[
+            ringTag = proxy<space>(ringTag),
+            exec_tag,
+            ringSize = proxy<space>(ringSize)] ZS_LAMBDA(int isi) mutable {
+                atomic_add(exec_tag,&ringSize[ringTag[isi]],(int)1);
+        });        
+
+        zs::Vector<vec2i> edges_A_topos{tris_A.get_allocator(),tris_A.size() * 3};
+        zs::Vector<vec2i> edges_B_topos{tris_B.get_allocator(),tris_B.size() * 3};
+        auto tris_2_edges_topo = [&](const TriTileVec& tris,zs::Vector<vec2i>& edge_topos) mutable {
+            pol(zs::range(tris.size()),[
+                tris = proxy<space>({},tris),
+                edge_topos = proxy<space>(edge_topos)] ZS_LAMBDA(int ti) mutable {
+                    auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                    for(int i = 0;i != 3;++i) {
+                        if(tri[i] < tri[(i + 1) % 3])
+                            edge_topos[ti * 3 + i] = vec2i{tri[i],tri[(i + 1) % 3]};
+                        else
+                            edge_topos[ti * 3 + i] = vec2i{-1,-1};
+                    }
+            });
+        };
+        tris_2_edges_topo(tris_A,edges_A_topos);
+        tris_2_edges_topo(tris_B,edges_B_topos);
+
+        dtiles_t gia_res_A{verts_A.get_allocator(),{
+            {"ring_mask",1}
+        },verts_A.size()};
+        TILEVEC_OPS::fill(pol,gia_res_A,"ring_mask",zs::reinterpret_bits<T>((int)0));
+        dtiles_t gia_res_B{verts_B.get_allocator(),{
+            {"ring_mask",1}
+        },verts_B.size()};
+        TILEVEC_OPS::fill(pol,gia_res_B,"ring_mask",zs::reinterpret_bits<T>((int)0));
+
+
+        dtiles_t tris_gia_res_A{tris_A.get_allocator(),{
+            {"ring_mask",1}
+        },tris_A.size()};
+        TILEVEC_OPS::fill(pol,tris_gia_res_A,"ring_mask",zs::reinterpret_bits<T>((int)0));
+        dtiles_t tris_gia_res_B{tris_B.get_allocator(),{
+            {"ring_mask",1}
+        },tris_B.size()};
+        TILEVEC_OPS::fill(pol,tris_gia_res_B,"ring_mask",zs::reinterpret_bits<T>((int)0));
+
+        if(nm_rings >= 32) {
+            std::cout << "the nm_rings[" << nm_rings << "] exceeds the max_nm_rings[" << 32 << "]" << std::endl;
+        }
+        nm_rings = nm_rings >= 32 ? 31 : nm_rings;
+        // return 0;
+
+        for(int ri = 0;ri != nm_rings;++ri) {
+            // std::cout << "mark gia_mesk for ring[" << ri << "]" << std::endl;
+            auto mark_gia_tag = [&](const zs::bht<int,2,int>& tab,
+                int ints_offset,
+                const TriTileVec& tris,
+                const PosTileVec& verts,
+                // const zs::Vector<int>& island_buffer,
+                const zs::Vector<vec2i>& edges_topo,
+                const HalfEdgeTileVec& halfedges,
+                GIA_TILEVEC& the_gia_res) mutable {
+                    zs::Vector<int> island_buffer{the_gia_res.get_allocator(),the_gia_res.size()};
+                    table_vec2i_type disable_lines{the_gia_res.get_allocator(),ringSize.getVal(ri) * 6};
+                    disable_lines.reset(pol,true);
+                    table_int_type disable_points{the_gia_res.get_allocator(),ringSize.getVal(ri) * 8};
+                    disable_points.reset(pol,true);
+                    // build disable_lines
+                    pol(zip(zs::range(tab.size()),zs::range(tab._activeKeys)),[
+                        ringTag = proxy<space>(ringTag),
+                        ri = ri,
+                        tab = proxy<space>(tab),
+                        disable_lines = proxy<space>(disable_lines),
+                        tris = proxy<space>({},tris),
+                        offset = ints_offset,
+                        halfedges = proxy<space>({},halfedges)] ZS_LAMBDA(auto,const auto& pair) mutable {
+                            auto iti = tab.query(pair);
+                            if(ringTag[iti + offset] != ri)
+                                return;
+                            auto hi = pair[0];
+                            auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                            auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
+                            auto local_vidx = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+                            auto a = htri[local_vidx];
+                            auto b = htri[(local_vidx + 1) % 3];
+                            if(a > b) {
+                                auto tmp = a;
+                                a = b;
+                                b = tmp;
+                            }
+                            disable_lines.insert(zs::vec<int,2>{a,b});                            
+                    });
+
+                    auto nm_islands = mark_disconnected_island(pol,edges_topo,disable_points,disable_lines,island_buffer);
+                    // std::cout << "nm_islands : " << nm_islands << std::endl;
+                    if(nm_islands == 1)
+                        return;
+
+                    int valid_island_idx = 0;
+
+                    zs::Vector<int> nm_cmps_every_island_count{the_gia_res.get_allocator(),(size_t)nm_islands};
+                    pol(zs::range(nm_cmps_every_island_count),[] ZS_LAMBDA(int& count) mutable { count = 0; });
+                    // find the island with the most must excluded points or the largest
+                    pol(zs::range(the_gia_res.size()),[
+                        island_buffer = proxy<space>(island_buffer),
+                        verts = proxy<space>({},verts),
+                        nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int vi) mutable {
+                            auto island_idx = island_buffer[vi];
+                            if(verts.hasProperty("GIA_must_exclude")){
+                                if(verts("GIA_must_exclude",vi) < (T)0.5)
+                                    return;
+                            }
+                            atomic_add(exec_cuda,&nm_cmps_every_island_count[island_idx],(int)1);
+                    });
+
+                    // for(int i = 0;i != nm_islands;++i)
+                    //     std::cout << nm_cmps_every_island_count.getVal(i) << "\t";
+                    // std::cout << std::endl;
+                    int max_size = 0;
+
+                    for(int i = 0;i != nm_islands;++i) {
+                        auto size_of_island = nm_cmps_every_island_count.getVal(i);
+                        if(size_of_island > max_size){
+                            max_size = size_of_island;
+                            valid_island_idx = i;
+                        }
+                    }
+                    
+                    auto cur_ri_mask = (int)1 << ri;
+                    pol(zs::range(the_gia_res.size()),[
+                        the_gia_res = proxy<space>({},the_gia_res),
+                        nm_islands,
+                        cur_ri_mask,
+                        exec_tag,
+                        valid_island_idx = valid_island_idx,
+                        island_buffer = proxy<space>(island_buffer)] ZS_LAMBDA(int vi) mutable {
+                            auto island_idx = island_buffer[vi];
+                            auto ring_mask = zs::reinterpret_bits<int>(the_gia_res("ring_mask",vi));
+                            if(island_idx != valid_island_idx/* || ints_types[island_idx] == 1*/){
+                                ring_mask |= cur_ri_mask;
+                            }
+                            the_gia_res("ring_mask",vi) = zs::reinterpret_bits<T>(ring_mask);
+                    });
+            };
+            mark_gia_tag(A_2_B_tab,0,tris_A,verts_A,edges_A_topos,halfedges_A,gia_res_A);
+            mark_gia_tag(B_2_A_tab,A_2_B_tab.size(),tris_B,verts_B,edges_B_topos,halfedges_B,gia_res_B);
+
+            auto mark_gia_tris_tag = [&](const zs::bht<int,2,int>& tab,
+                int ints_offset,
+                const TriTileVec& tris,
+                GIA_TILEVEC& the_tris_gia_res) mutable {
+                    pol(zip(zs::range(tab.size()),zs::range(tab._activeKeys)),[
+                        tab = proxy<space>(tab),
+                        ri = ri,
+                        offset = ints_offset,
+                        tris = proxy<space>({},tris),
+                        ringTag = proxy<space>(ringTag),
+                        the_tris_gia_res = proxy<space>({},the_tris_gia_res)] ZS_LAMBDA(auto,const auto& pair) mutable {
+                            auto iti = tab.query(pair);
+                            if(ringTag[iti + offset] != ri)
+                                return;
+                            auto ti = pair[1];
+
+                            int cur_ri_mask = (int)1 << ri;
+                            auto ring_mask = zs::reinterpret_bits<int>(the_tris_gia_res("ring_mask",ti));
+                            ring_mask |= cur_ri_mask;
+                            the_tris_gia_res("ring_mask",ti) = zs::reinterpret_bits<T>(ring_mask);
+                    });
+            };
+            mark_gia_tris_tag(A_2_B_tab,0,tris_B,tris_gia_res_B);
+            mark_gia_tris_tag(B_2_A_tab,A_2_B_tab.size(),tris_A,tris_gia_res_A);
+        }
+
+        // a & b
+
+        TILEVEC_OPS::copy(pol,gia_res_A,"ring_mask",gia_res,"ring_mask",0);
+        TILEVEC_OPS::copy(pol,gia_res_B,"ring_mask",gia_res,"ring_mask",gia_res_A.size());
+
+        pol(zs::range(tris_gia_res_A.size()),[
+            tris_A = proxy<space>({},tris_A),
+            tris_gia_res_A = proxy<space>({},tris_gia_res_A),
+            gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int ti) mutable {
+                auto tri_A = tris_A.pack(dim_c<3>,"inds",ti,int_c);
+                int t_ring_mask = 0;
+                int v_ring_mask[3] = {};
+                for(int i = 0;i != 3;++i)
+                    v_ring_mask[i] = zs::reinterpret_bits<int>(gia_res("ring_mask",tri_A[i]));
+                t_ring_mask = v_ring_mask[0] & v_ring_mask[1] & v_ring_mask[2];
+
+                auto ori_t_ring_mask = zs::reinterpret_bits<int>(tris_gia_res_A("ring_mask",ti));
+                t_ring_mask |= ori_t_ring_mask;
+                tris_gia_res_A("ring_mask",ti) = zs::reinterpret_bits<T>(t_ring_mask);
+        });
+        pol(zs::range(tris_gia_res_B.size()),[
+            tris_B = proxy<space>({},tris_B),
+            voffset = verts_A.size(),
+            tris_gia_res_B = proxy<space>({},tris_gia_res_B),
+            gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int ti) mutable {
+                auto tri_B = tris_B.pack(dim_c<3>,"inds",ti,int_c);
+                int t_ring_mask = 0;
+                int v_ring_mask[3] = {};
+                for(int i = 0;i != 3;++i)
+                    v_ring_mask[i] = zs::reinterpret_bits<int>(gia_res("ring_mask",tri_B[i] + voffset));
+                t_ring_mask = v_ring_mask[0] & v_ring_mask[1] & v_ring_mask[2];
+
+                auto ori_t_ring_mask = zs::reinterpret_bits<int>(tris_gia_res_B("ring_mask",ti));
+                t_ring_mask |= ori_t_ring_mask;
+                tris_gia_res_B("ring_mask",ti) = zs::reinterpret_bits<T>(t_ring_mask);
+        });
+
+        TILEVEC_OPS::copy(pol,tris_gia_res_A,"ring_mask",tris_gia_res,"ring_mask",0);
+        TILEVEC_OPS::copy(pol,tris_gia_res_B,"ring_mask",tris_gia_res,"ring_mask",tris_gia_res_A.size());
         return nm_rings;
 }
 

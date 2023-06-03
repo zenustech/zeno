@@ -2212,9 +2212,9 @@ struct VisualizeSelfIntersections : zeno::INode {
             });
         }
 
-        if(!calculate_facet_normal(cudaPol,verts_buffer,"x",tri_buffer,tri_buffer,"nrm")){
-            throw std::runtime_error("fail updating facet normal");
-        }  
+        // if(!calculate_facet_normal(cudaPol,verts_buffer,"x",tri_buffer,tri_buffer,"nrm")){
+        //     throw std::runtime_error("fail updating facet normal");
+        // }  
 
         // zs::Vector<int> nodal_colors{verts_buffer.get_allocator(),verts_buffer.size()};
         // zs::Vector<zs::vec<int,2>> instBuffer{tri_buffer.get_allocator(),tri_buffer.size() * 2};
@@ -2659,9 +2659,9 @@ struct VisualizeIntersections : zeno::INode {
 
         const auto& quads = zsparticles->getQuadraturePoints();
         auto quad_bvh = LBvh<3,int,T>{};
-        if(is_tet_volume) {
-            auto bvs = re
-        }
+        // if(is_tet_volume) {
+        //     auto bvs = re
+        // }
 
         for(auto kinematic : kinematics) {
             auto& kverts = kinematic->getParticles();
@@ -2673,64 +2673,71 @@ struct VisualizeIntersections : zeno::INode {
                 {"ring_mask",1}
             },verts_buffer.size() + kverts.size()};
 
+            dtiles_t tris_gia_res(tri_buffer.get_allocator(),{
+                {"ring_mask",1}
+            },tri_buffer.size() + ktris.size());
             // if(!kverts.hasProperty("flood"))
             //     kverts.append_channels(cudaPol,{{"flood",1}});
             // TILEVEC_OPS::fill(cudaPol,kverts,"flood",(T)0.0);
 
-            dtiles_t ints_buffer_A_2_B{verts_buffer.get_allocator(),
-                {
-                    {"pair",2},
-                    {"int_points",3}
-            },1000};
+            // dtiles_t ints_buffer_A_2_B{verts_buffer.get_allocator(),
+            //     {
+            //         {"pair",2},
+            //         {"int_points",3}
+            // },1000};
 
-            dtiles_t ints_buffer_B_2_A{kverts.get_allocator(),
-                {
-                    {"pair",2},
-                    {"int_points",3}
-            },1000};
-            int nm_A_2_B_ints,nm_B_2_A_ints;
-            auto nm_rings = do_global_intersection_analysis(cudaPol,
-                verts_buffer,"x",tri_buffer,halfedges,
-                kverts,"x",ktris,khalfedges,
-                ints_buffer_A_2_B,nm_A_2_B_ints,
-                ints_buffer_B_2_A,nm_B_2_A_ints,gia_res);
-            {
-                // auto ints_buffer_2_verts_buffer = [&](const dtiles_t& ints_buffer,int offset,const dtiles_t& verts,const dtiles_t& tris,dtiles_t& out_verts_buffer,)
-                auto dyn_offset = reserveMemory(dyn_verts_buffer,nm_A_2_B_ints);
+            // dtiles_t ints_buffer_B_2_A{kverts.get_allocator(),
+            //     {
+            //         {"pair",2},
+            //         {"int_points",3}
+            // },1000};
+            // int nm_A_2_B_ints,nm_B_2_A_ints;
+            // auto nm_rings = do_global_intersection_analysis(cudaPol,
+            //     verts_buffer,"x",tri_buffer,halfedges,
+            //     kverts,"x",ktris,khalfedges,
+            //     ints_buffer_A_2_B,nm_A_2_B_ints,
+            //     ints_buffer_B_2_A,nm_B_2_A_ints,gia_res);
+            auto nm_rings = do_global_intersection_analysis(cudaPol,verts_buffer,"x",tri_buffer,halfedges,kverts,"x",ktris,khalfedges,gia_res,tris_gia_res);
+            // {
+            //     // auto ints_buffer_2_verts_buffer = [&](const dtiles_t& ints_buffer,int offset,const dtiles_t& verts,const dtiles_t& tris,dtiles_t& out_verts_buffer,)
+            //     auto dyn_offset = reserveMemory(dyn_verts_buffer,nm_A_2_B_ints);
 
-                cudaPol(zs::range(nm_A_2_B_ints),[
-                    ints_buffer = proxy<cuda_space>({},ints_buffer_A_2_B),
-                    offset = dyn_offset,
-                    out_verts_buffer = proxy<cuda_space>({},dyn_verts_buffer),
-                    verts = proxy<cuda_space>({},verts_buffer),
-                    tris = proxy<cuda_space>({},tri_buffer),
-                    halfedges = proxy<cuda_space>({},halfedges)] ZS_LAMBDA(int isi) mutable {
-                        auto pair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
-                        auto hi = pair[0];
-                        auto local_vid = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
-                        auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
-                        auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
-                        out_verts_buffer.tuple(dim_c<3>,"x0",offset + isi) = verts.pack(dim_c<3>,"x",htri[(local_vid + 0) % 3]);
-                        out_verts_buffer.tuple(dim_c<3>,"x1",offset + isi) = verts.pack(dim_c<3>,"x",htri[(local_vid + 1) % 3]);
-                });
+            //     cudaPol(zs::range(nm_A_2_B_ints),[
+            //         ints_buffer = proxy<cuda_space>({},ints_buffer_A_2_B),
+            //         offset = dyn_offset,
+            //         out_verts_buffer = proxy<cuda_space>({},dyn_verts_buffer),
+            //         verts = proxy<cuda_space>({},verts_buffer),
+            //         tris = proxy<cuda_space>({},tri_buffer),
+            //         halfedges = proxy<cuda_space>({},halfedges)] ZS_LAMBDA(int isi) mutable {
+            //             auto pair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
+            //             auto hi = pair[0];
+            //             auto local_vid = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+            //             auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+            //             auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
+            //             out_verts_buffer.tuple(dim_c<3>,"x0",offset + isi) = verts.pack(dim_c<3>,"x",htri[(local_vid + 0) % 3]);
+            //             out_verts_buffer.tuple(dim_c<3>,"x1",offset + isi) = verts.pack(dim_c<3>,"x",htri[(local_vid + 1) % 3]);
+            //     });
 
-                auto kin_offset = reserveMemory(kin_verts_buffer,nm_B_2_A_ints);
-                cudaPol(zs::range(nm_B_2_A_ints),[
-                    ints_buffer = proxy<cuda_space>({},ints_buffer_B_2_A),
-                    offset = kin_offset,
-                    out_verts_buffer = proxy<cuda_space>({},kin_verts_buffer),
-                    verts = proxy<cuda_space>({},kverts),
-                    tris = proxy<cuda_space>({},ktris),
-                    halfedges = proxy<cuda_space>({},khalfedges)] ZS_LAMBDA(int isi) mutable {
-                        auto pair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
-                        auto hi = pair[0];
-                        auto local_vid = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
-                        auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
-                        auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
-                        out_verts_buffer.tuple(dim_c<3>,"x0",offset + isi) = verts.pack(dim_c<3>,"x",htri[(local_vid + 0) % 3]);
-                        out_verts_buffer.tuple(dim_c<3>,"x1",offset + isi) = verts.pack(dim_c<3>,"x",htri[(local_vid + 1) % 3]);
-                });
-            }
+            //     auto kin_offset = reserveMemory(kin_verts_buffer,nm_B_2_A_ints);
+            //     cudaPol(zs::range(nm_B_2_A_ints),[
+            //         ints_buffer = proxy<cuda_space>({},ints_buffer_B_2_A),
+            //         offset = kin_offset,
+            //         out_verts_buffer = proxy<cuda_space>({},kin_verts_buffer),
+            //         verts = proxy<cuda_space>({},kverts),
+            //         tris = proxy<cuda_space>({},ktris),
+            //         halfedges = proxy<cuda_space>({},khalfedges)] ZS_LAMBDA(int isi) mutable {
+            //             auto pair = ints_buffer.pack(dim_c<2>,"pair",isi,int_c);
+            //             auto hi = pair[0];
+            //             auto local_vid = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+            //             auto hti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+            //             auto htri = tris.pack(dim_c<3>,"inds",hti,int_c);
+            //             out_verts_buffer.tuple(dim_c<3>,"x0",offset + isi) = verts.pack(dim_c<3>,"x",htri[(local_vid + 0) % 3]);
+            //             out_verts_buffer.tuple(dim_c<3>,"x1",offset + isi) = verts.pack(dim_c<3>,"x",htri[(local_vid + 1) % 3]);
+            //     });
+            // }
+
+            std::cout << "finish gia test" << std::endl;
+
             cudaPol(zs::range(verts_buffer.size()),[
                 verts_buffer = proxy<cuda_space>({},verts_buffer),
                 gia_res = proxy<cuda_space>({},gia_res)] ZS_LAMBDA(int vi) mutable {
@@ -2801,40 +2808,40 @@ struct VisualizeIntersections : zeno::INode {
         set_output("flood_dynamic",std::move(flood_dynamic));
         set_output("flood_kinematic",std::move(flood_kinematic));
 
-        dyn_verts_buffer = dyn_verts_buffer.clone({zs::memsrc_e::host});
-        auto dyn_vis = std::make_shared<zeno::PrimitiveObject>();
-        auto &dv = dyn_vis->verts;
-        auto &dl = dyn_vis->lines;
-        dv.resize(dyn_verts_buffer.size() * 2);
-        dl.resize(dyn_verts_buffer.size());
-        ompPol(zs::range(dyn_verts_buffer.size()),[
-            dyn_verts_buffer = proxy<omp_space>({},dyn_verts_buffer),
-            &dv,&dl] (int di) mutable {
-                auto x0 = dyn_verts_buffer.pack(dim_c<3>,"x0",di);
-                auto x1 = dyn_verts_buffer.pack(dim_c<3>,"x1",di);
-                dv[di * 2 + 0] = x0.to_array();
-                dv[di * 2 + 1] = x1.to_array();
-                dl[di] = zeno::vec2i{di * 2 + 0,di * 2 + 1};
-        });
-        set_output("dyn_edges_vis",std::move(dyn_vis));
+        // dyn_verts_buffer = dyn_verts_buffer.clone({zs::memsrc_e::host});
+        // auto dyn_vis = std::make_shared<zeno::PrimitiveObject>();
+        // auto &dv = dyn_vis->verts;
+        // auto &dl = dyn_vis->lines;
+        // dv.resize(dyn_verts_buffer.size() * 2);
+        // dl.resize(dyn_verts_buffer.size());
+        // ompPol(zs::range(dyn_verts_buffer.size()),[
+        //     dyn_verts_buffer = proxy<omp_space>({},dyn_verts_buffer),
+        //     &dv,&dl] (int di) mutable {
+        //         auto x0 = dyn_verts_buffer.pack(dim_c<3>,"x0",di);
+        //         auto x1 = dyn_verts_buffer.pack(dim_c<3>,"x1",di);
+        //         dv[di * 2 + 0] = x0.to_array();
+        //         dv[di * 2 + 1] = x1.to_array();
+        //         dl[di] = zeno::vec2i{di * 2 + 0,di * 2 + 1};
+        // });
+        // set_output("dyn_edges_vis",std::move(dyn_vis));
 
-        kin_verts_buffer = kin_verts_buffer.clone({zs::memsrc_e::host});
-        auto kin_vis = std::make_shared<zeno::PrimitiveObject>();
-        auto &kv = kin_vis->verts;
-        auto &kl = kin_vis->lines;
-        kv.resize(kin_verts_buffer.size() * 2);
-        kl.resize(kin_verts_buffer.size());
-        ompPol(zs::range(kin_verts_buffer.size()),[
-            kin_verts_buffer = proxy<omp_space>({},kin_verts_buffer),
-            &kv,&kl] (int ki) mutable {
-                auto x0 = kin_verts_buffer.pack(dim_c<3>,"x0",ki);
-                auto x1 = kin_verts_buffer.pack(dim_c<3>,"x1",ki);
-                kv[ki * 2 + 0] = x0.to_array();
-                kv[ki * 2 + 1] = x1.to_array();
-                kl[ki] = zeno::vec2i{ki * 2 + 0,ki * 2 + 1};
-        });
+        // kin_verts_buffer = kin_verts_buffer.clone({zs::memsrc_e::host});
+        // auto kin_vis = std::make_shared<zeno::PrimitiveObject>();
+        // auto &kv = kin_vis->verts;
+        // auto &kl = kin_vis->lines;
+        // kv.resize(kin_verts_buffer.size() * 2);
+        // kl.resize(kin_verts_buffer.size());
+        // ompPol(zs::range(kin_verts_buffer.size()),[
+        //     kin_verts_buffer = proxy<omp_space>({},kin_verts_buffer),
+        //     &kv,&kl] (int ki) mutable {
+        //         auto x0 = kin_verts_buffer.pack(dim_c<3>,"x0",ki);
+        //         auto x1 = kin_verts_buffer.pack(dim_c<3>,"x1",ki);
+        //         kv[ki * 2 + 0] = x0.to_array();
+        //         kv[ki * 2 + 1] = x1.to_array();
+        //         kl[ki] = zeno::vec2i{ki * 2 + 0,ki * 2 + 1};
+        // });
 
-        set_output("kin_edges_vis",std::move(kin_vis));
+        // set_output("kin_edges_vis",std::move(kin_vis));
     }
 };
 
@@ -2843,8 +2850,8 @@ ZENDEFNODE(VisualizeIntersections, {{"zsparticles","kinematics"},
                                   {
                                         "flood_dynamic",
                                         "flood_kinematic",
-                                        "dyn_edges_vis",
-                                        "kin_edges_vis"
+                                        // "dyn_edges_vis",
+                                        // "kin_edges_vis"
                                     },
                                   {
                                     
