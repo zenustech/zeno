@@ -40,12 +40,26 @@ public slots:
     void onViewParamsMoved(const QModelIndex &parent, int start, int end, const QModelIndex &destination, int destRow);
     void onSettings();
 
+  protected:
+    bool eventFilter(QObject *obj, QEvent *event);
+
 private:
     void clearLayout();
     bool syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout* pGroupLayout, QStandardItem* paramItem, int row);
     bool syncAddGroup(QVBoxLayout* pTabLayout, QStandardItem* pGroupItem, int row);
     bool syncAddTab(QTabWidget* pTabWidget, QStandardItem* pTabItem, int row);
     ZExpandableSection* findGroup(const QString& tabName, const QString& groupName);
+    void getDelfCurveData(CURVE_DATA &curve, float val, bool visible, const QString& key);
+    void updateHandler(CURVE_DATA &curve);
+    void updateRange(CURVES_DATA &curves);
+    bool isSetKeyFrame(const CURVES_DATA &curves);
+    QStringList getKeys(const QObject *obj, const _PANEL_CONTROL &ctrl);
+    void setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList  &keys);
+    void delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
+    void editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
+    CURVES_DATA getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys);
+    void updateTimelineKeys(const CURVES_DATA &curves);
+
 
     QPersistentModelIndex m_subgIdx;
     QPersistentModelIndex m_idx;
@@ -54,6 +68,7 @@ private:
     bool m_bReentry;
 
     PANEL_TABS m_controls;
+    QList<_PANEL_CONTROL> m_floatColtrols;
 };
 
 #endif

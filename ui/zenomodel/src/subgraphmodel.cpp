@@ -396,6 +396,24 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
             const QModelIndex& subgIdx = m_pGraphsModel->indexBySubModel(const_cast<SubGraphModel*>(this));
             return subgIdx;
         }
+        case ROLE_KEYFRAMES: {
+            if (!item.nodeParams)
+                return QVariant();
+            QVector<int> keys;
+            for (const QModelIndex &index : item.nodeParams->getInputIndice()) {
+                QVariant value = index.data(ROLE_PARAM_VALUE);
+                int ctrl = index.data(ROLE_PARAM_CTRL).toInt();
+                if (value.canConvert<CURVES_DATA>() && ctrl != CONTROL_CURVE) {
+                    CURVES_DATA curves = value.value<CURVES_DATA>();
+                    for (CURVE_DATA &curve : curves)
+                    {
+                        keys << curve.pointBases();
+                    }
+                }
+            }
+            keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
+            return QVariant::fromValue(keys);
+        }
         default:
             return QVariant();
     }

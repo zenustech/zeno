@@ -12,6 +12,7 @@ public:
     virtual QSize sizeHint() const override;
     void setFromTo(int from, int to);
     int value() const;
+    void updateKeyFrames(const QVector<int> &keys);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -42,6 +43,7 @@ private:
     int m_cellLength;
     int m_lengthUnit[3] = {1, 2, 5};
     int getCellLength(int total);
+    QVector<int> m_keyframes;
 };
 
 #endif

@@ -13,6 +13,7 @@
 #endif
 #include <zeno/utils/safe_at.h>
 #include <zeno/utils/logger.h>
+#include <zeno/extra/GlobalState.h>
 
 namespace zeno {
 
@@ -127,11 +128,82 @@ ZENO_API bool INode::has_input(std::string const &id) const {
 }
 
 ZENO_API zany INode::get_input(std::string const &id) const {
+    if (has_keyframe(id)) {
+        return get_keyframe(id);
+    } else if (has_formula(id)) {
+        return get_formula(id);
+    }
     return safe_at(inputs, id, "input socket of node `" + myname + "`");
 }
 
 ZENO_API void INode::set_output(std::string const &id, zany obj) {
     outputs[id] = std::move(obj);
+}
+
+ZENO_API bool INode::has_keyframe(std::string const &id) const {
+    return kframes.find(id) != kframes.end();
+}
+
+ZENO_API zany INode::get_keyframe(std::string const &id) const 
+{
+    auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
+    auto curves = dynamic_cast<zeno::CurveObject *>(value.get());
+    int frame = getGlobalState()->frameid;
+    if (curves->keys.size() == 1) {
+        auto val = curves->keys.begin()->second.eval(frame);
+        value = objectFromLiterial(val);
+    } else {
+        int size = curves->keys.size();
+        if (size == 2) {
+            zeno::vec2f vec2;
+            for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin(); it != curves->keys.cend();
+                 it++) {
+                int index = it->first == "x" ? 0 : 1;
+                vec2[index] = it->second.eval(frame);
+            }
+            value = objectFromLiterial(vec2);
+        } else if (size == 3) {
+            zeno::vec3f vec3;
+            for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin(); it != curves->keys.cend();
+                 it++) {
+                int index = it->first == "x" ? 0 : it->first == "y" ? 1 : 2;
+                vec3[index] = it->second.eval(frame);
+            }
+            value = objectFromLiterial(vec3);
+        } else if (size == 4) {
+            zeno::vec4f vec4;
+            for (std::map<std::string, CurveData>::const_iterator it = curves->keys.cbegin(); it != curves->keys.cend();
+                 it++) {
+                int index = it->first == "x" ? 0 : it->first == "y" ? 1 : it->first == "z" ? 2 : 3;
+                vec4[index] = it->second.eval(frame);
+            }
+            value = objectFromLiterial(vec4);
+        }
+    }
+    return value;
+}
+
+ZENO_API bool INode::has_formula(std::string const &id) const {
+    return formulas.find(id) != formulas.end();
+}
+
+ZENO_API zany INode::get_formula(std::string const &id) const 
+{
+    auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
+    if (auto formulas = dynamic_cast<zeno::StringObject *>(value.get())) 
+    {
+        std::string code = formulas->get();
+        std::string prefix = "vec3";
+        std::string resType;
+        if (code.substr(0, prefix.size()) == prefix) {
+            resType = "vec3f";
+        } else {
+            resType = "float";
+        }
+        auto res = getThisGraph()->callTempNode("NumericEval", {{"zfxCode", objectFromLiterial(code)}, {"resType", objectFromLiterial(resType)}}).at("result");
+        value = objectFromLiterial(std::move(res));
+    }     
+    return value;
 }
 
 ZENO_API TempNodeCaller INode::temp_node(std::string const &id) {

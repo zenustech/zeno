@@ -39,6 +39,7 @@ public:
 
     // FIXME temp function for merge
     void selectObjViaNodes();
+    void updateKeyFrame();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event) override;

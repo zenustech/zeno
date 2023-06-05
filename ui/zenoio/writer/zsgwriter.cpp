@@ -200,11 +200,14 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
     {
         writer.Key("default-value");
         QVariant deflVal = socket.defaultValue;
-
-        bool bValid = UiHelper::validateVariant(deflVal, sockType);
-        if (!bValid)
-            deflVal = QVariant();
-        AddVariant(deflVal, sockType, writer, true);
+        if (deflVal.canConvert<CURVES_DATA>() && (sockType == "float" || sockType.startsWith("vec"))) {
+            AddVariant(deflVal, "curve", writer, true);
+        } else {
+            bool bValid = UiHelper::validateVariant(deflVal, sockType);
+            if (!bValid)
+                deflVal = QVariant();
+            AddVariant(deflVal, sockType, writer, true);
+        }
 
         writer.Key("control");
         JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);

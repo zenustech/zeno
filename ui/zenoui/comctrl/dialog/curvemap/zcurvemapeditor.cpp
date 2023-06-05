@@ -210,7 +210,12 @@ void ZCurveMapEditor::addCurve(CurveModel *model)
 
     m_bate_rows.push_back(model);
     CurveGrid *pGrid = m_ui->gridview->gridItem();
-    pGrid->setCurvesColor(id, preset[id]);
+    QColor col;
+    if (!preset.contains(id))
+        col = QColor("#CE2F2F");
+    else
+        col = preset[id];
+    pGrid->setCurvesColor(id, col);
     pGrid->setCurvesVisible(id, model->getVisible());
 
     QStandardItem *pItem = new QStandardItem(model->id());

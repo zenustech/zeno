@@ -280,8 +280,11 @@ void TransferAcceptor::setInputSocket2(
         if (desc.inputs.find(inSock) != desc.inputs.end()) {
             descInfo = desc.inputs[inSock].info;
         }
-
-        defaultValue = UiHelper::parseJsonByType(descInfo.type, defaultVal, nullptr);
+        QString type = descInfo.type;
+        if (defaultVal.IsObject() && defaultVal.HasMember("objectType")) {
+            type = defaultVal["objectType"].GetString();
+        }
+        defaultValue = UiHelper::parseJsonByType(type, defaultVal, nullptr);
     }
 
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());

@@ -178,9 +178,22 @@ namespace JsonHelper
                     writer.EndArray();
                 }
             }
+            else if (value.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()) {
+                UI_VECSTRING vec = value.value<UI_VECSTRING>();
+                if (!vec.isEmpty()) {
+                    writer.StartArray();
+
+                    for (int i = 0; i < vec.size(); i++) {
+                        auto s = vec[i].toStdString();
+                        writer.String(s.data(), s.size());
+                    }
+
+                    writer.EndArray();
+                }
+            }
             else if (value.userType() == QMetaTypeId<CURVES_DATA>::qt_metatype_id())
             {
-                if (type == "curve") {
+                if (type == "curve" || value.canConvert<CURVES_DATA>()) {
                     CURVES_DATA curves = value.value<CURVES_DATA>();
                     writer.StartObject();
                     writer.Key(key_objectType);
@@ -335,6 +348,10 @@ namespace JsonHelper
 
             curve.points.append(pt);
         }
+        if (jsonCurve.HasMember(key_visible)) 
+        {
+            curve.visible = jsonCurve[key_visible].GetBool();
+        }
         return curve;
     }
 
@@ -481,6 +498,8 @@ namespace JsonHelper
                 writer.Bool(bLockY);
             }
         }
+        writer.Key(key_visible);
+        writer.Bool(curve.visible);
     }
 
     void dumpCurveModel(const CurveModel* pModel, RAPIDJSON_WRITER& writer)

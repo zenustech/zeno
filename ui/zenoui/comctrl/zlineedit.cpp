@@ -2,6 +2,13 @@
 #include "znumslider.h"
 #include "style/zenostyle.h"
 #include <QSvgRenderer>
+#include <zenoedit/zenoapplication.h>
+#include <zenoedit/zenomainwindow.h>
+#include <zenoedit/timeline/ztimeline.h>
+#include "./dialog/curvemap/zcurvemapeditor.h"
+
+const char *g_setKey = "setKey";
+const char *g_keyFrame = "keyFrame";
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
@@ -168,4 +175,125 @@ bool ZLineEdit::eventFilter(QObject *obj, QEvent *event) {
         }
     }
     return QLineEdit::eventFilter(obj, event);
+}
+
+//FLOAT LINEEDIT
+ZFloatLineEdit::ZFloatLineEdit(QWidget *parent):
+    ZLineEdit(parent)
+{
+    setProperty(g_setKey, "null");
+}
+ZFloatLineEdit::ZFloatLineEdit(const QString &text, QWidget *parent) : 
+    ZLineEdit(text, parent)
+{
+    setProperty(g_setKey, "null");
+}
+
+void ZFloatLineEdit::updateCurveData() 
+{
+    CURVE_DATA val;
+    if (!getKeyFrame(val)) {
+        return;
+    }
+    if (ZTimeline *timeline = getTimeline()) {
+        float x = timeline->value();
+        float y = text().toFloat();
+        if (val.visible) {
+            for (auto &point : val.points) {
+                if (point.point.x() == x && point.point.y() != y) {
+                    point.point.setY(y);
+                    val.rg.yTo = val.rg.yTo > y ? val.rg.yTo : y;
+                    val.rg.yFrom = val.rg.yFrom > y ? y : val.rg.yFrom;
+                    setProperty(g_keyFrame, QVariant::fromValue(val));
+                    break;
+                }
+            }
+        } else {
+            val.points.begin()->point = QPointF(x, y);
+            setProperty(g_keyFrame, QVariant::fromValue(val));
+        }
+    }
+}
+
+bool ZFloatLineEdit::event(QEvent *event) 
+{
+    CURVE_DATA curve;
+    {
+        ZTimeline *timeline = getTimeline();
+        ZASSERT_EXIT(timeline, false);
+        if (event->type() == QEvent::DynamicPropertyChange) {
+            QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent*>(event); 
+            if (evt->propertyName() == g_keyFrame) {
+                updateBackgroundProp(timeline->value());
+                if (getKeyFrame(curve)) {
+                    connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatLineEdit::updateBackgroundProp, Qt::UniqueConnection);
+                    connect( zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatLineEdit::onUpdate, Qt::UniqueConnection);
+                } else {
+                    disconnect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatLineEdit::updateBackgroundProp);
+                    disconnect( zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatLineEdit::onUpdate);
+                }
+            }
+        } 
+        else if (event->type() == QEvent::FocusOut) {
+            updateCurveData();
+        }
+    }
+    ZLineEdit::event(event);
+}
+
+void ZFloatLineEdit::updateBackgroundProp(int frame) 
+{
+    CURVE_DATA data;
+    if (getKeyFrame(data)) {
+        QString text = QString::number(data.eval(frame));
+        setText(text);
+        if (isSetKeyFrame()) {
+            setProperty(g_setKey, "true");
+        } else if (data.visible) {
+            setProperty(g_setKey, "false");
+        } else {
+            setProperty(g_setKey, "null");
+        }
+    } else {
+        setProperty(g_setKey, "null");
+    }
+    this->style()->unpolish(this);
+    this->style()->polish(this);
+    update();
+}
+void ZFloatLineEdit::onUpdate(bool gl, int frame) 
+{
+    updateBackgroundProp(frame);
+}
+ZTimeline *ZFloatLineEdit::getTimeline() 
+{
+    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, nullptr);
+    ZTimeline *timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline, nullptr);
+    return timeline;
+}
+bool ZFloatLineEdit::isSetKeyFrame() 
+{
+    if (ZTimeline *timeline = getTimeline()) {
+        CURVE_DATA data;
+        if (getKeyFrame(data)) {
+            int x = timeline->value();
+            for (auto p : data.points) {
+                int px = p.point.x();
+                if ((px == x) && data.visible) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool ZFloatLineEdit::getKeyFrame(CURVE_DATA &curve) 
+{
+    bool res = property(g_keyFrame).canConvert<CURVE_DATA>();
+    if (res)
+        curve = property(g_keyFrame).value<CURVE_DATA>();
+    return res;
 }

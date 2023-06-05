@@ -23,6 +23,7 @@ namespace iotags {
         constexpr const char *key_type = "type";
         constexpr const char *key_lockX = "lockX";
         constexpr const char *key_lockY = "lockY";
+        constexpr const char *key_visible = "visible";
     }
 
     namespace timeline {

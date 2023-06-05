@@ -133,9 +133,9 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     QVariant::Type varType = var.type();
 
     switch (control) {
-    case CONTROL_INT:   return QVariant::Int == varType;
+    case CONTROL_INT:   return (QVariant::Int == varType || QVariant::String == varType);
     case CONTROL_BOOL:  return (QVariant::Bool == varType || QVariant::Int == varType);
-    case CONTROL_FLOAT: return (QMetaType::Float == varType || QVariant::Double == varType);
+    case CONTROL_FLOAT: return (QMetaType::Float == varType || QVariant::Double == varType || QVariant::String == varType);
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
@@ -167,7 +167,8 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     case CONTROL_VEC4_INT:
     {
         if (varType == QVariant::UserType &&
-            var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id())
+            (var.userType() == QMetaTypeId<UI_VECTYPE>::qt_metatype_id() || 
+              var.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()))
         {
             return true;
         }
@@ -243,7 +244,10 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
         bool bOk = false;
         float fVal = defaultValue.toFloat(&bOk);
         //TODO: need to check OK?
-        return fVal;
+        if (bOk)
+            return fVal;
+        else
+            return defaultValue;
     }
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
@@ -1253,8 +1257,13 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
     {
         bool bSucc = false;
         int iVal = parseJsonNumeric(val, true, bSucc);
-        if (!bSucc)
-            return QVariant();  //will not be serialized when return null variant.
+        if (!bSucc) {
+            if (val.IsString()) {
+                return val.GetString();
+            } else {
+                return QVariant(); //will not be serialized when return null variant.
+            }
+        }
         res = iVal;
     }
     else if (descType == "float" ||
@@ -1262,8 +1271,13 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
     {
         bool bSucc = false;
         float fVal = parseJsonNumeric(val, true, bSucc);
-        if (!bSucc)
-            return QVariant();
+        if (!bSucc) {
+           if (val.IsString()) {
+                return val.GetString();
+           } else {
+                return QVariant();
+           }
+        }
         res = fVal;
     }
     else if (descType == "string" ||
@@ -1296,12 +1310,16 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
         {
             res = QVariant::fromValue(UI_VECTYPE(dim, 0));
             UI_VECTYPE vec;
+            UI_VECSTRING strVec;
             if (val.IsArray())
             {
                 auto values = val.GetArray();
                 for (int i = 0; i < values.Size(); i++)
                 {
-                    vec.append(values[i].GetFloat());
+                    if (values[i].IsFloat())
+                        vec.append(values[i].GetFloat());
+                    else if (values[i].IsString())
+                        strVec.append(values[i].GetString());
                 }
             }
             else if (val.IsString())
@@ -1322,7 +1340,10 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
                     }
                 }
             }
-            res = QVariant::fromValue(vec);
+            if (!vec.isEmpty())
+                res = QVariant::fromValue(vec);
+            else
+                res = QVariant::fromValue(strVec);
         }
         else
         {
@@ -1809,6 +1830,17 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
         const QString& newOutSock = UiHelper::constructObjPath(targetSubgraph, newOutputNode, outParamPath);
 
         outLinks.append(EdgeInfo(newOutSock, newInSock));
+    }
+}
+
+QString UiHelper::getCurveKey(int index) 
+{
+    switch (index) {
+    case 0: return "x";
+    case 1: return "y";
+    case 2: return "z";
+    case 3: return "w";
+    default: return "";
     }
 }
 

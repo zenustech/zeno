@@ -33,6 +33,7 @@
 #include <zenovis/ObjectsManager.h>
 #include <viewportinteraction/picker.h>
 #include "settings/zenosettingsmanager.h"
+#include "timeline/ztimeline.h"
 
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
@@ -922,6 +923,7 @@ void ZenoSubGraphScene::afterSelectionChanged()
         }
         mainWin->onNodesSelected(m_subgIdx, unSelNodes, false);
         mainWin->onNodesSelected(m_subgIdx, selNodes, true);
+        updateKeyFrame();
     }
     m_selChanges.clear();
 }
@@ -977,6 +979,7 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
         delete pNode;
         m_nodes.erase(id);
     }
+    updateKeyFrame();
 }
 
 void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last)
@@ -1049,6 +1052,16 @@ void ZenoSubGraphScene::selectObjViaNodes() {
         picker->sync_to_scene();
         zenoApp->getMainWindow()->updateViewport();
     }
+}
+
+void ZenoSubGraphScene::updateKeyFrame() 
+{
+    QVector<int> keys;
+    for (const QModelIndex &index : selectNodesIndice()) {
+        keys << index.data(ROLE_KEYFRAMES).value<QVector<int>>();
+    }
+    keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
+    zenoApp->getMainWindow()->timeline()->updateKeyFrames(keys);
 }
 
 void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)

@@ -93,6 +93,8 @@ public:
                                NODES_DATA& outNodes,
                                LINKS_DATA& outLinks);
 
+    static QString getCurveKey(int index);
+
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };
