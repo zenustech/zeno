@@ -312,6 +312,25 @@ NODE_CATES GraphsManagment::getCates()
     return m_nodesCate;
 }
 
+NODE_TYPE GraphsManagment::nodeType(const QString& name)
+{
+    if (m_subgsDesc.find(name) != m_subgsDesc.end()) {
+        return SUBGRAPH_NODE;
+    } else if (name == "Blackboard") {
+        return BLACKBOARD_NODE;
+    } else if (name == "Group") {
+        return GROUP_NODE;
+    } else if (name == "SubInput") {
+        return SUBINPUT_NODE;
+    } else if (name == "SubOutput") {
+        return SUBOUTPUT_NODE;
+    } else if (name == "MakeHeatmap") {
+        return HEATMAP_NODE;
+    } else {
+        return NORMAL_NODE;
+    }
+}
+
 NODE_DESCS GraphsManagment::descriptors()
 {
     NODE_DESCS descs;

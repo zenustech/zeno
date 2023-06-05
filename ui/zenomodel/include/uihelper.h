@@ -85,6 +85,12 @@ public:
                                   QModelIndexList& outputs,
                                   bool bEnsureSRCDST_lastKey = true);
     static QVector<qreal> scaleFactors();
+    static IGraphsModel* getGraphsBySubg(const QModelIndex& subgIdx);
+    static NODES_DATA fork(
+            const QString& currentPath,
+            const QMap<QString, SUBGRAPH_DATA>& subgraphDatas,
+            const QString& subnetName,
+            LINKS_DATA& newLinks);
 
     static QPair<NODES_DATA, LINKS_DATA> dumpNodes(const QModelIndexList& nodeIndice, const QModelIndexList& linkIndice);
     static void reAllocIdents(const QString& targetSubgraph,

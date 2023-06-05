@@ -95,6 +95,7 @@ public:
     bool IsSubGraphNode(const QModelIndex& nodeIdx) const override;
 
 	NODE_DATA itemData(const QModelIndex& index, const QModelIndex& subGpIdx) const override;
+    void exportSubgraph(const QModelIndex &subGpIdx, NODES_DATA &nodes, LINKS_DATA &links) const override;
 	void setName(const QString& name, const QModelIndex& subGpIdx) override;
 	void clearSubGraph(const QModelIndex& subGpIdx) override;
     void clear() override;

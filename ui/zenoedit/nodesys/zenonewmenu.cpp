@@ -4,6 +4,7 @@
 #include <zenomodel/include/nodesmgr.h>
 #include "fuzzy_search.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include <zenomodel/include/uihelper.h>
 
 
 ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent)
@@ -33,7 +34,8 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     m_pWAction->setDefaultWidget(m_searchEdit);
     addAction(m_pWAction);
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = UiHelper::getGraphsBySubg(m_subgIdx);
+    ZASSERT_EXIT(pModel);
     QList<QAction*> actions = getCategoryActions(pModel, m_subgIdx, "", m_scenePos);
     addActions(actions);
 
@@ -87,7 +89,8 @@ void ZenoNewnodeMenu::onTextChanged(const QString& text)
             delete acts[i];
     }
 
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = UiHelper::getGraphsBySubg(m_subgIdx);
+    ZASSERT_EXIT(pModel);
     QList<QAction*> actions = getCategoryActions(pModel, m_subgIdx, text, m_scenePos);
     addActions(actions);
     setEditorFocus();

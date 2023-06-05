@@ -12,6 +12,8 @@
 #include "common_def.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include "graphsmanagment.h"
+#include "graphstreemodel.h"
+#include "graphstreemodel_impl.h"
 
 
 using namespace zeno::iotags;
@@ -1634,6 +1636,90 @@ QVector<qreal> UiHelper::scaleFactors()
 {
     static QVector<qreal> lst({0.01, 0.025, 0.05, .1, .15, .2, .25, .5, .75, 1.0, 1.25, 1.5, 2.0, 3.0, 4.0, 5.0});
     return lst;
+}
+
+IGraphsModel* UiHelper::getGraphsBySubg(const QModelIndex& subgIdx)
+{
+    auto iModel = const_cast<QAbstractItemModel*>(subgIdx.model());
+    IGraphsModel* pModel = qobject_cast<IGraphsModel*>(iModel);
+    if (pModel) {
+        return pModel;
+    }
+    else if (auto pTree = qobject_cast<GraphsTreeModel_impl*>(iModel)) {
+        return pTree->model();
+    } else {
+        return nullptr;
+    }
+}
+
+NODES_DATA UiHelper::fork(
+            const QString& currentPath,
+            const QMap<QString, SUBGRAPH_DATA>& subgraphDatas,
+            const QString& subnetName,
+            LINKS_DATA& newLinks)
+{
+    NODES_DATA newDatas;
+
+    QMap<QString, NODE_DATA> nodes;
+    QHash<QString, QString> old2new;
+    QHash<QString, QString> old2new_nodePath;
+    LINKS_DATA oldLinks;
+
+    ZASSERT_EXIT(subgraphDatas.find(subnetName) != subgraphDatas.end(), newDatas);
+    const SUBGRAPH_DATA& subgraph = subgraphDatas[subnetName];
+
+    for (QString ident : subgraph.nodes.keys())
+    {
+        NODE_DATA nodeData = subgraph.nodes[ident];
+        const QString snodeId = nodeData.ident;
+        const QString& name = nodeData.nodeCls;
+        const QString& newId = UiHelper::generateUuid(name);
+        old2new.insert(snodeId, newId);
+
+        if (subgraphDatas.find(name) != subgraphDatas.end())
+        {
+            const QString &ssubnetName = name;
+            nodeData.ident = newId;
+            nodeData.type = SUBGRAPH_NODE;
+
+            LINKS_DATA childLinks;
+            nodeData.children = fork(
+                    currentPath + "/" + newId,
+                    subgraphDatas,
+                    ssubnetName,
+                    childLinks);
+            newDatas.insert(newId, nodeData);
+            newLinks.append(childLinks);
+        }
+        else
+        {
+            nodeData.ident = newId;
+            newDatas.insert(newId, nodeData);
+        }
+
+        //apply legacy format `subnet:nodeid`.
+        const QString &oldNodePath = QString("%1:%2").arg(subnetName).arg(snodeId);
+        const QString &newNodePath = currentPath + "/" + newId;
+        old2new_nodePath.insert(oldNodePath, newNodePath);
+    }
+
+    for (EdgeInfo oldLink : subgraph.links)
+    {
+        //oldLink format: subg:xxx-objid:sockid
+        QString outputNode = UiHelper::getNodePath(oldLink.outSockPath);
+        QString outParamPath = UiHelper::getParamPath(oldLink.outSockPath);
+        QString inputNode = UiHelper::getNodePath(oldLink.inSockPath);
+        QString inParamPath = UiHelper::getParamPath(oldLink.inSockPath);
+
+        ZASSERT_EXIT(old2new_nodePath.find(outputNode) != old2new_nodePath.end() &&
+                     old2new_nodePath.find(inputNode) != old2new_nodePath.end(),
+                     newDatas);
+
+        const QString &newInSock = old2new_nodePath[inputNode] + cPathSeperator + inParamPath;
+        const QString &newOutSock = old2new_nodePath[outputNode] + cPathSeperator + outParamPath;
+        newLinks.append(EdgeInfo(newOutSock, newInSock));
+    }
+    return newDatas;
 }
 
 QPair<NODES_DATA, LINKS_DATA> UiHelper::dumpNodes(const QModelIndexList &nodeIndice,

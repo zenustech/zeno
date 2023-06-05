@@ -68,6 +68,7 @@ public:
                           bool enableTransaction);
 
     NODE_DATA itemData(const QModelIndex &index, const QModelIndex &subGpIdx) const;
+    void exportSubgraph(const QModelIndex& subGpIdx, NODES_DATA& nodes, LINKS_DATA& links) const;
     void setName(const QString &name, const QModelIndex &subGpIdx);
 
     QModelIndexList searchInSubgraph(const QString &objName, const QModelIndex &subgIdx);
@@ -79,6 +80,7 @@ public:
     int ModelSetData(const QPersistentModelIndex &idx, const QVariant &value, int role,
                      const QString &comment = "");
     QModelIndex indexFromPath(const QString &path);
+    GraphsTreeModel* model() const;
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value);
     void initMainGraph();
     void clear();

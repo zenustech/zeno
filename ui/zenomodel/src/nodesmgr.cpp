@@ -12,7 +12,7 @@
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
     zeno::log_debug("onNewNodeCreated");
-    NODE_DATA node = newNodeData(pModel, descName, pt);
+    NODE_DATA node = newNodeData(pModel, subgIdx, descName, pt);
     pModel->addNode(node, subgIdx, true);
     return node.ident;
 }
@@ -20,7 +20,7 @@ QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const
 QString NodesMgr::createExtractDictNode(IGraphsModel *pModel, QModelIndex subgIdx, const QString &infos) 
 {
     zeno::log_debug("onExtractDictCreated");
-    NODE_DATA node = newNodeData(pModel, "ExtractDict", QPointF());
+    NODE_DATA node = newNodeData(pModel, subgIdx, "ExtractDict", QPointF());
     if (!infos.isEmpty()) {
         QStringList lst = infos.split(",");
         for (auto name : lst) {
@@ -35,9 +35,11 @@ QString NodesMgr::createExtractDictNode(IGraphsModel *pModel, QModelIndex subgId
     return node.ident;
 }
 
-NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, const QPointF& pt)
+NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
     NODE_DATA node;
+    LINKS_DATA links;
+
     NODE_DESC desc;
     auto &mgr = GraphsManagment::instance();
     bool ret = mgr.getDescriptor(descName, desc);
@@ -45,14 +47,37 @@ NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, const QString& descName, c
 
     const QString &nodeid = UiHelper::generateUuid(descName);
     node.ident = nodeid;
-    node.nodeCls = descName;
-    node.type = nodeType(descName);
+    node.nodeCls = desc.name;
+    node.type = GraphsManagment::instance().nodeType(descName);
+    node.inputs = desc.inputs;
+    node.params = desc.params;
+    node.outputs = desc.outputs;
     initInputSocks(pModel, nodeid, node.inputs, desc.is_subgraph);
     initOutputSocks(pModel, nodeid, node.outputs);
     initParams(descName, pModel, node.params);
     node.parmsNotDesc = initParamsNotDesc(descName);
     node.pos = pt;
     node.bCollasped = false;
+
+    NODE_DESC _desc;
+    if (mgr.getSubgDesc(descName, _desc))
+    {
+        IGraphsModel* pSubgraphs = mgr.sharedSubgraphs();
+        ZASSERT_EXIT(pSubgraphs, node);
+
+        QMap<QString, SUBGRAPH_DATA> subgraphDatas;
+        for (int r = 0; r < pSubgraphs->rowCount(); r++)
+        {
+            SUBGRAPH_DATA subgData;
+            const QModelIndex& _subg = pSubgraphs->index(r, 0);
+            const QString& subgName = _subg.data(ROLE_OBJNAME).toString();
+            pSubgraphs->exportSubgraph(_subg, subgData.nodes, subgData.links);
+            subgraphDatas[subgName] = subgData;
+        }
+
+        QString objPath = subgIdx.data(ROLE_OBJPATH).toString();
+        node.children = UiHelper::fork(objPath + "/" + nodeid, subgraphDatas, descName, links);
+    }
     return node;
 }
 

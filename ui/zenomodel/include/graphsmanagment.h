@@ -34,6 +34,7 @@ public:
     void appendSubGraph(const NODE_DESC& desc);
     NODE_DESCS descriptors();
     NODE_CATES getCates();
+    NODE_TYPE nodeType(const QString& name);
 
 signals:
     void modelInited(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs);

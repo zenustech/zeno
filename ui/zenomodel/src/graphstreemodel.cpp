@@ -275,6 +275,11 @@ NODE_DATA GraphsTreeModel::itemData(const QModelIndex &index, const QModelIndex 
     return m_impl->itemData(index, subGpIdx);
 }
 
+void GraphsTreeModel::exportSubgraph(const QModelIndex& subGpIdx, NODES_DATA& nodes, LINKS_DATA& links) const
+{
+    return m_impl->exportSubgraph(subGpIdx, nodes, links);
+}
+
 void GraphsTreeModel::setName(const QString &name, const QModelIndex &subGpIdx)
 {
     return m_impl->setName(name, subGpIdx);

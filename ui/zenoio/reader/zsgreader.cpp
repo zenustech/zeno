@@ -9,6 +9,7 @@
 #include <zenomodel/customui/customuirw.h>
 #include <zenomodel/include/nodesmgr.h>
 #include "iotags.h"
+#include <zenomodel/include/graphsmanagment.h>
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -112,6 +113,15 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
     }
 
     QMap<QString, SUBGRAPH_DATA> subgraphDatas;
+    //init keys
+    for (const auto& subgraph : graph.GetObject())
+    {
+        const QString &graphName = subgraph.name.GetString();
+        if ("main" == graphName)
+            continue;
+        subgraphDatas[graphName] = SUBGRAPH_DATA();
+    }
+
     for (const auto& subgraph : graph.GetObject())
     {
         const QString& graphName = subgraph.name.GetString();
@@ -120,7 +130,7 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
         if (!_parseSubGraph(graphName,
                     subgraph.value,
                     nodesDescs,
-                    QMap<QString, SUBGRAPH_DATA>(),
+                    subgraphDatas,
                     subgraphDatas[graphName]))
         {
             return false;
@@ -194,6 +204,7 @@ bool ZsgReader::_parseNode(
 
     ret.ident = nodeid;
     ret.nodeCls = name;
+    auto &mgr = GraphsManagment::instance();
     ret.type = UiHelper::nodeType(name);
     if (subgraphDatas.contains(name))
         ret.type = SUBGRAPH_NODE;
@@ -371,7 +382,7 @@ NODES_DATA ZsgReader::_fork(
             nodeData.type = SUBGRAPH_NODE;
 
             LINKS_DATA childLinks;
-            nodeData.children = _fork(currentPath + "/" + newId, subgraphDatas, ssubnetName, childLinks);
+            nodeData.children = UiHelper::fork(currentPath + "/" + newId, subgraphDatas, ssubnetName, childLinks);
             newDatas.insert(newId, nodeData);
             newLinks.append(childLinks);
         }
@@ -385,27 +396,6 @@ NODES_DATA ZsgReader::_fork(
         const QString &oldNodePath = QString("%1:%2").arg(subnetName).arg(snodeId);
         const QString &newNodePath = currentPath + "/" + newId;
         old2new_nodePath.insert(oldNodePath, newNodePath);
-
-        //only collect links from input socket.
-        /*
-        for (const INPUT_SOCKET& socket : nodeData.inputs)
-        {
-            const QString& inSock = socket.info.name;
-            const int inSockProp = socket.info.sockProp;
-            LINKS_DATA links = socket.info.links;
-            if (!links.isEmpty())
-            {
-                oldLinks.append(links);
-            }
-            else if (inSockProp & SOCKPROP_DICTLIST_PANEL)
-            {
-                for (DICTKEY_INFO keyInfo : socket.info.dictpanel.keys)
-                {
-                    oldLinks.append(keyInfo.links);
-                }
-            }
-        }
-        */
     }
 
     for (EdgeInfo oldLink : subgraph.links)

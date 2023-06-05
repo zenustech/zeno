@@ -286,7 +286,7 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
 
 void ZenoSubGraphScene::onLinkInserted(const QModelIndex& parent, int first, int last)
 {
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
     QModelIndex linkIdx = pGraphsModel->linkIndex(m_subgIdx, first);
     ZASSERT_EXIT(linkIdx.isValid());
     viewAddLink(linkIdx);
@@ -327,7 +327,7 @@ void ZenoSubGraphScene::viewAddLink(const QModelIndex& linkIdx)
 
 void ZenoSubGraphScene::onLinkAboutToBeRemoved(const QModelIndex&, int first, int last)
 {
-	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
     QModelIndex linkIdx = pGraphsModel->linkIndex(m_subgIdx, first);
 	ZASSERT_EXIT(linkIdx.isValid());
     viewRemoveLink(linkIdx);
@@ -500,7 +500,7 @@ void ZenoSubGraphScene::copy()
 void ZenoSubGraphScene::paste(QPointF pos)
 {
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
-    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
     if (pMimeData->hasText() && pGraphsModel)
     {
         const QString& strJson = pMimeData->text();
@@ -543,7 +543,7 @@ void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
     QPointF socketPos = pSocketItem->center();
 
     ZASSERT_EXIT(m_nodes.find(nodeid) != m_nodes.end());
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
     ZASSERT_EXIT(pGraphsModel);
 
     PARAM_LINKS linkIndice = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
@@ -695,7 +695,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
     if (!m_tempLink)
         return;
 
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
     ZASSERT_EXIT(pGraphsModel);
 
     ZenoSocketItem* targetSock = m_tempLink->getAdsorbedSocket();
@@ -939,7 +939,8 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
 {
     if (subgIdx != m_subgIdx)
         return;
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
+    ZASSERT_EXIT(pGraphsModel);
     for (int r = first; r <= last; r++)
     {
         QModelIndex idx = pGraphsModel->index(r, m_subgIdx);
@@ -968,11 +969,15 @@ void ZenoSubGraphScene::onRowsAboutToBeRemoved(const QModelIndex& subgIdx, const
 }
 
 void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelIndex& parent, int first, int last)
-{//right click goes here
+{
     if (subgIdx != m_subgIdx)
         return;
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+
+    IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
+    ZASSERT_EXIT(pGraphsModel);
+
     QModelIndex idx = pGraphsModel->index(first, m_subgIdx);
+    ZASSERT_EXIT(idx.isValid());
     ZenoNode *pNode = createNode(idx, m_nodeParams);
     connect(pNode, &ZenoNode::socketClicked, this, &ZenoSubGraphScene::onSocketClicked);
     connect(pNode, &ZenoNode::nodePosChangedSignal, this, &ZenoSubGraphScene::onNodePosChanged);
@@ -1068,7 +1073,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             }
             if (!nodes.isEmpty() || !links.isEmpty())
             {
-                IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+                IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
                 ZASSERT_EXIT(pGraphsModel);
 
                 pGraphsModel->beginTransaction("remove nodes and links");
@@ -1126,7 +1131,7 @@ void ZenoSubGraphScene::updateNodeStatus(bool &bOn, int option)
     bOn = !bOn;
     for (const QModelIndex &idx : selectNodesIndice()) 
     {
-        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
         ZASSERT_EXIT(pGraphsModel);
         STATUS_UPDATE_INFO info;
         int options = idx.data(ROLE_OPTIONS).toInt();

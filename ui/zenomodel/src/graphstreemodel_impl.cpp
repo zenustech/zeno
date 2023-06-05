@@ -682,6 +682,13 @@ NODE_DATA GraphsTreeModel_impl::itemData(const QModelIndex& index, const QModelI
     return pChildItem->expData();
 }
 
+void GraphsTreeModel_impl::exportSubgraph(const QModelIndex& subGpIdx, NODES_DATA& nodes, LINKS_DATA& links) const
+{
+    //no impl.
+    TreeNodeItem* pSubgItem = static_cast<TreeNodeItem*>(itemFromIndex(subGpIdx));
+    ZASSERT_EXIT(pSubgItem);
+}
+
 int GraphsTreeModel_impl::ModelSetData(
                     const QPersistentModelIndex& idx,
                     const QVariant& value,
@@ -770,6 +777,11 @@ void GraphsTreeModel_impl::setName(const QString &name, const QModelIndex &subGp
 {
     //this name is obj class, which is not recommented to change name besides init io.
     this->setData(subGpIdx, name, ROLE_OBJNAME);
+}
+
+GraphsTreeModel* GraphsTreeModel_impl::model() const
+{
+    return m_pModel;
 }
 
 bool GraphsTreeModel_impl::setCustomName(const QModelIndex& subgIdx, const QModelIndex& idx, const QString& value)

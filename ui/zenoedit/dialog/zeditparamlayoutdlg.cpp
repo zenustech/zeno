@@ -1198,7 +1198,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                         VParamItem *pTargetGroup = static_cast<VParamItem *>(appliedItem);
 
                         NODE_DATA node =
-                            NodesMgr::newNodeData(m_pGraphsModel, bSubInput ? "SubInput" : "SubOutput", pos);
+                            NodesMgr::newNodeData(m_pGraphsModel, m_subgIdx, bSubInput ? "SubInput" : "SubOutput", pos);
                         node.params["name"].value = name;
                         node.params["name"].toolTip = m_ui->editLabel->text();
                         node.params["type"].value = typeDesc;

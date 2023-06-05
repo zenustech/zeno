@@ -742,7 +742,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     importNodes(newNodes, newLinks, QPointF(), newSubgIdx, false);
 
     //create the new fork subnet node at outter layer.
-    NODE_DATA subnetData = NodesMgr::newNodeData(this, forkSubgName);
+    NODE_DATA subnetData = NodesMgr::newNodeData(this, subgIdx, forkSubgName);
     subnetData.ident = UiHelper::generateUuid(forkName);
     subnetData.nodeCls = forkName;
     //clear the link.
@@ -1366,6 +1366,26 @@ NODE_DATA GraphsModel::itemData(const QModelIndex& index, const QModelIndex& sub
 	SubGraphModel* pGraph = subGraph(subGpIdx.row());
     ZASSERT_EXIT(pGraph, NODE_DATA());
     return pGraph->nodeData(index);
+}
+
+void GraphsModel::exportSubgraph(const QModelIndex& subGpIdx, NODES_DATA& nodes, LINKS_DATA& links) const
+{
+    SubGraphModel* pGraph = subGraph(subGpIdx.row());
+    ZASSERT_EXIT(pGraph);
+    for (int r = 0; r < pGraph->rowCount(); r++)
+    {
+        QModelIndex idx = pGraph->index(r, 0);
+        const QString& id = idx.data(ROLE_OBJID).toString();
+        nodes[id] = pGraph->nodeData(idx);
+    }
+
+    auto lnkModel = linkModel(subGpIdx);
+    ZASSERT_EXIT(lnkModel);
+    for (int r = 0; r < lnkModel->rowCount(); r++)
+    {
+        QModelIndex idx = lnkModel->index(r, 0);
+        links.append(UiHelper::exportLink(idx));
+    }
 }
 
 void GraphsModel::setName(const QString& name, const QModelIndex& subGpIdx)
