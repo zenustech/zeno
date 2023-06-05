@@ -1988,9 +1988,6 @@ struct ImageMatting: INode {
                    image->verts[i][2] <= 0.01 && image->verts.attr<float>("alpha")[i] != 0){
                     image->verts.attr<float>("alpha")[i] = 0;
                 }
-                else{
-//                    image->verts.attr<float>("alpha")[i] = 1;
-                }
             }
         }
         else if(imagemode == "deletewhite"){
@@ -2004,9 +2001,6 @@ struct ImageMatting: INode {
                 if(image->verts[i][0] >= 0.99 && image->verts[i][1] >= 0.99 &&
                    image->verts[i][2] >= 0.99 && image->verts.attr<float>("alpha")[i] != 0){
                     image->verts.attr<float>("alpha")[i] = 0;
-                }
-                else{
-//                    image->verts.attr<float>("alpha")[i] = 1;
                 }
             }
         }
@@ -2154,11 +2148,9 @@ struct ImageMatting: INode {
                     }
                 }
             }
+            //todo
             else if (wg < w && hg < h) {
-
             }
-//            for (int i = (hg < h ? (h - hg) / 2 : 0); i < (hg < h ? h - (h - hg) / 2 : h); i++) {
-//                for (int j = (wg < w ? (w - wg) / 2 : 0); j < (wg < w ? w - (w - wg) / 2 : w); j++) {
         }
         set_output("image", image);
     }
@@ -2177,6 +2169,7 @@ ZENDEFNODE(ImageMatting, {
     {},
     { "image" },
 });
+
 struct ImageDelAlpha: INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -2238,6 +2231,7 @@ ZENDEFNODE(ImageCut, {
     {},
     {"image"},
 });
+
 struct ImageShape: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");

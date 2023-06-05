@@ -18,7 +18,7 @@ namespace zeno {
 
 namespace {
 
-static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int height, std::vector<float>& dx, std::vector<float>& dy)
+static void zenoedge(std::shared_ptr<PrimitiveObject> & grayImage, int width, int height, std::vector<float>& dx, std::vector<float>& dy)
 {
     dx.resize(width * height);
     dy.resize(width * height);
@@ -42,7 +42,7 @@ static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int h
 static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, int height, std::vector<float>& normal)
 {
     std::vector<float> dx, dy;
-    sobel(grayImage, width, height, dx, dy);
+    zenoedge(grayImage, width, height, dx, dy);
     normal.resize(width * height * 3);
 
     for (int y = 0; y < height; y++) {
@@ -65,21 +65,6 @@ static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, in
             normal[i * 3 + 2] = normalZ;
         }
     }
-}
-
-static void sobelcv(cv::Mat& src, cv::Mat& dst, int thresholdValue, int maxThresholdValue){
-
-    // 应用Sobel算子计算水平和垂直梯度
-    cv::Mat gradX, gradY;
-    cv::Sobel(src, gradX, CV_32F, 1, 0);
-    cv::Sobel(src, gradY, CV_32F, 0, 1);
-
-    // 计算梯度强度和方向
-    cv::Mat gradientMagnitude, gradientDirection;
-    cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
-
-    // 应用阈值
-    cv::threshold(gradientMagnitude, dst, thresholdValue, maxThresholdValue, cv::THRESH_BINARY);
 }
 
 static void scharr2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<PrimitiveObject> & dst, int width, int height,int threshold) {
@@ -125,21 +110,15 @@ struct EdgeDetect : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
-        int low_threshold = get_input2<int>("low_threshold");
-        int high_threshold = get_input2<int>("high_threshold");
+        int threshold = get_input2<int>("threshold");
+        int maxThreshold = get_input2<int>("maxThreshold");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
 
-        auto image2 = std::make_shared<PrimitiveObject>();
-        image2->resize(w * h);
-        image2->userData().set2("isImage", 1);
-        image2->userData().set2("w", w);
-        image2->userData().set2("h", h);
-
-        if(mode=="sobel"){
+        if(mode=="zeno_gray"){
             std::vector<float> dx,dy;
-            zeno::sobel(image, w, h, dx, dy);
+            zenoedge(image, w, h, dx, dy);
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     // 计算梯度幅值
@@ -149,7 +128,26 @@ struct EdgeDetect : INode {
             }
             set_output("image", image);
         }
-        if(mode=="sobelcv"){
+
+        if(mode=="zeno_threshold"){
+            std::vector<float> dx,dy;
+            zenoedge(image, w, h, dx, dy);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    // 计算梯度幅值
+                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
+
+                    if (gradient * 255 > threshold) {
+                        image->verts[i * w + j] = {1,1,1};
+                    }
+                    else {
+                        image->verts[i * w + j] = {0,0,0};
+                    }
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="sobel_gray"){
             cv::Mat imagecvin(h, w, CV_32F);
             cv::Mat imagecvout(h, w, CV_32F);
             int var = 1;
@@ -160,7 +158,15 @@ struct EdgeDetect : INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            zeno::sobelcv(imagecvin,imagecvout, low_threshold, high_threshold);
+            // 应用Sobel算子计算水平和垂直梯度
+            cv::Mat gradX, gradY;
+            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
+            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
+
+            // 计算梯度强度和方向 gradientMagnitude, gradientDirection
+            cv::Mat gradientMagnitude, gradientDirection;
+            cv::cartToPolar(gradX, gradY, imagecvout, gradientDirection, true);
+
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     float r = float(imagecvout.at<float>(i, j)) / 255.f;
@@ -169,7 +175,163 @@ struct EdgeDetect : INode {
             }
             set_output("image", image);
         }
-        if(mode=="cannycv"){
+        if(mode=="sobel_threshold"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            // 应用Sobel算子计算水平和垂直梯度
+            cv::Mat gradX, gradY;
+            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
+            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
+
+            // 计算梯度强度和方向
+            cv::Mat gradientMagnitude, gradientDirection;
+            cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
+
+            // 应用阈值
+            cv::threshold(gradientMagnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
+            for (int i = 0; i < h; i++) {
+
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="roberts_gray"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat robertsX, robertsY;
+            cv::Mat magnitude;
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            // 计算 Roberts 算子的水平梯度
+            cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
+            cv::filter2D(imagecvin, robertsX, -1, kernelX);
+
+            // 计算 Roberts 算子的垂直梯度
+            cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
+            cv::filter2D(imagecvin, robertsY, -1, kernelY);
+
+            // 计算梯度幅值
+            cv::magnitude(robertsX, robertsY, imagecvout);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+
+        if(mode=="roberts_threshold"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat robertsX, robertsY;
+            cv::Mat magnitude;
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            // 计算 Roberts 算子的水平梯度
+            cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
+            cv::filter2D(imagecvin, robertsX, -1, kernelX);
+
+            // 计算 Roberts 算子的垂直梯度
+            cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
+            cv::filter2D(imagecvin, robertsY, -1, kernelY);
+
+            // 计算梯度幅值
+            cv::magnitude(robertsX, robertsY, magnitude);
+            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="roberts_gray"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat edges;
+            cv::Mat prewittX, prewittY;
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1);
+            cv::filter2D(imagecvin, prewittX, -1, kernelX);
+
+            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1);
+            cv::filter2D(imagecvin, prewittY, -1, kernelY);
+
+            cv::magnitude(prewittX, prewittY, imagecvout);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="roberts_threshold"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat edges;
+            cv::Mat prewittX, prewittY;
+            cv::Mat magnitude;
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1);
+            cv::filter2D(imagecvin, prewittX, -1, kernelX);
+
+            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1);
+            cv::filter2D(imagecvin, prewittY, -1, kernelY);
+
+            cv::magnitude(prewittX, prewittY, magnitude);
+
+            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="canny_gray"){
             cv::Mat imagecvin(h, w, CV_8U);
             cv::Mat imagecvout(h, w, CV_8U);
             for (int i = 0; i < h; i++) {
@@ -178,7 +340,18 @@ struct EdgeDetect : INode {
                     imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
                 }
             }
-            cv::Canny(imagecvin,imagecvout,low_threshold, high_threshold);
+            // 自适应阈值化
+            cv::Mat thresholdImage;
+            int maxValue = 255;  // 最大像素值
+            int blockSize = 3;  // 邻域块大小
+            double C = 2;  // 常数项
+            cv::adaptiveThreshold(imagecvin, thresholdImage, maxValue, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, blockSize, C);
+
+            // 执行 Canny 边缘检测
+            int apertureSize = 3;  // 孔径大小，默认为 3
+            bool L2gradient = false;  // 使用 L1 范数计算梯度幅值
+            cv::Canny(thresholdImage, imagecvout, 0, 0, apertureSize, L2gradient);
+
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
@@ -187,21 +360,32 @@ struct EdgeDetect : INode {
             }
             set_output("image", image);
         }
-        if(mode=="scharr"){
-            zeno::scharr2(image, image2, w, h, low_threshold);
-            set_output("image", image2);
-        }
-        if(mode=="laplacian"){
-
+        if(mode=="canny_threshold"){
+            cv::Mat imagecvin(h, w, CV_8U);
+            cv::Mat imagecvout(h, w, CV_8U);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
+                }
+            }
+            cv::Canny(imagecvin,imagecvout,threshold, maxThreshold);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
         }
     }
 };
 ZENDEFNODE(EdgeDetect, {
     {
         {"image"},
-        {"enum sobel sobelcv cannycv scharr", "mode", "sobel"},
-        {"int", "low_threshold", "100"},
-        {"int", "high_threshold", "150"},
+        {"enum zeno_gray zeno_threshold sobel_gray sobel_threshold roberts_gray roberts_threshold prewitt_gray prewitt_threshold canny_gray canny_threshold", "mode", "sobel_gray"},
+        {"float", "threshold", "50"},
+        {"float", "maxThreshold", "9999"},
     },
     {
         {"image"}
@@ -210,83 +394,441 @@ ZENDEFNODE(EdgeDetect, {
     { "image" },
 });
 
-struct EdgeDetect_sobel : INode {
+struct EdgeDetect_DIY: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
-        int thresholdValue = get_input2<int>("thresholdValue");
-        int maxValue = get_input2<int>("maxValue");
+        auto ktop = get_input2<vec3f>("kerneltop");
+        auto kmid = get_input2<vec3f>("kernelmid");
+        auto kbot = get_input2<vec3f>("kernelbot");
+        int threshold = get_input2<int>("threshold");
+        int maxThreshold = get_input2<int>("maxThreshold");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
 
-        if(mode=="sobel"){
-            std::vector<float> dx,dy;
-            zeno::sobel(image, w, h, dx, dy);
+        if(mode=="diy_gray"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat edges;
+            cv::Mat prewittX, prewittY;
+            int var = 1;
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    // 计算梯度幅值
-                    float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
-                    image->verts[i * w + j] = {gradient,gradient,gradient};
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << ktop[0], kmid[0], kbot[0],
+                                                        ktop[1], kmid[1], kbot[1],
+                                                        ktop[2], kmid[2], kbot[2]);
+            cv::filter2D(imagecvin, prewittX, -1, kernelX);
+
+            cv::Mat kernelY = (cv::Mat_<float>(3, 3) <<  ktop[0], kmid[1], kbot[2],
+                                                         kmid[0], kmid[1], kbot[2],
+                                                         kbot[0], kmid[1], kbot[2]);
+            cv::filter2D(imagecvin, prewittY, -1, kernelY);
+            cv::magnitude(prewittX, prewittY, imagecvout);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
                 }
             }
             set_output("image", image);
         }
-        if(mode=="sobelcv"){
+
+        if(mode=="diy_threshold"){
             cv::Mat imagecvin(h, w, CV_32F);
             cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat edges;
+            cv::Mat prewittX, prewittY;
+            cv::Mat magnitude;
             int var = 1;
-            for (auto a = 0; a < image->verts.size(); a++){
-                int i = a / w;
-                int j = a % w;
-                vec3f rgb = image->verts[i * w + j];
-                var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
-                imagecvin.at<float>(i, j) = var;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
             }
-            zeno::sobelcv(imagecvin,imagecvout, thresholdValue, maxValue);
-            for (auto a = 0; a < image->verts.size(); a++){
-                int i = a / w;
-                int j = a % w;
-                float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                image->verts[i * w + j] = {r, r, r};
-            }
-            set_output("image", image);
-        }
-        if(mode=="sobelcv2"){
-            cv::Mat imagecvin(h, w, CV_32F);
-            cv::Mat imagecvout(h, w, CV_32F);
-            int var = 1;
-            for (auto a = 0; a < image->verts.size(); a++){
-                int i = a / w;
-                int j = a % w;
-                vec3f rgb = image->verts[i * w + j];
-                var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
-                imagecvin.at<float>(i, j) = var;
-            }
-            cv::Sobel(imagecvin, imagecvout, CV_8U, 1, 1);
-            cv::threshold(imagecvin, imagecvout, thresholdValue, maxValue, cv::THRESH_BINARY);
-            for (auto a = 0; a < image->verts.size(); a++){
-                int i = a / w;
-                int j = a % w;
-                float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                image->verts[i * w + j] = {r, r, r};
+            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << ktop[0], kmid[0], kbot[0],
+                                                        ktop[1], kmid[1], kbot[1],
+                                                        ktop[2], kmid[2], kbot[2]);
+            cv::filter2D(imagecvin, prewittX, -1, kernelX);
+
+            cv::Mat kernelY = (cv::Mat_<float>(3, 3) <<  ktop[0], kmid[1], kbot[2],
+                                                         kmid[0], kmid[1], kbot[2],
+                                                         kbot[0], kmid[1], kbot[2]);
+            cv::filter2D(imagecvin, prewittY, -1, kernelY);
+
+            cv::magnitude(prewittX, prewittY, magnitude);
+
+            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
             }
             set_output("image", image);
         }
     }
 };
-ZENDEFNODE(EdgeDetect_sobel, {
+ZENDEFNODE(EdgeDetect_DIY, {
     {
         {"image"},
-        {"enum sobel sobelcv sobelcv2", "mode", "sobel"},
-        {"int", "thresholdValue", "100"},
-        {"int", "maxValue", "255"},
+        {"enum diy_gray diy_threshold", "mode", "diy_gray"},
+        {"vec3f", "kerneltop", "-1,-2,-1"},
+        {"vec3f", "kernelmid", "0,0,0"},
+        {"vec3f", "kernelbot", "1,2,1"},
+        {"float", "threshold", "50"},
+        {"float", "maxThreshold", "9999"},
     },
     {
         {"image"}
     },
     {},
     { "deprecated" },
+});
+
+struct EdgeDetect_Sobel : INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        int threshold = get_input2<int>("threshold");
+        int maxThreshold = get_input2<int>("maxThreshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        if(mode=="sobel_gray"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            // 应用Sobel算子计算水平和垂直梯度
+            cv::Mat gradX, gradY;
+            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
+            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
+
+            // 计算梯度强度和方向 gradientMagnitude, gradientDirection
+            cv::Mat gradientMagnitude, gradientDirection;
+            cv::cartToPolar(gradX, gradY, imagecvout, gradientDirection, true);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+
+        if(mode=="sobel_threshold"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            // 应用Sobel算子计算水平和垂直梯度
+            cv::Mat gradX, gradY;
+            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
+            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
+
+            // 计算梯度强度和方向
+            cv::Mat gradientMagnitude, gradientDirection;
+            cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
+
+            // 应用阈值
+            cv::threshold(gradientMagnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+    }
+};
+ZENDEFNODE(EdgeDetect_Sobel, {
+    {
+        {"image"},
+        {"enum sobel_gray sobel_threshold", "mode", "sobel_gray"},
+        {"float", "threshold", "50"},
+        {"float", "maxThreshold", "9999"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "image" },
+});
+
+struct EdgeDetect_Roberts: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        int threshold = get_input2<int>("threshold");
+        int maxThreshold = get_input2<int>("maxThreshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        if(mode=="roberts_gray"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat robertsX, robertsY;
+            cv::Mat magnitude;
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            // 计算 Roberts 算子的水平梯度
+            cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
+            cv::filter2D(imagecvin, robertsX, -1, kernelX);
+
+            // 计算 Roberts 算子的垂直梯度
+            cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
+            cv::filter2D(imagecvin, robertsY, -1, kernelY);
+
+            // 计算梯度幅值
+            cv::magnitude(robertsX, robertsY, imagecvout);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+
+        if(mode=="roberts_threshold"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat robertsX, robertsY;
+            cv::Mat magnitude;
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            // 计算 Roberts 算子的水平梯度
+            cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
+            cv::filter2D(imagecvin, robertsX, -1, kernelX);
+
+            // 计算 Roberts 算子的垂直梯度
+            cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
+            cv::filter2D(imagecvin, robertsY, -1, kernelY);
+
+            // 计算梯度幅值
+            cv::magnitude(robertsX, robertsY, magnitude);
+            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+    }
+};
+ZENDEFNODE(EdgeDetect_Roberts, {
+    {
+        {"image"},
+        {"enum roberts_gray roberts_threshold", "mode", "roberts_gray"},
+        {"float", "threshold", "50"},
+        {"float", "maxThreshold", "255"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "image" },
+});
+
+struct EdgeDetect_Prewitt: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        int threshold = get_input2<int>("threshold");
+        int maxThreshold = get_input2<int>("maxThreshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        if(mode=="roberts_gray"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat edges;
+            cv::Mat prewittX, prewittY;
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1);
+            cv::filter2D(imagecvin, prewittX, -1, kernelX);
+
+            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1);
+            cv::filter2D(imagecvin, prewittY, -1, kernelY);
+
+            cv::magnitude(prewittX, prewittY, imagecvout);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+
+        if(mode=="roberts_threshold"){
+            cv::Mat imagecvin(h, w, CV_32F);
+            cv::Mat imagecvout(h, w, CV_32F);
+            cv::Mat edges;
+            cv::Mat prewittX, prewittY;
+            cv::Mat magnitude;
+            int var = 1;
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    var = 255 * (rgb[0] + rgb[1] + rgb[2])/3;
+                    imagecvin.at<float>(i, j) = var;
+                }
+            }
+            cv::Mat kernelX = (cv::Mat_<float>(3, 3) << -1, 0, 1, -1, 0, 1, -1, 0, 1);
+            cv::filter2D(imagecvin, prewittX, -1, kernelX);
+
+            cv::Mat kernelY = (cv::Mat_<float>(3, 3) << -1, -1, -1, 0, 0, 0, 1, 1, 1);
+            cv::filter2D(imagecvin, prewittY, -1, kernelY);
+
+            cv::magnitude(prewittX, prewittY, magnitude);
+
+            cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+    }
+};
+ZENDEFNODE(EdgeDetect_Prewitt, {
+    {
+        {"image"},
+        {"enum prewitt_gray prewitt_threshold", "mode", "prewitt_gray"},
+        {"float", "threshold", "50"},
+        {"float", "maxThreshold", "255"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "image" },
+});
+
+//边缘检测
+struct EdgeDetect_Canny : INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto mode = get_input2<std::string>("mode");
+        int threshold1 = get_input2<int>("threshold1");
+        int threshold2 = get_input2<int>("threshold2");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        if(mode=="canny_gray"){
+            cv::Mat imagecvin(h, w, CV_8U);
+            cv::Mat imagecvout(h, w, CV_8U);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
+                }
+            }
+            // 自适应阈值化
+            cv::Mat thresholdImage;
+            int maxValue = 255;  // 最大像素值
+            int blockSize = 3;  // 邻域块大小
+            double C = 2;  // 常数项
+            cv::adaptiveThreshold(imagecvin, thresholdImage, maxValue, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, blockSize, C);
+
+            // 执行 Canny 边缘检测
+            int apertureSize = 3;  // 孔径大小，默认为 3
+            bool L2gradient = false;  // 使用 L1 范数计算梯度幅值
+            cv::Canny(thresholdImage, imagecvout, 0, 0, apertureSize, L2gradient);
+
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+        if(mode=="canny_threshold"){
+            cv::Mat imagecvin(h, w, CV_8U);
+            cv::Mat imagecvout(h, w, CV_8U);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    vec3f rgb = image->verts[i * w + j];
+                    imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
+                }
+            }
+            cv::Canny(imagecvin, imagecvout, threshold1, threshold2, 3, false);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w; j++) {
+                    float r = float(imagecvout.at<uchar>(i, j)) / 255.f;
+                    image->verts[i * w + j] = {r, r, r};
+                }
+            }
+            set_output("image", image);
+        }
+    }
+};
+ZENDEFNODE(EdgeDetect_Canny, {
+    {
+        {"image"},
+        {"enum canny_gray canny_threshold", "mode", "canny_gray"},
+        {"float", "threshold1", "100"},
+        {"float", "threshold2", "200"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "image" },
 });
 
 struct ImageExtractFeature_ORB : INode {
