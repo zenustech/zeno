@@ -198,6 +198,8 @@ struct PathTracerState
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
     raii<CUdeviceptr> lightsbuf_p;
+    raii<CUdeviceptr> sky_cdf_p;
+    raii<CUdeviceptr> sky_start;
     Params                         params;
     raii<CUdeviceptr>                        d_params;
     CUdeviceptr                              d_params2=0;
@@ -2266,7 +2268,32 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
     OptixUtil::createRenderGroups(state.context, OptixUtil::ray_module);
     if (OptixUtil::sky_tex.has_value()) {
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
+        state.params.skynx = OptixUtil::sky_nx_map[OptixUtil::sky_tex.value()];
+        state.params.skyny = OptixUtil::sky_ny_map[OptixUtil::sky_tex.value()];
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
+                              sizeof(float2)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size() ) );
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_start.reset() ),
+                              sizeof(int)*OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].size() ) );
+        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p),
+                   OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].data(),
+                   sizeof(float)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size(),
+                   cudaMemcpyHostToDevice);
+        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_cdf_p)+sizeof(float)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size(),
+                   OptixUtil::sky_pdf_map[OptixUtil::sky_tex.value()].data(),
+                   sizeof(float)*OptixUtil::sky_pdf_map[OptixUtil::sky_tex.value()].size(),
+                   cudaMemcpyHostToDevice);
+        cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr)state.sky_start),
+                   OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].data(),
+                   sizeof(int)*OptixUtil::sky_start_map[OptixUtil::sky_tex.value()].size(),
+                   cudaMemcpyHostToDevice);
+        state.params.skycdf = reinterpret_cast<float *>((CUdeviceptr)state.sky_cdf_p);
+        state.params.sky_start = reinterpret_cast<int *>((CUdeviceptr)state.sky_start);
+
+    } else {
+        state.params.skynx = 0;
+        state.params.skyny = 0;
     }
+
 }
 
 void optixupdateend() {
@@ -2312,10 +2339,12 @@ void optixupdateend() {
 }
 
 struct DrawDat {
+    std::vector<std::string>  mtlidList;
     std::string mtlid;
     std::string instID;
     std::vector<float> verts;
     std::vector<int> tris;
+    std::vector<int> triMats;
     std::map<std::string, std::vector<float>> vertattrs;
     auto const &getAttr(std::string const &s) const
     {
@@ -2453,11 +2482,18 @@ static void updateStaticDrawObjects() {
     n = 0;
     for (auto const &[key, dat]: drawdats) {
         if(key.find(":static:")!=key.npos && dat.instID == "Default") {
-            auto it = g_mtlidlut.find(dat.mtlid);
-            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+            //auto it = g_mtlidlut.find(dat.mtlid);
+            // mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
             //#pragma omp parallel for
             for (size_t i = 0; i < dat.tris.size() / 3; i++) {
+                int mtidx = dat.triMats[i];
+                int mtlindex = 0;
+                if(mtidx!=-1) {
+                    auto matName = dat.mtlidList[mtidx];
+                    auto it = g_mtlidlut.find(matName);
+                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+                }
                 g_mat_indices[n + i] = mtlindex;
                 g_lightMark[n + i] = 0;
                 g_vertices[(n + i) * 3 + 0] = {
@@ -2576,11 +2612,18 @@ static void updateDynamicDrawObjects() {
     n = 0;
     for (auto const &[key, dat]: drawdats) {
         if(key.find(":static:")==key.npos && dat.instID == "Default") {
-            auto it = g_mtlidlut.find(dat.mtlid);
-            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+//            auto it = g_mtlidlut.find(dat.mtlid);
+//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
             //#pragma omp parallel for
             for (size_t i = 0; i < dat.tris.size() / 3; i++) {
+                int mtidx = dat.triMats[i];
+                int mtlindex = 0;
+                if(mtidx!=-1) {
+                    auto matName = dat.mtlidList[mtidx];
+                    auto it = g_mtlidlut.find(matName);
+                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+                }
                 g_mat_indices[g_staticVertNum/3 + n + i] = mtlindex;
                 g_lightMark[g_staticVertNum/3 + n + i] = 0;
                 g_vertices[g_staticVertNum + (n + i) * 3 + 0] = {
@@ -2756,12 +2799,19 @@ static void updateStaticDrawInstObjects()
             auto &mat_indices = instData.mat_indices;
             auto &lightMark = instData.lightMark;
 
-            auto it = g_mtlidlut.find(dat.mtlid);
-            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+//            auto it = g_mtlidlut.find(dat.mtlid);
+//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
             //#pragma omp parallel for
             for (std::size_t i = 0; i < dat.tris.size() / 3; ++i)
             {
+                int mtidx = dat.triMats[i];
+                int mtlindex = 0;
+                if(mtidx!=-1) {
+                    auto matName = dat.mtlidList[mtidx];
+                    auto it = g_mtlidlut.find(matName);
+                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+                }
                 mat_indices[numVerts + i] = mtlindex;
                 lightMark[numVerts + i] = 0;
                 vertices[(numVerts + i) * 3 + 0] = {
@@ -2910,12 +2960,19 @@ static void updateDynamicDrawInstObjects()
             auto &lightMark = instData.lightMark;
             auto &staticVertNum = instData.staticVertNum;
 
-            auto it = g_mtlidlut.find(dat.mtlid);
-            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+//            auto it = g_mtlidlut.find(dat.mtlid);
+//            int mtlindex = it != g_mtlidlut.end() ? it->second : 0;
             //zeno::log_error("{} {}", dat.mtlid, mtlindex);
             //#pragma omp parallel for
             for (std::size_t i = 0; i < dat.tris.size() / 3; ++i)
             {
+                int mtidx = dat.triMats[i];
+                int mtlindex = 0;
+                if(mtidx!=-1) {
+                    auto matName = dat.mtlidList[mtidx];
+                    auto it = g_mtlidlut.find(matName);
+                    mtlindex = it != g_mtlidlut.end() ? it->second : 0;
+                }
                 mat_indices[staticVertNum / 3 + numVerts + i] = mtlindex;
                 lightMark[staticVertNum / 3 + numVerts + i] = 0;
                 vertices[staticVertNum + (numVerts + i) * 3 + 0] = {
@@ -3018,9 +3075,14 @@ static void updateDynamicDrawInstObjects()
     }
 }
 
-void load_object(std::string const &key, std::string const &mtlid, const std::string &instID, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab) {
+void load_object(std::string const &key, std::string const &mtlid, const std::string &instID,
+                 float const *verts, size_t numverts, int const *tris, size_t numtris,
+                 std::map<std::string, std::pair<float const *, size_t>> const &vtab,
+                 int const *matids, std::vector<std::string> const &matNameList) {
     DrawDat &dat = drawdats[key];
     //ZENO_P(mtlid);
+    dat.triMats.assign(matids, matids + numtris);
+    dat.mtlidList = matNameList;
     dat.mtlid = mtlid;
     dat.instID = instID;
     dat.verts.assign(verts, verts + numverts * 3);

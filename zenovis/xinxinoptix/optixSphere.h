@@ -23,7 +23,7 @@ inline void updateSphereGAS(const OptixDeviceContext& context, OptixBuildInput& 
     raii<CUdeviceptr> d_temp_buffer_gas {};
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_temp_buffer_gas ), temp_buffer_size));
 
-    printf("Requires %lu MB for tmp and %lu MB output for sphere GAS \n", temp_buffer_size / (1024 * 1024), output_buffer_size / (1024 * 1024));
+    printf("Requires %lu MB tmp buffer and %lu MB output buffer for sphere GAS \n", temp_buffer_size / (1024 * 1024), output_buffer_size / (1024 * 1024));
 
     const bool COMPACTION = accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
 

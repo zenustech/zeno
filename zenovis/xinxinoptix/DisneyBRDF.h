@@ -76,9 +76,27 @@ static __inline__ __device__  float GGX(float cosT, float a){
     float b = cosT*cosT;
     return 2.0f/ (1.0f  + sqrtf(a2 + b - a2*b));
 }
-
-static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float roughness)
+static __inline__ __device__  vec3 cosSampleHemisphere(unsigned int &seed)
 {
+    float2 xy = {rnd(seed), rnd(seed)};
+    const float x = xy.x;
+    const float y = xy.y;
+
+    float a = x;
+    float b = 2.0f * 3.1415926f * y;
+
+    vec3 result = vec3(
+        a * cos(b),
+        a * sin(b),
+        sqrt(1.0f - x));
+
+    return result;
+}
+static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed,
+                                                     float roughness,
+                                                     float &pdf)
+{
+    //so this is a GGX sample hemisphere
     float2 xy = {rnd(seed), rnd(seed)};
     const float x = xy.x;
     const float y = xy.y;
@@ -88,14 +106,15 @@ static __inline__ __device__  vec3 sampleOnHemisphere(unsigned int &seed, float 
 	float phi = 2.0f * M_PIf * x;
 	float cosTheta = sqrtf((1.0f - y) / (1.0f + (a*a - 1.0f) * y));
 	float sinTheta = sqrtf(1.0f - cosTheta*cosTheta);
-
-
+        float dnom = (a*a - 1.0f) * cosTheta*cosTheta + 1.0f+ 1e-8f;
+    pdf = a*a*cosTheta*sinTheta/(M_PIf * dnom * dnom);
     return vec3(cos(phi) * sinTheta,  sin(phi) * sinTheta, cosTheta);
 }
 static __inline__ __device__  vec3 halfPlaneSample(unsigned int & seed, vec3 N, float roughness)
 {
     Onb tbn = Onb(N);
-    vec3 P = sampleOnHemisphere(seed, roughness);
+    float pdf;
+    vec3 P = sampleOnHemisphere(seed, roughness, pdf);
     auto wi = P;
     tbn.inverse_transform(wi);
     wi = normalize(wi);
@@ -187,6 +206,45 @@ static __inline__ __device__ void GgxVndfAnisotropicPdf(vec3 wi, vec3 wm, vec3 w
     float G1l = SeparableSmithGGXG1(wi, wm, ax, ay);
     reversePdfW = G1l * absDotHV * D / (absDotNV);
 }
+static __inline__ __device__
+vec3 sampleGgxAnisotropic(vec3 wo, float alphaX, float alphaY, float u1, float u2)
+{
+    float r1 = u1;
+    float phi = atan(alphaY / alphaX * tan(2.0f * M_PIf * r1 + 0.5f * M_PIf));
+    phi += r1 > 0.5f ? M_PIf : 0.0f;
+    float sinP = sin(phi);
+    float cosP = cos(phi);
+    float alpha2 = 1.0f / (cosP * cosP / (alphaX * alphaX) + sinP * sinP / (alphaY * alphaY));
+    float r0 = u2;
+    float tan2Theta = alpha2 * r0 / (1.0f - r0);
+    float cosT = 1.0f / sqrt(1.0f + tan2Theta);
+    float sinT = sqrt(max(0.0f, 1.0f - cosT * cosT));
+    vec3 wh = vec3(sinT * cos(phi), sinT * sin(phi), cosT);
+    wh =wh * (wo.z * wh.z < 0.0f ? -1.0f : 1.0f);
+    return wh;
+}
+static __inline__ __device__
+float GgxD(vec3 wh, float alphaX, float alphaY)
+{
+    float tan2 = tanTheta2(wh);
+    if (tan2 > 1e10f) return 0.0;
+    float cos4 = pow(cosTheta(wh), 4.0f);
+    float e = (cosPhi2(wh) / (alphaX * alphaX) + sinPhi2(wh) / (alphaY * alphaY)) * tan2;
+    return 1.0f / (M_PIf * alphaX * alphaY * cos4 * (1.0f + e) * (1.0f + e));
+}
+static __inline__ __device__
+float GgxLambda(vec3 w, float alphaX, float alphaY) {
+    float absTan = abs(tanTheta(w));
+    if (absTan > 1e10f) return 0.0;
+    float alpha = sqrt(cosPhi2(w) * alphaX * alphaX + sinPhi2(w) * alphaY * alphaY);
+    float a = (alpha * absTan) * (alpha * absTan);
+    return (-1.0f + sqrt(1.0f + a)) * 0.5f;
+}
+static __inline__ __device__
+float GgxG(vec3 wo, vec3 wi, float alphaX, float alphaY) {
+    return 1.0f / (1.0f + GgxLambda(wo, alphaX, alphaY) + GgxLambda(wi, alphaX, alphaY));
+}
+
 static __inline__ __device__ 
 vec3 SampleGgxVndfAnisotropic(vec3 wo, float ax, float ay, float u1, float u2)
 {
@@ -301,8 +359,8 @@ static __inline__ __device__ vec3 sample_f(
         
         if( p < ratiodiffuse){
             //sample diffuse lobe
-            
-            vec3 P = BRDFBasics::sampleOnHemisphere(seed, 1.0f);
+            float pdf;
+            vec3 P = BRDFBasics::sampleOnHemisphere(seed, 1.0f, pdf);
             wi = P;
             tbn.inverse_transform(wi);
             wi = normalize(wi);
@@ -310,8 +368,8 @@ static __inline__ __device__ vec3 sample_f(
         }else{
             //sample specular lobe.
             float a = max(0.001f, roughness);
-            
-            vec3 P = BRDFBasics::sampleOnHemisphere(seed, a*a);
+            float pdf;
+            vec3 P = BRDFBasics::sampleOnHemisphere(seed, a*a, pdf);
             vec3 half = normalize(P);
             tbn.inverse_transform(half);            
             wi = half* 2.0f* dot(normalize(wo), half) - normalize(wo); //reflection vector
