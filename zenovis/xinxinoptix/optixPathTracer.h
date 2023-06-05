@@ -68,6 +68,7 @@ struct Params
     cudaTextureObject_t sky_texture;
 
     float* skycdf;
+    int* sky_start;
 
 
     int skynx;

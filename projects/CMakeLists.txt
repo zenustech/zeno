@@ -37,6 +37,7 @@ set(ZENO_EXTENSIONS
     Python
     Parameterization
     UnrealTool
+    ChatZeno
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

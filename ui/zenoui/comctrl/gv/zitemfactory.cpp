@@ -223,6 +223,24 @@ namespace zenoui
                 pItemWidget = pEditBtn;
                 break;
             }
+            case CONTROL_PURE_COLOR: {
+                ZenoParamPushButton *pEditBtn = new ZenoParamPushButton("", -1, QSizePolicy::Expanding);
+                pEditBtn->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
+                pEditBtn->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+                pEditBtn->setData(GVKEY_TYPE, type);
+                pEditBtn->setProperty("color", value.value<QColor>().name());
+
+                QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
+                    QColor color = QColorDialog::getColor(QColor(pEditBtn->property("color").toString()));
+                    if (color.isValid()) 
+                    {
+                        pEditBtn->setProperty("color", color.name());
+                        cbSet.cbEditFinished(QVariant::fromValue(color));
+                    }
+                });
+                pItemWidget = pEditBtn;
+                break;
+            }
             case CONTROL_VEC2_INT:
             case CONTROL_VEC2_FLOAT:
             case CONTROL_VEC3_FLOAT:

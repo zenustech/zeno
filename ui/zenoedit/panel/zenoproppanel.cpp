@@ -654,6 +654,11 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             else if (ZSpinBoxSlider* pSpinSlider = qobject_cast<ZSpinBoxSlider*>(ctrl.pControl))
             {
                 pSpinSlider->setValue(value.toInt());
+            } 
+            else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl)) 
+            {
+                if (value.canConvert<QColor>())
+                    pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
             }
             //...
         }
@@ -709,7 +714,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                     QDoubleSpinBox *pSpinBox = qobject_cast<QDoubleSpinBox *>(ctrl.pControl);
                     pSpinBox->setSingleStep(info.step);
                     pSpinBox->setRange(info.min, info.max);
-                  }
+                  } 
             }
         } 
         else if (role == ROLE_VPARAM_TOOLTIP) 

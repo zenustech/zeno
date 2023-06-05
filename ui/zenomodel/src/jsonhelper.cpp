@@ -220,6 +220,11 @@ namespace JsonHelper
                 //todo: color custom type.
                 writer.Null();
             }
+        } 
+        else if (varType == QVariant::Color) 
+        {
+            auto s = value.value<QColor>().name().toStdString();
+            writer.String(s.data(), s.size());
         }
         //todo: qlineargradient.
         else if (varType != QVariant::Invalid)

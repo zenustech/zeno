@@ -431,9 +431,12 @@ void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, cons
 
 void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties) 
 {
+    //init control by descriptor
+    return;
     if (!m_currentGraph)
         return;
-
+    if (m_pModel->hasDescriptor(nodeCls))
+        return;
     QString subgName, paramCls;
     subgName = m_currentGraph->name();
     QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);

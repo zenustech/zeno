@@ -345,8 +345,13 @@ vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
     o.x = 1.0 - o.y - o.z;
     return o;
 }
-vec3 ImportanceSampleEnv(float* env_cdf, int nx, int ny, float p, float &pdf)
+vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf)
 {
+    if(nx*ny == 0)
+    {
+        pdf = 1.0f;
+        return vec3(0);
+    }
     int start = 0; int end = nx*ny-1;
     while(start<end-1)
     {
@@ -360,13 +365,19 @@ vec3 ImportanceSampleEnv(float* env_cdf, int nx, int ny, float p, float &pdf)
             end = mid;
         }
     }
+    start = env_start[start];
     int i = start%nx;
     int j = start/nx;
     float theta = ((float)i + 0.5f)/(float) nx * 2.0f * 3.1415926f - 3.1415926f;
     float phi = ((float)j + 0.5f)/(float) ny * 3.1415926f;
     float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sin(phi);
     pdf =  twoPi2sinTheta / env_cdf[start + nx*ny];
-    return normalize(vec3(cos(theta), sin(phi - 0.5 * 3.1415926f), sin(theta)));
+    vec3 dir = normalize(vec3(cos(theta), sin(phi - 0.5 * 3.1415926f), sin(theta)));
+    dir = dir.rotY(to_radians(-params.sky_rot))
+            .rotZ(to_radians(-params.sky_rot_z))
+            .rotX(to_radians(-params.sky_rot_x))
+            .rotY(to_radians(-params.sky_rot_y));
+    return dir;
 
 }
 extern "C" __global__ void __closesthit__radiance()
@@ -661,7 +672,8 @@ extern "C" __global__ void __closesthit__radiance()
                 extinction,
                 isDiff,
                 isSS,
-                isTrans
+                isTrans,
+                prd->minSpecRough
                 )  == false)
         {
             isSS = false;
@@ -947,8 +959,8 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
                 prd->Lweight = weight;
 
-                float3 lbrdf = DisneyBSDF::EvaluateDisney(
-                    basecolor, sssColor, metallic, subsurface, specular, roughness, specularTint, anisotropic, anisoRotation, sheen, sheenTint,
+                float3 lbrdf = DisneyBSDF::EvaluateDisney(vec3(1.0f),
+                    basecolor, sssColor, metallic, subsurface, specular, max(prd->minSpecRough,roughness), specularTint, anisotropic, anisoRotation, sheen, sheenTint,
                     clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
                     dot(N, L));
@@ -969,19 +981,26 @@ extern "C" __global__ void __closesthit__radiance()
             }
         }
     } else {
-    for(int samples=0;samples<20;samples++) {
+        float env_weight_sum = 1e-8f;
+        int NSamples = prd->depth<=2?5:1;//16 / pow(4.0f, (float)prd->depth-1);
+    for(int samples=0;samples<NSamples;samples++) {
         float3 lbrdf{};
         bool inside = false;
         float p = rnd(prd->seed);
         //vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
-        float envpdf = 0;
-        vec3 sunLightDir = ImportanceSampleEnv(params.skycdf, params.skynx, params.skyny, p, envpdf);
+        int hasenv = params.skynx * params.skyny;
+        hasenv = params.usingHdrSky? hasenv : 0;
+        float envpdf = 1;
+        vec3 sunLightDir = hasenv? ImportanceSampleEnv(params.skycdf, params.sky_start,
+                                                        params.skynx, params.skyny, p, envpdf)
+                                  : vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
         auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
-                                                   params.sunSoftness * 0); //perturb the sun to have some softness
-        sun_dir = normalize(sunLightDir);
-        float3 illum = float3(envSky(sun_dir, sun_dir, make_float3(0., 0., 1.),
+                                                   params.sunSoftness * 0.2); //perturb the sun to have some softness
+        sun_dir = hasenv ? normalize(sunLightDir):sun_dir;
+        float3 illum = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                      40, // be careful
                                      .45, 15., 1.030725 * 0.3, params.elapsedTime));
+
         prd->LP = P;
         prd->Ldir = sun_dir;
         prd->nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
@@ -991,7 +1010,7 @@ extern "C" __global__ void __closesthit__radiance()
                        1e-5f, // tmin
                        1e16f, // tmax,
                        &shadow_prd);
-        lbrdf = DisneyBSDF::EvaluateDisney(
+        lbrdf = DisneyBSDF::EvaluateDisney(vec3(illum),
             basecolor, sssColor, metallic, subsurface, specular, roughness, specularTint, anisotropic,
             anisoRotation, sheen, sheenTint, clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance,
             ior, flatness, sun_dir, -normalize(inDir), T, B, N, thin > 0.5f,
@@ -1015,9 +1034,11 @@ extern "C" __global__ void __closesthit__radiance()
                                                       dot(attrs.H, attrs.L), false);
             mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
         }
-        prd->radiance += 1.0f/20.0f  *
-            light_attenuation * illum * envpdf * 2.0 * (thin > 0.5 ? float3(mat2.reflectance) : lbrdf);
+
+        prd->radiance += 1.0f / (float)NSamples *
+            light_attenuation  * envpdf * 2.0 * (thin > 0.5 ? float3(mat2.reflectance) : lbrdf);
     }
+        prd->radiance = float3(clamp(vec3(prd->radiance), vec3(0.0f), vec3(100.0f)));
     }
 
     P = P_OLD;

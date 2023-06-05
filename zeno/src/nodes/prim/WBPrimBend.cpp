@@ -622,8 +622,8 @@ struct PrimCopyAttr : INode {
 
         if (!prim->verts.has_attr(sourceName))
             zeno::log_error("no such attr named '{}'.", sourceName);
-        if (prim->verts.has_attr(targetName))
-            zeno::log_warn("already has such attr named '{}'.", targetName);
+//        if (prim->verts.has_attr(targetName))
+//            zeno::log_warn("already has such attr named '{}'.", targetName);
 
         std::visit(
             [&](auto ty) {
@@ -949,8 +949,13 @@ struct PrimitiveDelAttrs : zeno::INode {
         }
 
         if (!invert) {
-            for(std::string attr : names)
+            for(std::string attr : names) {
                 prim->verts.attrs.erase(attr);
+                prim->tris.attrs.erase(attr);
+                prim->quads.attrs.erase(attr);
+                prim->loops.attrs.erase(attr);
+                prim->polys.attrs.erase(attr);
+            }
         } else {
             std::vector<std::string> myKeys = prim->verts.attr_keys();
 
@@ -959,8 +964,13 @@ struct PrimitiveDelAttrs : zeno::INode {
             });
             myKeys.erase(reserve_attr, myKeys.end());
 
-            for(std::string attr : myKeys)
+            for(std::string attr : myKeys){
                 prim->verts.attrs.erase(attr);
+                prim->tris.attrs.erase(attr);
+                prim->quads.attrs.erase(attr);
+                prim->loops.attrs.erase(attr);
+                prim->polys.attrs.erase(attr);
+            }
         }
 
         set_output("prim", get_input("prim"));
@@ -1210,14 +1220,6 @@ struct PrimAttribBlur : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto prim_type = get_input2<std::string>("primType");
-
-//        auto maskName = get_input2<std::string>("group");
-//        if (!prim->verts.has_attr(maskName)) {
-//            auto &_mask = prim->verts.add_attr<float>(maskName);
-//            std::fill(_mask.begin(), _mask.end(), 1.0);
-//        }
-//        auto &mask = prim->verts.attr<float>(maskName);
-
         auto attr_name = get_input2<std::string>("attributes");
         auto attr_type = get_input2<std::string>("attributesType");
 

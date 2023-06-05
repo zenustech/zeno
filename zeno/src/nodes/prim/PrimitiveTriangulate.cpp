@@ -74,7 +74,7 @@ ZENO_API void primTriangulate(PrimitiveObject *prim, bool with_uv, bool has_line
     }
 
 
-    if (!prim->loops.has_attr("uvs") || !with_uv) {
+    if (!(prim->loops.has_attr("uvs") && prim->uvs.size() > 0) || !with_uv) {
         parallel_for(prim->polys.size(), [&] (size_t i) {
             auto [start, len] = prim->polys[i];
             auto matidx = prim->polys.attr<int>("matid")[i];

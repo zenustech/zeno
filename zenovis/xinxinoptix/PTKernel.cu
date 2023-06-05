@@ -131,7 +131,8 @@ extern "C" __global__ void __raygen__rg()
         prd.direction = ray_direction;
         prd.curMatIdx = 0;
         prd.test_distance = false;
-
+        prd.ss_alpha_queue[0] = vec3(-1.0f);
+        prd.minSpecRough = 0.01;
         auto tmin = prd.trace_tmin;
         auto ray_mask = prd._mask_;
 
@@ -170,7 +171,9 @@ extern "C" __global__ void __raygen__rg()
             // }
 
             if(prd.countEmitted==false || prd.depth>0) {
-                result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
+                auto temp_radiance = prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
+                float upperBound = prd.diffDepth==1?1.0f:100.0f;
+                result +=  prd.done? float3(clamp(vec3(temp_radiance), vec3(0.0f), vec3(upperBound))) : temp_radiance;
                 // fire without smoke requires this line to work.
             }
 
@@ -197,7 +200,7 @@ extern "C" __global__ void __raygen__rg()
                 if(rnd(prd.seed) > RRprob || prd.depth>32){
                     prd.done=true;
                 } else {
-                    prd.attenuation = prd.attenuation / (RRprob + 1e-5);
+                    prd.attenuation = prd.attenuation / RRprob;
                 }
             }
             if(prd.countEmitted == true)
@@ -249,7 +252,9 @@ extern "C" __global__ void __miss__radiance()
     prd->countEmitted = false;
     prd->CH = 0.0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
-        prd->radiance = envSky(
+        float upperBound = 100.0f;
+        prd->radiance =
+            envSky(
             normalize(prd->direction),
             sunLightDir,
             make_float3(0., 0., 1.),
@@ -258,6 +263,7 @@ extern "C" __global__ void __miss__radiance()
             15.,
             1.030725 * 0.3,
             params.elapsedTime,
+            upperBound,
             1.0
         );
         prd->done      = true;

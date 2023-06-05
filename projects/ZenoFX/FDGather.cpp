@@ -214,9 +214,8 @@ ZENDEFNODE(MomentumTransfer2DFiniteDifference, {
                                          {"zenofx"},
                                      });
 
-template<class T>
-T lerp(T a, T b, float c)
-{
+template <class T>
+T lerp(T a, T b, float c) {
     return (1.0 - c) * a + c * b;
 }
 template <class T>
@@ -247,19 +246,39 @@ struct Grid2DSample : zeno::INode {
         auto bmin = get_input2<zeno::vec3f>("bmin");
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto grid = get_input<zeno::PrimitiveObject>("sampleGrid");
-        auto attrT = get_param<std::string>("attrT");
-        auto channel = get_input<zeno::StringObject>("channel")->get();
-        auto sampleby = get_input<zeno::StringObject>("sampleBy")->get();
+        auto channelList = get_input2<std::string>("channel");
+        auto sampleby = get_input2<std::string>("sampleBy");
         auto h = get_input<zeno::NumericObject>("h")->get<float>();
-        if (grid->has_attr(channel) && prim->has_attr(sampleby)) {
-            if (attrT == "float") {
-                prim->add_attr<float>(channel);
-                sample2D<float>(prim->attr<zeno::vec3f>(sampleby), grid->attr<float>(channel),
-                                prim->attr<float>(channel), nx, ny, h, bmin);
-            } else if (attrT == "vec3") {
-                prim->add_attr<zeno::vec3f>(channel);
-                sample2D<zeno::vec3f>(prim->attr<zeno::vec3f>(sampleby), grid->attr<zeno::vec3f>(channel),
-                                      prim->attr<zeno::vec3f>(channel), nx, ny, h, bmin);
+
+        bool sampleAll = false;
+
+        std::vector<std::string> channels;
+        std::istringstream iss(channelList);
+        std::string word;
+        while (iss >> word) {
+            if (word == "*") {
+                sampleAll = true;
+                channels = grid->attr_keys();
+                break;
+            }
+            channels.push_back(word);
+        }
+
+        if (prim->has_attr(sampleby)) {
+            if (!(sampleby == "pos" || std::holds_alternative<std::vector<vec3f>>(prim->attr(sampleby))))
+                throw std::runtime_error("[sampleBy] has to be a vec3f attribute!");
+
+            for (const auto &ch : channels) {
+                if (ch != "pos") {
+                    std::visit(
+                        [&](auto &&ref) {
+                            using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
+                            prim->add_attr<T>(ch);
+                            sample2D<T>(prim->attr<zeno::vec3f>(sampleby), grid->attr<T>(ch), prim->attr<T>(ch), nx, ny,
+                                        h, bmin);
+                        },
+                        grid->attr(ch));
+                }
             }
         }
 
@@ -273,12 +292,10 @@ ZENDEFNODE(Grid2DSample, {
                               {"int", "ny", "1"},
                               {"float", "h", "1"},
                               {"vec3f", "bmin", "0,0,0"},
-                              {"string", "channel", "vel"},
+                              {"string", "channel", "*"},
                               {"string", "sampleBy", "pos"}},
                              {{"PrimitiveObject", "prim"}},
-                             {
-                                 {"enum vec3 float", "attrT", "float"},
-                             },
+                             {},
                              {"zenofx"},
                          });
 } // namespace zeno

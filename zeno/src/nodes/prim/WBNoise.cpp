@@ -750,10 +750,10 @@ struct erode_noise_analytic_simplex_2d : INode {
         }
         auto& pos = terrain->verts.attr<vec3f>(posLikeAttrName);
 
-        glm::vec3 ret{};// = glm::vec3(0, 0, 0);
-//#pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < terrain->verts.size(); i++)
         {
+            glm::vec3 ret{};// = glm::vec3(0, 0, 0);
             ret = sdnoise(glm::vec2(pos[i][0], pos[i][2]));
             noise[i] = vec3f(ret.x, ret.y, ret.z);
         }

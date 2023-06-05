@@ -153,7 +153,7 @@ struct SubjectRegistry {
      */
     template <typename T>
     std::optional<T> Get(const std::string& Key, const std::string& SessionKey = "", bool bSearchAllSession = false) {
-        CONSTEXPR ESubjectType RequiredSubjectType = TGetClassSubjectType<T>::Value;
+        CONSTEXPR ESubjectType RequiredSubjectType = T::SubjectType;
         if (StaticFlags.IsMainProcess()) {
             auto& ElementMap = GetOrCreateSessionElement(SessionKey);
             auto& GlobalElementMap = GetOrCreateSessionElement("");
