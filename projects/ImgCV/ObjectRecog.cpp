@@ -105,7 +105,6 @@ static void scharr2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<Prim
     }
 }
 
-//边缘检测
 struct EdgeDetect : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
@@ -121,7 +120,7 @@ struct EdgeDetect : INode {
             zenoedge(image, w, h, dx, dy);
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    // 计算梯度幅值
+
                     float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
                     image->verts[i * w + j] = {gradient,gradient,gradient};
                 }
@@ -134,7 +133,7 @@ struct EdgeDetect : INode {
             zenoedge(image, w, h, dx, dy);
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    // 计算梯度幅值
+
                     float gradient = std::sqrt(pow(dx[i * w + j],2) + pow(dy[i * w + j],2));
 
                     if (gradient * 255 > threshold) {
@@ -158,12 +157,11 @@ struct EdgeDetect : INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            // 应用Sobel算子计算水平和垂直梯度
+
             cv::Mat gradX, gradY;
             cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
             cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
 
-            // 计算梯度强度和方向 gradientMagnitude, gradientDirection
             cv::Mat gradientMagnitude, gradientDirection;
             cv::cartToPolar(gradX, gradY, imagecvout, gradientDirection, true);
 
@@ -186,12 +184,11 @@ struct EdgeDetect : INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            // 应用Sobel算子计算水平和垂直梯度
+
             cv::Mat gradX, gradY;
             cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
             cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
 
-            // 计算梯度强度和方向
             cv::Mat gradientMagnitude, gradientDirection;
             cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
 
@@ -219,15 +216,12 @@ struct EdgeDetect : INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            // 计算 Roberts 算子的水平梯度
             cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
             cv::filter2D(imagecvin, robertsX, -1, kernelX);
 
-            // 计算 Roberts 算子的垂直梯度
             cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
             cv::filter2D(imagecvin, robertsY, -1, kernelY);
 
-            // 计算梯度幅值
             cv::magnitude(robertsX, robertsY, imagecvout);
 
             for (int i = 0; i < h; i++) {
@@ -252,15 +246,10 @@ struct EdgeDetect : INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            // 计算 Roberts 算子的水平梯度
             cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
             cv::filter2D(imagecvin, robertsX, -1, kernelX);
-
-            // 计算 Roberts 算子的垂直梯度
             cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
             cv::filter2D(imagecvin, robertsY, -1, kernelY);
-
-            // 计算梯度幅值
             cv::magnitude(robertsX, robertsY, magnitude);
             cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
             for (int i = 0; i < h; i++) {
@@ -515,12 +504,9 @@ struct EdgeDetect_Sobel : INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            // 应用Sobel算子计算水平和垂直梯度
             cv::Mat gradX, gradY;
             cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
             cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-
-            // 计算梯度强度和方向 gradientMagnitude, gradientDirection
             cv::Mat gradientMagnitude, gradientDirection;
             cv::cartToPolar(gradX, gradY, imagecvout, gradientDirection, true);
 
@@ -544,16 +530,11 @@ struct EdgeDetect_Sobel : INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            // 应用Sobel算子计算水平和垂直梯度
             cv::Mat gradX, gradY;
             cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
             cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-
-            // 计算梯度强度和方向
             cv::Mat gradientMagnitude, gradientDirection;
             cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
-
-            // 应用阈值
             cv::threshold(gradientMagnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
@@ -602,15 +583,10 @@ struct EdgeDetect_Roberts: INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            // 计算 Roberts 算子的水平梯度
             cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
             cv::filter2D(imagecvin, robertsX, -1, kernelX);
-
-            // 计算 Roberts 算子的垂直梯度
             cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
             cv::filter2D(imagecvin, robertsY, -1, kernelY);
-
-            // 计算梯度幅值
             cv::magnitude(robertsX, robertsY, imagecvout);
 
             for (int i = 0; i < h; i++) {
@@ -635,15 +611,10 @@ struct EdgeDetect_Roberts: INode {
                     imagecvin.at<float>(i, j) = var;
                 }
             }
-            // 计算 Roberts 算子的水平梯度
             cv::Mat kernelX = (cv::Mat_<float>(2, 2) << 1, 0, 0, -1);
             cv::filter2D(imagecvin, robertsX, -1, kernelX);
-
-            // 计算 Roberts 算子的垂直梯度
             cv::Mat kernelY = (cv::Mat_<float>(2, 2) << 0, 1, -1, 0);
             cv::filter2D(imagecvin, robertsY, -1, kernelY);
-
-            // 计算梯度幅值
             cv::magnitude(robertsX, robertsY, magnitude);
             cv::threshold(magnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
             for (int i = 0; i < h; i++) {
