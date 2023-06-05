@@ -21,6 +21,21 @@ using namespace Alembic::AbcGeom;
 namespace zeno {
 namespace {
 
+static void write_velocity(std::shared_ptr<PrimitiveObject> prim, OPolyMeshSchema::Sample& mesh_samp) {
+    if (prim->verts.has_attr("v")) {
+        auto &vel = prim->verts.attr<vec3f>("v");
+        mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
+    }
+}
+
+static void write_normal(std::shared_ptr<PrimitiveObject> prim, OPolyMeshSchema::Sample& mesh_samp) {
+    if (prim->verts.has_attr("nrm")) {
+        auto &nrm = (std::vector<N3f>&)prim->verts.attr<vec3f>("nrm");
+        ON3fGeomParam::Sample oNormalsSample(nrm, kFacevaryingScope);
+        mesh_samp.setNormals(oNormalsSample);
+    }
+}
+
 struct WriteAlembic : INode {
     OArchive archive;
     OPolyMesh meshyObj;
@@ -264,12 +279,8 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
                             uvsamp);
-                    {
-                        if (prim->verts.has_attr("v")) {
-                            auto &vel = prim->verts.attr<vec3f>("v");
-                            mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
-                        }
-                    }
+                    write_velocity(prim, mesh_samp);
+                    write_normal(prim, mesh_samp);
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -277,12 +288,8 @@ struct WriteAlembic2 : INode {
                     V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
-                    {
-                        if (prim->verts.has_attr("v")) {
-                            auto &vel = prim->verts.attr<vec3f>("v");
-                            mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
-                        }
-                    }
+                    write_velocity(prim, mesh_samp);
+                    write_normal(prim, mesh_samp);
                     mesh.set( mesh_samp );
                 }
             }
@@ -331,24 +338,16 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ),
                             uvsamp);
-                    {
-                        if (prim->verts.has_attr("v")) {
-                            auto &vel = prim->verts.attr<vec3f>("v");
-                            mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
-                        }
-                    }
+                    write_velocity(prim, mesh_samp);
+                    write_normal(prim, mesh_samp);
                     mesh.set( mesh_samp );
                 } else {
                     OPolyMeshSchema::Sample mesh_samp(
                     V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ),
                             Int32ArraySample( vertex_index_per_face.data(), vertex_index_per_face.size() ),
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
-                    {
-                        if (prim->verts.has_attr("v")) {
-                            auto &vel = prim->verts.attr<vec3f>("v");
-                            mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
-                        }
-                    }
+                    write_velocity(prim, mesh_samp);
+                    write_normal(prim, mesh_samp);
                     mesh.set( mesh_samp );
                 }
             }

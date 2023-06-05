@@ -159,6 +159,19 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
 
     read_velocity(prim, mesamp.getVelocities(), read_done);
+    if (auto nrm = mesh.getNormalsParam()) {
+        auto nrmsamp =
+                nrm.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+        int value_size = (int)nrmsamp.getVals()->size();
+        if (value_size == prim->verts.size()) {
+            auto &nrms = prim->verts.add_attr<vec3f>("nrm");
+            auto marr = nrmsamp.getVals();
+            for (size_t i = 0; i < marr->size(); i++) {
+                auto const &n = (*marr)[i];
+                nrms[i] = {n[0], n[1], n[2]};
+            }
+        }
+    }
 
     if (auto marr = mesamp.getFaceIndices()) {
         if (!read_done) {
