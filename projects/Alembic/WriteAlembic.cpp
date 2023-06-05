@@ -15,13 +15,14 @@
 #include <cstring>
 #include <cstdio>
 #include <zeno/utils/log.h>
-
+#include <numeric>
 
 using namespace Alembic::AbcGeom;
 namespace zeno {
 namespace {
 
-static void write_velocity(std::shared_ptr<PrimitiveObject> prim, OPolyMeshSchema::Sample& mesh_samp) {
+template<typename T>
+void write_velocity(std::shared_ptr<PrimitiveObject> prim, T& mesh_samp) {
     if (prim->verts.has_attr("v")) {
         auto &vel = prim->verts.attr<vec3f>("v");
         mesh_samp.setVelocities(V3fArraySample( ( const V3f * )vel.data(), vel.size() ));
@@ -203,7 +204,9 @@ ZENDEFNODE(WriteAlembic, {
 struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
+    OPoints pointsObj;
     virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
         bool flipFrontBack = get_input2<int>("flipFrontBack");
         int frameid;
         if (has_input("frameid")) {
@@ -217,10 +220,17 @@ struct WriteAlembic2 : INode {
             std::string path = get_input2<std::string>("path");
             archive = {Alembic::AbcCoreOgawa::WriteArchive(), path};
             archive.addTimeSampling(TimeSampling(1.0/24, frame_start / 24.0));
-            meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
+            if (prim->polys.size() || prim->tris.size()) {
+                meshyObj = OPolyMesh( OObject( archive, 1 ), "mesh" );
+            }
+            else {
+                pointsObj = OPoints (OObject( archive, 1 ), "points");
+            }
         }
-        auto prim = get_input<PrimitiveObject>("prim");
-        if (frame_start <= frameid && frameid <= frame_end) {
+        if (!(frame_start <= frameid && frameid <= frame_end)) {
+            return;
+        }
+        if (prim->polys.size() || prim->tris.size()) {
             // Create a PolyMesh class.
             OPolyMeshSchema &mesh = meshyObj.getSchema();
             mesh.setTimeSampling(1);
@@ -351,6 +361,16 @@ struct WriteAlembic2 : INode {
                     mesh.set( mesh_samp );
                 }
             }
+        }
+        else {
+            OPointsSchema &points = pointsObj.getSchema();
+            points.setTimeSampling(1);
+            OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
+            std::vector<uint64_t> ids(prim->verts.size());
+            std::iota(ids.begin(), ids.end(), 0);
+            samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
+            write_velocity(prim, samp);
+            points.set( samp );
         }
     }
 };
