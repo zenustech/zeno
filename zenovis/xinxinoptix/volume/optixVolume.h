@@ -97,8 +97,8 @@ struct TypedGridWrapper: GridWrapper {
 		std::cout << "max value is " << maxi << " in " << path << " {" << gridname << "}" << std::endl;
 
 		auto ibb = grid_handle->indexBBox();
-		std::cout << "gird indexed box min: " << ibb.min().x() << " " << ibb.min().y() << " "<< ibb.min().z() << std::endl;
-		std::cout << "gird indexed box max: " << ibb.max().x() << " " << ibb.max().y() << " "<< ibb.max().z() << std::endl;
+		std::cout << "gird indexed box min: {" << ibb.min().x() << ", " << ibb.min().y() << ", "<< ibb.min().z() << "}" << std::endl;
+		std::cout << "gird indexed box max: {" << ibb.max().x() << ", " << ibb.max().y() << ", "<< ibb.max().z() << "}" << std::endl;
 
 		return maxi;
 	}
