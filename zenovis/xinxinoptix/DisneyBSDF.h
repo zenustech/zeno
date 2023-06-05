@@ -610,10 +610,12 @@ namespace DisneyBSDF{
 
             float ptotal = 1.0f + p_in ;
             float psss = subsurface>0? p_in/ptotal : 0; // /ptotal;
-            vec3 lobeOfSheen =  clamp(EvaluateSheen(baseColor,1.0,sheenTint, HoL),
-                                      vec3(0.0f), vec3(1.0f));
-            float sheenW = sheen / (1.0f + sheen);
-            vec3 diffusepart = mix(diffuse * baseColor, lobeOfSheen, sheenW);
+            sheen = wi.z * wo.z>0? sheen:0.0f;
+            vec3 lobeOfSheen =  clamp(EvaluateSheen(baseColor,sheen,sheenTint, HoL)
+                                         ,vec3(0.0f), vec3(1.0f));
+            //float sheenW = sheen / (1.0f + sheen);
+            float dd = sheen>0? 0.5f:1.0f;
+            vec3 diffusepart = dd * diffuse * baseColor + (1.0f - dd) * lobeOfSheen ;
             fPdf += pDiffuse * forwardDiffusePdfW;
             rPdf += pDiffuse * reverseDiffusePdfW;
             if(!thin && nDl<=0.0f)
@@ -1313,14 +1315,14 @@ namespace DisneyBSDF{
         if(!trans)
         {
 
-            float psheen = sheen / (1.0f + sheen);
+            float psheen = 0.5;
 
 
             if(rnd(seed)<psheen)
             {
-                diffpart = clamp(
-                EvaluateSheen(baseColor, 1.0f, sheenTint, HoL) ,
-                vec3(0.0f), vec3(1.0f))* M_PIf  ;
+                diffpart =
+                  clamp(EvaluateSheen(baseColor,sheen,sheenTint, HoL)
+                            ,vec3(0.0f), vec3(1.0f)) * M_PIf  ;
             } else
             {
                 diffpart = color * vec3(EvaluateDisneyDiffuse(1.0, flatness, wi, wo, wm, thin)) * M_PIf;
