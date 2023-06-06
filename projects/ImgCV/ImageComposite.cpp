@@ -810,7 +810,7 @@ ZENDEFNODE(CompExtractChanel_gray, {
         {"image"}
     },
     {},
-    { "comp" },
+    { "deprecated" },
 });
 
 struct CompExtractChanel : INode {
@@ -839,15 +839,21 @@ struct CompExtractChanel : INode {
         if(R && !RGB) {
             for (auto i = 0; i < image->verts.size(); i++) {
                 image2->verts[i][0] = image->verts[i][0];
+                image2->verts[i][1] = image->verts[i][0];
+                image2->verts[i][2] = image->verts[i][0];
             }
         }
         if(G && !RGB) {
             for (auto i = 0; i < image->verts.size(); i++) {
+                image2->verts[i][0] = image->verts[i][1];
                 image2->verts[i][1] = image->verts[i][1];
+                image2->verts[i][2] = image->verts[i][1];
             }
         }
         if(B && !RGB) {
             for (auto i = 0; i < image->verts.size(); i++) {
+                image2->verts[i][0] = image->verts[i][2];
+                image2->verts[i][1] = image->verts[i][2];
                 image2->verts[i][2] = image->verts[i][2];
             }
         }
@@ -930,5 +936,34 @@ ZENDEFNODE(CompImport, {
     { "comp" },
 });
 
+struct CompMix : INode {
+    virtual void apply() override {
+        auto R = get_input<PrimitiveObject>("R");
+        auto G = get_input<PrimitiveObject>("G");
+        auto B = get_input<PrimitiveObject>("B");
+        auto &ud = R->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        for(int i = 0;i < R->size();i++){
+            R->verts[i][1] = G->verts[i][1];
+            R->verts[i][2] = B->verts[i][2];
+        }
+        set_output("image", R);
+    }
+};
+
+ZENDEFNODE(CompMix, {
+    {
+        {"R"},
+        {"G"},
+        {"B"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
 }
 }

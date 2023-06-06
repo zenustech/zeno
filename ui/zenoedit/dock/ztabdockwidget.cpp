@@ -54,6 +54,12 @@ ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
     connect(m_tabWidget, SIGNAL(layoutBtnClicked()), this, SLOT(onDockOptionsClicked()));
     //connect(this, SIGNAL(dockLocationChanged(Qt::DockWidgetArea)),
     //    mainWin, SLOT(onDockLocationChanged(Qt::DockWidgetArea)));
+    connect(m_tabWidget, &ZDockTabWidget::tabAboutToClose, this, [=](int i) {
+        DockToolbarWidget* pToolWid = qobject_cast<DockToolbarWidget*>(m_tabWidget->widget(i));
+        if (pToolWid)
+            pToolWid->onTabAboutToClose();
+    });
+
     connect(m_tabWidget, &ZDockTabWidget::tabClosed, this, [=]() {
         if (m_tabWidget->count() == 0) {
             this->close();

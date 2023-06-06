@@ -1465,19 +1465,23 @@ static void createSBT( PathTracerState& state )
 
 static void cleanupState( PathTracerState& state )
 {
-    OPTIX_CHECK( optixPipelineDestroy( state.pipeline ) );
+    
     OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
-    OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_miss_group ) );
-
+    OPTIX_CHECK(optixProgramGroupDestroy(state.radiance_miss_group));
+    OPTIX_CHECK(optixProgramGroupDestroy(state.occlusion_miss_group));
+    OPTIX_CHECK(optixModuleDestroy(OptixUtil::ray_module));
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.radiance_hit_group2 ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_hit_group2 ) );
     //OPTIX_CHECK( optixProgramGroupDestroy( state.occlusion_miss_group ) );
     //OPTIX_CHECK( optixModuleDestroy( state.ptx_module ) );
-    OPTIX_CHECK( optixDeviceContextDestroy( state.context ) );
-    OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module));
+
     OPTIX_CHECK( optixModuleDestroy( OptixUtil::sphere_module));
+
+    
+    
+
 
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.raygenRecord ) ) );
     //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.missRecordBase ) ) );
@@ -1505,7 +1509,7 @@ static void cleanupState( PathTracerState& state )
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
         state.d_params.reset();
-    state = {};
+    //state = {};
 }
 
 static void detectHuangrenxunHappiness() {
@@ -2167,8 +2171,8 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
 {
     camera_changed = true;
 
-        static bool hadOnce = false;
-        if (!hadOnce) {
+        //static bool hadOnce = false;
+        if (OptixUtil::ray_module.handle==0) {
             //OPTIX_CHECK( optixModuleDestroy( OptixUtil::ray_module ) );
             if (!OptixUtil::createModule(
                 OptixUtil::ray_module,
@@ -2176,7 +2180,7 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
                 sutil::lookupIncFile("PTKernel.cu"),
                 "PTKernel.cu")) throw std::runtime_error("base ray module failed to compile");
             
-        } hadOnce = true;
+        } //hadOnce = true;
 
     OptixUtil::rtMaterialShaders.resize(0);
     OptixUtil::rtMaterialShaders.reserve(shaders.size());
@@ -3370,20 +3374,27 @@ void optixcleanup() {
         CUDA_SYNC_CHECK();
         cleanupState( state );
         rtMaterialShaders.clear();
-    } catch (sutil::Exception const &e) {
-        std::cout << "OptixCleanupError: " << e.what() << std::endl;
-        std::memset((void *)&state, 0, sizeof(state));
-        std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
-
-             context                  .handle=0;
-pipeline                 .handle=0;
-ray_module               .handle=0;
-sphere_module            .handle=0;
-raygen_prog_group        .handle=0;
-radiance_miss_group      .handle=0;
-occlusion_miss_group     .handle=0;
-
+        
+        OPTIX_CHECK(optixPipelineDestroy(state.pipeline));
+        OPTIX_CHECK(optixDeviceContextDestroy(state.context));
     }
+    catch (sutil::Exception const& e) {
+        std::cout << "OptixCleanupError: " << e.what() << std::endl;
+    }
+        std::memset((void *)&state, 0, sizeof(state));
+        //std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
+
+
+            context                  .handle=0;
+            pipeline                 .handle=0;
+            ray_module               .handle=0;
+            raygen_prog_group        .handle=0;
+            radiance_miss_group      .handle=0;
+            occlusion_miss_group     .handle=0;
+            isPipelineCreated               = false;
+
+
+            
 }
 #if 0
         if( outfile.empty() )
