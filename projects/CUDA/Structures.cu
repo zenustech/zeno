@@ -9,7 +9,7 @@ ZenoParticles::computeBoundingVolume<zs::CudaExecutionPolicy>(zs::CudaExecutionP
 template void ZenoParticles::updateElementIndices<zs::CudaExecutionPolicy>(zs::CudaExecutionPolicy &pol,
                                                                            typename ZenoParticles::particles_t &eles);
 
-template void ZenoParticles::orderByMortonCode<zs::CudaExecutionPolicy>(zs::CudaExecutionPolicy &pol,
-                                                                        const typename ZenoParticles::bv_t &);
+template void ZenoParticles::orderByMortonCode<zs::CudaExecutionPolicy, true>(zs::CudaExecutionPolicy &pol,
+                                                                        const typename ZenoParticles::bv_t &, zs::wrapv<true>);
 
 } // namespace zeno
