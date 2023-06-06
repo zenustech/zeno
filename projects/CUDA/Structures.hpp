@@ -326,7 +326,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     struct Mapping {
         zs::Vector<int> originalToOrdered, orderedToOriginal;
     };
-    std::optional<Mapping> vertMapping;
+    std::optional<Mapping> vertMapping, eleMapping;
 
     bool hasVertexMapping() const noexcept {
         return vertMapping.has_value();
@@ -386,34 +386,51 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
                 eles(idOffset + d, i, int_c) = dsts[eles(idOffset + d, i, int_c)];
         });
     }
+    template <typename Pol, typename CodeRange, typename IndexRange>
+    void computeElementMortonCodes(Pol& pol, const bv_t& bv, const particles_t& eles, CodeRange&& codes, IndexRange&& indices) {
+        using namespace zs;
+        constexpr execspace_e space = RM_CVREF_T(pol)::exec_tag::value;
+        const auto& pars = *particles;
+        auto nchns = eles.getPropertySize("inds");
+        pol(range(eles.size()), [codes = std::begin(codes), indices = std::begin(indices), offset = eles.getPropertyOffset("inds"),
+            eles = view<space>(eles), verts = view<space>({}, pars), bv = bv, nchns] ZS_LAMBDA(int ei) mutable {
+            auto c = vec3f::zeros();
+            for (int d = 0; d != nchns; ++d)
+                c += verts.pack(dim_c<3>, "x", eles(offset + d, ei, int_c));
+            c /= nchns;
+            auto coord = bv.getUniformCoord(c).template cast<f32>();
+            codes[ei] = (zs::u32)morton_code<3>(coord);
+            indices[ei] = ei;
+        });
+    }
 
-    template <typename Pol>
-    void orderByMortonCode(Pol &pol, const bv_t &bv) {
+    template <typename Pol, bool IncludeElement = true>
+    void orderByMortonCode(Pol& pol, const bv_t& bv, zs::wrapv<IncludeElement> = {}) {
         using namespace zs;
         constexpr execspace_e space = RM_CVREF_T(pol)::exec_tag::value;
         if (!particles)
             return;
 
-        const auto &pars = *particles;
+        const auto& pars = *particles;
         if (!vertMapping.has_value()) {
-            auto originalToOrdered = zs::Vector<int>{pars.get_allocator(), pars.size()};
-            auto orderedToOriginal = zs::Vector<int>{pars.get_allocator(), pars.size()};
-            vertMapping = Mapping{std::move(originalToOrdered), std::move(orderedToOriginal)};
+            auto originalToOrdered = zs::Vector<int>{ pars.get_allocator(), pars.size() };
+            auto orderedToOriginal = zs::Vector<int>{ pars.get_allocator(), pars.size() };
+            vertMapping = Mapping{ std::move(originalToOrdered), std::move(orderedToOriginal) };
         }
-        auto &dsts = (*vertMapping).originalToOrdered;
-        auto &indices = (*vertMapping).orderedToOriginal;
+        auto& dsts = (*vertMapping).originalToOrdered;
+        auto& indices = (*vertMapping).orderedToOriginal;
         dsts.resize(pars.size());
         indices.resize(pars.size());
         zs::Vector<zs::u32> tempBuffer{pars.get_allocator(), pars.size() * 2};
         pol(range(pars.size()), [dsts = view<space>(dsts), codes = view<space>(tempBuffer),
-                                 verts = view<space>({}, pars), bv = bv] ZS_LAMBDA(int i) mutable {
+            verts = view<space>({}, pars), bv = bv] ZS_LAMBDA(int i) mutable {
             auto coord = bv.getUniformCoord(verts.pack(dim_c<3>, "x", i)).template cast<f32>();
             codes[i] = (zs::u32)morton_code<3>(coord);
             dsts[i] = i;
         });
         // radix sort
         radix_sort_pair(pol, std::begin(tempBuffer), dsts.begin(), std::begin(tempBuffer) + pars.size(),
-                        indices.begin(), pars.size());
+            indices.begin(), pars.size());
         // compute inverse mapping
         pol(range(pars.size()), [dsts = view<space>(dsts), indices = view<space>(indices)] ZS_LAMBDA(int i) mutable {
             dsts[indices[i]] = i;
@@ -421,33 +438,30 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
         // sort vert data
         auto verts = std::make_shared<particles_t>(pars.get_allocator(), pars.getPropertyTags(), pars.size());
         pol(range(pars.size()), [indices = view<space>(indices), verts = view<space>(*verts), pars = view<space>(pars),
-                                 nchns = (int)pars.numChannels()] ZS_LAMBDA(int i) mutable {
+            nchns = (int)pars.numChannels()] ZS_LAMBDA(int i) mutable {
             auto srcNo = indices[i];
             for (int d = 0; d != nchns; ++d)
                 verts(d, i) = pars(d, srcNo);
         });
         particles = std::move(verts);
         if (hasImage(s_particleTag)) {
-            auto &dpars = getParticles(true_c);
-            auto dverts = dtiles_t{dpars.get_allocator(), dpars.getPropertyTags(), dpars.size()};
+            auto& dpars = getParticles(true_c);
+            auto dverts = dtiles_t{ dpars.get_allocator(), dpars.getPropertyTags(), dpars.size() };
             pol(range(dpars.size()),
                 [indices = view<space>(indices), dverts = view<space>(dverts), dpars = view<space>(dpars),
-                 nchns = (int)dpars.numChannels()] ZS_LAMBDA(int i) mutable {
-                    auto srcNo = indices[i];
-                    for (int d = 0; d != nchns; ++d)
-                        dverts(d, i) = dpars(d, srcNo);
-                });
+                nchns = (int)dpars.numChannels()] ZS_LAMBDA(int i) mutable {
+                auto srcNo = indices[i];
+                for (int d = 0; d != nchns; ++d)
+                    dverts(d, i) = dpars(d, srcNo);
+            });
             images[s_particleTag] = std::move(dverts);
         }
-        auto update_indices = [&pol, &dsts](auto &eles) {
-
-        };
         // update indices (modified in-place)
         bool flag = false;
         if (category == category_e::curve || category == category_e::surface || category == category_e::tet)
             flag = true;
         if (elements.has_value()) {
-            auto &eles = getQuadraturePoints();
+            auto& eles = getQuadraturePoints();
             if (flag) {
                 updateElementIndices(pol, eles);
                 if (hasImage(s_elementTag)) {
@@ -469,6 +483,38 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
                 updateElementIndices(pol, operator[](s_bendingEdgeTag));
             else if (hasAuxData(s_surfHalfEdgeTag))
                 updateElementIndices(pol, operator[](s_surfHalfEdgeTag));
+        }
+
+        if constexpr (!IncludeElement)
+            return;
+        {
+            auto& eles = getQuadraturePoints();
+            if (!eleMapping.has_value()) {
+                auto originalToOrdered = zs::Vector<int>{ eles.get_allocator(), eles.size() };
+                auto orderedToOriginal = zs::Vector<int>{ eles.get_allocator(), eles.size() };
+                eleMapping = Mapping{ std::move(originalToOrdered), std::move(orderedToOriginal) };
+            }
+            auto& dsts = (*eleMapping).originalToOrdered;
+            auto& indices = (*eleMapping).orderedToOriginal;
+            dsts.resize(eles.size());
+            indices.resize(eles.size());
+            tempBuffer.resize(eles.size() * 2);
+            computeElementMortonCodes(pol, bv, eles, tempBuffer, dsts);
+            // radix sort
+            radix_sort_pair(pol, std::begin(tempBuffer), dsts.begin(), std::begin(tempBuffer) + eles.size(),
+                indices.begin(), eles.size());
+            // compute inverse mapping
+            pol(range(eles.size()), [dsts = view<space>(dsts), indices = view<space>(indices)] ZS_LAMBDA(int i) mutable {
+                dsts[indices[i]] = i;
+            });
+            auto newEles = particles_t{ eles.get_allocator(), eles.getPropertyTags(), eles.size() };
+            pol(range(eles.size()), [indices = view<space>(indices), newEles = view<space>(newEles), eles = view<space>(eles),
+                nchns = (int)eles.numChannels()] ZS_LAMBDA(int i) mutable {
+                auto srcNo = indices[i];
+                for (int d = 0; d != nchns; ++d)
+                    newEles(d, i) = eles(d, srcNo);
+            });
+            eles = std::move(newEles);
         }
     }
 
