@@ -54,9 +54,9 @@ vec3 ACESFitted(vec3 color, float gamma)
     color = vec3(dot(color, v1), dot(color, v2), dot(color, v3));
 
     // Clamp to [0, 1]
-    color = clamp(color, 0.0, 1.0);
+    color = clamp(color, 0.0f, 1.0f);
 
-    color = pow(color, vec3(1. / gamma));
+    color = pow(color, vec3(1.0f / gamma));
 
     return color;
 }
@@ -71,7 +71,7 @@ extern "C" __global__ void __raygen__rg()
     const CameraInfo cam = params.cam;
 
     unsigned int seed = tea<4>( idx.y*w + idx.x, subframe_index );
-    float focalPlaneDistance = cam.focalPlaneDistance>0.01? cam.focalPlaneDistance : 0.01;
+    float focalPlaneDistance = cam.focalPlaneDistance>0.01f? cam.focalPlaneDistance : 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
     aperture/=10;
 
@@ -171,7 +171,7 @@ extern "C" __global__ void __raygen__rg()
             // }
 
             if(prd.countEmitted==false || prd.depth>0) {
-                auto temp_radiance = prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
+                auto temp_radiance = prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5f);
                 float upperBound = prd.diffDepth==1?1.0f:100.0f;
                 result +=  prd.done? float3(clamp(vec3(temp_radiance), vec3(0.0f), vec3(upperBound))) : temp_radiance;
                 // fire without smoke requires this line to work.
@@ -196,8 +196,8 @@ extern "C" __global__ void __raygen__rg()
 
             if(prd.depth>16){
                 //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
-                float RRprob = clamp(length(prd.attenuation),0.1, 0.95);
-                if(rnd(prd.seed) > RRprob || prd.depth>32){
+                float RRprob = clamp(length(prd.attenuation),0.1f, 0.95f);
+                if(rnd(prd.seed) > RRprob || prd.depth > 16){
                     prd.done=true;
                 } else {
                     prd.attenuation = prd.attenuation / RRprob;
@@ -214,6 +214,7 @@ extern "C" __global__ void __raygen__rg()
                 //prd.passed = false;
             //}
         }
+        seed = prd.seed;
     }
     while( --i );
 
@@ -261,7 +262,7 @@ extern "C" __global__ void __miss__radiance()
             40, // be careful
             .45,
             15.,
-            1.030725 * 0.3,
+            1.030725f * 0.3f,
             params.elapsedTime,
             upperBound,
             1.0
@@ -287,7 +288,7 @@ extern "C" __global__ void __miss__radiance()
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 
-    vec3 channelPDF = vec3(1.0/3.0);
+    vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);

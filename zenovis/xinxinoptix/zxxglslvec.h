@@ -1182,7 +1182,7 @@ __forceinline__ __device__ float cosTheta2(vec3 w) {
 }
 
 __forceinline__ __device__ float sinTheta2(vec3 w) {
-    return 1.0 - cosTheta2(w);
+    return 1.0f - cosTheta2(w);
 }
 
 __forceinline__ __device__ float sinTheta(vec3 w) {
@@ -1199,12 +1199,12 @@ __forceinline__ __device__ float tanTheta2(vec3 w) {
 
 __forceinline__ __device__ float cosPhi(vec3 w) {
     float s = sinTheta(w);
-    return (s == 0.0) ? 1.0 : clamp(w.x / s, -1.0f, 1.0f);
+    return (s == 0.0f) ? 1.0f : clamp(w.x / s, -1.0f, 1.0f);
 }
 
 __forceinline__ __device__ float sinPhi(vec3 w) {
     float s = sinTheta(w);
-    return (s == 0.0) ? 0.0 : clamp(w.y / s, -1.0f, 1.0f);
+    return (s == 0.0f) ? 0.0f : clamp(w.y / s, -1.0f, 1.0f);
 }
 
 __forceinline__ __device__ float cosPhi2(vec3 w) {

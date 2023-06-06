@@ -210,7 +210,7 @@ static __inline__ __device__
 vec3 sampleGgxAnisotropic(vec3 wo, float alphaX, float alphaY, float u1, float u2)
 {
     float r1 = u1;
-    float phi = atan(alphaY / alphaX * tan(2.0 * M_PIf * r1 + 0.5 * M_PIf));
+    float phi = atan(alphaY / alphaX * tan(2.0f * M_PIf * r1 + 0.5f * M_PIf));
     phi += r1 > 0.5f ? M_PIf : 0.0f;
     float sinP = sin(phi);
     float cosP = cos(phi);
