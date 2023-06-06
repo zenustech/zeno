@@ -152,7 +152,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto vbase = bases[primIdx];
-            auto base = linebases[primIdx];
+            auto base = pointbases[primIdx];
             auto core = [&] (auto key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
 #if 0
