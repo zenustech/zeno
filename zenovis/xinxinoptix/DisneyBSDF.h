@@ -241,7 +241,7 @@ namespace DisneyBSDF{
         float clearcoatW     = clearCoat;
 
         float norm = 1.0f/(specularW + transmissionW + diffuseW + clearcoatW);
-        totalp = norm;
+        totalp = (specularW + transmissionW + diffuseW + clearcoatW);
 
         pSpecular  = specularW      * norm;
         pSpecTrans = transmissionW  * norm;
@@ -606,8 +606,8 @@ namespace DisneyBSDF{
         float ax,ay;
         BRDFBasics::CalculateAnisotropicParams(roughness, anisotropic, ax, ay);
 
-        float diffuseW = (1.0f - metallic) * (1.0f - specTrans);
-        float transmissionW = (1.0f - metallic) * specTrans;
+        float diffuseW = pDiffuse;
+        float transmissionW = pSpecTrans;
 
 
         // Clearcoat
@@ -678,7 +678,7 @@ namespace DisneyBSDF{
             rPdf += pSpecular * reverseMetallicPdfW / (4 * abs(HoL));
         }
 
-        reflectance = reflectance * abs(NoL);
+        reflectance = reflectance * abs(NoL) ;
 
         return reflectance ;/// totalp;
 
@@ -1533,14 +1533,8 @@ namespace DisneyBSDF{
                 wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
             }
         }
-        reflectance = reflectance ;/// totalp;
-        //reflectance = clamp(reflectance, vec3(0,0,0), vec3(1,1,1));
-        if(pLobe > 0.0f){
-            //pLobe = clamp(pLobe, 0.001f, 0.999f);
-            //reflectance = reflectance * (1.0f/(pLobe));
-            rPdf *= pLobe;
-            fPdf *= pLobe;
-        }
+        reflectance = reflectance ;
+
         return true;
 
     }

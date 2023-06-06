@@ -59,6 +59,22 @@ ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
             this->close();
         }
     });
+    connect(m_tabWidget, &ZDockTabWidget::currentChanged, this, [=](int index) {
+        if (DockContent_View* view = qobject_cast<DockContent_View*>(m_tabWidget->widget(index)))
+        {
+            if (DisplayWidget* dpview = view->getDisplayWid())
+            {
+                ZenoMainWindow* main = zenoApp->getMainWindow();
+                ZASSERT_EXIT(main);
+                QVector<DisplayWidget*> views = main->viewports();
+                for (auto view : views)
+                {
+                    view->setIsCurrent(false);
+                }
+                dpview->setIsCurrent(true);
+            }
+        }
+        });
 }
 
 ZTabDockWidget::~ZTabDockWidget()
