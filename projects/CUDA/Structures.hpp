@@ -162,6 +162,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     static constexpr auto s_bendingEdgeTag = "bendingEdges";
     static constexpr auto s_surfVertTag = "surfVerts";
     static constexpr auto s_surfHalfEdgeTag = "surfHalfEdges";
+    static constexpr auto s_tetHalfFacetTag = "tetHalfFacets";
 
     ZenoParticles() = default;
     ~ZenoParticles() = default;

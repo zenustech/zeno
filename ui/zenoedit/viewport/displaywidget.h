@@ -39,8 +39,11 @@ public:
     bool isGLViewport() const;
     ZOptixViewport* optixViewport() const;
     void killOptix();
-	void moveToFrame(int frame);
-
+    void moveToFrame(int frame);
+    void setIsCurrent(bool isCurrent);
+    bool isCurrent();
+protected:
+    void mouseReleaseEvent(QMouseEvent* event) override;
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
@@ -70,6 +73,7 @@ private:
     bool m_bRecordRun;
     const bool m_bGLView;
     static const int m_sliderFeq = 16;
+    bool bIsCurrent = false;
 };
 
 #endif

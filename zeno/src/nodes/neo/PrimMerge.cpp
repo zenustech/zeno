@@ -34,6 +34,15 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         size_t polytotal = 0;
         for (size_t primIdx = 0; primIdx < primList.size(); primIdx++) {
             auto prim = primList[primIdx];
+            /// @note promote pure vert prim to point-based prim
+            if (!(prim->points.size() || prim->lines.size() || prim->tris.size() || prim->quads.size() || prim->polys.size())) {
+                auto nverts = prim->verts.size();
+                prim->points.resize(nverts);
+                parallel_for(nverts, [&points = prim->points.values](size_t i) {
+                    points[i] = i;
+                });
+            }
+            /// 
             total += prim->verts.size();
             pointtotal += prim->points.size();
             linetotal += prim->lines.size();
@@ -152,7 +161,7 @@ ZENO_API std::shared_ptr<zeno::PrimitiveObject> primMerge(std::vector<zeno::Prim
         parallel_for(primList.size(), [&] (size_t primIdx) {
             auto prim = primList[primIdx];
             auto vbase = bases[primIdx];
-            auto base = linebases[primIdx];
+            auto base = pointbases[primIdx];
             auto core = [&] (auto key, auto const &arr) {
                 using T = std::decay_t<decltype(arr[0])>;
 #if 0

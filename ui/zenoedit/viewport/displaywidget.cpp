@@ -217,6 +217,28 @@ void DisplayWidget::killOptix()
         m_optixView->killThread();
 }
 
+void DisplayWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    ZenoMainWindow* main = zenoApp->getMainWindow();
+    ZASSERT_EXIT(main);
+    QVector<DisplayWidget*> views = main->viewports();
+    for (auto view : views)
+    {
+        view->setIsCurrent(false);
+    }
+    setIsCurrent(true);
+}
+
+void DisplayWidget::setIsCurrent(bool isCurrent)
+{
+    bIsCurrent = isCurrent;
+}
+
+bool DisplayWidget::isCurrent()
+{
+    return bIsCurrent;
+}
+
 void DisplayWidget::onPlayClicked(bool bChecked)
 {
     if (m_bGLView)

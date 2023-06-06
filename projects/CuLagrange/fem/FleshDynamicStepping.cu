@@ -267,7 +267,7 @@ struct FleshDynamicStepping : INode {
             dtiles_t& gh_buffer) {
                 using namespace zs;
                 constexpr auto space = execspace_e::cuda;
-                int max_nm_binders = tris.getPropertySize(binderTag);
+                int max_nm_binders = tris.getChannelSize(binderTag);
                 // printf("max_nm_binders = %d\n",max_nm_binders);
 
                 cudaPol(zs::range(tris.size()),
@@ -388,109 +388,109 @@ struct FleshDynamicStepping : INode {
                 });
         }
 
-        template <typename Model>
-        void computeCollisionGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,const Model& model,
-                            dtiles_t& vtemp,
-                            dtiles_t& etemp,
-                            dtiles_t& sttemp,
-                            dtiles_t& setemp,
-                            // dtiles_t& ee_buffer,
-                            dtiles_t& fp_buffer,
-                            dtiles_t& kverts,
-                            dtiles_t& kc_buffer,
-                            dtiles_t& gh_buffer,
-                            T kd_theta = (T)0.0,
-                            bool explicit_collision = false,
-                            bool neglect_inverted = true) {
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
+        // template <typename Model>
+        // void computeCollisionGradientAndHessian(zs::CudaExecutionPolicy& cudaPol,const Model& model,
+        //                     dtiles_t& vtemp,
+        //                     dtiles_t& etemp,
+        //                     dtiles_t& sttemp,
+        //                     dtiles_t& setemp,
+        //                     // dtiles_t& ee_buffer,
+        //                     dtiles_t& fp_buffer,
+        //                     dtiles_t& kverts,
+        //                     dtiles_t& kc_buffer,
+        //                     dtiles_t& gh_buffer,
+        //                     T kd_theta = (T)0.0,
+        //                     bool explicit_collision = false,
+        //                     bool neglect_inverted = true) {
+        //     using namespace zs;
+        //     constexpr auto space = execspace_e::cuda;
 
-            int offset = eles.size();
+        //     int offset = eles.size();
 
-            T lambda = model.lam;
-            T mu = model.mu; 
+        //     T lambda = model.lam;
+        //     T mu = model.mu; 
 
-            // auto stBvh = bvh_t{};
-            // auto bvs = retrieve_bounding_volumes(cudaPol,vtemp,tris,wrapv<3>{},(T)0.0,"xn");
-            // stBvh.build(cudaPol,bvs);
-            // auto avgl = compute_average_edge_length(cudaPol,vtemp,"xn",tris);
-            // auto bvh_thickness = 5 * avgl;            
-            // if(!calculate_facet_normal(cudaPol,vtemp,"xn",tris,sttemp,"nrm")){
-            //     throw std::runtime_error("fail updating facet normal");
-            // }       
-            // if(!COLLISION_UTILS::calculate_cell_bisector_normal(cudaPol,
-            //     vtemp,"xn",
-            //     lines,
-            //     tris,
-            //     sttemp,"nrm",
-            //     setemp,"nrm")){
-            //         throw std::runtime_error("fail calculate cell bisector normal");
-            // }    
+        //     // auto stBvh = bvh_t{};
+        //     // auto bvs = retrieve_bounding_volumes(cudaPol,vtemp,tris,wrapv<3>{},(T)0.0,"xn");
+        //     // stBvh.build(cudaPol,bvs);
+        //     // auto avgl = compute_average_edge_length(cudaPol,vtemp,"xn",tris);
+        //     // auto bvh_thickness = 5 * avgl;            
+        //     // if(!calculate_facet_normal(cudaPol,vtemp,"xn",tris,sttemp,"nrm")){
+        //     //     throw std::runtime_error("fail updating facet normal");
+        //     // }       
+        //     // if(!COLLISION_UTILS::calculate_cell_bisector_normal(cudaPol,
+        //     //     vtemp,"xn",
+        //     //     lines,
+        //     //     tris,
+        //     //     sttemp,"nrm",
+        //     //     setemp,"nrm")){
+        //     //         throw std::runtime_error("fail calculate cell bisector normal");
+        //     // }    
 
 
-            COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
-                vtemp,"xn",
-                points,
-                lines,
-                tris,
-                sttemp,
-                setemp,
-                fp_buffer,
-                in_collisionEps,out_collisionEps);
+        //     COLLISION_UTILS::do_facet_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
+        //         vtemp,"xn",
+        //         points,
+        //         lines,
+        //         tris,
+        //         sttemp,
+        //         setemp,
+        //         fp_buffer,
+        //         in_collisionEps,out_collisionEps);
 
-            COLLISION_UTILS::evaluate_fp_collision_grad_and_hessian(cudaPol,
-                vtemp,"xn","vn",dt,
-                fp_buffer,
-                gh_buffer,offset,
-                in_collisionEps,out_collisionEps,
-                (T)collisionStiffness,
-                (T)mu,(T)lambda,(T)kd_theta);
+        //     COLLISION_UTILS::evaluate_fp_collision_grad_and_hessian(cudaPol,
+        //         vtemp,"xn","vn",dt,
+        //         fp_buffer,
+        //         gh_buffer,offset,
+        //         in_collisionEps,out_collisionEps,
+        //         (T)collisionStiffness,
+        //         (T)mu,(T)lambda,(T)kd_theta);
             
 
 
-            // COLLISION_UTILS::do_kinematic_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
-            //     vtemp,"xn",
-            //     points,
-            //     lines,
-            //     tris,
-            //     setemp,
-            //     sttemp,
-            //     kverts,
-            //     kc_buffer,
-            //     (T)kine_in_collisionEps,(T)kine_out_collisionEps,false);
+        //     // COLLISION_UTILS::do_kinematic_point_collision_detection<MAX_FP_COLLISION_PAIRS>(cudaPol,
+        //     //     vtemp,"xn",
+        //     //     points,
+        //     //     lines,
+        //     //     tris,
+        //     //     setemp,
+        //     //     sttemp,
+        //     //     kverts,
+        //     //     kc_buffer,
+        //     //     (T)kine_in_collisionEps,(T)kine_out_collisionEps,false);
 
-            // offset = 0;
+        //     // offset = 0;
 
-            // COLLISION_UTILS::evaluate_kinematic_fp_collision_grad_and_hessian(cudaPol,
-            //     eles,
-            //     vtemp,"xn","vn",dt,
-            //     tris,
-            //     kverts,
-            //     kc_buffer,
-            //     gh_buffer,offset,
-            //     (T)kine_in_collisionEps,(T)kine_out_collisionEps,
-            //     (T)kineCollisionStiffness,
-            //     (T)mu,(T)lambda,(T)kd_theta);
+        //     // COLLISION_UTILS::evaluate_kinematic_fp_collision_grad_and_hessian(cudaPol,
+        //     //     eles,
+        //     //     vtemp,"xn","vn",dt,
+        //     //     tris,
+        //     //     kverts,
+        //     //     kc_buffer,
+        //     //     gh_buffer,offset,
+        //     //     (T)kine_in_collisionEps,(T)kine_out_collisionEps,
+        //     //     (T)kineCollisionStiffness,
+        //     //     (T)mu,(T)lambda,(T)kd_theta);
 
 
-            // adding collision damping on self collision
-            // int offset = eles.size() + b_verts.size();
-            // cudaPol(zs::range(fp_buffer.size() + kc_buffer.size()),
-            //     [vtemp = proxy<space>({},vtemp),
-            //         gh_buffer = proxy<space>({},gh_buffer),offset,kd_theta] ZS_LAMBDA(int ci) mutable {
-            //     auto inds = gh_buffer.pack(dim_c<4>,"inds",ci).reinterpret_bits(int_c);
-            //     for(int i = 0;i != 4;++i)
-            //         if(inds[i] < 0)
-            //             return;
-            //     vec3 vs[4] = {};
-            //     for(int i = 0;i = 4;++i)
-            //         vs[i] = vtemp.pack(dim_c<3>,"vn",inds[i]);
-            //     auto H = gh_buffer.pack(dim_c<12*12>,"H",ci);
-            //     gh_buffer.tuple(dim_c<12*12>,"H",ci) = H;
-            // });
+        //     // adding collision damping on self collision
+        //     // int offset = eles.size() + b_verts.size();
+        //     // cudaPol(zs::range(fp_buffer.size() + kc_buffer.size()),
+        //     //     [vtemp = proxy<space>({},vtemp),
+        //     //         gh_buffer = proxy<space>({},gh_buffer),offset,kd_theta] ZS_LAMBDA(int ci) mutable {
+        //     //     auto inds = gh_buffer.pack(dim_c<4>,"inds",ci).reinterpret_bits(int_c);
+        //     //     for(int i = 0;i != 4;++i)
+        //     //         if(inds[i] < 0)
+        //     //             return;
+        //     //     vec3 vs[4] = {};
+        //     //     for(int i = 0;i = 4;++i)
+        //     //         vs[i] = vtemp.pack(dim_c<3>,"vn",inds[i]);
+        //     //     auto H = gh_buffer.pack(dim_c<12*12>,"H",ci);
+        //     //     gh_buffer.tuple(dim_c<12*12>,"H",ci) = H;
+        //     // });
         
 
-        }
+        // }
 
         void computePlaneConstraintGradientAndHessian2(zs::CudaExecutionPolicy& cudaPol,
                             const dtiles_t& vtemp,
@@ -526,7 +526,7 @@ struct FleshDynamicStepping : INode {
                     return;
 
 
-
+#if 1
                 auto plane_root = kverts.pack(dim_c<3>,"x",ktri[0]);
                 auto plane_nrm = ktris.pack(dim_c<3>,"nrm",idx);
 
@@ -544,6 +544,29 @@ struct FleshDynamicStepping : INode {
                     fc = -dist * mu * plane_constraint_stiffness * plane_nrm;
                     Hc = mu * plane_constraint_stiffness * dyadic_prod(plane_nrm,plane_nrm);
                 }
+#else
+                vec3 cv[4] = {};
+                // auto ktri = ktris.pack(dim_c<3>,"inds",idx,int_c);
+                cv[0] = vtemp.pack(dim_c<3>,"xn",vi);
+                for(int i = 0;i != 3;++i)
+                    cv[i + 1] = kverts.pack(dim_c<3>,"x",ktri[i]);
+                
+                auto mu = verts("mu",vi);
+                auto lam = verts("lam",vi);
+                auto eps = kine_out_collisionEps;
+                auto cforce = -mu * plane_constraint_stiffness * VERTEX_FACE_SQRT_COLLISION::gradient(cv,mu,lam,eps);
+                auto cK = mu * plane_constraint_stiffness * VERTEX_FACE_SQRT_COLLISION::hessian(cv,mu,lam,eps);
+
+                vec3 fc{};
+                mat3 Hc{};
+
+                for(int i = 0;i != 3;++i)
+                    fc[i] = cforce[i];
+                for(int i = 0;i != 3;++i)
+                    for(int j = 0;j != 3;++j)
+                        Hc(i,j) = cK(i,j);
+
+#endif
 
                 // printf("apply plane constraint with force : %f %f\n",(float)dist,(float)fc.norm());
 
@@ -738,6 +761,7 @@ struct FleshDynamicStepping : INode {
                             const dtiles_t& vtemp,
                             const dtiles_t& etemp,
                             dtiles_t& gh_buffer,
+                            bool use_kinematic_potential,
                             T kd_alpha = (T)0.0,
                             T kd_beta = (T)0.0) {        
             using namespace zs;
@@ -746,41 +770,53 @@ struct FleshDynamicStepping : INode {
             int offset = 0;
             TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",gh_buffer,"inds",offset);   
             // eval the inertia term gradient
-            // cudaPol(zs::range(eles.size()),[dt2 = dt2,
-            //             verts = proxy<space>({},verts),
-            //             eles = proxy<space>({},eles),
-            //             vtemp = proxy<space>({},vtemp),
-            //             gh_buffer = proxy<space>({},gh_buffer),
-            //             dt = dt,offset = offset] ZS_LAMBDA(int ei) mutable {
-            //     auto m = eles("m",ei)/(T)4.0;
-            //     auto inds = eles.pack(dim_c<4>,"inds",ei).reinterpret_bits(int_c);
-            //     auto pgrad = zs::vec<T,12>::zeros();
-            //     // auto H  = zs::vec<T,12,12>::zeros();
-            //     // if(eles.hasProperty("dt")) {
-            //     //     dt2 = eles("dt",ei) * eles("dt",ei);
-            //     // }
+            if(use_kinematic_potential) {
+                cudaPol(zs::range(eles.size()),[dt2 = dt2,
+                            verts = proxy<space>({},verts),
+                            eles = proxy<space>({},eles),
+                            etemp = proxy<space>({},etemp),
+                            vtemp = proxy<space>({},vtemp),
+                            gh_buffer = proxy<space>({},gh_buffer),
+                            dt = dt,offset = offset] ZS_LAMBDA(int ei) mutable {
+                    auto m = eles("m",ei)/(T)4.0;
+                    auto inds = eles.pack(dim_c<4>,"inds",ei).reinterpret_bits(int_c);
+                    auto pgrad = zs::vec<T,12>::zeros();
+                    // auto H  = zs::vec<T,12,12>::zeros();
+                    // if(eles.hasProperty("dt")) {
+                    //     dt2 = eles("dt",ei) * eles("dt",ei);
+                    // }
 
-            //     auto inertia = (T)1.0;
-            //     if(eles.hasProperty("inertia"))
-            //         inertia = eles("inertia",ei);
-            //     for(int i = 0;i != 4;++i){
-            //         auto x1 = vtemp.pack(dim_c<3>,"xn",inds[i]);
-            //         auto x0 = vtemp.pack(dim_c<3>,"xp",inds[i]);
-            //         auto v0 = vtemp.pack(dim_c<3>,"vp",inds[i]);
+                    auto A = mat3::identity();
+                    if(etemp.hasProperty("dfiber")) {
+                        auto f = etemp.pack(dim_c<3>,"dfiber",ei);
+                        A = A - dyadic_prod(f,f);
+                    }
 
-            //         auto alpha = inertia * m/dt2;
-            //         auto nodal_pgrad = -alpha * (x1 - x0 - v0 * dt);
-            //         for(int d = 0;d != 3;++d){
-            //             auto idx = i * 3 + d;
-            //             gh_buffer("grad",idx,ei) = nodal_pgrad[d];
-            //             gh_buffer("H",idx*12 + idx,ei + offset) = alpha;
-            //         }
-                    
-            //     }
-            //     // gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = pgrad;
-            //     // gh_buffer.template tuple<12*12>("H",ei + offset) = H;
-            // });
+                    auto inertia = (T)1.0;
+                    if(eles.hasProperty("inertia"))
+                        inertia = eles("inertia",ei);
+                    for(int i = 0;i != 4;++i){
+                        auto x1 = vtemp.pack(dim_c<3>,"xn",inds[i]);
+                        auto x0 = vtemp.pack(dim_c<3>,"xp",inds[i]);
+                        auto v0 = vtemp.pack(dim_c<3>,"vp",inds[i]);
 
+                        auto alpha = inertia * m/dt2 * A;
+                        auto nodal_pgrad = -alpha * (x1 - x0 - v0 * dt);
+                        for(int d = 0;d != 3;++d){
+                            auto idx = i * 3 + d;
+                            gh_buffer("grad",idx,ei + offset) = nodal_pgrad[d];
+                            // gh_buffer("H",idx*12 + idx,ei + offset) = alpha;
+                        }
+                        for(int d = 0;d != 9;++d){
+                            auto idx = (i * 3 + (d / 3)) * 12 + (i * 3 + d % 3);
+                            gh_buffer("H",idx,ei + offset) = alpha(d / 3,d % 3);
+                        }
+                        
+                    }
+                    // gh_buffer.tuple(dim_c<12>,"grad",ei + offset) = pgrad;
+                    // gh_buffer.template tuple<12*12>("H",ei + offset) = H;
+                });
+            }
 
             cudaPol(zs::range(eles.size()), [dt = dt,dt2 = dt2,aniso_strength = aniso_strength,
                             verts = proxy<space>({},verts),
@@ -858,8 +894,6 @@ struct FleshDynamicStepping : INode {
                     );
                 }
 
-
-
                 // if(eles.hasProperty("Muscle_ID") && (int)eles("Muscle_ID",ei) >= 0) {
                 //     auto fiber = eles.pack(dim_c<3>,"fiber",ei);
                 //     if(zs::abs(fiber.norm() - 1.0) < 1e-3) {
@@ -874,7 +908,8 @@ struct FleshDynamicStepping : INode {
                 //         vecAP = dFActdF.transpose() * vecP;
                 //         vf -= vole  * dFdXT * vecAP *aniso_strength;
 
-                //         auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
+                //         // auto aHq = amodel.do_first_piola_derivative(FAct,fiber);
+                //         auto aHq = zs::vec<T,9,9>::zeros();
                 //         H += dFdAct_dFdX.transpose() * aHq * dFdAct_dFdX * vole * aniso_strength;
                 //         // if((int)eles("Muscle_ID",ei) == 0){
                 //         //     printf("fiber : %f %f %f,Fa = %f,aP = %f,aHq = %f,H = %f\n",fiber[0],fiber[1],fiber[2],(float)FAct.norm(),(float)aP.norm(),(float)aHq.norm(),(float)H.norm());
@@ -928,6 +963,10 @@ struct FleshDynamicStepping : INode {
 
                             return;
                         }
+
+                        if(b_verts.hasProperty("intersect"))
+                            if(b_verts("intersect",vi) > (T)0.5)
+                                return;
                         // if(ei >= etemp.size()){
                         //     printf("ei too big for etemp\n");
                         //     return;
@@ -1102,13 +1141,13 @@ struct FleshDynamicStepping : INode {
         }
 
         FEMDynamicSteppingSystem(const tiles_t &verts, const tiles_t &eles,
-                const tiles_t& points,const tiles_t& lines,const tiles_t& tris,
+                const tiles_t& points,const tiles_t& tris,
                 T in_collisionEps,T out_collisionEps,
                 const tiles_t &b_bcws, const tiles_t& b_verts,T bone_driven_weight,
                 const vec3& volf,const T& _dt,const T& collisionStiffness,
                 const T& kine_in_collisionEps,const T& kine_out_collisionEps,
                 const T& kineCollisionStiffness,const T& aniso_strength,const T& binderStiffness,const T& plane_constraint_stiffness)
-            : verts{verts}, eles{eles},points{points}, lines{lines}, tris{tris},
+            : verts{verts}, eles{eles},points{points}, tris{tris},
                     in_collisionEps{in_collisionEps},out_collisionEps{out_collisionEps},
                     b_bcws{b_bcws}, b_verts{b_verts}, bone_driven_weight{bone_driven_weight},
                     volf{volf},binderStiffness{binderStiffness},plane_constraint_stiffness{plane_constraint_stiffness},
@@ -1119,7 +1158,6 @@ struct FleshDynamicStepping : INode {
         const tiles_t &verts;
         const tiles_t &eles;
         const tiles_t &points;
-        const tiles_t &lines;
         const tiles_t &tris;
         const tiles_t &b_bcws;  // the barycentric interpolation of embeded bones 
         const tiles_t &b_verts; // the position of embeded bones
@@ -1164,8 +1202,8 @@ struct FleshDynamicStepping : INode {
         auto gravity = zeno::vec<3,T>(0);
         if(has_input("gravity"))
             gravity = get_input2<zeno::vec<3,T>>("gravity");
-        // T armijo = (T)1e-4;
-        // T wolfe = (T)0.9;
+        T armijo = (T)1e-4;
+        T wolfe = (T)0.9;
         // T cg_res = (T)0.01;
         // T cg_res = (T)0.0001;
         // T cg_res = get_param<float>("cg_res");
@@ -1178,21 +1216,21 @@ struct FleshDynamicStepping : INode {
         // zs::Vector<vec3>(MAX_VERTS)
         // TileVec("pos","tag","deleted","")
 
-        if(eles.getPropertySize("inds") != 4)
+        if(eles.getChannelSize("inds") != 4)
             throw std::runtime_error("the input zsparticles is not a tetrahedra mesh");
         if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag))
             throw std::runtime_error("the input zsparticles has no surface tris");
-        if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
-            throw std::runtime_error("the input zsparticles has no surface lines");
+        // if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
+        //     throw std::runtime_error("the input zsparticles has no surface lines");
         if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag)) 
             throw std::runtime_error("the input zsparticles has no surface points");
         if(!zsparticles->hasAuxData(ZenoParticles::s_surfHalfEdgeTag))
             throw std::runtime_error("the input zsparticles has no half edge structures");
 
         auto& tris  = (*zsparticles)[ZenoParticles::s_surfTriTag];
-        auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+        // auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
         auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
-        const auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
+        auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
 
         auto muscle_id_tag = get_input2<std::string>("muscle_id_tag");
 
@@ -1210,6 +1248,11 @@ struct FleshDynamicStepping : INode {
         if(has_input("Acts")) {
             act_ = get_input<zeno::ListObject>("Acts")->getLiterial<zeno::vec2f>();
             nm_acts = act_.size();
+
+            std::cout << "use Activation : ";
+            for(int i = 0;i != act_.size();++i)
+                std::cout << "[" << act_[i][0] << "\t" << act_[i][1] << "] ";
+            std::cout << std::endl;
         }
 
         std::cout << "nmActs:" << nm_acts << std::endl;
@@ -1240,6 +1283,7 @@ struct FleshDynamicStepping : INode {
 
         auto bverts = typename ZenoParticles::particles_t({
             {"x",3},
+            {"intersect",1},
             {"strength",1}},0,zs::memsrc_e::device,0);
         if(has_input<ZenoParticles>("driven_boudary") && zsparticles->hasAuxData(driven_tag)){
             auto zsbones = get_input<ZenoParticles>("driven_boudary");
@@ -1252,6 +1296,11 @@ struct FleshDynamicStepping : INode {
                 TILEVEC_OPS::copy(cudaPol,zsbones_verts,"strength",bverts,"strength");
             else   
                 TILEVEC_OPS::fill(cudaPol,bverts,"strength",(T)1.0);
+
+            if(zsbones_verts.hasProperty("intersect"))
+                TILEVEC_OPS::copy(cudaPol,zsbones_verts,"intersect",bverts,"intersect");
+            else
+               TILEVEC_OPS::fill(cudaPol,bverts,"intersect",(T)0.0); 
 
             const auto& inbbw = (*zsparticles)[driven_tag];
             bbw.resize(inbbw.size());
@@ -1292,7 +1341,8 @@ struct FleshDynamicStepping : INode {
 
         dtiles_t surf_verts_buffer{points.get_allocator(),{
             {"inds",1},
-            {"xn",3}
+            {"xn",3},
+            {"is_corner",1}
         },points.size()};
         TILEVEC_OPS::copy(cudaPol,points,"inds",surf_verts_buffer,"inds");
         TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
@@ -1302,7 +1352,8 @@ struct FleshDynamicStepping : INode {
         dtiles_t gia_res{points.get_allocator(),{
             {"ring_mask",1},
             {"type_mask",1},
-            {"color_mask",1}
+            {"color_mask",1},
+            {"is_corner",1}
         },points.size()};
         // zs::Vector<zs::vec<int,2>> instBuffer{surf_verts_buffer.get_allocator(),surf_verts_buffer.size() * 8};
         dtiles_t inst_buffer_info{tris.get_allocator(),{
@@ -1385,8 +1436,9 @@ struct FleshDynamicStepping : INode {
         // auto max_collision_pairs = tris.size() / 10; 
         dtiles_t etemp(eles.get_allocator(), {
                 // {"H", 12 * 12},
-                    {"ActInv",3*3},
-                // {"muscle_ID",1},
+                    {"ActInv",3*3},\
+                    {"dfiber",3},
+                    // {"muscle_ID",1},
                     {"is_inverted",1}
                 }, eles.size()
         );
@@ -1401,11 +1453,11 @@ struct FleshDynamicStepping : INode {
             },tris.size()
         );
         TILEVEC_OPS::copy(cudaPol,tris,"inds",sttemp,"inds");
-        dtiles_t setemp(lines.get_allocator(),
-            {
-                {"nrm",3}
-            },lines.size()
-        );
+        // dtiles_t setemp(lines.get_allocator(),
+        //     {
+        //         {"nrm",3}
+        //     },lines.size()
+        // );
 
         // std::cout << "sttemp.size() << " << sttemp.size() << std::endl;
         // std::cout << "setemp.size() << " << setemp.size() << std::endl;
@@ -1486,6 +1538,7 @@ struct FleshDynamicStepping : INode {
         // TILEVEC_OPS::fill<4>(cudaPol,etemp,"inds",zs::vec<int,4>::uniform(-1).template reinterpret_bits<T>())
         // TILEVEC_OPS::copy<4>(cudaPol,eles,"inds",etemp,"inds");
         TILEVEC_OPS::fill<9>(cudaPol,etemp,"ActInv",zs::vec<T,9>{1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0});
+        TILEVEC_OPS::fill<3>(cudaPol,etemp,"dfiber",zs::vec<T,3>::zeros());
         // TILEVEC_OPS::fill(cudaPol,vtemp,"inertia",(T)1.0);
         // if(verts.hasProperty("inertia"))
         //     TILEVEC_OPS::copy(cudaPol,verts,"inertia",vtemp,"inertia");
@@ -1502,13 +1555,15 @@ struct FleshDynamicStepping : INode {
         if(!eles.hasProperty("Act"))
             eles.append_channels(cudaPol,{{"Act",1}});
 
-        if(!eles.hasProperty(muscle_id_tag) || !eles.hasProperty("fiber"))
-            fmt::print(fg(fmt::color::red),"the quadrature has no \"{}\" muscle_id_tag\n",muscle_id_tag);
+        if(!eles.hasProperty("fiber"))
+            fmt::print(fg(fmt::color::red),"the quadrature has no \"fiber\"\n");
+        if(!verts.hasProperty(muscle_id_tag))
+            fmt::print(fg(fmt::color::red),"the verts has no \"{}\" muscle_id_tag\n",muscle_id_tag);
         if(nm_acts == 0)
             fmt::print(fg(fmt::color::red),"no activation input\n");
 
         cudaPol(zs::range(eles.size()),
-            [etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),
+            [etemp = proxy<space>({},etemp),eles = proxy<space>({},eles),verts = proxy<space>({},verts),
                 act_buffer = proxy<space>({},act_buffer),muscle_id_tag = SmallString(muscle_id_tag),nm_acts] ZS_LAMBDA(int ei) mutable {
                 // auto act = eles.template pack<3>("act",ei);
                 // auto fiber = etemp.template pack<3>("fiber",ei);
@@ -1516,9 +1571,44 @@ struct FleshDynamicStepping : INode {
                 vec3 act{1.0,1.0,1.0};
                 vec3 fiber{};
                 // float a = 1.0f;
-                if(eles.hasProperty("fiber") && eles.hasProperty(muscle_id_tag) && nm_acts > 0 && (int)eles(muscle_id_tag,ei) >= 0 && fabs(eles.template pack<3>("fiber",ei).norm() - 1.0) < 0.001 && (int)eles(muscle_id_tag,ei) < act_buffer.size()){
+                if(eles.hasProperty("fiber") && verts.hasProperty(muscle_id_tag) && nm_acts > 0 && /*(int)eles(muscle_id_tag,ei) >= 0 &&*/ fabs(eles.template pack<3>("fiber",ei).norm() - 1.0) < 0.001){
+                    // printf("apply muscle activation\n");
+                    const auto& inds = eles.template pack<4>("inds",ei).template reinterpret_bits<int>();
                     fiber = eles.template pack<3>("fiber",ei);
-                    auto ID = (int)eles(muscle_id_tag,ei);
+                    int ID = (int)eles(muscle_id_tag,ei);
+                    // if(verts.hasProperty(muscle_id_tag)) {
+                    auto tet = eles.pack(dim_c<4>,"inds",ei,int_c);
+                    auto nm_ids = zs::vec<int,4>::uniform(0);
+                    for(int i = 0;i != 4;++i){
+                        auto idx0 = (int)verts(muscle_id_tag,tet[i]);
+                        if(idx0 < 0)
+                            continue;
+                        for(int j = i+1;j != 4;++j){
+                            auto idx1 = (int)verts(muscle_id_tag,tet[j]);
+                            if(idx1 < 0)
+                                continue;
+                            if(idx0 == idx1){
+                                nm_ids[i] = nm_ids[i] + 1;
+                                nm_ids[j] = nm_ids[j] + 1;
+                            }
+                        }
+                    }
+                    int max_ID = -1;
+                    int max_IDs = -1;
+                    for(int i = 0;i != 4;++i) {
+                        auto idx = (int)verts(muscle_id_tag,tet[i]);
+                        if(idx < 0)
+                            continue;
+                        if(nm_ids[i] > max_IDs) {
+                            max_IDs = nm_ids[i];
+                            max_ID = (int)verts(muscle_id_tag,tet[i]);
+                        }
+                    }
+                    if(max_ID < 0)
+                        return;
+                    ID = max_ID;
+                    // }
+                    
                     auto a = 1. - act_buffer("act",0,ID);
                     auto b = 1. - act_buffer("act",1,ID);
                     // act = vec3{zs::sqrt(a),zs::sqrt(1./a),zs::sqrt(1./a)};
@@ -1526,6 +1616,19 @@ struct FleshDynamicStepping : INode {
                     // act = vec3{a < 0.7 ? 0.7 : a,zs::sqrt(1./a),zs::sqrt(1./a)};
                     act = vec3{a,zs::sqrt(1./b),zs::sqrt(1./b)};
                     eles("Act",ei) = act_buffer("act",0,ID) + 1e-6;
+
+                    {
+                        zs::vec<T,3,3> F{};
+                        F = LSL_GEO::deformation_gradient(
+                            verts.template pack<3>("x",inds[0]),
+                            verts.template pack<3>("x",inds[1]),
+                            verts.template pack<3>("x",inds[2]),
+                            verts.template pack<3>("x",inds[3]),
+                            eles.template pack<3,3>("IB",ei));
+                        auto dfiber = F * fiber;
+                        dfiber = dfiber / dfiber.norm();
+                        etemp.tuple(dim_c<3>,"dfiber",ei) = dfiber;
+                    }
                 }else{
                     fiber = zs::vec<T,3>(1.0,0.0,0.0);
                     act = vec3{1,1,1};
@@ -1598,7 +1701,7 @@ struct FleshDynamicStepping : INode {
 
         FEMDynamicSteppingSystem A{
             verts,eles,
-            points,lines,tris,
+            points,tris,
             (T)in_collisionEps,(T)out_collisionEps,
             bbw,bverts,bone_driven_weight,
             volf,dt,collisionStiffness,
@@ -1650,6 +1753,7 @@ struct FleshDynamicStepping : INode {
 
         bool use_plane_constraint = get_input2<bool>("use_plane_constraint");
         bool use_binder_constraint = get_input2<bool>("use_binder_constraint");
+        bool use_kinematic_potential = get_input2<bool>("with_kinematic_potential");
 
         bool use_line_search = get_param<bool>("use_line_search");
 
@@ -1755,7 +1859,7 @@ struct FleshDynamicStepping : INode {
             // })(models.getElasticModel(),models.getAnisoElasticModel());
             timer.tick();
             match([&](auto &elasticModel,zs::AnisotropicArap<float> &anisoModel){
-                A.computeGradientAndHessian(cudaPol, elasticModel,anisoModel,vtemp,etemp,gh_buffer,kd_alpha,kd_beta);
+                A.computeGradientAndHessian(cudaPol, elasticModel,anisoModel,vtemp,etemp,gh_buffer,use_kinematic_potential,kd_alpha,kd_beta);
             },[](...) {
                 throw std::runtime_error("unsupported anisotropic elasticity model");
             })(models.getElasticModel(),models.getAnisoElasticModel());
@@ -1801,8 +1905,16 @@ struct FleshDynamicStepping : INode {
             if(turn_on_self_collision) {
                 // auto nm_insts = do_
                 topological_sample(cudaPol,points,vtemp,"xn",surf_verts_buffer);
-                auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(cudaPol,
-                    surf_verts_buffer,"xn",surf_tris_buffer,halfedges,inst_buffer_info,gia_res);
+                // std::cout << "do_global_self_intersection_analysis" << std::endl;
+
+                zs::bht<int,2,int> conn_of_first_ring{halfedges.get_allocator(),halfedges.size()};
+                auto nm_rings = do_global_self_intersection_analysis(cudaPol,
+                    surf_verts_buffer,"xn",surf_tris_buffer,halfedges,gia_res,conn_of_first_ring);
+
+                // auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(cudaPol,
+                //     surf_verts_buffer,"xn",surf_tris_buffer,halfedges,inst_buffer_info,gia_res);
+                // std::cout << "finish do_global_self_intersection_analysis" << std::endl;
+                
                 TILEVEC_OPS::fill(cudaPol,vtemp,"ring_mask",zs::reinterpret_bits<T>((int)0));
                 TILEVEC_OPS::fill(cudaPol,vtemp,"color_mask",zs::reinterpret_bits<T>((int)0));
                 TILEVEC_OPS::fill(cudaPol,vtemp,"type_mask",zs::reinterpret_bits<T>((int)0));
@@ -1818,10 +1930,10 @@ struct FleshDynamicStepping : INode {
 
 
                 #ifdef USE_SPARSE_MATRIX
-                    COLLISION_UTILS::do_facet_point_collsion_detection_and_compute_surface_normal(
+                    COLLISION_UTILS::do_facet_point_collision_detection(
                         cudaPol,
                         vtemp,"xn",
-                        points,tris,sttemp,csPT,nm_csPT,(T)in_collisionEps,(T )out_collisionEps);
+                        points,tris,halfedges,csPT,nm_csPT,(T)in_collisionEps,(T )out_collisionEps);
                     std::cout << "nm_csPT detected : " << nm_csPT << std::endl;
 
                     match([&](auto &elasticModel) {
@@ -1955,7 +2067,7 @@ struct FleshDynamicStepping : INode {
                 if(eg0 > 0)
                     throw std::runtime_error("invalid searching direction");
                 double armijo_condition;
-                // int max_line_search = 5;
+                int max_line_search = 5;
 
 
                 do {
@@ -2038,7 +2150,8 @@ ZENDEFNODE(FleshDynamicStepping, {{"ZSParticles","kinematic_boundary",
                                     {"bool","use_plane_constraint","0"},
                                     {"bool","use_binder_constraint","0"},
                                     {"bool","use_self_collision","0"},
-                                    {"bool","use_sticky_condition","0"}
+                                    {"bool","use_sticky_condition","0"},
+                                    {"bool","with_kinematic_potential","0"}
                                     },
                                   {"ZSParticles"},
                                   {

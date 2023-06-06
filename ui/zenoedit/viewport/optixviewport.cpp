@@ -117,6 +117,8 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     auto scene = m_zenoVis->getSession()->get_scene();
     auto old_num_samples = scene->drawOptions->num_samples;
     scene->drawOptions->num_samples = recInfo.numOptix;
+
+    zeno::scope_exit sp([=]() {scene->drawOptions->num_samples = old_num_samples;});
     //it seems that msaa is used by opengl, but opengl has been removed from optix.
     scene->drawOptions->msaa_samples = recInfo.numMSAA;
 
@@ -141,7 +143,6 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     m_zenoVis->getSession()->do_screenshot(record_file, extname);
     m_zenoVis->getSession()->set_window_size(x, y);
 
-    scene->drawOptions->num_samples = old_num_samples;
     //todo: emit some signal to main thread(ui)
     emit sig_frameRecordFinished(frame);
 

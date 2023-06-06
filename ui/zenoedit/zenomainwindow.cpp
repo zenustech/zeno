@@ -7,6 +7,7 @@
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
 #include "dock/ztabdockwidget.h"
+#include <zenoui/comctrl/zdocktabwidget.h>
 #include "dock/docktabcontent.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
@@ -730,6 +731,30 @@ QVector<DisplayWidget*> ZenoMainWindow::viewports() const
         }
     }
     return views;
+}
+
+DisplayWidget* ZenoMainWindow::getCurrentViewport() const
+{
+	auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    QVector<DisplayWidget*> vec;
+	for (ZTabDockWidget* pDock : docks)
+	{
+        if (pDock->isVisible())
+        {
+            if (ZDockTabWidget* tabwidget = qobject_cast<ZDockTabWidget*>(pDock->widget()))
+            {
+                if (DockContent_View* wid = qobject_cast<DockContent_View*>(tabwidget->currentWidget()))
+                {
+                    DisplayWidget* pView = wid->getDisplayWid();
+                    if (pView && pView->isCurrent())
+                    {
+                        return pView;
+                    }
+                }
+            }
+        }
+    }
+    return nullptr;
 }
 
 void ZenoMainWindow::toggleTimelinePlay(bool bOn)

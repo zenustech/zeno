@@ -15,7 +15,7 @@
 namespace zeno {
 
 struct LBvh : IObjectClone<LBvh> {
-  enum element_e { point = 0, line, tri, tet };
+  enum element_e { point = 0, line, tri, tet, unknown };
   template <element_e et>
   using element_t = std::integral_constant<element_e, et>;
   template <element_e et> static constexpr element_t<et> element_c{};
