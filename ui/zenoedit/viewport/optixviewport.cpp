@@ -19,6 +19,10 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 }
 
+OptixWorker::~OptixWorker()
+{
+}
+
 void OptixWorker::updateFrame()
 {
     //avoid conflict.
@@ -227,6 +231,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
 
 ZOptixViewport::~ZOptixViewport()
 {
+    m_thdOptix.quit();
+    m_thdOptix.wait();
 }
 
 void ZOptixViewport::setSimpleRenderOption()
