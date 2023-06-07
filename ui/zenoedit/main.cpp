@@ -4,10 +4,16 @@
 #include "zenomainwindow.h"
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
+#include <QCefContext.h>
 
 /* debug cutsom layout: ZGraphicsLayout */
 //#define DEBUG_ZENOGV_LAYOUT
 //#define DEBUG_NORMAL_WIDGET
+//#define DEBUG_CEFWIDGET
+
+#ifdef DEBUG_CEFWIDGET
+#include "nodesview/zcefnodeseditor.h"
+#endif
 
 #ifdef DEBUG_ZENOGV_LAYOUT
 #include <zenoui/comctrl/gv/gvtestwidget.h>
@@ -22,6 +28,19 @@ int main(int argc, char *argv[])
 {
     ZenoApplication a(argc, argv);
     a.setStyle(new ZenoStyle);
+
+#ifdef DEBUG_CEFWIDGET
+
+// build QCefConfig
+    QCefConfig config = initCef();
+    // create QCefContext instance with config,
+    // the lifecycle of cefContext must be the same as QApplication instance
+    QCefContext cefContext(&a, argc, argv, &config);
+
+    ZCefNodesEditor editor("https://www.baidu.com/", nullptr);
+    editor.show();
+    return a.exec();
+#endif
 
 #ifdef DEBUG_NORMAL_WIDGET
     TestNormalWidget wid;
@@ -90,6 +109,11 @@ int main(int argc, char *argv[])
             a.installTranslator(&qtTran);
         }
     }
+
+    QCefConfig config = initCef();
+    // create QCefContext instance with config,
+    // the lifecycle of cefContext must be the same as QApplication instance
+    QCefContext cefContext(&a, argc, argv, &config);
 
 	ZenoMainWindow mainWindow;
 	mainWindow.showMaximized();

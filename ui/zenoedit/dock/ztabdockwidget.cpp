@@ -21,6 +21,7 @@
 #include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
 #include "viewport/optixviewport.h"
+#include "nodesview/zcefnodeseditor.h"
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
@@ -197,6 +198,12 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
             wid->initUI();
             return wid;
         }
+        case PANEL_CEF_EDITOR:
+        {
+            QString url = "https://nme.babylonjs.com/";
+            ZCefNodesEditor *wid = new ZCefNodesEditor(url, nullptr, this);
+            return wid;
+        }
     }
     return nullptr;
 }
@@ -212,6 +219,7 @@ QString ZTabDockWidget::type2Title(PANEL_TYPE type)
     case PANEL_LOG:         return tr("Log");
     case PANEL_LIGHT:       return tr("Light");
     case PANEL_OPTIX_VIEW:  return tr("Optix");
+    case PANEL_CEF_EDITOR:  return tr("CEF Node Editor");
     case PANEL_IMAGE: return tr("Image");
     default:
         return "";
@@ -244,6 +252,9 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
     }
     else if (title == tr("Optix")|| title == "Optix") {
         type = PANEL_OPTIX_VIEW;
+    }
+    else if (title == tr("CEF Node Editor")) {
+        type = PANEL_CEF_EDITOR;
     }
     return type;
 }
@@ -489,7 +500,15 @@ void ZTabDockWidget::onAddTabClicked()
     font.setBold(false);
     menu->setFont(font);
 
-    static QList<QString> panels = { tr("Parameter"), tr("Scene Viewport"), tr("Node Editor"), tr("Spreadsheet"), tr("Log"), tr("Light"), tr("Image"), tr("Optix") };
+    static QList<QString> panels = {tr("Parameter"),
+                                    tr("Scene Viewport"),
+                                    tr("Node Editor"),
+                                    tr("Spreadsheet"),
+                                    tr("Log"),
+                                    tr("Light"),
+                                    tr("Image"),
+                                    tr("Optix"),
+                                    tr("CEF Node Editor")};
     for (QString name : panels)
     {
         QAction* pAction = new QAction(name);
@@ -508,6 +527,7 @@ void ZTabDockWidget::onAddTabClicked()
                 case 5: m_debugPanel = PANEL_LIGHT; break;
                 case 6: m_debugPanel = PANEL_IMAGE; break;
                 case 7: m_debugPanel = PANEL_OPTIX_VIEW; break;
+                case 8: m_debugPanel = PANEL_CEF_EDITOR; break;
                 }
                 m_tabWidget->setCurrentIndex(idx);
             }

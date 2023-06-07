@@ -20,7 +20,8 @@ enum PANEL_TYPE
     PANEL_LOG,
     PANEL_LIGHT,
     PANEL_IMAGE,
-    PANEL_OPTIX_VIEW
+    PANEL_OPTIX_VIEW,
+    PANEL_CEF_EDITOR,
 };
 
 class ZTabDockWidget : public QDockWidget
