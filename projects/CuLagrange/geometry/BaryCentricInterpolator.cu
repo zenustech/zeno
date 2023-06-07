@@ -463,20 +463,20 @@ struct ZSInterpolateEmbedAttr : zeno::INode {
                 fmt::print("the source have no {} channel\n",srcAttr);
                 throw std::runtime_error("the source have no specified channel");
             }           
-            if(topo.getChannelSize("inds") != 4) {
+            if(topo.getPropertySize("inds") != 4) {
                 fmt::print("only support tetrahedra mesh as source\n");
                 throw std::runtime_error("only support tetrahedra mesh as source");
             }
-            if(dest_pars.hasProperty(dstAttr) && dest_pars.getChannelSize(dstAttr) != source_pars.getChannelSize(srcAttr)){
+            if(dest_pars.hasProperty(dstAttr) && dest_pars.getPropertySize(dstAttr) != source_pars.getPropertySize(srcAttr)){
                 fmt::print("the dest attr_{} and source attr_{} not match in size\n",dstAttr,srcAttr);
                 throw std::runtime_error("the dest attr and source attr not match in size");
             }
 
-            if(source_pars.getChannelSize(srcAttr) == 1)
+            if(source_pars.getPropertySize(srcAttr) == 1)
                 interpolate_p2p_imp<1>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
-            if(source_pars.getChannelSize(srcAttr) == 2)
+            if(source_pars.getPropertySize(srcAttr) == 2)
                 interpolate_p2p_imp<2>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
-            if(source_pars.getChannelSize(srcAttr) == 3)
+            if(source_pars.getPropertySize(srcAttr) == 3)
                 interpolate_p2p_imp<3>(srcAttr,dstAttr,source_pars,dest_pars,topo,bcw);
         }else if(strategy == "q2p") {
             const auto& source_quads = source->getQuadraturePoints();
@@ -484,16 +484,16 @@ struct ZSInterpolateEmbedAttr : zeno::INode {
                 fmt::print("the source have no {} channel\n",srcAttr);
                 throw std::runtime_error("the source have no specified channel");
             }    
-            if(dest_pars.hasProperty(dstAttr) && dest_pars.getChannelSize(dstAttr) != source_quads.getChannelSize(srcAttr)){
+            if(dest_pars.hasProperty(dstAttr) && dest_pars.getPropertySize(dstAttr) != source_quads.getPropertySize(srcAttr)){
                 fmt::print("the dest attr_{} and source attr_{} not match in size\n",dstAttr,srcAttr);
                 throw std::runtime_error("the dest attr and source attr not match in size");
             }
 
-            if(source_quads.getChannelSize(srcAttr) == 1)
+            if(source_quads.getPropertySize(srcAttr) == 1)
                 interpolate_q2p_imp<1>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
-            if(source_quads.getChannelSize(srcAttr) == 2)
+            if(source_quads.getPropertySize(srcAttr) == 2)
                 interpolate_q2p_imp<2>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
-            if(source_quads.getChannelSize(srcAttr) == 3)
+            if(source_quads.getPropertySize(srcAttr) == 3)
                 interpolate_q2p_imp<3>(srcAttr,dstAttr,source_quads,dest_pars,bcw);
         }
         set_output("dest",dest);

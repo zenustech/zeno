@@ -137,8 +137,8 @@ struct ZSGetUserData : zeno::INode {
     virtual void apply() override {
         auto object = get_input<ZenoParticles>("object");
         auto key = get_param<std::string>("key");
-        auto hasValue = object->userData().has(key);
-        auto data = hasValue ? object->userData().get(key) : std::make_shared<DummyObject>();
+        auto hasValue = object->zsUserData().has(key);
+        auto data = hasValue ? object->zsUserData().get(key) : std::make_shared<DummyObject>();
         set_output2("hasValue", hasValue);
         set_output("data", std::move(data));
     }

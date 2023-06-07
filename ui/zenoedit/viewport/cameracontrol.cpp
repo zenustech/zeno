@@ -495,6 +495,10 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                             }
                         }
                         auto obj_node_location = zeno::NodeSyncMgr::GetInstance().searchNodeOfPrim(prim);
+                        if (!obj_node_location)
+                        {
+                            return;
+                        }
                         auto subgraph_name = obj_node_location->subgraph.data(ROLE_OBJNAME).toString();
                         auto obj_node_name = obj_node_location->node.data(ROLE_OBJID).toString();
                         nodes.push_back(obj_node_name);

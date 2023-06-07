@@ -250,7 +250,7 @@ struct ZSRetrieveVectorField : zeno::INode {
                 sverts[i*2 + 0] = zeno::vec3f{start[0],start[1],start[2]};
                 sverts[i*2 + 1] = zeno::vec3f{end[0],end[1],end[2]};
 
-                auto x = (zsvec_buffer[i]-min_res[0])/(max_res[0]-min_res[0]);
+                auto x = (zsvec_buffer[i]-min_res[0])/(max_res[0]-min_res[0] + (T)1e-6);
 
                 auto color = heatmap->interp(x);
                 scolors[i*2 + 0] = color;     
@@ -311,8 +311,8 @@ struct ZSSampleQuadratureAttr2Vert : zeno::INode {
         if(!verts.hasProperty(attr)) {
             fmt::print("append new nodal attribute {}[{}]\n",attr,attr_dim);
             verts.append_channels(cudaPol,{{attr,attr_dim}});
-        }else if(verts.getChannelSize(attr) != attr_dim){
-            fmt::print("the verts' {} attr[{}] and quads' {} attr[{}] not matched\n",attr,verts.getChannelSize(attr),attr,attr_dim);
+        }else if(verts.getPropertySize(attr) != attr_dim){
+            fmt::print("the verts' {} attr[{}] and quads' {} attr[{}] not matched\n",attr,verts.getPropertySize(attr),attr,attr_dim);
         }
         cudaPol(range(verts.size()),
             [verts = proxy<space>({},verts),attr_dim,attr = SmallString(attr)] 
@@ -422,8 +422,8 @@ struct ZSSampleVertAttr2Quadrature : zeno::INode {
 
         if(!quads.hasProperty(attr))
             quads.append_channels(cudaPol,{{attr,attr_dim}});
-        else if(quads.getChannelSize(attr) != attr_dim) {
-            fmt::print("the size of channel {} V[{}] and Q[{}] not match\n",attr,attr_dim,quads.getChannelSize(attr));
+        else if(quads.getPropertySize(attr) != attr_dim) {
+            fmt::print("the size of channel {} V[{}] and Q[{}] not match\n",attr,attr_dim,quads.getPropertySize(attr));
             throw std::runtime_error("the size of channel does not match");
         }
 
@@ -816,9 +816,9 @@ struct ZSGaussianSampler : zeno::INode {
         int source_size = 0;
 
         if(srcType == std::string("vert"))
-            source_dim = srcVerts.getChannelSize(srcAttr);
+            source_dim = srcVerts.getPropertySize(srcAttr);
         else
-            source_dim = srcQuads.getChannelSize(srcAttr);
+            source_dim = srcQuads.getPropertySize(srcAttr);
 
 
         std::cout << "source_dim = " << source_dim << std::endl;
@@ -838,9 +838,9 @@ struct ZSGaussianSampler : zeno::INode {
         int dst_dim = 0;
         int dst_size = 0;
         if(dstType == std::string("vert"))
-            dst_dim = dstVerts.getChannelSize(srcAttr);
+            dst_dim = dstVerts.getPropertySize(srcAttr);
         else
-            dst_dim = dstQuads.getChannelSize(dstAttr);
+            dst_dim = dstQuads.getPropertySize(dstAttr);
         if(source_dim != dst_dim){
             fmt::print("the dst's {} channel and src's {} channel do not match in size [{} {}]\n",
                 dstAttr,srcAttr,source_dim,dst_dim);
@@ -851,7 +851,7 @@ struct ZSGaussianSampler : zeno::INode {
         auto src = typename ZenoParticles::particles_t({{"x",3},{"attr",dim},{"inds",1}},0,zs::memsrc_e::device,0);
         auto dst = typename ZenoParticles::particles_t({{"x",3},{"attr",dim},{"mark",1}},0,zs::memsrc_e::device,0);
 
-        int source_simplex_size = srcQuads.getChannelSize("inds");
+        int source_simplex_size = srcQuads.getPropertySize("inds");
         if(srcType == "vert"){
             src.resize(srcVerts.size());
             TILEVEC_OPS::copy(cudaPol,srcVerts,"x",src,"x");
@@ -865,7 +865,7 @@ struct ZSGaussianSampler : zeno::INode {
             TILEVEC_OPS::copy(cudaPol,srcQuads,srcAttr,src,"attr");
         }
 
-        // int dst_simplex_size = dstQuads.getChannelSize("inds");
+        // int dst_simplex_size = dstQuads.getPropertySize("inds");
         if(dstType == "vert"){
             dst.resize(dstVerts.size());
             TILEVEC_OPS::copy(cudaPol,dstVerts,"x",dst,"x");

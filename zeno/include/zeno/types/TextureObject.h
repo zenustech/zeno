@@ -108,4 +108,95 @@ namespace zeno
 
     }; // struct Texture
 
+
+    struct TextureObjectVDB: IObjectClone<TextureObjectVDB>
+    {
+        std::string path;
+        std::string channel;
+
+        enum struct ElementType {
+            Fp32, Fp16, Fp8, Fp4
+        };
+        ElementType eleType;
+
+        size_t serializeSize()
+        {
+            size_t size{0};
+
+            auto pathLen{path.size()};
+            size += sizeof(pathLen);
+            size += pathLen;
+
+            auto channelLen(channel.size());
+            size += sizeof(channelLen);
+            size += channelLen;
+
+            size += sizeof(eleType);
+
+            return size;
+        }
+
+        std::vector<char> serialize()
+        {
+            std::vector<char> str;
+            str.resize(serializeSize());
+
+            size_t i{0}; 
+            {
+                auto pathLen{path.size()};
+                memcpy(str.data() + i, &pathLen, sizeof(pathLen));
+                i += sizeof(pathLen);
+                path.copy(str.data() + i, pathLen);
+                i += pathLen;
+            }
+
+            {
+                auto channelLen(channel.size());
+                memcpy(str.data() + i, &channelLen, sizeof(channelLen));
+                i += sizeof(channelLen);
+                channel.copy(str.data() + i, channelLen);
+                i += channelLen;
+            }
+
+            {
+                memcpy(str.data() + i, &eleType, sizeof(eleType));
+                i += sizeof(eleType);
+            }
+
+            return str;
+        }
+        
+        static TextureObjectVDB deserialize(const std::vector<char> &str)
+        {
+            TextureObjectVDB tex;
+            size_t i{0}; 
+
+            {
+                size_t pathLen;
+                memcpy(&pathLen, str.data() + i, sizeof(pathLen));
+                i += sizeof(pathLen);
+
+                tex.path = std::string{str.data() + i, pathLen};
+                i += pathLen;
+            }
+
+            {
+                size_t channelLen;
+                memcpy(&channelLen, str.data() + i, sizeof(channelLen));
+                i += sizeof(channelLen);
+
+                tex.channel = std::string{str.data() + i, channelLen};
+                i += channelLen;
+            }
+
+            {
+                memcpy(&(tex.eleType), str.data() + i, sizeof(eleType));
+                i += sizeof(eleType);
+            }
+
+            return tex;
+        }
+
+    }; // struct Texture
+
 } // namespace zeno

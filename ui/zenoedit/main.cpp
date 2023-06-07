@@ -58,15 +58,21 @@ int main(int argc, char *argv[])
 
 #ifdef ZENO_MULTIPROCESS
     if (argc >= 3 && !strcmp(argv[1], "-runner")) {
-        extern int runner_main(int sessionid, int port, char* cachedir);
+        extern int runner_main(int sessionid, int port, char *cachedir, bool cacheLightCameraOnly, bool cacheMaterialOnly);
         int sessionid = atoi(argv[2]);
         int port = -1;
         char* cachedir = nullptr;
+        bool cacheLightCameraOnly = false;
+        bool cacheMaterialOnly = false;
         if (argc >= 5 && !strcmp(argv[3], "-port"))
             port = atoi(argv[4]);
         if (argc >= 7 && !strcmp(argv[5], "-cachedir"))
             cachedir = argv[6];
-        return runner_main(sessionid, port, cachedir);
+        if (argc >= 9 && !strcmp(argv[7], "-cacheLightCameraOnly"))
+            cacheLightCameraOnly = atoi(argv[8]);
+        if (argc >= 11 && !strcmp(argv[9], "-cacheMaterialOnly"))
+            cacheMaterialOnly = atoi(argv[10]);
+        return runner_main(sessionid, port, cachedir, cacheLightCameraOnly, cacheMaterialOnly);
     }
 #endif
 

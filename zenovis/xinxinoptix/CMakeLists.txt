@@ -8,6 +8,8 @@ target_sources(zenovis PRIVATE
 
   volume/optixVolume.cpp
   volume/optixVolume.h
+  optixSphere.h
+  
 
   ies/ies_loader.cpp
   ies/ies_loader.h
