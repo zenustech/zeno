@@ -9,6 +9,7 @@
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/types/Property.h"
 #include <atomic>
+#include <limits>
 #include <type_traits>
 #include <zeno/VDBGrid.h>
 #include <zeno/types/DictObject.h>
@@ -736,7 +737,7 @@ struct ToZSTriMesh : INode {
 
         bool include_customed_properties = get_param<int>("add_customed_attr");
 
-        std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3}};
+        std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3},{"inds",1}};
         std::vector<zs::PropertyTag> eleTags{{"inds", 3}, {"area", 1}};
 
         std::vector<zs::PropertyTag> auxVertAttribs{};
@@ -798,6 +799,7 @@ struct ToZSTriMesh : INode {
         ompExec(Collapse{pars.size()},
                 [pars = proxy<space>({}, pars), &pos, prim, &auxVertAttribs, velsPtr](int vi) mutable {
                     pars.template tuple<3>("x", vi) = vec3::from_array(pos[vi]);
+                    pars("inds",vi) = zs::reinterpret_bits<float>(vi);
                     auto vel = vec3::zeros();
                     if (velsPtr != nullptr)
                         vel = vec3::from_array(velsPtr[vi]);
@@ -830,6 +832,7 @@ struct ToZSTriMesh : INode {
                     eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
             }
         });
+
 
         pars = pars.clone({zs::memsrc_e::device, 0});
         eles = eles.clone({zs::memsrc_e::device, 0});
@@ -882,6 +885,13 @@ struct ToZSSurfaceMesh : INode {
         else
             tag = std::false_type{};
 
+        float scaling = 1.f;
+        if (has_input("rest_shape_scaling")) {
+            scaling = get_input2<float>("rest_shape_scaling");
+            if (scaling < std::numeric_limits<float>::epsilon() * 10)
+                scaling = 1.f;
+        }
+
         match([&](auto tag) {
             using namespace zs;
             constexpr auto space = zs::execspace_e::openmp;
@@ -922,7 +932,7 @@ struct ToZSSurfaceMesh : INode {
             zstris->elements = typename ZenoParticles::particles_t(eleTags, tris.size(), zs::memsrc_e::host);
             auto &eles = zstris->getQuadraturePoints();
             ompExec(Collapse{tris.size()},
-                    [&zsmodel, pars = proxy<space>({}, pars), eles = proxy<space>({}, eles), &tris](int ei) mutable {
+                    [&zsmodel, pars = proxy<space>({}, pars), eles = proxy<space>({}, eles), &tris, scaling](int ei) mutable {
                         for (size_t i = 0; i < 3; ++i)
                             eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
                         using vec3 = zs::vec<T, 3>;
@@ -935,7 +945,7 @@ struct ToZSSurfaceMesh : INode {
                             xs[d] = pars.pack(dim_c<3>, "x", tri[d]);
                         }
 
-                        vec3 ds[2] = {xs[1] - xs[0], xs[2] - xs[0]};
+                        vec3 ds[2] = {(xs[1] - xs[0]) * scaling, (xs[2] - xs[0]) * scaling};
 
                         // ref: codim-ipc
                         // for first fundamental form
@@ -1151,6 +1161,7 @@ struct ToZSSurfaceMesh : INode {
 
 ZENDEFNODE(ToZSSurfaceMesh, {{{"ZSModel"},
                               {"surf (tri) mesh", "prim"},
+                              {"float", "rest_shape_scaling", "1.0"},
                               {"bool", "high_precision", "true"},
                               {"bool", "with_bending", "false"},
                               {"DictObject", "params"}},

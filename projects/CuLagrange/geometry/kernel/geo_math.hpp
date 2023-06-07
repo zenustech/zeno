@@ -29,7 +29,11 @@ namespace zeno { namespace LSL_GEO {
         return 2*zs::sqrt(s*(s-a)*(s-b)*(s-c));
     }    
 
-    // using T = REAL;
+    template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
+    constexpr auto facet_normal(const zs::VecInterface<VecT>& p0,const zs::VecInterface<VecT>& p1,const zs::VecInterface<VecT>& p2) {
+        return (p1 - p0).cross(p2 - p0).normalized();
+    }
+
     template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
     constexpr auto area(const zs::VecInterface<VecT>& p0,const zs::VecInterface<VecT>& p1,const zs::VecInterface<VecT>& p2){
         auto a = (p0 - p1).norm();
@@ -37,18 +41,6 @@ namespace zeno { namespace LSL_GEO {
         auto c = (p1 - p2).norm();
         return doublearea(a,b,c) / (typename VecT::value_type)2.0;
     }
-    // template<typename T,typename V = typename zs::vec<T,3>>
-    // constexpr T area(const V p[3]){
-    //     auto a = (p[0] - p[1]).norm();
-    //     auto b = (p[0] - p[2]).norm();
-    //     auto c = (p[1] - p[2]).norm();
-    //     return doublearea(a,b,c) / 2.0;
-    // }
-    // template<typename T,zs::enable_if_t<std::is_integral_v<T>> = 0>
-    // constexpr T area(T a,T b,T c) {
-    //     return doublearea(a,b,c)/2;
-    // }    
-
 
     template<typename T>
     constexpr T volume(const zs::vec<T, 6>& l) {
@@ -689,22 +681,21 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
     }
 
 
-    constexpr REAL tri_intersect(VECTOR3 const &ro, VECTOR3 const &rd, VECTOR3 const &v0, VECTOR3 const &v1, VECTOR3 const &v2,
-             REAL& b,REAL& rtmp,REAL& dtmp,REAL& stmp, REAL& ttmp,VECTOR3 &bary,REAL& ip_dist) {
+    constexpr REAL tri_ray_intersect(VECTOR3 const &ro, VECTOR3 const &rd, VECTOR3 const &v0, VECTOR3 const &v1, VECTOR3 const &v2) {
         const REAL eps = (REAL)1e-6;
         VECTOR3 u = v1 - v0;
         VECTOR3 v = v2 - v0;
         VECTOR3 n = cross(u, v);
         n = n/n.norm();
-        // REAL b = dot(n, rd);
-        b = dot(n,rd);
+        REAL b = dot(n, rd);
+        // b = dot(n,rd);
         if (zs::abs(b) > eps) {
             REAL a = n.dot(v0 - ro);
             REAL r = a / b;
-            rtmp = r;
+            // rtmp = r;
             if (r > eps) {
                 VECTOR3 ip = ro + r * rd;
-                ip_dist = dot(ip - v0,n);
+                // ip_dist = dot(ip - v0,n);
                 REAL uu = dot(u, u);
                 REAL uv = dot(u, v);
                 REAL vv = dot(v, v);
@@ -726,13 +717,13 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
                 d = (REAL)1.0 / d;
                 s *= d;
                 t *= d;
-                dtmp = d;
-                stmp = s;
-                ttmp = t;
+                // dtmp = d;
+                // stmp = s;
+                // ttmp = t;
 
-                bary[0] = (REAL)1.0 - s - t;
-                bary[1] = s;
-                bary[2] = t;
+                // bary[0] = (REAL)1.0 - s - t;
+                // bary[1] = s;
+                // bary[2] = t;
                 if (-eps <= s && s <= 1 + eps && -eps <= t && s + t <= 1 + eps * 2)
                     return r;
             }

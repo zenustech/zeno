@@ -78,7 +78,7 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 #endif
 }
 
-static int runner_start(std::string const &progJson, int sessionid, char* cachedir) {
+static int runner_start(std::string const &progJson, int sessionid, char* cachedir, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
     zeno::log_trace("runner got program JSON: {}", progJson);
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
     zeno::scope_exit sp([=]() { std::cout.flush(); });
@@ -138,7 +138,7 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
         send_packet("{\"action\":\"newFrame\"}", "", 0);
 
         if (bZenCache) {
-            session->globalComm->dumpFrameCache(frame);
+            session->globalComm->dumpFrameCache(frame, cacheLightCameraOnly, cacheMaterialOnly);
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();
             zeno::log_debug("runner got {} view objects", viewObjs.size());
@@ -160,8 +160,8 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
 
 }
 
-int runner_main(int sessionid, int port, char* cachedir);
-int runner_main(int sessionid, int port, char* cachedir) {
+int runner_main(int sessionid, int port, char *cachedir, bool cacheLightCameraOnly, bool cacheMaterialOnly);
+int runner_main(int sessionid, int port, char *cachedir, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
 #ifdef __linux__
     stderr = freopen("/dev/stdout", "w", stderr);
 #endif
@@ -200,6 +200,6 @@ int runner_main(int sessionid, int port, char* cachedir) {
     }(), 0);
 #endif
 
-    return runner_start(progJson, sessionid, cachedir);
+    return runner_start(progJson, sessionid, cachedir, cacheLightCameraOnly, cacheMaterialOnly);
 }
 #endif

@@ -4,10 +4,11 @@
 
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
+#include "zxxglslvec.h"
 
 // #include <cuda_fp16.h>
 // #include "nvfunctional"
-
+#include <math_constants.h>
 #include <nanovdb/NanoVDB.h>
 #include <nanovdb/util/Ray.h>
 #include <nanovdb/util/HDDA.h>
@@ -16,9 +17,82 @@
 //PLACEHOLDER
 static const int   _vol_depth = 99;
 static const float _vol_extinction = 1.0f;
+using DataTypeNVDB0 = nanovdb::Fp32;
+using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 //PLACEHOLDER
 
+#define USING_VDB 1
 //COMMON_CODE
+
+/* w0, w1, w2, and w3 are the four cubic B-spline basis functions. */
+inline __device__ float cubic_w0(float a)
+{
+  return (1.0f / 6.0f) * (a * (a * (-a + 3.0f) - 3.0f) + 1.0f);
+}
+inline __device__ float cubic_w1(float a)
+{
+  return (1.0f / 6.0f) * (a * a * (3.0f * a - 6.0f) + 4.0f);
+}
+inline __device__ float cubic_w2(float a)
+{
+  return (1.0f / 6.0f) * (a * (a * (-3.0f * a + 3.0f) + 3.0f) + 1.0f);
+}
+inline __device__ float cubic_w3(float a)
+{
+  return (1.0f / 6.0f) * (a * a * a);
+}
+
+/* g0 and g1 are the two amplitude functions. */
+inline __device__ float cubic_g0(float a)
+{
+  return cubic_w0(a) + cubic_w1(a);
+}
+inline __device__ float cubic_g1(float a)
+{
+  return cubic_w2(a) + cubic_w3(a);
+}
+
+/* h0 and h1 are the two offset functions */
+inline __device__ float cubic_h0(float a)
+{
+  return (cubic_w1(a) / cubic_g0(a)) - 1.0f;
+}
+inline __device__ float cubic_h1(float a)
+{
+  return (cubic_w3(a) / cubic_g1(a)) + 1.0f;
+}
+
+template<typename S>
+inline __device__ float interp_tricubic_nanovdb(S &s, float x, float y, float z)
+{
+  float px = floorf(x);
+  float py = floorf(y);
+  float pz = floorf(z);
+  float fx = x - px;
+  float fy = y - py;
+  float fz = z - pz;
+
+  float g0x = cubic_g0(fx);
+  float g1x = cubic_g1(fx);
+  float g0y = cubic_g0(fy);
+  float g1y = cubic_g1(fy);
+  float g0z = cubic_g0(fz);
+  float g1z = cubic_g1(fz);
+
+  float x0 = px + cubic_h0(fx);
+  float x1 = px + cubic_h1(fx);
+  float y0 = py + cubic_h0(fy);
+  float y1 = py + cubic_h1(fy);
+  float z0 = pz + cubic_h0(fz);
+  float z1 = pz + cubic_h1(fz);
+
+  using namespace nanovdb;
+
+  return g0z * (g0y * (g0x * s(Vec3f(x0, y0, z0)) + g1x * s(Vec3f(x1, y0, z0))) +
+                g1y * (g0x * s(Vec3f(x0, y1, z0)) + g1x * s(Vec3f(x1, y1, z0)))) +
+         g1z * (g0y * (g0x * s(Vec3f(x0, y0, z1)) + g1x * s(Vec3f(x1, y0, z1))) +
+                g1y * (g0x * s(Vec3f(x0, y1, z1)) + g1x * s(Vec3f(x1, y1, z1))));
+}
 
 inline __device__ float _LERP_(float t, float s1, float s2)
 {
@@ -26,12 +100,18 @@ inline __device__ float _LERP_(float t, float s1, float s2)
     return fma(t, s2, fma(-t, s1, s1));
 }
 
-template <typename Acc, int Order>
-inline __device__ float linearSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
+template <typename Acc, typename DataTypeNVDB, uint8_t Order>
+inline __device__ float nanoSampling(Acc& acc, nanovdb::Vec3f& point_indexd) {
+    
+    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
-        using Sampler = nanovdb::SampleFromVoxels<nanovdb::FloatGrid::AccessorType, Order, true>;
+    if constexpr(3 == Order) {
+        nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, 1, true> s(acc);
+        return interp_tricubic_nanovdb(s, point_indexd[0], point_indexd[1], point_indexd[2]);
+    } else {
+        using Sampler = nanovdb::SampleFromVoxels<typename GridTypeNVDB::AccessorType, Order, true>;
         return Sampler(acc)(point_indexd);
-
+    }
         //nanovdb::BaseStencil<typename DerivedType, int SIZE, typename GridT>
         //auto bs = nanovdb::BoxStencil<nanovdb::FloatGrid*>(grid);
 
@@ -66,11 +146,12 @@ struct VolumeIn {
     vec3 _local_pos_ = vec3(CUDART_NAN_F);
     __inline__ __device__ vec3 localPosLazy() {
         if ( isnan(_local_pos_.x) ) {
+            using GridTypeNVDB = GridTypeNVDB0;
 
             const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
             const auto grid_ptr = sbt_data->vdb_grids[0];
-            const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
+            const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
             //const auto& _acc = _grid->tree().getAccessor();
             auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(pos);
             pos_indexed = _grid->worldToIndexF(pos_indexed);
@@ -83,11 +164,12 @@ struct VolumeIn {
     vec3 _uniform_pos_ = vec3(CUDART_NAN_F);
     __inline__ __device__ vec3 uniformPosLazy() {
         if ( isnan(_uniform_pos_.x) ) {
+            using GridTypeNVDB = GridTypeNVDB0;
 
             const HitGroupData* sbt_data = reinterpret_cast<HitGroupData*>( optixGetSbtDataPointer() );
 
             const auto grid_ptr = sbt_data->vdb_grids[0];
-            const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
+            const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
 
             auto bbox = _grid->indexBBox();
 
@@ -106,6 +188,11 @@ struct VolumeIn {
             auto local_pos = localPosLazy();
 
             _uniform_pos_ = (local_pos - min) / (max - min);
+            _uniform_pos_ = clamp(_uniform_pos_, vec3(0.0f), vec3(1.0f));
+
+            assert(_uniform_pos_.x >= 0);
+            assert(_uniform_pos_.y >= 0);
+            assert(_uniform_pos_.z >= 0);
         }
         return _uniform_pos_;
     }
@@ -120,12 +207,11 @@ struct VolumeOut {
     vec3 albedo;
 };
 
-#define USING_VDB 1
-
-template <int Order, bool WorldSpace>
+template <uint8_t Order, bool WorldSpace, typename DataTypeNVDB>
 static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr, vec3 att_pos) {
+    using GridTypeNVDB = nanovdb::NanoGrid<DataTypeNVDB>;
 
-    const auto* _grid = reinterpret_cast<const nanovdb::FloatGrid*>(grid_ptr);
+    const auto* _grid = reinterpret_cast<const GridTypeNVDB*>(grid_ptr);
     const auto& _acc = _grid->tree().getAccessor();
 
     auto pos_indexed = reinterpret_cast<const nanovdb::Vec3f&>(att_pos);
@@ -135,7 +221,7 @@ static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr,
         pos_indexed = _grid->worldToIndexF(pos_indexed);
     } //_grid->tree().root().maximum();
 
-    return vec2 { linearSampling<decltype(_acc), Order>(_acc, pos_indexed), _grid->tree().root().maximum() };
+    return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed), _grid->tree().root().maximum() };
 }
 
 static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn &attrs) {
@@ -164,7 +250,7 @@ static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn &at
     VolumeOut output;
 
     output.albedo = clamp(vol_sample_albedo, 0.0f, 1.0f);
-    output.anisotropy = clamp(vol_sample_anisotropy, -0.99, 0.99);
+    output.anisotropy = clamp(vol_sample_anisotropy, -0.99f, 0.99f);
 
     output.density = clamp(vol_sample_density, 0.0f, 1.0f);
     output.emission = vol_sample_emission;
@@ -253,40 +339,36 @@ inline __device__ float transmittanceHDDA(
 
 extern "C" __global__ void __intersection__volume()
 {
-    RadiancePRD* prd = getPRD();
-    // if (prd->test_distance) { return; }
-    // auto mask = optixGetRayVisibilityMask();
+    const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
+    const auto* grid = reinterpret_cast<const GridTypeNVDB0*>( sbt_data->vdb_grids[0] );
+    assert( grid );
+
+    const float3 ray_orig = optixGetWorldRayOrigin(); //optixGetObjectRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection(); //optixGetObjectRayDirection();
+
+    auto dbox = grid->worldBBox(); //grid->indexBBox();
+    float t0 = optixGetRayTmin();
+    float t1 = _FLT_MAX_; //optixGetRayTmax();
+
+    auto iray = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
+                                     reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
+    // auto fbox = nanovdb::BBox<nanovdb::Vec3f>(nanovdb::Vec3f(dbox.min()), nanovdb::Vec3f(dbox.max()));
+
+    if( iray.intersects( dbox, t0, t1 )) // t0 >= 0
     {
-        const auto* sbt_data = reinterpret_cast<const HitGroupData*>( optixGetSbtDataPointer() );
-        const auto* grid = reinterpret_cast<const nanovdb::FloatGrid*>( sbt_data->vdb_grids[0] );
-        assert( grid );
+        // report the entry-point as hit-point
+        //auto kind = optixGetHitKind();
+        t0 = fmaxf(t0, optixGetRayTmin());
 
-        // compute intersection points with the volume's bounds in index (object) space.
-        const float3 ray_orig = optixGetWorldRayOrigin(); //optixGetObjectRayOrigin();
-        const float3 ray_dir  = optixGetWorldRayDirection(); //optixGetObjectRayDirection();
+        RadiancePRD* prd = getPRD();
+        prd->vol_t0 = t0;
+        prd->origin_inside_vdb = (t0 == 0);
 
-        auto bbox = grid->worldBBox(); //grid->indexBBox();
-        float t0 = optixGetRayTmin();
-        float t1 = _FLT_MAX_; //optixGetRayTmax();
+        prd->vol_t1 = t1; //min(optixGetRayTmax(), t1);
+        prd->surface_inside_vdb = (optixGetRayTmax() < t1); // In case triangles were visited before vdb
 
-        auto iRay = nanovdb::Ray<float>( reinterpret_cast<const nanovdb::Vec3f&>( ray_orig ),
-            reinterpret_cast<const nanovdb::Vec3f&>( ray_dir ), t0, t1 );
-        
-        if( iRay.intersects( bbox, t0, t1 )) // t0 >= 0
-        {
-            // report the entry-point as hit-point
-            //auto kind = optixGetHitKind();
-            t0 = fmaxf(t0, optixGetRayTmin());
-
-            prd->vol_t0 = t0;
-            prd->origin_inside_vdb = (t0 == 0);
-
-            prd->vol_t1 = t1; //min(optixGetRayTmax(), t1);
-            prd->surface_inside_vdb = (optixGetRayTmax() < t1); // In case triangles were visited before vdb
-
-            if (optixGetRayTmax() > 0) {
-                optixReportIntersection( t0, 0);
-            }
+        if (optixGetRayTmax() > 0) {
+            optixReportIntersection(t0, 0);
         }
     } 
 }
@@ -294,7 +376,7 @@ extern "C" __global__ void __intersection__volume()
 extern "C" __global__ void __closesthit__radiance_volume()
 {
     RadiancePRD* prd = getPRD();
-    if(prd->test_distance) { return; }
+    //if(prd->test_distance) { return; }
     
     prd->countEmitted = false;
     prd->radiance = make_float3(0);
@@ -307,8 +389,8 @@ extern "C" __global__ void __closesthit__radiance_volume()
     float3 ray_orig = optixGetWorldRayOrigin();
     float3 ray_dir  = optixGetWorldRayDirection();
 
-          float t0 = prd->vol_t0; // world space
-          float t1 = prd->vol_t1; // world space
+        float t0 = prd->vol_t0; // world space
+        float t1 = prd->vol_t1; // world space
 
     RadiancePRD testPRD {};
     testPRD.vol_t1 = _FLT_MAX_;
@@ -330,7 +412,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         prd->surface_inside_vdb = true;
     }
 
-    const float t_max = max(0.f, t1 - t0); // world space
+    const float t_max = fmax(0.f, t1 - t0); // world space
     float t_ele = 0;
 
     auto test_point = ray_orig; 
@@ -378,7 +460,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     auto level = _vol_depth;
     while(--level > 0) {
         auto prob = rnd(prd->seed);
-        t_ele -= log(prob) / (sigma_t);
+        t_ele -= log(1.0f-prob) / (sigma_t);
 
         if (t_ele >= t_max) {
 
@@ -392,7 +474,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
             } else { // Volume edge
 
                 prd->_mask_ = EverythingMask;
-                prd->trace_tmin = 1e-5;
+                prd->trace_tmin = 1e-5f;
 
                 test_point = ray_orig + t1 * ray_dir;
                 test_point = rtgems::offset_ray(test_point, ray_dir);
@@ -408,8 +490,6 @@ extern "C" __global__ void __closesthit__radiance_volume()
         
         vol_out = evalVolume(sbt_data->uniforms, vol_in);
         v_density = vol_out.density;
-
-        //prd->vol_tr *= exp(-sigma_t * t_ele);
         
         float s_prob = vol_out.density;
         float n_prob = 1.0f - s_prob;
@@ -423,10 +503,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         float3 le = vol_out.emission;
 
         if ( length(le) > 0.0f ) {
-            //le *= exp(-sigma_t * t_ele);
-        
-            float3 emission_prob = a_prob_rgb / _prob_rgb; // scale by emission prob
-
+            //float3 emission_prob = a_prob_rgb / _prob_rgb; // scale by emission prob
             //le *= emission_prob; 
             emitting += le;
         }
@@ -439,11 +516,9 @@ extern "C" __global__ void __closesthit__radiance_volume()
             float2 uu = {rnd(prd->seed), rnd(prd->seed)};
             auto prob = hg.Sample_p(-ray_dir, new_dir, uu);              
             //auto relative_prob = prob * (CUDART_PI_F * 4);
-            new_dir = normalize(new_dir);
+            ray_dir = normalize(new_dir);;
 
             scattering = s_prob_rgb * (_prob_rgb - a_prob_rgb) / _prob_rgb; // scattering prob
-                
-            ray_dir = new_dir;
             break;
         } else {
             v_density = 0; 
@@ -473,7 +548,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     for(int lidx=0;lidx<params.num_lights;lidx++)
     {
             ParallelogramLight light = params.lights[lidx];
-            float3 light_pos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
+            float3 light_pos = light.corner + light.v1 * 0.5f + light.v2 * 0.5f;
 
             // Calculate properties of light sample (for area based pdf)
             float Ldist = length(light_pos - test_point);
@@ -500,7 +575,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
             float2 z = {rnd(prd->seed), rnd(prd->seed) };
             const float z1 = z.x;
             const float z2 = z.y;
-            float3 light_tpos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
+            float3 light_tpos = light.corner + light.v1 * 0.5f + light.v2 * 0.5f;
             float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
             // Calculate properties of light sample (for area based pdf)
@@ -511,7 +586,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
             float tA = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
             ppl += length(light.emission) * tnDl * tLnDl * tA / (M_PIf * tLdist * tLdist) / sum;
             if (ppl > pl) {
-                float Ldist = length(light_pos - test_point) + 1e-6;
+                float Ldist = length(light_pos - test_point) + 1e-6f;
                 float3 L = normalize(light_pos - test_point);
                 float nDl = 1.0f; //clamp(dot(N, L), 0.0f, 1.0f);
                 float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
@@ -538,7 +613,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
                 float ray_prob = hg.p(-ray_dir, L);
                 float3 lbrdf = scattering * ray_prob;
 
-                prd->radiance = light_attenuation * weight * 2.0 * light.emission * lbrdf;
+                prd->radiance = light_attenuation * weight * 2.0f * light.emission * lbrdf;
                 computed = true;
             }
         }
@@ -546,7 +621,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         vec3 sunLightDir = vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
         auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
-                                                   params.sunSoftness * 0.2); //perturb the sun to have some softness
+                                                   params.sunSoftness * 0.2f); //perturb the sun to have some softness
         sun_dir = normalize(sun_dir);
         // prd->LP = test_point;
         // prd->Ldir = sun_dir;
@@ -566,7 +641,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         prd->radiance = light_attenuation * params.sunLightIntensity * 2.0f * lbrdf *
                         float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                        10, // be careful
-                                       .45, 15., 1.030725 * 0.3, params.elapsedTime));
+                                       .45f, 15.f, 1.030725f * 0.3f, params.elapsedTime));
     }
 
     prd->CH = 1.0;
@@ -617,7 +692,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     while(--level > 0) {
 
         auto prob = rnd(prd->seed);
-        t_ele -= log(prob) / (sigma_t);
+        t_ele -= log(1.0f-prob) / (sigma_t);
 
         test_point = ray_orig + (t0+t_ele) * ray_dir;
 
@@ -630,10 +705,10 @@ extern "C" __global__ void __anyhit__occlusion_volume()
 
         const auto v_density = vol_out.density;
 
-        transmittance *= 1 - clamp(v_density, 0.0f, 1.0f);
+        transmittance *= 1.0f - clamp(v_density, 0.0f, 1.0f);
         auto avg = dot(transmittance, make_float3(1.0f/3.0f));
-        if (avg < 0.1) {
-            float q = max(0.05, 1 - avg);
+        if (avg < 0.1f) {
+            float q = fmax(0.05f, 1 - avg);
             if (rnd(prd->seed) < q) { 
                 transmittance = vec3(0);
                 break; 
