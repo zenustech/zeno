@@ -25,6 +25,13 @@
     </message>
 </context>
 <context>
+    <name>ColorWidget</name>
+    <message>
+        <source>More Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DesignerMainWin</name>
     <message>
         <source>Open</source>
@@ -108,11 +115,11 @@
         <source>Kill</source>
         <translation>终止</translation>
     </message>
-	<message>
+    <message>
         <source>RunLightCamera</source>
         <translation>运行灯光相机</translation>
     </message>
-	<message>
+    <message>
         <source>RunMaterial</source>
         <translation>运行材质</translation>
     </message>
@@ -132,13 +139,9 @@
         <source>alwaysLightCamera</source>
         <translation>实时预览灯光相机</translation>
     </message>
-	<message>
+    <message>
         <source>alwaysMaterial</source>
         <translation>实时预览材质</translation>
-    </message>
-    <message>
-        <source>RunLightCamera</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1008,6 +1011,18 @@
         <source>Float Panel</source>
         <translation type="unfinished">弹出属性面板</translation>
     </message>
+    <message>
+        <source>View</source>
+        <translation type="unfinished">节点显示</translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation type="unfinished">节点计算一次</translation>
+    </message>
+    <message>
+        <source>Bypass</source>
+        <translation type="unfinished">跳过节点</translation>
+    </message>
 </context>
 <context>
     <name>RecFrameSelectDlg</name>
@@ -1495,6 +1510,14 @@
         <source>subgraph name:</source>
         <translation>子图名称：</translation>
     </message>
+    <message>
+        <source>Delete Subgraph</source>
+        <translation type="unfinished">删除子图</translation>
+    </message>
+    <message>
+        <source>Do you want to delete the selected subgraphs</source>
+        <translation type="unfinished">是否删除选中的子图</translation>
+    </message>
 </context>
 <context>
     <name>ZTabDockWidget</name>
@@ -1630,7 +1653,7 @@
         <source>RunLightCamera</source>
         <translation>运行灯光相机</translation>
     </message>
-	<message>
+    <message>
         <source>RunMaterial</source>
         <translation>运行材质</translation>
     </message>
@@ -2209,6 +2232,18 @@
     <message>
         <source>CustomName invalid!</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set KeyFrame</source>
+        <translation type="unfinished">设置K帧</translation>
+    </message>
+    <message>
+        <source>Del KeyFrame</source>
+        <translation type="unfinished">删除K帧</translation>
+    </message>
+    <message>
+        <source>KeyFrames</source>
+        <translation type="unfinished">编辑K帧</translation>
     </message>
 </context>
 <context>

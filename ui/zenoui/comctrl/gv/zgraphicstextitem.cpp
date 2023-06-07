@@ -10,6 +10,7 @@
 #include <zenoedit/timeline/ztimeline.h>
 #include <zenoedit/zenomainwindow.h>
 #include <zenomodel/include/curvemodel.h>
+#include <zenomodel/include/curveutil.h>
 
 
 qreal editor_factor = 1.0;
@@ -648,15 +649,9 @@ void ZFloatEditableTextItem::updateCurveData() {
     float x = timeline->value();
     float y = text().toFloat();
     if (val.visible) {
-        for (auto &point : val.points) {
-            if (point.point.x() == x && point.point.y() != y) {
-                point.point.setY(y);
-                val.rg.yTo = val.rg.yTo > y ? val.rg.yTo : y;
-                val.rg.yFrom = val.rg.yFrom > y ? y : val.rg.yFrom;
-                setProperty(g_keyFrame, QVariant::fromValue(val));
-                break;
-            }
-        }
+        bool bUpdate = curve_util::updateCurve(QPoint(x, y), val);
+        if (bUpdate)
+            setProperty(g_keyFrame, QVariant::fromValue(val));
     } else {
         val.points.begin()->point = QPointF(x, y);
         setProperty(g_keyFrame, QVariant::fromValue(val));
