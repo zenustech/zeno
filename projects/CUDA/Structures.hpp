@@ -534,7 +534,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
 
 struct ZenoPartition : IObjectClone<ZenoPartition> {
     using Ti = int; // entry count
-    using table_t = zs::bcht<zs::vec<int, 3>, int, true, zs::universal_hash<zs::vec<int, 3>>, 32>;
+    using table_t = zs::bht<int, 3, int, 16>;
     using tag_t = zs::Vector<int>;
     using indices_t = zs::Vector<Ti>;
 
