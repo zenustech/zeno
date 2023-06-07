@@ -1,5 +1,6 @@
 #include <openvdb/tools/GridOperators.h>
 #include <openvdb/tools/Interpolation.h>
+#include <thread>
 #include <zeno/VDBGrid.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
@@ -37,7 +38,7 @@ struct WhitewaterSource : INode {
         // pars->verts.values.push_back(vec3f{});
         // vel.push_back();
 
-        auto limit_depth = get_input2<float>("LimitDepth");
+        auto limit_depth = get_input2<vec2f>("LimitDepth");
         auto speed_range = get_input2<vec2f>("SpeedRange");
         auto curv_emit = get_input2<float>("EmitFromCurvature");
         auto max_angle = get_input2<float>("MaxVelocityAngle");
@@ -86,7 +87,7 @@ struct WhitewaterSource : INode {
 
             for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
                 float m_sdf = *iter;
-                if (m_sdf < limit_depth || m_sdf > eps)
+                if (m_sdf < limit_depth[0] || m_sdf > limit_depth[1])
                     continue;
 
                 auto icoord = iter.getCoord();
@@ -182,7 +183,7 @@ ZENDEFNODE(WhitewaterSource, {/* inputs: */
                                "SolidSDF",
                                "Velocity",
                                "PreVelocity",
-                               {"float", "LimitDepth", "-1"},
+                               {"vec2f", "LimitDepth", "-1, 0.5"},
                                {"vec2f", "SpeedRange", "0, 1"},
                                {"float", "EmitFromCurvature", "0"},
                                {"float", "MaxVelocityAngle", "45"},
@@ -231,7 +232,7 @@ struct WhitewaterSolver : INode {
             if (m_liquid_sdf > dx) {
                 // spray
                 m_vel += gravity * dt - air_drag * m_vel;
-            } else if (m_liquid_sdf < -dx) {
+            } else if (m_liquid_sdf < -0.3f * dx) {
                 // bubble
                 auto m_liquid_vel =
                     openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
