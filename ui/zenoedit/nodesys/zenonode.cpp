@@ -911,7 +911,6 @@ ZGraphicsLayout* ZenoNode::addParam(const QModelIndex& viewparamIdx, ZenoSubGrap
         case CONTROL_READPATH:
         case CONTROL_WRITEPATH:
         case CONTROL_MULTILINE_STRING:
-        case CONTROL_COLOR:
         case CONTROL_PURE_COLOR:
         case CONTROL_CURVE:
         case CONTROL_HSLIDER:
