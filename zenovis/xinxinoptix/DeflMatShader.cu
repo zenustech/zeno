@@ -211,7 +211,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     float3 v1 = make_float3(bv1.x, bv1.y, bv1.z);
     float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
 
-    float3 N_0  = normalize( cross( v1-v0, v2-v0 ) );
+    float3 N_0 = normalize( cross( normalize(v1-v0), normalize(v2-v0) ) );
     
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
     
@@ -509,7 +509,7 @@ extern "C" __global__ void __closesthit__radiance()
     float3 v1 = make_float3(bv1.x, bv1.y, bv1.z);
     float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
 
-    float3 N_0  = normalize( cross( v1-v0, v2-v1 ) );
+    float3 N_0 = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) );
         prd->geometryNormal = N_0;
 
     float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
