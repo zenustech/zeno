@@ -134,6 +134,21 @@ __forceinline__ __device__ float3 interp(float2 barys, float3 a, float3 b, float
     return w0*a + w1*b + w2*c;
 }
 
+static __inline__ __device__ bool isBadVector(vec3& vector) {
+
+    for (size_t i=0; i<3; ++i) {
+        if(isnan(vector[i]) || isinf(vector[i])) {
+            return true;
+        }
+    }
+    return length(vector) <= 0;
+}
+
+static __inline__ __device__ bool isBadVector(float3& vector) {
+    vec3 tmp = vector;
+    return isBadVector(tmp);
+}
+
 static __inline__ __device__ float3 sphereUV(float3 &direction) {
     
     return float3 {
@@ -212,6 +227,13 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
 
     float3 N_0 = normalize( cross( normalize(v1-v0), normalize(v2-v0) ) );
+
+    if (isBadVector(N_0)) 
+    {  
+        //assert(false);
+        N_0 = DisneyBSDF::SampleScatterDirection(prd->seed);
+        N_0 = faceforward( N_0, -ray_dir, N_0 );
+    }
     
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
     
@@ -430,6 +452,7 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
     return dir;
 
 }
+
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
@@ -509,8 +532,15 @@ extern "C" __global__ void __closesthit__radiance()
     float3 v1 = make_float3(bv1.x, bv1.y, bv1.z);
     float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
 
-    float3 N_0 = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) );
-        prd->geometryNormal = N_0;
+    float3 N_0 = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) ); // this value has precision issue for big float 
+    
+    if (isBadVector(N_0)) 
+    {  
+        N_0 = DisneyBSDF::SampleScatterDirection(prd->seed);
+        N_0 = faceforward( N_0, -ray_dir, N_0 );
+    }
+    
+    prd->geometryNormal = N_0;
 
     float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
@@ -547,7 +577,7 @@ extern "C" __global__ void __closesthit__radiance()
     
     //N_0 = normalize(interp(barys, n0, n1, n2));
     float3 N = N_0;//faceforward( N_0, -ray_dir, N_0 );
-    P = interp(barys, v0, v1, v2);
+    P = interp(barys, v0, v1, v2); // this value has precision issue for big float 
     attrs.pos = vec3(P.x, P.y, P.z);
     attrs.nrm = N;
     attrs.uv = interp(barys, uv0, uv1, uv2);//todo later
