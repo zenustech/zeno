@@ -318,51 +318,53 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                     auto t1 = vtemp.pack(dim_c<3>, "xn", tri[1]);
                     auto t2 = vtemp.pack(dim_c<3>, "xn", tri[2]);
 
-                    switch (pt_distance_type(p, t0, t1, t2)) {
+                    auto [cate, d2] = pt_category_and_dist2(p, t0, t1, t2);
+
+                    switch (cate) {
                     case 0: {
-                        if (auto d2 = dist2_pp(p, t0); d2 < dHat2) {
+                        if (d2 < dHat2) {
                             PP.try_push(pair_t{vi, tri[0]});
                             csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                         }
                         break;
                     }
                     case 1: {
-                        if (auto d2 = dist2_pp(p, t1); d2 < dHat2) {
+                        if (d2 < dHat2) {
                             PP.try_push(pair_t{vi, tri[1]});
                             csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                         }
                         break;
                     }
                     case 2: {
-                        if (auto d2 = dist2_pp(p, t2); d2 < dHat2) {
+                        if (d2 < dHat2) {
                             PP.try_push(pair_t{vi, tri[2]});
                             csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                         }
                         break;
                     }
                     case 3: {
-                        if (auto d2 = dist2_pe(p, t0, t1); d2 < dHat2) {
+                        if (d2 < dHat2) {
                             PE.try_push(pair3_t{vi, tri[0], tri[1]});
                             csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                         }
                         break;
                     }
                     case 4: {
-                        if (auto d2 = dist2_pe(p, t1, t2); d2 < dHat2) {
+                        if (d2 < dHat2) {
                             PE.try_push(pair3_t{vi, tri[1], tri[2]});
                             csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                         }
                         break;
                     }
                     case 5: {
-                        if (auto d2 = dist2_pe(p, t2, t0); d2 < dHat2) {
+                        if (d2 < dHat2) {
                             PE.try_push(pair3_t{vi, tri[2], tri[0]});
                             csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                         }
                         break;
                     }
                     case 6: {
-                        if (auto d2 = dist2_pt(p, t0, t1, t2); d2 < dHat2) {
+                        if (d2 < dHat2) {
                             PT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                             csPT.try_push(pair4_t{vi, tri[0], tri[1], tri[2]});
                         }
@@ -370,6 +372,13 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                     }
                     default: break;
                     }
+
+#if 0
+                    if (trueCate != chkCate) {
+                        printf("$pt$\t\t$$$$\tref: %d, d2: %f; fact: %d, d2: %f\n", trueCate, (float)d2, chkCate,
+                               (float)dd2);
+                    }
+#endif
                 };
                 bvh.iter_neighbors(bv, f);
             });
@@ -428,9 +437,11 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             mollify = c < epsX;
                         }
 
-                        switch (ee_distance_type(v0, v1, v2, v3)) {
+                        auto [cate, d2] = ee_category_and_dist2(v0, v1, v2, v3);
+
+                        switch (cate) {
                         case 0: {
-                            if (auto d2 = dist2_pp(v0, v2); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     PPM.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
@@ -441,7 +452,7 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             break;
                         }
                         case 1: {
-                            if (auto d2 = dist2_pp(v0, v3); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     PPM.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[1], ejInds[0]});
@@ -452,7 +463,7 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             break;
                         }
                         case 2: {
-                            if (auto d2 = dist2_pe(v0, v2, v3); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     PEM.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
@@ -463,7 +474,7 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             break;
                         }
                         case 3: {
-                            if (auto d2 = dist2_pp(v1, v2); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     PPM.try_push(pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]});
@@ -474,7 +485,7 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             break;
                         }
                         case 4: {
-                            if (auto d2 = dist2_pp(v1, v3); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     PPM.try_push(pair4_t{eiInds[1], eiInds[0], ejInds[1], ejInds[0]});
@@ -485,7 +496,7 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             break;
                         }
                         case 5: {
-                            if (auto d2 = dist2_pe(v1, v2, v3); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     PEM.try_push(pair4_t{eiInds[1], eiInds[0], ejInds[0], ejInds[1]});
@@ -496,7 +507,7 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             break;
                         }
                         case 6: {
-                            if (auto d2 = dist2_pe(v2, v0, v1); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     PEM.try_push(pair4_t{ejInds[0], ejInds[1], eiInds[0], eiInds[1]});
@@ -507,7 +518,7 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             break;
                         }
                         case 7: {
-                            if (auto d2 = dist2_pe(v3, v0, v1); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     PEM.try_push(pair4_t{ejInds[1], ejInds[0], eiInds[0], eiInds[1]});
@@ -518,7 +529,7 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                             break;
                         }
                         case 8: {
-                            if (auto d2 = dist2_ee(v0, v1, v2, v3); d2 < dHat2) {
+                            if (d2 < dHat2) {
                                 csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                                 if (mollify) {
                                     EEM.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
@@ -530,6 +541,13 @@ void UnifiedIPCSystem::findCollisionConstraintsImpl(zs::CudaExecutionPolicy &pol
                         }
                         default: break;
                         }
+
+#if 0
+                        if (trueCate != chkCate) {
+                            printf("#ee#\t\t####\tref: %d, d2: %f; fact: %d, d2: %f\n", trueCate, (float)d2, chkCate,
+                                   (float)dd2);
+                        }
+#endif
                     };
                     bvh.iter_neighbors(bv, f);
                 });
