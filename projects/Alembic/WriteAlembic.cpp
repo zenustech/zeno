@@ -1,20 +1,15 @@
 // https://github.com/alembic/alembic/blob/master/lib/Alembic/AbcGeom/Tests/PolyMeshTest.cpp
 // WHY THE FKING ALEMBIC OFFICIAL GIVES NO DOC BUT ONLY "TESTS" FOR ME TO LEARN THEIR FKING LIB
 #include <zeno/zeno.h>
-#include <zeno/utils/logger.h>
-#include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
-#include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
-#include <cstring>
-#include <cstdio>
-#include <zeno/utils/log.h>
+#include <any>
 #include <numeric>
 
 using namespace Alembic::AbcGeom;
@@ -205,6 +200,31 @@ struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
     OPoints pointsObj;
+    std::map<std::string, std::any> attrs;
+
+    template<typename T1, typename T2>
+    void write_attrs(std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
+        OCompoundProperty arbAttrs = schema.getArbGeomParams();
+        prim->verts.foreach_attr([&](auto const &key, auto &arr) {
+            if (key == "v" || key == "nrm") {
+                return;
+            }
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                if (attrs.count(key) == 0) {
+                    attrs[key] = OV3fArrayProperty( arbAttrs, key, 1);
+                }
+                auto samp = V3fArraySample(( const V3f * )arr.data(), arr.size());
+                std::any_cast<OV3fArrayProperty>(attrs[key]).set(samp);
+            } else if constexpr (std::is_same_v<T, float>) {
+                if (attrs.count(key) == 0) {
+                    attrs[key] = OFloatArrayProperty( arbAttrs, key, 1);
+                }
+                auto samp = FloatArraySample(( const float * )arr.data(), arr.size());
+                std::any_cast<OFloatArrayProperty>(attrs[key]).set(samp);
+            }
+        });
+    }
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         bool flipFrontBack = get_input2<int>("flipFrontBack");
@@ -291,6 +311,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
+                    write_attrs(prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -300,6 +321,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
+                    write_attrs(prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
             }
@@ -350,6 +372,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
+                    write_attrs(prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 } else {
                     OPolyMeshSchema::Sample mesh_samp(
@@ -358,6 +381,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
+                    write_attrs(prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
             }
@@ -370,6 +394,7 @@ struct WriteAlembic2 : INode {
             std::iota(ids.begin(), ids.end(), 0);
             samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
             write_velocity(prim, samp);
+            write_attrs(prim, points, samp);
             points.set( samp );
         }
     }
