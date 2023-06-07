@@ -12,7 +12,7 @@ class ZTcpServer : public QObject
 public:
     ZTcpServer(QObject* parent = nullptr);
     void init(const QHostAddress &address);
-    void startProc(const std::string& progJson);
+    void startProc(const std::string &progJson, bool applyLightAndCameraOnly, bool applyMaterialOnly);
     void killProc();
 
 private slots:
