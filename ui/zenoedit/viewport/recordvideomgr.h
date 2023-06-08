@@ -17,6 +17,7 @@ struct VideoRecInfo
     int numOptix = 1;
     bool bExportVideo;
     bool exitWhenRecordFinish = false;
+    bool bRecordByCommandLine = false;
     VideoRecInfo()
         : bExportVideo(false)
         , fps(0)

@@ -73,6 +73,7 @@ int record_main(const QCoreApplication& app)
         {"optix", "optix", "optix mode"},
         {"video", "video", "export video"},
         {"videoname", "videoname", "export video's name"},
+        {"subzsg", "subgraphzsg", "subgraph zsg file path"},
     });
     cmdParser.process(app);
 
@@ -122,6 +123,7 @@ int record_main(const QCoreApplication& app)
 	param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
 	param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
 	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
+	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 #else
     param.sZsgPath = "C:\\zeno\\framenum.zsg";
     param.sPath = "C:\\recordpath";
@@ -138,7 +140,7 @@ int record_main(const QCoreApplication& app)
     if (!param.bOptix)
     {
         tempWindow.showMaximized();
-        tempWindow.directlyRunRecord(param, param.bOptix);
+        tempWindow.solidRunRender(param);
     }
     else {
         tempWindow.optixRunRender(param);
