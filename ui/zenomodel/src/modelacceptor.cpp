@@ -436,8 +436,8 @@ void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QStrin
     return;
     if (!m_currentGraph)
         return;
-    if (m_pModel->hasDescriptor(nodeCls))
-        return;
+    //if (m_pModel->hasDescriptor(nodeCls))
+    //    return;
     QString subgName, paramCls;
     subgName = m_currentGraph->name();
     QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/inputs/", inSock);
