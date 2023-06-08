@@ -45,7 +45,6 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         if (nRunFrames == 0)
         {
             m_ui->lblRunFrame->setText(tr("The scene has not been run yet."));
-            m_ui->btnRecLastRun->setVisible(false);
             m_ui->btnRecordNow->setVisible(false);
             m_ui->btnRunFirst->setVisible(true);
             m_ui->btnCancelRecord->setVisible(true);
@@ -60,24 +59,20 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
             int nLastRunFrom = pair.first;
             int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() -1;
             ZASSERT_EXIT(nLastRunTo >= nLastRunFrom);
+
+            m_ui->btnRecordNow->setVisible(true);
+            m_ui->btnRunFirst->setVisible(true);
+            m_ui->btnCancelRecord->setVisible(true);
+
             if (nLastRunTo == pair.second)
             {
                 //complete calculation on last run.
-                m_ui->lblRunFrame->setText(tr("Last complete run frame: [%1 - %2], you can record the video based on it.").arg(nLastRunFrom).arg(nLastRunTo));
-                m_ui->btnRecLastRun->setVisible(false);
-                m_ui->btnRecordNow->setVisible(true);
-                m_ui->btnRunFirst->setVisible(true);
-                m_ui->btnCancelRecord->setVisible(true);
-
+                m_ui->lblRunFrame->setText(tr("Last complete run frame: [%1 - %2].").arg(nLastRunFrom).arg(nLastRunTo));
                 m_state = RUN_COMPLELTE;
             }
             else
             {
-                m_ui->lblRunFrame->setText(tr("Last run frame: [%1 - %2]").arg(nLastRunFrom).arg(nLastRunTo));
-                m_ui->btnRecordNow->setVisible(false);
-                m_ui->btnRunFirst->setVisible(true);
-                m_ui->btnCancelRecord->setVisible(true);
-
+                m_ui->lblRunFrame->setText(tr("Last incomplete run frame: [%1 - %2].").arg(nLastRunFrom).arg(nLastRunTo));
                 m_state = RUN_INCOMPLETE;
             }
 
@@ -91,7 +86,6 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         int nRunEndF = pair.second;
 
         m_ui->lblRunFrame->setText(tr("Running frame: [%1 - %2]").arg(nRunStartF).arg(nRunEndF));
-        m_ui->btnRecLastRun->setVisible(false);
         m_ui->btnRunFirst->setVisible(false);
         m_ui->btnRecordNow->setVisible(true);
 
@@ -166,7 +160,7 @@ bool ZRecFrameSelectDlg::validateFrame()
     auto pair = zeno::getSession().globalComm->frameRange();
     int nLastRunFrom = pair.first;
     int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() - 1;
-    if (m_state == RUN_COMPLELTE)
+    if (m_state == RUN_COMPLELTE || m_state == RUN_INCOMPLETE)
     {
         if (pair.first <= m_recStartF && m_recEndF <= nLastRunTo)
             return true;
