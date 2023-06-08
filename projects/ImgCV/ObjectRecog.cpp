@@ -105,7 +105,7 @@ static void scharr2(std::shared_ptr<PrimitiveObject> & src, std::shared_ptr<Prim
     }
 }
 
-struct EdgeDetect : INode {
+struct ImageEdgeDetect : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -369,7 +369,7 @@ struct EdgeDetect : INode {
         }
     }
 };
-ZENDEFNODE(EdgeDetect, {
+ZENDEFNODE(ImageEdgeDetect, {
     {
         {"image"},
         {"enum zeno_gray zeno_threshold sobel_gray sobel_threshold roberts_gray roberts_threshold prewitt_gray prewitt_threshold canny_gray canny_threshold", "mode", "sobel_gray"},
@@ -383,7 +383,7 @@ ZENDEFNODE(EdgeDetect, {
     { "image" },
 });
 
-struct EdgeDetect_DIY: INode {
+struct ImageEdgeDetect_DIY: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -466,7 +466,7 @@ struct EdgeDetect_DIY: INode {
         }
     }
 };
-ZENDEFNODE(EdgeDetect_DIY, {
+ZENDEFNODE(ImageEdgeDetect_DIY, {
     {
         {"image"},
         {"enum diy_gray diy_threshold", "mode", "diy_gray"},
@@ -483,7 +483,7 @@ ZENDEFNODE(EdgeDetect_DIY, {
     { "deprecated" },
 });
 
-struct EdgeDetect_Sobel : INode {
+struct ImageEdgeDetect_Sobel : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -546,7 +546,7 @@ struct EdgeDetect_Sobel : INode {
         }
     }
 };
-ZENDEFNODE(EdgeDetect_Sobel, {
+ZENDEFNODE(ImageEdgeDetect_Sobel, {
     {
         {"image"},
         {"enum sobel_gray sobel_threshold", "mode", "sobel_gray"},
@@ -560,7 +560,7 @@ ZENDEFNODE(EdgeDetect_Sobel, {
     { "image" },
 });
 
-struct EdgeDetect_Roberts: INode {
+struct ImageEdgeDetect_Roberts: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -627,7 +627,7 @@ struct EdgeDetect_Roberts: INode {
         }
     }
 };
-ZENDEFNODE(EdgeDetect_Roberts, {
+ZENDEFNODE(ImageEdgeDetect_Roberts, {
     {
         {"image"},
         {"enum roberts_gray roberts_threshold", "mode", "roberts_gray"},
@@ -641,7 +641,7 @@ ZENDEFNODE(EdgeDetect_Roberts, {
     { "image" },
 });
 
-struct EdgeDetect_Prewitt: INode {
+struct ImageEdgeDetect_Prewitt: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -714,7 +714,7 @@ struct EdgeDetect_Prewitt: INode {
         }
     }
 };
-ZENDEFNODE(EdgeDetect_Prewitt, {
+ZENDEFNODE(ImageEdgeDetect_Prewitt, {
     {
         {"image"},
         {"enum prewitt_gray prewitt_threshold", "mode", "prewitt_gray"},
@@ -729,7 +729,7 @@ ZENDEFNODE(EdgeDetect_Prewitt, {
 });
 
 //边缘检测
-struct EdgeDetect_Canny : INode {
+struct ImageEdgeDetect_Canny : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
         auto mode = get_input2<std::string>("mode");
@@ -788,7 +788,7 @@ struct EdgeDetect_Canny : INode {
         }
     }
 };
-ZENDEFNODE(EdgeDetect_Canny, {
+ZENDEFNODE(ImageEdgeDetect_Canny, {
     {
         {"image"},
         {"enum canny_gray canny_threshold", "mode", "canny_gray"},
@@ -802,65 +802,76 @@ ZENDEFNODE(EdgeDetect_Canny, {
     { "image" },
 });
 
-struct ImageExtractFeature_ORB : INode {
+struct ImageFeatureDetect_ORB : INode {
     void apply() override {
         auto image = get_input<PrimitiveObject>("image");
+        auto nFeatures = get_input2<float>("nFeatures");
+        auto scaleFactor = get_input2<float>("scaleFactor");
+        auto edgeThreshold = get_input2<float>("edgeThreshold");
+        auto patchSize = get_input2<float>("patchSize");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        cv::Ptr<cv::ORB> orb = cv::ORB::create(500, 1.2f, 8, 31, 0, 2, cv::ORB::HARRIS_SCORE, 31, 20);
-//        cv::Ptr<cv::ORB> orb = cv::ORB::create();
+        image->verts.add_attr<vec3f>("keypoints");
+        image->verts.add_attr<float>("descriptors");
+        cv::Ptr<cv::ORB> orb = cv::ORB::create(nFeatures, scaleFactor, 8, edgeThreshold, 0, 2, cv::ORB::HARRIS_SCORE, 31, patchSize);
         cv::Mat imagecvin(h, w, CV_8UC3);
+//        cv::Mat imagecv(h, w, CV_8UC3);
         cv::Mat imagecvgray(h, w, CV_8U);
         cv::Mat imagecvdetect(h, w, CV_8U);
         cv::Mat imagecvout(h, w, CV_8UC3);
-        std::vector<cv::KeyPoint> keypoints;
+        std::vector<cv::KeyPoint> ikeypoints;
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 vec3f rgb = image->verts[i * w + j];
-//                imagecvin.at<uchar>(i, j) = 255 * (rgb[0]+rgb[1]+rgb[2])/3;
                 imagecvin.at<cv::Vec3b>(i, j) = (255 * rgb[0], 255 * rgb[1], 255 * rgb[2]);
+//                imagecv.at<cv::Vec3b>(i, j) = (255 * rgb[0], 255 * rgb[1], 255 * rgb[2]);
             }
         }
         cv::cvtColor(imagecvin, imagecvgray, cv::COLOR_BGR2GRAY);
-//        imagecvin.convertTo(imagecvgray, CV_8U);
-        orb->detect(imagecvgray, keypoints);
-        zeno::log_info("orb->detect (imagecvin keypoints:{})", keypoints.size());
-        orb->compute(imagecvgray, keypoints, imagecvdetect);
+        orb->detect(imagecvgray, ikeypoints);
+        zeno::log_info("orb->detect (imagecvin keypoints:{})", ikeypoints.size());
+        orb->compute(imagecvgray, ikeypoints, imagecvdetect);
         zeno::log_info("orb->compute(imagecvin, keypoints, imagecvout)");
-//        cv::drawKeypoints(imagecvin, keypoints, imagecvout, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DEFAULT | cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
 
-        cv::drawKeypoints(imagecvin, keypoints, imagecvout, cv::Scalar(0, 0, 255),
+        cv::drawKeypoints(imagecvin, ikeypoints, imagecvout, cv::Scalar(0, 0, 255),
                           cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS | cv::DrawMatchesFlags::DRAW_OVER_OUTIMG);
         zeno::log_info(
                 "cv::drawKeypoints(imagecvin, keypoints, imagecvout, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);");
+
+        cv::Mat imageFloat;
+        imagecvdetect.convertTo(imageFloat, CV_32F, 1.0 / 255.0); // 将像素值从 [0, 255] 转换为 [0, 1] 的范围
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
-//                cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
-//                image->verts[i * w + j] = {rgb/255, rgb/255, rgb/255};
-//                image->verts[i * w + j] = {rgb[0], rgb[1], rgb[2]};
-                image->verts[i * w + j][0] = imagecvin.at<cv::Vec3b>(i, j)[0];
-                image->verts[i * w + j][1] = imagecvin.at<cv::Vec3b>(i, j)[1];
-                image->verts[i * w + j][2] = imagecvin.at<cv::Vec3b>(i, j)[2];
-
+                image->verts[i * w + j][0] += imagecvout.at<cv::Vec3b>(i, j)[0];
+                image->verts[i * w + j][1] += imagecvout.at<cv::Vec3b>(i, j)[1];
+                image->verts[i * w + j][2] += imagecvout.at<cv::Vec3b>(i, j)[2];
+//                zeno::log_info("{}",imageFloat.at<float>(i,j));
+//                image->verts.attr<vec3f>("keypoints")[i * w + j] = {ikeypoints[i * w + j].pt.x,ikeypoints[i * w + j].pt.y,0};
+                image->verts.attr<float>("descriptors")[i * w + j] = imageFloat.at<float>(i,j);
             }
         }
         set_output("image", image);
     }
 };
 
-ZENDEFNODE(ImageExtractFeature_ORB, {
+ZENDEFNODE(ImageFeatureDetect_ORB, {
     {
-        { "image" },
+        {"image" },
+        {"float","nFeatures","100"},
+        {"float","scaleFactor","1.1"},
+        {"float","edgeThreshold","20"},
+        {"float","patchSize","10"},
     },
     {
         { "image" },
+
     },
     {},
     { "image" },
 });
 
-struct ImageExtractFeature_SIFT : INode {
+struct ImageFeatureDetect_SIFT : INode {
     void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
@@ -892,7 +903,7 @@ struct ImageExtractFeature_SIFT : INode {
     }
 };
 
-ZENDEFNODE(ImageExtractFeature_SIFT, {
+ZENDEFNODE(ImageFeatureDetect_SIFT, {
     {
         { "image" },
     },
@@ -902,5 +913,87 @@ ZENDEFNODE(ImageExtractFeature_SIFT, {
     {},
     { "image" },
 });
+
+struct ImageFeatureMatch : INode {
+    void apply() override {
+        auto image1 = get_input<PrimitiveObject>("image1");
+        auto image2 = get_input<PrimitiveObject>("image2");
+
+        auto &ud = image1->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
+        std::vector<cv::DMatch> matches;
+
+        cv::Mat imagecvdescriptors1(h, w, CV_8U);
+        cv::Mat imagecvdescriptors2(h, w, CV_8U);
+        cv::Mat imagecvkeypoints1(h, w, CV_8U);
+        cv::Mat imagecvkeypoints2(h, w, CV_8U);
+        std::vector<cv::KeyPoint> keypoints;
+        auto d1 = image1->verts.attr<float>("descriptors");
+        auto d2 = image2->verts.attr<float>("descriptors");
+        auto k1 = image2->verts.attr<vec3f>("keypoints");
+        auto k2 = image2->verts.attr<vec3f>("keypoints");
+
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                imagecvdescriptors1.at<uchar>(i, j) = d1[i * w + j];
+                imagecvdescriptors2.at<uchar>(i, j) = d2[i * w + j];
+            }
+        }
+        matcher->match(imagecvdescriptors1, imagecvdescriptors2, matches);
+        std::vector<cv::Point2f> points1, points2;
+        for (const auto& match : matches) {
+            points1.push_back({k1[match.queryIdx][0], k1[match.queryIdx][1]});
+            points2.push_back({k2[match.trainIdx][0], k2[match.trainIdx][1]});
+//            points1.push_back(imagecvkeypoints1[match.queryIdx].pt);
+//            points2.push_back(imagecvkeypoints2[match.trainIdx].pt);
+        }
+        //iphone11
+        double focalLength = 26.0; // 焦距（单位：毫米）
+        double sensorWidth = 5.715; // 传感器宽度（单位：毫米）
+        double sensorHeight = 4.286; // 传感器高度（单位：毫米）
+        double imageWidth = 4032.0; // 图像宽度（像素）
+        double imageHeight = 3024.0; // 图像高度（像素）
+//        double imageWidth = w;
+//        double imageHeight = h;
+        double fx = focalLength * (imageWidth / sensorWidth); // fx
+        double fy = focalLength * (imageHeight / sensorHeight); // fy
+        double cx = imageWidth / 2.0; // cx
+        double cy = imageHeight / 2.0; // cy
+
+        cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) <<fx, 0, cx,
+                                                         0, fy, cy,
+                                                         0, 0, 1);
+        cv::Mat mask;
+//        cv::Mat essentialMatrix = cv::findEssentialMat(points1, points2, cameraMatrix, cv::RANSAC, 0.99, 1.0, mask);
+        cv::Mat rotation, translation;
+//        cv::recoverPose(essentialMatrix, points1, points2, cameraMatrix, rotation, translation);
+        image2->add_attr<float>("rotation");
+        image2->add_attr<float>("translation");
+        for(int i = 0;i < image2->size();i++){
+//            image2->attr<float>("translation")[i] = translation.at<float>(i);
+//            image2->attr<float>("rotation")[i] = rotation.at<float>(i);
+        }
+        set_output("image", image2);
+    }
+};
+
+ZENDEFNODE(ImageFeatureMatch, {
+    {
+        { "image1" },
+        { "image2" },
+
+    },
+    {
+        { "image" },
+    },
+    {},
+    { "image" },
+});
+
+
+
 }
 }
