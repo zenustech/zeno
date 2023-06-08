@@ -105,6 +105,7 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
+    setAcceptDrops(true);
 
     m_ui->statusbar->showMessage(tr("Status Bar"));
     connect(this, &ZenoMainWindow::recentFilesChanged, this, [=](const QObject *sender) {
@@ -1095,6 +1096,34 @@ void ZenoMainWindow::mouseMoveEvent(QMouseEvent* event)
 void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
 {
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void ZenoMainWindow::dragEnterEvent(QDragEnterEvent* event)
+{
+    auto urls = event->mimeData()->urls();
+    if (urls.size() == 1 && urls[0].toLocalFile().endsWith(".zsg")) {
+        event->acceptProposedAction();
+    }
+}
+
+void ZenoMainWindow::dropEvent(QDropEvent* event)
+{
+    auto urls = event->mimeData()->urls();
+    if (urls.size() != 1) {
+        return;
+    }
+    auto filePath = urls[0].toLocalFile();
+    if (!filePath.endsWith(".zsg")) {
+        return;
+    }
+
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    mgr->setNewCacheDir(true);
+
+    if (saveQuit()) {
+        openFile(filePath);
+    }
 }
 
 void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
