@@ -128,10 +128,4 @@ struct HitGroupData
 
     unsigned long long vdb_grids[8];
     float vdb_max_v[8];
-
-    // cihou nanovdb
-    float opacityHDDA;
-
-    float sigma_a, sigma_s;
-    float greenstein; // -1 ~ 1
 };

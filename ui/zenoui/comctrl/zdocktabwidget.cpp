@@ -24,6 +24,7 @@ ZDockTabWidget::ZDockTabWidget(QWidget* parent)
     connect(pTabbar, SIGNAL(layoutBtnClicked()), this, SIGNAL(layoutBtnClicked()));
 
     connect(pTabbar, &ZAddTabBar::tabCloseRequested, this, [=](int index) {
+        emit tabAboutToClose(index);
         removeTab(index);
         emit tabClosed(index);
     });

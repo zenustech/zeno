@@ -1,7 +1,8 @@
-# export CC=/usr/bin/clang
-# export CXX=/usr/bin/clang++
+[ "$1" ] && [ $1 = Debug ] && flag="Debug" || flag="Release"
+echo $flag
 
-cmake -B build -DCMAKE_BUILD_TYPE=Release \
+cmake -B build -DCMAKE_BUILD_TYPE=$flag \
+    -DZENO_MULTIPROCESS=ON \
     -DZENO_WITH_zenvdb:BOOL=ON \
     -DZENO_SYSTEM_OPENVDB=OFF \
     -DZENO_WITH_ZenoFX:BOOL=ON \

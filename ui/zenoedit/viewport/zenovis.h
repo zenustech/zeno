@@ -42,6 +42,7 @@ public slots:
 
 public:
     Zenovis(QObject* parent = nullptr);
+    ~Zenovis();
     void loadGLAPI(void *procaddr);
     void initializeGL();
     void paintGL();

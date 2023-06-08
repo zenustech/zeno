@@ -55,6 +55,7 @@ public:
     explicit DockToolbarWidget(QWidget* parent = nullptr);
     QWidget* widget() const;
     virtual void initUI();
+    virtual void onTabAboutToClose();
 
 protected:
     virtual void initToolbar(QHBoxLayout* pToolLayout) = 0;
@@ -128,6 +129,7 @@ public:
     DisplayWidget* getDisplayWid() const;
     bool isGLView() const;
     QSize viewportSize() const;
+    void onTabAboutToClose() override;
 
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;

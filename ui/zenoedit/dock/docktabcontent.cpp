@@ -176,6 +176,10 @@ void DockToolbarWidget::initUI()
     setLayout(pLayout);
 }
 
+void DockToolbarWidget::onTabAboutToClose()
+{
+}
+
 QWidget* DockToolbarWidget::widget() const
 {
     return m_pWidget;
@@ -862,6 +866,16 @@ bool DockContent_View::isGLView() const
 QSize DockContent_View::viewportSize() const
 {
     return m_pDisplay->viewportSize();
+}
+
+void DockContent_View::onTabAboutToClose()
+{
+    ZASSERT_EXIT(m_pDisplay);
+    if (!m_pDisplay->isGLViewport())
+    {
+        delete m_pDisplay;
+        m_pDisplay = nullptr;
+    }
 }
 
 

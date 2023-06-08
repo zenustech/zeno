@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <atomic>
 #include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <zeno/zeno.h>
 #if defined(_OPENMP)
@@ -80,6 +81,8 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       }
       return bv;
     };
+  else if (eleCategory == element_e::unknown)
+    getBv = [defaultBox](Ti) -> Box { return defaultBox; };
   return getBv;
 }
 
@@ -116,11 +119,14 @@ void LBvh::build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
         for (Ti i = 0; i < numLeaves; ++i)
           prim->points[i] = i;
       }
+    } else {
+      this->eleCategory = element_e::unknown;
+      numLeaves = 0;
     }
   }
 
   const auto &refpos = prim->attr<vec3f>("pos");
-  const Ti numNodes = numLeaves + numLeaves - 1;
+  const Ti numNodes = numLeaves > 2 ? numLeaves + numLeaves - 1 : numLeaves;
   sortedBvs.resize(numNodes);
   auxIndices.resize(numNodes);
   levels.resize(numNodes);
@@ -537,7 +543,7 @@ void LBvh::refit() {
 /// nearest primitive
 template <LBvh::element_e et>
 typename LBvh::TV LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
-                        element_t<et>) const {
+                                     element_t<et>) const {
   std::shared_ptr<const PrimitiveObject> prim = primPtr.lock();
   if (!prim)
     throw std::runtime_error(
@@ -568,20 +574,20 @@ typename LBvh::TV LBvh::find_nearest(TV const &pos, Ti &id, float &dist,
         d = dist_pt(pos, refpos[tri[0]], refpos[tri[1]], refpos[tri[2]], wsTmp);
       } else if constexpr (et == element_e::tet) {
         auto tet = prim->quads[eid];
-        if (auto dd =
-                dist_pt(pos, refpos[tet[0]], refpos[tet[1]], refpos[tet[2]], wsTmp);
+        if (auto dd = dist_pt(pos, refpos[tet[0]], refpos[tet[1]],
+                              refpos[tet[2]], wsTmp);
             dd < d)
           d = dd;
-        if (auto dd =
-                dist_pt(pos, refpos[tet[1]], refpos[tet[3]], refpos[tet[2]], wsTmp);
+        if (auto dd = dist_pt(pos, refpos[tet[1]], refpos[tet[3]],
+                              refpos[tet[2]], wsTmp);
             dd < d)
           d = dd;
-        if (auto dd =
-                dist_pt(pos, refpos[tet[0]], refpos[tet[3]], refpos[tet[2]], wsTmp);
+        if (auto dd = dist_pt(pos, refpos[tet[0]], refpos[tet[3]],
+                              refpos[tet[2]], wsTmp);
             dd < d)
           d = dd;
-        if (auto dd =
-                dist_pt(pos, refpos[tet[0]], refpos[tet[2]], refpos[tet[3]], wsTmp);
+        if (auto dd = dist_pt(pos, refpos[tet[0]], refpos[tet[2]],
+                              refpos[tet[3]], wsTmp);
             dd < d)
           d = dd;
       }
