@@ -874,18 +874,18 @@ void mark_surface_boundary_verts(Pol &&pol, const ZenoParticles::particles_t &su
                              indsOffset = surf.getPropertyOffset("inds")] ZS_LAMBDA(int ei) mutable {
         using tab_t = RM_CVREF_T(tab);
         int i = surf(indsOffset, ei, int_c);
-        bool isBoundary = true;
+        int isBoundary = 0;
         for (int d = 0; d != codim; ++d) {
             int j = surf(indsOffset + (d + 1) % codim, ei, int_c);
-            int no = -1;
+            int no = tab_t::sentinel_v;
             if constexpr (codim == 3)
                 no = tab.query(key_t{j, i});
             else if constexpr (codim == 2)
                 no = tab.query(key_t{i});
             else
                 static_assert(always_false<MarkIter>, "do not support codim other than 2 or 3.");
-            if (no != tab_t::sentinel_v) { // this surf element is not boundary
-                isBoundary = false;
+            if (no == tab_t::sentinel_v) { // this surf element is not boundary
+                isBoundary = 1;
                 break;
             }
             i = j;

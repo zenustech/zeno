@@ -151,4 +151,98 @@ ZENDEFNODE(ZSGetUserData, {
                               {"lifecycle"},
                           });
 
+struct ColoringSelected : INode {
+    using tiles_t = typename ZenoParticles::particles_t;
+    void markBoundaryVerts(zs::CudaExecutionPolicy &pol, ZenoParticles *prim) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto &vtemp = prim->getParticles();
+        vtemp.append_channels(pol, std::vector<zs::PropertyTag>{{"on_boundary", 1}});
+        auto markIter = vtemp.begin("on_boundary", dim_c<1>, int_c);
+        auto markIterEnd = vtemp.end("on_boundary", dim_c<1>, int_c);
+        pol(detail::iter_range(markIter, markIterEnd), [] ZS_LAMBDA(auto &mark) mutable { mark = 0; });
+
+        if (prim->category == ZenoParticles::curve) {
+            auto &eles = prim->getQuadraturePoints();
+            mark_surface_boundary_verts(pol, eles, wrapv<2>{}, markIter, (size_t)0);
+        } else if (prim->category == ZenoParticles::surface) {
+            auto &eles = prim->getQuadraturePoints();
+            mark_surface_boundary_verts(pol, eles, wrapv<3>{}, markIter, (size_t)0);
+        } else if (prim->category == ZenoParticles::tet) {
+            auto &surf = (*prim)[ZenoParticles::s_surfTriTag];
+            mark_surface_boundary_verts(pol, surf, wrapv<3>{}, markIter, (size_t)0);
+        }
+    }
+    template <typename LsView>
+    void markVerts(zs::CudaExecutionPolicy &cudaPol, zs::SmallString tag, ZenoParticles *zsprim, LsView lsv,
+                   bool boundaryWise) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto &vtemp = zsprim->getParticles();
+        auto numVerts = vtemp.size();
+        cudaPol(range(numVerts), [vtemp = proxy<space>({}, vtemp), tag, lsv, boundaryWise] ZS_LAMBDA(int i) mutable {
+            if (boundaryWise && vtemp.hasProperty("on_boundary"))
+                if (vtemp("on_boundary", i, int_c) == 0) // only operate on verts on boundary
+                    return;
+            auto x = vtemp.pack(dim_c<3>, "x", i);
+            if (lsv.getSignedDistance(x) < 0) {
+                vtemp(tag, i) = 1.f;
+            }
+        });
+    }
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto zsprim = get_input<ZenoParticles>("ZSParticles");
+
+        auto cudaPol = zs::cuda_exec().sync(true);
+
+        auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
+        bool boundaryWise = get_input2<bool>("boundary_wise");
+        auto &vtemp = zsprim->getParticles();
+        if (boundaryWise || vtemp.hasProperty("on_boundary"))
+            markBoundaryVerts(cudaPol, zsprim.get());
+
+        auto tag = get_input2<std::string>("markTag");
+        vtemp.append_channels(cudaPol, std::vector<zs::PropertyTag>{{tag, 1}});
+        cudaPol(range(vtemp, tag), [] ZS_LAMBDA(auto &mark) mutable { mark = 0; });
+
+        match([&](const auto &ls) {
+            using basic_ls_t = typename ZenoLevelSet::basic_ls_t;
+            using const_sdf_vel_ls_t = typename ZenoLevelSet::const_sdf_vel_ls_t;
+            using const_transition_ls_t = typename ZenoLevelSet::const_transition_ls_t;
+            if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
+                match([&](const auto &lsPtr) {
+                    auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
+                    markVerts(cudaPol, tag, zsprim.get(), lsv, boundaryWise);
+                })(ls._ls);
+            } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
+                match([&](auto lsv) { markVerts(cudaPol, tag, zsprim.get(), SdfVelFieldView{lsv}, boundaryWise); })(
+                    ls.template getView<execspace_e::cuda>());
+            } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
+                match([&](auto fieldPair) {
+                    auto &fvSrc = zs::get<0>(fieldPair);
+                    auto &fvDst = zs::get<1>(fieldPair);
+                    markVerts(
+                        cudaPol, tag, zsprim.get(),
+                        TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt, ls._alpha},
+                        boundaryWise);
+                })(ls.template getView<zs::execspace_e::cuda>());
+            }
+        })(zsls->getLevelSet());
+
+        set_output("ZSParticles", zsprim);
+    }
+};
+
+ZENDEFNODE(ColoringSelected, {{
+                                  "ZSParticles",
+                                  "ZSLevelSet",
+                                  {"bool", "boundary_wise", "0"},
+                                  {"string", "markTag", "selected"},
+                              },
+                              {"ZSParticles"},
+                              {},
+                              {"geom"}});
+
 } // namespace zeno
