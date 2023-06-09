@@ -8,6 +8,7 @@
 #include "zensim/types/SmallVector.hpp"
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
+#include <vector>
 #include <zeno/utils/log.h>
 
 namespace zeno {
@@ -38,6 +39,32 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
                 point[d] = 0;
         }
         return (max < 0.f ? max : 0.f) + point.length();
+    }
+    void markBoundaryVerts(zs::CudaExecutionPolicy &pol, UnifiedIPCSystem *ipcsys) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto &vtemp = ipcsys->vtemp;
+        vtemp.append_channels(pol, std::vector<zs::PropertyTag>{{"on_boundary", 1}});
+        auto markIter = vtemp.begin("on_boundary", dim_c<1>, zs::wrapt<i64>{});
+        auto markIterEnd = vtemp.end("on_boundary", dim_c<1>, zs::wrapt<i64>{});
+        // pol(range(vtemp, "on_boundary", dim_c<1>, zs::wrapt<i64>{}), [] ZS_LAMBDA(auto &mark) mutable { mark = 0; });
+        pol(detail::iter_range(markIter, markIterEnd), [] ZS_LAMBDA(auto &mark) mutable { mark = 0; });
+
+        for (auto &primHandle : ipcsys->prims) {
+            if (primHandle.isAuxiliary())
+                continue;
+            auto vOffset = primHandle.vOffset;
+            if (primHandle.category == ZenoParticles::curve) {
+                auto &eles = primHandle.getEles();
+                mark_surface_boundary_verts(pol, eles, wrapv<2>{}, markIter, (size_t)vOffset);
+            } else if (primHandle.category == ZenoParticles::surface) {
+                auto &eles = primHandle.getEles();
+                mark_surface_boundary_verts(pol, eles, wrapv<3>{}, markIter, (size_t)vOffset);
+            } else if (primHandle.category == ZenoParticles::tet) {
+                auto &surf = primHandle.getSurfTris();
+                mark_surface_boundary_verts(pol, surf, wrapv<3>{}, markIter, (size_t)vOffset);
+            }
+        }
     }
     template <typename VTilesT, typename LsView, typename Bvh>
     std::shared_ptr<tiles_t> bindStrings(zs::CudaExecutionPolicy &cudaPol, VTilesT &vtemp, std::size_t numVerts,
@@ -127,6 +154,7 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
 
         auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
         bool ifHardCons = get_input2<bool>("hard_constraint");
+        bool boundaryWise = get_input2<bool>("boundary_wise");
 
         auto cudaPol = zs::cuda_exec().sync(true);
         bvh_t bouBvh;
@@ -185,6 +213,7 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
 ZENDEFNODE(UnifiedIPCSystemClothBinding, {{
                                               "ZSUnifiedIPCSystem",
                                               "ZSLevelSet",
+                                              {"bool", "boundary_wise", "1"},
                                               {"bool", "hard_constraint", "1"},
                                               {"float", "dist_cap", "0"},
                                               {"float", "rest_length", "0.1"},
