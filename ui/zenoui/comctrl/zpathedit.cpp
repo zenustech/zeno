@@ -1,10 +1,10 @@
 #include "zpathedit.h"
 #include "zlineedit.h"
+#include <filesystem>
 #include <zenomodel/include/modeldata.h>
 #include <zenoedit/zenoapplication.h>
 #include <zenoedit/zenomainwindow.h>
-
-
+#include <zeno/extra/assetDir.h>
 
 ZPathEdit::ZPathEdit(QWidget *parent)
     : ZLineEdit(parent)
@@ -35,7 +35,20 @@ void ZPathEdit::initUI()
             path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
         } else if (ctrl == CONTROL_WRITEPATH) {
             path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
-        } else {
+        }
+        else if (ctrl == CONTROL_RELATIVE_PATH) {
+
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+            std::filesystem::path selectedPath(path.toStdString());
+
+            auto zpath = zeno::getConfigVariable("$ZSGPATH");
+            std::filesystem::path basePath(zpath);
+            basePath = basePath.remove_filename();
+
+            auto relative_path = std::filesystem::relative(selectedPath, basePath);
+            path = QString(relative_path.c_str());
+        }  
+        else {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }
         if (path.isEmpty()) {

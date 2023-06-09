@@ -26,6 +26,7 @@ static CONTROL_ITEM_INFO controlList[] = {
     {"Boolean",             CONTROL_BOOL,           "bool", ":/icons/parameter_control_boolean.svg"},
     {"Multiline String",    CONTROL_MULTILINE_STRING, "string", ":/icons/parameter_control_string.svg"},
     {"read path",           CONTROL_READPATH,       "string", ":/icons/parameter_control_fold.svg"},
+    {"relative path",       CONTROL_RELATIVE_PATH,  "string", ":/icons/parameter_control_fold.svg"},
     {"write path",          CONTROL_WRITEPATH,      "string", ":/icons/parameter_control_fold.svg"},
     {"Enum",                CONTROL_ENUM,           "string", ":/icons/parameter_control_enum.svg"},
     {"Float Vector 4",      CONTROL_VEC4_FLOAT,     "vec4f", ":/icons/parameter_control_floatVector4.svg"},

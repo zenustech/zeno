@@ -5,6 +5,7 @@
 #include <zenomodel/include/uihelper.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/scope_exit.h>
+#include <zeno/extra/assetDir.h>
 #include "common_def.h"
 #include <zenoio/writer/zsgwriter.h>
 
@@ -91,6 +92,8 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
     pModel->clearDirty();
     setCurrentModel(pModel);
     emit fileOpened(fn);
+
+    zeno::setConfigVariable("$ZSGPATH", fn.toStdString());    
     return pModel;
 }
 

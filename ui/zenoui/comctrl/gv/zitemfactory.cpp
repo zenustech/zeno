@@ -151,6 +151,7 @@ namespace zenoui
                 break;
             }
             case CONTROL_READPATH:
+            case CONTROL_RELATIVE_PATH:
             case CONTROL_WRITEPATH:
             {
                 const QString& path = UiHelper::variantToString(value);

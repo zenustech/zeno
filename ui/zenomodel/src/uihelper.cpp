@@ -1,5 +1,6 @@
 #include "uihelper.h"
 #include <zeno/utils/logger.h>
+#include "modeldata.h"
 #include "modelrole.h"
 #include "zassert.h"
 #include "curvemodel.h"
@@ -139,6 +140,7 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
+    case CONTROL_RELATIVE_PATH:
     case CONTROL_ENUM:
         return (QVariant::String == varType);
     case CONTROL_MULTILINE_STRING:
@@ -248,6 +250,7 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     case CONTROL_STRING:
     case CONTROL_WRITEPATH:
     case CONTROL_READPATH:
+    case CONTROL_RELATIVE_PATH:
     case CONTROL_MULTILINE_STRING:
     case CONTROL_COLOR:
     case CONTROL_ENUM:
@@ -298,6 +301,7 @@ QVariant UiHelper::parseTextValue(PARAM_CONTROL editCtrl, const QString& textVal
 	case CONTROL_BOOL: varValue = textValue.isEmpty() ? false : textValue == "true" ? true :
 		(textValue == "false" ? false : (bool)std::stoi(textValue.toStdString())); break;
 	case CONTROL_READPATH:
+    case CONTROL_RELATIVE_PATH:
 	case CONTROL_WRITEPATH:
 	case CONTROL_MULTILINE_STRING:
     case CONTROL_COLOR:
@@ -378,6 +382,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_BOOL:              return "Boolean";
     case CONTROL_MULTILINE_STRING:  return "Multiline String";
     case CONTROL_READPATH:          return "read path";
+    case CONTROL_RELATIVE_PATH:     return "relative path";
     case CONTROL_WRITEPATH:         return "write path";
     case CONTROL_ENUM:              return "Enum";
     case CONTROL_VEC4_FLOAT:        return "Float Vector 4";
@@ -425,6 +430,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     else if (descName == "read path")
     {
         return CONTROL_READPATH;
+    }
+    else if (descName == "relative path")
+    {
+        return CONTROL_RELATIVE_PATH;
     }
     else if (descName == "write path")
     {
@@ -552,6 +561,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
     else if (type == "vec4i") { ctrls = { CONTROL_VEC4_INT }; }
     else if (type == "writepath") { ctrls = { CONTROL_WRITEPATH }; }
     else if (type == "readpath") { ctrls = { CONTROL_READPATH }; }
+    else if (type == "relativepath") { ctrls = { CONTROL_RELATIVE_PATH }; }
     else if (type == "multiline_string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
     else if (type == "color") {   //color is more general than heatmap.
         ctrls = {CONTROL_COLOR, CONTROL_PURE_COLOR};
@@ -605,6 +615,8 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         return CONTROL_WRITEPATH;
     } else if (type == "readpath") {
         return CONTROL_READPATH;
+    } else if (type == "relativepath") {
+        return CONTROL_RELATIVE_PATH;
     } else if (type == "multiline_string") {
         return CONTROL_MULTILINE_STRING;
     } else if (type == "color") {   //color is more general than heatmap.
@@ -654,6 +666,7 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     case CONTROL_VEC4_INT: return "vec4i";
     case CONTROL_WRITEPATH: return "string";
     case CONTROL_READPATH: return "string";
+    case CONTROL_RELATIVE_PATH: return "string";
     case CONTROL_COLOR: return "color";     //todo: is vec3?
     case CONTROL_CURVE: return "curve";
     case CONTROL_ENUM: return "string";
@@ -827,6 +840,7 @@ QVariant UiHelper::initVariantByControl(PARAM_CONTROL ctrl)
         case CONTROL_ENUM:
         case CONTROL_WRITEPATH:
         case CONTROL_READPATH:
+        case CONTROL_RELATIVE_PATH:
         case CONTROL_MULTILINE_STRING:
         case CONTROL_STRING:
             return "";
