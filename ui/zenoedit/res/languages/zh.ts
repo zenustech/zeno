@@ -1013,15 +1013,15 @@
     </message>
     <message>
         <source>View</source>
-        <translation type="unfinished">节点显示</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Once</source>
-        <translation type="unfinished">节点计算一次</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Bypass</source>
-        <translation type="unfinished">跳过节点</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1040,7 +1040,7 @@
     </message>
     <message>
         <source>record by last run</source>
-        <translation>基于上次的运行结果录制</translation>
+        <translation type="vanished">基于上次的运行结果录制</translation>
     </message>
     <message>
         <source>Run by record frame</source>
@@ -1349,7 +1349,7 @@
     </message>
     <message>
         <source>Last run frame: [%1 - %2]</source>
-        <translation>上一次运行的帧范围是：[%1 - %2]</translation>
+        <translation type="vanished">上一次运行的帧范围是：[%1 - %2]</translation>
     </message>
     <message>
         <source>Running frame: [%1 - %2]</source>
@@ -1365,7 +1365,15 @@
     </message>
     <message>
         <source>Last complete run frame: [%1 - %2], you can record the video based on it.</source>
-        <translation>上一次运行的帧范围是：[%1 - %2]，你可以基于上一次运行结果直接录制。</translation>
+        <translation type="vanished">上一次运行的帧范围是：[%1 - %2]，你可以基于上一次运行结果直接录制。</translation>
+    </message>
+    <message>
+        <source>Last complete run frame: [%1 - %2].</source>
+        <translation>上一次运行完成，其帧范围是：[%1 - %2]</translation>
+    </message>
+    <message>
+        <source>Last incomplete run frame: [%1 - %2].</source>
+        <translation>上一次运行未完成，其帧范围是：[%1 - %2]</translation>
     </message>
 </context>
 <context>
@@ -1512,11 +1520,11 @@
     </message>
     <message>
         <source>Delete Subgraph</source>
-        <translation type="unfinished">删除子图</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Do you want to delete the selected subgraphs</source>
-        <translation type="unfinished">是否删除选中的子图</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
