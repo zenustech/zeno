@@ -810,17 +810,13 @@ ZENDEFNODE(CompExtractChanel_gray, {
         {"image"}
     },
     {},
-    { "comp" },
+    { "deprecated" },
 });
 
 struct CompExtractChanel : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
-        auto RGB = get_input2<bool>("RGB");
-        auto R = get_input2<bool>("R");
-        auto G = get_input2<bool>("G");
-        auto B = get_input2<bool>("B");
-        auto A = get_input2<bool>("A");
+        auto channel = get_input2<std::string>("channel");
         auto &ud1 = image->userData();
         int w = ud1.get2<int>("w");
         int h = ud1.get2<int>("h");
@@ -829,38 +825,45 @@ struct CompExtractChanel : INode {
         image2->userData().set2("w", w);
         image2->userData().set2("h", h);
         image2->verts.resize(image->size());
-        if(RGB){
+        if(channel == "R") {
             for (auto i = 0; i < image->verts.size(); i++) {
                 image2->verts[i][0] = image->verts[i][0];
+                image2->verts[i][1] = image->verts[i][0];
+                image2->verts[i][2] = image->verts[i][0];
+            }
+        }
+        if(channel == "G") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                image2->verts[i][0] = image->verts[i][1];
                 image2->verts[i][1] = image->verts[i][1];
+                image2->verts[i][2] = image->verts[i][1];
+            }
+        }
+        if(channel == "B") {
+            for (auto i = 0; i < image->verts.size(); i++) {
+                image2->verts[i][0] = image->verts[i][2];
+                image2->verts[i][1] = image->verts[i][2];
                 image2->verts[i][2] = image->verts[i][2];
             }
         }
-        if(R && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i][0] = image->verts[i][0];
-            }
-        }
-        if(G && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i][1] = image->verts[i][1];
-            }
-        }
-        if(B && !RGB) {
-            for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i][2] = image->verts[i][2];
-            }
-        }
-        if(A) {
+        if(channel == "A") {
             if (image->verts.has_attr("alpha")) {
                 auto &Alpha = image->verts.attr<float>("alpha");
                 image2->verts.add_attr<float>("alpha");
                 image2->verts.attr<float>("alpha")=image->verts.attr<float>("alpha");
+                for(int i = 0;i < w * h;i++){
+                    image2->verts[i][0] = image->verts.attr<float>("alpha")[i];
+                    image2->verts[i][1] = image->verts.attr<float>("alpha")[i];
+                    image2->verts[i][2] = image->verts.attr<float>("alpha")[i];
+                }
             }
             else{
                 image2->verts.add_attr<float>("alpha");
                 for(int i = 0;i < w * h;i++){
                     image2->verts.attr<float>("alpha")[i] = 1.0;
+                    image2->verts[i][0] = image->verts.attr<float>("alpha")[i];
+                    image2->verts[i][1] = image->verts.attr<float>("alpha")[i];
+                    image2->verts[i][2] = image->verts.attr<float>("alpha")[i];
                 }
             }
         }
@@ -870,11 +873,7 @@ struct CompExtractChanel : INode {
 ZENDEFNODE(CompExtractChanel, {
     {
         {"image"},
-        {"bool", "RGB", "0"},
-        {"bool", "R", "0"},
-        {"bool", "G", "0"},
-        {"bool", "B", "0"},
-        {"bool", "A", "0"},
+        {"enum R G B A", "channel", "R"},
     },
     {
         {"image"}
@@ -930,5 +929,34 @@ ZENDEFNODE(CompImport, {
     { "comp" },
 });
 
+struct CompMixChanel : INode {
+    virtual void apply() override {
+        auto R = get_input<PrimitiveObject>("R");
+        auto G = get_input<PrimitiveObject>("G");
+        auto B = get_input<PrimitiveObject>("B");
+        auto &ud = R->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        for(int i = 0;i < R->size();i++){
+            R->verts[i][1] = G->verts[i][1];
+            R->verts[i][2] = B->verts[i][2];
+        }
+        set_output("image", R);
+    }
+};
+
+ZENDEFNODE(CompMixChanel, {
+    {
+        {"R"},
+        {"G"},
+        {"B"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "comp" },
+});
 }
 }

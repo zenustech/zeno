@@ -4,6 +4,7 @@
 #include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveTools.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/MatrixObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/string.h>
 #include <zeno/utils/logger.h>
@@ -1059,6 +1060,7 @@ struct CreateSphere : zeno::INode {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto position = get_input2<zeno::vec3f>("position");
         auto scale = get_input2<zeno::vec3f>("scaleSize");
+        auto rotate = get_input2<zeno::vec3f>("rotate");
         auto rows = get_input2<int>("rows");
         auto columns = get_input2<int>("columns");
         auto radius = get_input2<float>("radius");
@@ -1172,15 +1174,16 @@ struct CreateSphere : zeno::INode {
             loops_uv.push_back(columns+(columns+1)*(rows-1)+column);
         }
 
-        nors.resize(verts.size());
         glm::mat4 transform = glm::mat4 (1.0);
-        auto rotate = get_input2<zeno::vec3f>("rotate");
         transform = glm::translate(transform, glm::vec3(position[0], position[1], position[2]));
         transform = glm::rotate(transform, glm::radians(rotate[0]), glm::vec3(1, 0, 0));
         transform = glm::rotate(transform, glm::radians(rotate[1]), glm::vec3(0, 1, 0));
         transform = glm::rotate(transform, glm::radians(rotate[2]), glm::vec3(0, 0, 1));
         transform = glm::scale(transform, glm::vec3(scale[0],scale[1],scale[2]) * radius);
+
         auto n_transform = glm::transpose(glm::inverse(transform));
+
+        nors.resize(verts.size());
         for(int i = 0; i < verts.size(); i++){
             auto n = verts[i];
             auto p = verts[i];
@@ -1237,6 +1240,33 @@ struct CreateSphere : zeno::INode {
         if(!quad){
             primTriangulate(prim.get());
         }
+
+        auto SphereRT = get_input2<bool>("SphereRT");
+
+        if (SphereRT) {
+            prim->userData().set2("sphere_center", std::move(position));
+            prim->userData().set2("sphere_radius", std::move(radius));
+
+            prim->userData().set2("sphere_rotate", std::move(rotate));
+            prim->userData().set2("sphere_scale", std::move(scale));
+
+            // auto sphere_transform = std::make_shared<zeno::MatrixObject>();
+            // sphere_transform->m = transform;
+            auto transform_ptr = glm::value_ptr(transform);
+            
+            zeno::vec4f row0, row1, row2, row3;
+            //zeno::vec<16, float> tmp_array;
+            memcpy(row0.data(), transform_ptr, sizeof(float)*4);
+            memcpy(row1.data(), transform_ptr+4, sizeof(float)*4);
+            memcpy(row2.data(), transform_ptr+8, sizeof(float)*4);  
+            memcpy(row3.data(), transform_ptr+12, sizeof(float)*4);
+
+            prim->userData().set2("sphere_transform_row0", row0);
+            prim->userData().set2("sphere_transform_row1", row1);
+            prim->userData().set2("sphere_transform_row2", row2);
+            prim->userData().set2("sphere_transform_row3", row3);
+        }
+
         set_output("prim",std::move(prim));
     }
 };
@@ -1253,6 +1283,7 @@ ZENDEFNODE(CreateSphere, {
         {"int", "rows", "12"},
         {"int", "columns", "24"},
         {"bool", "quads", "0"},
+        {"bool", "SphereRT", "0"}
     },
     {"prim"},
     {},

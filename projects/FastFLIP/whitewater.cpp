@@ -58,10 +58,6 @@ struct WhitewaterSource : INode {
         if (vor_emit > eps) {
             Vorticity = openvdb::tools::curl(*Velocity);
         }
-        auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
-        auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
-        auto vel_axr = Velocity->getConstUnsafeAccessor();
-        auto pre_vel_axr = Pre_vel->getConstUnsafeAccessor();
 
         std::random_device rd;
         std::mt19937 gen(rd());
@@ -71,8 +67,11 @@ struct WhitewaterSource : INode {
         std::mutex mutex;
 
         auto particle_emitter = [&](openvdb::FloatTree::LeafNodeType &leaf, openvdb::Index leafpos) {
-            // auto &new_pos = new_pars_pos[std::this_thread::get_id()];
-            // auto &new_vel = new_pars_vel[std::this_thread::get_id()];
+            auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
+            auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
+            auto vel_axr = Velocity->getConstUnsafeAccessor();
+            auto pre_vel_axr = Pre_vel->getConstUnsafeAccessor();
+
             typename MapT::iterator posIter, velIter;
             {
                 std::lock_guard<std::mutex> lk(mutex);
@@ -219,13 +218,13 @@ struct WhitewaterSolver : INode {
 
         auto Normal = openvdb::tools::gradient(*Solid_sdf);
 
-        auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
-        auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
-        auto vel_axr = Velocity->getConstUnsafeAccessor();
-        auto norm_axr = Normal->getConstUnsafeAccessor();
-
 #pragma omp parallel for
         for (size_t idx = 0; idx < pars->size(); ++idx) {
+            auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
+            auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
+            auto vel_axr = Velocity->getConstUnsafeAccessor();
+            auto norm_axr = Normal->getConstUnsafeAccessor();
+
             auto m_vel = vec_to_other<openvdb::Vec3f>(par_vel[idx]);
             auto wcoord = vec_to_other<openvdb::Vec3f>(par_pos[idx]);
             float m_liquid_sdf = openvdb::tools::BoxSampler::sample(liquid_sdf_axr, Liquid_sdf->worldToIndex(wcoord));

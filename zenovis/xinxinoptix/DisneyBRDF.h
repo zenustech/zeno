@@ -17,7 +17,7 @@ static __inline__ __device__ vec3 fresnelSchlick(vec3 r0, float radians)
 static __inline__ __device__ float fresnelSchlick(float r0, float radians)
 {
     //previous : mix(1.0, fresnel(radians), r0); //wrong
-    return mix(fresnel(radians), 1.0, r0); //giving: (1 - r0) * pow(radians, 5) + r0, consistant with line 15
+    return mix(fresnel(radians), 1.0f, r0); //giving: (1 - r0) * pow(radians, 5) + r0, consistant with line 15
 }
 static __inline__ __device__ float SchlickWeight(float u)
 {
@@ -49,7 +49,7 @@ static __inline__ __device__ float fresnelDielectric(float cosThetaI, float ni, 
     }
 
     float sinThetaI = sqrtf(max(0.0f, 1.0f - cosThetaI * cosThetaI));
-    float sinThetaT = ni / (nt + 1e-5) * sinThetaI;
+    float sinThetaT = ni / (nt + 1e-5f) * sinThetaI;
 
     if(sinThetaT >= 1)
     {
@@ -58,18 +58,18 @@ static __inline__ __device__ float fresnelDielectric(float cosThetaI, float ni, 
 
     float cosThetaT = sqrtf(max(0.0f, 1.0f - sinThetaT * sinThetaT));
 
-    float rParallel     = ((nt * cosThetaI) - (ni * cosThetaT)) / ((nt * cosThetaI) + (ni * cosThetaT) + 1e-5);
-    float rPerpendicuar = ((ni * cosThetaI) - (nt * cosThetaT)) / ((ni * cosThetaI) + (nt * cosThetaT) + 1e-5);
+    float rParallel     = ((nt * cosThetaI) - (ni * cosThetaT)) / ((nt * cosThetaI) + (ni * cosThetaT) + 1e-5f);
+    float rPerpendicuar = ((ni * cosThetaI) - (nt * cosThetaT)) / ((ni * cosThetaI) + (nt * cosThetaT) + 1e-5f);
     return (rParallel * rParallel + rPerpendicuar * rPerpendicuar) / 2;
 }
 static __inline__ __device__  float GTR1(float cosT,float a){
     if(a >= 1.0f) return 1/M_PIf;
     float t = (1+(a*a-1)*cosT*cosT);
-    return (a*a-1.0f) / (M_PIf*logf(a*a)*t  + 1e-5);
+    return (a*a-1.0f) / (M_PIf*logf(a*a)*t  + 1e-5f);
 }
 static __inline__ __device__  float GTR2(float cosT,float a){
     float t = (1+(a*a-1)*cosT*cosT);
-    return (a*a) / (M_PIf*t*t  + 1e-5);
+    return (a*a) / (M_PIf*t*t  + 1e-5f);
 }
 static __inline__ __device__  float GGX(float cosT, float a){
     float a2 = a*a;
@@ -165,14 +165,14 @@ vec3 mon2lin(vec3 c)
 static __inline__ __device__ float  SeparableSmithGGXG1(vec3 w, vec3 wm, float ax, float ay)
 {
 
-    if(abs(w.z)<1e-5) {
+    if(abs(w.z)<1e-5f) {
         return 0.0f;
     }
     float sinTheta = sqrtf(1.0f - w.z * w.z);
     float absTanTheta = abs( sinTheta / w.z);
-    float Cos2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.x / (sinTheta + 1e-5), -1.0f, 1.0f);
+    float Cos2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.x / (sinTheta + 1e-5f), -1.0f, 1.0f);
     Cos2Phi *= Cos2Phi;
-    float Sin2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.y / (sinTheta + 1e-5), -1.0f, 1.0f);
+    float Sin2Phi = (sinTheta == 0.0f)? 1.0f:clamp(w.y / (sinTheta + 1e-5f), -1.0f, 1.0f);
     Sin2Phi *= Sin2Phi;
     float a = sqrtf(Cos2Phi * ax * ax + Sin2Phi * ay * ay);
     float a2Tan2Theta = pow(a * absTanTheta, 2.0f);
@@ -188,7 +188,7 @@ static __inline__ __device__ float GgxAnisotropicD(vec3 wm, float ax, float ay)
     float ax2 = ax * ax;
     float ay2 = ay * ay;
 
-    return 1.0f / (M_PIf * ax * ay * powf(dotHX2 / ax2 + dotHY2 / ay2 + cos2Theta, 2.0f) + 1e-5);
+    return 1.0f / (M_PIf * ax * ay * powf(dotHX2 / ax2 + dotHY2 / ay2 + cos2Theta, 2.0f) + 1e-5f);
 }
 
 static __inline__ __device__ void GgxVndfAnisotropicPdf(vec3 wi, vec3 wm, vec3 wo, float ax, float ay,
@@ -210,7 +210,7 @@ static __inline__ __device__
 vec3 sampleGgxAnisotropic(vec3 wo, float alphaX, float alphaY, float u1, float u2)
 {
     float r1 = u1;
-    float phi = atan(alphaY / alphaX * tan(2.0 * M_PIf * r1 + 0.5 * M_PIf));
+    float phi = atan(alphaY / alphaX * tan(2.0f * M_PIf * r1 + 0.5f * M_PIf));
     phi += r1 > 0.5f ? M_PIf : 0.0f;
     float sinP = sin(phi);
     float cosP = cos(phi);

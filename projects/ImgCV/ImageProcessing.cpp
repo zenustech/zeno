@@ -1988,9 +1988,6 @@ struct ImageMatting: INode {
                    image->verts[i][2] <= 0.01 && image->verts.attr<float>("alpha")[i] != 0){
                     image->verts.attr<float>("alpha")[i] = 0;
                 }
-                else{
-//                    image->verts.attr<float>("alpha")[i] = 1;
-                }
             }
         }
         else if(imagemode == "deletewhite"){
@@ -2004,9 +2001,6 @@ struct ImageMatting: INode {
                 if(image->verts[i][0] >= 0.99 && image->verts[i][1] >= 0.99 &&
                    image->verts[i][2] >= 0.99 && image->verts.attr<float>("alpha")[i] != 0){
                     image->verts.attr<float>("alpha")[i] = 0;
-                }
-                else{
-//                    image->verts.attr<float>("alpha")[i] = 1;
                 }
             }
         }
@@ -2128,18 +2122,13 @@ struct ImageMatting: INode {
                             }
                         }
                     }
-                } else if (maskmode == "alpha") {
+                }
+                else if (maskmode == "alpha") {
                     if (gimage->verts.has_attr("alpha")) {
 #pragma omp parallel for
                         for (int i = 0; i < h; i++) {
                             for (int j = 0; j < w; j++) {
-                                if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
-                                    image->verts.attr<float>("alpha")[i * w + j] != 0) {
-                                    image->verts.attr<float>("alpha")[i * w + j] = gimage->verts.attr<float>("alpha")[
-                                            i * w + j];
-                                } else {
-                                    image->verts.attr<float>("alpha")[i * w + j] = 1;
-                                }
+                                image->verts.attr<float>("alpha")[i * w + j] = gimage->verts.attr<float>("alpha")[i * w + j];
                             }
                         }
                     } else {
@@ -2154,11 +2143,9 @@ struct ImageMatting: INode {
                     }
                 }
             }
+            //todo
             else if (wg < w && hg < h) {
-
             }
-//            for (int i = (hg < h ? (h - hg) / 2 : 0); i < (hg < h ? h - (h - hg) / 2 : h); i++) {
-//                for (int j = (wg < w ? (w - wg) / 2 : 0); j < (wg < w ? w - (w - wg) / 2 : w); j++) {
         }
         set_output("image", image);
     }
@@ -2177,6 +2164,7 @@ ZENDEFNODE(ImageMatting, {
     {},
     { "image" },
 });
+
 struct ImageDelAlpha: INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -2187,10 +2175,6 @@ struct ImageDelAlpha: INode {
         if(image->verts.has_attr("alpha")){
             image->verts.erase_attr("alpha");
         }
-        for(int i = 0;i<image->verts.size();i++){
-            image->verts.attr<float>("alpha")[i] = 1;
-        }
-
         set_output("image", image);
     }
 };
@@ -2198,7 +2182,6 @@ struct ImageDelAlpha: INode {
 ZENDEFNODE(ImageDelAlpha, {
     {
         {"image"},
-        {"mask"},
     },
     {
         {"image"}
@@ -2206,6 +2189,108 @@ ZENDEFNODE(ImageDelAlpha, {
     {},
     { "image" },
 });
+
+struct ImageAddAlpha: INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        auto maskmode = get_input2<std::string>("maskmode");
+        image->verts.add_attr<float>("alpha");
+        for(int i = 0;i < image->size();i++){
+            image->verts.attr<float>("alpha")[i] = 1;
+        }
+        if (has_input("mask")) {
+            auto gimage = get_input2<PrimitiveObject>("mask");
+            auto &gud = gimage->userData();
+            int wg = gud.get2<int>("w");
+            int hg = gud.get2<int>("h");
+            if (wg == w && hg == h) {
+                 if (maskmode == "gray_black") {
+                    if (gimage->verts.has_attr("alpha")) {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
+                                    image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 1 - gimage->verts[i * w + j][0];
+                                } else {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                }
+                            }
+                        }
+                    } else {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 1 - gimage->verts[i * w + j][0];
+                                }
+                            }
+                        }
+                    }
+                } else if (maskmode == "gray_white") {
+                    if (gimage->verts.has_attr("alpha")) {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
+                                    image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = gimage->verts[i * w + j][0];
+                                } else {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 0;
+                                }
+                            }
+                        }
+                    } else {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = gimage->verts[i * w + j][0];
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (maskmode == "alpha") {
+                    if (gimage->verts.has_attr("alpha")) {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                image->verts.attr<float>("alpha")[i * w + j] = gimage->verts.attr<float>("alpha")[i * w + j];
+                            }
+                        }
+                    } else {
+#pragma omp parallel for
+                        for (int i = 0; i < h; i++) {
+                            for (int j = 0; j < w; j++) {
+                                if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
+                                    image->verts.attr<float>("alpha")[i * w + j] = 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageAddAlpha, {
+    {
+        {"image"},
+        {"mask"},
+        {"enum alpha gray_black gray_white", "maskmode", "alpha"},
+    },
+    {
+        {"image"}
+    },
+    {},
+    { "image" },
+});
+
 struct ImageCut: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
@@ -2237,6 +2322,32 @@ ZENDEFNODE(ImageCut, {
     },
     {},
     {"image"},
+});
+//根据灰度进行上色
+struct MaskEdit: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        UserData &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        for(int i = 0;i < image->size();i++){
+
+        }
+
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(MaskEdit, {
+    {
+        {"image"},
+        {"int", "rows", "2"},
+        {"int", "cols", "2"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"deprecated"},
 });
 struct ImageShape: INode {
     void apply() override {
