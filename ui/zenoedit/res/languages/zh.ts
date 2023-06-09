@@ -25,6 +25,13 @@
     </message>
 </context>
 <context>
+    <name>ColorWidget</name>
+    <message>
+        <source>More Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DesignerMainWin</name>
     <message>
         <source>Open</source>
@@ -2233,6 +2240,18 @@
     <message>
         <source>CustomName invalid!</source>
         <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set KeyFrame</source>
+        <translation type="unfinished">设置K帧</translation>
+    </message>
+    <message>
+        <source>Del KeyFrame</source>
+        <translation type="unfinished">删除K帧</translation>
+    </message>
+    <message>
+        <source>KeyFrames</source>
+        <translation type="unfinished">编辑K帧</translation>
     </message>
 </context>
 <context>

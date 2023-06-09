@@ -1833,17 +1833,6 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
     }
 }
 
-QString UiHelper::getCurveKey(int index) 
-{
-    switch (index) {
-    case 0: return "x";
-    case 1: return "y";
-    case 2: return "z";
-    case 3: return "w";
-    default: return "";
-    }
-}
-
 static std::string getZenoVersion()
 {
     const char *date = __DATE__;

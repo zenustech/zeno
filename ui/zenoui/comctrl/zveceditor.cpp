@@ -2,6 +2,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/uihelper.h>
 #include "zlineedit.h"
+#include <zenomodel/include/curveutil.h>
 
 ZVecEditor::ZVecEditor(const QVariant &vec, bool bFloat, int deflSize, QString styleCls, QWidget *parent)
 	: QWidget(parent)
@@ -55,7 +56,7 @@ void ZVecEditor::initUI(const QVariant &vec) {
             setText(vec.value<UI_VECSTRING>().at(i), m_editors[i]);
         else if (vec.canConvert<CURVES_DATA>()) {
             CURVES_DATA curves = vec.value<CURVES_DATA>();
-            QString key = UiHelper::getCurveKey(i);
+            QString key = curve_util::getCurveKey(i);
             if (curves.contains(key)) {
                 m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));
             }
@@ -97,7 +98,7 @@ QVariant ZVecEditor::vec() const
             if (m_editors[i]->property(g_keyFrame).canConvert<CURVE_DATA>()) 
             {
                 CURVE_DATA data = m_editors[i]->property(g_keyFrame).value<CURVE_DATA>();
-                QString key = UiHelper::getCurveKey(i);
+                QString key = curve_util::getCurveKey(i);
                 datas.insert(key, data);
             } 
             else 
@@ -167,7 +168,7 @@ void ZVecEditor::setVec(const QVariant& vec, bool bFloat)
                 setText(vec.value<UI_VECSTRING>().at(i), m_editors[i]);
             else if (vec.canConvert<CURVES_DATA>()) {
                 CURVES_DATA curves = vec.value<CURVES_DATA>();
-                QString key = UiHelper::getCurveKey(i);
+                QString key = curve_util::getCurveKey(i);
                 if (curves.contains(key)) 
                 {
                     m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));

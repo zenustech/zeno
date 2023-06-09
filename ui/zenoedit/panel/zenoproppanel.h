@@ -51,7 +51,6 @@ private:
     ZExpandableSection* findGroup(const QString& tabName, const QString& groupName);
     void getDelfCurveData(CURVE_DATA &curve, float val, bool visible, const QString& key);
     void updateHandler(CURVE_DATA &curve);
-    void updateRange(CURVES_DATA &curves);
     bool isSetKeyFrame(const CURVES_DATA &curves);
     QStringList getKeys(const QObject *obj, const _PANEL_CONTROL &ctrl);
     void setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList  &keys);
