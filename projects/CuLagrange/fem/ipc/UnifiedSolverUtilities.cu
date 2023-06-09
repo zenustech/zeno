@@ -160,6 +160,8 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
         auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
         bool ifHardCons = get_input2<bool>("hard_constraint");
         bool boundaryWise = get_input2<bool>("boundary_wise");
+        if (boundaryWise)
+            markBoundaryVerts(cudaPol, A.get());
 
         bvh_t bouBvh;
         Vector<bv_t> bouVertBvs{vtemp.get_allocator(), numBouVerts};
@@ -218,7 +220,7 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
 ZENDEFNODE(UnifiedIPCSystemClothBinding, {{
                                               "ZSUnifiedIPCSystem",
                                               "ZSLevelSet",
-                                              {"bool", "boundary_wise", "1"},
+                                              {"bool", "boundary_wise", "0"},
                                               {"bool", "hard_constraint", "1"},
                                               {"float", "dist_cap", "0"},
                                               {"float", "rest_length", "0.1"},

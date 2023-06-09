@@ -865,8 +865,6 @@ void mark_surface_boundary_verts(Pol &&pol, const ZenoParticles::particles_t &su
                 tab.insert(key_t{i});
             else
                 static_assert(always_false<MarkIter>, "do not support codim other than 2 or 3.");
-            if (dim == 2)
-                break;
             i = j;
         }
     });
