@@ -68,7 +68,8 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
     }
     template <typename VTilesT, typename LsView, typename Bvh>
     std::shared_ptr<tiles_t> bindStrings(zs::CudaExecutionPolicy &cudaPol, VTilesT &vtemp, std::size_t numVerts,
-                                         LsView lsv, const Bvh &bvh, float k, float distCap, float rl) {
+                                         LsView lsv, const Bvh &bvh, float k, float distCap, float rl,
+                                         bool boundaryWise) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         // assume all verts
@@ -76,8 +77,11 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
         nStrings.setVal(0);
         tiles_t strings{vtemp.get_allocator(), {{"inds", 2}, {"vol", 1}, {"k", 1}, {"rl", 1}}, numVerts};
         cudaPol(range(numVerts), [vtemp = proxy<space>({}, vtemp), eles = proxy<space>({}, strings), lsv, distCap,
-                                  bvh = proxy<space>(bvh), cnt = proxy<space>(nStrings), coOffset = numVerts, k,
-                                  rl] ZS_LAMBDA(int i) mutable {
+                                  bvh = proxy<space>(bvh), cnt = proxy<space>(nStrings), coOffset = numVerts, k, rl,
+                                  boundaryWise] ZS_LAMBDA(int i) mutable {
+            if (boundaryWise && vtemp.hasProperty("on_boundary"))
+                if (vtemp("on_boundary", i, zs::wrapt<i64>{}) == 0) // only operate on verts on boundary
+                    return;
             auto x = vtemp.pack(dim_c<3>, "xn", i);
             if (lsv.getSignedDistance(x) < 0) {
                 float dist = distCap;
@@ -152,11 +156,14 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
         auto &vtemp = A->vtemp;
         const auto numVerts = A->coOffset;
 
+        auto cudaPol = zs::cuda_exec().sync(true);
+
         auto zsls = get_input<ZenoLevelSet>("ZSLevelSet");
         bool ifHardCons = get_input2<bool>("hard_constraint");
         bool boundaryWise = get_input2<bool>("boundary_wise");
+        if (boundaryWise)
+            markBoundaryVerts(cudaPol, A.get());
 
-        auto cudaPol = zs::cuda_exec().sync(true);
         bvh_t bouBvh;
         Vector<bv_t> bouVertBvs{vtemp.get_allocator(), numBouVerts};
         cudaPol(enumerate(bouVertBvs),
@@ -182,15 +189,16 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
             if constexpr (is_same_v<RM_CVREF_T(ls), basic_ls_t>) {
                 match([&](const auto &lsPtr) {
                     auto lsv = get_level_set_view<execspace_e::cuda>(lsPtr);
-                    A->pushBoundarySprings(bindStrings(cudaPol, vtemp, numVerts, lsv, bouBvh, k, dist_cap, rl),
-                                           ifHardCons ? ZenoParticles::category_e::tracker
-                                                      : ZenoParticles::category_e::curve);
+                    A->pushBoundarySprings(
+                        bindStrings(cudaPol, vtemp, numVerts, lsv, bouBvh, k, dist_cap, rl, boundaryWise),
+                        ifHardCons ? ZenoParticles::category_e::tracker : ZenoParticles::category_e::curve);
                 })(ls._ls);
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_sdf_vel_ls_t>) {
                 match([&](auto lsv) {
-                    A->pushBoundarySprings(
-                        bindStrings(cudaPol, vtemp, numVerts, SdfVelFieldView{lsv}, bouBvh, k, dist_cap, rl),
-                        ifHardCons ? ZenoParticles::category_e::tracker : ZenoParticles::category_e::curve);
+                    A->pushBoundarySprings(bindStrings(cudaPol, vtemp, numVerts, SdfVelFieldView{lsv}, bouBvh, k,
+                                                       dist_cap, rl, boundaryWise),
+                                           ifHardCons ? ZenoParticles::category_e::tracker
+                                                      : ZenoParticles::category_e::curve);
                 })(ls.template getView<execspace_e::cuda>());
             } else if constexpr (is_same_v<RM_CVREF_T(ls), const_transition_ls_t>) {
                 match([&](auto fieldPair) {
@@ -200,7 +208,7 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
                         bindStrings(cudaPol, vtemp, numVerts,
                                     TransitionLevelSetView{SdfVelFieldView{fvSrc}, SdfVelFieldView{fvDst}, ls._stepDt,
                                                            ls._alpha},
-                                    bouBvh, k, dist_cap, rl),
+                                    bouBvh, k, dist_cap, rl, boundaryWise),
                         ifHardCons ? ZenoParticles::category_e::tracker : ZenoParticles::category_e::curve);
                 })(ls.template getView<zs::execspace_e::cuda>());
             }
@@ -213,7 +221,7 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
 ZENDEFNODE(UnifiedIPCSystemClothBinding, {{
                                               "ZSUnifiedIPCSystem",
                                               "ZSLevelSet",
-                                              {"bool", "boundary_wise", "1"},
+                                              {"bool", "boundary_wise", "0"},
                                               {"bool", "hard_constraint", "1"},
                                               {"float", "dist_cap", "0"},
                                               {"float", "rest_length", "0.1"},
