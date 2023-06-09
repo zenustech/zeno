@@ -384,23 +384,23 @@ static __inline__ __device__
 vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float sheen, vec3 Csheen, vec3 V, vec3 L, vec3 H, float &pdf)
 {
   pdf = 0.0;
-  if (L.z <= 0.0)
+  if (L.z == 0.0)
     return vec3(0.0);
 
-  float LDotH = dot(L, H);
+  float LDotH = abs(dot(L, H));
 
   float Rr = 2.0f * roughness * LDotH * LDotH;
 
   // Diffuse
-  float FL = SchlickWeight(L.z);
-  float FV = SchlickWeight(V.z);
+  float FL = SchlickWeight(abs(L.z));
+  float FV = SchlickWeight(abs(V.z));
   float Fretro = Rr * (FL + FV + FL * FV * (Rr - 1.0f));
   float Fd = (1.0f - 0.5f * FL) * (1.0f - 0.5f * FV);
 
   // Fake subsurface
   float Fss90 = 0.5f * Rr;
   float Fss = mix(1.0f, Fss90, FL) * mix(1.0f, Fss90, FV);
-  float ss = 1.25f * (Fss * (1.0f / (L.z + V.z) - 0.5f) + 0.5f);
+  float ss = 1.25f * (Fss * (1.0f / (abs(L.z) + abs(V.z)) - 0.5f) + 0.5f);
 
   // Sheen
   float FH = SchlickWeight(LDotH);

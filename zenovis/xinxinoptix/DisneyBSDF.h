@@ -576,6 +576,7 @@ namespace DisneyBSDF{
             vec3 T,
             vec3 B,
             vec3 N,
+            vec3 N2,
             bool thin,
             bool is_inside,
             float& fPdf,
@@ -583,6 +584,11 @@ namespace DisneyBSDF{
             float nDl)
 
     {
+        bool sameside = (dot(wo, N)*dot(wo, N2))>0.0f;
+        if(sameside == false)
+        {
+          wo = normalize(wo - 1.01f * dot(wo, N) * N);
+        }
         float eta = dot(wo, N)>0?ior:1.0f/ior;
         vec3 f = vec3(0.0f);
         fPdf = 0.0f;
@@ -1757,7 +1763,7 @@ namespace DisneyBSDF{
         reflectance = EvaluateDisney2(vec3(1.0f), baseColor, sssColor, metallic, subsurface,
                                       specular, roughness, specularTint, anisotropic, anisoRotation, sheen,
                                       sheenTint, clearCoat, clearcoatGloss, ccRough, ccIor, specTrans,
-                                      scatterDistance, ior, flatness, wi, wo, T, B, N, thin,
+                                      scatterDistance, ior, flatness, wi, wo, T, B, N, N2, thin,
                                       is_inside, pdf, pdf2, 0);
         reflectance = pdf>1e-5f? reflectance/pdf:vec3(0.0f);
         return true;
