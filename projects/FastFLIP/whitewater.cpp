@@ -30,7 +30,6 @@ struct WhitewaterSource : INode {
         auto &Liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF")->m_grid;
         auto &Solid_sdf = get_input<VDBFloatGrid>("SolidSDF")->m_grid;
         auto &Velocity = get_input<VDBFloat3Grid>("Velocity")->m_grid;
-        auto &Pre_vel = get_input<VDBFloat3Grid>("PreVelocity")->m_grid;
 
         auto &par_pos = pars->verts.values;
         auto &par_vel = pars->add_attr<vec3f>("vel");
@@ -50,11 +49,14 @@ struct WhitewaterSource : INode {
 
         float dx = static_cast<float>(Velocity->voxelSize()[0]);
 
-        openvdb::Vec3fGrid::Ptr Normal, Vorticity;
+        openvdb::Vec3fGrid::Ptr Normal, Vorticity, Pre_vel;
         openvdb::FloatGrid::Ptr Curvature;
         if (curv_emit > eps) {
             Normal = openvdb::tools::gradient(*Liquid_sdf);
             Curvature = openvdb::tools::meanCurvature(*Liquid_sdf);
+        }
+        if (acc_emit > eps) {
+            Pre_vel = get_input<VDBFloat3Grid>("PreVelocity")->m_grid;
         }
         if (vor_emit > eps) {
             Vorticity = openvdb::tools::curl(*Velocity);
@@ -71,7 +73,6 @@ struct WhitewaterSource : INode {
             auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
             auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
             auto vel_axr = Velocity->getConstUnsafeAccessor();
-            auto pre_vel_axr = Pre_vel->getConstUnsafeAccessor();
 
             typename MapT::iterator posIter, velIter;
             {
@@ -111,6 +112,7 @@ struct WhitewaterSource : INode {
                     generates += curv_emit * clamp_map(m_curv, curv_range);
                 }
                 if (acc_emit > eps) {
+                    auto pre_vel_axr = Pre_vel->getConstUnsafeAccessor();
                     openvdb::Vec3f m_pre_vel =
                         openvdb::tools::StaggeredBoxSampler::sample(pre_vel_axr, Pre_vel->worldToIndex(wcoord));
                     auto m_acc_vec = (m_vel - m_pre_vel) / dt;
