@@ -173,28 +173,41 @@ struct ExtractMatData : zeno::INode {
         }
         matName->set(data->sMaterial.matName);
 
+        // Make Zeno Objects
         auto texLists = std::make_shared<zeno::ListObject>();
         auto texMaps = std::make_shared<zeno::DictObject>();
+        auto matValues = std::make_shared<zeno::DictObject>();
 
-        std::vector<std::string> texList{}; std::map<std::string, int> texMap{};
+        // Get Texture List And Prop-Index And Mat Params Value
+        std::vector<std::string> texList{};
+        std::map<std::string, int> texMap{};
+        std::map<std::string, aiColor4D> matValue{};
 
-            data->sMaterial.getSimplestTexList(texList, texMap);
+        data->sMaterial.getSimplestTexList(texList, texMap, matValue);
 
-        for(auto&p: texList){
-            auto s = std::make_shared<zeno::StringObject>();
-            s->value = p;
-            texLists->arr.emplace_back(s);
+        // Set Data -> Zeno Object
+        for(auto& path: texList){
+            auto strObj = std::make_shared<zeno::StringObject>();
+            strObj->value = path;
+            texLists->arr.emplace_back(strObj);
         }
-        for(auto&[matName, index]: texMap){
+        for(auto&[matPropName, index]: texMap){
             auto numeric_obj = std::make_shared<zeno::NumericObject>();
             numeric_obj->set(index);
-            texMaps->lut[matName] = std::move(numeric_obj);
+            texMaps->lut[matPropName] = std::move(numeric_obj);
+        }
+
+        for(auto& [matPropName, matPropValue]: matValue){
+            auto numeric_obj = std::make_shared<zeno::NumericObject>();
+            numeric_obj->set(zeno::vec4f(matPropValue.r, matPropValue.g, matPropValue.b, matPropValue.a));
+            matValues->lut[matPropName] = std::move(numeric_obj);
         }
 
         set_output("datas", std::move(datas));
         set_output("matName", std::move(matName));
         set_output("texLists", std::move(texLists));
         set_output("texMaps", std::move(texMaps));
+        set_output("matValues", std::move(matValues));
     }
 };
 ZENDEFNODE(ExtractMatData,
@@ -203,10 +216,11 @@ ZENDEFNODE(ExtractMatData,
                 "data"
             },  /* outputs: */
             {
-                {"ListObject", "datas", ""},
+                {"list", "datas", ""},
                 "matName",
-                {"ListObject", "texLists", ""},
-                {"DictObject", "texMaps", ""}
+                {"list", "texLists", ""},
+                {"DictObject", "texMaps", ""},
+                {"DictObject", "matValues", ""}
             },  /* params: */
             {
 

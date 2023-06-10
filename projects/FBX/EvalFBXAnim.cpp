@@ -662,9 +662,9 @@ ZENDEFNODE(EvalFBXAnim,
                },  /* outputs: */
                {
                    "prim",
-                   {"ListObject", "prims", ""},
+                   {"list", "prims", ""},
                    "camera", "light", "matName", "meshName", "pathName", "bsPrimsOrigin",
-                   {"ListObject", "bsPrims", ""},
+                   {"list", "bsPrims", ""},
                    "transDict", "quatDict", "scaleDict",
                    "writeData", "visibility"
                },  /* params: */
