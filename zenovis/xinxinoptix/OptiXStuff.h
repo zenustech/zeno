@@ -613,7 +613,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
             auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
             illum = zeno::dot(color, zeno::vec3f(0.2126f,0.7152f, 0.0722f));
             //illum = illum > 0.5? illum : 0.0f;
-            illum = abs(illum) * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
+            illum = abs(illum);// * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
 
             sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
             skypdf[idx] = illum;

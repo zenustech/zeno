@@ -133,6 +133,7 @@ extern "C" __global__ void __raygen__rg()
         prd.test_distance = false;
         prd.ss_alpha_queue[0] = vec3(-1.0f);
         prd.minSpecRough = 0.01;
+        prd.samplePdf = 1.0f;
         auto tmin = prd.trace_tmin;
         auto ray_mask = prd._mask_;
 
@@ -254,7 +255,8 @@ extern "C" __global__ void __miss__radiance()
     prd->CH = 0.0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
         float upperBound = 100.0f;
-        prd->radiance =
+        float envPdf = 0.0f;
+        vec3 skysample =
             envSky(
             normalize(prd->direction),
             sunLightDir,
@@ -264,9 +266,14 @@ extern "C" __global__ void __miss__radiance()
             15.,
             1.030725f * 0.3f,
             params.elapsedTime,
+            envPdf,
             upperBound,
             1.0
+
         );
+        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf);
+        misWeight = misWeight>0.0f?misWeight:0.0f;
+        prd->radiance = skysample ;
         prd->done      = true;
         return;
     }
