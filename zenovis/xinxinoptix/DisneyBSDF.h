@@ -615,18 +615,21 @@ namespace DisneyBSDF{
         float schlickWt = BRDFBasics::SchlickWeight(abs(wo.z));
         //event probability
         float diffPr = dielectricWt * Luminance(baseColor);
+        float sssPr = dielectricWt  * Luminance(baseColor) * subsurface;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
         float glassPr = glassWt;
         float clearCtPr = 0.25 * clearCoat;
 
-        float invTotalWt = 1.0 / (diffPr + dielectricPr + metalPr + glassPr + clearCtPr);
+        float invTotalWt = 1.0 / (diffPr + sssPr + dielectricPr + metalPr + glassPr + clearCtPr);
         diffPr       *= invTotalWt;
+        sssPr        *= invTotalWt;
         dielectricPr *= invTotalWt;
         metalPr      *= invTotalWt;
         glassPr      *= invTotalWt;
         clearCtPr    *= invTotalWt;
         float p0 = diffPr;
+        float p1 = p0 + sssPr;
         float p2 = p0 + dielectricPr;
         float p3 = p2 + metalPr;
         float p4 = p3 + glassPr;
@@ -701,6 +704,14 @@ namespace DisneyBSDF{
             f = f + BRDFBasics::EvalClearcoat(ccRough, wo, wi,
                                          wm, tmpPdf) * 0.25 * clearCoat;
             fPdf += tmpPdf * clearCtPr;
+        }
+        if(sssPr>0.0)
+        {
+          bool trans = wo.z * wi.z < 0.0f;
+          float tmpPdf = trans?abs(wi.z)/M_PIf:0.0f;
+          f = f + 1.0f/M_PIf * (trans?vec3(1.0f):vec3(0.0f)) * subsurface * dielectricWt;
+          fPdf += tmpPdf * sssPr;
+
         }
         return float3( f * abs(wi.z) * illum);
     }
@@ -1653,19 +1664,22 @@ namespace DisneyBSDF{
 
         //event probability
         float diffPr = dielectricWt * Luminance(baseColor);
+        float sssPr = dielectricWt  * Luminance(baseColor) * subsurface;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
         float glassPr = glassWt;
         float clearCtPr = 0.25 * clearCoat;
 
-        float invTotalWt = 1.0 / (diffPr + dielectricPr + metalPr + glassPr + clearCtPr);
+        float invTotalWt = 1.0 / (diffPr + sssPr + dielectricPr + metalPr + glassPr + clearCtPr);
         diffPr       *= invTotalWt;
+        sssPr        *= invTotalWt;
         dielectricPr *= invTotalWt;
         metalPr      *= invTotalWt;
         glassPr      *= invTotalWt;
         clearCtPr    *= invTotalWt;
         float p0 = diffPr;
-        float p2 = p0 + dielectricPr;
+        float p1 = p0 + sssPr;
+        float p2 = p1 + dielectricPr;
         float p3 = p2 + metalPr;
         float p4 = p3 + glassPr;
         float p5 = p4 + clearCtPr;
@@ -1676,36 +1690,12 @@ namespace DisneyBSDF{
         tbn.m_binormal = B;
         if(r3<p0) // diffuse
         {
-            float psub = subsurface / (1.0f + subsurface);
-            float r4 = rnd(seed);
-            if(r4<psub)
-            {
-              wi = wo.z > 0 ? -BRDFBasics::CosineSampleHemisphere(r1, r2)
-                            : BRDFBasics::CosineSampleHemisphere(r1, r2);
-              bool trans = true;
-              isSS = wo.z > 0 ? true : false;
-              flag = transmissionEvent;
-              vec3 color = mix(baseColor, sssColor, subsurface);
-              color = clamp(color, vec3(0.05), vec3(0.99));
-              vec3 sssRadius = transmiianceColor * subsurface;
-              RadiancePRD *prd = getPRD();
-              prd->ss_alpha = color;
-              if (isSS) {
-                medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t,
-                                     prd->ss_alpha);
-              }
-              tbn.inverse_transform(wi);
-              wi = normalize(wi);
+            //float psub = subsurface / (1.0f + subsurface);
+            //float r4 = rnd(seed);
+            //if(r4<psub)
 
-              bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
-              if (sameside == false) {
-                wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
-              }
-              reflectance = vec3(1.0f) * M_PIf ;
-              return true;
-            }else
-            {
+            //else
+            //{
               wi = BRDFBasics::CosineSampleHemisphere(r1, r2);
               tbn.inverse_transform(wi);
               wi = normalize(wi);
@@ -1714,9 +1704,38 @@ namespace DisneyBSDF{
               if (sameside == false) {
                 wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
               }
-            }
+            //}
 
-        }else if(r3<p3)//specular
+        }else if(r3<p1)
+        {
+
+            wi = wo.z > 0 ? -BRDFBasics::CosineSampleHemisphere(r1, r2)
+                          : BRDFBasics::CosineSampleHemisphere(r1, r2);
+            bool trans = true;
+            isSS = wo.z > 0 ? true : false;
+            flag = transmissionEvent;
+            vec3 color = mix(baseColor, sssColor, subsurface);
+            color = clamp(color, vec3(0.05), vec3(0.99));
+            vec3 sssRadius = transmiianceColor * subsurface;
+            RadiancePRD *prd = getPRD();
+            prd->ss_alpha = color;
+            if (isSS) {
+              medium = PhaseFunctions::isotropic;
+              CalculateExtinction2(color, sssRadius, prd->sigma_t,
+                                   prd->ss_alpha);
+            }
+            tbn.inverse_transform(wi);
+            wi = normalize(wi);
+
+            bool sameside2 = (dot(wi, N) * dot(wi, N2)) > 0.0f;
+            if (sameside == false) {
+              wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
+            }
+            //reflectance = vec3(1.0f) * M_PIf ;
+            //return true;
+
+        }
+        else if(r3<p3)//specular
         {
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(roughness,anisotropic,ax,ay);
