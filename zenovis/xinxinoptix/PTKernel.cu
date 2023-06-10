@@ -268,12 +268,14 @@ extern "C" __global__ void __miss__radiance()
             params.elapsedTime,
             envPdf,
             upperBound,
-            1.0
+            0.0
 
         );
         float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf);
         misWeight = misWeight>0.0f?misWeight:0.0f;
-        prd->radiance = skysample ;
+        misWeight = prd->depth>=1?misWeight:1.0f;
+        misWeight = (prd->samplePdf<0.25f||envPdf<0.25f)?misWeight:1.0f;
+        prd->radiance = misWeight * skysample ;
         prd->done      = true;
         return;
     }

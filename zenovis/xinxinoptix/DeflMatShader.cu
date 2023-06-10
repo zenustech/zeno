@@ -1087,7 +1087,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     } else {
         float env_weight_sum = 1e-8f;
-        int NSamples = prd->depth<=2?1:1;//16 / pow(4.0f, (float)prd->depth-1);
+        int NSamples = prd->depth==1?5:1;//16 / pow(4.0f, (float)prd->depth-1);
     for(int samples=0;samples<NSamples;samples++) {
         float3 lbrdf{};
         bool inside = false;
@@ -1142,7 +1142,10 @@ extern "C" __global__ void __closesthit__radiance()
         }
         float misWeight = BRDFBasics::PowerHeuristic(envpdf, ffPdf);
         misWeight = misWeight>0.0f?misWeight:0.0f;
-        prd->radiance += 1.0f / (float)NSamples *
+        misWeight = ffPdf>1e-5f?misWeight:1.0f;
+        misWeight = (ffPdf<0.1||envpdf<0.1)?misWeight:1.0f;
+        float     add = ffPdf>1e-5f?1.0f:0.0f;
+        prd->radiance += add * misWeight * 1.0f / (float)NSamples *
             light_attenuation  / envpdf * 2.0f * (thin > 0.5f ? float3(mat2.reflectance) : lbrdf);
     }
         prd->radiance = float3(clamp(vec3(prd->radiance), vec3(0.0f), vec3(100.0f)));
