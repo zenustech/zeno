@@ -1784,7 +1784,8 @@ namespace DisneyBSDF{
                                       sheenTint, clearCoat, clearcoatGloss, ccRough, ccIor, specTrans,
                                       scatterDistance, ior, flatness, wi, wo, T, B, N, N2, thin,
                                       is_inside, pdf, pdf2, 0);
-        reflectance = pdf>1e-5f? reflectance/pdf:vec3(0.0f);
+        fPdf = pdf;
+        reflectance = reflectance;
         return true;
     }
 
@@ -2216,7 +2217,7 @@ static __inline__ __device__ vec3 proceduralSky(
 }
 
 static __inline__ __device__ vec3 hdrSky(
-        vec3 dir, float upperBound,  float isclamp
+        vec3 dir, float upperBound,  float isclamp, float &pdf
 ){
     dir = dir
             .rotY(to_radians(params.sky_rot_y))
@@ -2227,6 +2228,10 @@ static __inline__ __device__ vec3 hdrSky(
     float v = asin(dir.y) / 3.1415926f + 0.5f;
     vec3 col = (vec3)texture2D(params.sky_texture, vec2(u, v)) * params.sky_strength;
     vec3 col2 = clamp(col, vec3(0.0f), vec3(upperBound));
+    int i = u * params.skynx;
+    int j = v * params.skyny;
+    float p = params.skycdf[params.skynx * params.skyny + j * params.skynx + i];
+    pdf = p / (2.0f * M_PIf * M_PIf * sin(((float)j+0.5f)/(float)params.skyny*M_PIf));
     return mix(col, col2, isclamp);
 }
 
@@ -2267,6 +2272,7 @@ static __inline__ __device__ vec3 envSky(
     float thickness,
     float absorption,
     float t,
+    float &pdf,
     float upperBound = 100.0f,
     float isclamp = 0.0f
 ){
@@ -2285,7 +2291,7 @@ static __inline__ __device__ vec3 envSky(
     }
     else {
         color = hdrSky(
-            dir, upperBound, isclamp
+            dir, upperBound, isclamp, pdf
         );
     }
     if (params.colorTemperatureMix > 0) {

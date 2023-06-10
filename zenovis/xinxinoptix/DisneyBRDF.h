@@ -4,6 +4,12 @@
 #include "TraceStuff.h"
 
 namespace BRDFBasics{
+static __inline__ __device__
+float PowerHeuristic(float a, float b)
+{
+  float t = a * a;
+  return t / (b * b + t);
+}
 static __inline__ __device__  float fresnel(float cosT){
     float v = clamp(1-cosT,0.0f,1.0f);
     float v2 = v *v;
