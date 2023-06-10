@@ -48,6 +48,9 @@
 #include "util/apphelper.h"
 #include "dialog/zaboutdlg.h"
 
+#include <zenomodel/include/zenomodel.h>
+#include <zeno/extra/GlobalStatus.h>
+#include <zeno/core/Session.h>
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -809,6 +812,15 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     QDir dir(recInfo.record_path);
     ZASSERT_EXIT(dir.exists());
     dir.mkdir("P"); //optix worker need this directory
+    {
+        QString dir_path = recInfo.record_path + "/P/";
+        QDir qDir = QDir(dir_path);
+        qDir.setNameFilters(QStringList("*.jpg"));
+        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+        for (auto i = 0; i < fileList.size(); i++) {
+            qDir.remove(fileList.at(i));
+        }
+    }
 
     if (!param.sPixel.isEmpty())
     {
@@ -827,13 +839,46 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     }
 
     connect(this, &ZenoMainWindow::runFinished, this, [=]() {
-        OptixWorker worker;
-        worker.recordVideo(recInfo);
-        QApplication::exit(0);
+        auto globalStatus = zeno::getSession().globalStatus.get();
+        if (globalStatus->failed())
+        {
+            zeno::log_info("process exited with {}", -1);
+            QApplication::exit(-1);
+        }
+        else {
+            OptixWorker worker;
+            worker.recordVideo(recInfo);
+            QApplication::exit(0);
+        }
     });
 
     bool ret = openFile(param.sZsgPath);
     ZASSERT_EXIT(ret);
+    if (!param.subZsg.isEmpty())
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        for (auto subgFilepath : param.subZsg.split(","))
+        {
+            zenoApp->graphsManagment()->importGraph(subgFilepath);
+        }
+        QModelIndex mainGraphIdx = pGraphsModel->index("main");
+
+        for (QModelIndex subgIdx : pGraphsModel->subgraphsIndice())
+        {
+            QString subgName = subgIdx.data(ROLE_OBJNAME).toString();
+            if (subgName == "main" || subgName.isEmpty())
+            {
+                continue;
+            }
+            QString subgNodeId = NodesMgr::createNewNode(pGraphsModel, mainGraphIdx, subgName, QPointF(500, 500));
+            QModelIndex subgNodeIdx = pGraphsModel->index(subgNodeId, mainGraphIdx);
+            STATUS_UPDATE_INFO info;
+            info.role = ROLE_OPTIONS;
+            info.oldValue = subgNodeIdx.data(ROLE_OPTIONS).toInt();
+            info.newValue = subgNodeIdx.data(ROLE_OPTIONS).toInt() | OPT_VIEW;
+            pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
+        }
+    }
     zeno::getSession().globalComm->clearState();
 
     auto pGraphsMgr = zenoApp->graphsManagment();
@@ -846,7 +891,7 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     //viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
 }
 
-void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, bool bIsOptix)
+void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
 {
 	auto& pGlobalComm = zeno::getSession().globalComm;
 	ZASSERT_EXIT(pGlobalComm);
@@ -876,6 +921,7 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, b
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
+    recInfo.bRecordByCommandLine = true;
 
     if (!param.sPixel.isEmpty())
     {
@@ -895,6 +941,31 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, b
     viewWidget->setNumSamples(param.bRecord ? param.iSample : 16);
     bool ret = openFile(param.sZsgPath);
     ZASSERT_EXIT(ret);
+    if (!param.subZsg.isEmpty())
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        for (auto subgFilepath : param.subZsg.split(","))
+        {
+	        zenoApp->graphsManagment()->importGraph(subgFilepath);
+        }
+        QModelIndex mainGraphIdx = pGraphsModel->index("main");
+
+        for (QModelIndex subgIdx : pGraphsModel->subgraphsIndice())
+        {
+            QString subgName = subgIdx.data(ROLE_OBJNAME).toString();
+            if (subgName == "main" || subgName.isEmpty())
+            {
+                continue;
+            }
+            QString subgNodeId = NodesMgr::createNewNode(pGraphsModel, mainGraphIdx, subgName, QPointF(500, 500));
+            QModelIndex subgNodeIdx = pGraphsModel->index(subgNodeId, mainGraphIdx);
+            STATUS_UPDATE_INFO info;
+            info.role = ROLE_OPTIONS;
+            info.oldValue = subgNodeIdx.data(ROLE_OPTIONS).toInt();
+            info.newValue = subgNodeIdx.data(ROLE_OPTIONS).toInt() | OPT_VIEW;
+            pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
+        }
+    }
 	zeno::getSession().globalComm->clearState();
 	viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
 
@@ -904,27 +975,18 @@ void ZenoMainWindow::directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param, b
 	RecordVideoMgr* recordMgr = new RecordVideoMgr(this);
 	recordMgr->setParent(viewWidget);
 	recordMgr->setRecordInfo(recInfo);
-    connect(recordMgr, &RecordVideoMgr::recordFailed, this, []() {
-        QApplication::exit(-1);
+    connect(this, &ZenoMainWindow::runFinished, this, [=]() {
+        connect(recordMgr, &RecordVideoMgr::recordFailed, this, []() {
+            zeno::log_info("process exited with {}", -1);
+            QApplication::exit(-1);
+            });
+        connect(recordMgr, &RecordVideoMgr::recordFinished, this, []() {
+            QApplication::exit(0);
+            });
         });
-    connect(recordMgr, &RecordVideoMgr::recordFinished, this, []() {
-        QApplication::exit(0);
-        });
-    if (bIsOptix)
-    {
-        if (viewWidget->optixViewport()) {
-			viewWidget->optixViewport()->recordVideo(recInfo);
-            connect(viewWidget->optixViewport(), &ZOptixViewport::sig_recordFinished, this, [=]() {
-				    delete recordMgr;
-    			    QApplication::exit(0);
-				});
-        }
-    }
-    else {
-		viewWidget->moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
-	    this->toggleTimelinePlay(true);          // and then play.
-        viewWidget->onPlayClicked(true);
-    }
+    viewWidget->moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
+    this->toggleTimelinePlay(true);          // and then play.
+    viewWidget->onPlayClicked(true);
 }
 
 void ZenoMainWindow::updateViewport(const QString& action)
