@@ -199,7 +199,7 @@ struct ExtractMatData : zeno::INode {
 
         for(auto& [matPropName, matPropValue]: matValue){
             auto numeric_obj = std::make_shared<zeno::NumericObject>();
-            numeric_obj->set(zeno::vec4f(matPropValue.r, matPropValue.g, matPropValue.b, matPropValue.a));
+            numeric_obj->set(zeno::vec3f(matPropValue.r, matPropValue.g, matPropValue.b));
             matValues->lut[matPropName] = std::move(numeric_obj);
         }
 
