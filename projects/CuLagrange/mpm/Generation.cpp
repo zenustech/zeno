@@ -25,7 +25,7 @@ struct PoissonDiskSample : INode {
         else
             gridPtr = zs::load_floatgrid_from_vdb_file(get_param<std::string>("path"));
 
-        // auto spls = zs::convert_floatgrid_to_sparse_levelset(
+        // auto spls = zs::convert_floatgrid_to_sparse_grid(
         //    gridPtr, {zs::memsrc_e::host, -1});
         auto dx = get_input2<float>("dx");
 #if 0
@@ -1537,18 +1537,26 @@ struct ToZSLevelSet : INode {
         if (has_input<VDBFloatGrid>("VDBGrid")) {
             // pass in FloatGrid::Ptr
             zs::OpenVDBStruct gridPtr = get_input<VDBFloatGrid>("VDBGrid")->m_grid;
-            ls->getLevelSet() = basic_ls_t{
-                zs::convert_floatgrid_to_sparse_levelset(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+            ls->getLevelSet() =
+                basic_ls_t{zs::convert_floatgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
         } else if (has_input<VDBFloat3Grid>("VDBGrid")) {
             // pass in FloatGrid::Ptr
+#if 0
             zs::OpenVDBStruct gridPtr = get_input<VDBFloat3Grid>("VDBGrid")->m_grid;
-            ls->getLevelSet() = basic_ls_t{
-                zs::convert_vec3fgrid_to_sparse_staggered_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+            ls->getLevelSet() =
+                basic_ls_t{zs::convert_vec3fgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+#else
+            throw std::runtime_error("does not support conversion from vec3fgrid to sparsegrid");
+#endif
         } else {
+#if 0
             auto path = get_param<std::string>("path");
             auto gridPtr = zs::load_vec3fgrid_from_vdb_file(path);
             ls->getLevelSet() = basic_ls_t{
-                zs::convert_vec3fgrid_to_sparse_levelset(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+                zs::convert_vec3fgrid_to_sparse_grid(gridPtr, zs::MemoryProperty{zs::memsrc_e::device, 0})};
+#else
+            throw std::runtime_error("does not support conversion from vec3fgrid to sparsegrid");
+#endif
         }
 
         fmt::print(fg(fmt::color::cyan), "done executing ToZSLevelSet\n");

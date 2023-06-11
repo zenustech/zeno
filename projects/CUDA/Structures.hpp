@@ -7,7 +7,6 @@
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/geometry/Collider.h"
 #include "zensim/geometry/SparseGrid.hpp"
-#include "zensim/geometry/SparseLevelSet.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"
@@ -692,11 +691,7 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
     using const_transition_ls_t = zs::ConstTransitionLevelSetPtr<float, 3>;
     using levelset_t = zs::variant<basic_ls_t, const_sdf_vel_ls_t, const_transition_ls_t>;
 
-    template <zs::grid_e category = zs::grid_e::collocated>
-    using spls_t = typename basic_ls_t::template spls_t<category>;
-    using clspls_t = typename basic_ls_t::clspls_t;
-    using ccspls_t = typename basic_ls_t::ccspls_t;
-    using sgspls_t = typename basic_ls_t::sgspls_t;
+    using spls_t = typename basic_ls_t::spls_t;
     using dummy_ls_t = typename basic_ls_t::dummy_ls_t;
     using uniform_vel_ls_t = typename basic_ls_t::uniform_vel_ls_t;
 
@@ -710,11 +705,10 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
     bool holdsBasicLevelSet() const noexcept {
         return std::holds_alternative<basic_ls_t>(levelset);
     }
-    template <zs::grid_e category = zs::grid_e::collocated>
-    bool holdsSparseLevelSet(zs::wrapv<category> = {}) const noexcept {
+    bool holdsSparseLevelSet() const noexcept {
         return zs::match([](const auto &ls) {
             if constexpr (zs::is_same_v<RM_CVREF_T(ls), basic_ls_t>)
-                return ls.template holdsLevelSet<spls_t<category>>();
+                return ls.template holdsLevelSet<spls_t>();
             else
                 return false;
         })(levelset);
@@ -737,13 +731,11 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
     decltype(auto) getLevelSetSequence() noexcept {
         return std::get<const_transition_ls_t>(levelset);
     }
-    template <zs::grid_e category = zs::grid_e::collocated>
-    decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) const noexcept {
-        return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t<category>>();
+    decltype(auto) getSparseLevelSet() const noexcept {
+        return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t>();
     }
-    template <zs::grid_e category = zs::grid_e::collocated>
-    decltype(auto) getSparseLevelSet(zs::wrapv<category> = {}) noexcept {
-        return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t<category>>();
+    decltype(auto) getSparseLevelSet() noexcept {
+        return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t>();
     }
 
     levelset_t levelset;
