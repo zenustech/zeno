@@ -1,6 +1,5 @@
 #pragma once
 
-#include "zensim/geometry/SparseLevelSet.hpp"
 #include "zensim/geometry/Structure.hpp"
 #include "zensim/geometry/Structurefree.hpp"
 #include "zensim/physics/ConstitutiveModel.hpp"

@@ -1423,19 +1423,21 @@ struct MakeZSLevelSet : INode {
             throw std::runtime_error(fmt::format("unrecognized transfer scheme [{}]\n", ls->transferScheme));
 
         if (cateStr == "collocated") {
-            auto tmp =
-                typename ZenoLevelSet::template spls_t<zs::grid_e::collocated>{tags, dx, 1, zs::memsrc_e::device, 0};
-            tmp.reset(zs::cuda_exec(), 0);
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            tmp.scale(dx);
+            // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
         } else if (cateStr == "cellcentered") {
-            auto tmp =
-                typename ZenoLevelSet::template spls_t<zs::grid_e::cellcentered>{tags, dx, 1, zs::memsrc_e::device, 0};
-            tmp.reset(zs::cuda_exec(), 0);
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            tmp.scale(dx);
+            auto trans = zs::vec<float, 3>::constant(-dx / 2);
+            tmp.translate(trans);
+            // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
         } else if (cateStr == "staggered") {
-            auto tmp =
-                typename ZenoLevelSet::template spls_t<zs::grid_e::staggered>{tags, dx, 1, zs::memsrc_e::device, 0};
-            tmp.reset(zs::cuda_exec(), 0);
+            auto tmp = typename ZenoLevelSet::spls_t{tags, 1, zs::memsrc_e::device, 0};
+            tmp.scale(dx);
+            // tmp.reset(zs::cuda_exec(), 0);
             ls->getLevelSet() = std::move(tmp);
         } else if (cateStr == "const_velocity") {
             auto v = get_input2<zeno::vec3f>("aux");
