@@ -421,7 +421,7 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
     float theta = ((float)i + 0.5f)/(float) nx * 2.0f * 3.1415926f - 3.1415926f;
     float phi = ((float)j + 0.5f)/(float) ny * 3.1415926f;
     float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sin(phi);
-    pdf =  twoPi2sinTheta / env_cdf[start + nx*ny];
+    pdf = env_cdf[start + nx*ny] / twoPi2sinTheta;
     vec3 dir = normalize(vec3(cos(theta), sin(phi - 0.5f * 3.1415926f), sin(theta)));
     dir = dir.rotY(to_radians(-params.sky_rot))
             .rotZ(to_radians(-params.sky_rot_z))
@@ -659,6 +659,7 @@ extern "C" __global__ void __closesthit__radiance()
     if(prd->isSS == true  && subsurface==0 )
     {
         prd->passed = true;
+        prd->samplePdf = 1.0f;
         prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
         prd->opacity = 0;
         prd->readMat(prd->sigma_t, prd->ss_alpha);
@@ -695,6 +696,7 @@ extern "C" __global__ void __closesthit__radiance()
     if(opacity>0.99f)
     {
         prd->passed = true;
+        prd->samplePdf = 1.0f;
         prd->radiance = make_float3(0.0f);
         //prd->origin = P + 1e-5 * ray_dir; 
         prd->offsetUpdateRay(P, ray_dir);
@@ -733,7 +735,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     //sssColor = mix(basecolor, sssColor, subsurface);
 
-    while(DisneyBSDF::SampleDisney(
+    while(DisneyBSDF::SampleDisney2(
                 prd->seed,
                 basecolor,
                 sssParam,
@@ -777,13 +779,16 @@ extern "C" __global__ void __closesthit__radiance()
         {
             isSS = false;
             isDiff = false;
-            rPdf = 0.0f;
-            fPdf = 0.0f;
-            reflectance = vec3(0.0f);
+            prd->samplePdf = fPdf;
+            reflectance = fPdf>1e-5?reflectance/fPdf:vec3(0.0f);
+            prd->done = fPdf>1e-5?true:prd->done;
             flag = DisneyBSDF::scatterEvent;
         }
+        prd->samplePdf = fPdf;
+        reflectance = fPdf>1e-5?reflectance/fPdf:vec3(0.0f);
+        prd->done = fPdf>1e-5?prd->done:true;
     prd->isSS = isSS;
-    pdf = fPdf;
+    pdf = 1.0;
     if(isDiff || prd->diffDepth>0){
         prd->diffDepth++;
     }
@@ -795,6 +800,7 @@ extern "C" __global__ void __closesthit__radiance()
         if(rnd(prd->seed)<opacity)
         {
             prd->passed = true;
+            prd->samplePdf = 1.0f;
             //you shall pass!
             prd->radiance = make_float3(0.0f);
 
@@ -1058,9 +1064,9 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
                 prd->Lweight = weight;
 
-                float3 lbrdf = DisneyBSDF::EvaluateDisney(vec3(1.0f),
+                float3 lbrdf = DisneyBSDF::EvaluateDisney2(vec3(1.0f),
                     basecolor, sssColor, metallic, subsurface, specular, max(prd->minSpecRough,roughness), specularTint, anisotropic, anisoRotation, sheen, sheenTint,
-                    clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,
+                    clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, -normalize(inDir), T, B, N,prd->geometryNormal,
                     thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
                     dot(N, L));
                 MatOutput mat2;
@@ -1081,7 +1087,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     } else {
         float env_weight_sum = 1e-8f;
-        int NSamples = prd->depth<=2?5:1;//16 / pow(4.0f, (float)prd->depth-1);
+        int NSamples = prd->depth<=2?1:1;//16 / pow(4.0f, (float)prd->depth-1);
     for(int samples=0;samples<NSamples;samples++) {
         float3 lbrdf{};
         bool inside = false;
@@ -1096,9 +1102,10 @@ extern "C" __global__ void __closesthit__radiance()
         auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
                                                    params.sunSoftness * 0.2f); //perturb the sun to have some softness
         sun_dir = hasenv ? normalize(sunLightDir):sun_dir;
+        float tmpPdf;
         float3 illum = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                      40, // be careful
-                                     .45, 15., 1.030725f * 0.3f, params.elapsedTime));
+                                     .45, 15., 1.030725f * 0.3f, params.elapsedTime, tmpPdf));
 
         prd->LP = P;
         prd->Ldir = sun_dir;
@@ -1109,10 +1116,10 @@ extern "C" __global__ void __closesthit__radiance()
                        1e-5f, // tmin
                        1e16f, // tmax,
                        &shadow_prd);
-        lbrdf = DisneyBSDF::EvaluateDisney(vec3(illum),
+        lbrdf = DisneyBSDF::EvaluateDisney2(vec3(illum),
             basecolor, sssColor, metallic, subsurface, specular, roughness, specularTint, anisotropic,
             anisoRotation, sheen, sheenTint, clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance,
-            ior, flatness, sun_dir, -normalize(inDir), T, B, N, thin > 0.5f,
+            ior, flatness, sun_dir, -normalize(inDir), T, B, N, prd->geometryNormal,thin > 0.5f,
             flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, ffPdf, rrPdf,
             dot(N, float3(sun_dir)));
         light_attenuation = shadow_prd.shadowAttanuation;
@@ -1133,9 +1140,10 @@ extern "C" __global__ void __closesthit__radiance()
                                                       dot(attrs.H, attrs.L), false);
             mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
         }
-
+        float misWeight = BRDFBasics::PowerHeuristic(envpdf, ffPdf);
+        misWeight = misWeight>0.0f?misWeight:0.0f;
         prd->radiance += 1.0f / (float)NSamples *
-            light_attenuation  * envpdf * 2.0f * (thin > 0.5f ? float3(mat2.reflectance) : lbrdf);
+            light_attenuation  / envpdf * 2.0f * (thin > 0.5f ? float3(mat2.reflectance) : lbrdf);
     }
         prd->radiance = float3(clamp(vec3(prd->radiance), vec3(0.0f), vec3(100.0f)));
     }

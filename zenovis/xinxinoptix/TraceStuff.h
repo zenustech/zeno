@@ -92,6 +92,7 @@ struct RadiancePRD
     vec3         sigma_t_queue[8];
     vec3         ss_alpha_queue[8];
     int          curMatIdx;
+    float        samplePdf;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
         return sigma_t_queue[idx];
