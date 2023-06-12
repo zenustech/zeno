@@ -1,20 +1,14 @@
 // https://github.com/alembic/alembic/blob/master/lib/Alembic/AbcGeom/Tests/PolyMeshTest.cpp
 // WHY THE FKING ALEMBIC OFFICIAL GIVES NO DOC BUT ONLY "TESTS" FOR ME TO LEARN THEIR FKING LIB
 #include <zeno/zeno.h>
-#include <zeno/utils/logger.h>
-#include <zeno/types/StringObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/extra/GlobalState.h>
 #include <Alembic/AbcGeom/All.h>
 #include <Alembic/AbcCoreAbstract/All.h>
 #include <Alembic/AbcCoreOgawa/All.h>
-#include <Alembic/AbcCoreHDF5/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
-#include <cstring>
-#include <cstdio>
-#include <zeno/utils/log.h>
 #include <numeric>
 
 using namespace Alembic::AbcGeom;
@@ -205,6 +199,39 @@ struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
     OPoints pointsObj;
+    std::map<std::string, OFloatGeomParam> attrs;
+
+    template<typename T1, typename T2>
+    void write_attrs(std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
+        OCompoundProperty arbAttrs = schema.getArbGeomParams();
+        prim->verts.foreach_attr([&](auto const &key, auto &arr) {
+            if (key == "v" || key == "nrm") {
+                return;
+            }
+            using T = std::decay_t<decltype(arr[0])>;
+            if constexpr (std::is_same_v<T, zeno::vec3f>) {
+                if (attrs.count(key) == 0) {
+                    attrs[key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
+                }
+                auto samp = OFloatGeomParam::Sample();
+                std::vector<float> v(arr.size() * 3);
+                for (auto i = 0; i < arr.size(); i++) {
+                    v[i * 3 + 0] = arr[i][0];
+                    v[i * 3 + 1] = arr[i][1];
+                    v[i * 3 + 2] = arr[i][2];
+                }
+                samp.setVals(v);
+                attrs[key].set(samp);
+            } else if constexpr (std::is_same_v<T, float>) {
+                if (attrs.count(key) == 0) {
+                    attrs[key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
+                }
+                auto samp = OFloatGeomParam::Sample();
+                samp.setVals(arr);
+                attrs[key].set(samp);
+            }
+        });
+    }
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         bool flipFrontBack = get_input2<int>("flipFrontBack");
@@ -229,6 +256,9 @@ struct WriteAlembic2 : INode {
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
             return;
+        }
+        if (archive.valid() == false) {
+            zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
         if (prim->polys.size() || prim->tris.size()) {
             // Create a PolyMesh class.
@@ -291,6 +321,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
+                    write_attrs(prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
                 else {
@@ -300,6 +331,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
+                    write_attrs(prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
             }
@@ -350,6 +382,7 @@ struct WriteAlembic2 : INode {
                             uvsamp);
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
+                    write_attrs(prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 } else {
                     OPolyMeshSchema::Sample mesh_samp(
@@ -358,6 +391,7 @@ struct WriteAlembic2 : INode {
                             Int32ArraySample( vertex_count_per_face.data(), vertex_count_per_face.size() ));
                     write_velocity(prim, mesh_samp);
                     write_normal(prim, mesh_samp);
+                    write_attrs(prim, mesh, mesh_samp);
                     mesh.set( mesh_samp );
                 }
             }
@@ -370,6 +404,7 @@ struct WriteAlembic2 : INode {
             std::iota(ids.begin(), ids.end(), 0);
             samp.setIds(Alembic::Abc::UInt64ArraySample(ids.data(), ids.size()));
             write_velocity(prim, samp);
+            write_attrs(prim, points, samp);
             points.set( samp );
         }
     }

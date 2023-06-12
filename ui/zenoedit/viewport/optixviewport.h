@@ -13,6 +13,7 @@ class OptixWorker : public QObject
 public:
     OptixWorker(QObject* parent = nullptr);
     OptixWorker(Zenovis *pzenoVis);
+    ~OptixWorker();
     QImage renderImage() const;
 
 signals:

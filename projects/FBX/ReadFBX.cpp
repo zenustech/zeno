@@ -190,8 +190,8 @@ struct Mesh{
         float uv_scale = 1.0f;
         auto origPathName = pathName;
         pathName = reconstructionPathName(pathName);
-        ED_COUT << "FBX: Mesh name " << meshName << " VertCount " << mesh->mNumVertices << " NumAnimMesh " << numAnimMesh << " NumBone " << mesh->mNumBones << "\n";
-        ED_COUT << "FBX: Path name " << pathName << "\n";
+        ED_COUT << "FBX: ReadMesh - Mesh name " << meshName << " VertCount " << mesh->mNumVertices << " NumAnimMesh " << numAnimMesh << " NumBone " << mesh->mNumBones << "\n";
+        ED_COUT << "FBX: ReadMesh - Path name " << pathName << "\n";
 
         // Material
         if(mesh->mNumVertices)
@@ -507,7 +507,7 @@ struct Mesh{
         }
 
         // Use the metallic attribute to determine if the material is PBR
-        bool isPbr = false;
+        //bool isPbr = false;
 
         SMaterial mat;
         mat.matName = matName;
@@ -516,20 +516,22 @@ struct Mesh{
         //std::replace(tmpMatName.begin(), tmpMatName.end(), ':', '_');
         //std::string vmPath = createTexDir("valueTex/" + tmpMatName);
 
-        zeno::log_info("FBX: Mesh name {} Mat name {}", relMeshName, matName);
+        std::cout << "FBX: ReadMat - Mesh name "<<relMeshName<<" Mat name "<<matName<<"\n";
 
-        if( findCaseInsensitive(matName, "SKIN") != std::string::npos ){
-            zeno::log_info("FBX: SKIN");
-            mat.setDefaultValue(dMatProp.getUnknownProp());
-        }else if( findCaseInsensitive(matName, "CLOTH") != std::string::npos ){
-            zeno::log_info("FBX: CLOTH");
-            mat.setDefaultValue(dMatProp.getUnknownProp());
-        }else if( findCaseInsensitive(matName, "HAIR") != std::string::npos ){
-            zeno::log_info("FBX: HAIR");
-            mat.setDefaultValue(dMatProp.getUnknownProp());
-        }else{
-            mat.setDefaultValue(dMatProp.getUnknownProp());
-        }
+        //if( findCaseInsensitive(matName, "SKIN") != std::string::npos ){
+        //    zeno::log_info("FBX: SKIN");
+        //    mat.setDefaultValue(dMatProp.getUnknownProp());
+        //}else if( findCaseInsensitive(matName, "CLOTH") != std::string::npos ){
+        //    zeno::log_info("FBX: CLOTH");
+        //    mat.setDefaultValue(dMatProp.getUnknownProp());
+        //}else if( findCaseInsensitive(matName, "HAIR") != std::string::npos ){
+        //    zeno::log_info("FBX: HAIR");
+        //    mat.setDefaultValue(dMatProp.getUnknownProp());
+        //}else{
+        //    mat.setDefaultValue(dMatProp.getUnknownProp());
+        //}
+
+        mat.setDefaultValue(dMatProp.getUnknownProp());
 
         for(auto&com: mat.val)
         {
@@ -553,14 +555,17 @@ struct Mesh{
                     if(hintPath != "-1") {
                         std::string truePath;
                         findFile(hintPath, combinePath, truePath);
+
                         //std::cout << "hintPath:" << hintPath << "\n";
                         //std::cout << "truePath:" << truePath << "\n";
                         //std::cout << "fbxPath:" << fbxPath << "\n";
                         //std::cout << "combinePath:" << combinePath << "\n";
+
                         combinePath = truePath;
                     }
 
-                    zeno::log_info("FBX: Mat name {}, PropName {} RelTexPath {} TexType {} MerPath {}",matName,com.first, texPathGet.data, texType, combinePath);
+                    std::cout << " PropName "<<com.first<<" RelTexPath "<<texPathGet.data<<"\n";
+                    std::cout << "  TexType "<<texType<<" MerPath "<<combinePath<<"\n";
 
                     Path file_full_path(combinePath);
                     std::string filename = Path(combinePath).filename().string();
@@ -689,45 +694,38 @@ struct Mesh{
                 mat.val.at(com.first).texPath = "-1";
             }
 
-            // TODO Get Material Value To Node
-            /*
-            if(! texfound)
             // The second step - to find the material-prop and to generate a value-based texture
+            //if(! texfound)
             {
                 aiColor4D tmp;
-                bool found = false;
 
                 for(int i=0;i<com.second.aiNames.size(); i++){
                     auto key = com.second.aiNames[i];
-                    //zeno::log_info("Getting {}", key);
+
                     if(!forceD && !key.empty()){
-                        if(AI_SUCCESS == aiGetMaterialColor(material,
-                                                            key.c_str(),0,0,
-                                                            &tmp)){
-                            found = true;
-                            if(key == "$ai.metalness")
-                                isPbr = true;
+                        if(AI_SUCCESS == aiGetMaterialColor(material, key.c_str(),0,0, &tmp)){
+
+                            //if(key == "$ai.metalness")
+                            //    isPbr = true;
+
                             // override the default value
-                            zeno::log_info("FBX: Mat name {}, PropName {}, MatValue {} {} {} {}",matName, com.first,tmp.r, tmp.g,tmp.b,tmp.a);
                             com.second.value = tmp;
+                            std::cout <<" PropName "<<com.first<<" MatValue "<<tmp.r<<","<<tmp.g<<","<<tmp.b<<","<<tmp.a<<"\n";
+                            break;
                         }
                     }
-
-                    if(found){
-                        break;
-                    }
                 }
 
-                if(isPbr && com.first == "opacity" && m_readOption.invertOpacity){
-                    zeno::log_info("FBX: Convert PBR opacity");
-                    com.second.value = std::any_cast<aiColor4D>(com.second.value)*-1.0f+1.0f;
-                }
+                //if(isPbr && com.first == "opacity" && m_readOption.invertOpacity){
+                //    zeno::log_info("FBX: Convert PBR opacity");
+                //    com.second.value = std::any_cast<aiColor4D>(com.second.value)*-1.0f+1.0f;
+                //}
 
-                auto v = std::any_cast<aiColor4D>(com.second.value);
-
+                /*
                 // XXX
-                if(com.first == "opacity" && v.r>0.99f && v.g>0.99f && v.b>0.99f)
-                    v *= 0.8;
+                //auto castValue = std::any_cast<aiColor4D>(com.second.value);
+                if(com.first == "opacity" && castValue.r>0.99f && castValue.g>0.99f && castValue.b>0.99f)
+                    castValue *= 0.8;
 
                 int channel_num = 4;
                 int width = 2, height = 2;
@@ -738,9 +736,9 @@ struct Mesh{
                 {
                     for (int i = 0; i < width; ++i)
                     {
-                        int ir = int(255.99 * v.r);
-                        int ig = int(255.99 * v.g);
-                        int ib = int(255.99 * v.b);
+                        int ir = int(255.99 * castValue.r);
+                        int ig = int(255.99 * castValue.g);
+                        int ib = int(255.99 * castValue.b);
                         int ia = int(255.99 * 1.0f);
 
                         pixels[index++] = ir;
@@ -750,14 +748,15 @@ struct Mesh{
                     }
                 }
 
+
                 std::string img_path = vmPath+"/"+com.first+".png";
 
                 stbi_write_png(img_path.c_str(), width, height, channel_num, pixels, width*channel_num);
 
                 mat.val.at(com.first).texPath = img_path;
-                //zeno::log_info("3N {} P `{}` F {} V `{} {} {} {}`", com.first, key, found, v.r, v.g, v.b, v.a);
+                 */
             }
-            */
+
         }
 
         m_loadedMat[matName] = mat;
@@ -854,7 +853,7 @@ struct Mesh{
                     verBone = true;
                 }
             }
-            ED_COUT << "FBX: applied " << verBone << " " << applied << " " << meshName << "\n";
+            //ED_COUT << "FBX: applied " << verBone << " " << applied << " " << meshName << "\n";
 
             // Sub-prims (applied node transform)
             auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
@@ -1291,8 +1290,11 @@ struct ReadFBXPrim : zeno::INode {
                 zeno::log_info("FBX: Setting user data {} {}", count, k);
                 prim->userData().setLiterial(std::to_string(count), k);
 
-                std::vector<std::string> texList{}; std::map<std::string, int> texMap{};
-                vc->getSimplestTexList(texList, texMap);
+                std::vector<std::string> texList{};
+                std::map<std::string, int> texMap{};
+                std::map<std::string, aiColor4D> matValue{};
+
+                vc->getSimplestTexList(texList, texMap, matValue);
                 for(int i=0;i<texList.size();i++){
                     prim->userData().setLiterial(std::to_string(count) + "_tex_" + std::to_string(i), texList[i]);
                 }

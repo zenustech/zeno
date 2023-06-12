@@ -72,6 +72,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
         if (mainWin) {
             mainWin->visFrameUpdated(true, frameid);
         }
+        clearTransformer();
     });
 
     connect(m_pauseRenderDally, &QTimer::timeout, [&](){

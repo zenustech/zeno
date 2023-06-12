@@ -48,7 +48,7 @@ void ZTcpServer::init(const QHostAddress& address)
     connect(m_tcpServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
 }
 
-void ZTcpServer::startProc(const std::string& progJson)
+void ZTcpServer::startProc(const std::string& progJson,  bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
     ZASSERT_EXIT(m_tcpServer);
     if (m_proc && m_proc->isOpen())
@@ -65,7 +65,6 @@ void ZTcpServer::startProc(const std::string& progJson)
     m_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
     m_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
     int sessionid = zeno::getSession().globalState->sessionid;
-
     QSettings settings(zsCompanyName, zsEditor);
     bool bEnableCache = settings.value("zencache-enable").toBool();
     bool bAutoRemove = settings.value("zencache-autoremove", true).toBool();
@@ -96,7 +95,9 @@ void ZTcpServer::startProc(const std::string& progJson)
     QStringList args = {
         "-runner", QString::number(sessionid),
         "-port", QString::number(m_port),
-        "-cachedir", finalPath
+        "-cachedir", finalPath,
+        "-cacheLightCameraOnly", QString::number(applyLightAndCameraOnly),
+        "-cacheMaterialOnly", QString::number(applyMaterialOnly),
     };
 
     m_proc->start(QCoreApplication::applicationFilePath(), args);

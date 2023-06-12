@@ -116,6 +116,7 @@ struct FBXSDKVisibility : zeno::INode {
 
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
+        auto inheritVisibility = get_input2<bool>("inherit");
         auto vis_dict = std::make_shared<zeno::DictObject>();
         auto inherit_dict = std::make_shared<zeno::DictObject>();
         auto fps = get_param<std::string>("fps");
@@ -248,14 +249,16 @@ struct FBXSDKVisibility : zeno::INode {
                 }
             }
 
-            // Check Worst-case scenario n^2 algorithm complexity
-            for(auto& path: paths) {
-                std::string find_path{};
-                bool inherit = FBX::CheckInherit(checkInherit, path, find_path);
-                //std::cout << " Check " << path << " Inherit " << inherit << "\n";
-                if(inherit){
-                    //std::cout << "  Find: " << find_path << "\n";
-                    vis_dict->lut[path] = inherit_dict->lut[find_path];
+            if(inheritVisibility) {
+                // Check Worst-case scenario n^2 algorithm complexity
+                for (auto &path : paths) {
+                    std::string find_path{};
+                    bool inherit = FBX::CheckInherit(checkInherit, path, find_path);
+                    //std::cout << " Check " << path << " Inherit " << inherit << "\n";
+                    if (inherit) {
+                        //std::cout << "  Find: " << find_path << "\n";
+                        vis_dict->lut[path] = inherit_dict->lut[find_path];
+                    }
                 }
             }
         }
@@ -270,6 +273,7 @@ ZENDEFNODE(FBXSDKVisibility,
            {       /* inputs: */
             {
                 {"readpath", "path"},
+                {"bool", "inherit", "false"},
             },  /* outputs: */
             {
                 {"DictObject", "visibility", ""},

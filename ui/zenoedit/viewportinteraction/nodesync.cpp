@@ -11,6 +11,9 @@ std::optional<NodeLocation> NodeSyncMgr::generateNewNode(NodeLocation& node_loca
     auto& subgraph = node_location.subgraph;
     auto pos = node.data(ROLE_OBJPOS).toPointF();
     pos.setX(pos.x() + 10);
+    if (!m_graph_model) {
+        return {};
+    }
     auto new_node_id = NodesMgr::createNewNode(m_graph_model,
                                                subgraph,
                                                new_node_type.c_str(),
@@ -37,6 +40,10 @@ std::optional<NodeLocation> NodeSyncMgr::searchNodeOfPrim(const std::string& pri
 }
 
 std::optional<NodeLocation> NodeSyncMgr::searchNode(const std::string& node_id) {
+    if (!m_graph_model)
+    {
+        return {};
+    }
     auto search_result = m_graph_model->search(node_id.c_str(), SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
     if (search_result.empty())
         return {};
@@ -76,6 +83,10 @@ std::optional<NodeLocation> NodeSyncMgr::checkNodeLinkedSpecificNode(const QMode
     for (const auto& linked_edge : linked_edges) {
         auto next_node_id = UiHelper::getSockNode(linked_edge.inSockPath);
         if (next_node_id.contains(node_type.c_str())) {
+            if (!m_graph_model)
+            {
+                return {};
+            }
             auto search_result = m_graph_model->search(next_node_id, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
             if (search_result.empty()) return {};
             auto linked_node = search_result[0].targetIdx;
@@ -125,6 +136,10 @@ void NodeSyncMgr::updateNodeVisibility(NodeLocation& node_location) {
     int new_option = old_option;
     new_option ^= OPT_VIEW;
     STATUS_UPDATE_INFO status_info = {old_option, new_option, ROLE_OPTIONS};
+    if (!m_graph_model)
+    {
+        return;
+    }
     m_graph_model->updateNodeStatus(node_id,
                                     status_info,
                                     node_location.subgraph,
@@ -142,6 +157,10 @@ void NodeSyncMgr::updateNodeInputString(NodeLocation node_location,
         QVariant::fromValue(old_value),
         QVariant::fromValue(QString(new_value.c_str()))
     };
+    if (!m_graph_model)
+    {
+        return;
+    }
     m_graph_model->updateSocketDefl(node_id,
                                     update_info,
                                     node_location.subgraph,
@@ -158,7 +177,10 @@ void NodeSyncMgr::updateNodeParamString(NodeLocation node_location,
         info.value,
         QVariant(new_value.c_str())
     };
-
+    if (!m_graph_model)
+    {
+        return;
+    }
     m_graph_model->updateParamInfo(node_location.get_node_id(),
                                    new_info,
                                    node_location.subgraph,

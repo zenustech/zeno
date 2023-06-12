@@ -440,6 +440,10 @@ void DisplayWidget::onSliderValueChanged(int frame)
         BlockSignalScope scope(timeline);
         timeline->setPlayButtonChecked(false);
     }
+    if (m_glView)
+    {
+        m_glView->clearTransformer();
+    }
 }
 
 void DisplayWidget::changeTransformOperation(const QString& node)
