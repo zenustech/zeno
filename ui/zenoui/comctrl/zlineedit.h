@@ -50,7 +50,6 @@ class ZFloatLineEdit : public ZLineEdit {
     explicit ZFloatLineEdit(QWidget *parent = nullptr);
     explicit ZFloatLineEdit(const QString &text, QWidget *parent = nullptr);
     void updateCurveData();
-    bool getKeyFrame(CURVE_DATA &curve);
 
   protected:
     bool event(QEvent *event) override;
@@ -61,7 +60,6 @@ class ZFloatLineEdit : public ZLineEdit {
 
   private:
     ZTimeline *getTimeline();
-    bool isSetKeyFrame();
 };
-extern const char *g_keyFrame;
+
 #endif

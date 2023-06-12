@@ -6,9 +6,7 @@
 #include <zenoedit/zenomainwindow.h>
 #include <zenoedit/timeline/ztimeline.h>
 #include "./dialog/curvemap/zcurvemapeditor.h"
-
-const char *g_setKey = "setKey";
-const char *g_keyFrame = "keyFrame";
+#include <zenomodel/include/uihelper.h>
 
 ZLineEdit::ZLineEdit(QWidget* parent)
     : QLineEdit(parent)
@@ -192,7 +190,7 @@ ZFloatLineEdit::ZFloatLineEdit(const QString &text, QWidget *parent) :
 void ZFloatLineEdit::updateCurveData() 
 {
     CURVE_DATA val;
-    if (!getKeyFrame(val)) {
+    if (!UiHelper::getKeyFrame(this, val)) {
         return;
     }
     if (ZTimeline *timeline = getTimeline()) {
@@ -219,7 +217,7 @@ bool ZFloatLineEdit::event(QEvent *event)
             QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent*>(event); 
             if (evt->propertyName() == g_keyFrame) {
                 updateBackgroundProp(timeline->value());
-                if (getKeyFrame(curve)) {
+                if (UiHelper::getKeyFrame(this, curve)) {
                     connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatLineEdit::updateBackgroundProp, Qt::UniqueConnection);
                     connect( zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatLineEdit::onUpdate, Qt::UniqueConnection);
                 } else {
@@ -238,19 +236,12 @@ bool ZFloatLineEdit::event(QEvent *event)
 void ZFloatLineEdit::updateBackgroundProp(int frame) 
 {
     CURVE_DATA data;
-    if (getKeyFrame(data)) {
+    if (UiHelper::getKeyFrame(this, data)) {
         QString text = QString::number(data.eval(frame));
         setText(text);
-        if (isSetKeyFrame()) {
-            setProperty(g_setKey, "true");
-        } else if (data.visible) {
-            setProperty(g_setKey, "false");
-        } else {
-            setProperty(g_setKey, "null");
-        }
-    } else {
-        setProperty(g_setKey, "null");
+        
     }
+    UiHelper::updateProperty(this);
     this->style()->unpolish(this);
     this->style()->polish(this);
     update();
@@ -266,28 +257,4 @@ ZTimeline *ZFloatLineEdit::getTimeline()
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline, nullptr);
     return timeline;
-}
-bool ZFloatLineEdit::isSetKeyFrame() 
-{
-    if (ZTimeline *timeline = getTimeline()) {
-        CURVE_DATA data;
-        if (getKeyFrame(data)) {
-            int x = timeline->value();
-            for (auto p : data.points) {
-                int px = p.point.x();
-                if ((px == x) && data.visible) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-bool ZFloatLineEdit::getKeyFrame(CURVE_DATA &curve) 
-{
-    bool res = property(g_keyFrame).canConvert<CURVE_DATA>();
-    if (res)
-        curve = property(g_keyFrame).value<CURVE_DATA>();
-    return res;
 }

@@ -11,6 +11,7 @@
 #include "zassert.h"
 #include "zgraphicstextitem.h"
 #include <zenoedit/zenoapplication.h>
+#include <zenomodel/include/uihelper.h>
 
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT
@@ -143,7 +144,7 @@ namespace zenoui
                     // be careful about the dynamic type.
                     QVariant newValue;
                     CURVE_DATA curve;
-                    if (pLineEdit->getKeyFrame(curve)) {
+                    if (UiHelper::getKeyFrame(pLineEdit, curve)) {
                         CURVES_DATA data;
                         data.insert(curve.key, curve);
                         newValue = QVariant::fromValue(data);
