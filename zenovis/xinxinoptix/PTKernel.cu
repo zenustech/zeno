@@ -54,9 +54,9 @@ vec3 ACESFitted(vec3 color, float gamma)
     color = vec3(dot(color, v1), dot(color, v2), dot(color, v3));
 
     // Clamp to [0, 1]
-    color = clamp(color, 0.0, 1.0);
+    color = clamp(color, 0.0f, 1.0f);
 
-    color = pow(color, vec3(1. / gamma));
+    color = pow(color, vec3(1.0f / gamma));
 
     return color;
 }
@@ -71,7 +71,7 @@ extern "C" __global__ void __raygen__rg()
     const CameraInfo cam = params.cam;
 
     unsigned int seed = tea<4>( idx.y*w + idx.x, subframe_index );
-    float focalPlaneDistance = cam.focalPlaneDistance>0.01? cam.focalPlaneDistance : 0.01;
+    float focalPlaneDistance = cam.focalPlaneDistance>0.01f? cam.focalPlaneDistance : 0.01f;
     float aperture = clamp(cam.aperture,0.0f,100.0f);
     aperture/=10;
 
@@ -131,7 +131,9 @@ extern "C" __global__ void __raygen__rg()
         prd.direction = ray_direction;
         prd.curMatIdx = 0;
         prd.test_distance = false;
-
+        prd.ss_alpha_queue[0] = vec3(-1.0f);
+        prd.minSpecRough = 0.01;
+        prd.samplePdf = 1.0f;
         auto tmin = prd.trace_tmin;
         auto ray_mask = prd._mask_;
 
@@ -170,7 +172,9 @@ extern "C" __global__ void __raygen__rg()
             // }
 
             if(prd.countEmitted==false || prd.depth>0) {
-                result += prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5);
+                auto temp_radiance = prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5f);
+                float upperBound = prd.diffDepth==1?1.0f:100.0f;
+                result +=  prd.done? float3(clamp(vec3(temp_radiance), vec3(0.0f), vec3(upperBound))) : temp_radiance;
                 // fire without smoke requires this line to work.
             }
 
@@ -193,11 +197,11 @@ extern "C" __global__ void __raygen__rg()
 
             if(prd.depth>16){
                 //float RRprob = clamp(length(prd.attenuation)/1.732f,0.01f,0.9f);
-                float RRprob = clamp(length(prd.attenuation),0.1, 0.95);
-                if(rnd(prd.seed) > RRprob || prd.depth>32){
+                float RRprob = clamp(length(prd.attenuation),0.1f, 0.95f);
+                if(rnd(prd.seed) > RRprob || prd.depth > 16){
                     prd.done=true;
                 } else {
-                    prd.attenuation = prd.attenuation / (RRprob + 1e-5);
+                    prd.attenuation = prd.attenuation / RRprob;
                 }
             }
             if(prd.countEmitted == true)
@@ -211,6 +215,7 @@ extern "C" __global__ void __raygen__rg()
                 //prd.passed = false;
             //}
         }
+        seed = prd.seed;
     }
     while( --i );
 
@@ -249,29 +254,58 @@ extern "C" __global__ void __miss__radiance()
     prd->countEmitted = false;
     prd->CH = 0.0;
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
-        prd->radiance = envSky(
+        float upperBound = 100.0f;
+        float envPdf = 0.0f;
+        vec3 skysample =
+            envSky(
             normalize(prd->direction),
             sunLightDir,
             make_float3(0., 0., 1.),
             40, // be careful
             .45,
             15.,
-            1.030725 * 0.3,
-            params.elapsedTime
+            1.030725f * 0.3f,
+            params.elapsedTime,
+            envPdf,
+            upperBound,
+            1.0
+
         );
+        float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf);
+        misWeight = misWeight>0.0f?misWeight:0.0f;
+        prd->radiance = skysample ;
         prd->done      = true;
         return;
     }
 
-    vec3 transmittance = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+    vec3 sigma_t, ss_alpha;
+    //vec3 sigma_t, ss_alpha;
+    prd->readMat(sigma_t, ss_alpha);
+
+
+    vec3 transmittance;
+    if (ss_alpha.x < 0.0f) { // is inside Glass
+        transmittance = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+    } else {
+        transmittance = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), false);
+    }
+
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->attenuation2 *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
     prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
 
-    vec3 channelPDF = vec3(1.0/3.0);
-    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, channelPDF);
-    prd->channelPDF= channelPDF;
+    vec3 channelPDF = vec3(1.0f/3.0f);
+    prd->channelPDF = channelPDF;
+    if (ss_alpha.x < 0.0f) { // is inside Glass
+        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
+    } else
+    {
+        prd->maxDistance =
+            DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
+        prd->channelPDF = channelPDF;
+    }
+
     prd->depth++;
 
     if(length(prd->attenuation)<1e-7f){

@@ -201,13 +201,13 @@ struct ProgramRunData {
 };
 #endif
 
-void launchProgramJSON(std::string progJson)
+void launchProgramJSON(std::string progJson, bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer *pServer = zenoApp->getServer();
     if (pServer)
     {
-        pServer->startProc(std::move(progJson));
+        pServer->startProc(std::move(progJson), applyLightAndCameraOnly, applyMaterialOnly);
     }
 #else
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
@@ -257,7 +257,7 @@ void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool appl
     f.write(qstrJson.toUtf8());
     f.close();
 #endif
-    launchProgramJSON(std::move(progJson));
+    launchProgramJSON(std::move(progJson), applyLightAndCameraOnly, applyMaterialOnly);
     pModel->clearNodeDataChanged();
 }
 

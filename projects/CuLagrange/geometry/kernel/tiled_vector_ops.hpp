@@ -7,6 +7,8 @@ namespace zeno { namespace TILEVEC_OPS {
     // the interface the equation should have:
     using T = float;
 
+    // template<typename Pol,typename SrcTileVec
+
     template<int width,typename Pol,typename SrcTileVec,typename DstTileVec>
     void copy(Pol& pol,const SrcTileVec& src,const zs::SmallString& src_tag,DstTileVec& dst,const zs::SmallString& dst_tag,int offset = 0) {
         using namespace zs;

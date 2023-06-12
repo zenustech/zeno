@@ -101,13 +101,6 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="btnRecLastRun">
-       <property name="text">
-        <string>record by last run</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QPushButton" name="btnRunFirst">
        <property name="text">
         <string>Run by record frame</string>

@@ -263,7 +263,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             }
             else
             {
-                if (applyLightAndCameraOnly && !lightCameraNodes.contains(name) || applyMaterialOnly && name != matlNode)
+                if ((applyLightAndCameraOnly && !lightCameraNodes.contains(name) || applyMaterialOnly && name != matlNode) && !pGraphsModel->IsSubGraphNode(idx))
                 {
                     continue;
                 }

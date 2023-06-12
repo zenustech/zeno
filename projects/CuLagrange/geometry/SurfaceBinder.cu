@@ -56,6 +56,8 @@ struct ZSSurfaceBind : zeno::INode {
         auto &verts = zssurf->getParticles();
         auto &tris = zssurf->category == ZenoParticles::category_e::tet ? (*zssurf)[ZenoParticles::s_surfTriTag] : zssurf->getQuadraturePoints();
 
+        const auto& halfedges = (*zssurf)[ZenoParticles::s_surfHalfEdgeTag];
+
         auto markTag = get_param<std::string>("mark_tag");
         auto& kb_verts = kboundary->getParticles();
         if(!kb_verts.hasProperty(markTag))
@@ -71,12 +73,15 @@ struct ZSSurfaceBind : zeno::INode {
                 {"tag",1},
                 {"binderFailTag",1}
             },kb_verts.size()};
+            
         TILEVEC_OPS::copy(cudaPol,kb_verts,"x",kverts,"x");
         TILEVEC_OPS::copy(cudaPol,kb_verts,"nrm",kverts,"nrm");
+
         if(kb_verts.hasProperty("tag"))
             TILEVEC_OPS::copy(cudaPol,kb_verts,"tag",kverts,"tag");
         else
             TILEVEC_OPS::fill(cudaPol,kverts,"tag",(T)0.0);
+
         cudaPol(zs::range(kverts.size()),
             [kverts = proxy<space>({},kverts)] ZS_LAMBDA(int vi) mutable {
                 kverts("inds",vi) = reinterpret_bits<T>(vi);
@@ -145,6 +150,7 @@ struct ZSSurfaceBind : zeno::INode {
                 kverts = proxy<space>({},kverts),
                 kpBvh = proxy<space>(kpBvh),
                 markTag = zs::SmallString(markTag),
+                halfedges = proxy<space>({},halfedges),
                 binder_tag = zs::SmallString(binder_tag),
                 thickness_tag = zs::SmallString(thickness_tag),
                 inversion_tag = zs::SmallString(inversion_tag),
@@ -206,13 +212,13 @@ struct ZSSurfaceBind : zeno::INode {
                 if(distance > collisionEps)
                     return;
 
-                auto ntris = tris.pack(dim_c<3>,"ff_inds",ti).reinterpret_bits(int_c);
+                auto hi = zs::reinterpret_bits<int>(tris("he_inds",ti));
                 for(int i = 0;i != 3;++i){
-                    auto nti = ntris[i];
-                    if(nti < 0){
-                        // printf("negative ff_inds detected\n");
+                    auto rhi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+                    if(rhi < 0)
                         return;
-                    }
+                    auto nti = zs::reinterpret_bits<int>(halfedges("to_face",rhi));
+                    // auto nti = ntris[i];
                     auto edge_normal = tris.pack(dim_c<3>,"nrm",ti) + tris.pack(dim_c<3>,"nrm",nti);
                     edge_normal = (edge_normal)/(edge_normal.norm() + (T)1e-6);
                     auto e0 = verts.pack(dim_c<3>,"x",tri[(i + 0) % 3]);
@@ -223,6 +229,7 @@ struct ZSSurfaceBind : zeno::INode {
                     seg = kp - verts.pack(dim_c<3>,"x",tri[i]);
                     if(bisector_normal.dot(seg) < 0)
                         return;
+                    hi = zs::reinterpret_bits<int>(halfedges("next_he",hi));
                 }
                 // printf("bind tri[%d] to kp[%d]\n",ti,kpi);
                 binder_tags_vec[nm_binders] = kverts("tag",kpi);
@@ -772,6 +779,7 @@ struct ZSSurfaceClosestPoints : zeno::INode {
         // every vertex can only bind to one triangle
         auto& kverts = kboundary->getParticles();
         auto& ktris = kboundary->getQuadraturePoints();
+        const auto& khalfedges = (*kboundary)[ZenoParticles::s_surfHalfEdgeTag];
 
         // auto max_nm_binder = get_input2<int>("nm_max_binders");
         auto project_pos_tag = get_param<std::string>("project_pos_tag");
@@ -800,49 +808,6 @@ struct ZSSurfaceClosestPoints : zeno::INode {
         auto kinInCollisionEps = get_input2<float>("kinInColEps");
         auto kinOutCollisionEps = get_input2<float>("kinOutColEps");
         auto thickness = kinInCollisionEps + kinOutCollisionEps;
-
-        // evaluate nodal-wise normal of kboundary
-
-        // if(!ktris.hasProperty("nrm"))
-        //     ktris.append_channels(cudaPol,{{"nrm",3}});
-        // cudaPol(zs::range(ktris.size()),
-        //     [ktris = proxy<space>({},ktris),
-        //         kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kti) {
-        //     auto ktri = ktris.template pack<3>("inds",kti).reinterpret_bits(int_c);
-        //     auto kv0 = kverts.template pack<3>("x",ktri[0]);
-        //     auto kv1 = kverts.template pack<3>("x",ktri[1]);
-        //     auto kv2 = kverts.template pack<3>("x",ktri[2]);
-
-        //     auto e01 = kv1 - kv0;
-        //     auto e02 = kv2 - kv0;
-
-        //     auto nrm = e01.cross(e02);
-        //     auto nrm_norm = nrm.norm();
-        //     if(nrm_norm < 1e-8)
-        //         nrm = zs::vec<T,3>::zeros();
-        //     else
-        //         nrm = nrm / nrm_norm;
-
-        //     ktris.tuple(dim_c<3>,"nrm",kti) = nrm;
-        // });  
-
-        // if(!kverts.hasProperty("nrm"))
-        //     kverts.append_channels(cudaPol,{{"nrm",3}});
-        // TILEVEC_OPS::fill(cudaPol,kverts,"nrm",(T)0.0);
-        // cudaPol(zs::range(ktris.size()),[
-        //         ktris = proxy<space>({},ktris),
-        //         kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kti) mutable {
-        //     auto ktri = ktris.pack(dim_c<3>,"inds",kti).reinterpret_bits(int_c);
-        //     auto nrm = ktris.pack(dim_c<3>,"nrm",kti);
-        //     for(int i = 0;i != 3;++i)
-        //         for(int d = 0;d != 3;++d)
-        //             atomic_add(exec_cuda,&kverts("nrm",d,ktri[i]),nrm[d]/*/(T)kverts("valence",ktri[i])*/);
-        // });
-        // cudaPol(zs::range(kverts.size()),[kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kvi) mutable {
-        //     auto nrm = kverts.pack(dim_c<3>,"nrm",kvi);
-        //     nrm = nrm / (nrm.norm() + (T)1e-6);
-        //     kverts.tuple(dim_c<3>,"nrm",kvi) = nrm;
-        // });   
 
         if(!tris.hasProperty("nrm"))
             tris.append_channels(cudaPol,{{"nrm",3}});
@@ -892,6 +857,7 @@ struct ZSSurfaceClosestPoints : zeno::INode {
             ktBvh = proxy<space>(ktBvh),
             kverts = proxy<space>({},kverts),
             ktris = proxy<space>({},ktris),
+            khalfedges = proxy<space>({},khalfedges),
             align_angle_cosin = align_angle_cosin,
             project_pos_tag = zs::SmallString(project_pos_tag),
             project_nrm_tag = zs::SmallString(project_nrm_tag),
@@ -961,10 +927,12 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                     if(bary_sum > 1.1)
                         return;
                     else {
-                        auto ntris = ktris.pack(dim_c<3>,"ff_inds",kti).reinterpret_bits(int_c);
+                        auto khi = zs::reinterpret_bits<int>(ktris("he_inds",kti));
 
                         for(int i = 0;i != 3;++i){
-                            auto nti = ntris[i];
+                            auto rkhi = zs::reinterpret_bits<int>(khalfedges("opposite_he",khi));
+                            auto nti = zs::reinterpret_bits<int>(khalfedges("to_face",rkhi));
+                            // auto nti = ntris[i];
                             auto edge_normal = vec3::zeros();
                             if(nti < 0){
                                 edge_normal = knrm;
@@ -980,6 +948,8 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                             seg = p - kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
                             if(bisector_normal.dot(seg) < 0)
                                 return;
+
+                            khi = zs::reinterpret_bits<int>(khalfedges("next_he",khi));
                         }
                     }
 
@@ -1297,6 +1267,8 @@ struct ZSSurfaceClosestTris : zeno::INode {
             (*zsparticles)[ZenoParticles::s_surfTriTag] : 
             zsparticles->getQuadraturePoints();
 
+        auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
+
         auto& kverts = kboundary->getParticles();
         auto& ktris = kboundary->getQuadraturePoints();
 
@@ -1407,6 +1379,7 @@ struct ZSSurfaceClosestTris : zeno::INode {
         cudaPol(zs::range(tris.size()),[
                 verts = proxy<space>({},verts),
                 tris = proxy<space>({},tris),
+                halfedges = proxy<space>({},halfedges),
                 kpBvh = proxy<space>(kpBvh),
                 kverts = proxy<space>({},kverts),
                 align_angle_cosin = align_angle_cosin,
@@ -1438,10 +1411,12 @@ struct ZSSurfaceClosestTris : zeno::INode {
             for(int i = 0;i != 3;++i)
                 tvs[i] = verts.pack(dim_c<3>,"x",tri[i]);
 
-            auto ntris = tris.pack(dim_c<3>,"ff_inds",ti).reinterpret_bits(int_c);
+
+            auto hi = zs::reinterpret_bits<int>(tris("he_inds",ti));
             vec3 bnrms[3] = {};
             for(int i = 0;i != 3;++i){
-                auto nti = ntris[i];
+                auto rhi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+                auto nti = zs::reinterpret_bits<int>(halfedges("to_face",rhi));
                 auto edge_normal = vec3::zeros();
                 if(nti < 0)
                     edge_normal = tnrm;
@@ -1451,6 +1426,7 @@ struct ZSSurfaceClosestTris : zeno::INode {
                 }
                 auto e01 = tvs[(i + 1) % 3] - tvs[(i + 0) % 3];
                 bnrms[i] = edge_normal.cross(e01).normalized();
+                hi = zs::reinterpret_bits<int>(halfedges("next_he",hi));
             }
 
             auto process_potential_closest_point = [&](int kpi) {
@@ -1859,6 +1835,7 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
 
         auto& kverts = kboundary->getParticles();
         auto& ktris = kboundary->getQuadraturePoints();
+        const auto& khalfedges = (*kboundary)[ZenoParticles::s_surfHalfEdgeTag];
 
         auto project_pos_tag = get_param<std::string>("project_pos_tag");
         auto project_nrm_tag = get_param<std::string>("project_nrm_tag");
@@ -1983,6 +1960,7 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
             ktBvh = proxy<space>(ktBvh),
             kverts = proxy<space>({},kverts),
             ktris = proxy<space>({},ktris),
+            khalfedges = proxy<space>({},khalfedges),
             project_pos_tag = zs::SmallString(project_pos_tag),
             project_nrm_tag = zs::SmallString(project_nrm_tag),
             project_idx_tag = zs::SmallString(project_idx_tag),
@@ -2041,9 +2019,10 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
                             if(kverts("k_fail",ktri[i]) > (T)0.5)
                                 return;                    
 
-                    auto ntris = ktris.pack(dim_c<3>,"ff_inds",kti).reinterpret_bits(int_c);
+                    auto hi = zs::reinterpret_bits<int>(ktris("he_inds",kti));
                     for(int i = 0;i != 3;++i){
-                        auto nti = ntris[i];
+                        auto rhi = zs::reinterpret_bits<int>(khalfedges("opposite_he",hi));
+                        auto nti = zs::reinterpret_bits<int>(khalfedges("to_face",rhi));
                         auto edge_normal = vec3::zeros();
                         if(nti < 0){
                             edge_normal = knrm;
@@ -2059,6 +2038,8 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
                         seg = p - kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
                         if(bisector_normal.dot(seg) < 0)
                             return;
+
+                        hi = zs::reinterpret_bits<int>(khalfedges("next_he",hi));
                     }    
 
                     auto insert_idx = nm_valid_tri_found < 3 ? nm_valid_tri_found : 2;
@@ -2142,6 +2123,7 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
             ktBvh = proxy<space>(ktBvh),
             kverts = proxy<space>({},kverts),
             ktris = proxy<space>({},ktris),
+            khalfedges = proxy<space>({},khalfedges),
             project_pos_tag = zs::SmallString(project_pos_tag),
             project_nrm_tag = zs::SmallString(project_nrm_tag),
             project_idx_tag = zs::SmallString(project_idx_tag),
@@ -2205,9 +2187,11 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
                             if(kverts("k_fail",ktri[i]) > (T)0.5)
                                 return;                    
 
-                    auto ntris = ktris.pack(dim_c<3>,"ff_inds",kti).reinterpret_bits(int_c);
+                    auto khi = zs::reinterpret_bits<int>(ktris("he_inds",kti));
                     for(int i = 0;i != 3;++i){
-                        auto nti = ntris[i];
+                        auto rkhi = zs::reinterpret_bits<int>(khalfedges("opposite_he",khi));
+                        auto nti = zs::reinterpret_bits<int>(khalfedges("to_face",rkhi));
+                        // auto nti = ntris[i];
                         auto edge_normal = vec3::zeros();
                         if(nti < 0){
                             edge_normal = knrm;
@@ -2223,6 +2207,8 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
                         seg = p - kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
                         if(bisector_normal.dot(seg) < 0)
                             return;
+
+                        khi = zs::reinterpret_bits<int>(khalfedges("next_he",khi));
                     }    
 
                     auto insert_idx = nm_valid_tri_found < 3 ? nm_valid_tri_found : 2;
@@ -2549,7 +2535,6 @@ ZENDEFNODE(ZSSurfaceClosestIntersectingTris, {
 
 
 
-
 struct VisualizeClosestIntersectingTris : zeno::INode {
     using T = float;
     using Ti = int;
@@ -2616,9 +2601,7 @@ struct VisualizeClosestIntersectingTris : zeno::INode {
                     verts_buffer.tuple(dim_c<3>,"xp",ti) = kp;
                     verts_buffer.tuple(dim_c<3>,"nrm",ti) = tnrm;
                 }
-
         });
-
 
         constexpr auto omp_space = execspace_e::openmp;
         auto ompPol = omp_exec();         

@@ -103,6 +103,7 @@ void ReadFBXPrim::onEditClicked()
         .set("path", path_)
         .set("hintPath", hintPath_)
         .set2<bool>("generate", true)
+        .set2<float>("offset", 0.0)
         .set2<std::string>("udim:", "DISABLE")
         .set2<bool>("invOpacity:", true)
         .set2<bool>("primitive:", false)
@@ -125,7 +126,7 @@ void ReadFBXPrim::onEditClicked()
         ZENO_HANDLE fbxPartGraph = Zeno_GetGraph("FBXPart");
         ZASSERT_EXIT(fbxPartGraph);
 
-        int my_x = my_sqrt(matNum);
+        int check = my_sqrt(matNum);
         int my_i = 0;
         float add_x_pos = 0.0f;
         float add_y_pos = 0.0f;
@@ -139,15 +140,15 @@ void ReadFBXPrim::onEditClicked()
             ZENO_HANDLE dictNode = Zeno_AddNode(hGraph, "DictGetItem");
             add_y_pos = my_i * 300.0f;
             my_i++;
-            if(i % my_x == 0){
-                add_x_pos += 1500.0f;
-                my_i = 0;
-                add_y_pos = 0.0f;
-            }
 
             std::pair<float, float> dictNodePos = {fbxNodePos.first + 600.0f + add_x_pos, fbxNodePos.second + add_y_pos};
-            Zeno_SetPos(hGraph,dictNode, dictNodePos);
 
+            if(my_i % check == 0){
+                add_x_pos += 1500.0f;
+                my_i = 0;
+            }
+
+            Zeno_SetPos(hGraph,dictNode, dictNodePos);
             Zeno_SetInputDefl(hGraph, dictNode, "key", matName);
             Zeno_AddLink(hGraph, fbxNode, "mats", dictNode, "dict");
 

@@ -22,7 +22,7 @@ ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &
     pGroupLayout->setSpacing(10);
     PARAMS_INFO params = m_idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    insertRow("background", PARAM_CONTROL::CONTROL_COLOR_NORMAL, info.background, 0, pGroupLayout);
+    insertRow("background", PARAM_CONTROL::CONTROL_PURE_COLOR, info.background, 0, pGroupLayout);
     insertRow("title", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.title, 1, pGroupLayout);
     //insertRow("content", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.content, 2, pGroupLayout);
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();

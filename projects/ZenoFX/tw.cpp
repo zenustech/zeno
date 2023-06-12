@@ -211,9 +211,9 @@ struct TrianglesWrangle : zeno::INode {
 	    }
             auto key = name.substr(1);
             if (dim == 3) {
-                tris.add_attr<zeno::vec3f>(key);
+                tris.template add_attr<zeno::vec3f>(key);
             } else if (dim == 1) {
-                tris.add_attr<float>(key);
+                tris.template add_attr<float>(key);
             } else {
                 err_printf("ERROR: bad attribute dimension for primitive: %d\n",
                     dim);
@@ -264,7 +264,6 @@ ZENDEFNODE(TrianglesWrangle, {
     {{"PrimitiveObject", "prim"},
      {"string", "zfxCode"}, {"DictObject:NumericObject", "params"},
      {"enum points lines tris quads loops polys", "faceType", "tris"}},
-    },
     {{"PrimitiveObject", "prim"}},
     {},
     {"zenofx"},

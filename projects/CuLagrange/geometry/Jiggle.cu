@@ -170,32 +170,30 @@ struct ZSJiggle : INode {
                 ppjTag  = zs::SmallString(ppjTag),
                 jwTag   = zs::SmallString(jwTag),
                 jdt] ZS_LAMBDA(int vi) mutable {
+                    auto jw = verts(jwTag,vi);
 
+                    verts.template tuple<3>(ppjTag,vi) = verts.template pack<3>(pjTag,vi);
+                    verts.template tuple<3>(pjTag,vi) = verts.template pack<3>(cjTag,vi);
 
-                auto jw = verts(jwTag,vi);
+                    auto cp = verts.template pack<3>(drivenTag,vi);
+                    auto cj = verts.template pack<3>(cjTag,vi);
+                    auto pj = verts.template pack<3>(pjTag,vi);
+                    auto ppj = verts.template pack<3>(ppjTag,vi);
 
-                verts.template tuple<3>(ppjTag,vi) = verts.template pack<3>(pjTag,vi);
-                verts.template tuple<3>(pjTag,vi) = verts.template pack<3>(cjTag,vi);
+                    auto jvec = ( 1- jiggleDamp) * (pj - ppj) / jdt;
 
-                auto cp = verts.template pack<3>(drivenTag,vi);
-                auto cj = verts.template pack<3>(cjTag,vi);
-                auto pj = verts.template pack<3>(pjTag,vi);
-                auto ppj = verts.template pack<3>(ppjTag,vi);
+                    auto tension = jiggleStiffness * (cp - pj);
+                    jw = jiggleScale * jw;
 
-                auto jvec = ( 1- jiggleDamp) * (pj - ppj) / jdt;
+                    cj += jvec * jdt + 0.5 * tension * jdt * jdt;  
 
-                auto tension = jiggleStiffness * (cp - pj);
-                jw = jiggleScale * jw;
+                    verts.template tuple<3>(cjTag,vi) = cp * (1 - jw) + jw * cj;
 
-                cj += jvec * jdt + 0.5 * tension * jdt * jdt;  
-
-                verts.template tuple<3>(cjTag,vi) = cp * (1 - jw) + jw * cj;
-
-                // if(vi == 0) {
-                //     auto check_cj = verts.template pack<3>(cjTag,vi);
-                //     printf("ZS_JIGGLE[0] : %f %f %f %f %f %f %f %f %f\n",(float)check_cj[0],(float)check_cj[1],(float)check_cj[2],
-                //         (float)cp[0],(float)cp[1],(float)cp[2],(float)cj[0],(float)cj[1],(float)cj[2]);
-                // }
+                    // if(vi == 0) {
+                    //     auto check_cj = verts.template pack<3>(cjTag,vi);
+                    //     printf("ZS_JIGGLE[0] : %f %f %f %f %f %f %f %f %f\n",(float)check_cj[0],(float)check_cj[1],(float)check_cj[2],
+                    //         (float)cp[0],(float)cp[1],(float)cp[2],(float)cj[0],(float)cj[1],(float)cj[2]);
+                    // }
 
         });   
 

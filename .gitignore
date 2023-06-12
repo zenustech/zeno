@@ -1,5 +1,6 @@
 # cmake files
-build
+build/
+ninja/
 cmake-build-*/
 Debug/
 Release/
@@ -14,5 +15,4 @@ CMakeSettings.json
 CMakeUserPresets.json
 .vim_localrc
 CMakeLists.txt.user
-
 compile_commands.json

@@ -52,7 +52,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
 void Camera::setResolution(int nx, int ny) {
     m_nx = nx;
     m_ny = ny;
-    m_proj = glm::perspective(glm::radians(m_fov), getAspect(), m_near, m_far);
+    m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
 }
 
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
@@ -79,7 +79,7 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
     if (!(fov <= 0)) {
-        auto fnear = 0.1f;
+        auto fnear = 0.05f;
         auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
         placeCamera(center - front * radius, front, up, fov, fnear, ffar);
     } else {

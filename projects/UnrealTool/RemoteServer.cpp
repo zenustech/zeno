@@ -581,7 +581,7 @@ struct IObjectExtractor<remote::ESubjectType::HeightField> {
             for (float Height : HeightAttrs) {
                 // Map height [-255, 255] in R to [0, UINT16_MAX] in Z
                 constexpr uint16_t uint16Max = std::numeric_limits<uint16_t>::max();
-                auto NewValue = static_cast<uint16_t>(((Height + 255.f) / (255.f * 2.f)) * uint16Max);
+                auto NewValue = static_cast<uint16_t>(((Height + UE_LANDSCAPE_ZSCALE_INV) / (UE_LANDSCAPE_ZSCALE_INV * 2.f)) * uint16Max);
                 RemappedHeightFieldData.push_back(NewValue);
             }
             remote::HeightField HeightField { N, N, RemappedHeightFieldData };
@@ -592,6 +592,26 @@ struct IObjectExtractor<remote::ESubjectType::HeightField> {
             log_error(R"(Primitive type HeightField must have attribute "float")");
             return { std::string{}, static_cast<int16_t>(remote::ESubjectType::Invalid), std::vector<uint8_t>{} };
         }
+    }
+};
+
+template <>
+struct IObjectExtractor<remote::ESubjectType::PointSet> {
+    remote::SubjectContainer operator()(IObject* Node, const std::string& InName = "", const std::map<std::string, std::string>& InMeta = {}) {
+        auto* PrimObj = safe_dynamic_cast<PrimitiveObject>(Node);
+        if (PrimObj->size() == 0) {
+            log_error(R"(Primitive type HeightField must have attribute "float")");
+            return { std::string{}, static_cast<int16_t>(remote::ESubjectType::Invalid), std::vector<uint8_t>{} };
+        }
+        zeno::remote::PointSet Result;
+        Result.Points.reserve(PrimObj->size());
+        for (const auto& Point : PrimObj->verts) {
+            // Inverse Z and Y
+            Result.Points.push_back({ Point.at(0), Point.at(2), Point.at(1) });
+        }
+        Result.Meta = InMeta;
+        std::vector<uint8_t> Data = msgpack::pack(Result);
+        return remote::SubjectContainer{ InName, static_cast<int16_t>(remote::ESubjectType::PointSet), std::move(Data) };
     }
 };
 
@@ -606,6 +626,11 @@ struct TransferPrimitiveToUnreal : public INode {
         } else if (processor_type == "HeightField") {
             remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::HeightField>{}(prim.get(), subject_name);
             zeno::remote::StaticRegistry.Push({ std::move(NewSubject), });
+        } else if (processor_type == "Points") {
+            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::PointSet>{}(prim.get(), subject_name);
+            zeno::remote::StaticRegistry.Push({ std::move(NewSubject), });
+        } else {
+            log_error("Unknown processor type: " + processor_type);
         }
         set_output2("primRef", prim);
     }
@@ -754,7 +779,12 @@ struct SetExecutionResult : public INode {
         const std::string ProcessorType = get_input2<std::string>("type");
         const remote::ESubjectType Type = remote::NameToSubjectType(ProcessorType);
         const std::string SubjectName = get_input2<std::string>("name");
-        const std::shared_ptr<zeno::remote::MetaData> MetaData = get_input2<zeno::remote::MetaData>("meta");
+        std::shared_ptr<zeno::remote::MetaData> MetaData = nullptr;
+        if (has_input("meta")) {
+            MetaData = get_input2<zeno::remote::MetaData>("meta");
+        } else {
+            MetaData = std::make_shared<zeno::remote::MetaData>();
+        }
         std::shared_ptr<zeno::IObject> Value = get_input<zeno::IObject>("value");
         if (!Value) {
             zeno::log_error("No value provided.");
@@ -771,6 +801,11 @@ struct SetExecutionResult : public INode {
         } else if (Type == remote::ESubjectType::HeightField) {
             remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::HeightField>{}(Value.get(), SubjectName, Meta);
             remote::StaticRegistry.Push( { NewSubject }, SessionKey);
+        } else if (Type == remote::ESubjectType::PointSet) {
+            remote::SubjectContainer NewSubject = IObjectExtractor<remote::ESubjectType::PointSet>{}(Value.get(), SubjectName, Meta);
+            remote::StaticRegistry.Push( { NewSubject }, SessionKey);
+        } else {
+            log_error("Unknown processor type: " + ProcessorType);
         }
     }
 };
