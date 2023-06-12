@@ -394,26 +394,21 @@ vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float 
     return vec3(0.0);
 
   float LDotH = abs(dot(L, H));
-
-  float Rr = 2.0f * roughness * LDotH * LDotH;
-
+  float LH2 = dot(L,V) + 1.0f;
+  float Rr = roughness * LH2;
   // Diffuse
   float FL = SchlickWeight(abs(L.z));
   float FV = SchlickWeight(abs(V.z));
   float Fretro = Rr * (FL + FV + FL * FV * (Rr - 1.0f));
   float Fd = (1.0f - 0.5f * FL) * (1.0f - 0.5f * FV);
 
-  // Fake subsurface
-  float Fss90 = 0.5f * Rr;
-  float Fss = mix(1.0f, Fss90, FL) * mix(1.0f, Fss90, FV);
-  float ss = 1.25f * (Fss * (1.0f / (abs(L.z) + abs(V.z)) - 0.5f) + 0.5f);
 
   // Sheen
   float FH = SchlickWeight(LDotH);
   vec3 Fsheen = FH * sheen * Csheen;
 
   pdf = L.z * 1.0f / M_PIf;
-  return 1.0f / M_PIf * baseColor * mix(Fd + Fretro, ss, subsurface) + Fsheen;
+  return 1.0f / M_PIf * baseColor * (Fd + Fretro) + Fsheen;
 }
 
 static __inline__ __device__
@@ -441,7 +436,7 @@ vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F
   if (L.z * V.z <= 0.0)
     return vec3(0.0);
 
-  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ax, ay),0.0f,1.0f);
+  float D = clamp(GTR2Aniso(abs(H.z), H.x, H.y, ax, ay),0.0f,40.0f);
   float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
 
@@ -459,7 +454,7 @@ vec3 EvalMicrofacetRefraction2(vec3 baseColor, float ax, float ay, float eta, ve
 
   float HoL = dot(L, H);
   float HoV = dot(V, H);
-  float D = clamp(GgxD(H, ax, ay),0.0f,1.0f);
+  float D = clamp(GgxD(H, ax, ay),0.0f,40.0f);
   float g = GgxG(V, L, ax, ay);
   float denom = HoL + HoV * eta;
   denom *= denom;
@@ -489,7 +484,7 @@ vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec
   float LDotH = dot(L, H);
   float VDotH = dot(V, H);
 
-  float D = clamp(GTR2Aniso(H.z, H.x, H.y, ax, ay),0.0f,1.0f);
+  float D = clamp(GTR2Aniso(H.z, H.x, H.y, ax, ay),0.0f,40.0f);
   float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
   float denom = LDotH + VDotH * eta;
@@ -517,7 +512,7 @@ vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
   float VDotH = abs(dot(V, H));
 
   float F = mix(0.04, 1.0, SchlickWeight(VDotH));
-  float D = clamp(GTR1(H.z, ccR),0.0f,1.0f);
+  float D = clamp(GTR1(H.z, ccR),0.0f,4.0f);
   float G = SmithG(L.z, 0.25f) * SmithG(V.z, 0.25f);
   float jacobian = 1.0f / (4.0f * VDotH);
 

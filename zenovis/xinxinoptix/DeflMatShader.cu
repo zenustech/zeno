@@ -1100,8 +1100,8 @@ extern "C" __global__ void __closesthit__radiance()
                                                         params.skynx, params.skyny, p, envpdf)
                                   : vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
         auto sun_dir = BRDFBasics::halfPlaneSample(prd->seed, sunLightDir,
-                                                   params.sunSoftness * 0.2f); //perturb the sun to have some softness
-        sun_dir = hasenv ? normalize(sunLightDir):sun_dir;
+                                                   params.sunSoftness * 0.0f); //perturb the sun to have some softness
+        sun_dir = hasenv ? normalize(sunLightDir):normalize(sun_dir);
         float tmpPdf;
         float3 illum = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                      40, // be careful
@@ -1141,11 +1141,12 @@ extern "C" __global__ void __closesthit__radiance()
             mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
         }
         float misWeight = BRDFBasics::PowerHeuristic(envpdf, ffPdf);
-        misWeight = misWeight>0.0f?misWeight:0.0f;
-        prd->radiance += 1.0f / (float)NSamples *
+        misWeight = misWeight>0.0f?misWeight:1.0f;
+        misWeight = ffPdf>0.0f?misWeight:1.0f;
+        prd->radiance += misWeight * 1.0f / (float)NSamples *
             light_attenuation  / envpdf * 2.0f * (thin > 0.5f ? float3(mat2.reflectance) : lbrdf);
     }
-        prd->radiance = float3(clamp(vec3(prd->radiance), vec3(0.0f), vec3(100.0f)));
+        //prd->radiance = float3(clamp(vec3(prd->radiance), vec3(0.0f), vec3(100.0f)));
     }
 
     P = P_OLD;

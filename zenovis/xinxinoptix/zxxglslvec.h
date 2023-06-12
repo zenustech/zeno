@@ -1219,7 +1219,8 @@ __forceinline__ __device__ float sinPhi2(vec3 w) {
 
 __forceinline__ __device__ float Luminance(vec3 c)
 {
-  return 0.212671 * c.x + 0.715160 * c.y + 0.072169 * c.z;
+  return dot(c, vec3(1.0f))/3.0f;
+  //return 0.2126729f * c.x + 0.7151522f * c.y + 0.0721750f * c.z;
 }
 
 __forceinline__ __device__ bool refract(vec3 &R, vec3 I, vec3 N, float eta)

@@ -614,9 +614,9 @@ namespace DisneyBSDF{
 
         float schlickWt = BRDFBasics::SchlickWeight(abs(wo.z));
         //event probability
-        float diffPr = dielectricWt * Luminance(baseColor);
-        float sssPr = dielectricWt  * Luminance(baseColor) * subsurface;
-        float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
+        float diffPr = dielectricWt  * Luminance(baseColor);
+        float sssPr = dielectricWt * Luminance(baseColor)  * subsurface;
+        float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt)) * specular;
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
         float glassPr = glassWt;
         float clearCtPr = 0.25 * clearCoat;
@@ -637,11 +637,14 @@ namespace DisneyBSDF{
 
 
         float tmpPdf = 0.0f;
+        wo = normalize(wo);
+        wi = normalize(wi);
+        wm = normalize(wm);
         float HoV = abs(dot(wm, wo));
         if(diffPr > 0.0 && reflect)
         {
-            float psub = subsurface / (1.0f + subsurface);
-            f = f + (1.0f-psub) * BRDFBasics::EvalDisneyDiffuse(mix(baseColor,sssColor,subsurface), subsurface, roughness, sheen,
+
+            f = f + BRDFBasics::EvalDisneyDiffuse(mix(baseColor,sssColor,subsurface), subsurface, roughness, sheen,
                                              Csheen, wo, wi, wm, tmpPdf) * dielectricWt;
             fPdf += tmpPdf * diffPr;
         }
@@ -651,7 +654,7 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(roughness,anisotropic,ax,ay);
             f = f + BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                          mix(Cspec0, vec3(1.0f), F), tmpPdf) * dielectricWt;
+                                          mix(Cspec0, vec3(1.0f), F), tmpPdf) * dielectricWt * specular;
             fPdf += tmpPdf * dielectricPr;
         }
         if(metalPr>0.0 && reflect)
@@ -1664,8 +1667,8 @@ namespace DisneyBSDF{
 
         //event probability
         float diffPr = dielectricWt * Luminance(baseColor);
-        float sssPr = dielectricWt  * Luminance(baseColor) * subsurface;
-        float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
+        float sssPr = dielectricWt * Luminance(baseColor)  * subsurface;
+        float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt)) * specular;
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
         float glassPr = glassWt;
         float clearCtPr = 0.25 * clearCoat;
