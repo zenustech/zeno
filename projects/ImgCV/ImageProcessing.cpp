@@ -2125,12 +2125,7 @@ struct ImageMatting: INode {
                 }
                 else if (maskmode == "alpha") {
                     if (gimage->verts.has_attr("alpha")) {
-#pragma omp parallel for
-                        for (int i = 0; i < h; i++) {
-                            for (int j = 0; j < w; j++) {
-                                image->verts.attr<float>("alpha")[i * w + j] = gimage->verts.attr<float>("alpha")[i * w + j];
-                            }
-                        }
+                        image->verts.attr<float>("alpha") = gimage->verts.attr<float>("alpha");
                     } else {
 #pragma omp parallel for
                         for (int i = 0; i < h; i++) {
@@ -2256,12 +2251,7 @@ struct ImageAddAlpha: INode {
                 }
                 else if (maskmode == "alpha") {
                     if (gimage->verts.has_attr("alpha")) {
-#pragma omp parallel for
-                        for (int i = 0; i < h; i++) {
-                            for (int j = 0; j < w; j++) {
-                                image->verts.attr<float>("alpha")[i * w + j] = gimage->verts.attr<float>("alpha")[i * w + j];
-                            }
-                        }
+                        image->verts.attr<float>("alpha") = gimage->verts.attr<float>("alpha");
                     } else {
 #pragma omp parallel for
                         for (int i = 0; i < h; i++) {

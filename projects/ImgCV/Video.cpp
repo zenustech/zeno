@@ -36,7 +36,7 @@ struct ReadImageFromVideo : INode {
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 cv::Vec3f rgb = frameimage.at<cv::Vec3b>(i, j);
-                image->verts[(h - i - 1) * w + j] = {rgb[0] / 255, rgb[1] / 255, rgb[2] / 255};
+                image->verts[(h - i - 1) * w + j] = {rgb[2] / 255, rgb[1] / 255, rgb[0] / 255};
             }
         }
         set_output("image", image);
