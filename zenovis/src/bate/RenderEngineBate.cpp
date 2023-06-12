@@ -60,6 +60,19 @@ struct RenderEngineBate : RenderEngine {
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
             }
+            {
+                // left-down gizmo axis
+                if (hudGraphics.size() > 2) {
+                    Camera backup = *scene->camera;
+                    scene->camera->focusCamera(0, 0, 0, 10);
+                    CHECK_GL(glViewport(0, 0, scene->camera->m_nx * 0.1, scene->camera->m_ny * 0.1));
+                    CHECK_GL(glDisable(GL_DEPTH_TEST));
+                    hudGraphics[1]->draw();
+                    CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glViewport(0, 0, scene->camera->m_nx, scene->camera->m_ny));
+                    *scene->camera = backup;
+                }
+            }
         }
         if (!scene->selected.empty() && scene->drawOptions->handler) {
             CHECK_GL(glClear(GL_DEPTH_BUFFER_BIT));
