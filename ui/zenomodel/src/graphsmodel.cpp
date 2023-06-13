@@ -1488,7 +1488,6 @@ void GraphsModel::_findReference(
             QModelIndexList& refNodesInMain)
 {
     //find all graphs that contains `targetSubgraph`.
-    QVector<_Ref_Subnet> refs;
     for (SubGraphModel* subg : m_subGraphs)
     {
         const QString& subgName = subg->name();

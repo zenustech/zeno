@@ -1137,7 +1137,7 @@ void ZenoNode::onUpdateParamsNotDesc()
 void ZenoNode::onMarkDataChanged(bool bDirty)
 {
     QColor clrMarker;
-    if (bDirty)
+    if (bDirty && bShowDataChanged)
     {
         clrMarker = QColor(240, 215, 4);
     }

@@ -162,12 +162,6 @@ public slots:
 	void on_linkRemoved(const QModelIndex& parent, int first, int last);
 
 private:
-
-    struct _Ref_Subnet {
-        QString graphName;
-        QModelIndex subnetIdx;      //target subnet node in `graphName`
-    };
-
     NODE_DESCS getCoreDescs();
     void _markNodeChanged(const QModelIndex& idx);
     void _markSubnodesChange(SubGraphModel* pSubg);
