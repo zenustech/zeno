@@ -116,6 +116,7 @@
 					},
 					"tabs": [
 						"Parameter",
+						"Image",
 						"Data",
 						"Logger"
 					]
@@ -164,6 +165,7 @@
 						"tabs": [
 							"Logger",
 							"Parameter",
+							"Image",
 							"Data"
 						]
 					}
