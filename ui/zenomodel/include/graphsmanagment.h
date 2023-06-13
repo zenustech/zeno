@@ -35,6 +35,7 @@ public:
     NODE_DESCS descriptors();
     NODE_CATES getCates();
     NODE_TYPE nodeType(const QString& name);
+    QString filePath() const;
 
 signals:
     void modelInited(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs);
@@ -68,6 +69,7 @@ private:
     QString m_currFile;
     TIMELINE_INFO m_timerInfo;
     QMap<QString, QGraphicsScene*> m_scenes;
+    QString m_filePath;
 };
 
 #endif

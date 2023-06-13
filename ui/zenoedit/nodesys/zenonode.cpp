@@ -130,7 +130,7 @@ void ZenoNode::initUI(ZenoSubGraphScene* pScene, const QModelIndex& subGIdx, con
     m_subGpIndex = QPersistentModelIndex(subGIdx);
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
 
-    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subGpIndex);
     ZASSERT_EXIT(pGraphsModel);
 
     m_headerWidget = initHeaderWidget(pGraphsModel);
@@ -308,7 +308,7 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
     const QPersistentModelIndex perIdx(paramIdx);
 
     Callback_EditFinished cbUpdateParam = [=](QVariant newValue) {
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel *pModel = UiHelper::getGraphsBySubg(m_subGpIndex);
         if (!pModel)
             return;
         pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
@@ -799,7 +799,7 @@ ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bI
 
 ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, ZenoSubGraphScene* pScene)
 {
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pModel = UiHelper::getGraphsBySubg(m_subGpIndex);
 
     CallbackForSocket cbSocket;
     cbSocket.cbOnSockClicked = [=](ZenoSocketItem* pSocketItem) {
@@ -1114,7 +1114,7 @@ void ZenoNode::updateNodePos(const QPointF &pos, bool enableTransaction)
     info.role = ROLE_OBJPOS;
     info.newValue = pos;
     info.oldValue = oldPos;
-    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subGpIndex);
     ZASSERT_EXIT(pGraphsModel);
     pGraphsModel->updateBlackboard(nodeId(), QVariant::fromValue(info), m_subGpIndex, enableTransaction);
     m_bMoving = false;
@@ -1226,7 +1226,7 @@ ZenoGraphsEditor* ZenoNode::getEditorViewByViewport(QWidget* pWidget)
 
 void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subGpIndex);
     if (pGraphsModel && pGraphsModel->IsSubGraphNode(m_index))
     {
         scene()->clearSelection();
@@ -1292,7 +1292,7 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     else if (wtf.contains(m_bodyWidget))
     {
         const QString& objPath = m_index.data(ROLE_OBJPATH).toString();
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel *pModel = UiHelper::getGraphsBySubg(m_subGpIndex);
         QModelIndex subgIdx = pModel->indexFromPath(objPath);
         if (subgIdx.isValid() && pModel->IsSubGraphNode(subgIdx))
         {
@@ -1326,7 +1326,7 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     if (m_bMoving)
     {
         m_bMoving = false;
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subGpIndex);
         QPointF newPos = event->scenePos();
         QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
         if (newPos != oldPos)
@@ -1426,7 +1426,7 @@ void ZenoNode::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
 
 void ZenoNode::onCollaspeBtnClicked()
 {
-	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subGpIndex);
     ZASSERT_EXIT(pGraphsModel);
     bool bCollasped = m_index.data(ROLE_COLLASPED).toBool();
 
@@ -1441,7 +1441,7 @@ void ZenoNode::onOptionsBtnToggled(STATUS_BTN btn, bool toggled)
 {
 	QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(m_index.model());
 
-	IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+	IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subGpIndex);
 	ZASSERT_EXIT(pGraphsModel);
 
     int options = m_index.data(ROLE_OPTIONS).toInt();

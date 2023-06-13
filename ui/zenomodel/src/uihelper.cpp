@@ -14,6 +14,8 @@
 #include "graphsmanagment.h"
 #include "graphstreemodel.h"
 #include "graphstreemodel_impl.h"
+#include <zenomodel/include/vparamitem.h>
+#include <zenomodel/src/subgraphmodel.h>
 
 
 using namespace zeno::iotags;
@@ -922,34 +924,6 @@ QPointF UiHelper::parsePoint(const rapidjson::Value& ptObj, bool& bSucceed)
     return pt;
 }
 
-NODE_TYPE UiHelper::nodeType(const QString& name)
-{
-    if (name == "Blackboard")
-    {
-        return BLACKBOARD_NODE;
-    }
-    else if (name == "Group")
-    {
-        return GROUP_NODE;
-    }
-    else if (name == "SubInput")
-    {
-        return SUBINPUT_NODE;
-    }
-    else if (name == "SubOutput")
-    {
-        return SUBOUTPUT_NODE;
-    }
-    else if (name == "MakeHeatmap")
-    {
-        return HEATMAP_NODE;
-    }
-    else
-    {
-        return NORMAL_NODE;
-    }
-}
-
 int UiHelper::getMaxObjId(const QList<QString> &lst)
 {
     int maxObjId = -1;
@@ -1096,34 +1070,61 @@ QString UiHelper::nthSerialNumName(QString name)
         return name + "(" + QString::number(ith + 1) + ")";
     }
 }
-
-QString UiHelper::correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput)
+QString UiHelper::correctSubIOName(SubGraphModel* pSubModel, const QString& newName, bool bInput)
 {
-    ZASSERT_EXIT(pModel, "");
+    ZASSERT_EXIT(pSubModel, "");
 
-    NODE_DESC desc;
-    auto& mgr = GraphsManagment::instance();
-    bool ret = mgr.getDescriptor(subgName, desc);
-    if (!ret)
+    QString finalName = newName;
+    int i = 1;
+    QModelIndexList indexs = pSubModel->getNodesByCls(bInput ? "SubInput" : "SubOutput");
+    QStringList names;
+    for (auto index : indexs) {
+        NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(index.data(ROLE_NODE_PARAMS));
+        ZASSERT_EXIT(nodeParams, "");
+        VParamItem *param = nodeParams->getParams();
+        ZASSERT_EXIT(param, "");
+        VParamItem *nameItem = param->getItem("name");
+        ZASSERT_EXIT(nameItem, "");
+        const QString& name = nameItem->data(ROLE_PARAM_VALUE).toString();
+        names << name;
+    }
+    while (names.contains(finalName)) {
+        finalName = newName + QString("_%1").arg(i);
+        i++;
+    }
+    return finalName;
+}
+
+QString UiHelper::correctSubIOName(const const QModelIndex& subIdx, const QString& newName, bool bInput)
+{
+    NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subIdx.data(ROLE_NODE_PARAMS));
+    if (!nodeParams)
         return "";
 
     QString finalName = newName;
     int i = 1;
+    VParamItem *pItem = nullptr;
     if (bInput)
     {
-        while (desc.inputs.find(finalName) != desc.inputs.end())
-        {
-            finalName = finalName + QString("_%1").arg(i);
-            i++;
-        }
+        pItem = nodeParams->getInputs();
     }
     else
     {
-        while (desc.outputs.find(finalName) != desc.outputs.end())
-        {
-            finalName = finalName + QString("_%1").arg(i);
-            i++;
+        pItem = nodeParams->getOutputs();
+    }
+    QStringList names;
+    if (pItem) {
+        for (int row = 0; row < pItem->rowCount(); row++) {
+            VParamItem *param = static_cast<VParamItem *>(pItem->child(row));
+            if (param) {
+                const QString &name = param->m_name;
+                names << name;
+            }
         }
+    }
+    while (names.contains(finalName)) {
+        finalName = newName + QString("_%1").arg(i);
+        i++;
     }
     return finalName;
 }

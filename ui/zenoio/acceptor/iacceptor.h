@@ -18,7 +18,6 @@ public:
     virtual void EndSubgraph() = 0;
     virtual void EndGraphs() = 0;
     virtual bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) = 0;
-    virtual void setFilePath(const QString& fileName) = 0;
     virtual void switchSubGraph(const QString& graphName) = 0;
     virtual bool addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors) = 0;
     virtual void setViewRect(const QRectF& rc) = 0;

@@ -42,9 +42,6 @@ public:
     bool isDirty() const override;
     void markDirty() override;
     void clearDirty() override;
-    QString filePath() const override;
-    QString fileName() const override;
-    void setFilePath(const QString& fn) override;
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex nodeIndex(uint32_t sid, uint32_t nodeid) override;
     QModelIndex subgIndex(uint32_t sid) override;
@@ -135,6 +132,7 @@ public:
     QAbstractItemModel *implModel() override {
         return nullptr;
     }
+    void onMerge(IGraphsModel *pModel, const QModelIndex subgIdx) override{};
 
 public slots:
     void onCurrentIndexChanged(int);

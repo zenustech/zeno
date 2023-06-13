@@ -145,7 +145,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     if (bNodeUI)
     {
         m_ui->m_coreMappingWidget->hide();
-        m_proxyModel = new NodeParamModel(m_pGraphsModel, true, this);
+        m_proxyModel = new NodeParamModel(m_pGraphsModel, true, pModel->parent());
     }
     else
     {
@@ -972,7 +972,8 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
         VParamItem *pGroup = static_cast<VParamItem *>(proxyItem);
         bSubInput = pGroup->m_name == iotags::params::node_inputs;
         subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        subgIdx = m_pGraphsModel->index(subgName);
+        QString subgId = m_nodeIdx.data(ROLE_OBJID).toString();
+        subgIdx = m_pGraphsModel->index(subgId, m_subgIdx);
     }
 
     int r = 0;

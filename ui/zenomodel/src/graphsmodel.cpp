@@ -37,12 +37,6 @@ QItemSelectionModel* GraphsModel::selectionModel() const
     return m_selection;
 }
 
-void GraphsModel::setFilePath(const QString& fn)
-{
-    m_filePath = fn;
-    emit pathChanged(m_filePath);
-}
-
 SubGraphModel* GraphsModel::subGraph(const QString& name) const
 {
     auto iter = m_subGraphs.find(name);
@@ -769,20 +763,6 @@ QString GraphsModel::uniqueSubgraph(QString orginName)
     return newSubName;
 }
 
-QString GraphsModel::filePath() const
-{
-    return m_filePath;
-}
-
-QString GraphsModel::fileName() const
-{
-    QFileInfo fi(m_filePath);
-    QString fn;
-    if (fi.isFile())
-        fn = fi.fileName();
-    return fn;
-}
-
 void GraphsModel::onCurrentIndexChanged(int row)
 {
     const QString& graphName = data(index(row, 0), ROLE_OBJNAME).toString();
@@ -1503,7 +1483,7 @@ bool GraphsModel::onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2)
 
     ZASSERT_EXIT(nodeData2.params.find("name") != nodeData2.params.end(), false);
     PARAM_INFO& param = nodeData2.params["name"];
-    QString newSockName = UiHelper::correctSubIOName(this, pGraph->name(), param.value.toString(), bInput);
+    QString newSockName = UiHelper::correctSubIOName(pGraph, param.value.toString(), bInput);
     param.value = newSockName;
     pGraph->appendItem(nodeData2);
 
@@ -1594,18 +1574,20 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     {
         if (bInput)
         {
-            ZASSERT_EXIT(desc.inputs.find(nameValue) == desc.inputs.end());
+            if (desc.inputs.find(nameValue) == desc.inputs.end())
+                desc.inputs[nameValue] = INPUT_SOCKET();
             desc.inputs[nameValue].info = info;
         }
         else
         {
-            ZASSERT_EXIT(desc.outputs.find(nameValue) == desc.outputs.end());
+            if (desc.outputs.find(nameValue) == desc.outputs.end())
+                desc.outputs[nameValue] = OUTPUT_SOCKET();
             desc.outputs[nameValue].info = info;
         }
 
         //sync to all subgraph nodes.
         QModelIndexList subgNodes = findSubgraphNode(subnetNodeName);
-        for (QModelIndex subgNode : subgNodes)
+        for (const QModelIndex& subgNode : subgNodes)
         {
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
             nodeParams->setAddParam(
@@ -1635,12 +1617,13 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
         }
 
         QModelIndexList subgNodes = findSubgraphNode(subnetNodeName);
-        for (QModelIndex subgNode : subgNodes)
+        for (const QModelIndex& subgNode : subgNodes)
         {
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
             nodeParams->removeParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, nameValue);
         }
     }
+    mgr.updateSubgDesc(subnetNodeName, desc);
 }
 
 QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType, int searchOpts)

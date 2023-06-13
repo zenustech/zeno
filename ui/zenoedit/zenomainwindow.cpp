@@ -1473,14 +1473,14 @@ void ZenoMainWindow::save()
         msgBox.exec();
         bool ret = saveAs();
         if (ret) {
-            pModel->setIOVersion(zenoio::VER_2_5);
+            pModel->setIOVersion(zenoio::VER_3);
         }
     }
     else
     {
         if (pModel)
         {
-            QString currFilePath = pModel->filePath();
+            QString currFilePath = pGraphsMgm->filePath();
             if (currFilePath.isEmpty())
                 saveAs();
             else

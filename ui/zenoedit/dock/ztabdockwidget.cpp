@@ -466,7 +466,7 @@ void ZTabDockWidget::onFloatTriggered()
                         Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint;
 
         QString filePath;
-        auto pCurrentGraph = zenoApp->graphsManagment()->currentModel();
+        auto pCurrentGraph = zenoApp->graphsManagment();
         if (pCurrentGraph)
         {
             filePath = pCurrentGraph->filePath();

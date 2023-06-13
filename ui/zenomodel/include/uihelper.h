@@ -6,8 +6,8 @@
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenomodel/include/globalcontrolmgr.h>
 
-class BlockSignalScope
-{
+class SubGraphModel;
+class BlockSignalScope {
 public:
     BlockSignalScope(QObject* pObj);
     ~BlockSignalScope();
@@ -60,13 +60,13 @@ public:
     static float parseNumeric(const QVariant& val, bool castStr, bool& bSucceed);
     static QVariant initVariantByControl(PARAM_CONTROL ctrl);
     static QPointF parsePoint(const rapidjson::Value& ptObj, bool& bSucceed);
-    static NODE_TYPE nodeType(const QString& name);
 
     static int getMaxObjId(const QList<QString>& lst);
     static QString getUniqueName(const QList<QString>& existNames, const QString& prefix, bool bWithBrackets = true);
     static QVector<qreal> getSlideStep(const QString& name, PARAM_CONTROL ctrl);
     static QString nthSerialNumName(QString name);
-    static QString correctSubIOName(IGraphsModel* pModel, const QString& subgName, const QString& newName, bool bInput);
+    static QString correctSubIOName(SubGraphModel *pSubModel, const QString &newName, bool bInput);
+    static QString correctSubIOName(const QModelIndex& subIdx, const QString& newName, bool bInput);
 
     static QVariant parseJsonByType(const QString& type, const rapidjson::Value& val);
     static QVariant parseVarByType(const QString& type, const QVariant& var);

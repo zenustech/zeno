@@ -205,7 +205,7 @@ bool ZsgReader::_parseNode(
     ret.ident = nodeid;
     ret.nodeCls = name;
     auto &mgr = GraphsManagment::instance();
-    ret.type = UiHelper::nodeType(name);
+    ret.type = mgr.nodeType(name);
     if (subgraphDatas.contains(name))
         ret.type = SUBGRAPH_NODE;
 
@@ -429,11 +429,12 @@ void ZsgReader::_parseChildNodes(
 
 void ZsgReader::initSockets(const QString& name, const NODE_DESCS& legacyDescs, NODE_DATA& ret)
 {
-    ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
-    const NODE_DESC& desc = legacyDescs[name];
-    ret.inputs = desc.inputs;
-    ret.params = desc.params;
-    ret.outputs = desc.outputs;
+    if (legacyDescs.find(name) != legacyDescs.end()) {
+        const NODE_DESC &desc = legacyDescs[name];
+        ret.inputs = desc.inputs;
+        ret.params = desc.params;
+        ret.outputs = desc.outputs;
+    }
     ret.parmsNotDesc = NodesMgr::initParamsNotDesc(name);
 }
 
@@ -638,7 +639,12 @@ void ZsgReader::_parseSocket(
 
     if (sockObj.HasMember("default-value"))
     {
-        socket.defaultValue = _parseDeflValue(nodeCls, descriptors, sockName, cls, sockObj["default-value"]);
+        if (descriptors.find(sockName) != descriptors.end())
+            socket.defaultValue = _parseDeflValue(nodeCls, descriptors, sockName, cls, sockObj["default-value"]);
+        else if (sockObj.HasMember("type")) {
+            QString type = sockObj["type"].GetString();
+            socket.defaultValue = UiHelper::parseJsonByType(type, sockObj["default-value"]);
+        }
     }
 
     //link:
@@ -664,15 +670,14 @@ void ZsgReader::_parseSocket(
     {
         _parseDictPanel(subgPath, bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, ret, links);
     }
-    if (sockObj.HasMember("control")) 
+    if (sockObj.HasMember("control") && descriptors.find(nodeCls) == descriptors.end()) 
 	{
         PARAM_CONTROL ctrl;
         QVariant props;
         bool bret = JsonHelper::importControl(sockObj["control"], ctrl, props);
         if (bret){
-            //init by desc.
-            //socket.control = ctrl;
-            //socket.ctrlProps = props.toMap();
+            socket.control = ctrl;
+            socket.ctrlProps = props.toMap();
         }
     }
 
@@ -772,6 +777,10 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
     for (const auto& outObj : outputs.GetObject())
     {
         const QString& outSock = outObj.name.GetString();
+        if (ret.outputs.find(outSock) == ret.outputs.end()) {
+            ret.outputs[outSock] = OUTPUT_SOCKET();
+            ret.outputs[outSock].info.name = outSock;
+        }
         const auto& sockObj = outObj.value;
         if (sockObj.IsObject())
         {

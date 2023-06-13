@@ -279,6 +279,7 @@ void GraphsManagment::renameSubGraph(const QString& oldName, const QString& newN
                  m_subgsDesc.find(newName) == m_subgsDesc.end());
 
     NODE_DESC desc = m_subgsDesc[oldName];
+    desc.name = newName;
     m_subgsDesc[newName] = desc;
     m_subgsDesc.remove(oldName);
 
@@ -331,6 +332,11 @@ NODE_TYPE GraphsManagment::nodeType(const QString& name)
     }
 }
 
+QString GraphsManagment::filePath() const 
+{
+    return m_filePath;
+}
+
 NODE_DESCS GraphsManagment::descriptors()
 {
     NODE_DESCS descs;
@@ -354,6 +360,9 @@ void GraphsManagment::onParseResult(
     //init descriptor first.
     auto subgraphs = res.subgraphs.keys();
     initSubnetDescriptors(subgraphs, res);
+
+    pNodeModel->setIOVersion(res.ver);
+    pSubgraphs->setIOVersion(res.ver);
 
     //only based on tree layout.
     ZASSERT_EXIT(pNodeModel && pSubgraphs);
@@ -385,6 +394,7 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
         onParseResult(result, pNodeModel, pSubgraphsModel);
     }
 
+    m_filePath = fn;
     pNodeModel->clearDirty();
     setGraphsModel(pNodeModel, pSubgraphsModel);
     emit fileOpened(fn);
@@ -412,7 +422,7 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
     f.close();
     zeno::log_debug("saved successfully");
 
-    m_pNodeModel->setFilePath(filePath);
+    m_filePath = filePath;
     m_pNodeModel->clearDirty();
 
     QFileInfo info(filePath);

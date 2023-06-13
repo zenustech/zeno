@@ -140,12 +140,6 @@ void ModelAcceptor::EndSubgraph()
     m_currentGraph = nullptr;
 }
 
-void ModelAcceptor::setFilePath(const QString& fileName)
-{
-    if (!m_bImport)
-        m_pModel->setFilePath(fileName);
-}
-
 void ModelAcceptor::switchSubGraph(const QString& graphName)
 {
     m_pModel->switchSubGraph(graphName);
@@ -168,7 +162,7 @@ bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const QS
     data.nodeCls = name;
     data.customName = customName;
     data.bCollasped = false;
-    data.type = UiHelper::nodeType(name);
+    data.type = inst.nodeType(name);
 
     //zeno::log_warn("zsg has Inputs {}", data.find(ROLE_PARAMETERS) != data.end());
     m_currentGraph->appendItem(data, false);

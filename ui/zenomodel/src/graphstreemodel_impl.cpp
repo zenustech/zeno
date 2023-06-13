@@ -11,6 +11,7 @@
 #include "command.h"
 #include "apilevelscope.h"
 #include "common_def.h"
+#include <zenomodel/include/nodesmgr.h>
 
 
 GraphsTreeModel_impl::GraphsTreeModel_impl(GraphsTreeModel* pModel, QObject *parent)
@@ -128,9 +129,6 @@ void GraphsTreeModel_impl::onSubIOAddRemove(
 
     ZASSERT_EXIT(pSubgraph);
 
-    const QString& objId = addedNodeIdx.data(ROLE_OBJID).toString();
-    const QString& objName = addedNodeIdx.data(ROLE_OBJNAME).toString();
-
     NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(addedNodeIdx.data(ROLE_NODE_PARAMS));
 
     const QModelIndex& nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
@@ -145,6 +143,7 @@ void GraphsTreeModel_impl::onSubIOAddRemove(
     QVariant ctrlProps = deflIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     QString toolTip = nameIdx.data(ROLE_VPARAM_TOOLTIP).toString();
 
+    nodeParams = QVariantPtr<NodeParamModel>::asPtr(pSubgraph->data(ROLE_NODE_PARAMS));
     //only need to update pSubgraph node.
     if (bInsert)
     {
@@ -179,7 +178,7 @@ bool GraphsTreeModel_impl::onSubIOAdd(TreeNodeItem *pSubgraph, NODE_DATA nodeDat
 
     ZASSERT_EXIT(nodeData.params.find("name") != nodeData.params.end(), false);
     PARAM_INFO& param = nodeData.params["name"];
-    QString newSockName = UiHelper::correctSubIOName(m_pModel, pSubgraph->objClass(), param.value.toString(), bInput);
+    QString newSockName = UiHelper::correctSubIOName(pSubgraph->index(), param.value.toString(), bInput);
     param.value = newSockName;
 
     pSubgraph->addNode(nodeData, m_pModel);
@@ -249,12 +248,16 @@ void GraphsTreeModel_impl::addNode(const NODE_DATA& nodeData, const QModelIndex&
 
         TreeNodeItem* pSubgItem = static_cast<TreeNodeItem*>(itemFromIndex(subGpIdx));
         ZASSERT_EXIT(pSubgItem);
+        bool bAdd = false;
+        bAdd = onSubIOAdd(pSubgItem, nodeData);
+        if (!bAdd)
+            bAdd = onListDictAdd(pSubgItem, nodeData);
+        if (!bAdd)
+            pSubgItem->addNode(nodeData, m_pModel);
 
-        if (onSubIOAdd(pSubgItem, nodeData))
-            return;
-        if (onListDictAdd(pSubgItem, nodeData))
-            return;
-        pSubgItem->addNode(nodeData, m_pModel);
+        TreeNodeItem * childItem = pSubgItem->childItem(nodeData.ident);
+        ZASSERT_EXIT(childItem);
+        appendSubGraphNode(childItem);
     }
 }
 
@@ -465,6 +468,7 @@ void GraphsTreeModel_impl::removeNode(
 
         QModelIndex idx = pSubgItem->childIndex(nodeid);
         const QString &objName = idx.data(ROLE_OBJNAME).toString();
+        removeSubGraphNode(pSubgItem->childItem(nodeid));
         if (!bEnableIOProc)
         {
             //if subnode removed, the parent layer node should be update.
@@ -822,32 +826,56 @@ QList<SEARCH_RESULT> GraphsTreeModel_impl::search_impl(
     TreeNodeItem* pRootItem = static_cast<TreeNodeItem*>(itemFromIndex(root));
     ZASSERT_EXIT(pRootItem, results);
 
-    if (SEARCH_NODEID == searchType)
+    if (SEARCH_NODEID & searchType)
     {
         TreeNodeItem* pChildItem = pRootItem->childItem(content);
-        if (pChildItem)
-        {
+        if (pChildItem) {
             SEARCH_RESULT result;
             result.targetIdx = pChildItem->index();
             result.subgIdx = root;
             result.type = SEARCH_NODEID;
             results.append(result);
-        }
-        if (bRecursivly && results.isEmpty())
-        {
-            for (int r = 0; r < pChildItem->rowCount(); r++)
-            {
-                pChildItem = static_cast<TreeNodeItem*>(pChildItem->child(r));
-                if (pChildItem->rowCount() > 0)
-                    results.append(search_impl(pChildItem->index(), content, searchType, searchOpts, bRecursivly));
-                if (!results.isEmpty())
-                    break;
+            if (bRecursivly && results.isEmpty()) {
+                for (int r = 0; r < pChildItem->rowCount(); r++) {
+                    pChildItem = static_cast<TreeNodeItem *>(pChildItem->child(r));
+                    if (pChildItem) 
+                    {
+                        if (pChildItem->rowCount() > 0)
+                            results.append(search_impl(pChildItem->index(), content, searchType, searchOpts, bRecursivly));
+                        if (!results.isEmpty())
+                            break;
+                    }
+                }
             }
         }
-        return results;
+    } 
+    if (SEARCH_NODECLS & searchType) 
+    {
+        for (int row = 0; row <pRootItem->rowCount(); row++) {
+            QStandardItem *pChildItem = pRootItem->child(row);
+            if (pChildItem) {
+                if (pChildItem->data(ROLE_OBJNAME).toString() == content) {
+                    SEARCH_RESULT result;
+                    result.targetIdx = pChildItem->index();
+                    result.subgIdx = root;
+                    result.type = SEARCH_NODECLS;
+                    results.append(result);
+                }
+                if (bRecursivly && results.isEmpty()) {
+                    for (int r = 0; r < pChildItem->rowCount(); r++) {
+                        pChildItem = pChildItem->child(r);
+                        if (pChildItem) {
+                            if (pChildItem->rowCount() > 0)
+                                results.append(search_impl(pChildItem->index(), content, searchType, searchOpts, bRecursivly));
+                            if (!results.isEmpty())
+                                break;
+                        }
+                    }
+                }
+            }
+        }
     }
-
-    //todo:
+    return results;
 }
 
 QRectF GraphsTreeModel_impl::viewRect(const QModelIndex &subgIdx)
@@ -880,4 +908,65 @@ void GraphsTreeModel_impl::expand(const QModelIndex &subgIdx)
 LinkModel* GraphsTreeModel_impl::linkModel(const QModelIndex &subgIdx) const
 {
     return m_linkModel;
+}
+
+void GraphsTreeModel_impl::renameSubGraph(const QString &oldName, const QString &newName) {
+    if (m_treeNodeItems.find(oldName) != m_treeNodeItems.end()) {
+        for (auto item : m_treeNodeItems[oldName]) {
+            item->setData(newName, ROLE_OBJNAME);
+        }
+
+        m_treeNodeItems[newName] = m_treeNodeItems[oldName];
+        m_treeNodeItems.remove(oldName);
+    }
+}
+
+void GraphsTreeModel_impl::appendSubGraphNode(TreeNodeItem *pSubgraph) 
+{
+    if (!IsSubGraphNode(pSubgraph->index()))
+        return;
+    QString nodeCls = pSubgraph->objClass();
+    if (m_treeNodeItems.find(nodeCls) == m_treeNodeItems.end())
+        m_treeNodeItems[nodeCls] = QList<TreeNodeItem *>();
+    m_treeNodeItems[nodeCls] << pSubgraph;
+    for (int row = 0; row < pSubgraph->rowCount(); row++) {
+        TreeNodeItem *pChildItem = static_cast<TreeNodeItem *>(pSubgraph->child(row));
+        ZASSERT_EXIT(pChildItem);
+        appendSubGraphNode(pChildItem);
+    }
+}
+
+void GraphsTreeModel_impl::removeSubGraphNode(TreeNodeItem *pSubgraph) 
+{
+    QString nodeCls = pSubgraph->objClass();
+    if (m_treeNodeItems.contains(nodeCls)) {
+        m_treeNodeItems[nodeCls].removeOne(pSubgraph);
+    }
+    for (int row = 0; row < pSubgraph->rowCount(); row++) {
+        TreeNodeItem *pChildItem = static_cast<TreeNodeItem *>(pSubgraph->child(row));
+        ZASSERT_EXIT(pChildItem);
+        removeSubGraphNode(pChildItem);
+    }
+}
+
+void GraphsTreeModel_impl::onMerge(IGraphsModel *pModel, const QModelIndex subgIdx) 
+{
+    QString nodeCls = subgIdx.data(ROLE_OBJNAME).toString();
+    if (m_treeNodeItems.find(nodeCls) != m_treeNodeItems.end()) {
+        for (auto pItem : m_treeNodeItems[nodeCls])
+        {
+            //delete old child items
+            while (pItem->rowCount() > 0)
+            {
+                TreeNodeItem *pChildItem = static_cast<TreeNodeItem*>(pItem->child(0));
+                ZASSERT_EXIT(pChildItem);
+                QString ident = pChildItem->data(ROLE_OBJID).toString();
+                removeNode(ident, pItem->index(), false);
+            }
+            LINKS_DATA links;
+            NODES_DATA childrens = NodesMgr::getChildItems(pItem->parent()->index(), nodeCls, pItem->objName(), links);
+            importNodes(childrens, links, QPointF(), pItem->index(), false);
+
+        }
+    }
 }
