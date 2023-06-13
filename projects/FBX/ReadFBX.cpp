@@ -190,8 +190,8 @@ struct Mesh{
         float uv_scale = 1.0f;
         auto origPathName = pathName;
         pathName = reconstructionPathName(pathName);
-        ED_COUT << "FBX: ReadMesh - Mesh name " << meshName << " VertCount " << mesh->mNumVertices << " NumAnimMesh " << numAnimMesh << " NumBone " << mesh->mNumBones << "\n";
-        ED_COUT << "FBX: ReadMesh - Path name " << pathName << "\n";
+        //ED_COUT << "FBX: ReadMesh - Mesh name " << meshName << " VertCount " << mesh->mNumVertices << " NumAnimMesh " << numAnimMesh << " NumBone " << mesh->mNumBones << "\n";
+        //ED_COUT << "FBX: ReadMesh - Path name " << pathName << "\n";
 
         // Material
         if(mesh->mNumVertices)
@@ -710,7 +710,7 @@ struct Mesh{
 
                             // override the default value
                             com.second.value = tmp;
-                            std::cout <<" PropName "<<com.first<<" MatValue "<<tmp.r<<","<<tmp.g<<","<<tmp.b<<","<<tmp.a<<"\n";
+                            //std::cout <<" PropName "<<com.first<<" MatValue "<<tmp.r<<","<<tmp.g<<","<<tmp.b<<","<<tmp.a<<"\n";
                             break;
                         }
                     }
@@ -800,9 +800,10 @@ struct Mesh{
                       std::shared_ptr<BoneTree>& boneTree,
                       std::shared_ptr<AnimInfo>& animInfo)
     {
-        std::unordered_map<std::string, std::shared_ptr<FBXData>> tmpFbxData;
-
+        //std::unordered_map<std::string, std::shared_ptr<FBXData>> tmpFbxData;
+        auto current = 0;
         for(auto& iter: m_VerticesSlice) {
+            std::cout << "curr: " << current << " total " << m_VerticesSlice.size() << "\n";
             std::string meshName = iter.first;
             std::string pathName = m_MeshNamePath[iter.first];
             std::string origPathName = m_OrigMeshNamePath[iter.first];
@@ -828,9 +829,11 @@ struct Mesh{
             }
              */
 
+            /*
             bool applied = false;
             bool verBone = false;
-            for(unsigned int i=verStart; i<verEnd; i++){
+            for(unsigned int i=verStart; i<verEnd; i++)
+            {
                 if(verBoneNum == 0){
                     auto & vertex = fbxData.iVertices.value[i];
 
@@ -854,9 +857,10 @@ struct Mesh{
                 }
             }
             //ED_COUT << "FBX: applied " << verBone << " " << applied << " " << meshName << "\n";
+            */
 
             // Sub-prims (applied node transform)
-            auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
+            //auto sub_prim = std::make_shared<zeno::PrimitiveObject>();
             auto sub_data = std::make_shared<FBXData>();
             std::vector<SVertex> sub_vertices;
             std::vector<unsigned int> sub_TriIndices;
@@ -869,28 +873,31 @@ struct Mesh{
                     auto i2 = fbxData.iIndices.valueTri[i + 1] - verStart;
                     auto i3 = fbxData.iIndices.valueTri[i + 2] - verStart;
                     zeno::vec3i incs(i1, i2, i3);
-                    sub_prim->tris.push_back(incs);
+                    //sub_prim->tris.push_back(incs);
                     sub_TriIndices.push_back(i1);
                     sub_TriIndices.push_back(i2);
                     sub_TriIndices.push_back(i3);
                 }
             }else{
-                for (unsigned int i = polysCountStart; i < polysCountEnd; i++) {
+                for (unsigned int i = polysCountStart; i < polysCountEnd; ++i) {
                     sub_PolysIndices.emplace_back(fbxData.iIndices.valuePolys[i]);
                 }
-                for (unsigned int i = indicesStart; i < indicesEnd; i++) {
+                for (unsigned int i = indicesStart; i < indicesEnd; ++i) {
                     auto l1 = fbxData.iIndices.valueLoops[i] - verStart;
                     sub_LoopsIndices.push_back(l1);
                 }
 
             }
 
-            for(unsigned int i=verStart; i< verEnd; i++){
-                sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
-                                             fbxData.iVertices.value[i].position.y,
-                                             fbxData.iVertices.value[i].position.z);
+            for(unsigned int i=verStart; i< verEnd; ++i){
+                //sub_prim->verts.emplace_back(fbxData.iVertices.value[i].position.x,
+                //                             fbxData.iVertices.value[i].position.y,
+                //                             fbxData.iVertices.value[i].position.z);
                 sub_vertices.push_back(fbxData.iVertices.value[i]);
             }
+
+            IPathTrans piecePathTrans{};
+            piecePathTrans.value[origPathName] = fbxData.iPathTrans.value[origPathName];
 
             sub_data->iIndices.valueTri = sub_TriIndices;
             sub_data->iIndices.valueLoops = sub_LoopsIndices;
@@ -904,7 +911,7 @@ struct Mesh{
             // TODO Currently it is the sub-data that has all the data
             sub_data->iBoneOffset = fbxData.iBoneOffset;
             sub_data->iBlendSData = fbxData.iBlendSData;
-            sub_data->iPathTrans = fbxData.iPathTrans;
+            sub_data->iPathTrans = piecePathTrans;
             sub_data->iKeyMorph.value = morph;
             sub_data->iMeshInfo.value_corsName = m_MeshCorsName;
 
@@ -912,9 +919,11 @@ struct Mesh{
             sub_data->nodeTree = nodeTree;
             sub_data->animInfo = animInfo;
 
-            prims->lut[meshName] = sub_prim;
+            //prims->lut[meshName] = sub_prim;
             datas->lut[meshName] = sub_data;
-            tmpFbxData[meshName] = sub_data;
+            //tmpFbxData[meshName] = sub_data;
+
+            ++current;
         }
 
         for(auto [k, v]:m_loadedMat){
@@ -922,7 +931,10 @@ struct Mesh{
 
             mat_data->sMaterial = v;
             for(auto l: m_MatMeshNames[k]){
-                mat_data->iFbxData.value[l] = tmpFbxData[l];
+                //mat_data->iFbxData.value[l] = tmpFbxData[l];
+
+                auto fbx_data = zeno::safe_dynamic_cast<FBXData>(datas->lut[l]);
+                mat_data->iFbxData.value[l] = fbx_data;
             }
             mats->lut[k] = mat_data;
         }
