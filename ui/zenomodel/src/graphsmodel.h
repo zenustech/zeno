@@ -162,7 +162,20 @@ public slots:
 	void on_linkRemoved(const QModelIndex& parent, int first, int last);
 
 private:
+
+    struct _Ref_Subnet {
+        QString graphName;
+        QModelIndex subnetIdx;      //target subnet node in `graphName`
+    };
+
     NODE_DESCS getCoreDescs();
+    void _markNodeChanged(const QModelIndex& idx);
+    void _markSubnodesChange(SubGraphModel* pSubg);
+    void _findReference(
+        const QString& subgraphName,
+        QModelIndexList& refNodesInMain //the reference can be directly or indirectly nodes.
+    );
+
     void parseDescStr(const QString& descStr, QString& name, QString& type, QVariant& defl);
     void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     bool onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);

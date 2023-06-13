@@ -591,6 +591,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
 
             checkExtractDict(newName);
             pItem->setData(newName, role);
+            markNodeChanged();
             break;
         }
         case ROLE_PARAM_TYPE:
