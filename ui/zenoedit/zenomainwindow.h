@@ -58,6 +58,7 @@ public:
     void resetTimeline(TIMELINE_INFO info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;
+    DisplayWidget* getCurrentViewport() const;
     DisplayWidget* getOptixWidget() const;
     ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);

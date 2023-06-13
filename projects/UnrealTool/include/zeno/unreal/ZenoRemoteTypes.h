@@ -13,12 +13,15 @@
 #define CONSTEXPR
 #endif
 
+#define UE_LANDSCAPE_ZSCALE_INV 128.f
+
 namespace zeno::remote {
 
 enum class ESubjectType : int16_t {
     Invalid = -1,
     Mesh = 0,
     HeightField,
+    PointSet,
     Num,
 };
 
@@ -124,6 +127,10 @@ struct Diff {
     }
 };
 
+/**
+ * @brief SubjectContainer
+ * @note  This is a container for subject data, provide Name, Type and Data.
+ */
 struct SubjectContainer {
     std::string Name;
     int16_t/* ESubjectType */ Type;
@@ -139,6 +146,10 @@ struct SubjectContainer {
     }
 };
 
+/**
+ * @brief SubjectContainerList
+ * @note  This is a container for SubjectContainer, provide a list of SubjectContainer.
+ */
 struct SubjectContainerList {
     std::vector<SubjectContainer> Data;
 
@@ -148,9 +159,14 @@ struct SubjectContainerList {
     }
 };
 
+/**
+ * @brief HeightField
+ * @note  This is a container for height field data, provide Nx, Ny, Data and LandscapeScale.
+ */
 struct HeightField : public ZenoSubject<ESubjectType::HeightField> {
     int32_t Nx = 0, Ny = 0;
     std::vector<std::vector<uint16_t>> Data;
+    float LandscapeScale = .0f;
 
     HeightField() = default;
 
@@ -184,17 +200,22 @@ struct HeightField : public ZenoSubject<ESubjectType::HeightField> {
     template <class T>
     void pack(T& pack) {
         ZenoSubject::pack(pack);
-        pack(Nx, Ny, Data);
+        pack(Nx, Ny, Data, LandscapeScale);
     }
 };
 
-struct Dummy {
+struct Dummy : public ZenoSubject<ESubjectType::Invalid> {
     template <class T>
     void pack(T& pack) {
+        ZenoSubject::pack(pack);
         pack();
     }
 };
 
+/**
+ * @brief ParamContainer
+ * @note  This is a container for param value, provide type and data.
+ */
 struct ParamContainer {
     int8_t/* EParamType */ Type;
     std::string Data;
@@ -209,6 +230,10 @@ template <typename T, uint8_t N>
 using TVectorN = std::array<T, N>;
 using Vector3f = TVectorN<float, 3>;
 
+/**
+ * @brief ParamDescriptor
+ * @note  This is a container for param information, provide name and type.
+ */
 struct ParamDescriptor {
     std::string Name;
     int16_t/* ESubjectType */ Type = 0;
@@ -219,6 +244,10 @@ struct ParamDescriptor {
     }
 };
 
+/**
+ * @brief ParamValue
+ * @note  This is a container for param value, it can be either numeric or complex data
+ */
 struct ParamValue : public ParamDescriptor {
     std::string NumericData;
     std::vector<uint8_t> ComplexData;
@@ -275,6 +304,10 @@ struct GraphInfo {
     }
 };
 
+/**
+ * @brief The GraphRunInfo struct
+ * This is a struct that contains information to run a graph.
+ */
 struct GraphRunInfo {
     ParamValueBatch Values;
     std::string GraphDefinition; // zsl file
@@ -285,21 +318,28 @@ struct GraphRunInfo {
     }
 };
 
+struct PCGPoint {
+    Vector3f Position { .0f, .0f, .0f };
+    float Density = 1.f;
+    // TODO [darc] : support others attributes :
+
+    template <class T>
+    void pack(T& pack) {
+        pack(Position, Density);
+    }
+};
+
+struct PointSet : public ZenoSubject<ESubjectType::PointSet> {
+    std::vector<PCGPoint> Points;
+
+    template <class T>
+    void pack(T& pack) {
+        ZenoSubject::pack(pack);
+        pack(Points);
+    }
+};
+
 inline const static std::string NAME_LandscapeInfoSimple = "__Internal_Reserved_LandscapeInfo";
-
-template <typename T>
-struct TGetClassSubjectType {
-    static CONSTEXPR ESubjectType Value = ESubjectType::Invalid;
-};
-
-template <>
-struct TGetClassSubjectType<Mesh> {
-    static CONSTEXPR ESubjectType Value = ESubjectType::Mesh;
-};
-
-template <>
-struct TGetClassSubjectType<HeightField> {
-    static CONSTEXPR ESubjectType Value = ESubjectType::HeightField;
-};
+inline const static std::string NAME_SurfaceSample = "__Internal_Reserved_SurfaceSample";
 
 }

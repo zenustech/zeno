@@ -8,6 +8,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
 #include <random>
+#include <vector>
 
 namespace zeno
 {
@@ -78,7 +79,6 @@ struct erode_value2cond : INode {
 #pragma omp parallel for
         for (int z = 0; z < nz; z++)
         {
-#pragma omp parallel for
             for (int x = 0; x < nx; x++)
             {
                 int idx = Pos2Idx(x, z, nx);
@@ -241,7 +241,7 @@ struct erode_tumble_material_v0 : INode {
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
-        auto cut_angle = get_input<NumericObject>("cut_angle")->get<float>();
+        auto cut_angle = get_input<NumericObject>("cutangle")->get<float>();
         auto global_erosionrate = get_input<NumericObject>("global_erosionrate")->get<float>();
         auto erosionrate = get_input<NumericObject>("erosionrate")->get<float>();
         auto erodability = get_input<NumericObject>("erodability")->get<float>();
@@ -261,6 +261,43 @@ struct erode_tumble_material_v0 : INode {
         auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         // 初始化网格属性
+        auto erodabilitymask_name = get_input2<std::string>("erodability_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(erodabilitymask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(erodabilitymask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_erodabilitymask = terrain->verts.attr<float>(erodabilitymask_name);
+
+        auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(removalratemask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(removalratemask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_removalratemask = terrain->verts.attr<float>(removalratemask_name);
+
+        auto cutanglemask_name = get_input2<std::string>("cutangle_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(cutanglemask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(cutanglemask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_cutanglemask = terrain->verts.attr<float>(cutanglemask_name);
+
+        auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(gridbiasmask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(gridbiasmask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_gridbiasmask = terrain->verts.attr<float>(gridbiasmask_name);
+
+        // 存放地质特征的属性
         if (!terrain->verts.has_attr("_height") || !terrain->verts.has_attr("_debris") ||
             !terrain->verts.has_attr("_temp_height") || !terrain->verts.has_attr("_temp_debris")) {
             zeno::log_error("Node [erode_tumble_material_v0], no such data layer named '{}' or '{}' or '{}' or '{}'.",
@@ -280,7 +317,6 @@ struct erode_tumble_material_v0 : INode {
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
-#pragma omp parallel for
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int iterseed = iter * 134775813;
@@ -370,7 +406,7 @@ struct erode_tumble_material_v0 : INode {
 
                         float max_diff = 0.0f;
                         float dir_prob = 0.0f;
-
+                        float c_gridbiasmask = _gridbiasmask[c_idx];
                         for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++)
                         {
                             for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++)
@@ -388,7 +424,8 @@ struct erode_tumble_material_v0 : INode {
 
                                 float tmp_diff = n_height - (c_height);
 
-                                float _gridbias = clamp(gridbias, -1.0f, 1.0f);
+                                //float _gridbias = clamp(gridbias, -1.0f, 1.0f);
+                                float _gridbias = clamp(gridbias * c_gridbiasmask, -1.0f, 1.0f);
 
                                 if (tmp_dx && tmp_dz)
                                     tmp_diff *= clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
@@ -421,7 +458,8 @@ struct erode_tumble_material_v0 : INode {
                         if (cond)
                         {
                             float abs_h_diff = h_diff < 0.0f ? -h_diff : h_diff;
-                            float _cut_angle = clamp(cut_angle, 0.0f, 90.0f);
+                            //float _cut_angle = clamp(cut_angle, 0.0f, 90.0f);
+                            float _cut_angle = clamp(cut_angle * _cutanglemask[n_idx], 0.0f, 90.0f);
                             float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
                             float height_removed = _cut_angle < 90.0f ? tan(_cut_angle * M_PI / 180) * delta_x : 1e10f;
                             float height_diff = abs_h_diff - height_removed;
@@ -432,11 +470,12 @@ struct erode_tumble_material_v0 : INode {
                             unsigned int randval = erode_random(seed * 3.14, (idx + nx * nz) * 8 + color + iterseed);
                             int do_erode = randval < cutoff;
 
-                            float height_removal_amt = do_erode * clamp(global_erosionrate * erosionrate * erodability, 0.0f, height_diff);
+                            float height_removal_amt = do_erode * clamp(global_erosionrate * erosionrate * erodability * _erodabilitymask[c_idx], 0.0f, height_diff);
 
                             _height[c_idx] -= height_removal_amt;
 
-                            float bedrock_density = 1.0f - (removalrate);
+                            //float bedrock_density = 1.0f - (removalrate);
+                            float bedrock_density = 1.0f - (removalrate * _removalratemask[c_idx]);
                             if (bedrock_density > 0.0f)
                             {
                                 float newdebris = bedrock_density * height_removal_amt;
@@ -472,14 +511,21 @@ ZENDEFNODE(erode_tumble_material_v0,
                 {"int", "i", "0"},
 
                 {"int", "openborder", "0"},
-                {"float", "gridbias", "0.0"},
-
-                {"float", "cut_angle", "35"},
+                {"float", "maxdepth", "5.0"},
                 {"float", "global_erosionrate", "1.0"},
                 {"float", "erosionrate", "0.03"},
+
+                {"float", "cutangle", "35"},
+                {"string", "cutangle_mask_layer", "cutangle_mask"},
+
                 {"float", "erodability", "0.4"},
+                {"string", "erodability_mask_layer", "erodability_mask"},
+
                 {"float", "removalrate", "0.7"},
-                {"float", "maxdepth", "5.0"},
+                {"string", "removalrate_mask_layer", "removalrate_mask"},
+
+                {"float", "gridbias", "0.0"},
+                {"string", "gridbias_mask_layer", "gridbias_mask"},
             },
             /* outputs: */
             {
@@ -535,6 +581,7 @@ struct erode_tumble_material_v2 : INode {
 
         // 初始化网格属性
         auto stablilityMaskName = get_input2<std::string>("stabilitymask");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(stablilityMaskName)) {
             auto &_sta = terrain->verts.add_attr<float>(stablilityMaskName);
             std::fill(_sta.begin(), _sta.end(), 0.0);
@@ -560,7 +607,6 @@ struct erode_tumble_material_v2 : INode {
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
-#pragma omp parallel for
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int iterseed = iter * 134775813;
@@ -825,6 +871,7 @@ struct erode_tumble_material_v3 : INode {
 
         // 初始化网格属性
         auto stablilityMaskName = get_input2<std::string>("stabilitymask");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(stablilityMaskName))
         {
             auto &_sta = terrain->verts.add_attr<float>(stablilityMaskName);
@@ -832,6 +879,7 @@ struct erode_tumble_material_v3 : INode {
         }
         auto &stabilitymask = terrain->verts.attr<float>(stablilityMaskName);
 
+        // 存放地质特征的属性
         if (!terrain->verts.has_attr("height") ||
             !terrain->verts.has_attr("_material") ||
             !terrain->verts.has_attr("_temp_material") ||
@@ -851,9 +899,10 @@ struct erode_tumble_material_v3 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma omp parallel for
-        for (int id_z = 0; id_z < nz; id_z++) {
-#pragma omp parallel for
-            for (int id_x = 0; id_x < nx; id_x++) {
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+            for (int id_x = 0; id_x < nx; id_x++)
+            {
                 int iterseed = iter * 134775813;
                 int color = perm[i];
 
@@ -1126,9 +1175,10 @@ struct erode_smooth_flow : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma omp parallel for
-        for (int id_z = 0; id_z < nz; id_z++) {
-#pragma omp parallel for
-            for (int id_x = 0; id_x < nx; id_x++) {
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+            for (int id_x = 0; id_x < nx; id_x++)
+            {
                 int idx = Pos2Idx(id_x, id_z, nx);
 
                 float net_diff = 0.0f;
@@ -1145,9 +1195,10 @@ struct erode_smooth_flow : INode {
         }
 
 #pragma omp parallel for
-        for (int id_z = 0; id_z < nz; id_z++) {
-#pragma omp parallel for
-            for (int id_x = 0; id_x < nx; id_x++) {
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+            for (int id_x = 0; id_x < nx; id_x++)
+            {
                 int idx = Pos2Idx(id_x, id_z, nx);
 
                 float net_diff = 0.0f;
@@ -1281,7 +1332,6 @@ struct erode_tumble_material_v4 : INode {
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
-#pragma omp parallel for
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int iterseed = iter * 134775813;
@@ -1763,6 +1813,62 @@ float chramp(const float inputData) {
     return outputData;
 }
 
+// 计算图像的梯度
+void computeGradient(std::shared_ptr<PrimitiveObject> & hf, std::vector<std::vector<float>>& gradientX, std::vector<std::vector<float>>& gradientY) {
+    auto &ud = hf->userData();
+    int height  = ud.get2<int>("nx");
+    int width = ud.get2<int>("nx");
+
+    gradientX.resize(height, std::vector<float>(width));
+    gradientY.resize(height, std::vector<float>(width));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (x > 0 && x < width - 1) {
+                gradientX[y][x] = (hf->verts.attr<float>("heightLayer")[y * width + x + 1] - hf->verts.attr<float>("heightLayer")[y * width + x  - 1]) / 2.0f;
+            } else {
+                gradientX[y][x] = 0.0f;
+            }
+            if (y > 0 && y < height - 1) {
+                gradientY[y][x] = (hf->verts.attr<float>("heightLayer")[(y+1) * width + x] - hf->verts.attr<float>("heightLayer")[(y - 1) * width + x]) / 2.0f;
+            } else {
+                gradientY[y][x] = 0.0f;
+            }
+        }
+    }
+}
+
+// 计算图像的曲率
+void computeCurvature(const std::vector<std::vector<float>>& gradientX, const std::vector<std::vector<float>>& gradientY, std::vector<std::vector<float>>& curvature) {
+    int height = gradientX.size();
+    int width = gradientX[0].size();
+
+    curvature.resize(height, std::vector<float>(width));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            float dx = gradientX[y][x];
+            float dy = gradientY[y][x];
+            float dxx = 0.0f;
+            float dyy = 0.0f;
+            float dxy = 0.0f;
+
+            if (x > 0 && x < width - 1) {
+                dxx = gradientX[y][x + 1] - 2.0f * dx + gradientX[y][x - 1];
+            }
+
+            if (y > 0 && y < height - 1) {
+                dyy = gradientY[y + 1][x] - 2.0f * dy + gradientY[y - 1][x];
+            }
+
+            if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
+                dxy = (gradientX[y + 1][x + 1] - gradientX[y + 1][x - 1] - gradientX[y - 1][x + 1] + gradientX[y - 1][x - 1]) / 4.0f;
+            }
+
+            curvature[y][x] = (dxx * dyy - dxy * dxy) / ((dxx + dyy) * (dxx + dyy) + 1e-6f);
+        }
+    }
+}
 struct HF_maskByFeature : INode {
     void apply() override {
 
@@ -1798,8 +1904,8 @@ struct HF_maskByFeature : INode {
         auto angleSpread = get_input2<float>("angle_spread");
 
         auto useHeight = get_input2<bool>("use_height");
-        auto minHeight = get_input2<float>("min_height");
-        auto maxHeight = get_input2<float>("max_height");
+        auto minCur = get_input2<float>("min_curvature");
+        auto maxCur = get_input2<float>("max_curvature");
 
         // 初始化网格属性
         if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
@@ -1816,46 +1922,62 @@ struct HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
-#pragma omp parallel for
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int idx = Pos2Idx(id_x, id_z, nx);
-                int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
+                int idx_xl, idx_xr, idx_zl, idx_zr;
+                int scale_x = 0;
+                int scale_z = 0;
 
                 if (id_x == 0) {
                     idx_xl = idx;
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 1;
+                    scale_x = 1;
                 } else if (id_x == nx - 1) {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = idx;
-                    scale = 1;
+                    scale_x = 1;
                 } else {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 2;
+                    scale_x = 2;
                 }
 
                 if (id_z == 0) {
                     idx_zl = idx;
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 1;
-                } else if (id_x == nz - 1) {
+                    scale_z = 1;
+                } else if (id_z == nz - 1) {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = idx;
-                    scale = 1;
+                    scale_z = 1;
                 } else {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 2;
+                    scale_z = 2;
                 }
 
-                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
-                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+                // debug
+//                if(id_x >= 570 && id_z >= 570)
+//                {
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                    printf("nx = %i, nz = %i\n", nx, nz);
+//                    printf("id_x = %i, id_z = %i\n", id_x, id_z);
+//                    printf("scale_x = %i, scale_z = %i, cellSize = %f\n", scale_x, scale_z, cellSize);
+//                    printf("-------------------\n");
+//                    printf("idx_xr = %i, idx_xl = %i\n", idx_xr, idx_xl);
+//                    printf("idx_zr = %i, idx_zl = %i\n", idx_zr, idx_zl);
+//                    printf("-------------------\n");
+//                    //printf("height[idx_xr] = %f, height[idx_xl] = %f\n", height[idx_xr], height[idx_xl]);
+//                    //printf("height[idx_zr] = %f, height[idx_zl] = %f\n", height[idx_zr], height[idx_zl]);
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                }
+
+                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (float(scale_x) * cellSize);
+                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (float(scale_z) * cellSize);
 
                 vec3f dx = normalizeSafe(vec3f(1, 0, _grad[idx][0]));
                 vec3f dy = normalizeSafe(vec3f(0, 1, _grad[idx][2]));
@@ -1890,12 +2012,27 @@ struct HF_maskByFeature : INode {
 
                 if (useHeight)
                 {
-                    float h = fit(height[idx], minHeight, maxHeight, 0, 1);
-                    mask[idx] *= chramp(h);
+//                    float h = fit(height[idx], minHeight, maxHeight, 0, 1);
+                    std::vector<std::vector<float>> gx(nx, std::vector<float>(nx, 0));
+                    std::vector<std::vector<float>> gy(nx, std::vector<float>(nx, 0));
+                    std::vector<std::vector<float>> cur(nx, std::vector<float>(nx, 0));
+                    computeGradient(terrain,gx, gy);
+                    computeCurvature(gx,gy,cur);
+                    for(int i = 0 ; i < nx ;i++){
+                        for(int j = 0;j < nx;j++){
+                            if(minCur < cur[i][j] &&  cur[i][j] < maxCur){
+                                mask[i * nx +j] = 1;
+                            }
+                            else{
+                                mask[i * nx +j] = 0;
+                            }
+                        }
+                    }
+//                    mask[idx] *= chramp(h);
                 }
             }
         }
-
+        terrain->verts.erase_attr("_grad");
         set_output("HeightField", std::move(terrain));
     }
 };
@@ -1914,8 +2051,8 @@ ZENDEFNODE(HF_maskByFeature,
             {"float", "angle_spread", "30"},
             //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             {"bool", "use_height", "0"},
-            {"float", "min_height", "0"},
-            {"float", "max_height", "1"},
+            {"float", "min_curvature", "0.5"},
+            {"float", "max_curvature", "1"},
         },
         /* outputs: */
         {

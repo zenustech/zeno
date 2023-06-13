@@ -66,24 +66,14 @@ zeno::remote::ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField
         }
 
     auto& Arr = Prim->verts.add_attr<float>("height");
-//    size_t Idx = 0;
-//    for (const auto& Row : InHeightData.Data) {
-//        for (const uint16_t Height : Row) {
-//            Arr[Idx] = ((float)Height / std::numeric_limits<uint16_t>::max()) * (255.f * 2) - 255.f;
-//            Prim->verts[Idx] = { Prim->verts[Idx].at(0), Arr[Idx], Prim->verts[Idx].at(2) };
-//            Idx++;
-//        }
-//    }
-    size_t IdxX = 0;
-    size_t IdxY = 0;
+    size_t Idx = 0;
+    constexpr uint16_t uint16Max = std::numeric_limits<uint16_t>::max();
     for (const auto& Row : InHeightData.Data) {
-        IdxX = 0;
         for (const uint16_t Height : Row) {
-            Arr[IdxX * Nx + IdxY] = ((float)Height / std::numeric_limits<uint16_t>::max()) * (255.f * 2) - 255.f;
-            Prim->verts[IdxX * Ny + IdxY] = { Prim->verts[IdxX * Ny + IdxY].at(0), Arr[IdxX * Ny + IdxY], Prim->verts[IdxX * Ny + IdxY].at(2) };
-            IdxX ++;
+            Arr[Idx] = ((float)Height - uint16Max / 2.f) / uint16Max * UE_LANDSCAPE_ZSCALE_INV;
+            Prim->verts[Idx] = { Prim->verts[Idx].at(0), Arr[Idx], Prim->verts[Idx].at(2) };
+            Idx++;
         }
-        IdxY ++;
     }
 
     return Prim;

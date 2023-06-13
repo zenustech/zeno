@@ -926,16 +926,16 @@ __forceinline__ __device__ float length(vec4 a)
 }
 __forceinline__ __device__ vec2 normalize(vec2 a)
 {
-    return a/(length(a)+1e-6);
+    return a/(length(a)+1e-6f);
 }
 
 __forceinline__ __device__ vec3 normalize(vec3 a)
 {
-    return a/(length(a)+1e-6);
+    return a/(length(a)+1e-6f);
 }
 __forceinline__ __device__ vec4 normalize(vec4 a)
 {
-    return a/(length(a)+1e-6);
+    return a/(length(a)+1e-6f);
 }
 
 __forceinline__ __device__ float distance(vec2 a, vec2 b)
@@ -1172,4 +1172,47 @@ __forceinline__ __device__ vec3 hsvAdjust(vec3 c, vec3 amount) {
     hsv.y = hsv.y * amount.y;
     hsv.z = hsv.z * amount.z;
     return hsvToRgb(hsv);
+}
+__forceinline__ __device__ float cosTheta(vec3 w) {
+    return w.z;
+}
+
+__forceinline__ __device__ float cosTheta2(vec3 w) {
+    return w.z * w.z;
+}
+
+__forceinline__ __device__ float sinTheta2(vec3 w) {
+    return 1.0f - cosTheta2(w);
+}
+
+__forceinline__ __device__ float sinTheta(vec3 w) {
+    return sqrt(sinTheta2(w));
+}
+
+__forceinline__ __device__ float tanTheta(vec3 w) {
+    return sinTheta(w) / cosTheta(w);
+}
+
+__forceinline__ __device__ float tanTheta2(vec3 w) {
+    return sinTheta2(w) / cosTheta2(w);
+}
+
+__forceinline__ __device__ float cosPhi(vec3 w) {
+    float s = sinTheta(w);
+    return (s == 0.0f) ? 1.0f : clamp(w.x / s, -1.0f, 1.0f);
+}
+
+__forceinline__ __device__ float sinPhi(vec3 w) {
+    float s = sinTheta(w);
+    return (s == 0.0f) ? 0.0f : clamp(w.y / s, -1.0f, 1.0f);
+}
+
+__forceinline__ __device__ float cosPhi2(vec3 w) {
+    float c = cosPhi(w);
+    return c * c;
+}
+
+__forceinline__ __device__ float sinPhi2(vec3 w) {
+    float s = sinPhi(w);
+    return s * s;
 }

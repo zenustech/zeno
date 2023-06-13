@@ -418,7 +418,7 @@ void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& pat
     auto graphsMgm = zenoApp->graphsManagment();
     IGraphsModel* pModel = graphsMgm->currentModel();
 
-    if (!pModel->index(subGraphName).isValid())
+    if (!pModel || !pModel->index(subGraphName).isValid())
         return;
 
     int idx = tabIndexOfName(subGraphName);

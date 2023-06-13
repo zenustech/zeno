@@ -1,5 +1,6 @@
 #include "TopoUtils.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
+#include "zensim/container/Bht.hpp"
 
 namespace zeno {
 
@@ -14,7 +15,8 @@ void compute_surface_neighbors(zs::CudaExecutionPolicy &pol, ZenoParticles::part
 
     fmt::print("sfs size: {}, ses size: {}, svs size: {}\n", sfs.size(), ses.size(), svs.size());
 
-    bcht<vec2i, int, true, universal_hash<vec2i>, 32> etab{sfs.get_allocator(), sfs.size() * 3};
+    bht<int, 2, int> etab{sfs.get_allocator(), sfs.size() * 3};
+    etab.reset(pol, true);
     Vector<int> sfi{sfs.get_allocator(), sfs.size() * 3}; // surftri indices corresponding to edges in the table
     /// @brief compute ff neighbors
     {

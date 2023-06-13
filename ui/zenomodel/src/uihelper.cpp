@@ -157,6 +157,9 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
             return true;
         }
     }
+    case CONTROL_PURE_COLOR: {
+        return QVariant::Color == varType;
+    }
     case CONTROL_CURVE:
     {
         return (varType == QMetaType::User);
@@ -389,6 +392,7 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_VEC3_INT:          return "Integer Vector 3";
     case CONTROL_VEC2_INT:          return "Integer Vector 2";
     case CONTROL_COLOR:             return "Color";
+    case CONTROL_PURE_COLOR: return "Pure Color";
     case CONTROL_CURVE:             return "Curve";
     case CONTROL_HSPINBOX:          return "SpinBox";
     case CONTROL_HDOUBLESPINBOX: return "DoubleSpinBox";
@@ -462,6 +466,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     else if (descName == "Color")
     {
         return CONTROL_COLOR;
+    } 
+    else if (descName == "Pure Color") 
+    {
+        return CONTROL_PURE_COLOR;
     }
     else if (descName == "Curve")
     {
@@ -551,7 +559,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
     else if (type == "readpath") { ctrls = { CONTROL_READPATH }; }
     else if (type == "multiline_string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
     else if (type == "color") {   //color is more general than heatmap.
-        ctrls = { CONTROL_COLOR };
+        ctrls = {CONTROL_COLOR, CONTROL_PURE_COLOR};
     }
     else if (type == "curve") { ctrls = { CONTROL_CURVE }; }
     else if (type.startsWith("enum ")) {
@@ -1361,6 +1369,11 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
         }
         res = QVariant::fromValue(curves);
     }
+    else if (descType == "color" && val.IsString()) 
+    {
+        if (QColor(val.GetString()).isValid())
+            res = QVariant::fromValue(QColor(val.GetString()));
+    }
     else
     {
         // omitted or legacy type, need to parse by json value.
@@ -1384,6 +1397,10 @@ QVariant UiHelper::parseJsonByValue(const QString& type, const rapidjson::Value&
         float fVal = parseJsonNumeric(val, true, bSucc);
         if (bSucc)
             return fVal;
+
+        if (type == "color")
+            return QVariant::fromValue(QColor(val.GetString()));
+
         return val.GetString();
     }
     else if (val.GetType() == rapidjson::kNumberType)

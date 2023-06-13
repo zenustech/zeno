@@ -17,15 +17,15 @@ namespace zeno {
         const SurfTriTopoTileVec& ltopo) {
             using namespace zs;
 
-            if(!ttemp.hasProperty(srcTag) || ttemp.getChannelSize(srcTag) != 3){
+            if(!ttemp.hasProperty(srcTag) || ttemp.getPropertySize(srcTag) != 3){
                 fmt::print(fg(fmt::color::red),"the input triNrmTileVec has no valid {} normal channel\n",srcTag);
                 return false;
             }
-            if(!etemp.hasProperty(dstTag) || etemp.getChannelSize(dstTag) != 3) {
+            if(!etemp.hasProperty(dstTag) || etemp.getPropertySize(dstTag) != 3) {
                 fmt::print(fg(fmt::color::red),"the input lineNrmTileVec has no valid {} normal channel\n",dstTag);
                 return false;
             }
-            if(!ltopo.hasProperty("fe_inds") || ltopo.getChannelSize("fe_inds") != 2){
+            if(!ltopo.hasProperty("fe_inds") || ltopo.getPropertySize("fe_inds") != 2){
                 fmt::print(fg(fmt::color::red),"the input ltopo has no \"fe_inds\" channel\n");
                 return false;
             }

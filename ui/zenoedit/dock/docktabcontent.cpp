@@ -176,6 +176,10 @@ void DockToolbarWidget::initUI()
     setLayout(pLayout);
 }
 
+void DockToolbarWidget::onTabAboutToClose()
+{
+}
+
 QWidget* DockToolbarWidget::widget() const
 {
     return m_pWidget;
@@ -864,6 +868,16 @@ QSize DockContent_View::viewportSize() const
     return m_pDisplay->viewportSize();
 }
 
+void DockContent_View::onTabAboutToClose()
+{
+    ZASSERT_EXIT(m_pDisplay);
+    if (!m_pDisplay->isGLViewport())
+    {
+        delete m_pDisplay;
+        m_pDisplay = nullptr;
+    }
+}
+
 
 DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)
     : DockToolbarWidget(parent)
@@ -876,12 +890,14 @@ void DockContent_Log::initToolbar(QHBoxLayout* pToolLayout)
 {
     m_pBtnFilterLog = new ZToolBarButton(true, ":/icons/subnet-listview.svg", ":/icons/subnet-listview-on.svg");
     m_pBtnPlainLog = new ZToolBarButton(true, ":/icons/nodeEditor_nodeTree_unselected.svg", ":/icons/nodeEditor_nodeTree_selected.svg");
+    m_pDeleteLog = new ZToolBarButton(false, ":/icons/toolbar_delete_idle.svg", ":/icons/toolbar_delete_light.svg");
     m_pBtnPlainLog->setChecked(true);
     m_pBtnFilterLog->setChecked(false);
 
     pToolLayout->addWidget(m_pBtnPlainLog);
     pToolLayout->addWidget(m_pBtnFilterLog);
     pToolLayout->addStretch();
+    pToolLayout->addWidget(m_pDeleteLog);
 }
 
 QWidget* DockContent_Log::initWidget()
@@ -907,7 +923,14 @@ void DockContent_Log::initConnections()
         m_pBtnFilterLog->setChecked(false);
         m_stack->setCurrentIndex(0);
     });
+    connect(m_pDeleteLog, &ZToolButton::clicked, this, [=]() {
+        zenoApp->logModel()->clear();
+        ZPlainLogPanel *pLogger = qobject_cast<ZPlainLogPanel *>(m_stack->widget(0));
+        if (pLogger)
+            pLogger->clear();
+    });
 }
+
 
 DockContent_Image::DockContent_Image(QWidget *parent)
     : DockToolbarWidget(parent)

@@ -13,6 +13,7 @@ class ZenoImagePanel : public QWidget {
 
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
+    QCheckBox *pGamma = new QCheckBox("Gamma");
     ZenoImageView *image_view = nullptr;
 
 public:
