@@ -106,6 +106,7 @@ struct WhitewaterSource : INode {
                     auto curv_axr = Curvature->getConstUnsafeAccessor();
 
                     float m_curv = openvdb::tools::BoxSampler::sample(curv_axr, Curvature->worldToIndex(wcoord));
+                    m_curv = std::abs(m_curv);
                     openvdb::Vec3f m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord));
                     if (!checkAngle(m_vel, m_norm, max_angle))
                         m_curv = 0;
