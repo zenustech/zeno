@@ -628,9 +628,8 @@ bool ZFloatEditableTextItem::event(QEvent *event)
             QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent *>(event);
             if (evt->propertyName() == g_keyFrame) 
             {
+                updateText(timeline->value());
                 if (UiHelper::getKeyFrame(this, curve)) {
-                    float currentFrame = timeline->value();
-                    updateText(currentFrame);
                     connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatEditableTextItem::updateText, Qt::UniqueConnection);
                     connect(zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatEditableTextItem::onUpdate, Qt::UniqueConnection);
                 } else {
