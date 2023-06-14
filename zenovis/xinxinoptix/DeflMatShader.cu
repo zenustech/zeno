@@ -10,7 +10,7 @@
 #include "IOMat.h"
 
 #define _SPHERE_ 0
-
+#define TRI_PER_MESH 16384
 //COMMON_CODE
 
 template<bool isDisplacement>
@@ -190,7 +190,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 #else
     int inst_idx2 = optixGetInstanceIndex();
     int inst_idx = rt_data->meshIdxs[inst_idx2];
-    int vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
+    int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
 
     float* meshMats = rt_data->meshMats;
     mat4 meshMat = mat4(
@@ -270,7 +270,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.instClr = rt_data->instClr[inst_idx2];
     attrs.instTang = rt_data->instTang[inst_idx2];
 
-    unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
+    unsigned short isLight = rt_data->lightMark[inst_idx * TRI_PER_MESH + prim_idx];
 #endif
 
     MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
@@ -488,7 +488,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     int inst_idx2 = optixGetInstanceIndex();
     int inst_idx = rt_data->meshIdxs[inst_idx2];
-    int vert_idx_offset = (inst_idx * 1024 + prim_idx)*3;
+    int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
 
     float* meshMats = rt_data->meshMats;
     mat4 meshMat = mat4(
@@ -513,7 +513,7 @@ extern "C" __global__ void __closesthit__radiance()
         prd->geometryNormal = N_0;
 
     float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
-    unsigned short isLight = rt_data->lightMark[inst_idx * 1024 + prim_idx];
+    unsigned short isLight = rt_data->lightMark[inst_idx * TRI_PER_MESH + prim_idx];
     float w = rt_data->vertices[ vert_idx_offset+0 ].w;
 
     /* MODMA */
@@ -655,7 +655,12 @@ extern "C" __global__ void __closesthit__radiance()
         specTrans = 0;
         ior = 1;
     }
-
+    if(prd->isSS == true && subsurface>0 && dot(-normalize(ray_dir), N)>0)
+    {
+       prd->attenuation = make_float3(0,0,0);
+       prd->done = true;
+       return;
+    }
     if(prd->isSS == true  && subsurface==0 )
     {
         prd->passed = true;
@@ -780,13 +785,13 @@ extern "C" __global__ void __closesthit__radiance()
             isSS = false;
             isDiff = false;
             prd->samplePdf = fPdf;
-            reflectance = fPdf>1e-5?reflectance/fPdf:vec3(0.0f);
-            prd->done = fPdf>1e-5?true:prd->done;
+            reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
+            prd->done = fPdf>0?true:prd->done;
             flag = DisneyBSDF::scatterEvent;
         }
         prd->samplePdf = fPdf;
-        reflectance = fPdf>1e-5?reflectance/fPdf:vec3(0.0f);
-        prd->done = fPdf>1e-5?prd->done:true;
+        reflectance = fPdf>0?reflectance/fPdf:vec3(0.0f);
+        prd->done = fPdf>0?prd->done:true;
     prd->isSS = isSS;
     pdf = 1.0;
     if(isDiff || prd->diffDepth>0){
@@ -800,7 +805,7 @@ extern "C" __global__ void __closesthit__radiance()
         if(rnd(prd->seed)<opacity)
         {
             prd->passed = true;
-            prd->samplePdf = 1.0f;
+            prd->samplePdf = 0.0f;
             //you shall pass!
             prd->radiance = make_float3(0.0f);
 
