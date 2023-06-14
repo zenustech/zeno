@@ -3050,10 +3050,10 @@ template<typename Pol,typename PosTileVec,typename TriTileVec,typename HalfEdgeT
 int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
     const PosTileVec& verts_A,const zs::SmallString& xtag_A,
     const TriTileVec& tris_A,
-    HalfEdgeTileVec& halfedges_A,
+    HalfEdgeTileVec& halfedges_A,bool A_intersect_interior,
     const PosTileVec& verts_B,const zs::SmallString& xtag_B,
     const TriTileVec& tris_B,
-    const HalfEdgeTileVec& halfedges_B,
+    const HalfEdgeTileVec& halfedges_B,bool B_intersect_interior,
     zs::Vector<int>& gia_res,zs::Vector<int>& tris_gia_res) {
         using namespace zs;
         using T = typename PosTileVec::value_type;
@@ -3381,7 +3381,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
             const TriTileVec& htris,const PosTileVec& hverts,const zs::SmallString& hxtag,const TriTileVec& tris,const PosTileVec& tverts,const zs::SmallString& txtag,
             const zs::Vector<int>& closestTriID,int its_offset,int hv_offset,
             const zs::bht<int,2,int>& ints_tab,const zs::Vector<int>& ints_tab_buffer,
-            bool mark_outward) {
+            bool mark_interior) {
                 pol(zip(zs::range(halfedges_tab.size()),zs::range(halfedges_tab._activeKeys)),[
                     halfedges_tab = proxy<space>(halfedges_tab),
                     halfedges = proxy<space>({},halfedges),
@@ -3391,7 +3391,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                     hverts = proxy<space>({},hverts),its_offset = its_offset,
                     ints_tab = proxy<space>(ints_tab),ints_tab_buffer = proxy<space>(ints_tab_buffer),
                     closestTriID = proxy<space>(closestTriID),
-                    mark_outward = mark_outward,hv_offset = hv_offset,gia_res = proxy<space>(gia_res),
+                    mark_interior = mark_interior,hv_offset = hv_offset,gia_res = proxy<space>(gia_res),
                     tris = proxy<space>({},tris),ring_mask_width = ring_mask_width,
                     tverts = proxy<space>({},tverts)] ZS_LAMBDA(auto,const auto& key) mutable {
                         auto hi = key[0];
@@ -3414,7 +3414,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                             ctV[i] = tverts.pack(dim_c<3>,txtag,ctri[i]);
 
                         auto ctnrm = LSL_GEO::facet_normal(ctV[0],ctV[1],ctV[2]);  
-                        ctnrm = mark_outward ? ctnrm : -ctnrm;
+                        ctnrm = !mark_interior ? ctnrm : -ctnrm;
 
                         auto seg = hv - ctV[0];
                         // printf("testing root : %d %d %f\n",hi,cti,(float)ctnrm.dot(seg));
@@ -3443,11 +3443,11 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
         gia_flood_vertex_region(halfedges_A,halfedges_A_tab,
             tris_A,verts_A,xtag_A,tris_B,verts_B,xtag_B,
             halfedges_A_closest_tri,0,0,
-            A_2_B_tab,A_2_B_buffer,false);
+            A_2_B_tab,A_2_B_buffer,B_intersect_interior);
         gia_flood_vertex_region(halfedges_B,halfedges_B_tab,
             tris_B,verts_B,xtag_B,tris_A,verts_A,xtag_A,
             halfedges_B_closest_tri,nm_A_2_B_ints,(int)verts_A.size(),
-            B_2_A_tab,B_2_A_buffer,true);
+            B_2_A_tab,B_2_A_buffer,A_intersect_interior);
 
         zs::Vector<int> island_ring_mask{gia_res.get_allocator(),(size_t)nm_islands * (size_t)ring_mask_width};
         pol(zs::range(island_ring_mask),[] ZS_LAMBDA(auto& ring_mask) mutable {ring_mask = 0;});

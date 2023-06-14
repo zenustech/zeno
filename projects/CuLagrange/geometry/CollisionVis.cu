@@ -2616,22 +2616,25 @@ struct VisualizeIntersections : zeno::INode {
             {"inds",1},
             {"x",3},
             {"flood",1},
-            {"he_inds",1},
+            // {"he_inds",1},
         },is_tet_volume_mesh ? (*zsparticles)[ZenoParticles::s_surfVertTag].size() : verts.size()};
         TILEVEC_OPS::fill(cudaPol,verts_buffer,"flood",(T)0.0);
         TILEVEC_OPS::copy(cudaPol,tris,"he_inds",tri_buffer,"he_inds");
         if(is_tet_volume_mesh) {
             const auto &points = (*zsparticles)[ZenoParticles::s_surfVertTag];
             TILEVEC_OPS::copy(cudaPol,points,"inds",verts_buffer,"inds");
-            TILEVEC_OPS::copy(cudaPol,points,"he_inds",verts_buffer,"he_inds");
+            // TILEVEC_OPS::copy(cudaPol,points,"he_inds",verts_buffer,"he_inds");
+            // TILEVEC_OPS::copy(cudaPol,points,"inds",verts_buffer,"inds");
+            std::cout << "do_topological_sample" << std::endl;
             topological_sample(cudaPol,points,verts,"x",verts_buffer);
             // topological_sample(cudaPol,points,verts,"X",verts_buffer);
             TILEVEC_OPS::copy(cudaPol,tris,"inds",tri_buffer,"inds");
+            std::cout << "do_reorder_topology" << std::endl;
             reorder_topology(cudaPol,points,tri_buffer);
         }else {
             TILEVEC_OPS::copy(cudaPol,tris,"inds",tri_buffer,"inds");
             TILEVEC_OPS::copy(cudaPol,verts,"x",verts_buffer,"x");
-            TILEVEC_OPS::copy(cudaPol,verts,"he_inds",verts_buffer,"he_inds");
+            // TILEVEC_OPS::copy(cudaPol,verts,"he_inds",verts_buffer,"he_inds");
             cudaPol(zs::range(verts.size()),[
                 verts = proxy<cuda_space>({},verts),
                 verts_buffer = proxy<cuda_space>({},verts_buffer)] ZS_LAMBDA(int vi) mutable {
@@ -2642,42 +2645,28 @@ struct VisualizeIntersections : zeno::INode {
         dtiles_t kverts_buffer{verts.get_allocator(),{
             {"flood",1},
             {"x",3}
-        },kverts_buffer.size()};
+        },kverts.size()};
         TILEVEC_OPS::fill(cudaPol,kverts_buffer,"flood",(T)0.0);
         TILEVEC_OPS::copy(cudaPol,kverts,"x",kverts_buffer,"x");
 
-        // dtiles_t gia_res{verts_buffer.get_allocator(),{
-        //     {"ring_mask",1}
-        // },verts_buffer.size() + kverts.size()};
         zs::Vector<int> gia_res{verts_buffer.get_allocator(),0};
-        // cudaPol(zs::range(gia_res),[] ZS_LAMBDA(auto& ring_mask) {ring_mask = 0;});
 
         zs::Vector<int> tris_gia_res{tri_buffer.get_allocator(),0};
-        // cudaPol(zs::range(tris_gia_res),[] ZS_LAMBDA(auto& ring_mask) {ring_mask = 0;});
 
 
-
-        int kid = 0;
-        int k_offset = 0;
-
-        dtiles_t dyn_verts_buffer{verts.get_allocator(),{
-            {"x0",3},
-            {"x1",3}
-        },0};
-        dtiles_t kin_verts_buffer{verts.get_allocator(),{
-            {"x0",3},
-            {"x1",3}
-        },0};
-        auto reserveMemory = [&](dtiles_t& buffer,int nsize) {
-            auto old_size = buffer.size();
-            buffer.resize(old_size + nsize);
-            return old_size;
-        };
+        bool use_zs_interior = get_input2<bool>("use_zsparticles_interior");
+        bool use_kin_interior = get_input2<bool>("use_kinematic_interior");
 
         // TODO: The must ExcludeMark is not include
         {
+            std::cout << "do_global_intersection_analysis_with_connected_manifolds" << std::endl;
+
             auto ring_mask_width = do_global_intersection_analysis_with_connected_manifolds(cudaPol,
-                verts_buffer,"x",tri_buffer,halfedges,kverts_buffer,"x",ktris,khalfedges,gia_res,tris_gia_res);
+                verts_buffer,"x",tri_buffer,halfedges,use_zs_interior,
+                kverts_buffer,"x",ktris,khalfedges,use_kin_interior,
+                gia_res,tris_gia_res);
+
+            std::cout << "finish do_global_intersection_analysis_with_connected_manifolds" << std::endl;
 
             zs::Vector<int> nmFloodVerts{verts_buffer.get_allocator(),1};
             nmFloodVerts.setVal(0);
@@ -2758,7 +2747,11 @@ struct VisualizeIntersections : zeno::INode {
 };
 
 
-ZENDEFNODE(VisualizeIntersections, {{"zsparticles","kinematics"},
+ZENDEFNODE(VisualizeIntersections, {{"zsparticles",
+                                        "kinematics",
+                                        {"bool","use_zsparticles_interior","1"},    
+                                        {"bool","use_kinematic_interior","1"}
+                                    },
                                   {
                                         "flood_dynamic",
                                         "flood_kinematic",
@@ -3150,6 +3143,8 @@ struct VisualizeIntersections3 : zeno::INode {
         csPT.reset(cudaPol,true);
         // zs::Vector<int> csPTOffsets{verts.get_allocator(),kinematics.size()};
         // std::cout << "number of kinematics : " << kinematics.size() << std::endl;
+        auto collide_from_exterior = get_input2<bool>("collide_from_exterior");
+
         auto nm_csPT = COLLISION_UTILS::do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(cudaPol,
             kinematic,
             verts,"x",
@@ -3159,7 +3154,7 @@ struct VisualizeIntersections3 : zeno::INode {
             out_collisionEps,
             in_collisionEps,
             csPT,
-            // csPTOffsets,
+            collide_from_exterior,
             true);
 
         std::cout << "do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection with csPT : " << nm_csPT << std::endl;
@@ -3367,6 +3362,7 @@ ZENDEFNODE(VisualizeIntersections3, {{
                                         "kinematic",
                                         {"float","out_collisionEps","0.1"},
                                         {"float","in_collisionEps","0.1"},    
+                                        {"bool","collide_from_exterior","1"}
                                     },
                                   {
                                         "flood_dynamic",
