@@ -550,7 +550,7 @@ constexpr bool is_intersecting(const Vec3T vA[3],const Vec3T vB[3]) {
 }
 
 template<typename Pol,typename PosTileVec,typename TriTileVec,typename HETileVec,typename InstTileVec>
-int retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
+size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
     const PosTileVec& verts,
     const zs::SmallString& xtag,
     const TriTileVec& tris,
@@ -706,7 +706,7 @@ int do_global_self_intersection_analysis(Pol& pol,
     GIA_TILEVEC& gia_res,
     GIA_TILEVEC& tris_gia_res,
     // zs::bht<int,2,int>& conn_of_first_ring,
-    int max_nm_intersections = 10000) {
+    size_t max_nm_intersections = 10000) {
         using namespace zs;
         using T = typename PosTileVec::value_type;
         using index_type = std::make_signed_t<int>;
@@ -916,7 +916,7 @@ int do_global_self_intersection_analysis(Pol& pol,
         // conn_of_first_ring.reset(pol,true);
 
         for(int ri = 0;ri != nm_rings;++ri) {
-            auto rsize = ringSize.getVal(ri);
+            auto rsize = (size_t)ringSize.getVal(ri);
             // if(output_intermediate_information)
             printf("ring[%d] Size : %d\n",ri,rsize);
 
@@ -2385,7 +2385,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
 
 
 template<typename DREAL,typename Pol,typename PosTileVec,typename TriTileVec,typename HETileVec>
-int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
+size_t retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
     const PosTileVec& verts_A, const zs::SmallString& xtag_A,
     const TriTileVec& tris_A,
     const HETileVec& halfedges_A,
@@ -3046,7 +3046,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
 
 
 // NEW VERSION
-template<typename Pol,typename PosTileVec,typename TriTileVec,typename HalfEdgeTileVec>
+template<typename Pol,typename PosTileVec,typename TriTileVec,typename HalfEdgeTileVec, auto space = Pol::exec_tag::value>
 int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
     const PosTileVec& verts_A,const zs::SmallString& xtag_A,
     const TriTileVec& tris_A,
@@ -3061,10 +3061,10 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
         using table_vec2i_type = zs::bht<int,2,int>;
         using table_int_type = zs::bht<int,1,int>;
         using vec2i = zs::vec<int,2>;
-        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        // constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
         constexpr auto exec_tag = wrapv<space>{};
 
-        constexpr int MAX_NM_INTERSECTIONS = 50000;
+        constexpr size_t MAX_NM_INTERSECTIONS = 50000;
 
         dtiles_t ints_buffer_A_2_B{verts_A.get_allocator(),{
             {"pair",2},
@@ -3110,7 +3110,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
 
         table_vec2i_type A_2_B_tab{ints_buffer_A_2_B.get_allocator(),(size_t)nm_A_2_B_ints};
         A_2_B_tab.reset(pol,true);
-        zs::Vector<int> A_2_B_buffer{ints_buffer_A_2_B.get_allocator(),nm_A_2_B_ints};
+        zs::Vector<int> A_2_B_buffer{ints_buffer_A_2_B.get_allocator(),(size_t)nm_A_2_B_ints};
 
         table_vec2i_type B_2_A_tab{ints_buffer_B_2_A.get_allocator(),(size_t)nm_B_2_A_ints};
         B_2_A_tab.reset(pol,true);
@@ -3142,14 +3142,14 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
         table_vec2i_type incidentItsTab{gia_res.get_allocator(),(size_t)total_nm_ints * 2};
         incidentItsTab.reset(pol,true);
 
-        zs::Vector<int> nmInvalid{verts_A.get_allocator(),1};
+        zs::Vector<int> nmInvalid{verts_A.get_allocator(),(size_t)1};
         nmInvalid.setVal(0);
 
-        auto establish_connections = [&](
-            const zs::bht<int,2,int>& _A_2_B_tab,const Vector<int>& _A_2_B_buffer,const HalfEdgeTileVec& _A_halfedges,const TriTileVec& _A_tris,int _A_offset,
-            const zs::bht<int,2,int>& _B_2_A_tab,const Vector<int>& _B_2_A_buffer,const HalfEdgeTileVec& _B_halfedges,const TriTileVec& _B_tris,int _B_offset) mutable {
+        auto establish_connections = [&pol,&nmInvalid,&incidentItsTab,exec_tag](
+            const zs::bht<int,2,int>& _A_2_B_tab,const Vector<int>& _A_2_B_buffer,const HalfEdgeTileVec& _A_halfedges,const TriTileVec& _A_tris,size_t _A_offset,
+            const zs::bht<int,2,int>& _B_2_A_tab,const Vector<int>& _B_2_A_buffer,const HalfEdgeTileVec& _B_halfedges,const TriTileVec& _B_tris,size_t _B_offset) mutable {
                 auto nn = _A_2_B_tab.size();
-                pol(zip(zs::range(nn),zs::range(_A_2_B_tab._activeKeys)),[
+                pol(zip(zs::range(nn),_A_2_B_tab._activeKeys),[
                     exec_tag,
                     _A_2_B_tab = proxy<space>(_A_2_B_tab),
                     _A_2_B_buffer = proxy<space>(_A_2_B_buffer),
@@ -3222,11 +3222,11 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
 
         zs::Vector<zs::vec<int,2>> conn_topo{gia_res.get_allocator(),nmEmtries};
         pol(zip(conn_topo,range(incidentItsTab._activeKeys)),[] ZS_LAMBDA(zs::vec<int,2> &ij,const auto& key) mutable {ij = key;});
-        zs::Vector<int> ringTag{gia_res.get_allocator(),total_nm_ints};
+        zs::Vector<int> ringTag{gia_res.get_allocator(),(size_t)total_nm_ints};
         auto nm_rings = mark_disconnected_island(pol,conn_topo,ringTag);
 
         // width of ring_mask
-        auto ring_mask_width = (int)((nm_rings + 31) / 32);
+        auto ring_mask_width = (size_t)((nm_rings + 31) / 32);
 
         std::cout << "nm_rings : " << nm_rings << std::endl;
         std::cout << "ring_mask_width : " << ring_mask_width << std::endl;
@@ -3244,7 +3244,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
         
 
         zs::Vector<vec2i> edges_topos{tris_A.get_allocator(),tris_A.size() * 3 + tris_B.size() * 3};
-        auto tris_2_edges_topo = [&](const TriTileVec& tris,zs::Vector<vec2i>& edge_topos,int v_offset,int e_offset) mutable {
+        auto tris_2_edges_topo = [&pol](const TriTileVec& tris,zs::Vector<vec2i>& edge_topos,int v_offset,int e_offset) mutable {
             pol(zs::range(tris.size()),[
                 tris = proxy<space>({},tris),
                 e_offset = e_offset,
@@ -3259,15 +3259,15 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
         tris_2_edges_topo(tris_A,edges_topos,0,0);
         tris_2_edges_topo(tris_B,edges_topos,verts_A.size(),tris_A.size() * 3);
 
-        table_vec2i_type disable_lines{edges_topos.get_allocator(),total_nm_ints};
+        table_vec2i_type disable_lines{edges_topos.get_allocator(),(size_t)total_nm_ints};
         disable_lines.reset(pol,true);
-        table_int_type disable_points{edges_topos.get_allocator(),total_nm_ints};
+        table_int_type disable_points{edges_topos.get_allocator(),(size_t)total_nm_ints};
         disable_points.reset(pol,true);
 
         // cut all the all the intersected edges
         auto collect_intersected_halfedges = [&](const HalfEdgeTileVec& halfedges,
             const TriTileVec& tris,
-            const dtiles_t& ints_buffer,int nm_ints,int v_offset) mutable {
+            const dtiles_t& ints_buffer,size_t nm_ints,int v_offset) mutable {
                 pol(zs::range(nm_ints),[
                     v_offset = v_offset,
                     halfedges = proxy<space>({},halfedges),
@@ -3293,7 +3293,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
         };
         collect_intersected_halfedges(halfedges_A,tris_A,ints_buffer_A_2_B,nm_A_2_B_ints,0);
         collect_intersected_halfedges(halfedges_B,tris_B,ints_buffer_B_2_A,nm_B_2_A_ints,verts_A.size());
-        zs::Vector<int> island_buffer{gia_res.get_allocator(),total_nm_verts};
+        zs::Vector<int> island_buffer{gia_res.get_allocator(),(size_t)total_nm_verts};
         auto nm_islands = mark_disconnected_island(pol,edges_topos,disable_points,disable_lines,island_buffer);
 
         std::cout << "nm_islands : " << nm_islands << std::endl;
@@ -3449,7 +3449,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
             halfedges_B_closest_tri,nm_A_2_B_ints,(int)verts_A.size(),
             B_2_A_tab,B_2_A_buffer,true);
 
-        zs::Vector<int> island_ring_mask{gia_res.get_allocator(),nm_islands * ring_mask_width};
+        zs::Vector<int> island_ring_mask{gia_res.get_allocator(),(size_t)nm_islands * (size_t)ring_mask_width};
         pol(zs::range(island_ring_mask),[] ZS_LAMBDA(auto& ring_mask) mutable {ring_mask = 0;});
 
         std::cout << "nm_islands : " << nm_islands << std::endl;
@@ -3482,7 +3482,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                 }
         });
 
-        zs::Vector<int> nm_flood_A{verts_A.get_allocator(),1};
+        zs::Vector<int> nm_flood_A{verts_A.get_allocator(),(size_t)1};
         nm_flood_A.setVal(0);
         pol(zs::range(verts_A.size()),[
             gia_res = proxy<space>(gia_res),
@@ -3498,7 +3498,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
         });
         std::cout << "nm_flood_A : " << nm_flood_A.getVal(0) << std::endl;
 
-        zs::Vector<int> nm_flood_B{verts_B.get_allocator(),1};
+        zs::Vector<int> nm_flood_B{verts_B.get_allocator(),(size_t)1};
         nm_flood_B.setVal(0);
         pol(zs::range(verts_B.size()),[
             gia_res = proxy<space>(gia_res),
