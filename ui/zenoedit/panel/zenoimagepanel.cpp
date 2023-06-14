@@ -204,6 +204,7 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     pGamma->setCheckState(Qt::Checked);
     pTitleLayout->addWidget(pGamma);
 
+    pFit->setProperty("cssClass", "grayButton");
     pTitleLayout->addWidget(pFit);
 
     pMainLayout->addLayout(pTitleLayout);
