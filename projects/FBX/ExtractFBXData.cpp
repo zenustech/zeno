@@ -168,10 +168,12 @@ struct ExtractMatData : zeno::INode {
         auto datas = std::make_shared<zeno::ListObject>();
         auto matName = std::make_shared<zeno::StringObject>();
 
+        TIMER_START(MakeDatas)
         for(auto [k, v]: data->iFbxData.value){
             datas->arr.push_back(v);
         }
         matName->set(data->sMaterial.matName);
+        TIMER_END(MakeDatas)
 
         // Make Zeno Objects
         auto texLists = std::make_shared<zeno::ListObject>();
@@ -183,6 +185,7 @@ struct ExtractMatData : zeno::INode {
         std::map<std::string, int> texMap{};
         std::map<std::string, aiColor4D> matValue{};
 
+        TIMER_START(SetMats)
         data->sMaterial.getSimplestTexList(texList, texMap, matValue);
 
         // Set Data -> Zeno Object
@@ -202,6 +205,7 @@ struct ExtractMatData : zeno::INode {
             numeric_obj->set(zeno::vec3f(matPropValue.r, matPropValue.g, matPropValue.b));
             matValues->lut[matPropName] = std::move(numeric_obj);
         }
+        TIMER_END(SetMats)
 
         set_output("datas", std::move(datas));
         set_output("matName", std::move(matName));

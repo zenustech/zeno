@@ -3,6 +3,7 @@
 
 #include <ios>
 #include <iostream>
+#include <chrono>
 
 namespace FBX {
     static bool failMsg = false;
@@ -11,6 +12,21 @@ namespace FBX {
 #define ED_COUT \
 if(FBX::failMsg)                \
 std::cout.setstate(std::ios::failbit); std::cout \
+
+#define TIMER_START(NAME)                                                                                       \
+    auto start_##NAME = std::chrono::high_resolution_clock::now();
+
+#define TIMER_END(NAME)                                                                                         \
+    auto stop_##NAME = std::chrono::high_resolution_clock::now();                                               \
+    auto duration_##NAME = std::chrono::duration_cast<std::chrono::microseconds>(stop_##NAME - start_##NAME);   \
+    std::cout << "E: Timer " << #NAME << " "                                                                    \
+              << duration_##NAME.count()*0.001f << " Milliseconds" << std::endl;
+
+#define TIMER_END_MSG(NAME, MSG)                                                                                \
+    auto stop_##NAME = std::chrono::high_resolution_clock::now();                                               \
+    auto duration_##NAME = std::chrono::duration_cast<std::chrono::microseconds>(stop_##NAME - start_##NAME);   \
+    std::cout << "E: Timer " << #NAME << duration_##NAME.count()*0.001f << " Milliseconds"                      \
+              << " " << MSG << std::endl;
 
 #include <limits>
 #include <algorithm>
@@ -32,10 +48,10 @@ inline namespace ZenoFBXDefinition {
     no->set(tmp);
 
 struct SFBXReadOption {
-    bool invertOpacity = false;
     bool makePrim = false;
     bool enableUDIM = false;
     bool generate = false;
+    bool indepData = false;
     bool triangulate = false;
     bool printTree = false;
     std::string hintPath = "";
@@ -266,10 +282,11 @@ struct SVertex{
     aiVector3D position;
     aiVector3D texCoord;
     aiVector3D normal;
-    aiVector3D tangent;
-    aiVector3D bitangent;
-    aiColor4D vectexColor;
+    //aiVector3D tangent;
+    //aiVector3D bitangent;
+    aiColor4D vectexColor = aiColor4D(0, 0, 0, 0);
     std::unordered_map<std::string, float> boneWeights;
+    //std::unordered_map<std::string, std::string> extraInfos;
 };
 
 struct SBSVertex{
