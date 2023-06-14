@@ -8,6 +8,9 @@
 #include "zeno/types/StringObject.h"
 #include "glm/common.hpp"
 
+#include <string>
+#include "magic_enum.hpp"
+
 namespace zeno
 {
 	static constexpr char
@@ -99,6 +102,58 @@ namespace zeno
 				{(std::string) "enum " + texWrapping, "wrapT", "REPEAT"},
 				{(std::string) "enum " + texFiltering, "minFilter", "LINEAR"},
 				{(std::string) "enum " + texFiltering, "magFilter", "LINEAR"},
+			},
+			{
+				{"texture", "tex"},
+			},
+			{},
+			{
+				"shader",
+			},
+		});
+
+	struct MakeTextureVDB: zeno::INode 
+	{
+		const static inline std::string dataTypeKey = "type";
+	
+		static std::string dataTypeDefaultString() {
+			auto name = magic_enum::enum_name(TextureObjectVDB::ElementType::Fp32);
+			return std::string(name);
+		}
+
+		static std::string dataTypeListString() {
+			auto list = magic_enum::enum_names<TextureObjectVDB::ElementType>();
+
+			std::string result;
+			for (auto& ele : list) {
+				result += " ";
+				result += ele;
+			}
+			return result;
+		}
+
+		virtual void apply() override
+		{
+			auto tex = std::make_shared<zeno::TextureObjectVDB>();
+
+			tex->path = get_input2<std::string>("path");
+			tex->channel = get_input2<std::string>("channel");
+
+			auto type = get_input2<std::string>(dataTypeKey);
+			auto casted = magic_enum::enum_cast<TextureObjectVDB::ElementType>(type);
+			tex->eleType = casted.value_or(TextureObjectVDB::ElementType::Fp32);
+
+			set_output("tex", std::move(tex));
+		}
+	};
+
+	ZENDEFNODE(
+		MakeTextureVDB,
+		{
+			{
+				{"readpath", "path"},
+				{"string", "channel", "0"},
+				{"enum " + MakeTextureVDB::dataTypeListString(), MakeTextureVDB::dataTypeKey, MakeTextureVDB::dataTypeDefaultString()},
 			},
 			{
 				{"texture", "tex"},

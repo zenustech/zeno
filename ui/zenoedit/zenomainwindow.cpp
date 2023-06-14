@@ -7,6 +7,7 @@
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
 #include "dock/ztabdockwidget.h"
+#include <zenoui/comctrl/zdocktabwidget.h>
 #include "dock/docktabcontent.h"
 #include "panel/zenodatapanel.h"
 #include "panel/zenoproppanel.h"
@@ -104,6 +105,7 @@ void ZenoMainWindow::init()
     pal.setColor(QPalette::Window, QColor(11, 11, 11));
     setAutoFillBackground(true);
     setPalette(pal);
+    setAcceptDrops(true);
 
     m_ui->statusbar->showMessage(tr("Status Bar"));
     connect(this, &ZenoMainWindow::recentFilesChanged, this, [=](const QObject *sender) {
@@ -716,6 +718,30 @@ QVector<DisplayWidget*> ZenoMainWindow::viewports() const
     return views;
 }
 
+DisplayWidget* ZenoMainWindow::getCurrentViewport() const
+{
+	auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    QVector<DisplayWidget*> vec;
+	for (ZTabDockWidget* pDock : docks)
+	{
+        if (pDock->isVisible())
+        {
+            if (ZDockTabWidget* tabwidget = qobject_cast<ZDockTabWidget*>(pDock->widget()))
+            {
+                if (DockContent_View* wid = qobject_cast<DockContent_View*>(tabwidget->currentWidget()))
+                {
+                    DisplayWidget* pView = wid->getDisplayWid();
+                    if (pView && pView->isCurrent())
+                    {
+                        return pView;
+                    }
+                }
+            }
+        }
+    }
+    return nullptr;
+}
+
 void ZenoMainWindow::toggleTimelinePlay(bool bOn)
 {
     m_pTimeline->togglePlayButton(bOn);
@@ -1070,6 +1096,34 @@ void ZenoMainWindow::mouseMoveEvent(QMouseEvent* event)
 void ZenoMainWindow::mouseReleaseEvent(QMouseEvent* event)
 {
     QMainWindow::mouseReleaseEvent(event);
+}
+
+void ZenoMainWindow::dragEnterEvent(QDragEnterEvent* event)
+{
+    auto urls = event->mimeData()->urls();
+    if (urls.size() == 1 && urls[0].toLocalFile().endsWith(".zsg")) {
+        event->acceptProposedAction();
+    }
+}
+
+void ZenoMainWindow::dropEvent(QDropEvent* event)
+{
+    auto urls = event->mimeData()->urls();
+    if (urls.size() != 1) {
+        return;
+    }
+    auto filePath = urls[0].toLocalFile();
+    if (!filePath.endsWith(".zsg")) {
+        return;
+    }
+
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    mgr->setNewCacheDir(true);
+
+    if (saveQuit()) {
+        openFile(filePath);
+    }
 }
 
 void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)

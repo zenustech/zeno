@@ -74,8 +74,8 @@ struct EvalAnim{
         //m_CurrentFrame = fmod(m_CurrentFrame, m_animInfo.duration);
 
         //zeno::log_info("Update: F {} D {} C {}", fi, dt, m_CurrentFrame);
-        ED_COUT << "FBX: Frame " << m_CurrentFrame << " Duration " << m_animInfo.duration << " " << m_pathName.value << std::endl;
-        ED_COUT << "FBX: FrameID " << fi << " Tick " << m_animInfo.tick << " DeltaTime " << dt << std::endl;
+        //ED_COUT << "FBX: Frame " << m_CurrentFrame << " Duration " << m_animInfo.duration << " " << m_pathName.value << std::endl;
+        //ED_COUT << "FBX: FrameID " << fi << " Tick " << m_animInfo.tick << " DeltaTime " << dt << std::endl;
 
         if(m_evalOption.writeData){
             expandBoneTransform(&m_RootNode, "", aiMatrix4x4());
@@ -498,7 +498,7 @@ struct EvalFBXAnim : zeno::INode {
             isVisibility->set(1);
         }
 
-        ED_COUT << " Visibility " << isVisibility->get<int>() << " Path " << fbxData->iPathName.value << "\n";
+        //ED_COUT << " Visibility " << isVisibility->get<int>() << " Path " << fbxData->iPathName.value << "\n";
 
         EvalAnim anim;
         anim.m_evalOption = evalOption;
@@ -662,9 +662,9 @@ ZENDEFNODE(EvalFBXAnim,
                },  /* outputs: */
                {
                    "prim",
-                   {"ListObject", "prims", ""},
+                   {"list", "prims", ""},
                    "camera", "light", "matName", "meshName", "pathName", "bsPrimsOrigin",
-                   {"ListObject", "bsPrims", ""},
+                   {"list", "bsPrims", ""},
                    "transDict", "quatDict", "scaleDict",
                    "writeData", "visibility"
                },  /* params: */

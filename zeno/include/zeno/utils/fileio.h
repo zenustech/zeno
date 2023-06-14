@@ -97,6 +97,9 @@ public:
     BinaryReader(std::vector<char> data_) {
         data = std::move(data_);
     }
+    size_t current() const {
+        return cur;
+    }
     void skip(size_t step) {
         // must use '>' rather than '>='
         if (cur + step > data.size()) {

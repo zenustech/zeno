@@ -103,7 +103,7 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
             return trisData(index);
         }
         else if (sel_attr == "Points") {
-            return trisData(index);
+            return pointsData(index);
         }
         else if (sel_attr == "Lines") {
             return linesData(index);

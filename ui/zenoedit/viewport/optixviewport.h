@@ -12,6 +12,7 @@ class OptixWorker : public QObject
     Q_OBJECT
 public:
     OptixWorker(Zenovis *pzenoVis);
+    ~OptixWorker();
     QImage renderImage() const;
 
 signals:
