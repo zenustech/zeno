@@ -2253,6 +2253,10 @@
         <source>KeyFrames</source>
         <translation type="unfinished">编辑K帧</translation>
     </message>
+    <message>
+        <source>Clear KeyFrames</source>
+        <translation type="unfinished">清除K帧</translation>
+    </message>
 </context>
 <context>
     <name>ZenoSpreadsheet</name>

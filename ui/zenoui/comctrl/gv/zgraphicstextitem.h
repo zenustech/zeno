@@ -142,7 +142,6 @@ class ZFloatEditableTextItem : public ZEditableTextItem {
   public:
     ZFloatEditableTextItem(const QString &text, QGraphicsItem *parent = nullptr);
     ZFloatEditableTextItem(QGraphicsItem *parent = nullptr);
-    bool getKeyFrame(CURVE_DATA &curve);
 
   protected:
     bool event(QEvent *event) override;

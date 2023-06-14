@@ -11,6 +11,7 @@
 #include <zenoedit/zenomainwindow.h>
 #include <zenomodel/include/curvemodel.h>
 #include <zenomodel/include/curveutil.h>
+#include <zenomodel/include/uihelper.h>
 
 
 qreal editor_factor = 1.0;
@@ -395,7 +396,14 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
     if (editor_factor < 0.2)
         return;
 #endif
-    painter->setBrush(QColor("#191D21"));
+    QColor col;
+    if (property(g_setKey) == "false")
+        col = QColor("#496DA0");
+    else if (property(g_setKey) == "true")
+        col = QColor("#3A6E64");
+    else
+        col = QColor("#191D21");
+    painter->setBrush(col);
     qreal width = ZenoStyle::dpiScaled(2);
     QPen pen(QColor(75, 158, 244), width);
     QRectF rc = boundingRect();
@@ -404,7 +412,7 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         painter->setPen(pen);
         painter->drawRect(rc);
     } else {
-        painter->fillRect(rc, QColor("#191D21"));
+        painter->fillRect(rc, col);
     }
     _base::paint(painter, option, widget);
 }
@@ -620,9 +628,8 @@ bool ZFloatEditableTextItem::event(QEvent *event)
             QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent *>(event);
             if (evt->propertyName() == g_keyFrame) 
             {
-                if (getKeyFrame(curve)) {
-                    float currentFrame = timeline->value();
-                    updateText(currentFrame);
+                updateText(timeline->value());
+                if (UiHelper::getKeyFrame(this, curve)) {
                     connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatEditableTextItem::updateText, Qt::UniqueConnection);
                     connect(zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatEditableTextItem::onUpdate, Qt::UniqueConnection);
                 } else {
@@ -639,7 +646,7 @@ bool ZFloatEditableTextItem::event(QEvent *event)
 }
 void ZFloatEditableTextItem::updateCurveData() {
     CURVE_DATA val;
-    if (!getKeyFrame(val)) {
+    if (!UiHelper::getKeyFrame(this, val)) {
         return;
     }
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
@@ -658,22 +665,17 @@ void ZFloatEditableTextItem::updateCurveData() {
     }
 }
 
-bool ZFloatEditableTextItem::getKeyFrame(CURVE_DATA & curve) 
-{
-    bool res = property(g_keyFrame).canConvert<CURVE_DATA>();
-    if (res)
-        curve = property(g_keyFrame).value<CURVE_DATA>();
-    return res;
-}
-
 void ZFloatEditableTextItem::updateText(int frame) 
 {
     CURVE_DATA data;
-    if (getKeyFrame(data)) {
+    if (UiHelper::getKeyFrame(this, data)) {
         QString text = QString::number(data.eval(frame));
         setText(text);
     }
+    UiHelper::updateProperty(this);
+    update();
 }
+
 void ZFloatEditableTextItem::onUpdate(bool gl, int frame) 
 {
     updateText(frame);

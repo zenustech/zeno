@@ -51,11 +51,12 @@ private:
     ZExpandableSection* findGroup(const QString& tabName, const QString& groupName);
     void getDelfCurveData(CURVE_DATA &curve, float val, bool visible, const QString& key);
     void updateHandler(CURVE_DATA &curve);
-    bool isSetKeyFrame(const CURVES_DATA &curves);
+    int getKeyFrameSize(const CURVES_DATA &curves);
     QStringList getKeys(const QObject *obj, const _PANEL_CONTROL &ctrl);
     void setKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList  &keys);
     void delKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
     void editKeyFrame(const _PANEL_CONTROL &ctrl, const QStringList &keys);
+    void clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
     CURVES_DATA getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys);
     void updateTimelineKeys(const CURVES_DATA &curves);
 

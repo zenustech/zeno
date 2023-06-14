@@ -196,7 +196,10 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
                 const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
                 QString opStr = "setNodeInput";
-                if ((sockType == "int" || sockType == "float" || sockType.startsWith("vec"))) {
+                if (sockType == "int" || 
+                    sockType == "float" || 
+                    sockType.startsWith("vec") ||
+                    (defl.type() == QVariant::String && defl.toString().startsWith("="))) {
                     if (defl.canConvert<CURVES_DATA>())
                         opStr = "setKeyFrame";
                     else if (defl.type() == QVariant::String) {

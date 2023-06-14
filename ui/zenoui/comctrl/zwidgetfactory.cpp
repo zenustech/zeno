@@ -22,6 +22,7 @@
 #include "gv/zitemfactory.h"
 #include <zenoui/comctrl/zpathedit.h>
 #include <zenomodel/include/modeldata.h>
+#include <zenomodel/include/uihelper.h>
 
 namespace zenoui
 {
@@ -70,7 +71,7 @@ namespace zenoui
                     // be careful about the dynamic type.
                     QVariant newValue;
                     CURVE_DATA curve;
-                    if (pLineEdit->getKeyFrame(curve)) {
+                    if (UiHelper::getKeyFrame(pLineEdit, curve)) {
                         CURVES_DATA data;
                         data.insert(curve.key, curve);
                         newValue = QVariant::fromValue(data);

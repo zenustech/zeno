@@ -193,15 +193,25 @@ ZENO_API zany INode::get_formula(std::string const &id) const
     if (auto formulas = dynamic_cast<zeno::StringObject *>(value.get())) 
     {
         std::string code = formulas->get();
-        std::string prefix = "vec3";
-        std::string resType;
-        if (code.substr(0, prefix.size()) == prefix) {
-            resType = "vec3f";
-        } else {
-            resType = "float";
+        if (code.find("=") == 0)
+        { 
+            code.replace(0, 1, "");
+            auto res = getThisGraph()->callTempNode("StringEval", { {"zfxCode", objectFromLiterial(code)} }).at("result");
+            value = objectFromLiterial(std::move(res));
         }
-        auto res = getThisGraph()->callTempNode("NumericEval", {{"zfxCode", objectFromLiterial(code)}, {"resType", objectFromLiterial(resType)}}).at("result");
-        value = objectFromLiterial(std::move(res));
+        else
+        {
+            std::string prefix = "vec3";
+            std::string resType;
+            if (code.substr(0, prefix.size()) == prefix) {
+                resType = "vec3f";
+            }
+            else {
+                resType = "float";
+            }
+            auto res = getThisGraph()->callTempNode("NumericEval", { {"zfxCode", objectFromLiterial(code)}, {"resType", objectFromLiterial(resType)} }).at("result");
+            value = objectFromLiterial(std::move(res));
+        }
     }     
     return value;
 }
