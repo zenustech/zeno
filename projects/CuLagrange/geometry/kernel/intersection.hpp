@@ -574,9 +574,12 @@ size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
         auto cnorm = compute_average_edge_length(pol,verts,xtag,tris);
         cnorm *= 3;
 
+        auto max_intersections = intersect_buffers.size();
+
         pol(zs::range(halfedges.size()),[
             exec_tag,
             nmIts = proxy<space>(nmIts),
+            max_intersections = max_intersections,
             halfedges = proxy<space>({},halfedges),/*'to_vertex' 'to_face' 'opposite_he' 'next_he'*/
             verts = proxy<space>({},verts),
             nm_verts = verts.size(),
@@ -641,6 +644,8 @@ size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
                         // LSL_GEO::tri_ray_intersect_d<double>(eV[0],eV[1],tV[0],tV[1],tV[2],r);
                         if(LSL_GEO::tri_ray_intersect_d<double>(eV[0],eV[1],tV[0],tV[1],tV[2],r)) {
                             auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                            if(offset >= max_intersections)
+                                return;
                             auto intp = r * dir + eV[0];
                             intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{hei,ti}.reinterpret_bits(float_c);
                             intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
@@ -661,6 +666,10 @@ size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
         });
 
         // std::cout << "initialize corner_idx : " << nmIts.getVal(0) << std::endl;
+
+        if(nmIts.getVal(0) >= max_intersections) {
+            throw std::runtime_error("max_size_of_intersections buffer reach");
+        }
 
         pol(zs::range(nmIts.getVal(0)),[
             intersect_buffers = proxy<space>({},intersect_buffers),
@@ -702,7 +711,7 @@ int do_global_self_intersection_analysis(Pol& pol,
     const PosTileVec& verts,
     const zs::SmallString& xtag,
     const TriTileVec& tris,
-    const HalfEdgeTileVec& halfedges,
+    HalfEdgeTileVec& halfedges,
     GIA_TILEVEC& gia_res,
     GIA_TILEVEC& tris_gia_res,
     // zs::bht<int,2,int>& conn_of_first_ring,
@@ -733,9 +742,9 @@ int do_global_self_intersection_analysis(Pol& pol,
                 {"r",1},
             },max_nm_intersections};
 
-        // if(!halfedges.hasProperty("broken"))
-        //     halfedges.append_channels(pol,{{"broken",1}});
-        // TILEVEC_OPS::fill(pol,halfedges,"broken",(T)0.0);
+        if(!halfedges.hasProperty("broken"))
+            halfedges.append_channels(pol,{{"broken",1}});
+        TILEVEC_OPS::fill(pol,halfedges,"broken",(T)0.0);
         
         auto nm_insts = retrieve_self_intersection_tri_halfedge_list_info(pol,verts,xtag,tris,halfedges,ints_buffer);
         table_vec2i_type cftab{ints_buffer.get_allocator(),(size_t)nm_insts};
@@ -953,7 +962,7 @@ int do_global_self_intersection_analysis(Pol& pol,
                     tring_mask |= cur_ri_mask;
                     tris_gia_res("ring_mask",ti) = zs::reinterpret_bits<T>(tring_mask);
 
-                    // halfedges("broken",hi) = (T)1.0;
+                    halfedges("broken",hi) = (T)1.0;
                     // auto ti = pair[1];
                     // auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
 
@@ -1038,6 +1047,8 @@ int do_global_self_intersection_analysis(Pol& pol,
                 nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int i) mutable {
                     nm_cmps_every_island_count[i] = 0;
             });
+
+            // it is a really bad idea to use mustExclude here, as this tag might no be locally significant
             pol(zs::range(verts.size()),[
                 exec_tag,
                 verts = proxy<space>({},verts),

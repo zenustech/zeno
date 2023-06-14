@@ -2372,6 +2372,8 @@ struct FleshDynamicStepping : INode {
                     out_collisionEps,
                     in_collisionEps,
                     csPT);
+
+                
                 
                 // auto varea = TILEVEC_OPS::dot<1>(cudaPol,vtemp,"area","area");
                 // auto tarea = TILEVEC_OPS::dot<1>(cudaPol,tris,"area","area");
@@ -2395,8 +2397,8 @@ struct FleshDynamicStepping : INode {
                     tris,"area",
                     csPT,self_collision_fp_buffer,collisionStiffness,out_collisionEps);
 
-                // auto cforce = TILEVEC_OPS::dot<12>(cudaPol,fp_buffer,"grad","grad");
-                // std::cout << "cforce " << cforce << std::endl;
+                auto cforce = TILEVEC_OPS::dot<12>(cudaPol,self_collision_fp_buffer,"grad","grad");
+                std::cout << "cforce " << cforce << "\tnmcsPT : " << csPT.size() << std::endl;
             }
 
             timer.tock("eval hessian and gradient");

@@ -785,8 +785,8 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
     PosTileVec& tet_verts,const zs::SmallString& pos_attr_tag,
     const TetTileVec& tets,
     const SurfPointTileVec& surf_points,const SurfTriTileVec& surf_tris,
-    const HalfEdgeTileVec& surf_halfedge,
-    const HalfFacetTileVec& tet_halffacet,
+    HalfEdgeTileVec& surf_halfedge,
+    HalfFacetTileVec& tet_halffacet,
     REAL outCollisionEps,
     REAL inCollisionEps,
     HashMap& csPT,
@@ -802,7 +802,7 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
             {"color_mask",1},
             {"type_mask",1},
             {"embed_tet_id",1},
-            {"mustExclude",1},
+            // {"mustExclude",1},
             {"is_corner",1},
             {"active",1}
         },surf_points.size()};
@@ -841,8 +841,8 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
         tetBvh.build(pol,tetBvs);
         TILEVEC_OPS::fill(pol,surf_verts_buffer,"embed_tet_id",zs::reinterpret_bits<T>((int)-1));
 
-        zs::Vector<int> nmExcludedPoints{tets.get_allocator(),1};
-        nmExcludedPoints.setVal(0);
+        // zs::Vector<int> nmExcludedPoints{tets.get_allocator(),1};
+        // nmExcludedPoints.setVal(0);
         pol(zs::range(surf_verts_buffer.size()),[
             pos_attr_tag = zs::SmallString(pos_attr_tag),
             surf_verts_buffer = proxy<space>({},surf_verts_buffer),
@@ -851,7 +851,7 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
             tets = proxy<space>({},tets),
             thickness = cnorm,
             exec_tag,
-            nmExcludedPoints = proxy<space>(nmExcludedPoints),
+            // nmExcludedPoints = proxy<space>(nmExcludedPoints),
             tet_verts = proxy<space>({},tet_verts)] ZS_LAMBDA(int pi) mutable {
                 auto pv = surf_verts_buffer.pack(dim_c<3>,pos_attr_tag,pi);
                 auto vi = zs::reinterpret_bits<int>(surf_points("inds",pi));
@@ -867,21 +867,21 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
                         tV[i] = tet_verts.pack(dim_c<3>,pos_attr_tag,tet[i]);
                     if(LSL_GEO::is_inside_tet(tV[0],tV[1],tV[2],tV[3],pv)){
                         surf_verts_buffer("embed_tet_id",pi) = zs::reinterpret_bits<T>((int)ei);
-                        atomic_add(exec_tag,&nmExcludedPoints[0],(int)1);
+                        // atomic_add(exec_tag,&nmExcludedPoints[0],(int)1);
                     }
                 };
                 tetBvh.iter_neighbors(bv,mark_interior_verts);
         });        
-        std::cout << "nm_excluded_points :" << nmExcludedPoints.getVal(0) << "\t" << surf_verts_buffer.size() << std::endl;
+        // std::cout << "nm_excluded_points :" << nmExcludedPoints.getVal(0) << "\t" << surf_verts_buffer.size() << std::endl;
 
-        pol(zs::range(surf_verts_buffer.size()),[
-            surf_verts_buffer = proxy<space>({},surf_verts_buffer)] ZS_LAMBDA(int pi) mutable {
-                auto embed_tet_id = zs::reinterpret_bits<int>(surf_verts_buffer("embed_tet_id",pi));
-                if(embed_tet_id >= 0)
-                    surf_verts_buffer("mustExclude",pi) = (T)1.0;
-                else
-                    surf_verts_buffer("mustExclude",pi) = (T)0.0;
-        });
+        // pol(zs::range(surf_verts_buffer.size()),[
+        //     surf_verts_buffer = proxy<space>({},surf_verts_buffer)] ZS_LAMBDA(int pi) mutable {
+        //         auto embed_tet_id = zs::reinterpret_bits<int>(surf_verts_buffer("embed_tet_id",pi));
+        //         if(embed_tet_id >= 0)
+        //             surf_verts_buffer("mustExclude",pi) = (T)1.0;
+        //         else
+        //             surf_verts_buffer("mustExclude",pi) = (T)0.0;
+        // });
         auto nm_rings = do_global_self_intersection_analysis(pol,
             surf_verts_buffer,pos_attr_tag,surf_tris_buffer,surf_halfedge,
             surf_verts_buffer,surf_tris_buffer);

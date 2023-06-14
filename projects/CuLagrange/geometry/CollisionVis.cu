@@ -2947,7 +2947,7 @@ struct VisualizeCollision2 : zeno::INode {
         const auto& tris = (*zsparticles)[ZenoParticles::s_surfTriTag];
         const auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
         const auto& tets = zsparticles->getQuadraturePoints();
-        const auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
+        auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
         const auto& halffacets = (*zsparticles)[ZenoParticles::s_tetHalfFacetTag];
 
         zs::bht<int,2,int> csPT{verts.get_allocator(),10000};
