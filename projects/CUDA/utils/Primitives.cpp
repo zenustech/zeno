@@ -278,14 +278,28 @@ struct PrimitiveConnectedComponents : INode {
 
         auto numSets = vtab.size();
         fmt::print("{} disjoint sets in total.\n", numSets);
+
+        std::vector<int> invMap(numSets);
+        std::vector<std::pair<int, int>> kvs(numSets);
+        auto keys = vtab._activeKeys;
+        pol(enumerate(keys, kvs), [](int id, int key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
+        struct {
+            constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                return a.first < b.first;
+            }
+        } lessOp;
+        std::sort(kvs.begin(), kvs.end(), lessOp);
+        pol(enumerate(kvs), [&invMap](int no, auto kv) { invMap[kv.second] = no; });
+
         /// @brief compute the set index of each vertex and calculate the size of each set
         auto &setids = prim->add_attr<int>("set");
         std::vector<int> vertexCounts(numSets), vertexOffsets(numSets);
-        pol(range(pos.size()), [&fas, &setids, &vertexCounts, vtab = view<space>(vtab)](int vi) mutable {
+        pol(range(pos.size()), [&fas, &setids, &vertexCounts, &invMap, vtab = view<space>(vtab)](int vi) mutable {
             auto ancestor = fas[vi];
             auto setNo = vtab.query(ancestor);
-            setids[vi] = setNo;
-            atomic_add(exec_omp, &vertexCounts[setNo], 1);
+            auto dst = invMap[setNo];
+            setids[vi] = dst;
+            atomic_add(exec_omp, &vertexCounts[dst], 1);
         });
         exclusive_scan(pol, std::begin(vertexCounts), std::end(vertexCounts), std::begin(vertexOffsets));
 
@@ -528,7 +542,7 @@ struct PrimitiveMarkIslands : INode {
         auto numSets = vtab.size();
         fmt::print("{} islands in total.\n", numSets);
 
-        std::vector<int> indices(numSets), invMap(numSets);
+        std::vector<int> invMap(numSets);
         std::vector<std::pair<int, int>> kvs(numSets);
         auto keys = vtab._activeKeys;
         pol(enumerate(keys, kvs), [](int id, int key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
