@@ -66,7 +66,7 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-
+#define TRI_PER_MESH 16384
 #include <string_view>
 struct CppTimer {
     void tick() {
@@ -1714,7 +1714,7 @@ void UpdateStaticMesh(std::map<std::string, int> const &mtlidlut) {
     if(!using20xx) {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, 0, 0);
         g_staticMeshNum = g_meshPieces.size();
-        size_t vertSize = 1024 * 3 * g_meshPieces.size();
+        size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
         g_staticVertNum = vertSize;
         g_vertices.resize(vertSize);
         g_clr.resize(vertSize);
@@ -1732,7 +1732,7 @@ void UpdateDynamicMesh(std::map<std::string, int> const &mtlidlut) {
     if(!using20xx) {
         splitMesh(g_vertices, g_mat_indices, g_meshPieces, g_staticMeshNum, g_staticVertNum);
         g_staticAndDynamicMeshNum = g_meshPieces.size();
-        size_t vertSize = 1024 * 3 * g_meshPieces.size();
+        size_t vertSize = TRI_PER_MESH * 3 * g_meshPieces.size();
         g_staticAndDynamicVertNum = vertSize;
         g_vertices.resize(vertSize);
         g_clr.resize(vertSize);
@@ -1770,7 +1770,7 @@ void UpdateStaticInstMesh(const std::map<std::string, int> &mtlidlut)
 
             splitMesh(vertices, mat_indices, meshPieces, 0, 0);
             staticMeshNum = meshPieces.size();
-            std::size_t vertSize = 1024 * 3 * meshPieces.size();
+            std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
             staticVertNum = vertSize;
             vertices.resize(vertSize);
             clr.resize(vertSize);
@@ -1803,7 +1803,7 @@ void UpdateDynamicInstMesh(std::map<std::string, int> const &mtlidlut)
             auto &meshPieces = instData.meshPieces;
 
             splitMesh(vertices, mat_indices, meshPieces, staticMeshNum, staticVertNum);
-            std::size_t vertSize = 1024 * 3 * meshPieces.size();
+            std::size_t vertSize = TRI_PER_MESH * 3 * meshPieces.size();
             vertices.resize(vertSize);
             clr.resize(vertSize);
             nrm.resize(vertSize);
@@ -2443,7 +2443,7 @@ std::vector<std::shared_ptr<smallMesh>> &oMeshes, int meshesStart, int vertsStar
 {
     size_t num_tri = (verts.size()-vertsStart)/3;
     oMeshes.resize(meshesStart);
-    size_t tris_per_mesh = 1024;
+    size_t tris_per_mesh = TRI_PER_MESH;
     size_t num_iter = num_tri/tris_per_mesh + 1;
     for(int i=0; i<num_iter;i++)
     {
