@@ -258,6 +258,7 @@ int do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(Pol&
     REAL in_collisionEps,
     HashMap& csPT,
     // zs::Vector<int>& csPTOffsets,
+    bool collide_from_exterior = true,
     bool write_back_gia_res = false) {
         using namespace zs;
         constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
@@ -339,8 +340,8 @@ int do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(Pol&
 
 
         auto ring_mask_width = do_global_intersection_analysis_with_connected_manifolds(pol,
-            surf_verts_buffer,tet_pos_attr_tag,surf_tris_buffer,tet_halfedges,
-            kverts,"x",ktris,khalfedges,
+            surf_verts_buffer,tet_pos_attr_tag,surf_tris_buffer,tet_halfedges,collide_from_exterior,
+            kverts,"x",ktris,khalfedges,true,
             gia_res,tris_gia_res);
 
         // as we only do the intersection detection between kverts and ptris, we only need to flood the two
@@ -641,8 +642,8 @@ int do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(Pol& p
         // });    
 
         auto nm_rings = do_global_intersection_analysis_with_connected_manifolds(pol,
-            surf_verts_buffer,tet_pos_attr_tag,surf_tris_buffer,tet_halfedges,
-            kverts_buffer,"x",ktris,khalfedges,
+            surf_verts_buffer,tet_pos_attr_tag,surf_tris_buffer,tet_halfedges,true,
+            kverts_buffer,"x",ktris,khalfedges,false,
             gia_res,tris_gia_res);
 
         // as we only do the intersection detection between kverts and ptris, we only need to flood the two

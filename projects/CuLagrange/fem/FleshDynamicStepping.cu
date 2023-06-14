@@ -2227,7 +2227,7 @@ struct FleshDynamicStepping : INode {
                     halfedges,
                     out_collisionEps,
                     in_collisionEps,
-                    csPT,false);
+                    csPT,false,false);
 
                 COLLISION_UTILS::evaluate_ktri_vert_collision_gradient_and_hessian(cudaPol,
                     kinematics[0],
