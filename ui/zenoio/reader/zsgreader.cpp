@@ -69,7 +69,10 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     doc.Parse(bytes);
 
     if (!doc.IsObject() || !doc.HasMember("graph"))
+    {
+        zeno::log_error("zsg json file is corrupted");
         return false;
+    }
 
     const rapidjson::Value& graph = doc["graph"];
     if (graph.IsNull()) {

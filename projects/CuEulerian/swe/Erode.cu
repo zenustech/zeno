@@ -321,8 +321,8 @@ struct zs_erode_tumble_material_v0 : INode {
         constexpr auto space = execspace_e::cuda;
         auto pol = cuda_exec();
         /// @brief  copy host-side attribute
-        auto zs_height = to_device_vector(_height, false);
-        auto zs_debris = to_device_vector(_debris, false);
+        auto zs_height = to_device_vector(_height);
+        auto zs_debris = to_device_vector(_debris);
         auto zs_temp_height = to_device_vector(_temp_height);
         auto zs_temp_debris = to_device_vector(_temp_debris);
         auto zs_perm = to_device_vector(perm);
@@ -610,7 +610,7 @@ struct zs_erode_tumble_material_v2 : INode {
         constexpr auto space = execspace_e::cuda;
         auto pol = cuda_exec();
         /// @brief  copy host-side attribute
-        auto zs_material = to_device_vector(_material, false);
+        auto zs_material = to_device_vector(_material);
         auto zs_height = to_device_vector(height);
         auto zs_temp_material = to_device_vector(_temp_material);
         auto zs_stabilitymask = to_device_vector(stabilitymask);
@@ -910,7 +910,7 @@ struct zs_erode_tumble_material_v3 : INode {
         constexpr auto space = execspace_e::cuda;
         auto pol = cuda_exec();
         /// @brief  copy host-side attribute
-        auto zs_material = to_device_vector(_material, false);
+        auto zs_material = to_device_vector(_material);
         auto zs_height = to_device_vector(height);
         auto zs_temp_material = to_device_vector(_temp_material);
         auto zs_flowdir = to_device_vector(flowdir);
@@ -1263,9 +1263,9 @@ struct zs_erode_tumble_material_v4 : INode {
         /// @brief  copy host-side attribute
         auto zs_height = to_device_vector(_height);
         auto zs_temp_height = to_device_vector(_temp_height);
-        auto zs_material = to_device_vector(_material, false);
+        auto zs_material = to_device_vector(_material);
         auto zs_temp_material = to_device_vector(_temp_material);
-        auto zs_debris = to_device_vector(_debris, false);
+        auto zs_debris = to_device_vector(_debris);
         auto zs_temp_debris = to_device_vector(_temp_debris);
         auto zs_sediment = to_device_vector(_sediment);
         auto zs_perm = to_device_vector(perm);

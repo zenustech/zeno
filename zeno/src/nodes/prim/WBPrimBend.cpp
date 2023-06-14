@@ -622,8 +622,8 @@ struct PrimCopyAttr : INode {
 
         if (!prim->verts.has_attr(sourceName))
             zeno::log_error("no such attr named '{}'.", sourceName);
-        if (prim->verts.has_attr(targetName))
-            zeno::log_warn("already has such attr named '{}'.", targetName);
+//        if (prim->verts.has_attr(targetName))
+//            zeno::log_warn("already has such attr named '{}'.", targetName);
 
         std::visit(
             [&](auto ty) {
@@ -1220,14 +1220,6 @@ struct PrimAttribBlur : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto prim_type = get_input2<std::string>("primType");
-
-//        auto maskName = get_input2<std::string>("group");
-//        if (!prim->verts.has_attr(maskName)) {
-//            auto &_mask = prim->verts.add_attr<float>(maskName);
-//            std::fill(_mask.begin(), _mask.end(), 1.0);
-//        }
-//        auto &mask = prim->verts.attr<float>(maskName);
-
         auto attr_name = get_input2<std::string>("attributes");
         auto attr_type = get_input2<std::string>("attributesType");
 

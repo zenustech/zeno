@@ -278,14 +278,28 @@ struct PrimitiveConnectedComponents : INode {
 
         auto numSets = vtab.size();
         fmt::print("{} disjoint sets in total.\n", numSets);
+
+        std::vector<int> invMap(numSets);
+        std::vector<std::pair<int, int>> kvs(numSets);
+        auto keys = vtab._activeKeys;
+        pol(enumerate(keys, kvs), [](int id, int key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
+        struct {
+            constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                return a.first < b.first;
+            }
+        } lessOp;
+        std::sort(kvs.begin(), kvs.end(), lessOp);
+        pol(enumerate(kvs), [&invMap](int no, auto kv) { invMap[kv.second] = no; });
+
         /// @brief compute the set index of each vertex and calculate the size of each set
         auto &setids = prim->add_attr<int>("set");
         std::vector<int> vertexCounts(numSets), vertexOffsets(numSets);
-        pol(range(pos.size()), [&fas, &setids, &vertexCounts, vtab = view<space>(vtab)](int vi) mutable {
+        pol(range(pos.size()), [&fas, &setids, &vertexCounts, &invMap, vtab = view<space>(vtab)](int vi) mutable {
             auto ancestor = fas[vi];
             auto setNo = vtab.query(ancestor);
-            setids[vi] = setNo;
-            atomic_add(exec_omp, &vertexCounts[setNo], 1);
+            auto dst = invMap[setNo];
+            setids[vi] = dst;
+            atomic_add(exec_omp, &vertexCounts[dst], 1);
         });
         exclusive_scan(pol, std::begin(vertexCounts), std::end(vertexCounts), std::begin(vertexOffsets));
 
@@ -468,18 +482,12 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
 struct PrimitiveMarkIslands : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        if (!prim->verts.has_attr("uv")) {
-            set_output("prim", std::move(prim));
-            zeno::log_warn("this primitive object does not include vertex uv property.");
-            return;
-        }
 
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
         auto pol = omp_exec();
 
         auto &pos = prim->attr<zeno::vec3f>("pos");
-        auto &vert_uv = prim->verts.attr<vec3f>("uv");
 
         bool isTris = prim->tris.size() > 0;
         if (isTris) {
@@ -531,15 +539,27 @@ struct PrimitiveMarkIslands : INode {
             fas[vi] = fa;
             vtab.insert(fa);
         });
-
-        auto &setids = prim->add_attr<int>(get_input2<std::string>("island_tag"));
-        pol(range(pos.size()), [&fas, &setids, vtab = view<space>(vtab)](int vi) mutable {
-            auto ancestor = fas[vi];
-            auto setNo = vtab.query(ancestor);
-            setids[vi] = setNo;
-        });
         auto numSets = vtab.size();
         fmt::print("{} islands in total.\n", numSets);
+
+        std::vector<int> invMap(numSets);
+        std::vector<std::pair<int, int>> kvs(numSets);
+        auto keys = vtab._activeKeys;
+        pol(enumerate(keys, kvs), [](int id, int key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
+        struct {
+            constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                return a.first < b.first;
+            }
+        } lessOp;
+        std::sort(kvs.begin(), kvs.end(), lessOp);
+        pol(enumerate(kvs), [&invMap](int no, auto kv) { invMap[kv.second] = no; });
+
+        auto &setids = prim->add_attr<int>(get_input2<std::string>("island_tag"));
+        pol(range(pos.size()), [&fas, &setids, &invMap, vtab = view<space>(vtab)](int vi) mutable {
+            auto ancestor = fas[vi];
+            auto setNo = vtab.query(ancestor);
+            setids[vi] = invMap[setNo];
+        });
 
         if (isTris) {
             primTriangulate(prim.get(), true, false);
@@ -733,13 +753,13 @@ struct PrimitiveFuse : INode {
 };
 
 ZENDEFNODE(PrimitiveFuse, {
-                                       {{"PrimitiveObject", "prim"}, {"float", "proximity_theshold", "0.00001"}},
-                                       {
-                                           {"PrimitiveObject", "prim"},
-                                       },
-                                       {},
-                                       {"zs_geom"},
-                                   });
+                              {{"PrimitiveObject", "prim"}, {"float", "proximity_theshold", "0.00001"}},
+                              {
+                                  {"PrimitiveObject", "prim"},
+                              },
+                              {},
+                              {"zs_geom"},
+                          });
 
 struct ComputeAverageEdgeLength : INode {
     void apply() override {
