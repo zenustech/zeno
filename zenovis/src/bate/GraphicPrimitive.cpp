@@ -266,7 +266,6 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
 
     obj.count = tris.size();
     obj.vbos.resize(5);
-    obj.vbos[0] = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
     std::vector<zeno::vec3i> trisdata(obj.count);
     auto &tang = prim->tris.attr<zeno::vec3f>("tang");
     std::vector<zeno::vec3f> _pos(obj.count * 3);
@@ -289,9 +288,9 @@ static void parseTrianglesDrawBuffer(zeno::PrimitiveObject *prim, ZhxxDrawObject
         _nrm[i * 3 + 1] = nrm[tris[i][1]];
         _nrm[i * 3 + 2] = nrm[tris[i][2]];
 
-        _tang[i * 3 + 0] = tang[tris[i][0]];
-        _tang[i * 3 + 1] = tang[tris[i][1]];
-        _tang[i * 3 + 2] = tang[tris[i][2]];
+        _tang[i * 3 + 0] = tang[i];
+        _tang[i * 3 + 1] = tang[i];
+        _tang[i * 3 + 2] = tang[i];
 
         trisdata[i] = zeno::vec3i(i * 3, i * 3 + 1, i * 3 + 2);
     }
