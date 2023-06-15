@@ -363,11 +363,9 @@ std::shared_ptr<PrimitiveObject> readPFMFile(std::string const &path) {
     file.ignore(1);
 
     auto img = std::make_shared<PrimitiveObject>();
-    img->resize(nx * ny);
-    for (auto i = 0; i < nx * ny; i++) {
-        vec3f &rgb = img->verts[i];
-        file >> rgb[0] >> rgb[1] >> rgb[2];
-    }
+    int size = nx * ny;
+    img->resize(size);
+    file.read(reinterpret_cast<char*>(img->verts.data()), sizeof(vec3f) * nx * ny);
 
     img->userData().set2("isImage", 1);
     img->userData().set2("w", nx);
