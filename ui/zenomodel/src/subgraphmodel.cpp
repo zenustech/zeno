@@ -408,7 +408,7 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         {
             const QModelIndex &subgIdx = m_pGraphsModel->index(m_name);
             const QString& subgPath = subgIdx.data(ROLE_OBJPATH).toString();
-            const QString& path = subgPath + cPathSeperator + item->objid;
+            const QString& path = subgPath + "/" + item->objid;
             return path;
         }
         case ROLE_CUSTOMUI_PANEL_IO:

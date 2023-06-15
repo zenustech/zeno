@@ -101,7 +101,7 @@ public:
 	ZenoSubGraphView(QWidget* parent = nullptr);
 	void initScene(ZenoSubGraphScene* pScene);
     ZenoSubGraphScene* scene();
-	void resetPath(IGraphsModel* pModel, const QString& path, const QString& subGraphName, const QString& objId, bool isError = false);
+	void resetPath(IGraphsModel* pModel, const QString& path, const QModelIndex& subgIdx, const QString& objId, bool isError = false);
     void setZoom(const qreal& scale);
     void focusOnWithNoSelect(const QString& nodeId);
     void focusOn(const QString& nodeId);

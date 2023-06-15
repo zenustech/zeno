@@ -680,31 +680,37 @@ void UiHelper::getSocketInfo(const QString& objPath,
     QStringList lst = objPath.split(cPathSeperator, QtSkipEmptyParts);
     //format like: [subgraph-name]:[node-ident]:[node|panel]/[param-layer-path]/[dict-key]
     //example: main:xxxxx-wrangle:[node]inputs/params/key1
-    if (lst.size() >= 3)
+    if (lst.size() >= 2)
     {
-        subgName = lst[0];
-        nodeIdent = lst[1];
-        paramPath = lst[2];
+        paramPath = lst[1];
+        lst = lst[0].split("/", QtSkipEmptyParts);
+        if (lst.size() > 1)
+        {
+            subgName = lst[0];
+            nodeIdent = lst[1];
+        }
     }
 }
 
 QString UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& group, const QString& sockName)
 {
-    QStringList seq = {subgraph, node, group + sockName};
-    return seq.join(cPathSeperator);
+    return subgraph + "/" + node + cPathSeperator + group + sockName;
 }
 
 QString UiHelper::constructObjPath(const QString& subgraph, const QString& node, const QString& paramPath)
 {
-    QStringList seq = {subgraph, node, paramPath};
-    return seq.join(cPathSeperator);
+    return subgraph + "/" + node + cPathSeperator + paramPath;
 }
 
 QString UiHelper::getSockNode(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 1)
-        return lst[1];
+    if (lst.size() > 0)
+    {
+        lst = lst[0].split("/", QtSkipEmptyParts);
+        if (lst.size() >1)
+            return lst[1];
+    }
     return "";
 }
 
@@ -712,8 +718,8 @@ QString UiHelper::getNodePath(const QString& sockPath)
 {
     //legacy format.
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 1) {
-        return lst[0] + cPathSeperator + lst[1];
+    if (lst.size() > 0) {
+        return lst[0];
     }
     return "";
 }
@@ -721,17 +727,17 @@ QString UiHelper::getNodePath(const QString& sockPath)
 QString UiHelper::getParamPath(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 2)
-        return lst[2];
+    if (lst.size() > 1)
+        return lst[1];
     return "";
 }
 
 QString UiHelper::getSockName(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 2)
+    if (lst.size() > 1)
     {
-        lst = lst[2].split("/", QtSkipEmptyParts);
+        lst = lst[1].split("/", QtSkipEmptyParts);
         if (!lst.isEmpty())
         {
             //format: main:xxxxx-wrangle:[node]inputs/params/key1
@@ -1681,6 +1687,7 @@ NODES_DATA UiHelper::fork(
     QMap<QString, NODE_DATA> nodes;
     QHash<QString, QString> old2new;
     QHash<QString, QString> old2new_nodePath;
+    QHash<QString, QStringList> groupItems;
     LINKS_DATA oldLinks;
 
     ZASSERT_EXIT(subgraphDatas.find(subnetName) != subgraphDatas.end(), newDatas);
@@ -1693,7 +1700,12 @@ NODES_DATA UiHelper::fork(
         const QString& name = nodeData.nodeCls;
         const QString& newId = UiHelper::generateUuid(name);
         old2new.insert(snodeId, newId);
-
+        if (nodeData.parmsNotDesc.contains("blackboard"))
+        {
+            BLACKBOARD_INFO info = nodeData.parmsNotDesc["blackboard"].value.value<BLACKBOARD_INFO>();
+            if (!info.items.isEmpty())
+                groupItems.insert(newId, info.items);
+        }
         if (subgraphDatas.find(name) != subgraphDatas.end())
         {
             const QString &ssubnetName = name;
@@ -1716,7 +1728,7 @@ NODES_DATA UiHelper::fork(
         }
 
         //apply legacy format `subnet:nodeid`.
-        const QString &oldNodePath = QString("%1:%2").arg(subnetName).arg(snodeId);
+        const QString &oldNodePath = QString("%1/%2").arg(subnetName).arg(snodeId);
         const QString &newNodePath = currentPath + "/" + newId;
         old2new_nodePath.insert(oldNodePath, newNodePath);
     }
@@ -1736,6 +1748,25 @@ NODES_DATA UiHelper::fork(
         const QString &newInSock = old2new_nodePath[inputNode] + cPathSeperator + inParamPath;
         const QString &newOutSock = old2new_nodePath[outputNode] + cPathSeperator + outParamPath;
         newLinks.append(EdgeInfo(newOutSock, newInSock));
+    }
+
+    for (auto& iter = groupItems.cbegin(); iter != groupItems.cend(); ++iter)
+    {
+        QString ident = iter.key();
+        QStringList newItems;
+        for (const auto& nodeIdent : iter.value())
+        {
+            if (old2new.contains(nodeIdent))
+            {
+                newItems << old2new[nodeIdent];
+            }
+        }
+        if (newDatas.contains(iter.key()) && newDatas[iter.key()].parmsNotDesc.contains("blackboard"))
+        {
+            BLACKBOARD_INFO info = newDatas[iter.key()].parmsNotDesc["blackboard"].value.value<BLACKBOARD_INFO>();
+            info.items = newItems;
+            newDatas[iter.key()].parmsNotDesc["blackboard"].value = QVariant::fromValue(info);
+        }
     }
     return newDatas;
 }

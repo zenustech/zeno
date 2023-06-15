@@ -671,7 +671,7 @@ ZenoSubGraphScene* ZenoSubGraphView::scene()
     return qobject_cast<ZenoSubGraphScene*>(m_view->scene());
 }
 
-void ZenoSubGraphView::resetPath(IGraphsModel* pModel, const QString& path, const QString& subGraphName, const QString& objId, bool isError)
+void ZenoSubGraphView::resetPath(IGraphsModel* pModel, const QString& path, const QModelIndex& subgIdx, const QString& objId, bool isError)
 {
     ZASSERT_EXIT(pModel);
     if (path.isEmpty())
@@ -683,9 +683,8 @@ void ZenoSubGraphView::resetPath(IGraphsModel* pModel, const QString& path, cons
         m_pathWidget->show();
         m_pathWidget->setPath(path);
     }
-    if (!subGraphName.isEmpty() && !objId.isEmpty())
+    if (!objId.isEmpty())
     {
-        QModelIndex subgIdx = pModel->indexFromPath(subGraphName);
         QModelIndex objIdx = pModel->index(objId, subgIdx);
         ZASSERT_EXIT(objIdx.isValid());
         QPointF pos = objIdx.data(ROLE_OBJPOS).toPointF();

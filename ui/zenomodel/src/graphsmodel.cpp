@@ -12,6 +12,7 @@
 #include "globalcontrolmgr.h"
 #include "dictkeymodel.h"
 #include "graphsmanagment.h"
+#include <zenoedit/zenoapplication.h>
 
 
 GraphsModel::GraphsModel(QObject *parent)
@@ -262,28 +263,20 @@ QModelIndex GraphsModel::parent(const QModelIndex& child) const
 QModelIndex GraphsModel::indexFromPath(const QString& path)
 {
     QStringList lst = path.split(cPathSeperator, QtSkipEmptyParts);
-    //format like: {subgraph-name}:{node-ident}:{[node|panel]param-layer-path}
     if (lst.size() == 1)
     {
-        const QString& subgName = lst[0];
-        return index(subgName);
+        const QString& nodePath = lst[0];
+        lst = nodePath.split('/', QtSkipEmptyParts);
+        if (lst[0] == "main")
+            return zenoApp->graphsManagment()->currentModel()->indexFromPath(path);
+        return nodeIndex(lst.last());
     }
     else if (lst.size() == 2)
     {
-        const QString& subgName = lst[0];
-        const QString& nodeIdent = lst[1];
-        const QModelIndex& subgIdx = index(subgName);
-        return index(nodeIdent, subgIdx);
-    }
-    else if (lst.size() >= 3)
-    {
-        const QString& subgName = lst[0];
-        const QString& nodeIdent = lst[1];
-        QString paramPath = lst[2];
-        const QModelIndex& subgIdx = index(subgName);
-        const QModelIndex& nodeIdx = index(nodeIdent, subgIdx);
-        if (!nodeIdx.isValid())
-            return QModelIndex();
+        const QString& nodePath = lst[0];
+        QModelIndex nodeIdx = indexFromPath(nodePath);
+
+        const QString& paramPath = lst[1];
         if (paramPath.startsWith("[node]"))
         {
             const QString& paramObj = paramPath.mid(QString("[node]").length());
@@ -297,6 +290,17 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
             ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_PANEL_PARAMS));
             QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
             return paramIdx;
+        }
+    }
+    else if (lst.size() == 3)
+    {
+        //legacy case:    main:xxx-wrangle:/inputs/prim
+        QString subnetName = lst[0];
+        QString nodeid = lst[1];
+        if (subnetName == "main")
+        {
+            QString newPath = QString("/main/%1:%2").arg(nodeid).arg(lst[2]);
+            return indexFromPath(newPath);
         }
     }
     return QModelIndex();
@@ -1665,6 +1669,7 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
         for (const QModelIndex &subgIdx : lst)
         {
             SEARCH_RESULT result;
+            result.subgIdx = subgIdx;
             result.targetIdx = subgIdx;
             result.type = SEARCH_SUBNET;
             results.append(result);
@@ -1696,6 +1701,7 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
                             result.type = SEARCH_ARGS;
                             result.socket = inputSock.info.name;
                             results.append(result);
+                            nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
                         }
                     }
                 }
@@ -1710,6 +1716,7 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
                             result.type = SEARCH_ARGS;
                             result.socket = param.name;
                             results.append(result);
+                            nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
                         }
                     }
                 }
@@ -1726,6 +1733,9 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
             }
             if (!lst.isEmpty()) {
                 for (const QModelIndex &nodeIdx : lst) {
+                    if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
+                        continue;
+                    }
                     SEARCH_RESULT result;
                     result.targetIdx = nodeIdx;
                     result.subgIdx = subgIdx;
@@ -1741,6 +1751,10 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
                 if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
                     continue;
                 }
+                QString nodeCls = nodeIdx.data(ROLE_OBJNAME).toString();
+                if (searchOpts == SEARCH_MATCH_EXACTLY && nodeCls != content) {
+                    continue;
+                }
                 SEARCH_RESULT result;
                 result.targetIdx = nodeIdx;
                 result.subgIdx = subgIdx;
@@ -1753,6 +1767,10 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_CUSTOM_OBJNAME, content, -1, Qt::MatchContains);
             for (const QModelIndex &nodeIdx : lst) {
                 if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
+                    continue;
+                }
+                QString customName = nodeIdx.data(ROLE_CUSTOM_OBJNAME).toString();
+                if (searchOpts == SEARCH_MATCH_EXACTLY && customName != content) {
                     continue;
                 }
                 SEARCH_RESULT result;

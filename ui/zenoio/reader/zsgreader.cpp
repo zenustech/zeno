@@ -393,7 +393,7 @@ NODES_DATA ZsgReader::_fork(
         }
 
         //apply legacy format `subnet:nodeid`.
-        const QString &oldNodePath = QString("%1:%2").arg(subnetName).arg(snodeId);
+        const QString &oldNodePath = QString("%1/%2").arg(subnetName).arg(snodeId);
         const QString &newNodePath = currentPath + "/" + newId;
         old2new_nodePath.insert(oldNodePath, newNodePath);
     }
@@ -660,7 +660,7 @@ void ZsgReader::_parseSocket(
         }
         else
         {
-            QString inLinkPath = QString("%1:%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(sockName);
+            QString inLinkPath = QString("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(sockName);
             EdgeInfo fullLink(outLinkPath, inLinkPath);
             links.append(fullLink);
         }
@@ -750,7 +750,7 @@ void ZsgReader::_parseDictPanel(
                     }
                     else
                     {
-                        QString inSockPath = QString("%1:%2:[node]/inputs/%3/%4").arg(subgPath).arg(id).arg(sockName).arg(keyName);
+                        QString inSockPath = QString("%1/%2:[node]/inputs/%3/%4").arg(subgPath).arg(id).arg(sockName).arg(keyName);
                         EdgeInfo edge(outSockPath, inSockPath);
                         links.append(edge);
                         //item.links.append(edge);

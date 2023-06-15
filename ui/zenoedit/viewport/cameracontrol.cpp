@@ -311,7 +311,7 @@ void CameraControl::fakeMouseDoubleClickEvent(QMouseEvent *event)
         if (pWin) {
             ZenoGraphsEditor *pEditor = pWin->getAnyEditor();
             if (pEditor)
-                pEditor->activateTab(subgraph_name, "", obj_node_name);
+                pEditor->activateTab(obj_node_location->subgraph, "", obj_node_name);
         }
     }
 }

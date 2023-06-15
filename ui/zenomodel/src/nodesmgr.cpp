@@ -14,9 +14,9 @@ QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const
     zeno::log_debug("onNewNodeCreated");
     LINKS_DATA links;
     NODE_DATA node = newNodeData(pModel, subgIdx, descName, pt, links);
-    NODES_DATA nodes;
-    nodes.insert(node.ident, node);
-    pModel->importNodes(nodes, links, pt, subgIdx, true);
+    pModel->addNode(node, subgIdx, true);
+    for (const auto link : links)
+        pModel->addLink(subgIdx, link, false);
     return node.ident;
 }
 

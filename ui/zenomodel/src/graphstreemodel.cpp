@@ -210,8 +210,8 @@ QModelIndex GraphsTreeModel::extractSubGraph(
                             const QString &toSubg,
                             bool enableTrans)
 {
-    ZASSERT_EXIT(m_pSubgraphs, QModelIndex());
-    return m_pSubgraphs->extractSubGraph(nodes, links, fromSubg, toSubg, enableTrans);
+    ZASSERT_EXIT(m_impl, QModelIndex());
+    return m_impl->extractSubGraph(nodes, links, fromSubg, toSubg, enableTrans);
 }
 
 bool GraphsTreeModel::IsSubGraphNode(const QModelIndex &nodeIdx) const
