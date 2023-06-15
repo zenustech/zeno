@@ -28,3 +28,6 @@
 [submodule "ui/qcefview"]
 	path = ui/qcefview
 	url = git@github.com:CefView/QCefView.git
+[submodule "ui/butterfly"]
+	path = ui/butterfly
+	url = https://github.com/alibaba/butterfly.git

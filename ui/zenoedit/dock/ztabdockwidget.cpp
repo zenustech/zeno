@@ -222,7 +222,10 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_CEF_EDITOR:
         {
-            QString url = "https://nme.babylonjs.com/";
+            QString url = "http://localhost:3000/";
+            //QString url = "https://butterfly-dag.gitee.io/butterfly-dag/demo/liteGraph";
+            //QString url = "https://nme.babylonjs.com/";
+            //QString url = "https://jerosoler.github.io/Drawflow/";
             ZCefNodesEditor *wid = new ZCefNodesEditor(url, nullptr, this);
             return wid;
         }
