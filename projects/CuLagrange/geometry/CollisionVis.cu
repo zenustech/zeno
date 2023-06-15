@@ -473,7 +473,7 @@ namespace zeno {
             auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(
                 cudaPol,verts_buffer,"x",tri_buffer,halfedges,inst_buffer_info,gia_res,false);  
             // zs::bht<int,2,int> conn_of_first_ring{halfedges.get_allocator(),halfedges.size()};      
-            auto nm_rings = do_global_self_intersection_analysis(cudaPol,
+            auto ring_mask_width = do_global_self_intersection_analysis(cudaPol,
                 verts_buffer,"x",tri_buffer,halfedges,gia_res,tris_gia_res);    
    
 
@@ -483,14 +483,18 @@ namespace zeno {
                 verts.append_channels(cudaPol,{{markTag,1}});
             }
             TILEVEC_OPS::fill(cudaPol,verts,markTag,(T)0.0);
-            cudaPol(zs::range(gia_res.size()),[
+            cudaPol(zs::range(verts_buffer.size()),[
                 gia_res = proxy<cuda_space>({},gia_res),
                 verts = proxy<cuda_space>({},verts),
+                ring_mask_width = ring_mask_width,
                 verts_buffer = proxy<cuda_space>({},verts_buffer),
                 markTag = zs::SmallString(markTag)
             ] ZS_LAMBDA(int pi) mutable {
                 auto vi = zs::reinterpret_bits<int>(verts_buffer("inds",pi));
-                auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",pi));
+                int ring_mask = 0;
+                for(int i = 0;i != ring_mask_width;++i) {
+                    ring_mask |= zs::reinterpret_bits<int>(gia_res("ring_mask",pi * ring_mask_width + i));
+                }
                 verts(markTag,vi) = ring_mask == 0 ? (T)0.0 : (T)1.0;
             });
             set_output("zsparticles",zsparticles);
@@ -2244,7 +2248,7 @@ struct VisualizeSelfIntersections : zeno::INode {
         auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(
             cudaPol,verts_buffer,"x",tri_buffer,halfedges,inst_buffer_info,gia_res,false);
         // zs::bht<int,2,int> conn_of_first_ring{halfedges.get_allocator(),halfedges.size()}; 
-        auto nm_rings = do_global_self_intersection_analysis(cudaPol,
+        auto ring_mask_width = do_global_self_intersection_analysis(cudaPol,
             verts_buffer,"x",tri_buffer,halfedges,gia_res,tris_gia_res);   
 
         
@@ -2386,14 +2390,23 @@ struct VisualizeSelfIntersections : zeno::INode {
             &flood_region_verts,
             &flood_region_mark,
             &is_corner_mark,
+            ring_mask_width = ring_mask_width,
             flood_region = proxy<omp_space>({},flood_region),
             gia_res = proxy<omp_space>({},gia_res)] (int vi) mutable {
                 auto p = flood_region.pack(dim_c<3>,"x",vi);
                 flood_region_verts[vi] = p.to_array();
-                auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",vi));
+                int ring_mask = 0;
+                bool is_corner = false;
+                for(int i = 0;i != ring_mask_width;++i) {
+                    ring_mask |= zs::reinterpret_bits<int>(gia_res("ring_mask",vi * ring_mask_width + i));
+                    if(gia_res("is_corner",vi) > (T)0.5)
+                        is_corner = true;
+                }
+
+
                 flood_region_mark[vi] = ring_mask == 0 ? (float)0.0 : (float)1.0;
                 // auto is_corner = gia_res("is_corner",vi);
-                is_corner_mark[vi] = gia_res("is_corner",vi);
+                is_corner_mark[vi] = is_corner ? (T)1.0 : (T)0.0;
         });
         set_output("flood_region",std::move(flood_region_vis));
 

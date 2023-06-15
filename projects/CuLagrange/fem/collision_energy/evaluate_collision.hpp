@@ -798,28 +798,50 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
 
         PosTileVec surf_verts_buffer{surf_points.get_allocator(),{
             {pos_attr_tag,3},
-            {"ring_mask",1},
-            {"color_mask",1},
-            {"type_mask",1},
+            // {"ring_mask",1},
+            // {"color_mask",1},
+            // {"type_mask",1},
             {"embed_tet_id",1},
             // {"mustExclude",1},
-            {"is_corner",1},
+            // {"is_corner",1},
             {"active",1}
         },surf_points.size()};
+        // PosTileVec gia_res{surf_points.get_allocator(),{
+        //     {"color_mask",1}
+        // },(size_t)0};
 
         SurfTriTileVec surf_tris_buffer{surf_tris.get_allocator(),{
             {"inds",3},
             {"he_inds",1},
+            // {"ring_mask",1},
+            // {"color_mask",1},
+            // {"type_mask",1}            
+        },surf_tris.size()};
+
+        PosTileVec gia_res{surf_points.get_allocator(),{
+            // {pos_attr_tag,3},
+            {"ring_mask",1},
+            {"color_mask",1},
+            {"type_mask",1},
+            // {"mustExclude",1},
+            {"is_corner",1},
+            // {"active",1}
+        },(size_t)0};
+
+        SurfTriTileVec tris_gia_res{surf_tris.get_allocator(),{
+            // {"inds",3},
+            // {"he_inds",1},
             {"ring_mask",1},
             {"color_mask",1},
             {"type_mask",1}            
-        },surf_tris.size()};
+        },(size_t)0};
+
 
 
         topological_sample(pol,surf_points,tet_verts,pos_attr_tag,surf_verts_buffer);
-        TILEVEC_OPS::fill(pol,surf_verts_buffer,"ring_mask",zs::reinterpret_bits<T>((int)0));
-        TILEVEC_OPS::fill(pol,surf_verts_buffer,"color_mask",zs::reinterpret_bits<T>((int)0));
-        TILEVEC_OPS::fill(pol,surf_verts_buffer,"type_mask",zs::reinterpret_bits<T>((int)0));
+        // TILEVEC_OPS::fill(pol,surf_verts_buffer,"ring_mask",zs::reinterpret_bits<T>((int)0));
+        // TILEVEC_OPS::fill(pol,surf_verts_buffer,"color_mask",zs::reinterpret_bits<T>((int)0));
+        // TILEVEC_OPS::fill(pol,surf_verts_buffer,"type_mask",zs::reinterpret_bits<T>((int)0));
         if(tet_verts.hasProperty("active")) {
             topological_sample(pol,surf_points,tet_verts,"active",surf_verts_buffer);
         }else {
@@ -830,11 +852,11 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
         TILEVEC_OPS::copy(pol,surf_tris,"inds",surf_tris_buffer,"inds");
         TILEVEC_OPS::copy(pol,surf_tris,"he_inds",surf_tris_buffer,"he_inds");
         reorder_topology(pol,surf_points,surf_tris_buffer);
-        TILEVEC_OPS::fill(pol,surf_tris_buffer,"ring_mask",zs::reinterpret_bits<T>((int)0));
-        TILEVEC_OPS::fill(pol,surf_tris_buffer,"color_mask",zs::reinterpret_bits<T>((int)0));
-        TILEVEC_OPS::fill(pol,surf_tris_buffer,"type_mask",zs::reinterpret_bits<T>((int)0));
+        // TILEVEC_OPS::fill(pol,surf_tris_buffer,"ring_mask",zs::reinterpret_bits<T>((int)0));
+        // TILEVEC_OPS::fill(pol,surf_tris_buffer,"color_mask",zs::reinterpret_bits<T>((int)0));
+        // TILEVEC_OPS::fill(pol,surf_tris_buffer,"type_mask",zs::reinterpret_bits<T>((int)0));
 
-        auto cnorm = 3 * compute_average_edge_length(pol,surf_verts_buffer,pos_attr_tag,surf_tris_buffer);
+        auto cnorm = 2 * compute_average_edge_length(pol,surf_verts_buffer,pos_attr_tag,surf_tris_buffer);
         // evaluate_embed_tet_id
         auto tetBvh = bvh_t{};
         auto tetBvs = retrieve_bounding_volumes(pol,tet_verts,tets,wrapv<4>{},(T)0,pos_attr_tag);
@@ -882,29 +904,34 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
         //         else
         //             surf_verts_buffer("mustExclude",pi) = (T)0.0;
         // });
-        auto nm_rings = do_global_self_intersection_analysis(pol,
+        auto ring_mask_width = do_global_self_intersection_analysis(pol,
             surf_verts_buffer,pos_attr_tag,surf_tris_buffer,surf_halfedge,
-            surf_verts_buffer,surf_tris_buffer);
-        std::cout << "nm_rings of GIA " << nm_rings << std::endl;
+            gia_res,tris_gia_res);
+        std::cout << "ring_mask_width of GIA : " << ring_mask_width << std::endl;
 
         if(write_back_gia_res) {
-            if(!tet_verts.hasProperty("ring_mask")) {
-                tet_verts.append_channels(pol,{{"ring_mask",1}});
-            }
+            // if(!tet_verts.hasProperty("ring_mask")) {
+            //     tet_verts.append_channels(pol,{{"ring_mask",1}});
+            // }
             if(!tet_verts.hasProperty("flood")) {
                 tet_verts.append_channels(pol,{{"flood",1}});
             }
-            TILEVEC_OPS::fill(pol,tet_verts,"ring_mask",zs::reinterpret_bits<T>((int)0));
+            // TILEVEC_OPS::fill(pol,tet_verts,"ring_mask",zs::reinterpret_bits<T>((int)0));
             TILEVEC_OPS::fill(pol,tet_verts,"flood",(T)0);
-            pol(zs::range(surf_verts_buffer.size()),[
+            pol(zs::range(surf_points.size()),[
                 tet_verts = proxy<space>({},tet_verts),
                 surf_points = proxy<space>({},surf_points),
-                surf_verts_buffer = proxy<space>({},surf_verts_buffer)] ZS_LAMBDA(int pi) mutable {
+                ring_mask_width = ring_mask_width,
+                gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int pi) mutable {
                     auto vi = zs::reinterpret_bits<int>(surf_points("inds",pi));
-                    tet_verts("ring_mask",vi) = surf_verts_buffer("ring_mask",pi);
-                    auto ring_mask = zs::reinterpret_bits<int>(surf_verts_buffer("ring_mask",pi));
-                    if(ring_mask > 0)
-                        tet_verts("flood",vi) = (T)1.0;
+                    // tet_verts("ring_mask",vi) = surf_verts_buffer("ring_mask",pi);
+                    for(int i = 0;i != ring_mask_width;++i) {
+                        auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",pi * ring_mask_width + i));
+                        if(ring_mask > 0) {
+                            tet_verts("flood",vi) = (T)1.0;
+                            return;
+                        }
+                    }
             });
         }
 
@@ -922,6 +949,9 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
             surf_halfedge = proxy<space>({},surf_halfedge),
             tets = proxy<space>({},tets),
             tet_verts = proxy<space>({},tet_verts),
+            gia_res = proxy<space>({},gia_res),
+            tris_gia_res= proxy<space>({},tris_gia_res),
+            ring_mask_width = ring_mask_width,
             thickness = cnorm,
             csPT = proxy<space>(csPT),
             spBvh = proxy<space>(spBvh)] ZS_LAMBDA(int ti) mutable {
@@ -958,7 +988,7 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
                     hi = zs::reinterpret_bits<int>(surf_halfedge("next_he",hi));
                 } 
 
-                T min_penertration_depth = 1e8;
+                T min_penertration_depth = zs::limits<T>::max();
                 int min_vi = -1;
 
                 auto process_vertex_face_collision_pairs = [&](int vi) {
@@ -996,74 +1026,87 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
                     // if(dist < 0) {
                     //     auto neighbor_tet = zs::reinterpret_bits<int>(halffacets(""))
                     // }
+                    bool is_valid_inverted_pair = false;
+                    for(int bi = 0;bi != ring_mask_width;++bi) {
+                        if(dist < 0) {
+                            // do gia intersection test
+                            int RING_MASK = zs::reinterpret_bits<int>(gia_res("ring_mask",vi * ring_mask_width + bi));
+                            if(RING_MASK == 0)
+                                continue;
+                            // bool is_same_ring = false;
+                            int TRING_MASK = ~0;
+                            for(int i = 0;i != 3;++i) {
+                                TRING_MASK &= zs::reinterpret_bits<int>(gia_res("ring_mask",tri[i] * ring_mask_width + bi));
+                            }
+                            RING_MASK = RING_MASK & TRING_MASK;
+                            // the point and the tri should belong to the same ring
+                            if(RING_MASK == 0)
+                                continue;
 
-                    if(dist < 0) {
-                        // do gia intersection test
-                        int RING_MASK = zs::reinterpret_bits<int>(surf_verts_buffer("ring_mask",vi));
-                        if(RING_MASK == 0)
-                            return;
-                        // bool is_same_ring = false;
-                        int TRING_MASK = 0;
-                        for(int i = 0;i != 3;++i) {
-                            TRING_MASK |= zs::reinterpret_bits<int>(surf_verts_buffer("ring_mask",tri[i]));
-                        }
-                        RING_MASK = RING_MASK & TRING_MASK;
-                        // the point and the tri should belong to the same ring
-                        if(RING_MASK == 0)
-                            return;
+                            // now the two pair belong to the same ring, check whether they belong black-white loop, and have different colors 
+                            auto COLOR_MASK = reinterpret_bits<int>(gia_res("color_mask",vi * ring_mask_width + bi));
+                            auto TYPE_MASK = reinterpret_bits<int>(gia_res("type_mask",vi * ring_mask_width + bi));
 
-                        // now the two pair belong to the same ring, check whether they belong black-white loop, and have different colors 
-                        auto COLOR_MASK = reinterpret_bits<int>(surf_verts_buffer("color_mask",vi));
-                        auto TYPE_MASK = reinterpret_bits<int>(surf_verts_buffer("type_mask",vi));
-
-                        // only check the common type-1(white-black loop) rings
-                        int TTYPE_MASK = 0;
-                        for(int i = 0;i != 3;++i)
-                            TTYPE_MASK |= reinterpret_bits<int>(surf_verts_buffer("type_mask",tri[i]));
-                        
-                        RING_MASK &= (TYPE_MASK & TTYPE_MASK);
-                        // int nm_common_rings = 0;
-                        // while()
-                        // as long as there is one ring in which the pair have different colors, neglect the pair
-                        int curr_ri_mask = 1;
-                        for(;RING_MASK > 0;RING_MASK = RING_MASK >> 1,curr_ri_mask = curr_ri_mask << 1) {
-                            if(RING_MASK & 1) {
-                                for(int i = 0;i != 3;++i) {
-                                    auto TCOLOR_MASK = reinterpret_bits<int>(surf_verts_buffer("color_mask",tri[i])) & curr_ri_mask;
-                                    auto VCOLOR_MASK = reinterpret_bits<int>(surf_verts_buffer("color_mask",vi)) & curr_ri_mask;
-                                    if(TCOLOR_MASK == VCOLOR_MASK)
-                                        return;
+                            // only check the common type-1(white-black loop) rings
+                            int TTYPE_MASK = 0;
+                            for(int i = 0;i != 3;++i)
+                                TTYPE_MASK |= reinterpret_bits<int>(gia_res("type_mask",tri[i] * ring_mask_width + bi));
+                            
+                            RING_MASK &= (TYPE_MASK & TTYPE_MASK);
+                            // int nm_common_rings = 0;
+                            // while()
+                            // as long as there is one ring in which the pair have different colors, neglect the pair
+                            int curr_ri_mask = 1;
+                            bool is_color_same = false;
+                            for(;RING_MASK > 0;RING_MASK = RING_MASK >> 1,curr_ri_mask = curr_ri_mask << 1) {
+                                if(RING_MASK & 1) {
+                                    for(int i = 0;i != 3;++i) {
+                                        auto TCOLOR_MASK = reinterpret_bits<int>(gia_res("color_mask",tri[i] * ring_mask_width + bi)) & curr_ri_mask;
+                                        auto VCOLOR_MASK = reinterpret_bits<int>(gia_res("color_mask",vi * ring_mask_width + bi)) & curr_ri_mask;
+                                        if(TCOLOR_MASK == VCOLOR_MASK) {
+                                            is_color_same = true;
+                                            break;
+                                        }
+                                    }
+                                    if(is_color_same)
+                                        break;
                                 }
                             }
+
+                            if(!is_color_same) {
+                                is_valid_inverted_pair = true;
+                                break;
+                            }
+
+                            // break;
+
+                            // embed_tet_id >= 0
+                            // do shortest path detection
+                            // auto ei = embed_tet_id;
+
+
+
+                            // is_valid_pair = true;
                         }
-
-                        // embed_tet_id >= 0
-                        // do shortest path detection
-                        // auto ei = embed_tet_id;
-
-
-                        // min_vi = vi;
-                        // min_penertration_depth = distance;
-                        
-                    }else { // dist > 0
-                        int RING_MASK = zs::reinterpret_bits<int>(surf_verts_buffer("ring_mask",vi));
-                        if(RING_MASK > 0)
-                            return;
-
-                        int TRING_MASK = 0;
-                        for(int i = 0;i != 3;++i) {
-                            TRING_MASK |= zs::reinterpret_bits<int>(surf_verts_buffer("ring_mask",tri[i]));
-                        }
-                        if(TRING_MASK > 0)
-                            return;
-
-                        
+                        // if(!is_valid_inverted_pair)
+                        //     return;
                     }
-                    csPT.insert(zs::vec<int,2>{vi,ti});
+
+
+                    if(ring_mask_width == 0 && dist < 0) {
+                        return;
+                    }
+
+                    if(dist < 0 && is_valid_inverted_pair){
+                        min_vi = vi;
+                        min_penertration_depth = distance;
+                    }
+                    if(dist > 0)
+                        csPT.insert(zs::vec<int,2>{vi,ti});
                 };
                 spBvh.iter_neighbors(bv,process_vertex_face_collision_pairs);
-                // if(min_vi >= 0)
-                //     csPT.insert(zs::vec<int,2>{min_vi,ti});
+                if(min_vi >= 0)
+                    csPT.insert(zs::vec<int,2>{min_vi,ti});
         });
 }
 

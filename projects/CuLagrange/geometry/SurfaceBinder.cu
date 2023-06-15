@@ -18,6 +18,8 @@
 
 #include "kernel/tiled_vector_ops.hpp"
 #include "kernel/geo_math.hpp"
+#include "kernel/topology.hpp"
+#include "kernel/intersection.hpp"
 
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/Bvs.hpp"
@@ -766,6 +768,7 @@ struct ZSSurfaceClosestPoints : zeno::INode {
     virtual void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
+        constexpr auto exec_tag = wrapv<space>{};
         auto cudaPol = cuda_exec();
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
@@ -776,6 +779,9 @@ struct ZSSurfaceClosestPoints : zeno::INode {
             (*zsparticles)[ZenoParticles::s_surfTriTag] : 
             zsparticles->getQuadraturePoints();
         
+        auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
+        const auto& points = (*zsparticles)[ZenoParticles::s_surfVertTag];
+
         // every vertex can only bind to one triangle
         auto& kverts = kboundary->getParticles();
         auto& ktris = kboundary->getQuadraturePoints();
@@ -788,6 +794,53 @@ struct ZSSurfaceClosestPoints : zeno::INode {
         auto project_bary_tag = get_param<std::string>("project_bary_tag");
         auto align_direction = get_param<bool>("align_direction");
 
+
+        dtiles_t surf_verts_buffer{points.get_allocator(),{
+            {"x",3},
+            {"active",1},
+            {"nrm",3}
+        },points.size()};
+
+        dtiles_t surf_tris_buffer{tris.get_allocator(),{
+            {"inds",3},
+            {"he_inds",1},   
+        },tris.size()};    
+
+        topological_sample(cudaPol,points,verts,"x",surf_verts_buffer);
+        if(verts.hasProperty("active")) {
+            topological_sample(cudaPol,points,verts,"active",surf_verts_buffer);
+        }else {
+            TILEVEC_OPS::fill(cudaPol,surf_verts_buffer,"active",(T)1.0);
+        }
+
+        TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
+        TILEVEC_OPS::copy(cudaPol,tris,"he_inds",surf_tris_buffer,"he_inds");
+        reorder_topology(cudaPol,points,surf_tris_buffer); 
+
+        TILEVEC_OPS::fill(cudaPol,surf_verts_buffer,"nrm",(T)0.0);
+        cudaPol(zs::range(surf_tris_buffer.size()),[
+            surf_verts_buffer = proxy<space>({},surf_verts_buffer),
+            exec_tag,
+            surf_tris_buffer = proxy<space>({},surf_tris_buffer)] ZS_LAMBDA(int ti) mutable {
+                auto tri = surf_tris_buffer.pack(dim_c<3>,"inds",ti,int_c);
+                zs::vec<T,3> tV[3] = {};
+                for(int i = 0;i != 3;++i)
+                    tV[i] = surf_verts_buffer.pack(dim_c<3>,"x",tri[i]);
+                auto tnrm = LSL_GEO::facet_normal(tV[0],tV[1],tV[2]); 
+                for(int i = 0;i != 3;++i)
+                    for(int d = 0;d != 3;++d)
+                        atomic_add(exec_tag,&surf_verts_buffer("nrm",d,tri[i]),tnrm[d]);
+        });
+        TILEVEC_OPS::normalized_channel<3>(cudaPol,surf_verts_buffer,"nrm");
+
+        zs::Vector<int> gia_res{surf_verts_buffer.get_allocator(),0};
+        zs::Vector<int> tris_gia_res{surf_tris_buffer.get_allocator(),0};
+
+        auto ring_mask_width = do_global_intersection_analysis_with_connected_manifolds(cudaPol,
+            surf_verts_buffer,"x",surf_tris_buffer,halfedges,false,
+            kverts,"x",ktris,khalfedges,true,
+            gia_res,tris_gia_res);
+
         // for each vertex of zsparticles, find a potential closest point on kboundary surface
         // add a plane constraint
         if(!verts.hasProperty(project_pos_tag) || !verts.hasProperty(project_nrm_tag) || !verts.hasProperty(project_idx_tag) || !verts.hasProperty(project_bary_tag)) {
@@ -798,12 +851,28 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                 {project_idx_tag,1}
             });
         }
+        if(!tris.hasProperty(project_idx_tag))
+            tris.append_channels(cudaPol,{{project_idx_tag,1}});
+        if(!kverts.hasProperty("inds")) {
+            kverts.append_channels(cudaPol,{{"inds",1}});
+            cudaPol(zs::range(kverts.size()),
+                [kverts = proxy<space>({},kverts)] ZS_LAMBDA(int kvi) mutable {
+                    kverts("inds",kvi) = reinterpret_bits<T>(kvi);
+            });
+        }
 
         TILEVEC_OPS::fill(cudaPol,verts,project_idx_tag,zs::reinterpret_bits<T>((int)-1));
-        
+        TILEVEC_OPS::fill(cudaPol,tris,project_idx_tag,zs::reinterpret_bits<T>((int)-1));
+
         auto ktBvh = bvh_t{};
         auto bvs = retrieve_bounding_volumes(cudaPol,kverts,ktris,wrapv<3>{},(T)0.0,"x");
         ktBvh.build(cudaPol,bvs);
+
+        auto cnorm = compute_average_edge_length(cudaPol,verts,"x",tris);
+        cnorm *= 2;
+        auto kpBvh = bvh_t{};
+        auto bvs_p = retrieve_bounding_volumes(cudaPol,kverts,kverts,wrapv<1>{},(T)cnorm,"x");
+        kpBvh.build(cudaPol,bvs_p);
 
         auto kinInCollisionEps = get_input2<float>("kinInColEps");
         auto kinOutCollisionEps = get_input2<float>("kinOutColEps");
@@ -819,17 +888,17 @@ struct ZSSurfaceClosestPoints : zeno::INode {
             auto v1 = verts.template pack<3>("x",tri[1]);
             auto v2 = verts.template pack<3>("x",tri[2]);
 
-            auto e01 = v1 - v0;
-            auto e02 = v2 - v0;
+            // auto e01 = v1 - v0;
+            // auto e02 = v2 - v0;
 
-            auto nrm = e01.cross(e02);
-            auto nrm_norm = nrm.norm();
-            if(nrm_norm < 1e-8)
-                nrm = zs::vec<T,3>::zeros();
-            else
-                nrm = nrm / nrm_norm;
+            // auto nrm = e01.cross(e02);
+            // auto nrm_norm = nrm.norm();
+            // if(nrm_norm < 1e-8)
+            //     nrm = zs::vec<T,3>::zeros();
+            // else
+            //     nrm = nrm / nrm_norm;
 
-            tris.tuple(dim_c<3>,"nrm",ti) = nrm;
+            tris.tuple(dim_c<3>,"nrm",ti) = LSL_GEO::facet_normal(v0,v1,v2);
         });
         if(!verts.hasProperty("nrm"))
             verts.append_channels(cudaPol,{{"nrm",3}});
@@ -852,11 +921,14 @@ struct ZSSurfaceClosestPoints : zeno::INode {
         auto align_angle_cosin = get_input2<float>("align_angle_cosin");
 
 
-        cudaPol(zs::range(verts.size()),[
+        cudaPol(zs::range(points.size()),[
             verts = proxy<space>({},verts),
             ktBvh = proxy<space>(ktBvh),
             kverts = proxy<space>({},kverts),
             ktris = proxy<space>({},ktris),
+            kt_offset = tris.size(),
+            kv_offset = points.size(),
+            points = proxy<space>({},points),
             khalfedges = proxy<space>({},khalfedges),
             align_angle_cosin = align_angle_cosin,
             project_pos_tag = zs::SmallString(project_pos_tag),
@@ -864,22 +936,28 @@ struct ZSSurfaceClosestPoints : zeno::INode {
             project_idx_tag = zs::SmallString(project_idx_tag),
             project_bary_tag = zs::SmallString(project_bary_tag),
             kinInCollisionEps = kinInCollisionEps,
+            gia_res = proxy<space>(gia_res),
+            tris_gia_res = proxy<space>(tris_gia_res),
+            ring_mask_width = ring_mask_width,
             align_direction = align_direction,
             kinOutCollisionEps = kinOutCollisionEps,
-            thickness = thickness] ZS_LAMBDA(int vi) mutable {
-                if(verts.hasProperty("is_surf"))
-                    if(verts("is_surf",vi) < (T)0.5)
-                        return;
+            thickness = thickness] ZS_LAMBDA(int pi) mutable {
+                auto vi = zs::reinterpret_bits<int>(points("inds",pi));
+                // if(verts.hasProperty("is_surf"))
+                //     if(verts("is_surf",vi) < (T)0.5)
+                //         return;
                 if(verts.hasProperty("k_active"))// static unbind
                     if(verts("k_active",vi) < (T)0.5)
                         return;
                 // if(verts.hasProperty("k_fail"))// dynamic unbind
                 //     if(verts("k_fail",vi) > (T)0.5)
                         // return;
+                // auto pi = zs::reintepret_bits<int>()
+
                 auto p = verts.pack(dim_c<3>,"x",vi);
                 auto bv = bv_t{get_bounding_box(p - thickness,p + thickness)};
 
-                auto min_dist = std::numeric_limits<T>::infinity();
+                auto min_dist = std::numeric_limits<T>::max();
                 int min_tri_idx = -1;
                 auto min_bary = vec3::zeros();
                 auto min_collision_eps = (T)0;
@@ -899,9 +977,6 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                     vec3 bary{};
                     vec3 project_bary{};
                     T distance = LSL_GEO::pointTriangleDistance(kv0,kv1,kv2,p,bary,project_bary);
-                    if(distance > min_dist)
-                        return;
-
 
                     auto seg = p - kv0;
                     auto knrm = ktris.pack(dim_c<3>,"nrm",kti);
@@ -911,6 +986,10 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                     if(distance > collisionEps)
                         return;
                     
+
+                    // distance = dist > 0 ? distance : -distance;
+                    if(distance > min_dist)
+                        return;
 
                     auto align = knrm.dot(pnrm);
                     // TO RECOVER
@@ -926,35 +1005,44 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                     auto bary_sum = fabs(bary[0]) + fabs(bary[1]) + fabs(bary[2]);
                     if(bary_sum > 1.1)
                         return;
-                    else {
-                        auto khi = zs::reinterpret_bits<int>(ktris("he_inds",kti));
 
-                        for(int i = 0;i != 3;++i){
-                            auto rkhi = zs::reinterpret_bits<int>(khalfedges("opposite_he",khi));
+                    auto khi = zs::reinterpret_bits<int>(ktris("he_inds",kti));
+
+                    for(int i = 0;i != 3;++i){
+                        auto rkhi = zs::reinterpret_bits<int>(khalfedges("opposite_he",khi));
+                        auto edge_normal = vec3::zeros();
+                        if(rkhi < 0) {
+                            edge_normal = knrm;
+                        }else {
                             auto nti = zs::reinterpret_bits<int>(khalfedges("to_face",rkhi));
-                            // auto nti = ntris[i];
-                            auto edge_normal = vec3::zeros();
-                            if(nti < 0){
-                                edge_normal = knrm;
-                            }else {
-                                edge_normal = ktris.pack(dim_c<3>,"nrm",nti) + knrm;
-                                edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
-                            }
-                            auto ke0 = kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
-                            auto ke1 = kverts.pack(dim_c<3>,"x",ktri[(i + 1) % 3]);  
-                            auto ke10 = ke1 - ke0;
-                            auto bisector_normal = edge_normal.cross(ke10).normalized();
-
-                            seg = p - kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
-                            if(bisector_normal.dot(seg) < 0)
-                                return;
-
-                            khi = zs::reinterpret_bits<int>(khalfedges("next_he",khi));
+                            edge_normal = ktris.pack(dim_c<3>,"nrm",nti) + knrm;
+                            edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
                         }
+                        
+                        // auto nti = ntris[i];
+
+                        auto ke0 = kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
+                        auto ke1 = kverts.pack(dim_c<3>,"x",ktri[(i + 1) % 3]);  
+                        auto ke10 = ke1 - ke0;
+                        auto bisector_normal = edge_normal.cross(ke10).normalized();
+
+                        seg = p - kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
+                        if(bisector_normal.dot(seg) < 0)
+                            return;
+
+                        khi = zs::reinterpret_bits<int>(khalfedges("next_he",khi));
                     }
 
+                    int RING_MASK = 0;
+                    for(int i = 0;i != ring_mask_width;++i) {
+                        auto MASK = gia_res[pi * ring_mask_width + i] & tris_gia_res[(kt_offset + kti) * ring_mask_width + i];
+                        RING_MASK |= MASK;
+                    }
 
-
+                    if(RING_MASK > 0 && dist > 0)
+                        return;
+                    if(RING_MASK < 0 && dist > 0)
+                        return;
 
                     min_dist = distance;
                     min_tri_idx = kti;
@@ -1021,6 +1109,129 @@ struct ZSSurfaceClosestPoints : zeno::INode {
                 verts.tuple(dim_c<3>,project_bary_tag,vi) = min_bary;
                 verts(project_idx_tag,vi) = reinterpret_bits<T>(min_tri_idx);
         });
+
+        cudaPol(zs::range(tris.size()),[
+                verts = proxy<space>({},verts),
+                tris = proxy<space>({},tris),
+                halfedges = proxy<space>({},halfedges),
+                kv_offset = points.size(),
+                gia_res = proxy<space>(gia_res),
+                tris_gia_res = proxy<space>(tris_gia_res),
+                ring_mask_width = ring_mask_width,
+                kpBvh = proxy<space>(kpBvh),
+                kverts = proxy<space>({},kverts),
+                align_angle_cosin = align_angle_cosin,
+                project_idx_tag = zs::SmallString(project_idx_tag),
+                kinInCollisionEps = kinInCollisionEps,
+                kinOutCollisionEps = kinOutCollisionEps,
+                align_direction = align_direction,
+                thickness = thickness] ZS_LAMBDA(int ti) mutable {
+            auto tp = vec3::zeros();
+            auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+            if(verts.hasProperty("k_active"))
+                for(int i = 0;i != 3;++i)
+                    if(verts("k_active",tri[i]) < (T)0.5)
+                        return;
+            for(int i = 0;i != 3;++i)
+                tp += verts.pack(dim_c<3>,"x",tri[i]) / (T)3.0;
+            auto bv = bv_t{get_bounding_box(tp - thickness,tp + thickness)};
+            
+            auto min_dist = std::numeric_limits<T>::max();
+            int min_kp_idx = -1;
+
+            auto tnrm = vec3::zeros();
+            for(int i = 0;i != 3;++i)
+                tnrm += verts.pack(dim_c<3>,"nrm",tri[i]);
+            tnrm /= tnrm.norm();
+            // auto tnrm = tris.pack(dim_c<3>,"nrm",ti);
+
+            vec3 tvs[3] = {};
+            for(int i = 0;i != 3;++i)
+                tvs[i] = verts.pack(dim_c<3>,"x",tri[i]);
+
+
+            auto hi = zs::reinterpret_bits<int>(tris("he_inds",ti));
+            vec3 bnrms[3] = {};
+            for(int i = 0;i != 3;++i){
+                auto edge_normal = tnrm;
+                auto rhi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+                if(rhi < 0)
+                    edge_normal = tnrm;
+                else{
+                    auto nti = zs::reinterpret_bits<int>(halfedges("to_face",rhi));
+                    edge_normal = tnrm + tris.pack(dim_c<3>,"nrm",nti);
+                    edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
+                }
+                
+                auto e01 = tvs[(i + 1) % 3] - tvs[(i + 0) % 3];
+                bnrms[i] = edge_normal.cross(e01).normalized();
+                hi = zs::reinterpret_bits<int>(halfedges("next_he",hi));
+            }
+
+            auto process_potential_closest_point = [&](int kpi) {
+                if(kverts.hasProperty("k_active"))
+                    if(kverts("k_active",kpi) < (T)0.5)
+                        return;
+                auto kp = kverts.pack(dim_c<3>,"x",kpi);
+
+                vec3 bary{};
+                vec3 project_bary{};
+
+
+                T distance = LSL_GEO::pointTriangleDistance(tvs[0],tvs[1],tvs[2],kp,bary,project_bary);
+                auto seg = tvs[0] - kp;
+                auto kpnrm = kverts.pack(dim_c<3>,"nrm",kpi);
+                auto dist = seg.dot(tnrm);
+
+                auto collisionEps = dist > 0 ? kinOutCollisionEps : kinInCollisionEps;
+                if(distance > collisionEps)
+                    return;
+                
+                // T distance = (kp - tp).norm();
+                // distance = dist > 0 ? distance : -distance;
+                if(distance > min_dist)
+                    return;
+
+
+                auto align = kpnrm.dot(tnrm);
+                // TO RECOVER
+                if(align < align_angle_cosin && align_direction && dist < 0)
+                    return;
+                if(align > -align_angle_cosin && !align_direction && dist < 0)
+                    return;
+
+                auto bary_sum = fabs(bary[0]) + fabs(bary[1]) + fabs(bary[2]);
+                if(bary_sum > 1.01)
+                    return;
+                // TO RECOVER
+                for(int i = 0;i != 3;++i) {
+                    seg = kp - tvs[i];
+                    if(bnrms[i].dot(seg) < 0)
+                        return;
+                }
+
+                int RING_MASK = 0;
+                for(int i = 0;i != ring_mask_width;++i) {
+                    auto MASK = gia_res[(kpi + kv_offset) * ring_mask_width + i] & tris_gia_res[ti * ring_mask_width + i];
+                    RING_MASK |= MASK;
+                }
+
+                if(RING_MASK > 0 && dist > 0)
+                    return;
+                if(RING_MASK < 0 && dist > 0)
+                    return;                
+
+                min_dist = distance;
+                min_kp_idx = kpi;
+            };
+            kpBvh.iter_neighbors(bv,process_potential_closest_point);
+            
+            if(min_kp_idx == -1)
+                return;
+            tris(project_idx_tag,ti) = reinterpret_bits<T>(min_kp_idx); 
+        });
+
+
 
         set_output("zsparticles",zsparticles);
         set_output("kboundary",kboundary);
@@ -1415,15 +1626,16 @@ struct ZSSurfaceClosestTris : zeno::INode {
             auto hi = zs::reinterpret_bits<int>(tris("he_inds",ti));
             vec3 bnrms[3] = {};
             for(int i = 0;i != 3;++i){
+                auto edge_normal = tnrm;
                 auto rhi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
-                auto nti = zs::reinterpret_bits<int>(halfedges("to_face",rhi));
-                auto edge_normal = vec3::zeros();
-                if(nti < 0)
+                if(rhi < 0)
                     edge_normal = tnrm;
                 else{
+                    auto nti = zs::reinterpret_bits<int>(halfedges("to_face",rhi));
                     edge_normal = tnrm + tris.pack(dim_c<3>,"nrm",nti);
                     edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
                 }
+                
                 auto e01 = tvs[(i + 1) % 3] - tvs[(i + 0) % 3];
                 bnrms[i] = edge_normal.cross(e01).normalized();
                 hi = zs::reinterpret_bits<int>(halfedges("next_he",hi));
@@ -2022,14 +2234,18 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
                     auto hi = zs::reinterpret_bits<int>(ktris("he_inds",kti));
                     for(int i = 0;i != 3;++i){
                         auto rhi = zs::reinterpret_bits<int>(khalfedges("opposite_he",hi));
-                        auto nti = zs::reinterpret_bits<int>(khalfedges("to_face",rhi));
                         auto edge_normal = vec3::zeros();
-                        if(nti < 0){
+
+                        if(rhi < 0){
                             edge_normal = knrm;
                         }else {
+                            auto nti = zs::reinterpret_bits<int>(khalfedges("to_face",rhi));
                             edge_normal = ktris.pack(dim_c<3>,"nrm",nti) + knrm;
                             edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
                         }
+
+
+
                         auto ke0 = kverts.pack(dim_c<3>,"x",ktri[(i + 0) % 3]);
                         auto ke1 = kverts.pack(dim_c<3>,"x",ktri[(i + 1) % 3]);  
                         auto ke10 = ke1 - ke0;
@@ -2189,13 +2405,15 @@ struct ZSSurfaceClosestPointsGrp : zeno::INode {
 
                     auto khi = zs::reinterpret_bits<int>(ktris("he_inds",kti));
                     for(int i = 0;i != 3;++i){
-                        auto rkhi = zs::reinterpret_bits<int>(khalfedges("opposite_he",khi));
-                        auto nti = zs::reinterpret_bits<int>(khalfedges("to_face",rkhi));
-                        // auto nti = ntris[i];
                         auto edge_normal = vec3::zeros();
-                        if(nti < 0){
+                        auto rkhi = zs::reinterpret_bits<int>(khalfedges("opposite_he",khi));
+                        
+                        // auto nti = ntris[i];
+
+                        if(rkhi < 0){
                             edge_normal = knrm;
                         }else {
+                            auto nti = zs::reinterpret_bits<int>(khalfedges("to_face",rkhi));
                             edge_normal = ktris.pack(dim_c<3>,"nrm",nti) + knrm;
                             edge_normal = edge_normal/(edge_normal.norm() + (T)1e-6);
                         }

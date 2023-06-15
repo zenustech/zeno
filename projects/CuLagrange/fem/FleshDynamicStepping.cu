@@ -973,7 +973,7 @@ struct FleshDynamicStepping : INode {
 
                         if(b_verts.hasProperty("intersect"))
                             if(b_verts("intersect",vi) > (T)0.5){
-                                printf("skip bverts[%d] due to intersection\n",vi);
+                                // printf("skip bverts[%d] due to intersection\n",vi);
                                 return;
                             }
                         // if(ei >= etemp.size()){

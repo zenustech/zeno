@@ -873,6 +873,25 @@ int do_global_self_intersection_analysis(Pol& pol,
 
         std::cout << "finish Mark disconnected island with nm_rings : " << nm_rings << std::endl;
 
+        auto ring_mask_width = (nm_rings + 31) / 32;
+
+        gia_res.resize(verts.size() * ring_mask_width);
+        pol(zs::range(gia_res.size()),[gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int mi) mutable {
+            // nodal_colors[ni] = 0;
+            gia_res("ring_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            gia_res("color_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            gia_res("type_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            gia_res("is_corner",mi) = zs::reinterpret_bits<T>((int)0);
+        });
+        tris_gia_res.resize(tris.size() * ring_mask_width);
+        pol(zs::range(tris_gia_res.size()),[tris_gia_res = proxy<space>({},tris_gia_res)] ZS_LAMBDA(int mi) mutable {
+            // nodal_colors[ni] = 0;
+            tris_gia_res("ring_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            tris_gia_res("color_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            tris_gia_res("type_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            // tris_gia_res("is_corner",ti) = zs::reinterpret_bits<T>((int)0);
+        });
+
         // return nm_rings;
 
         zs::Vector<int> ringSize(tris.get_allocator(),nm_rings);
@@ -890,22 +909,6 @@ int do_global_self_intersection_analysis(Pol& pol,
 
         zs::Vector<int> island_buffer{verts.get_allocator(),verts.size()};
         
-        gia_res.resize(verts.size());
-        pol(zs::range(verts.size()),[gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int ni) mutable {
-            // nodal_colors[ni] = 0;
-            gia_res("ring_mask",ni) = zs::reinterpret_bits<T>((int)0);
-            gia_res("color_mask",ni) = zs::reinterpret_bits<T>((int)0);
-            gia_res("type_mask",ni) = zs::reinterpret_bits<T>((int)0);
-            gia_res("is_corner",ni) = zs::reinterpret_bits<T>((int)0);
-        });
-        tris_gia_res.resize(tris.size());
-        pol(zs::range(tris.size()),[tris_gia_res = proxy<space>({},tris_gia_res)] ZS_LAMBDA(int ti) mutable {
-            // nodal_colors[ni] = 0;
-            tris_gia_res("ring_mask",ti) = zs::reinterpret_bits<T>((int)0);
-            tris_gia_res("color_mask",ti) = zs::reinterpret_bits<T>((int)0);
-            tris_gia_res("type_mask",ti) = zs::reinterpret_bits<T>((int)0);
-            // tris_gia_res("is_corner",ti) = zs::reinterpret_bits<T>((int)0);
-        });
 
         zs::Vector<zs::vec<int,2>> edge_topos{tris.get_allocator(),tris.size() * 3};
         pol(range(tris.size()),[
@@ -926,8 +929,13 @@ int do_global_self_intersection_analysis(Pol& pol,
 
         for(int ri = 0;ri != nm_rings;++ri) {
             auto rsize = (size_t)ringSize.getVal(ri);
+
             // if(output_intermediate_information)
             printf("ring[%d] Size : %d\n",ri,rsize);
+
+
+            int cur_ri_mask = 1 << (ri % 32);
+            int ri_offset = ri / 32;
 
             // edge_topo_type dc_edge_topos{tris.get_allocator(),rsize * 6};
             table_int_type disable_points{tris.get_allocator(),rsize * 8};
@@ -940,6 +948,9 @@ int do_global_self_intersection_analysis(Pol& pol,
                 ringTag = proxy<space>(ringTag),
                 // output_intermediate_information,
                 ri,
+                cur_ri_mask = cur_ri_mask,
+                ri_offset = ri_offset,
+                ring_mask_width = ring_mask_width,
                 halfedges = proxy<space>({},halfedges),
                 // topo_tag = zs::SmallString(topo_tag),
                 // dc_edge_topos = proxy<space>(dc_edge_topos),
@@ -958,9 +969,9 @@ int do_global_self_intersection_analysis(Pol& pol,
                     auto ti = pair[1];
 
                     int cur_ri_mask = 1 << ri;
-                    auto tring_mask = zs::reinterpret_bits<int>(tris_gia_res("ring_mask",ti));
+                    auto tring_mask = zs::reinterpret_bits<int>(tris_gia_res("ring_mask",ti * ring_mask_width + ri_offset));
                     tring_mask |= cur_ri_mask;
-                    tris_gia_res("ring_mask",ti) = zs::reinterpret_bits<T>(tring_mask);
+                    tris_gia_res("ring_mask",ti * ring_mask_width + ri_offset) = zs::reinterpret_bits<T>(tring_mask);
 
                     halfedges("broken",hi) = (T)1.0;
                     // auto ti = pair[1];
@@ -999,7 +1010,7 @@ int do_global_self_intersection_analysis(Pol& pol,
                     // }
                     auto corner_idx = zs::reinterpret_bits<int>(ints_buffer("corner_idx",isi));
                     if(corner_idx >= 0){
-                        gia_res("is_corner",corner_idx) = (T)1.0;
+                        gia_res("is_corner",corner_idx * ring_mask_width + ri_offset) = (T)1.0;
                         disable_points.insert(corner_idx);
                     }
 
@@ -1055,9 +1066,9 @@ int do_global_self_intersection_analysis(Pol& pol,
                 island_buffer = proxy<space>(island_buffer),
                 nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int vi) mutable {
                     auto island_idx = island_buffer[vi];
-                    if(verts.hasProperty("mustExclude"))
-                        if(verts("mustExclude",vi) > (T)0.5)
-                            return; 
+                    // if(verts.hasProperty("mustExclude"))
+                    //     if(verts("mustExclude",vi) > (T)0.5)
+                    //         return; 
                     atomic_add(exec_tag,&nm_cmps_every_island_count[island_idx],(int)1);
             });
 
@@ -1081,7 +1092,9 @@ int do_global_self_intersection_analysis(Pol& pol,
                     break;
                 }
             }
-            auto cur_ri_mask = (int)1 << ri;
+
+
+            // auto cur_ri_mask = (int)1 << ri;
 
 
             for(int i = 0;i != nm_islands;++i)
@@ -1093,6 +1106,8 @@ int do_global_self_intersection_analysis(Pol& pol,
                 gia_res = proxy<space>({},gia_res),
                 nm_islands,
                 cur_ri_mask,
+                ri_offset = ri_offset,
+                ring_mask_width = ring_mask_width,
                 black_island_idx,
                 exec_tag,
                 // ints_types = proxy<space>(ints_types),
@@ -1102,9 +1117,9 @@ int do_global_self_intersection_analysis(Pol& pol,
                     if(island_idx == max_island_idx)
                         return;
                     // might exceed the integer range
-                    auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",vi));
-                    auto color_mask = zs::reinterpret_bits<int>(gia_res("color_mask",vi));
-                    auto type_mask = zs::reinterpret_bits<int>(gia_res("type_mask",vi));
+                    auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",vi * ring_mask_width + ri_offset));
+                    auto color_mask = zs::reinterpret_bits<int>(gia_res("color_mask",vi * ring_mask_width + ri_offset));
+                    auto type_mask = zs::reinterpret_bits<int>(gia_res("type_mask",vi * ring_mask_width + ri_offset));
                     // ring_mask += ((int) << ri)
 
                     // if(island_idx != max_island_idx/* || ints_types[island_idx] == 1*/){
@@ -1114,20 +1129,22 @@ int do_global_self_intersection_analysis(Pol& pol,
                         type_mask |= cur_ri_mask;
                     if(nm_islands == 3 && island_idx == black_island_idx)
                         color_mask |= cur_ri_mask;
-                    gia_res("ring_mask",vi) = zs::reinterpret_bits<T>(ring_mask);
-                    gia_res("color_mask",vi) = zs::reinterpret_bits<T>(color_mask);
-                    gia_res("type_mask",vi) = zs::reinterpret_bits<T>(type_mask);
+                    gia_res("ring_mask",vi * ring_mask_width + ri_offset) = zs::reinterpret_bits<T>(ring_mask);
+                    gia_res("color_mask",vi * ring_mask_width + ri_offset) = zs::reinterpret_bits<T>(color_mask);
+                    gia_res("type_mask",vi * ring_mask_width + ri_offset) = zs::reinterpret_bits<T>(type_mask);
             });
         }
 
-        pol(zs::range(gia_res.size()),[
+        pol(zs::range(gia_res.size()),[ring_mask_width = ring_mask_width,
             gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int vi) mutable {
-                auto is_corner = gia_res("is_corner",vi);
-                if(is_corner > (T)0.5)
-                    gia_res("ring_mask",vi) = zs::reinterpret_bits<T>((int)0);
+                for(int i = 0;i != ring_mask_width;++i) {
+                    auto is_corner = gia_res("is_corner",vi * ring_mask_width + i);
+                    if(is_corner > (T)0.5)
+                        gia_res("ring_mask",vi * ring_mask_width + i) = zs::reinterpret_bits<T>((int)0);
+                }
         });
 
-        return nm_rings;
+        return ring_mask_width;
 }
 
 template<typename Pol,typename PosTileVec,typename TriTileVec,typename InstTileVec>
