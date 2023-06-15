@@ -917,7 +917,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
 
-            //auto MeshesMaterials = xinxinoptix::uniqueMatsForMesh();
+            auto MeshesMaterials = xinxinoptix::uniqueMatsForMesh();
             auto SphereMaterials = xinxinoptix::uniqueMatsForSphere();
             
             //for (auto const &[key, obj]: graphicsMan->graphics)
@@ -1006,11 +1006,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         _volume_shader_list.push_back(shaderP);
                     } else {
 
+                        if (MeshesMaterials.count(mtldet->mtlidkey) > 0) {
+                          meshMatLUT.insert(
+                              {mtldet->mtlidkey, (int)_mesh_shader_list.size()});
 
-                        meshMatLUT.insert({mtldet->mtlidkey, (int)_mesh_shader_list.size()});
-
-                        shaderP.mark = ShaderMaker::Mesh;
-                        _mesh_shader_list.push_back(shaderP);
+                          shaderP.mark = ShaderMaker::Mesh;
+                          _mesh_shader_list.push_back(shaderP);
+                        }
 
                         if (SphereMaterials.count(mtldet->mtlidkey) > 0) {
 

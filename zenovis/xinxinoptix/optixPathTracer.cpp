@@ -2365,7 +2365,9 @@ std::set<std::string> uniqueMatsForMesh() {
 
     std::set<std::string> result;
     for (auto const &[key, dat]: drawdats) {
-        result.insert(dat.mtlid);
+        for(auto s:dat.mtlidList) {
+          result.insert(s);
+        }
     }
 
     return result;
