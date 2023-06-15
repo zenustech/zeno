@@ -304,6 +304,7 @@ struct SMaterialProp{
     std::vector<aiTextureType> types;
     std::vector<std::string> aiNames;
     std::string texPath;
+    aiUVTransform uvTransform;
 };
 
 struct SDefaultMatProp{
@@ -457,9 +458,13 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         return tl;
     }
 
-    void getSimplestTexList(std::vector<std::string>& texList, std::map<std::string, int>& texMap, std::map<std::string, aiColor4D>& matValue){
+    void getSimplestTexList(std::vector<std::string>& texList,
+                            std::map<std::string, int>& texMap,
+                            std::map<std::string, aiUVTransform>& texUv,
+                            std::map<std::string, aiColor4D>& matValue){
         texList.clear();
         texMap.clear();
+        texUv.clear();
 
         std::map<std::string, SMaterialProp> val_tmp;
         val_tmp.emplace("basecolor",                    val["basecolor"]);
@@ -491,10 +496,13 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
 
                       return l.first < r.first;
                   });
+
         for (int i=0; i<val_vec_tmp.size(); i++) {
             auto& pair_value = val_vec_tmp[i];
             texList.emplace_back(pair_value.second.texPath);
             texMap[pair_value.first] = i;
+            texUv[pair_value.first] = pair_value.second.uvTransform;
+
             pair_value.second.value;
         }
 

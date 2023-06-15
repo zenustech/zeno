@@ -535,6 +535,10 @@ struct Mesh{
                 if(material->GetTextureCount(texType)){
                     aiString texPathGet;
                     material->GetTexture(texType, 0, &texPathGet);
+
+                    aiUVTransform uvTransform;
+                    material->Get(AI_MATKEY_UVTRANSFORM(texType, 0), uvTransform);
+
                     auto fbxFilePath = fbxPath;
                     auto texPathStr = std::string(texPathGet.C_Str());
                     auto combinePath = (fbxFilePath += texPathStr).string();
@@ -673,6 +677,8 @@ struct Mesh{
                     }
 
                     mat.val.at(com.first).texPath = combinePath;
+                    mat.val.at(com.first).uvTransform = uvTransform;
+
                     texfound = true;
 
                     break;  // for tex-types
@@ -1182,9 +1188,10 @@ struct ReadFBXPrim : zeno::INode {
 
                 std::vector<std::string> texList{};
                 std::map<std::string, int> texMap{};
+                std::map<std::string, aiUVTransform> texUv{};
                 std::map<std::string, aiColor4D> matValue{};
 
-                vc->getSimplestTexList(texList, texMap, matValue);
+                vc->getSimplestTexList(texList, texMap, texUv, matValue);
                 for(int i=0;i<texList.size();i++){
                     prim->userData().setLiterial(std::to_string(count) + "_tex_" + std::to_string(i), texList[i]);
                 }

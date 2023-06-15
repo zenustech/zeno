@@ -178,15 +178,17 @@ struct ExtractMatData : zeno::INode {
         // Make Zeno Objects
         auto texLists = std::make_shared<zeno::ListObject>();
         auto texMaps = std::make_shared<zeno::DictObject>();
+        auto texUvs = std::make_shared<zeno::DictObject>();
         auto matValues = std::make_shared<zeno::DictObject>();
 
         // Get Texture List And Prop-Index And Mat Params Value
         std::vector<std::string> texList{};
         std::map<std::string, int> texMap{};
+        std::map<std::string, aiUVTransform> texUv{};
         std::map<std::string, aiColor4D> matValue{};
 
         TIMER_START(SetMats)
-        data->sMaterial.getSimplestTexList(texList, texMap, matValue);
+        data->sMaterial.getSimplestTexList(texList, texMap, texUv, matValue);
 
         // Set Data -> Zeno Object
         for(auto& path: texList){
@@ -200,6 +202,12 @@ struct ExtractMatData : zeno::INode {
             texMaps->lut[matPropName] = std::move(numeric_obj);
         }
 
+        for(auto&[matPropName, uvTrans]: texUv){
+            auto numeric_obj = std::make_shared<zeno::NumericObject>();
+            numeric_obj->set(zeno::vec4f(uvTrans.mScaling.x, uvTrans.mScaling.y, uvTrans.mTranslation.x, uvTrans.mTranslation.y));
+            texUvs->lut[matPropName] = std::move(numeric_obj);
+        }
+
         for(auto& [matPropName, matPropValue]: matValue){
             auto numeric_obj = std::make_shared<zeno::NumericObject>();
             numeric_obj->set(zeno::vec3f(matPropValue.r, matPropValue.g, matPropValue.b));
@@ -211,6 +219,7 @@ struct ExtractMatData : zeno::INode {
         set_output("matName", std::move(matName));
         set_output("texLists", std::move(texLists));
         set_output("texMaps", std::move(texMaps));
+        set_output("texUvs", std::move(texUvs));
         set_output("matValues", std::move(matValues));
     }
 };
@@ -223,8 +232,9 @@ ZENDEFNODE(ExtractMatData,
                 {"list", "datas", ""},
                 "matName",
                 {"list", "texLists", ""},
-                {"DictObject", "texMaps", ""},
-                {"DictObject", "matValues", ""}
+                {"dict", "texMaps", ""},
+                {"dict", "texUvs", ""},
+                {"dict", "matValues", ""}
             },  /* params: */
             {
 
