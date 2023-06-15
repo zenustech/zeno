@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <cstring>
 #include <zeno/utils/log.h>
+#include <zeno/utils/fileio.h>
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
@@ -350,11 +351,36 @@ std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
     return img;
 }
 
+std::shared_ptr<PrimitiveObject> readPFMFile(std::string const &path) {
+    int nx = 0;
+    int ny = 0;
+    std::ifstream file(path, std::ios::binary);
+    std::string format;
+    file >> format;
+    file >> nx >> ny;
+    float scale = 0;
+    file >> scale;
+    file.ignore(1);
+
+    auto img = std::make_shared<PrimitiveObject>();
+    int size = nx * ny;
+    img->resize(size);
+    file.read(reinterpret_cast<char*>(img->verts.data()), sizeof(vec3f) * nx * ny);
+
+    img->userData().set2("isImage", 1);
+    img->userData().set2("w", nx);
+    img->userData().set2("h", ny);
+    return img;
+}
+
 struct ReadImageFile : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
         if (zeno::ends_with(path, ".exr", false)) {
             set_output("image", readExrFile(path));
+        }
+        if (zeno::ends_with(path, ".pfm", false)) {
+            set_output("image", readPFMFile(path));
         }
         else {
             set_output("image", readImageFile(path));
@@ -473,6 +499,18 @@ struct WriteImageFile : INode {
                 zeno::log_info("EXR file saved successfully.");
             }
         }
+        else if (type == "pfm") {
+            std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
+            data.resize(header.size() + w * h * sizeof(vec3f));
+            std::vector<vec3f> rgbs(w * h);
+            for (auto i = 0; i < w * h; i++) {
+                rgbs[i] = zeno::pow(image->verts[i], 1.0f / gamma);
+            }
+            std::vector<char> data(header.size() + rgbs.size() * sizeof(rgbs[0]));
+            memcpy(data.data(), header.data(), header.size());
+            memcpy(data.data() + header.size(), rgbs.data(), rgbs.size() * sizeof(rgbs[0]));
+            file_put_binary(data, path + ".pfm");
+        }
         set_output("image", image);
     }
 };
@@ -480,7 +518,7 @@ ZENDEFNODE(WriteImageFile, {
     {
         {"image"},
         {"writepath", "path"},
-        {"enum png jpg exr", "type", "png"},
+        {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
         {"bool", "gamma", "1"},
     },
