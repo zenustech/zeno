@@ -332,6 +332,15 @@ struct GraphicsManager {
                         zeno::primTriangulate(prim_in);
                     }
                     if(prim_in->tris.size()==0) return;
+
+                    /// WXL
+                    (void)zeno::TempNodeSimpleCaller("PrimitiveReorder")
+                        .set("prim", std::shared_ptr<zeno::PrimitiveObject>(prim_in, [](void *) {}))
+                        .set2<bool>("order_vertices", true)
+                        .set2<bool>("order_tris", true)
+                        .call();  // will inplace reorder prim
+                    /// WXL
+
                     bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
                     if(prim_in->has_attr("uv") && has_uv == false)
                     {
