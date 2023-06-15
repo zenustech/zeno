@@ -8,7 +8,7 @@
                         "path": {
                             "link": null,
                             "type": "readpath",
-                            "default-value": "C:/share/test/mattest.fbx",
+                            "default-value": "C:/share/test/testuvrepeat.fbx",
                             "control": {
                                 "name": "read path"
                             }
@@ -60,6 +60,13 @@
                         }
                     },
                     "params": {
+                        "indepData": {
+                            "value": false,
+                            "control": {
+                                "name": "Boolean"
+                            },
+                            "type": "bool"
+                        },
                         "invOpacity": {
                             "value": false,
                             "control": {
@@ -103,14 +110,6 @@
                     "outputs": {
                         "prim": {
                             "type": ""
-                        },
-                        "prims": {
-                            "property": "dict-panel",
-                            "dictlist-panel": {
-                                "collasped": false,
-                                "keys": {}
-                            },
-                            "type": "dict"
                         },
                         "data": {
                             "type": ""
@@ -172,7 +171,7 @@
                         "matName": {
                             "link": null,
                             "type": "string",
-                            "default-value": "mat_param",
+                            "default-value": "aiStandardSurface1",
                             "control": {
                                 "name": "String"
                             }
@@ -582,8 +581,8 @@
                         }
                     },
                     "uipos": [
-                        5157.00830078125,
-                        1146.27294921875
+                        5001.123594079947,
+                        1274.7669023420127
                     ],
                     "options": []
                 },
@@ -678,8 +677,8 @@
                         }
                     },
                     "uipos": [
-                        1974.367919921875,
-                        936.38330078125
+                        2076.765489489827,
+                        941.5621959515599
                     ],
                     "options": []
                 },
@@ -796,8 +795,8 @@
                         }
                     },
                     "uipos": [
-                        2787.0091804887667,
-                        65.93888417234712
+                        2787.00927734375,
+                        65.93888092041016
                     ],
                     "options": []
                 },
@@ -897,8 +896,8 @@
                         }
                     },
                     "uipos": [
-                        2715.5729112332776,
-                        -2044.9852012753877
+                        2715.572998046875,
+                        -2044.9852294921876
                     ],
                     "options": []
                 },
@@ -934,6 +933,14 @@
                             "type": "list"
                         },
                         "texMaps": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "type": "dict"
+                        },
+                        "texUvs": {
                             "property": "dict-panel",
                             "dictlist-panel": {
                                 "collasped": false,
@@ -997,8 +1004,8 @@
                         }
                     },
                     "uipos": [
-                        3495.5935880145796,
-                        864.4176452433726
+                        3495.593505859375,
+                        864.4176635742188
                     ],
                     "options": []
                 },
@@ -1171,7 +1178,7 @@
                             }
                         },
                         "SRC": {
-                            "link": "FBXMatInfo:32e2d56-PrintMessage:[node]/outputs/DST",
+                            "link": "FBXMatInfo:696acec2-PrintMessage:[node]/outputs/DST",
                             "type": "",
                             "default-value": null,
                             "control": {
@@ -1227,9 +1234,6 @@
                     "outputs": {
                         "prim": {
                             "type": ""
-                        },
-                        "prims": {
-                            "type": "list"
                         },
                         "camera": {
                             "type": ""
@@ -1361,8 +1365,8 @@
                         }
                     },
                     "uipos": [
-                        4876.11962890625,
-                        342.4648742675781
+                        5011.415645525183,
+                        306.52686985317419
                     ],
                     "options": []
                 },
@@ -1444,8 +1448,8 @@
                         }
                     },
                     "uipos": [
-                        2748.2494767064147,
-                        1465.4125717611
+                        2782.023597797222,
+                        1452.2782308479553
                     ],
                     "options": []
                 },
@@ -1524,8 +1528,8 @@
                         }
                     },
                     "uipos": [
-                        1959.0735582744283,
-                        -1655.6323624262475
+                        1959.0736083984376,
+                        -1655.63232421875
                     ],
                     "options": []
                 },
@@ -1567,8 +1571,8 @@
                         }
                     },
                     "uipos": [
-                        3432.6085329673067,
-                        -312.8432358740254
+                        3432.608642578125,
+                        -312.8432312011719
                     ],
                     "options": []
                 },
@@ -1831,6 +1835,426 @@
                         -2643.155517578125
                     ],
                     "options": []
+                },
+                "403cf947-ExtendList": {
+                    "name": "ExtendList",
+                    "inputs": {
+                        "list1": {
+                            "link": "FBXMatInfo:6901e146-DictGetKeyList:[node]/outputs/keys",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "list2": {
+                            "link": "FBXMatInfo:6ce6394a-MakeList:[node]/outputs/list",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "list1": {
+                            "type": "list"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        193.09326088765625,
+                        1815.2110431649042
+                    ],
+                    "options": [
+                        "collapsed"
+                    ]
+                },
+                "6901e146-DictGetKeyList": {
+                    "name": "DictGetKeyList",
+                    "inputs": {
+                        "dict": {
+                            "link": "FBXMatInfo:843ad537-ExtractMatData:[node]/outputs/texUvs",
+                            "type": "dict",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "keys": {
+                            "type": "ListObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -468.76144284457066,
+                        1735.2183475826797
+                    ],
+                    "options": [
+                        "collapsed"
+                    ]
+                },
+                "6ce6394a-MakeList": {
+                    "name": "MakeList",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "obj0": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "list": {
+                            "type": "list"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -446.290251599718,
+                        1969.8065712256344
+                    ],
+                    "options": [
+                        "collapsed"
+                    ]
+                },
+                "a82cc339-BeginForEach": {
+                    "name": "BeginForEach",
+                    "inputs": {
+                        "list": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "link": "FBXMatInfo:403cf947-ExtendList:[node]/outputs/list1",
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "accumate": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": "FBXMatInfo:32e2d56-PrintMessage:[node]/outputs/DST",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "object": {
+                            "type": ""
+                        },
+                        "accumate": {
+                            "type": ""
+                        },
+                        "index": {
+                            "type": "int"
+                        },
+                        "FOR": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        958.9205540909256,
+                        2432.953701264999
+                    ],
+                    "options": []
+                },
+                "a6dd508-EndForEach": {
+                    "name": "EndForEach",
+                    "inputs": {
+                        "object": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "list": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "link": null,
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "accumate": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "accept": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "FOR": {
+                            "link": "FBXMatInfo:a82cc339-BeginForEach:[node]/outputs/FOR",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": "FBXMatInfo:d51f7b04-PrintNumeric:[node]/outputs/DST",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "doConcat": {
+                            "value": false,
+                            "control": {
+                                "name": "Boolean"
+                            },
+                            "type": "bool"
+                        }
+                    },
+                    "outputs": {
+                        "list": {
+                            "type": "list"
+                        },
+                        "droppedList": {
+                            "type": ""
+                        },
+                        "accumate": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        4325.184346008698,
+                        2422.465411872002
+                    ],
+                    "options": []
+                },
+                "696acec2-PrintMessage": {
+                    "name": "PrintMessage",
+                    "inputs": {
+                        "SRC": {
+                            "link": "FBXMatInfo:a6dd508-EndForEach:[node]/outputs/DST",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "message": {
+                            "value": "======================",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        5154.367356921704,
+                        2581.790750396657
+                    ],
+                    "options": []
+                },
+                "6987a06d-DictGetItem": {
+                    "name": "DictGetItem",
+                    "inputs": {
+                        "dict": {
+                            "link": "FBXMatInfo:843ad537-ExtractMatData:[node]/outputs/texUvs",
+                            "type": "dict",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "key": {
+                            "link": "FBXMatInfo:a82cc339-BeginForEach:[node]/outputs/object",
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "defl": {
+                            "link": null,
+                            "type": "IObject",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": "FBXMatInfo:a82cc339-BeginForEach:[node]/outputs/DST",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "object": {
+                            "type": "zany"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        2010.3099139997203,
+                        2204.782371601871
+                    ],
+                    "options": []
+                },
+                "d51f7b04-PrintNumeric": {
+                    "name": "PrintNumeric",
+                    "inputs": {
+                        "value": {
+                            "link": "FBXMatInfo:6987a06d-DictGetItem:[node]/outputs/object",
+                            "type": "NumericObject",
+                            "default-value": null,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": "FBXMatInfo:cad41d9e-PrintString:[node]/outputs/DST",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {
+                        "hint": {
+                            "value": "  U Value",
+                            "control": {
+                                "name": "String"
+                            },
+                            "type": "string"
+                        }
+                    },
+                    "outputs": {
+                        "value": {
+                            "type": "NumericObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        3486.332551494265,
+                        2182.989524137064
+                    ],
+                    "options": []
+                },
+                "cad41d9e-PrintString": {
+                    "name": "PrintString",
+                    "inputs": {
+                        "str": {
+                            "link": "FBXMatInfo:a82cc339-BeginForEach:[node]/outputs/object",
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "SRC": {
+                            "link": "FBXMatInfo:6987a06d-DictGetItem:[node]/outputs/DST",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        2869.589442761625,
+                        2465.9027002318737
+                    ],
+                    "options": []
                 }
             },
             "view_rect": {}
@@ -1898,6 +2322,63 @@
             ],
             "categories": [
                 "math"
+            ]
+        },
+        "AlembicToSoftBodyVAT": {
+            "inputs": [
+                [
+                    "readpath",
+                    "path",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [
+                [
+                    "bool",
+                    "flipFrontBack",
+                    "1"
+                ],
+                [
+                    "int",
+                    "frameEnd",
+                    "1"
+                ],
+                [
+                    "int",
+                    "frameStart",
+                    "0"
+                ],
+                [
+                    "writepath",
+                    "outputPath",
+                    ""
+                ],
+                [
+                    "bool",
+                    "useXForm",
+                    "1"
+                ]
+            ],
+            "outputs": [
+                [
+                    "",
+                    "primitive",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "alembic",
+                "primitive"
             ]
         },
         "AllAlembicPrim": {
@@ -7957,6 +8438,11 @@
                     "0"
                 ],
                 [
+                    "bool",
+                    "SphereRT",
+                    "0"
+                ],
+                [
                     "",
                     "SRC",
                     ""
@@ -7987,6 +8473,11 @@
                     ""
                 ],
                 [
+                    "vec3f",
+                    "rotate",
+                    ""
+                ],
+                [
                     "float",
                     "MajorRadius",
                     ""
@@ -7997,11 +8488,6 @@
                     ""
                 ],
                 [
-                    "vec3f",
-                    "rotate",
-                    ""
-                ],
-                [
                     "bool",
                     "hasNormal",
                     "0"
@@ -8009,11 +8495,6 @@
                 [
                     "bool",
                     "hasVertUV",
-                    "0"
-                ],
-                [
-                    "bool",
-                    "isFlipFace",
                     "0"
                 ],
                 [
@@ -9065,11 +9546,6 @@
                     ""
                 ],
                 [
-                    "list",
-                    "prims",
-                    ""
-                ],
-                [
                     "",
                     "camera",
                     ""
@@ -9696,12 +10172,17 @@
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "texMaps",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
+                    "texUvs",
+                    ""
+                ],
+                [
+                    "dict",
                     "matValues",
                     ""
                 ],
@@ -11764,7 +12245,7 @@
                 [
                     "string",
                     "channel",
-                    "vel"
+                    "*"
                 ],
                 [
                     "string",
@@ -11777,13 +12258,7 @@
                     ""
                 ]
             ],
-            "params": [
-                [
-                    "enum vec3 float",
-                    "attrT",
-                    "float"
-                ]
-            ],
+            "params": [],
             "outputs": [
                 [
                     "PrimitiveObject",
@@ -11933,7 +12408,7 @@
             "inputs": [
                 [
                     "",
-                    "prim_2DGrid",
+                    "HeightField",
                     ""
                 ],
                 [
@@ -11988,12 +12463,12 @@
                 ],
                 [
                     "float",
-                    "min_height",
+                    "min_curvature",
                     ""
                 ],
                 [
                     "float",
-                    "max_height",
+                    "max_curvature",
                     ""
                 ],
                 [
@@ -12006,7 +12481,7 @@
             "outputs": [
                 [
                     "",
-                    "prim_2DGrid",
+                    "HeightField",
                     ""
                 ],
                 [
@@ -12017,6 +12492,46 @@
             ],
             "categories": [
                 "erode"
+            ]
+        },
+        "HeatmapFromImage": {
+            "inputs": [
+                [
+                    "",
+                    "image",
+                    ""
+                ],
+                [
+                    "int",
+                    "startPos",
+                    "0"
+                ],
+                [
+                    "int",
+                    "endPos",
+                    "-1"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "heatmap",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "visualize"
             ]
         },
         "HeightStarPattern": {
@@ -14273,6 +14788,46 @@
                 "shader"
             ]
         },
+        "MakeTextureVDB": {
+            "inputs": [
+                [
+                    "readpath",
+                    "path",
+                    ""
+                ],
+                [
+                    "string",
+                    "channel",
+                    "0"
+                ],
+                [
+                    "enum  Fp32 Fp16 Fp8 Fp4",
+                    "type",
+                    "Fp32"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "texture",
+                    "tex",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "shader"
+            ]
+        },
         "MakeVDBGrid": {
             "inputs": [
                 [
@@ -15714,6 +16269,11 @@
                 ],
                 [
                     "bool",
+                    "copyFaceAttrs",
+                    "1"
+                ],
+                [
+                    "bool",
                     "delayTillIpc",
                     "0"
                 ],
@@ -16981,7 +17541,7 @@
                 [
                     "enum line tri",
                     "primType",
-                    "line"
+                    "tri"
                 ],
                 [
                     "string",
@@ -16994,7 +17554,7 @@
                     "float"
                 ],
                 [
-                    "int",
+                    "bool",
                     "useEdgeLengthWeight",
                     "0"
                 ],
@@ -17496,7 +18056,7 @@
                 "primitive"
             ]
         },
-        "PrimCopyFloatAttr": {
+        "PrimCopyAttr": {
             "inputs": [
                 [
                     "",
@@ -17512,6 +18072,11 @@
                     "string",
                     "targetName",
                     "t"
+                ],
+                [
+                    "enum float vec2f vec3f vec4f int vec2i vec3i vec4i",
+                    "type",
+                    "float"
                 ],
                 [
                     "",
@@ -17533,7 +18098,7 @@
                 ]
             ],
             "categories": [
-                "primitive"
+                "erode"
             ]
         },
         "PrimCurveDir": {
@@ -18453,7 +19018,7 @@
                 ]
             ],
             "categories": [
-                "primitive"
+                "erode"
             ]
         },
         "PrimGetTrisSize": {
@@ -18484,6 +19049,41 @@
             ],
             "categories": [
                 "WBTest"
+            ]
+        },
+        "PrimHasAttr": {
+            "inputs": [
+                [
+                    "",
+                    "prim",
+                    ""
+                ],
+                [
+                    "string",
+                    "attrName",
+                    "attr_x"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "hasAttr",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "erode"
             ]
         },
         "PrimIntAttrToFloat": {
@@ -19718,7 +20318,7 @@
                 ]
             ],
             "categories": [
-                "primitive"
+                "erode"
             ]
         },
         "PrimSimplifyTag": {
@@ -20147,6 +20747,36 @@
                     "bool",
                     "writeUVToVertex",
                     "1"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "prim",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "primitive"
+            ]
+        },
+        "PrimUVVertsToLoopsuv": {
+            "inputs": [
+                [
+                    "",
+                    "prim",
+                    ""
                 ],
                 [
                     "",
@@ -20977,6 +21607,11 @@
                 ],
                 [
                     "",
+                    "attrName2",
+                    ""
+                ],
+                [
+                    "",
                     "heatmap",
                     ""
                 ],
@@ -21178,18 +21813,22 @@
                     ""
                 ],
                 [
+                    "bool",
+                    "invert",
+                    "0"
+                ],
+                [
+                    "string",
+                    "names",
+                    "name_1 name_2"
+                ],
+                [
                     "",
                     "SRC",
                     ""
                 ]
             ],
-            "params": [
-                [
-                    "string",
-                    "name",
-                    "nrm"
-                ]
-            ],
+            "params": [],
             "outputs": [
                 [
                     "",
@@ -21203,7 +21842,7 @@
                 ]
             ],
             "categories": [
-                "primitive"
+                "erode"
             ]
         },
         "PrimitiveDuplicate": {
@@ -23089,42 +23728,6 @@
                 "numeric"
             ]
         },
-        "PrintPrimInfo": {
-            "inputs": [
-                [
-                    "",
-                    "prim",
-                    ""
-                ],
-                [
-                    "",
-                    "SRC",
-                    ""
-                ]
-            ],
-            "params": [
-                [
-                    "int",
-                    "printInfo",
-                    "1"
-                ]
-            ],
-            "outputs": [
-                [
-                    "",
-                    "prim",
-                    ""
-                ],
-                [
-                    "",
-                    "DST",
-                    ""
-                ]
-            ],
-            "categories": [
-                "primitive"
-            ]
-        },
         "PrintString": {
             "inputs": [
                 [
@@ -23914,6 +24517,11 @@
             "params": [
                 [
                     "bool",
+                    "indepData",
+                    "0"
+                ],
+                [
+                    "bool",
                     "primitive",
                     "0"
                 ],
@@ -23940,22 +24548,17 @@
                     ""
                 ],
                 [
-                    "DictObject",
-                    "prims",
-                    ""
-                ],
-                [
                     "",
                     "data",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "datas",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "mats",
                     ""
                 ],
@@ -26935,9 +27538,9 @@
                     "vec2"
                 ],
                 [
-                    "enum LINEAR CLOSEST",
+                    "enum  Closest Trilinear Triquadratic Tricubic",
                     "method",
-                    "LINEAR"
+                    "Trilinear"
                 ],
                 [
                     "",
@@ -28487,6 +29090,51 @@
                 "primitive"
             ]
         },
+        "TransformVDB": {
+            "inputs": [
+                [
+                    "",
+                    "VDBGrid",
+                    ""
+                ],
+                [
+                    "vec3f",
+                    "translation",
+                    ""
+                ],
+                [
+                    "vec3f",
+                    "eulerXYZ",
+                    ""
+                ],
+                [
+                    "vec3f",
+                    "scaling",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "VDBGrid",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "openvdb"
+            ]
+        },
         "TreeCreateBranchs": {
             "inputs": [
                 [
@@ -28645,6 +29293,51 @@
             ],
             "categories": [
                 "TreeSketch"
+            ]
+        },
+        "TrianglesWrangle": {
+            "inputs": [
+                [
+                    "PrimitiveObject",
+                    "prim",
+                    ""
+                ],
+                [
+                    "string",
+                    "zfxCode",
+                    ""
+                ],
+                [
+                    "DictObject:NumericObject",
+                    "params",
+                    ""
+                ],
+                [
+                    "enum points lines tris quads loops polys",
+                    "faceType",
+                    "tris"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "PrimitiveObject",
+                    "prim",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "zenofx"
             ]
         },
         "TriggerAbortSignal": {
@@ -30515,6 +31208,176 @@
                 "primitive"
             ]
         },
+        "WhitewaterSolver": {
+            "inputs": [
+                [
+                    "",
+                    "Primitive",
+                    ""
+                ],
+                [
+                    "float",
+                    "dt",
+                    ""
+                ],
+                [
+                    "",
+                    "LiquidSDF",
+                    ""
+                ],
+                [
+                    "",
+                    "SolidSDF",
+                    ""
+                ],
+                [
+                    "",
+                    "Velocity",
+                    ""
+                ],
+                [
+                    "vec3f",
+                    "Gravity",
+                    ""
+                ],
+                [
+                    "float",
+                    "AirDrag",
+                    ""
+                ],
+                [
+                    "float",
+                    "Buoyancy",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "Primitive",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "FLIPSolver"
+            ]
+        },
+        "WhitewaterSource": {
+            "inputs": [
+                [
+                    "",
+                    "Primitive",
+                    ""
+                ],
+                [
+                    "float",
+                    "dt",
+                    ""
+                ],
+                [
+                    "float",
+                    "Lifespan",
+                    ""
+                ],
+                [
+                    "",
+                    "LiquidSDF",
+                    ""
+                ],
+                [
+                    "",
+                    "SolidSDF",
+                    ""
+                ],
+                [
+                    "",
+                    "Velocity",
+                    ""
+                ],
+                [
+                    "",
+                    "PreVelocity",
+                    ""
+                ],
+                [
+                    "vec2f",
+                    "LimitDepth",
+                    ""
+                ],
+                [
+                    "vec2f",
+                    "SpeedRange",
+                    ""
+                ],
+                [
+                    "float",
+                    "EmitFromCurvature",
+                    ""
+                ],
+                [
+                    "float",
+                    "MaxVelocityAngle",
+                    ""
+                ],
+                [
+                    "vec2f",
+                    "CurvatureRange",
+                    ""
+                ],
+                [
+                    "float",
+                    "EmitFromAcceleration",
+                    ""
+                ],
+                [
+                    "vec2f",
+                    "AccelerationRange",
+                    ""
+                ],
+                [
+                    "float",
+                    "EmitFromVorticity",
+                    ""
+                ],
+                [
+                    "vec2f",
+                    "VorticityRange",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "Primitive",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "FLIPSolver"
+            ]
+        },
         "WriteAlembic": {
             "inputs": [
                 [
@@ -30701,6 +31564,56 @@
             ],
             "categories": [
                 "primitive"
+            ]
+        },
+        "WriteImageFile": {
+            "inputs": [
+                [
+                    "",
+                    "image",
+                    ""
+                ],
+                [
+                    "writepath",
+                    "path",
+                    ""
+                ],
+                [
+                    "enum png jpg exr",
+                    "type",
+                    "png"
+                ],
+                [
+                    "",
+                    "mask",
+                    ""
+                ],
+                [
+                    "bool",
+                    "gamma",
+                    "1"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "image",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "comp"
             ]
         },
         "WriteObjMesh": {
@@ -31544,7 +32457,7 @@
                     ""
                 ],
                 [
-                    "",
+                    "vec3f",
                     "seed",
                     ""
                 ],
@@ -31796,12 +32709,7 @@
                 ],
                 [
                     "float",
-                    "gridbias",
-                    ""
-                ],
-                [
-                    "float",
-                    "cut_angle",
+                    "maxdepth",
                     ""
                 ],
                 [
@@ -31816,8 +32724,23 @@
                 ],
                 [
                     "float",
+                    "cutangle",
+                    ""
+                ],
+                [
+                    "string",
+                    "cutangle_mask_layer",
+                    "cutangle_mask"
+                ],
+                [
+                    "float",
                     "erodability",
                     ""
+                ],
+                [
+                    "string",
+                    "erodability_mask_layer",
+                    "erodability_mask"
                 ],
                 [
                     "float",
@@ -31825,9 +32748,19 @@
                     ""
                 ],
                 [
+                    "string",
+                    "removalrate_mask_layer",
+                    "removalrate_mask"
+                ],
+                [
                     "float",
-                    "maxdepth",
+                    "gridbias",
                     ""
+                ],
+                [
+                    "string",
+                    "gridbias_mask_layer",
+                    "gridbias_mask"
                 ],
                 [
                     "",
