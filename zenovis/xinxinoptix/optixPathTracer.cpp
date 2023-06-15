@@ -66,7 +66,7 @@
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#define TRI_PER_MESH 16384
+#define TRI_PER_MESH 4096
 #include <string_view>
 struct CppTimer {
     void tick() {
@@ -3383,6 +3383,12 @@ void optixcleanup() {
     catch (sutil::Exception const& e) {
         std::cout << "OptixCleanupError: " << e.what() << std::endl;
     }
+//    state.d_vertices.reset();
+//    state.d_clr.reset();
+//    state.d_mat_indices.reset();
+//    state.d_nrm.reset();
+//    state.d_tan.reset();
+//    state.d_uv.reset();
         std::memset((void *)&state, 0, sizeof(state));
         //std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
 

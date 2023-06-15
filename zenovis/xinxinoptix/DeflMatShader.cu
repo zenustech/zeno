@@ -10,7 +10,7 @@
 #include "IOMat.h"
 
 #define _SPHERE_ 0
-#define TRI_PER_MESH 16384
+#define TRI_PER_MESH 4096
 //COMMON_CODE
 
 template<bool isDisplacement>
