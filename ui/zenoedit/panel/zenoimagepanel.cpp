@@ -18,20 +18,18 @@
 #include "viewport/displaywidget.h"
 
 
-const float ziv_wheelZoomFactor = 1.25;
+static float ziv_wheelZoomFactor = 1.25;
 
 class ZenoImageView: public QGraphicsView {
 public:
     QGraphicsPixmapItem *_image = nullptr;
     QGraphicsScene *scene = nullptr;
+    bool fitMode = true;
     explicit ZenoImageView(QWidget *parent) : QGraphicsView(parent) {
         scene = new QGraphicsScene;
         this->setScene(scene);
 
         setBackgroundBrush(QColor(37, 37, 37));
-
-        this->setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
-        this->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
     }
 
     bool hasImage() {
@@ -61,11 +59,30 @@ public:
         if (!hasImage()) {
             return;
         }
-
-        fitInView(sceneRect(), Qt::AspectRatioMode::KeepAspectRatio);
+        if (fitMode) {
+            fitInView(sceneRect(), Qt::AspectRatioMode::KeepAspectRatio);
+        }
     }
     void resizeEvent(QResizeEvent *event) override {
         updateImageView();
+    }
+    void wheelEvent(QWheelEvent* event) override {
+        fitMode = false;
+        qreal zoomFactor = 1;
+        if (event->angleDelta().y() > 0)
+            zoomFactor = ziv_wheelZoomFactor;
+        else if (event->angleDelta().y() < 0)
+            zoomFactor = 1 / ziv_wheelZoomFactor;
+        scale(zoomFactor, zoomFactor);
+    }
+    void mousePressEvent(QMouseEvent* event) override {
+        fitMode = false;
+        setDragMode(QGraphicsView::ScrollHandDrag);
+        QGraphicsView::mousePressEvent(event);
+    }
+    void mouseReleaseEvent(QMouseEvent* event) override {
+        QGraphicsView::mouseReleaseEvent(event);
+        setDragMode(QGraphicsView::NoDrag);
     }
 };
 
@@ -187,6 +204,9 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     pGamma->setCheckState(Qt::Checked);
     pTitleLayout->addWidget(pGamma);
 
+    pFit->setProperty("cssClass", "grayButton");
+    pTitleLayout->addWidget(pFit);
+
     pMainLayout->addLayout(pTitleLayout);
 
     image_view = new ZenoImageView(this);
@@ -236,6 +256,11 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
                 setPrim(key);
             }
         }
+    });
+
+    connect(pFit, &QPushButton::clicked, this, [=](bool _) {
+        image_view->fitMode = true;
+        image_view->updateImageView();
     });
 }
 

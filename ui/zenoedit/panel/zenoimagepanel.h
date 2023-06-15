@@ -14,6 +14,7 @@ class ZenoImagePanel : public QWidget {
     QLabel* pStatusBar = new QLabel();
     QLabel* pPrimName = new QLabel();
     QCheckBox *pGamma = new QCheckBox("Gamma");
+    QPushButton *pFit = new QPushButton("Fit");
     ZenoImageView *image_view = nullptr;
 
 public:
