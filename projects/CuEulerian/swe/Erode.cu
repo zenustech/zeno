@@ -297,7 +297,7 @@ struct zs_erode_tumble_material_v0 : INode {
         auto i = get_input<NumericObject>("i")->get<int>();                   // 内部迭代当前次数    0~7
         auto openborder = get_input<NumericObject>("openborder")->get<int>(); // 获取边界标记
 
-        auto perm = get_input<ListObject>("perm")->get2<int>(); //std::vector<int>
+        auto perm = get_input<ListObject>("perm")->get2<int>();               //std::vector<int>
         auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
         auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
@@ -307,7 +307,7 @@ struct zs_erode_tumble_material_v0 : INode {
             zeno::log_error("Node [erode_tumble_material_v0], no such data layer named '{}' or '{}' or '{}' or '{}'.",
                             "_height", "_debris", "_temp_height", "_temp_debris");
         }
-        auto &_height = terrain->verts.attr<float>("_height"); // 计算用的临时属性
+        auto &_height = terrain->verts.attr<float>("_height");           // 计算用的临时属性
         auto &_debris = terrain->verts.attr<float>("_debris");
         auto &_temp_height = terrain->verts.attr<float>("_temp_height"); // 备份用的临时属性
         auto &_temp_debris = terrain->verts.attr<float>("_temp_debris");
@@ -863,7 +863,6 @@ struct zs_erode_tumble_material_v3 : INode {
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
 
-
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
         auto repose_angle = get_input<NumericObject>("repose_angle")->get<float>();
@@ -1177,14 +1176,14 @@ struct zs_erode_tumble_material_v4 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<ZenoParticles>("zs_prim_2DGrid");
         int nx, nz;
-        auto &ud = terrain->userData();
+        auto &ud = static_cast<IObject *>(terrain.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
+        auto &pos = terrain->prim->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
@@ -1235,22 +1234,23 @@ struct zs_erode_tumble_material_v4 : INode {
         auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         // 初始化网格属性
-        if (!terrain->verts.has_attr("_height") || !terrain->verts.has_attr("_temp_height") ||
-            !terrain->verts.has_attr("_material") || !terrain->verts.has_attr("_temp_material") ||
-            !terrain->verts.has_attr("_debris") || !terrain->verts.has_attr("_temp_debris") ||
-            !terrain->verts.has_attr("_sediment")) {
+        auto &pars = terrain->getParticles();
+
+        if (!pars.hasProperty("_height") || !pars.hasProperty("_temp_height") || !pars.hasProperty("_material") ||
+            !pars.hasProperty("_temp_material") || !pars.hasProperty("_debris") || !pars.hasProperty("_temp_debris") ||
+            !pars.hasProperty("_sediment")) {
             zeno::log_error("Node [erode_tumble_material_v4], no such data layer named '{}' or '{}' or '{}' or '{}' or "
                             "'{}' or '{}' or '{}'.",
                             "_height", "_temp_height", "_material", "_temp_material", "_debris", "_temp_debris",
                             "_sediment");
         }
-        auto &_height = terrain->verts.attr<float>("_height");
-        auto &_temp_height = terrain->verts.attr<float>("_temp_height");
-        auto &_material = terrain->verts.attr<float>("_material");
-        auto &_temp_material = terrain->verts.attr<float>("_temp_material");
-        auto &_debris = terrain->verts.attr<float>("_debris");
-        auto &_temp_debris = terrain->verts.attr<float>("_temp_debris");
-        auto &_sediment = terrain->verts.attr<float>("_sediment");
+        auto _height = pars.begin("_height");
+        auto _temp_height = pars.begin("_temp_height");
+        auto _material = pars.begin("_material");
+        auto _temp_material = pars.begin("_temp_material");
+        auto _debris = pars.begin("_debris");
+        auto _temp_debris = pars.begin("_temp_debris");
+        auto _sediment = pars.begin("_sediment");
 
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -1260,6 +1260,8 @@ struct zs_erode_tumble_material_v4 : INode {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         auto pol = cuda_exec();
+
+#if 0
         /// @brief  copy host-side attribute
         auto zs_height = to_device_vector(_height);
         auto zs_temp_height = to_device_vector(_temp_height);
@@ -1268,351 +1270,349 @@ struct zs_erode_tumble_material_v4 : INode {
         auto zs_debris = to_device_vector(_debris);
         auto zs_temp_debris = to_device_vector(_temp_debris);
         auto zs_sediment = to_device_vector(_sediment);
+#endif
         auto zs_perm = to_device_vector(perm);
         auto zs_p_dirs = to_device_vector(p_dirs);
         auto zs_x_dirs = to_device_vector(x_dirs);
 
-        pol(range((std::size_t)nz * (std::size_t)nx),
-            [=, _height = view<space>(zs_height), _temp_height = view<space>(zs_temp_height),
-             _material = view<space>(zs_material), _temp_material = view<space>(zs_temp_material),
-             _debris = view<space>(zs_debris), _temp_debris = view<space>(zs_temp_debris),
-             _sediment = view<space>(zs_sediment), perm = view<space>(zs_perm), p_dirs = view<space>(zs_p_dirs),
-             x_dirs = view<space>(zs_x_dirs)] __device__(std::size_t idx) mutable {
-                auto id_z = idx / nx; // outer index
-                auto id_x = idx % nx; // inner index
-
-                int iterseed = iter * 134775813;
-                int color = perm[i];
-                int is_red = ((id_z & 1) == 1) && (color == 1);
-                int is_green = ((id_x & 1) == 1) && (color == 2);
-                int is_blue = ((id_z & 1) == 0) && (color == 3);
-                int is_yellow = ((id_x & 1) == 0) && (color == 4);
-                int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
-                int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
-                int dxs[] = {0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1]};
-                int dzs[] = {p_dirs[1], 0, p_dirs[1], 0, x_dirs[0], -x_dirs[1], x_dirs[0], -x_dirs[1]};
-
-                if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
-                    int idx = Pos2Idx(id_x, id_z, nx);
-                    int dx = dxs[color - 1];
-                    int dz = dzs[color - 1];
-                    int bound_x = nx;
-                    int bound_z = nz;
-                    int clamp_x = bound_x - 1;
-                    int clamp_z = bound_z - 1;
-
-                    float i_height = _temp_height[idx];
-                    float i_material = _temp_material[idx];
-                    float i_debris = _temp_debris[idx];
-                    float i_sediment = _sediment[idx];
-
-                    int samplex = zs::clamp(id_x + dx, 0, clamp_x);
-                    int samplez = zs::clamp(id_z + dz, 0, clamp_z);
-                    int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
-
-                    if (validsource) {
-                        validsource = validsource || !openborder;
-
-                        int j_idx = Pos2Idx(samplex, samplez, nx);
-
-                        float j_height = _temp_height[j_idx];
-                        float j_material = validsource ? _temp_material[j_idx] : 0.0f;
-                        float j_debris = validsource ? _temp_debris[j_idx] : 0.0f;
-
-                        float j_sediment = validsource ? _sediment[j_idx] : 0.0f;
-                        float m_diff = (j_height + j_debris + j_material) - (i_height + i_debris + i_material);
-                        float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
-
-                        int cidx = 0;
-                        int cidz = 0;
-
-                        float c_height = 0.0f;
-
-                        float c_material = 0.0f;
-                        float n_material = 0.0f;
-
-                        float c_sediment = 0.0f;
-                        float n_sediment = 0.0f;
-
-                        float c_debris = 0.0f;
-                        float n_debris = 0.0f;
-
-                        float h_diff = 0.0f;
-
-                        int c_idx = 0;
-                        int n_idx = 0;
-                        int dx_check = 0;
-                        int dz_check = 0;
-                        int is_mh_diff_same_sign = 0;
-
-                        if (m_diff > 0.0f) {
-                            cidx = samplex;
-                            cidz = samplez;
-
-                            c_height = j_height;
-                            c_material = j_material;
-                            n_material = i_material;
-                            c_sediment = j_sediment;
-                            n_sediment = i_sediment;
-                            c_debris = j_debris;
-                            n_debris = i_debris;
-
-                            c_idx = j_idx;
-                            n_idx = idx;
-
-                            dx_check = -dx;
-                            dz_check = -dz;
-
-                            h_diff = j_height + j_debris - (i_height + i_debris);
-                            is_mh_diff_same_sign = (h_diff * m_diff) > 0.0f;
-                        } else {
-                            cidx = id_x;
-                            cidz = id_z;
-
-                            c_height = i_height;
-                            c_material = i_material;
-                            n_material = j_material;
-                            c_sediment = i_sediment;
-                            n_sediment = j_sediment;
-                            c_debris = i_debris;
-                            n_debris = j_debris;
-
-                            c_idx = idx;
-                            n_idx = j_idx;
-
-                            dx_check = dx;
-                            dz_check = dz;
-
-                            h_diff = i_height + i_debris - (j_height + j_debris);
-                            is_mh_diff_same_sign = (h_diff * m_diff) > 0.0f;
-                        }
-                        h_diff = (h_diff < 0.0f) ? -h_diff : h_diff;
-
-                        float sum_diffs[] = {0.0f, 0.0f};
-                        float dir_probs[] = {0.0f, 0.0f};
-                        float dir_prob = 0.0f;
-                        for (int diff_idx = 0; diff_idx < 2; diff_idx++) {
-                            for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++) {
-                                for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++) {
-                                    if (!tmp_dx && !tmp_dz)
-                                        continue;
-
-                                    int tmp_samplex = zs::clamp(cidx + tmp_dx, 0, clamp_x);
-                                    int tmp_samplez = zs::clamp(cidz + tmp_dz, 0, clamp_z);
-
-                                    int tmp_validsource =
-                                        (tmp_samplex == (cidx + tmp_dx)) && (tmp_samplez == (cidz + tmp_dz));
-                                    tmp_validsource = tmp_validsource || !openborder;
-                                    int tmp_j_idx = Pos2Idx(tmp_samplex, tmp_samplez, nx);
-
-                                    float tmp_n_material = tmp_validsource ? _temp_material[tmp_j_idx] : 0.0f;
-                                    float tmp_n_debris = tmp_validsource ? _temp_debris[tmp_j_idx] : 0.0f;
-
-                                    float n_height = _temp_height[tmp_j_idx];
-                                    float tmp_h_diff = n_height + tmp_n_debris - (c_height + c_debris);
-                                    float tmp_m_diff =
-                                        (n_height + tmp_n_debris + tmp_n_material) - (c_height + c_debris + c_material);
-                                    float tmp_diff = diff_idx == 0 ? tmp_h_diff : tmp_m_diff;
-                                    float _gridbias = gridbias;
-                                    _gridbias = zs::clamp(_gridbias, -1.0f, 1.0f);
-
-                                    if (tmp_dx && tmp_dz)
-                                        tmp_diff *= zs::clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
-                                    else
-                                        tmp_diff *= zs::clamp(1.0f + _gridbias, 0.0f, 1.0f);
-
-                                    if (tmp_diff <= 0.0f) {
-                                        if ((dx_check == tmp_dx) && (dz_check == tmp_dz))
-                                            dir_probs[diff_idx] = tmp_diff;
-
-                                        if (diff_idx && (tmp_diff < dir_prob))
-                                            dir_prob = tmp_diff;
-
-                                        sum_diffs[diff_idx] += tmp_diff;
-                                    }
-                                }
-                            }
-
-                            if (diff_idx && (dir_prob > 0.001f || dir_prob < -0.001f))
-                                dir_prob = dir_probs[diff_idx] / dir_prob;
-                            else
-                                dir_prob = 0.0f;
-
-                            if (sum_diffs[diff_idx] > 0.001f || sum_diffs[diff_idx] < -0.001f)
-                                dir_probs[diff_idx] = dir_probs[diff_idx] / sum_diffs[diff_idx];
-                            else
-                                dir_probs[diff_idx] = 0.0f;
-                        }
-
-                        float movable_mat = (m_diff < 0.0f) ? -m_diff : m_diff;
-                        movable_mat = zs::clamp(movable_mat * 0.5f, 0.0f, c_material);
-                        float l_rat = dir_probs[1];
-
-                        if (quant_amt > 0.001)
-                            movable_mat =
-                                zs::clamp(quant_amt * zs::ceil((movable_mat * l_rat) / quant_amt), 0.0f, c_material);
-                        else
-                            movable_mat *= l_rat;
-
-                        float diff = (m_diff > 0.0f) ? movable_mat : -movable_mat;
-
-                        int cond = 0;
-                        if (dir_prob >= 1.0f)
-                            cond = 1;
-                        else {
-                            dir_prob = dir_prob * dir_prob * dir_prob * dir_prob;
-                            unsigned int cutoff = (unsigned int)(dir_prob * 4294967295.0);
-                            unsigned int randval = erode_random(seed, (idx + nx * nz) * 8 + color + iterseed);
-                            cond = randval < cutoff;
-                        }
-
-                        if (!cond)
-                            diff = 0.0f;
-
-                        float slope_cont = (delta_x > 0.0f) ? (h_diff / delta_x) : 0.0f;
-                        float kd_factor = zs::clamp((1 / (1 + (slope_contribution_factor * slope_cont))), 0.0f, 1.0f);
-                        float norm_iter = zs::clamp(((float)iter / (float)max_erodability_iteration), 0.0f, 1.0f);
-                        float ks_factor = zs::clamp((1 - (slope_contribution_factor * zs::exp(-slope_cont))) *
-                                                        zs::sqrt(dir_probs[0]) *
-                                                        (initial_erodability_factor +
-                                                         ((1.0f - initial_erodability_factor) * zs::sqrt(norm_iter))),
-                                                    0.0f, 1.0f);
-
-                        float c_ks = global_erosionrate * erosionrate * erodability * ks_factor;
-
-                        float n_kd = depositionrate * kd_factor;
-                        n_kd = zs::clamp(n_kd, 0.0f, 1.0f);
-
-                        float _removalrate = removalrate;
-                        float bedrock_density = 1.0f - _removalrate;
-                        float abs_diff = (diff < 0.0f) ? -diff : diff;
-                        float sediment_limit = sedimentcap * abs_diff;
-                        float ent_check_diff = sediment_limit - c_sediment;
-
-                        if (ent_check_diff > 0.0f) {
-                            float dissolve_amt = c_ks * bed_erosionrate_factor * abs_diff;
-                            float dissolved_debris = zs::min(c_debris, dissolve_amt);
-                            _debris[c_idx] -= dissolved_debris;
-                            _height[c_idx] -= (dissolve_amt - dissolved_debris);
-                            _sediment[c_idx] -= c_sediment / 2;
-                            if (bedrock_density > 0.0f) {
-                                float newsediment = c_sediment / 2 + (dissolve_amt * bedrock_density);
-                                if (n_sediment + newsediment > max_debris_depth) {
-                                    float rollback = n_sediment + newsediment - max_debris_depth;
-                                    rollback = zs::min(rollback, newsediment);
-                                    _height[c_idx] += rollback / bedrock_density;
-                                    newsediment -= rollback;
-                                }
-                                _sediment[n_idx] += newsediment;
-                            }
-                        } else {
-                            float c_kd = depositionrate * kd_factor;
-                            c_kd = zs::clamp(c_kd, 0.0f, 1.0f);
-                            {
-                                _debris[c_idx] += (c_kd * -ent_check_diff);
-                                _sediment[c_idx] = (1 - c_kd) * -ent_check_diff;
-
-                                n_sediment += sediment_limit;
-                                _debris[n_idx] += (n_kd * n_sediment);
-                                _sediment[n_idx] = (1 - n_kd) * n_sediment;
-                            }
-
-                            int b_idx = 0;
-                            int r_idx = 0;
-                            float b_material = 0.0f;
-                            float r_material = 0.0f;
-                            float b_debris = 0.0f;
-                            float r_debris = 0.0f;
-                            float r_sediment = 0.0f;
-
-                            if (is_mh_diff_same_sign) {
-                                b_idx = c_idx;
-                                r_idx = n_idx;
-
-                                b_material = c_material;
-                                r_material = n_material;
-
-                                b_debris = c_debris;
-                                r_debris = n_debris;
-
-                                r_sediment = n_sediment;
-                            } else {
-                                b_idx = n_idx;
-                                r_idx = c_idx;
-
-                                b_material = n_material;
-                                r_material = c_material;
-
-                                b_debris = n_debris;
-                                r_debris = c_debris;
-
-                                r_sediment = c_sediment;
-                            }
-
-                            float erosion_per_unit_water =
-                                global_erosionrate * erosionrate * bed_erosionrate_factor * erodability * ks_factor;
-                            if (r_material != 0.0f && (b_material / r_material) < max_bank_bed_ratio &&
-                                r_sediment > (erosion_per_unit_water * max_bank_bed_ratio)) {
-                                float height_to_erode = global_erosionrate * erosionrate * bank_erosionrate_factor *
-                                                        erodability * ks_factor;
-
-                                float _bank_angle = bank_angle;
-
-                                _bank_angle = zs::clamp(_bank_angle, 0.0f, 90.0f);
-                                float safe_diff =
-                                    _bank_angle < 90.0f ? zs::tan(_bank_angle * M_PI / 180.0) * delta_x : 1e10f;
-                                float target_height_removal = (h_diff - safe_diff) < 0.0f ? 0.0f : h_diff - safe_diff;
-
-                                float dissolve_amt = zs::clamp(height_to_erode, 0.0f, target_height_removal);
-                                float dissolved_debris = zs::min(b_debris, dissolve_amt);
-
-                                _debris[b_idx] -= dissolved_debris;
-
-                                float division = 1 / (1 + safe_diff);
-
-                                _height[b_idx] -= (dissolve_amt - dissolved_debris);
-
-                                if (bedrock_density > 0.0f) {
-                                    float newdebris = (1 - division) * (dissolve_amt * bedrock_density);
-                                    if (b_debris + newdebris > max_debris_depth) {
-                                        float rollback = b_debris + newdebris - max_debris_depth;
-                                        rollback = zs::min(rollback, newdebris);
-                                        _height[b_idx] += rollback / bedrock_density;
-                                        newdebris -= rollback;
-                                    }
-                                    _debris[b_idx] += newdebris;
-
-                                    newdebris = division * (dissolve_amt * bedrock_density);
-
-                                    if (r_debris + newdebris > max_debris_depth) {
-                                        float rollback = r_debris + newdebris - max_debris_depth;
-                                        rollback = zs::min(rollback, newdebris);
-                                        _height[b_idx] += rollback / bedrock_density;
-                                        newdebris -= rollback;
-                                    }
-                                    _debris[r_idx] += newdebris;
-                                }
-                            }
-                        }
-
-                        _material[idx] = i_material + diff;
-                        _material[j_idx] = j_material - diff;
+        pol(range((std::size_t)nz * (std::size_t)nx), [=, perm = view<space>(zs_perm), p_dirs = view<space>(zs_p_dirs),
+                                                       x_dirs =
+                                                           view<space>(zs_x_dirs)] __device__(std::size_t idx) mutable {
+            auto id_z = idx / nx; // outer index
+            auto id_x = idx % nx; // inner index
+
+            int iterseed = iter * 134775813;
+            int color = perm[i];
+            int is_red = ((id_z & 1) == 1) && (color == 1);
+            int is_green = ((id_x & 1) == 1) && (color == 2);
+            int is_blue = ((id_z & 1) == 0) && (color == 3);
+            int is_yellow = ((id_x & 1) == 0) && (color == 4);
+            int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
+            int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
+            int dxs[] = {0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1]};
+            int dzs[] = {p_dirs[1], 0, p_dirs[1], 0, x_dirs[0], -x_dirs[1], x_dirs[0], -x_dirs[1]};
+
+            if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
+                int idx = Pos2Idx(id_x, id_z, nx);
+                int dx = dxs[color - 1];
+                int dz = dzs[color - 1];
+                int bound_x = nx;
+                int bound_z = nz;
+                int clamp_x = bound_x - 1;
+                int clamp_z = bound_z - 1;
+
+                float i_height = _temp_height[idx];
+                float i_material = _temp_material[idx];
+                float i_debris = _temp_debris[idx];
+                float i_sediment = _sediment[idx];
+
+                int samplex = zs::clamp(id_x + dx, 0, clamp_x);
+                int samplez = zs::clamp(id_z + dz, 0, clamp_z);
+                int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
+
+                if (validsource) {
+                    validsource = validsource || !openborder;
+
+                    int j_idx = Pos2Idx(samplex, samplez, nx);
+
+                    float j_height = _temp_height[j_idx];
+                    float j_material = validsource ? _temp_material[j_idx] : 0.0f;
+                    float j_debris = validsource ? _temp_debris[j_idx] : 0.0f;
+
+                    float j_sediment = validsource ? _sediment[j_idx] : 0.0f;
+                    float m_diff = (j_height + j_debris + j_material) - (i_height + i_debris + i_material);
+                    float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
+
+                    int cidx = 0;
+                    int cidz = 0;
+
+                    float c_height = 0.0f;
+
+                    float c_material = 0.0f;
+                    float n_material = 0.0f;
+
+                    float c_sediment = 0.0f;
+                    float n_sediment = 0.0f;
+
+                    float c_debris = 0.0f;
+                    float n_debris = 0.0f;
+
+                    float h_diff = 0.0f;
+
+                    int c_idx = 0;
+                    int n_idx = 0;
+                    int dx_check = 0;
+                    int dz_check = 0;
+                    int is_mh_diff_same_sign = 0;
+
+                    if (m_diff > 0.0f) {
+                        cidx = samplex;
+                        cidz = samplez;
+
+                        c_height = j_height;
+                        c_material = j_material;
+                        n_material = i_material;
+                        c_sediment = j_sediment;
+                        n_sediment = i_sediment;
+                        c_debris = j_debris;
+                        n_debris = i_debris;
+
+                        c_idx = j_idx;
+                        n_idx = idx;
+
+                        dx_check = -dx;
+                        dz_check = -dz;
+
+                        h_diff = j_height + j_debris - (i_height + i_debris);
+                        is_mh_diff_same_sign = (h_diff * m_diff) > 0.0f;
+                    } else {
+                        cidx = id_x;
+                        cidz = id_z;
+
+                        c_height = i_height;
+                        c_material = i_material;
+                        n_material = j_material;
+                        c_sediment = i_sediment;
+                        n_sediment = j_sediment;
+                        c_debris = i_debris;
+                        n_debris = j_debris;
+
+                        c_idx = idx;
+                        n_idx = j_idx;
+
+                        dx_check = dx;
+                        dz_check = dz;
+
+                        h_diff = i_height + i_debris - (j_height + j_debris);
+                        is_mh_diff_same_sign = (h_diff * m_diff) > 0.0f;
                     }
-                }
-            });
+                    h_diff = (h_diff < 0.0f) ? -h_diff : h_diff;
 
+                    float sum_diffs[] = {0.0f, 0.0f};
+                    float dir_probs[] = {0.0f, 0.0f};
+                    float dir_prob = 0.0f;
+                    for (int diff_idx = 0; diff_idx < 2; diff_idx++) {
+                        for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++) {
+                            for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++) {
+                                if (!tmp_dx && !tmp_dz)
+                                    continue;
+
+                                int tmp_samplex = zs::clamp(cidx + tmp_dx, 0, clamp_x);
+                                int tmp_samplez = zs::clamp(cidz + tmp_dz, 0, clamp_z);
+
+                                int tmp_validsource =
+                                    (tmp_samplex == (cidx + tmp_dx)) && (tmp_samplez == (cidz + tmp_dz));
+                                tmp_validsource = tmp_validsource || !openborder;
+                                int tmp_j_idx = Pos2Idx(tmp_samplex, tmp_samplez, nx);
+
+                                float tmp_n_material = tmp_validsource ? _temp_material[tmp_j_idx] : 0.0f;
+                                float tmp_n_debris = tmp_validsource ? _temp_debris[tmp_j_idx] : 0.0f;
+
+                                float n_height = _temp_height[tmp_j_idx];
+                                float tmp_h_diff = n_height + tmp_n_debris - (c_height + c_debris);
+                                float tmp_m_diff =
+                                    (n_height + tmp_n_debris + tmp_n_material) - (c_height + c_debris + c_material);
+                                float tmp_diff = diff_idx == 0 ? tmp_h_diff : tmp_m_diff;
+                                float _gridbias = gridbias;
+                                _gridbias = zs::clamp(_gridbias, -1.0f, 1.0f);
+
+                                if (tmp_dx && tmp_dz)
+                                    tmp_diff *= zs::clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
+                                else
+                                    tmp_diff *= zs::clamp(1.0f + _gridbias, 0.0f, 1.0f);
+
+                                if (tmp_diff <= 0.0f) {
+                                    if ((dx_check == tmp_dx) && (dz_check == tmp_dz))
+                                        dir_probs[diff_idx] = tmp_diff;
+
+                                    if (diff_idx && (tmp_diff < dir_prob))
+                                        dir_prob = tmp_diff;
+
+                                    sum_diffs[diff_idx] += tmp_diff;
+                                }
+                            }
+                        }
+
+                        if (diff_idx && (dir_prob > 0.001f || dir_prob < -0.001f))
+                            dir_prob = dir_probs[diff_idx] / dir_prob;
+                        else
+                            dir_prob = 0.0f;
+
+                        if (sum_diffs[diff_idx] > 0.001f || sum_diffs[diff_idx] < -0.001f)
+                            dir_probs[diff_idx] = dir_probs[diff_idx] / sum_diffs[diff_idx];
+                        else
+                            dir_probs[diff_idx] = 0.0f;
+                    }
+
+                    float movable_mat = (m_diff < 0.0f) ? -m_diff : m_diff;
+                    movable_mat = zs::clamp(movable_mat * 0.5f, 0.0f, c_material);
+                    float l_rat = dir_probs[1];
+
+                    if (quant_amt > 0.001)
+                        movable_mat =
+                            zs::clamp(quant_amt * zs::ceil((movable_mat * l_rat) / quant_amt), 0.0f, c_material);
+                    else
+                        movable_mat *= l_rat;
+
+                    float diff = (m_diff > 0.0f) ? movable_mat : -movable_mat;
+
+                    int cond = 0;
+                    if (dir_prob >= 1.0f)
+                        cond = 1;
+                    else {
+                        dir_prob = dir_prob * dir_prob * dir_prob * dir_prob;
+                        unsigned int cutoff = (unsigned int)(dir_prob * 4294967295.0);
+                        unsigned int randval = erode_random(seed, (idx + nx * nz) * 8 + color + iterseed);
+                        cond = randval < cutoff;
+                    }
+
+                    if (!cond)
+                        diff = 0.0f;
+
+                    float slope_cont = (delta_x > 0.0f) ? (h_diff / delta_x) : 0.0f;
+                    float kd_factor = zs::clamp((1 / (1 + (slope_contribution_factor * slope_cont))), 0.0f, 1.0f);
+                    float norm_iter = zs::clamp(((float)iter / (float)max_erodability_iteration), 0.0f, 1.0f);
+                    float ks_factor = zs::clamp(
+                        (1 - (slope_contribution_factor * zs::exp(-slope_cont))) * zs::sqrt(dir_probs[0]) *
+                            (initial_erodability_factor + ((1.0f - initial_erodability_factor) * zs::sqrt(norm_iter))),
+                        0.0f, 1.0f);
+
+                    float c_ks = global_erosionrate * erosionrate * erodability * ks_factor;
+
+                    float n_kd = depositionrate * kd_factor;
+                    n_kd = zs::clamp(n_kd, 0.0f, 1.0f);
+
+                    float _removalrate = removalrate;
+                    float bedrock_density = 1.0f - _removalrate;
+                    float abs_diff = (diff < 0.0f) ? -diff : diff;
+                    float sediment_limit = sedimentcap * abs_diff;
+                    float ent_check_diff = sediment_limit - c_sediment;
+
+                    if (ent_check_diff > 0.0f) {
+                        float dissolve_amt = c_ks * bed_erosionrate_factor * abs_diff;
+                        float dissolved_debris = zs::min(c_debris, dissolve_amt);
+                        _debris[c_idx] -= dissolved_debris;
+                        _height[c_idx] -= (dissolve_amt - dissolved_debris);
+                        _sediment[c_idx] -= c_sediment / 2;
+                        if (bedrock_density > 0.0f) {
+                            float newsediment = c_sediment / 2 + (dissolve_amt * bedrock_density);
+                            if (n_sediment + newsediment > max_debris_depth) {
+                                float rollback = n_sediment + newsediment - max_debris_depth;
+                                rollback = zs::min(rollback, newsediment);
+                                _height[c_idx] += rollback / bedrock_density;
+                                newsediment -= rollback;
+                            }
+                            _sediment[n_idx] += newsediment;
+                        }
+                    } else {
+                        float c_kd = depositionrate * kd_factor;
+                        c_kd = zs::clamp(c_kd, 0.0f, 1.0f);
+                        {
+                            _debris[c_idx] += (c_kd * -ent_check_diff);
+                            _sediment[c_idx] = (1 - c_kd) * -ent_check_diff;
+
+                            n_sediment += sediment_limit;
+                            _debris[n_idx] += (n_kd * n_sediment);
+                            _sediment[n_idx] = (1 - n_kd) * n_sediment;
+                        }
+
+                        int b_idx = 0;
+                        int r_idx = 0;
+                        float b_material = 0.0f;
+                        float r_material = 0.0f;
+                        float b_debris = 0.0f;
+                        float r_debris = 0.0f;
+                        float r_sediment = 0.0f;
+
+                        if (is_mh_diff_same_sign) {
+                            b_idx = c_idx;
+                            r_idx = n_idx;
+
+                            b_material = c_material;
+                            r_material = n_material;
+
+                            b_debris = c_debris;
+                            r_debris = n_debris;
+
+                            r_sediment = n_sediment;
+                        } else {
+                            b_idx = n_idx;
+                            r_idx = c_idx;
+
+                            b_material = n_material;
+                            r_material = c_material;
+
+                            b_debris = n_debris;
+                            r_debris = c_debris;
+
+                            r_sediment = c_sediment;
+                        }
+
+                        float erosion_per_unit_water =
+                            global_erosionrate * erosionrate * bed_erosionrate_factor * erodability * ks_factor;
+                        if (r_material != 0.0f && (b_material / r_material) < max_bank_bed_ratio &&
+                            r_sediment > (erosion_per_unit_water * max_bank_bed_ratio)) {
+                            float height_to_erode =
+                                global_erosionrate * erosionrate * bank_erosionrate_factor * erodability * ks_factor;
+
+                            float _bank_angle = bank_angle;
+
+                            _bank_angle = zs::clamp(_bank_angle, 0.0f, 90.0f);
+                            float safe_diff =
+                                _bank_angle < 90.0f ? zs::tan(_bank_angle * M_PI / 180.0) * delta_x : 1e10f;
+                            float target_height_removal = (h_diff - safe_diff) < 0.0f ? 0.0f : h_diff - safe_diff;
+
+                            float dissolve_amt = zs::clamp(height_to_erode, 0.0f, target_height_removal);
+                            float dissolved_debris = zs::min(b_debris, dissolve_amt);
+
+                            _debris[b_idx] -= dissolved_debris;
+
+                            float division = 1 / (1 + safe_diff);
+
+                            _height[b_idx] -= (dissolve_amt - dissolved_debris);
+
+                            if (bedrock_density > 0.0f) {
+                                float newdebris = (1 - division) * (dissolve_amt * bedrock_density);
+                                if (b_debris + newdebris > max_debris_depth) {
+                                    float rollback = b_debris + newdebris - max_debris_depth;
+                                    rollback = zs::min(rollback, newdebris);
+                                    _height[b_idx] += rollback / bedrock_density;
+                                    newdebris -= rollback;
+                                }
+                                _debris[b_idx] += newdebris;
+
+                                newdebris = division * (dissolve_amt * bedrock_density);
+
+                                if (r_debris + newdebris > max_debris_depth) {
+                                    float rollback = r_debris + newdebris - max_debris_depth;
+                                    rollback = zs::min(rollback, newdebris);
+                                    _height[b_idx] += rollback / bedrock_density;
+                                    newdebris -= rollback;
+                                }
+                                _debris[r_idx] += newdebris;
+                            }
+                        }
+                    }
+
+                    _material[idx] = i_material + diff;
+                    _material[j_idx] = j_material - diff;
+                }
+            }
+        });
+
+#if 0
         /// @brief  write back to host-side attribute
         retrieve_device_vector(_height, zs_height);
         retrieve_device_vector(_material, zs_material);
         retrieve_device_vector(_debris, zs_debris);
         retrieve_device_vector(_sediment, zs_sediment);
-
-        set_output("prim_2DGrid", std::move(terrain));
+#endif
+        set_output("zs_prim_2DGrid", std::move(terrain));
     }
 };
 ZENDEFNODE(zs_erode_tumble_material_v4,
            {/* inputs: */ {
-                "prim_2DGrid",
+                "zs_prim_2DGrid",
 
                 {"ListObject", "perm"},
                 {"ListObject", "p_dirs"},
@@ -1656,7 +1656,7 @@ ZENDEFNODE(zs_erode_tumble_material_v4,
             },
             /* outputs: */
             {
-                "prim_2DGrid",
+                "zs_prim_2DGrid",
             },
             /* params: */
             {
