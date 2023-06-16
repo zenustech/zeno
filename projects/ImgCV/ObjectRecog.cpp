@@ -920,6 +920,7 @@ struct ImageFeatureDetectSIFT : INode {
         auto &dp = image->tris.add_attr<float>("descriptors");
         cv::Ptr<cv::SIFT> sift = cv::SIFT::create(nFeatures, nOctaveLayers,
                                                   contrastThreshold, edgeThreshold,sigma);
+
         cv::Mat imagecvin(h, w, CV_8UC3);
         cv::Mat imagecvgray(h, w, CV_8U);
         cv::Mat idescriptor;
@@ -935,8 +936,11 @@ struct ImageFeatureDetectSIFT : INode {
             }
         }
         cv::cvtColor(imagecvin, imagecvgray, cv::COLOR_RGB2GRAY);
-        sift->detect(imagecvgray, ikeypoints);
-        sift->compute(imagecvgray, ikeypoints, idescriptor);
+//        sift->detect(imagecvgray, ikeypoints);
+//        const int descriptorSize = 32;
+//        idescriptor = cv::Mat(ikeypoints.size(), descriptorSize, CV_32F);
+//        sift->compute(imagecvgray, ikeypoints, idescriptor);
+        sift->detectAndCompute(imagecvgray, cv::noArray(), ikeypoints, idescriptor);
 //        zeno::log_info("ikeypoints.size{}",ikeypoints.size());
         if (ikeypoints.size() == 0) {
             throw zeno::Exception("Did not find any features");
@@ -998,6 +1002,7 @@ struct ImageFeatureMatch : INode {
         auto matchD = get_input2<float>("maxMatchDistance");
         auto visualize = get_input2<bool>("visualize");
         auto stitch = get_input2<bool>("stitch");
+
 //        auto stitch2 = get_input2<bool>("stitch");
         auto &ud1 = image1->userData();
         int w1 = ud1.get2<int>("w");
@@ -1009,7 +1014,7 @@ struct ImageFeatureMatch : INode {
         auto image3 = std::make_shared<PrimitiveObject>();
         auto &ud3 = image3->userData();
         image3->verts.resize(w2 * h2);
-        image3->tris.resize(zeno::max(image2->tris.size(),image2->tris.size()));
+        image3->tris.resize(zeno::max(image1->tris.size(),image2->tris.size()));
         ud3.set2("h", h2);
         ud3.set2("w", w2);
         ud3.set2("isImage", 1);
@@ -1050,16 +1055,16 @@ struct ImageFeatureMatch : INode {
         int dw2 = d2.size()/ks2;
         zeno::log_info("ks1:{},ks2:{},dw1:{},dw2:{}",ks1,ks2,dw1,dw2);
 
-        cv::Mat imagecvdescriptors1(ks1, dw1, CV_8U);
-        cv::Mat imagecvdescriptors2(ks2, dw2, CV_8U);
+        cv::Mat imagecvdescriptors1(ks1, dw1, CV_32F);
+        cv::Mat imagecvdescriptors2(ks2, dw2, CV_32F);
         for (int i = 0; i < ks1; i++) {
             for (int j = 0; j < dw1; j++) {
-                imagecvdescriptors1.at<uchar>(i, j) = d1[i * dw1 + j];
+                imagecvdescriptors1.at<float>(i, j) = d1[i * dw1 + j];
             }
         }
         for (int i = 0; i < ks2; i++) {
             for (int j = 0; j < dw2; j++) {
-                imagecvdescriptors2.at<uchar>(i, j) = d2[i * dw2 + j];
+                imagecvdescriptors2.at<float>(i, j) = d2[i * dw2 + j];
             }
         }
 
@@ -1075,16 +1080,14 @@ struct ImageFeatureMatch : INode {
                 continue;
             }
             float distanceRatio = knnMatch[0].distance / knnMatch[1].distance;
-            if (distanceRatio < 2) {
-                if (knnMatch[0].distance < matchD) {
-                    filteredMatches.push_back(knnMatch[0]);
-                    md[mdi] = static_cast<float>(knnMatch[0].distance);
-                    mdi++;
-                }
+            if (distanceRatio < matchD) {
+                filteredMatches.push_back(knnMatch[0]);
+                md[mdi] = static_cast<float>(knnMatch[0].distance);
+                mdi++;
             }
         }
-
         zeno::log_info("BRUTEFORCE  knnMatches.size:{},filteredMatches.size：{}",knnMatches.size(),filteredMatches.size());
+
         if(mode == "HAMMING"){
             cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_HAMMING);
             std::vector<std::vector<cv::DMatch>> knnMatches;
@@ -1212,12 +1215,12 @@ struct ImageFeatureMatch : INode {
                 }
             }
             zeno::log_info("V ok");
-            cv::Scalar lineColor(255, 0, 255); // 线段颜色为绿色
+            cv::Scalar lineColor(255, 0, 255);
 #pragma omp parallel for
             for (size_t i = 0; i < points1.size(); i++) {
                 cv::Point2f pt1 = points1[i];
-//                cv::Point2f pt2 = points2[i] + cv::Point2f(w1, 0);
-                cv::Point2f pt2 = points2[i] + cv::Point2f(imagecvin1.cols, 0);
+                cv::Point2f pt2 = points2[i] + cv::Point2f(w1, 0);
+//                cv::Point2f pt2 = points2[i] + cv::Point2f(imagecvin1.cols, 0);
                 cv::line(V, pt1, pt2, lineColor, 2);
             }
             cv::Size vs = V.size();
