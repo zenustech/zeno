@@ -282,7 +282,8 @@ struct PrimitiveConnectedComponents : INode {
         std::vector<int> invMap(numSets);
         std::vector<std::pair<int, int>> kvs(numSets);
         auto keys = vtab._activeKeys;
-        pol(enumerate(keys, kvs), [](int id, int key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
+        pol(enumerate(keys, kvs),
+            [](int id, zs::vec<int, 1> key, std::pair<int, int> &kv) { kv = std::make_pair((int)key[0], id); });
         struct {
             constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
                 return a.first < b.first;
@@ -544,7 +545,8 @@ struct PrimitiveMarkIslands : INode {
         std::vector<int> invMap(numSets);
         std::vector<std::pair<int, int>> kvs(numSets);
         auto keys = vtab._activeKeys;
-        pol(enumerate(keys, kvs), [](int id, int key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
+        pol(enumerate(keys, kvs),
+            [](int id, zs::vec<int, 1> key, std::pair<int, int> &kv) { kv = std::make_pair((int)key[0], id); });
         struct {
             constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
                 return a.first < b.first;
