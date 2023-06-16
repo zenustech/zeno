@@ -95,7 +95,7 @@ extern "C" __global__ void __raygen__rg()
             rnd(seed),
             rnd(seed)
         };
-        
+
         float r0 = r01.x * 2.0f* M_PIf;
         float r1 = r01.y * aperture * aperture;
         r1 = sqrt(r1);
@@ -103,7 +103,7 @@ extern "C" __global__ void __raygen__rg()
         // float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
         // float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
    
-        float3 eye_shake     = r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up); // Camera local space
+        float3 eye_shake     = r1 * ( cosf(r0)* normalize(cam.right) + sinf(r0)* normalize(cam.up)); // Camera local space
 
         float3 ray_origin    = cam.eye + eye_shake;
         float3 ray_direction = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
@@ -268,7 +268,7 @@ extern "C" __global__ void __miss__radiance()
             params.elapsedTime,
             envPdf,
             upperBound,
-            1.0
+            0.0
 
         );
         float misWeight = BRDFBasics::PowerHeuristic(prd->samplePdf,envPdf);
