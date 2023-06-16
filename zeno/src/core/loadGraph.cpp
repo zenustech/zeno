@@ -112,6 +112,9 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 this->endFrameNumber = di[1].GetInt();
             } else if (cmd == "setNodeOption") {
                 // skip this for compatibility
+            } else if (cmd == "markNodeChanged") {
+                auto ident = di[1].GetString();
+                //todo: mark node data change.
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }

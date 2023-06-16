@@ -139,6 +139,8 @@ public:
     void setApiRunningEnable(bool bEnable) override;
     bool isApiRunningEnable() const override;
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
+    void markNodeDataChanged(const QModelIndex& idx) override;
+    void clearNodeDataChanged() override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
@@ -161,6 +163,13 @@ public slots:
 
 private:
     NODE_DESCS getCoreDescs();
+    void _markNodeChanged(const QModelIndex& idx);
+    void _markSubnodesChange(SubGraphModel* pSubg);
+    void _findReference(
+        const QString& subgraphName,
+        QModelIndexList& refNodesInMain //the reference can be directly or indirectly nodes.
+    );
+
     void parseDescStr(const QString& descStr, QString& name, QString& type, QVariant& defl);
     void onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& idx, bool bInput, bool bInsert);
     bool onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2);
@@ -185,6 +194,7 @@ private:
 
     //LinkModel* m_linkModel;
     QHash<QString, LinkModel*> m_linksGroup;
+    QList<QPersistentModelIndex> m_changedNodes;
 
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;
