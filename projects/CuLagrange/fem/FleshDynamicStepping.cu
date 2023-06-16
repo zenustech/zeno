@@ -1514,13 +1514,13 @@ struct FleshDynamicStepping : INode {
             act_ = get_input<zeno::ListObject>("Acts")->getLiterial<zeno::vec2f>();
             nm_acts = act_.size();
 
-            std::cout << "use Activation : ";
-            for(int i = 0;i != act_.size();++i)
-                std::cout << "[" << act_[i][0] << "\t" << act_[i][1] << "] ";
-            std::cout << std::endl;
+            // std::cout << "use Activation : ";
+            // for(int i = 0;i != act_.size();++i)
+            //     std::cout << "[" << act_[i][0] << "\t" << act_[i][1] << "] ";
+            // std::cout << std::endl;
         }
 
-        std::cout << "nmActs:" << nm_acts << std::endl;
+        // std::cout << "nmActs:" << nm_acts << std::endl;
 
         constexpr auto host_space = zs::execspace_e::openmp;
         auto ompExec = zs::omp_exec();
@@ -1597,22 +1597,22 @@ struct FleshDynamicStepping : INode {
                 {"nrm",3}},0,zs::memsrc_e::device,0);
 
 
-        dtiles_t surf_tris_buffer{tris.get_allocator(),{
-            {"inds",3},
-            {"nrm",3},
-            {"he_inds",1}
-        },tris.size()};
+        // dtiles_t surf_tris_buffer{tris.get_allocator(),{
+        //     {"inds",3},
+        //     {"nrm",3},
+        //     {"he_inds",1}
+        // },tris.size()};
 
-        dtiles_t surf_verts_buffer{points.get_allocator(),{
-            {"inds",1},
-            {"xn",3},
-            {"is_corner",1},
-            {"mustExclude",1}
-        },points.size()};
-        TILEVEC_OPS::copy(cudaPol,points,"inds",surf_verts_buffer,"inds");
-        TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
-        TILEVEC_OPS::copy(cudaPol,tris,"he_inds",surf_tris_buffer,"he_inds");
-        reorder_topology(cudaPol,points,surf_tris_buffer);
+        // dtiles_t surf_verts_buffer{points.get_allocator(),{
+        //     {"inds",1},
+        //     {"xn",3},
+        //     {"is_corner",1},
+        //     {"mustExclude",1}
+        // },points.size()};
+        // TILEVEC_OPS::copy(cudaPol,points,"inds",surf_verts_buffer,"inds");
+        // TILEVEC_OPS::copy(cudaPol,tris,"inds",surf_tris_buffer,"inds");
+        // TILEVEC_OPS::copy(cudaPol,tris,"he_inds",surf_tris_buffer,"he_inds");
+        // reorder_topology(cudaPol,points,surf_tris_buffer);
         // zs::Vector<int> nodal_colors{surf_verts_buffer.get_allocator(),surf_verts_buffer.size()};
         dtiles_t gia_res{points.get_allocator(),{
             {"ring_mask",1},

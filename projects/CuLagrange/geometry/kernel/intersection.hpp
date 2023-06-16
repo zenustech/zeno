@@ -2260,10 +2260,16 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             edge_A[0] = tri_A[(local_vert_id_A + 0) % 3];
             edge_A[1] = tri_A[(local_vert_id_A + 1) % 3];
 
-            // auto ohei_A = zs::reinterpret_bits<int>(halfedges_A("opposite_he",hei_A));
+            auto ohei_A = zs::reinterpret_bits<int>(halfedges_A("opposite_he",hei_A));
 
-            // if(edge_A[0] > edge_A[1] && ohei_A >= 0)
-            //     return;
+            if(edge_A[0] > edge_A[1] && ohei_A >= 0)
+                return;
+
+            // if(edge_A[0] > edge_A[1]) {
+            //     auto tmp = edge_A[0];
+            //     edge_A[0] = edge_A[1];
+            //     edge_A[1] = tmp;
+            // }
 
             vec3 eV_A[2] = {}; 
             for(int i = 0;i != 2;++i)
@@ -2290,12 +2296,12 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                         intersect_buffers("r",offset) = (T)r;
                         // make sure the opposite he - tri pairs are also inserted
                         // auto opposite_hei_A = zs::reinterpret_bits<int>(halfedges_A("opposite_he",hei_A));
-                        // if(opposite_hei_A >= 0) {
-                        //     offset = atomic_add(exec_tag,&nmIts[0],(int)1);
-                        //     intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{opposite_hei_A,ti_B}.reinterpret_bits(float_c);
-                        //     intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
-                        //     intersect_buffers("r",offset) = (T)(1 - r);
-                        // }
+                        if(ohei_A >= 0) {
+                            offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                            intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ohei_A,ti_B}.reinterpret_bits(float_c);
+                            intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
+                            intersect_buffers("r",offset) = (T)(1 - r);
+                        }
                     }
                 }                    
             };
@@ -3204,7 +3210,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                                 if(a2b_isi + _A_offset > na2b_isi + _A_offset)
                                     incidentItsTab.insert(vec2i{a2b_isi + _A_offset,na2b_isi + _A_offset});
                             }else {
-                                printf("impossible reaching here, the hi and ohi should both have been inserted\n");
+                                printf("do_global_intersection_analysis_with_connected_manifolds_new::impossible reaching here, the hi and ohi should both have been inserted\n");
                                 atomic_add(exec_tag,&nmInvalid[0],(int)1);
                             }
                         }
@@ -3232,7 +3238,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                             }
                             hb = zs::reinterpret_bits<int>(_B_halfedges("next_he",hb));
                         }
-                        printf("impossible reaching here, the intersection ring seems to be broken\n");
+                        printf("do_global_intersection_analysis_with_connected_manifolds_new::impossible reaching here, the intersection ring seems to be broken\n");
                         atomic_add(exec_tag,&nmInvalid[0],(int)1);
                 });
         };
