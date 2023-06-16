@@ -2225,12 +2225,12 @@ struct VisualizeSelfIntersections : zeno::INode {
 
         // zs::Vector<int> nodal_colors{verts_buffer.get_allocator(),verts_buffer.size()};
         // zs::Vector<zs::vec<int,2>> instBuffer{tri_buffer.get_allocator(),tri_buffer.size() * 2};
-        dtiles_t inst_buffer_info{tris.get_allocator(),{
-            {"pair",2},
-            {"type",1},
-            {"its_edge_mark",6},
-            {"int_points",6}
-        },tris.size() * 2};
+        // dtiles_t inst_buffer_info{tris.get_allocator(),{
+        //     {"pair",2},
+        //     {"type",1},
+        //     {"its_edge_mark",6},
+        //     {"int_points",6}
+        // },tris.size() * 2};
 
         dtiles_t gia_res{verts_buffer.get_allocator(),{
             {"ring_mask",1},
@@ -2245,8 +2245,8 @@ struct VisualizeSelfIntersections : zeno::INode {
         },tri_buffer.size()};
 
         auto& halfedges = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
-        auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(
-            cudaPol,verts_buffer,"x",tri_buffer,halfedges,inst_buffer_info,gia_res,false);
+        // auto nm_insts = do_global_self_intersection_analysis_on_surface_mesh_info(
+        //     cudaPol,verts_buffer,"x",tri_buffer,halfedges,inst_buffer_info,gia_res,false);
         // zs::bht<int,2,int> conn_of_first_ring{halfedges.get_allocator(),halfedges.size()}; 
         auto ring_mask_width = do_global_self_intersection_analysis(cudaPol,
             verts_buffer,"x",tri_buffer,halfedges,gia_res,tris_gia_res);   
@@ -2411,159 +2411,159 @@ struct VisualizeSelfIntersections : zeno::INode {
         set_output("flood_region",std::move(flood_region_vis));
 
 
-        dtiles_t self_intersect_buffer{tris.get_allocator(),{
-            {"a0",3},{"A0",3},
-            {"a1",3},{"A1",3},
-            {"a2",3},{"A2",3},
-            {"b0",3},{"B0",3},
-            {"b1",3},{"B1",3},
-            {"b2",3},{"B2",3},
-            {"p0",3},{"p1",3}
-        },(size_t)nm_insts};
-        cudaPol(zs::range(nm_insts),[
-            // instBuffer = proxy<cuda_space>(instBuffer),
-            inst_buffer_info = proxy<cuda_space>({},inst_buffer_info),
-            verts_buffer = proxy<cuda_space>({},verts_buffer),
-            self_intersect_buffer = proxy<cuda_space>({},self_intersect_buffer),
-            tri_buffer = proxy<cuda_space>({},tri_buffer)] ZS_LAMBDA(int sti) mutable {
-                auto tpair = inst_buffer_info.pack(dim_c<2>,"pair",sti,int_c);
-                auto ta = tpair[0];
-                auto tb = tpair[1];
+        // dtiles_t self_intersect_buffer{tris.get_allocator(),{
+        //     {"a0",3},{"A0",3},
+        //     {"a1",3},{"A1",3},
+        //     {"a2",3},{"A2",3},
+        //     {"b0",3},{"B0",3},
+        //     {"b1",3},{"B1",3},
+        //     {"b2",3},{"B2",3},
+        //     // {"p0",3},{"p1",3}
+        // },(size_t)nm_insts};
+        // cudaPol(zs::range(nm_insts),[
+        //     // instBuffer = proxy<cuda_space>(instBuffer),
+        //     inst_buffer_info = proxy<cuda_space>({},inst_buffer_info),
+        //     verts_buffer = proxy<cuda_space>({},verts_buffer),
+        //     self_intersect_buffer = proxy<cuda_space>({},self_intersect_buffer),
+        //     tri_buffer = proxy<cuda_space>({},tri_buffer)] ZS_LAMBDA(int sti) mutable {
+        //         auto tpair = inst_buffer_info.pack(dim_c<2>,"pair",sti,int_c);
+        //         auto ta = tpair[0];
+        //         auto tb = tpair[1];
 
-                auto ints_p = inst_buffer_info.pack(dim_c<6>,"int_points",sti);
-                self_intersect_buffer.tuple(dim_c<3>,"p0",sti) = zs::vec<T,3>{ints_p[0],ints_p[1],ints_p[2]};
-                self_intersect_buffer.tuple(dim_c<3>,"p1",sti) = zs::vec<T,3>{ints_p[3],ints_p[4],ints_p[5]};
-                // auto ta = instBuffer[sti][0];
-                // auto tb = instBuffer[sti][1];
+        //         // auto ints_p = inst_buffer_info.pack(dim_c<6>,"int_points",sti);
+        //         // self_intersect_buffer.tuple(dim_c<3>,"p0",sti) = zs::vec<T,3>{ints_p[0],ints_p[1],ints_p[2]};
+        //         // self_intersect_buffer.tuple(dim_c<3>,"p1",sti) = zs::vec<T,3>{ints_p[3],ints_p[4],ints_p[5]};
+        //         // auto ta = instBuffer[sti][0];
+        //         // auto tb = instBuffer[sti][1];
 
-                auto triA = tri_buffer.pack(dim_c<3>,"inds",ta,int_c);
-                auto triB = tri_buffer.pack(dim_c<3>,"inds",tb,int_c);
-                self_intersect_buffer.tuple(dim_c<3>,"a0",sti) = verts_buffer.pack(dim_c<3>,"x",triA[0]);
-                self_intersect_buffer.tuple(dim_c<3>,"a1",sti) = verts_buffer.pack(dim_c<3>,"x",triA[1]);
-                self_intersect_buffer.tuple(dim_c<3>,"a2",sti) = verts_buffer.pack(dim_c<3>,"x",triA[2]);
+        //         auto triA = tri_buffer.pack(dim_c<3>,"inds",ta,int_c);
+        //         auto triB = tri_buffer.pack(dim_c<3>,"inds",tb,int_c);
+        //         self_intersect_buffer.tuple(dim_c<3>,"a0",sti) = verts_buffer.pack(dim_c<3>,"x",triA[0]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"a1",sti) = verts_buffer.pack(dim_c<3>,"x",triA[1]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"a2",sti) = verts_buffer.pack(dim_c<3>,"x",triA[2]);
 
-                self_intersect_buffer.tuple(dim_c<3>,"b0",sti) = verts_buffer.pack(dim_c<3>,"x",triB[0]);
-                self_intersect_buffer.tuple(dim_c<3>,"b1",sti) = verts_buffer.pack(dim_c<3>,"x",triB[1]);
-                self_intersect_buffer.tuple(dim_c<3>,"b2",sti) = verts_buffer.pack(dim_c<3>,"x",triB[2]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"b0",sti) = verts_buffer.pack(dim_c<3>,"x",triB[0]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"b1",sti) = verts_buffer.pack(dim_c<3>,"x",triB[1]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"b2",sti) = verts_buffer.pack(dim_c<3>,"x",triB[2]);
 
-                self_intersect_buffer.tuple(dim_c<3>,"A0",sti) = verts_buffer.pack(dim_c<3>,"x",triA[0]);
-                self_intersect_buffer.tuple(dim_c<3>,"A1",sti) = verts_buffer.pack(dim_c<3>,"x",triA[1]);
-                self_intersect_buffer.tuple(dim_c<3>,"A2",sti) = verts_buffer.pack(dim_c<3>,"x",triA[2]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"A0",sti) = verts_buffer.pack(dim_c<3>,"x",triA[0]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"A1",sti) = verts_buffer.pack(dim_c<3>,"x",triA[1]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"A2",sti) = verts_buffer.pack(dim_c<3>,"x",triA[2]);
 
-                self_intersect_buffer.tuple(dim_c<3>,"B0",sti) = verts_buffer.pack(dim_c<3>,"x",triB[0]);
-                self_intersect_buffer.tuple(dim_c<3>,"B1",sti) = verts_buffer.pack(dim_c<3>,"x",triB[1]);
-                self_intersect_buffer.tuple(dim_c<3>,"B2",sti) = verts_buffer.pack(dim_c<3>,"x",triB[2]);
-        });
+        //         self_intersect_buffer.tuple(dim_c<3>,"B0",sti) = verts_buffer.pack(dim_c<3>,"x",triB[0]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"B1",sti) = verts_buffer.pack(dim_c<3>,"x",triB[1]);
+        //         self_intersect_buffer.tuple(dim_c<3>,"B2",sti) = verts_buffer.pack(dim_c<3>,"x",triB[2]);
+        // });
 
-        self_intersect_buffer = self_intersect_buffer.clone({zs::memsrc_e::host});
+        // self_intersect_buffer = self_intersect_buffer.clone({zs::memsrc_e::host});
 
-        auto st_fact_vis = std::make_shared<zeno::PrimitiveObject>();
-        auto& st_verts = st_fact_vis->verts;
-        auto& st_tris = st_fact_vis->tris;
-        st_verts.resize(self_intersect_buffer.size() * 6);
-        st_tris.resize(self_intersect_buffer.size() * 2);
+        // auto st_fact_vis = std::make_shared<zeno::PrimitiveObject>();
+        // auto& st_verts = st_fact_vis->verts;
+        // auto& st_tris = st_fact_vis->tris;
+        // st_verts.resize(self_intersect_buffer.size() * 6);
+        // st_tris.resize(self_intersect_buffer.size() * 2);
 
-        ompPol(zs::range(nm_insts),[
-            &st_verts,&st_tris,self_intersect_buffer = proxy<omp_space>({},self_intersect_buffer)] (int sti) mutable {
-                st_verts[sti * 6 + 0] = self_intersect_buffer.pack(dim_c<3>,"a0",sti).to_array();
-                st_verts[sti * 6 + 1] = self_intersect_buffer.pack(dim_c<3>,"a1",sti).to_array();
-                st_verts[sti * 6 + 2] = self_intersect_buffer.pack(dim_c<3>,"a2",sti).to_array();
-                st_verts[sti * 6 + 3] = self_intersect_buffer.pack(dim_c<3>,"b0",sti).to_array();
-                st_verts[sti * 6 + 4] = self_intersect_buffer.pack(dim_c<3>,"b1",sti).to_array();
-                st_verts[sti * 6 + 5] = self_intersect_buffer.pack(dim_c<3>,"b2",sti).to_array();
+        // ompPol(zs::range(nm_insts),[
+        //     &st_verts,&st_tris,self_intersect_buffer = proxy<omp_space>({},self_intersect_buffer)] (int sti) mutable {
+        //         st_verts[sti * 6 + 0] = self_intersect_buffer.pack(dim_c<3>,"a0",sti).to_array();
+        //         st_verts[sti * 6 + 1] = self_intersect_buffer.pack(dim_c<3>,"a1",sti).to_array();
+        //         st_verts[sti * 6 + 2] = self_intersect_buffer.pack(dim_c<3>,"a2",sti).to_array();
+        //         st_verts[sti * 6 + 3] = self_intersect_buffer.pack(dim_c<3>,"b0",sti).to_array();
+        //         st_verts[sti * 6 + 4] = self_intersect_buffer.pack(dim_c<3>,"b1",sti).to_array();
+        //         st_verts[sti * 6 + 5] = self_intersect_buffer.pack(dim_c<3>,"b2",sti).to_array();
 
-                st_tris[sti * 2 + 0] = zeno::vec3i(sti * 6 + 0,sti * 6 + 1,sti * 6 + 2);
-                st_tris[sti * 2 + 1] = zeno::vec3i(sti * 6 + 3,sti * 6 + 4,sti * 6 + 5);
-        });   
+        //         st_tris[sti * 2 + 0] = zeno::vec3i(sti * 6 + 0,sti * 6 + 1,sti * 6 + 2);
+        //         st_tris[sti * 2 + 1] = zeno::vec3i(sti * 6 + 3,sti * 6 + 4,sti * 6 + 5);
+        // });   
 
-        // std::cout << "nm_insts : " << nm_insts << std::endl;
-        set_output("st_facet_vis",std::move(st_fact_vis));
+        // // std::cout << "nm_insts : " << nm_insts << std::endl;
+        // set_output("st_facet_vis",std::move(st_fact_vis));
 
-        auto st_ring_vis = std::make_shared<zeno::PrimitiveObject>();
-        auto& its_ring_verts = st_ring_vis->verts;
-        auto& its_ring_lines = st_ring_vis->lines;
-        its_ring_verts.resize(nm_insts * 2);
-        its_ring_lines.resize(nm_insts);
-        ompPol(zs::range(nm_insts),[
-            &its_ring_verts,&its_ring_lines,self_intersect_buffer = proxy<omp_space>({},self_intersect_buffer)] (int sti) mutable {
-            auto p0 = self_intersect_buffer.pack(dim_c<3>,"p0",sti);
-            auto p1 = self_intersect_buffer.pack(dim_c<3>,"p1",sti);
-            its_ring_verts[sti * 2 + 0] = p0.to_array();
-            its_ring_verts[sti * 2 + 1] = p1.to_array();
-            its_ring_lines[sti] = zeno::vec2i{sti * 2 + 0,sti * 2 + 1};
-        });
+        // auto st_ring_vis = std::make_shared<zeno::PrimitiveObject>();
+        // auto& its_ring_verts = st_ring_vis->verts;
+        // auto& its_ring_lines = st_ring_vis->lines;
+        // its_ring_verts.resize(nm_insts * 2);
+        // its_ring_lines.resize(nm_insts);
+        // ompPol(zs::range(nm_insts),[
+        //     &its_ring_verts,&its_ring_lines,self_intersect_buffer = proxy<omp_space>({},self_intersect_buffer)] (int sti) mutable {
+        //     auto p0 = self_intersect_buffer.pack(dim_c<3>,"p0",sti);
+        //     auto p1 = self_intersect_buffer.pack(dim_c<3>,"p1",sti);
+        //     its_ring_verts[sti * 2 + 0] = p0.to_array();
+        //     its_ring_verts[sti * 2 + 1] = p1.to_array();
+        //     its_ring_lines[sti] = zeno::vec2i{sti * 2 + 0,sti * 2 + 1};
+        // });
 
-        set_output("st_ring_vis",std::move(st_ring_vis));
+        // set_output("st_ring_vis",std::move(st_ring_vis));
 
-        auto st_facet_rest_vis = std::make_shared<zeno::PrimitiveObject>();
-        auto& st_rest_verts = st_facet_rest_vis->verts;
-        auto& st_rest_tris = st_facet_rest_vis->tris;
-        st_rest_verts.resize(self_intersect_buffer.size() * 6);
-        st_rest_tris.resize(self_intersect_buffer.size() * 2);
-        ompPol(zs::range(nm_insts),[
-            &st_rest_verts,&st_rest_tris,self_intersect_buffer = proxy<omp_space>({},self_intersect_buffer)] (int sti) mutable {
-                st_rest_verts[sti * 6 + 0] = self_intersect_buffer.pack(dim_c<3>,"A0",sti).to_array();
-                st_rest_verts[sti * 6 + 1] = self_intersect_buffer.pack(dim_c<3>,"A1",sti).to_array();
-                st_rest_verts[sti * 6 + 2] = self_intersect_buffer.pack(dim_c<3>,"A2",sti).to_array();
-                st_rest_verts[sti * 6 + 3] = self_intersect_buffer.pack(dim_c<3>,"B0",sti).to_array();
-                st_rest_verts[sti * 6 + 4] = self_intersect_buffer.pack(dim_c<3>,"B1",sti).to_array();
-                st_rest_verts[sti * 6 + 5] = self_intersect_buffer.pack(dim_c<3>,"B2",sti).to_array();
+        // auto st_facet_rest_vis = std::make_shared<zeno::PrimitiveObject>();
+        // auto& st_rest_verts = st_facet_rest_vis->verts;
+        // auto& st_rest_tris = st_facet_rest_vis->tris;
+        // st_rest_verts.resize(self_intersect_buffer.size() * 6);
+        // st_rest_tris.resize(self_intersect_buffer.size() * 2);
+        // ompPol(zs::range(nm_insts),[
+        //     &st_rest_verts,&st_rest_tris,self_intersect_buffer = proxy<omp_space>({},self_intersect_buffer)] (int sti) mutable {
+        //         st_rest_verts[sti * 6 + 0] = self_intersect_buffer.pack(dim_c<3>,"A0",sti).to_array();
+        //         st_rest_verts[sti * 6 + 1] = self_intersect_buffer.pack(dim_c<3>,"A1",sti).to_array();
+        //         st_rest_verts[sti * 6 + 2] = self_intersect_buffer.pack(dim_c<3>,"A2",sti).to_array();
+        //         st_rest_verts[sti * 6 + 3] = self_intersect_buffer.pack(dim_c<3>,"B0",sti).to_array();
+        //         st_rest_verts[sti * 6 + 4] = self_intersect_buffer.pack(dim_c<3>,"B1",sti).to_array();
+        //         st_rest_verts[sti * 6 + 5] = self_intersect_buffer.pack(dim_c<3>,"B2",sti).to_array();
 
-                st_rest_tris[sti * 2 + 0] = zeno::vec3i(sti * 6 + 0,sti * 6 + 1,sti * 6 + 2);
-                st_rest_tris[sti * 2 + 1] = zeno::vec3i(sti * 6 + 3,sti * 6 + 4,sti * 6 + 5);
-        });  
-        set_output("st_facet_rest_vis",std::move(st_facet_rest_vis));
+        //         st_rest_tris[sti * 2 + 0] = zeno::vec3i(sti * 6 + 0,sti * 6 + 1,sti * 6 + 2);
+        //         st_rest_tris[sti * 2 + 1] = zeno::vec3i(sti * 6 + 3,sti * 6 + 4,sti * 6 + 5);
+        // });  
+        // set_output("st_facet_rest_vis",std::move(st_facet_rest_vis));
 
-        dtiles_t st_pair_buffer{tris.get_allocator(),{
-            {"x0",3},
-            {"x1",3}
-        },(std::size_t)nm_insts};    
-        cudaPol(zs::range(nm_insts),[
-            inst_buffer_info = proxy<cuda_space>({},inst_buffer_info),
-            // instBuffer = proxy<cuda_space>(instBuffer),
-            st_pair_buffer = proxy<cuda_space>({},st_pair_buffer),
-            verts = proxy<cuda_space>({},verts_buffer),
-            tris = proxy<cuda_space>({},tri_buffer)] ZS_LAMBDA(int sti) mutable {
-                auto tpair = inst_buffer_info.pack(dim_c<2>,"pair",sti,int_c);
-                auto ta = tpair[0];
-                auto tb = tpair[1];
-                // auto ta = instBuffer[sti][0];
-                // auto tb = instBuffer[sti][1];
+        // dtiles_t st_pair_buffer{tris.get_allocator(),{
+        //     {"x0",3},
+        //     {"x1",3}
+        // },(std::size_t)nm_insts};    
+        // cudaPol(zs::range(nm_insts),[
+        //     inst_buffer_info = proxy<cuda_space>({},inst_buffer_info),
+        //     // instBuffer = proxy<cuda_space>(instBuffer),
+        //     st_pair_buffer = proxy<cuda_space>({},st_pair_buffer),
+        //     verts = proxy<cuda_space>({},verts_buffer),
+        //     tris = proxy<cuda_space>({},tri_buffer)] ZS_LAMBDA(int sti) mutable {
+        //         auto tpair = inst_buffer_info.pack(dim_c<2>,"pair",sti,int_c);
+        //         auto ta = tpair[0];
+        //         auto tb = tpair[1];
+        //         // auto ta = instBuffer[sti][0];
+        //         // auto tb = instBuffer[sti][1];
 
 
-                auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
-                auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
+        //         auto triA = tris.pack(dim_c<3>,"inds",ta,int_c);
+        //         auto triB = tris.pack(dim_c<3>,"inds",tb,int_c);
 
-                auto x0 = vec3::zeros();
-                auto x1 = vec3::zeros();
+        //         auto x0 = vec3::zeros();
+        //         auto x1 = vec3::zeros();
 
-                for(int i = 0;i != 3;++i) {
-                    x0 += verts.pack(dim_c<3>,"x",triA[i]) / (T)3.0;
-                    x1 += verts.pack(dim_c<3>,"x",triB[i]) / (T)3.0;
-                }
+        //         for(int i = 0;i != 3;++i) {
+        //             x0 += verts.pack(dim_c<3>,"x",triA[i]) / (T)3.0;
+        //             x1 += verts.pack(dim_c<3>,"x",triB[i]) / (T)3.0;
+        //         }
 
-                st_pair_buffer.tuple(dim_c<3>,"x0",sti) = x0.to_array();
-                st_pair_buffer.tuple(dim_c<3>,"x1",sti) = x1.to_array();
-        });
+        //         st_pair_buffer.tuple(dim_c<3>,"x0",sti) = x0.to_array();
+        //         st_pair_buffer.tuple(dim_c<3>,"x1",sti) = x1.to_array();
+        // });
 
-        st_pair_buffer = st_pair_buffer.clone({zs::memsrc_e::host});
-        auto st_pair_vis = std::make_shared<zeno::PrimitiveObject>();
-        auto& st_pair_verts = st_pair_vis->verts;
-        auto& st_pair_lines = st_pair_vis->lines;
-        st_pair_verts.resize(st_pair_buffer.size() * 2);
-        st_pair_lines.resize(st_pair_buffer.size());    
+        // st_pair_buffer = st_pair_buffer.clone({zs::memsrc_e::host});
+        // auto st_pair_vis = std::make_shared<zeno::PrimitiveObject>();
+        // auto& st_pair_verts = st_pair_vis->verts;
+        // auto& st_pair_lines = st_pair_vis->lines;
+        // st_pair_verts.resize(st_pair_buffer.size() * 2);
+        // st_pair_lines.resize(st_pair_buffer.size());    
 
-        ompPol(zs::range(st_pair_buffer.size()),[
-            st_pair_buffer = proxy<omp_space>({},st_pair_buffer),
-            &st_pair_verts,&st_pair_lines] (int spi) mutable {
-                auto x0 = st_pair_buffer.pack(dim_c<3>,"x0",spi);
-                auto x1 = st_pair_buffer.pack(dim_c<3>,"x1",spi);
-                st_pair_verts[spi * 2 + 0] = x0.to_array();
-                st_pair_verts[spi * 2 + 1] = x1.to_array();
-                st_pair_lines[spi] = zeno::vec2i{spi * 2 + 0,spi * 2 + 1};
-        });
+        // ompPol(zs::range(st_pair_buffer.size()),[
+        //     st_pair_buffer = proxy<omp_space>({},st_pair_buffer),
+        //     &st_pair_verts,&st_pair_lines] (int spi) mutable {
+        //         auto x0 = st_pair_buffer.pack(dim_c<3>,"x0",spi);
+        //         auto x1 = st_pair_buffer.pack(dim_c<3>,"x1",spi);
+        //         st_pair_verts[spi * 2 + 0] = x0.to_array();
+        //         st_pair_verts[spi * 2 + 1] = x1.to_array();
+        //         st_pair_lines[spi] = zeno::vec2i{spi * 2 + 0,spi * 2 + 1};
+        // });
 
-        set_output("st_pair_vis",std::move(st_pair_vis));
+        // set_output("st_pair_vis",std::move(st_pair_vis));
 
         // dtiles_t corner_verts_buffer{gia_res.get_allocator()}
     }
@@ -2571,9 +2571,9 @@ struct VisualizeSelfIntersections : zeno::INode {
 
 ZENDEFNODE(VisualizeSelfIntersections, {{"zsparticles"},
                                   {
-                                        "st_ring_vis",
-                                        "st_facet_rest_vis",
-                                        "st_facet_vis",                                                           
+                                        // "st_ring_vis",
+                                        // "st_facet_rest_vis",
+                                        // "st_facet_vis",                                                           
                                         "flood_region",
                                         // "be_vis"
                                         // "wire_fr_vis"
