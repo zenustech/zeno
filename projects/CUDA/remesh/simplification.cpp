@@ -22,9 +22,11 @@ struct PolyReduceLite : INode {
         std::vector<int> vertDiscard(pos.size());
         std::vector<std::set<int>> vertTris(pos.size());  /// neighboring tris
         std::vector<std::set<int>> vertVerts(pos.size()); /// neighboring verts
+        std::vector<std::pair<float, std::pair<int, int>>> vertEdgeCosts(pos.size()); /// neighboring verts
 
         auto &tris = prim->tris.values;
         std::vector<int> triDiscard(tris.size());
+        std::vector<zeno::vec3f> triNorms(tris.size());
 
         {
             /// establish vert-face & vert-vert relations
@@ -44,11 +46,15 @@ struct PolyReduceLite : INode {
                     }
                     vNo = vNoJ;
                 }
+                triNorms[triNo] = normalize(cross(pos[tri[1]] - pos[tri[0]], pos[tri[2]] - pos[tri[0]]));
             });
         }
 
         int nIters = get_input2<int>("iterations");
 
+        auto updateTriNormal = [&tris, &pos, &triNorms](int triNo, const auto &tri) {
+            triNorms[triNo] = normalize(cross(pos[tri[1]] - pos[tri[0]], pos[tri[2]] - pos[tri[0]]));
+        };
         auto triHasVert = [&tris](const auto &tri, int v) {
             for (auto vNo : tri)
                 if (vNo == v)
@@ -61,9 +67,56 @@ struct PolyReduceLite : INode {
         for (int i = 0; i != nIters; ++i) {
             zeno::log_warn(fmt::format("begin iter {}\n", i));
             /// evaluate vert curvatures
-            ;
+            pol(range(pos.size()), [&](int i) {
+                vertEdgeCosts[i] = std::make_pair(limits<float>::max(), std::make_pair(i, -1));
+                if (vertVerts[i].size() == 0 || vertDiscard[i]) {
+                    return;
+                }
+
+                auto cost = limits<float>::max();
+                for (auto j : vertVerts[i]) {
+                    if (vertDiscard[j]) continue;
+                    auto elen = length(pos[i] - pos[j]);
+                    auto curvature = 0.f;
+                    std::vector<int> sides; // tris that owns edge <i, j>
+                    for (int triNo : vertTris[i]) {
+                        if (triDiscard[triNo])
+                            continue;
+                        if (triHasVert(tris[triNo], j)) {
+                            sides.push_back(triNo);
+                        }
+                    }
+
+                    for (int triI : vertTris[i]) {
+                        auto minCurv = 1.f;
+                        for (auto triJ : sides) {
+                            auto dotProd = dot(triNorms[triI], triNorms[triJ]);
+                            minCurv = std::min(minCurv, (1 - dotProd) / 2.f);
+                        }
+                        curvature = std::max(curvature, minCurv);
+                    }
+                    if (auto c = curvature * elen; c < cost) {
+                        vertEdgeCosts[i] = std::make_pair(c, std::make_pair(i, j));
+                    }
+                }
+            });
             /// sort edges for collapse
-            ;
+            auto pair = std::reduce(std::begin(vertEdgeCosts), std::end(vertEdgeCosts), std::make_pair(limits<float>::max(), std::make_pair(-1, -1)), 
+                [](const std::pair<float, std::pair<int, int>> &a, const std::pair<float, std::pair<int, int>> &b) {
+                    if (a.first < b.first)
+                        return a;
+                    else return b;
+                });
+#if 1
+            u = pair.second.first;
+            v = pair.second.second;
+            fmt::print("selecting uv <{}, {}>\n", u, v);
+            if (v == -1) {
+                fmt::print("no more edges to collapse!\n");
+                break;
+            }
+            // pos[v] = (pos[v] + pos[u]) / 2;
+#else
             // temporal measure
             do {
                 u = (u32)rng() % (u32)pos.size();
@@ -76,10 +129,11 @@ struct PolyReduceLite : INode {
             if (u < v) {
                 std::swap(u, v);
             }
-            fmt::print("collapsing {} to {}.\n", u, v);
-
             // 0. adjust v pos
             pos[v] = (pos[v] + pos[u]) / 2;
+#endif
+            // fmt::print("collapsing {} to {}.\n", u, v);
+
             // 1. remove vert u (also maintain vertVerts)
             vertDiscard[u] = 1;
             for (auto nv : vertVerts[u]) {
@@ -89,7 +143,7 @@ struct PolyReduceLite : INode {
                     vertVerts[v].insert(nv);
                 }
             }
-            zeno::log_warn(fmt::format("done phase 1\n"));
+            // zeno::log_warn(fmt::format("done phase 1\n"));
             // 2. remove triangles containing edge <u, v>
             for (int triNo : vertTris[u]) {
                 if (triDiscard[triNo])
@@ -99,7 +153,7 @@ struct PolyReduceLite : INode {
                     triDiscard[triNo] = 1;
                 }
             }
-            zeno::log_warn(fmt::format("done phase 2\n"));
+            // zeno::log_warn(fmt::format("done phase 2\n"));
             // 3. remapping triangles verts u->v (also maintain vertTris)
             for (auto triNo : vertTris[u]) {
                 if (triDiscard[triNo])
@@ -112,7 +166,14 @@ struct PolyReduceLite : INode {
                         break;
                     }
             }
-            zeno::log_warn(fmt::format("done phase 3\n"));
+            // zeno::log_warn(fmt::format("done phase 3\n"));
+            // 4. update tri normals
+            for (auto triNo : vertTris[v]) {
+                if (triDiscard[triNo])
+                    continue;
+                auto &tri = tris[triNo];
+                updateTriNormal(triNo, tri);
+            }
         }
 
         std::vector<int> voffsets(pos.size());
@@ -146,7 +207,6 @@ struct PolyReduceLite : INode {
                     auto tri = tris[i];
                     for (auto &v : tri)
                         v = voffsets[v];
-                    fmt::print("preserving tri [{}] <{}, {}, {}>\n", i, tri[0], tri[1], tri[2]);
                     newTris.values[offsets[i]] = tri;
                 }
             });
