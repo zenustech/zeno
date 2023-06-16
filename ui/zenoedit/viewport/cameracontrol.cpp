@@ -60,8 +60,6 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         scene->camera->m_need_sync = false;
         if (scene->camera->m_auto_radius) {
             this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
-                zeno::log_info("d {} {} {}", depth, x, y);
-                qDebug() << depth;
                 if (depth < 0.001f) {
                     return;
                 }
