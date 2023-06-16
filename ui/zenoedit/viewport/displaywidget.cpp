@@ -566,7 +566,7 @@ void DisplayWidget::onRecord()
         VideoRecInfo recInfo;
         dlg.getInfo(recInfo.fps, recInfo.bitrate, recInfo.res[0],
                     recInfo.res[1], recInfo.record_path, recInfo.videoname, recInfo.numOptix, recInfo.numMSAA,
-                    recInfo.bExportVideo);
+                    recInfo.bExportVideo, recInfo.needDenoise);
         //validation.
 
         ZRecFrameSelectDlg frameDlg(this);

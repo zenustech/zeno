@@ -16,6 +16,7 @@ struct VideoRecInfo
     int numMSAA = 0;
     int numOptix = 1;
     bool bExportVideo;
+    bool needDenoise = true;
     bool exitWhenRecordFinish = false;
     bool bLaunchRunByRecord;
     VideoRecInfo()
