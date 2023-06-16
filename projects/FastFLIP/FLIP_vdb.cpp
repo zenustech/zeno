@@ -3045,7 +3045,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	auto lhs_matrix = simd_uaamg::LaplacianWithLevel::
 		createPressurePoissonLaplacian(liquid_sdf, face_weight, dt);
 	auto simd_solver = simd_uaamg::PoissonSolver(lhs_matrix);
-	simd_solver.mRelativeTolerance = 1e-5;
+	simd_solver.mRelativeTolerance = 1e-6;
 	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::ScheduledRelaxedJacobi;
 
   if (enable_tension) {
