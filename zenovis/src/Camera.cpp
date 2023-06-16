@@ -43,6 +43,7 @@ void Camera::setCamera(zeno::CameraData const &cam) {
         this->m_zxx_in.radius = radius;
     }
 
+    this->m_auto_radius = !cam.isSet;
     this->m_need_sync = true;
 }
 
