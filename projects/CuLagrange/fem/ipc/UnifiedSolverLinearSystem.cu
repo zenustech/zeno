@@ -552,8 +552,8 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
                         H = (dihedral_angle_hessian(x0, x1, x2, x3) * (theta - ra) +
                              dyadic_prod(localGrad, localGrad)) *
                             k * 2 * e / h;
-                        make_pd(H);
                         H *= dt2;
+                        make_pd(H);
                     }
                 }
 
