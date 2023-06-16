@@ -649,7 +649,7 @@ size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
                             auto intp = r * dir + eV[0];
                             intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{hei,ti}.reinterpret_bits(float_c);
                             intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
-                            intersect_buffers("r",offset) = r;
+                            intersect_buffers("r",offset) = (T)r;
 
                             // make sure the opposite he - tri pairs are also inserted
                             // auto opposite_hei = zs::reinterpret_bits<int>(halfedges("opposite_he",hei));
@@ -871,7 +871,7 @@ int do_global_self_intersection_analysis(Pol& pol,
 
         auto nm_rings = mark_disconnected_island(pol,conn_topo,ringTag);
 
-        std::cout << "finish Mark disconnected island with nm_rings : " << nm_rings << std::endl;
+        // std::cout << "finish Mark disconnected island with nm_rings : " << nm_rings << std::endl;
 
         auto ring_mask_width = (nm_rings + 31) / 32;
 
@@ -931,7 +931,7 @@ int do_global_self_intersection_analysis(Pol& pol,
             auto rsize = (size_t)ringSize.getVal(ri);
 
             // if(output_intermediate_information)
-            printf("ring[%d] Size : %d\n",ri,rsize);
+            // printf("ring[%d] Size : %d\n",ri,rsize);
 
 
             int cur_ri_mask = 1 << (ri % 32);
@@ -1049,7 +1049,7 @@ int do_global_self_intersection_analysis(Pol& pol,
                 // });
                 // std::cout << "size of conn_of_first_ring : " << conn_of_first_ring.size() << std::endl;
             // }
-            std::cout << "ring[" << ri << "] : " << nm_islands << "\tnm_broken_edges : " << disable_lines.size() << "\tnm_broken_corners : " << disable_points.size() << std::endl;
+            // std::cout << "ring[" << ri << "] : " << nm_islands << "\tnm_broken_edges : " << disable_lines.size() << "\tnm_broken_corners : " << disable_points.size() << std::endl;
 
 
             zs::Vector<int> nm_cmps_every_island_count{verts.get_allocator(),(size_t)nm_islands};
@@ -1099,7 +1099,7 @@ int do_global_self_intersection_analysis(Pol& pol,
 
             for(int i = 0;i != nm_islands;++i)
                 std::cout << nm_cmps_every_island_count.getVal(i) << "\t";
-            std::cout << "max_island = " << max_island_idx << std::endl;
+            // std::cout << "max_island = " << max_island_idx << std::endl;
             // std::cout << std::endl;
 
             pol(zs::range(verts.size()),[
@@ -1135,13 +1135,14 @@ int do_global_self_intersection_analysis(Pol& pol,
             });
         }
 
-        pol(zs::range(gia_res.size()),[ring_mask_width = ring_mask_width,
-            gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int vi) mutable {
-                for(int i = 0;i != ring_mask_width;++i) {
-                    auto is_corner = gia_res("is_corner",vi * ring_mask_width + i);
+        pol(zs::range(gia_res.size()),[
+            // ring_mask_width = ring_mask_width,
+            gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int mi) mutable {
+                // for(int i = 0;i != ring_mask_width;++i) {
+                    auto is_corner = gia_res("is_corner",mi);
                     if(is_corner > (T)0.5)
-                        gia_res("ring_mask",vi * ring_mask_width + i) = zs::reinterpret_bits<T>((int)0);
-                }
+                        gia_res("ring_mask",mi) = zs::reinterpret_bits<T>((int)0);
+                // }
         });
 
         return ring_mask_width;
