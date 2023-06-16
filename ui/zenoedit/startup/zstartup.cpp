@@ -169,6 +169,5 @@ int invoke_main(int argc, char *argv[]) {
     }
     zeno::log_info("launching sub-program [{}]", prog);
     auto alterMain = ud.get<zeno::GenericObject<int(*)(int, char **)>>("subprogram_" + prog)->get();
-    alterMain(newArgv.size(), newArgv.data());
-    return 0;
+    return alterMain(newArgv.size(), newArgv.data());
 }
