@@ -15,7 +15,7 @@ class ZRecordVideoDlg : public QDialog
 public:
 	ZRecordVideoDlg(QWidget* parent = nullptr);
 	bool getInfo(int& fps, int& bitrate, float& width, float& height,
-                 QString& path, QString& fn, int &numOptix, int &numMSAA, bool& bExportVideo);
+                 QString& path, QString& fn, int &numOptix, int &numMSAA, bool& bExportVideo, bool& needDenoise);
 
 private:
 	Ui::RecordVideoDlg* m_ui;
