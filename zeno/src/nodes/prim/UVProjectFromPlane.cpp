@@ -19,6 +19,7 @@
 #define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
+#include <zeno/types/HeatmapObject.h>
 
 static const float eps = 0.0001f;
 
@@ -398,6 +399,38 @@ ZENDEFNODE(ReadImageFile, {
     {"comp"},
 });
 
+void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
+    std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
+    std::vector<char> data(header.size() + w * h * sizeof(vec3f));
+    memcpy(data.data(), header.data(), header.size());
+    memcpy(data.data() + header.size(), rgb, w * h * sizeof(vec3f));
+    file_put_binary(data, path);
+}
+
+void write_pfm(std::string& path, std::shared_ptr<PrimitiveObject> image) {
+    auto &ud = image->userData();
+    int w = ud.get2<int>("w");
+    int h = ud.get2<int>("h");
+    write_pfm(path, w, h, image->verts->data());
+}
+
+void write_jpg(std::string& path, std::shared_ptr<PrimitiveObject> image) {
+    int w = image->userData().get2<int>("w");
+    int h = image->userData().get2<int>("h");
+    std::vector<uint8_t> colors;
+    for (auto i = 0; i < w * h; i++) {
+        auto rgb = zeno::pow(image->verts[i], 1.0f / 2.2f);
+        int r = zeno::clamp(int(rgb[0] * 255.99), 0, 255);
+        int g = zeno::clamp(int(rgb[1] * 255.99), 0, 255);
+        int b = zeno::clamp(int(rgb[2] * 255.99), 0, 255);
+        colors.push_back(r);
+        colors.push_back(g);
+        colors.push_back(b);
+    }
+    stbi_flip_vertically_on_write(1);
+    stbi_write_jpg(path.c_str(), w, h, 3, colors.data(), 100);
+}
+
 struct WriteImageFile : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -500,16 +533,8 @@ struct WriteImageFile : INode {
             }
         }
         else if (type == "pfm") {
-            std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
-            data.resize(header.size() + w * h * sizeof(vec3f));
-            std::vector<vec3f> rgbs(w * h);
-            for (auto i = 0; i < w * h; i++) {
-                rgbs[i] = zeno::pow(image->verts[i], 1.0f / gamma);
-            }
-            std::vector<char> data(header.size() + rgbs.size() * sizeof(rgbs[0]));
-            memcpy(data.data(), header.data(), header.size());
-            memcpy(data.data() + header.size(), rgbs.data(), rgbs.size() * sizeof(rgbs[0]));
-            file_put_binary(data, path + ".pfm");
+            path = path + ".pfm";
+            write_pfm(path, image);
         }
         set_output("image", image);
     }

@@ -11,6 +11,7 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenoedit/zenomainwindow.h>
+#include <zeno/types/HeatmapObject.h>
 #include "launch/corelaunch.h"
 
 
@@ -92,6 +93,36 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
 
 void RecordVideoMgr::endRecToExportVideo()
 {
+    // denoising
+    {
+        QString dir_path = m_recordInfo.record_path + "/P/";
+        QDir qDir = QDir(dir_path);
+        qDir.setNameFilters(QStringList("*.jpg"));
+        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+        fileList.sort();
+        for (auto i = 0; i < fileList.size(); i++) {
+            auto jpg_path = dir_path + fileList.at(i);
+            auto pfm_path = jpg_path + ".pfm";
+            auto pfm_dn_path = jpg_path + ".dn.pfm";
+            // jpg to pfm
+            {
+                auto image = zeno::readImageFile(jpg_path.toStdString());
+                write_pfm(pfm_path.toStdString(), image);
+            }
+            // cmd
+            {
+                QString cmd = QString("oidnDenoise --ldr %1 -o %2").arg(pfm_path)
+                        .arg(pfm_dn_path);
+                qDebug() << cmd;
+                int ret = QProcess::execute(cmd);
+                // pfm to jpg
+                if (ret == 0) {
+                    auto image = zeno::readPFMFile(pfm_dn_path.toStdString());
+                    write_jpg(jpg_path.toStdString(), image);
+                }
+            }
+        }
+    }
     if (!m_recordInfo.bExportVideo) {
         emit recordFinished(m_recordInfo.record_path);
         return;
