@@ -94,31 +94,38 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
 void RecordVideoMgr::endRecToExportVideo()
 {
     // denoising
-    {
+    if (m_recordInfo.needDenoise) {
         QString dir_path = m_recordInfo.record_path + "/P/";
         QDir qDir = QDir(dir_path);
         qDir.setNameFilters(QStringList("*.jpg"));
         QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
         fileList.sort();
         for (auto i = 0; i < fileList.size(); i++) {
-            auto jpg_path = dir_path + fileList.at(i);
+            auto jpg_path = (dir_path + fileList.at(i)).toStdString();
             auto pfm_path = jpg_path + ".pfm";
             auto pfm_dn_path = jpg_path + ".dn.pfm";
             // jpg to pfm
             {
-                auto image = zeno::readImageFile(jpg_path.toStdString());
-                write_pfm(pfm_path.toStdString(), image);
+                auto image = zeno::readImageFile(jpg_path);
+                write_pfm(pfm_path, image);
             }
             // cmd
             {
-                QString cmd = QString("oidnDenoise --ldr %1 -o %2").arg(pfm_path)
-                        .arg(pfm_dn_path);
-                qDebug() << cmd;
+                QString cmd = QString("oidnDenoise --ldr %1 -o %2").arg(QString::fromStdString(pfm_path))
+                        .arg(QString::fromStdString(pfm_dn_path));
                 int ret = QProcess::execute(cmd);
                 // pfm to jpg
                 if (ret == 0) {
-                    auto image = zeno::readPFMFile(pfm_dn_path.toStdString());
-                    write_jpg(jpg_path.toStdString(), image);
+                    auto image = zeno::readPFMFile(pfm_dn_path);
+                    write_jpg(jpg_path, image);
+                    QFile fileOrigin(QString::fromStdString(pfm_path));
+                    if (fileOrigin.exists()) {
+                        fileOrigin.remove();
+                    }
+                    QFile fileDn(QString::fromStdString(pfm_dn_path));
+                    if (fileDn.exists()) {
+                        fileDn.remove();
+                    }
                 }
             }
         }

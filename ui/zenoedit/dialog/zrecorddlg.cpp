@@ -53,7 +53,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
 }
 
 bool ZRecordVideoDlg::getInfo(int& fps, int& bitrate, float& width, float& height, 
-             QString& path, QString& fn, int &numOptix, int &numMSAA, bool& bExportVideo)
+             QString& path, QString& fn, int &numOptix, int &numMSAA, bool& bExportVideo, bool& needDenoise)
 {
     fps = m_ui->fps->text().toInt();
     bitrate = m_ui->bitrate->text().toInt();
@@ -63,6 +63,7 @@ bool ZRecordVideoDlg::getInfo(int& fps, int& bitrate, float& width, float& heigh
     height = m_ui->lineHeight->text().toFloat();
     path = m_ui->linePath->text();
     bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
+    needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
     if (path.isEmpty())
     {
         QTemporaryDir dir;
