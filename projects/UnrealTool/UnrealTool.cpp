@@ -70,7 +70,7 @@ zeno::remote::ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField
     constexpr uint16_t uint16Max = std::numeric_limits<uint16_t>::max();
     for (const auto& Row : InHeightData.Data) {
         for (const uint16_t Height : Row) {
-            Arr[Idx] = ((float)Height - uint16Max / 2.f) / uint16Max * 255.f;
+            Arr[Idx] = ((float)Height - uint16Max / 2.f) / uint16Max * UE_LANDSCAPE_ZSCALE_INV;
             Prim->verts[Idx] = { Prim->verts[Idx].at(0), Arr[Idx], Prim->verts[Idx].at(2) };
             Idx++;
         }

@@ -250,7 +250,7 @@ struct ZSRetrieveVectorField : zeno::INode {
                 sverts[i*2 + 0] = zeno::vec3f{start[0],start[1],start[2]};
                 sverts[i*2 + 1] = zeno::vec3f{end[0],end[1],end[2]};
 
-                auto x = (zsvec_buffer[i]-min_res[0])/(max_res[0]-min_res[0]);
+                auto x = (zsvec_buffer[i]-min_res[0])/(max_res[0]-min_res[0] + (T)1e-6);
 
                 auto color = heatmap->interp(x);
                 scolors[i*2 + 0] = color;     

@@ -1,21 +1,22 @@
 #pragma once
 
+#include <nanovdb/NanoVDB.h>
+
+#define _DELTA_TRACKING_ true
+
+#ifdef __CUDACC_RTC__
+#else
+#endif
+
 #include <optix.h>
+
 #include <cuda/random.h>
 #include <cuda/helpers.h>
 #include <sutil/vec_math.h>
-#include "zxxglslvec.h"
-#include <math_constants.h>
 
-#ifdef __CUDACC_RTC__ 
-    #define _CPU_GPU_ __device__ __host__
-#else
-    #define _CPU_GPU_ /* Nothing */
-#endif
-
-#define _FLT_EPL_ 1.19209290e-7F
-
-#define _DELTA_TRACKING_ true
+namespace nanovdb {
+    using Fp32 = float;
+};
 
 namespace pbrt {
 
@@ -29,7 +30,7 @@ inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
 //        b = float3{0, a.z, -a.y} /
 //              sqrt(max(_FLT_EPL_, a.y * a.y + a.z * a.z));
     
-    if (abs(a.x) > abs(a.y))
+    if (fabs(a.x) > fabs(a.y))
         b = float3{-a.z, 0, a.x};
     else
         b = float3{0, a.z, -a.y};
@@ -44,7 +45,7 @@ inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi) {
 
 inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi,
                                  const float3 &x, const float3 &y, const float3 &z) {
-    return sinTheta * cos(phi) * x + sinTheta * sin(phi) * y + cosTheta * z;
+    return sinTheta * cosf(phi) * x + sinTheta * sinf(phi) * y + cosTheta * z;
 }
 
 struct HenyeyGreenstein {
@@ -59,7 +60,7 @@ struct HenyeyGreenstein {
 inline float PhaseHG(float cosTheta, float g) {
     float gg = g * g;
     float denom = 1 + gg + 2 * g * cosTheta;
-    return (0.25 / M_PIf) * (1 - gg) / (denom * sqrt(denom));
+    return (0.25f / M_PIf) * (1 - gg) / (denom * sqrtf(denom));
 }
 
 // HenyeyGreenstein Method Definitions
@@ -70,7 +71,7 @@ inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
 inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const {
     // Compute $\cos \theta$ for Henyey--Greenstein sample
     float cosTheta;
-    if (abs(g) < 1e-3)
+    if (fabs(g) < 1e-3f)
         cosTheta = 1 - 2 * uu.x;
     else {
         float gg = g * g;
@@ -79,7 +80,7 @@ inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const floa
     }
 
     // Compute direction _wi_ for Henyey--Greenstein sample
-    float sinTheta = sqrt(fmax(0.0f, 1.0f - cosTheta * cosTheta));
+    float sinTheta = sqrtf(fmax(0.0f, 1.0f - cosTheta * cosTheta));
     float phi = 2 * M_PIf * uu.y;
     
     float3 v1, v2;
@@ -139,46 +140,3 @@ class BlackbodySpectrum {
 };
 
 } // namespace pbrt
-
-__device__ float3 kelvinRGB(float kelvin) //https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
-{
-    float3 result;
-
-    kelvin = clamp(kelvin, 1000.f, 40000.f) / 100.f;
-
-    if (kelvin <= 66) {
-        result.x = 1.0;
-        result.y = 0.39008157876901960784 * log(kelvin) - 0.63184144378862745098;
-    } else {
-        float t = kelvin - 60.0;
-		result.x = 1.29293618606274509804 * powf(t, -0.1332047592);
-		result.y = 1.12989086089529411765 * powf(t, -0.0755148492);
-    }
-
-    if (kelvin >= 66)
-        result.z = 1.0;
-    else if (kelvin <= 19)
-        result.z = 0.0;
-    else
-        result.z = 0.54320678911019607843 * log(kelvin - 10.0) - 1.19625408914;
-
-    return clamp(result, 0.0, 1.0);;
-}
-
-__device__ vec3 fakeBlackBody(float temp) //https://www.shadertoy.com/view/MlcGD7
-{
-    const static float white_temp = 6500;
-
-    const static float min_temp = 1000;
-    const static float max_temp = 15000;
-
-    temp = clamp(temp, min_temp, max_temp);
-
-    if (temp < white_temp) {
-        float ratio = temp / white_temp;
-        return vec3(1,1./4.,1./16.) * exp(4.* ratio - 1.);
-    } else {
-        float ratio = (temp - white_temp) / (max_temp - white_temp);
-        return pow(vec3(.1, .7, .8), vec3(4 * ratio));
-    }
-}

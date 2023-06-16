@@ -329,6 +329,22 @@ namespace zeno {
                 for(int array_id = 0;array_id != nm_arrays;++array_id){
                     int nm_components,nm_tuples;
                     bufferp = readline(buffer,fp,&line_count);
+                    char possible_meta_data_tag[256];
+                    sscanf(bufferp,"%s",possible_meta_data_tag);
+                    if(!strcmp(possible_meta_data_tag,"METADATA")) {
+                        printf("reading metadata\n");
+                        bufferp = readline(buffer,fp,&line_count);
+                        int nm_meta_data = 0;
+                        char information_tag[256];
+                        sscanf(bufferp,"%s %d",information_tag,&nm_meta_data);
+                        printf("information : %s %d\n",information_tag,nm_meta_data);
+                        // skip the meta data
+                        for(int i = 0;i != nm_meta_data * 2;++i) {
+                            // bufferp = readline(line,fp,&line_count,1);
+                            bufferp = readline(buffer,fp,&line_count);
+                        }
+                        bufferp = readline(buffer,fp,&line_count);
+                    }
                     sscanf(bufferp,"%s %d %d %s",array_name,&nm_components,&nm_tuples,dummy_str);
                     printf("array_name : %s | nm_components  %d | nm_tuples : %d | type : %s at %d\n",
                         array_name,nm_components,nm_tuples,dummy_str,line_count);
@@ -562,6 +578,19 @@ namespace zeno {
             if(line[0] == '#' || line[0]=='\n' || line[0] == 10 || line[0] == 13 || line[0] == 32) continue;   
             sscanf(line,"%s",id);
             // reading the points
+            if(!strcmp(id,"METADATA")) {
+                printf("reading metadata\n");
+                bufferp = readline(line,fp,&line_count,1);
+                int nm_meta_data = 0;
+                sscanf(line,"%s %d",id,&nm_meta_data);
+                printf("information : %s %d\n",id,nm_meta_data);
+                // skip the meta data
+                for(int i = 0;i != nm_meta_data * 2;++i) {
+                    // bufferp = readline(line,fp,&line_count,1);
+                    bufferp = readline(line,fp,&line_count,1);
+                }
+                continue;
+            }
             if(!strcmp(id,"POINTS")){
                 printf("reading points\n");
                 int numberofpoints = 0;

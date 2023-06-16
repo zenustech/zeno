@@ -54,11 +54,33 @@ ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
     connect(m_tabWidget, SIGNAL(layoutBtnClicked()), this, SLOT(onDockOptionsClicked()));
     //connect(this, SIGNAL(dockLocationChanged(Qt::DockWidgetArea)),
     //    mainWin, SLOT(onDockLocationChanged(Qt::DockWidgetArea)));
+    connect(m_tabWidget, &ZDockTabWidget::tabAboutToClose, this, [=](int i) {
+        DockToolbarWidget* pToolWid = qobject_cast<DockToolbarWidget*>(m_tabWidget->widget(i));
+        if (pToolWid)
+            pToolWid->onTabAboutToClose();
+    });
+
     connect(m_tabWidget, &ZDockTabWidget::tabClosed, this, [=]() {
         if (m_tabWidget->count() == 0) {
             this->close();
         }
     });
+    connect(m_tabWidget, &ZDockTabWidget::currentChanged, this, [=](int index) {
+        if (DockContent_View* view = qobject_cast<DockContent_View*>(m_tabWidget->widget(index)))
+        {
+            if (DisplayWidget* dpview = view->getDisplayWid())
+            {
+                ZenoMainWindow* main = zenoApp->getMainWindow();
+                ZASSERT_EXIT(main);
+                QVector<DisplayWidget*> views = main->viewports();
+                for (auto view : views)
+                {
+                    view->setIsCurrent(false);
+                }
+                dpview->setIsCurrent(true);
+            }
+        }
+        });
 }
 
 ZTabDockWidget::~ZTabDockWidget()
@@ -187,9 +209,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_IMAGE:
         {
-            DockContent_Image *wid = new DockContent_Image;
-            wid->initUI();
-            return wid;
+            return new ZenoImagePanel;
         }
         case PANEL_OPTIX_VIEW:
         {
@@ -299,16 +319,16 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                 view->getDisplayWid()->onNodeSelected(subgIdx, nodes, select);
             }
         }
-        else if (DockContent_Image *image = qobject_cast<DockContent_Image *>(wid))
+        else if (ZenoImagePanel *image = qobject_cast<ZenoImagePanel *>(wid))
         {
             if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];
-                image->getImagePanel()->setPrim(idx.data(ROLE_OBJID).toString().toStdString());
+                image->setPrim(idx.data(ROLE_OBJID).toString().toStdString());
             }
             if (!select)
             {
-                image->getImagePanel()->clear();
+                image->clear();
             }
         }
     }

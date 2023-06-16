@@ -18,20 +18,18 @@
 #include "viewport/displaywidget.h"
 
 
-const float ziv_wheelZoomFactor = 1.25;
+static float ziv_wheelZoomFactor = 1.25;
 
 class ZenoImageView: public QGraphicsView {
 public:
     QGraphicsPixmapItem *_image = nullptr;
     QGraphicsScene *scene = nullptr;
+    bool fitMode = true;
     explicit ZenoImageView(QWidget *parent) : QGraphicsView(parent) {
         scene = new QGraphicsScene;
         this->setScene(scene);
 
         setBackgroundBrush(QColor(37, 37, 37));
-
-        this->setHorizontalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
-        this->setVerticalScrollBarPolicy(Qt::ScrollBarPolicy::ScrollBarAlwaysOff);
     }
 
     bool hasImage() {
@@ -61,11 +59,30 @@ public:
         if (!hasImage()) {
             return;
         }
-
-        fitInView(sceneRect(), Qt::AspectRatioMode::KeepAspectRatio);
+        if (fitMode) {
+            fitInView(sceneRect(), Qt::AspectRatioMode::KeepAspectRatio);
+        }
     }
     void resizeEvent(QResizeEvent *event) override {
         updateImageView();
+    }
+    void wheelEvent(QWheelEvent* event) override {
+        fitMode = false;
+        qreal zoomFactor = 1;
+        if (event->angleDelta().y() > 0)
+            zoomFactor = ziv_wheelZoomFactor;
+        else if (event->angleDelta().y() < 0)
+            zoomFactor = 1 / ziv_wheelZoomFactor;
+        scale(zoomFactor, zoomFactor);
+    }
+    void mousePressEvent(QMouseEvent* event) override {
+        fitMode = false;
+        setDragMode(QGraphicsView::ScrollHandDrag);
+        QGraphicsView::mousePressEvent(event);
+    }
+    void mouseReleaseEvent(QMouseEvent* event) override {
+        QGraphicsView::mouseReleaseEvent(event);
+        setDragMode(QGraphicsView::NoDrag);
     }
 };
 
@@ -93,6 +110,7 @@ void ZenoImagePanel::setPrim(std::string primid) {
     if (!scene)
         return;
 
+    bool enableGamma = pGamma->checkState() == Qt::Checked;
     bool found = false;
     for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
         if ((key.substr(0, key.find(":"))) != primid) {
@@ -115,7 +133,9 @@ void ZenoImagePanel::setPrim(std::string primid) {
                         int h = i / width;
                         int w = i % width;
                         auto foreground = obj->verts[i];
-                        foreground = zeno::pow(foreground, 1.0f / 2.2f);
+                        if (enableGamma) {
+                            foreground = zeno::pow(foreground, 1.0f / 2.2f);
+                        }
                         zeno::vec3f background;
                         if ((h / gridSize) % 2 == (w / gridSize) % 2) {
                             background = {1, 1, 1};
@@ -137,7 +157,9 @@ void ZenoImagePanel::setPrim(std::string primid) {
                         int h = i / width;
                         int w = i % width;
                         auto c = obj->verts[i];
-                        c = zeno::pow(c, 1.0f / 2.2f);
+                        if (enableGamma) {
+                            c = zeno::pow(c, 1.0f / 2.2f);
+                        }
                         int r = glm::clamp(int(c[0] * 255.99), 0, 255);
                         int g = glm::clamp(int(c[1] * 255.99), 0, 255);
                         int b = glm::clamp(int(c[2] * 255.99), 0, 255);
@@ -178,14 +200,12 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     pPrimName->setProperty("cssClass", "proppanel");
     pTitleLayout->addWidget(pPrimName);
 
-//    ZComboBox* pMode = new ZComboBox();
-//    pMode->addItem("RGB");
-//    pMode->addItem("RGBA");
-//    pMode->addItem("R");
-//    pMode->addItem("G");
-//    pMode->addItem("B");
-//    pMode->setProperty("cssClass", "proppanel");
-//    pTitleLayout->addWidget(pMode);
+    pGamma->setStyleSheet("color: white;");
+    pGamma->setCheckState(Qt::Checked);
+    pTitleLayout->addWidget(pGamma);
+
+    pFit->setProperty("cssClass", "grayButton");
+    pTitleLayout->addWidget(pFit);
 
     pMainLayout->addLayout(pTitleLayout);
 
@@ -222,6 +242,25 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
                 setPrim(key);
             }
         }
+    });
+    connect(pGamma, &QCheckBox::stateChanged, this, [=](int state) {
+        std::string prim_name = pPrimName->text().toStdString();
+        Zenovis* zenovis = wids[0]->getZenoVis();
+        ZASSERT_EXIT(zenovis);
+        auto session = zenovis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+            if (key.find(prim_name) == 0) {
+                setPrim(key);
+            }
+        }
+    });
+
+    connect(pFit, &QPushButton::clicked, this, [=](bool _) {
+        image_view->fitMode = true;
+        image_view->updateImageView();
     });
 }
 

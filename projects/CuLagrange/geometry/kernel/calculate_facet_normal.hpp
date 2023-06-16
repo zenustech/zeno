@@ -5,6 +5,8 @@
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 
+#include "geo_math.hpp"
+
 namespace zeno {
     using T = float;
 
@@ -52,17 +54,17 @@ namespace zeno {
                 auto v1 = verts.template pack<3>(xTag,tri[1]);
                 auto v2 = verts.template pack<3>(xTag,tri[2]);
 
-                auto e01 = v1 - v0;
-                auto e02 = v2 - v0;
+                // auto e01 = v1 - v0;
+                // auto e02 = v2 - v0;
 
-                auto nrm = e01.cross(e02);
-                auto nrm_norm = nrm.norm();
-                if(nrm_norm < 1e-8)
-                    nrm = zs::vec<T,3>::zeros();
-                else
-                    nrm = nrm / nrm_norm;
+                // auto nrm = e01.cross(e02);
+                // auto nrm_norm = nrm.norm();
+                // if(nrm_norm < 1e-8)
+                //     nrm = zs::vec<T,3>::zeros();
+                // else
+                //     nrm = nrm / nrm_norm;
 
-                tri_nrm_buffer.template tuple<3>(nrmTag,ti) = nrm;
+                tri_nrm_buffer.template tuple<3>(nrmTag,ti) = LSL_GEO::facet_normal(v0,v1,v2);
         });
 
         return true;

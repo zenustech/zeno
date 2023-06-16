@@ -11,7 +11,6 @@
 #include <utility>
 
 namespace zeno {
-namespace {
 
 int count_alembic_prims(std::shared_ptr<zeno::ABCTree> abctree) {
     int count = 0;
@@ -260,5 +259,4 @@ ZENDEFNODE(GetAlembicCamera, {
     {"alembic"},
 });
 
-} // namespace
 } // namespace zeno

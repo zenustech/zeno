@@ -1,8 +1,9 @@
 #pragma once
 
 #include <optix.h>
-#include "optixPathTracer.h"
+
 #include "zxxglslvec.h"
+#include "optixPathTracer.h"
 
 #define _FLT_EPL_ 1.19209290e-7F
 
@@ -31,7 +32,7 @@ namespace rtgems {
     constexpr float float_scale() { return 1.0f / 65536.0f; }
     
     // Normal points outward for rays exiting the surface, else is flipped.
-    float3 offset_ray(const float3 p, const float3 n)
+    static __inline__ __device__ float3 offset_ray(const float3 p, const float3 n)
     {
         int3 of_i {
             (int)(int_scale() * n.x),
@@ -91,6 +92,8 @@ struct RadiancePRD
     vec3         sigma_t_queue[8];
     vec3         ss_alpha_queue[8];
     int          curMatIdx;
+    float        samplePdf;
+    bool         fromDiff;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
         return sigma_t_queue[idx];
@@ -111,7 +114,6 @@ struct RadiancePRD
     // cihou nanovdb
     float vol_t0=0, vol_t1=0;
 
-    float3 vol_tr = make_float3(1.0f);
     unsigned int vol_depth = 0;
     bool test_distance = false;
     bool origin_inside_vdb = false;
@@ -146,7 +148,7 @@ struct RadiancePRD
     {
         vec3 d = abs(sigma_t_queue[curMatIdx] - extinction);
         float c = dot(d, vec3(1,1,1));
-        if(curMatIdx<7 && c > 1e-6 )
+        if(curMatIdx<7 && c > 1e-6f )
         {
             curMatIdx++;
             sigma_t_queue[curMatIdx] = extinction;
