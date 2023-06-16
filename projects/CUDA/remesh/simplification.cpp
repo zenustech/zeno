@@ -115,6 +115,7 @@ struct PolyReduceLite : INode {
                 fmt::print("no more edges to collapse!\n");
                 break;
             }
+            // pos[v] = (pos[v] + pos[u]) / 2;
 #else
             // temporal measure
             do {
@@ -161,12 +162,18 @@ struct PolyReduceLite : INode {
                 for (auto &id : tri)
                     if (id == u) {
                         id = v;
-                        updateTriNormal(triNo, tri);    // must be called below the above index update
                         vertTris[v].insert(triNo);
                         break;
                     }
             }
             // zeno::log_warn(fmt::format("done phase 3\n"));
+            // 4. update tri normals
+            for (auto triNo : vertTris[v]) {
+                if (triDiscard[triNo])
+                    continue;
+                auto &tri = tris[triNo];
+                updateTriNormal(triNo, tri);
+            }
         }
 
         std::vector<int> voffsets(pos.size());
