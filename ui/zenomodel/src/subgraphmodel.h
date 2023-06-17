@@ -34,10 +34,12 @@ class SubGraphModel : public QAbstractItemModel
         NodeParamModel* nodeParams;
 
         bool bCollasped;
+        bool bDataChanged;      //changed before next running.
 
         _NodeItem()
             : options(0)
             , bCollasped(false)
+            , bDataChanged(false)
             , type(NORMAL_NODE)
             , panelParams(nullptr)
             , nodeParams(nullptr)

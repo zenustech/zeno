@@ -20,7 +20,7 @@ static int subprogram_dumpdesc_main(int argc, char **argv) {
     return 0;
 }
 
-static int defPythonInit = getSession().eventCallbacks->hookEvent("init", [] {
+static int defChatZenoInit = getSession().eventCallbacks->hookEvent("init", [] {
     getSession().userData().set("subprogram_dumpdesc", std::make_shared<GenericObject<int(*)(int, char **)>>(subprogram_dumpdesc_main));
 });
 

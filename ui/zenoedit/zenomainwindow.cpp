@@ -3,6 +3,9 @@
 #include "zenomainwindow.h"
 #include "dock/zenodockwidget.h"
 #include <zenomodel/include/graphsmanagment.h>
+#include <zeno/extra/EventCallbacks.h>
+#include <zeno/core/Session.h>
+#include <zeno/types/GenericObject.h>
 #include "launch/corelaunch.h"
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
@@ -1722,3 +1725,48 @@ void ZenoMainWindow::doFrameUpdate(int frame) {
         }
     }
 }
+
+static bool openFileAndExportAsZsl(const char *inPath, const char *outPath) {
+    auto pGraphs = zenoApp->graphsManagment();
+    IGraphsModel* pModel = pGraphs->openZsgFile(inPath);
+    if (!pModel) {
+        qWarning() << "cannot open zsg file" << inPath;
+        return false;
+    }
+    {
+        rapidjson::StringBuffer s;
+        RAPIDJSON_WRITER writer(s);
+        writer.StartArray();
+        serializeScene(pModel, writer);
+        writer.EndArray();
+        QFile fout(outPath);
+        /* printf("sadfkhjl jghkasdf [%s]\n", s.GetString()); */
+        if (!fout.open(QIODevice::WriteOnly)) {
+            qWarning() << "failed to open out zsl" << outPath;
+            return false;
+        }
+        fout.write(s.GetString(), s.GetLength());
+        fout.close();
+    }
+    return true;
+}
+
+static int subprogram_dumpzsg2zsl_main(int argc, char **argv) {
+    if (!argv[1]) {
+        qWarning() << "please specify input zsg file path";
+        return -1;
+    }
+    if (!argv[2]) {
+        qWarning() << "please specify output zsl file path";
+        return -1;
+    }
+    if (!openFileAndExportAsZsl(argv[1], argv[2])) {
+        qWarning() << "failed to convert zsg to zsl";
+        return -1;
+    }
+    return 0;
+}
+
+static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] {
+    zeno::getSession().userData().set("subprogram_dumpzsg2zsl", std::make_shared<zeno::GenericObject<int(*)(int, char **)>>(subprogram_dumpzsg2zsl_main));
+});
