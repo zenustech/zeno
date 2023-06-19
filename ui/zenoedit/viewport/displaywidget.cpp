@@ -8,11 +8,8 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/CameraObject.h>
 #include <zenomodel/include/uihelper.h>
-#include "settings/zenosettingsmanager.h"
-#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "zenomainwindow.h"
-#include <util/log.h>
 #include "camerakeyframe.h"
 #include <zenoui/style/zenostyle.h>
 #include <zeno/core/Session.h>
@@ -594,9 +591,7 @@ void DisplayWidget::onRecord()
     if (QDialog::Accepted == dlg.exec())
     {
         VideoRecInfo recInfo;
-        dlg.getInfo(recInfo.fps, recInfo.bitrate, recInfo.res[0],
-                    recInfo.res[1], recInfo.record_path, recInfo.videoname, recInfo.numOptix, recInfo.numMSAA,
-                    recInfo.bExportVideo, recInfo.needDenoise);
+        dlg.getInfo(recInfo);
         //validation.
 
         ZRecFrameSelectDlg frameDlg(this);
