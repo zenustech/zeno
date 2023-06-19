@@ -9,7 +9,10 @@
 
 #define _FLT_MAX_ 3.40282347e+38F
 #define _FLT_MIN_ 1.17549435e-38F
-
+#define MISS_HIT 0
+#define DIFFUSE_HIT 1
+#define SPECULAR_HIT 2
+#define TRANSMIT_HIT 3
 static __forceinline__ __device__ void* unpackPointer( unsigned int i0, unsigned int i1 )
 {
     const unsigned long long uptr = static_cast<unsigned long long>( i0 ) << 32 | i1;
@@ -94,6 +97,7 @@ struct RadiancePRD
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
+    unsigned char first_hit_type;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
         return sigma_t_queue[idx];

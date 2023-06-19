@@ -11,8 +11,10 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zenoedit/zenomainwindow.h>
+#include <zeno/types/HeatmapObject.h>
 #include "launch/corelaunch.h"
-
+#include <zeno/extra/GlobalStatus.h>
+#include <zeno/core/Session.h>
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
     : QObject(parent)
@@ -92,6 +94,45 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
 
 void RecordVideoMgr::endRecToExportVideo()
 {
+    // denoising
+    if (m_recordInfo.needDenoise) {
+        QString dir_path = m_recordInfo.record_path + "/P/";
+        QDir qDir = QDir(dir_path);
+        qDir.setNameFilters(QStringList("*.jpg"));
+        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
+        fileList.sort();
+        for (auto i = 0; i < fileList.size(); i++) {
+            auto jpg_path = (dir_path + fileList.at(i)).toStdString();
+            auto pfm_path = jpg_path + ".pfm";
+            auto pfm_dn_path = jpg_path + ".dn.pfm";
+            // jpg to pfm
+            {
+                auto image = zeno::readImageFile(jpg_path);
+                write_pfm(pfm_path, image);
+            }
+            // cmd
+            {
+                QString cmd = QString("oidnDenoise --ldr %1 -o %2").arg(QString::fromStdString(pfm_path))
+                        .arg(QString::fromStdString(pfm_dn_path));
+                qDebug() << cmd;
+                int ret = QProcess::execute(cmd);
+                qDebug() << ret;
+                // pfm to jpg
+                if (ret == 0) {
+                    auto image = zeno::readPFMFile(pfm_dn_path);
+                    write_jpg(jpg_path, image);
+                    QFile fileOrigin(QString::fromStdString(pfm_path));
+                    if (fileOrigin.exists()) {
+                        fileOrigin.remove();
+                    }
+                    QFile fileDn(QString::fromStdString(pfm_dn_path));
+                    if (fileDn.exists()) {
+                        fileDn.remove();
+                    }
+                }
+            }
+        }
+    }
     if (!m_recordInfo.bExportVideo) {
         emit recordFinished(m_recordInfo.record_path);
         return;
@@ -157,6 +198,12 @@ void RecordVideoMgr::disconnectSignal()
 
 void RecordVideoMgr::onFrameDrawn(int currFrame)
 {
+    auto& pGlobalStatus = zeno::getSession().globalStatus;
+    if (m_recordInfo.bRecordByCommandLine && pGlobalStatus->failed())
+    {
+        emit recordFailed(QString::fromStdString(pGlobalStatus->error->message));
+        return;
+    }
     auto& pGlobalComm = zeno::getSession().globalComm;
     ZASSERT_EXIT(pGlobalComm);
 

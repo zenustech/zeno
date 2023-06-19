@@ -143,6 +143,36 @@ void DisplayWidget::updateCameraProp(float aperture, float disPlane)
     }
 }
 
+void DisplayWidget::updatePerspective()
+{
+    if (m_glView) {
+        m_glView->updatePerspective();
+    }
+    else {
+        m_optixView->updatePerspective();
+    }
+}
+
+void DisplayWidget::setNumSamples(int samples)
+{
+    if (m_glView) {
+        m_glView->setNumSamples(samples);
+    }
+    else {
+        m_optixView->setNumSamples(samples);
+    }
+}
+
+void DisplayWidget::setCameraRes(const QVector2D& res)
+{
+    if (m_glView) {
+        m_glView->setCameraRes(res);
+    }
+    else {
+        m_optixView->setCameraRes(res);
+    }
+}
+
 void DisplayWidget::setSimpleRenderOption()
 {
     if (m_glView)
@@ -566,7 +596,7 @@ void DisplayWidget::onRecord()
         VideoRecInfo recInfo;
         dlg.getInfo(recInfo.fps, recInfo.bitrate, recInfo.res[0],
                     recInfo.res[1], recInfo.record_path, recInfo.videoname, recInfo.numOptix, recInfo.numMSAA,
-                    recInfo.bExportVideo);
+                    recInfo.bExportVideo, recInfo.needDenoise);
         //validation.
 
         ZRecFrameSelectDlg frameDlg(this);

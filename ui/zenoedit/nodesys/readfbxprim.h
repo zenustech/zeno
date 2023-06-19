@@ -10,11 +10,15 @@ public:
     ReadFBXPrim(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
     ~ReadFBXPrim();
 
+    bool GenMode;
+
+    void GenerateFBX();
 protected:
     ZGraphicsLayout* initCustomParamWidgets() override;
 
 private slots:
-    void onEditClicked();
+    void onNodeClicked();
+    void onPartClicked();
 };
 
 
