@@ -1,7 +1,7 @@
 #ifndef __NODE_ITEM_H__
 #define __NODE_ITEM_H__
 
-#include "modeldata.h"
+#include <zenomodel/include/modeldata.h>
 #include <QString>
 #include <QPoint>
 #include <QObject>

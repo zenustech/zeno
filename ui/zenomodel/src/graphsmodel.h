@@ -7,7 +7,7 @@
 #include <zenomodel/include/igraphsmodel.h>
 #include "subgraphmodel.h"
 #include "linkmodel.h"
-#include "modeldata.h"
+#include <zenomodel/include/modeldata.h>
 #include <stack>
 
 class SubGraphModel;
