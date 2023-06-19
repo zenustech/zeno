@@ -645,9 +645,8 @@ namespace DisneyBSDF{
         if(diffPr > 0.0 && reflect)
         {
 
-            f = f + clamp(BRDFBasics::EvalDisneyDiffuse(mix(baseColor,sssColor,subsurface)*(1.0f - psss), subsurface, roughness, sheen,
-                                             Csheen, wo, wi, wm, tmpPdf) * dielectricWt   * illum,
-                                             vec3(0), vec3(10));
+            f = f + BRDFBasics::EvalDisneyDiffuse(mix(baseColor,sssColor,subsurface)*(1.0f - psss), subsurface, roughness, sheen,
+                                             Csheen, wo, wi, wm, tmpPdf) * dielectricWt   * illum;
             fPdf += tmpPdf * diffPr ;
         }
         if(dielectricPr>0.0 && reflect)
@@ -1701,6 +1700,7 @@ namespace DisneyBSDF{
         prd->fromDiff = false;
         if(r3<p1) // diffuse + sss
         {
+          prd->first_hit_type = prd->depth==0?DIFFUSE_HIT:prd->first_hit_type;
           if(wo.z<0 && subsurface>0)//inside, scattering, go out for sure
           {
             wi = BRDFBasics::UniformSampleHemisphere(rnd(seed), rnd(seed));
@@ -1781,6 +1781,7 @@ namespace DisneyBSDF{
         }
         else if(r3<p3)//specular
         {
+            prd->first_hit_type = prd->depth==0?SPECULAR_HIT:prd->first_hit_type;
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(roughness,anisotropic,ax,ay);
             vec3 wm = BRDFBasics::SampleGGXVNDF(wo, ax, ay, r1, r2);
@@ -1798,6 +1799,7 @@ namespace DisneyBSDF{
             }
         }else if(r3<p4)//glass
         {
+
           SampleDisneySpecTransmission2(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance,
                                         wo, wi, rPdf, fPdf, reflectance, flag, medium, extinction, thin, is_inside,
                                         T, B, N, isTrans);
@@ -1807,8 +1809,11 @@ namespace DisneyBSDF{
           {
             wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
           }
+          auto isReflection =  dot(wi, N2) * dot(wo, N2)>0?1:0;
+          prd->first_hit_type = prd->depth==0? (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT):prd->first_hit_type;
         }else if(r3<p5)//cc
         {
+            prd->first_hit_type = prd->depth==0?SPECULAR_HIT:prd->first_hit_type;
             vec3 wm = BRDFBasics::SampleGTR1(ccRough, r1, r2);
 
             if (wm.z < 0.0)

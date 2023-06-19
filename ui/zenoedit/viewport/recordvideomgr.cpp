@@ -114,7 +114,9 @@ void RecordVideoMgr::endRecToExportVideo()
             {
                 QString cmd = QString("oidnDenoise --ldr %1 -o %2").arg(QString::fromStdString(pfm_path))
                         .arg(QString::fromStdString(pfm_dn_path));
+                qDebug() << cmd;
                 int ret = QProcess::execute(cmd);
+                qDebug() << ret;
                 // pfm to jpg
                 if (ret == 0) {
                     auto image = zeno::readPFMFile(pfm_dn_path);

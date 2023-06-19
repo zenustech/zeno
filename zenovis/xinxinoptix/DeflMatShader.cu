@@ -1203,7 +1203,8 @@ extern "C" __global__ void __closesthit__radiance()
         }
         float misWeight = BRDFBasics::PowerHeuristic(envpdf, ffPdf);
         misWeight = misWeight>0.0f?misWeight:1.0f;
-        misWeight = ffPdf>0.0f?misWeight:1.0f;
+        misWeight = ffPdf>1e-5f?misWeight:0.0f;
+        misWeight = envpdf>1e-5?misWeight:0.0f;
         prd->radiance += misWeight * 1.0f / (float)NSamples *
             light_attenuation  / envpdf * 2.0f * (thin > 0.5f ? float3(mat2.reflectance) : lbrdf);
     }
