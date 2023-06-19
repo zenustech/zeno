@@ -340,6 +340,7 @@ void TreeNodeItem::setData(const QVariant& value, int role)
             break;
         }
     }
+    QStandardItem::setData(value, role);
 }
 
 QString TreeNodeItem::objClass() const
