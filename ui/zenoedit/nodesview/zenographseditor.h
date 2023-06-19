@@ -54,7 +54,7 @@ signals:
     void zoomed(qreal);
 
 private slots:
-	void onSubGraphsToRemove(const QModelIndex&, int, int);
+	void onSubGraphsToRemove(const IGraphsModel* pModel, const QModelIndex& parent, int first, int end);
 	void onModelReset();
     void onModelCleared();
 	void onSubGraphRename(const QString& oldName, const QString& newName);

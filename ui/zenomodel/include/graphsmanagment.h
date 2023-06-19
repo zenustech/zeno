@@ -25,6 +25,7 @@ public:
     void appendErr(const QString& nodeName, const QString& msg);
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
+    void removeScene(const QString& subgName);
     TIMELINE_INFO timeInfo() const;
     bool getDescriptor(const QString &descName, NODE_DESC &desc);
     bool getSubgDesc(const QString& subgName, NODE_DESC& desc);
@@ -47,7 +48,6 @@ signals:
 
 private slots:
     void onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
-    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private:
     GraphsManagment(QObject *parent = nullptr);

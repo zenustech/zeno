@@ -70,8 +70,6 @@ void GraphsManagment::setGraphsModel(IGraphsModel* model, IGraphsModel* pSubgrap
 
     emit modelInited(m_pNodeModel, m_pSharedGraphs);
     connect(m_pNodeModel, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
-    connect(m_pNodeModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
-        this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
     connect(m_pNodeModel, &IGraphsModel::dirtyChanged, this, [=]() {
         emit dirtyChanged(m_pNodeModel->isDirty());
     });
@@ -491,17 +489,12 @@ void GraphsManagment::clear()
     emit fileClosed();
 }
 
-void GraphsManagment::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+void GraphsManagment::removeScene(const QString& subgName)
 {
-    const QModelIndex& idx = m_pNodeModel->index(first, 0);
-    if (idx.isValid())
+    if (m_scenes.find(subgName) != m_scenes.end())
     {
-        const QString& subgName = idx.data(ROLE_OBJNAME).toString();
-        if (m_scenes.find(subgName) != m_scenes.end())
-        {
-            delete m_scenes[subgName];
-            m_scenes.remove(subgName);
-        }
+        delete m_scenes[subgName];
+        m_scenes.remove(subgName);
     }
 }
 

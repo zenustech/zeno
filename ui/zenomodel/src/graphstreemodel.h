@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include "nodeitem.h"
-#include "igraphsmodel.h"
+#include <zenomodel/include/igraphsmodel.h>
 
 class GraphsModel;
 class SubGraphModel;

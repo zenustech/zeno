@@ -115,6 +115,7 @@ void ZenoGraphsEditor::initSignals()
     connect(m_ui->moreBtn, SIGNAL(clicked()), this, SLOT(onSubnetOptionClicked()));
     connect(m_ui->btnSearchOpt, SIGNAL(clicked()), this, SLOT(onSearchOptionClicked()));
     connect(m_ui->graphsViewTab, &QTabWidget::tabCloseRequested, this, [=](int index) {
+        zenoApp->graphsManagment()->removeScene(m_ui->graphsViewTab->tabText(index));
         m_ui->graphsViewTab->removeTab(index);
     });
     connect(m_ui->searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onSearchEdited(const QString&)));
@@ -168,8 +169,13 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgr
     m_ui->graphsViewTab->clear();
 
     connect(m_pNodeModel, &IGraphsModel::modelClear, this, &ZenoGraphsEditor::onModelCleared);
-    connect(m_pSubgraphs, SIGNAL(rowsAboutToBeRemoved(const QModelIndex &, int, int)), this,
-            SLOT(onSubGraphsToRemove(const QModelIndex &, int, int)));
+    connect(m_pNodeModel, &IGraphsModel::_rowsAboutToBeRemoved, this, [=](const QModelIndex& subgIdex, const QModelIndex& parent, int first, int end) {
+        onSubGraphsToRemove(m_pNodeModel, parent, first, end);
+    });
+    connect(m_pSubgraphs, &QAbstractItemModel::rowsAboutToBeRemoved, this, [=](const QModelIndex& parent, int first, int end)
+    {
+        onSubGraphsToRemove(m_pSubgraphs, parent, first, end);
+    });
 
     connect(m_pNodeModel, SIGNAL(modelReset()), this, SLOT(onModelReset()));
     connect(m_pSubgraphs, SIGNAL(graphRenamed(const QString&, const QString &)), this,
@@ -183,14 +189,38 @@ void ZenoGraphsEditor::onModelCleared()
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
 }
 
-void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)
+void ZenoGraphsEditor::onSubGraphsToRemove(const IGraphsModel* pModel, const QModelIndex& parent, int first, int last)
 {
     for (int r = first; r <= last; r++)
     {
-        QModelIndex subgIdx = m_pSubgraphs->index(r, 0);
-        const QString& name = subgIdx.data(ROLE_OBJNAME).toString();
-        int idx = tabIndexOfName(name);
-        m_ui->graphsViewTab->removeTab(idx);
+        if (pModel == m_pSubgraphs)
+        {
+            const QModelIndex& subgIdx = m_pSubgraphs->index(r, 0);
+            const QString& name = subgIdx.data(ROLE_OBJNAME).toString();
+            int idx = tabIndexOfName(name);
+            if (idx >= 0)
+            {
+                zenoApp->graphsManagment()->removeScene(name);
+                m_ui->graphsViewTab->removeTab(idx);
+            }
+        }
+        else
+        {
+            const QModelIndex& subgIdx = m_pNodeModel->index(r, 0, parent);
+            if (!m_pNodeModel->IsSubGraphNode(subgIdx))
+                continue;
+            const QString& path = subgIdx.data(ROLE_OBJPATH).toString();
+            int count = m_ui->graphsViewTab->count();
+            for (int i = count - 1; i >= 0; i--)
+            {
+                const QString tabText = m_ui->graphsViewTab->tabText(i);
+                if (tabText.contains(path, Qt::CaseInsensitive))
+                {
+                    zenoApp->graphsManagment()->removeScene(tabText);
+                    m_ui->graphsViewTab->removeTab(i);
+                }
+            }
+        }
     }
 }
 
