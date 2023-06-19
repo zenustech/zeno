@@ -340,7 +340,7 @@ void TreeNodeItem::setData(const QVariant& value, int role)
             break;
         }
     }
-    emit this->model()->dataChanged(index(), index(), QVector<int>{role});
+    QStandardItem::setData(value, role);
 }
 
 QString TreeNodeItem::objClass() const
