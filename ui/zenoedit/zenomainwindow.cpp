@@ -1492,7 +1492,8 @@ void ZenoMainWindow::save()
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel* pModel = pGraphsMgm->currentModel();
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
-    if (zenoio::VER_3 != ver)
+    QString currFilePath = pGraphsMgm->filePath();
+    if (zenoio::VER_3 != ver && !currFilePath.isEmpty())
     {
         QMessageBox msgBox(QMessageBox::Information, "", tr("The format of current zsg is old. To keep this file data trackable, we recommand you choose \"Save As\" to save it, as the format of new zsg"));
         msgBox.exec();
@@ -1505,7 +1506,6 @@ void ZenoMainWindow::save()
     {
         if (pModel)
         {
-            QString currFilePath = pGraphsMgm->filePath();
             if (currFilePath.isEmpty())
                 saveAs();
             else
@@ -1516,7 +1516,6 @@ void ZenoMainWindow::save()
 
 bool ZenoMainWindow::saveFile(QString filePath)
 {
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
     zenoApp->graphsManagment()->saveFile(filePath, settings);

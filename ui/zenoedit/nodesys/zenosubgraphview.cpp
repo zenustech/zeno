@@ -113,16 +113,6 @@ void _ZenoSubGraphView::showGrid(bool bShow)
     scene()->invalidate(rect());
 }
 
-void _ZenoSubGraphView::redo()
-{
-    m_scene->redo();
-}
-
-void _ZenoSubGraphView::undo()
-{
-    m_scene->undo();
-}
-
 void _ZenoSubGraphView::copy()
 {
     m_scene->copy();

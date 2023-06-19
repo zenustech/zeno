@@ -871,14 +871,6 @@ QList<SEARCH_RESULT> GraphsTreeModel_impl::search_impl(
             }
         }
     }
-    if (!results.isEmpty())
-    {
-        SEARCH_RESULT result;
-        result.targetIdx = root;
-        result.subgIdx = root;
-        result.type = SEARCH_SUBNET;
-        results.prepend(result);
-    }
     return results;
 }
 

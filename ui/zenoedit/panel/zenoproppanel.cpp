@@ -88,7 +88,7 @@ bool ZenoPropPanel::updateCustomName(const QString &value, QString &oldValue)
         return true;
 
     bool isValid = false;
-    IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
     if (pGraphsModel) {
         isValid = pGraphsModel->setCustomName(m_subgIdx, m_idx, value);
         if (!isValid) {
@@ -779,7 +779,7 @@ void ZenoPropPanel::onSettings()
         QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_idx.data(ROLE_PANEL_PARAMS));
         ZASSERT_EXIT(viewParams);
 
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_subgIdx);
         if (!pGraphsModel->IsSubGraphNode(m_idx)) 
         {
             QMessageBox::information(this, tr("Info"), tr("Cannot edit parameters!"));

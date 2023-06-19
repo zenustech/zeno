@@ -993,12 +993,20 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     }
     else if (actionType == ZenoMainWindow::ACTION_UNDO) 
     {
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        ZASSERT_EXIT(pView);
+        QModelIndex subgIdx = pView->scene()->subGraphIndex();
+        IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(subgIdx);
+        ZASSERT_EXIT(pGraphsModel);
         pGraphsModel->undo();
     }
     else if (actionType == ZenoMainWindow::ACTION_REDO) 
     {
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+        ZASSERT_EXIT(pView);
+        QModelIndex subgIdx = pView->scene()->subGraphIndex();
+        IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(subgIdx);
+        ZASSERT_EXIT(pGraphsModel);
         pGraphsModel->redo();
     }
     else if (actionType == ZenoMainWindow::ACTION_SELECT_NODE) 

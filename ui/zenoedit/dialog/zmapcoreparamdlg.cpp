@@ -18,13 +18,9 @@ ZMapCoreparamDlg::ZMapCoreparamDlg(const QPersistentModelIndex& idx, QWidget* pa
     connect(m_ui->buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(m_ui->buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
 
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    if (pGraphsModel)
-    {
-        NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
-        m_model = nodeParams;
-        m_ui->treeView->setModel(nodeParams);
-    }
+   NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
+   m_model = nodeParams;
+   m_ui->treeView->setModel(nodeParams);
     m_ui->treeView->expandAll();
 }
 

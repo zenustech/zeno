@@ -4,6 +4,7 @@
 #include <zenoui/style/zenostyle.h>
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
+#include <zenomodel/include/uihelper.h>
 
 
 ZenoSearchBar::ZenoSearchBar(const QModelIndex& idx, QWidget *parentWidget)
@@ -73,8 +74,8 @@ void ZenoSearchBar::onSearchExec(const QString& content)
     if (content.isEmpty()) {
         return;
     }
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-
+    IGraphsModel* pGraphsModel = UiHelper::getGraphsBySubg(m_index);
+    ZASSERT_EXIT(pGraphsModel);
     m_results = pGraphsModel->searchInSubgraph(content, m_index);
     if (!m_results.isEmpty())
     {

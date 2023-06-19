@@ -57,7 +57,7 @@ void MakeHeatMapNode::onEditClicked()
         if (newGrad != grad)
         {
             info.newValue = QVariant::fromValue(newGrad);
-            IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+            IGraphsModel *pModel = UiHelper::getGraphsBySubg(subGraphIndex());
             pModel->updateParamInfo(nodeId(), info, subGraphIndex(), true);
         }
     }
@@ -79,7 +79,7 @@ void MakeHeatMapNode::onEditClicked()
             info.name = "_RAMPS";
             info.oldValue = oldColor;
             info.newValue = colorText;
-            IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+            IGraphsModel *pModel = UiHelper::getGraphsBySubg(subGraphIndex());
             pModel->updateParamInfo(nodeId(), info, subGraphIndex(), true);
         }
     }

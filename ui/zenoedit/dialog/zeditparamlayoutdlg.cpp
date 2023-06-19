@@ -15,6 +15,7 @@
 #include <zenomodel/include/command.h>
 #include "iotags.h"
 #include <zenoui/style/zenostyle.h>
+#include <zenomodel/src/graphsmodel.h>
 
 
 static CONTROL_ITEM_INFO controlList[] = {
@@ -150,7 +151,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     }
     else
     {
-        m_proxyModel = new PanelParamModel(m_pGraphsModel, this);
+        m_proxyModel = new PanelParamModel(m_pGraphsModel, pModel->parent());
     }
 
     m_proxyModel->clone(m_model);
@@ -974,7 +975,10 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
         bSubInput = pGroup->m_name == iotags::params::node_inputs;
         subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
         QString subgId = m_nodeIdx.data(ROLE_OBJID).toString();
-        subgIdx = m_pGraphsModel->index(subgId, m_subgIdx);
+        if (qobject_cast<GraphsModel*>(m_pGraphsModel))
+            subgIdx = m_pGraphsModel->index(subgName);
+        else
+            subgIdx = m_pGraphsModel->index(subgId, m_subgIdx);
     }
 
     int r = 0;

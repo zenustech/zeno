@@ -441,6 +441,7 @@ IGraphsModel* GraphsManagment::newFile()
     pNodeModel->initSubgraphs(pSubgrahsModel);
 
     setGraphsModel(pModel, pSubgrahsModel);
+    m_filePath.clear();
     return pModel;
 }
 

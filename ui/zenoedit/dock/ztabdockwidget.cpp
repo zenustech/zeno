@@ -285,7 +285,6 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         }
         else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
         {
-            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
             if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];

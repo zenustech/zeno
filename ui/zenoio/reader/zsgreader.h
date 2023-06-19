@@ -120,12 +120,6 @@ namespace zenoio
                         PARAM_CLASS cls,
                         const rapidjson::Value &defaultValue);
 
-        NODES_DATA _fork(
-            const QString& currentPath,
-            const QMap<QString, SUBGRAPH_DATA>& subgraphDatas,
-            const QString& subnetName,
-            LINKS_DATA& newLinks);
-
         ZSG_VERSION m_ioVer;
         bool m_bDiskReading;        //disk io read.
     };

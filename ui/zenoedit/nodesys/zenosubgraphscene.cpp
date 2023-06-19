@@ -443,18 +443,6 @@ void ZenoSubGraphScene::clearMark()
     m_errNodes.clear();
 }
 
-void ZenoSubGraphScene::undo()
-{
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    pGraphsModel->undo();
-}
-
-void ZenoSubGraphScene::redo()
-{
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    pGraphsModel->redo();
-}
-
 QModelIndexList ZenoSubGraphScene::selectNodesIndice() const
 {
     QModelIndexList nodesIndice;

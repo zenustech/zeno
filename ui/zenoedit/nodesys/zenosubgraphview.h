@@ -39,8 +39,6 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 public slots:
-    void redo();
-    void undo();
     void copy();
     void paste();
     void find();

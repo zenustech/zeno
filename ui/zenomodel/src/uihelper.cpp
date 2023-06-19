@@ -680,14 +680,21 @@ void UiHelper::getSocketInfo(const QString& objPath,
     QStringList lst = objPath.split(cPathSeperator, QtSkipEmptyParts);
     //format like: [subgraph-name]:[node-ident]:[node|panel]/[param-layer-path]/[dict-key]
     //example: main:xxxxx-wrangle:[node]inputs/params/key1
-    if (lst.size() >= 2)
+    if (lst.size() > 2)
+    {
+        subgName = lst[0];
+        nodeIdent = lst[1];
+        paramPath = lst[2];
+    }
+    //format like: [subgraph-name]/[node-ident]:[node|panel]/[param-layer-path]/[dict-key]
+    else if (lst.size() > 1)
     {
         paramPath = lst[1];
         lst = lst[0].split("/", QtSkipEmptyParts);
         if (lst.size() > 1)
         {
-            subgName = lst[0];
-            nodeIdent = lst[1];
+            subgName = lst[lst.size()-2];
+            nodeIdent = lst.last();
         }
     }
 }
@@ -705,11 +712,13 @@ QString UiHelper::constructObjPath(const QString& subgraph, const QString& node,
 QString UiHelper::getSockNode(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 0)
+    if (lst.size() > 2)
+        return lst[1];
+    else if (lst.size() > 1)
     {
         lst = lst[0].split("/", QtSkipEmptyParts);
         if (lst.size() >1)
-            return lst[1];
+            return lst.last();
     }
     return "";
 }
@@ -718,7 +727,11 @@ QString UiHelper::getNodePath(const QString& sockPath)
 {
     //legacy format.
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 0) {
+    if (lst.size() > 2) {
+        return lst[0] + cPathSeperator + lst[1];
+    }
+    else if (lst.size() > 1)
+    {
         return lst[0];
     }
     return "";
@@ -727,7 +740,9 @@ QString UiHelper::getNodePath(const QString& sockPath)
 QString UiHelper::getParamPath(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 1)
+    if (lst.size() > 2)
+        return lst[2];
+    else(lst.size() > 1);
         return lst[1];
     return "";
 }
@@ -735,30 +750,41 @@ QString UiHelper::getParamPath(const QString& sockPath)
 QString UiHelper::getSockName(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 1)
+    if (lst.size() > 2)
+    {
+        lst = lst[2].split("/", QtSkipEmptyParts);
+    }
+    else if (lst.size() > 1)
     {
         lst = lst[1].split("/", QtSkipEmptyParts);
-        if (!lst.isEmpty())
+    }
+    if (!lst.isEmpty())
+    {
+        //format: main:xxxxx-wrangle:[node]inputs/params/key1
+        if (lst.size() == 4)
         {
-            //format: main:xxxxx-wrangle:[node]inputs/params/key1
-            if (lst.size() == 4)
-            {
-                return lst[2] + "/" + lst[3];
-            }
-            else
-            {
-                return lst.last();
-            }
+            return lst[2] + "/" + lst[3];
+        }
+        else
+        {
+            return lst.last();
         }
     }
+
     return "";
 }
 
 QString UiHelper::getSockSubgraph(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);
-    if (lst.size() > 0)
+    if (lst.size() > 2)
         return lst[0];
+    else if (lst.size() > 1)
+    {
+        lst = lst[0].split("/", QtSkipEmptyParts);
+        if (lst.size() > 1)
+            return lst[lst.size() - 2];
+    }
     return "";
 }
 

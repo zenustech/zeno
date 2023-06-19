@@ -25,7 +25,7 @@ ZenoBlackboardPropWidget::ZenoBlackboardPropWidget(const QPersistentModelIndex &
     insertRow("background", PARAM_CONTROL::CONTROL_PURE_COLOR, info.background, 0, pGroupLayout);
     insertRow("title", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.title, 1, pGroupLayout);
     //insertRow("content", PARAM_CONTROL::CONTROL_MULTILINE_STRING, info.content, 2, pGroupLayout);
-    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pModel = UiHelper::getGraphsBySubg(m_subgIdx);
     connect(pModel, SIGNAL(_dataChanged(const QModelIndex &, const QModelIndex &, int)), this,SLOT(onDataChanged(const QModelIndex &, const QModelIndex &, int)));
 }
 
@@ -62,7 +62,7 @@ void ZenoBlackboardPropWidget::insertRow(const QString &desc, const PARAM_CONTRO
 
     CallbackCollection cbSet;
     cbSet.cbEditFinished = [=](QVariant newValue) {
-        IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel *pModel = UiHelper::getGraphsBySubg(m_subgIdx);
         if (!pModel)
             return;
         PARAMS_INFO params = m_idx.data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
