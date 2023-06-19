@@ -8,6 +8,8 @@
 #include <cassert>
 #include <zeno/types/UserData.h>
 #include <unordered_set>
+#include <zeno/types/MaterialObject.h>
+#include <zeno/types/CameraObject.h>
 
 namespace zeno {
 
@@ -18,7 +20,7 @@ std::unordered_set<std::string> lightCameraNodes({
     });
 std::string matlNode = "ShaderFinalize";
 
-static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs) {
+static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
     if (cachedir.empty()) return;
     std::string dir = cachedir + "/" + std::to_string(1000000 + frameid).substr(1);
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
@@ -29,22 +31,55 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     std::vector<std::vector<size_t>> poses(3);
     std::vector<std::string> keys(3);
     for (auto const &[key, obj]: objs) {
+        int bufsize;
         std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") -1);
-        if (lightCameraNodes.count(nodeName)) {
-            keys[0].push_back('\a');
-            keys[0].append(key);
-            poses[0].push_back(bufCaches[0].size());
-            encodeObject(obj.get(), bufCaches[0]);
-        } else if (matlNode == nodeName) {
-            keys[1].push_back('\a');
-            keys[1].append(key);
-            poses[1].push_back(bufCaches[1].size());
-            encodeObject(obj.get(), bufCaches[1]);
-        } else {
-            keys[2].push_back('\a');
-            keys[2].append(key);
-            poses[2].push_back(bufCaches[2].size());
-            encodeObject(obj.get(), bufCaches[2]);
+        if (cacheLightCameraOnly && (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)))
+        {
+            bufsize = bufCaches[0].size();
+            if (encodeObject(obj.get(), bufCaches[0]))
+            {
+                keys[0].push_back('\a');
+                keys[0].append(key);
+                poses[0].push_back(bufsize);
+            }
+        }
+        if (cacheMaterialOnly && (matlNode == nodeName || std::dynamic_pointer_cast<MaterialObject>(obj)))
+        {
+            bufsize = bufCaches[1].size();
+            if (encodeObject(obj.get(), bufCaches[1]))
+            {
+                keys[1].push_back('\a');
+                keys[1].append(key);
+                poses[1].push_back(bufsize);
+            }
+        }
+        if (!cacheLightCameraOnly && !cacheMaterialOnly)
+        {
+            if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)) {
+                bufsize = bufCaches[0].size();
+                if (encodeObject(obj.get(), bufCaches[0]))
+                {
+                    keys[0].push_back('\a');
+                    keys[0].append(key);
+                    poses[0].push_back(bufsize);
+                }
+            } else if (matlNode == nodeName || std::dynamic_pointer_cast<MaterialObject>(obj)) {
+                bufsize = bufCaches[1].size();
+                if (encodeObject(obj.get(), bufCaches[1]))
+                {
+                    keys[1].push_back('\a');
+                    keys[1].append(key);
+                    poses[1].push_back(bufsize);
+                }
+            } else {
+                bufsize = bufCaches[2].size();
+                if (encodeObject(obj.get(), bufCaches[2]))
+                {
+                    keys[2].push_back('\a');
+                    keys[2].append(key);
+                    poses[2].push_back(bufsize);
+                }
+            }
         }
     }
     cachepath[0] = std::filesystem::u8path(dir) / "lightCameraObj.zencache";
@@ -146,12 +181,12 @@ ZENO_API void GlobalComm::finishFrame() {
     m_maxPlayFrame += 1;
 }
 
-ZENO_API void GlobalComm::dumpFrameCache(int frameid) {
+ZENO_API void GlobalComm::dumpFrameCache(int frameid, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
     std::lock_guard lck(m_mtx);
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx >= 0 && frameIdx < m_frames.size()) {
         log_debug("dumping frame {}", frameid);
-        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects);
+        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, cacheLightCameraOnly, cacheMaterialOnly);
     }
 }
 

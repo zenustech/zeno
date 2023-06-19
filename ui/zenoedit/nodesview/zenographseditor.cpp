@@ -161,9 +161,6 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
         }
     });
 
-    QShortcut *shortcut = new QShortcut(QKeySequence(Qt::Key_Delete), m_ui->subnetList);
-    connect(shortcut, SIGNAL(activated()), delegate, SLOT(onDelete()));
-
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->mainEditor);
     m_ui->graphsViewTab->clear();
 
@@ -411,7 +408,7 @@ void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& pat
     auto graphsMgm = zenoApp->graphsManagment();
     IGraphsModel* pModel = graphsMgm->currentModel();
 
-    if (!pModel->index(subGraphName).isValid())
+    if (!pModel || !pModel->index(subGraphName).isValid())
         return;
 
     int idx = tabIndexOfName(subGraphName);

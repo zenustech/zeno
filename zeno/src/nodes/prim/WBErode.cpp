@@ -8,6 +8,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
 #include <random>
+#include <vector>
 
 namespace zeno
 {
@@ -62,7 +63,7 @@ struct erode_value2cond : INode {
         auto value = get_input<NumericObject>("value")->get<float>();
         auto seed  = get_input<NumericObject>("seed")->get<float>();
 
-   	// 初始化网格属性
+        // 初始化网格属性
         if (!terrain->verts.has_attr("cond")) {
             auto &_cond = terrain->verts.add_attr<float>("cond");
             std::fill(_cond.begin(), _cond.end(), 0.0);
@@ -78,7 +79,6 @@ struct erode_value2cond : INode {
 #pragma omp parallel for
         for (int z = 0; z < nz; z++)
         {
-#pragma omp parallel for
             for (int x = 0; x < nx; x++)
             {
                 int idx = Pos2Idx(x, z, nx);
@@ -101,23 +101,23 @@ struct erode_value2cond : INode {
     }
 };
 ZENDEFNODE(erode_value2cond,
-            {/* inputs: */ {
-                "prim_2DGrid",
-                {"float", "value", "1.0"}, // 0.0 ~ 1.0
-                {"float", "seed", "0.0"},
-            },
-            /* outputs: */
-            {
-                "prim_2DGrid",
-            },
-            /* params: */
-            {
+           {/* inputs: */ {
+                   "prim_2DGrid",
+                   {"float", "value", "1.0"}, // 0.0 ~ 1.0
+                   {"float", "seed", "0.0"},
+               },
+               /* outputs: */
+               {
+                   "prim_2DGrid",
+               },
+               /* params: */
+               {
 
-            },
-            /* category: */
-            {
-                "erode",
-            }});
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
 
 struct erode_rand_color : INode {
     void apply() override {
@@ -154,22 +154,22 @@ struct erode_rand_color : INode {
     }
 };
 ZENDEFNODE(erode_rand_color,
-            {/* inputs: */ {
-                {"int", "iterations", "0"},
-                {"int", "iter", "0"},
-            },
-            /* outputs: */
-            {
-                "list",
-            },
-            /* params: */
-            {
+           {/* inputs: */ {
+                   {"int", "iterations", "0"},
+                   {"int", "iter", "0"},
+               },
+               /* outputs: */
+               {
+                   "list",
+               },
+               /* params: */
+               {
 
-            },
-            /* category: */
-            {
-                "erode",
-            }});
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
 
 struct erode_rand_dir : INode {
     void apply() override {
@@ -204,21 +204,21 @@ struct erode_rand_dir : INode {
     }
 };
 ZENDEFNODE(erode_rand_dir,
-            {/* inputs: */ {
-                {"int", "iterations", "0"},
-                {"int", "iter", "0"},
-            },
-            /* outputs: */
-            {
-                "list",
-            },
-            /* params: */ {}, /* category: */
-            {
-                "erode",
-            }});
+           {/* inputs: */ {
+                   {"int", "iterations", "0"},
+                   {"int", "iter", "0"},
+               },
+               /* outputs: */
+               {
+                   "list",
+               },
+               /* params: */ {}, /* category: */
+               {
+                   "erode",
+               }});
 
-// 热侵蚀
-struct erode_tumble_material_v0 : INode {
+// thermal erosion 热侵蚀
+struct erode_tumble_material_erosion : INode {
     void apply() override {
 
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -241,7 +241,7 @@ struct erode_tumble_material_v0 : INode {
 
         // 获取面板参数
         auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
-        auto cut_angle = get_input<NumericObject>("cut_angle")->get<float>();
+        auto cut_angle = get_input<NumericObject>("cutangle")->get<float>();
         auto global_erosionrate = get_input<NumericObject>("global_erosionrate")->get<float>();
         auto erosionrate = get_input<NumericObject>("erosionrate")->get<float>();
         auto erodability = get_input<NumericObject>("erodability")->get<float>();
@@ -261,6 +261,43 @@ struct erode_tumble_material_v0 : INode {
         auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         // 初始化网格属性
+        auto erodabilitymask_name = get_input2<std::string>("erodability_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(erodabilitymask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(erodabilitymask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_erodabilitymask = terrain->verts.attr<float>(erodabilitymask_name);
+
+        auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(removalratemask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(removalratemask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_removalratemask = terrain->verts.attr<float>(removalratemask_name);
+
+        auto cutanglemask_name = get_input2<std::string>("cutangle_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(cutanglemask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(cutanglemask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_cutanglemask = terrain->verts.attr<float>(cutanglemask_name);
+
+        auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(gridbiasmask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(gridbiasmask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_gridbiasmask = terrain->verts.attr<float>(gridbiasmask_name);
+
+        // 存放地质特征的属性
         if (!terrain->verts.has_attr("_height") || !terrain->verts.has_attr("_debris") ||
             !terrain->verts.has_attr("_temp_height") || !terrain->verts.has_attr("_temp_debris")) {
             zeno::log_error("Node [erode_tumble_material_v0], no such data layer named '{}' or '{}' or '{}' or '{}'.",
@@ -280,7 +317,6 @@ struct erode_tumble_material_v0 : INode {
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
-#pragma omp parallel for
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int iterseed = iter * 134775813;
@@ -370,7 +406,7 @@ struct erode_tumble_material_v0 : INode {
 
                         float max_diff = 0.0f;
                         float dir_prob = 0.0f;
-
+                        float c_gridbiasmask = _gridbiasmask[c_idx];
                         for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++)
                         {
                             for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++)
@@ -388,7 +424,8 @@ struct erode_tumble_material_v0 : INode {
 
                                 float tmp_diff = n_height - (c_height);
 
-                                float _gridbias = clamp(gridbias, -1.0f, 1.0f);
+                                //float _gridbias = clamp(gridbias, -1.0f, 1.0f);
+                                float _gridbias = clamp(gridbias * c_gridbiasmask, -1.0f, 1.0f);
 
                                 if (tmp_dx && tmp_dz)
                                     tmp_diff *= clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
@@ -421,7 +458,8 @@ struct erode_tumble_material_v0 : INode {
                         if (cond)
                         {
                             float abs_h_diff = h_diff < 0.0f ? -h_diff : h_diff;
-                            float _cut_angle = clamp(cut_angle, 0.0f, 90.0f);
+                            //float _cut_angle = clamp(cut_angle, 0.0f, 90.0f);
+                            float _cut_angle = clamp(cut_angle * _cutanglemask[n_idx], 0.0f, 90.0f);
                             float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
                             float height_removed = _cut_angle < 90.0f ? tan(_cut_angle * M_PI / 180) * delta_x : 1e10f;
                             float height_diff = abs_h_diff - height_removed;
@@ -432,11 +470,335 @@ struct erode_tumble_material_v0 : INode {
                             unsigned int randval = erode_random(seed * 3.14, (idx + nx * nz) * 8 + color + iterseed);
                             int do_erode = randval < cutoff;
 
-                            float height_removal_amt = do_erode * clamp(global_erosionrate * erosionrate * erodability, 0.0f, height_diff);
+                            float height_removal_amt = do_erode * clamp(global_erosionrate * erosionrate * erodability * _erodabilitymask[c_idx], 0.0f, height_diff);
 
                             _height[c_idx] -= height_removal_amt;
 
-                            float bedrock_density = 1.0f - (removalrate);
+                            //float bedrock_density = 1.0f - (removalrate);
+                            float bedrock_density = 1.0f - (removalrate * _removalratemask[c_idx]);
+                            if (bedrock_density > 0.0f)
+                            {
+                                float newdebris = bedrock_density * height_removal_amt;
+                                if (n_debris + newdebris > maxdepth)
+                                {
+                                    float rollback = n_debris + newdebris - maxdepth;
+                                    rollback = min(rollback, newdebris);
+                                    _height[c_idx] += rollback / bedrock_density;
+                                    newdebris -= rollback;
+                                }
+                                _debris[c_idx] += newdebris;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        set_output("prim_2DGrid", std::move(terrain));
+    }
+};
+ZENDEFNODE(erode_tumble_material_erosion,
+           {/* inputs: */ {
+                   "prim_2DGrid",
+
+                   {"ListObject", "perm"},
+                   {"ListObject", "p_dirs"},
+                   {"ListObject", "x_dirs"},
+
+                   {"float", "seed", "9676.79"},
+                   {"int", "iterations", "0"},
+                   {"int", "iter", "0"},
+                   {"int", "i", "0"},
+
+                   {"int", "openborder", "0"},
+                   {"float", "maxdepth", "5.0"},
+                   {"float", "global_erosionrate", "1.0"},
+                   {"float", "erosionrate", "0.03"},
+
+                   {"float", "cutangle", "35"},
+                   {"string", "cutangle_mask_layer", "cutangle_mask"},
+
+                   {"float", "erodability", "0.4"},
+                   {"string", "erodability_mask_layer", "erodability_mask"},
+
+                   {"float", "removalrate", "0.7"},
+                   {"string", "removalrate_mask_layer", "removalrate_mask"},
+
+                   {"float", "gridbias", "0.0"},
+                   {"string", "gridbias_mask_layer", "gridbias_mask"},
+               },
+               /* outputs: */
+               {
+                   "prim_2DGrid",
+               },
+               /* params: */
+               {
+
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
+
+// smooth slump 平滑崩解 实现是错的，需要修改
+struct erode_tumble_material_v0 : INode {
+    void apply() override {
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 初始化
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        // 初始化网格
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        int nx, nz;
+        auto &ud = terrain->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+        nx = ud.get2<int>("nx");
+        nz = ud.get2<int>("nz");
+        auto &pos = terrain->verts;
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
+
+        // 获取面板参数
+        auto gridbias = get_input<NumericObject>("gridbias")->get<float>();
+        auto cut_angle = get_input<NumericObject>("cutangle")->get<float>();
+        auto global_erosionrate = get_input<NumericObject>("global_erosionrate")->get<float>();
+        auto erosionrate = get_input<NumericObject>("erosionrate")->get<float>();
+        auto erodability = get_input<NumericObject>("erodability")->get<float>();
+        auto removalrate = get_input<NumericObject>("removalrate")->get<float>();
+        auto maxdepth = get_input<NumericObject>("maxdepth")->get<float>();
+
+        std::uniform_real_distribution<float> distr(0.0, 1.0); // 设置随机分布
+        auto seed = get_input<NumericObject>("seed")->get<float>();
+
+        auto iterations = get_input<NumericObject>("iterations")->get<int>(); // 外部迭代总次数      10
+        auto iter = get_input<NumericObject>("iter")->get<int>();             // 外部迭代当前次数    1~10
+        auto i = get_input<NumericObject>("i")->get<int>();                   // 内部迭代当前次数    0~7
+        auto openborder = get_input<NumericObject>("openborder")->get<int>(); // 获取边界标记
+
+        auto perm = get_input<ListObject>("perm")->get2<int>();
+        auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
+        auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
+
+        // 初始化网格属性
+        auto erodabilitymask_name = get_input2<std::string>("erodability_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(erodabilitymask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(erodabilitymask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_erodabilitymask = terrain->verts.attr<float>(erodabilitymask_name);
+
+        auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(removalratemask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(removalratemask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_removalratemask = terrain->verts.attr<float>(removalratemask_name);
+
+        auto cutanglemask_name = get_input2<std::string>("cutangle_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(cutanglemask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(cutanglemask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_cutanglemask = terrain->verts.attr<float>(cutanglemask_name);
+
+        auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(gridbiasmask_name))
+        {
+            auto &_temp = terrain->verts.add_attr<float>(gridbiasmask_name);
+            std::fill(_temp.begin(), _temp.end(), 1.0);
+        }
+        auto &_gridbiasmask = terrain->verts.attr<float>(gridbiasmask_name);
+
+        // 存放地质特征的属性
+        if (!terrain->verts.has_attr("_height") || !terrain->verts.has_attr("_debris") ||
+            !terrain->verts.has_attr("_temp_height") || !terrain->verts.has_attr("_temp_debris")) {
+            zeno::log_error("Node [erode_tumble_material_v0], no such data layer named '{}' or '{}' or '{}' or '{}'.",
+                            "_height", "_debris", "_temp_height", "_temp_debris");
+        }
+        auto &_height = terrain->verts.attr<float>("_height"); // 计算用的临时属性
+        auto &_debris = terrain->verts.attr<float>("_debris");
+        auto &_temp_height = terrain->verts.attr<float>("_temp_height"); // 备份用的临时属性
+        auto &_temp_debris = terrain->verts.attr<float>("_temp_debris");
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 计算
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma omp parallel for
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+            for (int id_x = 0; id_x < nx; id_x++)
+            {
+                int iterseed = iter * 134775813;
+                int color = perm[i];
+
+                int is_red = ((id_z & 1) == 1) && (color == 1);
+                int is_green = ((id_x & 1) == 1) && (color == 2);
+                int is_blue = ((id_z & 1) == 0) && (color == 3);
+                int is_yellow = ((id_x & 1) == 0) && (color == 4);
+                int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
+                int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
+                int dxs[] = { 0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1] };
+                int dzs[] = { p_dirs[1], 0, p_dirs[1], 0, x_dirs[0],-x_dirs[1], x_dirs[0],-x_dirs[1] };
+
+                if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y)
+                {
+                    int idx = Pos2Idx(id_x, id_z, nx);
+                    int dx = dxs[color - 1];
+                    int dz = dzs[color - 1];
+                    int bound_x = nx;
+                    int bound_z = nz;
+                    int clamp_x = bound_x - 1;
+                    int clamp_z = bound_z - 1;
+
+                    float i_debris = _temp_debris[idx];
+                    float i_height = _temp_height[idx];
+
+                    int samplex = clamp(id_x + dx, 0, clamp_x);
+                    int samplez = clamp(id_z + dz, 0, clamp_z);
+                    int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
+                    if (validsource)
+                    {
+                        validsource = validsource || !openborder;
+                        int j_idx = Pos2Idx(samplex, samplez, nx);
+                        float j_debris = validsource ? _temp_debris[j_idx] : 0.0f;
+                        float j_height = _temp_height[j_idx];
+
+                        int cidx = 0;
+                        int cidz = 0;
+
+                        float c_height = 0.0f;
+                        float c_debris = 0.0f;
+                        float n_debris = 0.0f;
+
+                        int c_idx = 0;
+                        int n_idx = 0;
+
+                        int dx_check = 0;
+                        int dz_check = 0;
+
+                        float h_diff = 0.0f;
+
+                        if ((j_height - i_height) > 0.0f)
+                        {
+                            cidx = samplex;
+                            cidz = samplez;
+
+                            c_height = j_height;
+                            c_debris = j_debris;
+                            n_debris = i_debris;
+
+                            c_idx = j_idx;
+                            n_idx = idx;
+
+                            dx_check = -dx;
+                            dz_check = -dz;
+
+                            h_diff = j_height - i_height;
+                        }
+                        else
+                        {
+                            cidx = id_x;
+                            cidz = id_z;
+
+                            c_height = i_height;
+                            c_debris = i_debris;
+                            n_debris = j_debris;
+
+                            c_idx = idx;
+                            n_idx = j_idx;
+
+                            dx_check = dx;
+                            dz_check = dz;
+
+                            h_diff = i_height - j_height;
+                        }
+
+                        float max_diff = 0.0f;
+                        float dir_prob = 0.0f;
+                        float c_gridbiasmask = _gridbiasmask[c_idx];
+                        for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++)
+                        {
+                            for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++)
+                            {
+                                if (!tmp_dx && !tmp_dz)
+                                    continue;
+
+                                int tmp_samplex = clamp(cidx + tmp_dx, 0, clamp_x);
+                                int tmp_samplez = clamp(cidz + tmp_dz, 0, clamp_z);
+                                int tmp_validsource = (tmp_samplex == (cidx + tmp_dx)) && (tmp_samplez == (cidz + tmp_dz));
+                                tmp_validsource = tmp_validsource || !openborder;
+                                int tmp_j_idx = Pos2Idx(tmp_samplex, tmp_samplez, nx);
+
+                                float n_height = _temp_height[tmp_j_idx];
+
+                                float tmp_diff = n_height - (c_height);
+
+                                //float _gridbias = clamp(gridbias, -1.0f, 1.0f);
+                                float _gridbias = clamp(gridbias * c_gridbiasmask, -1.0f, 1.0f);
+
+                                if (tmp_dx && tmp_dz)
+                                    tmp_diff *= clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
+                                else
+                                    tmp_diff *= clamp(1.0f + _gridbias, 0.0f, 1.0f);
+
+                                if (tmp_diff <= 0.0f)
+                                {
+                                    if ((dx_check == tmp_dx) && (dz_check == tmp_dz))
+                                        dir_prob = tmp_diff;
+                                    if (tmp_diff < max_diff)
+                                        max_diff = tmp_diff;
+                                }
+                            }
+                        }
+                        if (max_diff > 0.001f || max_diff < -0.001f)
+                            dir_prob = dir_prob / max_diff;
+
+                        int cond = 0;
+                        if (dir_prob >= 1.0f)
+                            cond = 1;
+                        else
+                        {
+                            dir_prob = dir_prob * dir_prob * dir_prob * dir_prob;
+                            unsigned int cutoff = (unsigned int)(dir_prob * 4294967295.0);
+                            unsigned int randval = erode_random(seed, (idx + nx * nz) * 8 + color + iterseed);
+                            cond = randval < cutoff;
+                        }
+
+                        if (cond)
+                        {
+                            float abs_h_diff = h_diff < 0.0f ? -h_diff : h_diff;
+                            //float _cut_angle = clamp(cut_angle, 0.0f, 90.0f);
+                            float _cut_angle = clamp(cut_angle * _cutanglemask[n_idx], 0.0f, 90.0f);
+                            float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
+                            float height_removed = _cut_angle < 90.0f ? tan(_cut_angle * M_PI / 180) * delta_x : 1e10f;
+                            float height_diff = abs_h_diff - height_removed;
+                            if (height_diff < 0.0f)
+                                height_diff = 0.0f;
+                            float prob = ((n_debris + c_debris) != 0.0f) ? clamp((height_diff / (n_debris + c_debris)), 0.0f, 1.0f) : 1.0f;
+                            unsigned int cutoff = (unsigned int)(prob * 4294967295.0);
+                            unsigned int randval = erode_random(seed * 3.14, (idx + nx * nz) * 8 + color + iterseed);
+                            int do_erode = randval < cutoff;
+
+                            float height_removal_amt = do_erode * clamp(global_erosionrate * erosionrate * erodability * _erodabilitymask[c_idx], 0.0f, height_diff);
+
+                            _height[c_idx] -= height_removal_amt;
+
+                            //float bedrock_density = 1.0f - (removalrate);
+                            float bedrock_density = 1.0f - (removalrate * _removalratemask[c_idx]);
                             if (bedrock_density > 0.0f)
                             {
                                 float newdebris = bedrock_density * height_removal_amt;
@@ -459,42 +821,238 @@ struct erode_tumble_material_v0 : INode {
     }
 };
 ZENDEFNODE(erode_tumble_material_v0,
-            {/* inputs: */ {
-                "prim_2DGrid",
+           {/* inputs: */ {
+                   "prim_2DGrid",
 
-                {"ListObject", "perm"},
-                {"ListObject", "p_dirs"},
-                {"ListObject", "x_dirs"},
+                   {"ListObject", "perm"},
+                   {"ListObject", "p_dirs"},
+                   {"ListObject", "x_dirs"},
 
-                {"float", "seed", "9676.79"},
-                {"int", "iterations", "0"},
-                {"int", "iter", "0"},
-                {"int", "i", "0"},
+                   {"float", "seed", "9676.79"},
+                   {"int", "iterations", "0"},
+                   {"int", "iter", "0"},
+                   {"int", "i", "0"},
 
-                {"int", "openborder", "0"},
-                {"float", "gridbias", "0.0"},
+                   {"int", "openborder", "0"},
+                   {"float", "maxdepth", "5.0"},
+                   {"float", "global_erosionrate", "1.0"},
+                   {"float", "erosionrate", "0.03"},
 
-                {"float", "cut_angle", "35"},
-                {"float", "global_erosionrate", "1.0"},
-                {"float", "erosionrate", "0.03"},
-                {"float", "erodability", "0.4"},
-                {"float", "removalrate", "0.7"},
-                {"float", "maxdepth", "5.0"},
-            },
-            /* outputs: */
+                   {"float", "cutangle", "35"},
+                   {"string", "cutangle_mask_layer", "cutangle_mask"},
+
+                   {"float", "erodability", "0.4"},
+                   {"string", "erodability_mask_layer", "erodability_mask"},
+
+                   {"float", "removalrate", "0.7"},
+                   {"string", "removalrate_mask_layer", "removalrate_mask"},
+
+                   {"float", "gridbias", "0.0"},
+                   {"string", "gridbias_mask_layer", "gridbias_mask"},
+               },
+               /* outputs: */
+               {
+                   "prim_2DGrid",
+               },
+               /* params: */
+               {
+
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
+
+// smooth slump + calculate flow 平滑崩解 + 流场计算 实现是错的
+struct erode_tumble_material_v1 : INode {
+    void apply() override {
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 初始化
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        // 初始化网格
+        auto terrain = get_input<PrimitiveObject>("HeightField");
+        int nx, nz;
+        auto &ud = terrain->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+        nx = ud.get2<int>("nx");
+        nz = ud.get2<int>("nz");
+        auto &pos = terrain->verts;
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
+
+        // 获取面板参数
+        auto openborder = get_input<NumericObject>("openborder")->get<int>();
+        auto repose_angle = get_input<NumericObject>("repose_angle")->get<float>();
+        auto flow_rate = get_input<NumericObject>("flow_rate")->get<float>();
+        auto height_factor = get_input<NumericObject>("height_factor")->get<float>();
+        auto entrainmentrate = get_input<NumericObject>("entrainmentrate")->get<float>();
+
+        // 初始化网格属性
+        auto write_back_material_layer = get_input2<std::string>("write_back_material_layer");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
+        if (!terrain->verts.has_attr(write_back_material_layer))
+        {
+            auto &_sta = terrain->verts.add_attr<float>(write_back_material_layer);
+            std::fill(_sta.begin(), _sta.end(), 0.0);
+        }
+        auto &write_back_material = terrain->verts.attr<float>(write_back_material_layer);
+
+        // 存放地质特征的属性
+        if (!terrain->verts.has_attr("height") ||
+            !terrain->verts.has_attr("_material") ||
+            !terrain->verts.has_attr("flowdir")) {
+            zeno::log_error("no such data layer named '{}' or '{}' or '{}'.",
+                            "height", "_material", "flowdir");
+        }
+        auto &height                = terrain->verts.attr<float>("height");
+        auto &_material             = terrain->verts.attr<float>("_material");
+        auto &flowdir               = terrain->verts.attr<vec3f>("flowdir");
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 计算
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma omp parallel for
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+            for (int id_x = 0; id_x < nx; id_x++)
             {
-                "prim_2DGrid",
-            },
-            /* params: */
-            {
+                int idx = Pos2Idx(id_x, id_z, nx);
+                int bound_x = nx;
+                int bound_z = nz;
+                int clamp_x = bound_x - 1;
+                int clamp_z = bound_z - 1;
 
-            },
-            /* category: */
-            {
-                "erode",
-            }});
+                // Validate parameters
+                flow_rate = clamp(flow_rate, 0.0f, 1.0f);
+                repose_angle = clamp(repose_angle, 0.0f, 90.0f);
+                height_factor = clamp(height_factor, 0.0f, 1.0f);
 
-// 崩塌
+                // The maximum slope at which we stop slumping
+                float static_diff = repose_angle < 90.0f ? tan(repose_angle * M_PI / 180.0) * cellSize : 1e10f;
+
+                // Initialize accumulation of flow
+                float net_diff = 0.0f;
+                float net_entrained = 0.0f;
+
+                float net_diff_x = 0.0f;
+                float net_diff_z = 0.0f;
+
+                // Get the current height level
+                float i_material = _material[idx];
+                float i_entrained = 0;
+                float i_height = height_factor * height[idx] + i_material + i_entrained;
+
+                bool moved = false;
+                // For each of the 8 neighbours, we get the difference in total
+                // height and add to our flow values.
+                for (int dz = -1; dz <= 1; dz++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        if (!dx && !dz)
+                            continue;
+
+                        int samplex = clamp(id_x + dx, 0, clamp_x);
+                        int samplez = clamp(id_z + dz, 0, clamp_z);
+                        int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
+                        // If we have closed borders, pretend a valid source to create
+                        // a streak condition
+                        validsource = validsource || !openborder;
+                        int j_idx = samplex + samplez * nx;
+                        float j_material = validsource ? _material[j_idx] : 0.0f;
+                        float j_entrained = 0;
+
+                        float j_height = height_factor * height[j_idx] + j_material + j_entrained;
+
+                        float diff = j_height - i_height;
+
+                        // Calculate the distance to this neighbour
+                        float distance = (dx && dz) ? 1.4142136f : 1.0f;
+                        // Cutoff at the repose angle
+                        float static_cutoff = distance * static_diff;
+                        diff = diff > 0.0f ? max(diff - static_cutoff, 0.0f) : min(diff + static_cutoff, 0.0f);
+
+                        // Weight the difference by the inverted distance
+                        diff = distance > 0.0f ? diff / distance : 0.0f;
+
+                        // Clamp within the material levels of the voxels
+                        diff = clamp(diff, -i_material, j_material);
+
+                        // Some percentage of the material flow will drag
+                        // the entrained material instead.
+                        float entrained_diff = diff * entrainmentrate;
+
+                        // Clamp entrained diff by the entrained levels.
+                        entrained_diff = clamp(entrained_diff, -i_entrained, j_entrained);
+
+                        // Flow uses total diff, including entrained material
+                        net_diff_x += (float) dx * diff;
+                        net_diff_z += (float) dz * diff;
+
+                        // And reduce the material diff by the amount of entrained substance
+                        // moved so total height updates as expected.
+                        diff -= entrained_diff;
+
+                        // Accumulate the diff
+                        net_diff += diff;
+                        net_entrained += entrained_diff;
+                    }
+                }
+
+                // 0.17 is to keep us in the circle of stability
+                float weight = flow_rate * 0.17;
+                net_diff *= weight;
+                net_entrained *= weight;
+
+                // Negate the directional flow so that they are positive in their axis direction
+                net_diff_x *= -weight;
+                net_diff_z *= -weight;
+
+                // Ensure diff cannot bring the material level negative
+                net_diff = max(net_diff, -i_material);
+                net_entrained = max(net_entrained, -i_entrained);
+
+                // Update the material level
+                write_back_material[idx] = i_material + net_diff;
+
+                // Update the flow
+                flowdir[idx][0] += net_diff_x;
+                flowdir[idx][2] += net_diff_z;
+            }
+        }
+
+        set_output("HeightField", std::move(terrain));
+    }
+};
+ZENDEFNODE(erode_tumble_material_v1,
+           {/* inputs: */ {
+                   "HeightField",
+                   {"string", "write_back_material_layer", "write_back_material"},
+                   {"int", "openborder", "0"},
+                   {"float", "repose_angle", "15.0"},
+                   {"float", "flow_rate", "1.0"},
+                   {"float", "height_factor", "1.0"},
+                   {"float", "entrainmentrate", "0.0"},
+               },
+               /* outputs: */
+               {
+                   "HeightField",
+               },
+               /* params: */
+               {
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
+
+// granular slump 颗粒崩解
 struct erode_tumble_material_v2 : INode {
     void apply() override {
 
@@ -535,6 +1093,7 @@ struct erode_tumble_material_v2 : INode {
 
         // 初始化网格属性
         auto stablilityMaskName = get_input2<std::string>("stabilitymask");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(stablilityMaskName)) {
             auto &_sta = terrain->verts.add_attr<float>(stablilityMaskName);
             std::fill(_sta.begin(), _sta.end(), 0.0);
@@ -560,7 +1119,6 @@ struct erode_tumble_material_v2 : INode {
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
-#pragma omp parallel for
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int iterseed = iter * 134775813;
@@ -749,41 +1307,41 @@ struct erode_tumble_material_v2 : INode {
     }
 };
 ZENDEFNODE(erode_tumble_material_v2,
-            {/* inputs: */ {
-                "prim_2DGrid",
+           {/* inputs: */ {
+                   "prim_2DGrid",
 
-                {"string", "stabilitymask", "_stability"},
-                {"ListObject", "perm"},
-                {"ListObject", "p_dirs"},
-                {"ListObject", "x_dirs"},
+                   {"string", "stabilitymask", "_stability"},
+                   {"ListObject", "perm"},
+                   {"ListObject", "p_dirs"},
+                   {"ListObject", "x_dirs"},
 
-                {"float", "seed", "15231.3"},
-                {"int", "iterations", "0"},
-                {"int", "iter", "0"},
-                {"int", "i", "0"},
+                   {"float", "seed", "15231.3"},
+                   {"int", "iterations", "0"},
+                   {"int", "iter", "0"},
+                   {"int", "i", "0"},
 
-                {"int", "openborder", "0"},
-                {"float", "gridbias", "0.0"},
+                   {"int", "openborder", "0"},
+                   {"float", "gridbias", "0.0"},
 
-                // 崩塌流淌相关
-                {"float", "repose_angle", "15.0"},
-                {"float", "quant_amt", "0.25"},
-                {"float", "flow_rate", "1.0"},
-            },
-            /* outputs: */
-            {
-                "prim_2DGrid",
-            },
-            /* params: */
-            {
-                //{"string", "stabilitymask", "_stability"},
-            },
-            /* category: */
-            {
-                "erode",
-            }});
+                   // 崩塌流淌相关
+                   {"float", "repose_angle", "15.0"},
+                   {"float", "quant_amt", "0.25"},
+                   {"float", "flow_rate", "1.0"},
+               },
+               /* outputs: */
+               {
+                   "prim_2DGrid",
+               },
+               /* params: */
+               {
+                   //{"string", "stabilitymask", "_stability"},
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
 
-// 崩塌 + flow
+// granular slump + calculate flow 颗粒崩解 + 流场计算
 struct erode_tumble_material_v3 : INode {
     void apply() override {
 
@@ -825,6 +1383,7 @@ struct erode_tumble_material_v3 : INode {
 
         // 初始化网格属性
         auto stablilityMaskName = get_input2<std::string>("stabilitymask");
+        // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
         if (!terrain->verts.has_attr(stablilityMaskName))
         {
             auto &_sta = terrain->verts.add_attr<float>(stablilityMaskName);
@@ -832,6 +1391,7 @@ struct erode_tumble_material_v3 : INode {
         }
         auto &stabilitymask = terrain->verts.attr<float>(stablilityMaskName);
 
+        // 存放地质特征的属性
         if (!terrain->verts.has_attr("height") ||
             !terrain->verts.has_attr("_material") ||
             !terrain->verts.has_attr("_temp_material") ||
@@ -851,9 +1411,10 @@ struct erode_tumble_material_v3 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma omp parallel for
-        for (int id_z = 0; id_z < nz; id_z++) {
-#pragma omp parallel for
-            for (int id_x = 0; id_x < nx; id_x++) {
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+            for (int id_x = 0; id_x < nx; id_x++)
+            {
                 int iterseed = iter * 134775813;
                 int color = perm[i];
 
@@ -1056,138 +1617,41 @@ struct erode_tumble_material_v3 : INode {
     }
 };
 ZENDEFNODE(erode_tumble_material_v3,
-            {/* inputs: */ {
-                "prim_2DGrid",
+           {/* inputs: */ {
+                   "prim_2DGrid",
 
-                {"string", "stabilitymask", "_stability"},
-                {"ListObject", "perm"},
-                {"ListObject", "p_dirs"},
-                {"ListObject", "x_dirs"},
+                   {"string", "stabilitymask", "_stability"},
+                   {"ListObject", "perm"},
+                   {"ListObject", "p_dirs"},
+                   {"ListObject", "x_dirs"},
 
-                {"float", "seed", "15231.3"},
-                {"int", "iterations", "0"},
-                {"int", "iter", "0"},
-                {"int", "i", "0"},
+                   {"float", "seed", "15231.3"},
+                   {"int", "iterations", "0"},
+                   {"int", "iter", "0"},
+                   {"int", "i", "0"},
 
-                {"int", "openborder", "0"},
-                {"float", "gridbias", "0.0"},
+                   {"int", "openborder", "0"},
+                   {"float", "gridbias", "0.0"},
 
-                // 崩塌流淌相关
-                {"float", "repose_angle", "0.0"},
-                {"float", "quant_amt", "0.0"},
-                {"float", "flow_rate", "1.0"},
-            },
-            /* outputs: */
-            {
-                "prim_2DGrid",
-            },
-            /* params: */
-            {
-                //{"string", "stabilitymask", "_stability"},
-            },
-            /* category: */
-            {
-                "erode",
-            }});
+                   // 崩塌流淌相关
+                   {"float", "repose_angle", "0.0"},
+                   {"float", "quant_amt", "0.0"},
+                   {"float", "flow_rate", "1.0"},
+               },
+               /* outputs: */
+               {
+                   "prim_2DGrid",
+               },
+               /* params: */
+               {
+                   //{"string", "stabilitymask", "_stability"},
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
 
-struct erode_smooth_flow : INode {
-    void apply() override {
-
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 初始化
-        ////////////////////////////////////////////////////////////////////////////////////////
-
-        // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
-        int nx, nz;
-        auto &ud = terrain->userData();
-        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
-            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-        nx = ud.get2<int>("nx");
-        nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
-        vec3f p0 = pos[0];
-        vec3f p1 = pos[1];
-        float cellSize = length(p1 - p0);
-
-        // 获取面板参数
-        auto smooth_rate = get_input<NumericObject>("smoothRate")->get<float>();
-        auto flowName = get_input2<std::string>("flowName");
-
-        // 初始化网格属性
-        auto &flow = terrain->verts.attr<float>(flowName);
-        auto &_lap = terrain->verts.add_attr<float>("_lap");
-
-
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 计算
-        ////////////////////////////////////////////////////////////////////////////////////////
-
-#pragma omp parallel for
-        for (int id_z = 0; id_z < nz; id_z++) {
-#pragma omp parallel for
-            for (int id_x = 0; id_x < nx; id_x++) {
-                int idx = Pos2Idx(id_x, id_z, nx);
-
-                float net_diff = 0.0f;
-                net_diff += flow[idx - 1 * (id_x > 0)];
-                net_diff += flow[idx + 1 * (id_x < nx - 1)];
-                net_diff += flow[idx - nx * (id_z > 0)];
-                net_diff += flow[idx + nx * (id_z < nz - 1)];
-
-                net_diff *= 0.25f;
-                net_diff -= flow[idx];
-
-                _lap[idx] = net_diff;
-            }
-        }
-
-#pragma omp parallel for
-        for (int id_z = 0; id_z < nz; id_z++) {
-#pragma omp parallel for
-            for (int id_x = 0; id_x < nx; id_x++) {
-                int idx = Pos2Idx(id_x, id_z, nx);
-
-                float net_diff = 0.0f;
-                net_diff += _lap[idx - 1 * (id_x > 0)];
-                net_diff += _lap[idx + 1 * (id_x < nx - 1)];
-                net_diff += _lap[idx - nx * (id_z > 0)];
-                net_diff += _lap[idx + nx * (id_z < nz - 1)];
-
-                net_diff *= 0.25f;
-                net_diff -= _lap[idx];
-
-                flow[idx] -= smooth_rate * 0.5f * net_diff;
-            }
-        }
-
-        terrain->verts.erase_attr("_lap");
-
-        set_output("prim_2DGrid", std::move(terrain));
-    }
-};
-ZENDEFNODE(erode_smooth_flow,
-            {/* inputs: */ {
-                "prim_2DGrid",
-                {"float", "smoothRate", "1.0"},
-                {"string", "flowName", "flow"},
-            },
-            /* outputs: */
-            {
-                "prim_2DGrid",
-            },
-            /* params: */
-            {
-
-            },
-            /* category: */
-            {
-                "erode",
-            }});
-
-// 崩塌 + 侵蚀
+// granular slump + erosion 颗粒崩解 + 侵蚀
 struct erode_tumble_material_v4 : INode {
     void apply() override {
 
@@ -1232,14 +1696,14 @@ struct erode_tumble_material_v4 : INode {
             get_input<NumericObject>("bed_erosionrate_factor")->get<float>();           // 1 河床侵蚀率因子
         auto depositionrate = get_input<NumericObject>("depositionrate")->get<float>(); // 0.01 沉积率
         auto sedimentcap = get_input<NumericObject>("sedimentcap")
-                               ->get<float>(); // 10.0 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
+            ->get<float>(); // 10.0 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
 
         // 河堤参数
         auto bank_erosionrate_factor =
             get_input<NumericObject>("bank_erosionrate_factor")->get<float>(); // 1.0 河堤侵蚀率因子
         auto max_bank_bed_ratio = get_input<NumericObject>("max_bank_bed_ratio")
-                                      ->get<float>(); // 0.5 The maximum of bank to bed water column height ratio
-                                                      // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
+            ->get<float>(); // 0.5 The maximum of bank to bed water column height ratio
+        // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
         // 河流控制
         auto quant_amt = get_input<NumericObject>("quant_amt")->get<float>(); // 0.05 流量维持率，越高流量越稳定
         auto iterations = get_input<NumericObject>("iterations")->get<int>(); // 流淌的总迭代次数
@@ -1281,7 +1745,6 @@ struct erode_tumble_material_v4 : INode {
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
-#pragma omp parallel for
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int iterseed = iter * 134775813;
@@ -1483,8 +1946,8 @@ struct erode_tumble_material_v4 : INode {
                         float kd_factor = clamp((1 / (1 + (slope_contribution_factor * slope_cont))), 0.0f, 1.0f);
                         float norm_iter = clamp(((float)iter / (float)max_erodability_iteration), 0.0f, 1.0f);
                         float ks_factor = clamp((1 - (slope_contribution_factor * exp(-slope_cont))) * sqrt(dir_probs[0]) *
-                            (initial_erodability_factor + ((1.0f - initial_erodability_factor) * sqrt(norm_iter))),
-                            0.0f, 1.0f);
+                                                    (initial_erodability_factor + ((1.0f - initial_erodability_factor) * sqrt(norm_iter))),
+                                                0.0f, 1.0f);
 
                         float c_ks = global_erosionrate * erosionrate * erodability * ks_factor;
 
@@ -1624,60 +2087,161 @@ struct erode_tumble_material_v4 : INode {
     }
 };
 ZENDEFNODE(erode_tumble_material_v4,
-            {/* inputs: */ {
-                "prim_2DGrid",
+           {/* inputs: */ {
+                   "prim_2DGrid",
 
-                {"ListObject", "perm"},
-                {"ListObject", "p_dirs"},
-                {"ListObject", "x_dirs"},
+                   {"ListObject", "perm"},
+                   {"ListObject", "p_dirs"},
+                   {"ListObject", "x_dirs"},
 
-                {"float", "seed", "12.34"},
-                {"int", "iterations", "40"}, // 流淌的总迭代次数
-                {"int", "iter", "0"},
-                {"int", "i", "0"},
+                   {"float", "seed", "12.34"},
+                   {"int", "iterations", "40"}, // 流淌的总迭代次数
+                   {"int", "iter", "0"},
+                   {"int", "i", "0"},
 
-                {"int", "openborder", "0"},
-                {"float", "gridbias", "0.0"},
+                   {"int", "openborder", "0"},
+                   {"float", "gridbias", "0.0"},
 
-                // 侵蚀主参数
-                {"float", "global_erosionrate", "1.0"}, // 全局侵蚀率
-                {"float", "erodability", "1.0"},        // 侵蚀能力
-                {"float", "erosionrate", "0.4"},        // 侵蚀率
-                {"float", "bank_angle", "70.0"},        // 河堤侵蚀角度
+                   // 侵蚀主参数
+                   {"float", "global_erosionrate", "1.0"}, // 全局侵蚀率
+                   {"float", "erodability", "1.0"},        // 侵蚀能力
+                   {"float", "erosionrate", "0.4"},        // 侵蚀率
+                   {"float", "bank_angle", "70.0"},        // 河堤侵蚀角度
 
-                // 高级参数
-                {"float", "removalrate", "0.1"},      // 风化率/水吸收率
-                {"float", "max_debris_depth", "5.0"}, // 碎屑最大深度
+                   // 高级参数
+                   {"float", "removalrate", "0.1"},      // 风化率/水吸收率
+                   {"float", "max_debris_depth", "5.0"}, // 碎屑最大深度
 
-                // 侵蚀能力调整
-                {"int", "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
-                {"float", "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
-                {"float", "slope_contribution_factor", "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
+                   // 侵蚀能力调整
+                   {"int", "max_erodability_iteration", "5"},      // 最大侵蚀能力迭代次数
+                   {"float", "initial_erodability_factor", "0.5"}, // 初始侵蚀能力因子
+                   {"float", "slope_contribution_factor", "0.8"}, // “地面斜率”对“侵蚀”和“沉积”的影响，“地面斜率大” -> 侵蚀因子大，沉积因子小
 
-                // 河床参数
-                {"float", "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
-                {"float", "depositionrate", "0.01"},        // 沉积率
-                {"float", "sedimentcap", "10.0"}, // 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
+                   // 河床参数
+                   {"float", "bed_erosionrate_factor", "1.0"}, // 河床侵蚀率因子
+                   {"float", "depositionrate", "0.01"},        // 沉积率
+                   {"float", "sedimentcap", "10.0"}, // 高度差转变为沉积物的比率 / 泥沙容量，每单位流动水可携带的泥沙量
 
-                // 河堤参数
-                {"float", "bank_erosionrate_factor", "1.0"}, // 河堤侵蚀率因子
-                {"float", "max_bank_bed_ratio", "0.5"}, // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
+                   // 河堤参数
+                   {"float", "bank_erosionrate_factor", "1.0"}, // 河堤侵蚀率因子
+                   {"float", "max_bank_bed_ratio", "0.5"}, // 高于这个比值的河岸将不会在侵蚀中被视为河岸，会停止侵蚀
 
-                // 河网控制
-                {"float", "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
-            },
-            /* outputs: */
+                   // 河网控制
+                   {"float", "quant_amt", "0.05"}, // 流量维持率，越高河流流量越稳定
+               },
+               /* outputs: */
+               {
+                   "prim_2DGrid",
+               },
+               /* params: */
+               {
+
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
+
+// smooth flow 平滑流场
+struct erode_smooth_flow : INode {
+    void apply() override {
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 初始化
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        // 初始化网格
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        int nx, nz;
+        auto &ud = terrain->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+        nx = ud.get2<int>("nx");
+        nz = ud.get2<int>("nz");
+        auto &pos = terrain->verts;
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
+
+        // 获取面板参数
+        auto smooth_rate = get_input<NumericObject>("smoothRate")->get<float>();
+        auto flowName = get_input2<std::string>("flowName");
+
+        // 初始化网格属性
+        auto &flow = terrain->verts.attr<float>(flowName);
+        auto &_lap = terrain->verts.add_attr<float>("_lap");
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 计算
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma omp parallel for
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+            for (int id_x = 0; id_x < nx; id_x++)
             {
-                "prim_2DGrid",
-            },
-            /* params: */
-            {
+                int idx = Pos2Idx(id_x, id_z, nx);
 
-            },
-            /* category: */
+                float net_diff = 0.0f;
+                net_diff += flow[idx - 1 * (id_x > 0)];
+                net_diff += flow[idx + 1 * (id_x < nx - 1)];
+                net_diff += flow[idx - nx * (id_z > 0)];
+                net_diff += flow[idx + nx * (id_z < nz - 1)];
+
+                net_diff *= 0.25f;
+                net_diff -= flow[idx];
+
+                _lap[idx] = net_diff;
+            }
+        }
+
+#pragma omp parallel for
+        for (int id_z = 0; id_z < nz; id_z++)
+        {
+            for (int id_x = 0; id_x < nx; id_x++)
             {
-                "erode",
-            }});
+                int idx = Pos2Idx(id_x, id_z, nx);
+
+                float net_diff = 0.0f;
+                net_diff += _lap[idx - 1 * (id_x > 0)];
+                net_diff += _lap[idx + 1 * (id_x < nx - 1)];
+                net_diff += _lap[idx - nx * (id_z > 0)];
+                net_diff += _lap[idx + nx * (id_z < nz - 1)];
+
+                net_diff *= 0.25f;
+                net_diff -= _lap[idx];
+
+                flow[idx] -= smooth_rate * 0.5f * net_diff;
+            }
+        }
+
+        terrain->verts.erase_attr("_lap");
+
+        set_output("prim_2DGrid", std::move(terrain));
+    }
+};
+ZENDEFNODE(erode_smooth_flow,
+           {/* inputs: */ {
+                   "prim_2DGrid",
+                   {"float", "smoothRate", "1.0"},
+                   {"string", "flowName", "flow"},
+               },
+               /* outputs: */
+               {
+                   "prim_2DGrid",
+               },
+               /* params: */
+               {
+
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
+
 // ######################################################
 // ######################################################
 // erode ################################################
@@ -1731,15 +2295,15 @@ struct erode_terrainHiMeLo : INode {
     }
 };
 ZENDEFNODE(erode_terrainHiMeLo,
-        { /* inputs: */ {
-            "prim_2DGrid",
-            { "string", "attrName", "fbm" },
-        }, /* outputs: */ {
-            "prim_2DGrid",
-        }, /* params: */ {
-        }, /* category: */ {
-            "erode",
-        } });
+           { /* inputs: */ {
+                   "prim_2DGrid",
+                   { "string", "attrName", "fbm" },
+               }, /* outputs: */ {
+                   "prim_2DGrid",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "erode",
+               } });
 
 
 float fit(const float data, const float ss, const float se, const float ds, const float de) {
@@ -1761,6 +2325,63 @@ float chramp(const float inputData) {
         outputData = 1;
     }
     return outputData;
+}
+
+// 计算图像的梯度
+void computeGradient(std::shared_ptr<PrimitiveObject> & hf, std::vector<std::vector<float>>& gradientX, std::vector<std::vector<float>>& gradientY) {
+    auto &ud = hf->userData();
+    int height  = ud.get2<int>("nx");
+    int width = ud.get2<int>("nx");
+
+    gradientX.resize(height, std::vector<float>(width));
+    gradientY.resize(height, std::vector<float>(width));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            if (x > 0 && x < width - 1) {
+                gradientX[y][x] = (hf->verts.attr<float>("heightLayer")[y * width + x + 1] - hf->verts.attr<float>("heightLayer")[y * width + x  - 1]) / 2.0f;
+            } else {
+                gradientX[y][x] = 0.0f;
+            }
+            if (y > 0 && y < height - 1) {
+                gradientY[y][x] = (hf->verts.attr<float>("heightLayer")[(y+1) * width + x] - hf->verts.attr<float>("heightLayer")[(y - 1) * width + x]) / 2.0f;
+            } else {
+                gradientY[y][x] = 0.0f;
+            }
+        }
+    }
+}
+
+// 计算图像的曲率
+void computeCurvature(const std::vector<std::vector<float>>& gradientX, const std::vector<std::vector<float>>& gradientY, std::vector<std::vector<float>>& curvature) {
+    int height = gradientX.size();
+    int width = gradientX[0].size();
+
+    curvature.resize(height, std::vector<float>(width));
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            float dx = gradientX[y][x];
+            float dy = gradientY[y][x];
+            float dxx = 0.0f;
+            float dyy = 0.0f;
+            float dxy = 0.0f;
+
+            if (x > 0 && x < width - 1) {
+                dxx = gradientX[y][x + 1] - 2.0f * dx + gradientX[y][x - 1];
+            }
+
+            if (y > 0 && y < height - 1) {
+                dyy = gradientY[y + 1][x] - 2.0f * dy + gradientY[y - 1][x];
+            }
+
+            if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
+                dxy = (gradientX[y + 1][x + 1] - gradientX[y + 1][x - 1] - gradientX[y - 1][x + 1] + gradientX[y - 1][x - 1]) / 4.0f;
+            }
+
+            curvature[y][x] = (dxx * dyy - dxy * dxy) / ((dxx + dyy) * (dxx + dyy) + 1e-6f);
+        }
+    }
 }
 
 struct HF_maskByFeature : INode {
@@ -1816,46 +2437,62 @@ struct HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
-
 #pragma omp parallel for
         for (int id_z = 0; id_z < nz; id_z++)
         {
-#pragma omp parallel for
             for (int id_x = 0; id_x < nx; id_x++)
             {
                 int idx = Pos2Idx(id_x, id_z, nx);
-                int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
+                int idx_xl, idx_xr, idx_zl, idx_zr;
+                int scale_x = 0;
+                int scale_z = 0;
 
                 if (id_x == 0) {
                     idx_xl = idx;
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 1;
+                    scale_x = 1;
                 } else if (id_x == nx - 1) {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = idx;
-                    scale = 1;
+                    scale_x = 1;
                 } else {
                     idx_xl = Pos2Idx(id_x - 1, id_z, nx);
                     idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                    scale = 2;
+                    scale_x = 2;
                 }
 
                 if (id_z == 0) {
                     idx_zl = idx;
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 1;
-                } else if (id_x == nz - 1) {
+                    scale_z = 1;
+                } else if (id_z == nz - 1) {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = idx;
-                    scale = 1;
+                    scale_z = 1;
                 } else {
                     idx_zl = Pos2Idx(id_x, id_z - 1, nx);
                     idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                    scale = 2;
+                    scale_z = 2;
                 }
 
-                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
-                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+                // debug
+//                if(id_x >= 570 && id_z >= 570)
+//                {
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                    printf("nx = %i, nz = %i\n", nx, nz);
+//                    printf("id_x = %i, id_z = %i\n", id_x, id_z);
+//                    printf("scale_x = %i, scale_z = %i, cellSize = %f\n", scale_x, scale_z, cellSize);
+//                    printf("-------------------\n");
+//                    printf("idx_xr = %i, idx_xl = %i\n", idx_xr, idx_xl);
+//                    printf("idx_zr = %i, idx_zl = %i\n", idx_zr, idx_zl);
+//                    printf("-------------------\n");
+//                    //printf("height[idx_xr] = %f, height[idx_xl] = %f\n", height[idx_xr], height[idx_xl]);
+//                    //printf("height[idx_zr] = %f, height[idx_zl] = %f\n", height[idx_zr], height[idx_zl]);
+//                    printf("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+//                }
+
+                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (float(scale_x) * cellSize);
+                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (float(scale_z) * cellSize);
 
                 vec3f dx = normalizeSafe(vec3f(1, 0, _grad[idx][0]));
                 vec3f dy = normalizeSafe(vec3f(0, 1, _grad[idx][2]));
@@ -1895,39 +2532,39 @@ struct HF_maskByFeature : INode {
                 }
             }
         }
-
+        terrain->verts.erase_attr("_grad");
         set_output("HeightField", std::move(terrain));
     }
 };
 ZENDEFNODE(HF_maskByFeature,
-        {/* inputs: */ {
-            "HeightField",
-            {"string", "height_layer", "height"},
-            {"string", "mask_layer", "mask"},
-            {"int", "smooth_radius", "1"},
-            {"bool", "use_slope", "0"},
-            {"float", "min_slopeangle", "0"},
-            {"float", "max_slopeangle", "90"},
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            {"bool", "use_direction", "0"},
-            {"float", "goal_angle", "0"},
-            {"float", "angle_spread", "30"},
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            {"bool", "use_height", "0"},
-            {"float", "min_height", "0"},
-            {"float", "max_height", "1"},
-        },
-        /* outputs: */
-        {
-            "HeightField",
-        },
-        /* params: */
-        {
-        },
-        /* category: */
-        {
-            "erode",
-        }});
+           {/* inputs: */ {
+                   "HeightField",
+                   {"string", "height_layer", "height"},
+                   {"string", "mask_layer", "mask"},
+                   {"int", "smooth_radius", "1"},
+                   {"bool", "use_slope", "0"},
+                   {"float", "min_slopeangle", "0"},
+                   {"float", "max_slopeangle", "90"},
+                   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                   {"bool", "use_direction", "0"},
+                   {"float", "goal_angle", "0"},
+                   {"float", "angle_spread", "30"},
+                   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                   {"bool", "use_height", "0"},
+                   {"float", "min_height", "0.5"},
+                   {"float", "max_height", "1"},
+               },
+               /* outputs: */
+               {
+                   "HeightField",
+               },
+               /* params: */
+               {
+               },
+               /* category: */
+               {
+                   "erode",
+               }});
 
 
 } // namespace

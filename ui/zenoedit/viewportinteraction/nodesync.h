@@ -59,6 +59,11 @@ class NodeSyncMgr {
     void updateNodeInputVec(NodeLocation& node_location,
                             const std::string& input_name,
                             const QVector<T>& new_value) {
+        auto graph_model = zenoApp->graphsManagment()->currentModel();
+        if (!graph_model) {
+            return;
+        }
+
         auto node_id = node_location.node.data(ROLE_OBJID).toString();
         auto inputs = node_location.node.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
         auto old_value = inputs[input_name.c_str()].info.defaultValue.value<UI_VECTYPE>();
@@ -67,10 +72,10 @@ class NodeSyncMgr {
             QVariant::fromValue(old_value),
             QVariant::fromValue(new_value)
         };
-        m_graph_model->updateSocketDefl(node_id,
-                                        update_info,
-                                        node_location.subgraph,
-                                        true);
+        graph_model->updateSocketDefl(node_id,
+                                      update_info,
+                                      node_location.subgraph,
+                                      true);
     }
     void updateNodeInputString(NodeLocation node_location,
                                const std::string& input_name,
@@ -87,10 +92,8 @@ class NodeSyncMgr {
     const NodeSyncMgr &operator=(const NodeSyncMgr &) = delete;
 
   private:
-    IGraphsModel *m_graph_model;    //bug: the currentmodel will be invalidated after the current graph has been closed.
     std::unordered_map<std::string, std::string> m_prim_sock_map;
     NodeSyncMgr() {
-        m_graph_model = zenoApp->graphsManagment()->currentModel();
         registerDefaultSocketName();
     };
     void registerDefaultSocketName() {

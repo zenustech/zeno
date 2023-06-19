@@ -162,6 +162,7 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     static constexpr auto s_bendingEdgeTag = "bendingEdges";
     static constexpr auto s_surfVertTag = "surfVerts";
     static constexpr auto s_surfHalfEdgeTag = "surfHalfEdges";
+    static constexpr auto s_tetHalfFacetTag = "tetHalfFacets";
 
     ZenoParticles() = default;
     ~ZenoParticles() = default;
@@ -292,10 +293,10 @@ struct ZenoParticles : IObjectClone<ZenoParticles> {
     decltype(auto) readMeta(const std::string &tag, zs::wrapt<T> = {}) {
         return std::any_cast<T>(metas.at(tag));
     }
-    const UserData &userData() const {
+    const UserData &zsUserData() const {
         return readMeta(s_userDataTag, zs::wrapt<const UserData &>{});
     }
-    UserData &userData() {
+    UserData &zsUserData() {
         return readMeta(s_userDataTag, zs::wrapt<UserData &>{});
     }
     bool hasBvh(const std::string &tag) const {

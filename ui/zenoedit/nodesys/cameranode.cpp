@@ -64,10 +64,9 @@ void CameraNode::onEditClicked()
 
     // it seems no sense when we have multiple viewport but only one node.
     // which info of viewport will be synced to this node.
-    QVector<DisplayWidget*> views = pWin->viewports();
-    for (auto pDisplay : views)
+    DisplayWidget* pDisplay = pWin->getCurrentViewport();
+    if (pDisplay)
     {
-        ZASSERT_EXIT(pDisplay);
         auto pZenoVis = pDisplay->getZenoVis();
         ZASSERT_EXIT(pZenoVis);
         auto sess = pZenoVis->getSession();
@@ -149,7 +148,7 @@ void CameraNode::onEditClicked()
         if(CameraPattern == 1){
             // Here
         }
-    }
+	}
 }
 
 LightNode::LightNode(const NodeUtilParam &params, int pattern, QGraphicsItem *parent)

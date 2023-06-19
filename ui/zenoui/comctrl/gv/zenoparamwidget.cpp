@@ -3,6 +3,7 @@
 #include "zgraphicsnumslideritem.h"
 #include <zenoui/render/common_id.h>
 #include <zenoui/style/zenostyle.h>
+#include <zenoui/zfxsys/zfxhighlighter.h>
 #include <zeno/utils/log.h>
 #include <zenomodel/include/uihelper.h>
 #include "../view/zcomboboxitemdelegate.h"
@@ -664,6 +665,16 @@ void ZenoParamPushButton::setText(const QString& text)
     m_pBtn->setText(text);
 }
 
+bool ZenoParamPushButton::event(QEvent *event) {
+    if (event->type() == QEvent::DynamicPropertyChange) {
+        QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent*>(event);
+        if (evt->propertyName() == "color") {
+            m_pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(property("color").toString()));
+        }
+    }
+    return ZenoParamWidget::event(event);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 ZenoParamOpenPath::ZenoParamOpenPath(const QString &filename, QGraphicsItem *parent)
@@ -701,6 +712,8 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(QGraphicsItem* parent)
     QPalette pal;
     pal.setColor(QPalette::Base, QColor(25, 29, 33));
     m_pTextEdit->setPalette(pal);
+
+    auto highlighter = new ZfxHighlighter(m_pTextEdit->document());
 }
 
 ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam param, QGraphicsItem *parent)
@@ -727,6 +740,8 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     //QPalette pal = param.palette;
     //pal.setColor(QPalette::Base, QColor(25, 29, 33));
     //m_pTextEdit->setPalette(pal);
+
+    auto highlighter = new ZfxHighlighter(m_pTextEdit->document());
 }
 
 void ZenoParamMultilineStr::setText(const QString& text)

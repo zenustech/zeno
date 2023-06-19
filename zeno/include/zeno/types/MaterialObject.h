@@ -18,7 +18,7 @@ namespace zeno
         std::string common;
         std::string extensions;
         std::vector<std::shared_ptr<Texture2DObject>> tex2Ds;
-        std::vector<std::pair<std::string, std::string>> tex3Ds;
+        std::vector<std::shared_ptr<TextureObjectVDB>> tex3Ds;
         std::string transform;
         std::string mtlidkey;  // unused for now
 
@@ -59,16 +59,10 @@ namespace zeno
             size += sizeof(tex3DsCount);
 
             for (const auto &tex3D : tex3Ds) {
-                auto& key = tex3D.first;
-                auto& value = tex3D.second;
 
-                auto key_len = key.length();
-                auto value_len = value.length();
-
-                size += sizeof(key_len);
-                size += key.length();
-                size += sizeof(value_len);
-                size += value.length();
+                auto tex3DStrSize = tex3D->serializeSize();
+                size += sizeof(tex3DStrSize);
+                size += tex3DStrSize;
             }
 
             auto transformLen{transform.size()};
@@ -137,21 +131,14 @@ namespace zeno
             i += sizeof(tex3DsCount);
             
             for (const auto &tex3D : tex3Ds) {
-                auto& key = tex3D.first;
-                auto& value = tex3D.second;
 
-                auto key_len = key.length();
-                auto value_len = value.length();
+                auto tex3DStr = tex3D->serialize();
+                auto tex3DStrSize = tex3DStr.size();
+                memcpy(str + i, &tex3DStrSize, sizeof(tex3DStrSize));
+                i += sizeof(tex3DStrSize);
 
-                memcpy(str + i, &key_len, sizeof(key_len));
-                i += sizeof(key_len);
-                memcpy(str + i, key.c_str(), key_len);
-                i += key_len;
-
-                memcpy(str + i, &value_len, sizeof(value_len));
-                i += sizeof(value_len);
-                memcpy(str + i, value.c_str(), value_len);
-                i += value_len;
+                memcpy(str + i, tex3DStr.data(), tex3DStrSize);
+                i += tex3DStrSize;
             }
 
             auto transformLen{transform.size()};
@@ -214,7 +201,6 @@ namespace zeno
             this->tex2Ds.resize(tex2DsSize);
 
             for (size_t j{0}; j < tex2DsSize; ++j)
-
             {
                 size_t tex2DStrSize;
                 memcpy(&tex2DStrSize, str + i, sizeof(tex2DStrSize));
@@ -230,7 +216,6 @@ namespace zeno
                 this->tex2Ds[j] = tex2D;
             }
 
-
             size_t tex3DsCount;
             memcpy(&tex3DsCount, str + i, sizeof(tex3DsCount));
             i += sizeof(tex3DsCount);
@@ -238,25 +223,18 @@ namespace zeno
             
             for (size_t j=0; j < tex3DsCount; ++j) 
             {
-                size_t key_len;
-                memcpy(&key_len, str + i, sizeof(key_len));
-                i += sizeof(key_len);
-                //std::vector<char> key_str;
-                //key_str.resize(key_len);
-                //memcpy(key_str.data(), str + i, key_len);
-                auto key = std::string{str + i, key_len};
-                i += key_len; 
+                size_t tex3DStrSize;
+                memcpy(&tex3DStrSize, str + i, sizeof(tex3DStrSize));
+                i += sizeof(tex3DStrSize);
 
-                size_t value_len;
-                memcpy(&value_len, str + i, sizeof(value_len));
-                i += sizeof(value_len);
-                //std::vector<char> value_str;
-                //value_str.resize(value_len);
-                //memcpy(value_str.data(), str + i, value_len);
-                auto value = std::string{str + i, value_len};
-                i += value_len; 
+                std::vector<char> tex3DStr;
+                tex3DStr.resize(tex3DStrSize);
+                memcpy(tex3DStr.data(), str + i, tex3DStrSize);
+                i += tex3DStrSize;
 
-                this->tex3Ds[j] = std::make_pair(key, value);;
+                auto tex3D = std::make_shared<TextureObjectVDB>(
+                    TextureObjectVDB::deserialize(tex3DStr));
+                this->tex3Ds[j] = tex3D;
             }
 
             size_t transformLen;

@@ -1168,6 +1168,7 @@ void UnifiedIPCSystem::findCCDConstraintsImplEE(zs::CudaExecutionPolicy &pol, T 
     /// ee
     if (enableContactEE) {
         const auto &sebvs = seBvs;
+        snapshot(csEE);
 
         zs::CppTimer timer;
         timer.tick();
@@ -1363,8 +1364,8 @@ void UnifiedIPCSystem::precomputeFrictions(zs::CudaExecutionPolicy &pol, T dHat,
             pol(range(svs.size()),
                 [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
                  svtemp = proxy<space>({}, primHandle.svtemp), kappa = kappa, xi2 = xi * xi, activeGap2,
-                 gn = s_groundNormal, svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                    const auto vi = svs("inds", svi, int_c) + svOffset;
+                 gn = s_groundNormal, vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                    const auto vi = svs("inds", svi, int_c) + vOffset;
                     auto x = vtemp.pack<3>("xn", vi);
                     auto dist = gn.dot(x);
                     auto dist2 = dist * dist;
@@ -1626,37 +1627,37 @@ typename UnifiedIPCSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, type
         if (primHandle.isBoundary())
             return 0;
         // elasticity
-        pol(range(eles.size()),
-            [eles = proxy<space>({}, eles), vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, model = model,
-             vOffset = primHandle.vOffset, n = eles.size()] __device__(int ei) mutable {
-                auto IB = eles.template pack<2, 2>("IB", ei);
-                auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
+        pol(range(eles.size()), [eles = proxy<space>({}, eles), vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
+                                 tag, model = model, vOffset = primHandle.vOffset,
+                                 n = eles.size()] __device__(int ei) mutable {
+            auto IB = eles.template pack<2, 2>("IB", ei);
+            auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
 
-                int BCorder[3];
-                for (int i = 0; i != 3; ++i)
-                    BCorder[i] = vtemp("BCorder", inds[i]);
-                T E;
-                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3)
-                    E = 0;
-                else {
-                    auto vole = eles("vol", ei);
-                    vec3 xs[3] = {vtemp.pack(dim_c<3>, tag, inds[0]), vtemp.pack(dim_c<3>, tag, inds[1]),
-                                  vtemp.pack(dim_c<3>, tag, inds[2])};
-                    auto x1x0 = xs[1] - xs[0];
-                    auto x2x0 = xs[2] - xs[0];
+            int BCorder[3];
+            for (int i = 0; i != 3; ++i)
+                BCorder[i] = vtemp("BCorder", inds[i]);
+            T E;
+            if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 || determinant(IB) <= limits<float>::epsilon())
+                E = 0;
+            else {
+                auto vole = eles("vol", ei);
+                vec3 xs[3] = {vtemp.pack(dim_c<3>, tag, inds[0]), vtemp.pack(dim_c<3>, tag, inds[1]),
+                              vtemp.pack(dim_c<3>, tag, inds[2])};
+                auto x1x0 = xs[1] - xs[0];
+                auto x2x0 = xs[2] - xs[0];
 
-                    zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
-                    auto F = Ds * IB;
-                    auto f0 = col(F, 0);
-                    auto f1 = col(F, 1);
-                    auto f0Norm = zs::sqrt(f0.l2NormSqr());
-                    auto f1Norm = zs::sqrt(f1.l2NormSqr());
-                    auto Estretch = model.mu * vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
-                    auto Eshear = (model.mu * 0.3) * vole * zs::sqr(f0.dot(f1));
-                    E = Estretch + Eshear;
-                }
-                reduce_to(ei, n, E, es[ei / 32]);
-            });
+                zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
+                auto F = Ds * IB;
+                auto f0 = col(F, 0);
+                auto f1 = col(F, 1);
+                auto f0Norm = zs::sqrt(f0.l2NormSqr());
+                auto f1Norm = zs::sqrt(f1.l2NormSqr());
+                auto Estretch = model.mu * vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
+                auto Eshear = (model.mu * 0.3) * vole * zs::sqr(f0.dot(f1));
+                E = Estretch + Eshear;
+            }
+            reduce_to(ei, n, E, es[ei / 32]);
+        });
         return (reduce(pol, es) * dt * dt);
     } else if (primHandle.category == ZenoParticles::tet) {
         pol(zs::range(eles.size()),
@@ -1752,16 +1753,25 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                 [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), bedges = proxy<space>({}, bedges), dt = dt,
                  vOffset = primHandle.vOffset, n = bedges.size()] __device__(int i) mutable {
                     auto stcl = bedges.pack(dim_c<4>, "inds", i, int_c) + vOffset;
+                    int BCorder[4];
+#pragma unroll
+                    for (int i = 0; i != 4; ++i)
+                        BCorder[i] = vtemp("BCorder", stcl[i]);
                     auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
                     auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
                     auto x2 = vtemp.pack(dim_c<3>, "xn", stcl[2]);
                     auto x3 = vtemp.pack(dim_c<3>, "xn", stcl[3]);
                     auto e = bedges("e", i);
                     auto h = bedges("h", i);
-                    auto k = bedges("k", i);
+                    auto k = bedges("k", i); /// @note k here also determines the validity of this bending pair
                     auto ra = bedges("ra", i);
                     auto theta = dihedral_angle(x0, x1, x2, x3);
-                    T E = k * zs::sqr(theta - ra) * e / h * dt * dt;
+                    T E;
+                    if (!(BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3) &&
+                        k > limits<float>::epsilon())
+                        E = k * zs::sqr(theta - ra) * e / h * dt * dt;
+                    else
+                        E = 0;
                     reduce_to(i, n, E, es[i / 32]);
                 });
             Es.push_back(reduce(pol, es));
@@ -1789,8 +1799,8 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                 es.reset(0);
                 pol(range(svs.size()), [vtemp = proxy<space>({}, vtemp), svs = proxy<space>({}, svs),
                                         es = proxy<space>(es), gn = s_groundNormal, dHat2 = dHat * dHat, n = svs.size(),
-                                        svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                    const auto vi = svs("inds", svi, int_c) + svOffset;
+                                        vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                    const auto vi = svs("inds", svi, int_c) + vOffset;
                     auto x = vtemp.pack<3>("xn", vi);
                     auto dist = gn.dot(x);
                     auto dist2 = dist * dist;
@@ -1811,8 +1821,8 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                             [vtemp = proxy<space>({}, vtemp), svtemp = proxy<space>({}, primHandle.svtemp),
                              svs = proxy<space>({}, svs), es = proxy<space>(es), gn = s_groundNormal, dHat = dHat,
                              epsvh = epsv * dt, fricMu = fricMu, n = svs.size(),
-                             svOffset = primHandle.svOffset] ZS_LAMBDA(int svi) mutable {
-                                const auto vi = svs("inds", svi, int_c) + svOffset;
+                             vOffset = primHandle.vOffset] ZS_LAMBDA(int svi) mutable {
+                                const auto vi = svs("inds", svi, int_c) + vOffset;
                                 auto fn = svtemp("fn", svi);
                                 T E = 0;
                                 if (fn != 0) {

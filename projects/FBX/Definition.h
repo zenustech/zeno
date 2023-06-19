@@ -1,45 +1,40 @@
 #ifndef ZENO_FBX_DEFINITION_H
 #define ZENO_FBX_DEFINITION_H
 
-#include <limits>
+#include <ios>
 #include <iostream>
+#include <chrono>
+
+namespace FBX {
+    static bool failMsg = false;
+}
+
+#define ED_COUT \
+if(FBX::failMsg)                \
+std::cout.setstate(std::ios::failbit); std::cout \
+
+#define TIMER_START(NAME)                                                                                       \
+    auto start_##NAME = std::chrono::high_resolution_clock::now();
+
+#define TIMER_END(NAME)                                                                                         \
+    auto stop_##NAME = std::chrono::high_resolution_clock::now();                                               \
+    auto duration_##NAME = std::chrono::duration_cast<std::chrono::microseconds>(stop_##NAME - start_##NAME);   \
+    std::cout << "E: Timer " << #NAME << " "                                                                    \
+              << duration_##NAME.count()*0.001f << " Milliseconds" << std::endl;
+
+#define TIMER_END_MSG(NAME, MSG)                                                                                \
+    auto stop_##NAME = std::chrono::high_resolution_clock::now();                                               \
+    auto duration_##NAME = std::chrono::duration_cast<std::chrono::microseconds>(stop_##NAME - start_##NAME);   \
+    std::cout << "E: Timer " << #NAME << duration_##NAME.count()*0.001f << " Milliseconds"                      \
+              << " " << MSG << std::endl;
+
+#include <limits>
 #include <algorithm>
 #include <zeno/utils/log.h>
 #include <zeno/utils/vec.h>
 #include <zeno/core/IObject.h>
 
 inline namespace ZenoFBXDefinition {
-
-#define COMMON_DEFAULT_basecolor aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_metallic aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_roughness aiColor4D(0.4f, 0.4f, 0.4f, 1.0f)
-#define COMMON_DEFAULT_specular aiColor4D(0.5f, 0.5f, 0.5f, 1.0f)
-#define COMMON_DEFAULT_subsurface aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_thinkness aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_sssParam aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_sssColor aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_foliage aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_skin aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_curvature aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_specularTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_anisotropic aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_sheen aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_sheenTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_clearcoat aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_clearcoatGloss aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
-#define COMMON_DEFAULT_normal aiColor4D(0.0f, 0.0f, 1.0f, 1.0f)
-#define COMMON_DEFAULT_emission aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_exposure aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
-#define COMMON_DEFAULT_ao aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
-#define COMMON_DEFAULT_toon aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_stroke aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
-#define COMMON_DEFAULT_shape aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_style aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
-#define COMMON_DEFAULT_strokeNoise aiColor4D(1.0f, 1.0f, 1.0f, 1.0f)
-#define COMMON_DEFAULT_shad aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_strokeTint aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_opacity aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
-#define COMMON_DEFAULT_transmissionColor aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 
 #define COMMON_DEFAULT_defaultColor aiColor4D(0.0f, 0.0f, 0.0f, 1.0f)
 
@@ -53,19 +48,21 @@ inline namespace ZenoFBXDefinition {
     no->set(tmp);
 
 struct SFBXReadOption {
-    bool invertOpacity = false;
     bool makePrim = false;
     bool enableUDIM = false;
     bool generate = false;
+    bool indepData = false;
     bool triangulate = false;
     bool printTree = false;
     std::string hintPath = "";
+    float offsetInSeconds = 0.0f;
 };
 
 struct SFBXEvalOption {
     bool writeData = false;
     bool interAnimData = false;
     bool printAnimData = false;
+    bool evalBlendShape = false;
     float globalScale = 1.0f;
 };
 
@@ -105,55 +102,62 @@ struct SAnimBone {
     float m_MaxTimeStamp = std::numeric_limits<float>::min();
     float m_MinTimeStamp = std::numeric_limits<float>::max();
 
-#define GET_TIME_STAMP \
-m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp); \
-m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
-
-    void initBone(std::string name, const aiNodeAnim* channel){
+    void initBone(std::string name, const aiNodeAnim* channel, double tickOffset){
         m_Name = name;
         m_NumPositions = channel->mNumPositionKeys;
         for (int positionIndex = 0; positionIndex < m_NumPositions; ++positionIndex) {
             aiVector3D aiPosition = channel->mPositionKeys[positionIndex].mValue;
-            float timeStamp = channel->mPositionKeys[positionIndex].mTime;
+            float timeStamp = channel->mPositionKeys[positionIndex].mTime + tickOffset;
 
             SKeyPosition data;
             data.position = aiPosition;
             data.timeStamp = timeStamp;
             m_Positions.push_back(data);
 
-            GET_TIME_STAMP
+            //std::cout << " BoneAnim: index " << positionIndex << " " << timeStamp << "\n";
+            //std::cout << "  Position: (" << aiPosition.x << ", " << aiPosition.y << ", " << aiPosition.z << ")\n";
+
+            m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp);
+            m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp);
         }
+
+        //std::cout << " -----\n";
 
         m_NumRotations = channel->mNumRotationKeys;
         for (int rotationIndex = 0; rotationIndex < m_NumRotations; ++rotationIndex) {
             aiQuaternion aiOrientation = channel->mRotationKeys[rotationIndex].mValue;
-            float timeStamp = channel->mRotationKeys[rotationIndex].mTime;
+            float timeStamp = channel->mRotationKeys[rotationIndex].mTime + tickOffset;
 
             SKeyRotation data;
             data.orientation = aiOrientation;
             data.timeStamp = timeStamp;
             m_Rotations.push_back(data);
 
-            GET_TIME_STAMP
+            //std::cout << " BoneAnim: index " << rotationIndex << " " << timeStamp << "\n";
+            //std::cout << "  Rotation: (" << aiOrientation.x << ", " << aiOrientation.y << ", " << aiOrientation.z << ", " << aiOrientation.w << ")\n";
+
+            m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp);
+            m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp);
         }
 
+        //std::cout << " -----\n";
+
         m_NumScalings = channel->mNumScalingKeys;
-        for (int keyIndex = 0; keyIndex < m_NumScalings; ++keyIndex) {
-            aiVector3D scale = channel->mScalingKeys[keyIndex].mValue;
-            float timeStamp = channel->mScalingKeys[keyIndex].mTime;
+        for (int scaleIndex = 0; scaleIndex < m_NumScalings; ++scaleIndex) {
+            aiVector3D scale = channel->mScalingKeys[scaleIndex].mValue;
+            float timeStamp = channel->mScalingKeys[scaleIndex].mTime + tickOffset;
 
             SKeyScale data;
             data.scale = scale;
             data.timeStamp = timeStamp;
             m_Scales.push_back(data);
 
-            GET_TIME_STAMP
-        }
+            //std::cout << " BoneAnim: index " << scaleIndex << " " << timeStamp << "\n";
+            //std::cout << "  Scale: (" << scale.x << ", " << scale.y << ", " << scale.z << ")\n";
 
-        //zeno::log_info("----- N {} NP {} NR {} NS {}",
-        //               m_Name, m_NumPositions, m_NumRotations, m_NumScalings);
-        //std::cout << "FBX: Anim Bone MaxTimeStamp " << m_MaxTimeStamp
-        //          << " MinTimeStamp " << m_MinTimeStamp << std::endl;
+            m_MaxTimeStamp = std::max(m_MaxTimeStamp, timeStamp);
+            m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp);
+        }
     }
 
     void update(float animationTime) {
@@ -164,33 +168,26 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
         m_LocalTransform = translation * rotation * scale;
     }
 
-    void _getIndexWarn(float animationTime){
-        zeno::log_warn("Failed to get index, time {}", animationTime);
-    }
-
     int getPositionIndex(float animationTime) {
         for (int index = 0; index < m_NumPositions - 1; ++index) {
             if (animationTime <= m_Positions[index + 1].timeStamp)
                 return index;
         }
-        _getIndexWarn(animationTime);
-        return 0;
+        return m_NumPositions-1;
     }
     int getRotationIndex(float animationTime) {
         for (int index = 0; index < m_NumRotations - 1; ++index) {
             if (animationTime <= m_Rotations[index + 1].timeStamp)
                 return index;
         }
-        _getIndexWarn(animationTime);
-        return 0;
+        return m_NumRotations-1;
     }
     int getScaleIndex(float animationTime) {
         for (int index = 0; index < m_NumScalings - 1; ++index) {
             if (animationTime <= m_Scales[index + 1].timeStamp)
                 return index;
         }
-        _getIndexWarn(animationTime);
-        return 0;
+        return m_NumScalings-1;
     }
 
     aiMatrix4x4 interpolatePosition(float animationTime) {
@@ -203,10 +200,14 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
 
         int p0Index = getPositionIndex(animationTime);
         int p1Index = p0Index + 1;
+        if(p1Index == m_NumPositions){
+            p1Index = p0Index;
+        }
         float scaleFactor = getScaleFactor(
                 m_Positions[p0Index].timeStamp,
                 m_Positions[p1Index].timeStamp,
                 animationTime);
+        //std::cout << "Interpolate Position: Index " << p0Index << " time " << animationTime << " factor " << scaleFactor << "\n";
         aiVector3D finalPosition = m_Positions[p0Index].position * (1.0f - scaleFactor) + m_Positions[p1Index].position * scaleFactor;
         aiMatrix4x4::Translation(finalPosition, result);
 
@@ -223,10 +224,14 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
 
         int p0Index = getRotationIndex(animationTime);
         int p1Index = p0Index + 1;
+        if(p1Index == m_NumRotations){
+            p1Index = p0Index;
+        }
         float scaleFactor = getScaleFactor(
                 m_Rotations[p0Index].timeStamp,
                 m_Rotations[p1Index].timeStamp,
                 animationTime);
+        //std::cout << "Interpolate Rotation: Index " << p0Index << " time " << animationTime << " factor " << scaleFactor << "\n";
         aiQuaternion finalRotation;
         aiQuaternion::Interpolate(finalRotation, m_Rotations[p0Index].orientation, m_Rotations[p1Index].orientation, scaleFactor);
         result = result * aiMatrix4x4(finalRotation.GetMatrix());
@@ -243,10 +248,14 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
 
         int p0Index = getScaleIndex(animationTime);
         int p1Index = p0Index + 1;
+        if(p1Index == m_NumScalings){
+            p1Index = p0Index;
+        }
         float scaleFactor = getScaleFactor(
                 m_Scales[p0Index].timeStamp,
                 m_Scales[p1Index].timeStamp,
                 animationTime);
+        //std::cout << "Interpolate Scaling : Index " << p0Index << " time " << animationTime << " factor " << scaleFactor << "\n";
         aiVector3D finalScale = m_Scales[p0Index].scale *  (1.0f - scaleFactor) + m_Scales[p1Index].scale * scaleFactor;
         aiMatrix4x4::Scaling(finalScale, result);
 
@@ -254,6 +263,13 @@ m_MinTimeStamp = std::min(m_MinTimeStamp, timeStamp); \
     }
 
     float getScaleFactor(float lastTimeStamp, float nextTimeStamp, float animationTime) {
+        //std::cout << " Stamp Factor " << lastTimeStamp << " " << nextTimeStamp << " " << animationTime << "\n";
+        if(animationTime <= lastTimeStamp){
+            return 0.0f;
+        }else if(animationTime >= nextTimeStamp){
+            return 1.0f;
+        }
+
         // e.g. last: 1, next: 2, time: 1.5  -> (1.5-1)/(2-1)=0.5
         float midWayLength = animationTime - lastTimeStamp;
         float framesDiff = nextTimeStamp - lastTimeStamp;
@@ -266,11 +282,11 @@ struct SVertex{
     aiVector3D position;
     aiVector3D texCoord;
     aiVector3D normal;
-    aiVector3D tangent;
-    aiVector3D bitangent;
-    aiColor4D vectexColor;
+    //aiVector3D tangent;
+    //aiVector3D bitangent;
+    aiColor4D vectexColor = aiColor4D(0, 0, 0, 0);
     std::unordered_map<std::string, float> boneWeights;
-    float numAnimMesh;
+    //std::unordered_map<std::string, std::string> extraInfos;
 };
 
 struct SBSVertex{
@@ -278,7 +294,7 @@ struct SBSVertex{
     aiVector3D deltaPosition;
     aiVector3D normal;
     aiVector3D deltaNormal;
-    float weight;
+    //float weight;
 };
 
 struct SMaterialProp{
@@ -288,44 +304,51 @@ struct SMaterialProp{
     std::vector<aiTextureType> types;
     std::vector<std::string> aiNames;
     std::string texPath;
+    aiUVTransform uvTransform;
 };
 
 struct SDefaultMatProp{
     std::map<std::string, aiColor4D> getUnknownProp(){
         std::map<std::string, aiColor4D> val;
 
-        val.emplace("basecolor", COMMON_DEFAULT_basecolor);
-        val.emplace("metallic", COMMON_DEFAULT_metallic);
-        val.emplace("diffuseRoughness", COMMON_DEFAULT_roughness);
-        val.emplace("specular", COMMON_DEFAULT_specular);
-        val.emplace("subsurface", COMMON_DEFAULT_subsurface);
-        val.emplace("thinkness", COMMON_DEFAULT_thinkness);
-        val.emplace("sssParam", COMMON_DEFAULT_sssParam);
-        val.emplace("sssColor", COMMON_DEFAULT_sssColor);
-        val.emplace("foliage", COMMON_DEFAULT_foliage);
-        val.emplace("skin", COMMON_DEFAULT_skin);
-        val.emplace("curvature", COMMON_DEFAULT_curvature);
-        val.emplace("specularTint", COMMON_DEFAULT_specularTint);
-        val.emplace("anisotropic", COMMON_DEFAULT_anisotropic);
-        val.emplace("sheen", COMMON_DEFAULT_sheen);
-        val.emplace("sheenTint", COMMON_DEFAULT_sheenTint);
-        val.emplace("clearcoat", COMMON_DEFAULT_clearcoat);
-        val.emplace("clearcoatGloss", COMMON_DEFAULT_clearcoatGloss);
-        val.emplace("normal", COMMON_DEFAULT_normal);
-        val.emplace("emission", COMMON_DEFAULT_emission);
-        val.emplace("exposure", COMMON_DEFAULT_exposure);
-        val.emplace("ao", COMMON_DEFAULT_ao);
-        val.emplace("toon", COMMON_DEFAULT_toon);
-        val.emplace("stroke", COMMON_DEFAULT_stroke);
-        val.emplace("shape", COMMON_DEFAULT_shape);
-        val.emplace("style", COMMON_DEFAULT_style);
-        val.emplace("strokeNoise", COMMON_DEFAULT_strokeNoise);
-        val.emplace("shad", COMMON_DEFAULT_shad);
-        val.emplace("strokeTint", COMMON_DEFAULT_strokeTint);
-        val.emplace("opacity", COMMON_DEFAULT_opacity);
-        val.emplace("transmissionColor", COMMON_DEFAULT_transmissionColor);
-        val.emplace("specularRoughness", COMMON_DEFAULT_defaultColor);
-        val.emplace("displacement", COMMON_DEFAULT_defaultColor);
+        val.emplace("base",                         aiColor4D (1.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("basecolor",                    aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("diffuseRoughness",             aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("metallic",                     aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("specular",                     aiColor4D (1.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("specularColor",                aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("specularRoughness",            aiColor4D (0.2f, 0.0f, 0.0f, 1.0f));
+        val.emplace("specularIOR",                  aiColor4D (1.5f, 0.0f, 0.0f, 1.0f));
+        val.emplace("specularAnisotropy",           aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("specularRotation",             aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("transmission",                 aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("transmissionColor",            aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("transmissionDepth",            aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("transmissionScatter",          aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("transmissionScatterAnisotropy",aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("subsurface",                   aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("subsurfaceColor",              aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("subsurfaceRadius",             aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("subsurfaceScale",              aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("subsurfaceAnisotropy",         aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("clearcoat",                    aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("clearcoatColor",               aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("clearcoatRoughness",           aiColor4D (0.1f, 0.0f, 0.0f, 1.0f));
+        val.emplace("clearcoatIOR",                 aiColor4D (1.5f, 0.0f, 0.0f, 1.0f));
+        val.emplace("clearcoatAnisotropy",          aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("clearcoatRotation",            aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("sheen",                        aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("sheenColor",                   aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("sheenRoughness",               aiColor4D (0.3f, 0.0f, 0.0f, 1.0f));
+        val.emplace("emission",                     aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("emissionColor",                aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("thinFilmThickness",            aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("thinFilmIOR",                  aiColor4D (1.5f, 0.0f, 0.0f, 1.0f));
+        val.emplace("thinWalled",                   aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("opacity",                      aiColor4D (1.0f, 1.0f, 1.0f, 1.0f));
+        val.emplace("displacement",                 aiColor4D (0.0f, 0.0f, 0.0f, 1.0f));
+        val.emplace("normal",                       aiColor4D (0.0f, 0.0f, 1.0f, 1.0f));
+
         return val;
     }
 };
@@ -353,45 +376,62 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
 
     void setDefaultValue(std::map<std::string, aiColor4D> dValueMap){
         for(auto&v: val){
-            v.second.value = dValueMap.at(v.first);
+            if(dValueMap.find(v.first) != dValueMap.end()) {
+                v.second.value = dValueMap.at(v.first);
+            }else{
+                std::cout << "FBX: Default Value Not Found " << v.first << "\n";
+                v.second.value = COMMON_DEFAULT_defaultColor;
+            }
         }
     }
 
     SMaterial(){
-        // TODO trick - We use some unused tex properties to set some tex
-        //
-        val.emplace("basecolor", SMaterialProp{0,           false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "$clr.diffuse"}});
-        val.emplace("metallic", SMaterialProp{1,            false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}});
-        val.emplace("diffuseRoughness", SMaterialProp{2,    false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.diffuseRoughness"}});
-        val.emplace("specular", SMaterialProp{3,            false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "$clr.specular"}});
-        val.emplace("subsurface", SMaterialProp{4,          false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceFactor"}});
-        val.emplace("thinkness", SMaterialProp{5,           true, aiColor4D(), {aiTextureType_NONE}, {"",}});
-        val.emplace("sssParam", SMaterialProp{6,            false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("sssColor", SMaterialProp{7,            false, aiColor4D(), {aiTextureType_REFLECTION}, {"$ai.subsurface"}});
-        val.emplace("foliage", SMaterialProp{8,             false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("skin", SMaterialProp{9,                false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("curvature", SMaterialProp{10,          false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("specularTint", SMaterialProp{11,       false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("anisotropic", SMaterialProp{12,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("sheen", SMaterialProp{13,              false, aiColor4D(), {aiTextureType_SHININESS}, {"$ai.sheen"}});
-        val.emplace("sheenTint", SMaterialProp{14,          false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("clearcoat", SMaterialProp{15,          false, aiColor4D(), {aiTextureType_AMBIENT}, {"$ai.coat"}});
-        val.emplace("clearcoatGloss", SMaterialProp{16,     true, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("normal", SMaterialProp{17,             false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}});
-        val.emplace("emission", SMaterialProp{18,           false, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
-        val.emplace("exposure", SMaterialProp{19,           false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("ao", SMaterialProp{20,                 false, aiColor4D(), {aiTextureType_AMBIENT_OCCLUSION}, {""}});
-        val.emplace("toon", SMaterialProp{21,               false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("stroke", SMaterialProp{22,             false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("shape", SMaterialProp{23,              false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("style", SMaterialProp{24,              false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("strokeNoise", SMaterialProp{25,        false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("shad", SMaterialProp{26,               false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("strokeTint", SMaterialProp{27,         false, aiColor4D(), {aiTextureType_NONE}, {""}});
-        val.emplace("opacity", SMaterialProp{28,            false, aiColor4D(), {aiTextureType_LIGHTMAP}, {"$ai.opacity", "$clr.transparent"}});
-        val.emplace("transmissionColor", SMaterialProp{29,  false, aiColor4D(), {aiTextureType_OPACITY}, {"$ai.transmission", "$clr.transparent"}});
-        val.emplace("specularRoughness", SMaterialProp{30,  false, aiColor4D(), {aiTextureType_HEIGHT}, {"$ai.specularRoughness",}});
-        val.emplace("displacement", SMaterialProp{31,       false, aiColor4D(), {aiTextureType_DISPLACEMENT}, {"",}});
+        // XXX trick - We use some unused tex properties to set some tex
+        val.emplace("base", SMaterialProp{0,                            false, aiColor4D(), {aiTextureType_NONE, }, {"$ai.baseFactor", }});
+        val.emplace("basecolor", SMaterialProp{1,                       false, aiColor4D(), {aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE}, {"$ai.base", "$clr.diffuse"}});
+        val.emplace("diffuseRoughness", SMaterialProp{5,                false, aiColor4D(), {aiTextureType_DIFFUSE_ROUGHNESS}, {"$ai.diffuseRoughness"}});
+        val.emplace("metallic", SMaterialProp{10,                       false, aiColor4D(), {aiTextureType_METALNESS}, {"$ai.metalness"}});
+
+        val.emplace("specular", SMaterialProp{15,                       false, aiColor4D(), {aiTextureType_NONE}, {"$ai.specularFactor", }});
+        val.emplace("specularColor", SMaterialProp{16,                  false, aiColor4D(), {aiTextureType_SPECULAR}, {"$ai.specular", "$clr.specular"}});
+        val.emplace("specularRoughness", SMaterialProp{17,              false, aiColor4D(), {aiTextureType_HEIGHT}, {"$ai.specularRoughness",}});
+        val.emplace("specularIOR", SMaterialProp{20,                    false, aiColor4D(), {aiTextureType_NONE}, {"$ai.specularIOR", }});
+        val.emplace("specularAnisotropy", SMaterialProp{21,             false, aiColor4D(), {aiTextureType_NONE}, {"$ai.specularAnisotropy", }});
+        val.emplace("specularRotation", SMaterialProp{22,               false, aiColor4D(), {aiTextureType_NONE}, {"$ai.specularRotation", }});
+
+        val.emplace("transmission", SMaterialProp{25,                   false, aiColor4D(), {aiTextureType_NONE}, {"$ai.transmissionFactor", }});
+        val.emplace("transmissionColor", SMaterialProp{26,              false, aiColor4D(), {aiTextureType_OPACITY}, {"$ai.transmission", "$clr.transparent"}});
+        val.emplace("transmissionDepth", SMaterialProp{27,              false, aiColor4D(), {aiTextureType_NONE}, {"$ai.transmissionDepth", }});
+        val.emplace("transmissionScatter", SMaterialProp{28,            false, aiColor4D(), {aiTextureType_NONE}, {"$ai.transmissionScatter", }});
+        val.emplace("transmissionScatterAnisotropy", SMaterialProp{29,  false, aiColor4D(), {aiTextureType_NONE}, {"$ai.transmissionScatterAnisotropy", }});
+
+        val.emplace("subsurface", SMaterialProp{35,                     false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceFactor"}});
+        val.emplace("subsurfaceColor", SMaterialProp{36,                false, aiColor4D(), {aiTextureType_REFLECTION}, {"$ai.subsurface"}});
+        val.emplace("subsurfaceRadius", SMaterialProp{37,               false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceRadius"}});
+        val.emplace("subsurfaceScale", SMaterialProp{38,                false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceScale"}});
+        val.emplace("subsurfaceAnisotropy", SMaterialProp{39,           false, aiColor4D(), {aiTextureType_NONE}, {"$ai.subsurfaceAnisotropy"}});
+
+        val.emplace("clearcoat", SMaterialProp{50,                      false, aiColor4D(), {aiTextureType_NONE}, {"$ai.coatFactor"}});
+        val.emplace("clearcoatColor", SMaterialProp{51,                 false, aiColor4D(), {aiTextureType_AMBIENT}, {"$ai.coat"}});
+        val.emplace("clearcoatRoughness", SMaterialProp{52,             false, aiColor4D(), {aiTextureType_NONE}, {"$ai.coatRoughness"}});
+        val.emplace("clearcoatIOR", SMaterialProp{55,                   false, aiColor4D(), {aiTextureType_NONE}, {"$ai.coatIOR"}});
+        val.emplace("clearcoatAnisotropy", SMaterialProp{56,            false, aiColor4D(), {aiTextureType_NONE}, {"$ai.coatAnisotropy"}});
+        val.emplace("clearcoatRotation", SMaterialProp{57,              false, aiColor4D(), {aiTextureType_NONE}, {"$ai.coatRotation"}});
+
+        val.emplace("sheen", SMaterialProp{60,                          false, aiColor4D(), {aiTextureType_NONE}, {"$ai.sheenFactor"}});
+        val.emplace("sheenColor", SMaterialProp{61,                     false, aiColor4D(), {aiTextureType_SHININESS}, {"$ai.sheen"}});
+        val.emplace("sheenRoughness", SMaterialProp{62,                 false, aiColor4D(), {aiTextureType_NONE}, {""}});
+
+        val.emplace("emission", SMaterialProp{65,                       false, aiColor4D(), {aiTextureType_NONE,}, {"$ai.emissionFactor", }});
+        val.emplace("emissionColor", SMaterialProp{66,                  false, aiColor4D(), {aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR}, {"$ai.emission", "$clr.emissive"}});
+
+        val.emplace("thinFilmThickness", SMaterialProp{70,              false, aiColor4D(), {aiTextureType_NONE}, {"$ai.thinFilmThickness",}});
+        val.emplace("thinFilmIOR", SMaterialProp{71,                    false, aiColor4D(), {aiTextureType_NONE}, {"$ai.thinFilmIOR",}});
+        val.emplace("thinWalled", SMaterialProp{72,                     false, aiColor4D(), {aiTextureType_NONE}, {"$ai.thinWalled",}});
+
+        val.emplace("opacity", SMaterialProp{75,                        false, aiColor4D(), {aiTextureType_LIGHTMAP}, {"$ai.opacity", "$clr.transparent"}});
+        val.emplace("displacement", SMaterialProp{76,                   false, aiColor4D(), {aiTextureType_DISPLACEMENT}, {"",}});
+        val.emplace("normal", SMaterialProp{77,                         false, aiColor4D(), {aiTextureType_NORMAL_CAMERA, aiTextureType_NORMALS}, {"",}});
     }
 
     std::vector<std::string> getTexList(){
@@ -418,26 +458,28 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
         return tl;
     }
 
-    void getSimplestTexList(std::vector<std::string>& texList, std::map<std::string, int>& texMap){
+    void getSimplestTexList(std::vector<std::string>& texList,
+                            std::map<std::string, int>& texMap,
+                            std::map<std::string, aiUVTransform>& texUv,
+                            std::map<std::string, aiColor4D>& matValue){
         texList.clear();
         texMap.clear();
+        texUv.clear();
 
         std::map<std::string, SMaterialProp> val_tmp;
-        val_tmp.emplace("basecolor", val["basecolor"]);                             //0
-        val_tmp.emplace("metallic", val["metallic"]);                               //1
-        val_tmp.emplace("diffuseRoughness", val["diffuseRoughness"]);               //2
-        val_tmp.emplace("specular", val["specular"]);                               //3
-        val_tmp.emplace("subsurface", val["subsurface"]);                           //4
-        val_tmp.emplace("sssColor", val["sssColor"]);                               //5
-        val_tmp.emplace("sheen", val["sheen"]);                                     //6
-        val_tmp.emplace("clearcoat", val["clearcoat"]);                             //7
-        val_tmp.emplace("normal", val["normal"]);                                   //8
-        val_tmp.emplace("emission", val["emission"]);                               //9
-        val_tmp.emplace("ao", val["ao"]);                                           //10
-        val_tmp.emplace("opacity", val["opacity"]);                                 //11
-        val_tmp.emplace("transmissionColor", val["transmissionColor"]);             //12
-        val_tmp.emplace("specularRoughness", val["specularRoughness"]);             //13
-        val_tmp.emplace("displacement", val["displacement"]);                       //14
+        val_tmp.emplace("basecolor",                    val["basecolor"]);
+        val_tmp.emplace("metallic",                     val["metallic"]);
+        val_tmp.emplace("diffuseRoughness",             val["diffuseRoughness"]);
+        val_tmp.emplace("specularRoughness",            val["specularRoughness"]);
+        val_tmp.emplace("specularColor",                val["specularColor"]);
+        val_tmp.emplace("transmissionColor",            val["transmissionColor"]);
+        val_tmp.emplace("subsurfaceColor",              val["subsurfaceColor"]);
+        val_tmp.emplace("clearcoatColor",               val["clearcoatColor"]);
+        val_tmp.emplace("sheenColor",                   val["sheenColor"]);
+        val_tmp.emplace("emissionColor",                val["emissionColor"]);
+        val_tmp.emplace("opacity",                      val["opacity"]);
+        val_tmp.emplace("normal",                       val["normal"]);
+        val_tmp.emplace("displacement",                 val["displacement"]);
 
         std::vector<pair> val_vec_tmp;
 
@@ -454,10 +496,19 @@ struct SMaterial : zeno::IObjectClone<SMaterial>{
 
                       return l.first < r.first;
                   });
+
         for (int i=0; i<val_vec_tmp.size(); i++) {
-            auto& p = val_vec_tmp[i];
-            texList.emplace_back(p.second.texPath);
-            texMap[p.first] = i;
+            auto& pair_value = val_vec_tmp[i];
+            texList.emplace_back(pair_value.second.texPath);
+            texMap[pair_value.first] = i;
+            texUv[pair_value.first] = pair_value.second.uvTransform;
+
+            pair_value.second.value;
+        }
+
+        for(auto&[propName, matProp]: val){
+            aiColor4D propValue = std::any_cast<aiColor4D>(matProp.value);
+            matValue[propName] = propValue;
         }
     }
 
@@ -529,6 +580,10 @@ struct IBoneOffset : zeno::IObjectClone<IBoneOffset>{
     std::unordered_map<std::string, SBoneOffset> value;
 };
 
+struct IPathTrans : zeno::IObjectClone<IPathTrans>{
+    std::unordered_map<std::string, aiMatrix4x4> value;
+};
+
 struct ICamera : zeno::IObjectClone<ICamera>{
     std::unordered_map<std::string, SCamera> value;
 };
@@ -562,22 +617,31 @@ struct IMeshName : zeno::IObjectClone<IMeshName>{
     std::string value_matName;
 };
 
+struct IPathName : zeno::IObjectClone<IMeshName>{
+    std::string value;
+    std::string value_oriPath;
+};
+
 struct IMeshInfo : zeno::IObjectClone<IMeshInfo>{
     std::unordered_map<std::string, std::string> value_corsName;
 };
 
 struct FBXData : zeno::IObjectClone<FBXData>{
     IMeshName iMeshName;
+    IPathName iPathName;
     IMeshInfo iMeshInfo;
     IVertices iVertices;
     IIndices iIndices;
     IBlendSData iBlendSData;
     IKeyMorph iKeyMorph;
     IBoneOffset iBoneOffset;
+    IPathTrans iPathTrans;
 
     IMaterial iMaterial;
     ICamera iCamera;
     ILight iLight;
+
+    zeno::DictObject iVisibility;
 
     std::shared_ptr<BoneTree> boneTree;
     std::shared_ptr<NodeTree> nodeTree;
@@ -600,7 +664,7 @@ struct IMatData : zeno::IObjectClone<IMatData>{
 struct Helper{
     static void printAiMatrix(aiMatrix4x4 m, bool transpose = false){
 
-        std::cout.precision(2);
+        std::cout.precision(4);
         std::cout << std::fixed;
         std::cout << " ("<<m[0][0]<<","<<m[0][1]<<","<<m[0][2]<<","<<m[0][3]<<", "
                          <<m[1][0]<<","<<m[1][1]<<","<<m[1][2]<<","<<m[1][3]<<", "
@@ -639,7 +703,7 @@ struct Helper{
         for (int i = c; i < space; i++)
             std::cout << " ";
         auto t = root->transformation;
-        std::cout.precision(2);
+        std::cout.precision(4);
         std::cout << root->name <<" ("<<t[0][0]<<","<<t[0][1]<<","<<t[0][2]<<","<<t[0][3]<<", "
                                       <<t[1][0]<<","<<t[1][1]<<","<<t[1][2]<<","<<t[1][3]<<", "
                                       <<t[2][0]<<","<<t[2][1]<<","<<t[2][2]<<","<<t[2][3]<<", "

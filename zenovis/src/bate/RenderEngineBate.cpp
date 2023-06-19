@@ -43,6 +43,9 @@ struct RenderEngineBate : RenderEngine {
 
     void draw() override {
         auto guard = setupState();
+        CHECK_GL(glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE));
+        glDepthFunc(GL_GREATER);
+        CHECK_GL(glClearDepth(0.0));
         CHECK_GL(glClearColor(scene->drawOptions->bgcolor.r, scene->drawOptions->bgcolor.g,
                               scene->drawOptions->bgcolor.b, 0.0f));
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -56,6 +59,19 @@ struct RenderEngineBate : RenderEngine {
         if (scene->drawOptions->show_grid) {
             for (auto const &hudgra : hudGraphics) {
                 hudgra->draw();
+            }
+            {
+                // left-down gizmo axis
+                if (hudGraphics.size() > 2) {
+                    Camera backup = *scene->camera;
+                    scene->camera->focusCamera(0, 0, 0, 10);
+                    CHECK_GL(glViewport(0, 0, scene->camera->m_nx * 0.1, scene->camera->m_ny * 0.1));
+                    CHECK_GL(glDisable(GL_DEPTH_TEST));
+                    hudGraphics[1]->draw();
+                    CHECK_GL(glEnable(GL_DEPTH_TEST));
+                    CHECK_GL(glViewport(0, 0, scene->camera->m_nx, scene->camera->m_ny));
+                    *scene->camera = backup;
+                }
             }
         }
         if (!scene->selected.empty() && scene->drawOptions->handler) {

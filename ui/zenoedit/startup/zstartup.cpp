@@ -27,6 +27,11 @@ void startUp()
         zeno::setConfigVariable("NASLOC", nas_loc_v.toString().toStdString());
     }
 
+    QVariant zencache_v = settings.value("zencachedir");
+    if (!zencache_v.isNull()) {
+        zeno::setConfigVariable("ZENCACHE", zencache_v.toString().toStdString());
+    }
+
 #if 0
     QVariant scalefac_v = settings.value("scale_factor");
     if (!scalefac_v.isNull()) {
@@ -164,6 +169,5 @@ int invoke_main(int argc, char *argv[]) {
     }
     zeno::log_info("launching sub-program [{}]", prog);
     auto alterMain = ud.get<zeno::GenericObject<int(*)(int, char **)>>("subprogram_" + prog)->get();
-    alterMain(newArgv.size(), newArgv.data());
-    return 0;
+    return alterMain(newArgv.size(), newArgv.data());
 }

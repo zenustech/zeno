@@ -22,14 +22,14 @@ namespace JsonHelper
         writer.EndArray();
     }
 
-    void AddVariantList(const QVariantList& list, const QString& valType, RAPIDJSON_WRITER& writer, bool fillInvalid)
+    void AddVariantList(const QVariantList& list, const QString& valType, RAPIDJSON_WRITER& writer)
     {
         writer.StartArray();
         for (const QVariant& value : list)
         {
             //the valType is only availble for "value", for example, in phrase ["setNodeInput", "xxx-cube", "pos", (variant value)],
             // valType is only used for value, and the other phrases are parsed as string.
-            AddVariant(value, valType, writer, fillInvalid);
+            AddVariant(value, valType, writer);
 		}
         writer.EndArray();
     }
@@ -43,10 +43,10 @@ namespace JsonHelper
     )
     {
         writer.StartArray();
-        AddVariant(op, "string", writer, true);
-        AddVariant(ident, "string", writer, true);
-        AddVariant(name, "string", writer, true);
-        AddVariant(defl, descType, writer, true);
+        AddVariant(op, "string", writer);
+        AddVariant(ident, "string", writer);
+        AddVariant(name, "string", writer);
+        AddVariant(defl, descType, writer);
         writer.EndArray();
     }
 
@@ -132,7 +132,7 @@ namespace JsonHelper
         }
     }
 
-    void AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid)
+    void AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer)
     {
         QVariant::Type varType = value.type();
         if (varType == QVariant::Double)
@@ -207,6 +207,11 @@ namespace JsonHelper
                 //todo: color custom type.
                 writer.Null();
             }
+        } 
+        else if (varType == QVariant::Color) 
+        {
+            auto s = value.value<QColor>().name().toStdString();
+            writer.String(s.data(), s.size());
         }
         //todo: qlineargradient.
         else if (varType != QVariant::Invalid)
@@ -225,8 +230,10 @@ namespace JsonHelper
         }
         else if (varType == QVariant::Invalid)
         {
-            if (fillInvalid)
-                writer.Null();
+            writer.Null();
+        }
+        else {
+            writer.Null();
         }
     }
 

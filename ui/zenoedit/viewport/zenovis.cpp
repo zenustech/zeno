@@ -22,6 +22,10 @@ Zenovis::Zenovis(QObject *parent)
 {
 }
 
+Zenovis::~Zenovis()
+{
+}
+
 void Zenovis::loadGLAPI(void *procaddr)
 {
     zenovis::Session::load_opengl_api(procaddr);

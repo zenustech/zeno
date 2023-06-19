@@ -8,14 +8,18 @@
 #include <filesystem>
 #include <cstring>
 #include <zeno/utils/log.h>
+#include <zeno/utils/fileio.h>
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
 #define TINYEXR_IMPLEMENTATION
 #include "tinyexr.h"
 #include "zeno/utils/string.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
+#include <zeno/types/HeatmapObject.h>
 
 static const float eps = 0.0001f;
 
@@ -82,157 +86,6 @@ ZENDEFNODE(UVProjectFromPlane, {
     {},
     {"primitive"},
 });
-
-static zeno::vec2i uvRepeat(vec3f uv, int w, int h) {
-    int iu = int(uv[0] * (w-eps)) % w;
-    if (iu < 0) {
-        iu += w;
-    }
-    int iv = int(uv[1] * (h-eps)) % h;
-    if (iv < 0) {
-        iv += h;
-    }
-    return {iu, iv};
-}
-static zeno::vec2i uvClampToEdge(vec3f uv, int w, int h) {
-    int iu = clamp(int(uv[0] * (w-eps)), 0, (w-1));
-    int iv = clamp(int(uv[1] * (h-eps)), 0, (h-1));
-    return {iu, iv};
-}
-
-static zeno::vec2i uvClampToEdge(vec3f uv, int w, int h, float &u, float &v) {
-    int iu = clamp(int(uv[0] * (w-eps)), 0, (w-1));
-    int iv = clamp(int(uv[1] * (h-eps)), 0, (h-1));
-    u = clamp(uv[0] * (w-eps), float(0), float(w-1)) - float(iu);
-    v = clamp(uv[1] * (h-eps), float(0), float(h-1)) - float(iv);
-    return {iu, iv};
-}
-
-//static zeno::vec3f queryColorInner(vec2i uv, const uint8_t* data, int w, int n) {
-    //int iu = uv[0];
-    //int iv = uv[1];
-    //int start = (iu + iv * w) * n;
-    //float r = float(data[start]) / 255.0f;
-    //float g = float(data[start+1]) / 255.0f;
-    //float b = float(data[start+2]) / 255.0f;
-    //return {r, g, b};
-//}
-static zeno::vec3f queryColorInner(vec2i uv, const float* data, int w, int n) {
-    int iu = uv[0];
-    int iv = uv[1];
-    int start = (iu + iv * w) * n;
-    float r = (data[start]);
-    float g = (data[start+1]);
-    float b = (data[start+2]);
-    return {r, g, b};
-}
-static zeno::vec3f queryColorInner(vec2i uv, const float* data, int w, int n, int h) {
-    int iu = clamp(uv[0], 0, w-1);
-    int iv = clamp(uv[1], 0, h-1);
-    int start = (iu + iv * w) * n;
-    float r = (data[start]);
-    float g = (data[start+1]);
-    float b = (data[start+2]);
-    return {r, g, b};
-}
-void primSampleTexture(
-    std::shared_ptr<PrimitiveObject> prim,
-    const std::string &srcChannel,
-    const std::string &uvSource,
-    const std::string &dstChannel,
-    std::shared_ptr<PrimitiveObject> img,
-    const std::string &wrap,
-    const std::string &filter,
-    vec3f borderColor,
-    float remapMin,
-    float remapMax
-) {
-    if (!img->userData().has("isImage")) throw zeno::Exception("not an image");
-    using ColorT = float;
-    const ColorT *data = (float *)img->verts.data();
-    auto &clr = prim->add_attr<zeno::vec3f>(dstChannel);
-    auto w = img->userData().get2<int>("w");
-    auto h = img->userData().get2<int>("h");
-    std::function<zeno::vec3f(vec3f, const ColorT*, int, int, int, vec3f)> queryColor;
-    if (filter == "nearest") {
-        if (wrap == "REPEAT") {
-            queryColor = [=](vec3f uv, const ColorT *data, int w, int h, int n, vec3f _clr) -> vec3f {
-                uv = (uv - remapMin) / (remapMax - remapMin);
-                auto iuv = uvRepeat(uv, w, h);
-                return queryColorInner(iuv, data, w, n);
-            };
-        } else if (wrap == "CLAMP_TO_EDGE") {
-            queryColor = [=](vec3f uv, const ColorT *data, int w, int h, int n, vec3f _clr) -> vec3f {
-                uv = (uv - remapMin) / (remapMax - remapMin);
-                auto iuv = uvClampToEdge(uv, w, h);
-                return queryColorInner(iuv, data, w, n);
-            };
-        } else if (wrap == "CLAMP_TO_BORDER") {
-            queryColor = [=](vec3f uv, const ColorT *data, int w, int h, int n, vec3f clr) -> vec3f {
-                uv = (uv - remapMin) / (remapMax - remapMin);
-                if (uv[0] < 0 || uv[0] > 1 || uv[1] < 0 || uv[1] > 1) {
-                    return clr;
-                }
-                auto iuv = uvClampToEdge(uv, w, h);
-                return queryColorInner(iuv, data, w, n);
-            };
-        } else {
-            zeno::log_error("wrap type error");
-            throw std::runtime_error("wrap type error");
-        }
-    }
-    else {
-        queryColor = [=](vec3f uv, const ColorT *data, int w, int h, int n, vec3f _clr) -> vec3f {
-            uv = (uv - remapMin) / (remapMax - remapMin);
-            float u, v;
-            auto iuv = uvClampToEdge(uv, w, h, u, v);
-
-            auto c00 = queryColorInner(iuv, data, w, n, h);
-            auto c01 = queryColorInner(iuv + vec2i(1, 0), data, w, n, h);
-            auto c10 = queryColorInner(iuv + vec2i(0, 1), data, w, n, h);
-            auto c11 = queryColorInner(iuv + vec2i(1, 1), data, w, n, h);
-            auto a = zeno::mix(c00, c01, u);
-            auto b = zeno::mix(c10, c11, u);
-            auto c = zeno::mix(a, b, v);
-            return c;
-        };
-    }
-
-    if (uvSource == "vertex") {
-        auto &uv = prim->attr<zeno::vec3f>(srcChannel);
-        #pragma omp parallel for
-        for (auto i = 0; i < uv.size(); i++) {
-            clr[i] = queryColor(uv[i], data, w, h, 3, borderColor);
-        }
-    }
-    else if (uvSource == "tris") {
-        auto uv0 = prim->tris.attr<vec3f>("uv0");
-        auto uv1 = prim->tris.attr<vec3f>("uv1");
-        auto uv2 = prim->tris.attr<vec3f>("uv2");
-        #pragma omp parallel for
-        for (auto i = 0; i < prim->tris.size(); i++) {
-            auto tri = prim->tris[i];
-            clr[tri[0]] = queryColor(uv0[i], data, w, h, 3, borderColor);
-            clr[tri[1]] = queryColor(uv1[i], data, w, h, 3, borderColor);
-            clr[tri[2]] = queryColor(uv2[i], data, w, h, 3, borderColor);
-        }
-
-    }
-    else if (uvSource == "loopsuv") {
-        auto &loopsuv = prim->loops.attr<int>("uvs");
-        #pragma omp parallel for
-        for (auto i = 0; i < prim->loops.size(); i++) {
-            auto uv = prim->uvs[loopsuv[i]];
-            int index = prim->loops[i];
-            clr[index] = queryColor({uv[0], uv[1], 0}, data, w, h, 3, borderColor);
-        }
-    }
-    else {
-        zeno::log_error("unknown uvSource");
-        throw std::runtime_error("unknown uvSource");
-    }
-}
-
 void primSampleTexture(
         std::shared_ptr<PrimitiveObject> prim,
         const std::string &srcChannel,
@@ -244,21 +97,167 @@ void primSampleTexture(
         float remapMin,
         float remapMax
 ) {
-    return primSampleTexture(prim, srcChannel, uvSource, dstChannel, img, wrap, "nearest", borderColor, remapMin, remapMax);;
+}
+
+static vec2i uv_to_tex(vec2f texCoord, int w, int h) {
+    int x = (int)(texCoord[0] * w - 0.5f) % w;
+    int y = (int)(texCoord[1] * h - 0.5f) % h;
+    x = x < 0 ? w + x : x;
+    y = y < 0 ? h + y : y;
+    return {x, y};
+}
+
+static vec3f getColor(vec2i tex, const vec3f* data, int w, int h) {
+    tex[0] = tex[0] % w;
+    tex[1] = tex[1] % h;
+    int index = tex[1] * w + tex[0];
+    return data[index];
+}
+
+static vec3f getColorClamp(vec2i tex, const vec3f* data, int w, int h) {
+    tex[0] = zeno::clamp(tex[0], 0, w-1);
+    tex[1] = zeno::clamp(tex[1], 0, h-1);
+    int index = tex[1] * w + tex[0];
+    return data[index];
+}
+
+static vec3f Sample2DLinear(vec2f texCoord, const vec3f* data, int w, int h) {
+    texCoord = texCoord * vec2f(w, h) - vec2f(0.5f);
+    vec2f f = fract(texCoord);
+    int x = (int)(texCoord[0]) % w;
+    int y = (int)(texCoord[1]) % h;
+    x = x < 0 ? w + x : x;
+    y = y < 0 ? h + y : y;
+    vec3f s1 = getColor(vec2i(x,y), data, w, h);
+    vec3f s2 = getColor(vec2i(x+1,y), data, w, h);
+    vec3f s3 = getColor(vec2i(x,y+1), data, w, h);
+    vec3f s4 = getColor(vec2i(x+1,y+1), data, w, h);
+    return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
+}
+
+static vec3f Sample2DLinearClamp(vec2f texCoord, const vec3f* data, int w, int h) {
+    texCoord = texCoord * vec2f(w, h) - vec2f(0.5f);
+    vec2f f = fract(texCoord);
+    int x = (int)(texCoord[0]) % w;
+    int y = (int)(texCoord[1]) % h;
+    x = x < 0 ? w + x : x;
+    y = y < 0 ? h + y : y;
+    vec3f s1 = getColorClamp(vec2i(x,y), data, w, h);
+    vec3f s2 = getColorClamp(vec2i(x+1,y), data, w, h);
+    vec3f s3 = getColorClamp(vec2i(x,y+1), data, w, h);
+    vec3f s4 = getColorClamp(vec2i(x+1,y+1), data, w, h);
+    return mix(mix(s1, s2, f[0]), mix(s3, s4, f[0]), f[1]);
 }
 struct PrimSample2D : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto srcChannel = get_input2<std::string>("uvChannel");
-        auto srcSource = get_input2<std::string>("uvSource");
+        auto uvSource = get_input2<std::string>("uvSource");
         auto dstChannel = get_input2<std::string>("targetChannel");
         auto image = get_input2<PrimitiveObject>("image");
         auto wrap = get_input2<std::string>("wrap");
         auto filter = get_input2<std::string>("filter");
         auto borderColor = get_input2<vec3f>("borderColor");
-        auto remapMin = get_input2<float>("remapMin");
-        auto remapMax = get_input2<float>("remapMax");
-        primSampleTexture(prim, srcChannel, srcSource, dstChannel, image, wrap, filter, borderColor, remapMin, remapMax);
+
+        if (!image->userData().has("isImage")) {
+            throw zeno::Exception("not an image");
+        }
+        auto w = image->userData().get2<int>("w");
+        auto h = image->userData().get2<int>("h");
+
+        auto &clrs = prim->add_attr<zeno::vec3f>(dstChannel);
+        auto data = image->verts.data();
+        std::function<zeno::vec3f(vec3f, const vec3f*, int, int, vec3f)> queryColor;
+        if (filter == "nearest") {
+            if (wrap == "REPEAT") {
+                queryColor = [=](vec3f uv3, const vec3f *data, int w, int h, vec3f clr) -> vec3f {
+                    vec2f uv = {uv3[0], uv3[1]};
+                    vec2i texuv = uv_to_tex(uv, w, h);
+                    return getColor(texuv, data, w, h);
+                };
+            }
+            else if (wrap == "CLAMP_TO_EDGE") {
+                queryColor = [=](vec3f uv3, const vec3f *data, int w, int h, vec3f clr) -> vec3f {
+                    vec2f uv = {uv3[0], uv3[1]};
+                    uv = zeno::clamp(uv, 0, 1);
+                    vec2i texuv = uv_to_tex(uv, w, h);
+                    return getColor(texuv, data, w, h);
+                };
+            }
+            else if (wrap == "CLAMP_TO_BORDER") {
+                queryColor = [=](vec3f uv3, const vec3f *data, int w, int h, vec3f clr) -> vec3f {
+                    vec2f uv = {uv3[0], uv3[1]};
+                    uv = zeno::clamp(uv, 0, 1);
+                    vec2i texuv = uv_to_tex(uv, w, h);
+                    if (uv[0] != uv3[0] || uv[1] != uv3[1]) {
+                        return borderColor;
+                    } else {
+                        return getColor(texuv, data, w, h);
+                    }
+                };
+            }
+        }
+        else {
+            if (wrap == "REPEAT") {
+                queryColor = [=](vec3f uv3, const vec3f *data, int w, int h, vec3f clr) -> vec3f {
+                    vec2f uv = {uv3[0], uv3[1]};
+                    return Sample2DLinear(uv, data, w, h);
+                };
+            }
+            else if (wrap == "CLAMP_TO_EDGE") {
+                queryColor = [=](vec3f uv3, const vec3f *data, int w, int h, vec3f clr) -> vec3f {
+                    vec2f uv = {uv3[0], uv3[1]};
+                    uv = zeno::clamp(uv, 0, 1);
+                    return Sample2DLinearClamp(uv, data, w, h);
+                };
+            }
+            else if (wrap == "CLAMP_TO_BORDER") {
+                queryColor = [=](vec3f uv3, const vec3f *data, int w, int h, vec3f clr) -> vec3f {
+                    vec2f uv = {uv3[0], uv3[1]};
+                    uv = zeno::clamp(uv, 0, 1);
+                    if ((uv[0] != uv3[0] || uv[1] != uv3[1])) {
+                        return borderColor;
+                    }
+                    else {
+                        return Sample2DLinearClamp(uv, data, w, h);
+                    }
+                };
+            }
+        }
+
+        if (uvSource == "vertex") {
+            auto &uv = prim->attr<zeno::vec3f>(srcChannel);
+            #pragma omp parallel for
+            for (auto i = 0; i < uv.size(); i++) {
+                clrs[i] = queryColor(uv[i], data, w, h, borderColor);
+            }
+        }
+        else if (uvSource == "tris") {
+            auto uv0 = prim->tris.attr<vec3f>("uv0");
+            auto uv1 = prim->tris.attr<vec3f>("uv1");
+            auto uv2 = prim->tris.attr<vec3f>("uv2");
+            #pragma omp parallel for
+            for (auto i = 0; i < prim->tris.size(); i++) {
+                auto tri = prim->tris[i];
+                clrs[tri[0]] = queryColor(uv0[i], data, w, h, borderColor);
+                clrs[tri[1]] = queryColor(uv1[i], data, w, h, borderColor);
+                clrs[tri[2]] = queryColor(uv2[i], data, w, h, borderColor);
+            }
+
+        }
+        else if (uvSource == "loopsuv") {
+            auto &loopsuv = prim->loops.attr<int>("uvs");
+            #pragma omp parallel for
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                auto uv = prim->uvs[loopsuv[i]];
+                int index = prim->loops[i];
+                clrs[index] = queryColor({uv[0], uv[1], 0}, data, w, h, borderColor);
+            }
+        }
+        else {
+            zeno::log_error("unknown uvSource");
+            throw std::runtime_error("unknown uvSource");
+        }
 
         set_output("outPrim", std::move(prim));
     }
@@ -353,11 +352,36 @@ std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
     return img;
 }
 
+std::shared_ptr<PrimitiveObject> readPFMFile(std::string const &path) {
+    int nx = 0;
+    int ny = 0;
+    std::ifstream file(path, std::ios::binary);
+    std::string format;
+    file >> format;
+    file >> nx >> ny;
+    float scale = 0;
+    file >> scale;
+    file.ignore(1);
+
+    auto img = std::make_shared<PrimitiveObject>();
+    int size = nx * ny;
+    img->resize(size);
+    file.read(reinterpret_cast<char*>(img->verts.data()), sizeof(vec3f) * nx * ny);
+
+    img->userData().set2("isImage", 1);
+    img->userData().set2("w", nx);
+    img->userData().set2("h", ny);
+    return img;
+}
+
 struct ReadImageFile : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
         if (zeno::ends_with(path, ".exr", false)) {
             set_output("image", readExrFile(path));
+        }
+        if (zeno::ends_with(path, ".pfm", false)) {
+            set_output("image", readPFMFile(path));
         }
         else {
             set_output("image", readImageFile(path));
@@ -375,11 +399,44 @@ ZENDEFNODE(ReadImageFile, {
     {"comp"},
 });
 
+void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
+    std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
+    std::vector<char> data(header.size() + w * h * sizeof(vec3f));
+    memcpy(data.data(), header.data(), header.size());
+    memcpy(data.data() + header.size(), rgb, w * h * sizeof(vec3f));
+    file_put_binary(data, path);
+}
+
+void write_pfm(std::string& path, std::shared_ptr<PrimitiveObject> image) {
+    auto &ud = image->userData();
+    int w = ud.get2<int>("w");
+    int h = ud.get2<int>("h");
+    write_pfm(path, w, h, image->verts->data());
+}
+
+void write_jpg(std::string& path, std::shared_ptr<PrimitiveObject> image) {
+    int w = image->userData().get2<int>("w");
+    int h = image->userData().get2<int>("h");
+    std::vector<uint8_t> colors;
+    for (auto i = 0; i < w * h; i++) {
+        auto rgb = zeno::pow(image->verts[i], 1.0f / 2.2f);
+        int r = zeno::clamp(int(rgb[0] * 255.99), 0, 255);
+        int g = zeno::clamp(int(rgb[1] * 255.99), 0, 255);
+        int b = zeno::clamp(int(rgb[2] * 255.99), 0, 255);
+        colors.push_back(r);
+        colors.push_back(g);
+        colors.push_back(b);
+    }
+    stbi_flip_vertically_on_write(1);
+    stbi_write_jpg(path.c_str(), w, h, 3, colors.data(), 100);
+}
+
 struct WriteImageFile : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto path = get_input2<std::string>("path");
         auto type = get_input2<std::string>("type");
+        auto boolgamma = get_input2<bool>("gamma");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -403,7 +460,10 @@ struct WriteImageFile : INode {
             alpha = mask->verts.attr<float>("alpha");
         }
         std::vector<char> data(w * h * n);
-        constexpr float gamma = 2.2f;
+        float gamma = 1;
+        if(boolgamma){
+            gamma = 2.2f;
+        }
         for (int i = 0; i < w * h; i++) {
             data[n * i + 0] = (char)(255 * powf(image->verts[i][0], 1.0f / gamma));
             data[n * i + 1] = (char)(255 * powf(image->verts[i][1], 1.0f / gamma));
@@ -472,6 +532,10 @@ struct WriteImageFile : INode {
                 zeno::log_info("EXR file saved successfully.");
             }
         }
+        else if (type == "pfm") {
+            path = path + ".pfm";
+            write_pfm(path, image);
+        }
         set_output("image", image);
     }
 };
@@ -479,8 +543,9 @@ ZENDEFNODE(WriteImageFile, {
     {
         {"image"},
         {"writepath", "path"},
-        {"enum png jpg exr", "type", "png"},
+        {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
+        {"bool", "gamma", "1"},
     },
     {
         {"image"},

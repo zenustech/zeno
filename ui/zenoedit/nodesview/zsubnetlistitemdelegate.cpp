@@ -136,7 +136,6 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             QAction* pPasteSubnet = new QAction(tr("Paste subnet"));
             QAction* pRename = new QAction(tr("Rename"));
             QAction* pDelete = new QAction(tr("Delete"));
-            pDelete->setShortcut(Qt::Key_Delete);
 
             if (m_selectedIndexs.size() > 1) 
             {

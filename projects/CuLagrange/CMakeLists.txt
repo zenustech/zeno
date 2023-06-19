@@ -93,7 +93,8 @@ target_sources(zeno PRIVATE
   # fem/collision_energy/edge_edge_sqrt_collition.hpp
   fem/collision_energy/evaluate_collision.hpp
   fem/collision_energy/collision_utils.hpp
-  fem/TendonDynamicStepping.cu
+  # fem/TendonDynamicStepping.cu
+  # fem/FEMFleshDynamicFast.cu
   # fem/StrainLimitRepulsion.cu
   # fem/KinematicCollisionRepulsion.cu
 )
@@ -113,6 +114,7 @@ target_sources(zeno PRIVATE
   geometry/kernel/calculate_facet_normal.hpp
   geometry/kernel/calculate_bisector_normal.hpp
   geometry/kernel/tiled_vector_ops.hpp
+  geometry/kernel/intersection.hpp
   geometry/SolveLaplacian.cu
   geometry/VectorField.cu
   geometry/SetupSkinningWeight.cu
@@ -124,8 +126,10 @@ target_sources(zeno PRIVATE
   geometry/DeformationField.cu
   # geometry/VectorField.cu
   geometry/CollisionVis.cu # CHECK THIS
-  geometry/CalcSurfaceArea.cu
+  # geometry/CalcSurfaceArea.cu
   geometry/MarkSurfaceTag.cu
   geometry/SurfaceBinder.cu
   geometry/MarkInversion.cu
+  geometry/Topology.cu
+  geometry/MarkCollisionRegion.cu # CHECK THIS
 )

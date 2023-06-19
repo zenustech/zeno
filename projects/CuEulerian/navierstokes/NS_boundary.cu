@@ -25,6 +25,7 @@ struct ZSNSNaiveSolidWall : INode {
 
         auto &spg = NSGrid->spg;
         auto block_cnt = spg.numBlocks();
+        auto dx = spg.voxelSize()[0];
 
         auto pol = zs::cuda_exec();
         constexpr auto space = zs::execspace_e::cuda;
@@ -35,17 +36,22 @@ struct ZSNSNaiveSolidWall : INode {
 
             pol(zs::Collapse{block_cnt, spg.block_size},
                 [spgv = zs::proxy<space>(spg), sdfv = zs::proxy<space>(sdf), velv = zs::proxy<space>(vel),
-                 vSrcTag = src_tag(NSGrid, "v")] __device__(int blockno, int cellno) mutable {
+                 vSrcTag = src_tag(NSGrid, "v"), dx] __device__(int blockno, int cellno) mutable {
                     auto wcoord = spgv.wCoord(blockno, cellno);
                     auto solid_sdf = sdfv.wSample("sdf", wcoord);
 
-                    if (solid_sdf < 0) {
-                        auto vel_s = velv.wStaggeredPack("v", wcoord);
-                        auto block = spgv.block(blockno);
-                        block.template tuple<3>(vSrcTag, cellno) = vel_s;
-                    }
-
                     spgv("sdf", blockno, cellno) = solid_sdf;
+
+                    for (int ch = 0; ch < 3; ++ch) {
+                        auto wcoord_face = wcoord;
+                        wcoord_face[ch] -= 0.5f * dx;
+
+                        float sdf_f = sdfv.wSample("sdf", wcoord_face);
+
+                        if (sdf_f <= 0) {
+                            spgv(vSrcTag, ch, blockno, cellno) = velv.wStaggeredSample("v", ch, wcoord_face);
+                        }
+                    }
                 });
         }
 

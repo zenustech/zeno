@@ -54,6 +54,8 @@ void* Scene::getOptixImg(int& w, int& h)
 {
 #ifdef ZENO_ENABLE_OPTIX
     return xinxinoptix::optixgetimg(w, h);
+#else
+    return nullptr;
 #endif
 }
 
