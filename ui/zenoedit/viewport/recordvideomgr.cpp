@@ -13,7 +13,8 @@
 #include <zenoedit/zenomainwindow.h>
 #include <zeno/types/HeatmapObject.h>
 #include "launch/corelaunch.h"
-
+#include <zeno/extra/GlobalStatus.h>
+#include <zeno/core/Session.h>
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
     : QObject(parent)
@@ -195,6 +196,12 @@ void RecordVideoMgr::disconnectSignal()
 
 void RecordVideoMgr::onFrameDrawn(int currFrame)
 {
+    auto& pGlobalStatus = zeno::getSession().globalStatus;
+    if (m_recordInfo.bRecordByCommandLine && pGlobalStatus->failed())
+    {
+        emit recordFailed(QString::fromStdString(pGlobalStatus->error->message));
+        return;
+    }
     auto& pGlobalComm = zeno::getSession().globalComm;
     ZASSERT_EXIT(pGlobalComm);
 
