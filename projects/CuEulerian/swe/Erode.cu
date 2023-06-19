@@ -98,21 +98,19 @@ __forceinline__ __device__ unsigned int erode_random(float seed, int idx) {
 // 降水/蒸发
 struct zs_erode_value2cond : INode {
     void apply() override {
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         // 初始化
         ////////////////////////////////////////////////////////////////////////////////////////
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<ZenoParticles>("zs_prim_2DGrid");
         int nx, nz;
-        auto &ud = terrain->userData();
+        auto &ud = static_cast<IObject *>(terrain.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
+        auto &pos = terrain->prim->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
@@ -122,22 +120,25 @@ struct zs_erode_value2cond : INode {
         auto seed = get_input2<float>("seed");
 
         // 初始化网格属性
-        if (!terrain->verts.has_attr("cond")) {
-            auto &_cond = terrain->verts.add_attr<float>("cond");
+        using namespace zs;
+        auto pol = cuda_exec();
+        auto &pars = terrain->getParticles();
+
+        if (!terrain->prim->verts.has_attr("cond")) {
+            auto &_cond = terrain->prim->verts.add_attr<float>("cond");
             std::fill(_cond.begin(), _cond.end(), 0.0);
+            pars.append_channels(pol, {{"cond", 1}});
         }
-        auto &attr_cond = terrain->verts.attr<float>("cond");
+
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
         /// @brief  accelerate cond computation using cuda
-        auto pol = cuda_exec();
-
-        auto zs_attr_cond = to_device_vector(attr_cond, false);
+        auto attr_cond = pars.begin("cond");
 
         pol(range((std::size_t)nz * (std::size_t)nx),
-            [=, attr_cond = view<space>(zs_attr_cond)] __device__(std::size_t idx) mutable {
+            [attr_cond, value, seed, nx, nz] __device__(std::size_t idx) mutable {
                 if (value >= 1.0f) {
                     attr_cond[idx] = 1;
                 } else {
@@ -148,21 +149,18 @@ struct zs_erode_value2cond : INode {
                 }
             });
 
-        /// @brief  write back to host-side attribute
-        retrieve_device_vector(attr_cond, zs_attr_cond);
-
-        set_output("prim_2DGrid", std::move(terrain));
+        set_output("zs_prim_2DGrid", std::move(terrain));
     }
 };
 
 ZENDEFNODE(zs_erode_value2cond, {/* inputs: */ {
-                                     "prim_2DGrid",
+                                     "zs_prim_2DGrid",
                                      {"float", "value", "1.0"}, // 0.0 ~ 1.0
                                      {"float", "seed", "0.0"},
                                  },
                                  /* outputs: */
                                  {
-                                     "prim_2DGrid",
+                                     "zs_prim_2DGrid",
                                  },
                                  /* params: */ {}, /* category: */
                                  {
@@ -176,14 +174,14 @@ struct zs_erode_smooth_flow : INode {
         // 初始化
         ////////////////////////////////////////////////////////////////////////////////////////
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<ZenoParticles>("zs_prim_2DGrid");
         int nx, nz;
-        auto &ud = terrain->userData();
+        auto &ud = static_cast<IObject *>(terrain.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
+        auto &pos = terrain->prim->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
@@ -191,67 +189,62 @@ struct zs_erode_smooth_flow : INode {
         // 获取面板参数
         auto smooth_rate = get_input2<float>("smoothRate");
         auto flowName = get_input2<std::string>("flowName");
+
         // 初始化网格属性
-        auto &flow = terrain->verts.attr<float>(flowName);
-        auto &_lap = terrain->verts.add_attr<float>("_lap");
+        using namespace zs;
+        auto pol = cuda_exec();
+        auto &pars = terrain->getParticles();
+
+        pars.append_channels(pol, {{"_lap", 1}});
+
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
         /// @brief  accelerate cond computation using cuda
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        auto pol = cuda_exec();
-        /// @brief  copy host-side attribute
-        auto zs_flow = to_device_vector(flow);
-        auto zs_lap = to_device_vector(_lap);
+        auto flow = pars.begin(flowName);
+        auto _lap = pars.begin("_lap");
 
         ///
-        pol(range((std::size_t)nz * (std::size_t)nx),
-            [flow = view<space>(zs_flow), _lap = view<space>(zs_lap), nx, nz] __device__(std::size_t idx) mutable {
-                auto id_z = idx / nx; // outer index
-                auto id_x = idx % nx; // inner index
-                float net_diff = 0.0f;
-                net_diff += flow[idx - 1 * (id_x > 0)];
-                net_diff += flow[idx + 1 * (id_x < nx - 1)];
-                net_diff += flow[idx - nx * (id_z > 0)];
-                net_diff += flow[idx + nx * (id_z < nz - 1)];
-                net_diff *= 0.25f;
-                net_diff -= flow[idx];
-                _lap[idx] = net_diff;
-            });
-
-        pol(range((std::size_t)nz * (std::size_t)nx), [flow = view<space>(zs_flow), _lap = view<space>(zs_lap),
-                                                       smooth_rate, nx, nz] __device__(std::size_t idx) mutable {
+        pol(range((std::size_t)nz * (std::size_t)nx), [flow, _lap, nx, nz] __device__(std::size_t idx) mutable {
             auto id_z = idx / nx; // outer index
             auto id_x = idx % nx; // inner index
             float net_diff = 0.0f;
-            net_diff += _lap[idx - 1 * (id_x > 0)];
-            net_diff += _lap[idx + 1 * (id_x < nx - 1)];
-            net_diff += _lap[idx - nx * (id_z > 0)];
-            net_diff += _lap[idx + nx * (id_z < nz - 1)];
+            net_diff += flow[idx - 1 * (id_x > 0)];
+            net_diff += flow[idx + 1 * (id_x < nx - 1)];
+            net_diff += flow[idx - nx * (id_z > 0)];
+            net_diff += flow[idx + nx * (id_z < nz - 1)];
             net_diff *= 0.25f;
-            net_diff -= _lap[idx];
-            flow[idx] -= smooth_rate * 0.5f * net_diff;
+            net_diff -= flow[idx];
+            _lap[idx] = net_diff;
         });
 
-        /// @brief  write back to host-side attribute
-        retrieve_device_vector(flow, zs_flow);
-        retrieve_device_vector(_lap, zs_lap);
+        pol(range((std::size_t)nz * (std::size_t)nx),
+            [flow, _lap, smooth_rate, nx, nz] __device__(std::size_t idx) mutable {
+                auto id_z = idx / nx; // outer index
+                auto id_x = idx % nx; // inner index
+                float net_diff = 0.0f;
+                net_diff += _lap[idx - 1 * (id_x > 0)];
+                net_diff += _lap[idx + 1 * (id_x < nx - 1)];
+                net_diff += _lap[idx - nx * (id_z > 0)];
+                net_diff += _lap[idx + nx * (id_z < nz - 1)];
+                net_diff *= 0.25f;
+                net_diff -= _lap[idx];
+                flow[idx] -= smooth_rate * 0.5f * net_diff;
+            });
 
-        terrain->verts.erase_attr("_lap");
-        set_output("prim_2DGrid", std::move(terrain));
+        set_output("zs_prim_2DGrid", std::move(terrain));
     }
 };
 
 ZENDEFNODE(zs_erode_smooth_flow, {/* inputs: */ {
-                                      "prim_2DGrid",
+                                      "zs_prim_2DGrid",
                                       {"float", "smoothRate", "1.0"},
                                       {"string", "flowName", "flow"},
                                   },
                                   /* outputs: */
                                   {
-                                      "prim_2DGrid",
+                                      "zs_prim_2DGrid",
                                   },
                                   /* params: */ {}, /* category: */
                                   {
@@ -268,14 +261,14 @@ struct zs_erode_tumble_material_v0 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<ZenoParticles>("zs_prim_2DGrid");
         int nx, nz;
-        auto &ud = terrain->userData();
+        auto &ud = static_cast<IObject *>(terrain.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
+        auto &pos = terrain->prim->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
@@ -302,215 +295,206 @@ struct zs_erode_tumble_material_v0 : INode {
         auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         // 初始化网格属性
-        if (!terrain->verts.has_attr("_height") || !terrain->verts.has_attr("_debris") ||
-            !terrain->verts.has_attr("_temp_height") || !terrain->verts.has_attr("_temp_debris")) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto pol = cuda_exec();
+        auto &pars = terrain->getParticles();
+
+        if (!pars.hasProperty("_height") || !pars.hasProperty("_debris") || !pars.hasProperty("_temp_height") ||
+            !pars.hasProperty("_temp_debris")) {
             zeno::log_error("Node [erode_tumble_material_v0], no such data layer named '{}' or '{}' or '{}' or '{}'.",
                             "_height", "_debris", "_temp_height", "_temp_debris");
         }
-        auto &_height = terrain->verts.attr<float>("_height");           // 计算用的临时属性
-        auto &_debris = terrain->verts.attr<float>("_debris");
-        auto &_temp_height = terrain->verts.attr<float>("_temp_height"); // 备份用的临时属性
-        auto &_temp_debris = terrain->verts.attr<float>("_temp_debris");
 
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
         /// @brief  accelerate cond computation using cuda
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        auto pol = cuda_exec();
+        auto _height = pars.begin("_height");
+        auto _debris = pars.begin("_debris");
+        auto _temp_height = pars.begin("_temp_height");
+        auto _temp_debris = pars.begin("_temp_debris");
+
         /// @brief  copy host-side attribute
-        auto zs_height = to_device_vector(_height);
-        auto zs_debris = to_device_vector(_debris);
-        auto zs_temp_height = to_device_vector(_temp_height);
-        auto zs_temp_debris = to_device_vector(_temp_debris);
         auto zs_perm = to_device_vector(perm);
         auto zs_p_dirs = to_device_vector(p_dirs);
         auto zs_x_dirs = to_device_vector(x_dirs);
 
-        pol(range((std::size_t)nz * (std::size_t)nx),
-            [=, _height = view<space>(zs_height), _debris = view<space>(zs_debris),
-             _temp_height = view<space>(zs_temp_height), _temp_debris = view<space>(zs_temp_debris),
-             perm = view<space>(zs_perm), p_dirs = view<space>(zs_p_dirs),
-             x_dirs = view<space>(zs_x_dirs)] __device__(std::size_t idx) mutable {
-                auto id_z = idx / nx; // outer index
-                auto id_x = idx % nx; // inner index
+        pol(range((std::size_t)nz * (std::size_t)nx), [=, perm = view<space>(zs_perm), p_dirs = view<space>(zs_p_dirs),
+                                                       x_dirs =
+                                                           view<space>(zs_x_dirs)] __device__(std::size_t idx) mutable {
+            auto id_z = idx / nx; // outer index
+            auto id_x = idx % nx; // inner index
 
-                int iterseed = iter * 134775813;
-                int color = perm[i];
+            int iterseed = iter * 134775813;
+            int color = perm[i];
 
-                int is_red = ((id_z & 1) == 1) && (color == 1);
-                int is_green = ((id_x & 1) == 1) && (color == 2);
-                int is_blue = ((id_z & 1) == 0) && (color == 3);
-                int is_yellow = ((id_x & 1) == 0) && (color == 4);
-                int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
-                int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
-                int dxs[] = {0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1]};
-                int dzs[] = {p_dirs[1], 0, p_dirs[1], 0, x_dirs[0], -x_dirs[1], x_dirs[0], -x_dirs[1]};
+            int is_red = ((id_z & 1) == 1) && (color == 1);
+            int is_green = ((id_x & 1) == 1) && (color == 2);
+            int is_blue = ((id_z & 1) == 0) && (color == 3);
+            int is_yellow = ((id_x & 1) == 0) && (color == 4);
+            int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
+            int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
+            int dxs[] = {0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1]};
+            int dzs[] = {p_dirs[1], 0, p_dirs[1], 0, x_dirs[0], -x_dirs[1], x_dirs[0], -x_dirs[1]};
 
-                if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
-                    int idx = Pos2Idx(id_x, id_z, nx);
-                    int dx = dxs[color - 1];
-                    int dz = dzs[color - 1];
-                    int bound_x = nx;
-                    int bound_z = nz;
-                    int clamp_x = bound_x - 1;
-                    int clamp_z = bound_z - 1;
+            if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
+                int idx = Pos2Idx(id_x, id_z, nx);
+                int dx = dxs[color - 1];
+                int dz = dzs[color - 1];
+                int bound_x = nx;
+                int bound_z = nz;
+                int clamp_x = bound_x - 1;
+                int clamp_z = bound_z - 1;
 
-                    float i_debris = _temp_debris[idx];
-                    float i_height = _temp_height[idx];
+                float i_debris = _temp_debris[idx];
+                float i_height = _temp_height[idx];
 
-                    int samplex = zs::clamp(id_x + dx, 0, clamp_x);
-                    int samplez = zs::clamp(id_z + dz, 0, clamp_z);
-                    int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
-                    if (validsource) {
-                        validsource = validsource || !openborder;
-                        int j_idx = Pos2Idx(samplex, samplez, nx);
-                        float j_debris = validsource ? _temp_debris[j_idx] : 0.0f;
-                        float j_height = _temp_height[j_idx];
+                int samplex = zs::clamp(id_x + dx, 0, clamp_x);
+                int samplez = zs::clamp(id_z + dz, 0, clamp_z);
+                int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
+                if (validsource) {
+                    validsource = validsource || !openborder;
+                    int j_idx = Pos2Idx(samplex, samplez, nx);
+                    float j_debris = validsource ? _temp_debris[j_idx] : 0.0f;
+                    float j_height = _temp_height[j_idx];
 
-                        int cidx = 0;
-                        int cidz = 0;
+                    int cidx = 0;
+                    int cidz = 0;
 
-                        float c_height = 0.0f;
-                        float c_debris = 0.0f;
-                        float n_debris = 0.0f;
+                    float c_height = 0.0f;
+                    float c_debris = 0.0f;
+                    float n_debris = 0.0f;
 
-                        int c_idx = 0;
-                        int n_idx = 0;
+                    int c_idx = 0;
+                    int n_idx = 0;
 
-                        int dx_check = 0;
-                        int dz_check = 0;
+                    int dx_check = 0;
+                    int dz_check = 0;
 
-                        float h_diff = 0.0f;
+                    float h_diff = 0.0f;
 
-                        if ((j_height - i_height) > 0.0f) {
-                            cidx = samplex;
-                            cidz = samplez;
+                    if ((j_height - i_height) > 0.0f) {
+                        cidx = samplex;
+                        cidz = samplez;
 
-                            c_height = j_height;
-                            c_debris = j_debris;
-                            n_debris = i_debris;
+                        c_height = j_height;
+                        c_debris = j_debris;
+                        n_debris = i_debris;
 
-                            c_idx = j_idx;
-                            n_idx = idx;
+                        c_idx = j_idx;
+                        n_idx = idx;
 
-                            dx_check = -dx;
-                            dz_check = -dz;
+                        dx_check = -dx;
+                        dz_check = -dz;
 
-                            h_diff = j_height - i_height;
-                        } else {
-                            cidx = id_x;
-                            cidz = id_z;
+                        h_diff = j_height - i_height;
+                    } else {
+                        cidx = id_x;
+                        cidz = id_z;
 
-                            c_height = i_height;
-                            c_debris = i_debris;
-                            n_debris = j_debris;
+                        c_height = i_height;
+                        c_debris = i_debris;
+                        n_debris = j_debris;
 
-                            c_idx = idx;
-                            n_idx = j_idx;
+                        c_idx = idx;
+                        n_idx = j_idx;
 
-                            dx_check = dx;
-                            dz_check = dz;
+                        dx_check = dx;
+                        dz_check = dz;
 
-                            h_diff = i_height - j_height;
-                        }
+                        h_diff = i_height - j_height;
+                    }
 
-                        float max_diff = 0.0f;
-                        float dir_prob = 0.0f;
+                    float max_diff = 0.0f;
+                    float dir_prob = 0.0f;
 
-                        for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++) {
-                            for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++) {
-                                if (!tmp_dx && !tmp_dz)
-                                    continue;
+                    for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++) {
+                        for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++) {
+                            if (!tmp_dx && !tmp_dz)
+                                continue;
 
-                                int tmp_samplex = zs::clamp(cidx + tmp_dx, 0, clamp_x);
-                                int tmp_samplez = zs::clamp(cidz + tmp_dz, 0, clamp_z);
-                                int tmp_validsource =
-                                    (tmp_samplex == (cidx + tmp_dx)) && (tmp_samplez == (cidz + tmp_dz));
-                                tmp_validsource = tmp_validsource || !openborder;
-                                int tmp_j_idx = Pos2Idx(tmp_samplex, tmp_samplez, nx);
+                            int tmp_samplex = zs::clamp(cidx + tmp_dx, 0, clamp_x);
+                            int tmp_samplez = zs::clamp(cidz + tmp_dz, 0, clamp_z);
+                            int tmp_validsource = (tmp_samplex == (cidx + tmp_dx)) && (tmp_samplez == (cidz + tmp_dz));
+                            tmp_validsource = tmp_validsource || !openborder;
+                            int tmp_j_idx = Pos2Idx(tmp_samplex, tmp_samplez, nx);
 
-                                float n_height = _temp_height[tmp_j_idx];
+                            float n_height = _temp_height[tmp_j_idx];
 
-                                float tmp_diff = n_height - (c_height);
+                            float tmp_diff = n_height - (c_height);
 
-                                float _gridbias = zs::clamp(gridbias, -1.0f, 1.0f);
+                            float _gridbias = zs::clamp(gridbias, -1.0f, 1.0f);
 
-                                if (tmp_dx && tmp_dz)
-                                    tmp_diff *= zs::clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
-                                else
-                                    tmp_diff *= zs::clamp(1.0f + _gridbias, 0.0f, 1.0f);
+                            if (tmp_dx && tmp_dz)
+                                tmp_diff *= zs::clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
+                            else
+                                tmp_diff *= zs::clamp(1.0f + _gridbias, 0.0f, 1.0f);
 
-                                if (tmp_diff <= 0.0f) {
-                                    if ((dx_check == tmp_dx) && (dz_check == tmp_dz))
-                                        dir_prob = tmp_diff;
-                                    if (tmp_diff < max_diff)
-                                        max_diff = tmp_diff;
-                                }
-                            }
-                        }
-                        if (max_diff > 0.001f || max_diff < -0.001f)
-                            dir_prob = dir_prob / max_diff;
-
-                        int cond = 0;
-                        if (dir_prob >= 1.0f)
-                            cond = 1;
-                        else {
-                            dir_prob = dir_prob * dir_prob * dir_prob * dir_prob;
-                            unsigned int cutoff = (unsigned int)(dir_prob * 4294967295.0);
-                            unsigned int randval = erode_random(seed, (idx + nx * nz) * 8 + color + iterseed);
-                            cond = randval < cutoff;
-                        }
-
-                        if (cond) {
-                            float abs_h_diff = h_diff < 0.0f ? -h_diff : h_diff;
-                            float _cut_angle = zs::clamp(cut_angle, 0.0f, 90.0f);
-                            float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
-                            float height_removed =
-                                _cut_angle < 90.0f ? zs::tan(_cut_angle * M_PI / 180) * delta_x : 1e10f;
-                            float height_diff = abs_h_diff - height_removed;
-                            if (height_diff < 0.0f)
-                                height_diff = 0.0f;
-                            float prob = ((n_debris + c_debris) != 0.0f)
-                                             ? zs::clamp((height_diff / (n_debris + c_debris)), 0.0f, 1.0f)
-                                             : 1.0f;
-                            unsigned int cutoff = (unsigned int)(prob * 4294967295.0);
-                            unsigned int randval = erode_random(seed * 3.14, (idx + nx * nz) * 8 + color + iterseed);
-                            int do_erode = randval < cutoff;
-
-                            float height_removal_amt =
-                                do_erode * zs::clamp(global_erosionrate * erosionrate * erodability, 0.0f, height_diff);
-
-                            _height[c_idx] -= height_removal_amt;
-
-                            float bedrock_density = 1.0f - (removalrate);
-                            if (bedrock_density > 0.0f) {
-                                float newdebris = bedrock_density * height_removal_amt;
-                                if (n_debris + newdebris > maxdepth) {
-                                    float rollback = n_debris + newdebris - maxdepth;
-                                    rollback = zs::min(rollback, newdebris);
-                                    _height[c_idx] += rollback / bedrock_density;
-                                    newdebris -= rollback;
-                                }
-                                _debris[c_idx] += newdebris;
+                            if (tmp_diff <= 0.0f) {
+                                if ((dx_check == tmp_dx) && (dz_check == tmp_dz))
+                                    dir_prob = tmp_diff;
+                                if (tmp_diff < max_diff)
+                                    max_diff = tmp_diff;
                             }
                         }
                     }
+                    if (max_diff > 0.001f || max_diff < -0.001f)
+                        dir_prob = dir_prob / max_diff;
+
+                    int cond = 0;
+                    if (dir_prob >= 1.0f)
+                        cond = 1;
+                    else {
+                        dir_prob = dir_prob * dir_prob * dir_prob * dir_prob;
+                        unsigned int cutoff = (unsigned int)(dir_prob * 4294967295.0);
+                        unsigned int randval = erode_random(seed, (idx + nx * nz) * 8 + color + iterseed);
+                        cond = randval < cutoff;
+                    }
+
+                    if (cond) {
+                        float abs_h_diff = h_diff < 0.0f ? -h_diff : h_diff;
+                        float _cut_angle = zs::clamp(cut_angle, 0.0f, 90.0f);
+                        float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
+                        float height_removed = _cut_angle < 90.0f ? zs::tan(_cut_angle * M_PI / 180) * delta_x : 1e10f;
+                        float height_diff = abs_h_diff - height_removed;
+                        if (height_diff < 0.0f)
+                            height_diff = 0.0f;
+                        float prob = ((n_debris + c_debris) != 0.0f)
+                                         ? zs::clamp((height_diff / (n_debris + c_debris)), 0.0f, 1.0f)
+                                         : 1.0f;
+                        unsigned int cutoff = (unsigned int)(prob * 4294967295.0);
+                        unsigned int randval = erode_random(seed * 3.14, (idx + nx * nz) * 8 + color + iterseed);
+                        int do_erode = randval < cutoff;
+
+                        float height_removal_amt =
+                            do_erode * zs::clamp(global_erosionrate * erosionrate * erodability, 0.0f, height_diff);
+
+                        _height[c_idx] -= height_removal_amt;
+
+                        float bedrock_density = 1.0f - (removalrate);
+                        if (bedrock_density > 0.0f) {
+                            float newdebris = bedrock_density * height_removal_amt;
+                            if (n_debris + newdebris > maxdepth) {
+                                float rollback = n_debris + newdebris - maxdepth;
+                                rollback = zs::min(rollback, newdebris);
+                                _height[c_idx] += rollback / bedrock_density;
+                                newdebris -= rollback;
+                            }
+                            _debris[c_idx] += newdebris;
+                        }
+                    }
                 }
-            });
+            }
+        });
 
-        /// @brief  write back to host-side attribute
-        retrieve_device_vector(_height, zs_height);
-        retrieve_device_vector(_debris, zs_debris);
-
-        set_output("prim_2DGrid", std::move(terrain));
+        set_output("zs_prim_2DGrid", std::move(terrain));
     }
 };
 
 ZENDEFNODE(zs_erode_tumble_material_v0, {/* inputs: */ {
-                                             "prim_2DGrid",
+                                             "zs_prim_2DGrid",
 
                                              {"ListObject", "perm"},
                                              {"ListObject", "p_dirs"},
@@ -533,7 +517,7 @@ ZENDEFNODE(zs_erode_tumble_material_v0, {/* inputs: */ {
                                          },
                                          /* outputs: */
                                          {
-                                             "prim_2DGrid",
+                                             "zs_prim_2DGrid",
                                          },
                                          /* params: */
                                          {
@@ -554,14 +538,14 @@ struct zs_erode_tumble_material_v2 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<ZenoParticles>("zs_prim_2DGrid");
         int nx, nz;
-        auto &ud = terrain->userData();
+        auto &ud = static_cast<IObject *>(terrain.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
+        auto &pos = terrain->prim->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
@@ -585,230 +569,223 @@ struct zs_erode_tumble_material_v2 : INode {
         auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         // 初始化网格属性
-        auto stablilityMaskName = get_input2<std::string>("stabilitymask");
-        if (!terrain->verts.has_attr(stablilityMaskName)) {
-            auto &_sta = terrain->verts.add_attr<float>(stablilityMaskName);
-            std::fill(_sta.begin(), _sta.end(), 0.0);
-        }
-        auto &stabilitymask = terrain->verts.attr<float>(stablilityMaskName);
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto pol = cuda_exec();
+        auto &pars = terrain->getParticles();
 
-        if (!terrain->verts.has_attr("height") || !terrain->verts.has_attr("_material") ||
-            !terrain->verts.has_attr("_temp_material")) {
+        auto stablilityMaskName = get_input2<std::string>("stabilitymask");
+        if (!terrain->prim->verts.has_attr(stablilityMaskName)) {
+            auto &_sta = terrain->prim->verts.add_attr<float>(stablilityMaskName);
+            std::fill(_sta.begin(), _sta.end(), 0.0);
+            pars.append_channels(pol, {{stablilityMaskName, 1}});
+        }
+
+        if (!pars.hasProperty("height") || !pars.hasProperty("_material") || !pars.hasProperty("_temp_material")) {
             zeno::log_error("Node [erode_tumble_material_v2], no such data layer named '{}' or '{}' or '{}'.", "height",
                             "_material", "_temp_material");
         }
-        auto &height = terrain->verts.attr<float>("height");
-        auto &_material = terrain->verts.attr<float>("_material");
-        auto &_temp_material = terrain->verts.attr<float>("_temp_material");
 
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
         /// @brief  accelerate cond computation using cuda
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        auto pol = cuda_exec();
+        auto height = pars.begin("height");
+        auto _material = pars.begin("_material");
+        auto _temp_material = pars.begin("_temp_material");
+        auto stabilitymask = pars.begin("stabilitymask");
+
         /// @brief  copy host-side attribute
-        auto zs_material = to_device_vector(_material);
-        auto zs_height = to_device_vector(height);
-        auto zs_temp_material = to_device_vector(_temp_material);
-        auto zs_stabilitymask = to_device_vector(stabilitymask);
         auto zs_perm = to_device_vector(perm);
         auto zs_p_dirs = to_device_vector(p_dirs);
         auto zs_x_dirs = to_device_vector(x_dirs);
 
-        pol(range((std::size_t)nz * (std::size_t)nx),
-            [=, _material = view<space>(zs_material), height = view<space>(zs_height),
-             _temp_material = view<space>(zs_temp_material), stabilitymask = view<space>(zs_stabilitymask),
-             perm = view<space>(zs_perm), p_dirs = view<space>(zs_p_dirs),
-             x_dirs = view<space>(zs_x_dirs)] __device__(std::size_t idx) mutable {
-                auto id_z = idx / nx; // outer index
-                auto id_x = idx % nx; // inner index
+        pol(range((std::size_t)nz * (std::size_t)nx), [=, perm = view<space>(zs_perm), p_dirs = view<space>(zs_p_dirs),
+                                                       x_dirs =
+                                                           view<space>(zs_x_dirs)] __device__(std::size_t idx) mutable {
+            auto id_z = idx / nx; // outer index
+            auto id_x = idx % nx; // inner index
 
-                int iterseed = iter * 134775813;
-                int color = perm[i];
+            int iterseed = iter * 134775813;
+            int color = perm[i];
 
-                int is_red = ((id_z & 1) == 1) && (color == 1);
-                int is_green = ((id_x & 1) == 1) && (color == 2);
-                int is_blue = ((id_z & 1) == 0) && (color == 3);
-                int is_yellow = ((id_x & 1) == 0) && (color == 4);
-                int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
-                int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
-                int dxs[] = {0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1]};
-                int dzs[] = {p_dirs[1], 0, p_dirs[1], 0, x_dirs[0], -x_dirs[1], x_dirs[0], -x_dirs[1]};
+            int is_red = ((id_z & 1) == 1) && (color == 1);
+            int is_green = ((id_x & 1) == 1) && (color == 2);
+            int is_blue = ((id_z & 1) == 0) && (color == 3);
+            int is_yellow = ((id_x & 1) == 0) && (color == 4);
+            int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
+            int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
+            int dxs[] = {0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1]};
+            int dzs[] = {p_dirs[1], 0, p_dirs[1], 0, x_dirs[0], -x_dirs[1], x_dirs[0], -x_dirs[1]};
 
-                if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
-                    int idx = Pos2Idx(id_x, id_z, nx);
-                    int dx = dxs[color - 1];
-                    int dz = dzs[color - 1];
-                    int bound_x = nx;
-                    int bound_z = nz;
-                    int clamp_x = bound_x - 1;
-                    int clamp_z = bound_z - 1;
+            if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
+                int idx = Pos2Idx(id_x, id_z, nx);
+                int dx = dxs[color - 1];
+                int dz = dzs[color - 1];
+                int bound_x = nx;
+                int bound_z = nz;
+                int clamp_x = bound_x - 1;
+                int clamp_z = bound_z - 1;
 
-                    flow_rate = zs::clamp(flow_rate, 0.0f, 1.0f);
+                flow_rate = zs::clamp(flow_rate, 0.0f, 1.0f);
 
-                    float i_material = _temp_material[idx];
-                    float i_height = height[idx];
+                float i_material = _temp_material[idx];
+                float i_height = height[idx];
 
-                    int samplex = zs::clamp(id_x + dx, 0, clamp_x);
-                    int samplez = zs::clamp(id_z + dz, 0, clamp_z);
-                    int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
+                int samplex = zs::clamp(id_x + dx, 0, clamp_x);
+                int samplez = zs::clamp(id_z + dz, 0, clamp_z);
+                int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
 
-                    if (validsource) {
-                        int same_node = !validsource;
+                if (validsource) {
+                    int same_node = !validsource;
 
-                        validsource = validsource || !openborder;
+                    validsource = validsource || !openborder;
 
-                        int j_idx = Pos2Idx(samplex, samplez, nx);
+                    int j_idx = Pos2Idx(samplex, samplez, nx);
 
-                        float j_material = validsource ? _temp_material[j_idx] : 0.0f;
-                        float j_height = height[j_idx];
+                    float j_material = validsource ? _temp_material[j_idx] : 0.0f;
+                    float j_height = height[j_idx];
 
-                        float _repose_angle = repose_angle;
-                        _repose_angle = zs::clamp(_repose_angle, 0.0f, 90.0f);
-                        float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
-                        float static_diff =
-                            _repose_angle < 90.0f ? zs::tan(_repose_angle * M_PI / 180.0) * delta_x : 1e10f;
-                        float m_diff = (j_height + j_material) - (i_height + i_material);
-                        int cidx = 0;
-                        int cidz = 0;
+                    float _repose_angle = repose_angle;
+                    _repose_angle = zs::clamp(_repose_angle, 0.0f, 90.0f);
+                    float delta_x = cellSize * (dx && dz ? 1.4142136f : 1.0f);
+                    float static_diff = _repose_angle < 90.0f ? zs::tan(_repose_angle * M_PI / 180.0) * delta_x : 1e10f;
+                    float m_diff = (j_height + j_material) - (i_height + i_material);
+                    int cidx = 0;
+                    int cidz = 0;
 
-                        float c_height = 0.0f;
-                        float c_material = 0.0f;
-                        float n_material = 0.0f;
+                    float c_height = 0.0f;
+                    float c_material = 0.0f;
+                    float n_material = 0.0f;
 
-                        int c_idx = 0;
-                        int n_idx = 0;
+                    int c_idx = 0;
+                    int n_idx = 0;
 
-                        int dx_check = 0;
-                        int dz_check = 0;
+                    int dx_check = 0;
+                    int dz_check = 0;
 
-                        if (m_diff > 0.0f) {
-                            cidx = samplex;
-                            cidz = samplez;
+                    if (m_diff > 0.0f) {
+                        cidx = samplex;
+                        cidz = samplez;
 
-                            c_height = j_height;
-                            c_material = j_material;
-                            n_material = i_material;
+                        c_height = j_height;
+                        c_material = j_material;
+                        n_material = i_material;
 
-                            c_idx = j_idx;
-                            n_idx = idx;
+                        c_idx = j_idx;
+                        n_idx = idx;
 
-                            dx_check = -dx;
-                            dz_check = -dz;
-                        } else {
-                            cidx = id_x;
-                            cidz = id_z;
+                        dx_check = -dx;
+                        dz_check = -dz;
+                    } else {
+                        cidx = id_x;
+                        cidz = id_z;
 
-                            c_height = i_height;
-                            c_material = i_material;
-                            n_material = j_material;
+                        c_height = i_height;
+                        c_material = i_material;
+                        n_material = j_material;
 
-                            c_idx = idx;
-                            n_idx = j_idx;
+                        c_idx = idx;
+                        n_idx = j_idx;
 
-                            dx_check = dx;
-                            dz_check = dz;
-                        }
+                        dx_check = dx;
+                        dz_check = dz;
+                    }
 
-                        float sum_diffs[] = {0.0f, 0.0f};
-                        float dir_probs[] = {0.0f, 0.0f};
-                        float dir_prob = 0.0f;
-                        for (int diff_idx = 0; diff_idx < 2; diff_idx++) {
-                            for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++) {
-                                for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++) {
-                                    if (!tmp_dx && !tmp_dz)
-                                        continue;
+                    float sum_diffs[] = {0.0f, 0.0f};
+                    float dir_probs[] = {0.0f, 0.0f};
+                    float dir_prob = 0.0f;
+                    for (int diff_idx = 0; diff_idx < 2; diff_idx++) {
+                        for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++) {
+                            for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++) {
+                                if (!tmp_dx && !tmp_dz)
+                                    continue;
 
-                                    int tmp_samplex = zs::clamp(cidx + tmp_dx, 0, clamp_x);
-                                    int tmp_samplez = zs::clamp(cidz + tmp_dz, 0, clamp_z);
-                                    int tmp_validsource =
-                                        (tmp_samplex == (cidx + tmp_dx)) && (tmp_samplez == (cidz + tmp_dz));
-                                    tmp_validsource = tmp_validsource || !openborder;
-                                    int tmp_j_idx = Pos2Idx(tmp_samplex, tmp_samplez, nx);
+                                int tmp_samplex = zs::clamp(cidx + tmp_dx, 0, clamp_x);
+                                int tmp_samplez = zs::clamp(cidz + tmp_dz, 0, clamp_z);
+                                int tmp_validsource =
+                                    (tmp_samplex == (cidx + tmp_dx)) && (tmp_samplez == (cidz + tmp_dz));
+                                tmp_validsource = tmp_validsource || !openborder;
+                                int tmp_j_idx = Pos2Idx(tmp_samplex, tmp_samplez, nx);
 
-                                    float n_material = tmp_validsource ? _temp_material[tmp_j_idx] : 0.0f;
-                                    float n_height = height[tmp_j_idx];
-                                    float tmp_h_diff = n_height - (c_height);
-                                    float tmp_m_diff = (n_height + n_material) - (c_height + c_material);
-                                    float tmp_diff = diff_idx == 0 ? tmp_h_diff : tmp_m_diff;
-                                    float _gridbias = gridbias;
-                                    _gridbias = zs::clamp(_gridbias, -1.0f, 1.0f);
+                                float n_material = tmp_validsource ? _temp_material[tmp_j_idx] : 0.0f;
+                                float n_height = height[tmp_j_idx];
+                                float tmp_h_diff = n_height - (c_height);
+                                float tmp_m_diff = (n_height + n_material) - (c_height + c_material);
+                                float tmp_diff = diff_idx == 0 ? tmp_h_diff : tmp_m_diff;
+                                float _gridbias = gridbias;
+                                _gridbias = zs::clamp(_gridbias, -1.0f, 1.0f);
 
-                                    if (tmp_dx && tmp_dz)
-                                        tmp_diff *= zs::clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
-                                    else
-                                        tmp_diff *= zs::clamp(1.0f + _gridbias, 0.0f, 1.0f);
+                                if (tmp_dx && tmp_dz)
+                                    tmp_diff *= zs::clamp(1.0f - _gridbias, 0.0f, 1.0f) / 1.4142136f;
+                                else
+                                    tmp_diff *= zs::clamp(1.0f + _gridbias, 0.0f, 1.0f);
 
-                                    if (tmp_diff <= 0.0f) {
-                                        if ((dx_check == tmp_dx) && (dz_check == tmp_dz))
-                                            dir_probs[diff_idx] = tmp_diff;
+                                if (tmp_diff <= 0.0f) {
+                                    if ((dx_check == tmp_dx) && (dz_check == tmp_dz))
+                                        dir_probs[diff_idx] = tmp_diff;
 
-                                        if (diff_idx && dir_prob > tmp_diff)
-                                            dir_prob = tmp_diff;
+                                    if (diff_idx && dir_prob > tmp_diff)
+                                        dir_prob = tmp_diff;
 
-                                        sum_diffs[diff_idx] += tmp_diff;
-                                    }
+                                    sum_diffs[diff_idx] += tmp_diff;
                                 }
                             }
-
-                            if (diff_idx && (dir_prob > 0.001f || dir_prob < -0.001f))
-                                dir_prob = dir_probs[diff_idx] / dir_prob;
-
-                            if (sum_diffs[diff_idx] > 0.001f || sum_diffs[diff_idx] < -0.001f)
-                                dir_probs[diff_idx] = dir_probs[diff_idx] / sum_diffs[diff_idx];
                         }
 
-                        float movable_mat = (m_diff < 0.0f) ? -m_diff : m_diff;
-                        float stability_val = 0.0f;
-                        stability_val = zs::clamp(stabilitymask[c_idx], 0.0f, 1.0f);
+                        if (diff_idx && (dir_prob > 0.001f || dir_prob < -0.001f))
+                            dir_prob = dir_probs[diff_idx] / dir_prob;
 
-                        if (stability_val > 0.01f)
-                            movable_mat = zs::clamp(movable_mat * (1.0f - stability_val) * 0.5f, 0.0f, c_material);
-                        else
-                            movable_mat = zs::clamp((movable_mat - static_diff) * 0.5f, 0.0f, c_material);
-
-                        float l_rat = dir_probs[1];
-                        if (quant_amt > 0.001)
-                            movable_mat =
-                                zs::clamp(quant_amt * zs::ceil((movable_mat * l_rat) / quant_amt), 0.0f, c_material);
-                        else
-                            movable_mat *= l_rat;
-
-                        float diff = (m_diff > 0.0f) ? movable_mat : -movable_mat;
-
-                        int cond = 0;
-                        if (dir_prob >= 1.0f)
-                            cond = 1;
-                        else {
-                            dir_prob = dir_prob * dir_prob * dir_prob * dir_prob;
-                            unsigned int cutoff = (unsigned int)(dir_prob * 4294967295.0);
-                            unsigned int randval = erode_random(seed, (idx + nx * nz) * 8 + color + iterseed);
-                            cond = randval < cutoff;
-                        }
-
-                        if (!cond || same_node)
-                            diff = 0.0f;
-
-                        diff *= flow_rate;
-                        float abs_diff = (diff < 0.0f) ? -diff : diff;
-                        _material[c_idx] = c_material - abs_diff;
-                        _material[n_idx] = n_material + abs_diff;
+                        if (sum_diffs[diff_idx] > 0.001f || sum_diffs[diff_idx] < -0.001f)
+                            dir_probs[diff_idx] = dir_probs[diff_idx] / sum_diffs[diff_idx];
                     }
+
+                    float movable_mat = (m_diff < 0.0f) ? -m_diff : m_diff;
+                    float stability_val = 0.0f;
+                    stability_val = zs::clamp(stabilitymask[c_idx], 0.0f, 1.0f);
+
+                    if (stability_val > 0.01f)
+                        movable_mat = zs::clamp(movable_mat * (1.0f - stability_val) * 0.5f, 0.0f, c_material);
+                    else
+                        movable_mat = zs::clamp((movable_mat - static_diff) * 0.5f, 0.0f, c_material);
+
+                    float l_rat = dir_probs[1];
+                    if (quant_amt > 0.001)
+                        movable_mat =
+                            zs::clamp(quant_amt * zs::ceil((movable_mat * l_rat) / quant_amt), 0.0f, c_material);
+                    else
+                        movable_mat *= l_rat;
+
+                    float diff = (m_diff > 0.0f) ? movable_mat : -movable_mat;
+
+                    int cond = 0;
+                    if (dir_prob >= 1.0f)
+                        cond = 1;
+                    else {
+                        dir_prob = dir_prob * dir_prob * dir_prob * dir_prob;
+                        unsigned int cutoff = (unsigned int)(dir_prob * 4294967295.0);
+                        unsigned int randval = erode_random(seed, (idx + nx * nz) * 8 + color + iterseed);
+                        cond = randval < cutoff;
+                    }
+
+                    if (!cond || same_node)
+                        diff = 0.0f;
+
+                    diff *= flow_rate;
+                    float abs_diff = (diff < 0.0f) ? -diff : diff;
+                    _material[c_idx] = c_material - abs_diff;
+                    _material[n_idx] = n_material + abs_diff;
                 }
-            });
+            }
+        });
 
-        /// @brief  write back to host-side attribute
-        retrieve_device_vector(_material, zs_material);
-
-        set_output("prim_2DGrid", std::move(terrain));
+        set_output("zs_prim_2DGrid", std::move(terrain));
     }
 };
 
 ZENDEFNODE(zs_erode_tumble_material_v2, {/* inputs: */ {
-                                             "prim_2DGrid",
+                                             "zs_prim_2DGrid",
 
                                              {"string", "stabilitymask", "_stability"},
                                              {"ListObject", "perm"},
@@ -830,7 +807,7 @@ ZENDEFNODE(zs_erode_tumble_material_v2, {/* inputs: */ {
                                          },
                                          /* outputs: */
                                          {
-                                             "prim_2DGrid",
+                                             "zs_prim_2DGrid",
                                          },
                                          /* params: */
                                          {
@@ -851,14 +828,14 @@ struct zs_erode_tumble_material_v3 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<ZenoParticles>("zs_prim_2DGrid");
         int nx, nz;
-        auto &ud = terrain->userData();
+        auto &ud = static_cast<IObject *>(terrain.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
+        auto &pos = terrain->prim->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
@@ -882,47 +859,44 @@ struct zs_erode_tumble_material_v3 : INode {
         auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         // 初始化网格属性
-        auto stablilityMaskName = get_input2<std::string>("stabilitymask");
-        if (!terrain->verts.has_attr(stablilityMaskName)) {
-            auto &_sta = terrain->verts.add_attr<float>(stablilityMaskName);
-            std::fill(_sta.begin(), _sta.end(), 0.0);
-        }
-        auto &stabilitymask = terrain->verts.attr<float>(stablilityMaskName);
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto pol = cuda_exec();
+        auto &pars = terrain->getParticles();
 
-        if (!terrain->verts.has_attr("height") || !terrain->verts.has_attr("_material") ||
-            !terrain->verts.has_attr("_temp_material") || !terrain->verts.has_attr("flowdir")) {
+        auto stablilityMaskName = get_input2<std::string>("stabilitymask");
+        if (!terrain->prim->verts.has_attr(stablilityMaskName)) {
+            auto &_sta = terrain->prim->verts.add_attr<float>(stablilityMaskName);
+            std::fill(_sta.begin(), _sta.end(), 0.0);
+            pars.append_channels(pol, {{stablilityMaskName, 1}});
+        }
+
+        if (!pars.hasProperty("height") || !pars.hasProperty("_material") || !pars.hasProperty("_temp_material") ||
+            !pars.hasProperty("flowdir")) {
             zeno::log_error("Node [erode_tumble_material_v3], no such data layer named '{}' or '{}' or '{}' or "
                             "'{}'.",
                             "height", "_material", "_temp_material", "flowdir");
         }
-        auto &height = terrain->verts.attr<float>("height");
-        auto &_material = terrain->verts.attr<float>("_material");
-        auto &_temp_material = terrain->verts.attr<float>("_temp_material");
-        auto &flowdir = terrain->verts.attr<vec3f>("flowdir");
 
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
         /// @brief  accelerate cond computation using cuda
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        auto pol = cuda_exec();
+        auto _material = pars.begin("_material");
+        auto height = pars.begin("height");
+        auto _temp_material = pars.begin("_temp_material");
+        auto stabilitymask = pars.begin("stabilitymask");
+
         /// @brief  copy host-side attribute
-        auto zs_material = to_device_vector(_material);
-        auto zs_height = to_device_vector(height);
-        auto zs_temp_material = to_device_vector(_temp_material);
-        auto zs_flowdir = to_device_vector(flowdir);
-        auto zs_stabilitymask = to_device_vector(stabilitymask);
         auto zs_perm = to_device_vector(perm);
         auto zs_p_dirs = to_device_vector(p_dirs);
         auto zs_x_dirs = to_device_vector(x_dirs);
 
         pol(range((std::size_t)nz * (std::size_t)nx),
-            [=, _material = view<space>(zs_material), height = view<space>(zs_height),
-             _temp_material = view<space>(zs_temp_material), flowdir = view<space>(zs_flowdir),
-             stabilitymask = view<space>(zs_stabilitymask), perm = view<space>(zs_perm),
-             p_dirs = view<space>(zs_p_dirs), x_dirs = view<space>(zs_x_dirs)] __device__(std::size_t idx) mutable {
+            [=, perm = view<space>(zs_perm), p_dirs = view<space>(zs_p_dirs), x_dirs = view<space>(zs_x_dirs),
+             pars = proxy<space>({}, pars),
+             flowdir_offset = pars.getPropertyOffset("flowdir")] __device__(std::size_t idx) mutable {
                 auto id_z = idx / nx; // outer index
                 auto id_x = idx % nx; // inner index
 
@@ -1114,26 +1088,22 @@ struct zs_erode_tumble_material_v3 : INode {
                         _material[n_idx] = n_material + abs_diff;
 
                         // CALC_FLOW
-                        float abs_c_x = flowdir[c_idx][0];
+                        float abs_c_x = pars(flowdir_offset + 0, c_idx);
                         abs_c_x = (abs_c_x < 0.0f) ? -abs_c_x : abs_c_x;
-                        float abs_c_z = flowdir[c_idx][2];
+                        float abs_c_z = pars(flowdir_offset + 2, c_idx);
                         abs_c_z = (abs_c_z < 0.0f) ? -abs_c_z : abs_c_z;
-                        flowdir[c_idx][0] += diff_x * 1.0f / (1.0f + abs_c_x);
-                        flowdir[c_idx][2] += diff_z * 1.0f / (1.0f + abs_c_z);
+                        pars(flowdir_offset + 0, c_idx) += diff_x * 1.0f / (1.0f + abs_c_x);
+                        pars(flowdir_offset + 2, c_idx) += diff_z * 1.0f / (1.0f + abs_c_z);
                     }
                 }
             });
 
-        /// @brief  write back to host-side attribute
-        retrieve_device_vector(_material, zs_material);
-        retrieve_device_vector(flowdir, zs_flowdir);
-
-        set_output("prim_2DGrid", std::move(terrain));
+        set_output("zs_prim_2DGrid", std::move(terrain));
     }
 };
 
 ZENDEFNODE(zs_erode_tumble_material_v3, {/* inputs: */ {
-                                             "prim_2DGrid",
+                                             "zs_prim_2DGrid",
 
                                              {"string", "stabilitymask", "_stability"},
                                              {"ListObject", "perm"},
@@ -1155,7 +1125,7 @@ ZENDEFNODE(zs_erode_tumble_material_v3, {/* inputs: */ {
                                          },
                                          /* outputs: */
                                          {
-                                             "prim_2DGrid",
+                                             "zs_prim_2DGrid",
                                          },
                                          /* params: */
                                          {
@@ -1234,6 +1204,9 @@ struct zs_erode_tumble_material_v4 : INode {
         auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
         // 初始化网格属性
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto pol = cuda_exec();
         auto &pars = terrain->getParticles();
 
         if (!pars.hasProperty("_height") || !pars.hasProperty("_temp_height") || !pars.hasProperty("_material") ||
@@ -1244,6 +1217,12 @@ struct zs_erode_tumble_material_v4 : INode {
                             "_height", "_temp_height", "_material", "_temp_material", "_debris", "_temp_debris",
                             "_sediment");
         }
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////
+        // 计算
+        ////////////////////////////////////////////////////////////////////////////////////////
+        /// @brief  accelerate cond computation using cuda
         auto _height = pars.begin("_height");
         auto _temp_height = pars.begin("_temp_height");
         auto _material = pars.begin("_material");
@@ -1252,25 +1231,6 @@ struct zs_erode_tumble_material_v4 : INode {
         auto _temp_debris = pars.begin("_temp_debris");
         auto _sediment = pars.begin("_sediment");
 
-        ////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////
-        // 计算
-        ////////////////////////////////////////////////////////////////////////////////////////
-        /// @brief  accelerate cond computation using cuda
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        auto pol = cuda_exec();
-
-#if 0
-        /// @brief  copy host-side attribute
-        auto zs_height = to_device_vector(_height);
-        auto zs_temp_height = to_device_vector(_temp_height);
-        auto zs_material = to_device_vector(_material);
-        auto zs_temp_material = to_device_vector(_temp_material);
-        auto zs_debris = to_device_vector(_debris);
-        auto zs_temp_debris = to_device_vector(_temp_debris);
-        auto zs_sediment = to_device_vector(_sediment);
-#endif
         auto zs_perm = to_device_vector(perm);
         auto zs_p_dirs = to_device_vector(p_dirs);
         auto zs_x_dirs = to_device_vector(x_dirs);
@@ -1600,13 +1560,6 @@ struct zs_erode_tumble_material_v4 : INode {
             }
         });
 
-#if 0
-        /// @brief  write back to host-side attribute
-        retrieve_device_vector(_height, zs_height);
-        retrieve_device_vector(_material, zs_material);
-        retrieve_device_vector(_debris, zs_debris);
-        retrieve_device_vector(_sediment, zs_sediment);
-#endif
         set_output("zs_prim_2DGrid", std::move(terrain));
     }
 };
@@ -1697,14 +1650,14 @@ struct zs_HF_maskByFeature : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("HeightField");
+        auto terrain = get_input<ZenoParticles>("zs_HeightField");
         int nx, nz;
-        auto &ud = terrain->userData();
+        auto &ud = static_cast<IObject *>(terrain.get())->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
             zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
         nx = ud.get2<int>("nx");
         nz = ud.get2<int>("nz");
-        auto &pos = terrain->verts;
+        auto &pos = terrain->prim->verts;
         vec3f p0 = pos[0];
         vec3f p1 = pos[1];
         float cellSize = length(p1 - p0);
@@ -1727,32 +1680,30 @@ struct zs_HF_maskByFeature : INode {
         auto maxHeight = get_input2<float>("max_height");
 
         // 初始化网格属性
-        if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
+        using namespace zs;
+        constexpr auto space = execspace_e::cuda;
+        auto pol = cuda_exec();
+        auto &pars = terrain->getParticles();
+
+        if (!pars.hasProperty(heightLayer) || !pars.hasProperty(maskLayer)) {
             zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}' or '{}'.", heightLayer, maskLayer);
         }
-        auto &height = terrain->verts.attr<float>(heightLayer);
-        auto &mask = terrain->verts.attr<float>(maskLayer);
 
-        auto &_grad = terrain->verts.add_attr<vec3f>("_grad");
-        std::fill(_grad.begin(), _grad.end(), vec3f(0, 0, 0));
+        auto &prim_grad = terrain->prim->verts.add_attr<vec3f>("_grad");
+        std::fill(prim_grad.begin(), prim_grad.end(), vec3f(0, 0, 0));
+        pars.append_channels(pol, {{"_grad", 3}});
 
         ////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////////////////
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
-
         /// @brief  accelerate cond computation using cuda
-        using namespace zs;
-        constexpr auto space = execspace_e::cuda;
-        auto pol = cuda_exec();
-        /// @brief  copy host-side attribute
-        auto zs_height = to_device_vector(height);
-        auto zs_mask = to_device_vector(mask, false);
-        auto zs_grad = to_device_vector(_grad);
+        auto height = pars.begin("heightLayer");
+        auto mask = pars.begin("data");
 
         pol(range((std::size_t)nz * (std::size_t)nx),
-            [=, height = view<space>(zs_height), mask = view<space>(zs_mask),
-             _grad = view<space>(zs_grad)] __device__(std::size_t idx) mutable {
+            [=, pars = proxy<space>({}, pars),
+             _grad_offset = pars.getPropertyOffset("_grad")] __device__(std::size_t idx) mutable {
                 using vec3f = zs::vec<float, 3>;
 
                 auto id_z = idx / nx; // outer index
@@ -1789,11 +1740,11 @@ struct zs_HF_maskByFeature : INode {
                     scale = 2;
                 }
 
-                _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
-                _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+                pars(_grad_offset + 0, idx) = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
+                pars(_grad_offset + 2, idx) = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
 
-                vec3f dx = zs::normalizeSafe(vec3f(1, 0, _grad[idx][0]));
-                vec3f dy = zs::normalizeSafe(vec3f(0, 1, _grad[idx][2]));
+                vec3f dx = zs::normalizeSafe(vec3f(1, 0, pars(_grad_offset + 0, idx)));
+                vec3f dy = zs::normalizeSafe(vec3f(0, 1, pars(_grad_offset + 2, idx)));
                 vec3f n = zs::normalizeSafe(dx.cross(dy));
 
                 mask[idx] = 1;
@@ -1827,15 +1778,11 @@ struct zs_HF_maskByFeature : INode {
                 }
             });
 
-        /// @brief  write back to host-side attribute
-        retrieve_device_vector(mask, zs_mask);
-        retrieve_device_vector(_grad, zs_grad);
-
-        set_output("HeightField", std::move(terrain));
+        set_output("zs_HeightField", std::move(terrain));
     }
 };
 ZENDEFNODE(zs_HF_maskByFeature, {/* inputs: */ {
-                                     "HeightField",
+                                     "zs_HeightField",
                                      {"string", "height_layer", "height"},
                                      {"string", "mask_layer", "mask"},
                                      {"int", "smooth_radius", "1"},
@@ -1853,7 +1800,7 @@ ZENDEFNODE(zs_HF_maskByFeature, {/* inputs: */ {
                                  },
                                  /* outputs: */
                                  {
-                                     "HeightField",
+                                     "zs_HeightField",
                                  },
                                  /* params: */
                                  {},
