@@ -155,16 +155,25 @@ struct SDFToPrim : zeno::INode{
         }
         if (allowQuads) {
 //            mesh->tris.resize(tris.size());
-            mesh->quads.resize(quads.size());
+            //mesh->quads.resize(quads.size());
 //#pragma omp parallel for
 //            for(int i=0;i<tris.size();i++)
 //            {
 //                mesh->tris[i] = zeno::vec3i(tris[i][2],tris[i][1],tris[i][0]);
 //            }
+
+            mesh->polys.resize(quads.size());
+            mesh->loops.resize(4*quads.size());
 #pragma omp parallel for
             for(int i=0;i<quads.size();i++)
             {
-                mesh->quads[i] = zeno::vec4i(quads[i][3],quads[i][2],quads[i][1],quads[i][0]);
+              mesh->polys[i] = {i*4, 4};
+              for(int k=0;k<4;k++)
+              {
+                mesh->loops[i*4+k] = quads[i][3-k];
+              }
+
+              //mesh->quads[i] = zeno::vec4i(quads[i][3],quads[i][2],quads[i][1],quads[i][0]);
             }
         } else {
             mesh->tris.resize(tris.size() + 2*quads.size());
