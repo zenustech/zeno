@@ -63,8 +63,8 @@ vec3 ACESFitted(vec3 color, float gamma)
 
 extern "C" __global__ void __raygen__rg()
 {
-    const int    w   = params.width;
-    const int    h   = params.height;
+    const int    w   = params.windowSpace.x;
+    const int    h   = params.windowSpace.y;
     //const float3 eye = params.eye;
     const uint3  idx = optixGetLaunchIndex();
     const int    subframe_index = params.subframe_index;
@@ -76,8 +76,11 @@ extern "C" __global__ void __raygen__rg()
     aperture/=10;
 
     float3 result = make_float3( 0.0f );
+    float3 result_d = make_float3( 0.0f );
+    float3 result_s = make_float3( 0.0f );
+    float3 result_t = make_float3( 0.0f );
+    float3 result_b = make_float3( 0.0f );
     int i = params.samples_per_launch;
-
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
@@ -87,8 +90,8 @@ extern "C" __global__ void __raygen__rg()
         };
 
         float2 d = 2.0f * make_float2(
-                ( static_cast<float>( idx.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
-                ( static_cast<float>( idx.y ) + subpixel_jitter.y ) / static_cast<float>( h )
+                ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
+                ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                 ) - 1.0f;
         //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
         float2 r01 = {
@@ -134,6 +137,7 @@ extern "C" __global__ void __raygen__rg()
         prd.ss_alpha_queue[0] = vec3(-1.0f);
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
+        prd.first_hit_type = 0;
         auto tmin = prd.trace_tmin;
         auto ray_mask = prd._mask_;
 
@@ -175,7 +179,7 @@ extern "C" __global__ void __raygen__rg()
                 auto temp_radiance = prd.radiance * prd.attenuation2;
 
                 //float upperBound = prd.fromDiff?1.0f:1.0f;
-                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(4));
+                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
 
                 result += prd.depth>1?clampped:temp_radiance;
                 // fire without smoke requires this line to work.
@@ -218,11 +222,19 @@ extern "C" __global__ void __raygen__rg()
                 //prd.passed = false;
             //}
         }
+        result_d += prd.first_hit_type==1? result:make_float3(0,0,0);
+        result_s += prd.first_hit_type==2? result:make_float3(0,0,0);
+        result_t += prd.first_hit_type==3? result:make_float3(0,0,0);
+        result_b += prd.first_hit_type==0? make_float3(0,0,0):make_float3(1,1,1);
         seed = prd.seed;
     }
     while( --i );
 
     float3         accum_color  = result / static_cast<float>( params.samples_per_launch );
+    float3         accum_color_d  = result_d / static_cast<float>( params.samples_per_launch );
+    float3         accum_color_s  = result_s / static_cast<float>( params.samples_per_launch );
+    float3         accum_color_t  = result_t / static_cast<float>( params.samples_per_launch );
+    float3         accum_color_b  = result_b / static_cast<float>( params.samples_per_launch );
     const uint3    launch_index = optixGetLaunchIndex();
     const unsigned int image_index  = launch_index.y * params.width + launch_index.x;
 
@@ -230,7 +242,15 @@ extern "C" __global__ void __raygen__rg()
     {
         const float                 a = 1.0f / static_cast<float>( subframe_index+1 );
         const float3 accum_color_prev = make_float3( params.accum_buffer[ image_index ]);
-        accum_color = lerp( accum_color_prev, accum_color, a );
+        const float3 accum_color_prev_d = make_float3( params.accum_buffer_D[ image_index ]);
+        const float3 accum_color_prev_s = make_float3( params.accum_buffer_S[ image_index ]);
+        const float3 accum_color_prev_t = make_float3( params.accum_buffer_T[ image_index ]);
+        const float3 accum_color_prev_b = make_float3( params.accum_buffer_B[ image_index ]);
+        accum_color   = lerp( accum_color_prev, accum_color, a );
+        accum_color_d = lerp( accum_color_prev_d, accum_color_d, a );
+        accum_color_s = lerp( accum_color_prev_s, accum_color_s, a );
+        accum_color_t = lerp( accum_color_prev_t, accum_color_t, a );
+        accum_color_b = lerp( accum_color_prev_b, accum_color_b, a );
     }
 
     /*if (launch_index.x == 0) {*/
@@ -238,9 +258,21 @@ extern "C" __global__ void __raygen__rg()
         /*printf("%p\n", params.frame_buffer);*/
     /*}*/
     params.accum_buffer[ image_index ] = make_float4( accum_color, 1.0f);
+    params.accum_buffer_D[ image_index ] = make_float4( accum_color_d, 1.0f);
+    params.accum_buffer_S[ image_index ] = make_float4( accum_color_s, 1.0f);
+    params.accum_buffer_T[ image_index ] = make_float4( accum_color_t, 1.0f);
+    params.accum_buffer_B[ image_index ] = make_float4( accum_color_b, 1.0f);
     //vec3 aecs_fitted = ACESFitted(vec3(accum_color), 2.2);
     float3 out_color = accum_color;
+    float3 out_color_d = accum_color_d;
+    float3 out_color_s = accum_color_s;
+    float3 out_color_t = accum_color_t;
+    float3 out_color_b = accum_color_b;
     params.frame_buffer[ image_index ] = make_color ( out_color );
+    params.frame_buffer_D[ image_index ] = make_color ( out_color_d );
+    params.frame_buffer_S[ image_index ] = make_color ( out_color_s );
+    params.frame_buffer_T[ image_index ] = make_color ( out_color_t );
+    params.frame_buffer_B[ image_index ] = make_color ( out_color_b );
 }
 
 extern "C" __global__ void __miss__radiance()

@@ -846,7 +846,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
-        xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
+            xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
+
         }
 
         if (sizeNeedUpdate || camNeedUpdate) {
