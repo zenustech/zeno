@@ -10,9 +10,14 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/calib3d.hpp>
-//#include <opencv2/xfeatures2d.hpp>
 #include <opencv2/stitching.hpp>
 #include <zeno/types/ListObject.h>
+#include <Eigen/Dense>
+#include <opencv2/core/eigen.hpp>
+#include <set>
+#include <algorithm>
+#include <vector>
+
 using namespace cv;
 
 namespace zeno {
@@ -862,7 +867,7 @@ struct ImageFeatureDetectORB : INode {
         cv::Size ds = imageFloat.size();
         int dss = ds.width * ds.height;
         image->tris.resize(dss);
-        zeno::log_info("ds.width:{}, ds.height:{}",ds.width, ds.height);
+        zeno::log_info("orbDescriptor.width:{}, orbDescriptor.height:{}",ds.width, ds.height);
         for (int i = 0; i < dss; i++) {
             dp[i] = imageFloat.at<float>(i);
         }
@@ -935,12 +940,7 @@ struct ImageFeatureDetectSIFT : INode {
             }
         }
         cv::cvtColor(imagecvin, imagecvgray, cv::COLOR_RGB2GRAY);
-//        sift->detect(imagecvgray, ikeypoints);
-//        const int descriptorSize = 32;
-//        idescriptor = cv::Mat(ikeypoints.size(), descriptorSize, CV_32F);
-//        sift->compute(imagecvgray, ikeypoints, idescriptor);
         sift->detectAndCompute(imagecvgray, cv::noArray(), ikeypoints, idescriptor);
-//        zeno::log_info("ikeypoints.size{}",ikeypoints.size());
         if (ikeypoints.size() == 0) {
             throw zeno::Exception("Did not find any features");
         }
@@ -953,7 +953,7 @@ struct ImageFeatureDetectSIFT : INode {
         cv::Size ds = imageFloat.size();
         int dss = ds.width * ds.height;
         image->tris.resize(dss);
-        zeno::log_info("ds.width:{}, ds.height:{}",ds.width, ds.height);
+        zeno::log_info("siftDescriptor.width:{}, siftDescriptor.height:{}",ds.width, ds.height);
         for (int i = 0; i < dss; i++) {
             dp[i] = imageFloat.at<float>(i);
         }
@@ -993,23 +993,26 @@ ZENDEFNODE(ImageFeatureDetectSIFT, {
     { "image" },
 });
 
+
 struct ImageFeatureMatch : INode {
     void apply() override {
         auto image1 = get_input<PrimitiveObject>("image1");
         auto image2 = get_input<PrimitiveObject>("image2");
-        auto mode = get_input2<std::string>("mode");
         auto matchD = get_input2<float>("maxMatchDistance");
         auto visualize = get_input2<bool>("visualize");
         auto stitch = get_input2<bool>("stitch");
+        auto bpM = get_input2<bool>("perspectiveMatrix");
+        auto bfM = get_input2<bool>("fundamentalMatrix");
+        auto beM = get_input2<bool>("essentialMatrix");
+        auto bhM = get_input2<bool>("homographyMatrix");
 
-//        auto stitch2 = get_input2<bool>("stitch");
         auto &ud1 = image1->userData();
         int w1 = ud1.get2<int>("w");
         int h1 = ud1.get2<int>("h");
         auto &ud2 = image2->userData();
         int w2 = ud2.get2<int>("w");
         int h2 = ud2.get2<int>("h");
-        cv::Ptr<cv::Stitcher> stitcher = cv::Stitcher::create();
+
         auto image3 = std::make_shared<PrimitiveObject>();
         auto &ud3 = image3->userData();
         image3->verts.resize(w2 * h2);
@@ -1018,30 +1021,6 @@ struct ImageFeatureMatch : INode {
         ud3.set2("w", w2);
         ud3.set2("isImage", 1);
         image3->verts = image2->verts;
-
-        cv::Mat imagecvin1(h1, w1, CV_8UC3);
-        cv::Mat imagecvin2(h2, w2, CV_8UC3);
-        for (int i = 0; i < h1; i++) {
-            for (int j = 0; j < w1; j++) {
-                vec3f rgb = image1->verts[i * w1 + j];
-                cv::Vec3b& pixel = imagecvin1.at<cv::Vec3b>(i, j);
-                pixel[0] = rgb[0] * 255;
-                pixel[1] = rgb[1] * 255;
-                pixel[2] = rgb[2] * 255;
-            }
-        }
-        for (int i = 0; i < h2; i++) {
-            for (int j = 0; j < w2; j++) {
-                vec3f rgb = image2->verts[i * w2 + j];
-                cv::Vec3b& pixel = imagecvin2.at<cv::Vec3b>(i, j);
-                pixel[0] = rgb[0] * 255;
-                pixel[1] = rgb[1] * 255;
-                pixel[2] = rgb[2] * 255;
-            }
-        }
-        std::vector<cv::Mat> images;
-        images.push_back(imagecvin1);
-        images.push_back(imagecvin2);
 
         std::vector<cv::KeyPoint> keypoints;
         auto d1 = image1->tris.add_attr<float>("descriptors");
@@ -1052,7 +1031,6 @@ struct ImageFeatureMatch : INode {
         int ks2 = k2.size();
         int dw1 = d1.size()/ks1;
         int dw2 = d2.size()/ks2;
-        zeno::log_info("ks1:{},ks2:{},dw1:{},dw2:{}",ks1,ks2,dw1,dw2);
 
         cv::Mat imagecvdescriptors1(ks1, dw1, CV_32F);
         cv::Mat imagecvdescriptors2(ks2, dw2, CV_32F);
@@ -1066,6 +1044,7 @@ struct ImageFeatureMatch : INode {
                 imagecvdescriptors2.at<float>(i, j) = d2[i * dw2 + j];
             }
         }
+        zeno::log_info("image1Keypoints.size:{},image2Keypoints.size:{},image1Descriptors.width:{},image2Descriptors.width:{}",ks1,ks2,dw1,dw2);
 
         cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE);
         std::vector<std::vector<cv::DMatch>> knnMatches;
@@ -1085,166 +1064,213 @@ struct ImageFeatureMatch : INode {
                 mdi++;
             }
         }
-        zeno::log_info("BRUTEFORCE  knnMatches.size:{},filteredMatches.size：{}",knnMatches.size(),filteredMatches.size());
-
-        if(mode == "HAMMING"){
-            cv::Ptr<cv::DescriptorMatcher> matcher = cv::BFMatcher::create(cv::NORM_HAMMING);
-            std::vector<std::vector<cv::DMatch>> knnMatches;
-            matcher->knnMatch(imagecvdescriptors1, imagecvdescriptors2, knnMatches, 2);
-            float distanceThreshold = 100.0;
-            std::vector<cv::DMatch> filteredMatches;
-            for (const auto& knnMatch : knnMatches) {
-                const cv::DMatch& bestMatch = knnMatch[0];
-                const cv::DMatch& secondBestMatch = knnMatch[1];
-                if (bestMatch.distance < distanceThreshold * secondBestMatch.distance) {
-                    filteredMatches.push_back(bestMatch);
-                }
-            }
-            zeno::log_info("NORM_HAMMING  HAMMINGknnMatches.size:{},filteredMatches.size：{}",knnMatches.size(),filteredMatches.size());
-        }
-        if(mode == "BRUTEFORCE_HAMMING") {
-            cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING);
-            std::vector<std::vector<cv::DMatch>> knnMatches;
-
-            int k = 2;
-            matcher->knnMatch(imagecvdescriptors1, imagecvdescriptors2, knnMatches, k);
-
-            float distanceThreshold = 100.0;
-
-            std::vector<cv::DMatch> filteredMatches;
-            for (const auto& knnMatch : knnMatches) {
-                const cv::DMatch& bestMatch = knnMatch[0];
-                const cv::DMatch& secondBestMatch = knnMatch[1];
-
-                if (bestMatch.distance < distanceThreshold * secondBestMatch.distance) {
-                    filteredMatches.push_back(bestMatch);
-                }
-            }
-            zeno::log_info("BRUTEFORCE_HAMMING  knnMatches.size:{},filteredMatches.size：{}",knnMatches.size(),filteredMatches.size());
-        }
+        zeno::log_info("knnMatches.size:{},filteredMatches.size：{}",knnMatches.size(),filteredMatches.size());
 
         std::vector<cv::Point2f> points1, points2;
         auto &m1 = image3->tris.add_attr<vec3f>("image1MatchPoints");
         auto &m2 = image3->tris.add_attr<vec3f>("image2MatchPoints");
         int m = 0;
+        std::set<float> uniqueP1;
         for (const auto &match: filteredMatches) {
+            if (uniqueP1.count(k1[match.queryIdx][0]) != 0) {
+                continue;
+            }
+            uniqueP1.insert(k1[match.queryIdx][0]);
             cv::Point2f pt1(k1[match.queryIdx][0], k1[match.queryIdx][1]);
             cv::Point2f pt2(k2[match.trainIdx][0], k2[match.trainIdx][1]);
             points1.push_back(pt1);
-            m1[m][0] = static_cast<float>(match.queryIdx);
+            m1[m] = {static_cast<float>(match.queryIdx),k1[match.queryIdx][0],k1[match.queryIdx][1]};
             points2.push_back(pt2);
-            m2[m][0] = static_cast<float>(match.trainIdx);
+            m2[m] = {static_cast<float>(match.trainIdx),k2[match.trainIdx][0],k2[match.trainIdx][1]};
             m++;
         }
-        for (size_t i = 0; i < points1.size(); ++i) {
-            cv::Point2f point1 = points1[i];
-            cv::Point2f point2 = points2[i];
-            float x1 = point1.x;
-            float y1 = point1.y;
-            float x2 = point2.x;
-            float y2 = point2.y;
-            m1[i][1] = x1;
-            m1[i][2] = y1;
-            m2[i][1] = x2;
-            m2[i][2] = y2;
-        }
-//Fisheye
-        float fx = w1;//image_size.width;
-        float fy = h1;//image_size.height;
-        float cx = w1/2;//image_size.width / 2.0;
-        float cy = h1/2;//image_size.height / 2.0;
 
-
+//cameraMatrix
+        float fx = w1;   // image.width;
+        float fy = h1;   // image.height;
+        float cx = w1/2; // image.width / 2.0;
+        float cy = h1/2; // image.height / 2.0;
         cv::Mat cameraMatrix = (cv::Mat_<float>(3, 3) << fx,0,cx,
         0,fy,cy,
         0, 0, 1);
 
-//        cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_32F);
-//        cameraMatrix.at<float>(0, 0) = 1000.0;
-//        cameraMatrix.at<float>(1, 1) = 800.0;
-//        cameraMatrix.at<float>(0, 2) = 640.0;
-//        cameraMatrix.at<float>(1, 2) = 480.0;
-
-//        cv::Mat cameraMatrix = cv::Mat_<float>::eye(3,3);
-        cv::Mat distCoeffs = cv::Mat::zeros(1, 5, CV_32F);
-
-        auto &cm = image3->tris.add_attr<float>("cameraMatrix");
-        cv::Size cs = cameraMatrix.size();
-        int css = cs.width * cs.height;
-        for (int i = 0; i < css; i++) {
-            cm[i] = static_cast<float>(cameraMatrix.at<float>(i));
-        }
-
-
-        std::vector<cv::Point2f> normalizedPoints1, normalizedPoints2;
-        auto &nm1 = image3->tris.add_attr<vec3f>("normalizedImage1MatchPoints");
-        auto &nm2 = image3->tris.add_attr<vec3f>("normalizedImage2MatchPoints");
-        int nm = 0;
-        for (const auto &match: filteredMatches) {
-            if(normalizedPoints1.size()>99){
-                continue;
+        if(bfM || beM || bhM){
+            auto &cm = image3->tris.add_attr<float>("cameraMatrix");
+            cv::Size cs = cameraMatrix.size();
+            int css = cs.width * cs.height;
+            for (int i = 0; i < css; i++) {
+                cm[i] = static_cast<float>(cameraMatrix.at<float>(i));
             }
-//            float nkw1 = static_cast<float>(static_cast<int>(static_cast<float>(k1[match.queryIdx][0]/w1)*1000)/1000.0);
-//            float nkh1 = static_cast<float>(static_cast<int>(static_cast<float>(k1[match.queryIdx][1]/h1)*1000)/1000.0);
-//            float nkw2 = static_cast<float>(static_cast<int>(static_cast<float>(k2[match.trainIdx][0]/w2)*1000)/1000.0);
-//            float nkh2 = static_cast<float>(static_cast<int>(static_cast<float>(k2[match.trainIdx][1]/h2)*1000)/1000.0);
-            float nkw1 = static_cast<float>(k1[match.queryIdx][0])/w1;
-            float nkh1 = static_cast<float>(k1[match.queryIdx][1])/h1;
-            float nkw2 = static_cast<float>(k2[match.trainIdx][0])/w2;
-            float nkh2 = static_cast<float>(k2[match.trainIdx][1])/h2;
-            cv::Point2f point1(nkw1, nkh1);
-            normalizedPoints1.push_back(point1);
-            nm1[nm][0] = static_cast<float>(match.queryIdx);
-            cv::Point2f point2(nkw2, nkh2);
-            normalizedPoints2.push_back(point2);
-            nm2[nm][0] = static_cast<float>(match.trainIdx);
-            nm++;
-        }
-        for (size_t i = 0; i < normalizedPoints1.size(); ++i) {
-            cv::Point2f point1 = normalizedPoints1[i];
-            cv::Point2f point2 = normalizedPoints2[i];
-            float x1 = point1.x;
-            float y1 = point1.y;
-            float x2 = point2.x;
-            float y2 = point2.y;
-            nm1[i][1] = x1;
-            nm1[i][2] = y1;
-            nm2[i][1] = x2;
-            nm2[i][2] = y2;
-        }
-        cv::Mat rotation, translation;
-
-//        cv::Mat mask;
-//        cv::Mat essentialMatrix = cv::findEssentialMat(normalizedPoints1, normalizedPoints2,cameraMatrix, cv::Mat(),
-//                                                       cameraMatrix, cv::Mat(), cv::RANSAC, 0.999, 1.0, mask);
-//        cv::recoverPose(essentialMatrix, normalizedPoints1, normalizedPoints2,cameraMatrix,rotation, translation, mask);
-
-        cv::Mat essentialMatrix = cv::findEssentialMat(normalizedPoints1, normalizedPoints2, cameraMatrix, cv::RANSAC, 0.999, 1.0);
-        cv::recoverPose(essentialMatrix,normalizedPoints1, normalizedPoints2, cameraMatrix, rotation, translation);
-
-//        cv::Mat homographyMatrix;
-//        homographyMatrix = cv::findHomography(normalizedPoints1,normalizedPoints2, cv::RANSAC, 3.0);
-//        cv::recoverPose(homographyMatrix, normalizedPoints1,normalizedPoints2, cameraMatrix, rotation, translation);
-
-        auto &em = image3->tris.add_attr<float>("essentialMatrix");
-        cv::Size es = essentialMatrix.size();
-        int ess = es.width * es.height;
-        for (int i = 0; i < ess; i++) {
-            em[i] = static_cast<float>(essentialMatrix.at<float>(i));
         }
 
-        auto &rt = image3->tris.add_attr<float>("rotation");
-        auto &tl = image3->tris.add_attr<float>("translation");
+//perspectiveMatrix
+        if(bpM){
+            auto &pp1 = image3->tris.add_attr<vec3f>("perspectiveImage1Points");
+            auto &pp2 = image3->tris.add_attr<vec3f>("perspectiveImage2Points");
+            Point2f pPoints1[4] ,pPoints2[4];
+            std::vector<vec3f> preTl;
+            int pp = 0;
+            std::set<float> uniquepP1;
+            int filsize = filteredMatches.size();
+            int foot = zeno::max(1,int(filsize/5));
+            cv::Mat perspectiveMatrix;
+            std::vector<cv::Mat> vmPerspectiveMatrix;
+            std::vector<cv::Mat> svmPerspectiveMatrix;
+            std::vector<double> vfPerspectiveTX;
+            std::vector<double> vfPerspectiveTY;
+            for(int group = 0;group < 7;group++){
+                for (size_t i = 0; i < filsize; i+=foot) {
+                    const cv::DMatch& match = filteredMatches[i];
+                    float nkw1 = static_cast<float>(static_cast<int>(k1[match.queryIdx][0]));
+                    if (uniquepP1.count(nkw1) != 0) {
+                        continue;
+                    }
+                    if (pp==4) {
+                        break;
+                    }
+                    uniquepP1.insert(nkw1);
+                    float nkh1 = static_cast<float>(static_cast<int>(k1[match.queryIdx][1]));
+                    float nkw2 = static_cast<float>(static_cast<int>(k2[match.trainIdx][0]));
+                    float nkh2 = static_cast<float>(static_cast<int>(k2[match.trainIdx][1]));
+                    pPoints1[pp].x = nkw1;
+                    pPoints1[pp].y = nkh1;
+                    pPoints2[pp].x = nkw2;
+                    pPoints2[pp].y = nkh2;
+                    pp1[pp] = {static_cast<float>(match.queryIdx),nkw1,nkh1};
+                    pp2[pp] = {static_cast<float>(match.trainIdx),nkw2,nkh2};
+                    pp++;
+                }
+                cv::Mat tempPerspectiveMatrix = cv::getPerspectiveTransform(pPoints1, pPoints2);
+                vmPerspectiveMatrix.push_back(tempPerspectiveMatrix);
+                vfPerspectiveTX.push_back(tempPerspectiveMatrix.at<double>(2));
+            }
+            std::sort(vfPerspectiveTX.begin(), vfPerspectiveTX.end());
+            for (const cv::Mat& tperspectiveMatrix : vmPerspectiveMatrix) {
+                if(tperspectiveMatrix.at<double>(2)==vfPerspectiveTX[2]||
+                tperspectiveMatrix.at<double>(2)==vfPerspectiveTX[3]||
+                tperspectiveMatrix.at<double>(2)==vfPerspectiveTX[4]){
+                    svmPerspectiveMatrix.push_back(tperspectiveMatrix);
+                }
+            }
+            for (const cv::Mat& tperspectiveMatrix : svmPerspectiveMatrix) {
+                vfPerspectiveTY.push_back(tperspectiveMatrix.at<double>(5));
+            }
+            std::sort(vfPerspectiveTY.begin(), vfPerspectiveTY.end());
+            for (const cv::Mat& tperspectiveMatrix : svmPerspectiveMatrix) {
+                if(tperspectiveMatrix.at<double>(5)==vfPerspectiveTY[1]){
+                    perspectiveMatrix = tperspectiveMatrix;
+                }
+            }
 
-        cv::Size ts = translation.size();
-        int tss = ts.width * ts.height;
-        for (int i = 0; i < tss; i++) {
-            tl[i] = static_cast<float>(translation.at<float>(i));
+            auto &pm = image3->tris.add_attr<float>("perspectiveMatrix");
+            cv::Size ps = perspectiveMatrix.size();
+            int pss = ps.width * ps.height;
+            for (int i = 0; i < pss; i++) {
+                pm[i] = static_cast<float>(perspectiveMatrix.at<double>(i));
+            }
+            auto &ptl = image3->tris.add_attr<float>("perspectiveTranslation");
+            auto &prt = image3->tris.add_attr<float>("perspectiveRotation");
+
+            ptl[0] = pm[2];
+            ptl[1] = pm[5];
+            ptl[2] = pm[8];
+
+            prt[0] = pm[0];
+            prt[1] = pm[1];
+            prt[2] = pm[3];
+            prt[3] = pm[4];
+
+            zeno::log_info("perspectiveMatrix.width:{} perspectiveMatrix.height:{}",ps.width,ps.height);
         }
-        cv::Size rs = rotation.size();
-        int rss = rs.width * rs.height;
-        for (int i = 0; i < rss; i++) {
-            rt[i] = static_cast<float>(rotation.at<float>(i));
+
+//fundamentalMatrix
+        if(bfM){
+            double fransacReprojThreshold = 3.0;
+            double fconfidence = 0.99;
+            int fmaxIters = 2000;
+            cv::OutputArray fmask = cv::noArray();
+            cv::Mat fundamentalMatrix = cv::findFundamentalMat(points1, points2, cv::FM_RANSAC,
+                                                               fransacReprojThreshold, fconfidence,fmaxIters,fmask);
+            auto &fm = image3->tris.add_attr<float>("fundamentalMatrix");
+            cv::Size fs = fundamentalMatrix.size();
+            int fss = fs.width * fs.height;
+            for (int i = 0; i < fss; i++) {
+                fm[i] = static_cast<float>(fundamentalMatrix.at<double>(i));
+            }
+            zeno::log_info("fundamentalMatrix.width:{} fundamentalMatrix.height:{}",fs.width,fs.height);
+        }
+
+
+//homographyMatrix
+        if(bhM){
+            cv::Mat homographyMatrix, hrotation, htranslation;
+            int hmethod = cv::RANSAC;
+            double hransacReprojThreshold = 3.0;
+            const int hmaxIters = 2000;
+            const double hconfidence = 0.995;
+            homographyMatrix = cv::findHomography(points1,points2, hmethod,
+                                                  hransacReprojThreshold,cv::noArray(),hmaxIters,hconfidence);
+            auto &hm = image3->tris.add_attr<float>("homographyMatrix");
+            cv::Size hs = homographyMatrix.size();
+            int hss = hs.width * hs.height;
+            for (int i = 0; i < hss; i++) {
+                if(-0.0001<homographyMatrix.at<float>(i)<0.0001){
+
+                }
+                if(1<homographyMatrix.at<float>(i)){
+
+                }
+                hm[i] = static_cast<float>(homographyMatrix.at<double>(i));
+            }
+            cv::recoverPose(homographyMatrix, points1,points2, cameraMatrix, hrotation, htranslation);
+            auto &hrt = image3->tris.add_attr<float>("homographyRotation");
+            auto &htl = image3->tris.add_attr<float>("homographyTranslation");
+            cv::Size hts = htranslation.size();
+            int htss = hts.width * hts.height;
+            for (int i = 0; i < htss; i++) {
+                htl[i] = static_cast<float>(htranslation.at<double>(i));
+            }
+            cv::Size hrs = hrotation.size();
+            int hrss = hrs.width * hrs.height;
+            for (int i = 0; i < hrss; i++) {
+                hrt[i] = static_cast<float>(hrotation.at<double>(i));
+            }
+            zeno::log_info("homographyMatrix.width:{} homographyMatrix.height:{}",hs.width,hs.height);
+        }
+
+
+//essentialMatrix
+        if(beM){
+            cv::Mat essentialMatrix, mask;
+            double threshold = 1.0;
+            double prob = 0.99;
+            int method = cv::RANSAC;
+            essentialMatrix = cv::findEssentialMat(points1, points2, cameraMatrix, method, prob, threshold, mask);
+
+            auto &em = image3->tris.add_attr<float>("essentialMatrix");
+            cv::Size es = essentialMatrix.size();
+            int ess = es.width * es.height;
+            for (int i = 0; i < ess; i++) {
+                em[i] = static_cast<float>(essentialMatrix.at<double>(i));
+            }
+
+            cv::Mat rotation,translation;
+            cv::recoverPose(essentialMatrix,points1,points2, cameraMatrix, rotation, translation);
+
+            auto &rt = image3->tris.add_attr<float>("essentialRotation");
+            auto &tl = image3->tris.add_attr<float>("essentialTranslation");
+
+            cv::Size ts = translation.size();
+            int tss = ts.width * ts.height;
+            for (int i = 0; i < tss; i++) {
+                tl[i] = static_cast<float>(translation.at<double>(i));
+            }
+            cv::Size rs = rotation.size();
+            int rss = rs.width * rs.height;
+            for (int i = 0; i < rss; i++) {
+                rt[i] = static_cast<float>(rotation.at<double>(i));
+            }
+            zeno::log_info("essentialMatrix.width:{} essentialMatrix.height:{}",es.width,es.height);
         }
 
         if(visualize && !stitch){
@@ -1267,13 +1293,11 @@ struct ImageFeatureMatch : INode {
                     pixel[2] = rgb[2] * 255;
                 }
             }
-            zeno::log_info("V ok");
             cv::Scalar lineColor(255, 0, 255);
 #pragma omp parallel for
             for (size_t i = 0; i < points1.size(); i++) {
                 cv::Point2f pt1 = points1[i];
                 cv::Point2f pt2 = points2[i] + cv::Point2f(w1, 0);
-//                cv::Point2f pt2 = points2[i] + cv::Point2f(imagecvin1.cols, 0);
                 cv::line(V, pt1, pt2, lineColor, 2);
             }
             cv::Size vs = V.size();
@@ -1289,11 +1313,37 @@ struct ImageFeatureMatch : INode {
             }
         }
         if(stitch){
+            cv::Mat imagecvin1(h1, w1, CV_8UC3);
+            cv::Mat imagecvin2(h2, w2, CV_8UC3);
+            for (int i = 0; i < h1; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb = image1->verts[i * w1 + j];
+                    cv::Vec3b& pixel = imagecvin1.at<cv::Vec3b>(i, j);
+                    pixel[0] = rgb[0] * 255;
+                    pixel[1] = rgb[1] * 255;
+                    pixel[2] = rgb[2] * 255;
+                }
+            }
+            for (int i = 0; i < h2; i++) {
+                for (int j = 0; j < w2; j++) {
+                    vec3f rgb = image2->verts[i * w2 + j];
+                    cv::Vec3b& pixel = imagecvin2.at<cv::Vec3b>(i, j);
+                    pixel[0] = rgb[0] * 255;
+                    pixel[1] = rgb[1] * 255;
+                    pixel[2] = rgb[2] * 255;
+                }
+            }
+
+            cv::Ptr<cv::Stitcher> stitcher = cv::Stitcher::create();
+            std::vector<cv::Mat> images;
+            images.push_back(imagecvin1);
+            images.push_back(imagecvin2);
+
             cv::Mat result;
             cv::Stitcher::Status status = stitcher->stitch(images, result);
-//            zeno::log_info("status = stitcher->stitch(images, result)");
             cv::Size vs = result.size();
             image3->verts.resize(vs.width * vs.height);
+
             if (status == cv::Stitcher::OK) {
                 int w = result.cols;
                 int h = result.rows;
@@ -1313,18 +1363,6 @@ struct ImageFeatureMatch : INode {
                 zeno::log_info("stitching failed");
             }
         }
-//        if(stitch2){
-//            cv::Mat V;
-//            cv::Mat homography = cv::findHomography(points1, points2, cv::RANSAC);
-//            cv::warpPerspective(imagecvin2, V, homography, cv::Size(w1 + w2, h1));
-//            imagecvin1.copyTo(V(cv::Rect(0, 0, w1, h1)));
-//        }
-//        image2->tris.erase_attr("descriptors");
-//        image2->uvs.resize(0);
-//        else{
-//            set_output("image", image2);
-//        }
-
         set_output("image", image3);
     }
 };
@@ -1333,11 +1371,13 @@ ZENDEFNODE(ImageFeatureMatch, {
     {
         { "image1" },
         { "image2" },
-        {"enum BRUTEFORCE HAMMING", "mode", "BRUTEFORCE"},
         {"float", "maxMatchDistance", "0.7"},
-        { "bool", "visualize", "0" },
+        { "bool", "perspectiveMatrix", "1" },
+        { "bool", "fundamentalMatrix", "0" },
+        { "bool", "essentialMatrix", "0" },
+        { "bool", "homographyMatrix", "0" },
+        { "bool", "visualize", "1" },
         { "bool", "stitch", "0" },
-//        { "bool", "stitch2", "0" },
     },
     {
         { "image" },
@@ -1609,10 +1649,6 @@ ZENDEFNODE(ImageFeatureMatch, {
 //    { "image" },
 //});
 //
-
-
-
-
 
 
 
