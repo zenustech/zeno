@@ -166,6 +166,8 @@ function (zeno_add_asset_dir dir)
 endfunction()
 ## --- end cihou asset dir
 
+add_subdirectory(zeno)
+
 ## --- begin cihou perf-geeks
 if (ZENO_MARCH_NATIVE)
     if (MSVC)
@@ -182,8 +184,6 @@ if (ZENO_USE_FAST_MATH)
     endif()
 endif()
 ## --- end cihou perf-geeks
-
-add_subdirectory(zeno)
 
 target_compile_options(zeno
             PUBLIC $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:MSVC>, /utf-8, >>
