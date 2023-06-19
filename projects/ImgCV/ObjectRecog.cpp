@@ -17,6 +17,9 @@
 #include <set>
 #include <algorithm>
 #include <vector>
+#include <zeno/types/MatrixObject.h>
+#include "imgcv.h"
+#include <variant>
 
 using namespace cv;
 
@@ -1005,6 +1008,7 @@ struct ImageFeatureMatch : INode {
         auto bfM = get_input2<bool>("fundamentalMatrix");
         auto beM = get_input2<bool>("essentialMatrix");
         auto bhM = get_input2<bool>("homographyMatrix");
+        cv::Mat OMatrix;
 
         auto &ud1 = image1->userData();
         int w1 = ud1.get2<int>("w");
@@ -1022,6 +1026,31 @@ struct ImageFeatureMatch : INode {
         ud3.set2("isImage", 1);
         image3->verts = image2->verts;
 
+        cv::Mat imagecvin1(h1, w1, CV_8UC3);
+        cv::Mat imagecvin2(h2, w2, CV_8UC3);
+        for (int i = 0; i < h1; i++) {
+            for (int j = 0; j < w1; j++) {
+                vec3f rgb = image1->verts[i * w1 + j];
+                cv::Vec3b& pixel = imagecvin1.at<cv::Vec3b>(i, j);
+                pixel[0] = rgb[0] * 255;
+                pixel[1] = rgb[1] * 255;
+                pixel[2] = rgb[2] * 255;
+            }
+        }
+        for (int i = 0; i < h2; i++) {
+            for (int j = 0; j < w2; j++) {
+                vec3f rgb = image2->verts[i * w2 + j];
+                cv::Vec3b& pixel = imagecvin2.at<cv::Vec3b>(i, j);
+                pixel[0] = rgb[0] * 255;
+                pixel[1] = rgb[1] * 255;
+                pixel[2] = rgb[2] * 255;
+            }
+        }
+
+        cv::Ptr<cv::Stitcher> stitcher = cv::Stitcher::create();
+        std::vector<cv::Mat> images;
+        images.push_back(imagecvin1);
+        images.push_back(imagecvin2);
         std::vector<cv::KeyPoint> keypoints;
         auto d1 = image1->tris.add_attr<float>("descriptors");
         auto d2 = image2->tris.add_attr<float>("descriptors");
@@ -1179,7 +1208,7 @@ struct ImageFeatureMatch : INode {
             prt[1] = pm[1];
             prt[2] = pm[3];
             prt[3] = pm[4];
-
+            OMatrix = perspectiveMatrix;
             zeno::log_info("perspectiveMatrix.width:{} perspectiveMatrix.height:{}",ps.width,ps.height);
         }
 
@@ -1197,9 +1226,9 @@ struct ImageFeatureMatch : INode {
             for (int i = 0; i < fss; i++) {
                 fm[i] = static_cast<float>(fundamentalMatrix.at<double>(i));
             }
+            OMatrix = fundamentalMatrix;
             zeno::log_info("fundamentalMatrix.width:{} fundamentalMatrix.height:{}",fs.width,fs.height);
         }
-
 
 //homographyMatrix
         if(bhM){
@@ -1235,9 +1264,10 @@ struct ImageFeatureMatch : INode {
             for (int i = 0; i < hrss; i++) {
                 hrt[i] = static_cast<float>(hrotation.at<double>(i));
             }
+            OMatrix = homographyMatrix;
+
             zeno::log_info("homographyMatrix.width:{} homographyMatrix.height:{}",hs.width,hs.height);
         }
-
 
 //essentialMatrix
         if(beM){
@@ -1270,6 +1300,7 @@ struct ImageFeatureMatch : INode {
             for (int i = 0; i < rss; i++) {
                 rt[i] = static_cast<float>(rotation.at<double>(i));
             }
+            OMatrix = essentialMatrix;
             zeno::log_info("essentialMatrix.width:{} essentialMatrix.height:{}",es.width,es.height);
         }
 
@@ -1313,32 +1344,6 @@ struct ImageFeatureMatch : INode {
             }
         }
         if(stitch){
-            cv::Mat imagecvin1(h1, w1, CV_8UC3);
-            cv::Mat imagecvin2(h2, w2, CV_8UC3);
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f rgb = image1->verts[i * w1 + j];
-                    cv::Vec3b& pixel = imagecvin1.at<cv::Vec3b>(i, j);
-                    pixel[0] = rgb[0] * 255;
-                    pixel[1] = rgb[1] * 255;
-                    pixel[2] = rgb[2] * 255;
-                }
-            }
-            for (int i = 0; i < h2; i++) {
-                for (int j = 0; j < w2; j++) {
-                    vec3f rgb = image2->verts[i * w2 + j];
-                    cv::Vec3b& pixel = imagecvin2.at<cv::Vec3b>(i, j);
-                    pixel[0] = rgb[0] * 255;
-                    pixel[1] = rgb[1] * 255;
-                    pixel[2] = rgb[2] * 255;
-                }
-            }
-
-            cv::Ptr<cv::Stitcher> stitcher = cv::Stitcher::create();
-            std::vector<cv::Mat> images;
-            images.push_back(imagecvin1);
-            images.push_back(imagecvin2);
-
             cv::Mat result;
             cv::Stitcher::Status status = stitcher->stitch(images, result);
             cv::Size vs = result.size();
@@ -1363,6 +1368,11 @@ struct ImageFeatureMatch : INode {
                 zeno::log_info("stitching failed");
             }
         }
+        CVImageObject CVMatrix1(OMatrix);
+        auto CVMatrix = std::make_shared<CVImageObject>(CVMatrix1);
+//        CVMatrix.reset(&CVMatrix1);
+        set_output("matrix",std::move(CVMatrix));
+//        set_output("matrix", CVMatrix);
         set_output("image", image3);
     }
 };
@@ -1371,7 +1381,7 @@ ZENDEFNODE(ImageFeatureMatch, {
     {
         { "image1" },
         { "image2" },
-        {"float", "maxMatchDistance", "0.7"},
+        { "float", "maxMatchDistance", "0.7" },
         { "bool", "perspectiveMatrix", "1" },
         { "bool", "fundamentalMatrix", "0" },
         { "bool", "essentialMatrix", "0" },
@@ -1380,14 +1390,13 @@ ZENDEFNODE(ImageFeatureMatch, {
         { "bool", "stitch", "0" },
     },
     {
+        { "matrix" },
         { "image" },
     },
     {},
     { "image" },
 });
 
-
-//
 //struct CameraEstimate : INode {
 //    void apply() override {
 //        auto image1 = get_input<PrimitiveObject>("image1");

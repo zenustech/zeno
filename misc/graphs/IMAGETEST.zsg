@@ -58,14 +58,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "exr",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -5880,7 +5881,7 @@
                     ],
                     "options": [],
                     "blackboard": {
-                        "width": 4646.068857818384,
+                        "width": 4646.06884765625,
                         "height": 4311.5146484375,
                         "title": "ImageFeatureDetect",
                         "background": "#0064a8",
@@ -5958,7 +5959,10 @@
                             "743e10fe-ReadImageFile",
                             "7f06dcc3-ImageFeatureDetectSIFT",
                             "e20e1467-ReadImageFile",
-                            "bc099038-ImageStitching"
+                            "bc099038-ImageStitching",
+                            "1eccf068-ImageFeatureMatch",
+                            "da899c4f-ImageFeatureMatch",
+                            "ae850e57-Route"
                         ]
                     }
                 },
@@ -6481,7 +6485,7 @@
                     ],
                     "options": [],
                     "blackboard": {
-                        "width": 9770.7578125,
+                        "width": 13029.212890625,
                         "height": 6051.234375,
                         "title": "ObjRecog",
                         "background": "#ff0000",
@@ -6545,7 +6549,14 @@
                             "25696b1b-ImageEdgeDetectSobel",
                             "19907f94-ImageFeatureMatch",
                             "9c56a963-ReadImageFile",
-                            "b12491b2-ReadImageFile"
+                            "b12491b2-ReadImageFile",
+                            "452a38a7-ReadImageFile",
+                            "519acf7-ImageFeatureDetectSIFT",
+                            "8a1ba2ed-ImageFeatureMatch",
+                            "bb7f81ca-ImageFeatureDetectSIFT",
+                            "c1422b40-ReadImageFile",
+                            "d3ba0eaf-Group",
+                            "4ff806a4-CameraEstimate"
                         ]
                     }
                 },
@@ -7292,14 +7303,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -7676,14 +7688,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8121,14 +8134,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8228,14 +8242,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8370,14 +8385,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8591,14 +8607,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8663,14 +8680,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8735,14 +8753,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -9440,14 +9459,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -11948,7 +11968,7 @@
                         "path": {
                             "link": null,
                             "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Videos/LOLCG2.mp4",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
                             "control": {
                                 "name": "read path"
                             }
@@ -12004,24 +12024,44 @@
                                 "name": ""
                             }
                         },
-                        "mode": {
-                            "link": null,
-                            "type": "enum BRUTEFORCE HAMMING",
-                            "default-value": "normal",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "BRUTEFORCE",
-                                    "HAMMING"
-                                ]
-                            }
-                        },
                         "maxMatchDistance": {
                             "link": null,
                             "type": "float",
-                            "default-value": 0.699999988079071,
+                            "default-value": 1.0,
                             "control": {
                                 "name": "Float"
+                            }
+                        },
+                        "perspectiveMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "fundamentalMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "essentialMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "homographyMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
                             }
                         },
                         "visualize": {
@@ -12051,6 +12091,9 @@
                     },
                     "params": {},
                     "outputs": {
+                        "matrix": {
+                            "type": ""
+                        },
                         "image": {
                             "type": ""
                         },
@@ -12059,7 +12102,7 @@
                         }
                     },
                     "uipos": [
-                        -6590.50537109375,
+                        -6595.01025390625,
                         -430.0108947753906
                     ],
                     "options": []
@@ -12070,7 +12113,7 @@
                         "path": {
                             "link": null,
                             "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Videos/LOLCG2.mp4",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
                             "control": {
                                 "name": "read path"
                             }
@@ -12282,24 +12325,44 @@
                                 "name": ""
                             }
                         },
-                        "mode": {
-                            "link": null,
-                            "type": "enum BRUTEFORCE HAMMING",
-                            "default-value": "normal",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "BRUTEFORCE",
-                                    "HAMMING"
-                                ]
-                            }
-                        },
                         "maxMatchDistance": {
                             "link": null,
                             "type": "float",
                             "default-value": 0.699999988079071,
                             "control": {
                                 "name": "Float"
+                            }
+                        },
+                        "perspectiveMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "fundamentalMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "essentialMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "homographyMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
                             }
                         },
                         "visualize": {
@@ -12329,6 +12392,9 @@
                     },
                     "params": {},
                     "outputs": {
+                        "matrix": {
+                            "type": ""
+                        },
                         "image": {
                             "type": ""
                         },
@@ -13023,7 +13089,7 @@
                         "nFeatures": {
                             "link": null,
                             "type": "float",
-                            "default-value": 0.0,
+                            "default-value": 100.0,
                             "control": {
                                 "name": "Float"
                             }
@@ -13106,7 +13172,7 @@
                         "nFeatures": {
                             "link": null,
                             "type": "float",
-                            "default-value": 0.0,
+                            "default-value": 100.0,
                             "control": {
                                 "name": "Float"
                             }
@@ -13393,7 +13459,7 @@
                         "path": {
                             "link": null,
                             "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/4.png",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
                             "control": {
                                 "name": "read path"
                             }
@@ -13417,8 +13483,8 @@
                         }
                     },
                     "uipos": [
-                        -7836.3837890625,
-                        851.5236206054688
+                        -7741.73095703125,
+                        696.9818115234375
                     ],
                     "options": []
                 },
@@ -13428,7 +13494,7 @@
                         "path": {
                             "link": null,
                             "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/2.png",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/O1.png",
                             "control": {
                                 "name": "read path"
                             }
@@ -13452,8 +13518,8 @@
                         }
                     },
                     "uipos": [
-                        -7855.236328125,
-                        443.4239807128906
+                        -7736.50244140625,
+                        389.27197265625
                     ],
                     "options": []
                 },
@@ -13471,7 +13537,7 @@
                         "visualize": {
                             "link": null,
                             "type": "bool",
-                            "default-value": false,
+                            "default-value": true,
                             "control": {
                                 "name": "Boolean"
                             }
@@ -13479,7 +13545,7 @@
                         "nFeatures": {
                             "link": null,
                             "type": "float",
-                            "default-value": 100.0,
+                            "default-value": 1000.0,
                             "control": {
                                 "name": "Float"
                             }
@@ -13535,87 +13601,8 @@
                         }
                     },
                     "uipos": [
-                        -7283.435546875,
-                        770.7766723632813
-                    ],
-                    "options": []
-                },
-                "86992ba1-ImageFeatureMatch": {
-                    "name": "ImageFeatureMatch",
-                    "inputs": {
-                        "image1": {
-                            "link": "main:c2c4759-ImageFeatureDetectSIFT:[node]/outputs/image",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "image2": {
-                            "link": "main:3c398fee-ImageFeatureDetectSIFT:[node]/outputs/image",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "mode": {
-                            "link": null,
-                            "type": "enum BRUTEFORCE HAMMING",
-                            "default-value": "BRUTEFORCE",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "BRUTEFORCE",
-                                    "HAMMING"
-                                ]
-                            }
-                        },
-                        "maxMatchDistance": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.699999988079071,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "visualize": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "stitch": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": false,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "image": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -6614.89794921875,
-                        688.2432250976563
+                        -7281.34423828125,
+                        699.667236328125
                     ],
                     "options": []
                 },
@@ -13641,7 +13628,7 @@
                         "nFeatures": {
                             "link": null,
                             "type": "float",
-                            "default-value": 100.0,
+                            "default-value": 1000.0,
                             "control": {
                                 "name": "Float"
                             }
@@ -13984,24 +13971,44 @@
                                 "name": ""
                             }
                         },
-                        "mode": {
-                            "link": null,
-                            "type": "enum BRUTEFORCE HAMMING",
-                            "default-value": "BRUTEFORCE",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "BRUTEFORCE",
-                                    "HAMMING"
-                                ]
-                            }
-                        },
                         "maxMatchDistance": {
                             "link": null,
                             "type": "float",
                             "default-value": 0.5,
                             "control": {
                                 "name": "Float"
+                            }
+                        },
+                        "perspectiveMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "fundamentalMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "essentialMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "homographyMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
                             }
                         },
                         "visualize": {
@@ -14031,6 +14038,9 @@
                     },
                     "params": {},
                     "outputs": {
+                        "matrix": {
+                            "type": ""
+                        },
                         "image": {
                             "type": ""
                         },
@@ -14122,8 +14132,8 @@
                         }
                     },
                     "uipos": [
-                        -7204.240620914894,
-                        1884.45611692494
+                        -7204.24072265625,
+                        1884.4561767578126
                     ],
                     "options": []
                 },
@@ -14157,8 +14167,8 @@
                         }
                     },
                     "uipos": [
-                        -7776.041402164894,
-                        1557.1034252745495
+                        -7776.04150390625,
+                        1557.1033935546876
                     ],
                     "options": []
                 },
@@ -14240,8 +14250,8 @@
                         }
                     },
                     "uipos": [
-                        -7206.607320133644,
-                        1381.9950878722057
+                        -7206.607421875,
+                        1381.9951171875
                     ],
                     "options": []
                 },
@@ -14275,8 +14285,8 @@
                         }
                     },
                     "uipos": [
-                        -7757.188863102394,
-                        1965.2030651671276
+                        -7757.18896484375,
+                        1965.203125
                     ],
                     "options": []
                 },
@@ -14318,8 +14328,406 @@
                         }
                     },
                     "uipos": [
-                        -6474.868421657053,
-                        1682.8017209644204
+                        -6474.86865234375,
+                        1682.8017578125
+                    ],
+                    "options": []
+                },
+                "452a38a7-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4035.47021484375,
+                        -989.7783203125
+                    ],
+                    "options": []
+                },
+                "519acf7-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
+                    "inputs": {
+                        "image": {
+                            "link": "main:c1422b40-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3463.66943359375,
+                        -662.4255981445313
+                    ],
+                    "options": []
+                },
+                "bb7f81ca-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
+                    "inputs": {
+                        "image": {
+                            "link": "main:452a38a7-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3466.0361328125,
+                        -1164.8865966796876
+                    ],
+                    "options": []
+                },
+                "c1422b40-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/6.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4016.61767578125,
+                        -581.6786499023438
+                    ],
+                    "options": []
+                },
+                "d3ba0eaf-Group": {
+                    "name": "Group",
+                    "inputs": {},
+                    "params": {},
+                    "outputs": {},
+                    "uipos": [
+                        -4441.5224609375,
+                        -1441.4652099609376
+                    ],
+                    "options": [],
+                    "blackboard": {
+                        "width": 2628.8935546875,
+                        "height": 1452.254638671875,
+                        "title": "CameraEstimate",
+                        "background": "#0064a8",
+                        "items": [
+                            "519acf7-ImageFeatureDetectSIFT",
+                            "452a38a7-ReadImageFile",
+                            "bb7f81ca-ImageFeatureDetectSIFT",
+                            "8a1ba2ed-ImageFeatureMatch",
+                            "c1422b40-ReadImageFile",
+                            "4ff806a4-CameraEstimate"
+                        ]
+                    }
+                },
+                "da899c4f-ImageFeatureMatch": {
+                    "name": "ImageFeatureMatch",
+                    "inputs": {
+                        "image1": {
+                            "link": "main:c2c4759-ImageFeatureDetectSIFT:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "image2": {
+                            "link": "main:3c398fee-ImageFeatureDetectSIFT:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "maxMatchDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.6000000238418579,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "perspectiveMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "fundamentalMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "essentialMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "homographyMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "stitch": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "matrix": {
+                            "type": ""
+                        },
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -6713.01220703125,
+                        578.5404663085938
+                    ],
+                    "options": []
+                },
+                "ae850e57-Route": {
+                    "name": "Route",
+                    "inputs": {
+                        "input": {
+                            "link": "main:da899c4f-ImageFeatureMatch:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "output": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -6222.80859375,
+                        667.2662963867188
                     ],
                     "options": []
                 }
@@ -16931,6 +17339,42 @@
                 "deprecated"
             ]
         },
+        "CacheToDisk": {
+            "inputs": [
+                [
+                    "",
+                    "object",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [
+                [
+                    "string",
+                    "cachebasedir",
+                    ""
+                ]
+            ],
+            "outputs": [
+                [
+                    "",
+                    "object",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "lifecycle"
+            ]
+        },
         "CacheVDBGrid": {
             "inputs": [
                 [
@@ -19278,6 +19722,41 @@
                 "zs_accel"
             ]
         },
+        "EmbedZsgGraph": {
+            "inputs": [
+                [
+                    "readpath",
+                    "zsgPath",
+                    ""
+                ],
+                [
+                    "dict",
+                    "argsDict",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "dict",
+                    "retsDict",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "subgraph"
+            ]
+        },
         "EmptyDict": {
             "inputs": [
                 [
@@ -19563,11 +20042,6 @@
                 [
                     "",
                     "prim",
-                    ""
-                ],
-                [
-                    "list",
-                    "prims",
                     ""
                 ],
                 [
@@ -20197,13 +20671,18 @@
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "texMaps",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "matValues",
+                    ""
+                ],
+                [
+                    "dict",
+                    "texUvs",
                     ""
                 ],
                 [
@@ -23552,19 +24031,34 @@
                     ""
                 ],
                 [
-                    "enum BRUTEFORCE HAMMING",
-                    "mode",
-                    "BRUTEFORCE"
-                ],
-                [
                     "float",
                     "maxMatchDistance",
                     ""
                 ],
                 [
                     "bool",
-                    "visualize",
+                    "perspectiveMatrix",
+                    "1"
+                ],
+                [
+                    "bool",
+                    "fundamentalMatrix",
                     "0"
+                ],
+                [
+                    "bool",
+                    "essentialMatrix",
+                    "0"
+                ],
+                [
+                    "bool",
+                    "homographyMatrix",
+                    "0"
+                ],
+                [
+                    "bool",
+                    "visualize",
+                    "1"
                 ],
                 [
                     "bool",
@@ -23579,6 +24073,11 @@
             ],
             "params": [],
             "outputs": [
+                [
+                    "",
+                    "matrix",
+                    ""
+                ],
                 [
                     "",
                     "image",
@@ -37061,6 +37560,11 @@
             "params": [
                 [
                     "bool",
+                    "indepData",
+                    "0"
+                ],
+                [
+                    "bool",
                     "primitive",
                     "0"
                 ],
@@ -37087,22 +37591,17 @@
                     ""
                 ],
                 [
-                    "DictObject",
-                    "prims",
-                    ""
-                ],
-                [
                     "",
                     "data",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "datas",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "mats",
                     ""
                 ],
@@ -41563,6 +42062,51 @@
                 "openvdb"
             ]
         },
+        "TrianglePrimSubdiv": {
+            "inputs": [
+                [
+                    "",
+                    "prim",
+                    ""
+                ],
+                [
+                    "int",
+                    "iters",
+                    "2"
+                ],
+                [
+                    "string",
+                    "face_inherit",
+                    ""
+                ],
+                [
+                    "string",
+                    "face_avg_edge",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "prim",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "primitive"
+            ]
+        },
         "TrianglesWrangle": {
             "inputs": [
                 [
@@ -43941,7 +44485,7 @@
                     ""
                 ],
                 [
-                    "enum png jpg exr",
+                    "enum png jpg exr pfm",
                     "type",
                     "png"
                 ],
