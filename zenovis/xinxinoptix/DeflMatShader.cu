@@ -749,8 +749,9 @@ extern "C" __global__ void __closesthit__radiance()
     }
     if(prd->depth==0&&flatness>0.5)
     {
-        prd->radiance make_float3(0.0f);
+        prd->radiance = make_float3(0.0f);
         prd->done = true;
+        return;
     }
 
     

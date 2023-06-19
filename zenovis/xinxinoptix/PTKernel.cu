@@ -172,9 +172,12 @@ extern "C" __global__ void __raygen__rg()
             // }
 
             if(prd.countEmitted==false || prd.depth>0) {
-                auto temp_radiance = prd.radiance * prd.attenuation2/(prd.prob2 + 1e-5f);
-                float upperBound = prd.diffDepth==1?1.0f:100.0f;
-                result +=  prd.done? float3(clamp(vec3(temp_radiance), vec3(0.0f), vec3(upperBound))) : temp_radiance;
+                auto temp_radiance = prd.radiance * prd.attenuation2;
+
+                //float upperBound = prd.fromDiff?1.0f:1.0f;
+                float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(4));
+
+                result += prd.depth>1?clampped:temp_radiance;
                 // fire without smoke requires this line to work.
             }
 
