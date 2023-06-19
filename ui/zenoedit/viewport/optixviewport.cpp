@@ -19,6 +19,10 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 }
 
+OptixWorker::~OptixWorker()
+{
+}
+
 OptixWorker::OptixWorker(QObject* parent)
     : QObject(parent)
     , m_zenoVis(nullptr)
