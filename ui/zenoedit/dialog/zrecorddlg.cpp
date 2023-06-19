@@ -52,18 +52,19 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     connect(m_ui->btnGroup, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
-bool ZRecordVideoDlg::getInfo(int& fps, int& bitrate, float& width, float& height, 
-             QString& path, QString& fn, int &numOptix, int &numMSAA, bool& bExportVideo, bool& needDenoise)
+bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
 {
-    fps = m_ui->fps->text().toInt();
-    bitrate = m_ui->bitrate->text().toInt();
-    numMSAA = m_ui->msaaSamplerNumber->text().toInt();
-    numOptix = m_ui->optixSamplerNumber->text().toInt();
-    width = m_ui->lineWidth->text().toFloat();
-    height = m_ui->lineHeight->text().toFloat();
+    auto &path = info.record_path;
+    auto &fn = info.videoname;
+    info.fps = m_ui->fps->text().toInt();
+    info.bitrate = m_ui->bitrate->text().toInt();
+    info.numMSAA = m_ui->msaaSamplerNumber->text().toInt();
+    info.numOptix = m_ui->optixSamplerNumber->text().toInt();
+    info.res[0] = m_ui->lineWidth->text().toFloat();
+    info.res[1] = m_ui->lineHeight->text().toFloat();
     path = m_ui->linePath->text();
-    bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
-    needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
+    info.bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
+    info.needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
     if (path.isEmpty())
     {
         QTemporaryDir dir;
