@@ -50,7 +50,7 @@ template<typename Pol,
             // typename TetraTileVec,
             // typename HalfFacetTileVec,
             typename HalfEdgeTileVec> 
-void do_facet_point_collision_detection(Pol& cudaPol,
+inline void do_facet_point_collision_detection(Pol& cudaPol,
     const PosTileVec& verts,const zs::SmallString& xtag,
     const SurfPointTileVec& points,
     const SurfTriTileVec& tris,
@@ -248,7 +248,7 @@ template<typename Pol,
     typename SurfTriTileVec,
     typename HalfEdgeTileVec,
     typename HashMap>
-int do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(Pol& pol,
+inline int do_tetrahedra_surface_points_and_kinematic_boundary_collision_detection(Pol& pol,
     ZenoParticlePtr kinematic,
     PosTileVec& tet_verts,const zs::SmallString& tet_pos_attr_tag,
     const TetTileVec& tets,
@@ -498,7 +498,7 @@ template<typename Pol,
     typename SurfTriTileVec,
     typename HalfEdgeTileVec,
     typename HashMap>
-int do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(Pol& pol,
+inline int do_tetrahedra_surface_mesh_and_kinematic_boundary_collision_detection(Pol& pol,
     const std::vector<ZenoParticles*>& kinematics,
     PosTileVec& tet_verts,const zs::SmallString& tet_pos_attr_tag,
     const TetTileVec& tets,
@@ -781,7 +781,7 @@ template<typename Pol,
     typename HalfEdgeTileVec,
     typename HalfFacetTileVec,
     typename HashMap>
-void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
+inline void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
     PosTileVec& tet_verts,const zs::SmallString& pos_attr_tag,
     const TetTileVec& tets,
     const SurfPointTileVec& surf_points,const SurfTriTileVec& surf_tris,
@@ -856,7 +856,7 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
                 auto pv = surf_verts_buffer.pack(dim_c<3>,pos_attr_tag,pi);
                 auto vi = zs::reinterpret_bits<int>(surf_points("inds",pi));
                 auto bv = bv_t{get_bounding_box(pv - thickness,pv + thickness)};
-                auto mark_interior_verts = [&](int ei) {
+                auto mark_interior_verts = [&, exec_tag](int ei) {
                     // printf("testing %d %d\n",pi,ei);
                     auto tet = tets.pack(dim_c<4>,"inds",ei,int_c);
                     for(int i = 0;i != 4;++i)
@@ -960,8 +960,7 @@ void do_tetrahedra_surface_tris_and_points_self_collision_detection(Pol& pol,
 
                 T min_penertration_depth = 1e8;
                 int min_vi = -1;
-
-                auto process_vertex_face_collision_pairs = [&](int vi) {
+                auto process_vertex_face_collision_pairs = [&, pos_attr_tag](int vi) {
                     if(tri[0] == vi || tri[1] == vi || tri[2] == vi)
                         return;
                     if(surf_verts_buffer("active",vi) < (T)0.5)
@@ -1074,7 +1073,7 @@ template<typename Pol,
     typename TriTileVec,
     typename GradHessianTileVec,
     typename HashMap>
-void evaluate_fp_self_collision_gradient_and_hessian(Pol& pol,
+inline void evaluate_fp_self_collision_gradient_and_hessian(Pol& pol,
     const PosTileVec& verts,const zs::SmallString& pos_attr_tag,const zs::SmallString& nodal_area_tag,
     const PointTileVec& points,
     const TriTileVec& tris,const zs::SmallString& tri_area_tag,
@@ -1128,7 +1127,7 @@ template<typename Pol,
     typename TriTileVec,
     typename GradHessianTileVec,
     typename HashMap>
-void evaluate_tri_kvert_collision_gradient_and_hessian(Pol& pol,
+inline void evaluate_tri_kvert_collision_gradient_and_hessian(Pol& pol,
     const std::vector<ZenoParticles*>& kinematics,
     const PosTileVec& verts,const zs::SmallString& pos_attr_tag,const zs::SmallString& nodal_area_tag,
     const TriTileVec& tris,const zs::SmallString& tri_area_tag,
@@ -1205,7 +1204,7 @@ template<typename Pol,
     typename PointTileVec,
     typename GradHessianTileVec,
     typename HashMap>
-void evaluate_ktri_vert_collision_gradient_and_hessian(Pol& pol,
+inline void evaluate_ktri_vert_collision_gradient_and_hessian(Pol& pol,
     const ZenoParticles* kinematic,
     const PosTileVec& verts,const zs::SmallString& pos_attr_tag,const zs::SmallString& nodal_area_tag,
     const TriTileVec& tris,const zs::SmallString& tri_area_tag,
@@ -1364,7 +1363,7 @@ template<int MAX_KINEMATIC_COLLISION_PAIRS,
     typename SurfTriNrmTileVec,
     typename KPosTileVec,
     typename KCollisionBuffer>
-void do_kinematic_point_collision_detection(Pol& cudaPol,
+inline void do_kinematic_point_collision_detection(Pol& cudaPol,
     PosTileVec& verts,const zs::SmallString& xtag,
     const SurfPointTileVec& points,
     SurfLineTileVec& lines,
@@ -1506,7 +1505,7 @@ void do_kinematic_point_collision_detection(Pol& cudaPol,
 template<typename Pol,
     typename PosTileVec,
     typename GradHessianTileVec>
-void evaluate_fp_collision_grad_and_hessian(
+inline void evaluate_fp_collision_grad_and_hessian(
     Pol& cudaPol,
     const PosTileVec& verts,const zs::SmallString& xtag,
     const zs::Vector<zs::vec<int,4>>& csPT,
@@ -1553,7 +1552,7 @@ template<typename Pol,
     typename PosTileVec,
     typename FPCollisionBuffer,
     typename GradHessianTileVec>
-void evaluate_fp_collision_grad_and_hessian(
+inline void evaluate_fp_collision_grad_and_hessian(
     Pol& cudaPol,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,T dt,
     const FPCollisionBuffer& fp_collision_buffer,// recording all the fp collision pairs
@@ -1630,7 +1629,7 @@ template<typename Pol,
     typename SurfTriTileVec,
     typename FPCollisionBuffer,
     typename GradHessianTileVec>
-void evaluate_kinematic_fp_collision_grad_and_hessian(
+inline void evaluate_kinematic_fp_collision_grad_and_hessian(
     Pol& cudaPol,
     const TetTileVec& eles,
     const PosTileVec& verts,const zs::SmallString& xtag,const zs::SmallString& vtag,T dt,
