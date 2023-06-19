@@ -111,7 +111,7 @@ QCefConfig initCef()
 
     // WindowlessRenderingEnabled is set to true by default,
     // set to false to disable the OSR mode
-    config.setWindowlessRenderingEnabled(true);
+    config.setWindowlessRenderingEnabled(false);
 
     // add command line args, you can any cef supported switches or parameters
     config.addCommandLineSwitch("use-mock-keychain");

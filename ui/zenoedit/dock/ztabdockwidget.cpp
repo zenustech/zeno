@@ -222,10 +222,12 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_CEF_EDITOR:
         {
-            QString url = "http://localhost:3000/";
+            //QString url = "http://localhost:3000/";
             //QString url = "https://butterfly-dag.gitee.io/butterfly-dag/demo/liteGraph";
             //QString url = "https://nme.babylonjs.com/";
             //QString url = "https://jerosoler.github.io/Drawflow/";
+            //QString url = "https://codesandbox.io/s/baklavajs-example-jyc6f?file=/src/App.vue";
+            QString url = "file:///C:/Users/Ada51/Desktop/drawflow-vue3(1)/drawflow-vue3/dist/index.html";
             ZCefNodesEditor *wid = new ZCefNodesEditor(url, nullptr, this);
             return wid;
         }
