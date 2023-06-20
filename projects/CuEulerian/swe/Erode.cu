@@ -594,7 +594,7 @@ struct zs_erode_tumble_material_v2 : INode {
         auto height = pars.begin("height");
         auto _material = pars.begin("_material");
         auto _temp_material = pars.begin("_temp_material");
-        auto stabilitymask = pars.begin("stabilitymask");
+        auto stabilitymask = pars.begin(stablilityMaskName);
 
         /// @brief  copy host-side attribute
         auto zs_perm = to_device_vector(perm);
@@ -886,7 +886,7 @@ struct zs_erode_tumble_material_v3 : INode {
         auto _material = pars.begin("_material");
         auto height = pars.begin("height");
         auto _temp_material = pars.begin("_temp_material");
-        auto stabilitymask = pars.begin("stabilitymask");
+        auto stabilitymask = pars.begin(stablilityMaskName);
 
         /// @brief  copy host-side attribute
         auto zs_perm = to_device_vector(perm);
