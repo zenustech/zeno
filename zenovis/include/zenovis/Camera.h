@@ -29,6 +29,7 @@ struct Camera {
     glm::vec3 m_lodup{0, 1, 0};
 
     bool m_need_sync = false;
+    bool m_auto_radius = false;
 
     struct ZxxHappyLookParam {
         float cx = 0;

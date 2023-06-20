@@ -60,6 +60,12 @@ int DictKeyModel::columnCount(const QModelIndex& parent) const
     return 2;
 }
 
+void DictKeyModel::markNodeChanged()
+{
+    QModelIndex nodeIdx = m_dictParam.data(ROLE_NODE_IDX).toModelIndex();
+    m_pGraphs->markNodeDataChanged(nodeIdx);
+}
+
 bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
     switch (role)
@@ -71,6 +77,7 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
             if (index.column() == 0) {
                 item.key = value.toString();
                 emit dataChanged(index, index, QVector<int>{role});
+                markNodeChanged();
                 return true;
             }
             break;
@@ -82,6 +89,7 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
             ZASSERT_EXIT(linkIdx.isValid(), false);
             item.links.append(linkIdx);
             emit dataChanged(index, index, QVector<int>{role});
+            markNodeChanged();
             return true;
         }
         case ROLE_REMOVELINK:
@@ -90,6 +98,7 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
             _DictItem& item = m_items[index.row()];
             item.links.removeAll(linkIdx);
             emit dataChanged(index, index, QVector<int>{role});
+            markNodeChanged();
             return true;
         }
         case ROLE_COLLASPED:
@@ -210,6 +219,7 @@ bool DictKeyModel::insertRows(int row, int count, const QModelIndex& parent)
     item.key = newKeyName;
     m_items.insert(row, item);
     endInsertRows();
+    markNodeChanged();
     return true;
 }
 
@@ -228,6 +238,7 @@ bool DictKeyModel::removeRows(int row, int count, const QModelIndex& parent)
     }
     m_items.removeAt(row);
     endRemoveRows();
+    markNodeChanged();
     return true;
 }
 

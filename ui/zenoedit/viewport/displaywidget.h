@@ -29,6 +29,9 @@ public:
     void resizeViewport(QSize sz);
     std::shared_ptr<zeno::Picker> picker() const;
     void updateCameraProp(float aperture, float disPlane);
+    void updatePerspective();
+    void setNumSamples(int samples);
+    void setCameraRes(const QVector2D& res);
     void setSimpleRenderOption();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     bool isCameraMoving() const;
@@ -36,11 +39,11 @@ public:
     bool isGLViewport() const;
     ZOptixViewport* optixViewport() const;
     void killOptix();
+    void moveToFrame(int frame);
     void setIsCurrent(bool isCurrent);
     bool isCurrent();
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
-
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
@@ -61,7 +64,6 @@ signals:
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
-    void moveToFrame(int frame);
 
     ViewportWidget* m_glView;
     ZOptixViewport* m_optixView;

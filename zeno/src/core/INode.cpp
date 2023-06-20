@@ -6,6 +6,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/extra/DirtyChecker.h>
 #include <zeno/extra/TempNode.h>
 #include <zeno/utils/Error.h>
 #ifdef ZENO_BENCHMARKING
@@ -86,7 +87,10 @@ ZENO_API bool INode::requireInput(std::string const &ds) {
     if (it == inputBounds.end())
         return false;
     auto [sn, ss] = it->second;
-    graph->applyNode(sn);
+    if (graph->applyNode(sn)) {
+        auto &dc = graph->getDirtyChecker();
+        dc.taintThisNode(myname);
+    }
     auto ref = graph->getNodeOutput(sn, ss);
     inputs[ds] = ref;
     return true;

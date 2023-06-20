@@ -248,27 +248,27 @@ struct EvalAnim{
     {
         float gscale = m_evalOption.globalScale;
         // TODO We didn't consider that the camera might be in the hierarchy
-        for(auto& m: m_LazyTransforms){
-            //std::cout << " ===== " << m.first << "\n";
-            if(fbxData->iCamera.value.find(m.first) != fbxData->iCamera.value.end()){
-                //zeno::log_info("----- LT Camera {}", m.first);
-                //Helper::printAiMatrix(m.second, true);
+        for(auto& ltrans: m_LazyTransforms){
+            auto namePath = ltrans.first;
 
-                SCamera cam = fbxData->iCamera.value.at(m.first);
+            for(auto &[camName, camObj]: fbxData->iCamera.value){
+                if(namePath.find(camName) != std::string::npos){
 
-                aiVector3t<float> trans;
-                aiQuaterniont<float> rotate;
-                aiVector3t<float> scale;
-                m.second.Decompose(scale, rotate, trans);
-                cam.pos = zeno::vec3f(trans.x * gscale, trans.y * gscale, trans.z * gscale);
-                aiMatrix3x3 r = rotate.GetMatrix().Transpose();
-                cam.view = zeno::vec3f(r.a1, r.a2, r.a3);
-                cam.up = zeno::vec3f(r.b1, r.b2, r.b3);
+                    SCamera cam = fbxData->iCamera.value.at(camName);
 
-                iCamera->value[m.first] = cam;
-            }else if(fbxData->iLight.value.find(m.first) != fbxData->iLight.value.end()){
-                //zeno::log_info("+++++ LT Light {}", m.first);
-                //Helper::printAiMatrix(m.second, true);
+                    aiVector3t<float> trans;
+                    aiQuaterniont<float> rotate;
+                    aiVector3t<float> scale;
+
+                    ltrans.second.Decompose(scale, rotate, trans);
+
+                    cam.pos = zeno::vec3f(trans.x * gscale, trans.y * gscale, trans.z * gscale);
+                    aiMatrix3x3 r = rotate.GetMatrix().Transpose();
+                    cam.view = zeno::vec3f(r.a1, r.a2, r.a3);
+                    cam.up = zeno::vec3f(r.b1, r.b2, r.b3);
+
+                    iCamera->value[camName] = cam;
+                }
             }
         }
     }

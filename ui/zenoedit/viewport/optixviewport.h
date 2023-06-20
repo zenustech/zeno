@@ -11,6 +11,7 @@ class OptixWorker : public QObject
 {
     Q_OBJECT
 public:
+    OptixWorker(QObject* parent = nullptr);
     OptixWorker(Zenovis *pzenoVis);
     ~OptixWorker();
     QImage renderImage() const;
@@ -53,6 +54,9 @@ public:
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void cameraLookTo(int dir);
     void updateCameraProp(float aperture, float disPlane);
+    void updatePerspective();
+    void setCameraRes(const QVector2D& res);
+    void setNumSamples(int samples);
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
     void updateCamera();

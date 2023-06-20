@@ -53,7 +53,15 @@ struct Params
 {
     unsigned int subframe_index;
     float4*      accum_buffer;
+    float4*      accum_buffer_D;
+    float4*      accum_buffer_S;
+    float4*      accum_buffer_T;
+    float4*      accum_buffer_B;
     uchar4*      frame_buffer;
+    uchar4*      frame_buffer_D;
+    uchar4*      frame_buffer_S;
+    uchar4*      frame_buffer_T;
+    uchar4*      frame_buffer_B;
     unsigned int width;
     unsigned int height;
     unsigned int samples_per_launch;
@@ -69,7 +77,9 @@ struct Params
 
     float* skycdf;
     int* sky_start;
-
+    int2 windowCrop_min;
+    int2 windowCrop_max;
+    int2 windowSpace;
 
     int skynx;
     int skyny;
