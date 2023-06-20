@@ -8,6 +8,9 @@
 #include "variantptr.h"
 #include "viewport/displaywidget.h"
 
+const char* g_setKey = "setKey";
+const char* g_keyFrame = "keyFrame";
+
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
 {
@@ -207,4 +210,37 @@ void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
             zeno::log_info("modifyLightData not found {}", name);
         }
     }
+}
+
+void AppHelper::updateProperty(QObject* obj)
+{
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    CURVE_DATA data;
+    QString property = "null";
+    if (getKeyFrame(obj, data)) {
+        if (data.visible)
+        {
+            property = "false";
+            int x = timeline->value();
+            for (const auto& p : data.points) {
+                int px = p.point.x();
+                if (px == x) {
+                    property = "true";
+                    break;
+                }
+            }
+        }
+    }
+    obj->setProperty(g_setKey, property);
+}
+
+bool AppHelper::getKeyFrame(const QObject* obj, CURVE_DATA& curve)
+{
+    bool res = obj->property(g_keyFrame).canConvert<CURVE_DATA>();
+    if (res)
+        curve = obj->property(g_keyFrame).value<CURVE_DATA>();
+    return res;
 }

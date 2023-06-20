@@ -1,8 +1,10 @@
 #include "zveceditor.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/uihelper.h>
-#include "zlineedit.h"
+#include <zenoui/comctrl/zlineedit.h>
 #include <zenomodel/include/curveutil.h>
+#include "zfloatlineedit.h"
+#include "util/apphelper.h"
 
 ZVecEditor::ZVecEditor(const QVariant &vec, bool bFloat, int deflSize, QString styleCls, QWidget *parent)
 	: QWidget(parent)

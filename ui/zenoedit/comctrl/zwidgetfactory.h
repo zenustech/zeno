@@ -2,7 +2,7 @@
 #define __ZWIDGET_FACTORY_H__
 
 #include <QtWidgets>
-#include "gv/callbackdef.h"
+#include <zenoui/comctrl/gv/callbackdef.h>
 #include <zenomodel/include/modeldata.h>
 
 namespace zenoui

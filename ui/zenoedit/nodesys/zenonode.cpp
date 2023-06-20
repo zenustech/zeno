@@ -9,7 +9,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/scope_exit.h>
 #include <zenoui/style/zenostyle.h>
-#include <zenoui/comctrl/zveceditor.h>
+#include "comctrl/zveceditor.h"
 #include "variantptr.h"
 #include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
 #include "zenoapplication.h"
@@ -19,14 +19,14 @@
 #include "util/log.h"
 #include "zenosubgraphview.h"
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
-#include <zenoui/comctrl/gv/zitemfactory.h>
+#include "comctrl/gv/zitemfactory.h"
 #include "zvalidator.h"
 #include "zenonewmenu.h"
 #include "util/apphelper.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include <zenoui/comctrl/gv/zgraphicstextitem.h>
-#include <zenoui/comctrl/gv/zenogvhelper.h>
+#include "comctrl/gv/zenogvhelper.h"
 #include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/viewparammodel.h>
 #include "iotags.h"

@@ -1,8 +1,8 @@
 #ifndef __ZENO_GV_HELPER_H__
 #define __ZENO_GV_HELPER_H__
 
-#include "zgraphicslayoutitem.h"
-#include "zgraphicslayout.h"
+#include <zenoui/comctrl/gv/zgraphicslayoutitem.h>
+#include <zenoui/comctrl/gv/zgraphicslayout.h>
 #include <zenomodel/include/modeldata.h>
 
 class ZenoGvHelper

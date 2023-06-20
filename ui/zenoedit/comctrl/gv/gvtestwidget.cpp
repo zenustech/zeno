@@ -2,7 +2,7 @@
 #include <zenoui/comctrl/gv/zgraphicslayoutitem.h>
 #include <zenoui/comctrl/gv/zlayoutbackground.h>
 #include <zenoui/comctrl/gv/zgraphicslayout.h>
-#include <zenoui/comctrl/gv/zsocketlayout.h>
+#include "zsocketlayout.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include <zenoui/nodesys/nodesys_common.h>
 #include <zenoui/render/ztfutil.h>

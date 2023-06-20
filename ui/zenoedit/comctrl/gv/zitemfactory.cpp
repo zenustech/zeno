@@ -4,14 +4,16 @@
 #include <zenoui/comctrl/gv/zlineedititem.h>
 #include <zenomodel/include/curvemodel.h>
 #include "zveceditoritem.h"
-#include "style/zenostyle.h"
-#include "../dialog/zenoheatmapeditor.h"
-#include "../dialog/curvemap/zcurvemapeditor.h"
+#include <zenoui/style/zenostyle.h>
+#include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
+#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
 #include "variantptr.h"
 #include "zassert.h"
-#include "zgraphicstextitem.h"
+#include <zenoui/comctrl/gv/zgraphicstextitem.h>
 #include <zenoedit/zenoapplication.h>
 #include <zenomodel/include/uihelper.h>
+#include "util/apphelper.h"
+#include "zfloateditabletextitem.h"
 
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT
@@ -144,7 +146,7 @@ namespace zenoui
                     // be careful about the dynamic type.
                     QVariant newValue;
                     CURVE_DATA curve;
-                    if (UiHelper::getKeyFrame(pLineEdit, curve)) {
+                    if (AppHelper::getKeyFrame(pLineEdit, curve)) {
                         CURVES_DATA data;
                         data.insert(curve.key, curve);
                         newValue = QVariant::fromValue(data);

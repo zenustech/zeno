@@ -6,12 +6,6 @@
 #include <zenoui/style/zenostyle.h>
 #include "zgraphicsnumslideritem.h"
 #include <zeno/utils/scope_exit.h>
-#include "zenoedit/zenoapplication.h"
-#include <zenoedit/timeline/ztimeline.h>
-#include <zenoedit/zenomainwindow.h>
-#include <zenomodel/include/curvemodel.h>
-#include <zenomodel/include/curveutil.h>
-#include <zenomodel/include/uihelper.h>
 
 
 qreal editor_factor = 1.0;
@@ -353,7 +347,7 @@ ZSocketPlainTextItem::ZSocketPlainTextItem(
     , m_socket(nullptr)
 {
     setBrush(QColor("#C3D2DF"));
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(12);
     font.setWeight(QFont::DemiBold);
     setFont(font);
@@ -397,9 +391,9 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         return;
 #endif
     QColor col;
-    if (property(g_setKey) == "false")
+    if (property("setKey") == "false")
         col = QColor("#496DA0");
-    else if (property(g_setKey) == "true")
+    else if (property("setKey") == "true")
         col = QColor("#3A6E64");
     else
         col = QColor("#191D21");
@@ -422,7 +416,7 @@ void ZEditableTextItem::initUI(const QString& text)
     setDefaultTextColor(QColor("#C3D2DF"));
     setCursor(Qt::IBeamCursor);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     font.setWeight(QFont::Medium);
     setFont(font);
@@ -605,82 +599,6 @@ void ZEditableTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     _base::mouseReleaseEvent(event);
 }
 
-//float
-ZFloatEditableTextItem::ZFloatEditableTextItem(const QString &text, QGraphicsItem *parent):
-    _base(text, parent)
-{
-}
-ZFloatEditableTextItem::ZFloatEditableTextItem(QGraphicsItem *parent) :
-    _base(parent)
-{
-}
-
-bool ZFloatEditableTextItem::event(QEvent *event) 
-{
-    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(mainWin, false);
-    ZTimeline *timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline, false);
-    CURVE_DATA curve;
-    {
-        if (event->type() == QEvent::DynamicPropertyChange) 
-        {
-            QDynamicPropertyChangeEvent *evt = static_cast<QDynamicPropertyChangeEvent *>(event);
-            if (evt->propertyName() == g_keyFrame) 
-            {
-                updateText(timeline->value());
-                if (UiHelper::getKeyFrame(this, curve)) {
-                    connect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatEditableTextItem::updateText, Qt::UniqueConnection);
-                    connect(zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatEditableTextItem::onUpdate, Qt::UniqueConnection);
-                } else {
-                    disconnect(timeline, &ZTimeline::sliderValueChanged, this, &ZFloatEditableTextItem::updateText);
-                    disconnect(zenoApp->getMainWindow(), &ZenoMainWindow::visFrameUpdated, this, &ZFloatEditableTextItem::onUpdate);
-                }
-            }
-        }
-        if (event->type() == QEvent::FocusOut) {
-            updateCurveData();
-        }
-    }
-    return _base::event(event);
-}
-void ZFloatEditableTextItem::updateCurveData() {
-    CURVE_DATA val;
-    if (!UiHelper::getKeyFrame(this, val)) {
-        return;
-    }
-    ZenoMainWindow *mainWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(mainWin);
-    ZTimeline *timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-    float x = timeline->value();
-    float y = text().toFloat();
-    if (val.visible) {
-        bool bUpdate = curve_util::updateCurve(QPoint(x, y), val);
-        if (bUpdate)
-            setProperty(g_keyFrame, QVariant::fromValue(val));
-    } else {
-        val.points.begin()->point = QPointF(x, y);
-        setProperty(g_keyFrame, QVariant::fromValue(val));
-    }
-}
-
-void ZFloatEditableTextItem::updateText(int frame) 
-{
-    CURVE_DATA data;
-    if (UiHelper::getKeyFrame(this, data)) {
-        QString text = QString::number(data.eval(frame));
-        setText(text);
-    }
-    UiHelper::updateProperty(this);
-    update();
-}
-
-void ZFloatEditableTextItem::onUpdate(bool gl, int frame) 
-{
-    updateText(frame);
-}
-
 ZSocketEditableItem::ZSocketEditableItem(
         const QPersistentModelIndex& viewSockIdx,
         const QString& sockName,
@@ -709,7 +627,7 @@ ZSocketEditableItem::ZSocketEditableItem(
     //});
 
     setDefaultTextColor(QColor(188, 188, 188));
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     font.setWeight(QFont::Bold);
     setFont(font);

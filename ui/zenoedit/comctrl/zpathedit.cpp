@@ -1,8 +1,7 @@
 #include "zpathedit.h"
-#include "zlineedit.h"
 #include <zenomodel/include/modeldata.h>
-#include <zenoedit/zenoapplication.h>
-#include <zenoedit/zenomainwindow.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 
