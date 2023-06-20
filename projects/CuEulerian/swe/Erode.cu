@@ -1698,8 +1698,8 @@ struct zs_HF_maskByFeature : INode {
         // 计算
         ////////////////////////////////////////////////////////////////////////////////////////
         /// @brief  accelerate cond computation using cuda
-        auto height = pars.begin("heightLayer");
-        auto mask = pars.begin("data");
+        auto height = pars.begin(heightLayer);
+        auto mask = pars.begin(maskLayer);
 
         pol(range((std::size_t)nz * (std::size_t)nx),
             [=, pars = proxy<space>({}, pars),
