@@ -63,6 +63,9 @@ struct RadiancePRD
 {
     // TODO: move some state directly into payload registers?
     float3       radiance;
+    float3       radiance_d;
+    float3       radiance_s;
+    float3       radiance_t;
     float3       emission;
     float3       attenuation;
     float3       attenuation2;
@@ -76,6 +79,7 @@ struct RadiancePRD
     float        prob2;
     unsigned int seed;
     unsigned int flags;
+    bool         hitEnv;
     int          countEmitted;
     int          done;
     int          pad;
