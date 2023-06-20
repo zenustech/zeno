@@ -3,7 +3,7 @@
 #include <zenoui/style/zenostyle.h>
 #include <QGridLayout>
 #include "zenoapplication.h"
-#include <zenoui/comctrl/zwidgetfactory.h>
+#include "comctrl/zwidgetfactory.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include "zenomainwindow.h"
 #include <zenomodel/include/uihelper.h>

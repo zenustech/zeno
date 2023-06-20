@@ -10,7 +10,6 @@
 #include "zassert.h"
 #include <zenomodel/include/igraphsmodel.h>.
 #include <zenomodel/include/graphsmanagment.h>
-#include <zenoedit/zenoapplication.h>
 #include "variantptr.h"
 
 ZCurveMapEditor::ZCurveMapEditor(bool bTimeline, QWidget* parent)
@@ -267,8 +266,7 @@ void ZCurveMapEditor::onAddCurveBtnClicked() {
     QStandardItem * pRootItem = m_channelModel->itemFromIndex(m_channelModel->index(0, 0));
     if (pRootItem->rowCount() != 3)
     {
-        IGraphsModel *pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        CurveModel *newCurve = curve_util::deflModel(pGraphsModel);
+        CurveModel *newCurve = curve_util::deflModel(this);
 
         if (pRootItem->child(0, 0) == NULL || pRootItem->child(0, 0)->data(Qt::DisplayRole) != "x")
         {

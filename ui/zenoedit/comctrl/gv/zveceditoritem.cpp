@@ -1,8 +1,10 @@
 #include "zveceditoritem.h"
+#include "util/apphelper.h"
 #include <zenomodel/include/uihelper.h>
 #include <zenomodel/include/modeldata.h>
-#include "../../style/zenostyle.h"
+#include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/curveutil.h>
+#include "zfloateditabletextitem.h"
 
 
 ZVecEditorItem::ZVecEditorItem(const QVariant& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent, Qt::WindowFlags wFlags)

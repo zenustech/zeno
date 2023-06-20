@@ -1,7 +1,7 @@
 #ifndef __ZPATHEDIT_H__
 #define __ZPATHEDIT_H__
 
-#include "zlineedit.h"
+#include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/gv/callbackdef.h>
 
 class ZPathEdit : public ZLineEdit

@@ -11,12 +11,6 @@
 #include <QUuid>
 #include "common_def.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
-#include <zenoedit/zenoapplication.h>
-#include <zenoedit/zenomainwindow.h>
-#include <zenoedit/timeline/ztimeline.h>
-
-const char* g_setKey = "setKey";
-const char* g_keyFrame = "keyFrame";
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -1848,37 +1842,4 @@ static std::string getZenoVersion()
     int day = std::stoi(std::string(date + 4, 2));
     int year = std::stoi(std::string(date + 7, 4));
     return zeno::format("{:04d}.{:02d}.{:02d}", year, month, day);
-}
-
-bool UiHelper::getKeyFrame(const QObject* obj, CURVE_DATA& curve)
-{
-    bool res = obj->property(g_keyFrame).canConvert<CURVE_DATA>();
-    if (res)
-        curve = obj->property(g_keyFrame).value<CURVE_DATA>();
-    return res;
-}
-
-void UiHelper::updateProperty(QObject* obj)
-{
-    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(mainWin);
-    ZTimeline* timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-    CURVE_DATA data;
-    QString property = "null";
-    if (getKeyFrame(obj, data)) {
-        if (data.visible)
-        {
-            property = "false";
-            int x = timeline->value();
-            for (const auto& p : data.points) {
-                int px = p.point.x();
-                if (px == x) {
-                    property = "true";
-                    break;
-                }
-            }
-        }
-    }
-    obj->setProperty(g_setKey, property);
 }

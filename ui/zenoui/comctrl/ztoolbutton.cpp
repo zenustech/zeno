@@ -1,7 +1,6 @@
 #include "../style/zenostyle.h"
 #include "../style/zstyleoption.h"
 #include "ztoolbutton.h"
-#include <zenoedit/zenoapplication.h>
 
 
 ZToolButton::ZToolButton(QWidget* parent)
@@ -34,7 +33,7 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     initDefault();
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(9);
     m_font = font;
 }
@@ -56,7 +55,7 @@ ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn,
     setIcon(m_iconSize, icon, "", iconOn, "");
     setMouseTracking(true);
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(9);
     m_font = font;
 }

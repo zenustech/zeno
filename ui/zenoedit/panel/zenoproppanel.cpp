@@ -9,13 +9,13 @@
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include <zenoui/comctrl/zveceditor.h>
+#include "comctrl/zveceditor.h"
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/ztextedit.h>
-#include <zenoui/comctrl/zwidgetfactory.h>
+#include "comctrl/zwidgetfactory.h"
 #include "util/log.h"
 #include "util/apphelper.h"
 #include <zenomodel/include/curveutil.h>

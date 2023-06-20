@@ -12,17 +12,19 @@
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenomodel/include/curvemodel.h>
-#include <zenoui/comctrl/zveceditor.h>
-#include "view/zcomboboxitemdelegate.h"
+#include "zveceditor.h"
+#include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
 #include "variantptr.h"
 #include "zassert.h"
-#include "zspinboxslider.h"
-#include "zdicttableview.h"
+#include <zenoui/comctrl/zspinboxslider.h>
+#include <zenoui/comctrl/zdicttableview.h>
 #include <zenoedit/zenoapplication.h>
 #include "gv/zitemfactory.h"
-#include <zenoui/comctrl/zpathedit.h>
+#include "zpathedit.h"
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/uihelper.h>
+#include "zfloatlineedit.h"
+#include "util/apphelper.h"
 
 namespace zenoui
 {
@@ -71,7 +73,7 @@ namespace zenoui
                     // be careful about the dynamic type.
                     QVariant newValue;
                     CURVE_DATA curve;
-                    if (UiHelper::getKeyFrame(pLineEdit, curve)) {
+                    if (AppHelper::getKeyFrame(pLineEdit, curve)) {
                         CURVES_DATA data;
                         data.insert(curve.key, curve);
                         newValue = QVariant::fromValue(data);

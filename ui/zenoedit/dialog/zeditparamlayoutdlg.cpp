@@ -9,7 +9,7 @@
 #include <zenomodel/include/nodeparammodel.h>
 #include <zenomodel/include/panelparammodel.h>
 #include <zenomodel/include/nodesmgr.h>
-#include <zenoui/comctrl/zwidgetfactory.h>
+#include "comctrl/zwidgetfactory.h"
 #include <zenomodel/include/globalcontrolmgr.h>
 #include "variantptr.h"
 #include <zenomodel/include/command.h>

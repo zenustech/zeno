@@ -1,8 +1,8 @@
 #ifndef __ZITEM_FACTORY_H__
 #define __ZITEM_FACTORY_H__
 
-#include "zenoparamwidget.h"
-#include "callbackdef.h"
+#include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include <zenoui/comctrl/gv/callbackdef.h>
 
 namespace zenoui
 {
