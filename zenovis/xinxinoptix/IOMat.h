@@ -33,6 +33,7 @@ struct MatOutput {
 
     vec3 nrm;
     vec3 emission;
+    float vol_anisotropy;
 };
 
 struct MatInput {

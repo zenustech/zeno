@@ -8,6 +8,7 @@
 #include "DisneyBSDF.h"
 #include "zxxglslvec.h"
 
+#include "volume.h"
 #include <cuda_fp16.h>
 
 extern "C" {
@@ -337,9 +338,7 @@ extern "C" __global__ void __miss__radiance()
     }
 
     vec3 sigma_t, ss_alpha;
-    //vec3 sigma_t, ss_alpha;
     prd->readMat(sigma_t, ss_alpha);
-
 
     vec3 transmittance;
     if (ss_alpha.x < 0.0f) { // is inside Glass
@@ -351,12 +350,19 @@ extern "C" __global__ void __miss__radiance()
     prd->attenuation *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->attenuation2 *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
-    prd->direction = DisneyBSDF::SampleScatterDirection(prd->seed);
+
+    auto anisotropy = prd->anisotropy_queue[prd->curMatIdx];
+    pbrt::HenyeyGreenstein hg(anisotropy); float3 newdir;
+
+    float2 uu = {rnd(prd->seed), rnd(prd->seed)}; 
+    auto prob = hg.Sample_p(prd->direction, newdir, uu);
+
+    prd->direction = newdir; //DisneyBSDF::SampleScatterDirection(prd->seed);
 
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
+        prd->maxDistance = 1e16f; //DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
     } else
     {
         prd->maxDistance =

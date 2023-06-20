@@ -72,6 +72,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
     vec3 mat_reflectance = att_reflectance;
+    auto vol_sample_anisotropy = 0.0f;
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
@@ -108,6 +109,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         mats.sssParam = mat_sssParam;
         mats.scatterStep = mat_scatterStep;
         mats.smoothness = mat_smoothness;
+        mats.vol_anisotropy = clamp(vol_sample_anisotropy, -0.99f, 0.99f);
         return mats;
     }
 }
@@ -950,7 +952,7 @@ extern "C" __global__ void __closesthit__radiance()
                         //     printf("into sss, sigma_t, alpha: %f, %f, %f\n", prd->sigma_t.x, prd->sigma_t.y, prd->sigma_t.z,prd->ss_alpha.x, prd->ss_alpha.y, prd->ss_alpha.z);
                         // }
                         
-                        prd->pushMat(prd->sigma_t, prd->ss_alpha);
+                        prd->pushMat(prd->sigma_t, prd->ss_alpha, mats.vol_anisotropy);
                     }
 
                     prd->scatterDistance = scatterDistance;

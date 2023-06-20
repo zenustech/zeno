@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optix.h>
+#include <cuda_fp16.h>
 
 #include "zxxglslvec.h"
 #include "optixPathTracer.h"
@@ -98,6 +99,7 @@ struct RadiancePRD
     float        Lweight;
     vec3         sigma_t_queue[8];
     vec3         ss_alpha_queue[8];
+    half         anisotropy_queue[8];
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
@@ -152,7 +154,7 @@ struct RadiancePRD
         attenuation *= multiplier;
     }
     
-    int pushMat(vec3 extinction, vec3 ss_alpha = vec3(-1.0f))
+    int pushMat(vec3 extinction, vec3 ss_alpha = vec3(-1.0f), half aniso = 0.0f)
     {
         vec3 d = abs(sigma_t_queue[curMatIdx] - extinction);
         float c = dot(d, vec3(1,1,1));
@@ -161,7 +163,7 @@ struct RadiancePRD
             curMatIdx++;
             sigma_t_queue[curMatIdx] = extinction;
             ss_alpha_queue[curMatIdx] = ss_alpha;
-            
+            anisotropy_queue[curMatIdx] = aniso;
         }
 
         return curMatIdx;
