@@ -58,7 +58,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         m_aperture = scene->camera->m_aperture;
         m_focalPlaneDistance = scene->camera->focalPlaneDistance;
         scene->camera->m_need_sync = false;
-        if (scene->camera->m_auto_radius) {
+        if (bool(m_picker) && scene->camera->m_auto_radius) {
             this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
                 if (depth < 0.001f) {
                     return;
