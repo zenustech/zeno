@@ -31,7 +31,7 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     std::vector<std::vector<size_t>> poses(3);
     std::vector<std::string> keys(3);
     for (auto const &[key, obj]: objs) {
-        int bufsize;
+        size_t bufsize = 0;
         std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") -1);
         if (cacheLightCameraOnly && (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)))
         {
