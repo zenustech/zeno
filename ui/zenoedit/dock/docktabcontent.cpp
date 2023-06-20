@@ -608,7 +608,7 @@ void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
 DockContent_View::DockContent_View(bool bGLView, QWidget* parent)
     : DockToolbarWidget(parent)
     , m_pDisplay(nullptr)
-    , m_cbRenderWay(nullptr)
+    , m_cbRes(nullptr)
     , m_smooth_shading(nullptr)
     , m_normal_check(nullptr)
     , m_wire_frame(nullptr)
@@ -716,29 +716,54 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pMenuBar->addMenu(pView);
     pMenuBar->addMenu(pObject);
 
-    QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
+    QStringList items = {
+        tr("Free"),
+        "1024x768",
+        "1280x720",
+        "1280x768",
+        "1280x800",
+        "1680x1050",
+        "1920x1080",
+        tr("Customize Size")
+    };
     QVariant props = items;
 
     QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {
-        if (newValue == items[0]) {
-            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SOLID, true);
+        ZASSERT_EXIT(m_pDisplay);
+        int nx = -1, ny = -1;
+        bool bLock = false;
+        if (newValue == tr("Free"))
+        {
+            nx = 100;
+            ny = 100;
         }
-        else if (newValue == items[1]) {
-            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SHADING, true);
+        else if (newValue == tr("Customize Size"))
+        {
+            //todo
         }
-        else if (newValue == items[2]) {
-            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_OPTIX, true);
+        else
+        {
+            bLock = true;
+            QString resStr = newValue.toString();
+            auto L = resStr.split('x');
+            bool bOK = false;
+            nx = L[0].toInt(&bOK);
+            ZASSERT_EXIT(nx);
+            ny = L[1].toInt(&bOK);
+            ZASSERT_EXIT(ny);
         }
-        m_cbRenderWay->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
+        m_pDisplay->lockCameraRes(bLock, nx, ny);
+        m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
     };
+
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcRender;
-    m_cbRenderWay = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
-    m_cbRenderWay->setProperty("focusBorder", "none");
-    m_cbRenderWay->setEditable(false);
-    m_cbRenderWay->view()->setFixedWidth(ZenoStyle::dpiScaled(110));
-    m_cbRenderWay->setFixedSize(fontMetrics.horizontalAdvance(items[0]) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(20));
+    m_cbRes = qobject_cast<QComboBox*>(zenoui::createWidget("Free", CONTROL_ENUM, "string", cbSet, props));
+    m_cbRes->setProperty("focusBorder", "none");
+    m_cbRes->setEditable(false);
+    m_cbRes->view()->setFixedWidth(ZenoStyle::dpiScaled(110));
+    m_cbRes->setFixedSize(fontMetrics.horizontalAdvance(items[0]) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(20));
 
     pToolLayout->addWidget(pMenuBar);
     pToolLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
@@ -763,7 +788,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addStretch(7);
 
-    pToolLayout->addWidget(m_cbRenderWay);
+    pToolLayout->addWidget(m_cbRes);
 }
 
 QWidget* DockContent_View::initWidget()

@@ -15,7 +15,6 @@ Zenovis::Zenovis(QObject *parent)
     , m_solver_frameid(0)
     , m_solver_interval(0)
     , m_render_fps(0)
-    , m_resolution(QPoint(1,1))
     , m_cache_frames(10)
     , m_playing(false)
     , m_camera_keyframe(nullptr)
@@ -56,10 +55,9 @@ int Zenovis::getCurrentFrameId()
 
 void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective)
 {
-    m_resolution = resolution;
     m_perspective = perspective;
     if (session) {
-        session->set_window_size(m_resolution.x(), m_resolution.y());
+        session->set_window_size(resolution.x(), resolution.y());
         session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz,
                                   m_perspective.theta, m_perspective.phi, m_perspective.radius,
                                   m_perspective.fov, m_perspective.ortho_mode,

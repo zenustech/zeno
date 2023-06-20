@@ -50,6 +50,15 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
 }
 
 void Camera::setResolution(int nx, int ny) {
+    if (!m_lock_size) {
+        m_nx = nx;
+        m_ny = ny;
+        m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
+    }
+}
+
+void Camera::lock_window_size(bool bLock, int nx, int ny) {
+    m_lock_size = bLock;
     m_nx = nx;
     m_ny = ny;
     m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);

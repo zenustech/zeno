@@ -36,6 +36,11 @@ Session::~Session() = default;
 Scene* Session::get_scene() const {
     return impl->scene.get();
 }
+
+void Session::lock_window_size(bool bLock, int nx, int ny) {
+    impl->scene->camera->lock_window_size(bLock, nx, ny);
+}
+
 void Session::set_window_size(int nx, int ny) {
     impl->scene->camera->setResolution(nx, ny);
 }

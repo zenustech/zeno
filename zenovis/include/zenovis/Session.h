@@ -24,6 +24,7 @@ struct Session : zeno::disable_copy {
 
     void new_frame();
     bool load_objects();
+    void lock_window_size(bool bLock, int nx, int ny);
     void set_window_size(int nx, int ny);
     std::tuple<int, int> get_window_size();
     void set_curr_frameid(int frameid);

@@ -170,6 +170,16 @@ void DisplayWidget::setCameraRes(const QVector2D& res)
     }
 }
 
+void DisplayWidget::lockCameraRes(bool bLock, int nx, int ny)
+{
+    if (m_glView) {
+        //todo
+    }
+    else {
+        m_optixView->lockCameraRes(bLock, nx, ny);
+    }
+}
+
 void DisplayWidget::setSimpleRenderOption()
 {
     if (m_glView)

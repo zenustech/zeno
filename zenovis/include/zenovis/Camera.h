@@ -29,6 +29,7 @@ struct Camera {
     glm::vec3 m_lodup{0, 1, 0};
 
     bool m_need_sync = false;
+    bool m_lock_size = false;
 
     struct ZxxHappyLookParam {
         float cx = 0;
@@ -50,6 +51,7 @@ struct Camera {
     }
 
     void setResolution(int nx, int ny);
+    void lock_window_size(bool bLock, int nx, int ny);
     void setCamera(zeno::CameraData const &cam);
     void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar);
     void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance);
