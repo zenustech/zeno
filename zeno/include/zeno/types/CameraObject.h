@@ -16,6 +16,7 @@ struct CameraData {
     float aperture{0.1f};
     float focalPlaneDistance{2.0f};
 
+    bool isSet = false;
     vec3f center{0, 0, 0};
     float radius{1};
     float theta{};

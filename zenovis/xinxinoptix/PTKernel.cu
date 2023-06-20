@@ -138,6 +138,7 @@ extern "C" __global__ void __raygen__rg()
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
         prd.first_hit_type = 0;
+        prd.hitEnv = false;
         auto tmin = prd.trace_tmin;
         auto ray_mask = prd._mask_;
 
@@ -147,6 +148,9 @@ extern "C" __global__ void __raygen__rg()
 
         for(;;)
         {
+            result_d = make_float3(0,0,0);
+            result_s = make_float3(0,0,0);
+            result_t = make_float3(0,0,0);
             traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
 
             tmin = prd.trace_tmin;
@@ -182,6 +186,21 @@ extern "C" __global__ void __raygen__rg()
                 float3 clampped = clamp(vec3(temp_radiance), vec3(0), vec3(10));
 
                 result += prd.depth>1?clampped:temp_radiance;
+                if(prd.depth==1 && prd.hitEnv == false)
+                {
+                  result_d += prd.radiance_d * prd.attenuation2;
+                  result_s += prd.radiance_s * prd.attenuation2;
+                  result_t += prd.radiance_t * prd.attenuation2;
+                }
+                if(prd.depth>1 || (prd.depth==1 && prd.hitEnv == true)) {
+                  result_d +=
+                      prd.first_hit_type == 1 ? result : make_float3(0, 0, 0);
+                  result_s +=
+                      prd.first_hit_type == 2 ? result : make_float3(0, 0, 0);
+                  result_t +=
+                      prd.first_hit_type == 3 ? result : make_float3(0, 0, 0);
+                }
+
                 // fire without smoke requires this line to work.
             }
 
@@ -222,10 +241,8 @@ extern "C" __global__ void __raygen__rg()
                 //prd.passed = false;
             //}
         }
-        result_d += prd.first_hit_type==1? result:make_float3(0,0,0);
-        result_s += prd.first_hit_type==2? result:make_float3(0,0,0);
-        result_t += prd.first_hit_type==3? result:make_float3(0,0,0);
-        result_b += prd.first_hit_type==0? make_float3(0,0,0):make_float3(1,1,1);
+        result_b += prd.first_hit_type == 0 ? make_float3(0, 0, 0)
+                                            : make_float3(1, 1, 1);
         seed = prd.seed;
     }
     while( --i );
@@ -315,6 +332,7 @@ extern "C" __global__ void __miss__radiance()
         prd->radiance = misWeight * skysample ;
         prd->radiance = prd->depth>=1?prd->radiance:make_float3(0,0,0);
         prd->done      = true;
+        prd->hitEnv    = true;
         return;
     }
 

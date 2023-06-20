@@ -30,6 +30,7 @@ struct Camera {
 
     bool m_need_sync = false;
     bool m_lock_size = false;
+    bool m_auto_radius = false;
 
     struct ZxxHappyLookParam {
         float cx = 0;

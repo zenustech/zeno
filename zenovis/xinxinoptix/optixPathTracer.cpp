@@ -3413,6 +3413,20 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     cam.aperture = aperture;
 }
 
+void *optixgetimg_extra(std::string name) {
+    if (name == "diffuse") {
+        return output_buffer_diffuse->getHostPointer();
+    }
+    else if (name == "specular") {
+        return output_buffer_specular->getHostPointer();
+    }
+    else if (name == "transmit") {
+        return output_buffer_transmit->getHostPointer();
+    }
+    else if (name == "background") {
+        return output_buffer_background->getHostPointer();
+    }
+}
 
 void optixrender(int fbo, int samples, bool simpleRender) {
     samples = zeno::envconfig::getInt("SAMPLES", samples);
@@ -3448,6 +3462,12 @@ void optixrender(int fbo, int samples, bool simpleRender) {
         stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
         ud.erase("optix_image_path");
+        // AOV
+        path = path.substr(0, path.size() - 4);
+        stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
+        stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);
+        stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
+        stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
     }
 }
 
