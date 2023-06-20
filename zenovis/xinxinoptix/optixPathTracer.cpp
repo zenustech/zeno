@@ -3454,7 +3454,7 @@ void optixrender(int fbo, int samples, bool simpleRender) {
 void *optixgetimg(int &w, int &h) {
     w = output_buffer_o->width();
     h = output_buffer_o->height();
-    return output_buffer_specular->getHostPointer();
+    return output_buffer_o->getHostPointer();
 }
 
 //void optixsaveimg(const char *outfile) {
