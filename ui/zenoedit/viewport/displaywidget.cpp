@@ -7,6 +7,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/CameraObject.h>
+#include <zeno/types/UserData.h>
 #include <zenomodel/include/uihelper.h>
 #include "launch/corelaunch.h"
 #include "zenomainwindow.h"
@@ -625,6 +626,11 @@ void DisplayWidget::onRecord()
         {
             ZASSERT_EXIT(m_optixView);
             m_optixView->recordVideo(recInfo);
+            auto &ud = zeno::getSession().userData();
+            ud.set2("cropped", recInfo.cropped);
+            ud.set2("bmin", recInfo.bmin);
+            ud.set2("bmax", recInfo.bmax);
+            ud.set2("keepRatio", recInfo.keepRatio);
         }
         else
         {

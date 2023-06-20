@@ -2,6 +2,7 @@
 #define __RECORD_VIDEO_MGR_H__
 
 #include <QtWidgets>
+#include "zeno/utils/vec.h"
 
 struct VideoRecInfo
 {
@@ -19,6 +20,11 @@ struct VideoRecInfo
     bool needDenoise = true;
     bool exitWhenRecordFinish = false;
     bool bRecordByCommandLine = false;
+
+    bool cropped = false;
+    zeno::vec2i bmin = {};
+    zeno::vec2i bmax = {};
+    bool keepRatio = true;
 };
 Q_DECLARE_METATYPE(VideoRecInfo);
 

@@ -3356,7 +3356,7 @@ void UpdateInst()
         }
     }
 }
-void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true) {
+void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio) {
   zeno::vec2i t;
   t[0] = target[0]; t[1] = target[1];
   int dx = bmax[0] - bmin[0];

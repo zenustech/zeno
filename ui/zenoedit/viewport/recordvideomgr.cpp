@@ -15,6 +15,7 @@
 #include "launch/corelaunch.h"
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/core/Session.h>
+#include <zeno/types/UserData.h>
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
     : QObject(parent)
@@ -94,6 +95,8 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
 
 void RecordVideoMgr::endRecToExportVideo()
 {
+    auto &ud = zeno::getSession().userData();
+    ud.set2("cropped", false);
     // denoising
     if (m_recordInfo.needDenoise) {
         QString dir_path = m_recordInfo.record_path + "/P/";

@@ -91,6 +91,7 @@ void optixupdatelight();
 void optixupdateend();
 
 void set_window_size(int nx, int ny);
+void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true);
 void set_perspective(float const *U, float const *V, float const *W, float const *E, float aspect, float fov, float fpd, float aperture);
 
 void load_object(std::string const &key, std::string const &mtlid, const std::string& instID, float const *verts, size_t numverts, int const *tris, size_t numtris, std::map<std::string, std::pair<float const *, size_t>> const &vtab,int const *matids, std::vector<std::string> const &matNameList);
