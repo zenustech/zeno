@@ -55,13 +55,13 @@ struct Make1DLinePrimitive : INode {
     ax = has_input("direction") ?
             get_input<NumericObject>("direction")->get<vec3f>()
             : ax;
-    if (get_param<bool>("isCentered"))
-      o -= (ax) / 2;
-      if (has_input("scale")) {
-            auto scale = get_input<NumericObject>("scale")->get<float>();
-            ax *= scale;
-        }
+    if (has_input("scale")) {
+        auto scale = get_input<NumericObject>("scale")->get<float>();
+        ax *= scale;
+    }
     ax *= dx;
+    if (get_param<bool>("isCentered"))
+        o -= (ax) / 2;
 
     auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(nx);
