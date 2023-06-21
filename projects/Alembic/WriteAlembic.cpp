@@ -234,6 +234,71 @@ struct WriteAlembic2 : INode {
             }
         });
     }
+    void write_user_data(std::shared_ptr<PrimitiveObject> prim, OCompoundProperty& user) {
+        auto &ud = prim->userData();
+        for (const auto& [key, value] : ud.m_data) {
+            if (ud.has<int>(key)) {
+                if (user_attrs.count(key) == 0) {
+                    auto p = OInt32Property(user, key);
+                    p.setTimeSampling(1);
+                    user_attrs[key] = p;
+                }
+                std::any_cast<OInt32Property>(user_attrs[key]).set(ud.get2<int>(key));
+            }
+            else if (ud.has<float>(key)) {
+                if (user_attrs.count(key) == 0) {
+                    auto p = OFloatProperty(user, key);
+                    p.setTimeSampling(1);
+                    user_attrs[key] = p;
+                }
+                std::any_cast<OFloatProperty>(user_attrs[key]).set(ud.get2<float>(key));
+            }
+            else if (ud.has<vec2i>(key)) {
+                if (user_attrs.count(key) == 0) {
+                    auto p = OV2iProperty(user, key);
+                    p.setTimeSampling(1);
+                    user_attrs[key] = p;
+                }
+                auto v = ud.get2<vec2i>(key);
+                std::any_cast<OV2iProperty>(user_attrs[key]).set(Imath_3_2::V2i(v[0], v[1]));
+            }
+            else if (ud.has<vec3i>(key)) {
+                if (user_attrs.count(key) == 0) {
+                    auto p = OV3iProperty(user, key);
+                    p.setTimeSampling(1);
+                    user_attrs[key] = p;
+                }
+                auto v = ud.get2<vec3i>(key);
+                std::any_cast<OV3iProperty>(user_attrs[key]).set(Imath_3_2::V3i(v[0], v[1], v[2]));
+            }
+            else if (ud.has<vec2f>(key)) {
+                if (user_attrs.count(key) == 0) {
+                    auto p = OV2fProperty(user, key);
+                    p.setTimeSampling(1);
+                    user_attrs[key] = p;
+                }
+                auto v = ud.get2<vec2f>(key);
+                std::any_cast<OV2fProperty>(user_attrs[key]).set(Imath_3_2::V2f(v[0], v[1]));
+            }
+            else if (ud.has<vec3f>(key)) {
+                if (user_attrs.count(key) == 0) {
+                    auto p = OV3fProperty(user, key);
+                    p.setTimeSampling(1);
+                    user_attrs[key] = p;
+                }
+                auto v = ud.get2<vec3f>(key);
+                std::any_cast<OV3fProperty>(user_attrs[key]).set(Imath_3_2::V3f(v[0], v[1], v[2]));
+            }
+            else if (ud.has<std::string>(key)) {
+                if (user_attrs.count(key) == 0) {
+                    auto p = OStringProperty(user, key);
+                    p.setTimeSampling(1);
+                    user_attrs[key] = p;
+                }
+                std::any_cast<OStringProperty>(user_attrs[key]).set(ud.get2<std::string>(key));
+            }
+        }
+    }
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         bool flipFrontBack = get_input2<int>("flipFrontBack");
@@ -267,69 +332,7 @@ struct WriteAlembic2 : INode {
             OPolyMeshSchema &mesh = meshyObj.getSchema();
 
             OCompoundProperty user = mesh.getUserProperties();
-            auto &ud = prim->userData();
-            for (const auto& [key, value] : ud.m_data) {
-                if (ud.has<int>(key)) {
-                    if (user_attrs.count(key) == 0) {
-                        auto p = OInt32Property(user, key);
-                        p.setTimeSampling(1);
-                        user_attrs[key] = p;
-                    }
-                    std::any_cast<OInt32Property>(user_attrs[key]).set(ud.get2<int>(key));
-                }
-                else if (ud.has<float>(key)) {
-                    if (user_attrs.count(key) == 0) {
-                        auto p = OFloatProperty(user, key);
-                        p.setTimeSampling(1);
-                        user_attrs[key] = p;
-                    }
-                    std::any_cast<OFloatProperty>(user_attrs[key]).set(ud.get2<float>(key));
-                }
-                else if (ud.has<vec2i>(key)) {
-                    if (user_attrs.count(key) == 0) {
-                        auto p = OV2iProperty(user, key);
-                        p.setTimeSampling(1);
-                        user_attrs[key] = p;
-                    }
-                    auto v = ud.get2<vec2i>(key);
-                    std::any_cast<OV2iProperty>(user_attrs[key]).set(Imath_3_2::V2i(v[0], v[1]));
-                }
-                else if (ud.has<vec3i>(key)) {
-                    if (user_attrs.count(key) == 0) {
-                        auto p = OV3iProperty(user, key);
-                        p.setTimeSampling(1);
-                        user_attrs[key] = p;
-                    }
-                    auto v = ud.get2<vec3i>(key);
-                    std::any_cast<OV3iProperty>(user_attrs[key]).set(Imath_3_2::V3i(v[0], v[1], v[2]));
-                }
-                else if (ud.has<vec2f>(key)) {
-                    if (user_attrs.count(key) == 0) {
-                        auto p = OV2fProperty(user, key);
-                        p.setTimeSampling(1);
-                        user_attrs[key] = p;
-                    }
-                    auto v = ud.get2<vec2f>(key);
-                    std::any_cast<OV2fProperty>(user_attrs[key]).set(Imath_3_2::V2f(v[0], v[1]));
-                }
-                else if (ud.has<vec3f>(key)) {
-                    if (user_attrs.count(key) == 0) {
-                        auto p = OV3fProperty(user, key);
-                        p.setTimeSampling(1);
-                        user_attrs[key] = p;
-                    }
-                    auto v = ud.get2<vec3f>(key);
-                    std::any_cast<OV3fProperty>(user_attrs[key]).set(Imath_3_2::V3f(v[0], v[1], v[2]));
-                }
-                else if (ud.has<std::string>(key)) {
-                    if (user_attrs.count(key) == 0) {
-                        auto p = OStringProperty(user, key);
-                        p.setTimeSampling(1);
-                        user_attrs[key] = p;
-                    }
-                    std::any_cast<OStringProperty>(user_attrs[key]).set(ud.get2<std::string>(key));
-                }
-            }
+            write_user_data(prim, user);
 
             mesh.setTimeSampling(1);
 
@@ -466,6 +469,8 @@ struct WriteAlembic2 : INode {
         }
         else {
             OPointsSchema &points = pointsObj.getSchema();
+            OCompoundProperty user = points.getUserProperties();
+            write_user_data(prim, user);
             points.setTimeSampling(1);
             OPointsSchema::Sample samp(V3fArraySample( ( const V3f * )prim->verts.data(), prim->verts.size() ));
             std::vector<uint64_t> ids(prim->verts.size());
