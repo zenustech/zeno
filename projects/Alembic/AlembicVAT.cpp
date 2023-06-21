@@ -124,11 +124,17 @@ void writeObjFile(
     std::vector<std::pair<float, float>> vatUvMap;
     for (size_t i = 0; i < vertices.size(); i++) {
         float u1 = (float(i % vatWidth)) / (float)vatWidth;
-        float u2 = (float(i + 1 % vatWidth)) / (float)vatWidth;
+        float u2 = (float((i + 1) % vatWidth)) / (float)vatWidth;
+        if (u1 > 1.0f) {
+            u1 -= 1.0f;
+            u2 -= 1.0f;
+        }
         if (u1 > u2) {
             u2 = 1.0f;
         }
-        vatUvMap.emplace_back((u1 + u2) * 0.5f, std::floor((float)i / (float)vatWidth) / (float)vatHeight);
+        float v1 = std::floor((float)i / (float)vatWidth) / (float)vatHeight;
+        float v2 = std::floor(float(i + vatWidth) / (float)vatWidth) / (float)vatHeight;
+        vatUvMap.emplace_back((u1 + u2) * 0.5f, std::min((v1 + v2) * 0.5f, 1.0f));
         fprintf(fp, "vn %f %f %f\n", vatUvMap[i].first, vatUvMap[i].second, 0.0f);
     }
 
