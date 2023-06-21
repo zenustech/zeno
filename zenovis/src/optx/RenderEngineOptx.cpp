@@ -846,11 +846,20 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
-            xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
             auto &ud = zeno::getSession().userData();
             bool croped = ud.get2<bool>("cropped", false);
             zeno::log_info("crop {}", croped);
-
+            if (croped) {
+                auto nxny = ud.get2<zeno::vec2i>("nxny");
+                auto target = ud.get2<zeno::vec2i>("target");
+                auto bmin = ud.get2<zeno::vec2i>("bmin");
+                auto bmax = ud.get2<zeno::vec2i>("bmax");
+                bool keepRatio = ud.get2<bool>("keepRatio");
+                xinxinoptix::set_window_size_v2(nxny[0], nxny[1], bmin, bmax, target, keepRatio);
+            }
+            else {
+                xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
+            }
         }
 
         if (sizeNeedUpdate || camNeedUpdate) {

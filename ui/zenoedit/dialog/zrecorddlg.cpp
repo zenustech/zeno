@@ -24,6 +24,14 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui->msaaSamplerNumber->setText("0");
     m_ui->optixSamplerNumber->setValidator(new QIntValidator);
     m_ui->optixSamplerNumber->setText("1");
+    m_ui->CropBMinX->setValidator(new QIntValidator);
+    m_ui->CropBMinX->setText("0");
+    m_ui->CropBMinY->setValidator(new QIntValidator);
+    m_ui->CropBMinY->setText("0");
+    m_ui->CropBMaxX->setValidator(new QIntValidator);
+    m_ui->CropBMaxX->setText("0");
+    m_ui->CropBMaxY->setValidator(new QIntValidator);
+    m_ui->CropBMaxY->setText("0");
 
     m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
     m_ui->cbPresets->setCurrentIndex(1);
@@ -65,6 +73,10 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     path = m_ui->linePath->text();
     info.bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
     info.needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
+    info.keepRatio = m_ui->cbCropKeepRatio->checkState() == Qt::Checked;
+    info.bmin = {m_ui->CropBMinX->text().toInt(), m_ui->CropBMinY->text().toInt()};
+    info.bmax = {m_ui->CropBMaxX->text().toInt(), m_ui->CropBMaxY->text().toInt()};
+    info.cropped = m_ui->cbOptixCrop->checkState() == Qt::Checked;
     if (path.isEmpty())
     {
         QTemporaryDir dir;

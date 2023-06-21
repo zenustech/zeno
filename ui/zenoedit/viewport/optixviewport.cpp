@@ -8,6 +8,7 @@
 #include "settings/zenosettingsmanager.h"
 #include "launch/corelaunch.h"
 #include <zeno/core/Session.h>
+#include <zeno/types/UserData.h>
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
@@ -142,6 +143,14 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     int actualFrame = m_zenoVis->setCurrentFrameId(frame);
     m_zenoVis->doFrameUpdate();
     //todo: may be the frame has not been finished, in this case, we have to wait.
+    auto &ud = zeno::getSession().userData();
+    ud.set2("cropped", recInfo.cropped);
+    zeno::log_info("recInfo.cropped {}", recInfo.cropped);
+    ud.set2("bmin", recInfo.bmin);
+    ud.set2("bmax", recInfo.bmax);
+    ud.set2("keepRatio", recInfo.keepRatio);
+    ud.set2("nxny", zeno::vec2i(x, y));
+    ud.set2("target", zeno::vec2i(int(recInfo.res.x()), int(recInfo.res.y())));
 
     m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
     m_zenoVis->getSession()->do_screenshot(record_file, extname);
