@@ -9,7 +9,6 @@
 #include <Alembic/AbcCoreOgawa/All.h>
 #include <Alembic/Abc/ErrorHandler.h>
 #include "ABCTree.h"
-#include <any>
 #include <numeric>
 
 using namespace Alembic::AbcGeom;
@@ -200,7 +199,7 @@ struct WriteAlembic2 : INode {
     OArchive archive;
     OPolyMesh meshyObj;
     OPoints pointsObj;
-    std::map<std::string, std::any> attrs;
+    std::map<std::string, OFloatGeomParam> attrs;
 
     template<typename T1, typename T2>
     void write_attrs(std::shared_ptr<PrimitiveObject> prim, T1& schema, T2& samp) {
@@ -212,16 +211,24 @@ struct WriteAlembic2 : INode {
             using T = std::decay_t<decltype(arr[0])>;
             if constexpr (std::is_same_v<T, zeno::vec3f>) {
                 if (attrs.count(key) == 0) {
-                    attrs[key] = OV3fArrayProperty( arbAttrs, key, 1);
+                    attrs[key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 3);
                 }
-                auto samp = V3fArraySample(( const V3f * )arr.data(), arr.size());
-                std::any_cast<OV3fArrayProperty>(attrs[key]).set(samp);
+                auto samp = OFloatGeomParam::Sample();
+                std::vector<float> v(arr.size() * 3);
+                for (auto i = 0; i < arr.size(); i++) {
+                    v[i * 3 + 0] = arr[i][0];
+                    v[i * 3 + 1] = arr[i][1];
+                    v[i * 3 + 2] = arr[i][2];
+                }
+                samp.setVals(v);
+                attrs[key].set(samp);
             } else if constexpr (std::is_same_v<T, float>) {
                 if (attrs.count(key) == 0) {
-                    attrs[key] = OFloatArrayProperty( arbAttrs, key, 1);
+                    attrs[key] = OFloatGeomParam(arbAttrs.getPtr(), key, false, kVaryingScope, 1);
                 }
-                auto samp = FloatArraySample(( const float * )arr.data(), arr.size());
-                std::any_cast<OFloatArrayProperty>(attrs[key]).set(samp);
+                auto samp = OFloatGeomParam::Sample();
+                samp.setVals(arr);
+                attrs[key].set(samp);
             }
         });
     }
@@ -249,6 +256,9 @@ struct WriteAlembic2 : INode {
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
             return;
+        }
+        if (archive.valid() == false) {
+            zeno::makeError("Not init. Check whether in correct correct frame range.");
         }
         if (prim->polys.size() || prim->tris.size()) {
             // Create a PolyMesh class.

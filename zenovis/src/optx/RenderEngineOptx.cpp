@@ -332,6 +332,15 @@ struct GraphicsManager {
                         zeno::primTriangulate(prim_in);
                     }
                     if(prim_in->tris.size()==0) return;
+
+//                    /// WXL
+//                    (void)zeno::TempNodeSimpleCaller("PrimitiveReorder")
+//                        .set("prim", std::shared_ptr<zeno::PrimitiveObject>(prim_in, [](void *) {}))
+//                        .set2<bool>("order_vertices", true)
+//                        .set2<bool>("order_tris", true)
+//                        .call();  // will inplace reorder prim
+//                    /// WXL
+
                     bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
                     if(prim_in->has_attr("uv") && has_uv == false)
                     {
@@ -837,7 +846,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
-        xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
+            xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
+
         }
 
         if (sizeNeedUpdate || camNeedUpdate) {
@@ -917,7 +927,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
 
-            auto MeshesMaterials= xinxinoptix::uniqueMatsForMesh();
+            auto MeshesMaterials = xinxinoptix::uniqueMatsForMesh();
             auto SphereMaterials = xinxinoptix::uniqueMatsForSphere();
             
             //for (auto const &[key, obj]: graphicsMan->graphics)
@@ -1007,12 +1017,13 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                     } else {
 
                         if (MeshesMaterials.count(mtldet->mtlidkey) > 0) {
+                          meshMatLUT.insert(
+                              {mtldet->mtlidkey, (int)_mesh_shader_list.size()});
 
-                            meshMatLUT.insert({mtldet->mtlidkey, (int)_mesh_shader_list.size()});
-
-                            shaderP.mark = ShaderMaker::Mesh;
-                            _mesh_shader_list.push_back(shaderP);
+                          shaderP.mark = ShaderMaker::Mesh;
+                          _mesh_shader_list.push_back(shaderP);
                         }
+
                         if (SphereMaterials.count(mtldet->mtlidkey) > 0) {
 
                             shaderP.mark = ShaderMaker::Sphere;

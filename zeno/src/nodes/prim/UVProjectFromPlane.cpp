@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <cstring>
 #include <zeno/utils/log.h>
+#include <zeno/utils/fileio.h>
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
@@ -18,6 +19,7 @@
 #define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
+#include <zeno/types/HeatmapObject.h>
 
 static const float eps = 0.0001f;
 
@@ -350,11 +352,36 @@ std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
     return img;
 }
 
+std::shared_ptr<PrimitiveObject> readPFMFile(std::string const &path) {
+    int nx = 0;
+    int ny = 0;
+    std::ifstream file(path, std::ios::binary);
+    std::string format;
+    file >> format;
+    file >> nx >> ny;
+    float scale = 0;
+    file >> scale;
+    file.ignore(1);
+
+    auto img = std::make_shared<PrimitiveObject>();
+    int size = nx * ny;
+    img->resize(size);
+    file.read(reinterpret_cast<char*>(img->verts.data()), sizeof(vec3f) * nx * ny);
+
+    img->userData().set2("isImage", 1);
+    img->userData().set2("w", nx);
+    img->userData().set2("h", ny);
+    return img;
+}
+
 struct ReadImageFile : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
         if (zeno::ends_with(path, ".exr", false)) {
             set_output("image", readExrFile(path));
+        }
+        if (zeno::ends_with(path, ".pfm", false)) {
+            set_output("image", readPFMFile(path));
         }
         else {
             set_output("image", readImageFile(path));
@@ -371,6 +398,38 @@ ZENDEFNODE(ReadImageFile, {
     {},
     {"comp"},
 });
+
+void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
+    std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
+    std::vector<char> data(header.size() + w * h * sizeof(vec3f));
+    memcpy(data.data(), header.data(), header.size());
+    memcpy(data.data() + header.size(), rgb, w * h * sizeof(vec3f));
+    file_put_binary(data, path);
+}
+
+void write_pfm(std::string& path, std::shared_ptr<PrimitiveObject> image) {
+    auto &ud = image->userData();
+    int w = ud.get2<int>("w");
+    int h = ud.get2<int>("h");
+    write_pfm(path, w, h, image->verts->data());
+}
+
+void write_jpg(std::string& path, std::shared_ptr<PrimitiveObject> image) {
+    int w = image->userData().get2<int>("w");
+    int h = image->userData().get2<int>("h");
+    std::vector<uint8_t> colors;
+    for (auto i = 0; i < w * h; i++) {
+        auto rgb = zeno::pow(image->verts[i], 1.0f / 2.2f);
+        int r = zeno::clamp(int(rgb[0] * 255.99), 0, 255);
+        int g = zeno::clamp(int(rgb[1] * 255.99), 0, 255);
+        int b = zeno::clamp(int(rgb[2] * 255.99), 0, 255);
+        colors.push_back(r);
+        colors.push_back(g);
+        colors.push_back(b);
+    }
+    stbi_flip_vertically_on_write(1);
+    stbi_write_jpg(path.c_str(), w, h, 3, colors.data(), 100);
+}
 
 struct WriteImageFile : INode {
     virtual void apply() override {
@@ -473,6 +532,10 @@ struct WriteImageFile : INode {
                 zeno::log_info("EXR file saved successfully.");
             }
         }
+        else if (type == "pfm") {
+            path = path + ".pfm";
+            write_pfm(path, image);
+        }
         set_output("image", image);
     }
 };
@@ -480,7 +543,7 @@ ZENDEFNODE(WriteImageFile, {
     {
         {"image"},
         {"writepath", "path"},
-        {"enum png jpg exr", "type", "png"},
+        {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
         {"bool", "gamma", "1"},
     },

@@ -14,6 +14,7 @@
 #include "zensim/graph/ConnectedComponents.hpp"
 
 #include "zensim/container/Bht.hpp"
+#include "compute_characteristic_length.hpp"
 
 
 namespace zeno {
@@ -47,8 +48,57 @@ namespace zeno {
         return -1;
     }
 
+    template<typename DATA>
+    constexpr void do_simple_swap(DATA& d0,DATA& d1) {
+        auto tmp = d0;
+        d0 = d1;
+        d1 = tmp;
+    }
+
+    template<int SIMPLEX_SIZE>
+    constexpr int order_indices(zs::vec<int,SIMPLEX_SIZE>& simplex) {
+        // constexpr int len = 3;
+        int nm_swap = 0;
+        for(int i = 0;i != SIMPLEX_SIZE - 1;++i)
+            for(int j = 0;j != SIMPLEX_SIZE - 1 - i;++j)
+                if(simplex[j] > simplex[j + 1]) {
+                    auto tmp = simplex[j];
+                    simplex[j] = simplex[j + 1];
+                    simplex[j + 1] = tmp;
+                    ++nm_swap;
+                }
+        return nm_swap;
+    }    
+
+    template<typename Pol,typename TriTileVec>
+    bool is_manifold_check(Pol& pol,const TriTileVec& tris) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        constexpr auto exec_tag = wrapv<space>{};
+        using vec2i = zs::vec<int,2>;
+
+        zs::Vector<int> nm_non_manifold_edges{tris.get_allocator(),1};
+        nm_non_manifold_edges.setVal(0);
+        zs::bht<int,2,int> tab{tris.get_allocator(),tris.size() * 3};
+        tab.reset(pol,true);
+
+        pol(zs::range(tris.size()),[
+            exec_tag,
+            nm_non_manifold_edges = proxy<space>(nm_non_manifold_edges),
+            tris = proxy<space>({},tris),
+            tab = proxy<space>(tab)] ZS_LAMBDA(int ti) mutable {
+                auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                for(int i = 0;i != 3;++i) {
+                    if(auto no = tab.insert(vec2i{tri[(i + 0) % 3],tri[(i + 1) % 3]});no < 0)
+                        atomic_add(exec_tag,&nm_non_manifold_edges[0],(int)1);
+                }
+        });
+
+        return nm_non_manifold_edges.getVal(0) > 0 ? false : true;
+    }
+
     template<typename Pol,typename VTileVec,typename TriTileVec,typename TetTileVec>
-    bool compute_ft_neigh_topo(Pol& pol,const VTileVec& verts,TriTileVec& tris,const TetTileVec& tets,const zs::SmallString& neighTag,float bvh_thickness) {
+    bool compute_ft_neigh_topo(Pol& pol,const VTileVec& verts,TriTileVec& tris,const TetTileVec& tets,const zs::SmallString& neighTag) {
         using namespace zs;
         using T = typename VTileVec::value_type;
         using bv_t = AABBBox<3,T>;
@@ -56,6 +106,8 @@ namespace zeno {
         if(!tris.hasProperty(neighTag) || tris.getChannelSize(neighTag) != 1)
             return false;
         
+        auto bvh_thickness= compute_average_edge_length(pol,verts,"x",tris);
+
         constexpr auto space = zs::execspace_e::cuda;
         auto tetsBvh = LBvh<3,int,T>{};
         
@@ -417,30 +469,12 @@ namespace zeno {
 
         zs::bcht<IV,int,true,zs::universal_hash<IV>,16> tab{topo.get_allocator(),topo.size() * simplex_size};
         zs::Vector<int> is{topo.get_allocator(),0},js{topo.get_allocator(),0};
-        // bool use_disable = topo_disable_buffer.size() == fasBuffer.size();
-        // auto build_topo = [&](const auto& eles) mutable {
-        // fmt::print("initialize incident matrix topo\n");
-        std::cout << "initialize incident matrix topo" << std::endl;
+
+        // std::cout << "initialize incident matrix topo" << std::endl;
         pol(range(topo.size()),[
             topo = proxy<space>(topo),
-            // use_disable = use_disable,
-            // topo_disable_buffer = proxy<space>(topo_disable_buffer),
-            // simplex_size = simplex_size,
-            tab = proxy<space>(tab)] ZS_LAMBDA(int ei) mutable {
-                // if(use_disable)
-                //     if(topo_disable_buffer[ei])
-                //         return;
-                // for(int i = 0;i != simplex_size;++i) {
-                //     auto a = reinterpret_bits<int>(eles("inds",(i + 0) % simplex_size,ei));
-                //     auto b = reinterpret_bits<int>(eles("inds",(i + 1) % simplex_size,ei));
-                //     if(a > b){
-                //         auto tmp = a;
-                //         a = b;
-                //         b = tmp;
-                //     }
 
-                //     tab.insert(IV{a,b});
-                // }
+            tab = proxy<space>(tab)] ZS_LAMBDA(int ei) mutable {
                 auto a = topo[ei][0];
                 auto b = topo[ei][1];
                 if(a > b){
@@ -448,12 +482,11 @@ namespace zeno {
                     a = b;
                     b = tmp;
                 }
-
                 tab.insert(IV{a,b});                    
         });
 
         auto nmEntries = tab.size();
-        std::cout << "nmEntries of Topo : " << nmEntries << std::endl;
+        // std::cout << "nmEntries of Topo : " << nmEntries << std::endl;
         is.resize(nmEntries);
         js.resize(nmEntries);
 
@@ -495,7 +528,7 @@ namespace zeno {
 
         auto nmSets = vtab.size();
         return nmSets;
-        fmt::print("{} disjoint sets in total.\n",nmSets);
+        // fmt::print("{} disjoint sets in total.\n",nmSets);
     }
 
 
@@ -624,7 +657,8 @@ namespace zeno {
             const zs::bht<int,1,int>& disable_points,
             const zs::bht<int,2,int>& disable_lines,
             zs::Vector<int>& fasBuffer,
-            zs::bht<int,2,int>& tab) {
+            zs::bht<int,2,int>& tab
+            ) {
         using namespace zs;
         using vec2i = zs::vec<int,2>;
         using vec3i = zs::vec<int,3>;
@@ -678,7 +712,7 @@ namespace zeno {
         });
 
         auto nmEntries = tab.size();
-        std::cout << "nmEntries of Topo : " << nmEntries << std::endl;
+        // std::cout << "nmEntries of Topo : " << nmEntries << std::endl;
         is.resize(nmEntries);
         js.resize(nmEntries);
 
@@ -1234,7 +1268,7 @@ namespace zeno {
     void topological_sample(Pol& pol,
         const TopoTileVec& points,
         const SampleTileVec& verts,
-        const std::string& attr_name,
+        const zs::SmallString& attr_name,
         SampleTileVec& dst
     ) {
         using namespace zs;
@@ -1255,6 +1289,34 @@ namespace zeno {
                     dst(attr_name,i,pi) = verts(attr_name,i,vi);
         });    
     }
+
+    template<typename Pol,typename SampleTileVec,typename TopoTileVec>
+    void topological_sample(Pol& pol,
+        const TopoTileVec& points,
+        const SampleTileVec& src,
+        const std::string& src_attr_name,
+        SampleTileVec& dst,
+        const std::string& dst_attr_name) {
+        using namespace zs;
+        constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+        using T = typename SampleTileVec::value_type;    
+
+        dst.resize(points.size());
+        int attr_dim = src.getPropertySize(src_attr_name);
+
+        pol(zs::range(points.size()),[
+            dst = proxy<space>({},dst),
+            points = proxy<space>({},points),
+            src = proxy<space>({},src),
+            attr_dim,
+            src_attr_name = zs::SmallString(src_attr_name),
+            dst_attr_name = zs::SmallString(dst_attr_name)] ZS_LAMBDA(int pi) mutable {
+                auto vi = reinterpret_bits<int>(points("inds",pi));
+                for(int i = 0;i != attr_dim;++i)
+                    dst(dst_attr_name,i,pi) = src(src_attr_name,i,vi);
+        });    
+    }
+
     // template<typename Pol,typename VecTI,zs::enable_if_all<VecTI::dim == 1, VecTI::extent >= 2, VecTI::etent <= 4> = 0>
     // void surface_topological_coloring(Pol& pol,
     //         const zs::Vector<VecTI>& topo,

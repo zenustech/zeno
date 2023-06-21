@@ -8,14 +8,14 @@ namespace Ui
 
 #include <QDialog>
 #include "viewport/viewportwidget.h"
+#include "viewport/recordvideomgr.h"
 
 class ZRecordVideoDlg : public QDialog
 {
 	Q_OBJECT
 public:
 	ZRecordVideoDlg(QWidget* parent = nullptr);
-	bool getInfo(int& fps, int& bitrate, float& width, float& height,
-                 QString& path, QString& fn, int &numOptix, int &numMSAA, bool& bExportVideo);
+	bool getInfo(VideoRecInfo &info);
 
 private:
 	Ui::RecordVideoDlg* m_ui;

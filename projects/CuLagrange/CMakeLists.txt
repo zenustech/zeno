@@ -86,7 +86,7 @@ target_sources(zeno PRIVATE
   # fem/Check.cu
   fem/Generation.cpp
 
-  # fem/FleshDynamicStepping.cu # CHECK THIS
+  fem/FleshDynamicStepping.cu # CHECK THIS
   fem/collision_energy/vertex_face_collision.hpp
   fem/collision_energy/vertex_face_sqrt_collision.hpp
   # fem/collision_energy/edge_edge_collision.hpp
@@ -125,11 +125,11 @@ target_sources(zeno PRIVATE
   geometry/Jiggle.cu
   geometry/DeformationField.cu
   # geometry/VectorField.cu
-  # geometry/CollisionVis.cu # CHECK THIS
+  geometry/CollisionVis.cu # CHECK THIS
   # geometry/CalcSurfaceArea.cu
   geometry/MarkSurfaceTag.cu
   geometry/SurfaceBinder.cu
   geometry/MarkInversion.cu
   geometry/Topology.cu
-  # geometry/MarkIntersection.cu # CHECK THIS
+  geometry/MarkCollisionRegion.cu # CHECK THIS
 )

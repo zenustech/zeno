@@ -489,7 +489,7 @@ namespace zeno { namespace TILEVEC_OPS {
     }
 #else
     template<int space_dim ,typename Pol,typename VTileVec>
-    T dot(Pol &pol, VTileVec &vtemp,const zs::SmallString tag0, const zs::SmallString tag1) {
+    T dot(Pol &pol,const VTileVec &vtemp,const zs::SmallString& tag0, const zs::SmallString& tag1) {
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
         Vector<T> res{vtemp.get_allocator(), 1};
@@ -669,6 +669,20 @@ namespace zeno { namespace TILEVEC_OPS {
         });
     }
 
+    // tempalte<int dim>
+    // void build_spacial_hash(Pol& pol,
+    //     int nm_keys,
+    //     const zs::Vector<zs::vec<int,dim>>& keys,
+    //     zs::bht<int,dim,int>& hash,zs::Vector<int>& hash_buffer) {
+    //         constexpr auto space = Pol::exec_tag::value;
+    //         nm_keys = nm_keys <= 0 ? keys.size() : nm_keys;
+    //         hash.reset(pol,true);
+    //         pol(zs::range(nm_keys),[
+    //             keys = proxy<space>(keys),
+    //             hash = proxy<space>(hash),
+    //             hash_buffer = proxy<space>(hash)
+    //         ])
+    // }
 };
 
 };

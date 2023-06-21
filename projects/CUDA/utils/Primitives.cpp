@@ -278,14 +278,28 @@ struct PrimitiveConnectedComponents : INode {
 
         auto numSets = vtab.size();
         fmt::print("{} disjoint sets in total.\n", numSets);
+
+        std::vector<int> invMap(numSets);
+        std::vector<std::pair<int, int>> kvs(numSets);
+        auto keys = vtab._activeKeys;
+        pol(enumerate(keys, kvs), [](int id, int key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
+        struct {
+            constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                return a.first < b.first;
+            }
+        } lessOp;
+        std::sort(kvs.begin(), kvs.end(), lessOp);
+        pol(enumerate(kvs), [&invMap](int no, auto kv) { invMap[kv.second] = no; });
+
         /// @brief compute the set index of each vertex and calculate the size of each set
         auto &setids = prim->add_attr<int>("set");
         std::vector<int> vertexCounts(numSets), vertexOffsets(numSets);
-        pol(range(pos.size()), [&fas, &setids, &vertexCounts, vtab = view<space>(vtab)](int vi) mutable {
+        pol(range(pos.size()), [&fas, &setids, &vertexCounts, &invMap, vtab = view<space>(vtab)](int vi) mutable {
             auto ancestor = fas[vi];
             auto setNo = vtab.query(ancestor);
-            setids[vi] = setNo;
-            atomic_add(exec_omp, &vertexCounts[setNo], 1);
+            auto dst = invMap[setNo];
+            setids[vi] = dst;
+            atomic_add(exec_omp, &vertexCounts[dst], 1);
         });
         exclusive_scan(pol, std::begin(vertexCounts), std::end(vertexCounts), std::begin(vertexOffsets));
 
@@ -468,18 +482,12 @@ ZENDEFNODE(PrimitiveConnectedComponents, {
 struct PrimitiveMarkIslands : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
-        if (!prim->verts.has_attr("uv")) {
-            set_output("prim", std::move(prim));
-            zeno::log_warn("this primitive object does not include vertex uv property.");
-            return;
-        }
 
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
         auto pol = omp_exec();
 
         auto &pos = prim->attr<zeno::vec3f>("pos");
-        auto &vert_uv = prim->verts.attr<vec3f>("uv");
 
         bool isTris = prim->tris.size() > 0;
         if (isTris) {
@@ -531,15 +539,27 @@ struct PrimitiveMarkIslands : INode {
             fas[vi] = fa;
             vtab.insert(fa);
         });
-
-        auto &setids = prim->add_attr<int>(get_input2<std::string>("island_tag"));
-        pol(range(pos.size()), [&fas, &setids, vtab = view<space>(vtab)](int vi) mutable {
-            auto ancestor = fas[vi];
-            auto setNo = vtab.query(ancestor);
-            setids[vi] = setNo;
-        });
         auto numSets = vtab.size();
         fmt::print("{} islands in total.\n", numSets);
+
+        std::vector<int> invMap(numSets);
+        std::vector<std::pair<int, int>> kvs(numSets);
+        auto keys = vtab._activeKeys;
+        pol(enumerate(keys, kvs), [](int id, int key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
+        struct {
+            constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                return a.first < b.first;
+            }
+        } lessOp;
+        std::sort(kvs.begin(), kvs.end(), lessOp);
+        pol(enumerate(kvs), [&invMap](int no, auto kv) { invMap[kv.second] = no; });
+
+        auto &setids = prim->add_attr<int>(get_input2<std::string>("island_tag"));
+        pol(range(pos.size()), [&fas, &setids, &invMap, vtab = view<space>(vtab)](int vi) mutable {
+            auto ancestor = fas[vi];
+            auto setNo = vtab.query(ancestor);
+            setids[vi] = invMap[setNo];
+        });
 
         if (isTris) {
             primTriangulate(prim.get(), true, false);
@@ -557,6 +577,185 @@ ZENDEFNODE(PrimitiveMarkIslands, {
                                      {"zs_geom"},
                                  });
 #endif
+
+struct PrimitiveReorder : INode {
+    virtual void apply() override {
+        auto prim = get_input<PrimitiveObject>("prim");
+        bool orderVerts = get_input2<bool>("order_vertices");
+        bool orderTris = get_input2<bool>("order_tris");
+
+        using namespace zs;
+        using bv_t = zs::AABBBox<3, zs::f32>;
+        using zsvec3 = zs::vec<float, 3>;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto &verts = prim->verts;
+        const auto &pos = verts.values;
+
+        auto &tris = prim->tris.values;
+
+        /// @note bv
+        constexpr auto defaultBv =
+            bv_t{zsvec3::constant(zs::limits<zs::f32>::max()), zsvec3::constant(zs::limits<zs::f32>::lowest())};
+        bv_t gbv;
+        if (orderVerts || orderTris) {
+
+            zs::Vector<bv_t> bv{1};
+            bv.setVal(defaultBv);
+
+            zs::Vector<zs::f32> X{pos.size()}, Y{pos.size()}, Z{pos.size()};
+            zs::Vector<zs::f32> res{6};
+            pol(enumerate(X, Y, Z), [&pos] ZS_LAMBDA(int i, zs::f32 &x, zs::f32 &y, zs::f32 &z) {
+                auto xn = pos[i];
+                x = xn[0];
+                y = xn[1];
+                z = xn[2];
+            });
+            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res), zs::limits<zs::f32>::max(), getmin<zs::f32>{});
+            zs::reduce(pol, std::begin(X), std::end(X), std::begin(res) + 3, zs::limits<zs::f32>::lowest(),
+                       getmax<zs::f32>{});
+            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 1, zs::limits<zs::f32>::max(),
+                       getmin<zs::f32>{});
+            zs::reduce(pol, std::begin(Y), std::end(Y), std::begin(res) + 4, zs::limits<zs::f32>::lowest(),
+                       getmax<zs::f32>{});
+            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 2, zs::limits<zs::f32>::max(),
+                       getmin<zs::f32>{});
+            zs::reduce(pol, std::begin(Z), std::end(Z), std::begin(res) + 5, zs::limits<zs::f32>::lowest(),
+                       getmax<zs::f32>{});
+            gbv = bv_t{zsvec3{res[0], res[1], res[2]}, zsvec3{res[3], res[4], res[5]}};
+        }
+        gbv._min -= limits<float>::epsilon() * 16;
+        gbv._max += limits<float>::epsilon() * 16;
+
+        /// @note reorder
+        struct Mapping {
+            zs::Vector<int> originalToOrdered, orderedToOriginal;
+        } vertMapping, triMapping;
+
+        if (orderVerts) {
+            /// @brief establish vert proximity topo
+            RM_CVREF_T(verts) newVerts;
+
+            auto &dsts = vertMapping.originalToOrdered;
+            auto &indices = vertMapping.orderedToOriginal;
+            dsts.resize(pos.size());
+            indices.resize(pos.size());
+            zs::Vector<zs::u32> tempBuffer{pos.size() * 2};
+            pol(range(pos.size()),
+                [dsts = view<space>(dsts), codes = view<space>(tempBuffer), &pos, bv = gbv] ZS_LAMBDA(int i) mutable {
+                    auto coord = bv.getUniformCoord(vec_to_other<zsvec3>(pos[i])).template cast<f32>();
+                    codes[i] = (zs::u32)morton_code<3>(coord);
+                    dsts[i] = i;
+                });
+            // radix sort
+            radix_sort_pair(pol, std::begin(tempBuffer), dsts.begin(), std::begin(tempBuffer) + pos.size(),
+                            indices.begin(), pos.size());
+            // compute inverse mapping
+            pol(range(pos.size()), [dsts = view<space>(dsts), indices = view<space>(indices)] ZS_LAMBDA(int i) mutable {
+                dsts[indices[i]] = i;
+            });
+            // sort vert data
+            // alloc all props
+            newVerts.resize(verts.size());
+            verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                newVerts.add_attr<T>(key);
+            });
+            // reorder
+            pol(range(newVerts.size()), [indices = view<space>(indices), &verts, &pos,
+                                         &newVerts] ZS_LAMBDA(int i) mutable {
+                auto srcNo = indices[i];
+                newVerts.values[i] = pos[srcNo];
+                for (auto &[key, arr] : newVerts.attrs) {
+                    auto const &k = key;
+                    match(
+                        [&k, &verts, i, srcNo](
+                            auto &arr) -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
+                            using T = RM_CVREF_T(arr[0]);
+                            const auto &srcArr = verts.attr<T>(k);
+                            arr[i] = srcArr[srcNo];
+                        },
+                        [](...) {})(arr);
+                }
+            });
+            verts = std::move(newVerts);
+            // update tri indices
+            pol(tris, [&dsts](zeno::vec3i &tri) {
+                for (auto &v : tri)
+                    v = dsts[v];
+            });
+        }
+
+        if (orderTris) {
+            /// @brief map element indices
+            const bool hasTris = tris.size() > 0;
+
+            if (hasTris) {
+                RM_CVREF_T(prim->tris) newTris;
+
+                auto &dsts = triMapping.originalToOrdered;
+                auto &indices = triMapping.orderedToOriginal;
+                dsts.resize(tris.size());
+                indices.resize(tris.size());
+                zs::Vector<zs::u32> tempBuffer{tris.size() * 2};
+                pol(range(tris.size()), [dsts = view<space>(dsts), codes = view<space>(tempBuffer), &pos, &tris,
+                                         bv = gbv] ZS_LAMBDA(int i) mutable {
+                    auto c = zsvec3::zeros();
+                    for (auto v : tris[i])
+                        c += vec_to_other<zsvec3>(pos[v]);
+                    c /= 3;
+                    auto coord = bv.getUniformCoord(c).template cast<f32>();
+                    codes[i] = (zs::u32)morton_code<3>(coord);
+                    dsts[i] = i;
+                });
+                // radix sort
+                radix_sort_pair(pol, std::begin(tempBuffer), dsts.begin(), std::begin(tempBuffer) + tris.size(),
+                                indices.begin(), tris.size());
+                // compute inverse mapping
+                pol(range(pos.size()), [dsts = view<space>(dsts), indices = view<space>(indices)] ZS_LAMBDA(
+                                           int i) mutable { dsts[indices[i]] = i; });
+                // sort vert data
+                // alloc all props
+                newTris.resize(tris.size());
+                prim->tris.foreach_attr<AttrAcceptAll>([&](auto const &key, auto const &arr) {
+                    using T = std::decay_t<decltype(arr[0])>;
+                    newTris.add_attr<T>(key);
+                });
+                // reorder
+                pol(range(newTris.size()),
+                    [indices = view<space>(indices), &tris = prim->tris, &newTris] ZS_LAMBDA(int i) mutable {
+                        auto srcNo = indices[i];
+                        newTris.values[i] = tris.values[srcNo];
+                        for (auto &[key, arr] : newTris.attrs) {
+                            auto const &k = key;
+                            match(
+                                [&k, &tris, i, srcNo](auto &arr)
+                                    -> std::enable_if_t<variant_contains<RM_CVREF_T(arr[0]), AttrAcceptAll>::value> {
+                                    using T = RM_CVREF_T(arr[0]);
+                                    const auto &srcArr = tris.attr<T>(k);
+                                    arr[i] = srcArr[srcNo];
+                                },
+                                [](...) {})(arr);
+                        }
+                    });
+                prim->tris = std::move(newTris);
+            }
+        }
+
+        set_output("prim", std::move(prim));
+    }
+};
+
+ZENDEFNODE(PrimitiveReorder,
+           {
+               {{"PrimitiveObject", "prim"}, {"bool", "order_vertices", "0"}, {"bool", "order_tris", "1"}},
+               {
+                   {"PrimitiveObject", "prim"},
+               },
+               {},
+               {"zs_geom"},
+           });
 
 struct PrimitiveFuse : INode {
     virtual void apply() override {
@@ -733,13 +932,13 @@ struct PrimitiveFuse : INode {
 };
 
 ZENDEFNODE(PrimitiveFuse, {
-                                       {{"PrimitiveObject", "prim"}, {"float", "proximity_theshold", "0.00001"}},
-                                       {
-                                           {"PrimitiveObject", "prim"},
-                                       },
-                                       {},
-                                       {"zs_geom"},
-                                   });
+                              {{"PrimitiveObject", "prim"}, {"float", "proximity_theshold", "0.00001"}},
+                              {
+                                  {"PrimitiveObject", "prim"},
+                              },
+                              {},
+                              {"zs_geom"},
+                          });
 
 struct ComputeAverageEdgeLength : INode {
     void apply() override {

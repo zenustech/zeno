@@ -8,11 +8,8 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/CameraObject.h>
 #include <zenomodel/include/uihelper.h>
-#include "settings/zenosettingsmanager.h"
-#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "zenomainwindow.h"
-#include <util/log.h>
 #include "camerakeyframe.h"
 #include <zenoui/style/zenostyle.h>
 #include <zeno/core/Session.h>
@@ -140,6 +137,36 @@ void DisplayWidget::updateCameraProp(float aperture, float disPlane)
         m_glView->updateCameraProp(aperture, disPlane);
     } else {
         m_optixView->updateCameraProp(aperture, disPlane);
+    }
+}
+
+void DisplayWidget::updatePerspective()
+{
+    if (m_glView) {
+        m_glView->updatePerspective();
+    }
+    else {
+        m_optixView->updatePerspective();
+    }
+}
+
+void DisplayWidget::setNumSamples(int samples)
+{
+    if (m_glView) {
+        m_glView->setNumSamples(samples);
+    }
+    else {
+        m_optixView->setNumSamples(samples);
+    }
+}
+
+void DisplayWidget::setCameraRes(const QVector2D& res)
+{
+    if (m_glView) {
+        m_glView->setCameraRes(res);
+    }
+    else {
+        m_optixView->setCameraRes(res);
     }
 }
 
@@ -564,9 +591,7 @@ void DisplayWidget::onRecord()
     if (QDialog::Accepted == dlg.exec())
     {
         VideoRecInfo recInfo;
-        dlg.getInfo(recInfo.fps, recInfo.bitrate, recInfo.res[0],
-                    recInfo.res[1], recInfo.record_path, recInfo.videoname, recInfo.numOptix, recInfo.numMSAA,
-                    recInfo.bExportVideo);
+        dlg.getInfo(recInfo);
         //validation.
 
         ZRecFrameSelectDlg frameDlg(this);

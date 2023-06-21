@@ -1042,14 +1042,8 @@ void gaussian_filter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<Pr
     // 释放内存
     delete[] kernel;
 }
-//MedianBlur
-// 定义一个结构体，用于存储像素点的信息
-struct Pixel {
-    int x;
-    int y;
-    int value;
-};
-// MedianBlur函数，实现中值滤波操作
+
+// MedianBlur
 void MedianBlur(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<PrimitiveObject> &imagetmp, int width, int height, int kernel_size) {
     // 定义一个vector，用于存储周围像素的值
     using kernel = std::tuple<float, float, float>;
@@ -1256,7 +1250,7 @@ ZENDEFNODE(ImageMedianBlur, {
         {"image"}
     },
     {},
-    { "deprecated" },
+    { "image" },
 });
 
 struct ImageBilateralBlur : INode {
@@ -1301,8 +1295,6 @@ ZENDEFNODE(ImageBilateralBlur, {
     { "image" },
 });
 
-
-/* 创建颜色图层，可能需要的参数：颜色，分辨率，图层名称 */
 struct CreateImage : INode {
     virtual void apply() override {
         auto RGB = get_input2<vec3f>("RGB");
@@ -1334,7 +1326,6 @@ ZENDEFNODE(CreateImage, {
     { "create" },
 });
 
-//对比度
 struct ImageEditContrast : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -1359,7 +1350,6 @@ ZENDEFNODE(ImageEditContrast, {
     { "image" },
 });
 
-//饱和度
 struct ImageEditSaturation : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -2125,12 +2115,7 @@ struct ImageMatting: INode {
                 }
                 else if (maskmode == "alpha") {
                     if (gimage->verts.has_attr("alpha")) {
-#pragma omp parallel for
-                        for (int i = 0; i < h; i++) {
-                            for (int j = 0; j < w; j++) {
-                                image->verts.attr<float>("alpha")[i * w + j] = gimage->verts.attr<float>("alpha")[i * w + j];
-                            }
-                        }
+                        image->verts.attr<float>("alpha") = gimage->verts.attr<float>("alpha");
                     } else {
 #pragma omp parallel for
                         for (int i = 0; i < h; i++) {
@@ -2256,12 +2241,7 @@ struct ImageAddAlpha: INode {
                 }
                 else if (maskmode == "alpha") {
                     if (gimage->verts.has_attr("alpha")) {
-#pragma omp parallel for
-                        for (int i = 0; i < h; i++) {
-                            for (int j = 0; j < w; j++) {
-                                image->verts.attr<float>("alpha")[i * w + j] = gimage->verts.attr<float>("alpha")[i * w + j];
-                            }
-                        }
+                        image->verts.attr<float>("alpha") = gimage->verts.attr<float>("alpha");
                     } else {
 #pragma omp parallel for
                         for (int i = 0; i < h; i++) {

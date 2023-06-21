@@ -611,7 +611,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
             size_t idx = jj*nx + ii;
             float illum = 0.0f;
             auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
-            illum = zeno::dot(color, zeno::vec3f(0.2126f,0.7152f, 0.0722f));
+            illum = zeno::dot(color, zeno::vec3f(0.33333333f,0.33333333f, 0.33333333f));
             //illum = illum > 0.5? illum : 0.0f;
             illum = abs(illum) * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
 

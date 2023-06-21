@@ -204,7 +204,8 @@ void updateElasticGradientAndHessianImpl(zs::CudaExecutionPolicy &cudaPol, const
                 BCorder[i] = vtemp("BCorder", inds[i]);
             }
             zs::vec<T, 9, 9> H;
-            bool valid = !(BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3);
+            bool valid =
+                !(BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3) && determinant(IB) > limits<float>::epsilon();
             if (valid) {
                 zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
                 auto F = Ds * IB;
@@ -519,12 +520,13 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
                 for (int i = 0; i != 4; ++i)
                     BCorder[i] = vtemp("BCorder", stcl[i]);
 
+                auto k = bedges("k", i);
                 zs::vec<T, 12, 12> H;
-                bool valid = !(BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3);
+                bool valid = !(BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3) &&
+                             (k > limits<float>::epsilon());
                 if (valid) {
                     auto e = bedges("e", i);
                     auto h = bedges("h", i);
-                    auto k = bedges("k", i);
                     auto ra = bedges("ra", i);
                     auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
                     auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
@@ -533,16 +535,26 @@ void UnifiedIPCSystem::updateInherentGradientAndHessian(zs::CudaExecutionPolicy 
                     auto theta = dihedral_angle(x0, x1, x2, x3);
 
                     auto localGrad = dihedral_angle_gradient(x0, x1, x2, x3);
-                    auto grad = -localGrad * dt2 * k * 2 * (theta - ra) * e / h;
-                    for (int j = 0; j != 4; ++j)
-                        for (int d = 0; d != 3; ++d)
-                            atomic_add(exec_cuda, &vtemp("grad", d, stcl[j]), grad(j * 3 + d));
+                    if (zs::isnan(localGrad.dot(localGrad))) {
+                        bedges("k", i) = 0;
+                        valid = false;
+                        printf("<%d, %d, %d, %d> bending nan thus omitted since! theta: %f, e: %f, h: %f, grad: %f, "
+                               "%f, %f, %f\n",
+                               (int)stcl[0], (int)stcl[1], (int)stcl[2], (int)stcl[3], (float)theta, (float)e, (float)h,
+                               (float)localGrad[0], (float)localGrad[1], (float)localGrad[2], (float)localGrad[3]);
+                    } else {
+                        auto grad = -localGrad * dt2 * k * 2 * (theta - ra) * e / h;
+                        for (int j = 0; j != 4; ++j)
+                            for (int d = 0; d != 3; ++d)
+                                atomic_add(exec_cuda, &vtemp("grad", d, stcl[j]), grad(j * 3 + d));
 
-                    // rotate and project
-                    H = (dihedral_angle_hessian(x0, x1, x2, x3) * (theta - ra) + dyadic_prod(localGrad, localGrad)) *
-                        k * 2 * e / h;
-                    make_pd(H);
-                    H *= dt2;
+                        // rotate and project
+                        H = (dihedral_angle_hessian(x0, x1, x2, x3) * (theta - ra) +
+                             dyadic_prod(localGrad, localGrad)) *
+                            k * 2 * e / h;
+                        H *= dt2;
+                        make_pd(H);
+                    }
                 }
 
                 // 12 * 12 = 16 * 9

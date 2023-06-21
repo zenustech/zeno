@@ -40,6 +40,8 @@ public:
     void setCollasped(bool bCollasped);
 
 private:
+    void markNodeChanged();
+
     QPersistentModelIndex m_dictParam;   //core param of dict param.
     QVector<_DictItem> m_items;
     IGraphsModel* m_pGraphs;
