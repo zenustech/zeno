@@ -9,13 +9,13 @@
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
-#include "comctrl/zveceditor.h"
+#include <zenoui/comctrl/zveceditor.h>
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/zexpandablesection.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/zlineedit.h>
 #include <zenoui/comctrl/ztextedit.h>
-#include "comctrl/zwidgetfactory.h"
+#include <zenoui/comctrl/zwidgetfactory.h>
 #include "util/log.h"
 #include "util/apphelper.h"
 #include <zenomodel/include/curveutil.h>
@@ -27,6 +27,7 @@
 #include <zenoui/comctrl/zspinboxslider.h>
 #include "zenoblackboardpropwidget.h"
 #include "timeline/ztimeline.h"
+#include "util/apphelper.h"
 
 
 class RetryScope
@@ -332,6 +333,10 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     }
 
     cbSet.cbEditFinished = [=](QVariant newValue) {
+        if (ctrl != CONTROL_CURVE)
+        {
+            AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue);
+        }
         AppHelper::socketEditFinished(newValue, m_idx, perIdx);
     };
     cbSet.cbSwitch = [=](bool bOn) {
@@ -340,7 +345,12 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     cbSet.cbGetIndexData = [=]() -> QVariant { 
         return perIdx.isValid() ? paramItem->data(ROLE_PARAM_VALUE) : QVariant();
     };
-
+    //key frame
+    bool bKeyFrame = false;
+    if (ctrl != CONTROL_CURVE)
+    {
+        bKeyFrame = AppHelper::getCurveValue(val);
+    }
     QWidget* pControl = zenoui::createWidget(val, ctrl, typeDesc, cbSet, pros);
 
     ZTextLabel* pLabel = new ZTextLabel(paramName);
@@ -381,6 +391,24 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
         m_floatColtrols << panelCtrl;
         pLabel->installEventFilter(this);
         pControl->installEventFilter(this);
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, false);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, false);
+        if (bKeyFrame)
+        {
+            connect(timeline, &ZTimeline::sliderValueChanged, this, [=](int nFrame) {
+                onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
+            }, Qt::UniqueConnection);
+            connect(mainWin, &ZenoMainWindow::visFrameUpdated, this, [=](bool bGLView, int nFrame) {
+                onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
+            }, Qt::UniqueConnection);
+        }
+        else
+        {
+            disconnect(timeline, &ZTimeline::sliderValueChanged, this, nullptr);
+            disconnect(mainWin, &ZenoMainWindow::visFrameUpdated, this, nullptr);
+        }
     }
     return true;
 }
@@ -606,18 +634,13 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                 PARAM_CONTROL paramCtrl = (PARAM_CONTROL)param->data(ROLE_PARAM_CTRL).toInt();
                 QString literalNum;
                 if (paramCtrl == CONTROL_FLOAT) {
-                    if (value.canConvert<CURVES_DATA>()) {
-                        CURVES_DATA curves = value.value<CURVES_DATA>();
-                        if (curves.isEmpty())
-                            pLineEdit->setProperty(g_keyFrame, QVariant());
-                        else
-                            pLineEdit->setProperty(g_keyFrame, QVariant::fromValue(curves.first()));
-                    } else {
-
-                        literalNum = UiHelper::variantToString(value);
-                        pLineEdit->setText(literalNum);
-                        pLineEdit->setProperty(g_keyFrame, QVariant());
-                    }
+                    QVariant newVal = value;
+                    AppHelper::getCurveValue(newVal);
+                    literalNum = UiHelper::variantToString(newVal);
+                    pLineEdit->setText(literalNum);
+                    QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
+                    pLineEdit->setProperty(g_setKey, properties.first());
+                    
                 } else {
                     literalNum = UiHelper::variantToString(value);
                     pLineEdit->setText(literalNum);
@@ -633,7 +656,27 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             }
             else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
             {
-                pVecEdit->setVec(value, pVecEdit->isFloat());
+                QVariant newVal = value;
+                AppHelper::getCurveValue(newVal);
+                pVecEdit->setVec(newVal, pVecEdit->isFloat());
+                if (pVecEdit->isFloat())
+                {
+                    QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
+                    QVector<ZLineEdit*> editors = pVecEdit->getEditors();
+                    for (int i = 0; editors.size(); i++)
+                    {
+                        QString property;
+                        if (i >= properties.size())
+                        {
+                            property = properties.first();
+                        }
+                        else
+                        {
+                            property = properties.at(i);
+                        }
+                        editors[i]->setProperty(g_setKey, property);
+                    }
+                }
             }
             else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
             {
@@ -1157,4 +1200,21 @@ void ZenoPropPanel::updateTimelineKeys(const CURVES_DATA &curves)
     ZASSERT_EXIT(timeline);
     QVector<int> keys = m_idx.data(ROLE_KEYFRAMES).value<QVector<int>>();
     timeline->updateKeyFrames(keys);
+}
+
+void ZenoPropPanel::onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val)
+{
+    if (!AppHelper::getCurveValue(val))
+        return;
+    CURVES_DATA curves = val.value<CURVES_DATA>();
+    //vec
+    if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pContrl))
+    {
+        pVecEdit->setVec(val, pVecEdit->isFloat());
+    }
+    else if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(pContrl))
+    {
+        QString text = UiHelper::variantToString(val);
+        pLineEdit->setText(text);
+    }
 }

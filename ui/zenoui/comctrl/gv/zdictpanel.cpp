@@ -1,11 +1,11 @@
 #include "zdictpanel.h"
 #include "zsocketlayout.h"
-#include <zenoui/render/renderparam.h>
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/comctrl/gv/zenosocketitem.h>
+#include "../../render/renderparam.h"
+#include "../../style/zenostyle.h"
+#include "zenosocketitem.h"
 #include "variantptr.h"
 #include <zenomodel/include/modelrole.h>
-#include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include "zenoparamwidget.h"
 #include <zenomodel/include/uihelper.h>
 #include "zitemfactory.h"
 #include "zenogvhelper.h"

@@ -6,7 +6,7 @@
 #include <QPainter>
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/uihelper.h>
-#include "comctrl/gv/zitemfactory.h"
+#include <zenoui/comctrl/gv/zitemfactory.h>
 #include <zenoui/render/common_id.h>
 #include "zenosubgraphscene.h"
 #include <QtSvg/QSvgRenderer>

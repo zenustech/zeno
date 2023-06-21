@@ -8,7 +8,7 @@
 #include <zenoui/comctrl/effect/innershadoweffect.h>
 #include <zeno/utils/envconfig.h>
 #include <zenomodel/include/uihelper.h>
-#include "comctrl/zwidgetfactory.h"
+#include <zenoui/comctrl/zwidgetfactory.h>
 #include "../viewport/zenovis.h"
 #include "ui_ztimeline.h"
 #include <zenoui/comctrl/view/zcomboboxitemdelegate.h>

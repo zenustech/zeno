@@ -11,7 +11,7 @@
 #include <zenomodel/include/modeldata.h>
 #include <zenoui/comctrl/gv/zgraphicslayout.h>
 #include <zenoui/comctrl/gv/zgraphicslayoutitem.h>
-#include "comctrl/gv/zsocketlayout.h"
+#include <zenoui/comctrl/gv/zsocketlayout.h>
 #include <zenoui/comctrl/gv/zlayoutbackground.h>
 
 

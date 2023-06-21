@@ -1,14 +1,14 @@
 #include "zsocketlayout.h"
-#include <zenoui/comctrl/gv/zenosocketitem.h>
-#include <zenoui/comctrl/gv/zlayoutbackground.h>
-#include <zenoui/comctrl/gv/zgraphicstextitem.h>
+#include "zenosocketitem.h"
+#include "zlayoutbackground.h"
+#include "zgraphicstextitem.h"
 #include "zassert.h"
-#include <zenoui/style/zenostyle.h>
+#include "style/zenostyle.h"
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include "zdictpanel.h"
 #include "variantptr.h"
-#include <zenoui/render/common_id.h>
+#include "render/common_id.h"
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 #include "zitemfactory.h"
 

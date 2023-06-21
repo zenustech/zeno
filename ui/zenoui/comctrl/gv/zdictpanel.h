@@ -1,8 +1,8 @@
 #ifndef __ZDICT_PANEL_H__
 #define __ZDICT_PANEL_H__
 
-#include <zenoui/comctrl/gv/zlayoutbackground.h>
-#include <zenoui/comctrl/gv/callbackdef.h>
+#include "zlayoutbackground.h"
+#include "callbackdef.h"
 
 class ZDictSocketLayout;
 class ZenoParamPushButton;

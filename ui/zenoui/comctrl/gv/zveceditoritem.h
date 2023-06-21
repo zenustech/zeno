@@ -1,8 +1,8 @@
 #ifndef __ZVEC_EDITOR_ITEM_H__
 #define __ZVEC_EDITOR_ITEM_H__
 
-#include <zenoui/comctrl/gv/zgraphicslayoutitem.h>
-#include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include "zgraphicslayoutitem.h"
+#include "zenoparamwidget.h"
 
 class ZVecEditorItem : public ZGraphicsLayoutItem<ZenoParamWidget>
 {

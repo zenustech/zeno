@@ -6,6 +6,7 @@
 #include "../comctrl/zdocktabwidget.h"
 #include <QScreen>
 #include <QtSvg/QSvgRenderer>
+#include <zenoedit/zenoapplication.h>
 
 
 ZenoStyle::ZenoStyle()
@@ -52,7 +53,7 @@ QString ZenoStyle::dpiScaleSheet(const QString &sheet) {
     }
 
     QString tempStyle = sheet;
-    tempStyle.replace("FontFamily", QApplication::font().family());
+    tempStyle.replace("FontFamily", zenoApp->font().family());
 
     qreal scale = ZenoStyle::dpiScaled(1);
     if (scale == 1.0) {
@@ -168,7 +169,7 @@ void ZenoStyle::drawControl(ControlElement element, const QStyleOption* option, 
             painter->save();
             editRect.adjust(cb->textMargin, 0, 0, 0);
             painter->setClipRect(editRect);
-            QFont font = QApplication::font();
+            QFont font = zenoApp->font();
             painter->setFont(font);
             if (!cb->currentIcon.isNull()) {
                 //todo

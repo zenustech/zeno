@@ -9,7 +9,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/utils/scope_exit.h>
 #include <zenoui/style/zenostyle.h>
-#include "comctrl/zveceditor.h"
+#include <zenoui/comctrl/zveceditor.h>
 #include "variantptr.h"
 #include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
 #include "zenoapplication.h"
@@ -19,14 +19,14 @@
 #include "util/log.h"
 #include "zenosubgraphview.h"
 #include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
-#include "comctrl/gv/zitemfactory.h"
+#include <zenoui/comctrl/gv/zitemfactory.h>
 #include "zvalidator.h"
 #include "zenonewmenu.h"
 #include "util/apphelper.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include <zenoui/comctrl/gv/zgraphicstextitem.h>
-#include "comctrl/gv/zenogvhelper.h"
+#include <zenoui/comctrl/gv/zenogvhelper.h>
 #include <zenomodel/include/iparammodel.h>
 #include <zenomodel/include/viewparammodel.h>
 #include "iotags.h"
@@ -320,6 +320,10 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (!pModel)
             return;
+        if (ctrl != CONTROL_CURVE)
+        {
+            AppHelper::updateCurve(paramIdx.data(ROLE_PARAM_VALUE), newValue);
+        }
         pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
 
@@ -337,9 +341,15 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
     cbSet.cbGetIndexData = cbGetIndexData;
 
     const QString& paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
-    const QVariant& deflValue = paramIdx.data(ROLE_PARAM_VALUE);
+    QVariant deflValue = paramIdx.data(ROLE_PARAM_VALUE);
     const QString& typeDesc = paramIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
+    //key frame
+    bool bKeyFrame = false;
+    if (ctrl != CONTROL_CURVE)
+    {
+        bKeyFrame = AppHelper::getCurveValue(deflValue);
+    }
     QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbSet, scene, ctrlProps);
     return pControl;
 }

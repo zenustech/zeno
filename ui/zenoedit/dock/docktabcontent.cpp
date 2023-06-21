@@ -17,7 +17,7 @@
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/comctrl/zlinewidget.h>
 #include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
-#include "comctrl/zwidgetfactory.h"
+#include <zenoui/comctrl/zwidgetfactory.h>
 #include <zeno/utils/envconfig.h>
 #include "zenomainwindow.h"
 #include "launch/corelaunch.h"

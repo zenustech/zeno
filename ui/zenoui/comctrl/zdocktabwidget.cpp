@@ -5,6 +5,7 @@
 #include <zeno/utils/log.h>
 #include <zenoui/comctrl/zaddtabbar.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
+#include <zenoedit/zenoapplication.h>
 
 
 ZDockTabWidget::ZDockTabWidget(QWidget* parent)
@@ -31,7 +32,7 @@ ZDockTabWidget::ZDockTabWidget(QWidget* parent)
     setDocumentMode(true);
     setMouseTracking(true);
 
-    QFont font = QApplication::font();
+    QFont font = zenoApp->font();
     font.setPointSize(10);
     tabBar()->setFont(font);
     tabBar()->setDrawBase(false);

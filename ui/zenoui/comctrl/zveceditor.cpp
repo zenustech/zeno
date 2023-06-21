@@ -1,10 +1,8 @@
 #include "zveceditor.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenomodel/include/uihelper.h>
-#include <zenoui/comctrl/zlineedit.h>
+#include "zlineedit.h"
 #include <zenomodel/include/curveutil.h>
-#include "zfloatlineedit.h"
-#include "util/apphelper.h"
 
 ZVecEditor::ZVecEditor(const QVariant &vec, bool bFloat, int deflSize, QString styleCls, QWidget *parent)
 	: QWidget(parent)
@@ -36,18 +34,14 @@ void ZVecEditor::initUI(const QVariant &vec) {
         n = vec.value<UI_VECTYPE>().size();
     else if (vec.canConvert<UI_VECSTRING>())
         n = vec.value<UI_VECSTRING>().size();
-    else
-        n = vec.value<CURVES_DATA>().size();
 
     m_editors.resize(n);
     for (int i = 0; i < m_editors.size(); i++)
     {
+        m_editors[i] = new ZLineEdit;
         if (m_bFloat) {
-            m_editors[i] = new ZFloatLineEdit;
             m_editors[i]->installEventFilter(this);
         }
-        else
-            m_editors[i] = new ZLineEdit;
 
         m_editors[i]->setNumSlider(UiHelper::getSlideStep("", m_bFloat ? CONTROL_FLOAT : CONTROL_INT));
         //m_editors[i]->setFixedWidth(ZenoStyle::dpiScaled(64));
@@ -56,13 +50,6 @@ void ZVecEditor::initUI(const QVariant &vec) {
             setText(vec.value<UI_VECTYPE>().at(i), m_editors[i]);
         else if (vec.canConvert<UI_VECSTRING>())
             setText(vec.value<UI_VECSTRING>().at(i), m_editors[i]);
-        else if (vec.canConvert<CURVES_DATA>()) {
-            CURVES_DATA curves = vec.value<CURVES_DATA>();
-            QString key = curve_util::getCurveKey(i);
-            if (curves.contains(key)) {
-                m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));
-            }
-        }
 
         pLayout->addWidget(m_editors[i]);
         connect(m_editors[i], &ZLineEdit::editingFinished, this, &ZVecEditor::editingFinished);
@@ -91,19 +78,11 @@ UI_VECTYPE ZVecEditor::text() const
 QVariant ZVecEditor::vec() const
 {
 	QVariant value;
-    CURVES_DATA datas;
     UI_VECTYPE vec;
     UI_VECSTRING vecStr;
 	for (int i = 0; i < m_editors.size(); i++)
 	{
         if (m_bFloat) {
-            if (m_editors[i]->property(g_keyFrame).canConvert<CURVE_DATA>()) 
-            {
-                CURVE_DATA data = m_editors[i]->property(g_keyFrame).value<CURVE_DATA>();
-                QString key = curve_util::getCurveKey(i);
-                datas.insert(key, data);
-            } 
-            else 
             {
                 bool bOK = false;
                 float val = m_editors[i]->text().toFloat(&bOK);
@@ -140,10 +119,6 @@ QVariant ZVecEditor::vec() const
     {
         value = QVariant::fromValue(vecStr);
     }
-    else 
-    {
-        value = QVariant::fromValue(datas);
-    }
     return value;
 }
 
@@ -154,8 +129,6 @@ void ZVecEditor::setVec(const QVariant& vec, bool bFloat)
         size = vec.value<UI_VECTYPE>().size();
     else if (vec.canConvert<UI_VECSTRING>())
         size = vec.value<UI_VECSTRING>().size();
-    else
-        size = vec.value<CURVES_DATA>().size();
     if (bFloat != m_bFloat || size != m_editors.size())
     {
         initUI(vec);
@@ -168,14 +141,6 @@ void ZVecEditor::setVec(const QVariant& vec, bool bFloat)
                 setText(vec.value<UI_VECTYPE>().at(i), m_editors[i]);
             else if (vec.canConvert<UI_VECSTRING>())
                 setText(vec.value<UI_VECSTRING>().at(i), m_editors[i]);
-            else if (vec.canConvert<CURVES_DATA>()) {
-                CURVES_DATA curves = vec.value<CURVES_DATA>();
-                QString key = curve_util::getCurveKey(i);
-                if (curves.contains(key)) 
-                {
-                    m_editors[i]->setProperty(g_keyFrame, QVariant::fromValue(curves[key]));
-                }
-            }
         }
     }
 }
@@ -198,4 +163,9 @@ int ZVecEditor::getCurrentEditor()
         }
     }
     return -1;
+}
+
+QVector<ZLineEdit*> ZVecEditor::getEditors(int index)
+{
+    return m_editors;
 }

@@ -1,11 +1,10 @@
 #include "zenogvhelper.h"
-#include <zenoui/nodesys/nodesys_common.h>
-#include <zenoui/comctrl/gv/zlayoutbackground.h>
-#include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include "../../nodesys/nodesys_common.h"
+#include "zlayoutbackground.h"
+#include "zenoparamwidget.h"
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
 #include "zveceditoritem.h"
-#include "util/apphelper.h"
 
 
 void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)

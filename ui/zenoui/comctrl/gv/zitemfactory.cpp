@@ -4,16 +4,14 @@
 #include <zenoui/comctrl/gv/zlineedititem.h>
 #include <zenomodel/include/curvemodel.h>
 #include "zveceditoritem.h"
-#include <zenoui/style/zenostyle.h>
-#include <zenoui/comctrl/dialog/zenoheatmapeditor.h>
-#include <zenoui/comctrl/dialog/curvemap/zcurvemapeditor.h>
+#include "style/zenostyle.h"
+#include "../dialog/zenoheatmapeditor.h"
+#include "../dialog/curvemap/zcurvemapeditor.h"
 #include "variantptr.h"
 #include "zassert.h"
-#include <zenoui/comctrl/gv/zgraphicstextitem.h>
+#include "zgraphicstextitem.h"
 #include <zenoedit/zenoapplication.h>
 #include <zenomodel/include/uihelper.h>
-#include "util/apphelper.h"
-#include "zfloateditabletextitem.h"
 
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT
@@ -93,6 +91,7 @@ namespace zenoui
         switch (ctrl)
         {
             case CONTROL_INT:
+            case CONTROL_FLOAT:
             case CONTROL_STRING:
             {
                 const QString text = UiHelper::variantToString(value);
@@ -124,38 +123,6 @@ namespace zenoui
                 });
                 pItemWidget = pLineEdit;
 #endif
-                break;
-            }
-            case CONTROL_FLOAT: {
-                ZFloatEditableTextItem *pLineEdit = new ZFloatEditableTextItem;
-                QString text;
-                if (value.canConvert<CURVES_DATA>()) {
-                    CURVES_DATA data = value.value<CURVES_DATA>();
-                    if (!data.isEmpty()) {
-                        pLineEdit->setProperty(g_keyFrame, QVariant::fromValue(data.first()));
-                    }
-                } else {
-                    text = UiHelper::variantToString(value);
-                    pLineEdit->setText(text);
-                }
-                pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(100, zenoui::g_ctrlHeight)));
-                pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
-                pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
-
-                QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
-                    // be careful about the dynamic type.
-                    QVariant newValue;
-                    CURVE_DATA curve;
-                    if (AppHelper::getKeyFrame(pLineEdit, curve)) {
-                        CURVES_DATA data;
-                        data.insert(curve.key, curve);
-                        newValue = QVariant::fromValue(data);
-                    } else {
-                        newValue = UiHelper::parseStringByType(pLineEdit->toPlainText(), type);
-                    }
-                    cbSet.cbEditFinished(newValue);
-                });
-                pItemWidget = pLineEdit;
                 break;
             }
             case CONTROL_BOOL:

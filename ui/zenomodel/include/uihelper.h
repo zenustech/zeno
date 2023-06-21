@@ -92,7 +92,12 @@ public:
                                const LINKS_DATA& inLinks,
                                NODES_DATA& outNodes,
                                LINKS_DATA& outLinks);
+    static bool getKeyFrame(const QObject* obj, CURVE_DATA& curve);
+    static void updateProperty(QObject *obj);
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };
+
+extern const char* g_setKey;
+extern const char* g_keyFrame;
 #endif

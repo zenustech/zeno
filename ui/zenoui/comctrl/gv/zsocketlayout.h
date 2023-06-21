@@ -1,9 +1,9 @@
 #ifndef __ZSOCKET_LAYOUT_H__
 #define __ZSOCKET_LAYOUT_H__
 
-#include <zenoui/comctrl/gv/zgraphicslayout.h>
-#include <zenoui/comctrl/gv/zgraphicstextitem.h>
-#include <zenoui/comctrl/gv/callbackdef.h>
+#include "zgraphicslayout.h"
+#include "zgraphicstextitem.h"
+#include "callbackdef.h"
 
 class ZenoSocketItem;
 class ZSimpleTextItem;
