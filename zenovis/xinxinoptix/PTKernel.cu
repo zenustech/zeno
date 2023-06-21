@@ -355,15 +355,20 @@ extern "C" __global__ void __miss__radiance()
     pbrt::HenyeyGreenstein hg(anisotropy); float3 newdir;
 
     float2 uu = {rnd(prd->seed), rnd(prd->seed)}; 
-    auto prob = hg.Sample_p(prd->direction, newdir, uu);
+    auto prob = hg.Sample_p(-prd->direction, newdir, uu);
 
     prd->direction = newdir; //DisneyBSDF::SampleScatterDirection(prd->seed);
 
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        prd->maxDistance = 1e16f; //DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
-    } else
+        if (optixGetRayTmax() == 1e16f) {
+            prd->maxDistance = 1e16f;
+        } else {
+            prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
+        }
+    } 
+    else
     {
         prd->maxDistance =
             DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);

@@ -935,7 +935,8 @@ extern "C" __global__ void __closesthit__radiance()
                     if (isTrans) {
                         vec3 channelPDF = vec3(1.0f/3.0f);
                         prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, prd->sigma_t, prd->sigma_t, channelPDF) : 1e16f;
-                        prd->pushMat(extinction);
+                        prd->pushMat(extinction, vec3(-1.0f), mats.vol_anisotropy);
+
                     } else {
 
                         vec3 channelPDF = vec3(1.0f/3.0f);
@@ -990,7 +991,12 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->isSS = true;
                     prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                 }
-                else
+                else if (ss_alpha.x < 0.0f)
+                {
+                    prd->isSS = false;
+                    prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, prd->channelPDF) : 1e16f;
+                }
+                else 
                 {
                     prd->isSS = false;
                     prd->maxDistance = 1e16;
