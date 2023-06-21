@@ -81,7 +81,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load attr {}.", p.getName());
+                    log_error("[alembic] can not load attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
                 }
             }
         }
