@@ -55,6 +55,13 @@ int main(int argc, char *argv[])
             cacheMaterialOnly = atoi(argv[10]);
         return runner_main(sessionid, port, cachedir, cacheLightCameraOnly, cacheMaterialOnly);
     }
+    if (argc >= 3 && !strcmp(argv[1], "-optix")) {
+        extern int optix_main(const QCoreApplication & app, int port);
+        int port = -1;
+        if (argc >= 5 && !strcmp(argv[3], "-port"))
+            port = atoi(argv[4]);
+        return optix_main(a, port);
+    }
 #endif
 
     if (argc >= 3 && !strcmp(argv[1], "-invoke")) {

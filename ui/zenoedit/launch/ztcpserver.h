@@ -12,7 +12,8 @@ class ZTcpServer : public QObject
 public:
     ZTcpServer(QObject* parent = nullptr);
     void init(const QHostAddress &address);
-    void startProc(const std::string &progJson, bool applyLightAndCameraOnly, bool applyMaterialOnly);
+    void startProc(const std::string& progJson, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+    void startOptixProc();
     void killProc();
 
 private slots:
@@ -25,7 +26,9 @@ private slots:
 private:
     QTcpServer* m_tcpServer;
     QTcpSocket* m_tcpSocket;
+    QTcpSocket* m_tcpOptixSocket;
     std::unique_ptr<QProcess> m_proc;
+    std::unique_ptr<QProcess> m_optixProc;
     int m_port;
 };
 
