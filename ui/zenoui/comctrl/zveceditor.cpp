@@ -165,7 +165,7 @@ int ZVecEditor::getCurrentEditor()
     return -1;
 }
 
-QVector<ZLineEdit*> ZVecEditor::getEditors(int index)
+QVector<ZLineEdit*> ZVecEditor::getEditors()
 {
     return m_editors;
 }
