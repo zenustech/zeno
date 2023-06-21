@@ -3373,6 +3373,8 @@ void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno
   state.params.windowSpace = make_int2(sx * (float)nx, sy * (float)ny);
   state.params.windowCrop_min = make_int2(sx * (float)bmin[0], sy * (float)bmin[1]);
   state.params.windowCrop_max = make_int2(sx * (float)bmax[0], sy * (float)bmax[1]);
+  camera_changed = true;
+  resize_dirty = true;
 }
 void set_window_size(int nx, int ny) {
     state.params.width = nx;
