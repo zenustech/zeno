@@ -134,25 +134,6 @@ private:
     bool m_bShowSlider;
 };
 
-struct CURVE_DATA;
-class ZFloatEditableTextItem : public ZEditableTextItem {
-    Q_OBJECT
-    typedef ZEditableTextItem _base;
-
-  public:
-    ZFloatEditableTextItem(const QString &text, QGraphicsItem *parent = nullptr);
-    ZFloatEditableTextItem(QGraphicsItem *parent = nullptr);
-
-  protected:
-    bool event(QEvent *event) override;
-
-  private:
-    void updateCurveData();
-  private slots:
-    void updateText(int frame);
-    void onUpdate(bool gl, int frame);
-};
-
 class ZenoSocketItem;
 
 class ZSocketPlainTextItem : public ZSimpleTextItem

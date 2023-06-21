@@ -135,10 +135,8 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
                     CURVES_DATA curves = value.value<CURVES_DATA>();
                     if (curves.isEmpty())
                         return;
-                    pItem->setProperty(g_keyFrame, QVariant::fromValue(curves.first()));
                 } else {
                     pItem->setPlainText(UiHelper::variantToString(value));
-                    pItem->setProperty(g_keyFrame, QVariant());
                 }
             }
             else

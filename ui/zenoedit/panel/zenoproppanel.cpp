@@ -663,7 +663,7 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                 {
                     QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
                     QVector<ZLineEdit*> editors = pVecEdit->getEditors();
-                    for (int i = 0; editors.size(); i++)
+                    for (int i = 0; i < editors.size(); i++)
                     {
                         QString property;
                         if (i >= properties.size())

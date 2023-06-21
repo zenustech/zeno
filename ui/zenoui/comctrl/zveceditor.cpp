@@ -149,7 +149,6 @@ void ZVecEditor::setText(const QVariant &value, ZLineEdit* lineEdit)
 {
     QString text = UiHelper::variantToString(value);
     lineEdit->setText(text);
-    lineEdit->setProperty(g_keyFrame, QVariant());
 }
 
 int ZVecEditor::getCurrentEditor() 

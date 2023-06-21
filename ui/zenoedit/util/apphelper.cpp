@@ -209,28 +209,6 @@ void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
     }
 }
 
-void AppHelper::updateProperty(QObject* obj, const CURVE_DATA& data)
-{
-    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(mainWin);
-    ZTimeline* timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-    QString property = "null";
-    if (data.visible)
-    {
-        property = "false";
-        int x = timeline->value();
-        for (const auto& p : data.points) {
-            int px = p.point.x();
-            if (px == x) {
-                property = "true";
-                break;
-            }
-        }
-    }
-    obj->setProperty(g_setKey, property);
-}
-
 QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
 {
     QVector<QString> ret;
@@ -239,9 +217,9 @@ QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
         CURVES_DATA curves = val.value<CURVES_DATA>();
         ret.resize(curves.size());
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(mainWin);
+        ZASSERT_EXIT(mainWin, ret);
         ZTimeline* timeline = mainWin->timeline();
-        ZASSERT_EXIT(timeline);
+        ZASSERT_EXIT(timeline, ret);
         for (int i = 0; i < ret.size(); i++)
         {
             QString property = "null";
