@@ -59,9 +59,9 @@ struct Make1DLinePrimitive : INode {
         auto scale = get_input<NumericObject>("scale")->get<float>();
         ax *= scale;
     }
-    ax *= dx;
     if (get_param<bool>("isCentered"))
         o -= (ax) / 2;
+    ax *= dx;
 
     auto prim = std::make_shared<PrimitiveObject>();
     prim->resize(nx);
