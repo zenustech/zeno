@@ -4,6 +4,7 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveUtils.h>
 #include <zeno/extra/GlobalState.h>
@@ -308,6 +309,7 @@ struct ImportAlembicPrim : INode {
         if (get_input2<bool>("triangulate")) {
             zeno::primTriangulate(outprim.get());
         }
+        outprim->userData().set2("_abc_prim_count", count_alembic_prims(abctree));
         set_output("prim", std::move(outprim));
     }
 };
