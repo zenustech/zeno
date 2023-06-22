@@ -433,7 +433,7 @@ void traverseABC(
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done);
-            tree.prim->userData().set2("name", obj.getName());
+            tree.prim->userData().set2("_abc_name", obj.getName());
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a Xform [{}]", obj.getName());
@@ -455,7 +455,7 @@ void traverseABC(
             Alembic::AbcGeom::IPoints points(obj);
             auto &points_sch = points.getSchema();
             tree.prim = foundABCPoints(points_sch, frameid, read_done);
-            tree.prim->userData().set2("name", obj.getName());
+            tree.prim->userData().set2("_abc_name", obj.getName());
         } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found curves [{}]", obj.getName());
@@ -463,7 +463,7 @@ void traverseABC(
             Alembic::AbcGeom::ICurves curves(obj);
             auto &curves_sch = curves.getSchema();
             tree.prim = foundABCCurves(curves_sch, frameid, read_done);
-            tree.prim->userData().set2("name", obj.getName());
+            tree.prim->userData().set2("_abc_name", obj.getName());
         }
     }
 
