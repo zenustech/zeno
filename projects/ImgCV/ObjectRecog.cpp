@@ -1525,6 +1525,15 @@ ZENDEFNODE(ImageFeatureMatch, {
     { "image" },
 });
 
+Point2f pixel2cam ( const Point2d& p, const Mat& K )
+{
+    return Point2f
+    (
+        ( p.x - K.at<float>(0,2) ) / K.at<float>(0,0),
+        ( p.y - K.at<float>(1,2) ) / K.at<float>(1,1)
+    );
+}
+
 struct Image3DAnalyze : INode {
     void apply() override {
         auto image1 = get_input<PrimitiveObject>("image1");
@@ -1587,6 +1596,7 @@ struct Image3DAnalyze : INode {
 
 //matchpoints
         std::vector<cv::Point2f> image1Points,image2Points;
+        std::vector<cv::Point2f> image1PointsP2C,image2PointsP2C;
         int flag = image1->tris.size()>=image2->tris.size()?1:0;
         zeno::log_info("flag:{}",flag);
         auto &m11 = image1->tris.add_attr<vec3f>("image1MatchPoints");
@@ -1595,6 +1605,8 @@ struct Image3DAnalyze : INode {
         auto &m22 = image2->tris.add_attr<vec3f>("image2MatchPoints");
         auto &mp1 = image3->tris.add_attr<vec3f>("image1MatchPoints");
         auto &mp2 = image3->tris.add_attr<vec3f>("image2MatchPoints");
+        auto &mp1P2C = image3->tris.add_attr<vec3f>("image1MatchPointsP2C");
+        auto &mp2P2C = image3->tris.add_attr<vec3f>("image2MatchPointsP2C");
         std::vector<float> p1idx;
         std::vector<float> p2idx;
         std::vector<float> dupidx;
@@ -1622,23 +1634,29 @@ struct Image3DAnalyze : INode {
                 cv::Point2f pt1(m12[j][1], m12[j][2]);
                 image1Points.push_back(pt1);
                 mp1[i] = {m12[j][0],m12[j][1], m12[j][2]};
+                cv::Point2f pt1P2C = pixel2cam( pt1 , cameraMatrix);
+                image1PointsP2C.push_back ( pt1P2C );
+                mp1P2C[i] = {pt1P2C.x,pt1P2C.y};
             }
             if(dupidx[i]==m21[k][0]){
                 cv::Point2f pt2(m22[k][1], m22[k][2]);
                 image2Points.push_back(pt2);
                 mp2[i] = {m22[k][0],m22[k][1], m22[k][2]};
+                cv::Point2f pt2P2C = pixel2cam( pt2 , cameraMatrix);
+                image2PointsP2C.push_back ( pt2P2C );
+                mp2P2C[i] = {pt2P2C.x,pt2P2C.y};
             }
         }
-
         image3->tris.resize(image1Points.size());
+        zeno::log_info("image1Points.size:{} image2Points.size:{}",image1Points.size(),image2Points.size());
+
         cv::Mat points1Mat(2,image1Points.size(), CV_32FC1);
         cv::Mat points2Mat(2,image2Points.size(), CV_32FC1);
-        zeno::log_info("image1Points.size:{} image2Points.size:{}",image1Points.size(),image2Points.size());
-        for (size_t i = 0; i < image1Points.size(); i++) {
-            points1Mat.at<float>(0, i) = image1Points[i].x;
-            points1Mat.at<float>(1, i) = image1Points[i].y;
-            points2Mat.at<float>(0, i) = image2Points[i].x;
-            points2Mat.at<float>(1, i) = image2Points[i].y;
+        for (size_t i = 0; i < image1PointsP2C.size(); i++) {
+            points1Mat.at<float>(0, i) = image1PointsP2C[i].x;
+            points1Mat.at<float>(1, i) = image1PointsP2C[i].y;
+            points2Mat.at<float>(0, i) = image2PointsP2C[i].x;
+            points2Mat.at<float>(1, i) = image2PointsP2C[i].y;
         }
         zeno::log_info("points1Mat.size:{} points2Mat.size:{}",points1Mat.cols,points2Mat.cols);
 
@@ -1746,16 +1764,33 @@ struct Image3DAnalyze : INode {
         zeno::log_info("cameraMatrixPro1.width:{} cameraMatrixPro1.height:{}",cameraMatrixPro1x.cols,cameraMatrixPro1x.rows);
         zeno::log_info("cameraMatrixPro2.width:{} cameraMatrixPro2.height:{}",cameraMatrixPro2x.cols,cameraMatrixPro2x.rows);
 //todo:
-        // 三角化计算
+
+
+// triangulatePoints init
         auto &p4d = image3->tris.add_attr<vec4f>("4DPoints");
         cv::Mat points4D = cv::Mat::ones(3, 4, CV_32F);
-        cv::triangulatePoints(cameraMatrixPro1x, cameraMatrixPro2x, points1Mat, points2Mat, points4D);
+
+// triangulatePoints method1
+        Mat T1 = (Mat_<float> (3,4) <<
+            1,0,0,0,
+            0,1,0,0,
+            0,0,1,0);
+        Mat T2 = (Mat_<float> (3,4) <<
+            erotation2.at<float>(0,0), erotation2.at<float>(0,1), erotation2.at<float>(0,2), etranslation2.at<float>(0,0),
+            erotation2.at<float>(1,0), erotation2.at<float>(1,1), erotation2.at<float>(1,2), etranslation2.at<float>(1,0),
+            erotation2.at<float>(2,0), erotation2.at<float>(2,1), erotation2.at<float>(2,2), etranslation2.at<float>(2,0)
+        );
+        cv::triangulatePoints(T1,T2,points1Mat, points2Mat, points4D);
+
+// triangulatePoints method2
+//        cv::triangulatePoints(cameraMatrixPro1x, cameraMatrixPro2x, points1Mat, points2Mat, points4D);
         zeno::log_info("points4D.cols:{},points4D.rows:{}",points4D.cols,points4D.rows);
         for (size_t j = 0; j < points4D.cols; j++) {
             for(size_t i = 0;i < points4D.rows;i++){
                 p4d[j][i] = points4D.at<float>(i,j);
             }
         }
+
 //        cv::triangulatePoints(cameraMatrixPro,cameraMatrixPro, points1, points2, points4D);
 //        for (size_t i = 0; i < points4D.rows; i++) {
 //            cv::Point4f point = points4D.at<cv::Point4f>(i);
@@ -1951,7 +1986,7 @@ struct EstimateCameraMatrix : INode {
 //                cv::Mat(), cv::Mat(), // 旋转矩阵和平移向量（输出参数）
 //                cv::CALIB_FIX_INTRINSIC | cv::CALIB_USE_INTRINSIC_GUESS // 标定标志
 //        );
-        double rms = stereoCalibrate(objectPoints, image1Points, image2Points,
+        float rms = stereoCalibrate(objectPoints, image1Points, image2Points,
                                      cameraMatrix1, distCoeffs1, cameraMatrix2, distCoeffs2,
                                      cv::Size(w1, h1),
                                      R, T,
