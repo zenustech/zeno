@@ -54,8 +54,7 @@ static void zenoedge(std::shared_ptr<PrimitiveObject> &grayImage, int width, int
 }
 
 // 计算法向量
-static void
-normalMap(std::shared_ptr<PrimitiveObject> &grayImage, int width, int height, std::vector<float> &normal) {
+static void normalMap(std::shared_ptr<PrimitiveObject> &grayImage, int width, int height, std::vector<float> &normal) {
     std::vector<float> dx, dy;
     zenoedge(grayImage, width, height, dx, dy);
     normal.resize(width * height * 3);
@@ -82,8 +81,7 @@ normalMap(std::shared_ptr<PrimitiveObject> &grayImage, int width, int height, st
     }
 }
 
-static void
-scharr2(std::shared_ptr<PrimitiveObject> &src, std::shared_ptr<PrimitiveObject> &dst, int width, int height,
+static void scharr2(std::shared_ptr<PrimitiveObject> &src, std::shared_ptr<PrimitiveObject> &dst, int width, int height,
         int threshold) {
     std::vector<int> gx(width * height);
     std::vector<int> gy(width * height);
@@ -107,18 +105,12 @@ scharr2(std::shared_ptr<PrimitiveObject> &src, std::shared_ptr<PrimitiveObject> 
     for (int y = 1; y < height - 1; ++y) {
         for (int x = 1; x < width - 1; ++x) {
             int idx = y * width + x;
-
-            // Calculate gradient magnitude
             int mag = std::sqrt(gx[idx] * gx[idx] + gy[idx] * gy[idx]);
-            // Apply threshold
             if (mag * 255 > threshold) {
-                // Set to white
                 dst->verts[idx] = {1, 1, 1};
             } else {
-                // Set to black
                 dst->verts[idx] = {0, 0, 0};
             }
-            // Clamp to [0, 255] and store in output image
             float g = std::min(1, std::max(0, mag));
             dst->verts[idx] = {g, g, g};
         }
@@ -211,7 +203,6 @@ struct ImageEdgeDetect : INode {
             cv::Mat gradientMagnitude, gradientDirection;
             cv::cartToPolar(gradX, gradY, gradientMagnitude, gradientDirection, true);
 
-            // 应用阈值
             cv::threshold(gradientMagnitude, imagecvout, threshold, maxThreshold, cv::THRESH_BINARY);
             for (int i = 0; i < h; i++) {
 
@@ -348,15 +339,13 @@ struct ImageEdgeDetect : INode {
                     imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
                 }
             }
-            // 自适应阈值化
             cv::Mat thresholdImage;
             int maxValue = 255;  // 最大像素值
             int blockSize = 3;  // 邻域块大小
-            double C = 2;  // 常数项
+            double C = 2;
             cv::adaptiveThreshold(imagecvin, thresholdImage, maxValue, cv::ADAPTIVE_THRESH_MEAN_C,
                                   cv::THRESH_BINARY, blockSize, C);
 
-            // 执行 Canny 边缘检测
             int apertureSize = 3;  // 孔径大小，默认为 3
             bool L2gradient = false;  // 使用 L1 范数计算梯度幅值
             cv::Canny(thresholdImage, imagecvout, 0, 0, apertureSize, L2gradient);
@@ -753,7 +742,6 @@ ZENDEFNODE(ImageEdgeDetectPrewitt, {
     { "image" },
 });
 
-//边缘检测
 struct ImageEdgeDetectCanny : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
@@ -773,15 +761,13 @@ struct ImageEdgeDetectCanny : INode {
                     imagecvin.at<uchar>(i, j) = int(rgb[0] * 255);
                 }
             }
-            // 自适应阈值化
             cv::Mat thresholdImage;
             int maxValue = 255;  // 最大像素值
             int blockSize = 3;  // 邻域块大小
-            double C = 2;  // 常数项
+            double C = 2;
             cv::adaptiveThreshold(imagecvin, thresholdImage, maxValue, cv::ADAPTIVE_THRESH_MEAN_C,
                                   cv::THRESH_BINARY, blockSize, C);
 
-            // 执行 Canny 边缘检测
             int apertureSize = 3;  // 孔径大小，默认为 3
             bool L2gradient = false;  // 使用 L1 范数计算梯度幅值
             cv::Canny(thresholdImage, imagecvout, 0, 0, apertureSize, L2gradient);
@@ -831,7 +817,6 @@ ZENDEFNODE(ImageEdgeDetectCanny, {
 
 struct ImageStitching : INode {
     void apply() override {
-//        auto primList = get_input<ListObject>("listPrim")->getRaw<PrimitiveObject>();
         auto image1 = get_input<PrimitiveObject>("image1");
         auto image2 = get_input<PrimitiveObject>("image2");
         auto &ud1 = image1->userData();
@@ -1132,7 +1117,7 @@ ZENDEFNODE(ImageFeatureDetectSIFT, {
         { "float", "nOctaveLayers", "3" }, //每组尺度层级的层数
         { "float", "contrastThreshold", "0.04" }, //关键点提取的对比度阈值
         { "float", "edgeThreshold", "10" }, //关键点提取的边缘阈值
-        { "float", "sigma", "1.6" }, //高斯滤波器的初始尺度
+        { "float", "sigma", "1.0" }, //高斯滤波器的初始尺度
     },
     {
         { "PrimitiveObject", "image" },
@@ -1527,7 +1512,7 @@ ZENDEFNODE(ImageFeatureMatch, {
         { "float", "maxMatchDistance", "0.7" },
         { "bool", "perspectiveMatrix", "1" },
         { "bool", "fundamentalMatrix", "0" },
-        { "bool", "essentialMatrix", "0" },
+        { "bool", "essentialMatrix", "1" },
         { "bool", "homographyMatrix", "0" },
         { "bool", "visualize", "1" },
         { "bool", "stitch", "0" },
@@ -1598,20 +1583,65 @@ struct Image3DAnalyze : INode {
             cm[i] = static_cast<float>(cameraMatrix.at<float>(i));
         }
 //distCoeffsMatrix
-//        cv::Mat distCoeffsMatrix = cv::Mat::zeros(1, 5, CV_64F);  // 5个畸变系数，初始值为0
         cv::Mat distCoeffsMatrix = (cv::Mat_<float>(4, 1) << 1,1,1,1);
 
 //matchpoints
-        auto &mp12 = image1->tris.add_attr<vec3f>("image2MatchPoints");
-        auto &mp22 = image2->tris.add_attr<vec3f>("image2MatchPoints");
-        std::vector<cv::Point2f> points1, points2;
+        std::vector<cv::Point2f> image1Points,image2Points;
+        int flag = image1->tris.size()>=image2->tris.size()?1:0;
+        zeno::log_info("flag:{}",flag);
+        auto &m11 = image1->tris.add_attr<vec3f>("image1MatchPoints");
+        auto &m21 = image2->tris.add_attr<vec3f>("image1MatchPoints");
+        auto &m12 = image1->tris.add_attr<vec3f>("image2MatchPoints");
+        auto &m22 = image2->tris.add_attr<vec3f>("image2MatchPoints");
+        auto &mp1 = image3->tris.add_attr<vec3f>("image1MatchPoints");
+        auto &mp2 = image3->tris.add_attr<vec3f>("image2MatchPoints");
+        std::vector<float> p1idx;
+        std::vector<float> p2idx;
+        std::vector<float> dupidx;
+        p1idx.resize(image1->tris.size());
+        p2idx.resize(image2->tris.size());
         for(size_t i = 0;i < image1->tris.size();i++){
-            cv::Point2f p1(mp12[i][1],mp12[i][2]);
-            cv::Point2f p2(mp22[i][1],mp22[i][2]);
-            points1.push_back(p1);
-            points2.push_back(p2);
+            p1idx[i] = m11[i][0];
         }
-        zeno::log_info("image1Points.size:{} image2Points.size:{}",points1.size(),points2.size());
+        for(size_t i = 0;i < image2->tris.size();i++){
+            p2idx[i] = m21[i][0];
+        }
+
+        std::set_intersection(p1idx.begin(), p1idx.end(),
+                          p2idx.begin(),p2idx.end(),
+                          std::back_inserter(dupidx));
+        int j = 0,k = 0;
+        for(size_t i = 0;i < dupidx.size();i++){
+            while(dupidx[i]!=m11[j][0]){
+                j++;
+            }
+            while(dupidx[i]!=m21[k][0]){
+                k++;
+            }
+            if(dupidx[i]==m11[j][0]){
+                cv::Point2f pt1(m12[j][1], m12[j][2]);
+                image1Points.push_back(pt1);
+                mp1[i] = {m12[j][0],m12[j][1], m12[j][2]};
+            }
+            if(dupidx[i]==m21[k][0]){
+                cv::Point2f pt2(m22[k][1], m22[k][2]);
+                image2Points.push_back(pt2);
+                mp2[i] = {m22[k][0],m22[k][1], m22[k][2]};
+            }
+        }
+
+        image3->tris.resize(image1Points.size());
+        cv::Mat points1Mat(2,image1Points.size(), CV_32FC1);
+        cv::Mat points2Mat(2,image2Points.size(), CV_32FC1);
+        zeno::log_info("image1Points.size:{} image2Points.size:{}",image1Points.size(),image2Points.size());
+        for (size_t i = 0; i < image1Points.size(); i++) {
+            points1Mat.at<float>(0, i) = image1Points[i].x;
+            points1Mat.at<float>(1, i) = image1Points[i].y;
+            points2Mat.at<float>(0, i) = image2Points[i].x;
+            points2Mat.at<float>(1, i) = image2Points[i].y;
+        }
+        zeno::log_info("points1Mat.size:{} points2Mat.size:{}",points1Mat.cols,points2Mat.cols);
+
 //perspectiveMatrix
 
 //        auto &pm = image3->tris.add_attr<float>("perspectiveMatrix");
@@ -1637,7 +1667,7 @@ struct Image3DAnalyze : INode {
         auto &em1 = image1->tris.add_attr<float>("essentialMatrix");
         auto &er1 = image1->tris.add_attr<float>("essentialRotation");
         auto &et1 = image1->tris.add_attr<float>("essentialTranslation");
-
+        image3->tris.add_attr<float>("essentialMatrix1") = image1->tris.add_attr<float>("essentialMatrix");
         cv::Mat essentialMatrix1 = (cv::Mat_<float>(3, 3) << em1[0],em1[1],em1[2],
                                                               em1[3],em1[4],em1[5],
                                                               em1[6],em1[7],em1[8]);
@@ -1655,7 +1685,7 @@ struct Image3DAnalyze : INode {
         auto &em2 = image2->tris.add_attr<float>("essentialMatrix");
         auto &er2 = image2->tris.add_attr<float>("essentialRotation");
         auto &et2 = image2->tris.add_attr<float>("essentialTranslation");
-
+        image3->tris.add_attr<float>("essentialMatrix2") = image2->tris.add_attr<float>("essentialMatrix");
         cv::Mat essentialMatrix2 = (cv::Mat_<float>(3, 3) << em2[0],em2[1],em2[2],
                                                               em2[3],em2[4],em2[5],
                                                               em2[6],em2[7],em2[8]);
@@ -1664,102 +1694,68 @@ struct Image3DAnalyze : INode {
                                                         er2[3],er2[4],er2[5],
                                                         er2[6],er2[7],er2[8]);
 
-        cv::Mat etranslation2 = (cv::Mat_<float>(3, 3) << et2[0],et2[1],et2[2],
-                                                           et2[3],et2[4],et2[5],
-                                                           et2[6],et2[7],et2[8]);
+        cv::Mat etranslation2 = (cv::Mat_<float>(3, 1) << et2[0],et2[1],et2[2]);
 
         cv::Size ems2 = essentialMatrix2.size();
         zeno::log_info("essentialMatrix2.width:{} essentialMatrix2.height:{}",ems2.width,ems2.height);
 
-//        std::vector<cv::Point2f> undistortedPoints1, undistortedPoints2;
-//        cv::undistortPoints(points1, undistortedPoints1, cameraMatrix1, distCoeffs1);
-//        cv::undistortPoints(points2, undistortedPoints2, cameraMatrix2, distCoeffs2);
-
-//        cv::Mat cameraMatrixPro = (cv::Mat_<float>(3, 4) << fx,0,cx,1,
-//                0,fy,cy,1,
-//                0, 0, 1,1);
-//        // 定义相机投影矩阵
-//        cv::Mat projMatr1 = cv::Mat::eye(3, 4, CV_64FC1);  // 相机1的投影矩阵
-//        cv::Mat projMatr2 = cv::Mat::eye(3, 4, CV_64FC1);  // 相机2的投影矩阵
-//        cv::Mat identityMatrix = cv::Mat::eye(3, 3, CV_64F);
-//        cv::hconcat(cameraMatrix, identityMatrix, projMatr1);
-//        cv::hconcat(cameraMatrix, identityMatrix, projMatr2);
-
-//// 定义相机1的外参矩阵
-//        cv::Mat rotationMatrix1 = erotation;
-//        cv::Mat translationVector1 = etranslation;
-
-//// 定义相机2的外参矩阵
-//        cv::Mat rotationMatrix2 = ...; // 相机2的旋转矩阵（根据具体情况提供旋转矩阵）
-//        cv::Mat translationVector2 = ...; // 相机2的平移向量（根据具体情况提供平移向量）
-//
-//// 将内参矩阵和外参矩阵组合成相机投影矩阵
-//        cv::Mat projectionMatrix1 = cameraMatrix * cv::Mat::eye(3, 4, CV_64F); // 相机1的投影矩阵
-//        cv::Size ems2 = essentialMatrix2.size();
-//        zeno::log_info("essentialMatrix2.width:{} essentialMatrix2.height:{}",ems2.width,ems2.height);
-//        cv::Mat projectionMatrix2 = cameraMatrix * (cv::Mat_<double>(3, 4) << rotationMatrix2.at<double>(0, 0), rotationMatrix2.at<double>(0, 1), rotationMatrix2.at<double>(0, 2), translationVector2.at<double>(0),
-//                rotationMatrix
-//
-//        OMatrix
-
-        cv::Mat cameraMatrixPro1 = cv::Mat::ones(3, 4, CV_32F);
-        cv::Size cmp1si = cameraMatrixPro1.size();
-        zeno::log_info("cameraMatrixPro1init.width:{} cameraMatrixPro1init.height:{}",cmp1si.width,cmp1si.height);
-        cv::Mat cameraMatrixPro2 = cv::Mat::ones(3, 4, CV_32F);
+        cv::Mat cameraMatrix1 = cv::Mat::ones(3, 4, CV_32F);
+        cv::Size cmp1si = cameraMatrix1.size();
+        cv::Mat cameraMatrix2 = cv::Mat::ones(3, 4, CV_32F);
         cv::Size imageSize(w1, h1);
 
-// 设置相机1的内参矩阵
-        auto &cmp1 = image3->tris.add_attr<float>("cameraMatrixPro1");
+// estimateCameraMatrix1
+        auto &cm1 = image3->tris.add_attr<float>("cameraMatrix1");
         cv::Mat K1 = cameraMatrix;
         cv::Mat distCoeffs1 = distCoeffsMatrix;
         cv::Mat R1 = erotation1;
         cv::Mat t1 = etranslation1;
-        cv::fisheye::estimateNewCameraMatrixForUndistortRectify(K1, distCoeffs1, imageSize , erotation1, cameraMatrixPro1);
-        cv::Size cmp1s = cameraMatrixPro1.size();
-        zeno::log_info("cameraMatrixPro1.width:{} cameraMatrixPro1.height:{}",cmp1s.width,cmp1s.height);
+        cv::fisheye::estimateNewCameraMatrixForUndistortRectify(K1, distCoeffs1, imageSize , erotation1, cameraMatrix1);
+        cv::Size cmp1s = cameraMatrix1.size();
+        zeno::log_info("cameraMatrix1.width:{} cameraMatrix1.height:{}",cmp1s.width,cmp1s.height);
         for (int i = 0; i < 9; i++) {
-            cmp1[i] = static_cast<float>(cameraMatrixPro1.at<float>(i));
+            cm1[i] = static_cast<float>(cameraMatrix1.at<float>(i));
         }
-// 设置相机2的内参矩阵
-        auto &cmp2 = image3->tris.add_attr<float>("cameraMatrixPro2");
+// estimateCameraMatrix2
+        auto &cm2 = image3->tris.add_attr<float>("cameraMatrix2");
         cv::Mat K2 = cameraMatrix;
         cv::Mat distCoeffs2 = distCoeffsMatrix;
-        cv::Mat R2 = erotation2;     // 相机2的旋转矩阵，这里使用从标定得到的相机外参矩阵R
-        cv::Mat t2 = etranslation2;  // 相机2的平移向量，这里使用从标定得到的相机外参矩阵t
-        cv::fisheye::estimateNewCameraMatrixForUndistortRectify(K2, distCoeffs2, imageSize , R2, cameraMatrixPro2); // 根据畸变系数和图像尺寸计算相机2的投影矩阵
-        cv::Size cmp2s = cameraMatrixPro2.size();
-        zeno::log_info("cameraMatrixPro2.width:{} cameraMatrixPro2.height:{}",cmp2s.width,cmp2s.height);
+        cv::Mat R2 = erotation2;
+        cv::Mat t2 = etranslation2;
+        cv::fisheye::estimateNewCameraMatrixForUndistortRectify(K2, distCoeffs2, imageSize , R2, cameraMatrix2);
+        cv::Size cmp2s = cameraMatrix2.size();
+        zeno::log_info("cameraMatrix2.width:{} cameraMatrix2.height:{}",cmp2s.width,cmp2s.height);
         for (int i = 0; i < 9; i++) {
-            cmp2[i] = static_cast<float>(cameraMatrixPro2.at<float>(i));
+            cm2[i] = static_cast<float>(cameraMatrix2.at<float>(i));
         }
 //3x3 -> 3x4
-        auto &cmp1x = image3->tris.add_attr<float>("cameraMatrixPro1x");
-        auto &cmp2x = image3->tris.add_attr<float>("cameraMatrixPro2x");
+        auto &cmp1 = image3->tris.add_attr<float>("cameraMatrixPro1");
+        auto &cmp2 = image3->tris.add_attr<float>("cameraMatrixPro2");
         cv::Mat cameraMatrixPro1x = cv::Mat::eye(3, 4, CV_32F);
         cv::Mat roi1 = cameraMatrixPro1x(cv::Rect(0, 0, 3, 3));
-        cameraMatrixPro1.copyTo(roi1);
+        cameraMatrix1.copyTo(roi1);
         cv::Mat cameraMatrixPro2x = cv::Mat::eye(3, 4, CV_32F);
-        cv::Mat roi2 = cameraMatrixPro1x(cv::Rect(0, 0, 3, 3));
-        cameraMatrixPro2.copyTo(roi2);
+        cv::Mat roi2 = cameraMatrixPro2x(cv::Rect(0, 0, 3, 3));
+        cameraMatrix2.copyTo(roi2);
         for (int i = 0; i < 12; i++) {
-            cmp1x[i] = static_cast<float>(cameraMatrixPro1x.at<float>(i));
+            cmp1[i] = static_cast<float>(cameraMatrixPro1x.at<float>(i));
         }
         for (int i = 0; i < 12; i++) {
-            cmp2x[i] = static_cast<float>(cameraMatrixPro2x.at<float>(i));
+            cmp2[i] = static_cast<float>(cameraMatrixPro2x.at<float>(i));
         }
-
+        zeno::log_info("cameraMatrixPro1.width:{} cameraMatrixPro1.height:{}",cameraMatrixPro1x.cols,cameraMatrixPro1x.rows);
+        zeno::log_info("cameraMatrixPro2.width:{} cameraMatrixPro2.height:{}",cameraMatrixPro2x.cols,cameraMatrixPro2x.rows);
+//todo:
         // 三角化计算
         auto &p4d = image3->tris.add_attr<vec4f>("4DPoints");
         cv::Mat points4D = cv::Mat::ones(3, 4, CV_32F);
-        cv::triangulatePoints(cameraMatrixPro1x, cameraMatrixPro2x, points1, points2, points4D);
-        cv::Size p4ds = points4D.size();
-        zeno::log_info("points4D.width:{},points4D.height:{},points4D.cols:{},points4D.rows:{}",p4ds.width,p4ds.height,points4D.cols,points4D.rows);
+        cv::triangulatePoints(cameraMatrixPro1x, cameraMatrixPro2x, points1Mat, points2Mat, points4D);
+        zeno::log_info("points4D.cols:{},points4D.rows:{}",points4D.cols,points4D.rows);
         for (size_t j = 0; j < points4D.cols; j++) {
             for(size_t i = 0;i < points4D.rows;i++){
                 p4d[j][i] = points4D.at<float>(i,j);
             }
         }
-
 //        cv::triangulatePoints(cameraMatrixPro,cameraMatrixPro, points1, points2, points4D);
 //        for (size_t i = 0; i < points4D.rows; i++) {
 //            cv::Point4f point = points4D.at<cv::Point4f>(i);
@@ -1776,7 +1772,6 @@ struct Image3DAnalyze : INode {
             p4d[i] = {x,y,z,w};
         }
         zeno::log_info("triangulatePoints");
-
 
         // 转换为齐次坐标形式并进行归一化
         auto &p3d = image3->tris.add_attr<vec3f>("3DPoints");
