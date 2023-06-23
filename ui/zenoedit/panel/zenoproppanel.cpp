@@ -190,7 +190,7 @@ void ZenoPropPanel::reset(IGraphsModel* pModel, const QModelIndex& subgIdx, cons
     m_tabWidget->setTabsClosable(false);
     m_tabWidget->setMovable(false);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setWeight(QFont::Medium);
 
     m_tabWidget->setFont(font); //bug in qss font setting.
@@ -332,8 +332,9 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
         return false;
     }
 
+    bool bFloat = ctrl == CONTROL_VEC2_FLOAT || ctrl == CONTROL_VEC3_FLOAT || ctrl == CONTROL_VEC4_FLOAT || ctrl == CONTROL_FLOAT;
     cbSet.cbEditFinished = [=](QVariant newValue) {
-        if (ctrl != CONTROL_CURVE)
+        if (bFloat)
         {
             AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue);
         }
@@ -347,7 +348,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     };
     //key frame
     bool bKeyFrame = false;
-    if (ctrl != CONTROL_CURVE)
+    if (bFloat)
     {
         bKeyFrame = AppHelper::getCurveValue(val);
     }
@@ -355,7 +356,7 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
 
     ZTextLabel* pLabel = new ZTextLabel(paramName);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setWeight(QFont::DemiBold);
     pLabel->setFont(font);
     pLabel->setToolTip(paramItem->data(ROLE_VPARAM_TOOLTIP).toString());
@@ -386,29 +387,20 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
 
     m_controls[tabName][groupName][paramName] = panelCtrl;
 
-    if (ctrl == CONTROL_VEC2_FLOAT || ctrl == CONTROL_VEC3_FLOAT || ctrl == CONTROL_VEC4_FLOAT ||
-        ctrl == CONTROL_FLOAT) {
+    if (bFloat) {
         m_floatColtrols << panelCtrl;
         pLabel->installEventFilter(this);
         pControl->installEventFilter(this);
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(mainWin, false);
+        ZASSERT_EXIT(mainWin, true);
         ZTimeline* timeline = mainWin->timeline();
-        ZASSERT_EXIT(timeline, false);
-        if (bKeyFrame)
-        {
-            connect(timeline, &ZTimeline::sliderValueChanged, this, [=](int nFrame) {
-                onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
+        ZASSERT_EXIT(timeline, true);
+        connect(timeline, &ZTimeline::sliderValueChanged, this, [=](int nFrame) {
+            onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
             }, Qt::UniqueConnection);
-            connect(mainWin, &ZenoMainWindow::visFrameUpdated, this, [=](bool bGLView, int nFrame) {
-                onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
+        connect(mainWin, &ZenoMainWindow::visFrameUpdated, this, [=](bool bGLView, int nFrame) {
+            onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
             }, Qt::UniqueConnection);
-        }
-        else
-        {
-            disconnect(timeline, &ZTimeline::sliderValueChanged, this, nullptr);
-            disconnect(mainWin, &ZenoMainWindow::visFrameUpdated, this, nullptr);
-        }
     }
     return true;
 }
@@ -635,11 +627,14 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
                 QString literalNum;
                 if (paramCtrl == CONTROL_FLOAT) {
                     QVariant newVal = value;
-                    AppHelper::getCurveValue(newVal);
+                    bool bKeyFrame = AppHelper::getCurveValue(newVal);
                     literalNum = UiHelper::variantToString(newVal);
                     pLineEdit->setText(literalNum);
                     QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
                     pLineEdit->setProperty(g_setKey, properties.first());
+                    pLineEdit->style()->unpolish(pLineEdit);
+                    pLineEdit->style()->polish(pLineEdit);
+                    pLineEdit->update();                    
                     
                 } else {
                     literalNum = UiHelper::variantToString(value);
@@ -657,25 +652,12 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             else if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(ctrl.pControl))
             {
                 QVariant newVal = value;
-                AppHelper::getCurveValue(newVal);
+                bool bKeyFrame = AppHelper::getCurveValue(newVal);
                 pVecEdit->setVec(newVal, pVecEdit->isFloat());
                 if (pVecEdit->isFloat())
                 {
                     QVector<QString> properties = AppHelper::getKeyFrameProperty(value);
-                    QVector<ZLineEdit*> editors = pVecEdit->getEditors();
-                    for (int i = 0; i < editors.size(); i++)
-                    {
-                        QString property;
-                        if (i >= properties.size())
-                        {
-                            property = properties.first();
-                        }
-                        else
-                        {
-                            property = properties.at(i);
-                        }
-                        editors[i]->setProperty(g_setKey, property);
-                    }
+                    pVecEdit->updateProperties(properties);
                 }
             }
             else if (QCheckBox* pCheckbox = qobject_cast<QCheckBox*>(ctrl.pControl))
@@ -1204,17 +1186,24 @@ void ZenoPropPanel::updateTimelineKeys(const CURVES_DATA &curves)
 
 void ZenoPropPanel::onUpdateFrame(QWidget* pContrl, int nFrame, QVariant val)
 {
-    if (!AppHelper::getCurveValue(val))
+    QVariant newVal = val;
+    if (!AppHelper::getCurveValue(newVal))
         return;
-    CURVES_DATA curves = val.value<CURVES_DATA>();
     //vec
     if (ZVecEditor* pVecEdit = qobject_cast<ZVecEditor*>(pContrl))
     {
-        pVecEdit->setVec(val, pVecEdit->isFloat());
+        pVecEdit->setVec(newVal, pVecEdit->isFloat());
+        QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
+        pVecEdit->updateProperties(properties);
     }
     else if (QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(pContrl))
     {
-        QString text = UiHelper::variantToString(val);
+        QString text = UiHelper::variantToString(newVal);
         pLineEdit->setText(text);
+        QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
+        pLineEdit->setProperty(g_setKey, properties.first());
+        pLineEdit->style()->unpolish(pLineEdit);
+        pLineEdit->style()->polish(pLineEdit);
+        pLineEdit->update();
     }
 }

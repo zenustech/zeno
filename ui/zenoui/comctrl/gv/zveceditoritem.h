@@ -14,6 +14,7 @@ public:
     void setVec(const QVariant &vec, bool bFloat, QGraphicsScene *pScene);
     void setVec(const QVariant &vec);
     bool isFloatType() const;
+    void updateProperties(const QVector<QString>& properties);
 
 signals:
     void editingFinished();

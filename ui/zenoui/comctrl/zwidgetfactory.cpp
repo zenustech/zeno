@@ -18,7 +18,6 @@
 #include "zassert.h"
 #include "zspinboxslider.h"
 #include "zdicttableview.h"
-#include <zenoedit/zenoapplication.h>
 #include "gv/zitemfactory.h"
 #include <zenoui/comctrl/zpathedit.h>
 #include <zenomodel/include/modeldata.h>
@@ -65,7 +64,7 @@ namespace zenoui
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
             {
-                ZPathEdit *pathLineEdit = new ZPathEdit(value.toString());
+                ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setProperty("control", ctrl);
                 
@@ -80,7 +79,7 @@ namespace zenoui
                 pTextEdit->setFrameShape(QFrame::NoFrame);
                 pTextEdit->setProperty("cssClass", "proppanel");
                 pTextEdit->setProperty("control", ctrl);
-                QFont font = zenoApp->font();
+                QFont font = QApplication::font();
                 font.setPointSize(9);
                 pTextEdit->setFont(font);
                 pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);

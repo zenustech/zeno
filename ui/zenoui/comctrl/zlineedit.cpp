@@ -2,9 +2,6 @@
 #include "znumslider.h"
 #include "style/zenostyle.h"
 #include <QSvgRenderer>
-#include <zenoedit/zenoapplication.h>
-#include <zenoedit/zenomainwindow.h>
-#include <zenoedit/timeline/ztimeline.h>
 #include "./dialog/curvemap/zcurvemapeditor.h"
 #include <zenomodel/include/uihelper.h>
 

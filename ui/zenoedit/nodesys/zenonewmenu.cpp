@@ -28,7 +28,7 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     palette.setColor(QPalette::Text, clr);
 
     m_searchEdit->setPalette(palette);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     m_searchEdit->setFont(font);
     m_pWAction->setDefaultWidget(m_searchEdit);
     addAction(m_pWAction);

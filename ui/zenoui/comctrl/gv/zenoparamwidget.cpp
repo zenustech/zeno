@@ -7,8 +7,6 @@
 #include <zeno/utils/log.h>
 #include <zenomodel/include/uihelper.h>
 #include "../view/zcomboboxitemdelegate.h"
-#include "zenoedit/zenoapplication.h"
-#include "../zpathedit.h"
 #include <QSvgRenderer>
 
 
@@ -555,7 +553,7 @@ ZenoParamComboBox::ZenoParamComboBox(const QStringList &items, ComboBoxParam par
     ZLineEdit* pLineEdit = new ZLineEdit(m_combobox);
     pLineEdit->setTextMargins(param.margins);
     pLineEdit->setPalette(param.palette);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     pLineEdit->setFont(font);
     pLineEdit->setProperty("cssClass", "proppanel");
     pLineEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -732,7 +730,7 @@ ZenoParamMultilineStr::ZenoParamMultilineStr(const QString &value, LineEditParam
     m_pTextEdit->setText(value);
 
 	//QTextCharFormat format;
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     m_pTextEdit->setCurrentFont(font);
     m_pTextEdit->setFont(font);
@@ -1005,7 +1003,7 @@ QRectF ZenoParamGroupLine::boundingRect() const
 void ZenoParamGroupLine::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) 
 {
     //draw text
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     QFontMetrics fm(font);
     qreal width = fm.width(m_text);
     QPen pen;

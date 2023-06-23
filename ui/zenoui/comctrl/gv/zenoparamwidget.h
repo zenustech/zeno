@@ -88,8 +88,6 @@ private:
 };
 
 
-class ZPathEdit;
-
 class ZenoParamPathEdit : public ZEditableTextItem
 {
     Q_OBJECT

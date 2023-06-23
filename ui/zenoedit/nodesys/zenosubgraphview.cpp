@@ -586,7 +586,7 @@ void LayerPathWidget::setPath(const QString& path)
 
         ZTextLabel* pLabel = new ZTextLabel;
         pLabel->setText(item);
-        QFont font = zenoApp->font();
+        QFont font = QApplication::font();
         font.setPointSize(11);
         pLabel->setFont(font);
         pLabel->setTextColor(QColor(129, 125, 123));
@@ -597,7 +597,7 @@ void LayerPathWidget::setPath(const QString& path)
         {
             pLabel = new ZTextLabel;
             pLabel->setText(">");
-            QFont font = zenoApp->font();
+            QFont font = QApplication::font();
             font.setPointSize(11);
             font.setBold(true);
             pLabel->setFont(font);

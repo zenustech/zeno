@@ -141,3 +141,20 @@ bool ZVecEditorItem::isFloatType() const
 {
     return m_bFloatVec;
 }
+
+void ZVecEditorItem::updateProperties(const QVector<QString>& properties)
+{
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        QString property;
+        if (i >= properties.size())
+        {
+            property = properties.first();
+        }
+        else
+        {
+            property = properties.at(i);
+        }
+        m_editors[i]->setProperty(g_setKey, property);
+    }
+}

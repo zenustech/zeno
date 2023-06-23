@@ -2,7 +2,6 @@
 #include "common_id.h"
 #include <stdexcept>
 #include <zenoui/style/zenostyle.h>
-#include <zenoedit/zenoapplication.h>
 
 ZtfUtil& ZtfUtil::GetInstance()
 {
@@ -457,7 +456,7 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.socketVMargin = ZenoStyle::dpiScaled(param.socketVMargin);
 
     //todo: parameterized.
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(13);
 
     param.nameFont = font;

@@ -101,6 +101,9 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             }
             else if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pItem))
             {
+                if (value.canConvert<CURVES_DATA>()) {
+                    return;
+                }
                 bool bFloat = (CONTROL_VEC4_FLOAT == ctrl || CONTROL_VEC3_FLOAT == ctrl || CONTROL_VEC2_FLOAT == ctrl);
                 pEditor->setVec(value, bFloat, pScene);
             }
@@ -132,9 +135,7 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             if (ctrl == CONTROL_FLOAT) 
             {
                 if (value.canConvert<CURVES_DATA>()) {
-                    CURVES_DATA curves = value.value<CURVES_DATA>();
-                    if (curves.isEmpty())
-                        return;
+                    return;
                 } else {
                     pItem->setPlainText(UiHelper::variantToString(value));
                 }

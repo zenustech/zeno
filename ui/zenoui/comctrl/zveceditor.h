@@ -16,7 +16,7 @@ public:
 	bool isFloat() const;
     UI_VECTYPE text() const;
     int getCurrentEditor();
-    QVector<ZLineEdit*> getEditors();
+    void updateProperties(const QVector<QString>& properties);
 
 signals:
     void valueChanged(QVariant);

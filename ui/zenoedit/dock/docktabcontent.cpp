@@ -52,7 +52,7 @@ ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &i
 {
     setButtonOptions(ZToolButton::Opt_TextLeftToIcon | ZToolButton::Opt_Checkable);
     setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), icon, iconHover, iconOn, iconOnHover);
-    QFont fnt = zenoApp->font();
+    QFont fnt = QApplication::font();
     setText(tr("REC"));
     setMargins(ZenoStyle::dpiScaledMargins(QMargins(12, 5, 5, 5)));
     setBackgroundClr(QColor("#383F47"), QColor("#383F47"), QColor("#191D21"), QColor("#191D21"));
@@ -91,7 +91,7 @@ void ZToolRecordingButton::paintEvent(QPaintEvent *event)
     }
     option.iconSize = iconSize();
     option.buttonOpts = buttonOption();
-    option.font = zenoApp->font();
+    option.font = QApplication::font();
     option.bgRadius = ZenoStyle::dpiScaled(2);
     option.palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option.state)));
     p.drawComplexControl(QStyle::CC_ToolButton, option);
@@ -201,7 +201,7 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 20)), ":/icons/nodeclr-yellow.svg", "");
 
     m_plblName = new QLabel("");
-    QFont fnt = zenoApp->font();
+    QFont fnt = QApplication::font();
     m_plblName->setFont(fnt);
     m_plblName->setTextInteractionFlags(Qt::TextSelectableByMouse);
     QPalette palette = m_plblName->palette();
@@ -300,7 +300,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnRun = new ZToolMenuButton;
     m_btnKill = new ZToolButton;
 
-    QFont fnt = zenoApp->font();
+    QFont fnt = QApplication::font();
 
     m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(14, 14)), ":/icons/timeline_run_thunder.svg",
                           ":/icons/timeline_run_thunder.svg", "", "");
@@ -709,7 +709,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pMenuBar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     pMenuBar->setProperty("cssClass", "docktoolbar");
     pMenuBar->setFixedHeight(ZenoStyle::dpiScaled(sToolbarHeight));
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setWeight(QFont::Medium);
     pMenuBar->setFont(font);
 

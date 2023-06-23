@@ -51,7 +51,7 @@ void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
 
 QFont LogItemDelegate::getFont() const
 {
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setWeight(QFont::DemiBold);
     return font;
 }

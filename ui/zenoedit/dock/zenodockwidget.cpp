@@ -206,7 +206,7 @@ void ZenoDockWidget::init(ZenoMainWindow* pMainWin)
 void ZenoDockWidget::onDockOptionsClicked()
 {
     QMenu* menu = new QMenu(this);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setBold(false);
     menu->setFont(font);
     QAction* pSplitHor = new QAction("Split Left/Right");

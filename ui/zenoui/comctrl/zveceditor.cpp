@@ -164,7 +164,22 @@ int ZVecEditor::getCurrentEditor()
     return -1;
 }
 
-QVector<ZLineEdit*> ZVecEditor::getEditors()
+void ZVecEditor::updateProperties(const QVector<QString>& properties)
 {
-    return m_editors;
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        QString property;
+        if (i >= properties.size())
+        {
+            property = properties.first();
+        }
+        else
+        {
+            property = properties.at(i);
+        }
+        m_editors[i]->setProperty(g_setKey, property);
+        m_editors[i]->style()->unpolish(m_editors[i]);
+        m_editors[i]->style()->polish(m_editors[i]);
+        m_editors[i]->update();
+    }
 }

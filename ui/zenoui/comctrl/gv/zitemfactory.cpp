@@ -10,7 +10,6 @@
 #include "variantptr.h"
 #include "zassert.h"
 #include "zgraphicstextitem.h"
-#include <zenoedit/zenoapplication.h>
 #include <zenomodel/include/uihelper.h>
 
 /*tmp macro*/

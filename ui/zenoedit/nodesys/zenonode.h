@@ -129,6 +129,7 @@ private:
     void updateWhole();
     ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
     ZGraphicsLayout* addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);
+    void onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;

@@ -206,7 +206,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     m_NameItem = new ZSimpleTextItem(name);
     m_NameItem->setBrush(QColor("#FFFFFF"));
-    QFont font2 = zenoApp->font();
+    QFont font2 = QApplication::font();
     font2.setPointSize(16);
     font2.setWeight(QFont::DemiBold);
     m_NameItem->setFont(font2);
@@ -217,7 +217,7 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     {
         m_pCategoryItem = new ZSimpleTextItem(category);
         m_pCategoryItem->setBrush(QColor("#AB6E40"));
-        QFont font = zenoApp->font();
+        QFont font = QApplication::font();
         m_pCategoryItem->setFont(font);
         m_pCategoryItem->updateBoundingRect();
         m_pCategoryItem->setAcceptHoverEvents(false);
@@ -315,12 +315,12 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         return nullptr;
 
     const QPersistentModelIndex perIdx(paramIdx);
-
+    bool bFloat = ctrl == CONTROL_VEC2_FLOAT || ctrl == CONTROL_VEC3_FLOAT || ctrl == CONTROL_VEC4_FLOAT || ctrl == CONTROL_FLOAT;
     Callback_EditFinished cbUpdateParam = [=](QVariant newValue) {
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         if (!pModel)
             return;
-        if (ctrl != CONTROL_CURVE)
+        if (bFloat)
         {
             AppHelper::updateCurve(paramIdx.data(ROLE_PARAM_VALUE), newValue);
         }
@@ -346,11 +346,25 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     //key frame
     bool bKeyFrame = false;
-    if (ctrl != CONTROL_CURVE)
+    if (bFloat)
     {
         bKeyFrame = AppHelper::getCurveValue(deflValue);
     }
     QGraphicsItem* pControl = zenoui::createItemWidget(deflValue, ctrl, typeDesc, cbSet, scene, ctrlProps);
+
+    if (bFloat)
+    {
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, pControl);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, pControl);
+        connect(timeline, &ZTimeline::sliderValueChanged, this, [=](int nFrame) {
+            onUpdateFrame(pControl, nFrame, paramIdx.data(ROLE_PARAM_VALUE));
+            }, Qt::UniqueConnection);
+        connect(mainWin, &ZenoMainWindow::visFrameUpdated, this, [=](bool bGLView, int nFrame) {
+            onUpdateFrame(pControl, nFrame, paramIdx.data(ROLE_PARAM_VALUE));
+            }, Qt::UniqueConnection);
+    }
     return pControl;
 }
 
@@ -552,6 +566,31 @@ void ZenoNode::onViewParamDataChanged(const QModelIndex& topLeft, const QModelIn
             {
                 const QVariant& deflValue = pItem->data(ROLE_PARAM_VALUE);
                 ZenoGvHelper::setValue(pControl, ctrl, deflValue, pScene);
+                if (CONTROL_VEC4_FLOAT == ctrl || CONTROL_VEC3_FLOAT == ctrl 
+                    || CONTROL_VEC2_FLOAT == ctrl || CONTROL_FLOAT == ctrl)
+                {
+                    if (QGraphicsProxyWidget* pWidget = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl))
+                    {
+                        if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pWidget))
+                        {
+                            QVariant newVal = deflValue;
+                            bool bKeyFrame = AppHelper::getCurveValue(newVal);
+                            if (bKeyFrame)
+                                pEditor->setVec(newVal, true, pScene);
+                            QVector<QString> properties = AppHelper::getKeyFrameProperty(deflValue);
+                            pEditor->updateProperties(properties);
+                        }
+                    }
+                    else if (QGraphicsTextItem* pTextItem = qgraphicsitem_cast<QGraphicsTextItem*>(pControl))
+                    {
+                        QVariant newVal = deflValue;
+                        bool bKeyFrame = AppHelper::getCurveValue(newVal);
+                        if (bKeyFrame)
+                            pTextItem->setPlainText(UiHelper::variantToString(newVal));
+                        QVector<QString> properties = AppHelper::getKeyFrameProperty(deflValue);
+                        pTextItem->setProperty(g_setKey, properties.first());
+                    }
+                }
                 break;
             }
             case ROLE_VPARAM_CTRL_PROPERTIES: 
@@ -956,7 +995,13 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
 {
     const QPersistentModelIndex perIdx(paramIdx);
 
+    PARAM_CONTROL ctrl = (PARAM_CONTROL)paramIdx.data(ROLE_PARAM_CTRL).toInt();
+    bool bFloat = ctrl == CONTROL_VEC2_FLOAT || ctrl == CONTROL_VEC3_FLOAT || ctrl == CONTROL_VEC4_FLOAT || ctrl == CONTROL_FLOAT;
     auto cbUpdateSocketDefl = [=](QVariant newValue) {
+        if (bFloat)
+        {
+            AppHelper::updateCurve(paramIdx.data(ROLE_PARAM_VALUE), newValue);
+        }
         AppHelper::socketEditFinished(newValue, m_index, perIdx);
     };
 
@@ -964,7 +1009,6 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
     };
 
-    PARAM_CONTROL ctrl = (PARAM_CONTROL)paramIdx.data(ROLE_PARAM_CTRL).toInt();
     const QString& sockType = paramIdx.data(ROLE_PARAM_TYPE).toString();
     const QVariant& deflVal = paramIdx.data(ROLE_PARAM_VALUE);
     const QVariant& ctrlProps = paramIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
@@ -978,7 +1022,26 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
 
-    QGraphicsItem* pControl = zenoui::createItemWidget(deflVal, ctrl, sockType, cbSet, scene, ctrlProps);
+    QVariant newVal = deflVal;
+    if (bFloat)
+    {
+        AppHelper::getCurveValue(newVal);
+    }
+    QGraphicsItem* pControl = zenoui::createItemWidget(newVal, ctrl, sockType, cbSet, scene, ctrlProps);
+
+    if (bFloat) {
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, pControl);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, pControl);
+        connect(timeline, &ZTimeline::sliderValueChanged, this, [=](int nFrame) {
+            onUpdateFrame(pControl, nFrame, paramIdx.data(ROLE_PARAM_VALUE));
+            }, Qt::UniqueConnection);
+        connect(mainWin, &ZenoMainWindow::visFrameUpdated, this, [=](bool bGLView, int nFrame) {
+            onUpdateFrame(pControl, nFrame, paramIdx.data(ROLE_PARAM_VALUE));
+            }, Qt::UniqueConnection);
+    }
+
     return pControl;
 }
 
@@ -1554,4 +1617,27 @@ void ZenoNode::updateWhole()
     ZGraphicsLayout::updateHierarchy(this);
     emit inSocketPosChanged();
     emit outSocketPosChanged();
+}
+
+void ZenoNode::onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val)
+{
+    QVariant newVal = val;
+    if (!AppHelper::getCurveValue(newVal))
+        return;
+    //vec
+    if (QGraphicsProxyWidget* pWidget = qgraphicsitem_cast<QGraphicsProxyWidget*>(pContrl))
+    {
+        if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pWidget))
+        {
+            pEditor->setVec(newVal);
+            QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
+            pEditor->updateProperties(properties);
+        }
+    }
+    else if (QGraphicsTextItem* pTextItem = qgraphicsitem_cast<QGraphicsTextItem*>(pContrl))
+    {
+        pTextItem->setPlainText(UiHelper::variantToString(newVal));
+        QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
+        pTextItem->setProperty(g_setKey, properties.first());
+    }
 }

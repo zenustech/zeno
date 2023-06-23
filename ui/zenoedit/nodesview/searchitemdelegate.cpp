@@ -104,7 +104,7 @@ void SearchItemDelegate::paint(QPainter* p, const QStyleOptionViewItem& option, 
 			p->drawRect(textRect.adjusted(0, 0, -1, -1));
 		}
 
-        QFont font = zenoApp->font();
+        QFont font = QApplication::font();
 		QTextLayout textLayout(opt.text, font);
 
 		textLayout.beginLayout();

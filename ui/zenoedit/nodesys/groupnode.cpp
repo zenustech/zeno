@@ -147,7 +147,7 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
 void GroupNode::onZoomed() 
 {
     int fontSize = ZenoStyle::scaleWidth(12);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(fontSize);
     font.setBold(true);
     QFontMetrics fontMetrics(font);

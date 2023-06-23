@@ -6,9 +6,6 @@
 #include <zenoui/style/zenostyle.h>
 #include "zgraphicsnumslideritem.h"
 #include <zeno/utils/scope_exit.h>
-#include "zenoedit/zenoapplication.h"
-#include <zenoedit/timeline/ztimeline.h>
-#include <zenoedit/zenomainwindow.h>
 #include <zenomodel/include/curvemodel.h>
 #include <zenomodel/include/curveutil.h>
 #include <zenomodel/include/uihelper.h>
@@ -353,7 +350,7 @@ ZSocketPlainTextItem::ZSocketPlainTextItem(
     , m_socket(nullptr)
 {
     setBrush(QColor("#C3D2DF"));
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(12);
     font.setWeight(QFont::DemiBold);
     setFont(font);
@@ -422,7 +419,7 @@ void ZEditableTextItem::initUI(const QString& text)
     setDefaultTextColor(QColor("#C3D2DF"));
     setCursor(Qt::IBeamCursor);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     font.setWeight(QFont::Medium);
     setFont(font);
@@ -633,7 +630,7 @@ ZSocketEditableItem::ZSocketEditableItem(
     //});
 
     setDefaultTextColor(QColor(188, 188, 188));
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     font.setWeight(QFont::Bold);
     setFont(font);
