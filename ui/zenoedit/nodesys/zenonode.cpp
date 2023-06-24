@@ -358,10 +358,18 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         ZASSERT_EXIT(mainWin, pControl);
         ZTimeline* timeline = mainWin->timeline();
         ZASSERT_EXIT(timeline, pControl);
-        connect(timeline, &ZTimeline::sliderValueChanged, this, [=](int nFrame) {
+        QObject* context = nullptr;
+        if (QGraphicsProxyWidget* pWidget = qgraphicsitem_cast<QGraphicsProxyWidget*>(pControl))
+            context = pWidget;
+        else if (QGraphicsTextItem* pTextItem = qgraphicsitem_cast<QGraphicsTextItem*>(pControl))
+            context = pTextItem;
+        if (!context)
+            return pControl;
+        onUpdateFrame(pControl, timeline->value(), paramIdx.data(ROLE_PARAM_VALUE));
+        connect(timeline, &ZTimeline::sliderValueChanged, context, [=](int nFrame) {
             onUpdateFrame(pControl, nFrame, paramIdx.data(ROLE_PARAM_VALUE));
             }, Qt::UniqueConnection);
-        connect(mainWin, &ZenoMainWindow::visFrameUpdated, this, [=](bool bGLView, int nFrame) {
+        connect(mainWin, &ZenoMainWindow::visFrameUpdated, context, [=](bool bGLView, int nFrame) {
             onUpdateFrame(pControl, nFrame, paramIdx.data(ROLE_PARAM_VALUE));
             }, Qt::UniqueConnection);
     }

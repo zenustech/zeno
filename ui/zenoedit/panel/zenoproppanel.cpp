@@ -390,15 +390,16 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     if (bFloat) {
         m_floatColtrols << panelCtrl;
         pLabel->installEventFilter(this);
-        pControl->installEventFilter(this);
+        pControl->installEventFilter(this);   
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(mainWin, true);
         ZTimeline* timeline = mainWin->timeline();
         ZASSERT_EXIT(timeline, true);
-        connect(timeline, &ZTimeline::sliderValueChanged, this, [=](int nFrame) {
+        onUpdateFrame(pControl, timeline->value(), paramItem->data(ROLE_PARAM_VALUE));
+        connect(timeline, &ZTimeline::sliderValueChanged, pControl, [=](int nFrame) {
             onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
             }, Qt::UniqueConnection);
-        connect(mainWin, &ZenoMainWindow::visFrameUpdated, this, [=](bool bGLView, int nFrame) {
+        connect(mainWin, &ZenoMainWindow::visFrameUpdated, pControl, [=](bool bGLView, int nFrame) {
             onUpdateFrame(pControl, nFrame, paramItem->data(ROLE_PARAM_VALUE));
             }, Qt::UniqueConnection);
     }
