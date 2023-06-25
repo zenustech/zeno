@@ -64,7 +64,7 @@ void ZenoGraphsEditor::initUI()
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
     m_ui->stackedWidget->setCurrentIndex(0);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     m_ui->graphsViewTab->setFont(font);  //bug in qss font setting.
     m_ui->graphsViewTab->tabBar()->setDrawBase(false);
@@ -825,7 +825,10 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QDialog dlg(this);
         QGridLayout *pLayout = new QGridLayout(&dlg);
         QDialogButtonBox *pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-        ZPathEdit *pathLineEdit = new ZPathEdit(v, &dlg);
+        CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
+            zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
+        };
+        ZPathEdit *pathLineEdit = new ZPathEdit(cbSwitch, v, &dlg);
         pLayout->addWidget(new QLabel("Set NASLOC"), 2, 0);
         pLayout->addWidget(pathLineEdit, 2, 1);
         pLayout->addWidget(pButtonBox, 4, 1);
@@ -855,7 +858,10 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
 
-        ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
+        CALLBACK_SWITCH cbSwitch = [=](bool bOn) {
+            zenoApp->getMainWindow()->setInDlgEventLoop(bOn); //deal with ubuntu dialog slow problem when update viewport.
+        };
+        ZPathEdit *pathLineEdit = new ZPathEdit(cbSwitch, cacheRootDir);
         pathLineEdit->setFixedWidth(256);
         pathLineEdit->setEnabled(!bAutoRemove && bEnableCache);
         QCheckBox *pAutoDelCache = new QCheckBox;

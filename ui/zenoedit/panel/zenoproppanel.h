@@ -59,6 +59,7 @@ private:
     void clearKeyFrame(const _PANEL_CONTROL& ctrl, const QStringList& keys);
     CURVES_DATA getCurvesData(const QPersistentModelIndex &perIdx, const QStringList &keys);
     void updateTimelineKeys(const CURVES_DATA &curves);
+    void onUpdateFrame(QWidget *pContrl, int nFrame, QVariant val);
 
 
     QPersistentModelIndex m_subgIdx;

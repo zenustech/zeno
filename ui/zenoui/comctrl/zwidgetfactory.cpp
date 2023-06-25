@@ -12,19 +12,16 @@
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
 #include <zenomodel/include/curvemodel.h>
-#include "zveceditor.h"
-#include <zenoui/comctrl/view/zcomboboxitemdelegate.h>
+#include <zenoui/comctrl/zveceditor.h>
+#include "view/zcomboboxitemdelegate.h"
 #include "variantptr.h"
 #include "zassert.h"
-#include <zenoui/comctrl/zspinboxslider.h>
-#include <zenoui/comctrl/zdicttableview.h>
-#include <zenoedit/zenoapplication.h>
+#include "zspinboxslider.h"
+#include "zdicttableview.h"
 #include "gv/zitemfactory.h"
-#include "zpathedit.h"
+#include <zenoui/comctrl/zpathedit.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenomodel/include/uihelper.h>
-#include "zfloatlineedit.h"
-#include "util/apphelper.h"
 
 namespace zenoui
 {
@@ -39,6 +36,7 @@ namespace zenoui
         switch (ctrl)
         {
             case CONTROL_INT:
+            case CONTROL_FLOAT:
             case CONTROL_STRING:
             {
                 QString text = UiHelper::variantToString(value);
@@ -54,36 +52,6 @@ namespace zenoui
                     });
                 return pLineEdit;
             }
-            case CONTROL_FLOAT:
-            {
-                ZFloatLineEdit *pLineEdit = new ZFloatLineEdit;
-                if (value.canConvert<CURVES_DATA>()) {
-                    CURVES_DATA data = value.value<CURVES_DATA>();
-                    if (!data.isEmpty()) {
-                        pLineEdit->setProperty(g_keyFrame, QVariant::fromValue(data.first()));
-                    }
-                } else {
-                    QString text = UiHelper::variantToString(value);
-                    pLineEdit->setText(text);
-                }
-                pLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
-                pLineEdit->setProperty("cssClass", "zeno2_2_lineedit");
-                pLineEdit->setNumSlider(UiHelper::getSlideStep("", ctrl));
-                QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
-                    // be careful about the dynamic type.
-                    QVariant newValue;
-                    CURVE_DATA curve;
-                    if (AppHelper::getKeyFrame(pLineEdit, curve)) {
-                        CURVES_DATA data;
-                        data.insert(curve.key, curve);
-                        newValue = QVariant::fromValue(data);
-                    } else {
-                        newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
-                    }
-                    cbSet.cbEditFinished(newValue);
-                });
-                return pLineEdit;
-            }
             case CONTROL_BOOL:
             {
                 QCheckBox* pCheckbox = new QCheckBox;
@@ -96,7 +64,7 @@ namespace zenoui
             case CONTROL_READPATH:
             case CONTROL_WRITEPATH:
             {
-                ZPathEdit *pathLineEdit = new ZPathEdit(value.toString());
+                ZPathEdit *pathLineEdit = new ZPathEdit(cbSet.cbSwitch,value.toString());
                 pathLineEdit->setFixedHeight(ZenoStyle::dpiScaled(zenoui::g_ctrlHeight));
                 pathLineEdit->setProperty("control", ctrl);
                 
@@ -111,7 +79,7 @@ namespace zenoui
                 pTextEdit->setFrameShape(QFrame::NoFrame);
                 pTextEdit->setProperty("cssClass", "proppanel");
                 pTextEdit->setProperty("control", ctrl);
-                QFont font = zenoApp->font();
+                QFont font = QApplication::font();
                 font.setPointSize(9);
                 pTextEdit->setFont(font);
                 pTextEdit->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);

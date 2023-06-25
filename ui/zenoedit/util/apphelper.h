@@ -8,7 +8,7 @@
 #include "zenomainwindow.h"
 #include <zenovis/ObjectsManager.h>
 #include <zeno/types/UserData.h>
-#include "comctrl/gv/zveceditoritem.h"
+#include <zenoui/comctrl/gv/zveceditoritem.h>
 #include <viewport/viewportwidget.h>
 
 class AppHelper
@@ -21,12 +21,10 @@ public:
     static QString nativeWindowTitle(const QString& currentFilePath);
     static void socketEditFinished(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
     static void modifyLightData(QPersistentModelIndex nodeIdx);
-    static void updateProperty(QObject* obj);
-    static bool getKeyFrame(const QObject* obj, CURVE_DATA& curve);
+    static QVector<QString> getKeyFrameProperty(const QVariant &val);
+    static bool getCurveValue(QVariant & val);
+    static void updateCurve(QVariant oldVal, QVariant& val);
 };
-
-extern const char* g_setKey;
-extern const char* g_keyFrame;
 
 
 #endif

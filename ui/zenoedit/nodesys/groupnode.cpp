@@ -6,7 +6,7 @@
 #include <QPainter>
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/uihelper.h>
-#include "comctrl/gv/zitemfactory.h"
+#include <zenoui/comctrl/gv/zitemfactory.h>
 #include <zenoui/render/common_id.h>
 #include "zenosubgraphscene.h"
 #include <QtSvg/QSvgRenderer>
@@ -147,7 +147,7 @@ bool GroupNode::nodePosChanged(ZenoNode *item)
 void GroupNode::onZoomed() 
 {
     int fontSize = ZenoStyle::scaleWidth(12);
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(fontSize);
     font.setBold(true);
     QFontMetrics fontMetrics(font);

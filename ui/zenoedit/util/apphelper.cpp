@@ -8,9 +8,6 @@
 #include "variantptr.h"
 #include "viewport/displaywidget.h"
 
-const char* g_setKey = "setKey";
-const char* g_keyFrame = "keyFrame";
-
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
 {
@@ -212,35 +209,110 @@ void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
     }
 }
 
-void AppHelper::updateProperty(QObject* obj)
+QVector<QString> AppHelper::getKeyFrameProperty(const QVariant& val)
 {
-    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(mainWin);
-    ZTimeline* timeline = mainWin->timeline();
-    ZASSERT_EXIT(timeline);
-    CURVE_DATA data;
-    QString property = "null";
-    if (getKeyFrame(obj, data)) {
-        if (data.visible)
+    QVector<QString> ret;
+    if (val.canConvert<CURVES_DATA>())
+    {
+        CURVES_DATA curves = val.value<CURVES_DATA>();
+        ret.resize(curves.size());
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, ret);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, ret);
+        for (int i = 0; i < ret.size(); i++)
         {
-            property = "false";
-            int x = timeline->value();
-            for (const auto& p : data.points) {
-                int px = p.point.x();
-                if (px == x) {
-                    property = "true";
-                    break;
+            QString property = "null";
+            const QString& key = curve_util::getCurveKey(i);
+            if (curves.contains(key))
+            {
+                CURVE_DATA data = curves[key];
+
+                if (data.visible)
+                {
+                    property = "false";
+                    int x = timeline->value();
+                    for (const auto& p : data.points) {
+                        int px = p.point.x();
+                        if (px == x) {
+                            property = "true";
+                            break;
+                        }
+                    }
                 }
+
             }
+            ret[i] = property;
         }
     }
-    obj->setProperty(g_setKey, property);
+    if (ret.isEmpty())
+        ret << "null";
+    return ret;
 }
 
-bool AppHelper::getKeyFrame(const QObject* obj, CURVE_DATA& curve)
+bool AppHelper::getCurveValue(QVariant& val)
 {
-    bool res = obj->property(g_keyFrame).canConvert<CURVE_DATA>();
-    if (res)
-        curve = obj->property(g_keyFrame).value<CURVE_DATA>();
-    return res;
+    if (val.canConvert<CURVES_DATA>())
+    {
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin, false);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline, false);
+        int nFrame = timeline->value();
+        CURVES_DATA curves = val.value<CURVES_DATA>();
+        if (curves.size() > 1)
+        {
+            UI_VECTYPE newVal;
+            newVal.resize(curves.size());
+            for (int i = 0; i < newVal.size(); i++)
+            {
+                QString key = curve_util::getCurveKey(i);
+                if (curves.contains(key))
+                {
+                    newVal[i] = curves[key].eval(nFrame);
+                }
+            }
+            val = QVariant::fromValue(newVal);
+        }
+        else if (curves.contains("x"))
+        {
+            val = QVariant::fromValue(curves["x"].eval(nFrame));
+        }
+        return true;
+    }
+    return false;
+}
+
+void AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
+{
+    if (oldVal.canConvert<CURVES_DATA>())
+    {
+        CURVES_DATA curves = oldVal.value<CURVES_DATA>();
+        UI_VECTYPE datas;
+        //vec
+        if (newValue.canConvert<UI_VECTYPE>())
+        {
+            datas = newValue.value<UI_VECTYPE>();
+        }
+        //float
+        else
+        {
+            datas << newValue.toFloat();
+        }
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        ZTimeline* timeline = mainWin->timeline();
+        ZASSERT_EXIT(timeline);
+        int nFrame = timeline->value();
+        for (int i = 0; i < datas.size(); i++) {
+            QString key = curve_util::getCurveKey(i);
+            if (curves.contains(key))
+            {
+                CURVE_DATA& curve = curves[key];
+                QPointF pos(nFrame, datas.at(i));
+                curve_util::updateCurve(pos, curve);
+            }
+        }
+        newValue = QVariant::fromValue(curves);
+    }
 }

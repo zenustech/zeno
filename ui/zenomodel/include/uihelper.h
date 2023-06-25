@@ -95,4 +95,6 @@ public:
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };
+
+extern const char* g_setKey;
 #endif

@@ -1,11 +1,10 @@
 #include "zenogvhelper.h"
-#include <zenoui/nodesys/nodesys_common.h>
-#include <zenoui/comctrl/gv/zlayoutbackground.h>
-#include <zenoui/comctrl/gv/zenoparamwidget.h>
+#include "../../nodesys/nodesys_common.h"
+#include "zlayoutbackground.h"
+#include "zenoparamwidget.h"
 #include "zassert.h"
 #include <zenomodel/include/uihelper.h>
 #include "zveceditoritem.h"
-#include "util/apphelper.h"
 
 
 void ZenoGvHelper::setSizeInfo(QGraphicsItem* item, const SizeInfo& sz)
@@ -102,6 +101,9 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             }
             else if (ZVecEditorItem* pEditor = qobject_cast<ZVecEditorItem*>(pItem))
             {
+                if (value.canConvert<CURVES_DATA>()) {
+                    return;
+                }
                 bool bFloat = (CONTROL_VEC4_FLOAT == ctrl || CONTROL_VEC3_FLOAT == ctrl || CONTROL_VEC2_FLOAT == ctrl);
                 pEditor->setVec(value, bFloat, pScene);
             }
@@ -133,13 +135,9 @@ void ZenoGvHelper::setValue(QGraphicsItem* item, PARAM_CONTROL ctrl, const QVari
             if (ctrl == CONTROL_FLOAT) 
             {
                 if (value.canConvert<CURVES_DATA>()) {
-                    CURVES_DATA curves = value.value<CURVES_DATA>();
-                    if (curves.isEmpty())
-                        return;
-                    pItem->setProperty(g_keyFrame, QVariant::fromValue(curves.first()));
+                    return;
                 } else {
                     pItem->setPlainText(UiHelper::variantToString(value));
-                    pItem->setProperty(g_keyFrame, QVariant());
                 }
             }
             else

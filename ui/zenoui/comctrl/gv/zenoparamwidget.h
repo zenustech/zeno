@@ -8,6 +8,7 @@
 #include "zenosocketitem.h"
 #include "zgraphicstextitem.h"
 #include <zenoui/comctrl/zcombobox.h>
+#include <zenoui/comctrl/zveceditor.h>
 #include <zenoui/comctrl/zcheckboxbar.h>
 #include <zenoui/comctrl/zcheckbox.h>
 #include <zenoui/comctrl/zlineedit.h>
@@ -86,8 +87,6 @@ private:
     ZGraphicsNumSliderItem* m_pSlider;
 };
 
-
-class ZPathEdit;
 
 class ZenoParamPathEdit : public ZEditableTextItem
 {

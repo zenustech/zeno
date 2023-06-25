@@ -87,7 +87,7 @@ void ZSubnetListItemDelegate::paint(QPainter* painter, const QStyleOptionViewIte
     }
 
     //draw text
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     font.setBold(false);
     QFontMetricsF fontMetrics(font);

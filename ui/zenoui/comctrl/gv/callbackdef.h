@@ -18,6 +18,8 @@ typedef std::function<QVariant()> Callback_GetIndexData;
 typedef std::function<QPointF()> Callback_UpdateSockItemPos;
 typedef std::function<void()> Callback_OnSockLayoutChanged;
 
+typedef std::function<void(int nframe)> Callback_UpdateFrame;
+
 struct CallbackForSocket
 {
     Callback_OnSockClicked cbOnSockClicked;

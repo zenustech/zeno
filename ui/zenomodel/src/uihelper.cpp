@@ -12,6 +12,8 @@
 #include "common_def.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
 
+const char* g_setKey = "setKey";
+
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
 

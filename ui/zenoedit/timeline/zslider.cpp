@@ -139,7 +139,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(9);
     font.setWeight(QFont::DemiBold);
     QFontMetrics metrics(font);
@@ -245,7 +245,7 @@ void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
                              QPointF(xarrow_pos + handleWidth / 2, y + handleHeight)),
                       QColor(76, 159, 244));
 
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setPointSize(10);
     QFontMetrics metrics(font);
     painter->setFont(font);

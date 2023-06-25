@@ -6,6 +6,9 @@
 #include <zenoui/style/zenostyle.h>
 #include "zgraphicsnumslideritem.h"
 #include <zeno/utils/scope_exit.h>
+#include <zenomodel/include/curvemodel.h>
+#include <zenomodel/include/curveutil.h>
+#include <zenomodel/include/uihelper.h>
 
 
 qreal editor_factor = 1.0;
@@ -391,9 +394,9 @@ void ZEditableTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem 
         return;
 #endif
     QColor col;
-    if (property("setKey") == "false")
+    if (property(g_setKey) == "false")
         col = QColor("#496DA0");
-    else if (property("setKey") == "true")
+    else if (property(g_setKey) == "true")
         col = QColor("#3A6E64");
     else
         col = QColor("#191D21");

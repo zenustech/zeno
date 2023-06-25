@@ -11,7 +11,7 @@
 #include <zenomodel/include/modeldata.h>
 #include <zenoui/comctrl/gv/zgraphicslayout.h>
 #include <zenoui/comctrl/gv/zgraphicslayoutitem.h>
-#include "comctrl/gv/zsocketlayout.h"
+#include <zenoui/comctrl/gv/zsocketlayout.h>
 #include <zenoui/comctrl/gv/zlayoutbackground.h>
 
 
@@ -129,6 +129,7 @@ private:
     void updateWhole();
     ZSocketLayout* addSocket(const QModelIndex& idx, bool bInput, ZenoSubGraphScene* pScene);
     ZGraphicsLayout* addParam(const QModelIndex& idx, ZenoSubGraphScene* pScene);
+    void onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val);
 
     QPersistentModelIndex m_index;
     QPersistentModelIndex m_subGpIndex;

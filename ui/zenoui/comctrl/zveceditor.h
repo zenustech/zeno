@@ -16,6 +16,7 @@ public:
 	bool isFloat() const;
     UI_VECTYPE text() const;
     int getCurrentEditor();
+    void updateProperties(const QVector<QString>& properties);
 
 signals:
     void valueChanged(QVariant);
