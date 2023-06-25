@@ -1245,16 +1245,19 @@ struct ImageFeatureMatch : INode {
         image3->tris.resize(m);
 
 //cameraMatrix
-        float fx = w1;   // image.width;
-        float fy = h1;   // image.height;
-        float cx = w1/2; // image.width / 2.0;
-        float cy = h1/2; // image.height / 2.0;
-        cv::Mat cameraMatrix = (cv::Mat_<float>(3, 3) << fx,0,cx,
-                0,fy,cy,
-                0, 0, 1);
+        auto &cm = image3->tris.add_attr<float>("cameraMatrix");
+        cv::Mat cameraMatrix = (cv::Mat_<float>(3, 3) << cm[0],0,cm[2],
+                                                         0,cm[4],cm[5],
+                                                         0, 0, 1);
+        if(cm[0]==0){
+            float fx = w1;   // image.width;
+            float fy = h1;   // image.height;
+            float cx = w1/2; // image.width / 2.0;
+            float cy = h1/2; // image.height / 2.0;
+            cv::Mat cameraMatrix = (cv::Mat_<float>(3, 3) << fx,0,cx,
+                    0,fy,cy,
+                    0, 0, 1);
 
-        if(bfM || beM || bhM){
-            auto &cm = image3->tris.add_attr<float>("cameraMatrix");
             cv::Size cs = cameraMatrix.size();
             int css = cs.width * cs.height;
             for (int i = 0; i < css; i++) {
@@ -1401,15 +1404,16 @@ struct ImageFeatureMatch : INode {
 
 //essentialMatrix
         if(beM){
+            zeno::log_info("beM");
             cv::Mat essentialMatrix, mask;
-            double threshold = 1.0;
-            double prob = 0.99;
-            int method = cv::RANSAC;
-            essentialMatrix = cv::findEssentialMat(points1, points2, cameraMatrix, method, prob, threshold, mask);
+//            essentialMatrix = cv::findEssentialMat(points1, points2, cameraMatrix, cv::RANSAC, 0.99, 1.0, 1000, noArray());
+            essentialMatrix = cv::findEssentialMat(points1, points2, 1.0, Point2d(0, 0),RANSAC,0.999,1.0, 1000,noArray());
 
+            zeno::log_info("essentialMatrix:{}x{}",essentialMatrix.cols,essentialMatrix.rows);
             auto &em = image3->tris.add_attr<float>("essentialMatrix");
             cv::Size es = essentialMatrix.size();
             int ess = es.width * es.height;
+
             for (int i = 0; i < ess; i++) {
                 em[i] = static_cast<float>(essentialMatrix.at<double>(i));
             }
@@ -1417,6 +1421,7 @@ struct ImageFeatureMatch : INode {
             cv::Mat rotation,translation;
             cv::recoverPose(essentialMatrix,points1,points2, cameraMatrix, rotation, translation);
 
+            zeno::log_info("recoverPose_essentialMatrix");
             auto &rt = image3->tris.add_attr<float>("essentialRotation");
             auto &tl = image3->tris.add_attr<float>("essentialTranslation");
 
@@ -1538,7 +1543,7 @@ struct Image3DAnalyze : INode {
     void apply() override {
         auto image1 = get_input<PrimitiveObject>("image1");
         auto image2 = get_input<PrimitiveObject>("image2");
-
+        auto visualize = get_input2<bool>("visualize");
         auto &ud1 = image1->userData();
         int w1 = ud1.get2<int>("w");
         int h1 = ud1.get2<int>("h");
@@ -1765,7 +1770,7 @@ struct Image3DAnalyze : INode {
         zeno::log_info("cameraMatrixPro2.width:{} cameraMatrixPro2.height:{}",cameraMatrixPro2x.cols,cameraMatrixPro2x.rows);
 //todo:
 
-
+//4D points
 // triangulatePoints init
         auto &p4d = image3->tris.add_attr<vec4f>("4DPoints");
         cv::Mat points4D = cv::Mat::ones(3, 4, CV_32F);
@@ -1808,6 +1813,7 @@ struct Image3DAnalyze : INode {
         }
         zeno::log_info("triangulatePoints");
 
+//3D points
         // 转换为齐次坐标形式并进行归一化
         auto &p3d = image3->tris.add_attr<vec3f>("3DPoints");
         cv::Mat points3D;
@@ -1820,9 +1826,49 @@ struct Image3DAnalyze : INode {
         }
         zeno::log_info("convertPointsFromHomogeneous");
 
-//        CVImageObject CVMatrix1(OMatrix);
-//        auto CVMatrix = std::make_shared<CVImageObject>(CVMatrix1);
-//        set_output("matrix",std::move(CVMatrix));
+        if(visualize){
+            //image1Points
+            int h = h1;
+            int w = w1+w2;
+            cv::Mat V(h,w,CV_8UC3);
+            for (int i = 0; i < h; i++) {
+                for (int j = 0; j < w1; j++) {
+                    vec3f rgb = image1->verts[i * w1 + j];
+                    cv::Vec3b& pixel = V.at<cv::Vec3b>(i, j);
+                    pixel[0] = rgb[0] * 255;
+                    pixel[1] = rgb[1] * 255;
+                    pixel[2] = rgb[2] * 255;
+                }
+                for (int j = w1; j < w; j++) {
+                    vec3f rgb = image2->verts[i * w2 + j - w1];
+                    cv::Vec3b& pixel = V.at<cv::Vec3b>(i, j);
+                    pixel[0] = rgb[0] * 255;
+                    pixel[1] = rgb[1] * 255;
+                    pixel[2] = rgb[2] * 255;
+                }
+            }
+            cv::Scalar lineColor(0, 255, 255);
+#pragma omp parallel for
+            for (size_t i = 0; i < image1Points.size(); i++) {
+                cv::Point2f pt1 = image1Points[i];
+                cv::Point2f pt2 = image2Points[i] + cv::Point2f(w1, 0);
+                cv::line(V, pt1, pt2, lineColor, 2);
+            }
+            cv::Size vs = V.size();
+            image3->verts.resize(vs.width * vs.height);
+            ud3.set2("w", vs.width);
+            ud3.set2("h", vs.height);
+#pragma omp parallel for
+            for (int i = 0; i < vs.width * vs.height; i++) {
+                cv::Vec3b pixel = V.at<cv::Vec3b>(i);
+                image3->verts[i][0] = zeno::min(static_cast<float>(pixel[0])/255,1.0f);
+                image3->verts[i][1] = zeno::min(static_cast<float>(pixel[1])/255,1.0f);
+                image3->verts[i][2] = zeno::min(static_cast<float>(pixel[2])/255,1.0f);
+            }
+        }
+
+
+
         set_output("image", image3);
     }
 };
@@ -1831,6 +1877,7 @@ ZENDEFNODE(Image3DAnalyze, {
     {
         { "image1" },
         { "image2" },
+        { "bool", "visualize", "1" },
     },
     {
         { "image" },
