@@ -145,7 +145,7 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     //todo: may be the frame has not been finished, in this case, we have to wait.
     auto &ud = zeno::getSession().userData();
     ud.set2("cropped", recInfo.cropped);
-    zeno::log_info("recInfo.cropped {}", recInfo.cropped);
+//    zeno::log_info("recInfo.cropped {}", recInfo.cropped);
     ud.set2("bmin", recInfo.bmin);
     ud.set2("bmax", recInfo.bmax);
     ud.set2("keepRatio", recInfo.keepRatio);

@@ -848,7 +848,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             zeno::log_debug("[zeno-optix] updating resolution");
             auto &ud = zeno::getSession().userData();
             bool croped = ud.get2<bool>("cropped", false);
-            zeno::log_info("crop {}", croped);
+//            zeno::log_info("crop {}", croped);
             if (croped) {
                 auto nxny = ud.get2<zeno::vec2i>("nxny");
                 auto target = ud.get2<zeno::vec2i>("target");
