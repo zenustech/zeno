@@ -99,7 +99,7 @@ extern "C" __global__ void __raygen__rg()
             rnd(seed)
         };
 
-        float r0 = r01.x * 2.0f* M_PIf;
+        float r0 = r01.x * 2.0f * M_PIf;
         float r1 = r01.y * aperture * aperture;
         r1 = sqrt(r1);
 
