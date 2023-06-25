@@ -81,7 +81,7 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
             }
             else {
                 if (!read_done) {
-                    log_error("[alembic] can not load attr {}.", p.getName());
+                    log_error("[alembic] can not load attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
                 }
             }
         }
@@ -130,6 +130,63 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
         else {
             if (!read_done) {
                 log_error("[alembic] can not load attr {}..", p.getName());
+            }
+        }
+    }
+}
+
+static void read_user_data(std::shared_ptr<PrimitiveObject> prim, ICompoundProperty arbattrs, const ISampleSelector &iSS, bool read_done) {
+    if (!arbattrs) {
+        return;
+    }
+    size_t numProps = arbattrs.getNumProperties();
+    for (auto i = 0; i < numProps; i++) {
+        PropertyHeader p = arbattrs.getPropertyHeader(i);
+        if (IFloatProperty::matches(p)) {
+            IFloatProperty param(arbattrs, p.getName());
+
+            float v = param.getValue(iSS);
+            prim->userData().set2(p.getName(), v);
+        }
+        else if (IInt32Property::matches(p)) {
+            IInt32Property param(arbattrs, p.getName());
+
+            int v = param.getValue(iSS);
+            prim->userData().set2(p.getName(), v);
+        }
+        else if (IV2fProperty::matches(p)) {
+            IV2fProperty param(arbattrs, p.getName());
+
+            auto v = param.getValue(iSS);
+            prim->userData().set2(p.getName(), vec2f(v[0], v[1]));
+        }
+        else if (IV3fProperty::matches(p)) {
+            IV3fProperty param(arbattrs, p.getName());
+
+            auto v = param.getValue(iSS);
+            prim->userData().set2(p.getName(), vec3f(v[0], v[1], v[2]));
+        }
+        else if (IV2iProperty::matches(p)) {
+            IV2iProperty param(arbattrs, p.getName());
+
+            auto v = param.getValue(iSS);
+            prim->userData().set2(p.getName(), vec2i(v[0], v[1]));
+        }
+        else if (IV3iProperty::matches(p)) {
+            IV3iProperty param(arbattrs, p.getName());
+
+            auto v = param.getValue(iSS);
+            prim->userData().set2(p.getName(), vec3i(v[0], v[1], v[2]));
+        }
+        else if (IStringProperty::matches(p)) {
+            IStringProperty param(arbattrs, p.getName());
+
+            auto value = param.getValue(iSS);
+            prim->userData().set2(p.getName(), value);
+        }
+        else {
+            if (!read_done) {
+                log_error("[alembic] can not load user data {}..", p.getName());
             }
         }
     }
@@ -247,6 +304,8 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes(prim, arbattrs, iSS, read_done);
+    ICompoundProperty usrData = mesh.getUserProperties();
+    read_user_data(prim, usrData, iSS, read_done);
 
     return prim;
 }
@@ -307,6 +366,8 @@ static std::shared_ptr<PrimitiveObject> foundABCPoints(Alembic::AbcGeom::IPoints
     read_velocity(prim, mesamp.getVelocities(), read_done);
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes(prim, arbattrs, iSS, read_done);
+    ICompoundProperty usrData = mesh.getUserProperties();
+    read_user_data(prim, usrData, iSS, read_done);
     return prim;
 }
 
@@ -346,6 +407,8 @@ static std::shared_ptr<PrimitiveObject> foundABCCurves(Alembic::AbcGeom::ICurves
     }
     ICompoundProperty arbattrs = mesh.getArbGeomParams();
     read_attributes(prim, arbattrs, iSS, read_done);
+    ICompoundProperty usrData = mesh.getUserProperties();
+    read_user_data(prim, usrData, iSS, read_done);
     return prim;
 }
 
@@ -370,7 +433,7 @@ void traverseABC(
             Alembic::AbcGeom::IPolyMesh meshy(obj);
             auto &mesh = meshy.getSchema();
             tree.prim = foundABCMesh(mesh, frameid, read_done);
-            tree.prim->userData().set2("name", obj.getName());
+            tree.prim->userData().set2("_abc_name", obj.getName());
         } else if (Alembic::AbcGeom::IXformSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found a Xform [{}]", obj.getName());
@@ -392,7 +455,7 @@ void traverseABC(
             Alembic::AbcGeom::IPoints points(obj);
             auto &points_sch = points.getSchema();
             tree.prim = foundABCPoints(points_sch, frameid, read_done);
-            tree.prim->userData().set2("name", obj.getName());
+            tree.prim->userData().set2("_abc_name", obj.getName());
         } else if(Alembic::AbcGeom::ICurvesSchema::matches(md)) {
             if (!read_done) {
                 log_debug("[alembic] found curves [{}]", obj.getName());
@@ -400,7 +463,7 @@ void traverseABC(
             Alembic::AbcGeom::ICurves curves(obj);
             auto &curves_sch = curves.getSchema();
             tree.prim = foundABCCurves(curves_sch, frameid, read_done);
-            tree.prim->userData().set2("name", obj.getName());
+            tree.prim->userData().set2("_abc_name", obj.getName());
         }
     }
 
