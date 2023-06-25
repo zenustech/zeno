@@ -351,8 +351,8 @@ extern "C" __global__ void __miss__radiance()
     prd->attenuation2 *= transmittance;//DisneyBSDF::Transmission(prd->extinction,optixGetRayTmax());
     prd->origin += prd->direction * optixGetRayTmax();
 
-    auto anisotropy = prd->anisotropy_queue[prd->curMatIdx];
-    pbrt::HenyeyGreenstein hg(anisotropy); float3 newdir;
+    auto anisotropy = prd->anisotropy_queue[prd->curMatIdx]; 
+    pbrt::HenyeyGreenstein hg{__half2float(anisotropy)}; float3 newdir;
 
     float2 uu = {rnd(prd->seed), rnd(prd->seed)}; 
     auto prob = hg.Sample_p(-prd->direction, newdir, uu);
@@ -362,17 +362,17 @@ extern "C" __global__ void __miss__radiance()
     vec3 channelPDF = vec3(1.0f/3.0f);
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
-        if (optixGetRayTmax() == 1e16f) {
-            prd->maxDistance = 1e16f;
-        } else {
-            prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
-        }
+        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
     } 
-    else
+    else if (ss_alpha.x > 0.0f)
     {
         prd->maxDistance =
             DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
         prd->channelPDF = channelPDF;
+    } 
+    else 
+    {
+        prd->maxDistance = 1e16f;
     }
 
     prd->depth++;

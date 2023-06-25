@@ -923,7 +923,6 @@ extern "C" __global__ void __closesthit__radiance()
 
                     if (prd->curMatIdx > 0) {
                         vec3 sigma_t, ss_alpha;
-                        //vec3 sigma_t, ss_alpha;
                         prd->readMat(sigma_t, ss_alpha);
                         if (ss_alpha.x < 0.0f) { // is inside Glass
                             prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
@@ -948,11 +947,6 @@ extern "C" __global__ void __closesthit__radiance()
                         //printf("maxdist:%f\n",prd->maxDistance);
                         prd->channelPDF = channelPDF;
                         // already calculated in BxDF
-
-                        // if (idx.x == w/2 && idx.y == h/2) {
-                        //     printf("into sss, sigma_t, alpha: %f, %f, %f\n", prd->sigma_t.x, prd->sigma_t.y, prd->sigma_t.z,prd->ss_alpha.x, prd->ss_alpha.y, prd->ss_alpha.z);
-                        // }
-                        
                         prd->pushMat(prd->sigma_t, prd->ss_alpha, mats.vol_anisotropy);
                     }
 
@@ -999,17 +993,8 @@ extern "C" __global__ void __closesthit__radiance()
                 else 
                 {
                     prd->isSS = false;
-                    prd->maxDistance = 1e16;
+                    prd->maxDistance = 1e16f;
                 }
-
-                // if (prd->medium != DisneyBSDF::PhaseFunctions::vacuum) {
-
-                //     prd->bad = true;
-                    
-                //     printf("%f %f %f %f %f %f %f %f \n matIdx = %d isotropic = %d \n", prd->sigma_t_queue[0].x, prd->sigma_t_queue[1].x, prd->sigma_t_queue[2].x, prd->sigma_t_queue[3].x, prd->sigma_t_queue[4].x, prd->sigma_t_queue[5].x, prd->sigma_t_queue[6].x, prd->sigma_t_queue[7].x,
-                //         prd->curMatIdx, prd->medium);
-                //     printf("matIdx = %d isotropic = %d \n\n", prd->curMatIdx, prd->medium);
-                // }
             }
         }else{
             if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
