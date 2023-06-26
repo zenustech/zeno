@@ -81,6 +81,10 @@ extern "C" __global__ void __raygen__rg()
     float3 result_t = make_float3( 0.0f );
     float3 result_b = make_float3( 0.0f );
     int i = params.samples_per_launch;
+
+    float3 tmp_albedo{};
+    float3 tmp_normal{};
+
     do
     {
         // The center of each pixel is at fraction (0.5,0.5)
@@ -146,38 +150,33 @@ extern "C" __global__ void __raygen__rg()
         // prd.ss_alpha = vec3(0.0f);
         // prd.sigma_t = vec3(0.0f);
 
+        result_d = make_float3(0,0,0);
+        result_s = make_float3(0,0,0);
+        result_t = make_float3(0,0,0);
+
+        //if constexpr(params.denoise) 
+        if (params.denoise) 
+        {
+            prd.trace_denoise_albedo = true;
+            prd.trace_denoise_normal = true;
+        }
+
+        // Primary Ray
+        traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
+
+        tmp_albedo = prd.tmp_albedo;
+        tmp_normal = prd.tmp_normal;
+
+        prd.trace_denoise_albedo = false;
+        prd.trace_denoise_normal = false;
+
         for(;;)
         {
-            result_d = make_float3(0,0,0);
-            result_s = make_float3(0,0,0);
-            result_t = make_float3(0,0,0);
-            traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
-
             tmin = prd.trace_tmin;
             prd.trace_tmin = 0;
 
             ray_mask = prd._mask_; 
             prd._mask_ = EverythingMask;
-
-//            vec3 radiance = vec3(prd.radiance);
-//            vec3 oldradiance = radiance;
-//            RadiancePRD shadow_prd;
-//            shadow_prd.depth = prd.depth;
-//            shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-//            shadow_prd.nonThinTransHit = prd.nonThinTransHit;
-//            traceOcclusion(params.handle, prd.LP, prd.Ldir,
-//                           1e-5f, // tmin
-//                           1e16f, // tmax,
-//                           &shadow_prd);
-//            radiance = radiance * prd.Lweight * vec3(shadow_prd.shadowAttanuation);
-//            radiance = radiance + vec3(prd.emission);
-
-//            prd.radiance = float3(mix(oldradiance, radiance, prd.CH));
-
-            // if (prd.bad) {
-            //     result = make_float3(999, 0, 0);
-            //     i = 1; break;
-            // }
 
             if(prd.countEmitted==false || prd.depth>0) {
                 auto temp_radiance = prd.radiance * prd.attenuation2;
@@ -210,6 +209,7 @@ extern "C" __global__ void __raygen__rg()
             if (ray_mask != EverythingMask && ray_mask != NothingMask) {
                 //ray_origin = prd.origin;
                 //ray_direction = prd.direction;
+                traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
                 continue; // trace again with same parameters but different mask
             }
 
@@ -235,11 +235,12 @@ extern "C" __global__ void __raygen__rg()
 
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
-            // if(prd.passed == false)
-            //     ++depth;        
-            //}else{
-                //prd.passed = false;
-            //}
+            
+            result_d = make_float3(0,0,0);
+            result_s = make_float3(0,0,0);
+            result_t = make_float3(0,0,0);
+
+            traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
         }
         result_b += prd.first_hit_type == 0 ? make_float3(0, 0, 0)
                                             : make_float3(1, 1, 1);
@@ -268,6 +269,15 @@ extern "C" __global__ void __raygen__rg()
         accum_color_s = lerp( accum_color_prev_s, accum_color_s, a );
         accum_color_t = lerp( accum_color_prev_t, accum_color_t, a );
         accum_color_b = lerp( accum_color_prev_b, accum_color_b, a );
+
+        if (params.denoise) {
+
+            const float3 accum_albedo_prev = params.albedo_buffer[ image_index ];
+            tmp_albedo = lerp(accum_albedo_prev, tmp_albedo, a);
+
+            const float3 accum_normal_prev = params.normal_buffer[ image_index ];
+            tmp_normal = lerp(accum_normal_prev, tmp_normal, a); 
+        }
     }
 
     /*if (launch_index.x == 0) {*/
@@ -290,6 +300,11 @@ extern "C" __global__ void __raygen__rg()
     params.frame_buffer_S[ image_index ] = make_color ( out_color_s );
     params.frame_buffer_T[ image_index ] = make_color ( out_color_t );
     params.frame_buffer_B[ image_index ] = make_color ( out_color_b );
+    
+    if (params.denoise) {
+        params.albedo_buffer[ image_index ] = tmp_albedo;
+        params.normal_buffer[ image_index ] = tmp_normal;
+    }
 }
 
 extern "C" __global__ void __miss__radiance()
