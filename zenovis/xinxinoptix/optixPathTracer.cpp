@@ -1701,6 +1701,7 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
                                        1.0, 0.0, 6500.0);
     xinxinoptix::using_hdr_sky(false);
+    xinxinoptix::show_background(false);
 }
 
 
@@ -2126,6 +2127,10 @@ void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
 
 void using_hdr_sky(bool enable) {
     state.params.usingHdrSky = enable;
+}
+
+void show_background(bool enable) {
+    state.params.show_background = enable;
 }
 
 void update_procedural_sky(

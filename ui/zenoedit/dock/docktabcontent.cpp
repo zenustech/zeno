@@ -24,6 +24,9 @@
 #include "settings/zenosettingsmanager.h"
 #include "settings/zsettings.h"
 #include <zenoui/comctrl/zcombobox.h>
+#include <zeno/core/Session.h>
+#include <zeno/types/UserData.h>
+#include <zenovis/ObjectsManager.h>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -755,6 +758,10 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_wire_frame);
     pToolLayout->addWidget(m_smooth_shading);
     pToolLayout->addWidget(m_normal_check);
+    {
+        m_background->setStyleSheet("color: white;");
+        pToolLayout->addWidget(m_background);
+    }
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
     pToolLayout->addWidget(m_screenshoot);
@@ -812,6 +819,20 @@ void DockContent_View::initConnections()
 
     connect(m_screenshoot, &ZToolBarButton::clicked, this, [=]() {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
+    });
+    connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
+        auto &ud = zeno::getSession().userData();
+        ud.set2("optix_show_background", state > 0);
+
+        {
+            Zenovis *pZenoVis = m_pDisplay->getZenoVis();
+            ZASSERT_EXIT(pZenoVis);
+            auto scene = pZenoVis->getSession()->get_scene();
+            ZASSERT_EXIT(scene);
+            scene->objectsMan->needUpdateLight = true;
+            m_pDisplay->setSimpleRenderOption();
+            zenoApp->getMainWindow()->updateViewport();
+        }
     });
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
