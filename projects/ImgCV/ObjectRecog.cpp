@@ -970,8 +970,8 @@ struct ImageFeatureDetectORB : INode {
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        auto &dp = image->tris.add_attr<float>("descriptors"); //descriptors.size() = 32 * nFeatures
-
+        auto &dp = image->uvs.add_attr<float>("descriptors"); //descriptors.size() = 32 * nFeatures
+        auto &kp = image->uvs.add_attr<vec2f>("keypoints");
         auto &pos = image->verts.attr<vec3f>("pos");
         cv::Ptr<cv::ORB> orb = cv::ORB::create(nFeatures, scaleFactor, 8, edgeThreshold, 0, 2,
                                                cv::ORB::HARRIS_SCORE, 31, patchSize);
@@ -999,16 +999,19 @@ struct ImageFeatureDetectORB : INode {
         idescriptor.convertTo(imageFloat, CV_32F, 1.0 / 255.0);
         cv::Size ds = imageFloat.size();
         int dss = ds.width * ds.height;
-        image->tris.resize(dss);
+        image->uvs.resize(dss);
+        image->userData().set2("dw",ds.width);
         zeno::log_info("orbDescriptor.width:{}, orbDescriptor.height:{}",ds.width, ds.height);
         for (int i = 0; i < dss; i++) {
             dp[i] = imageFloat.at<float>(i);
         }
-        for (const cv::KeyPoint &keypoint: ikeypoints) {
+        for(size_t i = 0;i < ikeypoints.size();i++){
+            cv::KeyPoint keypoint = ikeypoints[i];
             float x = static_cast<float>(keypoint.pt.x);
             float y = static_cast<float>(keypoint.pt.y);
-            image->uvs.push_back({x, y});
+            kp[i] = {x, y};
         }
+
         if (visualize) {
             cv::drawKeypoints(imagecvin, ikeypoints, imagecvout, cv::Scalar(255, 0, 0),
                               cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
@@ -1054,7 +1057,8 @@ struct ImageFeatureDetectSIFT : INode {
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        auto &dp = image->tris.add_attr<float>("descriptors");
+        auto &dp = image->uvs.add_attr<float>("descriptors");
+        auto &kp = image->uvs.add_attr<vec2f>("keypoints");
         cv::Ptr<cv::SIFT> sift = cv::SIFT::create(nFeatures, nOctaveLayers,
                                                   contrastThreshold, edgeThreshold,sigma);
 
@@ -1085,15 +1089,17 @@ struct ImageFeatureDetectSIFT : INode {
         idescriptor.convertTo(imageFloat, CV_32F, 1.0 / 255.0);
         cv::Size ds = imageFloat.size();
         int dss = ds.width * ds.height;
-        image->tris.resize(dss);
+        image->userData().set2("dw",ds.width);
+        image->uvs.resize(dss);
         zeno::log_info("siftDescriptor.width:{}, siftDescriptor.height:{}",ds.width, ds.height);
         for (int i = 0; i < dss; i++) {
             dp[i] = imageFloat.at<float>(i);
         }
-        for (const cv::KeyPoint &keypoint: ikeypoints) {
+        for(size_t i = 0;i < ikeypoints.size();i++){
+            cv::KeyPoint keypoint = ikeypoints[i];
             float x = static_cast<float>(keypoint.pt.x);
             float y = static_cast<float>(keypoint.pt.y);
-            image->uvs.push_back({x, y});
+            kp[i] = {x, y};
         }
         if (visualize) {
             for (int i = 0; i < h; i++) {
@@ -1150,7 +1156,7 @@ struct ImageFeatureMatch : INode {
         auto image3 = std::make_shared<PrimitiveObject>();
         auto &ud3 = image3->userData();
         image3->verts.resize(w2 * h2);
-        image3->tris.resize(zeno::max(image1->tris.size(),image2->tris.size()));
+        image3->uvs.resize(zeno::max(image1->uvs.size(),image2->uvs.size()));
         ud3.set2("h", h2);
         ud3.set2("w", w2);
         ud3.set2("isImage", 1);
@@ -1182,15 +1188,15 @@ struct ImageFeatureMatch : INode {
         images.push_back(imagecvin1);
         images.push_back(imagecvin2);
         std::vector<cv::KeyPoint> keypoints;
-        auto d1 = image1->tris.add_attr<float>("descriptors");
-        auto d2 = image2->tris.add_attr<float>("descriptors");
-        auto k1 = image1->uvs;
-        auto k2 = image2->uvs;
-        int ks1 = k1.size();
-        int ks2 = k2.size();
-        int dw1 = d1.size()/ks1;
-        int dw2 = d2.size()/ks2;
+        auto d1 = image1->uvs.add_attr<float>("descriptors");
+        auto d2 = image2->uvs.add_attr<float>("descriptors");
+        auto k1 = image1->uvs.add_attr<vec2f>("keypoints");
+        auto k2 = image2->uvs.add_attr<vec2f>("keypoints");
 
+        int dw1 = ud1.get2<int>("dw");
+        int dw2 = ud2.get2<int>("dw");
+        int ks1 = d1.size()/dw1;
+        int ks2 = d2.size()/dw2;
         cv::Mat imagecvdescriptors1(ks1, dw1, CV_32F);
         cv::Mat imagecvdescriptors2(ks2, dw2, CV_32F);
         for (int i = 0; i < ks1; i++) {
@@ -1210,7 +1216,7 @@ struct ImageFeatureMatch : INode {
         std::vector<cv::DMatch> filteredMatches;
         matcher->knnMatch(imagecvdescriptors1, imagecvdescriptors2, knnMatches, 2);
         filteredMatches.reserve(knnMatches.size());
-//        auto &md = image3->tris.add_attr<float>("matchDistance");
+//        auto &md = image3->uvs.add_attr<float>("matchDistance");
 //        int mdi = 0;
         for (const auto& knnMatch : knnMatches) {
             if (knnMatch.size() < 2) {
@@ -1225,8 +1231,8 @@ struct ImageFeatureMatch : INode {
         }
         zeno::log_info("knnMatches.size:{},filteredMatches.size：{}",knnMatches.size(),filteredMatches.size());
         std::vector<cv::Point2f> points1, points2;
-        auto &m1 = image3->tris.add_attr<vec3f>("image1MatchPoints");
-        auto &m2 = image3->tris.add_attr<vec3f>("image2MatchPoints");
+        auto &m1 = image3->uvs.add_attr<vec3f>("image1MatchPoints");
+        auto &m2 = image3->uvs.add_attr<vec3f>("image2MatchPoints");
         int m = 0;
         std::set<float> uniqueP1;
         for (const auto &match: filteredMatches) {
@@ -1242,10 +1248,10 @@ struct ImageFeatureMatch : INode {
             m2[m] = {static_cast<float>(match.trainIdx),k2[match.trainIdx][0],k2[match.trainIdx][1]};
             m++;
         }
-        image3->tris.resize(m);
+        image3->uvs.resize(m);
 
 //cameraMatrix
-        auto &cm = image3->tris.add_attr<float>("cameraMatrix");
+        auto &cm = image3->uvs.add_attr<float>("cameraMatrix");
         cv::Mat cameraMatrix = (cv::Mat_<float>(3, 3) << cm[0],0,cm[2],
                                                          0,cm[4],cm[5],
                                                          0, 0, 1);
@@ -1267,8 +1273,8 @@ struct ImageFeatureMatch : INode {
 
 //perspectiveMatrix
         if(bpM){
-            auto &pp1 = image3->tris.add_attr<vec3f>("perspectiveImage1Points");
-            auto &pp2 = image3->tris.add_attr<vec3f>("perspectiveImage2Points");
+            auto &pp1 = image3->uvs.add_attr<vec3f>("perspectiveImage1Points");
+            auto &pp2 = image3->uvs.add_attr<vec3f>("perspectiveImage2Points");
             Point2f pPoints1[4] ,pPoints2[4];
             std::vector<vec3f> preTl;
             int pp = 0;
@@ -1324,14 +1330,14 @@ struct ImageFeatureMatch : INode {
                 }
             }
 
-            auto &pm = image3->tris.add_attr<float>("perspectiveMatrix");
+            auto &pm = image3->uvs.add_attr<float>("perspectiveMatrix");
             cv::Size ps = perspectiveMatrix.size();
             int pss = ps.width * ps.height;
             for (int i = 0; i < pss; i++) {
                 pm[i] = static_cast<float>(perspectiveMatrix.at<double>(i));
             }
-            auto &ptl = image3->tris.add_attr<float>("perspectiveTranslation");
-            auto &prt = image3->tris.add_attr<float>("perspectiveRotation");
+            auto &ptl = image3->uvs.add_attr<float>("perspectiveTranslation");
+            auto &prt = image3->uvs.add_attr<float>("perspectiveRotation");
 
             ptl[0] = pm[2];
             ptl[1] = pm[5];
@@ -1353,7 +1359,7 @@ struct ImageFeatureMatch : INode {
             cv::OutputArray fmask = cv::noArray();
             cv::Mat fundamentalMatrix = cv::findFundamentalMat(points1, points2, cv::FM_RANSAC,
                                                                fransacReprojThreshold, fconfidence,fmaxIters,fmask);
-            auto &fm = image3->tris.add_attr<float>("fundamentalMatrix");
+            auto &fm = image3->uvs.add_attr<float>("fundamentalMatrix");
             cv::Size fs = fundamentalMatrix.size();
             int fss = fs.width * fs.height;
             for (int i = 0; i < fss; i++) {
@@ -1372,7 +1378,7 @@ struct ImageFeatureMatch : INode {
             const double hconfidence = 0.995;
             homographyMatrix = cv::findHomography(points1,points2, hmethod,
                                                   hransacReprojThreshold,cv::noArray(),hmaxIters,hconfidence);
-            auto &hm = image3->tris.add_attr<float>("homographyMatrix");
+            auto &hm = image3->uvs.add_attr<float>("homographyMatrix");
             cv::Size hs = homographyMatrix.size();
             int hss = hs.width * hs.height;
             for (int i = 0; i < hss; i++) {
@@ -1385,8 +1391,8 @@ struct ImageFeatureMatch : INode {
                 hm[i] = static_cast<float>(homographyMatrix.at<double>(i));
             }
             cv::recoverPose(homographyMatrix, points1,points2, cameraMatrix, hrotation, htranslation);
-            auto &hrt = image3->tris.add_attr<float>("homographyRotation");
-            auto &htl = image3->tris.add_attr<float>("homographyTranslation");
+            auto &hrt = image3->uvs.add_attr<float>("homographyRotation");
+            auto &htl = image3->uvs.add_attr<float>("homographyTranslation");
             cv::Size hts = htranslation.size();
             int htss = hts.width * hts.height;
             for (int i = 0; i < htss; i++) {
@@ -1410,7 +1416,7 @@ struct ImageFeatureMatch : INode {
             essentialMatrix = cv::findEssentialMat(points1, points2, 1.0, Point2d(0, 0),RANSAC,0.999,1.0, 1000,noArray());
 
             zeno::log_info("essentialMatrix:{}x{}",essentialMatrix.cols,essentialMatrix.rows);
-            auto &em = image3->tris.add_attr<float>("essentialMatrix");
+            auto &em = image3->uvs.add_attr<float>("essentialMatrix");
             cv::Size es = essentialMatrix.size();
             int ess = es.width * es.height;
 
@@ -1422,8 +1428,8 @@ struct ImageFeatureMatch : INode {
             cv::recoverPose(essentialMatrix,points1,points2, cameraMatrix, rotation, translation);
 
             zeno::log_info("recoverPose_essentialMatrix");
-            auto &rt = image3->tris.add_attr<float>("essentialRotation");
-            auto &tl = image3->tris.add_attr<float>("essentialTranslation");
+            auto &rt = image3->uvs.add_attr<float>("essentialRotation");
+            auto &tl = image3->uvs.add_attr<float>("essentialTranslation");
 
             cv::Size ts = translation.size();
             int tss = ts.width * ts.height;
@@ -1554,10 +1560,10 @@ struct Image3DAnalyze : INode {
         auto image3 = std::make_shared<PrimitiveObject>();
         auto &ud3 = image3->userData();
         image3->verts.resize(w2 * h2);
-        image3->tris.resize(zeno::max(image1->tris.size(),image2->tris.size()));
+        image3->uvs.resize(zeno::max(image1->uvs.size(),image2->uvs.size()));
         ud3.set2("h", h2);
         ud3.set2("w", w2);
-        ud3.set2("isImage", 1);
+
         image3->verts = image2->verts;
 
         cv::Mat imagecvin1(h1, w1, CV_8UC3);
@@ -1590,7 +1596,7 @@ struct Image3DAnalyze : INode {
                 0,fy,cy,
                 0, 0, 1);
 
-        auto &cm = image3->tris.add_attr<float>("cameraMatrix");
+        auto &cm = image3->uvs.add_attr<float>("cameraMatrix");
         cv::Size cs = cameraMatrix.size();
         int css = cs.width * cs.height;
         for (int i = 0; i < css; i++) {
@@ -1602,57 +1608,30 @@ struct Image3DAnalyze : INode {
 //matchpoints
         std::vector<cv::Point2f> image1Points,image2Points;
         std::vector<cv::Point2f> image1PointsP2C,image2PointsP2C;
-        int flag = image1->tris.size()>=image2->tris.size()?1:0;
+        int flag = image1->uvs.size()>=image2->uvs.size()?1:0;
         zeno::log_info("flag:{}",flag);
-        auto &m11 = image1->tris.add_attr<vec3f>("image1MatchPoints");
-        auto &m21 = image2->tris.add_attr<vec3f>("image1MatchPoints");
-        auto &m12 = image1->tris.add_attr<vec3f>("image2MatchPoints");
-        auto &m22 = image2->tris.add_attr<vec3f>("image2MatchPoints");
-        auto &mp1 = image3->tris.add_attr<vec3f>("image1MatchPoints");
-        auto &mp2 = image3->tris.add_attr<vec3f>("image2MatchPoints");
-        auto &mp1P2C = image3->tris.add_attr<vec3f>("image1MatchPointsP2C");
-        auto &mp2P2C = image3->tris.add_attr<vec3f>("image2MatchPointsP2C");
-        std::vector<float> p1idx;
-        std::vector<float> p2idx;
-        std::vector<float> dupidx;
-        p1idx.resize(image1->tris.size());
-        p2idx.resize(image2->tris.size());
-        for(size_t i = 0;i < image1->tris.size();i++){
-            p1idx[i] = m11[i][0];
-        }
-        for(size_t i = 0;i < image2->tris.size();i++){
-            p2idx[i] = m21[i][0];
-        }
 
-        std::set_intersection(p1idx.begin(), p1idx.end(),
-                          p2idx.begin(),p2idx.end(),
-                          std::back_inserter(dupidx));
-        int j = 0,k = 0;
-        for(size_t i = 0;i < dupidx.size();i++){
-            while(dupidx[i]!=m11[j][0]){
-                j++;
-            }
-            while(dupidx[i]!=m21[k][0]){
-                k++;
-            }
-            if(dupidx[i]==m11[j][0]){
-                cv::Point2f pt1(m12[j][1], m12[j][2]);
-                image1Points.push_back(pt1);
-                mp1[i] = {m12[j][0],m12[j][1], m12[j][2]};
-                cv::Point2f pt1P2C = pixel2cam( pt1 , cameraMatrix);
-                image1PointsP2C.push_back ( pt1P2C );
-                mp1P2C[i] = {pt1P2C.x,pt1P2C.y};
-            }
-            if(dupidx[i]==m21[k][0]){
-                cv::Point2f pt2(m22[k][1], m22[k][2]);
-                image2Points.push_back(pt2);
-                mp2[i] = {m22[k][0],m22[k][1], m22[k][2]};
-                cv::Point2f pt2P2C = pixel2cam( pt2 , cameraMatrix);
-                image2PointsP2C.push_back ( pt2P2C );
-                mp2P2C[i] = {pt2P2C.x,pt2P2C.y};
-            }
+        auto &mp1 = image3->uvs.add_attr<vec3f>("image1MatchPoints") ;
+        mp1 = image2->uvs.add_attr<vec3f>("image1MatchPoints");
+        auto &mp2 = image3->uvs.add_attr<vec3f>("image2MatchPoints") ;
+        mp2 = image2->uvs.add_attr<vec3f>("image2MatchPoints");
+        auto &mp1P2C = image3->uvs.add_attr<vec3f>("image1MatchPointsP2C");
+        auto &mp2P2C = image3->uvs.add_attr<vec3f>("image2MatchPointsP2C");
+        image3->uvs.resize(image2->uvs.size());
+
+        for(size_t i = 0;i < image3->uvs.size();i++){
+            cv::Point2f pt1(mp1[i][1], mp1[i][2]);
+            image1Points.push_back(pt1);
+            cv::Point2f pt1P2C = pixel2cam( pt1 , cameraMatrix);
+            image1PointsP2C.push_back ( pt1P2C );
+            mp1P2C[i] = {pt1P2C.x,pt1P2C.y};
+
+            cv::Point2f pt2(mp2[i][1], mp2[i][2]);
+            image2Points.push_back(pt2);
+            cv::Point2f pt2P2C = pixel2cam( pt2 , cameraMatrix);
+            image2PointsP2C.push_back ( pt2P2C );
+            mp2P2C[i] = {pt2P2C.x,pt2P2C.y};
         }
-        image3->tris.resize(image1Points.size());
         zeno::log_info("image1Points.size:{} image2Points.size:{}",image1Points.size(),image2Points.size());
 
         cv::Mat points1Mat(2,image1Points.size(), CV_32FC1);
@@ -1665,32 +1644,11 @@ struct Image3DAnalyze : INode {
         }
         zeno::log_info("points1Mat.size:{} points2Mat.size:{}",points1Mat.cols,points2Mat.cols);
 
-//perspectiveMatrix
-
-//        auto &pm = image3->tris.add_attr<float>("perspectiveMatrix");
-//        cv::Size ps = perspectiveMatrix.size();
-//        int pss = ps.width * ps.height;
-//        for (int i = 0; i < pss; i++) {
-//            pm[i] = static_cast<float>(perspectiveMatrix.at<double>(i));
-//        }
-//        auto &ptl = image3->tris.add_attr<float>("perspectiveTranslation");
-//        auto &prt = image3->tris.add_attr<float>("perspectiveRotation");
-//
-//        ptl[0] = pm[2];
-//        ptl[1] = pm[5];
-//        ptl[2] = pm[8];
-//
-//        prt[0] = pm[0];
-//        prt[1] = pm[1];
-//        prt[2] = pm[3];
-//        prt[3] = pm[4];
-//        zeno::log_info("perspectiveMatrix.width:{} perspectiveMatrix.height:{}",ps.width,ps.height);
-
 //essentialMatrix1
-        auto &em1 = image1->tris.add_attr<float>("essentialMatrix");
-        auto &er1 = image1->tris.add_attr<float>("essentialRotation");
-        auto &et1 = image1->tris.add_attr<float>("essentialTranslation");
-        image3->tris.add_attr<float>("essentialMatrix1") = image1->tris.add_attr<float>("essentialMatrix");
+        auto &em1 = image1->uvs.add_attr<float>("essentialMatrix");
+        auto &er1 = image1->uvs.add_attr<float>("essentialRotation");
+        auto &et1 = image1->uvs.add_attr<float>("essentialTranslation");
+        image3->uvs.add_attr<float>("essentialMatrix1") = image1->uvs.add_attr<float>("essentialMatrix");
         cv::Mat essentialMatrix1 = (cv::Mat_<float>(3, 3) << em1[0],em1[1],em1[2],
                                                               em1[3],em1[4],em1[5],
                                                               em1[6],em1[7],em1[8]);
@@ -1705,10 +1663,10 @@ struct Image3DAnalyze : INode {
         zeno::log_info("essentialMatrix1.width:{} essentialMatrix1.height:{}",ems1.width,ems1.height);
 
 //essentialMatrix2
-        auto &em2 = image2->tris.add_attr<float>("essentialMatrix");
-        auto &er2 = image2->tris.add_attr<float>("essentialRotation");
-        auto &et2 = image2->tris.add_attr<float>("essentialTranslation");
-        image3->tris.add_attr<float>("essentialMatrix2") = image2->tris.add_attr<float>("essentialMatrix");
+        auto &em2 = image2->uvs.add_attr<float>("essentialMatrix");
+        auto &er2 = image2->uvs.add_attr<float>("essentialRotation");
+        auto &et2 = image2->uvs.add_attr<float>("essentialTranslation");
+        image3->uvs.add_attr<float>("essentialMatrix2") = image2->uvs.add_attr<float>("essentialMatrix");
         cv::Mat essentialMatrix2 = (cv::Mat_<float>(3, 3) << em2[0],em2[1],em2[2],
                                                               em2[3],em2[4],em2[5],
                                                               em2[6],em2[7],em2[8]);
@@ -1728,19 +1686,19 @@ struct Image3DAnalyze : INode {
         cv::Size imageSize(w1, h1);
 
 // estimateCameraMatrix1
-        auto &cm1 = image3->tris.add_attr<float>("cameraMatrix1");
+        auto &cm1 = image3->uvs.add_attr<float>("cameraMatrix1");
         cv::Mat K1 = cameraMatrix;
         cv::Mat distCoeffs1 = distCoeffsMatrix;
         cv::Mat R1 = erotation1;
         cv::Mat t1 = etranslation1;
-        cv::fisheye::estimateNewCameraMatrixForUndistortRectify(K1, distCoeffs1, imageSize , erotation1, cameraMatrix1);
+        cv::fisheye::estimateNewCameraMatrixForUndistortRectify(K1, distCoeffs1, imageSize , R1, cameraMatrix1);
         cv::Size cmp1s = cameraMatrix1.size();
         zeno::log_info("cameraMatrix1.width:{} cameraMatrix1.height:{}",cmp1s.width,cmp1s.height);
         for (int i = 0; i < 9; i++) {
             cm1[i] = static_cast<float>(cameraMatrix1.at<float>(i));
         }
 // estimateCameraMatrix2
-        auto &cm2 = image3->tris.add_attr<float>("cameraMatrix2");
+        auto &cm2 = image3->uvs.add_attr<float>("cameraMatrix2");
         cv::Mat K2 = cameraMatrix;
         cv::Mat distCoeffs2 = distCoeffsMatrix;
         cv::Mat R2 = erotation2;
@@ -1752,8 +1710,8 @@ struct Image3DAnalyze : INode {
             cm2[i] = static_cast<float>(cameraMatrix2.at<float>(i));
         }
 //3x3 -> 3x4
-        auto &cmp1 = image3->tris.add_attr<float>("cameraMatrixPro1");
-        auto &cmp2 = image3->tris.add_attr<float>("cameraMatrixPro2");
+        auto &cmp1 = image3->uvs.add_attr<float>("cameraMatrixPro1");
+        auto &cmp2 = image3->uvs.add_attr<float>("cameraMatrixPro2");
         cv::Mat cameraMatrixPro1x = cv::Mat::eye(3, 4, CV_32F);
         cv::Mat roi1 = cameraMatrixPro1x(cv::Rect(0, 0, 3, 3));
         cameraMatrix1.copyTo(roi1);
@@ -1772,7 +1730,8 @@ struct Image3DAnalyze : INode {
 
 //4D points
 // triangulatePoints init
-        auto &p4d = image3->tris.add_attr<vec4f>("4DPoints");
+        auto &p4d = image3->uvs.add_attr<vec4f>("4DPoints");
+        auto &p3d = image3->uvs.add_attr<vec3f>("3DPoints");
         cv::Mat points4D = cv::Mat::ones(3, 4, CV_32F);
 
 // triangulatePoints method1
@@ -1802,7 +1761,7 @@ struct Image3DAnalyze : INode {
 //            p4d[i] = {point.x,point.y,point.z,point.w};
 //        }
         int numPoints = points4D.cols; // 获取点的数量
-
+        image3->verts.resize(numPoints);
         for (int i = 0; i < numPoints; i++) {
             cv::Vec4f point = points4D.col(i);
             float x = point(0);
@@ -1810,24 +1769,14 @@ struct Image3DAnalyze : INode {
             float z = point(2);
             float w = point(3);
             p4d[i] = {x,y,z,w};
+            p3d[i] = {x/w,y/w,z/w};
+            image3->verts[i] = p3d[i];
         }
         zeno::log_info("triangulatePoints");
-
-//3D points
-        // 转换为齐次坐标形式并进行归一化
-        auto &p3d = image3->tris.add_attr<vec3f>("3DPoints");
-        cv::Mat points3D;
-        cv::convertPointsFromHomogeneous(points4D.t(), points3D);
-//        cv::Size p3ds = points3D.size();
-//        int p3dss = p3ds.width * p3ds.height;
-        for (size_t i = 0; i < points3D.rows; i++) {
-            cv::Point3f point = points3D.at<cv::Point3f>(i);
-            p3d[i] = {point.x,point.y,point.z};
-        }
-        zeno::log_info("convertPointsFromHomogeneous");
+//        ud3.set2("isImage", 0);
 
         if(visualize){
-            //image1Points
+            ud3.set2("isImage", 1);
             int h = h1;
             int w = w1+w2;
             cv::Mat V(h,w,CV_8UC3);
@@ -1866,9 +1815,6 @@ struct Image3DAnalyze : INode {
                 image3->verts[i][2] = zeno::min(static_cast<float>(pixel[2])/255,1.0f);
             }
         }
-
-
-
         set_output("image", image3);
     }
 };
@@ -1961,21 +1907,21 @@ struct EstimateCameraMatrix : INode {
         std::vector<cv::Point2f> image1Points,image2Points;
         std::vector<cv::Point3f> objectPoints;
 
-        int flag = image1->tris.size()>=image2->tris.size()?1:0;
+        int flag = image1->uvs.size()>=image2->uvs.size()?1:0;
         zeno::log_info("flag:{}",flag);
-        auto &m11 = image1->tris.add_attr<vec3f>("image1MatchPoints");
-        auto &m21 = image2->tris.add_attr<vec3f>("image1MatchPoints");
-        auto &m12 = image1->tris.add_attr<vec3f>("image2MatchPoints");
-        auto &m22 = image2->tris.add_attr<vec3f>("image2MatchPoints");
+        auto &m11 = image1->uvs.add_attr<vec3f>("image1MatchPoints");
+        auto &m21 = image2->uvs.add_attr<vec3f>("image1MatchPoints");
+        auto &m12 = image1->uvs.add_attr<vec3f>("image2MatchPoints");
+        auto &m22 = image2->uvs.add_attr<vec3f>("image2MatchPoints");
         std::set<float> dp;
         std::set<float> dp1;
         std::set<float> dp2;
 
         if(flag == 1){
-            for(size_t i = 0;i < image2->tris.size();i++){
+            for(size_t i = 0;i < image2->uvs.size();i++){
                 dp1.insert(m12[i][0]);
             }
-            for(size_t i = 0;i < image1->tris.size();i++){
+            for(size_t i = 0;i < image1->uvs.size();i++){
                 dp1.insert(m22[i][0]);
                 if (dp1.count(m22[i][0]) == 2 ) {
                     cv::Point2f pt1(m12[i][1], m12[i][2]);
@@ -1984,10 +1930,10 @@ struct EstimateCameraMatrix : INode {
                     objectPoints.push_back(pt);
                 }
             }
-            for(size_t i = 0;i < image1->tris.size();i++){
+            for(size_t i = 0;i < image1->uvs.size();i++){
                 dp2.insert(m11[i][0]);
             }
-            for(size_t i = 0;i < image2->tris.size();i++){
+            for(size_t i = 0;i < image2->uvs.size();i++){
                 dp2.insert(m21[i][0]);
                 if (dp2.count(m21[i][0]) == 2 ) {
                     cv::Point2f pt2(m22[i][1], m22[i][2]);
@@ -1996,20 +1942,20 @@ struct EstimateCameraMatrix : INode {
             }
         }
         if(flag == 0){
-            for(size_t i = 0;i < image2->tris.size();i++){
+            for(size_t i = 0;i < image2->uvs.size();i++){
                 dp1.insert(m12[i][0]);
             }
-            for(size_t i = 0;i < image1->tris.size();i++){
+            for(size_t i = 0;i < image1->uvs.size();i++){
                 dp1.insert(m22[i][0]);
                 if (dp1.count(m22[i][0]) == 2 ) {
                     cv::Point2f pt1(m12[i][1], m12[i][2]);
                     image1Points.push_back(pt1);
                 }
             }
-            for(size_t i = 0;i < image1->tris.size();i++){
+            for(size_t i = 0;i < image1->uvs.size();i++){
                 dp2.insert(m11[i][0]);
             }
-            for(size_t i = 0;i < image2->tris.size();i++){
+            for(size_t i = 0;i < image2->uvs.size();i++){
                 dp2.insert(m21[i][0]);
                 if (dp2.count(m21[i][0]) == 2 ) {
                     cv::Point2f pt2(m22[i][1], m22[i][2]);
@@ -2042,7 +1988,7 @@ struct EstimateCameraMatrix : INode {
                                      criteria);
         zeno::log_info("rms:{}",rms);
 
-        auto &cm2 = image2->tris.add_attr<float>("cameraMatrix");
+        auto &cm2 = image2->uvs.add_attr<float>("cameraMatrix");
         cv::Size cs2 = cameraMatrix2.size();
         int css2 = cs2.width * cs2.height;
         for (int i = 0; i < css2; i++) {
