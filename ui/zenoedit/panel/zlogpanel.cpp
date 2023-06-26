@@ -334,6 +334,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
     : QWidget(parent)
     , m_pFilterModel(nullptr)
     , m_pMenu(nullptr)
+    , m_bSynLogs(false)
 {
     m_ui = new Ui::LogPanel;
     m_ui->setupUi(this);
@@ -464,11 +465,32 @@ void ZlogPanel::initSignals()
 
     connect(m_ui->btnDelete, &ZToolButton::clicked, this, [=]() {
         m_logModel->clear();
+        m_bSynLogs = false;
         //zenoApp->logModel()->clear();
     });
 
     connect(m_ui->btnSetting, &ZToolButton::clicked, this, [=]() {
         onSettings();
+    });
+
+    connect(zenoApp->logModel(), &QStandardItemModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
+        QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
+        if (pModel) {
+            if (m_bSynLogs)
+            {
+                m_logModel->appendRow(pModel->item(first)->clone());
+            }
+            else
+            {
+                QModelIndex idx = pModel->index(first, 0, parent);
+                int type = idx.data(ROLE_LOGTYPE).toInt();
+                if (type == QtFatalMsg)
+                {
+                    m_bSynLogs = true;
+                    onSyncLogs();
+                }
+            }
+        }
     });
 }
 
@@ -497,6 +519,10 @@ void ZlogPanel::onFilterChanged()
     m_pFilterModel->setFilters(filters, m_ui->editSearch->text());
 }
 
+void ZlogPanel::setSyncLog(bool bSynLog)
+{
+    m_bSynLogs = bSynLog;
+}
 
 //////////////////////////////////////////////////////////////////////////
 CustomFilterProxyModel::CustomFilterProxyModel(QObject *parent)
