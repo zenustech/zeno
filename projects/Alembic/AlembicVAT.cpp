@@ -329,7 +329,7 @@ void writeDynamicRemeshObjFile(
 
     auto outputUV = [&](size_t vertId) {
       float u1 = float(vertId % vatWidth) / float(vatWidth);
-      float u2 = float(vertId % vatWidth) / float(vatWidth);
+      float u2 = float((vertId + 1) % vatWidth) / float(vatWidth);
       if (u1 > 1.0f) {
         u1 -= 1.0f;
         u2 -= 1.0f;
