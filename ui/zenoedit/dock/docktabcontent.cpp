@@ -928,6 +928,11 @@ void DockContent_Log::initConnections()
         ZPlainLogPanel *pLogger = qobject_cast<ZPlainLogPanel *>(m_stack->widget(0));
         if (pLogger)
             pLogger->clear();
+        ZlogPanel* pLogPanel = qobject_cast<ZlogPanel*>(m_stack->widget(1));
+        if (pLogPanel)
+        {
+            pLogPanel->setSyncLog(false);
+        }
     });
 }
 

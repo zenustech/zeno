@@ -75,6 +75,7 @@ class ZlogPanel : public QWidget
     Q_OBJECT
 public:
     ZlogPanel(QWidget* parent = nullptr);
+    void setSyncLog(bool bSynLog);
 
 public slots:
     void onFilterChanged();
@@ -89,6 +90,7 @@ private:
     QStandardItemModel *m_logModel;
     CustomFilterProxyModel *m_pFilterModel;
     QMenu* m_pMenu;
+    bool m_bSynLogs;
 };
 
 class ZPlainLogPanel : public QPlainTextEdit
