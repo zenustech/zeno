@@ -380,7 +380,7 @@ struct ReadImageFile : INode {
         if (zeno::ends_with(path, ".exr", false)) {
             set_output("image", readExrFile(path));
         }
-        if (zeno::ends_with(path, ".pfm", false)) {
+        else if (zeno::ends_with(path, ".pfm", false)) {
             set_output("image", readPFMFile(path));
         }
         else {
