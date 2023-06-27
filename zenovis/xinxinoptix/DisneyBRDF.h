@@ -438,8 +438,7 @@ float SmithGAniso(float NDotV, float VDotX, float VDotY, float ax, float ay)
 static __inline__ __device__
 vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
 {
-  ax = max(0.04f,ax);
-  ay = max(0.04f,ay);
+
   pdf = 0.0;
   if (L.z * V.z <= 0.0)
     return vec3(0.0);
