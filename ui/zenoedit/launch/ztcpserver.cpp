@@ -12,12 +12,14 @@
 #include "zenoapplication.h"
 #include "cache/zcachemgr.h"
 #include "zenomainwindow.h"
+#include "viewport/displaywidget.h"
 
 
 ZTcpServer::ZTcpServer(QObject *parent)
     : QObject(parent)
     , m_tcpServer(nullptr)
     , m_tcpSocket(nullptr)
+    , m_tcpOptixSocket(nullptr)
     , m_port(0)
 {
 }
@@ -91,6 +93,17 @@ void ZTcpServer::startProc(const std::string& progJson,  bool applyLightAndCamer
     {
         viewDecodeSetFrameCache("", 0);
     }
+	if (m_tcpOptixSocket)
+	{
+        ZenoMainWindow* main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        TIMELINE_INFO tlinfo = main->timelineInfo();
+        QString info = "init_" + finalPath + "_" + QString::number(tlinfo.beginFrame) + "-" + QString::number(tlinfo.endFrame) + "-" + QString::number(tlinfo.currFrame) + "-" + QString::number(tlinfo.bAlways);
+        m_tcpOptixSocket->write(info.toStdString().data(), info.size());
+        while (m_tcpOptixSocket->bytesToWrite() > 0) {
+            m_tcpOptixSocket->waitForBytesWritten();
+        }
+	}
 
     QStringList args = {
         "-runner", QString::number(sessionid),
@@ -112,6 +125,37 @@ void ZTcpServer::startProc(const std::string& progJson,  bool applyLightAndCamer
 
     connect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+}
+
+void ZTcpServer::startOptixProc()
+{
+	if (m_optixProc && m_optixProc->isOpen())
+	{
+		zeno::log_info("optix process already running");
+		return;
+	}
+
+	zeno::log_info("launching optix program...");
+
+	m_optixProc = std::make_unique<QProcess>();
+	m_optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+	m_optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+	m_optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+
+	QStringList args = {
+		"-optix", QString::number(0),
+		"-port", QString::number(m_port)
+	};
+
+	m_optixProc->start(QCoreApplication::applicationFilePath(), args);
+
+	if (!m_optixProc->waitForStarted(-1)) {
+		zeno::log_warn("optix process failed to get started, giving up");
+		return;
+	}
+
+	connect(m_optixProc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
+	connect(m_optixProc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 }
 
 void ZTcpServer::killProc()
@@ -143,20 +187,43 @@ void ZTcpServer::onNewConnection()
 
 void ZTcpServer::onReadyRead()
 {
-    QByteArray arr = m_tcpSocket->readAll();
-    qint64 redSize = arr.size();
-    zeno::log_debug("qtcpsocket got {} bytes (ping test has 19)", redSize);
-    if (redSize > 0) {
-        viewDecodeAppend(arr.data(), redSize);
+    if (QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender()))
+    {
+        QByteArray arr = socket->readAll();
+        if (arr == "optixProcStart")
+        {
+            m_tcpOptixSocket = socket;
+            return;
+        }else if (arr == "optixProcClose")
+        {
+            if (m_optixProc) {
+                m_optixProc->terminate();
+                m_optixProc = nullptr;
+            }
+            return;
+        }
+        qint64 redSize = arr.size();
+        if (m_tcpOptixSocket)
+        {
+            m_tcpOptixSocket->write(arr.data(), redSize);
+            while (m_tcpOptixSocket->bytesToWrite() > 0) {
+                m_tcpOptixSocket->waitForBytesWritten();
+            }
+        }
+        zeno::log_debug("qtcpsocket got {} bytes (ping test has 19)", redSize);
+        if (redSize > 0) {
+            viewDecodeAppend(arr.data(), redSize);
+        }
     }
 }
 
 void ZTcpServer::onProcPipeReady()
 {
-    if (!m_proc) {
+    QProcess* proc = qobject_cast<QProcess*>(sender());
+    if (!proc) {
         return;
     }
-    QByteArray arr = m_proc->readAll();
+    QByteArray arr = proc->readAll();
     QList<QByteArray> lst = arr.split('\n');
     for (QByteArray line : lst)
     {
@@ -170,7 +237,25 @@ void ZTcpServer::onProcPipeReady()
 
 void ZTcpServer::onDisconnect()
 {
+    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+    for (auto pDisplay : views)
+    {
+        Zenovis* pZenovis = pDisplay->getZenoVis();
+        ZASSERT_EXIT(pZenovis);
+        auto session = pZenovis->getSession();
+        ZASSERT_EXIT(session);
+        session->set_curr_frameid(0);
+    }
+
     viewDecodeFinish();
+    if (m_tcpOptixSocket)
+    {
+        QString fin = "calcuProcFin";
+        m_tcpOptixSocket->write(fin.toStdString().data(), fin.size());
+        while (m_tcpOptixSocket->bytesToWrite() > 0) {
+            m_tcpOptixSocket->waitForBytesWritten();
+        }
+    }
 }
 
 void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)

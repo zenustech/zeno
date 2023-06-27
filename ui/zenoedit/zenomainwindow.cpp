@@ -54,6 +54,7 @@
 #include <zenomodel/include/zenomodel.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/core/Session.h>
+#include "launch/viewdecode.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -586,7 +587,7 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
         m_layoutRoot->type = NT_ELEM;
 
         ZTabDockWidget* onlyWid = new ZTabDockWidget(this);
-        if (onlyView == PANEL_GL_VIEW)
+        if (onlyView == PANEL_GL_VIEW || onlyView == PANEL_OPTIX_VIEW)
             onlyWid->setCurrentWidget(onlyView);
 
         addDockWidget(Qt::TopDockWidgetArea, onlyWid);
@@ -895,6 +896,80 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     //viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
 }
 
+
+void ZenoMainWindow::optixRunClient(int port)
+{
+    optixClientSocket = std::make_unique<QTcpSocket>();
+    optixClientSocket->connectToHost(QHostAddress::LocalHost, port);
+    if (!optixClientSocket->waitForConnected(10000)) {
+        zeno::log_error("tcp optix client connection fail");
+        return;
+    }
+    else {
+        zeno::log_info("tcp optix client connection succeed");
+    }
+    int iSize = optixClientSocket->write(std::string("optixProcStart").data());
+	if (!optixClientSocket->waitForBytesWritten(50000))
+	{
+        zeno::log_error("tcp init optix client connection fail");
+        return;
+	}
+	if (iSize == -1)
+	{
+        zeno::log_error("tcp init optix client send fail");
+        return;
+	}
+    connect(optixClientSocket.get(), &QTcpSocket::readyRead, this, [=]() {
+        QByteArray arr = optixClientSocket->readAll();
+        qint64 redSize = arr.size();
+        if (redSize > 0) {
+            if (arr.count("init"))
+            {
+                QString cachedir = QString(arr).split("_")[1];
+                zeno::log_info("cachedir {} ", cachedir.toStdString());
+                initZenCache(cachedir.toStdString().data());
+                QSettings settings(zsCompanyName, zsEditor);
+                bool bEnableCache = settings.value("zencache-enable").toBool();
+                if (bEnableCache)
+                {
+                    viewDecodeSetFrameCache(cachedir.toStdString().c_str(), 1);
+                }
+                else
+                {
+                    viewDecodeSetFrameCache("", 0);
+                }
+                viewDecodeClear();
+                TIMELINE_INFO tlinfo;
+                QString timelineinfo = QString(arr).split("_")[2];
+                tlinfo.beginFrame = timelineinfo.split("-")[0].toInt();
+                tlinfo.endFrame = timelineinfo.split("-")[1].toInt();
+                tlinfo.currFrame = timelineinfo.split("-")[2].toInt();
+                tlinfo.bAlways = timelineinfo.split("-")[3].toInt();
+                resetTimeline(tlinfo);
+                zeno::log_info("optixClientSocket got {} bytes, cachedir: {} timelineinfo: {} (ping test has 19)", redSize, cachedir.toStdString(), timelineinfo.toStdString());
+            }
+            else if (arr.count("calcuProcFin"))
+            {
+                QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+                for (auto pDisplay : views)
+                {
+                    Zenovis* pZenovis = pDisplay->getZenoVis();
+                    ZASSERT_EXIT(pZenovis);
+                    auto session = pZenovis->getSession();
+                    ZASSERT_EXIT(session);
+                    session->set_curr_frameid(0);
+                }
+                viewDecodeFinish();
+                zeno::log_info("optixClientSocket got {} bytes(viewDecFin) (ping test has 19)", redSize);
+            }
+            else {
+                viewDecodeAppend(arr.data(), redSize);
+                zeno::log_info("optixClientSocket got {} bytes(viewDecode) (ping test has 19)", redSize);
+            }
+        }
+        });
+}
+
 void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
 {
 	auto& pGlobalComm = zeno::getSession().globalComm;
@@ -1161,6 +1236,14 @@ void ZenoMainWindow::killOptix()
     if (pWid)
     {
         pWid->killOptix();
+    }
+    if (optixClientSocket)
+    {
+        optixClientSocket->write(std::string("optixProcClose").data());
+        if (!optixClientSocket->waitForBytesWritten(50000))
+        {
+            zeno::log_error("tcp optix client close fail");
+        }
     }
 }
 

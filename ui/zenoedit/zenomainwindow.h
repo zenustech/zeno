@@ -9,6 +9,7 @@
 #include "common.h"
 #include "layout/winlayoutrw.h"
 #include "cache/zcachemgr.h"
+#include <QTcpSocket>
 
 
 struct ZENO_RECORD_RUN_INITPARAM {
@@ -179,6 +180,7 @@ public slots:
     void onLangChanged(bool bChecked);
     void solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
     void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
+    void optixRunClient(int port);
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
@@ -234,6 +236,7 @@ private:
     Ui::MainWindow* m_ui;
 
     std::shared_ptr<ZCacheMgr> m_spCacheMgr;
+    std::unique_ptr<QTcpSocket> optixClientSocket;
 };
 
 #endif
