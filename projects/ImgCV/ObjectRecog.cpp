@@ -1156,7 +1156,7 @@ struct ImageFeatureMatch : INode {
         auto image3 = std::make_shared<PrimitiveObject>();
         auto &ud3 = image3->userData();
         image3->verts.resize(w2 * h2);
-        image3->uvs.resize(zeno::max(image1->uvs.size(),image2->uvs.size()));
+        image3->uvs.resize(zeno::max(9,zeno::max(image1->uvs.size(),image2->uvs.size())));
         ud3.set2("h", h2);
         ud3.set2("w", w2);
         ud3.set2("isImage", 1);
@@ -1544,12 +1544,18 @@ Point2f pixel2cam ( const Point2d& p, const Mat& K )
         ( p.y - K.at<float>(1,2) ) / K.at<float>(1,1)
     );
 }
-
+Point2f cam2pixel(const Point2f& p, const Mat& K) {
+    return Point2f(
+        p.x * K.at<float>(0, 0) + K.at<float>(0, 2),
+        p.y * K.at<float>(1, 1) + K.at<float>(1, 2)
+    );
+}
 struct Image3DAnalyze : INode {
     void apply() override {
         auto image1 = get_input<PrimitiveObject>("image1");
         auto image2 = get_input<PrimitiveObject>("image2");
         auto visualize = get_input2<bool>("visualize");
+        auto visualize2 = get_input2<bool>("visualize2");
         auto &ud1 = image1->userData();
         int w1 = ud1.get2<int>("w");
         int h1 = ud1.get2<int>("h");
@@ -1560,7 +1566,7 @@ struct Image3DAnalyze : INode {
         auto image3 = std::make_shared<PrimitiveObject>();
         auto &ud3 = image3->userData();
         image3->verts.resize(w2 * h2);
-        image3->uvs.resize(zeno::max(image1->uvs.size(),image2->uvs.size()));
+        image3->uvs.resize(zeno::max(12,zeno::max(image1->uvs.size(),image2->uvs.size())));
         ud3.set2("h", h2);
         ud3.set2("w", w2);
 
@@ -1617,20 +1623,20 @@ struct Image3DAnalyze : INode {
         mp2 = image2->uvs.add_attr<vec3f>("image2MatchPoints");
         auto &mp1P2C = image3->uvs.add_attr<vec3f>("image1MatchPointsP2C");
         auto &mp2P2C = image3->uvs.add_attr<vec3f>("image2MatchPointsP2C");
-        image3->uvs.resize(image2->uvs.size());
+//        image3->uvs.resize(image2->uvs.size());
 
         for(size_t i = 0;i < image3->uvs.size();i++){
             cv::Point2f pt1(mp1[i][1], mp1[i][2]);
             image1Points.push_back(pt1);
             cv::Point2f pt1P2C = pixel2cam( pt1 , cameraMatrix);
             image1PointsP2C.push_back ( pt1P2C );
-            mp1P2C[i] = {pt1P2C.x,pt1P2C.y};
+            mp1P2C[i] = {mp1[i][0],pt1P2C.x,pt1P2C.y};
 
             cv::Point2f pt2(mp2[i][1], mp2[i][2]);
             image2Points.push_back(pt2);
             cv::Point2f pt2P2C = pixel2cam( pt2 , cameraMatrix);
             image2PointsP2C.push_back ( pt2P2C );
-            mp2P2C[i] = {pt2P2C.x,pt2P2C.y};
+            mp2P2C[i] = {mp2[i][0],pt2P2C.x,pt2P2C.y};
         }
         zeno::log_info("image1Points.size:{} image2Points.size:{}",image1Points.size(),image2Points.size());
 
@@ -1735,15 +1741,28 @@ struct Image3DAnalyze : INode {
         cv::Mat points4D = cv::Mat::ones(3, 4, CV_32F);
 
 // triangulatePoints method1
-        Mat T1 = (Mat_<float> (3,4) <<
-            1,0,0,0,
-            0,1,0,0,
-            0,0,1,0);
-        Mat T2 = (Mat_<float> (3,4) <<
-            erotation2.at<float>(0,0), erotation2.at<float>(0,1), erotation2.at<float>(0,2), etranslation2.at<float>(0,0),
-            erotation2.at<float>(1,0), erotation2.at<float>(1,1), erotation2.at<float>(1,2), etranslation2.at<float>(1,0),
-            erotation2.at<float>(2,0), erotation2.at<float>(2,1), erotation2.at<float>(2,2), etranslation2.at<float>(2,0)
+
+//        Mat T1 = (Mat_<float> (3,4) <<
+//            1,0,0,0,
+//            0,1,0,0,
+//            0,0,1,0);
+        cv::Mat T1 = (cv::Mat_<float> (3,4) <<
+                erotation1.at<float>(0,0), erotation1.at<float>(0,1), erotation1.at<float>(0,2), etranslation1.at<float>(0,0),
+                erotation1.at<float>(1,0), erotation1.at<float>(1,1), erotation1.at<float>(1,2), etranslation1.at<float>(1,0),
+                erotation1.at<float>(2,0), erotation1.at<float>(2,1), erotation1.at<float>(2,2), etranslation1.at<float>(2,0)
         );
+        cv::Mat T2 = (cv::Mat_<float> (3,4) <<
+                erotation2.at<float>(0,0), erotation2.at<float>(0,1), erotation2.at<float>(0,2), etranslation2.at<float>(0,0),
+                erotation2.at<float>(1,0), erotation2.at<float>(1,1), erotation2.at<float>(1,2), etranslation2.at<float>(1,0),
+                erotation2.at<float>(2,0), erotation2.at<float>(2,1), erotation2.at<float>(2,2), etranslation2.at<float>(2,0)
+        );
+        //相机内外参数整合为一个相机投影矩阵
+//        cv::Mat C1,C2;
+        cv::Mat C1 = cv::Mat::zeros(3, 4, CV_32FC1);
+        cv::Mat C2 = cv::Mat::zeros(3, 4, CV_32FC1);
+        cv::gemm(cameraMatrix,T1, 1.0, cv::Mat(), 0.0, C1);
+        cv::gemm(cameraMatrix,T2, 1.0, cv::Mat(), 0.0, C2);
+        zeno::log_info("C1.cols:{},C1.rows:{}",C1.cols,C1.rows);
         cv::triangulatePoints(T1,T2,points1Mat, points2Mat, points4D);
 
 // triangulatePoints method2
@@ -1762,6 +1781,8 @@ struct Image3DAnalyze : INode {
 //        }
         int numPoints = points4D.cols; // 获取点的数量
         image3->verts.resize(numPoints);
+        float maxdepth = 0;
+        float mindepth = 0;
         for (int i = 0; i < numPoints; i++) {
             cv::Vec4f point = points4D.col(i);
             float x = point(0);
@@ -1769,12 +1790,25 @@ struct Image3DAnalyze : INode {
             float z = point(2);
             float w = point(3);
             p4d[i] = {x,y,z,w};
-            p3d[i] = {x/w,y/w,z/w};
+            cv::Point2f pt(x/w,y/w);
+            cam2pixel(pt,cameraMatrix);
+            p3d[i] = {image2Points[i].x,image2Points[i].y,z/w};
+            maxdepth = zeno::max(maxdepth,z/w);
+            mindepth = zeno::min(mindepth,z/w);
             image3->verts[i] = p3d[i];
         }
         zeno::log_info("triangulatePoints");
 //        ud3.set2("isImage", 0);
-
+        if(visualize2){
+            ud3.set2("isImage", 1);
+            image3->verts.resize(0);
+            image3->verts.resize(w2 * h2);
+            for(size_t i = 0;i < image3->uvs.size();i++){
+                float var = (float)(p3d[i][2]/(maxdepth - mindepth));
+                int idx = (int)p3d[i][0] * w2 + (int)p3d[i][1];
+                image3->verts[idx] = {var,var,var};
+            }
+        }
         if(visualize){
             ud3.set2("isImage", 1);
             int h = h1;
@@ -1823,7 +1857,8 @@ ZENDEFNODE(Image3DAnalyze, {
     {
         { "image1" },
         { "image2" },
-        { "bool", "visualize", "1" },
+        { "bool", "visualize", "0" },
+        { "bool", "visualize2", "1" },
     },
     {
         { "image" },
