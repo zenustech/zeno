@@ -283,10 +283,11 @@ bool AppHelper::getCurveValue(QVariant& val)
     return false;
 }
 
-void AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
+bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
 {
     if (oldVal.canConvert<CURVES_DATA>())
     {
+        bool bUpdate = false;
         CURVES_DATA curves = oldVal.value<CURVES_DATA>();
         UI_VECTYPE datas;
         //vec
@@ -300,9 +301,9 @@ void AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
             datas << newValue.toFloat();
         }
         ZenoMainWindow* mainWin = zenoApp->getMainWindow();
-        ZASSERT_EXIT(mainWin);
+        ZASSERT_EXIT(mainWin, false);
         ZTimeline* timeline = mainWin->timeline();
-        ZASSERT_EXIT(timeline);
+        ZASSERT_EXIT(timeline, false);
         int nFrame = timeline->value();
         for (int i = 0; i < datas.size(); i++) {
             QString key = curve_util::getCurveKey(i);
@@ -310,9 +311,12 @@ void AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
             {
                 CURVE_DATA& curve = curves[key];
                 QPointF pos(nFrame, datas.at(i));
-                curve_util::updateCurve(pos, curve);
+                if (curve_util::updateCurve(pos, curve))
+                    bUpdate = true;
             }
         }
         newValue = QVariant::fromValue(curves);
+        return bUpdate;
     }
+    return true;
 }

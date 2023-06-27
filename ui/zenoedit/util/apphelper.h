@@ -23,7 +23,7 @@ public:
     static void modifyLightData(QPersistentModelIndex nodeIdx);
     static QVector<QString> getKeyFrameProperty(const QVariant &val);
     static bool getCurveValue(QVariant & val);
-    static void updateCurve(QVariant oldVal, QVariant& val);
+    static bool updateCurve(QVariant oldVal, QVariant& val);
 };
 
 

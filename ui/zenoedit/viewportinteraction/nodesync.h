@@ -79,9 +79,7 @@ class NodeSyncMgr {
                         bUpdate = true;
                 }
             }
-            if (bUpdate)
-                curve_util::updateRange(curves);
-            else
+            if (!bUpdate)
                 return false;
             value = QVariant::fromValue(curves);
         }
