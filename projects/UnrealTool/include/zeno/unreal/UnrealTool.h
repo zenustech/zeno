@@ -238,7 +238,7 @@ struct SubjectRegistry {
  * @param HeightData Height data
  * @return PrimitiveObject
  */
-std::shared_ptr<zeno::PrimitiveObject> ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField& InHeightData, int Nx = 0, int Ny = 0, float Scale = 250.f);
+std::shared_ptr<zeno::PrimitiveObject> ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField& InHeightData, int Nx = 0, int Ny = 0, std::array<float, 3> Scale = { 100.0f, 100.0f, 100.0f});
 
 struct MetaData : IObjectClone<MetaData> {
     std::map<std::string, std::string> Data;

@@ -187,7 +187,7 @@ class Packer {
         serialized_object.clear();
     }
 
-  private:
+  public:
     std::vector<uint8_t> serialized_object;
 
     template<class T>
@@ -547,7 +547,7 @@ class Unpacker {
 
     std::error_code ec{};
 
-  private:
+  public:
     const uint8_t *data_pointer;
     const uint8_t *data_end;
 

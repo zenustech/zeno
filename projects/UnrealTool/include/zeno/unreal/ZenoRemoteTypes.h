@@ -13,6 +13,9 @@
 #define CONSTEXPR
 #endif
 
+// Height data range is [-255.0, 255.0]
+// See UE LandscapeDataAccess.h.
+#define UE_LANDSCAPE_ZSCALE (1.0f / 128.0f)
 #define UE_LANDSCAPE_ZSCALE_INV 128.f
 
 namespace zeno::remote {
@@ -166,7 +169,9 @@ struct SubjectContainerList {
 struct HeightField : public ZenoSubject<ESubjectType::HeightField> {
     int32_t Nx = 0, Ny = 0;
     std::vector<std::vector<uint16_t>> Data;
-    float LandscapeScale = .0f;
+    float LandscapeScaleX = .0f;
+    float LandscapeScaleY = .0f;
+    float LandscapeScaleZ = .0f;
 
     HeightField() = default;
 
@@ -200,7 +205,7 @@ struct HeightField : public ZenoSubject<ESubjectType::HeightField> {
     template <class T>
     void pack(T& pack) {
         ZenoSubject::pack(pack);
-        pack(Nx, Ny, Data, LandscapeScale);
+        pack(Nx, Ny, Data, LandscapeScaleX, LandscapeScaleY, LandscapeScaleZ);
     }
 };
 

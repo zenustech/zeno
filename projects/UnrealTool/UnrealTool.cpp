@@ -30,47 +30,34 @@ std::string zeno::remote::RandomString(size_t Length) {
     return str;
 }
 std::shared_ptr<zeno::PrimitiveObject>
-zeno::remote::ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField &InHeightData, int Nx, int Ny, const float Scale) {
+zeno::remote::ConvertHeightDataToPrimitiveObject(const zeno::remote::HeightField &InHeightData, int Nx, int Ny, std::array<float,3> Scale) {
     std::shared_ptr<zeno::PrimitiveObject> Prim = std::make_shared<zeno::PrimitiveObject>();
     Nx = std::max(Nx, InHeightData.Nx);
     Ny = std::max(Ny, InHeightData.Ny);
-    float Dx = 1.f / std::max((float)Nx - 1.f, 1.f);
-    float Dy = 1.f / std::max((float)Ny - 1.f, 1.f);
-    vec3f ax {1, 0, 0};
-    vec3f ay {0, 0, 1};
-    vec3f o = -((ax + ay) / 2);
-    ax *= Dx; ay *= Dy;
-    ax *= Scale;
-    ay *= Scale;
-    Prim->resize(Nx * Ny);
 
-    auto &pos = Prim->add_attr<vec3f>("pos");
-#pragma omp parallel for collapse(2)
-    for (int32_t y = 0; y < Ny; y++)
-        for (int32_t x = 0; x < Nx; x++) {
-            vec3f p = o + x * ax + y * ay;
-            size_t i = x + y * Nx;
-            pos[i] = p;
+    const float centerX = (float)Nx * Scale[0] * 0.5f;
+    const float centerY = (float)Ny * Scale[1] * 0.5f;
+
+    Prim->verts.reserve(Nx * Ny);
+    for (int y = 0; y < Ny; y++) {
+        for (int x = 0; x < Nx; x++) {
+            Prim->verts.push_back({ (float)x * Scale[0] - centerX, 0.0f, (float)y * Scale[1] - centerY });
         }
-    Prim->tris.resize((Nx - 1) * (Ny - 1) * 2);
-#pragma omp parallel for collapse(2)
-    for (int32_t y = 0; y < Ny - 1; y++)
-        for (int32_t x = 0; x < Nx - 1; x++) {
-            int32_t index = y * (Nx - 1) + x;
-            Prim->tris[index * 2][2] = y * Nx + x;
-            Prim->tris[index * 2][1] = y * Nx + x + 1;
-            Prim->tris[index * 2][0] = (y + 1) * Nx + x + 1;
-            Prim->tris[index * 2 + 1][2] = (y + 1) * Nx + x + 1;
-            Prim->tris[index * 2 + 1][1] = (y + 1) * Nx + x;
-            Prim->tris[index * 2 + 1][0] = y * Nx + x;
+    }
+
+    Prim->tris.reserve((Nx - 1) * (Ny - 1) * 6);
+    for (int y = 0; y < Ny - 1; y++) {
+        for (int x = 0; x < Nx - 1; x++) {
+            Prim->tris.push_back({ y * Nx + x, y * Nx + x + 1, (y + 1) * Nx + x });
+            Prim->tris.push_back({ y * Nx + x + 1, (y + 1) * Nx + x + 1, (y + 1) * Nx + x });
         }
+    }
 
     auto& Arr = Prim->verts.add_attr<float>("height");
     size_t Idx = 0;
-    constexpr uint16_t uint16Max = std::numeric_limits<uint16_t>::max();
     for (const auto& Row : InHeightData.Data) {
         for (const uint16_t Height : Row) {
-            Arr[Idx] = ((float)Height - uint16Max / 2.f) / uint16Max * UE_LANDSCAPE_ZSCALE_INV;
+            Arr[Idx] = ((float)Height - 0x8000) * UE_LANDSCAPE_ZSCALE * Scale[2]; // ((float)Height - MidValue) * LANDSCAPE_ZSCALE
             Prim->verts[Idx] = { Prim->verts[Idx].at(0), Arr[Idx], Prim->verts[Idx].at(2) };
             Idx++;
         }
