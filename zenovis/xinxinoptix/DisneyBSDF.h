@@ -1739,7 +1739,8 @@ namespace DisneyBSDF{
         prd->fromDiff = false;
         if(r3<p1) // diffuse + sss
         {
-          prd->first_hit_type = prd->depth==0?DIFFUSE_HIT:prd->first_hit_type;
+          auto first_hit_type = prd->first_hit_type;
+          prd->first_hit_type = prd->depth==0?DIFFUSE_HIT:first_hit_type;
           if(wo.z<0 && subsurface>0)//inside, scattering, go out for sure
           {
             wi = BRDFBasics::UniformSampleHemisphere(rnd(seed), rnd(seed));
@@ -1820,7 +1821,8 @@ namespace DisneyBSDF{
         }
         else if(r3<p3)//specular
         {
-            prd->first_hit_type = prd->depth==0?SPECULAR_HIT:prd->first_hit_type;
+            auto first_hit_type = prd->first_hit_type;
+            prd->first_hit_type = prd->depth==0?SPECULAR_HIT:first_hit_type;
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(roughness,anisotropic,ax,ay);
 
@@ -1877,10 +1879,12 @@ namespace DisneyBSDF{
             wi = normalize(wi - 1.01f * dot(wi, N2) * N2);
           }
           auto isReflection =  dot(wi, N2) * dot(wo, N2)>0?1:0;
-          prd->first_hit_type = prd->depth==0? (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT):prd->first_hit_type;
+          auto first_hit_type = prd->first_hit_type;
+          prd->first_hit_type = prd->depth==0? (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT):first_hit_type;
         }else if(r3<p5)//cc
         {
-            prd->first_hit_type = prd->depth==0?SPECULAR_HIT:prd->first_hit_type;
+            auto first_hit_type = prd->first_hit_type;
+            prd->first_hit_type = prd->depth==0?SPECULAR_HIT:first_hit_type;
             vec3 wm = BRDFBasics::SampleGTR1(ccRough, r1, r2);
 
             if (wm.z < 0.0)

@@ -150,9 +150,7 @@ extern "C" __global__ void __raygen__rg()
         // prd.ss_alpha = vec3(0.0f);
         // prd.sigma_t = vec3(0.0f);
 
-        result_d = make_float3(0,0,0);
-        result_s = make_float3(0,0,0);
-        result_t = make_float3(0,0,0);
+
 
         //if constexpr(params.denoise) 
         if (params.denoise) 
@@ -172,6 +170,9 @@ extern "C" __global__ void __raygen__rg()
 
         for(;;)
         {
+            prd.radiance_d = make_float3(0);
+            prd.radiance_s = make_float3(0);
+            prd.radiance_t = make_float3(0);
             tmin = prd.trace_tmin;
             prd.trace_tmin = 0;
 
@@ -193,11 +194,11 @@ extern "C" __global__ void __raygen__rg()
                 }
                 if(prd.depth>1 || (prd.depth==1 && prd.hitEnv == true)) {
                   result_d +=
-                      prd.first_hit_type == 1 ? result : make_float3(0, 0, 0);
+                      prd.first_hit_type == 1 ? clampped : make_float3(0, 0, 0);
                   result_s +=
-                      prd.first_hit_type == 2 ? result : make_float3(0, 0, 0);
+                      prd.first_hit_type == 2 ? clampped : make_float3(0, 0, 0);
                   result_t +=
-                      prd.first_hit_type == 3 ? result : make_float3(0, 0, 0);
+                      prd.first_hit_type == 3 ? clampped : make_float3(0, 0, 0);
                 }
 
                 // fire without smoke requires this line to work.
@@ -236,9 +237,9 @@ extern "C" __global__ void __raygen__rg()
             ray_origin    = prd.origin;
             ray_direction = prd.direction;
             
-            result_d = make_float3(0,0,0);
-            result_s = make_float3(0,0,0);
-            result_t = make_float3(0,0,0);
+//            result_d = make_float3(0,0,0);
+//            result_s = make_float3(0,0,0);
+//            result_t = make_float3(0,0,0);
 
             traceRadianceMasked(params.handle, ray_origin, ray_direction, tmin, prd.maxDistance, ray_mask, &prd);
         }
