@@ -399,6 +399,42 @@ ZENDEFNODE(ReadImageFile, {
     {"comp"},
 });
 
+template<typename T>
+void image_flip_vertical(T *v, int w, int h) {
+    for (auto j = 0; j < h / 2; j++) {
+        for (auto i = 0; i < w; i++) {
+            auto index1 = i + j * w;
+            auto index2 = i + (h - j - 1) * w;
+            std::swap(v[index1], v[index2]);
+        }
+    }
+}
+
+struct ImageFlipVertical : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        image_flip_vertical(image->verts.data(), w, h);
+        if (image->verts.has_attr("alpha")) {
+            auto alpha = image->verts.attr<float>("alpha");
+            image_flip_vertical(alpha.data(), w, h);
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageFlipVertical, {
+    {
+        {"image"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
 void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
     std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
     std::vector<char> data(header.size() + w * h * sizeof(vec3f));
