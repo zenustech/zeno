@@ -554,66 +554,67 @@ ZENDEFNODE(WriteImageFile, {
     {"comp"},
 });
 
+std::vector<zeno::vec3f> float_gaussian_blur(const vec3f *data, int w, int h) {
+    float weight[5] = {0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f};
+    std::vector<zeno::vec3f> img_pass(w * h);
+
+    #pragma omp parallel for
+    for (auto j = 0; j < h; j++) {
+        for (auto i = 0; i < w; i++) {
+            vec3f sum = {};
+            int index = i + w * j;
+            for (auto k = 0; k < 5; k++) {
+                if (k == 0) {
+                    sum += data[index] * weight[k];
+                }
+                else {
+                    int index_r = (i + k + w) % w + w * j;
+                    sum += data[index_r] * weight[k];
+                    int index_l = (i - k + w) % w + w * j;
+                    sum += data[index_l] * weight[k];
+                }
+            }
+            img_pass[index] = sum;
+        }
+    }
+
+    std::vector<zeno::vec3f> img_out(w * h);
+
+    #pragma omp parallel for
+    for (auto j = 0; j < h; j++) {
+        for (auto i = 0; i < w; i++) {
+            vec3f sum = {};
+            int index = i + w * j;
+            for (auto k = 0; k < 5; k++) {
+                if (k == 0) {
+                    sum += img_pass[index] * weight[k];
+                }
+                else {
+                    int index_t = i + w * ((j + k + h) % h);
+                    sum += img_pass[index_t] * weight[k];
+                    int index_b = i + w * ((j - k + h) % h);
+                    sum += img_pass[index_b] * weight[k];
+                }
+            }
+            img_out[index] = sum;
+        }
+    }
+    return img_out;
+}
+
 struct ImageFloatGaussianBlur : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        float weight[5] = {0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f};
-        auto img_pass = std::make_shared<PrimitiveObject>();
-        img_pass->resize(w * h);
-        img_pass->userData().set2("w", w);
-        img_pass->userData().set2("h", h);
-        img_pass->userData().set2("isImage", 1);
-
-        #pragma omp parallel for
-        for (auto j = 0; j < h; j++) {
-            for (auto i = 0; i < w; i++) {
-                vec3f sum = {};
-                int index = i + w * j;
-                for (auto k = 0; k < 3; k++) {
-                    if (k == 0) {
-                        sum += image->verts[index] * weight[k];
-                    }
-                    else {
-                        int index_r = (i + k + w) % w + w * j;
-                        sum += image->verts[index_r] * weight[k];
-                        int index_l = (i - k + w) % w + w * j;
-                        sum += image->verts[index_l] * weight[k];
-                    }
-
-                }
-                img_pass->verts[index] = sum;
-            }
-        }
 
         auto img_out = std::make_shared<PrimitiveObject>();
         img_out->resize(w * h);
         img_out->userData().set2("w", w);
         img_out->userData().set2("h", h);
         img_out->userData().set2("isImage", 1);
-
-        #pragma omp parallel for
-        for (auto j = 0; j < h; j++) {
-            for (auto i = 0; i < w; i++) {
-                vec3f sum = {};
-                int index = i + w * j;
-                for (auto k = 0; k < 3; k++) {
-                    if (k == 0) {
-                        sum += img_pass->verts[index] * weight[k];
-                    }
-                    else {
-                        int index_t = i + w * ((j + k + h) % h);
-                        sum += img_pass->verts[index_t] * weight[k];
-                        int index_b = i + w * ((j - k + h) % h);
-                        sum += img_pass->verts[index_b] * weight[k];
-                    }
-
-                }
-                img_out->verts[index] = sum;
-            }
-        }
+        img_out->verts.values = float_gaussian_blur(image->verts.data(), w, h);
 
         set_output("image", img_out);
     }
