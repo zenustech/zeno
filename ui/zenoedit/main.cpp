@@ -121,6 +121,10 @@ int main(int argc, char *argv[])
     // the lifecycle of cefContext must be the same as QApplication instance
     QCefContext cefContext(&a, argc, argv, &config);
 
+    QDir dir = QCoreApplication::applicationDirPath();
+    QString webResourceDir = QDir::toNativeSeparators(dir.filePath("webres"));
+    cefContext.addLocalFolderResource(webResourceDir, "http://zeno/");
+
 	ZenoMainWindow mainWindow;
 	mainWindow.showMaximized();
 	return a.exec();

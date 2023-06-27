@@ -227,7 +227,8 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
             //QString url = "https://nme.babylonjs.com/";
             //QString url = "https://jerosoler.github.io/Drawflow/";
             //QString url = "https://codesandbox.io/s/baklavajs-example-jyc6f?file=/src/App.vue";
-            QString url = "file:///C:/Users/Ada51/Desktop/drawflow-vue3(1)/drawflow-vue3/dist/index.html";
+            //QString url = "http://localhost:8080/";
+            QString url = "http://zeno/nodeeditor/index.html";
             ZCefNodesEditor *wid = new ZCefNodesEditor(url, nullptr, this);
             return wid;
         }

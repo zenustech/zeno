@@ -68,3 +68,12 @@ endif()
 if (ZENO_INSTALL_TARGET)
     install(TARGETS zenoedit EXPORT ZenoTargets)
 endif()
+
+add_custom_command(TARGET zenoedit
+    POST_BUILD
+
+    # Copy the webres directory to output folder
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/res/webres
+    ${ZENO_OUTPUT_DIR}/webres
+)
