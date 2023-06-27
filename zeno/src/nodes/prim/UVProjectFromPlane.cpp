@@ -329,13 +329,13 @@ std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
     }
     nx = std::max(nx, 1);
     ny = std::max(ny, 1);
-//    for (auto i = 0; i < ny / 2; i++) {
-//        for (auto x = 0; x < nx * 4; x++) {
-//            auto index1 = i * (nx * 4) + x;
-//            auto index2 = (ny - 1 - i) * (nx * 4) + x;
-//            std::swap(rgba[index1], rgba[index2]);
-//        }
-//    }
+    for (auto i = 0; i < ny / 2; i++) {
+        for (auto x = 0; x < nx * 4; x++) {
+            auto index1 = i * (nx * 4) + x;
+            auto index2 = (ny - 1 - i) * (nx * 4) + x;
+            std::swap(rgba[index1], rgba[index2]);
+        }
+    }
 
     auto img = std::make_shared<PrimitiveObject>();
     img->verts.resize(nx * ny);
@@ -526,6 +526,13 @@ struct WriteImageFile : INode {
                 data2[n * i + 1] = image->verts[i][1];
                 data2[n * i + 2] = image->verts[i][2];
                 data2[n * i + 3] = alpha[i];
+            }
+            for (auto i = 0; i < h / 2; i++) {
+                for (auto x = 0; x < w * 4; x++) {
+                    auto index1 = i * (w * 4) + x;
+                    auto index2 = (h - 1 - i) * (w * 4) + x;
+                    std::swap(data2[index1], data2[index2]);
+                }
             }
 
             // Create EXR header
