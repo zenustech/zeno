@@ -1008,7 +1008,11 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
     auto cbUpdateSocketDefl = [=](QVariant newValue) {
         if (bFloat)
         {
-            AppHelper::updateCurve(paramIdx.data(ROLE_PARAM_VALUE), newValue);
+            if (!AppHelper::updateCurve(paramIdx.data(ROLE_PARAM_VALUE), newValue))
+            {
+                onViewParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
+                return;
+            }
         }
         AppHelper::socketEditFinished(newValue, m_index, perIdx);
     };

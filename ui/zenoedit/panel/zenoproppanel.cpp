@@ -336,7 +336,11 @@ bool ZenoPropPanel::syncAddControl(ZExpandableSection* pGroupWidget, QGridLayout
     cbSet.cbEditFinished = [=](QVariant newValue) {
         if (bFloat)
         {
-            AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue);
+            if (!AppHelper::updateCurve(paramItem->data(ROLE_PARAM_VALUE), newValue))
+            {
+                onViewParamDataChanged(perIdx, perIdx, QVector<int>() << ROLE_PARAM_VALUE);
+                return;
+            }
         }
         AppHelper::socketEditFinished(newValue, m_idx, perIdx);
     };
@@ -823,7 +827,6 @@ void ZenoPropPanel::getDelfCurveData(CURVE_DATA &curve, float y, bool visible, c
     ZASSERT_EXIT(timeline);
     QPair<int, int> fromTo = timeline->fromTo();
     rg.xFrom = fromTo.first;
-    rg.yFrom = 0;
     rg.xTo = fromTo.second;
     if (curve.points.isEmpty()) {
         curve.key = key;
