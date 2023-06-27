@@ -880,8 +880,6 @@ extern "C" __global__ void __closesthit__radiance()
         prd->diffDepth++;
     }
     
-
-
     prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
@@ -898,13 +896,15 @@ extern "C" __global__ void __closesthit__radiance()
         if (prd->curMatIdx > 0) {
             vec3 sigma_t, ss_alpha;
             prd->readMat(sigma_t, ss_alpha);
+            
+            float3 trans;
             if (ss_alpha.x<0.0f) { // is inside Glass
-                prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-                prd->attenuation2 *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+                trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
             } else {
-                prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-                prd->attenuation2 *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+                trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
             }
+            prd->attenuation *= trans;
+            prd->attenuation2 *= trans;
         }else {
             prd->attenuation *= 1;
         }
@@ -914,8 +914,7 @@ extern "C" __global__ void __closesthit__radiance()
         //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         if(istransmission || flag == DisneyBSDF::diracEvent) {
             if(prd->next_ray_is_going_inside){
-                if(thin < 0.5f && mats.doubleSide < 0.5f ) 
-                {
+
                     outToIn = true;
                     inToOut = false;
 
@@ -933,7 +932,8 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, prd->sigma_t, prd->sigma_t, channelPDF) : 1e16f;
+                        // prd->sigma_t is only pre-calculated for SSS branch, so it's garbage value here, use extinction value instead
+                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, extinction, extinction, channelPDF) : 1e16f;
                         prd->pushMat(extinction, vec3(-1.0f), mats.vol_anisotropy);
 
                     } else {
@@ -946,16 +946,15 @@ extern "C" __global__ void __closesthit__radiance()
                         //prd->maxDistance = max(prd->maxDistance, 10/min_sg);
                         //printf("maxdist:%f\n",prd->maxDistance);
                         prd->channelPDF = channelPDF;
-                        // already calculated in BxDF
+                        // prd->sigma_t and prd->ss_alpha should be pre-calculated in BxDF for this SSS branch
                         prd->pushMat(prd->sigma_t, prd->ss_alpha, mats.vol_anisotropy);
                     }
 
                     prd->scatterDistance = scatterDistance;
                     prd->scatterStep = scatterStep;
-                }
-                
-            }
-            else{
+            } 
+            else {
+
                 outToIn = false;
                 inToOut = true;
 
@@ -985,15 +984,10 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->isSS = true;
                     prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                 }
-                else if (ss_alpha.x < 0.0f)
+                else
                 {
                     prd->isSS = false;
                     prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, prd->channelPDF) : 1e16f;
-                }
-                else 
-                {
-                    prd->isSS = false;
-                    prd->maxDistance = 1e16f;
                 }
             }
         }else{

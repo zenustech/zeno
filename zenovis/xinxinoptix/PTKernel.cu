@@ -135,6 +135,7 @@ extern "C" __global__ void __raygen__rg()
         prd.direction = ray_direction;
         prd.curMatIdx = 0;
         prd.test_distance = false;
+        prd.sigma_t_queue[0] = vec3(0.0f);
         prd.ss_alpha_queue[0] = vec3(-1.0f);
         prd.minSpecRough = 0.01;
         prd.samplePdf = 1.0f;
@@ -363,17 +364,15 @@ extern "C" __global__ void __miss__radiance()
     prd->channelPDF = channelPDF;
     if (ss_alpha.x < 0.0f) { // is inside Glass
         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF);
+        prd->isSS = false;
     } 
-    else if (ss_alpha.x > 0.0f)
+    else
     {
         prd->maxDistance =
             DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, channelPDF);
         prd->channelPDF = channelPDF;
+        prd->isSS = true;
     } 
-    else 
-    {
-        prd->maxDistance = 1e16f;
-    }
 
     prd->depth++;
 
