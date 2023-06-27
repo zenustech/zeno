@@ -69,7 +69,7 @@ std::set<std::string> uniqueMatsForMesh();
 std::set<std::string> uniqueMatsForSphere();
 
 void optixcleanup();
-void optixrender(int fbo = 0, int samples = 1, bool simpleRender = false);
+void optixrender(int fbo = 0, int samples = 1, bool denoise = false, bool simpleRender = false);
 void *optixgetimg(int &w, int &h);
 void optixinit(int argc, char* argv[]);
 void optixupdatebegin();
