@@ -135,7 +135,7 @@ void writeObjFile(
         float v1 = std::floor((float)i / (float)vatWidth) / (float)vatHeight;
         float v2 = std::floor(float(i + vatWidth) / (float)vatWidth) / (float)vatHeight;
         vatUvMap.emplace_back((u1 + u2) * 0.5f, std::min((v1 + v2) * 0.5f, 1.0f));
-        fprintf(fp, "vn %f %f %f\n", vatUvMap[i].first, vatUvMap[i].second, 0.0f);
+        fprintf(fp, "vn %.10f %.10f %.10f\n", vatUvMap[i].first, vatUvMap[i].second, 0.0f);
     }
 
     auto& uv0 = triangle.attr<zeno::vec3f>("uv0");
@@ -147,9 +147,9 @@ void writeObjFile(
         const int32_t v0 = ind[0], v1 = ind[1], v2 = ind[2];
         const int32_t ui0 = count * 3 + 1, ui1 = count * 3 + 2, ui2 = count * 3 + 3;
 
-        fprintf(fp, "vt %f %f\n", uv0[count][0], uv0[count][1]);
-        fprintf(fp, "vt %f %f\n", uv1[count][0], uv1[count][1]);
-        fprintf(fp, "vt %f %f\n", uv2[count][0], uv2[count][1]);
+        fprintf(fp, "vt %.10f %.10f\n", uv0[count][0], uv0[count][1]);
+        fprintf(fp, "vt %.10f %.10f\n", uv1[count][0], uv1[count][1]);
+        fprintf(fp, "vt %.10f %.10f\n", uv2[count][0], uv2[count][1]);
         fprintf(fp, "f %d/%d/%d %d/%d/%d %d/%d/%d\n",
             v0 + 1, ui0, v0 + 1,
             v1 + 1, ui1, v1 + 1,
@@ -340,7 +340,7 @@ void writeDynamicRemeshObjFile(
       float v2 = std::floor(float(vertId + vatWidth) / (float)vatWidth) / (float)vatHeight;
       float v = std::min((v1 + v2) * 0.5f, 1.0f);
 
-      fprintf(fp, "vt %f %f\n", u, v);
+      fprintf(fp, "vt %.10f %.10f\n", u, v);
     };
 
     outputUV(idxBase - 1);
