@@ -137,15 +137,30 @@ namespace JsonHelper
         QVariant::Type varType = value.type();
         if (varType == QVariant::Double)
         {
-            writer.Double(value.toDouble());
+            bool ok = true;
+            double val = value.toDouble(&ok);
+            if (ok)
+                writer.Double(val);
+            else
+                writer.Null();
         }
         else if (varType == QMetaType::Float)
         {
-            writer.Double(value.toFloat());
+            bool ok = true;
+            double val = value.toFloat(&ok);
+            if (ok)
+                writer.Double(val);
+            else
+                writer.Null();
         }
         else if (varType == QVariant::Int)
         {
-            writer.Int(value.toInt());
+            bool ok = true;
+            double val = value.toInt(&ok);
+            if (ok)
+                writer.Int(val);
+            else
+                writer.Null();
         }
         else if (varType == QVariant::String)
         {
