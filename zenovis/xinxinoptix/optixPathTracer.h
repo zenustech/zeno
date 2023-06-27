@@ -108,11 +108,15 @@ struct Params
     float elapsedTime;
     bool simpleRender;
 
+
 #if defined (__cudacc__)
     const bool denoise;
 #else
     bool denoise;
 #endif
+
+    bool show_background;
+
 };
 
 

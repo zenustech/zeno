@@ -579,6 +579,10 @@ struct GraphicsManager {
             }
         }
 
+        auto &ud = zeno::getSession().userData();
+        bool show_background = ud.get2<bool>("optix_show_background", false);
+        xinxinoptix::show_background(show_background);
+
         return changelight;
     }
     bool load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
