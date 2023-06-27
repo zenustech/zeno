@@ -204,7 +204,13 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         bool bValid = UiHelper::validateVariant(deflVal, sockType);
         if (!bValid)
             deflVal = QVariant();
-        AddVariant(deflVal, sockType, writer);
+
+        bool bOK = AddVariant(deflVal, sockType, writer);
+        if (!bOK)
+        {
+            zeno::log_error(QString("write default-value error. nodeId : %1, socket : %2").arg(socket.nodeid, socket.name));
+            ZASSERT_EXIT(bOK);
+        }
 
         writer.Key("control");
         JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);

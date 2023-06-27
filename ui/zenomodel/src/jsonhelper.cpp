@@ -132,35 +132,20 @@ namespace JsonHelper
         }
     }
 
-    void AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer)
+    bool AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer)
     {
         QVariant::Type varType = value.type();
         if (varType == QVariant::Double)
         {
-            bool ok = true;
-            double val = value.toDouble(&ok);
-            if (ok)
-                writer.Double(val);
-            else
-                writer.Null();
+            return writer.Double(value.toDouble());
         }
         else if (varType == QMetaType::Float)
         {
-            bool ok = true;
-            double val = value.toFloat(&ok);
-            if (ok)
-                writer.Double(val);
-            else
-                writer.Null();
+            return writer.Double(value.toFloat());
         }
         else if (varType == QVariant::Int)
         {
-            bool ok = true;
-            double val = value.toInt(&ok);
-            if (ok)
-                writer.Int(val);
-            else
-                writer.Null();
+            return writer.Int(value.toInt());
         }
         else if (varType == QVariant::String)
         {
@@ -213,7 +198,7 @@ namespace JsonHelper
                     }
                     writer.EndObject();
                 } else {
-                    ZASSERT_EXIT(false);
+                    ZASSERT_EXIT(false, true);
                     writer.Null();
                 }
             }
@@ -250,6 +235,7 @@ namespace JsonHelper
         else {
             writer.Null();
         }
+        return true;
     }
 
     void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer)
