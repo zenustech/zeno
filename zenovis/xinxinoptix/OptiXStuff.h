@@ -26,6 +26,7 @@
 #include "raiicuda.h"
 #include "zeno/types/TextureObject.h"
 #include "zeno/utils/string.h"
+#include "zeno/utils/image_proc.h"
 #include "tinyexr.h"
 #include <filesystem>
 
@@ -575,6 +576,7 @@ inline std::vector<float> IES2HDR(const std::string& path)
 }
 #include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
+inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex_blur;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
 inline std::optional<std::string> sky_tex;
 inline std::map<std::string, int> sky_nx_map;
@@ -587,6 +589,25 @@ inline std::map<std::string, std::vector<int>>   sky_start_map;
 
 template<typename T>
 inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
+    std::vector<zeno::vec3f> origin(nx * ny);
+    for (auto i = 0; i < nx * ny; i++) {
+        if constexpr (std::is_same_v<T, float>) {
+            origin[i] = {
+                    img[i * nc + 0],
+                    img[i * nc + 1],
+                    img[i * nc + 2],
+            };
+        }
+        else {
+            origin[i] = {
+                float(img[i * nc + 0])/ 255.0f,
+                float(img[i * nc + 1])/ 255.0f,
+                float(img[i * nc + 2])/ 255.0f,
+            };
+        }
+    }
+    auto blur = zeno::float_gaussian_blur(origin.data(), nx, ny);
+    g_tex_blur[sky_tex.value()] = makeCudaTexture((float *)blur.data(), nx, ny, 3);
     auto &sky_nx = sky_nx_map[sky_tex.value()];
     auto &sky_ny = sky_ny_map[sky_tex.value()];
     auto &sky_cdf = sky_cdf_map[sky_tex.value()];
