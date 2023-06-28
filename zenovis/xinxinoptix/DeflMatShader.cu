@@ -640,6 +640,19 @@ extern "C" __global__ void __closesthit__radiance()
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
     }
 
+    if (prd->trace_denoise_albedo) {
+
+        if(0.0f == mats.roughness) {
+            prd->tmp_albedo = make_float3(1.0f);
+        } else {
+            prd->tmp_albedo = mats.basecolor;
+        }
+    }
+
+    if (prd->trace_denoise_normal) {
+        prd->tmp_normal = N;
+    }
+
     /* MODME */
     auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
@@ -1161,6 +1174,7 @@ extern "C" __global__ void __closesthit__radiance()
         int hasenv = params.skynx * params.skyny;
         hasenv = params.usingHdrSky? hasenv : 0;
         float envpdf = 1;
+        float3 illum = make_float3(0,0,0);
         vec3 sunLightDir = hasenv? ImportanceSampleEnv(params.skycdf, params.sky_start,
                                                         params.skynx, params.skyny, p, envpdf)
                                   : vec3(params.sunLightDirX, params.sunLightDirY, params.sunLightDirZ);
@@ -1168,7 +1182,7 @@ extern "C" __global__ void __closesthit__radiance()
                                                    params.sunSoftness * 0.0f); //perturb the sun to have some softness
         sun_dir = hasenv ? normalize(sunLightDir):normalize(sun_dir);
         float tmpPdf;
-        float3 illum = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+        illum = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                      40, // be careful
                                      .45, 15., 1.030725f * 0.3f, params.elapsedTime, tmpPdf));
 

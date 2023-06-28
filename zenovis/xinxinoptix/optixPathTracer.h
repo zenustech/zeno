@@ -48,7 +48,6 @@ struct CameraInfo
     float aperture;
 };
 
-
 struct Params
 {
     unsigned int subframe_index;
@@ -62,6 +61,10 @@ struct Params
     uchar4*      frame_buffer_S;
     uchar4*      frame_buffer_T;
     uchar4*      frame_buffer_B;
+
+    float3*      albedo_buffer;
+    float3*      normal_buffer;
+
     unsigned int width;
     unsigned int height;
     unsigned int samples_per_launch;
@@ -104,6 +107,16 @@ struct Params
     float sunSoftness;
     float elapsedTime;
     bool simpleRender;
+
+
+#if defined (__cudacc__)
+    const bool denoise;
+#else
+    bool denoise;
+#endif
+
+    bool show_background;
+
 };
 
 
