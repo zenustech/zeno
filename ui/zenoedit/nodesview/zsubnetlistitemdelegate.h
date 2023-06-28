@@ -33,7 +33,7 @@ public:
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 signals:
-    void mergeSignal(IGraphsModel *pModel, const QModelIndex subgIdx);
+    void subgrahSyncSignal(const QModelIndex subgIdx);
 
 protected:
     void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override;

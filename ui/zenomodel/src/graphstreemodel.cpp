@@ -494,7 +494,7 @@ bool GraphsTreeModel::setCustomName(const QModelIndex &subgIdx, const QModelInde
     return m_impl->setCustomName(subgIdx, idx, value);
 }
 
-void GraphsTreeModel::onMerge(IGraphsModel *pModel, const QModelIndex subgIdx) {
+void GraphsTreeModel::onSubgrahSync(const QModelIndex& subgIdx) {
     ZASSERT_EXIT(m_impl);
-    m_impl->onMerge(pModel, subgIdx);
+    m_impl->onSubgrahSync(subgIdx);
 }

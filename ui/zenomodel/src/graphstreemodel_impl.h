@@ -87,7 +87,7 @@ public:
     void renameSubGraph(const QString &oldName, const QString &newName);
     void appendSubGraphNode(TreeNodeItem *pSubgraph);
     void removeSubGraphNode(TreeNodeItem *pSubgraph);
-    void onMerge(IGraphsModel *pModel, const QModelIndex subgIdx);
+    void onSubgrahSync(const QModelIndex& subgIdx);
     QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links,
         const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false);
 

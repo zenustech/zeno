@@ -114,7 +114,7 @@ public:
     QVariant data(const QModelIndex &, int) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QAbstractItemModel *implModel();
-    void onMerge(IGraphsModel *pModel, const QModelIndex subgIdx) override;
+    void onSubgrahSync(const QModelIndex& subgIdx) override;
 
 public:
     QModelIndex mainIndex() const;

@@ -136,7 +136,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             QAction* pPasteSubnet = new QAction(tr("Paste subnet"));
             QAction* pRename = new QAction(tr("Rename"));
             QAction* pDelete = new QAction(tr("Delete"));
-            QAction* pMerge = new QAction(tr("Merge"));
+            QAction* pMerge = new QAction(tr("Subgrah Sync"));
 
             if (m_selectedIndexs.size() > 1) 
             {
@@ -150,7 +150,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
                 onRename(index);
             });
             connect(pMerge, &QAction::triggered, this, [=]() {
-                emit mergeSignal(m_model, index);
+                emit subgrahSyncSignal(index);
             });
 
             menu->addAction(pCopySubnet);

@@ -108,7 +108,7 @@ public:
 	//temp:
     virtual QAbstractItemModel *implModel() = 0;
 
-    virtual void onMerge(IGraphsModel *pModel, const QModelIndex subgIdx) = 0;
+    virtual void onSubgrahSync(const QModelIndex& subgIdx) = 0;
 
 
 signals:

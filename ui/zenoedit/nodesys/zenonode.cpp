@@ -1264,6 +1264,14 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
             dlg.exec();
         });
 
+        QAction* saveSubgrah = new QAction(tr("Subgrah Sync"));
+        nodeMenu->addAction(saveSubgrah);
+        connect(saveSubgrah, &QAction::triggered, this, [=]() {
+            IGraphsModel* pSubgModel = zenoApp->graphsManagment()->sharedSubgraphs();
+            ZASSERT_EXIT(pSubgModel);
+            pSubgModel->onSubgrahSync(m_index);
+        });
+
         nodeMenu->exec(QCursor::pos());
         nodeMenu->deleteLater();
     }

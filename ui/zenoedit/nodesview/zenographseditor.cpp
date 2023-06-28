@@ -154,7 +154,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgr
     connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
 
     ZSubnetListItemDelegate *delegate = new ZSubnetListItemDelegate(m_pSubgraphs, this);
-    connect(delegate, &ZSubnetListItemDelegate::mergeSignal, m_pNodeModel, &IGraphsModel::onMerge);
+    connect(delegate, &ZSubnetListItemDelegate::subgrahSyncSignal, m_pNodeModel, &IGraphsModel::onSubgrahSync);
     m_ui->subnetList->setItemDelegate(delegate);
     connect(m_ui->subnetList->selectionModel(), &QItemSelectionModel::selectionChanged, this, [=]() {
         QModelIndexList lst = m_ui->subnetList->selectionModel()->selectedIndexes();

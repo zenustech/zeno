@@ -1804,3 +1804,79 @@ void GraphsModel::setNodeData(const QModelIndex &nodeIndex, const QModelIndex &s
     ZASSERT_EXIT(pModel);
     pModel->setData(nodeIndex, value, role);
 }
+
+void GraphsModel::onSubgrahSync(const QModelIndex& subgIdx)
+{
+    IGraphsModel* pModel = UiHelper::getGraphsBySubg(subgIdx);
+    ZASSERT_EXIT(pModel);
+    updateSubgrahs(subgIdx);
+    pModel->onSubgrahSync(subgIdx);
+}
+
+void GraphsModel::updateSubgrahs(const QModelIndex& subgIdx)
+{
+    QString nodeCls = subgIdx.data(ROLE_OBJNAME).toString();
+    SubGraphModel* pSubgModel = subGraph(nodeCls);
+    if (pSubgModel) {
+        //delete old child items
+        while (pSubgModel->rowCount() > 0)
+        {
+            QModelIndex index = pSubgModel->index(0, 0);
+            QString ident = index.data(ROLE_OBJID).toString();
+            removeNode(ident, this->index(nodeCls), true);
+        }
+        //import nodes
+        NODE_DATA node = subgIdx.data(ROLE_OBJDATA).value<NODE_DATA>();
+        LINKS_DATA oldLinks;
+        if (IGraphsModel* pModel = UiHelper::getGraphsBySubg(subgIdx))
+        {
+            for (int i = 0; i < pModel->itemCount(subgIdx); i++)
+            {
+                const QModelIndex& childIdx = pModel->index(i, subgIdx);
+                if (childIdx.isValid())
+                {
+                    if (pModel->IsSubGraphNode(childIdx))
+                    {
+                        onSubgrahSync(childIdx);
+                    }
+                    NodeParamModel* viewParams = QVariantPtr<NodeParamModel>::asPtr(childIdx.data(ROLE_NODE_PARAMS));
+                    const QModelIndexList& lst = viewParams->getInputIndice();
+                    for (int r = 0; r < lst.size(); r++)
+                    {
+                        const QModelIndex& paramIdx = lst[r];
+                        const QString& inSock = paramIdx.data(ROLE_PARAM_NAME).toString();
+                        const int inSockProp = paramIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+                        PARAM_LINKS links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        if (!links.isEmpty())
+                        {
+                            for (auto linkIdx : links)
+                            {
+                                oldLinks.append(UiHelper::exportLink(linkIdx));
+                            }
+                        }
+                        else if (inSockProp & SOCKPROP_DICTLIST_PANEL)
+                        {
+                            QAbstractItemModel* pKeyObjModel =
+                                QVariantPtr<QAbstractItemModel>::asPtr(paramIdx.data(ROLE_VPARAM_LINK_MODEL));
+                            for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                            {
+                                const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                                ZASSERT_EXIT(keyIdx.isValid());
+                                PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                                if (!links.isEmpty())
+                                {
+                                    const QModelIndex& linkIdx = links[0];
+                                    oldLinks.append(UiHelper::exportLink(linkIdx));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            QMap<QString, NODE_DATA> newNodes;
+            QList<EdgeInfo> newLinks;
+            UiHelper::reAllocIdents(nodeCls, node.children, oldLinks, newNodes, newLinks);
+            importNodes(newNodes, newLinks, QPointF(), this->index(nodeCls), true);
+        }
+    }
+}

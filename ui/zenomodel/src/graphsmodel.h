@@ -132,7 +132,7 @@ public:
     QAbstractItemModel *implModel() override {
         return nullptr;
     }
-    void onMerge(IGraphsModel *pModel, const QModelIndex subgIdx) override{};
+    void onSubgrahSync(const QModelIndex& subgIdx) override;
 
 public slots:
     void onCurrentIndexChanged(int);
@@ -162,6 +162,7 @@ private:
     QString uniqueSubgraph(QString orginName);
 
     void onApiBatchFinished();
+    void updateSubgrahs(const QModelIndex& subgIdx);
 
     QHash<QString, SubGraphModel*> m_subGraphs;
     QHash<QString, int> m_key2Row;

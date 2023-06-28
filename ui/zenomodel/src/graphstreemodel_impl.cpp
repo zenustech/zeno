@@ -1013,23 +1013,27 @@ void GraphsTreeModel_impl::removeSubGraphNode(TreeNodeItem *pSubgraph)
     }
 }
 
-void GraphsTreeModel_impl::onMerge(IGraphsModel *pModel, const QModelIndex subgIdx) 
+void GraphsTreeModel_impl::onSubgrahSync(const QModelIndex& subgIdx) 
 {
     QString nodeCls = subgIdx.data(ROLE_OBJNAME).toString();
     if (m_treeNodeItems.find(nodeCls) != m_treeNodeItems.end()) {
         for (auto pItem : m_treeNodeItems[nodeCls])
         {
+            if (subgIdx == pItem->index())
+            {
+                continue;
+            }
             //delete old child items
             while (pItem->rowCount() > 0)
             {
                 TreeNodeItem *pChildItem = static_cast<TreeNodeItem*>(pItem->child(0));
                 ZASSERT_EXIT(pChildItem);
                 QString ident = pChildItem->data(ROLE_OBJID).toString();
-                removeNode(ident, pItem->index(), false);
+                removeNode(ident, pItem->index(), true);
             }
             LINKS_DATA links;
             NODES_DATA childrens = NodesMgr::getChildItems(pItem->parent()->index(), nodeCls, pItem->objName(), links);
-            importNodes(childrens, links, QPointF(), pItem->index(), false);
+            importNodes(childrens, links, QPointF(), pItem->index(), true);
 
         }
     }
