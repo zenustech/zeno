@@ -329,13 +329,13 @@ std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
     }
     nx = std::max(nx, 1);
     ny = std::max(ny, 1);
-//    for (auto i = 0; i < ny / 2; i++) {
-//        for (auto x = 0; x < nx * 4; x++) {
-//            auto index1 = i * (nx * 4) + x;
-//            auto index2 = (ny - 1 - i) * (nx * 4) + x;
-//            std::swap(rgba[index1], rgba[index2]);
-//        }
-//    }
+    for (auto i = 0; i < ny / 2; i++) {
+        for (auto x = 0; x < nx * 4; x++) {
+            auto index1 = i * (nx * 4) + x;
+            auto index2 = (ny - 1 - i) * (nx * 4) + x;
+            std::swap(rgba[index1], rgba[index2]);
+        }
+    }
 
     auto img = std::make_shared<PrimitiveObject>();
     img->verts.resize(nx * ny);
@@ -394,6 +394,42 @@ ZENDEFNODE(ReadImageFile, {
     },
     {
         {"PrimitiveObject", "image"},
+    },
+    {},
+    {"comp"},
+});
+
+template<typename T>
+void image_flip_vertical(T *v, int w, int h) {
+    for (auto j = 0; j < h / 2; j++) {
+        for (auto i = 0; i < w; i++) {
+            auto index1 = i + j * w;
+            auto index2 = i + (h - j - 1) * w;
+            std::swap(v[index1], v[index2]);
+        }
+    }
+}
+
+struct ImageFlipVertical : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        image_flip_vertical(image->verts.data(), w, h);
+        if (image->verts.has_attr("alpha")) {
+            auto alpha = image->verts.attr<float>("alpha");
+            image_flip_vertical(alpha.data(), w, h);
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageFlipVertical, {
+    {
+        {"image"},
+    },
+    {
+        {"image"},
     },
     {},
     {"comp"},
@@ -490,6 +526,13 @@ struct WriteImageFile : INode {
                 data2[n * i + 1] = image->verts[i][1];
                 data2[n * i + 2] = image->verts[i][2];
                 data2[n * i + 3] = alpha[i];
+            }
+            for (auto i = 0; i < h / 2; i++) {
+                for (auto x = 0; x < w * 4; x++) {
+                    auto index1 = i * (w * 4) + x;
+                    auto index2 = (h - 1 - i) * (w * 4) + x;
+                    std::swap(data2[index1], data2[index2]);
+                }
             }
 
             // Create EXR header
