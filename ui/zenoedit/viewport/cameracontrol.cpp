@@ -214,38 +214,17 @@ void CameraControl::resizeTransformHandler(int dir)
     zenoApp->getMainWindow()->updateViewport();
 }
 
-QVector2D CameraControl::realRes() const
-{
-    auto session = m_zenovis->getSession();
-    if (!session)
-        return m_res;
-
-    auto scene = session->get_scene();
-    if (!scene)
-        return m_res;
-
-    bool bLock = scene->camera->m_lock_size;
-    if (bLock) {
-        return QVector2D(scene->camera->m_nx, scene->camera->m_ny);
-    }
-    else {
-        return m_res;
-    }
-}
-
 void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
 
-    QVector2D resolution = realRes();
-
     if (event->buttons() & Qt::MiddleButton) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float xpos = event->x(), ypos = event->y();
         float dx = xpos - m_lastPos.x(), dy = ypos - m_lastPos.y();
-        dx *= ratio / resolution[0];
-        dy *= ratio / resolution[1];
+        dx *= ratio / m_res[0];
+        dy *= ratio / m_res[1];
         bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         if (shift_pressed) {
             float cos_t = cos(m_theta);
@@ -269,21 +248,21 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         if (m_transformer)
         {
             if (m_transformer->isTransforming()) {
-                auto dir = screenToWorldRay(event->pos().x() / resolution.x(), event->pos().y() / resolution.y());
+                auto dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
                 auto camera_pos = realPos();
                 auto x = event->x() * 1.0f;
                 auto y = event->y() * 1.0f;
-                x = (2 * x / resolution.x()) - 1;
-                y = 1 - (2 * y / resolution.y());
+                x = (2 * x / res().x()) - 1;
+                y = 1 - (2 * y / res().y());
                 auto mouse_pos = glm::vec2(x, y);
                 auto vp = scene->camera->m_proj * scene->camera->m_view;
                 m_transformer->transform(camera_pos, mouse_pos, dir, scene->camera->m_lodfront, vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else {
-                float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / resolution.x();
-                float max_x = std::max((float)m_boundRectStartPos.x(), (float)event->x()) / resolution.x();
-                float min_y = std::min((float)m_boundRectStartPos.y(), (float)event->y()) / resolution.y();
-                float max_y = std::max((float)m_boundRectStartPos.y(), (float)event->y()) / resolution.y();
+                float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
+                float max_x = std::max((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
+                float min_y = std::min((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
+                float max_y = std::max((float)m_boundRectStartPos.y(), (float)event->y()) / m_res.y();
                 scene->select_box = zeno::vec4f(min_x, min_y, max_x, max_y);
             }
         }
@@ -293,8 +272,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 
 void CameraControl::updatePerspective() {
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    QVector2D resolution = realRes();
-    m_zenovis->updatePerspective(resolution, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode,
+    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode,
                                                        m_aperture, m_focalPlaneDistance));
 }
 

@@ -170,13 +170,13 @@ void DisplayWidget::setCameraRes(const QVector2D& res)
     }
 }
 
-void DisplayWidget::lockCameraRes(bool bLock, int nx, int ny)
+void DisplayWidget::setSafeFrames(bool bLock, int nx, int ny)
 {
     if (m_glView) {
-        //todo
+        m_glView->setSafeFrames(bLock, nx, ny);
     }
     else {
-        m_optixView->lockCameraRes(bLock, nx, ny);
+        m_optixView->setSafeFrames(bLock, nx, ny);
     }
 }
 

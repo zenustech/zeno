@@ -31,7 +31,7 @@ public:
     void updateCameraProp(float aperture, float disPlane);
     void updatePerspective();
     void setNumSamples(int samples);
-    void lockCameraRes(bool bLock, int nx, int ny);
+    void setSafeFrames(bool bLock, int nx, int ny);
     void setCameraRes(const QVector2D& res);
     void setSimpleRenderOption();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);

@@ -83,9 +83,9 @@ void OptixWorker::setRenderSeparately(bool updateLightCameraOnly, bool updateMat
     scene->drawOptions->updateMatlOnly = updateMatlOnly;
 }
 
-void OptixWorker::onLockCameraRes(bool bLock, int nx, int ny) {
+void OptixWorker::onSetSafeFrames(bool bLock, int nx, int ny) {
     auto scene = m_zenoVis->getSession()->get_scene();
-    scene->camera->lock_window_size(bLock, nx, ny);
+    scene->camera->set_safe_frames(bLock, nx, ny);
 }
 
 void OptixWorker::recordVideo(VideoRecInfo recInfo)
@@ -242,7 +242,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
-    connect(this, &ZOptixViewport::sig_lockCameraRes, m_worker, &OptixWorker::onLockCameraRes);
+    connect(this, &ZOptixViewport::sig_setSafeFrames, m_worker, &OptixWorker::onSetSafeFrames);
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
     connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
@@ -340,9 +340,9 @@ void ZOptixViewport::setCameraRes(const QVector2D& res)
     m_camera->setRes(res);
 }
 
-void ZOptixViewport::lockCameraRes(bool bLock, int nx, int ny)
+void ZOptixViewport::setSafeFrames(bool bLock, int nx, int ny)
 {
-    emit sig_lockCameraRes(bLock, nx, ny);
+    emit sig_setSafeFrames(bLock, nx, ny);
 }
 
 void ZOptixViewport::setNumSamples(int samples)
@@ -365,8 +365,6 @@ void ZOptixViewport::resizeEvent(QResizeEvent* event)
     zeno::log_trace("nx={}, ny={}, dpr={}", nx, ny, ratio);
     m_camera->setRes(QVector2D(nx * ratio, ny * ratio));
     m_camera->updatePerspective();
-
-    m_zenovis->getSession()->set_window_size(sz.width(), sz.height());
 }
 
 void ZOptixViewport::mousePressEvent(QMouseEvent* event)

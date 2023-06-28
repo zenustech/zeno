@@ -37,8 +37,20 @@ Scene* Session::get_scene() const {
     return impl->scene.get();
 }
 
+void Session::set_safe_frames(bool bLock, int nx, int ny) {
+    impl->scene->camera->set_safe_frames(bLock, nx, ny);
+}
+
+float Session::get_safe_frames() const {
+    return impl->scene->camera->get_safe_frames();
+}
+
 void Session::lock_window_size(bool bLock, int nx, int ny) {
     impl->scene->camera->lock_window_size(bLock, nx, ny);
+}
+
+bool Session::is_lock_window() const {
+    return impl->scene->camera->is_locked_window();
 }
 
 void Session::set_window_size(int nx, int ny) {

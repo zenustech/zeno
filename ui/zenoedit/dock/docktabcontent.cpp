@@ -741,6 +741,38 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         else if (newValue == tr("Customize Size"))
         {
             //todo
+            QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+            QDialog dlg(this);
+            QGridLayout* pLayout = new QGridLayout;
+
+            QLineEdit* pWidthEdit = new QLineEdit;
+            pWidthEdit->setValidator(new QIntValidator);
+
+            QLineEdit* pHeightEdit = new QLineEdit;
+            pHeightEdit->setValidator(new QIntValidator);
+
+            pLayout->addWidget(new QLabel("width"), 0, 0);
+            pLayout->addWidget(pWidthEdit, 0, 1);
+            pLayout->addWidget(new QLabel("height"), 1, 0);
+            pLayout->addWidget(pHeightEdit, 1, 1);
+            pLayout->addWidget(pButtonBox, 2, 1);
+            dlg.setLayout(pLayout);
+
+            connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
+            connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+
+            if (QDialog::Accepted == dlg.exec())
+            {
+                nx = pWidthEdit->text().toInt();
+                ny = pHeightEdit->text().toInt();
+                bLock = (nx > 0 && ny > 0);
+            }
+            else {
+                bLock = false;
+                nx = 100;
+                ny = 100;
+            }
         }
         else
         {
@@ -753,7 +785,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
             ny = L[1].toInt(&bOK);
             ZASSERT_EXIT(ny);
         }
-        m_pDisplay->lockCameraRes(bLock, nx, ny);
+        m_pDisplay->setSafeFrames(bLock, nx, ny);
         m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
     };
 
@@ -840,33 +872,7 @@ void DockContent_View::initConnections()
     });
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
-        QDialogButtonBox *pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
-        QDialog dlg(this);
-        QGridLayout *pLayout = new QGridLayout;
-
-        QLineEdit* pWidthEdit = new QLineEdit;
-        pWidthEdit->setValidator(new QIntValidator);
-
-        QLineEdit* pHeightEdit = new QLineEdit;
-        pHeightEdit->setValidator(new QIntValidator);
-
-        pLayout->addWidget(new QLabel("width"), 0, 0);
-        pLayout->addWidget(pWidthEdit, 0, 1);
-        pLayout->addWidget(new QLabel("height"), 1, 0);
-        pLayout->addWidget(pHeightEdit, 1, 1);
-        pLayout->addWidget(pButtonBox, 2, 1);
-        dlg.setLayout(pLayout);
-
-        connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
-        connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
-
-        if (QDialog::Accepted == dlg.exec())
-        {
-            int w = pWidthEdit->text().toInt();
-            int h = pHeightEdit->text().toInt();
-            m_pDisplay->resizeViewport(QSize(w, h));
-        }
     });
 }
 

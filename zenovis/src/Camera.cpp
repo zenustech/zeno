@@ -74,18 +74,29 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
 }
 
 void Camera::setResolution(int nx, int ny) {
-    if (!m_lock_size) {
-        m_nx = nx;
-        m_ny = ny;
-        m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
-    }
-}
-
-void Camera::lock_window_size(bool bLock, int nx, int ny) {
-    m_lock_size = bLock;
     m_nx = nx;
     m_ny = ny;
     m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
+}
+
+void Camera::lock_window_size(bool bLock, int nx, int ny) {
+    m_block_window = bLock;
+    m_nx = nx;
+    m_ny = ny;
+    m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
+}
+
+void Camera::set_safe_frames(bool bLock, int nx, int ny) {
+    m_block_window = bLock;
+    m_safe_frames = (float)nx / ny;
+}
+
+float Camera::get_safe_frames() const {
+    return m_safe_frames;
+}
+
+bool Camera::is_locked_window() const {
+    return m_block_window;
 }
 
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {

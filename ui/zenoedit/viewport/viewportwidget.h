@@ -35,6 +35,7 @@ public:
     bool isPlaying() const;
     void startPlay(bool bPlaying);
     void setCameraRes(const QVector2D& res);
+    void setSafeFrames(bool bLock, int nx, int ny);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
     void cameraLookTo(int dir);

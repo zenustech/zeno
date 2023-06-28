@@ -184,6 +184,13 @@ void ViewportWidget::setCameraRes(const QVector2D& res)
     m_camera->setRes(res);
 }
 
+void ViewportWidget::setSafeFrames(bool bLock, int nx, int ny)
+{
+    auto scene = m_zenovis->getSession()->get_scene();
+    scene->camera->set_safe_frames(bLock, nx, ny);
+    update();
+}
+
 void ViewportWidget::updatePerspective()
 {
     m_camera->updatePerspective();

@@ -18,7 +18,6 @@ public:
                   QObject* parent = nullptr);
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
-    QVector2D realRes() const;
     void setAperture(float aperture);
     void setDisPlane(float disPlane);
     void updatePerspective();
