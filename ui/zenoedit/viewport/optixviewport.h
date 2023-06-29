@@ -32,6 +32,7 @@ public slots:
     void onFrameSwitched(int frame);
     void cancelRecording();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
+    void onSetSafeFrames(bool bLock, int nx, int ny);
 
 private:
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
@@ -56,6 +57,7 @@ public:
     void updateCameraProp(float aperture, float disPlane);
     void updatePerspective();
     void setCameraRes(const QVector2D& res);
+    void setSafeFrames(bool bLock, int nx, int ny);
     void setNumSamples(int samples);
     Zenovis* getZenoVis() const;
     bool isCameraMoving() const;
@@ -76,6 +78,7 @@ signals:
     void sig_frameRunFinished(int frame);
     void sig_togglePlayButton(bool bToggled);
     void sig_switchTimeFrame(int frame);
+    void sig_setSafeFrames(bool bLock, int nx, int ny);
     void sig_cancelRecording();
     void sig_setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
 

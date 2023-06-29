@@ -149,8 +149,9 @@ private:
     ZToolBarButton* m_scaleBtn;
     ZToolBarButton* m_rotateBtn;
     ZToolBarButton* m_resizeViewport;
+    QCheckBox *m_background = new QCheckBox("Background");
 
-    QComboBox* m_cbRenderWay;
+    QComboBox* m_cbRes;
     QAction* m_pFocus;
     QAction *m_pOrigin;
     QAction *m_front;

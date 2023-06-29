@@ -640,6 +640,19 @@ extern "C" __global__ void __closesthit__radiance()
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
     }
 
+    if (prd->trace_denoise_albedo) {
+
+        if(0.0f == mats.roughness) {
+            prd->tmp_albedo = make_float3(1.0f);
+        } else {
+            prd->tmp_albedo = mats.basecolor;
+        }
+    }
+
+    if (prd->trace_denoise_normal) {
+        prd->tmp_normal = N;
+    }
+
     /* MODME */
     auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
@@ -744,7 +757,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->attenuation2 = prd->attenuation;
         prd->passed = true;
-        prd->samplePdf = 0.0f;
+        //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
         //prd->origin = P + 1e-5 * ray_dir; 
         prd->offsetUpdateRay(P, ray_dir);
@@ -768,7 +781,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->attenuation2 = prd->attenuation;
         prd->passed = true;
-        prd->samplePdf = 0.0f;
+        //prd->samplePdf = 0.0f;
         //you shall pass!
         prd->radiance = make_float3(0.0f);
 

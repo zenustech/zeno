@@ -24,7 +24,11 @@ struct Session : zeno::disable_copy {
 
     void new_frame();
     bool load_objects();
+    void set_safe_frames(bool bLock, int nx, int ny);
+    float get_safe_frames() const;
+    bool is_lock_window() const;
     void set_window_size(int nx, int ny);
+    void set_window_size(int nx, int ny, zeno::vec2i offset);
     std::tuple<int, int> get_window_size();
     void set_curr_frameid(int frameid);
     int get_curr_frameid();

@@ -24,6 +24,9 @@
 #include "settings/zenosettingsmanager.h"
 #include "settings/zsettings.h"
 #include <zenoui/comctrl/zcombobox.h>
+#include <zeno/core/Session.h>
+#include <zeno/types/UserData.h>
+#include <zenovis/ObjectsManager.h>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -608,7 +611,7 @@ void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
 DockContent_View::DockContent_View(bool bGLView, QWidget* parent)
     : DockToolbarWidget(parent)
     , m_pDisplay(nullptr)
-    , m_cbRenderWay(nullptr)
+    , m_cbRes(nullptr)
     , m_smooth_shading(nullptr)
     , m_normal_check(nullptr)
     , m_wire_frame(nullptr)
@@ -716,29 +719,86 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pMenuBar->addMenu(pView);
     pMenuBar->addMenu(pObject);
 
-    QStringList items = {tr("Solid"), tr("Shading"), tr("Optix")};
+    QStringList items = {
+        tr("Free"),
+        "1024x768",
+        "1280x720",
+        "1280x768",
+        "1280x800",
+        "1680x1050",
+        "1920x1080",
+        tr("Customize Size")
+    };
     QVariant props = items;
 
     QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {
-        if (newValue == items[0]) {
-            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SOLID, true);
+        ZASSERT_EXIT(m_pDisplay);
+        int nx = -1, ny = -1;
+        bool bLock = false;
+        if (newValue == tr("Free"))
+        {
+            nx = 100;
+            ny = 100;
         }
-        else if (newValue == items[1]) {
-            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SHADING, true);
+        else if (newValue == tr("Customize Size"))
+        {
+            //todo
+            QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+
+            QDialog dlg(this);
+            QGridLayout* pLayout = new QGridLayout;
+
+            QLineEdit* pWidthEdit = new QLineEdit;
+            pWidthEdit->setValidator(new QIntValidator);
+
+            QLineEdit* pHeightEdit = new QLineEdit;
+            pHeightEdit->setValidator(new QIntValidator);
+
+            pLayout->addWidget(new QLabel("width"), 0, 0);
+            pLayout->addWidget(pWidthEdit, 0, 1);
+            pLayout->addWidget(new QLabel("height"), 1, 0);
+            pLayout->addWidget(pHeightEdit, 1, 1);
+            pLayout->addWidget(pButtonBox, 2, 1);
+            dlg.setLayout(pLayout);
+
+            connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
+            connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
+
+            if (QDialog::Accepted == dlg.exec())
+            {
+                nx = pWidthEdit->text().toInt();
+                ny = pHeightEdit->text().toInt();
+                bLock = (nx > 0 && ny > 0);
+            }
+            else {
+                bLock = false;
+                nx = 100;
+                ny = 100;
+            }
         }
-        else if (newValue == items[2]) {
-            m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_OPTIX, true);
+        else
+        {
+            bLock = true;
+            QString resStr = newValue.toString();
+            auto L = resStr.split('x');
+            bool bOK = false;
+            nx = L[0].toInt(&bOK);
+            ZASSERT_EXIT(nx);
+            ny = L[1].toInt(&bOK);
+            ZASSERT_EXIT(ny);
         }
-        m_cbRenderWay->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
+        m_pDisplay->setSafeFrames(bLock, nx, ny);
+        m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(newValue.toString()) + ZenoStyle::dpiScaled(28));
     };
+
     CallbackCollection cbSet;
     cbSet.cbEditFinished = funcRender;
-    m_cbRenderWay = qobject_cast<QComboBox*>(zenoui::createWidget("100%", CONTROL_ENUM, "string", cbSet, props));
-    m_cbRenderWay->setProperty("focusBorder", "none");
-    m_cbRenderWay->setEditable(false);
-    m_cbRenderWay->view()->setFixedWidth(ZenoStyle::dpiScaled(110));
-    m_cbRenderWay->setFixedSize(fontMetrics.horizontalAdvance(items[0]) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(20));
+    m_cbRes = qobject_cast<QComboBox*>(zenoui::createWidget("Free", CONTROL_ENUM, "string", cbSet, props));
+    m_cbRes->setProperty("focusBorder", "none");
+    m_cbRes->setEditable(false);
+    m_cbRes->view()->setFixedWidth(ZenoStyle::dpiScaled(110));
+    m_cbRes->setFixedSize(fontMetrics.horizontalAdvance(items[0]) + ZenoStyle::dpiScaled(28), ZenoStyle::dpiScaled(20));
 
     pToolLayout->addWidget(pMenuBar);
     pToolLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
@@ -755,6 +815,10 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_wire_frame);
     pToolLayout->addWidget(m_smooth_shading);
     pToolLayout->addWidget(m_normal_check);
+    {
+        m_background->setStyleSheet("color: white;");
+        pToolLayout->addWidget(m_background);
+    }
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
     pToolLayout->addWidget(m_screenshoot);
@@ -763,7 +827,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     pToolLayout->addStretch(7);
 
-    pToolLayout->addWidget(m_cbRenderWay);
+    pToolLayout->addWidget(m_cbRes);
 }
 
 QWidget* DockContent_View::initWidget()
@@ -813,35 +877,23 @@ void DockContent_View::initConnections()
     connect(m_screenshoot, &ZToolBarButton::clicked, this, [=]() {
         m_pDisplay->onCommandDispatched(ZenoMainWindow::ACTION_SCREEN_SHOOT, true);
     });
+    connect(m_background, &QCheckBox::stateChanged, this, [=](int state) {
+        auto &ud = zeno::getSession().userData();
+        ud.set2("optix_show_background", state > 0);
+
+        {
+            Zenovis *pZenoVis = m_pDisplay->getZenoVis();
+            ZASSERT_EXIT(pZenoVis);
+            auto scene = pZenoVis->getSession()->get_scene();
+            ZASSERT_EXIT(scene);
+            scene->objectsMan->needUpdateLight = true;
+            m_pDisplay->setSimpleRenderOption();
+            zenoApp->getMainWindow()->updateViewport();
+        }
+    });
 
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
-        QDialogButtonBox *pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
 
-        QDialog dlg(this);
-        QGridLayout *pLayout = new QGridLayout;
-
-        QLineEdit* pWidthEdit = new QLineEdit;
-        pWidthEdit->setValidator(new QIntValidator);
-
-        QLineEdit* pHeightEdit = new QLineEdit;
-        pHeightEdit->setValidator(new QIntValidator);
-
-        pLayout->addWidget(new QLabel("width"), 0, 0);
-        pLayout->addWidget(pWidthEdit, 0, 1);
-        pLayout->addWidget(new QLabel("height"), 1, 0);
-        pLayout->addWidget(pHeightEdit, 1, 1);
-        pLayout->addWidget(pButtonBox, 2, 1);
-        dlg.setLayout(pLayout);
-
-        connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
-        connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
-
-        if (QDialog::Accepted == dlg.exec())
-        {
-            int w = pWidthEdit->text().toInt();
-            int h = pHeightEdit->text().toInt();
-            m_pDisplay->resizeViewport(QSize(w, h));
-        }
     });
 }
 

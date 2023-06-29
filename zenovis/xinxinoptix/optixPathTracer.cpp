@@ -63,6 +63,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "tinyexr.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -201,6 +203,10 @@ struct PathTracerState
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
+
+    raii<CUdeviceptr> albedo_buffer_p;
+    raii<CUdeviceptr> normal_buffer_p;
+
     raii<CUdeviceptr> accum_buffer_d;
     raii<CUdeviceptr> accum_buffer_s;
     raii<CUdeviceptr> accum_buffer_t;
@@ -452,8 +458,21 @@ static void initLaunchParams( PathTracerState& state )
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
                 ) );
-    
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+
+    auto& params = state.params;
+
+    CUDA_CHECK( cudaMallocManaged(
+            reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
+            params.width * params.height * sizeof( float3 )
+            ) );
+    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    
+    CUDA_CHECK( cudaMallocManaged(
+            reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
+            params.width * params.height * sizeof( float3 )
+            ) );
+    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
@@ -513,6 +532,19 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
         params.width * params.height * sizeof( float4 )
             ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+
+    CUDA_CHECK( cudaMallocManaged(
+                reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
+                params.width * params.height * sizeof( float3 )
+                ) );
+    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    
+    CUDA_CHECK( cudaMallocManaged(
+                reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
+                params.width * params.height * sizeof( float3 )
+                ) );
+    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
+    
     state.params.accum_buffer_D = (float4*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float4*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float4*)(CUdeviceptr)state.accum_buffer_t;
@@ -533,7 +565,7 @@ static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params&
 }
 
 
-static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state )
+static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state, bool denoise)
 {
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
@@ -543,6 +575,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
     state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.num_lights = g_lights.size();
+    state.params.denoise = denoise;
 
     CUDA_SYNC_CHECK();
     CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
@@ -1365,6 +1398,8 @@ static void createSBT( PathTracerState& state )
         state.d_hitgroup_records.reset();
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
+        state.albedo_buffer_p.reset();
+        state.normal_buffer_p.reset();
 
     raii<CUdeviceptr>  &d_raygen_record = state.d_raygen_record;
     const size_t raygen_record_size = sizeof( RayGenRecord );
@@ -1549,6 +1584,8 @@ static void cleanupState( PathTracerState& state )
         state.d_vertices.reset();
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
+        state.albedo_buffer_p.reset();
+        state.normal_buffer_p.reset();
         state.d_params.reset();
     //state = {};
 }
@@ -1701,6 +1738,7 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
                                        1.0, 0.0, 6500.0);
     xinxinoptix::using_hdr_sky(false);
+    xinxinoptix::show_background(false);
 }
 
 
@@ -2126,6 +2164,10 @@ void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
 
 void using_hdr_sky(bool enable) {
     state.params.usingHdrSky = enable;
+}
+
+void show_background(bool enable) {
+    state.params.show_background = enable;
 }
 
 void update_procedural_sky(
@@ -3413,6 +3455,14 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     cam.aperture = aperture;
 }
 
+void write_pfm(std::string& path, int w, int h, const float *rgb) {
+    std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
+    std::vector<char> data(header.size() + w * h * sizeof(zeno::vec3f));
+    memcpy(data.data(), header.data(), header.size());
+    memcpy(data.data() + header.size(), rgb, w * h * sizeof(zeno::vec3f));
+    zeno::file_put_binary(data, path);
+}
+
 void *optixgetimg_extra(std::string name) {
     if (name == "diffuse") {
         return output_buffer_diffuse->getHostPointer();
@@ -3428,7 +3478,7 @@ void *optixgetimg_extra(std::string name) {
     }
 }
 
-void optixrender(int fbo, int samples, bool simpleRender) {
+void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
@@ -3446,7 +3496,7 @@ void optixrender(int fbo, int samples, bool simpleRender) {
 
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
-        launchSubframe( *output_buffer_o, state );
+        launchSubframe( *output_buffer_o, state, denoise);
         state.params.subframe_index++;
     }
 #ifdef OPTIX_BASE_GL
@@ -3462,6 +3512,19 @@ void optixrender(int fbo, int samples, bool simpleRender) {
         stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
         ud.erase("optix_image_path");
+
+        if (denoise) {
+            const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+            //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+            auto a_path = path + ".albedo.pfm";
+            write_pfm(a_path, w, h, _albedo_buffer);
+
+            const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+            //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+            auto n_path = path + ".normal.pfm";
+            write_pfm(n_path, w, h, _normal_buffer); 
+        }
+
         // AOV
         path = path.substr(0, path.size() - 4);
         stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);

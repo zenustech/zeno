@@ -579,6 +579,10 @@ struct GraphicsManager {
             }
         }
 
+        auto &ud = zeno::getSession().userData();
+        bool show_background = ud.get2<bool>("optix_show_background", false);
+        xinxinoptix::show_background(show_background);
+
         return changelight;
     }
     bool load_light_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> objs){
@@ -1108,11 +1112,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {
             auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
+            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
 #else
-        xinxinoptix::optixrender(0, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
+        xinxinoptix::optixrender(0, scene->drawOptions->num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
 #endif
     }
 
