@@ -28,7 +28,7 @@ CameraControl::CameraControl(
     , m_fov(45.)
     , m_radius(5.0)
     , m_res(1, 1)
-    , m_aperture(0.1f)
+    , m_aperture(0.0f)
     , m_focalPlaneDistance(2.0f)
 {
     updatePerspective();
