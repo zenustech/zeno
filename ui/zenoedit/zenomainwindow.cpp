@@ -68,7 +68,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
     , m_spCacheMgr(nullptr)
-    , m_bMovingSeparator(false)
+    , m_bOnlyOptix(false)
 {
     liveTcpServer = new LiveTcpServer(this);
     liveHttpServer = std::make_shared<LiveHttpServer>();
@@ -142,7 +142,6 @@ void ZenoMainWindow::initWindowProperty()
         QString title = AppHelper::nativeWindowTitle(path);
         updateNativeWinTitle(title);
     });
-    connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
     connect(this, &ZenoMainWindow::visFrameUpdated, this, &ZenoMainWindow::onZenovisFrameUpdate);
 }
 
@@ -585,6 +584,7 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
     {
         m_layoutRoot = std::make_shared<LayerOutNode>();
         m_layoutRoot->type = NT_ELEM;
+        m_bOnlyOptix = onlyView == PANEL_OPTIX_VIEW;
 
         ZTabDockWidget* onlyWid = new ZTabDockWidget(this);
         if (onlyView == PANEL_GL_VIEW || onlyView == PANEL_OPTIX_VIEW)
@@ -923,32 +923,7 @@ void ZenoMainWindow::optixRunClient(int port)
         QByteArray arr = optixClientSocket->readAll();
         qint64 redSize = arr.size();
         if (redSize > 0) {
-            if (arr.count("init"))
-            {
-                QString cachedir = QString(arr).split("_")[1];
-                zeno::log_info("cachedir {} ", cachedir.toStdString());
-                initZenCache(cachedir.toStdString().data());
-                QSettings settings(zsCompanyName, zsEditor);
-                bool bEnableCache = settings.value("zencache-enable").toBool();
-                if (bEnableCache)
-                {
-                    viewDecodeSetFrameCache(cachedir.toStdString().c_str(), 1);
-                }
-                else
-                {
-                    viewDecodeSetFrameCache("", 0);
-                }
-                viewDecodeClear();
-                TIMELINE_INFO tlinfo;
-                QString timelineinfo = QString(arr).split("_")[2];
-                tlinfo.beginFrame = timelineinfo.split("-")[0].toInt();
-                tlinfo.endFrame = timelineinfo.split("-")[1].toInt();
-                tlinfo.currFrame = timelineinfo.split("-")[2].toInt();
-                tlinfo.bAlways = timelineinfo.split("-")[3].toInt();
-                resetTimeline(tlinfo);
-                zeno::log_info("optixClientSocket got {} bytes, cachedir: {} timelineinfo: {} (ping test has 19)", redSize, cachedir.toStdString(), timelineinfo.toStdString());
-            }
-            else if (arr.count("calcuProcFin"))
+            /*if (arr.count("calcuProcFin"))
             {
                 QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
                 for (auto pDisplay : views)
@@ -962,7 +937,7 @@ void ZenoMainWindow::optixRunClient(int port)
                 viewDecodeFinish();
                 zeno::log_info("optixClientSocket got {} bytes(viewDecFin) (ping test has 19)", redSize);
             }
-            else {
+            else */{
                 viewDecodeAppend(arr.data(), redSize);
                 zeno::log_info("optixClientSocket got {} bytes(viewDecode) (ping test has 19)", redSize);
             }
@@ -1304,25 +1279,13 @@ bool ZenoMainWindow::event(QEvent* event)
             }
         }
     }
-    bool ret = QMainWindow::event(event);
-    if (ret) {
-        if (event->type() == QEvent::MouseMove && event->isAccepted()) {
-            QMouseEvent* pMouse = static_cast<QMouseEvent*>(event);
-            if (isSeparator(pMouse->pos())) {
-                m_bMovingSeparator = true;
-                emit dockSeparatorMoving(true);
-            }
-        }
-        else if (m_bMovingSeparator && event->type() == QEvent::Timer)
-        {
-            emit dockSeparatorMoving(true);
-        }
-        else if (m_bMovingSeparator && event->type() == QEvent::MouseButtonRelease)
-        {
-            emit dockSeparatorMoving(false);
+    if (event->type() == QEvent::HoverMove) {
+        if (m_bOnlyOptix) {
+            DisplayWidget* pWid = getCurrentViewport();
+            pWid->onMouseHoverMoved();
         }
     }
-    return ret;
+    return QMainWindow::event(event);
 }
 
 void ZenoMainWindow::mousePressEvent(QMouseEvent* event)
@@ -1373,29 +1336,6 @@ void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
     if (!m_pTimeline)
         return;
     m_pTimeline->onTimelineUpdate(frameid);
-}
-
-void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
-{
-    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZTabDockWidget *pDock : docks)
-    {
-        for (int i = 0; i < pDock->count(); i++)
-        {
-            DockContent_View* pView = qobject_cast<DockContent_View*>(pDock->widget(i));
-            if (!pView)
-                continue;
-            QSize sz = pView->viewportSize();
-            QString str = QString("size: %1x%2").arg(QString::number(sz.width())).arg(QString::number(sz.height()));
-            QPoint pt = pView->mapToGlobal(QPoint(0, 10));
-            if (bMoving) {
-                QToolTip::showText(pt, str);
-            }
-            else {
-                QToolTip::hideText();
-            }
-        }
-    }
 }
 
 void ZenoMainWindow::importGraph() {

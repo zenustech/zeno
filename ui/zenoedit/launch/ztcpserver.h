@@ -24,11 +24,15 @@ private slots:
     void onProcFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
+    void send_packet(QTcpSocket* socket, std::string_view info, const char* buf, size_t len);
+
     QTcpServer* m_tcpServer;
     QTcpSocket* m_tcpSocket;
-    QTcpSocket* m_tcpOptixSocket;
+    QVector<QTcpSocket*> m_optixSocks;
     std::unique_ptr<QProcess> m_proc;
-    std::unique_ptr<QProcess> m_optixProc;
+
+    std::vector<std::unique_ptr<QProcess>> m_optixProcs;
+    //std::unique_ptr<QProcess> m_optixProc;
     int m_port;
 };
 

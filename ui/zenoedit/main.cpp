@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
         return runner_main(sessionid, port, cachedir, cacheLightCameraOnly, cacheMaterialOnly);
     }
     if (argc >= 3 && !strcmp(argv[1], "-optix")) {
+        MessageBox(0, "runner", "runner", MB_OK);
         extern int optix_main(const QCoreApplication & app, int port);
         int port = -1;
         if (argc >= 5 && !strcmp(argv[3], "-port"))

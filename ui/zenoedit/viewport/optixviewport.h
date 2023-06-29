@@ -65,6 +65,7 @@ public:
     void recordVideo(VideoRecInfo recInfo);
     void cancelRecording(VideoRecInfo recInfo);
     void killThread();
+    void onMouseHoverMoved();
 
 signals:
     void cameraAboutToRefresh();
@@ -94,9 +95,16 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
 private:
+    void pauseWorkerAndResume();
+
     CameraControl* m_camera;
     Zenovis* m_zenovis;
+#ifndef ZENO_OPTIX_PROC
     QThread m_thdOptix;
+#else
+    QTimer* m_pauseTimer = nullptr;
+    static const int m_resumeTime = 100;
+#endif
     bool updateLightOnce;
     bool m_bMovingCamera;
     QImage m_renderImage;

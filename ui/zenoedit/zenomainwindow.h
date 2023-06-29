@@ -151,7 +151,6 @@ signals:
     void visObjectsUpdated(ViewportWidget* viewport, int frameid);
     void visFrameUpdated(bool bGLView, int frameid);
     void alwaysModeChanged(bool bAlways);
-    void dockSeparatorMoving(bool bMoving);
     void runFinished();
 
 public slots:
@@ -184,7 +183,6 @@ public slots:
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
-    void onDockSeparatorMoving(bool bMoving);
     void onZenovisFrameUpdate(bool bGLView, int frameid);
 
 protected:
@@ -232,7 +230,7 @@ private:
     bool m_bAlwaysLightCamera;
     bool m_bAlwaysMaterial;
     int m_nResizeTimes;
-    bool m_bMovingSeparator;    //dock separator.
+    bool m_bOnlyOptix;          //isolate optix window.
     Ui::MainWindow* m_ui;
 
     std::shared_ptr<ZCacheMgr> m_spCacheMgr;

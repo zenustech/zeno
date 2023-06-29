@@ -578,6 +578,13 @@ void DisplayWidget::onScreenShoot() {
     }
 }
 
+void DisplayWidget::onMouseHoverMoved()
+{
+    //only used to stop timer on optix.
+    if (m_optixView)
+        m_optixView->onMouseHoverMoved();
+}
+
 void DisplayWidget::onRecord()
 {
     auto &pGlobalComm = zeno::getSession().globalComm;

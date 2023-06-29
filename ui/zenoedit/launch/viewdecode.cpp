@@ -19,6 +19,8 @@
 #include <cassert>
 #include <vector>
 #include <string>
+#include "launch/corelaunch.h"
+#include "settings/zsettings.h"
 
 namespace {
 
@@ -102,6 +104,36 @@ struct PacketProc {
                 //zeno::getSession().globalComm->frameCache(path, maxCachedFrames);
             //}
 
+        } else if (action == "initOptix") {
+            QString initInfo = QString::fromUtf8(buf, len);
+            {
+                QString cachedir = initInfo.split("_")[0];
+                zeno::log_info("cachedir {} ", cachedir.toStdString());
+                initZenCache(cachedir.toStdString().data());
+                QSettings settings(zsCompanyName, zsEditor);
+                bool bEnableCache = settings.value("zencache-enable").toBool();
+                if (bEnableCache)
+                {
+                    viewDecodeSetFrameCache(cachedir.toStdString().c_str(), 1);
+                }
+                else
+                {
+                    viewDecodeSetFrameCache("", 0);
+                }
+                viewDecodeClear();
+                TIMELINE_INFO tlinfo;
+                QString timelineinfo = initInfo.split("_")[1];
+                tlinfo.beginFrame = timelineinfo.split("-")[0].toInt();
+                tlinfo.endFrame = timelineinfo.split("-")[1].toInt();
+                tlinfo.currFrame = timelineinfo.split("-")[2].toInt();
+                tlinfo.bAlways = timelineinfo.split("-")[3].toInt();
+
+                auto mainWin = zenoApp->getMainWindow();
+                if (mainWin) {
+                    mainWin->resetTimeline(tlinfo);
+                    zeno::log_info("optixClientSocket got {} bytes, cachedir: {} timelineinfo: {} (ping test has 19)", len, cachedir.toStdString(), timelineinfo.toStdString());
+                }
+            }
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');
             if (pos != std::string::npos) {

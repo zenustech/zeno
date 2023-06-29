@@ -56,6 +56,7 @@ public slots:
     void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void onMouseHoverMoved();
 
 signals:
     void frameUpdated(int new_frame);
