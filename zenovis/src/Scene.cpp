@@ -115,7 +115,8 @@ void Scene::draw() {
     if (renderMan->getDefaultEngineName() != "optx")
     {
         //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-        CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
+        auto offset = camera->m_block_window? camera->viewport_offset : zeno::vec2i(0, 0);
+        CHECK_GL(glViewport(offset[0], offset[1], camera->m_nx, camera->m_ny));
         //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
     }
 

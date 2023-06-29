@@ -757,7 +757,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->attenuation2 = prd->attenuation;
         prd->passed = true;
-        prd->samplePdf = 0.0f;
+        //prd->samplePdf = 0.0f;
         prd->radiance = make_float3(0.0f);
         //prd->origin = P + 1e-5 * ray_dir; 
         prd->offsetUpdateRay(P, ray_dir);
@@ -781,7 +781,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
         prd->attenuation2 = prd->attenuation;
         prd->passed = true;
-        prd->samplePdf = 0.0f;
+        //prd->samplePdf = 0.0f;
         //you shall pass!
         prd->radiance = make_float3(0.0f);
 
