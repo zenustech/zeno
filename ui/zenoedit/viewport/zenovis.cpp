@@ -59,6 +59,7 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
     if (session) {
         if (session->is_lock_window())
         {
+            zeno::vec2i offset = {};
             int w = resolution.x(), W = 0;
             int h = resolution.y(), H = 0;
             float deviceRatio = (float)w / h;
@@ -66,11 +67,13 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
             if (deviceRatio > ratio) {
                 H = h;
                 W = H * ratio;
+                offset[0] = std::max((w - W) / 2, 0);
             } else {
                 W = w;
                 H = W / ratio;
+                offset[1] = std::max((h - H) / 2, 0);
             }
-            session->set_window_size(W, H);
+            session->set_window_size(W, H, offset);
         }
         else
         {
