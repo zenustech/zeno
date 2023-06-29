@@ -481,6 +481,10 @@ struct EvalFBXAnim : zeno::INode {
 
         if(nodeTree == nullptr || boneTree == nullptr || animInfo == nullptr){
             zeno::log_error("FBX: Empty NodeTree, BoneTree or AnimInfo");
+            std::cout << "nodeTree == nullptr?" << (nodeTree == nullptr) << "\n";
+            std::cout << "boneTree == nullptr?" << (boneTree == nullptr) << "\n";
+            std::cout << "animInfo == nullptr?" << (animInfo == nullptr) << "\n";
+            throw zeno::makeError("Empty FBX Data");
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
