@@ -1137,6 +1137,44 @@ void ZenoMainWindow::importGraph() {
     pGraphs->importGraph(filePath);
 }
 
+void ZenoMainWindow::importSubGraph() 
+{
+    QString filePath = getOpenFileByDialog();
+    if (filePath.isEmpty())
+        return;
+
+    //todo: path validation
+    auto pGraphs = zenoApp->graphsManagment();
+    IGraphsModel *pModel = pGraphs->sharedSubgraphs();
+    if (!pModel)
+        return;
+
+    zenoio::ZSG_PARSE_RESULT res;
+    if (!zenoio::ZsgReader::getInstance().openSubgraphFile(filePath, res))
+    {
+        zeno::log_error("failed to open zsg file: {}", filePath.toStdString());
+        return;
+    }
+
+    for (QString subgName : res.subgraphs.keys())
+    {
+        const SUBGRAPH_DATA& subg = res.subgraphs[subgName];
+        QModelIndex& subgIdx = pModel->index(subgName);
+        if (subgIdx.isValid())
+        {
+            if (QMessageBox::question(this, tr("question"), tr("subgraph [%1] already exists, overwrite or not?").arg(subgName)) == QMessageBox::No)
+                continue;
+            pModel->clearSubGraph(subgIdx);
+        }
+        else
+        {
+            pModel->newSubgraph(subgName);
+            subgIdx = pModel->index(subgName);
+        }
+        pModel->importNodes(subg.nodes, subg.links, QPointF(0, 0), subgIdx, false);
+    }
+}
+
 static bool saveContent(const QString &strContent, QString filePath) {
     QFile f(filePath);
     zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());

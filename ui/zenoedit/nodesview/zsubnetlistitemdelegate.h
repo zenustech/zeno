@@ -44,6 +44,7 @@ public slots:
     void onDelete();
 private slots:
     void onRename(const QModelIndex &index);
+    void onSaveSubgraph(const QModelIndex& index);
 
 private:
     IGraphsModel* m_model;

@@ -351,7 +351,7 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
         m_mainWin->importGraph();
     });
     connect(pImpFromSys, &QAction::triggered, this, [=]() {
-
+        m_mainWin->importSubGraph();
     });
 
     pOptionsMenu->exec(QCursor::pos());

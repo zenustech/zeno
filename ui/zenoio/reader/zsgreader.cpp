@@ -155,6 +155,69 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
     return true;
 }
 
+bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& result)
+{
+    QFile file(fn);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        zeno::log_error("cannot open zsg file: {} ({})", fn.toStdString(),
+            file.errorString().toStdString());
+        return false;
+    }
+
+    rapidjson::Document doc;
+    QByteArray bytes = file.readAll();
+    doc.Parse(bytes);
+
+    if (!doc.IsObject())
+    {
+        zeno::log_error("");
+        return false;
+    }
+    if (!doc.HasMember("subgraphs"))
+        return false;
+    const rapidjson::Value& graph = doc["subgraphs"];
+    if (graph.IsNull()) {
+        zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
+        return false;
+    }
+
+    ZASSERT_EXIT(doc.HasMember("descs"), false);
+    NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
+    if (!ret) {
+        return false;
+    }
+
+    QMap<QString, SUBGRAPH_DATA> subgraphDatas;
+    //init keys
+    for (const auto& subgraph : graph.GetObject())
+    {
+        const QString& graphName = subgraph.name.GetString();
+        if ("main" == graphName)
+            continue;
+        subgraphDatas[graphName] = SUBGRAPH_DATA();
+    }
+
+    for (const auto& subgraph : graph.GetObject())
+    {
+        const QString& graphName = subgraph.name.GetString();
+        if ("main" == graphName)
+            continue;
+        if (!_parseSubGraph(graphName,
+            subgraph.value,
+            nodesDescs,
+            subgraphDatas,
+            subgraphDatas[graphName]))
+        {
+            return false;
+        }
+    }
+
+    result.descs = nodesDescs;
+    result.subgraphs = subgraphDatas;
+    return true;
+}
+
 bool ZsgReader::_parseSubGraph(
             const QString& subgPath,
             const rapidjson::Value& subgraph,
