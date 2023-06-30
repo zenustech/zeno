@@ -516,6 +516,9 @@ void ZenoGraphsEditor::activateTabOfTree(const QString &path, const QString &nod
         else
             tabIcon = ":/icons/subnet-general.svg";
         m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
+        connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
+            activateTabOfTree(newPath, "", false);
+        });
     }
     m_ui->graphsViewTab->setCurrentIndex(idx);
 
