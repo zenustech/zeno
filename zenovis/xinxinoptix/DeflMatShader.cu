@@ -72,6 +72,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
     float mat_NoL = 1.0f;
     float mat_LoV = 1.0f;
     vec3 mat_reflectance = att_reflectance;
+    auto vol_sample_anisotropy = 0.0f;
     //GENERATED_END_MARK
     /** generated code here end **/
     MatOutput mats;
@@ -108,6 +109,7 @@ static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], fl
         mats.sssParam = mat_sssParam;
         mats.scatterStep = mat_scatterStep;
         mats.smoothness = mat_smoothness;
+        mats.vol_anisotropy = clamp(vol_sample_anisotropy, -0.99f, 0.99f);
         return mats;
     }
 }
@@ -891,8 +893,6 @@ extern "C" __global__ void __closesthit__radiance()
         prd->diffDepth++;
     }
     
-
-
     prd->passed = false;
     bool inToOut = false;
     bool outToIn = false;
@@ -909,13 +909,15 @@ extern "C" __global__ void __closesthit__radiance()
         if (prd->curMatIdx > 0) {
             vec3 sigma_t, ss_alpha;
             prd->readMat(sigma_t, ss_alpha);
+            
+            float3 trans;
             if (ss_alpha.x<0.0f) { // is inside Glass
-                prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-                prd->attenuation2 *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+                trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
             } else {
-                prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-                prd->attenuation2 *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+                trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
             }
+            prd->attenuation *= trans;
+            prd->attenuation2 *= trans;
         }else {
             prd->attenuation *= 1;
         }
@@ -925,8 +927,7 @@ extern "C" __global__ void __closesthit__radiance()
         //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         if(istransmission || flag == DisneyBSDF::diracEvent) {
             if(prd->next_ray_is_going_inside){
-                if(thin < 0.5f && mats.doubleSide < 0.5f ) 
-                {
+
                     outToIn = true;
                     inToOut = false;
 
@@ -934,7 +935,6 @@ extern "C" __global__ void __closesthit__radiance()
 
                     if (prd->curMatIdx > 0) {
                         vec3 sigma_t, ss_alpha;
-                        //vec3 sigma_t, ss_alpha;
                         prd->readMat(sigma_t, ss_alpha);
                         if (ss_alpha.x < 0.0f) { // is inside Glass
                             prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
@@ -945,8 +945,10 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, prd->sigma_t, prd->sigma_t, channelPDF) : 1e16f;
-                        prd->pushMat(extinction);
+                        // prd->sigma_t is only pre-calculated for SSS branch, so it's garbage value here, use extinction value instead
+                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, extinction, extinction, channelPDF) : 1e16f;
+                        prd->pushMat(extinction, vec3(-1.0f), mats.vol_anisotropy);
+
                     } else {
 
                         vec3 channelPDF = vec3(1.0f/3.0f);
@@ -957,21 +959,15 @@ extern "C" __global__ void __closesthit__radiance()
                         //prd->maxDistance = max(prd->maxDistance, 10/min_sg);
                         //printf("maxdist:%f\n",prd->maxDistance);
                         prd->channelPDF = channelPDF;
-                        // already calculated in BxDF
-
-                        // if (idx.x == w/2 && idx.y == h/2) {
-                        //     printf("into sss, sigma_t, alpha: %f, %f, %f\n", prd->sigma_t.x, prd->sigma_t.y, prd->sigma_t.z,prd->ss_alpha.x, prd->ss_alpha.y, prd->ss_alpha.z);
-                        // }
-                        
-                        prd->pushMat(prd->sigma_t, prd->ss_alpha);
+                        // prd->sigma_t and prd->ss_alpha should be pre-calculated in BxDF for this SSS branch
+                        prd->pushMat(prd->sigma_t, prd->ss_alpha, mats.vol_anisotropy);
                     }
 
                     prd->scatterDistance = scatterDistance;
                     prd->scatterStep = scatterStep;
-                }
-                
-            }
-            else{
+            } 
+            else {
+
                 outToIn = false;
                 inToOut = true;
 
@@ -1004,17 +1000,8 @@ extern "C" __global__ void __closesthit__radiance()
                 else
                 {
                     prd->isSS = false;
-                    prd->maxDistance = 1e16;
+                    prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, prd->channelPDF) : 1e16f;
                 }
-
-                // if (prd->medium != DisneyBSDF::PhaseFunctions::vacuum) {
-
-                //     prd->bad = true;
-                    
-                //     printf("%f %f %f %f %f %f %f %f \n matIdx = %d isotropic = %d \n", prd->sigma_t_queue[0].x, prd->sigma_t_queue[1].x, prd->sigma_t_queue[2].x, prd->sigma_t_queue[3].x, prd->sigma_t_queue[4].x, prd->sigma_t_queue[5].x, prd->sigma_t_queue[6].x, prd->sigma_t_queue[7].x,
-                //         prd->curMatIdx, prd->medium);
-                //     printf("matIdx = %d isotropic = %d \n\n", prd->curMatIdx, prd->medium);
-                // }
             }
         }else{
             if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
