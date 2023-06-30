@@ -71,6 +71,7 @@ public:
 
     void doFrameUpdate(int frame);
     void sortRecentFile(QStringList &lst);
+    bool isOnlyOptixWindow() const;
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
@@ -179,7 +180,7 @@ public slots:
     void onLangChanged(bool bChecked);
     void solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
     void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
-    void optixRunClient(int port);
+    void optixRunClient(int port, const char* cachedir, int cachenum, int sFrame, int eFrame);
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);

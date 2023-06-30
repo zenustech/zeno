@@ -96,43 +96,22 @@ struct PacketProc {
             //need to notify the GL to update.
             zenoApp->getMainWindow()->updateViewport(QString::fromStdString(action));
 
-        //} else if (action == "frameCache") {
-            //auto pos = objKey.find('!');
-            //if (pos != std::string::npos) {
-                //int maxCachedFrames = std::stoi(objKey.substr(0, pos));
-                //std::string path = objKey.substr(pos + 1);
-                //zeno::getSession().globalComm->frameCache(path, maxCachedFrames);
-            //}
-
-        } else if (action == "initOptix") {
-            QString initInfo = QString::fromUtf8(buf, len);
+        } else if (action == "frameCache") {
+            auto mainWin = zenoApp->getMainWindow();
+            if (mainWin && mainWin->isOnlyOptixWindow())
             {
-                QString cachedir = initInfo.split("_")[0];
-                zeno::log_info("cachedir {} ", cachedir.toStdString());
-                initZenCache(cachedir.toStdString().data());
-                QSettings settings(zsCompanyName, zsEditor);
-                bool bEnableCache = settings.value("zencache-enable").toBool();
-                if (bEnableCache)
-                {
-                    viewDecodeSetFrameCache(cachedir.toStdString().c_str(), 1);
+                auto pos = objKey.find('|');
+                if (pos != std::string::npos) {
+                    std::string path = objKey.substr(0, pos);
+                    int cacheNum = std::stoi(objKey.substr(pos + 1));
+                    if (!path.empty() && cacheNum > 0)
+                    {
+                        zeno::getSession().globalComm->frameCache(path, cacheNum);
+                        return true;
+                    }
                 }
-                else
-                {
-                    viewDecodeSetFrameCache("", 0);
-                }
-                viewDecodeClear();
-                TIMELINE_INFO tlinfo;
-                QString timelineinfo = initInfo.split("_")[1];
-                tlinfo.beginFrame = timelineinfo.split("-")[0].toInt();
-                tlinfo.endFrame = timelineinfo.split("-")[1].toInt();
-                tlinfo.currFrame = timelineinfo.split("-")[2].toInt();
-                tlinfo.bAlways = timelineinfo.split("-")[3].toInt();
-
-                auto mainWin = zenoApp->getMainWindow();
-                if (mainWin) {
-                    mainWin->resetTimeline(tlinfo);
-                    zeno::log_info("optixClientSocket got {} bytes, cachedir: {} timelineinfo: {} (ping test has 19)", len, cachedir.toStdString(), timelineinfo.toStdString());
-                }
+                //todo: error and exit because there is no cache obj.
+                return false;
             }
         } else if (action == "frameRange") {
             auto pos = objKey.find(':');
@@ -141,6 +120,16 @@ struct PacketProc {
                 int end = std::stoi(objKey.substr(pos + 1));
                 zeno::getSession().globalComm->initFrameRange(beg, end);
                 zeno::getSession().globalState->frameid = beg;
+
+                //init timeline on optix proc.
+                auto mainWin = zenoApp->getMainWindow();
+                if (mainWin && mainWin->isOnlyOptixWindow())
+                {
+                    TIMELINE_INFO tlinfo;
+                    tlinfo.beginFrame = beg;
+                    tlinfo.endFrame = end;
+                    mainWin->resetTimeline(tlinfo);
+                }
             }
 
         } else if (action == "reportStatus") {

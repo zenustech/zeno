@@ -56,12 +56,27 @@ int main(int argc, char *argv[])
         return runner_main(sessionid, port, cachedir, cacheLightCameraOnly, cacheMaterialOnly);
     }
     if (argc >= 3 && !strcmp(argv[1], "-optix")) {
-        MessageBox(0, "runner", "runner", MB_OK);
-        extern int optix_main(const QCoreApplication & app, int port);
+        //MessageBox(0, "runner", "runner", MB_OK);
+        extern int optix_main(const QCoreApplication & app, 
+                            int port,
+                            const char* cachedir,
+                            int cachenum,
+                            int sFrame,
+                            int eFrame);
         int port = -1;
         if (argc >= 5 && !strcmp(argv[3], "-port"))
             port = atoi(argv[4]);
-        return optix_main(a, port);
+        char* cachedir = nullptr;
+        int cachenum = 0, sFrame = 0, eFrame = 0;
+        if (argc >= 7 && !strcmp(argv[5], "-cachedir"))
+            cachedir = argv[6];
+        if (argc >= 9 && !strcmp(argv[7], "-cachenum"))
+            cachenum = atoi(argv[8]);
+        if (argc >= 11 && !strcmp(argv[9], "-beginFrame"))
+            sFrame = atoi(argv[10]);
+        if (argc >= 13 && !strcmp(argv[11], "-endFrame"))
+            eFrame = atoi(argv[10]);
+        return optix_main(a, port, cachedir, cachenum, sFrame, eFrame);
     }
 #endif
 

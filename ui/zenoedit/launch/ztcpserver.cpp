@@ -1,6 +1,7 @@
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
 #include "ztcpserver.h"
 #include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/log.h>
 #include <QMessageBox>
 #include <zeno/zeno.h>
@@ -107,16 +108,6 @@ void ZTcpServer::startProc(const std::string& progJson, bool applyLightAndCamera
         viewDecodeSetFrameCache("", 0);
     }
 
-    for (auto socket : m_optixSocks)
-    {
-        ZenoMainWindow* main = zenoApp->getMainWindow();
-        ZASSERT_EXIT(main);
-        TIMELINE_INFO tlinfo = main->timelineInfo();
-        QString info = finalPath + "_" + QString::number(tlinfo.beginFrame) + "-" + QString::number(tlinfo.endFrame) + "-" + QString::number(tlinfo.currFrame) + "-" + QString::number(tlinfo.bAlways);
-
-        send_packet(socket, "{\"action\":\"initOptix\"}", info.toUtf8(), info.length());
-    }
-
     QStringList args = {
         "-runner", QString::number(sessionid),
         "-port", QString::number(m_port),
@@ -141,33 +132,37 @@ void ZTcpServer::startProc(const std::string& progJson, bool applyLightAndCamera
 
 void ZTcpServer::startOptixProc()
 {
-	//if (m_optixProc && m_optixProc->isOpen())
-	//{
-	//	zeno::log_info("optix process already running");
-	//	return;
-	//}
+    zeno::log_info("launching optix program...");
 
-	zeno::log_info("launching optix program...");
+    auto optixProc = std::make_unique<QProcess>();
+    optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+    optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+    optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
 
-	auto optixProc = std::make_unique<QProcess>();
-	optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
-	optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
-	optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+    //check whether there is cached result.
+    int cachenum = 0, sFrame = 0, eFrame = 0;
+    auto& globalComm = zeno::getSession().globalComm;
+    int nRunFrames = globalComm->numOfFinishedFrame();
+    auto pair = globalComm->frameRange();
 
-	QStringList args = {
-		"-optix", QString::number(0),
-		"-port", QString::number(m_port)
-	};
+    QStringList args = {
+        "-optix", QString::number(0),
+        "-port", QString::number(m_port),
+        "-cachedir", QString::fromStdString(globalComm->cacheFramePath),
+        "-cachenum", QString::number(globalComm->maxCachedFrames),
+        "-beginFrame", QString::number(pair.first),
+        "-endFrame", QString::number(pair.second)
+    };
 
-	optixProc->start(QCoreApplication::applicationFilePath(), args);
+    optixProc->start(QCoreApplication::applicationFilePath(), args);
 
-	if (!optixProc->waitForStarted(-1)) {
-		zeno::log_warn("optix process failed to get started, giving up");
-		return;
-	}
+    if (!optixProc->waitForStarted(-1)) {
+        zeno::log_warn("optix process failed to get started, giving up");
+        return;
+    }
 
-	connect(optixProc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
-	connect(optixProc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+    connect(optixProc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
+    connect(optixProc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 
     m_optixProcs.push_back(std::move(optixProc));
 }
@@ -232,24 +227,14 @@ void ZTcpServer::onReadyRead()
         {
             m_optixSocks.append(socket);
             return;
-        }/*else if (arr == "optixProcClose")
-        {
-            if (m_optixProc) {
-                m_optixProc->terminate();
-                m_optixProc = nullptr;
-            }
-            return;
-        }*/
+        }
         qint64 redSize = arr.size();
-        if (m_optixSocks.indexOf(socket) == -1)
+        for (auto socket : m_optixSocks)
         {
-            for (auto socket : m_optixSocks)
-            {
-                QString retData = QString::fromUtf8(arr.data(), redSize);
-                socket->write(arr.data(), redSize);
-                while (socket->bytesToWrite() > 0) {
-                    socket->waitForBytesWritten();
-                }
+            QString retData = QString::fromUtf8(arr.data(), redSize);
+            socket->write(arr.data(), redSize);
+            while (socket->bytesToWrite() > 0) {
+                socket->waitForBytesWritten();
             }
         }
 

@@ -25,19 +25,25 @@
 #include <QApplication>
 #include <QObject>
 
-int optix_main(const QCoreApplication& app, int port);
-int optix_main(const QCoreApplication& app, int port) {
-	//MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
+
+int optix_main(const QCoreApplication& app,
+                int port,
+                const char* cachedir,
+                int cachenum,
+                int sFrame,
+                int eFrame)
+{
+    //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
 #ifdef __linux__
-	stderr = freopen("/dev/stdout", "w", stderr);
+    stderr = freopen("/dev/stdout", "w", stderr);
 #endif
-	std::cerr.rdbuf(std::cout.rdbuf());
-	std::clog.rdbuf(std::cout.rdbuf());
+    std::cerr.rdbuf(std::cout.rdbuf());
+    std::clog.rdbuf(std::cout.rdbuf());
 
-	zeno::set_log_stream(std::clog);
+    zeno::set_log_stream(std::clog);
 
-	ZenoMainWindow tempWindow(nullptr, 0, PANEL_OPTIX_VIEW);
-	tempWindow.showMaximized();
-	tempWindow.optixRunClient(port);
-	return app.exec();
+    ZenoMainWindow tempWindow(nullptr, 0, PANEL_OPTIX_VIEW);
+    tempWindow.showMaximized();
+    tempWindow.optixRunClient(port, cachedir, cachenum, sFrame, eFrame);
+    return app.exec();
 }

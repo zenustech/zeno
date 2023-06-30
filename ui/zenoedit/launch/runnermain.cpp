@@ -103,7 +103,11 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
     if (session->globalStatus->failed())
         return onfail();
 
-    bool bZenCache = initZenCache(cachedir);
+    int cacheNum = 0;
+    bool bZenCache = initZenCache(cachedir, cacheNum);
+    std::string msgCache = zeno::format("{}|{}", std::string(cachedir), std::to_string(cacheNum));
+    msgCache = "{\"action\":\"frameCache\", \"key\":\"" + msgCache + "\"}";
+    send_packet(msgCache, "", 0);
 
     std::vector<char> buffer;
 
