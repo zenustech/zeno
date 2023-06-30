@@ -1,9 +1,9 @@
 #include "zrecorddlg.h"
 #include "ui_zrecorddlg.h"
 #include <QFileDialog>
-#include "zenoapplication.h"
+#include <zeno/core/Session.h>
 #include "zenomainwindow.h"
-#include "zassert.h"
+#include "zeno/utils/UserData.h"
 
 
 ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
@@ -54,6 +54,8 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
 
 bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
 {
+    auto &ud = zeno::getSession().userData();
+    ud.set2("output_aov", m_ui->cbAOV->checkState() == Qt::Checked);
     auto &path = info.record_path;
     auto &fn = info.videoname;
     info.fps = m_ui->fps->text().toInt();
