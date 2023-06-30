@@ -61,7 +61,6 @@ public:
     int m_solver_frameid;
     int m_solver_interval;
     int m_render_fps;
-    QVector2D m_resolution;
     PerspectiveInfo m_perspective;
     int m_cache_frames;
     bool m_playing;

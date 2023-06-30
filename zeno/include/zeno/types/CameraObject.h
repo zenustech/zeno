@@ -13,7 +13,7 @@ struct CameraData {
     float fnear{0.01f};
     float ffar{20000.f};
     //float dof{-1.f};
-    float aperture{0.1f};
+    float aperture{0.0f};
     float focalPlaneDistance{2.0f};
 
     bool isSet = false;
