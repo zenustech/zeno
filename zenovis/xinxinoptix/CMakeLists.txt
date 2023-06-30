@@ -9,7 +9,6 @@ target_sources(zenovis PRIVATE
   volume/optixVolume.cpp
   volume/optixVolume.h
   optixSphere.h
-  
 
   ies/ies_loader.cpp
   ies/ies_loader.h
@@ -92,6 +91,8 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Lighting.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h

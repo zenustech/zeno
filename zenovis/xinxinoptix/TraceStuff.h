@@ -98,8 +98,7 @@ struct RadiancePRD
     bool         isSS;
     float        scatterStep;
     int          nonThinTransHit;
-    float3       LP;
-    float3       Ldir;
+
     float        Lweight;
     vec3         sigma_t_queue[8];
     vec3         ss_alpha_queue[8];
@@ -107,12 +106,15 @@ struct RadiancePRD
     float        samplePdf;
     bool         fromDiff;
 
+    __forceinline__ float rndf() {
+        return rnd(this->seed);
+    }
+
     unsigned char first_hit_type;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
         return sigma_t_queue[idx];
     }
-    float        CH;
 
     //cihou SS
     vec3 sigma_t;

@@ -150,8 +150,6 @@ extern "C" __global__ void __raygen__rg()
         // prd.ss_alpha = vec3(0.0f);
         // prd.sigma_t = vec3(0.0f);
 
-
-
         //if constexpr(params.denoise) 
         if (params.denoise) 
         {
@@ -173,6 +171,7 @@ extern "C" __global__ void __raygen__rg()
             prd.radiance_d = make_float3(0);
             prd.radiance_s = make_float3(0);
             prd.radiance_t = make_float3(0);
+
             tmin = prd.trace_tmin;
             prd.trace_tmin = 0;
 
@@ -320,7 +319,7 @@ extern "C" __global__ void __miss__radiance()
     prd->attenuation2 = prd->attenuation;
     prd->passed = false;
     prd->countEmitted = false;
-    prd->CH = 0.0;
+    
     if(prd->medium != DisneyBSDF::PhaseFunctions::isotropic){
         float upperBound = 100.0f;
         float envPdf = 0.0f;

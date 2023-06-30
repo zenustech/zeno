@@ -510,10 +510,10 @@ __forceinline__ __device__ vec4 inversesqrt(vec4 a)
 
 
 //////////////begin of common math/////////////////////////////////////////////////
-__forceinline__ __device__ float abs(float a)
-{
-    return float(fabsf(a));
-}
+// __forceinline__ __device__ float abs(float a)
+// {
+//     return float(fabsf(a));
+// }
 __forceinline__ __device__ vec2 abs(vec2 a)
 {
     return vec2(abs(a.x), abs(a.y));

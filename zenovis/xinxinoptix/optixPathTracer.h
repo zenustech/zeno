@@ -84,8 +84,8 @@ struct Params
     int2 windowCrop_max;
     int2 windowSpace;
 
-    int skynx;
-    int skyny;
+    uint32_t skynx;
+    uint32_t skyny;
 
     float sky_rot;
     float sky_rot_x;
