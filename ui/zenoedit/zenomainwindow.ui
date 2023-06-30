@@ -74,21 +74,6 @@
     <addaction name="actionOpen_View"/>
     <addaction name="actionClear_View"/>
    </widget>
-   <widget class="QMenu" name="menuRender">
-    <property name="title">
-     <string>Render</string>
-    </property>
-    <addaction name="actionSmooth_Shading"/>
-    <addaction name="actionNormal_Check"/>
-    <addaction name="actionWireFrame"/>
-    <addaction name="separator"/>
-    <addaction name="actionShow_Grid"/>
-    <addaction name="actionBackground_Color"/>
-    <addaction name="separator"/>
-    <addaction name="actionSolid"/>
-    <addaction name="actionShading"/>
-    <addaction name="actionOptix"/>
-   </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
      <string>View</string>
@@ -147,7 +132,6 @@
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
-   <addaction name="menuRender"/>
    <addaction name="menuView"/>
    <addaction name="menuWindow"/>
    <addaction name="menuOption"/>
