@@ -1150,20 +1150,35 @@ void ZenoMainWindow::importSubGraph()
         return;
 
     zenoio::ZSG_PARSE_RESULT res;
-    if (!zenoio::ZsgReader::getInstance().openSubgraphFile(filePath, res))
+    QString subgName;
+    if (!zenoio::ZsgReader::getInstance().openSubgraphFile(filePath, res, subgName))
     {
         zeno::log_error("failed to open zsg file: {}", filePath.toStdString());
         return;
     }
-
+    if (pGraphs->getSubgDesc(subgName, NODE_DESC()))
+    {
+        if (QMessageBox::question(this, tr("question"), tr("subgraph [%1] already exists, overwrite or not?").arg(subgName)) == QMessageBox::No)
+            return;
+    }
+    for (const auto& desc : res.descs)
+    {
+        if (pGraphs->getSubgDesc(desc.name, NODE_DESC()))
+        {
+            pGraphs->updateSubgDesc(desc.name, desc);
+        }
+        else
+        {
+            pGraphs->appendSubGraph(desc);
+        }
+    }
+    pModel->setIOProcessing(true);
     for (QString subgName : res.subgraphs.keys())
     {
         const SUBGRAPH_DATA& subg = res.subgraphs[subgName];
         QModelIndex& subgIdx = pModel->index(subgName);
         if (subgIdx.isValid())
         {
-            if (QMessageBox::question(this, tr("question"), tr("subgraph [%1] already exists, overwrite or not?").arg(subgName)) == QMessageBox::No)
-                continue;
             pModel->clearSubGraph(subgIdx);
         }
         else
@@ -1173,6 +1188,7 @@ void ZenoMainWindow::importSubGraph()
         }
         pModel->importNodes(subg.nodes, subg.links, QPointF(0, 0), subgIdx, false);
     }
+    pModel->setIOProcessing(false);
 }
 
 static bool saveContent(const QString &strContent, QString filePath) {

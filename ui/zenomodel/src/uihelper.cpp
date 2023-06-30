@@ -1118,7 +1118,7 @@ QString UiHelper::correctSubIOName(SubGraphModel* pSubModel, const QString& newN
     int i = 1;
     QModelIndexList indexs = pSubModel->getNodesByCls(bInput ? "SubInput" : "SubOutput");
     QStringList names;
-    for (auto index : indexs) {
+    for (const auto& index : indexs) {
         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(index.data(ROLE_NODE_PARAMS));
         ZASSERT_EXIT(nodeParams, "");
         VParamItem *param = nodeParams->getParams();

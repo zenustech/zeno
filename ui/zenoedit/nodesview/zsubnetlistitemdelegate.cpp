@@ -205,7 +205,8 @@ void ZSubnetListItemDelegate::onRename(const QModelIndex &index)
 void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
 {
     DlgInEventLoopScope;
-    QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "Zeno Graph File(*.zsg);; All Files(*);;");
+    QString subgName = index.data(ROLE_OBJNAME).toString();
+    QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", subgName, "Zeno Graph File(*.zsg);; All Files(*);;");
     if (!path.isEmpty()) {
         QModelIndexList indexs;
         indexs << index;
@@ -216,7 +217,7 @@ void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
             if (m_model->IsSubGraphNode(childIdx))
             {
                 const QModelIndex& subgIdx = m_model->index(childIdx.data(ROLE_OBJNAME).toString());
-                if (subgIdx.isValid())
+                if (subgIdx.isValid() && !indexs.contains(subgIdx))
                     indexs << subgIdx;
             }
         }
@@ -231,7 +232,7 @@ void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
 
         file.write(strJson.toUtf8());
         file.close();
-        zeno::log_debug("saved subgraph {} successfully", index.data(ROLE_OBJNAME).toString().toStdString());
+        zeno::log_debug("saved subgraph {} successfully", subgName.toStdString());
     }
 }
 

@@ -106,6 +106,9 @@ void SubGraphModel::clear()
     m_nodes.clear();
     m_key2Row.clear();
     m_row2Key.clear();
+    m_name2identLst.clear();
+    m_num2strId.clear();
+    m_str2numId.clear();
 
     const QModelIndex& subgIdx = m_pGraphsModel->index(m_name);
     emit m_pGraphsModel->clearLayout(subgIdx);

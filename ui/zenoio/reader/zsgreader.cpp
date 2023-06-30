@@ -155,7 +155,7 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
     return true;
 }
 
-bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& result)
+bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& result, QString& subgName)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -211,6 +211,8 @@ bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& re
         {
             return false;
         }
+        if (subgName.isEmpty())
+            subgName = graphName;
     }
 
     result.descs = nodesDescs;
