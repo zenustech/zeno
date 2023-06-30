@@ -32,7 +32,6 @@ private:
     std::unique_ptr<QProcess> m_proc;
 
     std::vector<std::unique_ptr<QProcess>> m_optixProcs;
-    //std::unique_ptr<QProcess> m_optixProc;
     int m_port;
 };
 

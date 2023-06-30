@@ -135,9 +135,9 @@ void ZTcpServer::startOptixProc()
     zeno::log_info("launching optix program...");
 
     auto optixProc = std::make_unique<QProcess>();
-    optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
-    optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
-    optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+    //optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+    //optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+    //optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
 
     //check whether there is cached result.
     int cachenum = 0, sFrame = 0, eFrame = 0;
@@ -153,6 +153,14 @@ void ZTcpServer::startOptixProc()
         "-beginFrame", QString::number(pair.first),
         "-endFrame", QString::number(pair.second)
     };
+
+    //open a new console to show log from optix.
+    /*
+    optixProc->setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments* args) {
+        args->flags |= CREATE_NEW_CONSOLE;
+        args->startupInfo->dwFlags &= ~STARTF_USESTDHANDLES;
+    });
+    */
 
     optixProc->start(QCoreApplication::applicationFilePath(), args);
 
