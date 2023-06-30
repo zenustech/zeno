@@ -57,6 +57,7 @@ private:
     void registerCate(const NODE_DESC& desc);
     void initCoreDescriptors();
     void initSubnetDescriptors(const QList<QString>& subgraphs, const zenoio::ZSG_PARSE_RESULT& res);
+    void clearSubgDesc();
 
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;
