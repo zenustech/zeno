@@ -601,7 +601,11 @@ void DisplayWidget::onRecord()
     if (QDialog::Accepted == dlg.exec())
     {
         VideoRecInfo recInfo;
-        dlg.getInfo(recInfo);
+        if (!dlg.getInfo(recInfo))
+        {
+            QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
+            return;
+        }
         //validation.
 
         ZRecFrameSelectDlg frameDlg(this);
