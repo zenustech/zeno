@@ -811,6 +811,8 @@ QList<SEARCH_RESULT> GraphsTreeModel_impl::search(
                             int searchType,
                             int searchOpts)
 {
+    if (!m_main)
+        return QList<SEARCH_RESULT>();
     const QModelIndex& mainIdx = m_main->index();
     return search_impl(mainIdx, content, searchType, searchOpts, true);
 }
@@ -856,19 +858,8 @@ QList<SEARCH_RESULT> GraphsTreeModel_impl::search_impl(
         {
             bAppend = search_result(root, pChildItem->index(), content, SEARCH_ARGS, searchOpts, results);
         }
-
-    }
-    if (bRecursivly && results.isEmpty()) {
-        TreeNodeItem* pChildItem = pRootItem;
-        for (int r = 0; r < pChildItem->rowCount(); r++) {
-            pChildItem = static_cast<TreeNodeItem*>(pChildItem->child(r));
-            if (pChildItem)
-            {
-                if (pChildItem->rowCount() > 0)
-                    results.append(search_impl(pChildItem->index(), content, searchType, searchOpts, bRecursivly));
-                if (!results.isEmpty())
-                    break;
-            }
+        if (bRecursivly && pChildItem->rowCount() > 0) {
+             results.append(search_impl(pChildItem->index(), content, searchType, searchOpts, bRecursivly));
         }
     }
     return results;

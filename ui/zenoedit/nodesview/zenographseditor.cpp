@@ -187,6 +187,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgr
 void ZenoGraphsEditor::onModelCleared()
 {
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
+    m_ui->searchEdit->clear();
 }
 
 void ZenoGraphsEditor::onSubGraphsToRemove(const IGraphsModel* pModel, const QModelIndex& parent, int first, int last)
@@ -731,6 +732,16 @@ void ZenoGraphsEditor::onSearchEdited(const QString& content)
         }
     }
 
+    if (QAbstractItemModel* model = m_ui->searchResView->model())
+    {
+        delete model;
+        model = nullptr;
+    }
+    if (QAbstractItemDelegate* pDelegate = m_ui->searchResView->itemDelegate())
+    {
+        delete pDelegate;
+        pDelegate = nullptr;
+    }
     m_ui->searchResView->setModel(pModel);
     m_ui->searchResView->setItemDelegate(new SearchItemDelegate(content));
     m_ui->searchResView->expandAll();
