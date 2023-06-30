@@ -297,6 +297,19 @@ void GraphsManagment::removeGraph(const QString& subgName)
     }
 }
 
+void GraphsManagment::clearSubgDesc()
+{
+    for (auto desc : m_subgsDesc)
+    {
+        for (QString cate : desc.categories) {
+            m_nodesCate[cate].nodes.removeAll(desc.name);
+            if (m_nodesCate[cate].nodes.isEmpty())
+                m_nodesCate.remove(cate);
+        }
+    }
+    m_subgsDesc.clear();
+}
+
 void GraphsManagment::appendSubGraph(const NODE_DESC& desc)
 {
     if (!desc.name.isEmpty() && m_subgsDesc.find(desc.name) == m_subgsDesc.end())
@@ -482,9 +495,9 @@ void GraphsManagment::clear()
     }
     if (m_pSharedGraphs)
     {
-        m_pSharedGraphs->clear();
         delete m_pSharedGraphs;
         m_pSharedGraphs = nullptr;
+        clearSubgDesc();
     }
     emit fileClosed();
 }
