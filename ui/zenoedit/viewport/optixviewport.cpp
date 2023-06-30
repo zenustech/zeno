@@ -210,14 +210,14 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         //    emit mainWin->visObjectsUpdated(this, frameid);
     });
 
-    //no need to notify timeline to update.
-    /*
+#ifdef ZENO_OPTIX_PROC
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
+        //update timeline
         if (mainWin)
             emit mainWin->visFrameUpdated(false, frameid);
-    }, Qt::BlockingQueuedConnection);
-    */
+    });
+#endif
 
     //fake GL
     m_zenovis->initializeGL();

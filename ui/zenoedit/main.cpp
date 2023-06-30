@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
         if (argc >= 11 && !strcmp(argv[9], "-beginFrame"))
             sFrame = atoi(argv[10]);
         if (argc >= 13 && !strcmp(argv[11], "-endFrame"))
-            eFrame = atoi(argv[10]);
+            eFrame = atoi(argv[12]);
         return optix_main(a, port, cachedir, cachenum, sFrame, eFrame);
     }
 #endif
