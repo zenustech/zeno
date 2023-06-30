@@ -47,10 +47,6 @@ ZENDEFNODE(ReadTile, {
 });
 
 namespace zeno_gltf {
-    struct Mesh {
-        std::vector<vec3f> poss;
-        std::vector<vec3i> indexs;
-    };
     enum class ComponentType {
         GL_BYTE = 0x1400,
         GL_UNSIGNED_BYTE = 0x1401,
@@ -138,20 +134,44 @@ struct LoadGLTFModel : INode {
             }
         }
 
-        std::vector<vec3i> indexs;
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
         {
             const auto &mesh = doc["meshes"][0];
             const auto &primitive = mesh["primitives"][0];
-            auto idx = primitive["indices"].GetInt();
-            const auto &acc = accessors[idx];
-            const auto &bv = bufferViews[acc.bufferView];
-
+            {
+                const auto &position = primitive["attributes"]["POSITION"].GetInt();
+                const auto &acc = accessors[position];
+                const auto &bv = bufferViews[acc.bufferView];
+                auto reader = BinaryReader(buffers[bv.buffer]);
+                reader.seek_from_begin(bv.byteOffset);
+                prim->resize(acc.count);
+                for (auto i = 0; i < acc.count; i++) {
+                    prim->verts[i] = reader.read_LE<vec3f>();
+                }
+            }
+            {
+                auto index = primitive["indices"].GetInt();
+                const auto &acc = accessors[index];
+                const auto &bv = bufferViews[acc.bufferView];
+                auto reader = BinaryReader(buffers[bv.buffer]);
+                reader.seek_from_begin(bv.byteOffset);
+                auto count = acc.count / 3;
+                prim->tris.resize(count);
+                for (auto i = 0; i < count; i++) {
+                    if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
+                        auto f0 = reader.read_LE<uint16_t>();
+                        auto f1 = reader.read_LE<uint16_t>();
+                        auto f2 = reader.read_LE<uint16_t>();
+                        prim->tris[i] = {f0, f1, f2};
+                    }
+                    else {
+                        zeno::log_info("not support componentType: {}", int(acc.componentType));
+                    }
+                }
+            }
         }
 
-        std::vector<vec3f> poss;
-
-
-        zeno::log_info("mesh {}", doc["meshes"].Size());
+        set_output("prim", std::move(prim));
     }
 };
 
@@ -159,7 +179,9 @@ ZENDEFNODE(LoadGLTFModel, {
     {
         {"readpath", "path"},
     },
-    {},
+    {
+        "prim"
+    },
     {},
     {"alembic"},
 });
