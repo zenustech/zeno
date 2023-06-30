@@ -559,11 +559,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         return old_attenuation * thisPDF;
     };
 
-    auto taskAux = [](const vec3& weight) {
-        // Nothing
-    };
-
-    DirectLighting<true>(prd, shadow_prd, new_orig, ray_dir, evalBxDF, taskAux);
+    DirectLighting<true>(prd, shadow_prd, new_orig, ray_dir, evalBxDF);
     
     prd->depth += 1;
     prd->radiance += prd->emission;

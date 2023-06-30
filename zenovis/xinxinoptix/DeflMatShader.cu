@@ -399,17 +399,6 @@ vec3 projectedBarycentricCoord(vec3 p, vec3 q, vec3 u, vec3 v)
     return o;
 }
 
-
-template <typename Func>
-__forceinline__ __device__ void dosomething(Func &&func) {
-    /// ...;
-    func();
-
-    auto lamdba = []() {
-
-    };
-}
-
 extern "C" __global__ void __closesthit__radiance()
 {
     RadiancePRD* prd = getPRD();
@@ -1072,7 +1061,7 @@ extern "C" __global__ void __closesthit__radiance()
     shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
  
-    DirectLighting<true>(prd, shadow_prd, P, ray_dir, evalBxDF, taskAux);
+    DirectLighting<true>(prd, shadow_prd, P, ray_dir, evalBxDF, &taskAux);
 
     P = P_OLD;
     prd->direction = normalize(wi);

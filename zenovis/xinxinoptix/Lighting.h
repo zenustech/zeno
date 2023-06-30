@@ -65,11 +65,18 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
              .rotY(to_radians(-params.sky_rot_y));
     return dir;
 }
+namespace detail {
+    template <typename T> struct is_void {
+        static constexpr bool value = false;
+    };
+    template <> struct is_void<void> {
+        static constexpr bool value = true;
+    };
+}
 
-
-template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux>
+template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
 static __inline__ __device__
-void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& P, const float3& ray_dir, TypeEvalBxDF& evalBxDF, TypeAux& taskAux) {
+void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& P, const float3& ray_dir, TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
 
     const float3 wo = normalize(-ray_dir); 
 
@@ -191,7 +198,12 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& P, 
             }
 
             prd->radiance += (float3)(tmp) * bxdf_value;
-            taskAux(tmp);
+
+            if constexpr (!detail::is_void<TypeAux>::value) {
+                if (taskAux != nullptr) {
+                    (*taskAux)(tmp);
+                }
+            }// TypeAux
         }
     }
 };
