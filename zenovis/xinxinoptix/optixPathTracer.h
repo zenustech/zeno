@@ -67,6 +67,10 @@ struct Params
 
     unsigned int width;
     unsigned int height;
+    unsigned int tile_i;
+    unsigned int tile_j;
+    unsigned int tile_w;
+    unsigned int tile_h;
     unsigned int samples_per_launch;
 
     CameraInfo cam;

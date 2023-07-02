@@ -576,25 +576,33 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.num_lights = g_lights.size();
     state.params.denoise = denoise;
+    for(int j=0;j<4;j++){
+      for(int i=0;i<4;i++){
+        state.params.tile_i = i;
+        state.params.tile_j = j;
+        state.params.tile_w = state.params.windowSpace.x/4 + 1;
+        state.params.tile_h = state.params.windowSpace.y/4 + 1;
 
-    CUDA_SYNC_CHECK();
-    CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
-                &state.params, sizeof( Params ),
-                cudaMemcpyHostToDevice
-                ) );
+        CUDA_SYNC_CHECK();
+        CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
+                    &state.params, sizeof( Params ),
+                    cudaMemcpyHostToDevice
+                    ) );
 
-    CUDA_SYNC_CHECK();
-    OPTIX_CHECK( optixLaunch(
-                state.pipeline,
-                0,
-                (CUdeviceptr)state.d_params2,
-                sizeof( Params ),
-                &state.sbt,
-                state.params.width,   // launch width
-                state.params.height,  // launch height
-                1                     // launch depth
-                ) );
+        CUDA_SYNC_CHECK();
 
+        OPTIX_CHECK( optixLaunch(
+                    state.pipeline,
+                    0,
+                    (CUdeviceptr)state.d_params2,
+                    sizeof( Params ),
+                    &state.sbt,
+                    state.params.tile_w,   // launch width
+                    state.params.tile_h,  // launch height
+                    1                     // launch depth
+                    ) );
+      }
+    }
     output_buffer.unmap();
     (*output_buffer_diffuse   ).unmap();
     (*output_buffer_specular  ).unmap();
@@ -3492,9 +3500,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 //    updateState( *output_buffer_specular, state.params);
 //    updateState( *output_buffer_transmit, state.params);
 //    updateState( *output_buffer_background, state.params);
-    const int max_samples_once = 16;
-
+    const int max_samples_once = 1;
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
+
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( *output_buffer_o, state, denoise);
         state.params.subframe_index++;
