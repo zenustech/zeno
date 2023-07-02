@@ -36,8 +36,26 @@ Session::~Session() = default;
 Scene* Session::get_scene() const {
     return impl->scene.get();
 }
+
+void Session::set_safe_frames(bool bLock, int nx, int ny) {
+    impl->scene->camera->set_safe_frames(bLock, nx, ny);
+}
+
+float Session::get_safe_frames() const {
+    return impl->scene->camera->get_safe_frames();
+}
+
+bool Session::is_lock_window() const {
+    return impl->scene->camera->is_locked_window();
+}
+
 void Session::set_window_size(int nx, int ny) {
     impl->scene->camera->setResolution(nx, ny);
+}
+
+void Session::set_window_size(int nx, int ny, zeno::vec2i offset) {
+    impl->scene->camera->setResolution(nx, ny);
+    impl->scene->camera->viewport_offset = offset;
 }
 
 std::tuple<int, int> Session::get_window_size() {

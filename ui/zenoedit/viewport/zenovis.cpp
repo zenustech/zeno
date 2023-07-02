@@ -8,6 +8,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
+#include "settings/zenosettingsmanager.h"
 
 
 Zenovis::Zenovis(QObject *parent)
@@ -15,7 +16,6 @@ Zenovis::Zenovis(QObject *parent)
     , m_solver_frameid(0)
     , m_solver_interval(0)
     , m_render_fps(0)
-    , m_resolution(QPoint(1,1))
     , m_cache_frames(10)
     , m_playing(false)
     , m_camera_keyframe(nullptr)
@@ -56,10 +56,30 @@ int Zenovis::getCurrentFrameId()
 
 void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective)
 {
-    m_resolution = resolution;
     m_perspective = perspective;
     if (session) {
-        session->set_window_size(m_resolution.x(), m_resolution.y());
+        if (session->is_lock_window())
+        {
+            zeno::vec2i offset = {};
+            int w = resolution.x(), W = 0;
+            int h = resolution.y(), H = 0;
+            float deviceRatio = (float)w / h;
+            float ratio = session->get_safe_frames();
+            if (deviceRatio > ratio) {
+                H = h;
+                W = H * ratio;
+                offset[0] = std::max((w - W) / 2, 0);
+            } else {
+                W = w;
+                H = W / ratio;
+                offset[1] = std::max((h - H) / 2, 0);
+            }
+            session->set_window_size(W, H, offset);
+        }
+        else
+        {
+            session->set_window_size(resolution.x(), resolution.y());
+        }
         session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz,
                                   m_perspective.theta, m_perspective.phi, m_perspective.radius,
                                   m_perspective.fov, m_perspective.ortho_mode,
@@ -154,6 +174,41 @@ void Zenovis::doFrameUpdate()
     bool inserted = session->load_objects();
     if (inserted) {
         emit objectsUpdated(frameid);
+        auto& inst = ZenoSettingsManager::GetInstance();
+        QVariant removeCurFrameCache = inst.getValue("zencache-rmcurcache");
+        QVariant EnableCache = inst.getValue("zencache-enable");
+        bool bremoveCurFrameCache = removeCurFrameCache.isValid() ? removeCurFrameCache.toBool() : false;
+        bool bEnableCache = EnableCache.isValid() ? EnableCache.toBool() : false;
+        if (bEnableCache && bremoveCurFrameCache)
+        {
+            std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+            ZASSERT_EXIT(mgr);
+            QDir spCacheDir = mgr->getPersistenceDir();
+            QString selfPath = QCoreApplication::applicationDirPath();
+            if (QDateTime::fromString(spCacheDir.dirName(), "yyyy-MM-dd hh-mm-ss").isValid() && spCacheDir.path() != selfPath && !selfPath.contains(spCacheDir.path()) && !spCacheDir.isRoot() && !spCacheDir.path().contains("."))
+            {
+                bool hasZencacheOnly = true;
+                bool ret = spCacheDir.cd(QString::number(1000000+frameid).mid(1));
+                ZASSERT_EXIT(ret);
+                spCacheDir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks | QDir::AllDirs | QDir::NoDotAndDotDot);
+                QFileInfoList list = spCacheDir.entryInfoList();
+                for (int i = 0; i < list.size(); ++i)
+                {
+                    QFileInfo fileInfo = list.at(i);
+                    zeno::log_debug("filesize: {} fileName: {}", fileInfo.size(), fileInfo.fileName().toStdString());
+                    if (fileInfo.isDir() || fileInfo.fileName().right(9) != ".zencache")
+                    {
+                        hasZencacheOnly = false;
+                        break;
+                    }
+                }
+                if (hasZencacheOnly)
+                {
+                    spCacheDir.removeRecursively();
+                    zeno::log_info("remove dir: {}", spCacheDir.absolutePath().toStdString());
+                }
+            }
+        }
     }
     if (m_playing)
         setCurrentFrameId(frameid + 1);

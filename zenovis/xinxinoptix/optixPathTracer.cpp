@@ -3534,11 +3534,13 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         }
 
         // AOV
-        path = path.substr(0, path.size() - 4);
-        stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
-        stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);
-        stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
-        stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
+        if (zeno::getSession().userData().get2<bool>("output_aov", false)) {
+            path = path.substr(0, path.size() - 4);
+            stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
+            stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);
+            stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
+            stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
+        }
     }
 }
 

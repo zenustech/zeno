@@ -64,7 +64,7 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
     ZASSERT_EXIT(dir.exists());
     dir.mkdir("P");
     // remove old image
-    {
+    if (m_recordInfo.bExportVideo) {
         QString dir_path = m_recordInfo.record_path + "/P/";
         QDir qDir = QDir(dir_path);
         qDir.setNameFilters(QStringList("*.jpg"));

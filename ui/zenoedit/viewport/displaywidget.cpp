@@ -170,6 +170,16 @@ void DisplayWidget::setCameraRes(const QVector2D& res)
     }
 }
 
+void DisplayWidget::setSafeFrames(bool bLock, int nx, int ny)
+{
+    if (m_glView) {
+        m_glView->setSafeFrames(bLock, nx, ny);
+    }
+    else {
+        m_optixView->setSafeFrames(bLock, nx, ny);
+    }
+}
+
 void DisplayWidget::setSimpleRenderOption()
 {
     if (m_glView)
@@ -591,7 +601,11 @@ void DisplayWidget::onRecord()
     if (QDialog::Accepted == dlg.exec())
     {
         VideoRecInfo recInfo;
-        dlg.getInfo(recInfo);
+        if (!dlg.getInfo(recInfo))
+        {
+            QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
+            return;
+        }
         //validation.
 
         ZRecFrameSelectDlg frameDlg(this);
