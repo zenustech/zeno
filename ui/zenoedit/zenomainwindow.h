@@ -223,7 +223,7 @@ private:
     void updateShortCut(QStringList keys);
     void shortCutDlg();
     void killOptix();
-    ZOptixViewport* getOnlyOptixViewport() const;
+    DisplayWidget* getOnlyViewport() const;
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

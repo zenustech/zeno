@@ -784,7 +784,7 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
     }
 }
 
-ZOptixViewport* ZenoMainWindow::getOnlyOptixViewport() const
+DisplayWidget* ZenoMainWindow::getOnlyViewport() const
 {
     //find the only optix viewport
     QVector<DisplayWidget*> views;
@@ -796,8 +796,7 @@ ZOptixViewport* ZenoMainWindow::getOnlyOptixViewport() const
     ZASSERT_EXIT(views.size() == 1, nullptr);
 
     DisplayWidget* pView = views[0];
-    ZASSERT_EXIT(pView, nullptr);
-    return pView->optixViewport();
+    return pView;
 }
 
 void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
@@ -879,9 +878,9 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
 
     launchProgram(pModel, recInfo.frameRange.first, recInfo.frameRange.second, false, false);
 
-    ZOptixViewport* pViewport = getOnlyOptixViewport();
+    DisplayWidget* pViewport = getOnlyViewport();
     ZASSERT_EXIT(pViewport);
-    pViewport->recordVideo(recInfo);
+    pViewport->onRecord_slient(recInfo);
 }
 
 void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
