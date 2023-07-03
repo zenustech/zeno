@@ -522,14 +522,11 @@ void ZenoGraphsEditor::activateTabOfTree(const QString &path, const QString &nod
     }
     m_ui->graphsViewTab->setCurrentIndex(idx);
 
-    if (!nodeid.isEmpty())
-    {
-        ZenoSubGraphView *pView = qobject_cast<ZenoSubGraphView *>(m_ui->graphsViewTab->currentWidget());
-        ZASSERT_EXIT(pView);
+    ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget());
+    ZASSERT_EXIT(pView);
 
-        pView->resetPath(pNodeModel, path, subgIdx, nodeid, isError);
-        m_mainWin->onNodesSelected(subgIdx, pView->scene()->selectNodesIndice(), true);
-    }
+    pView->resetPath(pNodeModel, path, subgIdx, nodeid, isError);
+    m_mainWin->onNodesSelected(subgIdx, pView->scene()->selectNodesIndice(), true);
 }
 
 void ZenoGraphsEditor::activateTab(const QModelIndex& subgIdx, const QString& path, const QString& objId, bool isError)
