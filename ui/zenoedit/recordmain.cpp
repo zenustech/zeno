@@ -74,6 +74,7 @@ int record_main(const QCoreApplication& app)
         {"video", "video", "export video"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
+        {"cacheautorm", "cacheautoremove", "remove cache after render"},
     });
     cmdParser.process(app);
 
@@ -100,14 +101,35 @@ int record_main(const QCoreApplication& app)
         text.replace('\\', '/');
         QSettings settings(zsCompanyName, zsEditor);
         settings.setValue("zencachedir", text);
+        settings.setValue("zencache-enable", true);
+        settings.setValue("zencache-autoremove", false);
         if (!QDir(text).exists()) {
             QDir().mkdir(text);
         }
+        if (cmdParser.isSet("cacheautorm"))
+        {
+            bool autorm = cmdParser.value("cacheautorm").toInt();
+            QSettings settings(zsCompanyName, zsEditor);
+            settings.setValue("zencache-rmcurcache", autorm);
+        }
+        else {
+            QSettings settings(zsCompanyName, zsEditor);
+            settings.setValue("zencache-rmcurcache", false);
+        }
+        if (cmdParser.isSet("cacheNum")) {
+            QString text2 = cmdParser.value("cacheNum");
+            QSettings settings(zsCompanyName, zsEditor);
+            settings.setValue("zencachenum", text2);
+        }
+        else {
+            QSettings settings(zsCompanyName, zsEditor);
+            settings.setValue("zencachenum", 1);
+        }
     }
-    if (cmdParser.isSet("cacheNum")) {
-        QString text2 = cmdParser.value("cacheNum");
+    else {
         QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencachenum", text2);
+        settings.setValue("zencache-enable", true);
+        settings.setValue("zencache-autoremove", true);
     }
     if (cmdParser.isSet("exitWhenRecordFinish"))
         param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";

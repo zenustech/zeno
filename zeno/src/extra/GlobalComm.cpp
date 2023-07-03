@@ -20,7 +20,7 @@ std::unordered_set<std::string> lightCameraNodes({
     });
 std::string matlNode = "ShaderFinalize";
 
-static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
+static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, size_t& cacheDirSize, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
     if (cachedir.empty()) return;
     std::string dir = cachedir + "/" + std::to_string(1000000 + frameid).substr(1);
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
@@ -102,6 +102,8 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
         std::copy(keys[i].begin(), keys[i].end(), oit);
         std::copy_n((const char *)poses[i].data(), poses[i].size() * sizeof(size_t), oit);
         std::copy(bufCaches[i].begin(), bufCaches[i].end(), oit);
+        ofs.close();
+        cacheDirSize += std::filesystem::file_size(cachepath[i]);
     }
     objs.clear();
 }
@@ -182,12 +184,12 @@ ZENO_API void GlobalComm::finishFrame() {
     m_maxPlayFrame += 1;
 }
 
-ZENO_API void GlobalComm::dumpFrameCache(int frameid, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
+ZENO_API void GlobalComm::dumpFrameCache(int frameid, size_t& cacheDirSize, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
     std::lock_guard lck(m_mtx);
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx >= 0 && frameIdx < m_frames.size()) {
         log_debug("dumping frame {}", frameid);
-        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, cacheLightCameraOnly, cacheMaterialOnly);
+        toDisk(cacheFramePath, frameid, m_frames[frameIdx].view_objects, cacheDirSize, cacheLightCameraOnly, cacheMaterialOnly);
     }
 }
 

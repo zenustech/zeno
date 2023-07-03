@@ -177,9 +177,11 @@ void Zenovis::doFrameUpdate()
         auto& inst = ZenoSettingsManager::GetInstance();
         QVariant removeCurFrameCache = inst.getValue("zencache-rmcurcache");
         QVariant EnableCache = inst.getValue("zencache-enable");
+        QVariant varAutoRemove = inst.getValue("zencache-autoremove");
         bool bremoveCurFrameCache = removeCurFrameCache.isValid() ? removeCurFrameCache.toBool() : false;
         bool bEnableCache = EnableCache.isValid() ? EnableCache.toBool() : false;
-        if (bEnableCache && bremoveCurFrameCache)
+        bool bAutoRemove = varAutoRemove.isValid() ? varAutoRemove.toBool() : false;
+        if (bEnableCache && bremoveCurFrameCache && !bAutoRemove)
         {
             std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
             ZASSERT_EXIT(mgr);
@@ -189,23 +191,25 @@ void Zenovis::doFrameUpdate()
             {
                 bool hasZencacheOnly = true;
                 bool ret = spCacheDir.cd(QString::number(1000000+frameid).mid(1));
-                ZASSERT_EXIT(ret);
-                spCacheDir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks | QDir::AllDirs | QDir::NoDotAndDotDot);
-                QFileInfoList list = spCacheDir.entryInfoList();
-                for (int i = 0; i < list.size(); ++i)
+                if (ret)
                 {
-                    QFileInfo fileInfo = list.at(i);
-                    zeno::log_debug("filesize: {} fileName: {}", fileInfo.size(), fileInfo.fileName().toStdString());
-                    if (fileInfo.isDir() || fileInfo.fileName().right(9) != ".zencache")
+                    spCacheDir.setFilter(QDir::Files | QDir::Hidden | QDir::NoSymLinks | QDir::AllDirs | QDir::NoDotAndDotDot);
+                    QFileInfoList list = spCacheDir.entryInfoList();
+                    for (int i = 0; i < list.size(); ++i)
                     {
-                        hasZencacheOnly = false;
-                        break;
+                        QFileInfo fileInfo = list.at(i);
+                        zeno::log_debug("filesize: {} fileName: {}", fileInfo.size(), fileInfo.fileName().toStdString());
+                        if (fileInfo.isDir() || fileInfo.fileName().right(9) != ".zencache")
+                        {
+                            hasZencacheOnly = false;
+                            break;
+                        }
                     }
-                }
-                if (hasZencacheOnly)
-                {
-                    spCacheDir.removeRecursively();
-                    zeno::log_info("remove dir: {}", spCacheDir.absolutePath().toStdString());
+                    if (hasZencacheOnly)
+                    {
+                        spCacheDir.removeRecursively();
+                        zeno::log_info("remove dir: {}", spCacheDir.absolutePath().toStdString());
+                    }
                 }
             }
         }

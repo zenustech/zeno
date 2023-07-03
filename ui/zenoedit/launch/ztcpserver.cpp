@@ -12,6 +12,7 @@
 #include "zenoapplication.h"
 #include "cache/zcachemgr.h"
 #include "zenomainwindow.h"
+#include <filesystem>
 
 
 ZTcpServer::ZTcpServer(QObject *parent)
@@ -77,6 +78,23 @@ void ZTcpServer::startProc(const std::string& progJson,  bool applyLightAndCamer
         {
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
+        }
+        QVariant removeCurFrameCache = settings.value("zencache-rmcurcache");
+        bool bremoveCurFrameCache = removeCurFrameCache.isValid() ? removeCurFrameCache.toBool() : false;
+        if (bremoveCurFrameCache)
+        {
+            size_t cacheDirSize = 0;
+            for (auto& direntry : std::filesystem::recursive_directory_iterator(std::filesystem::u8path(cacheRootdir.toStdString())))
+            {
+                if (!std::filesystem::is_directory(direntry.path()))
+                    cacheDirSize += std::filesystem::file_size(direntry.path());
+            }
+            if (cacheDirSize > 214748364800) //200GB
+            {
+                zeno::log_info("Cache root dir contains too many files(>200GB), program return");
+                QMessageBox::warning(nullptr, tr("ZenCache"), tr("Cache root dir contains too many files(>200GB), please clean up."));
+                return;
+            }
         }
 
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();

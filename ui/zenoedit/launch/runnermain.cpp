@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <filesystem>
 #include <zeno/utils/log.h>
 #include <zeno/utils/Timer.h>
 #include <zeno/core/Graph.h>
@@ -17,6 +18,7 @@
 #include <QTcpServer>
 #include <QtWidgets>
 #include <QTcpSocket>
+#include <QSettings>
 #endif
 #include <zeno/utils/scope_exit.h>
 #include "corelaunch.h"
@@ -78,6 +80,16 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 #endif
 }
 
+static size_t getCacheDirsize(std::string cachedir) {
+    size_t cacheDirSize = 0;
+    for (auto& direntry : std::filesystem::recursive_directory_iterator(std::filesystem::u8path(cachedir)))
+    {
+        if (!std::filesystem::is_directory(direntry.path()))
+            cacheDirSize += std::filesystem::file_size(direntry.path());
+    }
+    return cacheDirSize;
+}
+
 static int runner_start(std::string const &progJson, int sessionid, char* cachedir, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
     zeno::log_trace("runner got program JSON: {}", progJson);
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
@@ -104,6 +116,11 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
         return onfail();
 
     bool bZenCache = initZenCache(cachedir);
+
+    QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
+    size_t cacheDirSize = 0;
+    if (bZenCache && (settings.value("zencache-rmcurcache").isValid() ? settings.value("zencache-rmcurcache").toBool() : false))
+        cacheDirSize = getCacheDirsize(std::filesystem::u8path(cachedir).parent_path().string());
 
     std::vector<char> buffer;
 
@@ -138,7 +155,16 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
         send_packet("{\"action\":\"newFrame\"}", "", 0);
 
         if (bZenCache) {
-            session->globalComm->dumpFrameCache(frame, cacheLightCameraOnly, cacheMaterialOnly);
+            if (settings.value("zencache-rmcurcache").isValid() ? settings.value("zencache-rmcurcache").toBool() : false)
+            {
+                while (cacheDirSize > 214748364800) //200GB
+                {
+                    zeno::log_info("cacheDirSize {} byte, wait for zencache remove", cacheDirSize);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+                    cacheDirSize = getCacheDirsize(std::filesystem::u8path(cachedir).parent_path().string());
+                }
+            }
+            session->globalComm->dumpFrameCache(frame, cacheDirSize, cacheLightCameraOnly, cacheMaterialOnly);
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();
             zeno::log_debug("runner got {} view objects", viewObjs.size());
