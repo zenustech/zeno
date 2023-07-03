@@ -3534,7 +3534,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         }
 
         // AOV
-        if (zeno::getSession().userData().get2<bool>("output_aov", false)) {
+        if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
             path = path.substr(0, path.size() - 4);
             stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
             stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);

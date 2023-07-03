@@ -655,6 +655,27 @@ void DisplayWidget::onRecord()
     }
 }
 
+void DisplayWidget::onRecord_slient(const VideoRecInfo& recInfo)
+{
+    m_recordMgr.setRecordInfo(recInfo);
+
+    if (!m_bGLView)
+    {
+        ZASSERT_EXIT(m_optixView);
+        m_optixView->recordVideo(recInfo);
+    }
+    else
+    {
+        moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        mainWin->toggleTimelinePlay(true);          // and then play.
+        //the recording implementation is RecordVideoMgr::onFrameDrawn.
+    }
+
+    //todo: connect notify signals from RecordVideoMgr, e.g, frameFinished, recordFinished
+}
+
 void DisplayWidget::moveToFrame(int frame) {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
