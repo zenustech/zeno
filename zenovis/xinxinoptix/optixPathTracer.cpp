@@ -806,7 +806,6 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
     // copy mesh data to device
     //
     const size_t vertices_size_in_bytes = mesh->verts.size() * sizeof( Vertex );
-    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &mesh->dverts.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)mesh->dverts ),
@@ -922,6 +921,10 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
         mesh->d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
     }
     state.gas_handle = mesh->gas_handle;
+
+    mesh->dverts.reset();
+    mesh->dmats.reset(); 
+    mesh->didx.reset();
 }
 
 static size_t g_staticMeshNum = 0;
@@ -1266,7 +1269,6 @@ static void buildMeshAccel( PathTracerState& state )
     // copy mesh data to device
     //
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
-    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
@@ -1342,8 +1344,7 @@ static void buildMeshAccel( PathTracerState& state )
                 ) );
 
     d_temp_buffer.reset();
-    //d_mat_indices.reset();
-
+    
     size_t compacted_gas_size;
     CUDA_CHECK( cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost) );
 
@@ -1361,6 +1362,9 @@ static void buildMeshAccel( PathTracerState& state )
     {
         state.d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
     }
+
+    state.d_vertices.reset();
+    state.d_mat_indices.reset();
 }
 
 static void createSBT( PathTracerState& state )
@@ -1430,7 +1434,6 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx] = {};
 
             hitgroup_records[sbt_idx].data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
-            hitgroup_records[sbt_idx].data.vertices        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
             hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
             hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
             hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
@@ -1959,14 +1962,15 @@ void UpdateGasAndIas(bool staticNeedUpdate)
 {
 //#ifdef USING_20XX
     // no archieve inst func in using20xx
-    if (using20xx) {
+    if (using20xx) 
+    {
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
-                g_vertices.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
+    // CUDA_CHECK( cudaMemcpy(
+    //             reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
+    //             g_vertices.data(), vertices_size_in_bytes,
+    //             cudaMemcpyHostToDevice
+    //             ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_clr.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)state.d_clr ),
@@ -2009,7 +2013,9 @@ void UpdateGasAndIas(bool staticNeedUpdate)
                 ) );
     buildMeshAccel( state );
 //#else
-    } else {
+    } 
+    else 
+    {
         for(int i=0;i<g_meshPieces.size();i++)
         {
             buildMeshAccelSplitMesh(state, g_meshPieces[i]);
@@ -2034,15 +2040,15 @@ void UpdateGasAndIas(bool staticNeedUpdate)
             }
         };
 #if WXL
-        realloced = state.d_vertices.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        //realloced = state.d_vertices.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_clr.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_uv.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_nrm.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_tan.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
-        size_t reservedCap = state.d_vertices.capacity - vertices_size_in_bytes;
+        size_t reservedCap = state.d_clr.capacity - vertices_size_in_bytes;
         if (reservedCap > 0) {
-            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) +
-                                      vertices_size_in_bytes, 0, reservedCap));
+            // CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) +
+            //                           vertices_size_in_bytes, 0, reservedCap));
             CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) +
                                       vertices_size_in_bytes, 0, reservedCap));
             CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) +
@@ -2053,15 +2059,15 @@ void UpdateGasAndIas(bool staticNeedUpdate)
                                       vertices_size_in_bytes, 0, reservedCap));
         }
 #else
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
+        //CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_clr.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_uv.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_nrm.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_tan.reset()), vertices_size_in_bytes));
 #endif
         updateRange();
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) + offset,
-                              (char *)g_vertices.data() + offset, numBytes, cudaMemcpyHostToDevice));
+        // CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) + offset,
+        //                       (char *)g_vertices.data() + offset, numBytes, cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) + offset, (char *)g_clr.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) + offset, (char *)g_uv.data() + offset,
@@ -2071,8 +2077,8 @@ void UpdateGasAndIas(bool staticNeedUpdate)
         CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan) + offset, (char *)g_tan.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
         if (staticNeedUpdate && offset != 0) {
-            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices),
-                                  (char *)g_vertices.data(), static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            // CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices),
+            //                       (char *)g_vertices.data(), static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
             CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr), (char *)g_clr.data(),
                                   static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
             CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv), (char *)g_uv.data(),

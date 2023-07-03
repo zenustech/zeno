@@ -133,7 +133,7 @@ struct MissData
 
 struct HitGroupData
 {
-    float4* vertices;
+    //float4* vertices;
     float4* uv;
     float4* nrm;
     float4* clr;

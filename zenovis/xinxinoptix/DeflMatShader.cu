@@ -159,10 +159,14 @@ static __inline__ __device__ float3 sphereUV(float3 &direction) {
 
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
-    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    const int    prim_idx        = optixGetPrimitiveIndex();
+    const OptixTraversableHandle gas = optixGetGASTraversableHandle();
+    const uint           sbtGASIndex = optixGetSbtGASIndex();
+    const uint              prim_idx = optixGetPrimitiveIndex();
+
     const float3 ray_orig        = optixGetWorldRayOrigin();
     const float3 ray_dir         = optixGetWorldRayDirection();
+
+    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
 
     const float3 P    = ray_orig + optixGetRayTmax() * ray_dir;
     const auto zenotex = rt_data->textures;
@@ -171,9 +175,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     MatInput attrs{};
 
 #if (_SPHERE_)
-
-    const OptixTraversableHandle gas = optixGetGASTraversableHandle();
-    const unsigned int   sbtGASIndex = optixGetSbtGASIndex();
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -212,9 +213,16 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     optixGetObjectToWorldTransformMatrix(m16);
     mat4& meshMat = *reinterpret_cast<mat4*>(&m16);
 
-    float3 av0 = make_float3(rt_data->vertices[vert_idx_offset + 0]);
-    float3 av1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
-    float3 av2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
+    float3 _vertices_[3];
+    optixGetTriangleVertexData( gas,
+                                prim_idx,
+                                sbtGASIndex,
+                                0,
+                                _vertices_);
+
+    float3 av0 = _vertices_[0]; //make_float3(rt_data->vertices[vert_idx_offset + 0]);
+    float3 av1 = _vertices_[1]; //make_float3(rt_data->vertices[vert_idx_offset + 1]);
+    float3 av2 = _vertices_[2]; //make_float3(rt_data->vertices[vert_idx_offset + 2]);
     vec4 bv0 = vec4(av0.x, av0.y, av0.z, 1);
     vec4 bv1 = vec4(av1.x, av1.y, av1.z, 1);
     vec4 bv2 = vec4(av2.x, av2.y, av2.z, 1);
@@ -233,8 +241,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         N_0 = DisneyBSDF::SampleScatterDirection(prd->seed);
         N_0 = faceforward( N_0, -ray_dir, N_0 );
     }
-    
-    float w = rt_data->vertices[ vert_idx_offset+0 ].w;
+    //float w = rt_data->vertices[ vert_idx_offset+0 ].w;
     
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
@@ -462,22 +469,20 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->test_distance = false;
 
-    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    const int    prim_idx = optixGetPrimitiveIndex();
+    const OptixTraversableHandle gas = optixGetGASTraversableHandle();
+    const uint           sbtGASIndex = optixGetSbtGASIndex();
+    const uint              prim_idx = optixGetPrimitiveIndex();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
 
+    HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     auto zenotex = rt_data->textures;
-
     MatInput attrs{};
 
 #if (_SPHERE_)
 
     unsigned short isLight = 0;
-
-    const OptixTraversableHandle gas = optixGetGASTraversableHandle();
-    const unsigned int   sbtGASIndex = optixGetSbtGASIndex();
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
@@ -516,11 +521,17 @@ extern "C" __global__ void __closesthit__radiance()
     m16[12]=0; m16[13]=0; m16[14]=0; m16[15]=1;
     optixGetObjectToWorldTransformMatrix(m16);
     mat4& meshMat = *reinterpret_cast<mat4*>(&m16);
-    //optixGetTriangleVertexData()
+
+    float3 _vertices_[3];
+    optixGetTriangleVertexData( gas,
+                                prim_idx,
+                                sbtGASIndex,
+                                0,
+                                _vertices_);
     
-    float3 av0 = make_float3(rt_data->vertices[vert_idx_offset + 0]);
-    float3 av1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
-    float3 av2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
+    float3 av0 = _vertices_[0]; //make_float3(rt_data->vertices[vert_idx_offset + 0]);
+    float3 av1 = _vertices_[1]; //make_float3(rt_data->vertices[vert_idx_offset + 1]);
+    float3 av2 = _vertices_[2]; //make_float3(rt_data->vertices[vert_idx_offset + 2]);
     vec4 bv0 = vec4(av0.x, av0.y, av0.z, 1);
     vec4 bv1 = vec4(av1.x, av1.y, av1.z, 1);
     vec4 bv2 = vec4(av2.x, av2.y, av2.z, 1);
@@ -543,7 +554,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
     unsigned short isLight = rt_data->lightMark[inst_idx * TRI_PER_MESH + prim_idx];
-    float w = rt_data->vertices[ vert_idx_offset+0 ].w;
+    //float w = rt_data->vertices[ vert_idx_offset+0 ].w;
 
     /* MODMA */
     float2       barys    = optixGetTriangleBarycentrics();
