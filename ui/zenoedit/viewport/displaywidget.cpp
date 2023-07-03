@@ -673,7 +673,15 @@ void DisplayWidget::onRecord_slient(const VideoRecInfo& recInfo)
         //the recording implementation is RecordVideoMgr::onFrameDrawn.
     }
 
-    //todo: connect notify signals from RecordVideoMgr, e.g, frameFinished, recordFinished
+    connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=](QString msg) {
+        zeno::log_info("process exited with {} successfully", -1);
+        QApplication::exit(-1);
+    });
+
+    connect(&m_recordMgr, &RecordVideoMgr::recordFailed, this, [=](QString msg) {
+        zeno::log_info("process exited with {} failed", -1);
+        QApplication::exit(-1);
+    });
 }
 
 void DisplayWidget::moveToFrame(int frame) {
