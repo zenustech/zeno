@@ -11,6 +11,7 @@
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/extra/SubnetNode.h>
+#include <zeno/extra/DirtyChecker.h>
 #include <zeno/utils/Error.h>
 #include <zeno/utils/log.h>
 #include <iostream>
@@ -73,15 +74,19 @@ ZENO_API void Graph::completeNode(std::string const &id) {
     safe_at(nodes, id, "node name")->doComplete();
 }
 
-ZENO_API void Graph::applyNode(std::string const &id) {
+ZENO_API bool Graph::applyNode(std::string const &id) {
     if (ctx->visited.find(id) != ctx->visited.end()) {
-        return;
+        return false;
     }
     ctx->visited.insert(id);
     auto node = safe_at(nodes, id, "node name").get();
     GraphException::translated([&] {
         node->doApply();
     }, node->myname);
+    if (dirtyChecker && dirtyChecker->amIDirty(id)) {
+        return true;
+    }
+    return false;
 }
 
 ZENO_API void Graph::applyNodes(std::set<std::string> const &ids) {
@@ -145,6 +150,12 @@ ZENO_API void Graph::setNodeParam(std::string const &id, std::string const &par,
             setNodeInput(id, parid, objectFromLiterial(val));
         }
     }, val);
+}
+
+ZENO_API DirtyChecker &Graph::getDirtyChecker() {
+    if (!dirtyChecker)
+        dirtyChecker = std::make_unique<DirtyChecker>();
+    return *dirtyChecker;
 }
 
 }

@@ -110,7 +110,7 @@ static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int h
         }
     }
 }
-// 计算法向量
+
 static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, int height, std::vector<float>& normal)
 {
     std::vector<float> dx, dy;
@@ -155,10 +155,10 @@ struct ImageResize: INode {
         if(image->has_attr("alpha")){
             image2->verts.add_attr<float>("alpha");
         }
-        // 计算尺寸比例
+
         float scaleX = static_cast<float>(w) / width;
         float scaleY = static_cast<float>(h) / height;
-        // 改变图像大小
+
         for (auto a = 0; a < image->verts.size(); a++){
             int x = a / w;
             int y = a % w;
@@ -184,16 +184,14 @@ ZENDEFNODE(ImageResize, {
 });
 
 void rotateimage(std::shared_ptr<PrimitiveObject> src, std::shared_ptr<PrimitiveObject> & dst, float angle, bool balpha) {
-    // 计算旋转角度的弧度值
+
     double radians = angle * 3.14159 / 180.0;
     int width = src->userData().get2<int>("w");
     int height = src->userData().get2<int>("h");
 
-    // 计算旋转中心点
     int centerX = width / 2;
     int centerY = height / 2;
 
-    // 计算旋转后的图像宽度和高度
     int rotatedWidth = static_cast<int>(std::abs(width * cos(radians)) + std::abs(height * sin(radians)));
     int rotatedHeight = static_cast<int>(std::abs(height * cos(radians)) + std::abs(width * sin(radians)));
 
@@ -214,12 +212,11 @@ void rotateimage(std::shared_ptr<PrimitiveObject> src, std::shared_ptr<Primitive
         }
         for (int y = 0; y < rotatedHeight; ++y) {
             for (int x = 0; x < rotatedWidth; ++x) {
-                // 计算旋转前的坐标
+
                 int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
                 int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
-                // 检查坐标是否在旋转图像范围内
+
                 if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
-                    // 获取旋转前的像素值
                     dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
                     dst->verts.attr<float>("alpha")[y * rotatedWidth + x] = src->verts.attr<float>("alpha")[srcY * width + srcX];
                 }
@@ -240,28 +237,22 @@ void rotateimage(std::shared_ptr<PrimitiveObject> src, std::shared_ptr<Primitive
         }
         for (int y = 0; y < rotatedHeight; ++y) {
             for (int x = 0; x < rotatedWidth; ++x) {
-                // 计算旋转前的坐标
                 int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
                 int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
-                // 检查坐标是否在旋转图像范围内
+
                 if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
-                    // 获取旋转前的像素值
                     dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
                     dst->verts.attr<float>("alpha")[y * rotatedWidth + x] = 1;
                 }
             }
         }
     }
-    // 遍历旋转后的图像像素
     for (int y = 0; y < rotatedHeight; ++y) {
         for (int x = 0; x < rotatedWidth; ++x) {
-            // 计算旋转前的坐标
             int srcX = static_cast<int>((x - rotatedWidth / 2) * cos(-radians) - (y - rotatedHeight / 2) * sin(-radians) + centerX);
             int srcY = static_cast<int>((x - rotatedWidth / 2) * sin(-radians) + (y - rotatedHeight / 2) * cos(-radians) + centerY);
 
-            // 检查坐标是否在旋转图像范围内
             if (srcX >= 0 && srcX < width && srcY >= 0 && srcY < height) {
-                // 获取旋转前的像素值
                 dst->verts[y * rotatedWidth + x] = src->verts[srcY * width + srcX] ;
             }
         }
@@ -1000,18 +991,16 @@ ZENDEFNODE(ImageEdit, {
     { "image" },
 });
 
-// 高斯函数
 float gaussian(float x, float sigma) {
     return exp(-(x * x) / (2 * sigma * sigma));
 }
-// 高斯滤波函数
 void gaussian_filter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<PrimitiveObject> &imagetmp, int width, int height, int sigma) {
-    // 计算高斯核大小
+
     int size = (int)(2 * sigma + 1);
     if (size % 2 == 0) {
         size++;
     }
-    // 创建高斯核
+
     float* kernel = new float[size];
     float sum = 0.0;
     int mid = size / 2;
@@ -1022,7 +1011,7 @@ void gaussian_filter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<Pr
     for (int i = 0; i < size; i++) {
         kernel[i] /= sum;
     }
-    // 对每个像素进行卷积操作
+
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             float sum0 = 0.0, sum1 = 0.0, sum2 = 0.0;
@@ -1039,29 +1028,29 @@ void gaussian_filter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<Pr
         }
     }
     image = imagetmp;
-    // 释放内存
+
     delete[] kernel;
 }
 
 // MedianBlur
 void MedianBlur(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<PrimitiveObject> &imagetmp, int width, int height, int kernel_size) {
-    // 定义一个vector，用于存储周围像素的值
+
     using kernel = std::tuple<float, float, float>;
     kernel n = {0, 0, 0};
     std::vector<kernel> kernel_values(kernel_size * kernel_size);
-    // 遍历图像中的每个像素点
+
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            // 获取当前像素点的值
+
             int current_value0 = image->verts[y * width + x][0];
             int current_value1 = image->verts[y * width + x][1];
             int current_value2 = image->verts[y * width + x][2];
-            // 遍历周围像素，获取像素值和坐标信息
+
             for (int ky = 0; ky < kernel_size; ++ky) {
                 for (int kx = 0; kx < kernel_size; ++kx) {
                     int px = x - kernel_size / 2 + kx;
                     int py = y - kernel_size / 2 + ky;
-                    // 判断像素是否越界，如果越界则使用当前像素值作为周围像素值
+
                     if (px < 0 || px >= width || py < 0 || py >= height) {
                         kernel_values[ky * kernel_size + kx] = {current_value0,current_value1,current_value2};
                     }
@@ -1070,47 +1059,39 @@ void MedianBlur(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<Primiti
                     }
                 }
             }
-            // 对周围像素的值进行排序，并取中间值作为新的像素值
+
             std::sort(kernel_values.begin(), kernel_values.end());
             float new_value0 = std::get<0>(kernel_values[kernel_size * kernel_size / 2]);
             float new_value1 = std::get<1>(kernel_values[kernel_size * kernel_size / 2]);
             float new_value2 = std::get<2>(kernel_values[kernel_size * kernel_size / 2]);
-            // 将新的像素值赋值给输出图像
+
             imagetmp->verts[y * width + x] = {new_value0,new_value1,new_value2};
         }
     }
     image = imagetmp;
 }
 
-
-// 定义一个函数，用于计算双边权重
 float bilateral(float src, float dst, float sigma_s, float sigma_r) {
     return gaussian(src - dst, sigma_s) * gaussian(abs(src - dst), sigma_r);
 }
 
-// 定义一个函数，用于对图像进行双边滤波
 void bilateralFilter(std::shared_ptr<PrimitiveObject> &image, std::shared_ptr<PrimitiveObject> &imagetmp, int width, int height, float sigma_s, float sigma_r) {
-    // 计算卷积核的半径
     int k = ceil(3 * sigma_s);
-    // 定义一个临时数组，用于存储每个像素点的中间值
     float* tmp = new float[width * height];
     for (int i = k; i < height-k; i++) {
         for (int j = k; j < width-k; j++) {
-            // 定义变量，用于存储像素值的加权平均值
             float sum0 = 0, sum1 = 0, sum2 = 0;
-            // 定义变量，用于存储权重的和
             float wsum0 = 0,wsum1 = 0,wsum2 = 0;
             for (int m = -k; m <= k; m++) {
                 for (int n = -k; n <= k; n++) {
-                    // 计算双边权重
                     float w0 = bilateral(image->verts[i*width+j][0],image->verts[(i+m)*width+j+n][0], sigma_s, sigma_r);
                     float w1 = bilateral(image->verts[i*width+j][1],image->verts[(i+m)*width+j+n][1], sigma_s, sigma_r);
                     float w2 = bilateral(image->verts[i*width+j][2],image->verts[(i+m)*width+j+n][2], sigma_s, sigma_r);
-                    // 计算加权平均值
+
                     sum0 += w0 * image->verts[(i+m)*width+j+n][0];
                     sum1 += w1 * image->verts[(i+m)*width+j+n][1];
                     sum2 += w2 * image->verts[(i+m)*width+j+n][2];
-                    // 计算权重的和
+
                     wsum0 += w0;
                     wsum1 += w1;
                     wsum2 += w2;
@@ -1645,12 +1626,10 @@ ZENDEFNODE(ImageTile, {
 
 // ImageDilate函数实现
 void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vector<int>>& kernel,int iterations) {
-    // 获取图像和卷积核的形状
     int image_height = image->userData().get2<int>("h");
     int image_width = image->userData().get2<int>("w");
     int kernel_height = kernel.size();
     int kernel_width = kernel[0].size();
-    // 计算卷积核的中心点
     int center_y = kernel_height / 2;
     int center_x = kernel_width / 2;
 
@@ -1666,13 +1645,10 @@ void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vecto
                 float maxValue0 = 0;
                 float maxValue1 = 0;
                 float maxValue2 = 0;
-                // 遍历卷积核中的像素
                 for (int ky = 0; ky < kernel_height; ky++) {
                     for (int kx = 0; kx < kernel_width; kx++) {
-                        // 计算卷积核中的像素在原始图像中的位置
                         int image_y = y - center_y + ky;
                         int image_x = x - center_x + kx;
-                        // 如果该位置是前景像素，则更新最大值
                         if (kernel[ky][kx] == 1 && image->verts[image_y * image_width + image_x][0] > maxValue0) {
                             maxValue0 = image->verts[image_y * image_width + image_x][0];
                         }
@@ -1684,7 +1660,6 @@ void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vecto
                         }
                     }
                 }
-                // 将最大值赋值给输出图像
                 imagetmp->verts[y * image_width + x]= {maxValue0,maxValue1,maxValue2};
             }
         }
@@ -1692,11 +1667,8 @@ void imagedilate(std::shared_ptr<PrimitiveObject>& image, std::vector<std::vecto
     }
 }
 
-// 图像膨胀函数
 void dilateImage(cv::Mat& src, cv::Mat& dst, int kheight, int kwidth, int Strength) {
-    // 定义结构元素
     cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(kheight, kwidth));
-    // 进行膨胀操作
     cv::dilate(src, dst, kernel, cv::Point(-1, -1), Strength);
 }
 struct ImageDilate: INode {
@@ -2194,7 +2166,6 @@ struct ImageAddAlpha: INode {
             if (wg == w && hg == h) {
                  if (maskmode == "gray_black") {
                     if (gimage->verts.has_attr("alpha")) {
-#pragma omp parallel for
                         for (int i = 0; i < h; i++) {
                             for (int j = 0; j < w; j++) {
                                 if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
@@ -2206,7 +2177,6 @@ struct ImageAddAlpha: INode {
                             }
                         }
                     } else {
-#pragma omp parallel for
                         for (int i = 0; i < h; i++) {
                             for (int j = 0; j < w; j++) {
                                 if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
@@ -2217,7 +2187,6 @@ struct ImageAddAlpha: INode {
                     }
                 } else if (maskmode == "gray_white") {
                     if (gimage->verts.has_attr("alpha")) {
-#pragma omp parallel for
                         for (int i = 0; i < h; i++) {
                             for (int j = 0; j < w; j++) {
                                 if (gimage->verts.attr<float>("alpha")[i * w + j] != 0 &&
@@ -2229,7 +2198,6 @@ struct ImageAddAlpha: INode {
                             }
                         }
                     } else {
-#pragma omp parallel for
                         for (int i = 0; i < h; i++) {
                             for (int j = 0; j < w; j++) {
                                 if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
@@ -2243,7 +2211,6 @@ struct ImageAddAlpha: INode {
                     if (gimage->verts.has_attr("alpha")) {
                         image->verts.attr<float>("alpha") = gimage->verts.attr<float>("alpha");
                     } else {
-#pragma omp parallel for
                         for (int i = 0; i < h; i++) {
                             for (int j = 0; j < w; j++) {
                                 if (image->verts.attr<float>("alpha")[i * w + j] != 0) {
@@ -2303,6 +2270,7 @@ ZENDEFNODE(ImageCut, {
     {},
     {"image"},
 });
+
 //根据灰度进行上色
 struct MaskEdit: INode {
     void apply() override {
@@ -2329,6 +2297,7 @@ ZENDEFNODE(MaskEdit, {
     {},
     {"deprecated"},
 });
+
 struct ImageShape: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");

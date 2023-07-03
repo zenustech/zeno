@@ -9,7 +9,7 @@ QTemporaryDir sTempDir;
 
 LONG WINAPI MyUnhandledExceptionFilter(struct _EXCEPTION_POINTERS* ExceptionInfo)
 {
-    QMessageBox::information(nullptr, QStringLiteral("Crash"), QStringLiteral("Zeno出现了崩溃，正在记录崩溃信息..."));
+    QMessageBox::information(nullptr, "Crash", "Zeno has crashed, recording dump info right now...");
 
     QDateTime dateTime = QDateTime::currentDateTime();
     QString timestamp = dateTime.toString("yyyy-MM-dd-hh-mm-ss");

@@ -4,6 +4,7 @@
 #include <zeno/funcs/LiterialConverter.h>
 #include <zeno/funcs/ParseObjectFromUi.h>
 #include <zeno/extra/GraphException.h>
+#include <zeno/extra/DirtyChecker.h>
 #include <zeno/utils/logger.h>
 #include <zeno/utils/vec.h>
 #include <zeno/utils/zeno_p.h>
@@ -70,12 +71,12 @@ ZENO_API void Graph::loadGraph(const char *json) {
     Document d;
     d.Parse(json);
 
-    Graph *g = this;
-    std::stack<Graph *> gStack;
-
     if (!d.IsArray()) {
         throw GraphException { "None", nullptr };
     }
+
+    Graph *g = this;
+    std::stack<Graph *> gStack;
 
     for (int i = 0; i < d.Size(); i++) {
         Value const &di = d[i];
@@ -97,7 +98,7 @@ ZENO_API void Graph::loadGraph(const char *json) {
             } else if (cmd == "completeNode") {
                 g->completeNode(di[1].GetString());
             } else if (cmd == "addSubnetNode") {
-                g->addSubnetNode(/*di[1].GetString(), */di[2].GetString());
+                auto newG = g->addSubnetNode(/*di[1].GetString(), */di[2].GetString());
             } else if (cmd == "addNodeOutput") {
                 g->addNodeOutput(di[1].GetString(), di[2].GetString());
             } else if (cmd == "pushSubnetScope") {
@@ -112,6 +113,11 @@ ZENO_API void Graph::loadGraph(const char *json) {
                 this->endFrameNumber = di[1].GetInt();
             } else if (cmd == "setNodeOption") {
                 // skip this for compatibility
+            } else if (cmd == "markNodeChanged") {
+                auto ident = di[1].GetString();
+                auto &dc = g->getDirtyChecker();
+                dc.taintThisNode(ident);
+                //todo: mark node data change.
             } else {
                 log_warn("got unexpected command: {}", cmd);
             }

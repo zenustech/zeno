@@ -1048,6 +1048,9 @@ void GraphsModel::addNode(const NODE_DATA& nodeData, const QModelIndex& subGpIdx
         if (onListDictAdd(pGraph, nodeData))
             return;
         pGraph->appendItem(nodeData);
+
+        //mark dirty
+        _markSubnodesChange(pGraph);
     }
 }
 
@@ -1089,6 +1092,8 @@ void GraphsModel::removeNode(const QString& nodeid, const QModelIndex& subGpIdx,
             }
         }
         pGraph->removeNode(nodeid, false);
+        //mark dirty
+        _markSubnodesChange(pGraph);
     }
 }
 
@@ -1440,10 +1445,95 @@ bool GraphsModel::setCustomName(const QModelIndex &subgIdx, const QModelIndex &i
     return pModel->setData(index, value, ROLE_CUSTOM_OBJNAME);
 }
 
+void GraphsModel::_markSubnodesChange(SubGraphModel* pSubg)
+{
+    QString subnetName = pSubg->name();
+    if ("main" != pSubg->name())
+    {
+        QModelIndexList refNodes;
+        //find all nodes refer to pSubg on `main` graph.
+        _findReference(subnetName, refNodes);
+        for (const QModelIndex& node : refNodes)
+        {
+            _markNodeChanged(node);
+        }
+    }
+}
+
+void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx)
+{
+    if (IsIOProcessing())
+        return;
+
+    //if the node is not in main graph, then we have to find all references recursivliy.
+    QModelIndex subgIdx = nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+    if ("main" == subgIdx.data(ROLE_OBJNAME))
+    {
+        _markNodeChanged(nodeIdx);
+    }
+    else
+    {
+        QString subnetName = subgIdx.data(ROLE_OBJNAME).toString();
+        QModelIndexList subnetnodes;
+        _findReference(subnetName, subnetnodes);
+        for (const QModelIndex& node : subnetnodes)
+        {
+            _markNodeChanged(node);
+        }
+    }
+}
+
+void GraphsModel::_findReference(
+            const QString& targetSubgraph,
+            QModelIndexList& refNodesInMain)
+{
+    //find all graphs that contains `targetSubgraph`.
+    for (SubGraphModel* subg : m_subGraphs)
+    {
+        const QString& subgName = subg->name();
+        if (subgName == targetSubgraph)
+            continue;
+
+        QModelIndexList targetNodes = subg->getNodesByCls(targetSubgraph);
+        if (!targetNodes.isEmpty())
+        {
+            if ("main" == subgName)
+            {
+                refNodesInMain.append(targetNodes);
+            }
+            else
+            {
+                _findReference(subgName, refNodesInMain);
+            }
+        }
+    }
+}
+
+void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
+{
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+    ZASSERT_EXIT(pModel);
+    pModel->setData(nodeIdx, true, ROLE_NODE_DATACHANGED);
+    m_changedNodes.append(nodeIdx);
+}
+
+void GraphsModel::clearNodeDataChanged()
+{
+    for (auto nodeIdx : m_changedNodes)
+    {
+        QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
+        ZASSERT_EXIT(pModel);
+        pModel->setData(nodeIdx, false, ROLE_NODE_DATACHANGED);
+    }
+    m_changedNodes.clear();
+}
+
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
 {
     QModelIndex nodeIdx = index(nodeid, subgIdx);
     ModelSetData(nodeIdx, info.newValue, info.role);
+    if (ROLE_OPTIONS == info.role)
+        markNodeDataChanged(nodeIdx);
 }
 
 void GraphsModel::updateBlackboard(const QString &id, const QVariant &newInfo, const QModelIndex &subgIdx, bool enableTransaction) 

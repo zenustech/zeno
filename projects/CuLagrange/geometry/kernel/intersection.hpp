@@ -616,7 +616,7 @@ size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
                 auto dir = eV[1] - eV[0];
                 
                 auto bv = bv_t{get_bounding_box(edgeCenter - thickness,edgeCenter + thickness)};
-                auto process_potential_he_tri_intersection_pairs = [&](int ti) {
+                auto process_potential_he_tri_intersection_pairs = [&, exec_tag](int ti) {
                     auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
 
                     int nm_combinatorial_coincidences = 0;
@@ -1184,7 +1184,7 @@ int retrieve_triangulate_mesh_self_intersection_list_info(Pol& pol,
                 auto bv = bv_t{get_bounding_box(triBCenter - thickness,triBCenter + thickness)};
                 // auto nrmB = tris_B.pack(dim_c<3>,"nrm",tb_i);
 
-                auto process_potential_intersection_pairs = [&](int ta_i) {
+                auto process_potential_intersection_pairs = [&, exec_tag](int ta_i) {
                     auto triA = tris_A.pack(dim_c<3>,"inds",ta_i,int_c);
                     for(int i = 0;i != 3;++i)
                         vA[i] = verts_A.pack(dim_c<3>,xtag_A,triA[i]);
@@ -2244,7 +2244,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             auto dir_A = eV_A[1] - eV_A[0];
             auto bv_A = bv_t{get_bounding_box(edgeCenter_A - thickness,edgeCenter_A + thickness)};
 
-            auto process_potential_he_tri_intersection_pairs = [&](int ti_B) {
+            auto process_potential_he_tri_intersection_pairs = [&, exec_tag](int ti_B) {
                 auto tri_B = tris_B.pack(dim_c<3>,"inds",ti_B,int_c);
                 // might need an accurate predicate here for floating-point intersection testing
                 {
@@ -2350,7 +2350,7 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             auto dir_A = eV_A[1] - eV_A[0];
             auto bv_A = bv_t{get_bounding_box(edgeCenter_A - thickness,edgeCenter_A + thickness)};
 
-            auto process_potential_he_tri_intersection_pairs = [&](int ti_B) {
+            auto process_potential_he_tri_intersection_pairs = [&, exec_tag](int ti_B) {
                 auto tri_B = tris_B.pack(dim_c<3>,"inds",ti_B,int_c);
                 // might need an accurate predicate here for floating-point intersection testing
                 {
@@ -2458,7 +2458,7 @@ size_t retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             auto dir_A = eV_A[1] - eV_A[0];
             auto bv_A = bv_t{get_bounding_box(edgeCenter_A - thickness,edgeCenter_A + thickness)};
 
-            auto process_potential_he_tri_intersection_pairs = [&](int ti_B) {
+            auto process_potential_he_tri_intersection_pairs = [&, exec_tag](int ti_B) {
                 auto tri_B = tris_B.pack(dim_c<3>,"inds",ti_B,int_c);
                 // might need an accurate predicate here for floating-point intersection testing
                 {
@@ -3342,7 +3342,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
             pol(zs::range(nm_ints),[
                 ints_buffer = proxy<space>({},ints_buffer),
                 min_rs = proxy<space>(min_rs),
-                halfedges_tab = proxy<space>(halfedges_tab)] ZS_LAMBDA(int iti) mutable {
+                halfedges_tab = proxy<space>(halfedges_tab), exec_tag] ZS_LAMBDA(int iti) mutable {
                     auto pair = ints_buffer.pack(dim_c<2>,"pair",iti,int_c);
                     // auto no = halfedges_tab.insert(pair[0]);
                     // if(no < 0)

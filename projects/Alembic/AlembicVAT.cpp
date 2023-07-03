@@ -10,7 +10,7 @@
 
 namespace zeno {
 
-bool SaveEXR(const float* rgb, int width, int height, const char* outfilename) {
+bool SaveEXR(const float* rgb, size_t width, size_t height, const char* outfilename) {
     EXRHeader header;
     InitEXRHeader(&header);
 
@@ -54,7 +54,7 @@ bool SaveEXR(const float* rgb, int width, int height, const char* outfilename) {
         header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_HALF; // pixel type of output image to be stored in .EXR
     }
 
-    const char* err = NULL; // or nullptr in C++11 or later.
+    const char* err = nullptr; // or nullptr in C++11 or later.
     int ret = SaveEXRImageToFile(&image, &header, outfilename, &err);
     if (ret != TINYEXR_SUCCESS) {
         fprintf(stderr, "Save EXR err: %s\n", err);
@@ -99,6 +99,7 @@ void writeObjFile(
     fprintf(fp, "# Zeno generated from an alembic file.\n");
 
     auto& vertices = primitive->verts;
+    auto& triangle = primitive->tris;
 
     size_t vatWidth = std::min(vertices.size(), (size_t)8192);
     auto rowsPerFrame = static_cast<int32_t>(std::ceil((float)vertices.size() / (float)vatWidth));
@@ -120,7 +121,17 @@ void writeObjFile(
         fprintf(fp, "v %f %f %f\n", v[0], v[1], v[2]);
     }
 
-    auto& triangle = primitive->tris;
+    std::vector<std::pair<float, float>> vatUvMap;
+    for (size_t i = 0; i < vertices.size(); i++) {
+        float u1 = (float(i % vatWidth)) / (float)vatWidth;
+        float u2 = (float(i + 1 % vatWidth)) / (float)vatWidth;
+        if (u1 > u2) {
+            u2 = 1.0f;
+        }
+        vatUvMap.emplace_back((u1 + u2) * 0.5f, std::floor((float)i / (float)vatWidth) / (float)vatHeight);
+        fprintf(fp, "vn %f %f %f\n", vatUvMap[i].first, vatUvMap[i].second, 0.0f);
+    }
+
     auto& uv0 = triangle.attr<zeno::vec3f>("uv0");
     auto& uv1 = triangle.attr<zeno::vec3f>("uv1");
     auto& uv2 = triangle.attr<zeno::vec3f>("uv2");
@@ -133,13 +144,10 @@ void writeObjFile(
         fprintf(fp, "vt %f %f\n", uv0[count][0], uv0[count][1]);
         fprintf(fp, "vt %f %f\n", uv1[count][0], uv1[count][1]);
         fprintf(fp, "vt %f %f\n", uv2[count][0], uv2[count][1]);
-        fprintf(fp, "vn %f %f %f\n", (float)(v0 % vatWidth) / (float)vatWidth, ((float)v0 / (float)vatWidth) / (float)vatHeight, 0.0f);
-        fprintf(fp, "vn %f %f %f\n", (float)(v1 % vatWidth) / (float)vatWidth, ((float)v1 / (float)vatWidth) / (float)vatHeight, 0.0f);
-        fprintf(fp, "vn %f %f %f\n", (float)(v2 % vatWidth) / (float)vatWidth, ((float)v2 / (float)vatWidth) / (float)vatHeight, 0.0f);
         fprintf(fp, "f %d/%d/%d %d/%d/%d %d/%d/%d\n",
-            v0 + 1, ui0, ui0,
-            v1 + 1, ui1, ui1,
-            v2 + 1, ui2, ui2
+            v0 + 1, ui0, v0 + 1,
+            v1 + 1, ui1, v1 + 1,
+            v2 + 1, ui2, v2 + 1
         );
         count++;
     }

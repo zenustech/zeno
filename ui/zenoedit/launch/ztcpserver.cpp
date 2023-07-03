@@ -190,6 +190,10 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
         zeno::log_error("runner process crashed with code {}", exitCode);
     }
     viewDecodeFinish();
+
+    auto mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin);
+    emit mainWin->runFinished();
 }
 
 #endif

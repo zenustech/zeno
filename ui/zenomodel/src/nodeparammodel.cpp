@@ -591,6 +591,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
 
             checkExtractDict(newName);
             pItem->setData(newName, role);
+            markNodeChanged();
             break;
         }
         case ROLE_PARAM_TYPE:
@@ -601,6 +602,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
                 return false;
 
             pItem->setData(value, role);
+            markNodeChanged();
             break;
         }
         case ROLE_PARAM_VALUE:
@@ -613,6 +615,7 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
 
             pItem->setData(value, role);
             onSubIOEdited(oldValue, pItem);
+            markNodeChanged();
             break;
         }
         case ROLE_ADDLINK:
@@ -624,11 +627,11 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
                 return false;
 
             pItem->setData(value, role);
-
             if (role == ROLE_ADDLINK)
             {
                 onLinkAdded(pItem);
             }
+            markNodeChanged();
             break;
         }
         case ROLE_PARAM_CTRL: {
@@ -770,6 +773,11 @@ void NodeParamModel::checkExtractDict(QString &name)
         }
         name = lst.first();
     }
+}
+
+void NodeParamModel::markNodeChanged()
+{
+    m_pGraphsModel->markNodeDataChanged(m_nodeIdx);
 }
 
 void NodeParamModel::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)

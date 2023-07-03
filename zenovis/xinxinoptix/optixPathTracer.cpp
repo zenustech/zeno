@@ -63,10 +63,12 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "tinyexr.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
-#define TRI_PER_MESH 16384
+#define TRI_PER_MESH 4096
 #include <string_view>
 struct CppTimer {
     void tick() {
@@ -151,7 +153,11 @@ typedef Record<HitGroupData> HitGroupRecord;
     //float transform[12];
 //};
 
-
+std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
+std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_diffuse;
+std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_specular;
+std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_transmit;
+std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_background;
 using Vertex = float4;
 std::vector<Vertex> g_lightMesh;
 std::vector<Vertex> g_lightColor;
@@ -197,6 +203,14 @@ struct PathTracerState
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
+
+    raii<CUdeviceptr> albedo_buffer_p;
+    raii<CUdeviceptr> normal_buffer_p;
+
+    raii<CUdeviceptr> accum_buffer_d;
+    raii<CUdeviceptr> accum_buffer_s;
+    raii<CUdeviceptr> accum_buffer_t;
+    raii<CUdeviceptr> accum_buffer_b;
     raii<CUdeviceptr> lightsbuf_p;
     raii<CUdeviceptr> sky_cdf_p;
     raii<CUdeviceptr> sky_start;
@@ -444,8 +458,21 @@ static void initLaunchParams( PathTracerState& state )
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
                 ) );
-    
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+
+    auto& params = state.params;
+
+    CUDA_CHECK( cudaMallocManaged(
+            reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
+            params.width * params.height * sizeof( float3 )
+            ) );
+    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    
+    CUDA_CHECK( cudaMallocManaged(
+            reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
+            params.width * params.height * sizeof( float3 )
+            ) );
+    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
@@ -464,7 +491,7 @@ static void handleCameraUpdate( Params& params )
     //params.vp2 = cam_vp2;
     //params.vp3 = cam_vp3;
     //params.vp4 = cam_vp4;
-    camera.setAspectRatio( static_cast<float>( params.width ) / static_cast<float>( params.height ) );
+    camera.setAspectRatio( static_cast<float>( params.windowSpace.x ) / static_cast<float>( params.windowSpace.y ) );
     //params.eye = camera.eye();
     //camera.UVWFrame( params.U, params.V, params.W );
 }
@@ -478,13 +505,50 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     resize_dirty = false;
 
     output_buffer.resize( params.width, params.height );
+    (*output_buffer_diffuse).resize( params.width, params.height );
+    (*output_buffer_specular).resize( params.width, params.height );
+    (*output_buffer_transmit).resize( params.width, params.height );
+    (*output_buffer_background).resize( params.width, params.height );
 
     // Realloc accumulation buffer
     CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.accum_buffer_p .reset()),
-                params.width * params.height * sizeof( float4 )
-                ) );
+        reinterpret_cast<void**>( &state.accum_buffer_p .reset()),
+        params.width * params.height * sizeof( float4 )
+            ) );
+    CUDA_CHECK( cudaMalloc(
+        reinterpret_cast<void**>( &state.accum_buffer_d .reset()),
+        params.width * params.height * sizeof( float4 )
+            ) );
+    CUDA_CHECK( cudaMalloc(
+        reinterpret_cast<void**>( &state.accum_buffer_s .reset()),
+        params.width * params.height * sizeof( float4 )
+            ) );
+    CUDA_CHECK( cudaMalloc(
+        reinterpret_cast<void**>( &state.accum_buffer_t .reset()),
+        params.width * params.height * sizeof( float4 )
+            ) );
+    CUDA_CHECK( cudaMalloc(
+        reinterpret_cast<void**>( &state.accum_buffer_b .reset()),
+        params.width * params.height * sizeof( float4 )
+            ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+
+    CUDA_CHECK( cudaMallocManaged(
+                reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
+                params.width * params.height * sizeof( float3 )
+                ) );
+    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    
+    CUDA_CHECK( cudaMallocManaged(
+                reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
+                params.width * params.height * sizeof( float3 )
+                ) );
+    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
+    
+    state.params.accum_buffer_D = (float4*)(CUdeviceptr)state.accum_buffer_d;
+    state.params.accum_buffer_S = (float4*)(CUdeviceptr)state.accum_buffer_s;
+    state.params.accum_buffer_T = (float4*)(CUdeviceptr)state.accum_buffer_t;
+    state.params.accum_buffer_B = (float4*)(CUdeviceptr)state.accum_buffer_b;
     state.params.subframe_index = 0;
 }
 
@@ -497,15 +561,21 @@ static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params&
 
     handleCameraUpdate( params );
     handleResize( output_buffer, params );
+
 }
 
 
-static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state )
+static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state, bool denoise)
 {
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
+    state.params.frame_buffer_D = (*output_buffer_diffuse   ).map();
+    state.params.frame_buffer_S = (*output_buffer_specular  ).map();
+    state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
+    state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.num_lights = g_lights.size();
+    state.params.denoise = denoise;
 
     CUDA_SYNC_CHECK();
     CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
@@ -526,6 +596,10 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
                 ) );
 
     output_buffer.unmap();
+    (*output_buffer_diffuse   ).unmap();
+    (*output_buffer_specular  ).unmap();
+    (*output_buffer_transmit  ).unmap();
+    (*output_buffer_background).unmap();
     CUDA_SYNC_CHECK();
 }
 
@@ -1324,6 +1398,8 @@ static void createSBT( PathTracerState& state )
         state.d_hitgroup_records.reset();
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
+        state.albedo_buffer_p.reset();
+        state.normal_buffer_p.reset();
 
     raii<CUdeviceptr>  &d_raygen_record = state.d_raygen_record;
     const size_t raygen_record_size = sizeof( RayGenRecord );
@@ -1508,6 +1584,8 @@ static void cleanupState( PathTracerState& state )
         state.d_vertices.reset();
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
+        state.albedo_buffer_p.reset();
+        state.normal_buffer_p.reset();
         state.d_params.reset();
     //state = {};
 }
@@ -1540,7 +1618,7 @@ static void detectHuangrenxunHappiness() {
 // Main
 //
 //------------------------------------------------------------------------------
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
+
 
 #ifdef OPTIX_BASE_GL
 std::optional<sutil::GLDisplay> gl_display_o;
@@ -1612,14 +1690,46 @@ void optixinit( int argc, char* argv[] )
     if(state.d_params2==0)
         CUDA_CHECK(cudaMalloc((void**)&state.d_params2, sizeof( Params )));
 
-        if (!output_buffer_o) {
-            output_buffer_o.emplace(
-                    output_buffer_type,
-                    state.params.width,
-                    state.params.height
-                    );
-            output_buffer_o->setStream( 0 );
-        }
+    if (!output_buffer_o) {
+      output_buffer_o.emplace(
+          output_buffer_type,
+          state.params.width,
+          state.params.height
+      );
+      output_buffer_o->setStream( 0 );
+    }
+    if (!output_buffer_diffuse) {
+      output_buffer_diffuse.emplace(
+          output_buffer_type,
+          state.params.width,
+          state.params.height
+      );
+      output_buffer_diffuse->setStream( 0 );
+    }
+    if (!output_buffer_specular) {
+      output_buffer_specular.emplace(
+          output_buffer_type,
+          state.params.width,
+          state.params.height
+      );
+      output_buffer_specular->setStream( 0 );
+    }
+    if (!output_buffer_transmit) {
+      output_buffer_transmit.emplace(
+          output_buffer_type,
+          state.params.width,
+          state.params.height
+      );
+      output_buffer_transmit->setStream( 0 );
+    }
+    if (!output_buffer_background) {
+      output_buffer_background.emplace(
+          output_buffer_type,
+          state.params.width,
+          state.params.height
+      );
+      output_buffer_background->setStream( 0 );
+    }
 #ifdef OPTIX_BASE_GL
         if (!gl_display_o) {
             gl_display_o.emplace(sutil::BufferImageFormat::UNSIGNED_BYTE4);
@@ -1628,6 +1738,7 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
                                        1.0, 0.0, 6500.0);
     xinxinoptix::using_hdr_sky(false);
+    xinxinoptix::show_background(false);
 }
 
 
@@ -2053,6 +2164,10 @@ void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
 
 void using_hdr_sky(bool enable) {
     state.params.usingHdrSky = enable;
+}
+
+void show_background(bool enable) {
+    state.params.show_background = enable;
 }
 
 void update_procedural_sky(
@@ -3283,10 +3398,30 @@ void UpdateInst()
         }
     }
 }
+void set_window_size_v2(int nx, int ny, zeno::vec2i bmin, zeno::vec2i bmax, zeno::vec2i target, bool keepRatio=true) {
+  zeno::vec2i t;
+  t[0] = target[0]; t[1] = target[1];
+  int dx = bmax[0] - bmin[0];
+  int dy = bmax[1] - bmin[1];
+  if(keepRatio==true)
+  {
+    t[1] = (int)((float)dy/(float)dx*(float)t[0])+1;
+  }
+  state.params.width = t[0];
+  state.params.height = t[1];
+  float sx = (float)t[0]/(float)dx;
+  float sy = (float)t[1]/(float)dy;
 
+  state.params.windowSpace = make_int2(sx * (float)nx, sy * (float)ny);
+  state.params.windowCrop_min = make_int2(sx * (float)bmin[0], sy * (float)bmin[1]);
+  state.params.windowCrop_max = make_int2(sx * (float)bmax[0], sy * (float)bmax[1]);
+}
 void set_window_size(int nx, int ny) {
     state.params.width = nx;
     state.params.height = ny;
+    state.params.windowSpace = make_int2(nx, ny);
+    state.params.windowCrop_min = make_int2(0,0);
+    state.params.windowCrop_max = make_int2(nx, ny);
     camera_changed = true;
     resize_dirty = true;
 }
@@ -3320,8 +3455,30 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     cam.aperture = aperture;
 }
 
+void write_pfm(std::string& path, int w, int h, const float *rgb) {
+    std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
+    std::vector<char> data(header.size() + w * h * sizeof(zeno::vec3f));
+    memcpy(data.data(), header.data(), header.size());
+    memcpy(data.data() + header.size(), rgb, w * h * sizeof(zeno::vec3f));
+    zeno::file_put_binary(data, path);
+}
 
-void optixrender(int fbo, int samples, bool simpleRender) {
+void *optixgetimg_extra(std::string name) {
+    if (name == "diffuse") {
+        return output_buffer_diffuse->getHostPointer();
+    }
+    else if (name == "specular") {
+        return output_buffer_specular->getHostPointer();
+    }
+    else if (name == "transmit") {
+        return output_buffer_transmit->getHostPointer();
+    }
+    else if (name == "background") {
+        return output_buffer_background->getHostPointer();
+    }
+}
+
+void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
@@ -3331,11 +3488,15 @@ void optixrender(int fbo, int samples, bool simpleRender) {
     if (!gl_display_o) throw sutil::Exception("no gl_display_o");
 #endif
     updateState( *output_buffer_o, state.params );
+//    updateState( *output_buffer_diffuse, state.params);
+//    updateState( *output_buffer_specular, state.params);
+//    updateState( *output_buffer_transmit, state.params);
+//    updateState( *output_buffer_background, state.params);
     const int max_samples_once = 16;
 
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
-        launchSubframe( *output_buffer_o, state );
+        launchSubframe( *output_buffer_o, state, denoise);
         state.params.subframe_index++;
     }
 #ifdef OPTIX_BASE_GL
@@ -3351,6 +3512,27 @@ void optixrender(int fbo, int samples, bool simpleRender) {
         stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
         ud.erase("optix_image_path");
+
+        if (denoise) {
+            const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+            //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+            auto a_path = path + ".albedo.pfm";
+            write_pfm(a_path, w, h, _albedo_buffer);
+
+            const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+            //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+            auto n_path = path + ".normal.pfm";
+            write_pfm(n_path, w, h, _normal_buffer); 
+        }
+
+        // AOV
+        if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
+            path = path.substr(0, path.size() - 4);
+            stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
+            stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);
+            stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
+            stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
+        }
     }
 }
 
@@ -3383,6 +3565,12 @@ void optixcleanup() {
     catch (sutil::Exception const& e) {
         std::cout << "OptixCleanupError: " << e.what() << std::endl;
     }
+//    state.d_vertices.reset();
+//    state.d_clr.reset();
+//    state.d_mat_indices.reset();
+//    state.d_nrm.reset();
+//    state.d_tan.reset();
+//    state.d_uv.reset();
         std::memset((void *)&state, 0, sizeof(state));
         //std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
 

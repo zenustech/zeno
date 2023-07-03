@@ -58,14 +58,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "exr",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -250,7 +251,11 @@
                             "1a87a79c-ImageFeatureDetect_ORB",
                             "2847dd45-ImageFeatureDetect_ORB",
                             "b29a2b1b-ReadImageFromVideo",
-                            "b5d3013e-ReadImageFromVideo"
+                            "b5d3013e-ReadImageFromVideo",
+                            "2f50fd55-ImageEdgeDetectCanny",
+                            "141383c-ImageEdgeDetectPrewitt",
+                            "ad6da8eb-ImageEdgeDetectRoberts",
+                            "25696b1b-ImageEdgeDetectSobel"
                         ]
                     }
                 },
@@ -5070,7 +5075,7 @@
                     ],
                     "options": [],
                     "blackboard": {
-                        "width": 1026.5823974609376,
+                        "width": 1156.6134033203126,
                         "height": 1870.7562255859376,
                         "title": "ImageBlur",
                         "background": "#0064a8",
@@ -5155,8 +5160,8 @@
                         }
                     },
                     "uipos": [
-                        -38222.84765625,
-                        897.8207397460938
+                        -38241.6953125,
+                        891.5375366210938
                     ],
                     "options": []
                 },
@@ -5335,8 +5340,8 @@
                         }
                     },
                     "uipos": [
-                        -37754.33203125,
-                        880.4962768554688
+                        -37727.66796875,
+                        884.89013671875
                     ],
                     "options": []
                 },
@@ -5876,8 +5881,8 @@
                     ],
                     "options": [],
                     "blackboard": {
-                        "width": 4241.31640625,
-                        "height": 2801.206298828125,
+                        "width": 4646.06884765625,
+                        "height": 4311.5146484375,
                         "title": "ImageFeatureDetect",
                         "background": "#0064a8",
                         "items": [
@@ -5908,7 +5913,56 @@
                             "eb8d168d-ImageFeatureMatch",
                             "b5d3013e-ReadImageFromVideo",
                             "e530ce33-ReadImageFile",
-                            "6e4c3ba-ImageFeatureDetect_SIFT"
+                            "6e4c3ba-ImageFeatureDetect_SIFT",
+                            "2b1891eb-ImageFeatureDetectORB",
+                            "e5f2a3c6-ImageFeatureDetectSIFT",
+                            "2d3313fd-ImageFeatureDetectORB",
+                            "2b2714b9-ImageFeatureDetectORB",
+                            "a789f44e-ImageFeatureDetectSIFT",
+                            "df8181fd-ImageFeatureDetectSIFT",
+                            "38dae4d8-ImageFeatureMatch",
+                            "b7be6e14-ImageFeatureDetectORB",
+                            "eca6542-ImageFeatureDetectORB",
+                            "eb301b94-ReadImageFile",
+                            "f59eadf4-ReadImageFile",
+                            "c3d1d3af-ReadImageFromVideo",
+                            "d50ad341-ReadImageFromVideo",
+                            "75662b38-ImageFeatureMatch2",
+                            "2ec706e6-ReadImageFromVideo",
+                            "7214a298-ReadImageFromVideo",
+                            "5490603d-ReadImageFromVideo",
+                            "f996ea9b-ReadImageFromVideo",
+                            "8bcf78f8-ImageFeatureMatch2",
+                            "92714673-ReadImageFile",
+                            "bd77b363-ReadImageFile",
+                            "177244d5-ImageFeatureDetectORB",
+                            "ac342955-ReadImageFile",
+                            "be57bf34-ImageFeatureMatch",
+                            "e36e262a-ReadImageFile",
+                            "fd865153-ImageFeatureDetectORB",
+                            "3c398fee-ImageFeatureDetectSIFT",
+                            "86992ba1-ImageFeatureMatch",
+                            "c2c4759-ImageFeatureDetectSIFT",
+                            "1ce8e2e0-ReadImageFile",
+                            "6045ec94-ImageFeatureMatch",
+                            "8ded8117-ImageFeatureDetectORB",
+                            "bbf9c3d3-ImageFeatureDetectORB",
+                            "fa3a7f9d-ReadImageFile",
+                            "7f8ec82-ImageFeatureDetectORB",
+                            "a7bb0112-ImageFeatureDetectORB",
+                            "9c56a963-ReadImageFile",
+                            "b12491b2-ReadImageFile",
+                            "c85739ce-ImageStitching",
+                            "2990e44-ImageFeatureMatch",
+                            "62ee702c-ImageFeatureDetectSIFT",
+                            "7384a76f-ImageFeatureMatch",
+                            "743e10fe-ReadImageFile",
+                            "7f06dcc3-ImageFeatureDetectSIFT",
+                            "e20e1467-ReadImageFile",
+                            "bc099038-ImageStitching",
+                            "1eccf068-ImageFeatureMatch",
+                            "da899c4f-ImageFeatureMatch",
+                            "ae850e57-Route"
                         ]
                     }
                 },
@@ -6343,7 +6397,8 @@
                             "a67ffb02-ImageDelAlpha",
                             "f11964ab-Group",
                             "7fe24e16-Group",
-                            "2fe4d492-ReadImageFile"
+                            "2fe4d492-ReadImageFile",
+                            "7d8f4716-ImageMedianBlur"
                         ]
                     }
                 },
@@ -6430,7 +6485,7 @@
                     ],
                     "options": [],
                     "blackboard": {
-                        "width": 9770.7578125,
+                        "width": 13029.212890625,
                         "height": 6051.234375,
                         "title": "ObjRecog",
                         "background": "#ff0000",
@@ -6487,7 +6542,21 @@
                             "c9f2d990-ReadImageFile",
                             "e530ce33-ReadImageFile",
                             "eb8d168d-ImageFeatureMatch",
-                            "cbc8743d-MakeList"
+                            "cbc8743d-MakeList",
+                            "2f50fd55-ImageEdgeDetectCanny",
+                            "141383c-ImageEdgeDetectPrewitt",
+                            "ad6da8eb-ImageEdgeDetectRoberts",
+                            "25696b1b-ImageEdgeDetectSobel",
+                            "19907f94-ImageFeatureMatch",
+                            "9c56a963-ReadImageFile",
+                            "b12491b2-ReadImageFile",
+                            "452a38a7-ReadImageFile",
+                            "519acf7-ImageFeatureDetectSIFT",
+                            "8a1ba2ed-ImageFeatureMatch",
+                            "bb7f81ca-ImageFeatureDetectSIFT",
+                            "c1422b40-ReadImageFile",
+                            "d3ba0eaf-Group",
+                            "4ff806a4-CameraEstimate"
                         ]
                     }
                 },
@@ -7234,14 +7303,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -7618,14 +7688,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8063,14 +8134,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8170,14 +8242,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8312,14 +8385,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8533,14 +8607,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8605,14 +8680,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -8677,14 +8753,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -9382,14 +9459,15 @@
                         },
                         "type": {
                             "link": null,
-                            "type": "enum png jpg exr",
+                            "type": "enum png jpg exr pfm",
                             "default-value": "png",
                             "control": {
                                 "name": "Enum",
                                 "items": [
                                     "png",
                                     "jpg",
-                                    "exr"
+                                    "exr",
+                                    "pfm"
                                 ]
                             }
                         },
@@ -11681,7 +11759,7 @@
                     "name": "ImageStitching",
                     "inputs": {
                         "image1": {
-                            "link": "main:cbc8743d-MakeList:[node]/outputs/list",
+                            "link": "main:70ae1a1c-ReadImageFile:[node]/outputs/image",
                             "type": "",
                             "default-value": null,
                             "control": {
@@ -11694,50 +11772,6 @@
                             "default-value": null,
                             "control": {
                                 "name": ""
-                            }
-                        },
-                        "mode": {
-                            "link": null,
-                            "type": "enum orb sift",
-                            "default-value": "orb",
-                            "control": {
-                                "name": "Enum",
-                                "items": [
-                                    "orb",
-                                    "sift"
-                                ]
-                            }
-                        },
-                        "nFeatures": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 100.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "scaleFactor": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 1.2000000476837159,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "edgeThreshold": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 20.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "patchSize": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 10.0,
-                            "control": {
-                                "name": "Float"
                             }
                         },
                         "SRC": {
@@ -11759,12 +11793,10 @@
                         }
                     },
                     "uipos": [
-                        -10667.07231784255,
-                        2209.1880228907168
+                        -11231.140625,
+                        1906.811767578125
                     ],
-                    "options": [
-                        "VIEW"
-                    ]
+                    "options": []
                 },
                 "70ae1a1c-ReadImageFile": {
                     "name": "ReadImageFile",
@@ -11796,12 +11828,10 @@
                         }
                     },
                     "uipos": [
-                        -11840.009765625,
-                        2130.787841796875
+                        -12030.935546875,
+                        1784.086181640625
                     ],
-                    "options": [
-                        "VIEW"
-                    ]
+                    "options": []
                 },
                 "69b871e7-ReadImageFile": {
                     "name": "ReadImageFile",
@@ -11833,12 +11863,10 @@
                         }
                     },
                     "uipos": [
-                        -11839.228515625,
-                        2416.257080078125
+                        -12030.154296875,
+                        2069.5556640625
                     ],
-                    "options": [
-                        "VIEW"
-                    ]
+                    "options": []
                 },
                 "128d770d-ImageEdgeDetect": {
                     "name": "ImageEdgeDetect",
@@ -11911,8 +11939,576 @@
                     ],
                     "options": []
                 },
-                "8802eee7-ImageEdgeDetect_Canny": {
-                    "name": "ImageEdgeDetect_Canny",
+                "53b1cc28-Group": {
+                    "name": "Group",
+                    "inputs": {},
+                    "params": {},
+                    "outputs": {},
+                    "uipos": [
+                        -12168.7119140625,
+                        1666.089111328125
+                    ],
+                    "options": [],
+                    "blackboard": {
+                        "width": 1771.870849609375,
+                        "height": 1068.2484130859376,
+                        "title": "ImageStitching",
+                        "background": "#0064a8",
+                        "items": [
+                            "70ae1a1c-ReadImageFile",
+                            "69b871e7-ReadImageFile",
+                            "581950e6-ImageStitching",
+                            "cbc8743d-MakeList"
+                        ]
+                    }
+                },
+                "14ed524a-ReadImageFromVideo": {
+                    "name": "ReadImageFromVideo",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "frame": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 50,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7892.470703125,
+                        -735.6181640625
+                    ],
+                    "options": []
+                },
+                "19907f94-ImageFeatureMatch": {
+                    "name": "ImageFeatureMatch",
+                    "inputs": {
+                        "image1": {
+                            "link": "main:a789f44e-ImageFeatureDetectSIFT:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "image2": {
+                            "link": "main:df8181fd-ImageFeatureDetectSIFT:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "maxMatchDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "perspectiveMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "fundamentalMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "essentialMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "homographyMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "stitch": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "matrix": {
+                            "type": ""
+                        },
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -6595.01025390625,
+                        -430.0108947753906
+                    ],
+                    "options": []
+                },
+                "69d03215-ReadImageFromVideo": {
+                    "name": "ReadImageFromVideo",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "frame": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 52,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7896.349609375,
+                        -212.63400268554688
+                    ],
+                    "options": []
+                },
+                "b29a2b1b-ReadImageFromVideo": {
+                    "name": "ReadImageFromVideo",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Videos/PKQ/right.mp4",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "frame": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 60,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9838.435546875,
+                        -728.7947998046875
+                    ],
+                    "options": []
+                },
+                "b5d3013e-ReadImageFromVideo": {
+                    "name": "ReadImageFromVideo",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Videos/PKQ/right.mp4",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "frame": {
+                            "link": null,
+                            "type": "int",
+                            "default-value": 70,
+                            "control": {
+                                "name": "Integer"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9835.4267578125,
+                        -236.3116455078125
+                    ],
+                    "options": []
+                },
+                "c9f2d990-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/1024x1024/2022-03-07 100508.jpg",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7882.6201171875,
+                        -1317.1866455078126
+                    ],
+                    "options": []
+                },
+                "e530ce33-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/1024x1024/32R.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9802.607421875,
+                        -1276.1800537109376
+                    ],
+                    "options": []
+                },
+                "eb8d168d-ImageFeatureMatch": {
+                    "name": "ImageFeatureMatch",
+                    "inputs": {
+                        "image1": {
+                            "link": "main:2d3313fd-ImageFeatureDetectORB:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "image2": {
+                            "link": "main:2b2714b9-ImageFeatureDetectORB:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "maxMatchDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.699999988079071,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "perspectiveMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "fundamentalMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "essentialMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "homographyMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "stitch": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "matrix": {
+                            "type": ""
+                        },
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -8607.724609375,
+                        -445.311279296875
+                    ],
+                    "options": []
+                },
+                "cbc8743d-MakeList": {
+                    "name": "MakeList",
+                    "inputs": {
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "obj0": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "obj1": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "obj2": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "list": {
+                            "type": "list"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -11335.8779296875,
+                        2295.788330078125
+                    ],
+                    "options": []
+                },
+                "8ef10375-PrimMerge": {
+                    "name": "PrimMerge",
+                    "inputs": {
+                        "listPrim": {
+                            "property": "dict-panel",
+                            "dictlist-panel": {
+                                "collasped": false,
+                                "keys": {}
+                            },
+                            "link": null,
+                            "type": "list",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "tagAttr": {
+                            "link": null,
+                            "type": "string",
+                            "default-value": "",
+                            "control": {
+                                "name": "String"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "prim": {
+                            "type": "primitive"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -17288.21875,
+                        9346.666015625
+                    ],
+                    "options": []
+                },
+                "2f50fd55-ImageEdgeDetectCanny": {
+                    "name": "ImageEdgeDetectCanny",
                     "inputs": {
                         "image": {
                             "link": "main:909cd222-ReadImageFile:[node]/outputs/image",
@@ -11969,13 +12565,13 @@
                         }
                     },
                     "uipos": [
-                        -11356.505859375,
-                        -823.4232177734375
+                        -11374.7197265625,
+                        -843.7894287109375
                     ],
                     "options": []
                 },
-                "7df3dbc-ImageEdgeDetect_Prewitt": {
-                    "name": "ImageEdgeDetect_Prewitt",
+                "141383c-ImageEdgeDetectPrewitt": {
+                    "name": "ImageEdgeDetectPrewitt",
                     "inputs": {
                         "image": {
                             "link": "main:7176694d-ReadImageFile:[node]/outputs/image",
@@ -12032,13 +12628,13 @@
                         }
                     },
                     "uipos": [
-                        -11338.01171875,
-                        -329.8673400878906
+                        -11371.0673828125,
+                        -343.3601989746094
                     ],
                     "options": []
                 },
-                "acfecbb8-ImageEdgeDetect_Roberts": {
-                    "name": "ImageEdgeDetect_Roberts",
+                "ad6da8eb-ImageEdgeDetectRoberts": {
+                    "name": "ImageEdgeDetectRoberts",
                     "inputs": {
                         "image": {
                             "link": "main:1f397209-ReadImageFile:[node]/outputs/image",
@@ -12095,13 +12691,13 @@
                         }
                     },
                     "uipos": [
-                        -11316.0205078125,
-                        116.23896789550781
+                        -11360.1083984375,
+                        102.27750396728516
                     ],
                     "options": []
                 },
-                "fe8bd53c-ImageEdgeDetect_Sobel": {
-                    "name": "ImageEdgeDetect_Sobel",
+                "25696b1b-ImageEdgeDetectSobel": {
+                    "name": "ImageEdgeDetectSobel",
                     "inputs": {
                         "image": {
                             "link": "main:f7c11d33-ReadImageFile:[node]/outputs/image",
@@ -12158,125 +12754,16 @@
                         }
                     },
                     "uipos": [
-                        -11327.5537109375,
-                        562.0972290039063
+                        -11341.8447265625,
+                        551.5679931640625
                     ],
                     "options": []
                 },
-                "53b1cc28-Group": {
-                    "name": "Group",
-                    "inputs": {},
-                    "params": {},
-                    "outputs": {},
-                    "uipos": [
-                        -11977.7861328125,
-                        2012.7906494140626
-                    ],
-                    "options": [],
-                    "blackboard": {
-                        "width": 1311.2569580078126,
-                        "height": 735.1404418945313,
-                        "title": "ImageStitching",
-                        "background": "#0064a8",
-                        "items": [
-                            "70ae1a1c-ReadImageFile",
-                            "69b871e7-ReadImageFile",
-                            "581950e6-ImageStitching",
-                            "cbc8743d-MakeList"
-                        ]
-                    }
-                },
-                "14ed524a-ReadImageFromVideo": {
-                    "name": "ReadImageFromVideo",
-                    "inputs": {
-                        "path": {
-                            "link": null,
-                            "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Videos/LOLCG2.mp4",
-                            "control": {
-                                "name": "read path"
-                            }
-                        },
-                        "frame": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 50,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "image": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -7847.76220703125,
-                        -337.2085266113281
-                    ],
-                    "options": []
-                },
-                "19907f94-ImageFeatureMatch": {
-                    "name": "ImageFeatureMatch",
-                    "inputs": {
-                        "image1": {
-                            "link": "main:a6de1c0e-ImageFeatureDetect_SIFT:[node]/outputs/image",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "image2": {
-                            "link": "main:4e6baaaa-ImageFeatureDetect_SIFT:[node]/outputs/image",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "image": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -6453.51904296875,
-                        -81.10234832763672
-                    ],
-                    "options": []
-                },
-                "1a87a79c-ImageFeatureDetect_ORB": {
-                    "name": "ImageFeatureDetect_ORB",
+                "2b1891eb-ImageFeatureDetectORB": {
+                    "name": "ImageFeatureDetectORB",
                     "inputs": {
                         "image": {
-                            "link": "main:b29a2b1b-ReadImageFromVideo:[node]/outputs/image",
+                            "link": "main:e530ce33-ReadImageFile:[node]/outputs/image",
                             "type": "",
                             "default-value": null,
                             "control": {
@@ -12342,214 +12829,13 @@
                         }
                     },
                     "uipos": [
-                        -9266.888671875,
-                        -376.4114685058594
+                        -9159.744140625,
+                        -1348.4298095703126
                     ],
                     "options": []
                 },
-                "2847dd45-ImageFeatureDetect_ORB": {
-                    "name": "ImageFeatureDetect_ORB",
-                    "inputs": {
-                        "image": {
-                            "link": "main:b5d3013e-ReadImageFromVideo:[node]/outputs/image",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "visualize": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": true,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "nFeatures": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 100.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "scaleFactor": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 1.2000000476837159,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "edgeThreshold": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 20.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "patchSize": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 10.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "image": {
-                            "type": ""
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -9245.99609375,
-                        179.42330932617188
-                    ],
-                    "options": []
-                },
-                "4e6baaaa-ImageFeatureDetect_SIFT": {
-                    "name": "ImageFeatureDetect_SIFT",
-                    "inputs": {
-                        "image": {
-                            "link": "main:69d03215-ReadImageFromVideo:[node]/outputs/image",
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        },
-                        "visualize": {
-                            "link": null,
-                            "type": "bool",
-                            "default-value": false,
-                            "control": {
-                                "name": "Boolean"
-                            }
-                        },
-                        "nFeatures": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "nOctaveLayers": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 3.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "contrastThreshold": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 0.03999999910593033,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "edgeThreshold": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 10.0,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "sigma": {
-                            "link": null,
-                            "type": "float",
-                            "default-value": 1.600000023841858,
-                            "control": {
-                                "name": "Float"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "image": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -7229.48291015625,
-                        134.38394165039063
-                    ],
-                    "options": []
-                },
-                "69d03215-ReadImageFromVideo": {
-                    "name": "ReadImageFromVideo",
-                    "inputs": {
-                        "path": {
-                            "link": null,
-                            "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Videos/英雄联盟赛事 的个人主页微博.mp4",
-                            "control": {
-                                "name": "read path"
-                            }
-                        },
-                        "frame": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 52,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "image": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -7851.64111328125,
-                        185.77560424804688
-                    ],
-                    "options": []
-                },
-                "6e4c3ba-ImageFeatureDetect_SIFT": {
-                    "name": "ImageFeatureDetect_SIFT",
+                "e5f2a3c6-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
                     "inputs": {
                         "image": {
                             "link": "main:c9f2d990-ReadImageFile:[node]/outputs/image",
@@ -12626,13 +12912,163 @@
                         }
                     },
                     "uipos": [
-                        -7231.43603515625,
-                        -1136.333740234375
+                        -7288.25048828125,
+                        -1363.2974853515626
                     ],
                     "options": []
                 },
-                "a6de1c0e-ImageFeatureDetect_SIFT": {
-                    "name": "ImageFeatureDetect_SIFT",
+                "2d3313fd-ImageFeatureDetectORB": {
+                    "name": "ImageFeatureDetectORB",
+                    "inputs": {
+                        "image": {
+                            "link": "main:b29a2b1b-ReadImageFromVideo:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "scaleFactor": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.2000000476837159,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 20.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "patchSize": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9241.2158203125,
+                        -794.2250366210938
+                    ],
+                    "options": []
+                },
+                "2b2714b9-ImageFeatureDetectORB": {
+                    "name": "ImageFeatureDetectORB",
+                    "inputs": {
+                        "image": {
+                            "link": "main:b5d3013e-ReadImageFromVideo:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "scaleFactor": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.2000000476837159,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 20.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "patchSize": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9248.638671875,
+                        -263.37060546875
+                    ],
+                    "options": []
+                },
+                "a789f44e-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
                     "inputs": {
                         "image": {
                             "link": "main:14ed524a-ReadImageFromVideo:[node]/outputs/image",
@@ -12645,7 +13081,7 @@
                         "visualize": {
                             "link": null,
                             "type": "bool",
-                            "default-value": true,
+                            "default-value": false,
                             "control": {
                                 "name": "Boolean"
                             }
@@ -12653,7 +13089,7 @@
                         "nFeatures": {
                             "link": null,
                             "type": "float",
-                            "default-value": 0.0,
+                            "default-value": 100.0,
                             "control": {
                                 "name": "Float"
                             }
@@ -12709,16 +13145,99 @@
                         }
                     },
                     "uipos": [
-                        -7214.88134765625,
-                        -401.58294677734377
+                        -7261.40966796875,
+                        -847.6266479492188
                     ],
                     "options": []
                 },
-                "a9ac0bcf-ImageFeatureDetect_ORB": {
-                    "name": "ImageFeatureDetect_ORB",
+                "df8181fd-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
                     "inputs": {
                         "image": {
-                            "link": "main:e530ce33-ReadImageFile:[node]/outputs/image",
+                            "link": "main:69d03215-ReadImageFromVideo:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 100.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.03999999910593033,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.600000023841858,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7259.04296875,
+                        -244.03463745117188
+                    ],
+                    "options": []
+                },
+                "b7be6e14-ImageFeatureDetectORB": {
+                    "name": "ImageFeatureDetectORB",
+                    "inputs": {
+                        "image": {
+                            "link": "main:eb301b94-ReadImageFile:[node]/outputs/image",
                             "type": "",
                             "default-value": null,
                             "control": {
@@ -12784,28 +13303,60 @@
                         }
                     },
                     "uipos": [
-                        -9260.6708984375,
-                        -1068.932861328125
+                        -9236.5009765625,
+                        756.1519165039063
                     ],
                     "options": []
                 },
-                "b29a2b1b-ReadImageFromVideo": {
-                    "name": "ReadImageFromVideo",
+                "eca6542-ImageFeatureDetectORB": {
+                    "name": "ImageFeatureDetectORB",
                     "inputs": {
-                        "path": {
-                            "link": null,
-                            "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Videos/LOLCG2.mp4",
+                        "image": {
+                            "link": "main:f59eadf4-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
                             "control": {
-                                "name": "read path"
+                                "name": ""
                             }
                         },
-                        "frame": {
+                        "visualize": {
                             "link": null,
-                            "type": "int",
-                            "default-value": 50,
+                            "type": "bool",
+                            "default-value": false,
                             "control": {
-                                "name": "Integer"
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 100.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "scaleFactor": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.2000000476837159,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 20.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "patchSize": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
                             }
                         },
                         "SRC": {
@@ -12820,68 +13371,25 @@
                     "params": {},
                     "outputs": {
                         "image": {
-                            "type": "PrimitiveObject"
+                            "type": ""
                         },
                         "DST": {
                             "type": ""
                         }
                     },
                     "uipos": [
-                        -9889.205078125,
-                        -326.8687438964844
+                        -9238.2373046875,
+                        274.81298828125
                     ],
                     "options": []
                 },
-                "b5d3013e-ReadImageFromVideo": {
-                    "name": "ReadImageFromVideo",
-                    "inputs": {
-                        "path": {
-                            "link": null,
-                            "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Videos/英雄联盟赛事 的个人主页微博.mp4",
-                            "control": {
-                                "name": "read path"
-                            }
-                        },
-                        "frame": {
-                            "link": null,
-                            "type": "int",
-                            "default-value": 52,
-                            "control": {
-                                "name": "Integer"
-                            }
-                        },
-                        "SRC": {
-                            "link": null,
-                            "type": "",
-                            "default-value": null,
-                            "control": {
-                                "name": ""
-                            }
-                        }
-                    },
-                    "params": {},
-                    "outputs": {
-                        "image": {
-                            "type": "PrimitiveObject"
-                        },
-                        "DST": {
-                            "type": ""
-                        }
-                    },
-                    "uipos": [
-                        -9893.083984375,
-                        196.11538696289063
-                    ],
-                    "options": []
-                },
-                "c9f2d990-ReadImageFile": {
+                "eb301b94-ReadImageFile": {
                     "name": "ReadImageFile",
                     "inputs": {
                         "path": {
                             "link": null,
                             "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Pictures/1024x1024/2022-03-07 100508.jpg",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/6.png",
                             "control": {
                                 "name": "read path"
                             }
@@ -12905,18 +13413,18 @@
                         }
                     },
                     "uipos": [
-                        -7831.8505859375,
-                        -1054.8770751953126
+                        -9840.109375,
+                        853.6210327148438
                     ],
                     "options": []
                 },
-                "e530ce33-ReadImageFile": {
+                "f59eadf4-ReadImageFile": {
                     "name": "ReadImageFile",
                     "inputs": {
                         "path": {
                             "link": null,
                             "type": "readpath",
-                            "default-value": "C:/Users/Administrator/Pictures/1024x1024/32R.png",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
                             "control": {
                                 "name": "read path"
                             }
@@ -12940,16 +13448,472 @@
                         }
                     },
                     "uipos": [
-                        -9895.6845703125,
-                        -1030.7935791015626
+                        -9840.669921875,
+                        390.55889892578127
                     ],
                     "options": []
                 },
-                "eb8d168d-ImageFeatureMatch": {
-                    "name": "ImageFeatureMatch",
+                "ac342955-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7741.73095703125,
+                        696.9818115234375
+                    ],
+                    "options": []
+                },
+                "e36e262a-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/O1.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7736.50244140625,
+                        389.27197265625
+                    ],
+                    "options": []
+                },
+                "3c398fee-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
+                    "inputs": {
+                        "image": {
+                            "link": "main:ac342955-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7281.34423828125,
+                        699.667236328125
+                    ],
+                    "options": []
+                },
+                "c2c4759-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
+                    "inputs": {
+                        "image": {
+                            "link": "main:e36e262a-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7285.80224609375,
+                        268.3156433105469
+                    ],
+                    "options": []
+                },
+                "7f8ec82-ImageFeatureDetectORB": {
+                    "name": "ImageFeatureDetectORB",
+                    "inputs": {
+                        "image": {
+                            "link": "main:b12491b2-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 500.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "scaleFactor": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.2000000476837159,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 20.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "patchSize": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9210.275390625,
+                        1899.0643310546876
+                    ],
+                    "options": []
+                },
+                "9c56a963-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/r00.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9814.5908203125,
+                        1497.9208984375
+                    ],
+                    "options": []
+                },
+                "a7bb0112-ImageFeatureDetectORB": {
+                    "name": "ImageFeatureDetectORB",
+                    "inputs": {
+                        "image": {
+                            "link": "main:9c56a963-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 500.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "scaleFactor": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.2000000476837159,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 20.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "patchSize": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9209.6171875,
+                        1384.569091796875
+                    ],
+                    "options": []
+                },
+                "b12491b2-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/l00.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -9811.1279296875,
+                        1960.9830322265626
+                    ],
+                    "options": []
+                },
+                "c85739ce-ImageStitching": {
+                    "name": "ImageStitching",
                     "inputs": {
                         "image1": {
-                            "link": "main:1a87a79c-ImageFeatureDetect_ORB:[node]/outputs/image",
+                            "link": "main:a7bb0112-ImageFeatureDetectORB:[node]/outputs/image",
                             "type": "",
                             "default-value": null,
                             "control": {
@@ -12957,7 +13921,7 @@
                             }
                         },
                         "image2": {
-                            "link": "main:2847dd45-ImageFeatureDetect_ORB:[node]/outputs/image",
+                            "link": "main:7f8ec82-ImageFeatureDetectORB:[node]/outputs/image",
                             "type": "",
                             "default-value": null,
                             "control": {
@@ -12983,39 +13947,87 @@
                         }
                     },
                     "uipos": [
-                        -8494.9619140625,
-                        -70.76253509521485
+                        -8423.306640625,
+                        1722.7449951171876
                     ],
                     "options": []
                 },
-                "cbc8743d-MakeList": {
-                    "name": "MakeList",
+                "2990e44-ImageFeatureMatch": {
+                    "name": "ImageFeatureMatch",
                     "inputs": {
-                        "SRC": {
+                        "image1": {
+                            "link": "main:eca6542-ImageFeatureDetectORB:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "image2": {
+                            "link": "main:b7be6e14-ImageFeatureDetectORB:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "maxMatchDistance": {
                             "link": null,
-                            "type": "",
-                            "default-value": null,
+                            "type": "float",
+                            "default-value": 0.5,
                             "control": {
-                                "name": ""
+                                "name": "Float"
                             }
                         },
-                        "obj0": {
-                            "link": "main:70ae1a1c-ReadImageFile:[node]/outputs/image",
-                            "type": "",
-                            "default-value": null,
+                        "perspectiveMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
                             "control": {
-                                "name": ""
+                                "name": "Boolean"
                             }
                         },
-                        "obj1": {
-                            "link": "main:69b871e7-ReadImageFile:[node]/outputs/image",
-                            "type": "",
-                            "default-value": null,
+                        "fundamentalMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
                             "control": {
-                                "name": ""
+                                "name": "Boolean"
                             }
                         },
-                        "obj2": {
+                        "essentialMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "homographyMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "stitch": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
                             "link": null,
                             "type": "",
                             "default-value": null,
@@ -13026,41 +14038,79 @@
                     },
                     "params": {},
                     "outputs": {
-                        "list": {
-                            "type": "list"
+                        "matrix": {
+                            "type": ""
+                        },
+                        "image": {
+                            "type": ""
                         },
                         "DST": {
                             "type": ""
                         }
                     },
                     "uipos": [
-                        -11199.167193909478,
-                        2148.513320818215
+                        -8535.568359375,
+                        607.9020385742188
                     ],
                     "options": []
                 },
-                "8ef10375-PrimMerge": {
-                    "name": "PrimMerge",
+                "62ee702c-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
                     "inputs": {
-                        "listPrim": {
-                            "property": "dict-panel",
-                            "dictlist-panel": {
-                                "collasped": false,
-                                "keys": {}
-                            },
-                            "link": null,
-                            "type": "list",
+                        "image": {
+                            "link": "main:e20e1467-ReadImageFile:[node]/outputs/image",
+                            "type": "",
                             "default-value": null,
                             "control": {
                                 "name": ""
                             }
                         },
-                        "tagAttr": {
+                        "visualize": {
                             "link": null,
-                            "type": "string",
-                            "default-value": "",
+                            "type": "bool",
+                            "default-value": false,
                             "control": {
-                                "name": "String"
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 100.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
                             }
                         },
                         "SRC": {
@@ -13074,16 +14124,610 @@
                     },
                     "params": {},
                     "outputs": {
-                        "prim": {
-                            "type": "primitive"
+                        "image": {
+                            "type": "PrimitiveObject"
                         },
                         "DST": {
                             "type": ""
                         }
                     },
                     "uipos": [
-                        -17288.21828843766,
-                        9346.6660027418
+                        -7204.24072265625,
+                        1884.4561767578126
+                    ],
+                    "options": []
+                },
+                "743e10fe-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/2.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7776.04150390625,
+                        1557.1033935546876
+                    ],
+                    "options": []
+                },
+                "7f06dcc3-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
+                    "inputs": {
+                        "image": {
+                            "link": "main:743e10fe-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 100.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7206.607421875,
+                        1381.9951171875
+                    ],
+                    "options": []
+                },
+                "e20e1467-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/4.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -7757.18896484375,
+                        1965.203125
+                    ],
+                    "options": []
+                },
+                "bc099038-ImageStitching": {
+                    "name": "ImageStitching",
+                    "inputs": {
+                        "image1": {
+                            "link": "main:7f06dcc3-ImageFeatureDetectSIFT:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "image2": {
+                            "link": "main:62ee702c-ImageFeatureDetectSIFT:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -6474.86865234375,
+                        1682.8017578125
+                    ],
+                    "options": []
+                },
+                "452a38a7-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/1.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4035.47021484375,
+                        -989.7783203125
+                    ],
+                    "options": []
+                },
+                "519acf7-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
+                    "inputs": {
+                        "image": {
+                            "link": "main:c1422b40-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3463.66943359375,
+                        -662.4255981445313
+                    ],
+                    "options": []
+                },
+                "bb7f81ca-ImageFeatureDetectSIFT": {
+                    "name": "ImageFeatureDetectSIFT",
+                    "inputs": {
+                        "image": {
+                            "link": "main:452a38a7-ReadImageFile:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "nFeatures": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1000.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "nOctaveLayers": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 3.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "contrastThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.029999999329447748,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "edgeThreshold": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 10.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "sigma": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 1.0,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -3466.0361328125,
+                        -1164.8865966796876
+                    ],
+                    "options": []
+                },
+                "c1422b40-ReadImageFile": {
+                    "name": "ReadImageFile",
+                    "inputs": {
+                        "path": {
+                            "link": null,
+                            "type": "readpath",
+                            "default-value": "C:/Users/Administrator/Pictures/Stitching/1/6.png",
+                            "control": {
+                                "name": "read path"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "image": {
+                            "type": "PrimitiveObject"
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -4016.61767578125,
+                        -581.6786499023438
+                    ],
+                    "options": []
+                },
+                "d3ba0eaf-Group": {
+                    "name": "Group",
+                    "inputs": {},
+                    "params": {},
+                    "outputs": {},
+                    "uipos": [
+                        -4441.5224609375,
+                        -1441.4652099609376
+                    ],
+                    "options": [],
+                    "blackboard": {
+                        "width": 2628.8935546875,
+                        "height": 1452.254638671875,
+                        "title": "CameraEstimate",
+                        "background": "#0064a8",
+                        "items": [
+                            "519acf7-ImageFeatureDetectSIFT",
+                            "452a38a7-ReadImageFile",
+                            "bb7f81ca-ImageFeatureDetectSIFT",
+                            "8a1ba2ed-ImageFeatureMatch",
+                            "c1422b40-ReadImageFile",
+                            "4ff806a4-CameraEstimate"
+                        ]
+                    }
+                },
+                "da899c4f-ImageFeatureMatch": {
+                    "name": "ImageFeatureMatch",
+                    "inputs": {
+                        "image1": {
+                            "link": "main:c2c4759-ImageFeatureDetectSIFT:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "image2": {
+                            "link": "main:3c398fee-ImageFeatureDetectSIFT:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "maxMatchDistance": {
+                            "link": null,
+                            "type": "float",
+                            "default-value": 0.6000000238418579,
+                            "control": {
+                                "name": "Float"
+                            }
+                        },
+                        "perspectiveMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "fundamentalMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "essentialMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "homographyMatrix": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "visualize": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": true,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "stitch": {
+                            "link": null,
+                            "type": "bool",
+                            "default-value": false,
+                            "control": {
+                                "name": "Boolean"
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "matrix": {
+                            "type": ""
+                        },
+                        "image": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -6713.01220703125,
+                        578.5404663085938
+                    ],
+                    "options": []
+                },
+                "ae850e57-Route": {
+                    "name": "Route",
+                    "inputs": {
+                        "input": {
+                            "link": "main:da899c4f-ImageFeatureMatch:[node]/outputs/image",
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        },
+                        "SRC": {
+                            "link": null,
+                            "type": "",
+                            "default-value": null,
+                            "control": {
+                                "name": ""
+                            }
+                        }
+                    },
+                    "params": {},
+                    "outputs": {
+                        "output": {
+                            "type": ""
+                        },
+                        "DST": {
+                            "type": ""
+                        }
+                    },
+                    "uipos": [
+                        -6222.80859375,
+                        667.2662963867188
                     ],
                     "options": []
                 }
@@ -15695,6 +17339,42 @@
                 "deprecated"
             ]
         },
+        "CacheToDisk": {
+            "inputs": [
+                [
+                    "",
+                    "object",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [
+                [
+                    "string",
+                    "cachebasedir",
+                    ""
+                ]
+            ],
+            "outputs": [
+                [
+                    "",
+                    "object",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "lifecycle"
+            ]
+        },
         "CacheVDBGrid": {
             "inputs": [
                 [
@@ -18042,6 +19722,41 @@
                 "zs_accel"
             ]
         },
+        "EmbedZsgGraph": {
+            "inputs": [
+                [
+                    "readpath",
+                    "zsgPath",
+                    ""
+                ],
+                [
+                    "dict",
+                    "argsDict",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "dict",
+                    "retsDict",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "subgraph"
+            ]
+        },
         "EmptyDict": {
             "inputs": [
                 [
@@ -18330,11 +20045,6 @@
                     ""
                 ],
                 [
-                    "ListObject",
-                    "prims",
-                    ""
-                ],
-                [
                     "",
                     "camera",
                     ""
@@ -18365,7 +20075,7 @@
                     ""
                 ],
                 [
-                    "ListObject",
+                    "list",
                     "bsPrims",
                     ""
                 ],
@@ -18946,7 +20656,7 @@
             "params": [],
             "outputs": [
                 [
-                    "ListObject",
+                    "list",
                     "datas",
                     ""
                 ],
@@ -18956,13 +20666,23 @@
                     ""
                 ],
                 [
-                    "ListObject",
+                    "list",
                     "texLists",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "texMaps",
+                    ""
+                ],
+                [
+                    "dict",
+                    "matValues",
+                    ""
+                ],
+                [
+                    "dict",
+                    "texUvs",
                     ""
                 ],
                 [
@@ -20980,12 +22700,12 @@
                 ],
                 [
                     "float",
-                    "min_curvature",
+                    "min_height",
                     ""
                 ],
                 [
                     "float",
-                    "max_curvature",
+                    "max_height",
                     ""
                 ],
                 [
@@ -21573,7 +23293,7 @@
                 "image"
             ]
         },
-        "ImageEdgeDetect_Canny": {
+        "ImageEdgeDetectCanny": {
             "inputs": [
                 [
                     "",
@@ -21618,7 +23338,7 @@
                 "image"
             ]
         },
-        "ImageEdgeDetect_DIY": {
+        "ImageEdgeDetectDIY": {
             "inputs": [
                 [
                     "",
@@ -21678,7 +23398,7 @@
                 "deprecated"
             ]
         },
-        "ImageEdgeDetect_Prewitt": {
+        "ImageEdgeDetectPrewitt": {
             "inputs": [
                 [
                     "",
@@ -21723,7 +23443,7 @@
                 "image"
             ]
         },
-        "ImageEdgeDetect_Roberts": {
+        "ImageEdgeDetectRoberts": {
             "inputs": [
                 [
                     "",
@@ -21768,7 +23488,7 @@
                 "image"
             ]
         },
-        "ImageEdgeDetect_Sobel": {
+        "ImageEdgeDetectSobel": {
             "inputs": [
                 [
                     "",
@@ -22183,7 +23903,7 @@
                 "image"
             ]
         },
-        "ImageFeatureDetect_ORB": {
+        "ImageFeatureDetectORB": {
             "inputs": [
                 [
                     "",
@@ -22238,7 +23958,7 @@
                 "image"
             ]
         },
-        "ImageFeatureDetect_SIFT": {
+        "ImageFeatureDetectSIFT": {
             "inputs": [
                 [
                     "",
@@ -22311,6 +24031,41 @@
                     ""
                 ],
                 [
+                    "float",
+                    "maxMatchDistance",
+                    ""
+                ],
+                [
+                    "bool",
+                    "perspectiveMatrix",
+                    "1"
+                ],
+                [
+                    "bool",
+                    "fundamentalMatrix",
+                    "0"
+                ],
+                [
+                    "bool",
+                    "essentialMatrix",
+                    "0"
+                ],
+                [
+                    "bool",
+                    "homographyMatrix",
+                    "0"
+                ],
+                [
+                    "bool",
+                    "visualize",
+                    "1"
+                ],
+                [
+                    "bool",
+                    "stitch",
+                    "0"
+                ],
+                [
                     "",
                     "SRC",
                     ""
@@ -22318,6 +24073,11 @@
             ],
             "params": [],
             "outputs": [
+                [
+                    "",
+                    "matrix",
+                    ""
+                ],
                 [
                     "",
                     "image",
@@ -22590,7 +24350,7 @@
                 ]
             ],
             "categories": [
-                "deprecated"
+                "image"
             ]
         },
         "ImageRGB2HSV": {
@@ -22756,31 +24516,6 @@
                     ""
                 ],
                 [
-                    "enum orb sift",
-                    "mode",
-                    "orb"
-                ],
-                [
-                    "float",
-                    "nFeatures",
-                    ""
-                ],
-                [
-                    "float",
-                    "scaleFactor",
-                    ""
-                ],
-                [
-                    "float",
-                    "edgeThreshold",
-                    ""
-                ],
-                [
-                    "float",
-                    "patchSize",
-                    ""
-                ],
-                [
                     "",
                     "SRC",
                     ""
@@ -22801,61 +24536,6 @@
             ],
             "categories": [
                 "image"
-            ]
-        },
-        "ImageStitching2": {
-            "inputs": [
-                [
-                    "",
-                    "image1",
-                    ""
-                ],
-                [
-                    "",
-                    "image2",
-                    ""
-                ],
-                [
-                    "float",
-                    "nFeatures",
-                    ""
-                ],
-                [
-                    "float",
-                    "scaleFactor",
-                    ""
-                ],
-                [
-                    "float",
-                    "edgeThreshold",
-                    ""
-                ],
-                [
-                    "float",
-                    "patchSize",
-                    ""
-                ],
-                [
-                    "",
-                    "SRC",
-                    ""
-                ]
-            ],
-            "params": [],
-            "outputs": [
-                [
-                    "",
-                    "image",
-                    ""
-                ],
-                [
-                    "",
-                    "DST",
-                    ""
-                ]
-            ],
-            "categories": [
-                "deprecated"
             ]
         },
         "ImageTile": {
@@ -28122,6 +29802,41 @@
             ],
             "categories": [
                 "deprecated"
+            ]
+        },
+        "PolyReduceLite": {
+            "inputs": [
+                [
+                    "PrimitiveObject",
+                    "prim",
+                    ""
+                ],
+                [
+                    "int",
+                    "iterations",
+                    "100"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "PrimitiveObject",
+                    "prim",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "zs_geom"
             ]
         },
         "PortalIn": {
@@ -34052,6 +35767,46 @@
                 "primitive"
             ]
         },
+        "PrimitiveReorder": {
+            "inputs": [
+                [
+                    "PrimitiveObject",
+                    "prim",
+                    ""
+                ],
+                [
+                    "bool",
+                    "order_vertices",
+                    "0"
+                ],
+                [
+                    "bool",
+                    "order_tris",
+                    "1"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "PrimitiveObject",
+                    "prim",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "zs_geom"
+            ]
+        },
         "PrimitiveResize": {
             "inputs": [
                 [
@@ -35805,6 +37560,11 @@
             "params": [
                 [
                     "bool",
+                    "indepData",
+                    "0"
+                ],
+                [
+                    "bool",
                     "primitive",
                     "0"
                 ],
@@ -35831,22 +37591,17 @@
                     ""
                 ],
                 [
-                    "DictObject",
-                    "prims",
-                    ""
-                ],
-                [
                     "",
                     "data",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "datas",
                     ""
                 ],
                 [
-                    "DictObject",
+                    "dict",
                     "mats",
                     ""
                 ],
@@ -40307,6 +42062,51 @@
                 "openvdb"
             ]
         },
+        "TrianglePrimSubdiv": {
+            "inputs": [
+                [
+                    "",
+                    "prim",
+                    ""
+                ],
+                [
+                    "int",
+                    "iters",
+                    "2"
+                ],
+                [
+                    "string",
+                    "face_inherit",
+                    ""
+                ],
+                [
+                    "string",
+                    "face_avg_edge",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "prim",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "primitive"
+            ]
+        },
         "TrianglesWrangle": {
             "inputs": [
                 [
@@ -42685,7 +44485,7 @@
                     ""
                 ],
                 [
-                    "enum png jpg exr",
+                    "enum png jpg exr pfm",
                     "type",
                     "png"
                 ],
@@ -46157,6 +47957,131 @@
                 "erode"
             ]
         },
+        "erode_tumble_material_erosion": {
+            "inputs": [
+                [
+                    "",
+                    "prim_2DGrid",
+                    ""
+                ],
+                [
+                    "ListObject",
+                    "perm",
+                    ""
+                ],
+                [
+                    "ListObject",
+                    "p_dirs",
+                    ""
+                ],
+                [
+                    "ListObject",
+                    "x_dirs",
+                    ""
+                ],
+                [
+                    "float",
+                    "seed",
+                    ""
+                ],
+                [
+                    "int",
+                    "iterations",
+                    "0"
+                ],
+                [
+                    "int",
+                    "iter",
+                    "0"
+                ],
+                [
+                    "int",
+                    "i",
+                    "0"
+                ],
+                [
+                    "int",
+                    "openborder",
+                    "0"
+                ],
+                [
+                    "float",
+                    "maxdepth",
+                    ""
+                ],
+                [
+                    "float",
+                    "global_erosionrate",
+                    ""
+                ],
+                [
+                    "float",
+                    "erosionrate",
+                    ""
+                ],
+                [
+                    "float",
+                    "cutangle",
+                    ""
+                ],
+                [
+                    "string",
+                    "cutangle_mask_layer",
+                    "cutangle_mask"
+                ],
+                [
+                    "float",
+                    "erodability",
+                    ""
+                ],
+                [
+                    "string",
+                    "erodability_mask_layer",
+                    "erodability_mask"
+                ],
+                [
+                    "float",
+                    "removalrate",
+                    ""
+                ],
+                [
+                    "string",
+                    "removalrate_mask_layer",
+                    "removalrate_mask"
+                ],
+                [
+                    "float",
+                    "gridbias",
+                    ""
+                ],
+                [
+                    "string",
+                    "gridbias_mask_layer",
+                    "gridbias_mask"
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "prim_2DGrid",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "erode"
+            ]
+        },
         "erode_tumble_material_v0": {
             "inputs": [
                 [
@@ -46270,6 +48195,66 @@
                 [
                     "",
                     "prim_2DGrid",
+                    ""
+                ],
+                [
+                    "",
+                    "DST",
+                    ""
+                ]
+            ],
+            "categories": [
+                "erode"
+            ]
+        },
+        "erode_tumble_material_v1": {
+            "inputs": [
+                [
+                    "",
+                    "HeightField",
+                    ""
+                ],
+                [
+                    "string",
+                    "write_back_material_layer",
+                    "write_back_material"
+                ],
+                [
+                    "int",
+                    "openborder",
+                    "0"
+                ],
+                [
+                    "float",
+                    "repose_angle",
+                    ""
+                ],
+                [
+                    "float",
+                    "flow_rate",
+                    ""
+                ],
+                [
+                    "float",
+                    "height_factor",
+                    ""
+                ],
+                [
+                    "float",
+                    "entrainmentrate",
+                    ""
+                ],
+                [
+                    "",
+                    "SRC",
+                    ""
+                ]
+            ],
+            "params": [],
+            "outputs": [
+                [
+                    "",
+                    "HeightField",
                     ""
                 ],
                 [

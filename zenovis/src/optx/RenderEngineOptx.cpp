@@ -333,13 +333,13 @@ struct GraphicsManager {
                     }
                     if(prim_in->tris.size()==0) return;
 
-                    /// WXL
-                    (void)zeno::TempNodeSimpleCaller("PrimitiveReorder")
-                        .set("prim", std::shared_ptr<zeno::PrimitiveObject>(prim_in, [](void *) {}))
-                        .set2<bool>("order_vertices", true)
-                        .set2<bool>("order_tris", true)
-                        .call();  // will inplace reorder prim
-                    /// WXL
+//                    /// WXL
+//                    (void)zeno::TempNodeSimpleCaller("PrimitiveReorder")
+//                        .set("prim", std::shared_ptr<zeno::PrimitiveObject>(prim_in, [](void *) {}))
+//                        .set2<bool>("order_vertices", true)
+//                        .set2<bool>("order_tris", true)
+//                        .call();  // will inplace reorder prim
+//                    /// WXL
 
                     bool has_uv =   prim_in->tris.has_attr("uv0")&&prim_in->tris.has_attr("uv1")&&prim_in->tris.has_attr("uv2");
                     if(prim_in->has_attr("uv") && has_uv == false)
@@ -578,6 +578,10 @@ struct GraphicsManager {
                 changelight = true;
             }
         }
+
+        auto &ud = zeno::getSession().userData();
+        bool show_background = ud.get2<bool>("optix_show_background", false);
+        xinxinoptix::show_background(show_background);
 
         return changelight;
     }
@@ -846,7 +850,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
         if (sizeNeedUpdate) {
             zeno::log_debug("[zeno-optix] updating resolution");
-        xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
+            xinxinoptix::set_window_size(cam.m_nx, cam.m_ny);
+
         }
 
         if (sizeNeedUpdate || camNeedUpdate) {
@@ -1107,11 +1112,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         CHECK_GL(glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &targetFBO));
         {
             auto bindVao = opengl::scopeGLBindVertexArray(vao->vao);
-            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
+            xinxinoptix::optixrender(targetFBO, scene->drawOptions->num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
         }
         CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, targetFBO));
 #else
-        xinxinoptix::optixrender(0, scene->drawOptions->num_samples, scene->drawOptions->simpleRender);
+        xinxinoptix::optixrender(0, scene->drawOptions->num_samples, scene->drawOptions->denoise, scene->drawOptions->simpleRender);
 #endif
     }
 

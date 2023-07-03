@@ -347,6 +347,10 @@ QVariant SubGraphModel::data(const QModelIndex& index, int role) const
         {
             return item.bCollasped;
         }
+        case ROLE_NODE_DATACHANGED:
+        {
+            return item.bDataChanged;
+        }
         case ROLE_OPTIONS:
         {
             return item.options;
@@ -511,6 +515,11 @@ bool SubGraphModel::setData(const QModelIndex& index, const QVariant& value, int
             case ROLE_OPTIONS:
             {
                 item.options = value.toInt();
+                break;
+            }
+            case ROLE_NODE_DATACHANGED:
+            {
+                item.bDataChanged = value.toBool();
                 break;
             }
             case ROLE_OBJPOS:

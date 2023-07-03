@@ -10,6 +10,14 @@
 #define _FLT_MAX_ 3.40282347e+38F
 #define _FLT_MIN_ 1.17549435e-38F
 
+#ifndef uint
+using uint = unsigned int;
+#endif
+
+#define MISS_HIT 0
+#define DIFFUSE_HIT 1
+#define SPECULAR_HIT 2
+#define TRANSMIT_HIT 3
 static __forceinline__ __device__ void* unpackPointer( unsigned int i0, unsigned int i1 )
 {
     const unsigned long long uptr = static_cast<unsigned long long>( i0 ) << 32 | i1;
@@ -60,6 +68,9 @@ struct RadiancePRD
 {
     // TODO: move some state directly into payload registers?
     float3       radiance;
+    float3       radiance_d;
+    float3       radiance_s;
+    float3       radiance_t;
     float3       emission;
     float3       attenuation;
     float3       attenuation2;
@@ -73,6 +84,7 @@ struct RadiancePRD
     float        prob2;
     unsigned int seed;
     unsigned int flags;
+    bool         hitEnv;
     int          countEmitted;
     int          done;
     int          pad;
@@ -94,6 +106,8 @@ struct RadiancePRD
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
+
+    unsigned char first_hit_type;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
         return sigma_t_queue[idx];
@@ -109,12 +123,14 @@ struct RadiancePRD
     }
     vec3 channelPDF;
 
-    bool bad = false;
+    bool trace_denoise_albedo = false;
+    bool trace_denoise_normal = false;
+    float3 tmp_albedo {};
+    float3 tmp_normal {};
 
     // cihou nanovdb
     float vol_t0=0, vol_t1=0;
 
-    unsigned int vol_depth = 0;
     bool test_distance = false;
     bool origin_inside_vdb = false;
     bool surface_inside_vdb = false; 

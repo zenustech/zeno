@@ -8,11 +8,8 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/CameraObject.h>
 #include <zenomodel/include/uihelper.h>
-#include "settings/zenosettingsmanager.h"
-#include <zenomodel/include/graphsmanagment.h>
 #include "launch/corelaunch.h"
 #include "zenomainwindow.h"
-#include <util/log.h>
 #include "camerakeyframe.h"
 #include <zenoui/style/zenostyle.h>
 #include <zeno/core/Session.h>
@@ -140,6 +137,46 @@ void DisplayWidget::updateCameraProp(float aperture, float disPlane)
         m_glView->updateCameraProp(aperture, disPlane);
     } else {
         m_optixView->updateCameraProp(aperture, disPlane);
+    }
+}
+
+void DisplayWidget::updatePerspective()
+{
+    if (m_glView) {
+        m_glView->updatePerspective();
+    }
+    else {
+        m_optixView->updatePerspective();
+    }
+}
+
+void DisplayWidget::setNumSamples(int samples)
+{
+    if (m_glView) {
+        m_glView->setNumSamples(samples);
+    }
+    else {
+        m_optixView->setNumSamples(samples);
+    }
+}
+
+void DisplayWidget::setCameraRes(const QVector2D& res)
+{
+    if (m_glView) {
+        m_glView->setCameraRes(res);
+    }
+    else {
+        m_optixView->setCameraRes(res);
+    }
+}
+
+void DisplayWidget::setSafeFrames(bool bLock, int nx, int ny)
+{
+    if (m_glView) {
+        m_glView->setSafeFrames(bLock, nx, ny);
+    }
+    else {
+        m_optixView->setSafeFrames(bLock, nx, ny);
     }
 }
 
@@ -564,9 +601,11 @@ void DisplayWidget::onRecord()
     if (QDialog::Accepted == dlg.exec())
     {
         VideoRecInfo recInfo;
-        dlg.getInfo(recInfo.fps, recInfo.bitrate, recInfo.res[0],
-                    recInfo.res[1], recInfo.record_path, recInfo.videoname, recInfo.numOptix, recInfo.numMSAA,
-                    recInfo.bExportVideo);
+        if (!dlg.getInfo(recInfo))
+        {
+            QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
+            return;
+        }
         //validation.
 
         ZRecFrameSelectDlg frameDlg(this);
@@ -614,6 +653,27 @@ void DisplayWidget::onRecord()
             m_recordMgr.cancelRecord();
         }
     }
+}
+
+void DisplayWidget::onRecord_slient(const VideoRecInfo& recInfo)
+{
+    m_recordMgr.setRecordInfo(recInfo);
+
+    if (!m_bGLView)
+    {
+        ZASSERT_EXIT(m_optixView);
+        m_optixView->recordVideo(recInfo);
+    }
+    else
+    {
+        moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        mainWin->toggleTimelinePlay(true);          // and then play.
+        //the recording implementation is RecordVideoMgr::onFrameDrawn.
+    }
+
+    //todo: connect notify signals from RecordVideoMgr, e.g, frameFinished, recordFinished
 }
 
 void DisplayWidget::moveToFrame(int frame) {

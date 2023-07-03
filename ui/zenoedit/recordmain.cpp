@@ -70,6 +70,10 @@ int record_main(const QCoreApplication& app)
         {"cachePath", "cachePath", "cachePath"},
         {"cacheNum", "cacheNum", "cacheNum"},
         {"exitWhenRecordFinish", "exitWhenRecordFinish", "exitWhenRecordFinish"},
+        {"optix", "optix", "optix mode"},
+        {"video", "video", "export video"},
+        {"videoname", "videoname", "export video's name"},
+        {"subzsg", "subgraphzsg", "subgraph zsg file path"},
     });
     cmdParser.process(app);
 
@@ -116,18 +120,30 @@ int record_main(const QCoreApplication& app)
     }
     param.iBitrate = cmdParser.isSet("bitrate") ? cmdParser.value("bitrate").toInt() : 20000;
     param.iFps = cmdParser.isSet("fps") ? cmdParser.value("fps").toInt() : 24;
+	param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
+	param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
+	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
+	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 #else
-    param.sZsgPath = "E:\\zeno-fixbug\\once-bug.zsg";
-    param.sPath = "E:\\zeno-fixbug\\recordpath";
+    param.sZsgPath = "C:\\zeno\\framenum.zsg";
+    param.sPath = "C:\\recordpath";
     param.iFps = 24;
     param.iBitrate = 200000;
     param.iSFrame = 0;
     param.iFrame = 10;
+    param.iSample = 1;
+    param.bOptix = true;
     param.sPixel = "1200x800";
 #endif
 
-    ZenoMainWindow tempWindow;
-    tempWindow.showMaximized();
-    tempWindow.directlyRunRecord(param);
+    ZenoMainWindow tempWindow(nullptr, 0, param.bOptix ? PANEL_OPTIX_VIEW : PANEL_GL_VIEW);
+    if (!param.bOptix)
+    {
+        tempWindow.showMaximized();
+        tempWindow.solidRunRender(param);
+    }
+    else {
+        tempWindow.optixRunRender(param);
+    }
     return app.exec();
 }

@@ -31,38 +31,55 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     std::vector<std::vector<size_t>> poses(3);
     std::vector<std::string> keys(3);
     for (auto const &[key, obj]: objs) {
+
+        size_t bufsize =0;
         std::string nodeName = key.substr(key.find("-") + 1, key.find(":") - key.find("-") -1);
         if (cacheLightCameraOnly && (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)))
         {
-            keys[0].push_back('\a');
-            keys[0].append(key);
-            poses[0].push_back(bufCaches[0].size());
-            encodeObject(obj.get(), bufCaches[0]);
+            bufsize = bufCaches[0].size();
+            if (encodeObject(obj.get(), bufCaches[0]))
+            {
+                keys[0].push_back('\a');
+                keys[0].append(key);
+                poses[0].push_back(bufsize);
+            }
         }
         if (cacheMaterialOnly && (matlNode == nodeName || std::dynamic_pointer_cast<MaterialObject>(obj)))
         {
-            keys[1].push_back('\a');
-            keys[1].append(key);
-            poses[1].push_back(bufCaches[1].size());
-            encodeObject(obj.get(), bufCaches[1]);
+            bufsize = bufCaches[1].size();
+            if (encodeObject(obj.get(), bufCaches[1]))
+            {
+                keys[1].push_back('\a');
+                keys[1].append(key);
+                poses[1].push_back(bufsize);
+            }
         }
         if (!cacheLightCameraOnly && !cacheMaterialOnly)
         {
             if (lightCameraNodes.count(nodeName) || obj->userData().get2<int>("isL", 0) || std::dynamic_pointer_cast<CameraObject>(obj)) {
-                keys[0].push_back('\a');
-                keys[0].append(key);
-                poses[0].push_back(bufCaches[0].size());
-                encodeObject(obj.get(), bufCaches[0]);
+                bufsize = bufCaches[0].size();
+                if (encodeObject(obj.get(), bufCaches[0]))
+                {
+                    keys[0].push_back('\a');
+                    keys[0].append(key);
+                    poses[0].push_back(bufsize);
+                }
             } else if (matlNode == nodeName || std::dynamic_pointer_cast<MaterialObject>(obj)) {
-                keys[1].push_back('\a');
-                keys[1].append(key);
-                poses[1].push_back(bufCaches[1].size());
-                encodeObject(obj.get(), bufCaches[1]);
+                bufsize = bufCaches[1].size();
+                if (encodeObject(obj.get(), bufCaches[1]))
+                {
+                    keys[1].push_back('\a');
+                    keys[1].append(key);
+                    poses[1].push_back(bufsize);
+                }
             } else {
-                keys[2].push_back('\a');
-                keys[2].append(key);
-                poses[2].push_back(bufCaches[2].size());
-                encodeObject(obj.get(), bufCaches[2]);
+                bufsize = bufCaches[2].size();
+                if (encodeObject(obj.get(), bufCaches[2]))
+                {
+                    keys[2].push_back('\a');
+                    keys[2].append(key);
+                    poses[2].push_back(bufsize);
+                }
             }
         }
     }
@@ -125,7 +142,7 @@ static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
             log_error("zeno cache file broken (2)");
             return false;
         }
-        int keyscount = std::stoi(std::string(dat.data() + 8, pos - 8));
+        size_t keyscount = std::stoi(std::string(dat.data() + 8, pos - 8));
         pos = pos + 1;
         std::vector<std::string> keys;
         for (int k = 0; k < keyscount; k++) {

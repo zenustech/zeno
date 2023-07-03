@@ -21,6 +21,7 @@ struct DrawOptions {
     bool updateLightCameraOnly = false;
     int num_samples = 1;
     int msaa_samples = 0;
+    bool denoise = false;
 
     std::shared_ptr<IGraphicHandler> handler;
 

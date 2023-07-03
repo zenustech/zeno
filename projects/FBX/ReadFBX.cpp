@@ -394,12 +394,17 @@ struct Mesh{
     void processCamera(const aiScene *scene){
         // If Maya's camera does not have `LookAt`, it will use A `InterestPosition`
 
-        zeno::log_info("FBX: Num Camera {}", scene->mNumCameras);
+        std::cout << "FBX: Num Camera " << scene->mNumCameras << "\n";
         for(unsigned int i=0;i<scene->mNumCameras; i++){
-            auto& cam = scene->mCameras[i];
+            aiCamera* cam = scene->mCameras[i];
             std::string camName = cam->mName.data;
             aiMatrix4x4 camMatrix;
             cam->GetCameraMatrix(camMatrix);
+
+            SCamera sCam;
+            std::cout << "Camera Name: " << camName << "\n";
+            fbxData.iCamera.value[camName] = sCam;
+
         }
     }
 
@@ -559,6 +564,9 @@ struct Mesh{
 
                     std::cout << " PropName "<<com.first<<" RelTexPath "<<texPathGet.data<<"\n";
                     std::cout << "  TexType "<<texType<<" MerPath "<<combinePath<<"\n";
+                    std::cout << " uv transform " << uvTransform.mScaling.x << " " << uvTransform.mScaling.y
+                              << " - " << uvTransform.mTranslation.x << " " << uvTransform.mTranslation.y << "\n";
+
 
                     Path file_full_path(combinePath);
                     std::string filename = Path(combinePath).filename().string();
@@ -703,7 +711,7 @@ struct Mesh{
 
                             // override the default value
                             com.second.value = tmp;
-                            //std::cout <<" PropName "<<com.first<<" MatValue "<<tmp.r<<","<<tmp.g<<","<<tmp.b<<","<<tmp.a<<"\n";
+                            std::cout <<" PropName "<<com.first<<" MatValue "<<tmp.r<<","<<tmp.g<<","<<tmp.b<<","<<tmp.a<<"\n";
                             break;
                         }
                     }
@@ -1183,8 +1191,8 @@ struct ReadFBXPrim : zeno::INode {
             int count = 0;
             for (auto &[k, v]: mats->lut) {
                 auto vc = zeno::safe_dynamic_cast<SMaterial>(v);
-                std::cout << "setting user data: current " << k  << " total " << count << "\n";
-                prim->userData().setLiterial(std::to_string(count), k);
+                std::cout << "setting user data: " << count  << " name " << k << "\n";
+                prim->userData().set2(std::to_string(count), k);
 
                 std::vector<std::string> texList{};
                 std::map<std::string, int> texMap{};
@@ -1193,7 +1201,7 @@ struct ReadFBXPrim : zeno::INode {
 
                 vc->getSimplestTexList(texList, texMap, texUv, matValue);
                 for(int i=0;i<texList.size();i++){
-                    prim->userData().setLiterial(std::to_string(count) + "_tex_" + std::to_string(i), texList[i]);
+                    prim->userData().set2(std::to_string(count) + "_tex_" + std::to_string(i), texList[i]);
                 }
 
                 count++;

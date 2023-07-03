@@ -16,6 +16,7 @@ namespace zeno {
 
 struct Session;
 struct SubgraphNode;
+struct DirtyChecker;
 struct INode;
 
 struct Context {
@@ -44,6 +45,7 @@ struct Graph : std::enable_shared_from_this<Graph> {
     std::map<std::string, std::string> subOutputNodes;
 
     std::unique_ptr<Context> ctx;
+    std::unique_ptr<DirtyChecker> dirtyChecker;
 
     ZENO_API Graph();
     ZENO_API ~Graph();
@@ -53,13 +55,14 @@ struct Graph : std::enable_shared_from_this<Graph> {
     Graph(Graph &&) = delete;
     Graph &operator=(Graph &&) = delete;
 
+    ZENO_API DirtyChecker &getDirtyChecker();
     ZENO_API void clearNodes();
     ZENO_API void applyNodesToExec();
     ZENO_API void applyNodes(std::set<std::string> const &ids);
     ZENO_API void addNode(std::string const &cls, std::string const &id);
     ZENO_API Graph *addSubnetNode(std::string const &id);
     ZENO_API Graph *getSubnetGraph(std::string const &id) const;
-    ZENO_API void applyNode(std::string const &id);
+    ZENO_API bool applyNode(std::string const &id);
     ZENO_API void completeNode(std::string const &id);
     ZENO_API void bindNodeInput(std::string const &dn, std::string const &ds,
         std::string const &sn, std::string const &ss);

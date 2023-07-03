@@ -102,6 +102,7 @@ struct CameraNode: zeno::INode{
             p++;
         }
         if (prop_vals.size() == 6) {
+            camera->isSet = true;
             camera->center = {prop_vals[0], prop_vals[1], prop_vals[2]};
             camera->theta = prop_vals[3];
             camera->phi = prop_vals[4];

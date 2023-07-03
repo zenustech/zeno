@@ -58,7 +58,7 @@ namespace JsonHelper
 		const QString& descType,
 		RAPIDJSON_WRITER& writer
 		);
-	void AddVariant(const QVariant& var, const QString& type, RAPIDJSON_WRITER& writer);
+	bool AddVariant(const QVariant& var, const QString& type, RAPIDJSON_WRITER& writer);
 	void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer);
 	void WriteVariant(const QVariant& var, RAPIDJSON_WRITER& writer);
 	void dumpControl(PARAM_CONTROL ctrl, const QVariant& props, RAPIDJSON_WRITER& writer);

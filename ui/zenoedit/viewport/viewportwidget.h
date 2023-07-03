@@ -35,6 +35,7 @@ public:
     bool isPlaying() const;
     void startPlay(bool bPlaying);
     void setCameraRes(const QVector2D& res);
+    void setSafeFrames(bool bLock, int nx, int ny);
     void updatePerspective();
     void updateCameraProp(float aperture, float disPlane);
     void cameraLookTo(int dir);
@@ -42,6 +43,7 @@ public:
     void changeTransformOperation(const QString& node);
     void changeTransformOperation(int mode);
     void changeTransformCoordSys();
+    void setNumSamples(int samples);
     void setPickTarget(const std::string& prim_name);
     void bindNodeToPicker(const QModelIndex& node, const QModelIndex& subgraph, const std::string& sock_name);
     void unbindNodeFromPicker();

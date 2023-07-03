@@ -14,6 +14,8 @@
 struct ZENO_RECORD_RUN_INITPARAM {
     QString sZsgPath = "";
     bool bRecord = false;
+    bool bOptix = false;    //is optix view.
+    bool isExportVideo = false;
     int iFrame = 0;
     int iSFrame = 0;
     int iSample = 0;
@@ -23,12 +25,15 @@ struct ZENO_RECORD_RUN_INITPARAM {
     QString sPath = "";
     QString audioPath = "";
     QString configFilePath = "";
+    QString videoName = "";
+    QString subZsg = "";
     bool exitWhenRecordFinish = false;
 };
 
 
 class ZenoDockWidget;
 class DisplayWidget;
+class ZOptixViewport;
 class ZTimeline;
 class LiveTcpServer;
 class LiveHttpServer;
@@ -45,7 +50,7 @@ class ZenoMainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
+    ZenoMainWindow(QWidget* parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags(), PANEL_TYPE onlyView = PANEL_EMPTY);
     ~ZenoMainWindow();
     bool inDlgEventLoop() const;
     void setInDlgEventLoop(bool bOn);
@@ -69,8 +74,8 @@ public:
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
-    LiveTcpServer* liveTcpServer;
-    LiveHttpServer* liveHttpServer;
+    LiveTcpServer* liveTcpServer = nullptr;
+    std::shared_ptr<LiveHttpServer> liveHttpServer;
     LiveSignalsBridge* liveSignalsBridge;
 
     enum ActionType {
@@ -147,6 +152,7 @@ signals:
     void visFrameUpdated(bool bGLView, int frameid);
     void alwaysModeChanged(bool bAlways);
     void dockSeparatorMoving(bool bMoving);
+    void runFinished();
 
 public slots:
     void openFileDialog();
@@ -172,7 +178,8 @@ public slots:
     void saveDockLayout();
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
-    void directlyRunRecord(const ZENO_RECORD_RUN_INITPARAM& param);
+    void solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
+    void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
@@ -190,10 +197,10 @@ protected:
     void dropEvent(QDropEvent* event) override;
 
 private:
-    void init();
+    void init(PANEL_TYPE onlyView);
     void initMenu();
     void initLive();
-    void initDocks();
+    void initDocks(PANEL_TYPE onlyView);
     void initWindowProperty();
     void initDocksWidget(ZTabDockWidget* pCake, PtrLayoutNode root);
     void _resizeDocks(PtrLayoutNode root);
@@ -216,6 +223,7 @@ private:
     void updateShortCut(QStringList keys);
     void shortCutDlg();
     void killOptix();
+    DisplayWidget* getOnlyViewport() const;
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

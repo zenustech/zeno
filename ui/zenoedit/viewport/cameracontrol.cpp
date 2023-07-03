@@ -28,7 +28,7 @@ CameraControl::CameraControl(
     , m_fov(45.)
     , m_radius(5.0)
     , m_res(1, 1)
-    , m_aperture(0.1f)
+    , m_aperture(0.0f)
     , m_focalPlaneDistance(2.0f)
 {
     updatePerspective();
@@ -58,6 +58,23 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         m_aperture = scene->camera->m_aperture;
         m_focalPlaneDistance = scene->camera->focalPlaneDistance;
         scene->camera->m_need_sync = false;
+        if (bool(m_picker) && scene->camera->m_auto_radius) {
+            this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
+                if (depth < 0.001f) {
+                    return;
+                }
+                glm::vec4 ndc = {0, 0, depth, 1};
+                glm::vec4 posCS = glm::inverse(scene->camera->m_proj) * ndc;
+                glm::vec4 posVS = posCS / posCS.w;
+                glm::vec4 pWS = glm::inverse(scene->camera->m_view) * posVS;
+                glm::vec3 p3WS = glm::vec3(pWS.x, pWS.y, pWS.z);
+                m_radius = glm::length(scene->camera->m_lodcenter - p3WS);
+                m_center = {p3WS.x, p3WS.y, p3WS.z};
+            });
+            int mid_x = int(this->res().x() * 0.5);
+            int mid_y = int(this->res().y() * 0.5);
+            this->m_picker->pick_depth(mid_x, mid_y);
+        }
     }
     if (event->buttons() & Qt::MiddleButton) {
         m_lastPos = event->pos();

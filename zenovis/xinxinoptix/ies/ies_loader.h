@@ -39,7 +39,7 @@
 
 #include <vector>
 #include <string>
-
+#include <cstdint>
 // https://knowledge.autodesk.com/support/3ds-max/learn-explore/caas/CloudHelp/cloudhelp/2016/ENU/3DSMax/files/GUID-EA0E3DE0-275C-42F7-83EC-429A37B2D501-htm.html
 class IESFileInfo
 {

@@ -15,7 +15,7 @@
 #include <zenomodel/include/command.h>
 #include "iotags.h"
 #include <zenoui/style/zenostyle.h>
-
+#include <zenoui/comctrl/zspinboxslider.h>
 
 static CONTROL_ITEM_INFO controlList[] = {
     {"Tab", CONTROL_NONE, "", ":/icons/parameter_control_tab.svg"},
@@ -815,6 +815,7 @@ void ZEditParamLayoutDlg::onMinEditFinished()
     qreal from = m_ui->editMin->text().toDouble();
     properties["min"] = from;
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+    updateSliderInfo();
 }
 
 void ZEditParamLayoutDlg::onMaxEditFinished()
@@ -827,6 +828,7 @@ void ZEditParamLayoutDlg::onMaxEditFinished()
     qreal to = m_ui->editMax->text().toDouble();
     properties["max"] = to;
     proxyModelSetData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+    updateSliderInfo();
 }
 
 void ZEditParamLayoutDlg::onControlItemChanged(int idx)
@@ -919,6 +921,7 @@ void ZEditParamLayoutDlg::onStepEditFinished()
     //m_commandSeq.append(pCommand);
 
     m_proxyModel->setData(layerIdx, properties, ROLE_VPARAM_CTRL_PROPERTIES);
+    updateSliderInfo();
 }
 
 void ZEditParamLayoutDlg::onChooseParamClicked()
@@ -1305,4 +1308,36 @@ void ZEditParamLayoutDlg::onOk()
 void ZEditParamLayoutDlg::onCancel()
 {
     reject();
+}
+
+void ZEditParamLayoutDlg::updateSliderInfo()
+{
+    SLIDER_INFO info;
+    info.step = m_ui->editStep->text().toDouble();
+    info.min = m_ui->editMin->text().toDouble();
+    info.max = m_ui->editMax->text().toDouble();
+    //update control.
+    QLayoutItem* pLayoutItem = m_ui->gridLayout->itemAtPosition(rowValueControl, 1);
+    if (pLayoutItem) {
+        if (QDoubleSpinBox* pControl = qobject_cast<QDoubleSpinBox*>(pLayoutItem->widget()))
+        {
+            pControl->setRange(info.min, info.max);
+            pControl->setSingleStep(info.step);
+        }
+        else if (ZSpinBoxSlider* pControl = qobject_cast<ZSpinBoxSlider*>(pLayoutItem->widget()))
+        {
+            pControl->setRange(info.min, info.max);
+            pControl->setSingleStep(info.step);
+        }
+        else if (QSpinBox* pControl = qobject_cast<QSpinBox*>(pLayoutItem->widget()))
+        {
+            pControl->setRange(info.min, info.max);
+            pControl->setSingleStep(info.step);
+        }
+        else if (QSlider* pControl = qobject_cast<QSlider*>(pLayoutItem->widget()))
+        {
+            pControl->setRange(info.min, info.max);
+            pControl->setSingleStep(info.step);
+        }
+    }
 }

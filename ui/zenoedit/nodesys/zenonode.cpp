@@ -55,6 +55,7 @@ ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
     , m_pStatusWidgets(nullptr)
     , m_bVisible(true)
     , m_NameItemTip(nullptr)
+    , m_dirtyMarker(nullptr)
 {
     setFlags(ItemIsMovable | ItemIsSelectable);
     setAcceptHoverEvents(true);
@@ -254,7 +255,7 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setDebugName("Body Layout");
     m_bodyLayout->setSpacing(ZenoStyle::dpiScaled(5));
     qreal margin = ZenoStyle::dpiScaled(16);
-    m_bodyLayout->setContentsMargin(margin, bdrWidth, margin, bdrWidth);
+    m_bodyLayout->setContentsMargin(margin, bdrWidth, 0, bdrWidth);
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
     QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
@@ -289,6 +290,14 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     if (m_outputsLayout)
         m_outputsLayout->setDebugName("outputs layout");
     m_bodyLayout->addLayout(m_outputsLayout);
+
+    m_dirtyMarker = new ZLayoutBackground;
+    m_dirtyMarker->setColors(false, QColor(0, 0, 0, 0));
+    m_dirtyMarker->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    m_dirtyMarker->setGeometry(QRectF(0, 0, 1, 3));
+
+    m_bodyLayout->addSpacing(13, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
+    m_bodyLayout->addItem(m_dirtyMarker);
 
     bodyWidget->setLayout(m_bodyLayout);
     return bodyWidget;
@@ -1123,6 +1132,22 @@ void ZenoNode::updateNodePos(const QPointF &pos, bool enableTransaction)
 
 void ZenoNode::onUpdateParamsNotDesc()
 {
+}
+
+void ZenoNode::onMarkDataChanged(bool bDirty)
+{
+    QColor clrMarker;
+    if (bDirty && bShowDataChanged)
+    {
+        clrMarker = QColor(240, 215, 4);
+    }
+    else
+    {
+        clrMarker = QColor(0, 0, 0, 0);
+    }
+    ZASSERT_EXIT(m_dirtyMarker);
+    m_dirtyMarker->setColors(false, clrMarker);
+    updateWhole();
 }
 
 void ZenoNode::setMoving(bool isMoving)

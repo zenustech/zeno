@@ -76,6 +76,7 @@ private:
     void addControlGroup(bool bInput, const QString &name, PARAM_CONTROL ctrl);
     void delControlGroup(bool bInput, const QString &name);
     void updateControlGroup(bool bInput, const QString &newName, const QString &oldName, PARAM_CONTROL ctrl, int row);
+    void updateSliderInfo();
 
     ViewParamModel* m_proxyModel;
     ViewParamModel* m_model;

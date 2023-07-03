@@ -314,16 +314,18 @@ float GgxG(vec3 wo, vec3 wi, float alphaX, float alphaY) {
 static __inline__ __device__
 float DielectricFresnel(float cosThetaI, float eta)
 {
-  float sinThetaTSq = eta * eta * (1.0f - cosThetaI * cosThetaI);
+  float sin2 = 1.0f - cosThetaI * cosThetaI;
+  float eta2 = eta * eta;
 
-  // Total internal reflection
-  if (sinThetaTSq > 1.0)
-    return 1.0;
+  float cos2t = 1.0f - sin2 / eta2;
+  if(cos2t < 0) return 1.0f;
 
-  float cosThetaT = sqrt(max(1.0f - sinThetaTSq, 0.0f));
+  float t0 = sqrt(cos2t);
+  float t1 = eta * t0;
+  float t2 = eta * cosThetaI;
 
-  float rs = (eta * cosThetaT - cosThetaI) / (eta * cosThetaT + cosThetaI);
-  float rp = (eta * cosThetaI - cosThetaT) / (eta * cosThetaI + cosThetaT);
+  float rs = (cosThetaI - t1) / (cosThetaI + t1);
+  float rp = (t0 - t2) / (t0 + t2);
 
   return 0.5f * (rs * rs + rp * rp);
 }
@@ -436,8 +438,7 @@ float SmithGAniso(float NDotV, float VDotX, float VDotY, float ax, float ay)
 static __inline__ __device__
 vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
 {
-  ax = max(0.04f,ax);
-  ay = max(0.04f,ay);
+
   pdf = 0.0;
   if (L.z * V.z <= 0.0)
     return vec3(0.0);
@@ -449,57 +450,31 @@ vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F
   pdf = G1 * D / (4.0 * abs(V.z));
   return F * D * G2 / (4.0 * L.z * V.z);
 }
-static __inline__ __device__
-vec3 EvalMicrofacetRefraction2(vec3 baseColor, float ax, float ay, float eta, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
-{
-  ax = max(0.04f,ax);
-  ay = max(0.04f,ay);
-  pdf = 0.0;
-  if (L.z >= 0.0)
-    return vec3(0.0);
 
-  float HoL = dot(L, H);
-  float HoV = dot(V, H);
-  float D = GgxD(H, ax, ay);
-  float g = GgxG(V, L, ax, ay);
-  float denom = HoL + HoV * eta;
-  denom *= denom;
-  float eta2 = eta * eta;
-  float jacobian = HoL / denom;
-
-//  float D = clamp(GTR2Aniso(H.z, H.x, H.y, ax, ay),0.0f,1.0f);
-//  float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
-//  float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
-//  float denom = LDotH + VDotH * eta;
-//  denom *= denom;
-//  float eta2 = eta * eta;
-//  float jacobian = abs(LDotH) / denom;
-//
-//  pdf = G1 * max(0.0, VDotH) * D * jacobian / V.z;
-//  return pow(baseColor, vec3(0.5f)) * (vec3(1.0f) - F) * D * G2 * abs(VDotH) * jacobian * eta2 / abs(L.z * V.z);
-}
 static __inline__ __device__
 vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
 {
-  ax = max(0.04f,ax);
-  ay = max(0.04f,ay);
+//  ax = max(0.04f,ax);
+//  ay = max(0.04f,ay);
   pdf = 0.0;
-  if (L.z >= 0.0)
+  if (L.z == 0)
     return vec3(0.0);
 
-  float LDotH = dot(L, H);
-  float VDotH = dot(V, H);
+  float LDotH = dot(L, H); //always negative
+  float VDotH = dot(V, H); //always positive
 
-  float D = GTR2Aniso(H.z, H.x, H.y, ax, ay);
+  float D = GTR2Aniso(abs(H.z), H.x, H.y, ax, ay);
   float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
   float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
-  float denom = LDotH + VDotH * eta;
+  float denom = LDotH * eta + VDotH;
   denom *= denom;
   float eta2 = eta * eta;
   float jacobian = abs(LDotH) / denom;
 
   pdf = G1 * max(0.0, VDotH) * D * jacobian / abs(V.z);
-  return pow(baseColor, vec3(0.5f)) * (vec3(1.0f) - F) * D * G2 * abs(VDotH) * jacobian * eta2 / abs(L.z * V.z);
+  return pow(baseColor, vec3(0.5f)) * (vec3(1.0f) - F)
+         * D * G2 * abs(VDotH) * jacobian /
+         abs(L.z * V.z);
 }
 static __inline__ __device__
 float SmithG(float NDotV, float alphaG)

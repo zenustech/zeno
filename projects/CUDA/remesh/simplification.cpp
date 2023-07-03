@@ -20,8 +20,8 @@ struct PolyReduceLite : INode {
         auto &verts = prim->verts;
         auto &pos = verts.values;
         std::vector<int> vertDiscard(pos.size());
-        std::vector<std::set<int>> vertTris(pos.size());  /// neighboring tris
-        std::vector<std::set<int>> vertVerts(pos.size()); /// neighboring verts
+        std::vector<std::set<int>> vertTris(pos.size());                              /// neighboring tris
+        std::vector<std::set<int>> vertVerts(pos.size());                             /// neighboring verts
         std::vector<std::pair<float, std::pair<int, int>>> vertEdgeCosts(pos.size()); /// neighboring verts
 
         auto &tris = prim->tris.values;
@@ -65,7 +65,7 @@ struct PolyReduceLite : INode {
         std::mt19937 rng;
         rng.seed(0);
         for (int i = 0; i != nIters; ++i) {
-            zeno::log_warn(fmt::format("begin iter {}\n", i));
+            // zeno::log_warn(fmt::format("begin iter {}\n", i));
             /// evaluate vert curvatures
             pol(range(pos.size()), [&](int i) {
                 vertEdgeCosts[i] = std::make_pair(limits<float>::max(), std::make_pair(i, -1));
@@ -75,7 +75,8 @@ struct PolyReduceLite : INode {
 
                 auto cost = limits<float>::max();
                 for (auto j : vertVerts[i]) {
-                    if (vertDiscard[j]) continue;
+                    if (vertDiscard[j])
+                        continue;
                     auto elen = length(pos[i] - pos[j]);
                     auto curvature = 0.f;
                     std::vector<int> sides; // tris that owns edge <i, j>
@@ -101,16 +102,19 @@ struct PolyReduceLite : INode {
                 }
             });
             /// sort edges for collapse
-            auto pair = std::reduce(std::begin(vertEdgeCosts), std::end(vertEdgeCosts), std::make_pair(limits<float>::max(), std::make_pair(-1, -1)), 
+            auto pair = std::reduce(
+                std::begin(vertEdgeCosts), std::end(vertEdgeCosts),
+                std::make_pair(limits<float>::max(), std::make_pair(-1, -1)),
                 [](const std::pair<float, std::pair<int, int>> &a, const std::pair<float, std::pair<int, int>> &b) {
                     if (a.first < b.first)
                         return a;
-                    else return b;
+                    else
+                        return b;
                 });
 #if 1
             u = pair.second.first;
             v = pair.second.second;
-            fmt::print("selecting uv <{}, {}>\n", u, v);
+            // fmt::print("selecting uv <{}, {}>\n", u, v);
             if (v == -1) {
                 fmt::print("no more edges to collapse!\n");
                 break;

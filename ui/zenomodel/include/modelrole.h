@@ -22,6 +22,7 @@ enum MODEL_ROLE
 	ROLE_COLLASPED,
 	ROLE_INPUT_PARAM,		//input param model index.
 	ROLE_OUTPUT_PARAM,		//output param model index.
+	ROLE_NODE_DATACHANGED,		//mark node data changed before next run.
 
 	ROLE_INPUT_MODEL,		//input socket model
 	ROLE_PARAM_MODEL,		//param model
