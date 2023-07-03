@@ -265,9 +265,9 @@ struct WhitewaterSolver : INode {
                 par_life[idx] -= dt;
             }
             auto wcoord_new = wcoord + dt * m_vel;
-            float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord));
+            float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord_new));
             if (m_solid_sdf < 0) {
-                auto m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord));
+                auto m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord_new));
                 m_norm.normalize();
                 m_vel = -m_solid_sdf * m_norm / dt;
                 wcoord_new += m_vel * dt;
