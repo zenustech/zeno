@@ -6,6 +6,8 @@
 #include <QApplication>
 #include "zenomainwindow.h"
 #include "settings/zsettings.h"
+#include "zeno/core/Session.h"
+#include "zeno/types/UserData.h"
 
 //#define DEBUG_DIRECTLY
 
@@ -72,6 +74,7 @@ int record_main(const QCoreApplication& app)
         {"exitWhenRecordFinish", "exitWhenRecordFinish", "exitWhenRecordFinish"},
         {"optix", "optix", "optix mode"},
         {"video", "video", "export video"},
+        {"aov", "aov", "aov"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
     });
@@ -122,6 +125,9 @@ int record_main(const QCoreApplication& app)
     param.iFps = cmdParser.isSet("fps") ? cmdParser.value("fps").toInt() : 24;
 	param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
 	param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
+	int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
+    auto &ud = zeno::getSession().userData();
+    ud.set2("output_aov", enableAOV != 0);
 	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
 	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 #else
