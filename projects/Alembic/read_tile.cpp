@@ -11,6 +11,9 @@
 #include <zeno/utils/string.h>
 #include "rapidjson/document.h"
 
+#include "draco/mesh/mesh.h"
+#include "draco/core/decoder_buffer.h"
+#include "draco/compression/decode.h"
 
 namespace zeno {
 struct ReadTile : INode {
@@ -65,7 +68,7 @@ namespace zeno_gltf {
         VEC4,
     };
     struct Accessor {
-        int bufferView;
+        std::optional<int> bufferView;
         int count;
         ComponentType componentType;
         Type type;
@@ -94,7 +97,7 @@ struct LoadGLTFModel : INode {
             for (auto i = 0; i < json_len; i++) {
                 json.push_back(reader.read_LE<char>());
             }
-            zeno::file_put_content("fuck2.json", json);
+            zeno::file_put_content("fuck3.json", json);
             doc.Parse(json.c_str());
             while (!reader.is_eof()) {
                 auto len = reader.read_LE<int>();
@@ -125,7 +128,10 @@ struct LoadGLTFModel : INode {
             for (auto i = 0; i < doc["accessors"].Size(); i++) {
                 const auto & a = doc["accessors"][i];
                 Accessor accessor;
-                accessor.bufferView = a["bufferView"].GetInt();
+                accessor.bufferView = std::nullopt;
+                if (a.HasMember("bufferView")) {
+                    accessor.bufferView = a["bufferView"].GetInt();
+                }
                 accessor.count = a["count"].GetInt();
                 accessor.componentType = ComponentType(a["componentType"].GetInt());
                 std::string str_type = a["type"].GetString();
@@ -159,13 +165,57 @@ struct LoadGLTFModel : INode {
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
+        for (auto i = 0; i < doc["meshes"].Size(); i++) {
+            const auto &mesh = doc["meshes"][i];
+            for (auto j = 0; j < mesh["primitives"].Size(); j++) {
+                const auto &primitive = mesh["primitives"][j];
+                if (primitive.HasMember("extensions") && primitive["extensions"].HasMember("KHR_draco_mesh_compression")) {
+                    const auto &draco_info = primitive["extensions"]["KHR_draco_mesh_compression"];
+                    auto bufferView = draco_info["bufferView"].GetInt();
+                    zeno::log_info("KHR_draco_mesh_compression bufferView: {}", bufferView);
+                    const auto &bv = bufferViews[bufferView];
+                    draco::Decoder dracoDecoder;
+                    draco::DecoderBuffer dracoDecoderBuffer;
+                    auto pData = &buffers[bv.buffer][bv.byteOffset];
+                    dracoDecoderBuffer.Init(reinterpret_cast<char *>(pData), bv.byteLength);
+                    auto type_statusor = draco::Decoder::GetEncodedGeometryType(&dracoDecoderBuffer);
+                    const draco::EncodedGeometryType geom_type = type_statusor.value();
+                    if (geom_type != draco::TRIANGULAR_MESH) {
+                        zeno::log_error("not draco::TRIANGULAR_MESH");
+                        throw std::runtime_error("not draco::TRIANGULAR_MESH");
+                    }
+
+                    draco::StatusOr<std::unique_ptr<draco::Mesh>> decoderStatus = dracoDecoder.DecodeMeshFromBuffer(&dracoDecoderBuffer);
+                    auto mesh = std::move(decoderStatus).value();
+                    auto vertexCount = mesh->num_points();
+                    prim->resize(vertexCount);
+                    auto faceCount = mesh->num_faces();
+                    prim->tris.resize(faceCount);
+
+                    zeno::log_info("vertexCount: {}, faceCount: {}", vertexCount, faceCount);
+
+                    // from https://github.com/google/draco/blob/master/src/draco/io/obj_encoder.cc
+                    const draco::PointAttribute *const att = mesh->GetNamedAttribute(draco::GeometryAttribute::POSITION);
+                    for (draco::AttributeValueIndex i(0); i < static_cast<uint32_t>(att->size()); ++i) {
+                        att->ConvertValue<float, 3>(i, prim->verts[i.value()].data());
+                    }
+                    for (draco::FaceIndex i(0); i < faceCount; ++i) {
+                        int _0 = att->mapped_index(mesh->face(i)[0]).value();
+                        int _1 = att->mapped_index(mesh->face(i)[1]).value();
+                        int _2 = att->mapped_index(mesh->face(i)[2]).value();
+                        prim->tris[i.value()] = {_0, _1, _2};
+                    }
+                }
+            }
+        }
+        /*
         {
             const auto &mesh = doc["meshes"][0];
             const auto &primitive = mesh["primitives"][0];
             {
                 const auto &position = primitive["attributes"]["POSITION"].GetInt();
                 const auto &acc = accessors[position];
-                const auto &bv = bufferViews[acc.bufferView];
+                const auto &bv = bufferViews[acc.bufferView.value()];
                 auto reader = BinaryReader(buffers[bv.buffer]);
                 reader.seek_from_begin(bv.byteOffset);
                 prim->resize(acc.count);
@@ -176,7 +226,7 @@ struct LoadGLTFModel : INode {
             {
                 auto index = primitive["indices"].GetInt();
                 const auto &acc = accessors[index];
-                const auto &bv = bufferViews[acc.bufferView];
+                const auto &bv = bufferViews[acc.bufferView.value()];
                 auto reader = BinaryReader(buffers[bv.buffer]);
                 reader.seek_from_begin(bv.byteOffset);
                 auto count = acc.count / 3;
@@ -194,6 +244,7 @@ struct LoadGLTFModel : INode {
                 }
             }
         }
+         */
 
         set_output("prim", std::move(prim));
     }
