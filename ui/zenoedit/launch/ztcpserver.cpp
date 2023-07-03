@@ -12,6 +12,8 @@
 #include "zenoapplication.h"
 #include "cache/zcachemgr.h"
 #include "zenomainwindow.h"
+#include <zeno/zeno.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 ZTcpServer::ZTcpServer(QObject *parent)
@@ -78,7 +80,6 @@ void ZTcpServer::startProc(const std::string& progJson,  bool applyLightAndCamer
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
         }
-
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
         bool ret = mgr->initCacheDir(bAutoRemove, cacheRootdir);
@@ -91,13 +92,19 @@ void ZTcpServer::startProc(const std::string& progJson,  bool applyLightAndCamer
     {
         viewDecodeSetFrameCache("", 0);
     }
+    zeno::getSession().globalComm->setTempDirEnable(bAutoRemove);
+    zeno::getSession().globalComm->setCacheAutoRmEnable(settings.value("zencache-rmcurcache").isValid() ? settings.value("zencache-rmcurcache").toBool() : false);
 
     QStringList args = {
-        "-runner", QString::number(sessionid),
-        "-port", QString::number(m_port),
-        "-cachedir", finalPath,
-        "-cacheLightCameraOnly", QString::number(applyLightAndCameraOnly),
-        "-cacheMaterialOnly", QString::number(applyMaterialOnly),
+        "--runner", "1",
+        "--sessionid", QString::number(sessionid),
+        "--port", QString::number(m_port),
+        "--enablecache", QString::number(bEnableCache && QFileInfo(finalPath).isDir() && settings.value("zencachenum").toString().toInt() > 0),
+        "--cachenum", QString::number(settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1),
+        "--cachedir", finalPath,
+        "--cacheLightCameraOnly", QString::number(applyLightAndCameraOnly),
+        "--cacheMaterialOnly", QString::number(applyMaterialOnly),
+        "--cacheautorm", QString::number(settings.value("zencache-rmcurcache").isValid() ? settings.value("zencache-rmcurcache").toBool() : false),
     };
 
     m_proc->start(QCoreApplication::applicationFilePath(), args);
