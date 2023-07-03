@@ -6,7 +6,6 @@
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/GenericObject.h>
-#include "launch/corelaunch.h"
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
 #include "dock/ztabdockwidget.h"
@@ -655,7 +654,11 @@ void ZenoMainWindow::initTimelineDock()
         for (DisplayWidget *view : views) {
             if (m_bAlways) {
                 mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
-                view->onRun(nFrame, nFrame);
+                LAUNCH_PARAM launchParam;
+                launchParam.beginFrame = nFrame;
+                launchParam.endFrame = nFrame;
+                AppHelper::initLaunchCacheParam(launchParam);
+                view->onRun(launchParam);
             }
             else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
                 std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
@@ -668,7 +671,13 @@ void ZenoMainWindow::initTimelineDock()
                 };
                 setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
                 mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
-                view->onRun(nFrame, nFrame, m_bAlwaysLightCamera, m_bAlwaysMaterial);
+                LAUNCH_PARAM launchParam;
+                launchParam.beginFrame = nFrame;
+                launchParam.endFrame = nFrame;
+                launchParam.applyLightAndCameraOnly = m_bAlwaysLightCamera;
+                launchParam.applyMaterialOnly = m_bAlwaysMaterial;
+                AppHelper::initLaunchCacheParam(launchParam);
+                view->onRun(launchParam);
             }
         }
     });
@@ -775,7 +784,13 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         IGraphsModel* pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, beginFrame, endFrame, applyLightAndCameraOnly, applyMaterialOnly);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = beginFrame;
+        launchParam.endFrame = endFrame;
+        launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
+        launchParam.applyMaterialOnly = applyMaterialOnly;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     }
 
     for (auto view : views)
@@ -799,7 +814,7 @@ DisplayWidget* ZenoMainWindow::getOnlyViewport() const
     return pView;
 }
 
-void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
+void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchparam)
 {
     VideoRecInfo recInfo;
     recInfo.bitrate = param.iBitrate;
@@ -864,7 +879,9 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     IGraphsModel* pModel = pGraphsMgr->currentModel();
     ZASSERT_EXIT(pModel);
 
-    launchProgram(pModel, recInfo.frameRange.first, recInfo.frameRange.second, false, false);
+    launchparam.beginFrame = recInfo.frameRange.first;
+    launchparam.endFrame = recInfo.frameRange.second;
+    launchProgram(pModel, launchparam);
 
     DisplayWidget* pViewport = getOnlyViewport();
     ZASSERT_EXIT(pViewport);
@@ -948,7 +965,10 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
         }
     }
 	zeno::getSession().globalComm->clearState();
-	viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+    LAUNCH_PARAM launchParam;
+    launchParam.beginFrame = recInfo.frameRange.first;
+    launchParam.endFrame = recInfo.frameRange.second;
+	viewWidget->onRun(launchParam);
 
     //ZASSERT_EXIT(ret);
     //viewWidget->runAndRecord(recInfo);

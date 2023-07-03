@@ -208,3 +208,12 @@ void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
         }
     }
 }
+
+void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
+{
+    QSettings settings(zsCompanyName, zsEditor);
+    param.enableCache = settings.value("zencache-enable").isValid() ? settings.value("zencache-enable").toBool() : true;
+    param.tempDir = settings.value("zencache-autoremove", true).isValid() ? settings.value("zencache-autoremove", true).toBool() : false;
+    param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
+    param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
+}
