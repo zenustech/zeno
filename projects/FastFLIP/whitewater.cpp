@@ -234,12 +234,31 @@ struct WhitewaterSolver : INode {
             float m_liquid_sdf = openvdb::tools::BoxSampler::sample(liquid_sdf_axr, Liquid_sdf->worldToIndex(wcoord));
             if (m_liquid_sdf > dx) {
                 // spray
-                m_vel += gravity * dt - air_drag * m_vel;
+                // you can use time-splitting to stablize the computation
+                m_vel += gravity * dt; // first step, explicity integrate gravity
+
+                //second step, semi-implicit integrate drag
+                // (v_np1 - v_n) / dt = c * length(v_tar - v_n) * (v_tar - v_np1)
+                vec3f v_target = vec3f(0, 0, 0);
+                vec3f m_vel2 = vec3f(m_vel.x(), m_vel.y(), m_vel.z());
+                float v_diff = zeno::distance(v_target, m_vel2);
+                float denom = 1 + dt * air_drag * v_diff;
+                m_vel = vec_to_other<openvdb::Vec3f>((dt * air_drag * v_diff * v_target + m_vel2) / denom);
+                par_life[idx] -= 0.5f * dt;
             } else if (m_liquid_sdf < -0.3f * dx) {
                 // bubble
                 auto m_liquid_vel =
                     openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
-                m_vel += -buoyancy * gravity * dt + air_drag * (m_liquid_vel - m_vel);
+
+                m_vel += -buoyancy * gravity * dt; // + air_drag * (m_liquid_vel - m_vel);
+                //again, the time splitting technique, well, with none-zero target velocity
+                vec3f v_target = vec3f(m_liquid_vel.x(), m_liquid_vel.y(), m_liquid_vel.z());
+                vec3f m_vel2 = vec3f(m_vel.x(), m_vel.y(), m_vel.z());
+                float v_diff = zeno::distance(v_target, m_vel2);
+                float denom = 1 + dt * air_drag * v_diff;
+                m_vel = vec_to_other<openvdb::Vec3f>((dt * air_drag * v_diff * v_target + m_vel2) / denom);
+
+                par_life[idx] -= 0.5f * dt;
             } else {
                 // foam
                 m_vel = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
