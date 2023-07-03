@@ -33,6 +33,7 @@ struct ZENO_RECORD_RUN_INITPARAM {
 
 class ZenoDockWidget;
 class DisplayWidget;
+class ZOptixViewport;
 class ZTimeline;
 class LiveTcpServer;
 class LiveHttpServer;
@@ -222,6 +223,7 @@ private:
     void updateShortCut(QStringList keys);
     void shortCutDlg();
     void killOptix();
+    DisplayWidget* getOnlyViewport() const;
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
