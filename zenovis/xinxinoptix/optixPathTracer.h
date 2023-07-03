@@ -140,7 +140,7 @@ struct HitGroupData
     float4* tan;
     unsigned short* lightMark;
     int* meshIdxs;
-    float* meshMats;
+    
     float3* instPos;
     float3* instNrm;
     float3* instUv;

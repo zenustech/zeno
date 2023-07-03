@@ -180,7 +180,7 @@ struct PathTracerState
     raii<CUdeviceptr>              d_lightMark;
     raii<CUdeviceptr>              d_mat_indices;
     raii<CUdeviceptr>              d_meshIdxs;
-    raii<CUdeviceptr>              d_meshMats;
+    
     raii<CUdeviceptr>              d_instPos;
     raii<CUdeviceptr>              d_instNrm;
     raii<CUdeviceptr>              d_instUv;
@@ -963,7 +963,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
     }
     
     std::vector<int> meshIdxs(num_instances);
-    std::vector<float> meshMats(16 * num_instances);
+
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
@@ -984,14 +984,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         memcpy( optix_instance.transform, mat3r4c, sizeof( float ) * 12 );
 
         meshIdxs[i] = i; 
-        for (int j = 0; j < 12; ++j)
-        {
-            meshMats[16 * i + j] = mat3r4c[j];
-        }
-        meshMats[16 * i + 12] = 0;
-        meshMats[16 * i + 13] = 0;
-        meshMats[16 * i + 14] = 0;
-        meshMats[16 * i + 15] = 1;
+        
         instPos[i] = defaultInstPos;
         instNrm[i] = defaultInstNrm;
         instUv[i] = defaultInstUv;
@@ -1028,14 +1021,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                     memcpy(optix_instance.transform, instMat4x4, sizeof(float) * 12);
 
                     meshIdxs[instanceId] = meshesOffset; 
-                    for (int j = 0; j < 12; ++j)
-                    {
-                        meshMats[16 * instanceId + j] = instMat4x4[j];
-                    }
-                    meshMats[16 * instanceId + 12] = 0;
-                    meshMats[16 * instanceId + 13] = 0;
-                    meshMats[16 * instanceId + 14] = 0;
-                    meshMats[16 * instanceId + 15] = 1;
+                    
                     instPos[instanceId] = instAttrs.pos[k];
                     instNrm[instanceId] = instAttrs.nrm[k];
                     instUv[instanceId] = instAttrs.uv[k];
@@ -1060,14 +1046,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 memcpy(optix_instance.transform, mat3r4c, sizeof(float) * 12);
 
                 meshIdxs[instanceId] = meshesOffset; 
-                for (int j = 0; j < 12; ++j)
-                {
-                    meshMats[16 * instanceId + j] = mat3r4c[j];
-                }
-                meshMats[16 * instanceId + 12] = 0;
-                meshMats[16 * instanceId + 13] = 0;
-                meshMats[16 * instanceId + 14] = 0;
-                meshMats[16 * instanceId + 15] = 1;
+                
                 instPos[instanceId] = defaultInstPos;
                 instNrm[instanceId] = defaultInstNrm;
                 instUv[instanceId] = defaultInstUv;
@@ -1088,14 +1067,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 sizeof(meshIdxs[0]) * meshIdxs.size(),
                 cudaMemcpyHostToDevice
                 ) );
-    state.d_meshMats.resize(sizeof(meshMats[0]) * meshMats.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshMats.reset() ), sizeof(meshMats[0]) * meshMats.size()) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_meshMats ),
-                meshMats.data(),
-                sizeof(meshMats[0]) * meshMats.size(),
-                cudaMemcpyHostToDevice
-                ) );
+    
     state.d_instPos.resize(sizeof(instPos[0]) * instPos.size(), 0);
     // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instPos.reset() ), sizeof(instPos[0]) * instPos.size()) );
     CUDA_CHECK( cudaMemcpy(
@@ -1465,7 +1437,7 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
             hitgroup_records[sbt_idx].data.meshIdxs        = reinterpret_cast<int*>( (CUdeviceptr)state.d_meshIdxs );
-            hitgroup_records[sbt_idx].data.meshMats        = reinterpret_cast<float*>( (CUdeviceptr)state.d_meshMats );
+            
             hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
             hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
             hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instUv );

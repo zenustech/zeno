@@ -207,12 +207,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     int inst_idx = rt_data->meshIdxs[inst_idx2];
     int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
 
-    float* meshMats = rt_data->meshMats;
-    mat4 meshMat = mat4(
-        meshMats[16 * inst_idx2 + 0], meshMats[16 * inst_idx2 + 1], meshMats[16 * inst_idx2 + 2], meshMats[16 * inst_idx2 + 3],
-        meshMats[16 * inst_idx2 + 4], meshMats[16 * inst_idx2 + 5], meshMats[16 * inst_idx2 + 6], meshMats[16 * inst_idx2 + 7],
-        meshMats[16 * inst_idx2 + 8], meshMats[16 * inst_idx2 + 9], meshMats[16 * inst_idx2 + 10], meshMats[16 * inst_idx2 + 11],
-        meshMats[16 * inst_idx2 + 12], meshMats[16 * inst_idx2 + 13], meshMats[16 * inst_idx2 + 14], meshMats[16 * inst_idx2 + 15]);
+    float m16[16];
+    m16[12]=0; m16[13]=0; m16[14]=0; m16[15]=1;
+    optixGetObjectToWorldTransformMatrix(m16);
+    mat4& meshMat = *reinterpret_cast<mat4*>(&m16);
+
     float3 av0 = make_float3(rt_data->vertices[vert_idx_offset + 0]);
     float3 av1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
     float3 av2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
@@ -513,12 +512,12 @@ extern "C" __global__ void __closesthit__radiance()
     int inst_idx = rt_data->meshIdxs[inst_idx2];
     int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
 
-    float* meshMats = rt_data->meshMats;
-    mat4 meshMat = mat4(
-        meshMats[16 * inst_idx2 + 0], meshMats[16 * inst_idx2 + 1], meshMats[16 * inst_idx2 + 2], meshMats[16 * inst_idx2 + 3],
-        meshMats[16 * inst_idx2 + 4], meshMats[16 * inst_idx2 + 5], meshMats[16 * inst_idx2 + 6], meshMats[16 * inst_idx2 + 7],
-        meshMats[16 * inst_idx2 + 8], meshMats[16 * inst_idx2 + 9], meshMats[16 * inst_idx2 + 10], meshMats[16 * inst_idx2 + 11],
-        meshMats[16 * inst_idx2 + 12], meshMats[16 * inst_idx2 + 13], meshMats[16 * inst_idx2 + 14], meshMats[16 * inst_idx2 + 15]);
+    float m16[16];
+    m16[12]=0; m16[13]=0; m16[14]=0; m16[15]=1;
+    optixGetObjectToWorldTransformMatrix(m16);
+    mat4& meshMat = *reinterpret_cast<mat4*>(&m16);
+    //optixGetTriangleVertexData()
+    
     float3 av0 = make_float3(rt_data->vertices[vert_idx_offset + 0]);
     float3 av1 = make_float3(rt_data->vertices[vert_idx_offset + 1]);
     float3 av2 = make_float3(rt_data->vertices[vert_idx_offset + 2]);
