@@ -349,10 +349,9 @@ void ZenoGraphsEditor::onSubnetOptionClicked()
 
     });
     connect(pImpFromFile, &QAction::triggered, this, [=]() {
-        m_mainWin->importGraph();
+        m_mainWin->importSubGraph();
     });
     connect(pImpFromSys, &QAction::triggered, this, [=]() {
-        m_mainWin->importSubGraph();
     });
 
     pOptionsMenu->exec(QCursor::pos());
@@ -515,7 +514,7 @@ void ZenoGraphsEditor::activateTabOfTree(const QString &path, const QString &nod
         if (path.compare("/main", Qt::CaseInsensitive) == 0)
             tabIcon = ":/icons/subnet-main.svg";
         else
-            tabIcon = ":/icons/subnet-general.svg";
+            tabIcon = ":/icons/subnet.svg";
         m_ui->graphsViewTab->setTabIcon(idx, QIcon(tabIcon));
         connect(pView, &ZenoSubGraphView::pathUpdated, this, [=](QString newPath) {
             activateTabOfTree(newPath, "", false);

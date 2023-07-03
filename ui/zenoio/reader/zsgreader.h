@@ -19,7 +19,7 @@ namespace zenoio
     public:
         static ZsgReader& getInstance();
         bool openFile(const QString& fn, ZSG_PARSE_RESULT& ret);
-        bool openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& ret, QString &subgName);
+        bool openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& ret);
         bool importNodes(
                 IGraphsModel* pModel,
                 const QModelIndex& subgIdx,

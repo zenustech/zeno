@@ -155,7 +155,7 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
     return true;
 }
 
-bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& result, QString& subgName)
+bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& result)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -174,9 +174,9 @@ bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& re
         zeno::log_error("");
         return false;
     }
-    if (!doc.HasMember("subgraphs"))
+    if (!doc.HasMember("subgraphs") && !doc.HasMember("graph"))
         return false;
-    const rapidjson::Value& graph = doc["subgraphs"];
+    const rapidjson::Value& graph = doc.HasMember("subgraphs")? doc["subgraphs"] : doc["graph"];
     if (graph.IsNull()) {
         zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
         return false;
@@ -211,8 +211,6 @@ bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& re
         {
             return false;
         }
-        if (subgName.isEmpty())
-            subgName = graphName;
     }
 
     result.descs = nodesDescs;
