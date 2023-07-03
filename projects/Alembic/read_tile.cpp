@@ -8,6 +8,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/utils/string.h>
 #include "rapidjson/document.h"
 
 
@@ -80,12 +81,35 @@ namespace fs = std::filesystem;
 struct LoadGLTFModel : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
-        auto json = zeno::file_get_content(path);
         rapidjson::Document doc;
-        doc.Parse(json.c_str());
-
         std::vector<std::vector<char>> buffers;
-        {
+        if (zeno::ends_with(path, ".glb", false)) {
+            auto data = zeno::file_get_binary(path);
+            auto reader = BinaryReader(data);
+            reader.seek_from_begin(8);
+            auto total_len = reader.read_LE<int>();
+            auto json_len = reader.read_LE<int>();
+            reader.skip(4);
+            std::string json;
+            for (auto i = 0; i < json_len; i++) {
+                json.push_back(reader.read_LE<char>());
+            }
+            zeno::file_put_content("fuck2.json", json);
+            doc.Parse(json.c_str());
+            while (!reader.is_eof()) {
+                auto len = reader.read_LE<int>();
+                reader.skip(4);
+                std::vector<char> buffer;
+                for (auto i = 0; i < len; i++) {
+                    buffer.push_back(reader.read_LE<char>());
+                }
+                buffers.push_back(buffer);
+            }
+        }
+        else {
+            auto json = zeno::file_get_content(path);
+            doc.Parse(json.c_str());
+
             zeno::log_info("buffers {}", doc["buffers"].Size());
             for (auto i = 0; i < doc["buffers"].Size(); i++) {
                 fs::path p = path;
