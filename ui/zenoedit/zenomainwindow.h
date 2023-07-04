@@ -16,6 +16,7 @@ struct ZENO_RECORD_RUN_INITPARAM {
     bool bRecord = false;
     bool bOptix = false;    //is optix view.
     bool isExportVideo = false;
+    bool needDenoise = false;
     int iFrame = 0;
     int iSFrame = 0;
     int iSample = 0;
