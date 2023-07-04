@@ -970,14 +970,14 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         ins.visibilityMask = DefaultMatMask;
     }
     
-    std::vector<int> meshIdxs(num_instances);
+    std::vector<unsigned int> meshIdxs(num_instances);
     std::vector<float> meshMats(16 * num_instances);
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
-    unsigned int sbt_offset = 0;
+    size_t sbt_offset = 0;
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
     {
         auto  mesh = m_meshes[i];
@@ -1967,7 +1967,7 @@ void CopyInstMeshToGlobalMesh()
             auto &lightMark = instData.lightMark;
             auto &meshPieces = instData.meshPieces;
 
-            for (int i = 0; i < vertices.size(); ++i)
+            for (size_t i = 0; i < vertices.size(); ++i)
             {
                 g_vertices[vertsOffset + i] = vertices[i];
                 g_clr[vertsOffset + i] = clr[i];
@@ -1975,12 +1975,12 @@ void CopyInstMeshToGlobalMesh()
                 g_uv[vertsOffset + i] = uv[i];
                 g_tan[vertsOffset + i] = tan[i];
             }
-            for (int i = 0; i < vertices.size() / 3; ++i)
+            for (size_t i = 0; i < vertices.size() / 3; ++i)
             {
                 g_mat_indices[vertsOffset / 3 + i] = mat_indices[i];
                 g_lightMark[vertsOffset / 3 + i] = lightMark[i];
             }
-            for (int i = 0; i < meshPieces.size(); ++i)
+            for (size_t i = 0; i < meshPieces.size(); ++i)
             {
                 g_meshPieces[meshPiecesOffset + i] = meshPieces[i];
             }

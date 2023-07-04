@@ -160,7 +160,7 @@ static __inline__ __device__ float3 sphereUV(float3 &direction) {
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    const int    prim_idx        = optixGetPrimitiveIndex();
+    const size_t    prim_idx     = optixGetPrimitiveIndex();
     const float3 ray_orig        = optixGetWorldRayOrigin();
     const float3 ray_dir         = optixGetWorldRayDirection();
 
@@ -203,9 +203,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     unsigned short isLight = 0;
 #else
-    int inst_idx2 = optixGetInstanceIndex();
-    int inst_idx = rt_data->meshIdxs[inst_idx2];
-    int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
+    size_t inst_idx2 = optixGetInstanceIndex();
+    size_t inst_idx = rt_data->meshIdxs[inst_idx2];
+    size_t vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
 
     float* meshMats = rt_data->meshMats;
     mat4 meshMat = mat4(
@@ -464,7 +464,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->test_distance = false;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
-    const int    prim_idx = optixGetPrimitiveIndex();
+    const size_t    prim_idx = optixGetPrimitiveIndex();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
@@ -509,9 +509,9 @@ extern "C" __global__ void __closesthit__radiance()
 
 #else
 
-    int inst_idx2 = optixGetInstanceIndex();
-    int inst_idx = rt_data->meshIdxs[inst_idx2];
-    int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
+    size_t inst_idx2 = optixGetInstanceIndex();
+    size_t inst_idx = rt_data->meshIdxs[inst_idx2];
+    size_t vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
 
     float* meshMats = rt_data->meshMats;
     mat4 meshMat = mat4(
