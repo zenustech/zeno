@@ -165,86 +165,80 @@ struct LoadGLTFModel : INode {
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        for (auto i = 0; i < doc["meshes"].Size(); i++) {
-            const auto &mesh = doc["meshes"][i];
-            for (auto j = 0; j < mesh["primitives"].Size(); j++) {
-                const auto &primitive = mesh["primitives"][j];
-                if (primitive.HasMember("extensions") && primitive["extensions"].HasMember("KHR_draco_mesh_compression")) {
-                    const auto &draco_info = primitive["extensions"]["KHR_draco_mesh_compression"];
-                    auto bufferView = draco_info["bufferView"].GetInt();
-                    zeno::log_info("KHR_draco_mesh_compression bufferView: {}", bufferView);
-                    const auto &bv = bufferViews[bufferView];
-                    draco::Decoder dracoDecoder;
-                    draco::DecoderBuffer dracoDecoderBuffer;
-                    auto pData = &buffers[bv.buffer][bv.byteOffset];
-                    dracoDecoderBuffer.Init(reinterpret_cast<char *>(pData), bv.byteLength);
-                    auto type_statusor = draco::Decoder::GetEncodedGeometryType(&dracoDecoderBuffer);
-                    const draco::EncodedGeometryType geom_type = type_statusor.value();
-                    if (geom_type != draco::TRIANGULAR_MESH) {
-                        zeno::log_error("not draco::TRIANGULAR_MESH");
-                        throw std::runtime_error("not draco::TRIANGULAR_MESH");
-                    }
-
-                    draco::StatusOr<std::unique_ptr<draco::Mesh>> decoderStatus = dracoDecoder.DecodeMeshFromBuffer(&dracoDecoderBuffer);
-                    auto mesh = std::move(decoderStatus).value();
-                    auto vertexCount = mesh->num_points();
-                    prim->resize(vertexCount);
-                    auto faceCount = mesh->num_faces();
-                    prim->tris.resize(faceCount);
-
-                    zeno::log_info("vertexCount: {}, faceCount: {}", vertexCount, faceCount);
-
-                    // from https://github.com/google/draco/blob/master/src/draco/io/obj_encoder.cc
-                    const draco::PointAttribute *const att = mesh->GetNamedAttribute(draco::GeometryAttribute::POSITION);
-                    for (draco::AttributeValueIndex i(0); i < static_cast<uint32_t>(att->size()); ++i) {
-                        att->ConvertValue<float, 3>(i, prim->verts[i.value()].data());
-                    }
-                    for (draco::FaceIndex i(0); i < faceCount; ++i) {
-                        int _0 = att->mapped_index(mesh->face(i)[0]).value();
-                        int _1 = att->mapped_index(mesh->face(i)[1]).value();
-                        int _2 = att->mapped_index(mesh->face(i)[2]).value();
-                        prim->tris[i.value()] = {_0, _1, _2};
-                    }
-                }
-            }
-        }
-        /*
         {
             const auto &mesh = doc["meshes"][0];
             const auto &primitive = mesh["primitives"][0];
-            {
-                const auto &position = primitive["attributes"]["POSITION"].GetInt();
-                const auto &acc = accessors[position];
-                const auto &bv = bufferViews[acc.bufferView.value()];
-                auto reader = BinaryReader(buffers[bv.buffer]);
-                reader.seek_from_begin(bv.byteOffset);
-                prim->resize(acc.count);
-                for (auto i = 0; i < acc.count; i++) {
-                    prim->verts[i] = reader.read_LE<vec3f>();
+            if (primitive.HasMember("extensions") && primitive["extensions"].HasMember("KHR_draco_mesh_compression")) {
+                const auto &draco_info = primitive["extensions"]["KHR_draco_mesh_compression"];
+                auto bufferView = draco_info["bufferView"].GetInt();
+                zeno::log_info("KHR_draco_mesh_compression bufferView: {}", bufferView);
+                const auto &bv = bufferViews[bufferView];
+                draco::Decoder dracoDecoder;
+                draco::DecoderBuffer dracoDecoderBuffer;
+                auto pData = &buffers[bv.buffer][bv.byteOffset];
+                dracoDecoderBuffer.Init(reinterpret_cast<char *>(pData), bv.byteLength);
+                auto type_statusor = draco::Decoder::GetEncodedGeometryType(&dracoDecoderBuffer);
+                const draco::EncodedGeometryType geom_type = type_statusor.value();
+                if (geom_type != draco::TRIANGULAR_MESH) {
+                    zeno::log_error("not draco::TRIANGULAR_MESH");
+                    throw std::runtime_error("not draco::TRIANGULAR_MESH");
+                }
+
+                draco::StatusOr<std::unique_ptr<draco::Mesh>> decoderStatus = dracoDecoder.DecodeMeshFromBuffer(&dracoDecoderBuffer);
+                auto mesh = std::move(decoderStatus).value();
+                auto vertexCount = mesh->num_points();
+                prim->resize(vertexCount);
+                auto faceCount = mesh->num_faces();
+                prim->tris.resize(faceCount);
+
+                zeno::log_info("vertexCount: {}, faceCount: {}", vertexCount, faceCount);
+
+                // from https://github.com/google/draco/blob/master/src/draco/io/obj_encoder.cc
+                const draco::PointAttribute *const att = mesh->GetNamedAttribute(draco::GeometryAttribute::POSITION);
+                for (draco::AttributeValueIndex i(0); i < static_cast<uint32_t>(att->size()); ++i) {
+                    att->ConvertValue<float, 3>(i, prim->verts[i.value()].data());
+                }
+                for (draco::FaceIndex i(0); i < faceCount; ++i) {
+                    int _0 = att->mapped_index(mesh->face(i)[0]).value();
+                    int _1 = att->mapped_index(mesh->face(i)[1]).value();
+                    int _2 = att->mapped_index(mesh->face(i)[2]).value();
+                    prim->tris[i.value()] = {_0, _1, _2};
                 }
             }
-            {
-                auto index = primitive["indices"].GetInt();
-                const auto &acc = accessors[index];
-                const auto &bv = bufferViews[acc.bufferView.value()];
-                auto reader = BinaryReader(buffers[bv.buffer]);
-                reader.seek_from_begin(bv.byteOffset);
-                auto count = acc.count / 3;
-                prim->tris.resize(count);
-                for (auto i = 0; i < count; i++) {
-                    if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
-                        auto f0 = reader.read_LE<uint16_t>();
-                        auto f1 = reader.read_LE<uint16_t>();
-                        auto f2 = reader.read_LE<uint16_t>();
-                        prim->tris[i] = {f0, f1, f2};
+            else {
+                {
+                    const auto &position = primitive["attributes"]["POSITION"].GetInt();
+                    const auto &acc = accessors[position];
+                    const auto &bv = bufferViews[acc.bufferView.value()];
+                    auto reader = BinaryReader(buffers[bv.buffer]);
+                    reader.seek_from_begin(bv.byteOffset);
+                    prim->resize(acc.count);
+                    for (auto i = 0; i < acc.count; i++) {
+                        prim->verts[i] = reader.read_LE<vec3f>();
                     }
-                    else {
-                        zeno::log_info("not support componentType: {}", int(acc.componentType));
+                }
+                {
+                    auto index = primitive["indices"].GetInt();
+                    const auto &acc = accessors[index];
+                    const auto &bv = bufferViews[acc.bufferView.value()];
+                    auto reader = BinaryReader(buffers[bv.buffer]);
+                    reader.seek_from_begin(bv.byteOffset);
+                    auto count = acc.count / 3;
+                    prim->tris.resize(count);
+                    for (auto i = 0; i < count; i++) {
+                        if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
+                            auto f0 = reader.read_LE<uint16_t>();
+                            auto f1 = reader.read_LE<uint16_t>();
+                            auto f2 = reader.read_LE<uint16_t>();
+                            prim->tris[i] = {f0, f1, f2};
+                        }
+                        else {
+                            zeno::log_info("not support componentType: {}", int(acc.componentType));
+                        }
                     }
                 }
             }
         }
-         */
 
         set_output("prim", std::move(prim));
     }
