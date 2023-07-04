@@ -48,12 +48,13 @@ bool ZsgReader::importNodes(
 
     QStringList idents;
     NODES_DATA nodeDatas;
+    NODE_DESCS descs = GraphsManagment::instance().descriptors();
     for (const auto &node : nodes.GetObject())
     {
         const QString &nodeid = node.name.GetString();
         idents.append(nodeid);
         NODE_DATA& nodeData = subgraph.nodes[nodeid];
-        if (!_parseNode(subgPath, nodeid, node.value, NODE_DESCS(), QMap<QString, SUBGRAPH_DATA>(), nodeData,
+        if (!_parseNode(subgPath, nodeid, node.value, descs, QMap<QString, SUBGRAPH_DATA>(), nodeData,
             subgraph.links))
         {
             return false;
@@ -138,10 +139,13 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
         }
     }
 
-    const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
     SUBGRAPH_DATA mainData;
-    if (!_parseSubGraph("/main", mainGraph, nodesDescs, subgraphDatas, mainData))
-        return false;
+    if (doc.HasMember("main") || graph.HasMember("main"))
+    {
+        const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
+        if (!_parseSubGraph("/main", mainGraph, nodesDescs, subgraphDatas, mainData))
+            return false;
+    }
 
     if (doc.HasMember("views"))
     {
@@ -430,12 +434,11 @@ void ZsgReader::_parseChildNodes(
 
 void ZsgReader::initSockets(const QString& name, const NODE_DESCS& legacyDescs, NODE_DATA& ret)
 {
-    if (legacyDescs.find(name) != legacyDescs.end()) {
-        const NODE_DESC &desc = legacyDescs[name];
-        ret.inputs = desc.inputs;
-        ret.params = desc.params;
-        ret.outputs = desc.outputs;
-    }
+    ZASSERT_EXIT(legacyDescs.find(name) != legacyDescs.end());
+    const NODE_DESC& desc = legacyDescs[name];
+    ret.inputs = desc.inputs;
+    ret.params = desc.params;
+    ret.outputs = desc.outputs;
     ret.parmsNotDesc = NodesMgr::initParamsNotDesc(name);
 }
 
@@ -554,19 +557,21 @@ void ZsgReader::_parseInputs(
             int n = arr.Size();
             ZASSERT_EXIT(n == 3);
 
-            if (arr[0].IsString())
-                outId = arr[0].GetString();
-            if (arr[1].IsString())
-                outSock = arr[1].GetString();
-
             INPUT_SOCKET socket;
-            socket.info.defaultValue = _parseDeflValue(id, legacyDescs, inSock, PARAM_INPUT, arr[2]);
+            if (ret.inputs.contains(inSock))
+                socket = ret.inputs[inSock];
+            socket.info.defaultValue = _parseDeflValue(nodeName, legacyDescs, inSock, PARAM_INPUT, arr[2]);
 
-            QString outLinkPath = QString("%1/%2:[node]/outputs/%3").arg(subgPath).arg(outId).arg(outSock);
-            QString inLinkPath = QString("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(inSock);
-            links.append(EdgeInfo(outLinkPath, inLinkPath));
+            if (arr[0].IsString() && arr[1].IsString())
+            {
+                outId = arr[0].GetString();
+                outSock = arr[1].GetString();
+                QString outLinkPath = QString("%1/%2:[node]/outputs/%3").arg(subgPath).arg(outId).arg(outSock);
+                QString inLinkPath = QString("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(inSock);
+                links.append(EdgeInfo(outLinkPath, inLinkPath));
+            }
 
-            ret.inputs.insert(inSock, socket);
+            ret.inputs[inSock] = socket;
         }
         else if (inputObj.IsNull())
         {
@@ -845,11 +850,17 @@ void ZsgReader::_parseLegacyCurves(const QString& id,
 
 NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
 {
-    NODE_DESCS _descs;
+    auto& mgr = GraphsManagment::instance();
+    NODE_DESCS _descs = mgr.descriptors();
     for (const auto& node : jsonDescs.GetObject())
     {
         const QString& nodeCls = node.name.GetString();
         const auto& objValue = node.value;
+
+        if (_descs.find(nodeCls) != _descs.end() && !mgr.getSubgDesc(nodeCls, NODE_DESC()))
+        {
+            continue;
+        }
 
         NODE_DESC desc;
         desc.name = nodeCls;
