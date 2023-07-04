@@ -811,6 +811,7 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.record_path = param.sPath;
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
+    recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
     QDir dir(recInfo.record_path);
@@ -912,6 +913,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.record_path = param.sPath;
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
+    recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
     recInfo.bRecordByCommandLine = true;
 

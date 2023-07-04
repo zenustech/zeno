@@ -1062,7 +1062,7 @@ struct erode_tumble_material_v2 : INode {
         ////////////////////////////////////////////////////////////////////////////////////////
 
         // 初始化网格
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
+        auto terrain = get_input<PrimitiveObject>("HeightField");
         int nx, nz;
         auto& ud = terrain->userData();
         if ((!ud.has<int>("nx")) || (!ud.has<int>("nz"))) zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
@@ -1100,13 +1100,13 @@ struct erode_tumble_material_v2 : INode {
         }
         auto &stabilitymask = terrain->verts.attr<float>(stablilityMaskName);
 
-        if (!terrain->verts.has_attr("height") ||
+        if (!terrain->verts.has_attr("_height") ||
             !terrain->verts.has_attr("_material") ||
             !terrain->verts.has_attr("_temp_material")) {
             zeno::log_error("Node [erode_tumble_material_v2], no such data layer named '{}' or '{}' or '{}'.",
-                            "height", "_material", "_temp_material");
+                            "_height", "_material", "_temp_material");
         }
-        auto &height            = terrain->verts.attr<float>("height");
+        auto &_height           = terrain->verts.attr<float>("_height");
         auto &_material         = terrain->verts.attr<float>("_material");
         auto &_temp_material    = terrain->verts.attr<float>("_temp_material");
 
@@ -1146,7 +1146,7 @@ struct erode_tumble_material_v2 : INode {
                     flow_rate = clamp(flow_rate, 0.0f, 1.0f);
 
                     float i_material = _temp_material[idx];
-                    float i_height = height[idx];
+                    float i_height = _height[idx];
 
                     int samplex = clamp(id_x + dx, 0, clamp_x);
                     int samplez = clamp(id_z + dz, 0, clamp_z);
@@ -1161,7 +1161,7 @@ struct erode_tumble_material_v2 : INode {
                         int j_idx = Pos2Idx(samplex, samplez, nx);
 
                         float j_material = validsource ? _temp_material[j_idx] : 0.0f;
-                        float j_height = height[j_idx];
+                        float j_height = _height[j_idx];
 
                         float _repose_angle = repose_angle;
                         _repose_angle = clamp(_repose_angle, 0.0f, 90.0f);
@@ -1231,7 +1231,7 @@ struct erode_tumble_material_v2 : INode {
                                     int tmp_j_idx = Pos2Idx(tmp_samplex, tmp_samplez, nx);
 
                                     float n_material = tmp_validsource ? _temp_material[tmp_j_idx] : 0.0f;
-                                    float n_height = height[tmp_j_idx];
+                                    float n_height = _height[tmp_j_idx];
                                     float tmp_h_diff = n_height - (c_height);
                                     float tmp_m_diff = (n_height + n_material) - (c_height + c_material);
                                     float tmp_diff = diff_idx == 0 ? tmp_h_diff : tmp_m_diff;
@@ -1303,12 +1303,12 @@ struct erode_tumble_material_v2 : INode {
             }
         }
 
-        set_output("prim_2DGrid", std::move(terrain));
+        set_output("HeightField", std::move(terrain));
     }
 };
 ZENDEFNODE(erode_tumble_material_v2,
            {/* inputs: */ {
-                   "prim_2DGrid",
+                   "HeightField",
 
                    {"string", "stabilitymask", "_stability"},
                    {"ListObject", "perm"},
@@ -1330,7 +1330,7 @@ ZENDEFNODE(erode_tumble_material_v2,
                },
                /* outputs: */
                {
-                   "prim_2DGrid",
+                   "HeightField",
                },
                /* params: */
                {
