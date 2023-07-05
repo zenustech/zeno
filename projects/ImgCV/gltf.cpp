@@ -10,38 +10,6 @@
 #include "rapidjson/document.h"
 
 namespace zeno {
-struct ReadTile : INode {
-    virtual void apply() override {
-        auto path = get_input2<std::string>("path");
-        auto json = zeno::file_get_content(path);
-        rapidjson::Document doc;
-        doc.Parse(json.c_str());
-        const auto& root = doc["root"];
-        const auto& children = root["children"];
-
-        zeno::log_info("count {}", children.Size());
-
-        for (auto i = 0; i < children.Size(); i++) {
-            const auto &c = children[i];
-            std::string uri = c["content"]["uri"].GetString();
-            const auto &box = c["boundingVolume"]["box"];
-            vec3f center = {
-                box[0].GetFloat(),
-                box[1].GetFloat(),
-                box[2].GetFloat(),
-            };
-            zeno::log_info("{}: {} {}", i, uri, center);
-        }
-    }
-};
-ZENDEFNODE(ReadTile, {
-    {
-        {"readpath", "path"},
-    },
-    {},
-    {},
-    {"alembic"},
-});
 
 namespace zeno_gltf {
 
@@ -73,34 +41,75 @@ struct BufferView {
     int byteLength;
     int byteStride;
 };
-namespace fs = std::filesystem;
+
+struct GLBHeader {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t length;
+};
 
 struct ReadGLTF : zeno::INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
+        std::vector<std::vector<char>> buffers;
         rapidjson::Document root;
+
         if (zeno::ends_with(path, ".glb", false)) {
-            auto data = zeno::file_get_binary(path);
-            auto reader = BinaryReader(data);
-            reader.seek_from_begin(12);
-            auto json_len = reader.read_LE<int>();
-            std::string json;
-            for (auto i = 0; i < json_len; i++) {
-                json.push_back(data[20 + i]);
+            std::ifstream file(path.c_str(), std::ios::binary);
+            // Read 12-byte header
+            GLBHeader header;
+            file.read(reinterpret_cast<char *>(&header), sizeof(GLBHeader));
+            if (header.magic != 0x46546C67) {
+                return;
             }
-            zeno::file_put_content("GLB.json", json);
+            // Read JSON chunk
+            uint32_t jsonChunkLength;
+            file.read(reinterpret_cast<char *>(&jsonChunkLength), sizeof(uint32_t));
+            uint32_t jsonChunkType;
+            file.read(reinterpret_cast<char *>(&jsonChunkType), sizeof(uint32_t));
+
+            std::vector<char> jsonBuffer(jsonChunkLength);
+            file.read(jsonBuffer.data(), jsonChunkLength);
+
+            // Parse JSON
+            std::string json(jsonBuffer.begin(), jsonBuffer.end());
             root.Parse(json.c_str());
+            //        std::ofstream outputFile("d:\\1.json");
+            //        outputFile << json;
+
+            // Read binary chunk
+            uint32_t binaryChunkLength;
+            file.read(reinterpret_cast<char *>(&binaryChunkLength), sizeof(uint32_t));
+            uint32_t binaryChunkType;
+            file.read(reinterpret_cast<char *>(&binaryChunkType), sizeof(uint32_t));
+
+            std::vector<char> binaryBuffer(binaryChunkLength);
+            file.read(binaryBuffer.data(), binaryChunkLength);
+
+            // Parse Bin
+            buffers.push_back(binaryBuffer);
         }
         else {
             auto json = zeno::file_get_content(path);
             root.Parse(json.c_str());
+
+            zeno::log_info("buffers {}", root["buffers"].Size());
+            for (auto i = 0; i < root["buffers"].Size(); i++) {
+                std::filesystem::path p = path;
+                auto parent = p.parent_path().string();
+                std::string bin_path = parent + '/' + root["buffers"][i]["uri"].GetString();
+                auto buffer = zeno::file_get_binary(bin_path);
+                zeno::log_info("{}", bin_path);
+                buffers.push_back(buffer);
+            }
         }
+
         std::vector<Accessor> accessors;
         {
             for (auto i = 0; i < root["accessors"].Size(); i++) {
                 const auto & a = root["accessors"][i];
                 Accessor accessor;
-                accessor.bufferView = a["bufferView"].GetInt();
+                accessor.bufferView = a.HasMember("bufferView")? a["bufferView"].GetInt():0;
                 accessor.count = a["count"].GetInt();
                 accessor.componentType = ComponentType(a["componentType"].GetInt());
                 std::string str_type = a["type"].GetString();
@@ -129,18 +138,6 @@ struct ReadGLTF : zeno::INode {
                 bufferView.byteStride = v.HasMember("byteStride")? v["byteStride"].GetInt() : 0;
                 bufferView.byteLength = v["byteLength"].GetInt();
                 bufferViews.push_back(bufferView);
-            }
-        }
-        std::vector<std::vector<char>> buffers;
-        {
-            zeno::log_info("buffers {}", root["buffers"].Size());
-            for (auto i = 0; i < root["buffers"].Size(); i++) {
-                fs::path p = path;
-                auto parent = p.parent_path().string();
-                std::string bin_path = parent + '/' + root["buffers"][i]["uri"].GetString();
-                auto buffer = zeno::file_get_binary(bin_path);
-                zeno::log_info("{}", bin_path);
-                buffers.push_back(buffer);
             }
         }
         auto prim = std::make_shared<zeno::PrimitiveObject>();
@@ -405,6 +402,5 @@ ZENDEFNODE(ReadGLTF, {
     {},
     { "primitive" },
 });
-
 }
 }
