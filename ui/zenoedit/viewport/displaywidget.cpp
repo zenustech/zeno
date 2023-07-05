@@ -675,7 +675,7 @@ void DisplayWidget::onRecord_slient(const VideoRecInfo& recInfo)
 
     connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=](QString msg) {
         zeno::log_info("process exited with {} successfully", -1);
-        QApplication::exit(-1);
+        QApplication::exit(0);
     });
 
     connect(&m_recordMgr, &RecordVideoMgr::recordFailed, this, [=](QString msg) {
