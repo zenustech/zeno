@@ -571,7 +571,7 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
         m_layoutRoot->type = NT_ELEM;
 
         ZTabDockWidget* onlyWid = new ZTabDockWidget(this);
-        if (onlyView == PANEL_GL_VIEW)
+        if (onlyView == PANEL_GL_VIEW || onlyView == PANEL_OPTIX_VIEW)
             onlyWid->setCurrentWidget(onlyView);
 
         addDockWidget(Qt::TopDockWidgetArea, onlyWid);
@@ -784,6 +784,21 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
     }
 }
 
+DisplayWidget* ZenoMainWindow::getOnlyViewport() const
+{
+    //find the only optix viewport
+    QVector<DisplayWidget*> views;
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* pDock : docks)
+    {
+        views.append(pDock->viewports());
+    }
+    ZASSERT_EXIT(views.size() == 1, nullptr);
+
+    DisplayWidget* pView = views[0];
+    return pView;
+}
+
 void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
 {
     VideoRecInfo recInfo;
@@ -796,6 +811,7 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.record_path = param.sPath;
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
+    recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
     QDir dir(recInfo.record_path);
@@ -826,20 +842,6 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
         recInfo.res = { (float)1000, (float)680 };
         //viewWidget->setMinimumSize(1000, 680);
     }
-
-    connect(this, &ZenoMainWindow::runFinished, this, [=]() {
-        auto globalStatus = zeno::getSession().globalStatus.get();
-        if (globalStatus->failed())
-        {
-            zeno::log_info("process exited with {}", -1);
-            QApplication::exit(-1);
-        }
-        else {
-            OptixWorker worker;
-            worker.recordVideo(recInfo);
-            QApplication::exit(0);
-        }
-    });
 
     bool ret = openFile(param.sZsgPath);
     ZASSERT_EXIT(ret);
@@ -877,7 +879,9 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
 
     launchProgram(pModel, recInfo.frameRange.first, recInfo.frameRange.second, false, false);
 
-    //viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+    DisplayWidget* pViewport = getOnlyViewport();
+    ZASSERT_EXIT(pViewport);
+    pViewport->onRecord_slient(recInfo);
 }
 
 void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
@@ -909,6 +913,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.record_path = param.sPath;
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
+    recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
     recInfo.bRecordByCommandLine = true;
 

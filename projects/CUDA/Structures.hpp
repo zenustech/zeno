@@ -1,4 +1,5 @@
 #pragma once
+#include "zensim/container/Bht.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/container/IndexBuckets.hpp"
@@ -23,6 +24,10 @@
 #include <zeno/types/UserData.h>
 #include <zeno/zeno.h>
 
+namespace zs {
+template <typename T>
+constexpr bool always_false = false;
+}
 namespace zeno {
 
 using ElasticModel = zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>, zs::StvkWithHencky<float>,
@@ -784,5 +789,66 @@ struct ZenoBoundary : IObjectClone<ZenoBoundary> {
     zs::vec<float, 3> b{zs::vec<float, 3>::zeros()};
     zs::vec<float, 3> dbdt{zs::vec<float, 3>::zeros()};
 };
+
+#if 0
+template <typename Pol, int codim, typename MarkIter>
+void mark_surface_boundary_verts(Pol &&pol, const ZenoParticles::particles_t &surf, zs::wrapv<codim>, MarkIter &&marks,
+                                 int vOffset = 0) {
+    using namespace zs;
+    constexpr execspace_e space = RM_CVREF_T(pol)::exec_tag::value;
+    auto allocator = get_temporary_memory_source(pol);
+    using key_t = zs::vec<int, codim - 1>;
+    bht<int, codim - 1, int, 16> tab{allocator, surf.size() * codim * 2};
+    tab.reset(pol);
+    pol(range(surf.size()), [tab = proxy<space>(tab), surf = view<space>(surf),
+                             indsOffset = surf.getPropertyOffset("inds")] ZS_LAMBDA(int ei) mutable {
+        int i = surf(indsOffset, ei, int_c);
+        for (int d = 0; d != codim; ++d) {
+            int j = surf(indsOffset + (d + 1) % codim, ei, int_c);
+            if constexpr (codim == 3)
+                tab.insert(key_t{i, j});
+            else if constexpr (codim == 2)
+                tab.insert(key_t{i});
+            else
+                static_assert(always_false<MarkIter>, "do not support codim other than 2 or 3.");
+            i = j;
+        }
+    });
+    auto surfMarks = zs::Vector<int>{allocator, surf.size()};
+    surfMarks.reset(0);
+    pol(range(surf.size()), [tab = view<space>(tab), surf = view<space>(surf), surfMarks = view<space>(surfMarks),
+                             indsOffset = surf.getPropertyOffset("inds")] ZS_LAMBDA(int ei) mutable {
+        using tab_t = RM_CVREF_T(tab);
+        int i = surf(indsOffset, ei, int_c);
+        int isBoundary = 0;
+        for (int d = 0; d != codim; ++d) {
+            int j = surf(indsOffset + (d + 1) % codim, ei, int_c);
+            int no = tab_t::sentinel_v;
+            if constexpr (codim == 3)
+                no = tab.query(key_t{j, i});
+            else if constexpr (codim == 2)
+                no = tab.query(key_t{i});
+            else
+                static_assert(always_false<MarkIter>, "do not support codim other than 2 or 3.");
+            if (no == tab_t::sentinel_v) { // this surf element is not boundary
+                isBoundary = 1;
+                break;
+            }
+            i = j;
+        }
+        surfMarks[ei] = isBoundary;
+    });
+    pol(range(surf.size()), [surf = view<space>(surf), surfMarks = view<space>(surfMarks), marks,
+                             indsOffset = surf.getPropertyOffset("inds"), vOffset] ZS_LAMBDA(int ei) mutable {
+        using tab_t = RM_CVREF_T(tab);
+        if (!surfMarks[ei])
+            return;
+        for (int d = 0; d != codim; ++d) {
+            int i = surf(indsOffset + d, ei, int_c);
+            marks[i + vOffset] = 1;
+        }
+    });
+}
+#endif
 
 } // namespace zeno
