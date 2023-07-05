@@ -562,7 +562,12 @@ void LayerPathWidget::setPath(const QString& path)
     while (pLayout->count() > 0)
     {
         QLayoutItem* pItem = pLayout->itemAt(pLayout->count() - 1);
+        if (pItem->widget()) {
+            pItem->widget()->deleteLater();
+        }
         pLayout->removeItem(pItem);
+        delete pItem;
+        pItem = nullptr;
     }
 
     QStringList L = m_path.split("/", QtSkipEmptyParts);

@@ -560,6 +560,8 @@ void ZsgReader::_parseInputs(
             INPUT_SOCKET socket;
             if (ret.inputs.contains(inSock))
                 socket = ret.inputs[inSock];
+            else
+                socket.info.name = inSock;
             socket.info.defaultValue = _parseDeflValue(nodeName, legacyDescs, inSock, PARAM_INPUT, arr[2]);
 
             if (arr[0].IsString() && arr[1].IsString())

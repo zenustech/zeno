@@ -1155,7 +1155,9 @@ QModelIndex GraphsModel::addLink(const QModelIndex& subgIdx, const EdgeInfo& inf
         QModelIndex outParamIdx = indexFromPath(info.outSockPath);
         if (!inParamIdx.isValid() || !outParamIdx.isValid())
         {
-            zeno::log_warn("there is not valid input or output sockets.");
+            QString inSock = UiHelper::getSockNode(info.inSockPath) + "/" + UiHelper::getSockName(info.inSockPath);
+            QString outSock = UiHelper::getSockNode(info.outSockPath) + "/" + UiHelper::getSockName(info.outSockPath);
+            zeno::log_warn("there is not valid input ({}) or output ({}) sockets.", inSock.toStdString(), outSock.toStdString());
             return QModelIndex();
         }
         if (!subgIdx.isValid())

@@ -118,6 +118,8 @@ void ZenoWelcomePage::initRecentFiles()
         QLayoutItem *item = m_ui->layoutFiles->itemAt(0);
         deleteItem(item->layout());
         m_ui->layoutFiles->removeItem(item);
+        delete item;
+        item = nullptr;
     }
     for (int i = 0; i < lst.size(); i++)
     {
@@ -212,8 +214,9 @@ void ZenoWelcomePage::initRecentFiles()
 }
 
 void ZenoWelcomePage::deleteItem(QLayout *layout) {
-    QLayoutItem *child;
-    while ((child = layout->takeAt(0)) != nullptr) {
+    if (!layout)
+        return;
+    while (QLayoutItem * child = layout->takeAt(0)) {
         if (child->widget()) {
             child->widget()->setParent(nullptr);
             child->widget()->deleteLater();
@@ -222,5 +225,6 @@ void ZenoWelcomePage::deleteItem(QLayout *layout) {
             child->layout()->deleteLater();
         }
         delete child;
+        child = nullptr;
     }
 }

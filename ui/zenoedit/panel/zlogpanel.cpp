@@ -245,6 +245,12 @@ bool LogItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, cons
 
                 QModelIndex idx, subgIdx;
                 auto search_result = pModel->search(ident, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
+                if (search_result.isEmpty())
+                {
+                    IGraphsModel* pSubgModel = graphsMgm->sharedSubgraphs();
+                    ZASSERT_EXIT(pSubgModel, false);
+                    search_result = pSubgModel->search(ident, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
+                }
                 if (!search_result.isEmpty())
                 {
                     idx = search_result[0].targetIdx;
@@ -257,8 +263,8 @@ bool LogItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, cons
                     ZASSERT_EXIT(pWin, false);
                     ZenoGraphsEditor* pEditor = pWin->getAnyEditor();
                     if (pEditor) {
-                        const QString& objPath = subgIdx.data(ROLE_OBJPATH).toString();
-                        pEditor->activateTabOfTree(objPath, ident);
+                        const QString& objPath = idx.data(ROLE_OBJPATH).toString();
+                        pEditor->activateTab(subgIdx, objPath, ident);
                     }
                 }
             }
