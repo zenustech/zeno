@@ -250,14 +250,17 @@ struct ReadTile : INode {
                     box[2].GetFloat(),
             };
             auto prim = read_gltf_model(uri);
+            vec3f bmin, bmax;
+            std::tie(bmin, bmax) = primBoundingBox(prim.get());
+            vec3f bc = (bmin + bmax) / 2;
             for (auto i = 0; i < prim->verts.size(); i++) {
-                prim->verts[i] += vec3f(ct[0], ct[2], -ct[1]);
+                prim->verts[i] += - bc + vec3f(ct[0], ct[2], -ct[1]);
             }
             list->arr.push_back(prim);
         }
         auto pPrims = list->getRaw<PrimitiveObject>();
         auto output = primMerge(pPrims);
-        set_output("prim", std::move(list));
+        set_output("prim", std::move(output));
     }
 };
 
