@@ -142,250 +142,133 @@ struct ReadGLTF : zeno::INode {
         }
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         {
-            const auto &mesh = root["meshes"][0];
-            const auto &primitive = mesh["primitives"][0];
-            {
-                const auto &position = primitive["attributes"]["POSITION"].GetInt();
-                const auto &acc = accessors[position];
-                const auto &bv = bufferViews[acc.bufferView];
-                auto reader = BinaryReader(buffers[bv.buffer]);
-                reader.seek_from_begin(bv.byteOffset);
-                prim->resize(acc.count);
-                for (auto i = 0; i < acc.count; i++) {
-                    prim->verts[i] = reader.read_LE<vec3f>();
+            int pvert = 0;
+            int pnrm = 0;
+            int ptris = 0;
+            int puv = 0;
+            for(size_t mi = 0;mi < root["meshes"].Size();mi++){
+                const auto &mesh = root["meshes"][mi];
+                const auto &primitive = mesh["primitives"][0];
+                {
+                    const auto &position = primitive["attributes"]["POSITION"].GetInt();
+                    const auto &acc = accessors[position];
+                    const auto &bv = bufferViews[acc.bufferView];
+                    auto reader = BinaryReader(buffers[bv.buffer]);
+                    reader.seek_from_begin(bv.byteOffset);
+                    prim->resize(pvert + acc.count);
+                    for (auto i = pvert; i < pvert + acc.count; i++) {
+                        prim->verts[i] = reader.read_LE<vec3f>();
+                    }
+                    pvert += acc.count;
                 }
-            }
-            {
-                auto index = primitive["indices"].GetInt();
-                const auto &acc = accessors[index];
-                const auto &bv = bufferViews[acc.bufferView];
-                auto reader = BinaryReader(buffers[bv.buffer]);
-                reader.seek_from_begin(bv.byteOffset);
-                auto count = acc.count / 3;
-                prim->tris.resize(count);
-                if (acc.componentType == ComponentType::GL_BYTE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto f0 = reader.read_LE<int8_t>();
-                        auto f1 = reader.read_LE<int8_t>();
-                        auto f2 = reader.read_LE<int8_t>();
-                        prim->tris[i] = {f0, f1, f2};
+                {
+                    const auto &normal = primitive["attributes"]["NORMAL"].GetInt();
+                    const auto &acc = accessors[normal];
+                    const auto &bv = bufferViews[acc.bufferView];
+                    auto reader = BinaryReader(buffers[bv.buffer]);
+                    reader.seek_from_begin(bv.byteOffset);
+                    auto count = acc.count/3;
+                    auto &n = prim->verts.add_attr<vec3f>("nrm");
+                    if (acc.componentType == ComponentType::GL_FLOAT) {
+                        for (auto i = pnrm; i < pnrm + count; i++) {
+                            n[i] = reader.read_LE<vec3f>();
+                        }
+                        pnrm += count;
+                    }
+                    else if (acc.componentType == ComponentType::GL_DOUBLE) {
+                        for (auto i = pnrm; i < pnrm + count; i++) {
+                            auto n0 = float(reader.read_LE<double>());
+                            auto n1 = float(reader.read_LE<double>());
+                            auto n2 = float(reader.read_LE<double>());
+                            zeno::vec3f vn = {n0, n1, n2};
+                            n[i] = vn;
+                        }
+                        pnrm += count;
+                    }
+                    else {
+                        zeno::log_info("no support componentType for normal: {}", int(acc.componentType));
                     }
                 }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_BYTE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto f0 = reader.read_LE<uint8_t>();
-                        auto f1 = reader.read_LE<uint8_t>();
-                        auto f2 = reader.read_LE<uint8_t>();
-                        prim->tris[i] = {f0, f1, f2};
+                {
+                    auto index = primitive["indices"].GetInt();
+                    const auto &acc = accessors[index];
+                    const auto &bv = bufferViews[acc.bufferView];
+                    auto reader = BinaryReader(buffers[bv.buffer]);
+                    reader.seek_from_begin(bv.byteOffset);
+                    auto count = acc.count / 3;
+                    prim->tris.resize(ptris + count);
+                    if (acc.componentType == ComponentType::GL_SHORT) {
+                        for (auto i = ptris; i < ptris + count; i++) {
+                            auto f0 = reader.read_LE<int16_t>();
+                            auto f1 = reader.read_LE<int16_t>();
+                            auto f2 = reader.read_LE<int16_t>();
+                            prim->tris[i] = {f0, f1, f2};
+                        }
+                        ptris += count;
+                    }
+                    else if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
+                        for (auto i = ptris; i < ptris + count; i++) {
+                            auto f0 = reader.read_LE<uint16_t>();
+                            auto f1 = reader.read_LE<uint16_t>();
+                            auto f2 = reader.read_LE<uint16_t>();
+                            prim->tris[i] = {f0, f1, f2};
+                        }
+                        ptris += count;
+                    }
+                    else if (acc.componentType == ComponentType::GL_INT) {
+                        for (auto i = ptris; i < ptris + count; i++) {
+                            auto f0 = reader.read_LE<int32_t>();
+                            auto f1 = reader.read_LE<int32_t>();
+                            auto f2 = reader.read_LE<int32_t>();
+                            prim->tris[i] = {f0, f1, f2};
+                        }
+                        ptris += count;
+                    }
+                    else if (acc.componentType == ComponentType::GL_UNSIGNED_INT) {
+                        for (auto i = ptris; i < ptris + count; i++) {
+                            auto f0 = (int)(reader.read_LE<uint32_t>());
+                            auto f1 = (int)(reader.read_LE<uint32_t>());
+                            auto f2 = (int)(reader.read_LE<uint32_t>());
+                            prim->tris[i] = {f0, f1, f2};
+                        }
+                        ptris += count;
+                    }
+                    else {
+                        zeno::log_info("not support componentType for face: {}", int(acc.componentType));
                     }
                 }
-                else if (acc.componentType == ComponentType::GL_SHORT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto f0 = reader.read_LE<int16_t>();
-                        auto f1 = reader.read_LE<int16_t>();
-                        auto f2 = reader.read_LE<int16_t>();
-                        prim->tris[i] = {f0, f1, f2};
+                {
+                    int T0 = 0;
+                    if (primitive["attributes"].HasMember("TEXCOORD_0")){
+                        T0 = primitive["attributes"]["TEXCOORD_0"].GetInt();
                     }
-                }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto f0 = reader.read_LE<uint16_t>();
-                        auto f1 = reader.read_LE<uint16_t>();
-                        auto f2 = reader.read_LE<uint16_t>();
-                        prim->tris[i] = {f0, f1, f2};
+                    const auto &acc = accessors[T0];
+                    const auto &bv = bufferViews[acc.bufferView];
+                    auto reader = BinaryReader(buffers[bv.buffer]);
+                    reader.seek_from_begin(bv.byteOffset);
+                    auto count = acc.count/4;
+                    prim->uvs.resize(puv + count);
+                    auto &uv = prim->uvs;
+                    if (acc.componentType == ComponentType::GL_FLOAT) {
+                        for (auto i = puv; i < puv + count; i++) {
+                            auto n0 = (float)(reader.read_LE<float>());
+                            auto n1 = (float)(reader.read_LE<float>());
+                            vec2f uu = {n0,n1};
+                            uv[i] = uu;
+                        }
+                        puv += count;
                     }
-                }
-                else if (acc.componentType == ComponentType::GL_INT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto f0 = reader.read_LE<int32_t>();
-                        auto f1 = reader.read_LE<int32_t>();
-                        auto f2 = reader.read_LE<int32_t>();
-                        prim->tris[i] = {f0, f1, f2};
+                    else if (acc.componentType == ComponentType::GL_DOUBLE) {
+                        for (auto i = puv; i < puv + count; i++) {
+                            auto n0 = (float)(reader.read_LE<double>());
+                            auto n1 = (float)(reader.read_LE<double>());
+                            uv[i] = {n0,n1};
+                        }
+                        puv += count;
                     }
-                }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_INT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto f0 = (int)(reader.read_LE<uint32_t>());
-                        auto f1 = (int)(reader.read_LE<uint32_t>());
-                        auto f2 = (int)(reader.read_LE<uint32_t>());
-                        prim->tris[i] = {f0, f1, f2};
+                    else {
+                        zeno::log_info("no support componentType for uv: {}", int(acc.componentType));
                     }
-                }
-                else if (acc.componentType == ComponentType::GL_FLOAT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto f0 = (int)(reader.read_LE<float>());
-                        auto f1 = (int)(reader.read_LE<float>());
-                        auto f2 = (int)(reader.read_LE<float>());
-                        prim->tris[i] = {f0, f1, f2};
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_DOUBLE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto f0 = (int)(reader.read_LE<double>());
-                        auto f1 = (int)(reader.read_LE<double>());
-                        auto f2 = (int)(reader.read_LE<double>());
-                        prim->tris[i] = {f0, f1, f2};
-                    }
-                }
-                else {
-                    zeno::log_info("not support componentType for face: {}", int(acc.componentType));
-                }
-            }
-            {
-                const auto &normal = primitive["attributes"]["NORMAL"].GetInt();
-                const auto &acc = accessors[normal];
-                const auto &bv = bufferViews[acc.bufferView];
-                auto reader = BinaryReader(buffers[bv.buffer]);
-                reader.seek_from_begin(bv.byteOffset);
-                auto count = acc.count/3;
-                auto &n = prim->verts.add_attr<vec3f>("nrm");
-                if (acc.componentType == ComponentType::GL_BYTE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<int8_t>());
-                        auto n1 = (float)(reader.read_LE<int8_t>());
-                        auto n2 = (float)(reader.read_LE<int8_t>());
-                        zeno::vec3f vn = {n0, n1, n2};
-                        n[i] = vn;
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_BYTE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<uint8_t>());
-                        auto n1 = (float)(reader.read_LE<uint8_t>());
-                        auto n2 = (float)(reader.read_LE<uint8_t>());
-                        zeno::vec3f vn = {n0, n1, n2};
-                        n[i] = vn;
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_SHORT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<int16_t>());
-                        auto n1 = (float)(reader.read_LE<int16_t>());
-                        auto n2 = (float)(reader.read_LE<int16_t>());
-                        zeno::vec3f vn = {n0, n1, n2};
-                        n[i] = vn;
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<uint16_t>());
-                        auto n1 = (float)(reader.read_LE<uint16_t>());
-                        auto n2 = (float)(reader.read_LE<uint16_t>());
-                        zeno::vec3f vn = {n0, n1, n2};
-                        n[i] = vn;
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_INT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<int32_t>());
-                        auto n1 = (float)(reader.read_LE<int32_t>());
-                        auto n2 = (float)(reader.read_LE<int32_t>());
-                        zeno::vec3f vn = {n0, n1, n2};
-                        n[i] = vn;
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_INT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<uint32_t>());
-                        auto n1 = (float)(reader.read_LE<uint32_t>());
-                        auto n2 = (float)(reader.read_LE<uint32_t>());
-                        zeno::vec3f vn = {n0, n1, n2};
-                        n[i] = vn;
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_FLOAT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<float>());
-                        auto n1 = (float)(reader.read_LE<float>());
-                        auto n2 = (float)(reader.read_LE<float>());
-                        zeno::vec3f vn = {n0, n1, n2};
-                        n[i] = vn;
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_DOUBLE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<double>());
-                        auto n1 = (float)(reader.read_LE<double>());
-                        auto n2 = (float)(reader.read_LE<double>());
-                        zeno::vec3f vn = {n0, n1, n2};
-                        n[i] = vn;
-                    }
-                }
-                else {
-                    zeno::log_info("no support componentType for normal: {}", int(acc.componentType));
-                }
-            }
-            {
-                int T0 = 0;
-                if (primitive["attributes"].HasMember("TEXCOORD_0")){
-                    T0 = primitive["attributes"]["TEXCOORD_0"].GetInt();
-                }
-                const auto &acc = accessors[T0];
-                const auto &bv = bufferViews[acc.bufferView];
-                auto reader = BinaryReader(buffers[bv.buffer]);
-                reader.seek_from_begin(bv.byteOffset);
-                auto count = acc.count/4;
-                prim->uvs.resize(count);
-                auto &uv = prim->uvs;
-                if (acc.componentType == ComponentType::GL_BYTE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<int8_t>());
-                        auto n1 = (float)(reader.read_LE<int8_t>());
-                        uv[i] = {n0,n1};
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_BYTE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<uint8_t>());
-                        auto n1 = (float)(reader.read_LE<uint8_t>());
-                        uv[i] = {n0,n1};
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_SHORT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<int16_t>());
-                        auto n1 = (float)(reader.read_LE<int16_t>());
-                        uv[i] = {n0,n1};
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<uint16_t>());
-                        auto n1 = (float)(reader.read_LE<uint16_t>());
-                        uv[i] = {n0,n1};
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_INT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<int32_t>());
-                        auto n1 = (float)(reader.read_LE<int32_t>());
-                        uv[i] = {n0,n1};
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_UNSIGNED_INT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<uint32_t>());
-                        auto n1 = (float)(reader.read_LE<uint32_t>());
-                        uv[i] = {n0,n1};
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_FLOAT) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<float>());
-                        auto n1 = (float)(reader.read_LE<float>());
-                        vec2f uu = {n0,n1};
-                        uv[i] = uu;
-                    }
-                }
-                else if (acc.componentType == ComponentType::GL_DOUBLE) {
-                    for (auto i = 0; i < count; i++) {
-                        auto n0 = (float)(reader.read_LE<double>());
-                        auto n1 = (float)(reader.read_LE<double>());
-                        uv[i] = {n0,n1};
-                    }
-                }
-                else {
-                    zeno::log_info("no support componentType for uv: {}", int(acc.componentType));
                 }
             }
         }
