@@ -680,9 +680,9 @@ struct OceanCompute : zeno::INode {
 
 ZENDEFNODE(OceanCompute, {/* inputs:  */ {
                               "grid",
-                              "time",
-                              "depth",
-                              "dt",
+                              {"float", "time", "0"},
+                              {"float", "depth", "0"},
+                              {"float", "dt", "0.04"},
                               "ocean_FFT",
                           },
                           /* outputs: */
@@ -866,9 +866,9 @@ struct OceanCuCompute : zeno::INode {
 
 ZENDEFNODE(OceanCuCompute, {/* inputs:  */ {
                                 "grid",
-                                "time",
-                                "depth",
-                                "dt",
+                                {"float", "time", "0"},
+                                {"float", "depth", "0"},
+                                {"float", "dt", "0.04"},
                                 "ocean_FFT",
                             },
                             /* outputs: */
