@@ -208,7 +208,7 @@ struct WhitewaterSolver : INode {
         auto dt = get_input2<float>("dt");
         auto &Liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF")->m_grid;
         auto &Solid_sdf = get_input<VDBFloatGrid>("SolidSDF")->m_grid;
-        auto &Velocity = get_input<VDBFloat3Grid>("Velocity")->m_grid;
+        auto TargetVelAttr = get_input2<std::string>("TargetVelAttr");
 
         auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<vec3f>("Gravity"));
         auto air_drag = get_input2<float>("AirDrag");
@@ -216,11 +216,12 @@ struct WhitewaterSolver : INode {
         auto bubble_drag = get_input2<float>("BubbleDrag");
         auto buoyancy = get_input2<float>("Buoyancy");
 
-        float dx = static_cast<float>(Velocity->voxelSize()[0]);
+        float dx = static_cast<float>(Liquid_sdf->voxelSize()[0]);
 
         auto &par_pos = pars->verts.values;
         auto &par_vel = pars->attr<vec3f>("vel");
         auto &par_life = pars->attr<float>("life");
+        auto &par_tarVel = pars->attr<vec3f>(TargetVelAttr);
 
         auto Normal = openvdb::tools::gradient(*Solid_sdf);
 
@@ -228,29 +229,33 @@ struct WhitewaterSolver : INode {
         for (size_t idx = 0; idx < pars->size(); ++idx) {
             auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
             auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
-            auto vel_axr = Velocity->getConstUnsafeAccessor();
             auto norm_axr = Normal->getConstUnsafeAccessor();
 
             auto m_vel = vec_to_other<openvdb::Vec3f>(par_vel[idx]);
             auto wcoord = vec_to_other<openvdb::Vec3f>(par_pos[idx]);
             float m_liquid_sdf = openvdb::tools::BoxSampler::sample(liquid_sdf_axr, Liquid_sdf->worldToIndex(wcoord));
+            float drag_coef = 0;
             if (m_liquid_sdf > dx) {
                 // spray
-                m_vel += gravity * dt - air_drag * m_vel;
+                drag_coef = air_drag;
+                m_vel += gravity * dt;
+
                 par_life[idx] -= 0.5f * dt;
             } else if (m_liquid_sdf < -0.3f * dx) {
                 // bubble
-                auto m_liquid_vel =
-                    openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
-                m_vel += -buoyancy * gravity * dt + bubble_drag * (m_liquid_vel - m_vel);
+                drag_coef = bubble_drag;
+                m_vel += -buoyancy * gravity * dt;
+
                 par_life[idx] -= 0.5f * dt;
             } else {
                 // foam
-                auto m_liquid_vel =
-                    openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
-                m_vel += foam_drag * (m_liquid_vel - m_vel);
+                drag_coef = foam_drag;
+
                 par_life[idx] -= dt;
             }
+            auto m_tarVel = vec_to_other<openvdb::Vec3f>(par_tarVel[idx]);
+            m_vel += drag_coef * (m_tarVel - m_vel);
+
             auto wcoord_new = wcoord + dt * m_vel;
             float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord_new));
             if (m_solid_sdf < 0) {
@@ -273,12 +278,12 @@ ZENDEFNODE(WhitewaterSolver, {/* inputs: */
                                {"float", "dt", "0.04"},
                                "LiquidSDF",
                                "SolidSDF",
-                               "Velocity",
+                               {"string", "TargetVelAttr", "tv"},
                                {"vec3f", "Gravity", "0, -9.8, 0"},
                                {"float", "AirDrag", "0.05"},
                                {"float", "FoamDrag", "0.9"},
                                {"float", "BubbleDrag", "0.1"},
-                               {"float", "Buoyancy", "10"}},
+                               {"float", "Buoyancy", "5"}},
                               /* outputs: */
                               {"Primitive"},
                               /* params: */
