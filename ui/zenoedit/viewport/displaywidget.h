@@ -50,6 +50,7 @@ public slots:
     void onRun();
     void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void onRecord();
+    void onRecord_slient(const VideoRecInfo& recInfo);
     void onScreenShoot();
     void onKill();
     void onPlayClicked(bool);
