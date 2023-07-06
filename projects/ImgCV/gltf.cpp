@@ -103,7 +103,6 @@ struct ReadGLTF : zeno::INode {
                 buffers.push_back(buffer);
             }
         }
-
         std::vector<Accessor> accessors;
         {
             for (auto i = 0; i < root["accessors"].Size(); i++) {
@@ -180,8 +179,7 @@ struct ReadGLTF : zeno::INode {
                             auto n0 = float(reader.read_LE<double>());
                             auto n1 = float(reader.read_LE<double>());
                             auto n2 = float(reader.read_LE<double>());
-                            zeno::vec3f vn = {n0, n1, n2};
-                            n[i] = vn;
+                            n[i] = {n0, n1, n2};
                         }
                         pnrm += count;
                     }
@@ -204,7 +202,6 @@ struct ReadGLTF : zeno::INode {
                             auto f2 = reader.read_LE<int16_t>();
                             prim->tris[i] = {f0, f1, f2};
                         }
-                        ptris += count;
                     }
                     else if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
                         for (auto i = ptris; i < ptris + count; i++) {
@@ -213,29 +210,21 @@ struct ReadGLTF : zeno::INode {
                             auto f2 = reader.read_LE<uint16_t>();
                             prim->tris[i] = {f0, f1, f2};
                         }
-                        ptris += count;
                     }
                     else if (acc.componentType == ComponentType::GL_INT) {
                         for (auto i = ptris; i < ptris + count; i++) {
-                            auto f0 = reader.read_LE<int32_t>();
-                            auto f1 = reader.read_LE<int32_t>();
-                            auto f2 = reader.read_LE<int32_t>();
-                            prim->tris[i] = {f0, f1, f2};
+                            prim->tris[i] = reader.read_LE<vec3i>();
                         }
-                        ptris += count;
                     }
                     else if (acc.componentType == ComponentType::GL_UNSIGNED_INT) {
                         for (auto i = ptris; i < ptris + count; i++) {
-                            auto f0 = (int)(reader.read_LE<uint32_t>());
-                            auto f1 = (int)(reader.read_LE<uint32_t>());
-                            auto f2 = (int)(reader.read_LE<uint32_t>());
-                            prim->tris[i] = {f0, f1, f2};
+                            prim->tris[i] = reader.read_LE<vec3i>();
                         }
-                        ptris += count;
                     }
                     else {
                         zeno::log_info("not support componentType for face: {}", int(acc.componentType));
                     }
+                    ptris += count;
                 }
                 {
                     int T0 = 0;
@@ -251,24 +240,20 @@ struct ReadGLTF : zeno::INode {
                     auto &uv = prim->uvs;
                     if (acc.componentType == ComponentType::GL_FLOAT) {
                         for (auto i = puv; i < puv + count; i++) {
-                            auto n0 = (float)(reader.read_LE<float>());
-                            auto n1 = (float)(reader.read_LE<float>());
-                            vec2f uu = {n0,n1};
-                            uv[i] = uu;
+                            uv[i] = reader.read_LE<vec2f>();
                         }
-                        puv += count;
                     }
                     else if (acc.componentType == ComponentType::GL_DOUBLE) {
                         for (auto i = puv; i < puv + count; i++) {
-                            auto n0 = (float)(reader.read_LE<double>());
-                            auto n1 = (float)(reader.read_LE<double>());
+                            auto n0 = float(reader.read_LE<double>());
+                            auto n1 = float(reader.read_LE<double>());
                             uv[i] = {n0,n1};
                         }
-                        puv += count;
                     }
                     else {
                         zeno::log_info("no support componentType for uv: {}", int(acc.componentType));
                     }
+                    puv += count;
                 }
             }
         }
