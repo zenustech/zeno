@@ -212,6 +212,8 @@ struct WhitewaterSolver : INode {
 
         auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<vec3f>("Gravity"));
         auto air_drag = get_input2<float>("AirDrag");
+        auto foam_drag = get_input2<float>("FoamDrag");
+        auto bubble_drag = get_input2<float>("BubbleDrag");
         auto buoyancy = get_input2<float>("Buoyancy");
 
         float dx = static_cast<float>(Velocity->voxelSize()[0]);
@@ -234,34 +236,19 @@ struct WhitewaterSolver : INode {
             float m_liquid_sdf = openvdb::tools::BoxSampler::sample(liquid_sdf_axr, Liquid_sdf->worldToIndex(wcoord));
             if (m_liquid_sdf > dx) {
                 // spray
-                // you can use time-splitting to stablize the computation
-                m_vel += gravity * dt; // first step, explicity integrate gravity
-
-                //second step, semi-implicit integrate drag
-                // (v_np1 - v_n) / dt = c * length(v_tar - v_n) * (v_tar - v_np1)
-                vec3f v_target = vec3f(0, 0, 0);
-                vec3f m_vel2 = vec3f(m_vel.x(), m_vel.y(), m_vel.z());
-                float v_diff = zeno::distance(v_target, m_vel2);
-                float denom = 1 + dt * air_drag * v_diff;
-                m_vel = vec_to_other<openvdb::Vec3f>((dt * air_drag * v_diff * v_target + m_vel2) / denom);
+                m_vel += gravity * dt - air_drag * m_vel;
                 par_life[idx] -= 0.5f * dt;
             } else if (m_liquid_sdf < -0.3f * dx) {
                 // bubble
                 auto m_liquid_vel =
                     openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
-
-                m_vel += -buoyancy * gravity * dt; // + air_drag * (m_liquid_vel - m_vel);
-                //again, the time splitting technique, well, with none-zero target velocity
-                vec3f v_target = vec3f(m_liquid_vel.x(), m_liquid_vel.y(), m_liquid_vel.z());
-                vec3f m_vel2 = vec3f(m_vel.x(), m_vel.y(), m_vel.z());
-                float v_diff = zeno::distance(v_target, m_vel2);
-                float denom = 1 + dt * air_drag * v_diff;
-                m_vel = vec_to_other<openvdb::Vec3f>((dt * air_drag * v_diff * v_target + m_vel2) / denom);
-
+                m_vel += -buoyancy * gravity * dt + bubble_drag * (m_liquid_vel - m_vel);
                 par_life[idx] -= 0.5f * dt;
             } else {
                 // foam
-                m_vel = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
+                auto m_liquid_vel =
+                    openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
+                m_vel += foam_drag * (m_liquid_vel - m_vel);
                 par_life[idx] -= dt;
             }
             auto wcoord_new = wcoord + dt * m_vel;
@@ -288,7 +275,9 @@ ZENDEFNODE(WhitewaterSolver, {/* inputs: */
                                "SolidSDF",
                                "Velocity",
                                {"vec3f", "Gravity", "0, -9.8, 0"},
-                               {"float", "AirDrag", "0.1"},
+                               {"float", "AirDrag", "0.05"},
+                               {"float", "FoamDrag", "0.9"},
+                               {"float", "BubbleDrag", "0.1"},
                                {"float", "Buoyancy", "10"}},
                               /* outputs: */
                               {"Primitive"},
