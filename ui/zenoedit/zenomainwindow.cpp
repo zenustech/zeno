@@ -814,19 +814,6 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
-    QDir dir(recInfo.record_path);
-    ZASSERT_EXIT(dir.exists());
-    dir.mkdir("P"); //optix worker need this directory
-    {
-        QString dir_path = recInfo.record_path + "/P/";
-        QDir qDir = QDir(dir_path);
-        qDir.setNameFilters(QStringList("*.jpg"));
-        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-        for (auto i = 0; i < fileList.size(); i++) {
-            qDir.remove(fileList.at(i));
-        }
-    }
-
     if (!param.sPixel.isEmpty())
     {
         QStringList tmpsPix = param.sPixel.split("x");
