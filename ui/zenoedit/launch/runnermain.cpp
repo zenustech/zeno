@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <filesystem>
 #include <zeno/utils/log.h>
 #include <zeno/utils/Timer.h>
 #include <zeno/core/Graph.h>
@@ -78,7 +79,7 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 #endif
 }
 
-static int runner_start(std::string const &progJson, int sessionid, char* cachedir, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
+static int runner_start(std::string const &progJson, int sessionid, bool bZenCache, int cachenum, std::string cachedir, bool cacheautorm, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
     zeno::log_trace("runner got program JSON: {}", progJson);
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
     zeno::scope_exit sp([=]() { std::cout.flush(); });
@@ -91,6 +92,13 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
     session->globalStatus->clearState();
     auto graph = session->createGraph();
 
+    if (bZenCache) {
+        zeno::getSession().globalComm->frameCache(cachedir, cachenum);
+    }
+    else {
+        zeno::getSession().globalComm->frameCache("", 0);
+    }
+
     auto onfail = [&] {
         auto statJson = session->globalStatus->toJson();
         send_packet("{\"action\":\"reportStatus\"}", statJson.data(), statJson.size());
@@ -102,8 +110,6 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
     }, *session->globalStatus);
     if (session->globalStatus->failed())
         return onfail();
-
-    bool bZenCache = initZenCache(cachedir);
 
     std::vector<char> buffer;
 
@@ -159,12 +165,52 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
 }
 
 }
+int runner_main(const QCoreApplication& app);
+int runner_main(const QCoreApplication& app) {
+    //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
 
-int runner_main(int sessionid, int port, char *cachedir, bool cacheLightCameraOnly, bool cacheMaterialOnly);
-int runner_main(int sessionid, int port, char *cachedir, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
 #ifdef __linux__
     stderr = freopen("/dev/stdout", "w", stderr);
 #endif
+    int sessionid = 0;
+    int port = -1;
+    bool enablecache = true;
+    int cachenum = 1;
+    std::string cachedir = "";
+    bool cacheLightCameraOnly = false;
+    bool cacheMaterialOnly = false;
+    bool cacheautorm = false;
+    QCommandLineParser cmdParser;
+    cmdParser.addHelpOption();
+    cmdParser.addOptions({
+        {"runner", "runner", "runner"},
+        {"sessionid", "sessionid", "sessionid"},
+        {"port", "port", "tcp server port"},
+        {"enablecache", "enablecache", "enable zencache"},
+        {"cachenum", "cachenum", "max cached frames"},
+        {"cachedir", "cachedir", "cache dir for this run"},
+        {"cacheLightCameraOnly", "cacheLightCameraOnly", "only cache light and camera object"},
+        {"cacheMaterialOnly", "cacheMaterialOnly", "only cache material object"},
+        {"cacheautorm", "cacheautoremove", "remove cache after render"},
+        });
+    cmdParser.process(app);
+    if (cmdParser.isSet("sessionid"))
+        sessionid = cmdParser.value("sessionid").toInt();
+    if (cmdParser.isSet("port"))
+        port = cmdParser.value("port").toInt();
+    if (cmdParser.isSet("enablecache"))
+        enablecache = cmdParser.value("enablecache").toInt();
+    if (cmdParser.isSet("cachenum"))
+        cachenum = cmdParser.value("cachenum").toInt();
+    if (cmdParser.isSet("cachedir"))
+        cachedir = cmdParser.value("cachedir").toStdString();
+    if (cmdParser.isSet("cacheLightCameraOnly"))
+        cacheLightCameraOnly = cmdParser.value("cacheLightCameraOnly").toInt();
+    if (cmdParser.isSet("cacheMaterialOnly"))
+        cacheMaterialOnly = cmdParser.value("cacheMaterialOnly").toInt();
+    if (cmdParser.isSet("cacheautorm"))
+        cacheautorm = cmdParser.value("cacheautorm").toInt();
+
     std::cerr.rdbuf(std::cout.rdbuf());
     std::clog.rdbuf(std::cout.rdbuf());
 
@@ -200,6 +246,6 @@ int runner_main(int sessionid, int port, char *cachedir, bool cacheLightCameraOn
     }(), 0);
 #endif
 
-    return runner_start(progJson, sessionid, cachedir, cacheLightCameraOnly, cacheMaterialOnly);
+    return runner_start(progJson, sessionid, enablecache, cachenum, cachedir, cacheautorm, cacheLightCameraOnly, cacheMaterialOnly);
 }
 #endif

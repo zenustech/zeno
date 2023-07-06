@@ -12,6 +12,8 @@
 #include "zenoapplication.h"
 #include "cache/zcachemgr.h"
 #include "zenomainwindow.h"
+#include <zeno/zeno.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 ZTcpServer::ZTcpServer(QObject *parent)
@@ -48,7 +50,7 @@ void ZTcpServer::init(const QHostAddress& address)
     connect(m_tcpServer, SIGNAL(newConnection()), this, SLOT(onNewConnection()));
 }
 
-void ZTcpServer::startProc(const std::string& progJson,  bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
 {
     ZASSERT_EXIT(m_tcpServer);
     if (m_proc && m_proc->isOpen())
@@ -65,39 +67,42 @@ void ZTcpServer::startProc(const std::string& progJson,  bool applyLightAndCamer
     m_proc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
     m_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
     int sessionid = zeno::getSession().globalState->sessionid;
-    QSettings settings(zsCompanyName, zsEditor);
-    bool bEnableCache = settings.value("zencache-enable").toBool();
-    bool bAutoRemove = settings.value("zencache-autoremove", true).toBool();
+
     QString finalPath;
-    if (bEnableCache)
+    if (param.enableCache)
     {
-        const QString& cacheRootdir = settings.value("zencachedir").toString();
+        const QString& cacheRootdir = param.cacheDir;
         QDir dirCacheRoot(cacheRootdir);
-        if (!QFileInfo(cacheRootdir).isDir() && !bAutoRemove)
+        if (!QFileInfo(cacheRootdir).isDir() && !param.tempDir)
         {
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
         }
-
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
-        bool ret = mgr->initCacheDir(bAutoRemove, cacheRootdir);
+        bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir);
         ZASSERT_EXIT(ret);
         finalPath = mgr->cachePath();
-        int cnum = settings.value("zencachenum").toInt();
+        int cnum = param.cacheNum;
         viewDecodeSetFrameCache(finalPath.toStdString().c_str(), cnum);
     }
     else
     {
         viewDecodeSetFrameCache("", 0);
     }
+    zeno::getSession().globalComm->setTempDirEnable(param.tempDir);
+    zeno::getSession().globalComm->setCacheAutoRmEnable(param.autoRmCurcache);
 
     QStringList args = {
-        "-runner", QString::number(sessionid),
-        "-port", QString::number(m_port),
-        "-cachedir", finalPath,
-        "-cacheLightCameraOnly", QString::number(applyLightAndCameraOnly),
-        "-cacheMaterialOnly", QString::number(applyMaterialOnly),
+        "--runner", "1",
+        "--sessionid", QString::number(sessionid),
+        "--port", QString::number(m_port),
+        "--enablecache", QString::number(param.enableCache && QFileInfo(finalPath).isDir() && param.cacheNum),
+        "--cachenum", QString::number(param.cacheNum),
+        "--cachedir", finalPath,
+        "--cacheLightCameraOnly", QString::number(param.applyLightAndCameraOnly),
+        "--cacheMaterialOnly", QString::number(param.applyMaterialOnly),
+        "--cacheautorm", QString::number(param.autoRmCurcache),
     };
 
     m_proc->start(QCoreApplication::applicationFilePath(), args);

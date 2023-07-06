@@ -28,6 +28,9 @@ struct GlobalComm {
     int maxCachedFrames = 1;
     std::string cacheFramePath;
 
+    bool isTempDir = false;
+    bool cacheautorm = false;
+
     ZENO_API void frameCache(std::string const &path, int gcmax);
     ZENO_API void initFrameRange(int beg, int end);
     ZENO_API void newFrame();
@@ -41,6 +44,11 @@ struct GlobalComm {
     ZENO_API ViewObjects const *getViewObjects(const int frameid);
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool isFrameCompleted(int frameid) const;
+
+    ZENO_API void setTempDirEnable(bool enable);
+    ZENO_API bool tempDirEnabled();
+    ZENO_API void setCacheAutoRmEnable(bool enable);
+    ZENO_API bool cacheAutoRmEnabled();
 };
 
 }
