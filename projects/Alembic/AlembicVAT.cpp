@@ -124,12 +124,18 @@ void writeObjFile(
     std::vector<std::pair<float, float>> vatUvMap;
     for (size_t i = 0; i < vertices.size(); i++) {
         float u1 = (float(i % vatWidth)) / (float)vatWidth;
-        float u2 = (float(i + 1 % vatWidth)) / (float)vatWidth;
+        float u2 = (float((i + 1) % vatWidth)) / (float)vatWidth;
+        if (u1 > 1.0f) {
+            u1 -= 1.0f;
+            u2 -= 1.0f;
+        }
         if (u1 > u2) {
             u2 = 1.0f;
         }
-        vatUvMap.emplace_back((u1 + u2) * 0.5f, std::floor((float)i / (float)vatWidth) / (float)vatHeight);
-        fprintf(fp, "vn %f %f %f\n", vatUvMap[i].first, vatUvMap[i].second, 0.0f);
+        float v1 = std::floor((float)i / (float)vatWidth) / (float)vatHeight;
+        float v2 = std::floor(float(i + vatWidth) / (float)vatWidth) / (float)vatHeight;
+        vatUvMap.emplace_back((u1 + u2) * 0.5f, std::min((v1 + v2) * 0.5f, 1.0f));
+        fprintf(fp, "vn %.10f %.10f %.10f\n", vatUvMap[i].first, vatUvMap[i].second, 0.0f);
     }
 
     auto& uv0 = triangle.attr<zeno::vec3f>("uv0");
@@ -141,9 +147,9 @@ void writeObjFile(
         const int32_t v0 = ind[0], v1 = ind[1], v2 = ind[2];
         const int32_t ui0 = count * 3 + 1, ui1 = count * 3 + 2, ui2 = count * 3 + 3;
 
-        fprintf(fp, "vt %f %f\n", uv0[count][0], uv0[count][1]);
-        fprintf(fp, "vt %f %f\n", uv1[count][0], uv1[count][1]);
-        fprintf(fp, "vt %f %f\n", uv2[count][0], uv2[count][1]);
+        fprintf(fp, "vt %.10f %.10f\n", uv0[count][0], uv0[count][1]);
+        fprintf(fp, "vt %.10f %.10f\n", uv1[count][0], uv1[count][1]);
+        fprintf(fp, "vt %.10f %.10f\n", uv2[count][0], uv2[count][1]);
         fprintf(fp, "f %d/%d/%d %d/%d/%d %d/%d/%d\n",
             v0 + 1, ui0, v0 + 1,
             v1 + 1, ui1, v1 + 1,
@@ -159,8 +165,8 @@ struct AlembicToSoftBodyVAT: public INode {
     bool read_done = false;
 
     virtual void apply() override {
-        int frameStart = get_input2<int>("frameStart:");
-        int frameEnd = get_input2<int>("frameEnd:");
+        int frameStart = get_input2<int>("frameStart");
+        int frameEnd = get_input2<int>("frameEnd");
         if (frameEnd < frameStart) {
             std::swap(frameEnd, frameStart);
         }
@@ -169,8 +175,8 @@ struct AlembicToSoftBodyVAT: public INode {
             zeno::log_error("Invalid frame range: {} - {}", frameStart, frameEnd);
             return;
         }
-        bool use_xform = get_input2<bool>("useXForm:");
-        std::string writePath = get_input2<std::string>("outputPath:");
+        bool use_xform = get_input2<bool>("useXForm");
+        std::string writePath = get_input2<std::string>("outputPath");
         std::string path = get_input2<std::string>("path");
         size_t vatWidth;
         int32_t rowsPerFrame;
@@ -201,7 +207,7 @@ struct AlembicToSoftBodyVAT: public INode {
                     });
                 }
                 auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
-                if (get_input2<bool>("flipFrontBack:")) {
+                if (get_input2<bool>("flipFrontBack")) {
                     flipFrontBack(mergedPrim);
                 }
                 zeno::primTriangulate(mergedPrim.get());
@@ -272,17 +278,206 @@ struct AlembicToSoftBodyVAT: public INode {
 
 ZENDEFNODE(AlembicToSoftBodyVAT, {
     {
-        {"readpath", "path"},
+      {"readpath", "path"},
+      {"bool", "useXForm", "1"},
+      {"bool", "flipFrontBack", "1"},
+      {"int", "frameEnd", "1"},
+      {"int", "frameStart", "0"},
+      {"writepath", "outputPath", ""},
     },
     { {"primitive"} },
     {
-        {"bool", "useXForm", "1"},
-        {"bool", "flipFrontBack", "1"},
-        {"int", "frameEnd", "1"},
-        {"int", "frameStart", "0"},
-        {"writepath", "outputPath", ""},
     },
     {"alembic", "primitive"},
+});
+
+void writeDynamicRemeshObjFile(
+  const char *path,
+  int32_t frameNum,
+  const std::pair<zeno::vec3f, zeno::vec3f>& bbox,
+  size_t triNum
+) {
+
+  FILE *fp = fopen(path, "w");
+  if (!fp) {
+    perror(path);
+    abort();
+  }
+
+  fprintf(fp, "# Zeno generated from an alembic file.\n");
+
+  const size_t vertNum = triNum * 3;
+
+  size_t vatWidth = std::min(vertNum, (size_t)8192);
+  auto rowsPerFrame = static_cast<int32_t>(std::ceil((float)vertNum / (float)vatWidth));
+  size_t vatHeight = rowsPerFrame * frameNum;
+  fprintf(fp, "# metadata VATWidth %d\n", vatWidth);
+  fprintf(fp, "# metadata RowsPerFrame %d\n", rowsPerFrame);
+  fprintf(fp, "# metadata FrameNum %d\n", frameNum);
+  fprintf(fp, "# metadata VATHeight %d\n", vatHeight);
+  fprintf(fp, "# metadata BMin %f %f %f\n", bbox.first[0], bbox.first[1], bbox.first[2]);
+  fprintf(fp, "# metadata BMax %f %f %f\n", bbox.second[0], bbox.second[1], bbox.second[2]);
+
+  constexpr float scale = 0.01f;
+
+  const float center = float(triNum) * scale * 0.5f;
+
+  for (size_t idx = 0; idx < triNum; ++idx) {
+    float x = float(idx) * scale - center;
+    size_t idxBase = idx * 3 + 1;
+
+
+    auto outputUV = [&](size_t vertId) {
+      float u1 = float(vertId % vatWidth) / float(vatWidth);
+      float u2 = float((vertId + 1) % vatWidth) / float(vatWidth);
+      if (u1 > 1.0f) {
+        u1 -= 1.0f;
+        u2 -= 1.0f;
+      }
+      if (u1 > u2) u2 = 1.0f;
+      float u = (u1 + u2) * 0.5f;
+      float v1 = std::floor((float)vertId / (float)vatWidth) / (float)vatHeight;
+      float v2 = std::floor(float(vertId + vatWidth) / (float)vatWidth) / (float)vatHeight;
+      float v = std::min((v1 + v2) * 0.5f, 1.0f);
+
+      fprintf(fp, "vt %.10f %.10f\n", u, v);
+    };
+
+    outputUV(idxBase - 1);
+    outputUV(idxBase);
+    outputUV(idxBase + 1);
+
+    fprintf(fp, "v %f %f %f\n", x, x, x);
+    fprintf(fp, "v %f %f %f\n", x + 0.25, x, x + 0.25);
+    fprintf(fp, "v %f %f %f\n", x - 0.25, x, x - 0.25);
+    fprintf(fp, "f %d/%d %d/%d %d/%d\n", idxBase, idxBase, idxBase + 1, idxBase + 1, idxBase + 2, idxBase + 2);
+  }
+  fclose(fp);
+}
+
+struct AlembicToDynamicRemeshVAT : public INode {
+    Alembic::Abc::v12::IArchive archive;
+    bool read_done = false;
+
+    void apply() override {
+      int frameStart = get_input2<int>("frameStart");
+      int frameEnd = get_input2<int>("frameEnd");
+      if (frameEnd < frameStart) {
+        std::swap(frameEnd, frameStart);
+      }
+      int frameNum = frameEnd - frameStart;
+      if (frameNum <= 0) {
+        zeno::log_error("Invalid frame range: {} - {}", frameStart, frameEnd);
+        return;
+      }
+      bool use_xform = get_input2<bool>("useXForm");
+      std::string writePath = get_input2<std::string>("outputPath");
+      std::string path = get_input2<std::string>("path");
+      bool shouldFlipFrontBack = get_input2<bool>("flipFrontBack");
+
+      std::vector<float> pos_f32;
+      std::vector<float> nrm_f32;
+
+      std::vector<vec3f> temp_bboxs;
+
+      if (!read_done) {
+        archive = readABC(path);
+      }
+
+      auto obj = archive.getTop();
+      std::shared_ptr<ListObject> frameList = std::make_shared<ListObject>();
+      size_t maxTriNum = 0;
+      for (int32_t idx = frameStart; idx < frameEnd; ++idx) {
+        const int32_t frameIndex = frameEnd - idx - 1;
+        auto abctree = std::make_shared<ABCTree>();
+        auto prims = std::make_shared<zeno::ListObject>();
+        traverseABC(obj, *abctree, idx, read_done);
+        if (use_xform) {
+          prims = get_xformed_prims(abctree);
+        } else {
+          abctree->visitPrims([&] (auto const &p) {
+            auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
+            prims->arr.push_back(np);
+          });
+        }
+        auto mergedPrim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
+        if (shouldFlipFrontBack) {
+          flipFrontBack(mergedPrim);
+        }
+        zeno::primTriangulate(mergedPrim.get());
+        maxTriNum = zeno::max(mergedPrim->tris.size(), maxTriNum);
+        frameList->arr.push_back(mergedPrim);
+        auto bbox = parallel_reduce_minmax(mergedPrim->verts.begin(), mergedPrim->verts.end());
+        temp_bboxs.push_back(bbox.first);
+        temp_bboxs.push_back(bbox.second);
+        set_output("primitive", mergedPrim);
+      }
+      auto bbox = parallel_reduce_minmax(temp_bboxs.begin(), temp_bboxs.end());
+      read_done = true;
+
+      writeDynamicRemeshObjFile(writePath.c_str(), frameNum, bbox, maxTriNum);
+
+      const size_t vertNum = maxTriNum * 3;
+      size_t vatWidth = std::min(vertNum, (size_t)8192);
+      auto rowsPerFrame = static_cast<int32_t>(std::ceil((float)vertNum / (float)vatWidth));
+      size_t vatHeight = rowsPerFrame * frameNum;
+      size_t spaceToAlign = -1;
+
+      for (int32_t idx = frameStart; idx < frameEnd; ++idx) {
+        zeno::log_info("Processing frame {} / {} ...", idx + 1, frameEnd);
+        const int32_t frameIndex = idx - frameStart;
+        auto mergedPrim = safe_dynamic_cast<zeno::PrimitiveObject>(frameList->arr[frameIndex]);
+        spaceToAlign = vatWidth * rowsPerFrame - mergedPrim->tris.size() * 3;
+        zeno::primCalcNormal(mergedPrim.get());
+        auto& nrm_ref = mergedPrim->verts.attr<vec3f>("nrm");
+        for (auto& trig : mergedPrim->tris) {
+          for (uint8_t i = 0; i < 3; ++i) {
+            auto vec = normalized_vec3f(mergedPrim->verts[trig[i]], bbox.first, bbox.second);
+            pos_f32.push_back(vec[0]);
+            pos_f32.push_back(vec[1]);
+            pos_f32.push_back(vec[2]);
+            auto& nrm = nrm_ref[trig[i]];
+            nrm_f32.push_back(nrm[0]);
+            nrm_f32.push_back(nrm[1]);
+            nrm_f32.push_back(nrm[2]);
+          }
+        }
+        for (size_t idx = 0; idx < spaceToAlign; ++idx) {
+          pos_f32.push_back(0.0f);
+          pos_f32.push_back(0.0f);
+          pos_f32.push_back(0.0f);
+          nrm_f32.push_back(0.0f);
+          nrm_f32.push_back(0.0f);
+          nrm_f32.push_back(0.0f);
+        }
+      }
+
+      std::string posPath = writePath + "-position-texture.exr";
+      if (std::filesystem::exists(posPath)) {
+        std::filesystem::remove(posPath);
+      }
+      std::string nrmPath = writePath + "-normal-texture.exr";
+      if (std::filesystem::exists(nrmPath)) {
+        std::filesystem::remove(nrmPath);
+      }
+      SaveEXR(pos_f32.data(), vatWidth, vatHeight, posPath.c_str());
+      SaveEXR(nrm_f32.data(), vatWidth, vatHeight, nrmPath.c_str());
+    }
+
+};
+
+ZENDEFNODE(AlembicToDynamicRemeshVAT, {
+  {
+    {"readpath", "path"},
+    {"bool", "useXForm", "1"},
+    {"bool", "flipFrontBack", "1"},
+    {"int", "frameEnd", "1"},
+    {"int", "frameStart", "0"},
+    {"writepath", "outputPath", ""},
+  },
+  { {"primitive"} },
+  {},
+  {"alembic", "primitive"},
 });
 
 }

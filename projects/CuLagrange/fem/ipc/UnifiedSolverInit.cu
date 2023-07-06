@@ -501,6 +501,7 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
             auto axis = prims.back().getPrincipalAxis();
             weightedAxis[axis] += prims.back().getVerts().size();
         }
+#if ENABLE_STQ
         principalAxis = 0;
         T extent = bv._max[0] - bv._min[0];
         for (int d = 1; d != 3; ++d)
@@ -508,6 +509,7 @@ UnifiedIPCSystem::UnifiedIPCSystem(std::vector<ZenoParticles *> zsprims,
                 extent = ext;
                 principalAxis = d;
             }
+#endif
     }
     numDofs = coOffset;
     if (hasBoundary())
@@ -766,29 +768,37 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.build(pol, bvs);
+#if ENABLE_STQ
         stBvs.build(pol, bvs, principalAxis);
+#endif
 
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
         zs::CppTimer timer;
-        timer.tick();
+        // timer.tick();
         seBvh.build(pol, bvs);
-        timer.tock("sebvh build");
+        // timer.tock("sebvh build");
 
-        timer.tick();
+#if ENABLE_STQ
+        // timer.tick();
         seBvs.build(pol, bvs, principalAxis);
-        timer.tock("sebvs build");
+        // timer.tock("sebvs build");
+#endif
     }
     if (hasBoundary()) {
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
         bouStBvh.build(pol, bvs);
+#if ENABLE_STQ
         bouStBvs.build(pol, bvs, principalAxis);
+#endif
 
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.build(pol, bvs);
+#if ENABLE_STQ
         bouSeBvs.build(pol, bvs, principalAxis);
+#endif
     }
 
     /// @note update whole bounding box, but the first one may be done during the initial morton code ordering
