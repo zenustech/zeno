@@ -643,7 +643,7 @@ struct GraphicsManager {
         auto ins = graphics.insertPass();
         objOrder.clear();
         bool changed = false;
-        int idx = 0;
+        size_t idx = 0;
         for (auto const &[key, obj] : objs) {
             objOrder[key] = idx;
             idx++;
@@ -1100,8 +1100,10 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             }
         
             xinxinoptix::optixupdateend();
+            std::cout<<"optix update End\n";
             xinxinoptix::cleanupSpheres();
-                
+            std::cout<<"cleanupSpheres\n";
+
             matNeedUpdate = false;
             meshNeedUpdate = false;
             staticNeedUpdate = false;

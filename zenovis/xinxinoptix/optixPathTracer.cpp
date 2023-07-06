@@ -576,25 +576,33 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.num_lights = g_lights.size();
     state.params.denoise = denoise;
+    for(int j=0;j<4;j++){
+      for(int i=0;i<4;i++){
+        state.params.tile_i = i;
+        state.params.tile_j = j;
+        state.params.tile_w = state.params.windowSpace.x/4 + 1;
+        state.params.tile_h = state.params.windowSpace.y/4 + 1;
 
-    CUDA_SYNC_CHECK();
-    CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
-                &state.params, sizeof( Params ),
-                cudaMemcpyHostToDevice
-                ) );
+        CUDA_SYNC_CHECK();
+        CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
+                    &state.params, sizeof( Params ),
+                    cudaMemcpyHostToDevice
+                    ) );
 
-    CUDA_SYNC_CHECK();
-    OPTIX_CHECK( optixLaunch(
-                state.pipeline,
-                0,
-                (CUdeviceptr)state.d_params2,
-                sizeof( Params ),
-                &state.sbt,
-                state.params.width,   // launch width
-                state.params.height,  // launch height
-                1                     // launch depth
-                ) );
+        CUDA_SYNC_CHECK();
 
+        OPTIX_CHECK( optixLaunch(
+                    state.pipeline,
+                    0,
+                    (CUdeviceptr)state.d_params2,
+                    sizeof( Params ),
+                    &state.sbt,
+                    state.params.tile_w,   // launch width
+                    state.params.tile_h,  // launch height
+                    1                     // launch depth
+                    ) );
+      }
+    }
     output_buffer.unmap();
     (*output_buffer_diffuse   ).unmap();
     (*output_buffer_specular  ).unmap();
@@ -965,14 +973,16 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         ins.visibilityMask = DefaultMatMask;
     }
     
+
     std::vector<int> meshIdxs(num_instances);
+
 
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
-    unsigned int sbt_offset = 0;
+    size_t sbt_offset = 0;
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
     {
         auto  mesh = m_meshes[i];
@@ -1934,7 +1944,7 @@ void CopyInstMeshToGlobalMesh()
             auto &lightMark = instData.lightMark;
             auto &meshPieces = instData.meshPieces;
 
-            for (int i = 0; i < vertices.size(); ++i)
+            for (size_t i = 0; i < vertices.size(); ++i)
             {
                 g_vertices[vertsOffset + i] = vertices[i];
                 g_clr[vertsOffset + i] = clr[i];
@@ -1942,12 +1952,12 @@ void CopyInstMeshToGlobalMesh()
                 g_uv[vertsOffset + i] = uv[i];
                 g_tan[vertsOffset + i] = tan[i];
             }
-            for (int i = 0; i < vertices.size() / 3; ++i)
+            for (size_t i = 0; i < vertices.size() / 3; ++i)
             {
                 g_mat_indices[vertsOffset / 3 + i] = mat_indices[i];
                 g_lightMark[vertsOffset / 3 + i] = lightMark[i];
             }
-            for (int i = 0; i < meshPieces.size(); ++i)
+            for (size_t i = 0; i < meshPieces.size(); ++i)
             {
                 g_meshPieces[meshPiecesOffset + i] = meshPieces[i];
             }
@@ -3470,9 +3480,9 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 //    updateState( *output_buffer_specular, state.params);
 //    updateState( *output_buffer_transmit, state.params);
 //    updateState( *output_buffer_background, state.params);
-    const int max_samples_once = 16;
-
+    const int max_samples_once = 1;
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
+
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( *output_buffer_o, state, denoise);
         state.params.subframe_index++;
