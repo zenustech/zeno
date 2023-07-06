@@ -180,7 +180,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     const std::vector<const char*> compilerOptions {
         "-std=c++17", "-default-device", //"-extra-device-vectorization"
   #if !defined( NDEBUG )      
-        "-lineinfo", "-G"//"--dopt=on",
+        //"-lineinfo", "-G"//"--dopt=on",
   #endif
         //"--gpu-architecture=compute_60",
         //"--relocatable-device-code=true"

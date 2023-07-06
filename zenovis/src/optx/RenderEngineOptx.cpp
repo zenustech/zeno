@@ -762,6 +762,8 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         "volume.cu", false, {}, {}, {}
     };
 
+    std::set<std::string> cachedMeshesMaterials, cachedSphereMaterials;
+
     void ensure_shadtmpl(ShaderTemplateInfo &_template) 
     {
         if (_template.ensured) return;
@@ -931,9 +933,11 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 }
             }
 
-            auto MeshesMaterials = xinxinoptix::uniqueMatsForMesh();
-            auto SphereMaterials = xinxinoptix::uniqueMatsForSphere();
-            
+            if ( matNeedUpdate && (staticNeedUpdate || meshNeedUpdate) ) {
+                cachedMeshesMaterials = xinxinoptix::uniqueMatsForMesh();
+                cachedSphereMaterials = xinxinoptix::uniqueMatsForSphere();
+            } // preserve material names for materials-only updating case 
+
             //for (auto const &[key, obj]: graphicsMan->graphics)
             for(auto const &[matkey, mtldet] : matMap)
             {
@@ -1020,7 +1024,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                         _volume_shader_list.push_back(shaderP);
                     } else {
 
-                        if (MeshesMaterials.count(mtldet->mtlidkey) > 0) {
+                        if (cachedMeshesMaterials.count(mtldet->mtlidkey) > 0) {
                           meshMatLUT.insert(
                               {mtldet->mtlidkey, (int)_mesh_shader_list.size()});
 
@@ -1028,7 +1032,7 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                           _mesh_shader_list.push_back(shaderP);
                         }
 
-                        if (SphereMaterials.count(mtldet->mtlidkey) > 0) {
+                        if (cachedSphereMaterials.count(mtldet->mtlidkey) > 0) {
 
                             shaderP.mark = ShaderMaker::Sphere;
                             _sphere_shader_list.push_back(shaderP);
