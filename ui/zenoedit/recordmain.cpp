@@ -5,9 +5,10 @@
 #include "minimp3.h"
 #include <QApplication>
 #include "zenomainwindow.h"
-#include "settings/zsettings.h"
 #include "zeno/core/Session.h"
 #include "zeno/types/UserData.h"
+#include "launch/corelaunch.h"
+#include <zeno/utils/log.h>
 
 //#define DEBUG_DIRECTLY
 
@@ -100,40 +101,35 @@ int record_main(const QCoreApplication& app)
         param.configFilePath = cmdParser.value("configFilePath");
         zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
     }
+    LAUNCH_PARAM launchparam;
     if (cmdParser.isSet("cachePath")) {
         QString text = cmdParser.value("cachePath");
         text.replace('\\', '/');
-        QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencachedir", text);
-        settings.setValue("zencache-enable", true);
-        settings.setValue("zencache-autoremove", false);
+        launchparam.cacheDir = text;
+        launchparam.enableCache = true;
+        launchparam.tempDir = false;
         if (!QDir(text).exists()) {
             QDir().mkdir(text);
         }
         if (cmdParser.isSet("cacheautorm"))
         {
-            bool autorm = cmdParser.value("cacheautorm").toInt();
-            QSettings settings(zsCompanyName, zsEditor);
-            settings.setValue("zencache-rmcurcache", autorm);
+            launchparam.autoRmCurcache = cmdParser.value("cacheautorm").toInt();
         }
         else {
-            QSettings settings(zsCompanyName, zsEditor);
-            settings.setValue("zencache-rmcurcache", false);
+            launchparam.autoRmCurcache = true;
         }
         if (cmdParser.isSet("cacheNum")) {
-            QString text2 = cmdParser.value("cacheNum");
-            QSettings settings(zsCompanyName, zsEditor);
-            settings.setValue("zencachenum", text2);
+            launchparam.cacheNum = cmdParser.value("cacheNum").toInt();
         }
         else {
-            QSettings settings(zsCompanyName, zsEditor);
-            settings.setValue("zencachenum", 1);
+            launchparam.cacheNum = 1;
         }
     }
     else {
-        QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencache-enable", true);
-        settings.setValue("zencache-autoremove", true);
+        zeno::log_info("cachePath missed, process exited with {}", -1);
+        return -1;
+        //launchparam.enableCache = true;
+        //launchparam.tempDir = true;
     }
     if (cmdParser.isSet("exitWhenRecordFinish"))
         param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";
@@ -173,7 +169,7 @@ int record_main(const QCoreApplication& app)
         tempWindow.solidRunRender(param);
     }
     else {
-        tempWindow.optixRunRender(param);
+        tempWindow.optixRunRender(param, launchparam);
     }
     return app.exec();
 }

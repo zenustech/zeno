@@ -6,7 +6,6 @@
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/GenericObject.h>
-#include "launch/corelaunch.h"
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
 #include "dock/ztabdockwidget.h"
@@ -775,7 +774,13 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         IGraphsModel* pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, beginFrame, endFrame, applyLightAndCameraOnly, applyMaterialOnly);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = beginFrame;
+        launchParam.endFrame = endFrame;
+        launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
+        launchParam.applyMaterialOnly = applyMaterialOnly;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     }
 
     for (auto view : views)
@@ -799,7 +804,7 @@ DisplayWidget* ZenoMainWindow::getOnlyViewport() const
     return pView;
 }
 
-void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
+void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchparam)
 {
     VideoRecInfo recInfo;
     recInfo.bitrate = param.iBitrate;
@@ -877,7 +882,9 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     IGraphsModel* pModel = pGraphsMgr->currentModel();
     ZASSERT_EXIT(pModel);
 
-    launchProgram(pModel, recInfo.frameRange.first, recInfo.frameRange.second, false, false);
+    launchparam.beginFrame = recInfo.frameRange.first;
+    launchparam.endFrame = recInfo.frameRange.second;
+    launchProgram(pModel, launchparam);
 
     DisplayWidget* pViewport = getOnlyViewport();
     ZASSERT_EXIT(pViewport);
