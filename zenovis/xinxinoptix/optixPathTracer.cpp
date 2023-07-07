@@ -3391,6 +3391,7 @@ void *optixgetimg_extra(std::string name) {
 }
 
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
+    bool imageRendered = false;
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
@@ -3404,6 +3405,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 //    updateState( *output_buffer_specular, state.params);
 //    updateState( *output_buffer_transmit, state.params);
 //    updateState( *output_buffer_background, state.params);
+
     const int max_samples_once = 1;
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
@@ -3411,6 +3413,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         launchSubframe( *output_buffer_o, state, denoise);
         state.params.subframe_index++;
     }
+
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif
@@ -3445,6 +3448,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
             stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
         }
+        imageRendered = true;
     }
 }
 
@@ -3468,7 +3472,8 @@ void optixcleanup() {
     using namespace OptixUtil;
     try {
         CUDA_SYNC_CHECK();
-        cleanupSpheres();
+        //cleanupSpheres();
+        //sphereInstanceGroupAgentList.clear();
         cleanupState( state );
         rtMaterialShaders.clear();
 
