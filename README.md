@@ -37,6 +37,12 @@ Aside of its simulation Tools, ZENO provides necessary visualization nodes for u
 
 Integrated Toolbox, from volumetric geometry process tools (OpenVDB), to state-of-art, commercially robust, highly optimized physics solvers and visualization nodes, and various VFX and simulation solutions based on our nodes (provided by .zsg file in `graphs/` folder).
 
+## New
+
+Multi Importance Sampling
+
+<img src="https://zenustech.oss-cn-beijing.aliyuncs.com/Place-in-Github/202307/multi_importace_sampling.jpg" width="640" position="left">
+
 ## Gallery
 
 Fig.1 - Cloth simulation
