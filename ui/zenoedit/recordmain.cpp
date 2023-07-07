@@ -176,10 +176,58 @@ int record_main(const QCoreApplication& app)
     }
     else
     {
-        //start a calc proc and optix proc directly.
+        //start optix proc directly.
         VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
-        ZTcpServer* pServer = zenoApp->getServer();
-        pServer->startOptixProc();
+
+        //start a calc proc
+        launchparam.beginFrame = recInfo.frameRange.first;
+        launchparam.endFrame = recInfo.frameRange.second;
+
+        bool ret = AppHelper::openZsgAndRun(param, launchparam);
+        ZASSERT_EXIT(ret, -1); //will launch tcp server to start a calc proc.
+
+        //get the final zencache path, like `2023-07-06 18-29-14`
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+        QString zenCacheDir = mgr->cachePath();
+        ZASSERT_EXIT(!zenCacheDir.isEmpty(), -1);
+        QStringList args = QCoreApplication::arguments();
+
+        int idxCachePath = args.indexOf("--cachePath");
+        ZASSERT_EXIT(idxCachePath != -1 && idxCachePath + 1 < args.length(), -1);
+        args[idxCachePath + 1] = zenCacheDir;
+
+        ZASSERT_EXIT(args[1] == "--record", -1);
+        args[1] = "--optixcmd";
+        args[2] = QString::number(0);      //no need tcp
+        args.removeAt(0);
+
+        //start optix proc to render
+        QProcess* optixProc = new QProcess;
+
+        optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+        optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+        optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+        optixProc->start(QCoreApplication::applicationFilePath(), args);
+
+        if (!optixProc->waitForStarted(-1)) {
+            zeno::log_warn("optix process failed to get started, giving up");
+            return -1;
+        }
+
+        optixProc->closeWriteChannel();
+
+        //todo: should receive the msg from optixcmd proc, e.g. recordFinished msg.
+        QObject::connect(optixProc, &QProcess::readyRead, [=]() {
+            QByteArray arr = optixProc->readAll();
+            int j;
+            j = 0;
+        });
+
+        QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
+            int j;
+            j = 0;
+        });
     }
+    //idle
     return app.exec();
 }

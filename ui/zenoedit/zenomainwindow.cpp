@@ -4,7 +4,6 @@
 #include "dock/zenodockwidget.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zeno/extra/EventCallbacks.h>
-#include <zeno/core/Session.h>
 #include <zeno/types/GenericObject.h>
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
@@ -27,7 +26,6 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
-#include <zeno/core/Session.h>
 #include <zenovis/DrawOptions.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenoui/style/zenostyle.h>
@@ -52,9 +50,7 @@
 
 #include <zenomodel/include/zenomodel.h>
 #include <zeno/extra/GlobalStatus.h>
-#include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalState.h>
-#include <zeno/core/Session.h>
 #include "launch/viewdecode.h"
 
 const QString g_latest_layout = "LatestLayout";
@@ -68,7 +64,6 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
-    , m_spCacheMgr(nullptr)
     , m_bOnlyOptix(false)
 {
     liveTcpServer = new LiveTcpServer(this);
@@ -85,7 +80,6 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
         openFile(p);
     }
 //#endif
-    m_spCacheMgr = std::make_shared<ZCacheMgr>();
 }
 
 ZenoMainWindow::~ZenoMainWindow()
@@ -649,7 +643,7 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         m_pTimeline->togglePlayButton(false);
         int nFrame = m_pTimeline->value();
@@ -838,43 +832,11 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
         //viewWidget->setMinimumSize(1000, 680);
     }
 
-    bool ret = openFile(param.sZsgPath);
-    ZASSERT_EXIT(ret);
-    if (!param.subZsg.isEmpty())
-    {
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        for (auto subgFilepath : param.subZsg.split(","))
-        {
-            zenoApp->graphsManagment()->importGraph(subgFilepath);
-        }
-        QModelIndex mainGraphIdx = pGraphsModel->index("main");
-
-        for (QModelIndex subgIdx : pGraphsModel->subgraphsIndice())
-        {
-            QString subgName = subgIdx.data(ROLE_OBJNAME).toString();
-            if (subgName == "main" || subgName.isEmpty())
-            {
-                continue;
-            }
-            QString subgNodeId = NodesMgr::createNewNode(pGraphsModel, mainGraphIdx, subgName, QPointF(500, 500));
-            QModelIndex subgNodeIdx = pGraphsModel->index(subgNodeId, mainGraphIdx);
-            STATUS_UPDATE_INFO info;
-            info.role = ROLE_OPTIONS;
-            info.oldValue = subgNodeIdx.data(ROLE_OPTIONS).toInt();
-            info.newValue = subgNodeIdx.data(ROLE_OPTIONS).toInt() | OPT_VIEW;
-            pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
-        }
-    }
-    zeno::getSession().globalComm->clearState();
-
-    auto pGraphsMgr = zenoApp->graphsManagment();
-    ZASSERT_EXIT(pGraphsMgr);
-    IGraphsModel* pModel = pGraphsMgr->currentModel();
-    ZASSERT_EXIT(pModel);
-
     launchparam.beginFrame = recInfo.frameRange.first;
     launchparam.endFrame = recInfo.frameRange.second;
-    launchProgram(pModel, launchparam);
+
+    bool ret = AppHelper::openZsgAndRun(param, launchparam);
+    ZASSERT_EXIT(ret);
 
     DisplayWidget* pViewport = getOnlyViewport();
     ZASSERT_EXIT(pViewport);
@@ -1159,7 +1121,7 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
 
 void ZenoMainWindow::openFileDialog()
 {
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
     mgr->setNewCacheDir(true);
     QString filePath = getOpenFileByDialog();
@@ -1174,7 +1136,7 @@ void ZenoMainWindow::openFileDialog()
 }
 
 void ZenoMainWindow::onNewFile() {
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
     mgr->setNewCacheDir(true);
     if (saveQuit()) 
@@ -1186,11 +1148,6 @@ void ZenoMainWindow::onNewFile() {
 void ZenoMainWindow::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
-}
-
-std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
-{
-    return m_spCacheMgr;
 }
 
 void ZenoMainWindow::killOptix()
@@ -1310,7 +1267,7 @@ void ZenoMainWindow::dropEvent(QDropEvent* event)
         return;
     }
 
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
     mgr->setNewCacheDir(true);
 

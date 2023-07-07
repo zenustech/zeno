@@ -94,7 +94,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
         }
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir);
         ZASSERT_EXIT(ret);
@@ -294,14 +294,18 @@ void ZTcpServer::onProcPipeReady()
 
 void ZTcpServer::onDisconnect()
 {
-    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
-    for (auto pDisplay : views)
+    auto mainWin = zenoApp->getMainWindow();
+    if (mainWin)
     {
-        Zenovis* pZenovis = pDisplay->getZenoVis();
-        ZASSERT_EXIT(pZenovis);
-        auto session = pZenovis->getSession();
-        ZASSERT_EXIT(session);
-        session->set_curr_frameid(0);
+        QVector<DisplayWidget*> views = mainWin->viewports();
+        for (auto pDisplay : views)
+        {
+            Zenovis* pZenovis = pDisplay->getZenoVis();
+            ZASSERT_EXIT(pZenovis);
+            auto session = pZenovis->getSession();
+            ZASSERT_EXIT(session);
+            session->set_curr_frameid(0);
+        }
     }
 
     viewDecodeFinish();
@@ -338,8 +342,8 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
     viewDecodeFinish();
 
     auto mainWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(mainWin);
-    emit mainWin->runFinished();
+    if (mainWin)
+        emit mainWin->runFinished();
 }
 
 #endif

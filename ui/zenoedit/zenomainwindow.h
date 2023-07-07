@@ -48,7 +48,6 @@ public:
     DisplayWidget* getOptixWidget() const;
     ZenoGraphsEditor* getAnyEditor() const;
     void dispatchCommand(QAction* pAction, bool bTriggered);
-    std::shared_ptr<ZCacheMgr> cacheMgr() const;
 
     void doFrameUpdate(int frame);
     void sortRecentFile(QStringList &lst);
@@ -216,7 +215,6 @@ private:
     bool m_bOnlyOptix;          //isolate optix window.
     Ui::MainWindow* m_ui;
 
-    std::shared_ptr<ZCacheMgr> m_spCacheMgr;
     std::unique_ptr<QTcpSocket> optixClientSocket;
 };
 

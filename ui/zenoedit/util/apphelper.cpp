@@ -8,6 +8,8 @@
 #include "variantptr.h"
 #include "viewport/displaywidget.h"
 #include "common.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
@@ -252,4 +254,42 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
     param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
     param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
     param.autoRmCurcache = settings.value("zencache-rmcurcache").isValid() ? settings.value("zencache-rmcurcache").toBool() : false;
+}
+
+bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)
+{
+    auto pGraphs = zenoApp->graphsManagment();
+    IGraphsModel* pModel = pGraphs->openZsgFile(param.sZsgPath);
+    if (!pModel)
+        return false;
+
+    if (!param.subZsg.isEmpty())
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        for (auto subgFilepath : param.subZsg.split(","))
+        {
+            zenoApp->graphsManagment()->importGraph(subgFilepath);
+        }
+        QModelIndex mainGraphIdx = pGraphsModel->index("main");
+
+        for (QModelIndex subgIdx : pGraphsModel->subgraphsIndice())
+        {
+            QString subgName = subgIdx.data(ROLE_OBJNAME).toString();
+            if (subgName == "main" || subgName.isEmpty())
+            {
+                continue;
+            }
+            QString subgNodeId = NodesMgr::createNewNode(pGraphsModel, mainGraphIdx, subgName, QPointF(500, 500));
+            QModelIndex subgNodeIdx = pGraphsModel->index(subgNodeId, mainGraphIdx);
+            STATUS_UPDATE_INFO info;
+            info.role = ROLE_OPTIONS;
+            info.oldValue = subgNodeIdx.data(ROLE_OPTIONS).toInt();
+            info.newValue = subgNodeIdx.data(ROLE_OPTIONS).toInt() | OPT_VIEW;
+            pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
+        }
+    }
+    zeno::getSession().globalComm->clearState();
+
+    launchProgram(pModel, launchParam);
+    return true;
 }

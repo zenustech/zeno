@@ -342,7 +342,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     QFontMetrics fontMetrics(fnt);
     m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCamera")) + ZenoStyle::dpiScaled(30));
     QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
@@ -529,7 +529,7 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnRun, &ZToolMenuButton::clicked, this, [=]() {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);

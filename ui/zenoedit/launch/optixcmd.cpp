@@ -14,6 +14,9 @@
 #include "viewport/optixviewport.h"
 #include "util/apphelper.h"
 #include "common.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
+#include <zeno/extra/GlobalState.h>
 
 //#define DEBUG_DIRECTLY
 
@@ -21,11 +24,14 @@ int optixcmd(const QCoreApplication& app, int port)
 {
     ZENO_RECORD_RUN_INITPARAM param;
 #ifndef DEBUG_DIRECTLY
+
+    //clone from recordmain.
     QCommandLineParser cmdParser;
     cmdParser.addHelpOption();
     cmdParser.addOptions({
+        //name, description, value, default value.
         {"zsg", "zsg", "zsg file path"},
-        {"record", "record", "Record frame"},
+        {"optixcmd", "port", ""},
         {"frame", "frame", "frame count"},
         {"sframe", "sframe", "start frame"},
         {"sample", "sample", "sample count"},
@@ -49,8 +55,7 @@ int optixcmd(const QCoreApplication& app, int port)
 
     if (cmdParser.isSet("zsg"))
         param.sZsgPath = cmdParser.value("zsg");
-    if (cmdParser.isSet("record"))
-        param.bRecord = cmdParser.value("record").toLower() == "true";
+    param.bRecord = true;
     if (cmdParser.isSet("frame"))
         param.iFrame = cmdParser.value("frame").toInt();
     if (cmdParser.isSet("sframe"))
@@ -65,11 +70,12 @@ int optixcmd(const QCoreApplication& app, int port)
         param.configFilePath = cmdParser.value("configFilePath");
         zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
     }
+    QString cachePath;
     if (cmdParser.isSet("cachePath")) {
-        QString text = cmdParser.value("cachePath");
-        text.replace('\\', '/');
-        if (!QDir(text).exists()) {
-            QDir().mkdir(text);
+        cachePath = cmdParser.value("cachePath");
+        cachePath.replace('\\', '/');
+        if (!QDir(cachePath).exists()) {
+            QDir().mkdir(cachePath);
         }
     }
     if (cmdParser.isSet("cacheNum")) {
@@ -108,6 +114,7 @@ int optixcmd(const QCoreApplication& app, int port)
 
     VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
 
+    /*
     QTcpSocket optixClientSocket;
     optixClientSocket.connectToHost(QHostAddress::LocalHost, port);
     if (!optixClientSocket.waitForConnected(10000))
@@ -115,13 +122,21 @@ int optixcmd(const QCoreApplication& app, int port)
         zeno::log_error("tcp optix client connection fail");
         return -1;
     }
-    else
+    int iSize = optixClientSocket.write(std::string("optixCmd").data());
+    if (!optixClientSocket.waitForBytesWritten(50000))
     {
-        zeno::log_info("tcp optix client connection succeed");
+        zeno::log_error("tcp init optix client connection fail");
+        return -1;
     }
-
-    OptixWorker worker;
-
+    if (iSize <= 0)
+    {
+        zeno::log_error("tcp init optix client send fail");
+        return -1;
+    }
+    while (1) {
+        int j;
+        j = 0;
+    }
     QObject::connect(&optixClientSocket, &QTcpSocket::readyRead, [&]() {
         QByteArray arr = optixClientSocket.readAll();
         qint64 redSize = arr.size();
@@ -130,6 +145,21 @@ int optixcmd(const QCoreApplication& app, int port)
             zeno::log_info("finish frame");
         }
     });
+    */
 
-    return app.exec();
+    int beginF = recInfo.frameRange.first, endF = recInfo.frameRange.second;
+    auto& globalComm = zeno::getSession().globalComm;
+
+    globalComm->frameCache(cachePath.toStdString(), 1);
+    globalComm->initFrameRange(beginF, endF);
+
+    OptixWorker worker;
+    for (int frame = beginF; frame <= endF; frame++)
+    {
+        globalComm->newFrame();
+        //todo: check whether the cache file is ready.
+        globalComm->finishFrame();
+        bool ret = worker.recordFrame_impl(recInfo, frame);
+    }
+    return 0;
 }

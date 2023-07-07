@@ -89,12 +89,16 @@ struct PacketProc {
         } else if (action == "newFrame") {
             globalCommNeedNewFrame = 1;
             clearGlobalIfNeeded();
-            zenoApp->getMainWindow()->updateViewport(QString::fromStdString(action));
+            auto mainWin = zenoApp->getMainWindow();
+            if (mainWin)
+                mainWin->updateViewport(QString::fromStdString(action));
 
         } else if (action == "finishFrame") {
             zeno::getSession().globalComm->finishFrame();
             //need to notify the GL to update.
-            zenoApp->getMainWindow()->updateViewport(QString::fromStdString(action));
+            auto mainWin = zenoApp->getMainWindow();
+            if (mainWin)
+                mainWin->updateViewport(QString::fromStdString(action));
 
         } else if (action == "frameCache") {
             auto mainWin = zenoApp->getMainWindow();

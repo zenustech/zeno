@@ -26,6 +26,7 @@ public:
     static void modifyLightData(QPersistentModelIndex nodeIdx);
     static VideoRecInfo getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param);
     static void initLaunchCacheParam(LAUNCH_PARAM& param);
+    static bool openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam);
 };
 
 
