@@ -534,7 +534,7 @@ struct GraphicsManager {
                 std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
                 std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
-                xinxinoptix::load_light(key, p1.data(), e1.data(), e2.data(),
+                xinxinoptix::load_light(key, p2.data(), e1.data(), e2.data(),
                                         nor.data(), clr.data());
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
