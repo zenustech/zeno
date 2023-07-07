@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>413</width>
-    <height>379</height>
+    <height>386</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -172,6 +172,13 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="cbRemoveAfterRender">
+     <property name="text">
+      <string>removeAfterRender</string>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="btnGroup">

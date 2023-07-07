@@ -30,6 +30,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui->optixSamplerNumber->setText(settings.value("numOptix").isValid() ? settings.value("numOptix").toString() : "1");
     settings.endGroup();
 
+    m_ui->cbRemoveAfterRender->setCheckState(Qt::Unchecked);
     m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
     m_ui->cbPresets->setCurrentIndex(1);
 
@@ -72,6 +73,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     path = m_ui->linePath->text();
     info.bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
     info.needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
+    info.bAutoRemoveCache = m_ui->cbRemoveAfterRender->checkState() == Qt::Checked;
     if (path.isEmpty())
     {
         QTemporaryDir dir;
