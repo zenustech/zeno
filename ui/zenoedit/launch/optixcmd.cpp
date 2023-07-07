@@ -4,21 +4,23 @@
 #define MINIMP3_FLOAT_OUTPUT
 #include "minimp3.h"
 #include <QApplication>
+#include <QTcpServer>
+#include <QtWidgets>
+#include <QTcpSocket>
+#include <zeno/utils/log.h>
 #include "zenomainwindow.h"
 #include "settings/zsettings.h"
 #include "zeno/core/Session.h"
 #include "zeno/types/UserData.h"
+#include "viewport/optixviewport.h"
 #include "util/apphelper.h"
-#include "launch/ztcpserver.h"
-#include <zeno/extra/GlobalState.h>
-#include <zeno/extra/GlobalComm.h>
 
 //#define DEBUG_DIRECTLY
 
 
 static int calcFrameCountByAudio(std::string path, int fps) {
     //auto *pFlie;
-    auto *pFile = strrchr(path.c_str(), '.');
+    auto* pFile = strrchr(path.c_str(), '.');
     if (pFile != NULL) {
         if (strcmp(pFile, ".wav") == 0) {
             AudioFile<float> wav;
@@ -55,7 +57,7 @@ static int calcFrameCountByAudio(std::string path, int fps) {
     return 0;
 }
 
-int record_main(const QCoreApplication& app)
+int optixcmd(const QCoreApplication& app, int port)
 {
     ZENO_RECORD_RUN_INITPARAM param;
 #ifndef DEBUG_DIRECTLY
@@ -82,7 +84,7 @@ int record_main(const QCoreApplication& app)
         {"needDenoise", "needDenoise", "needDenoise"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
-    });
+        });
     cmdParser.process(app);
 
     if (cmdParser.isSet("zsg"))
@@ -103,18 +105,14 @@ int record_main(const QCoreApplication& app)
         param.configFilePath = cmdParser.value("configFilePath");
         zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
     }
-    QString cachePath;
     if (cmdParser.isSet("cachePath")) {
-        cachePath = cmdParser.value("cachePath");
-        cachePath.replace('\\', '/');
-        if (!QDir(cachePath).exists()) {
-            QDir().mkdir(cachePath);
+        QString text = cmdParser.value("cachePath");
+        text.replace('\\', '/');
+        if (!QDir(text).exists()) {
+            QDir().mkdir(text);
         }
     }
     if (cmdParser.isSet("cacheNum")) {
-        QString text2 = cmdParser.value("cacheNum");
-        QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencachenum", text2);
     }
     if (cmdParser.isSet("exitWhenRecordFinish"))
         param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";
@@ -127,14 +125,14 @@ int record_main(const QCoreApplication& app)
     }
     param.iBitrate = cmdParser.isSet("bitrate") ? cmdParser.value("bitrate").toInt() : 20000;
     param.iFps = cmdParser.isSet("fps") ? cmdParser.value("fps").toInt() : 24;
-	param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
-	param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
-	param.needDenoise = cmdParser.isSet("needDenoise") ? cmdParser.value("needDenoise").toInt() : 0;
-	int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
-    auto &ud = zeno::getSession().userData();
+    param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
+    param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
+    param.needDenoise = cmdParser.isSet("needDenoise") ? cmdParser.value("needDenoise").toInt() : 0;
+    int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
+    auto& ud = zeno::getSession().userData();
     ud.set2("output_aov", enableAOV != 0);
-	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
-	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
+    param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
+    param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 #else
     param.sZsgPath = "C:\\zeno\\framenum.zsg";
     param.sPath = "C:\\recordpath";
@@ -147,25 +145,30 @@ int record_main(const QCoreApplication& app)
     param.sPixel = "1200x800";
 #endif
 
+    VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
 
-    if (!param.bOptix) {
-        //gl normal recording may not be work in cmd mode.
-        ZenoMainWindow tempWindow(nullptr, 0, !param.bOptix ? PANEL_GL_VIEW : PANEL_EMPTY);
-        tempWindow.showMaximized();
-        tempWindow.solidRunRender(param);
+    QTcpSocket optixClientSocket;
+    optixClientSocket.connectToHost(QHostAddress::LocalHost, port);
+    if (!optixClientSocket.waitForConnected(10000))
+    {
+        zeno::log_error("tcp optix client connection fail");
+        return -1;
     }
     else
     {
-        //start a calc proc and optix proc directly.
-        VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
-        ZTcpServer* pServer = zenoApp->getServer();
-
-        zeno::getSession().globalComm->cacheFramePath = cachePath.toStdString();
-        pServer->startOptixProc();
-
-
+        zeno::log_info("tcp optix client connection succeed");
     }
 
+    OptixWorker worker;
+
+    QObject::connect(&optixClientSocket, &QTcpSocket::readyRead, [&]() {
+        QByteArray arr = optixClientSocket.readAll();
+        qint64 redSize = arr.size();
+        if (redSize > 0) {
+
+            zeno::log_info("finish frame");
+        }
+    });
 
     return app.exec();
 }

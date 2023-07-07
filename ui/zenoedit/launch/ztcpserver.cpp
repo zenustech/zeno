@@ -33,7 +33,6 @@ struct _Header { // sync with viewdecode.cpp
 ZTcpServer::ZTcpServer(QObject *parent)
     : QObject(parent)
     , m_tcpServer(nullptr)
-    , m_tcpSocket(nullptr)
     , m_port(0)
 {
 }
@@ -130,6 +129,22 @@ void ZTcpServer::startProc(const std::string& progJson, bool applyLightAndCamera
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 }
 
+void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
+{
+    zeno::log_info("launching optix program...");
+
+    auto optixProc = std::make_unique<QProcess>();
+    optixProc->start(QCoreApplication::applicationFilePath(), args);
+
+    if (!optixProc->waitForStarted(-1)) {
+        zeno::log_warn("optix process failed to get started, giving up");
+        return;
+    }
+
+    connect(optixProc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
+    connect(optixProc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+}
+
 void ZTcpServer::startOptixProc()
 {
     zeno::log_info("launching optix program...");
@@ -210,8 +225,8 @@ void ZTcpServer::killProc()
 void ZTcpServer::onNewConnection()
 {
     ZASSERT_EXIT(m_tcpServer);
-    m_tcpSocket = m_tcpServer->nextPendingConnection();
-    if (!m_tcpSocket)
+    QTcpSocket* tcpSocket = m_tcpServer->nextPendingConnection();
+    if (!tcpSocket)
     {
         zeno::log_error("tcp connection recv failed");
     }
@@ -220,8 +235,8 @@ void ZTcpServer::onNewConnection()
         zeno::log_debug("tcp connection succeed");
     }
 
-    connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
-    connect(m_tcpSocket, SIGNAL(disconnected()), this, SLOT(onDisconnect()));
+    connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
+    connect(tcpSocket, SIGNAL(disconnected()), this, SLOT(onDisconnect()));
 
     viewDecodeClear();
 }

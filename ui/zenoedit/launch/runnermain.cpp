@@ -139,7 +139,7 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
 
         zeno::log_debug("end frame {}", frame);
 
-        send_packet("{\"action\":\"newFrame\"}", "", 0);
+        send_packet("{\"action\":\"newFrame\",\"key\":\"" + std::to_string(frame) +"\"}", "", 0);
 
         if (bZenCache) {
             session->globalComm->dumpFrameCache(frame, cacheLightCameraOnly, cacheMaterialOnly);
@@ -154,7 +154,7 @@ static int runner_start(std::string const &progJson, int sessionid, char* cached
             }
         }
 
-        send_packet("{\"action\":\"finishFrame\"}", "", 0);
+        send_packet("{\"action\":\"finishFrame\",\"key\":\"" + std::to_string(frame) + "\"}", "", 0);
 
         if (session->globalStatus->failed())
             return onfail();

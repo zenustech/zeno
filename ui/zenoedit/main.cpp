@@ -55,6 +55,12 @@ int main(int argc, char *argv[])
             cacheMaterialOnly = atoi(argv[10]);
         return runner_main(sessionid, port, cachedir, cacheLightCameraOnly, cacheMaterialOnly);
     }
+    if (argc >= 3 && !strcmp(argv[1], "-optixcmd")) {
+        MessageBox(0, "optixcmd", "optixcmd", MB_OK);
+        extern int optixcmd(const QCoreApplication& app, int port);
+        int port = atoi(argv[2]);
+        return optixcmd(a, port);
+    }
     if (argc >= 3 && !strcmp(argv[1], "-optix")) {
         //MessageBox(0, "runner", "runner", MB_OK);
         extern int optix_main(const QCoreApplication & app, 

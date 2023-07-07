@@ -133,6 +133,40 @@ void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex node
     }
 }
 
+VideoRecInfo AppHelper::getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param)
+{
+    VideoRecInfo recInfo;
+    recInfo.bitrate = param.iBitrate;
+    recInfo.fps = param.iFps;
+    recInfo.frameRange = { param.iSFrame, param.iSFrame + param.iFrame - 1 };
+    recInfo.numMSAA = 0;
+    recInfo.numOptix = param.iSample;
+    recInfo.audioPath = param.audioPath;
+    recInfo.record_path = param.sPath;
+    recInfo.videoname = param.videoName;
+    recInfo.bExportVideo = param.isExportVideo;
+    recInfo.needDenoise = param.needDenoise;
+    recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
+
+    if (!param.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = param.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        recInfo.res = { (float)pixw, (float)pixh };
+
+        //viewWidget->setFixedSize(pixw, pixh);
+        //viewWidget->setCameraRes(QVector2D(pixw, pixh));
+        //viewWidget->updatePerspective();
+    }
+    else {
+        recInfo.res = { (float)1000, (float)680 };
+        //viewWidget->setMinimumSize(1000, 680);
+    }
+
+    return recInfo;
+}
+
 void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
     QStandardItemModel *viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
     ZASSERT_EXIT(viewParams);

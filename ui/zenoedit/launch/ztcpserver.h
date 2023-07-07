@@ -14,6 +14,7 @@ public:
     void init(const QHostAddress &address);
     void startProc(const std::string& progJson, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void startOptixProc();
+    void startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param);
     void killProc();
 
 private slots:
@@ -27,7 +28,6 @@ private:
     void send_packet(QTcpSocket* socket, std::string_view info, const char* buf, size_t len);
 
     QTcpServer* m_tcpServer;
-    QTcpSocket* m_tcpSocket;
     QVector<QTcpSocket*> m_optixSocks;
     std::unique_ptr<QProcess> m_proc;
 
