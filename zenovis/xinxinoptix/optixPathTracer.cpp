@@ -3406,7 +3406,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 //    updateState( *output_buffer_transmit, state.params);
 //    updateState( *output_buffer_background, state.params);
 
-    const int max_samples_once = 1;
+    const int max_samples_once = 32;
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
