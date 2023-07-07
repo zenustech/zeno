@@ -17,6 +17,7 @@
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
 #include "dialog/zrecframeselectdlg.h"
+#include "settings/zsettings.h"
 
 
 using std::string;
@@ -487,7 +488,7 @@ void DisplayWidget::afterRun()
     scene->objectsMan->lightObjects.clear();
 }
 
-void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly, bool applyMaterialOnly, bool launchByRecord)
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -506,7 +507,7 @@ void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCamera
         m_glView->getSession()->get_scene()->selected.clear();
     }
 
-    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly, applyMaterialOnly);
+    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly, applyMaterialOnly, launchByRecord);
 
     if (m_glView)
         m_glView->updateLightOnce = true;
@@ -621,7 +622,9 @@ void DisplayWidget::onRecord()
         {
             //clear cached objs.
             zeno::getSession().globalComm->clearState();
-            onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+            QSettings settings(zsCompanyName, zsEditor);
+            settings.setValue("zencache-rmcurcache", recInfo.bAutoRemoveCache);
+            onRun(recInfo.frameRange.first, recInfo.frameRange.second, false, false, true);
         }
 
         //setup signals issues.

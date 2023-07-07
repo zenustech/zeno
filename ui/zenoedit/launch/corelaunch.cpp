@@ -239,8 +239,13 @@ void killProgramJSON()
 
 }
 
-void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool applyLightAndCameraOnly, bool applyMaterialOnly, bool launchByRecord)
 {
+    if (!launchByRecord)
+    {
+        QSettings settings(zsCompanyName, zsEditor);
+        settings.setValue("zencache-rmcurcache", false);
+    }
 	rapidjson::StringBuffer s;
 	RAPIDJSON_WRITER writer(s);
     {

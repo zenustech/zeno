@@ -19,6 +19,7 @@ struct VideoRecInfo
     bool needDenoise = false;
     bool exitWhenRecordFinish = false;
     bool bRecordByCommandLine = false;
+    bool bAutoRemoveCache = false;
 };
 Q_DECLARE_METATYPE(VideoRecInfo);
 

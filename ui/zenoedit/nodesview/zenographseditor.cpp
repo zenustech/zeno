@@ -849,28 +849,21 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QVariant varAutoRemove = inst.getValue("zencache-autoremove");
         QVariant varCacheRoot = inst.getValue("zencachedir");
         QVariant varCacheNum = inst.getValue("zencachenum");
-        QVariant varRemoveCurFrameCache = inst.getValue("zencache-rmcurcache");
 
         bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
         bool bAutoRemove = varAutoRemove.isValid() ? varAutoRemove.toBool() : true;
         QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
-        bool bRemoveCurFrameCache = varRemoveCurFrameCache.isValid() ? varRemoveCurFrameCache.toBool() : false;
 
         ZPathEdit *pathLineEdit = new ZPathEdit(cacheRootDir);
         pathLineEdit->setFixedWidth(256);
         pathLineEdit->setEnabled(!bAutoRemove && bEnableCache);
-        QCheckBox* pRemoveCurFrameCache = new QCheckBox;
-        pRemoveCurFrameCache->setCheckState(bRemoveCurFrameCache ? Qt::Checked : Qt::Unchecked);
-        pRemoveCurFrameCache->setEnabled(!bAutoRemove && bEnableCache);
         QCheckBox *pAutoDelCache = new QCheckBox;
         pAutoDelCache->setCheckState(bAutoRemove ? Qt::Checked : Qt::Unchecked);
         pAutoDelCache->setEnabled(bEnableCache);
         connect(pAutoDelCache, &QCheckBox::stateChanged, [=](bool state) {
             pathLineEdit->setText("");
             pathLineEdit->setEnabled(!state);
-            pRemoveCurFrameCache->setCheckState(Qt::Unchecked);
-            pRemoveCurFrameCache->setEnabled(!state);
         });
 
         QSpinBox* pSpinBox = new QSpinBox;
@@ -886,12 +879,10 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
                 pSpinBox->clear();
                 pathLineEdit->clear();
                 pAutoDelCache->setCheckState(Qt::Unchecked);
-                pRemoveCurFrameCache->setCheckable(Qt::Unchecked);
             }
             pSpinBox->setEnabled(state);
             pathLineEdit->setEnabled(state);
             pAutoDelCache->setEnabled(state);
-            pRemoveCurFrameCache->setEnabled(state);
         });
 
         QDialogButtonBox* pButtonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -906,9 +897,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         pLayout->addWidget(pAutoDelCache, 2, 1);
         pLayout->addWidget(new QLabel("cache root"), 3, 0);
         pLayout->addWidget(pathLineEdit, 3, 1);
-        pLayout->addWidget(new QLabel("remove cache after render"), 4, 0);
-        pLayout->addWidget(pRemoveCurFrameCache, 4, 1);
-        pLayout->addWidget(pButtonBox, 5, 1);
+        pLayout->addWidget(pButtonBox, 4, 1);
 
         connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));
         connect(pButtonBox, SIGNAL(rejected()), &dlg, SLOT(reject()));
@@ -920,7 +909,6 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             inst.setValue("zencache-autoremove", pAutoDelCache->checkState() == Qt::Checked);
             inst.setValue("zencachedir", pathLineEdit->text());
             inst.setValue("zencachenum", pSpinBox->value());
-            inst.setValue("zencache-rmcurcache", pRemoveCurFrameCache->checkState() == Qt::Checked);
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_ZOOM) 

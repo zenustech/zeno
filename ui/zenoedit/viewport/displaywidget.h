@@ -48,7 +48,7 @@ protected:
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
-    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false, bool launchByRecord = false);
     void onRecord();
     void onRecord_slient(const VideoRecInfo& recInfo);
     void onScreenShoot();
