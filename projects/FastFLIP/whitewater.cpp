@@ -254,6 +254,16 @@ struct WhitewaterSolver : INode {
                 par_life[idx] -= dt;
             }
             auto m_tarVel = vec_to_other<openvdb::Vec3f>(par_tarVel[idx]);
+#if 0
+            //second step, semi-implicit integrate drag
+            // (v_np1 - v_n) / dt = c * length(v_tar - v_n) * (v_tar - v_np1)
+            vec3f v_target = vec3f(m_tarVel[0], m_tarVel[1], m_tarVel[2]);
+            vec3f m_vel2 = vec3f(m_vel.x(), m_vel.y(), m_vel.z());
+            float v_diff = zeno::distance(v_target, m_vel2);
+            float denom = 1 + dt * air_drag * v_diff;
+            m_vel = vec_to_other<openvdb::Vec3f>((dt * air_drag * v_diff * v_target + m_vel2) / denom);
+#endif
+            // simple drag
             m_vel += drag_coef * (m_tarVel - m_vel);
 
             auto wcoord_new = wcoord + dt * m_vel;
