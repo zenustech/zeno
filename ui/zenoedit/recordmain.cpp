@@ -13,6 +13,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include "launch/corelaunch.h"
 #include <zeno/utils/log.h>
+#include "common.h"
 
 //#define DEBUG_DIRECTLY
 
@@ -178,13 +179,7 @@ int record_main(const QCoreApplication& app)
         //start a calc proc and optix proc directly.
         VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
         ZTcpServer* pServer = zenoApp->getServer();
-
-        zeno::getSession().globalComm->cacheFramePath = cachePath.toStdString();
         pServer->startOptixProc();
-
-
     }
-
-
     return app.exec();
 }

@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QtNetwork>
 #include "launch/corelaunch.h"
+#include "common.h"
 
 class ZTcpServer : public QObject
 {

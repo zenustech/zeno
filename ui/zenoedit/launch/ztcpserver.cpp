@@ -16,6 +16,7 @@
 #include "viewport/displaywidget.h"
 #include <zeno/zeno.h>
 #include <zeno/extra/GlobalComm.h>
+#include "common.h"
 
 
 struct _Header { // sync with viewdecode.cpp
@@ -139,7 +140,7 @@ void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
     zeno::log_info("launching optix program...");
 
     auto optixProc = std::make_unique<QProcess>();
-    optixProc->start(QCoreApplication::applicationFilePath(), args);
+    //optixProc->start(QCoreApplication::applicationFilePath(), args);
 
     if (!optixProc->waitForStarted(-1)) {
         zeno::log_warn("optix process failed to get started, giving up");
