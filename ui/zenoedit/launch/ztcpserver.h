@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QtNetwork>
+#include "launch/corelaunch.h"
 
 class ZTcpServer : public QObject
 {
@@ -12,7 +13,7 @@ class ZTcpServer : public QObject
 public:
     ZTcpServer(QObject* parent = nullptr);
     void init(const QHostAddress &address);
-    void startProc(const std::string& progJson, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+    void startProc(const std::string &progJson, LAUNCH_PARAM param);
     void startOptixProc();
     void startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param);
     void killProc();

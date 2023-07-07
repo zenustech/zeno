@@ -5,13 +5,14 @@
 #include "minimp3.h"
 #include <QApplication>
 #include "zenomainwindow.h"
-#include "settings/zsettings.h"
 #include "zeno/core/Session.h"
 #include "zeno/types/UserData.h"
 #include "util/apphelper.h"
 #include "launch/ztcpserver.h"
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
+#include "launch/corelaunch.h"
+#include <zeno/utils/log.h>
 
 //#define DEBUG_DIRECTLY
 
@@ -82,6 +83,7 @@ int record_main(const QCoreApplication& app)
         {"needDenoise", "needDenoise", "needDenoise"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
+        {"cacheautorm", "cacheautoremove", "remove cache after render"},
     });
     cmdParser.process(app);
 
@@ -103,18 +105,35 @@ int record_main(const QCoreApplication& app)
         param.configFilePath = cmdParser.value("configFilePath");
         zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
     }
-    QString cachePath;
+    LAUNCH_PARAM launchparam;
     if (cmdParser.isSet("cachePath")) {
-        cachePath = cmdParser.value("cachePath");
-        cachePath.replace('\\', '/');
-        if (!QDir(cachePath).exists()) {
-            QDir().mkdir(cachePath);
+        QString text = cmdParser.value("cachePath");
+        text.replace('\\', '/');
+        launchparam.cacheDir = text;
+        launchparam.enableCache = true;
+        launchparam.tempDir = false;
+        if (!QDir(text).exists()) {
+            QDir().mkdir(text);
+        }
+        if (cmdParser.isSet("cacheautorm"))
+        {
+            launchparam.autoRmCurcache = cmdParser.value("cacheautorm").toInt();
+    }
+        else {
+            launchparam.autoRmCurcache = true;
+        }
+    if (cmdParser.isSet("cacheNum")) {
+            launchparam.cacheNum = cmdParser.value("cacheNum").toInt();
+    }
+        else {
+            launchparam.cacheNum = 1;
         }
     }
-    if (cmdParser.isSet("cacheNum")) {
-        QString text2 = cmdParser.value("cacheNum");
-        QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencachenum", text2);
+    else {
+        zeno::log_info("cachePath missed, process exited with {}", -1);
+        return -1;
+        //launchparam.enableCache = true;
+        //launchparam.tempDir = true;
     }
     if (cmdParser.isSet("exitWhenRecordFinish"))
         param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";

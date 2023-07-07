@@ -886,7 +886,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
                 pSpinBox->clear();
                 pathLineEdit->clear();
                 pAutoDelCache->setCheckState(Qt::Unchecked);
-                pRemoveCurFrameCache->setCheckable(Qt::Unchecked);
+                pRemoveCurFrameCache->setCheckState(Qt::Unchecked);
             }
             pSpinBox->setEnabled(state);
             pathLineEdit->setEnabled(state);

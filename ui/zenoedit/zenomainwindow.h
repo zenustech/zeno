@@ -9,6 +9,7 @@
 #include "common.h"
 #include "layout/winlayoutrw.h"
 #include "cache/zcachemgr.h"
+#include "launch/corelaunch.h"
 #include <QTcpSocket>
 
 
@@ -181,7 +182,7 @@ public slots:
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
-    void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
+    void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchparam);
     void optixRunClient(int port, const char* cachedir, int cachenum, int sFrame, int eFrame);
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);

@@ -17,6 +17,7 @@
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
 #include "dialog/zrecframeselectdlg.h"
+#include "util/apphelper.h"
 
 
 using std::string;
@@ -427,7 +428,11 @@ void DisplayWidget::onSliderValueChanged(int frame)
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, frame, frame);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = frame;
+        launchParam.endFrame = frame;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     }
     else
     {
@@ -505,8 +510,13 @@ void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCamera
         m_glView->clearTransformer();
         m_glView->getSession()->get_scene()->selected.clear();
     }
-
-    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly, applyMaterialOnly);
+    LAUNCH_PARAM launchParam;
+    launchParam.beginFrame = frameStart;
+    launchParam.endFrame = frameEnd;
+    launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
+    launchParam.applyMaterialOnly = applyMaterialOnly;
+    AppHelper::initLaunchCacheParam(launchParam);
+    launchProgram(pModel, launchParam);
 
     if (m_glView)
         m_glView->updateLightOnce = true;
@@ -537,7 +547,11 @@ void DisplayWidget::onRun() {
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, beginFrame, endFrame);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = beginFrame;
+        launchParam.endFrame = endFrame;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     } else {
     }
 
