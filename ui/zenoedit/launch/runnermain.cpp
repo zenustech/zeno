@@ -144,6 +144,11 @@ static int runner_start(std::string const &progJson, int sessionid, bool bZenCac
         send_packet("{\"action\":\"newFrame\",\"key\":\"" + std::to_string(frame) +"\"}", "", 0);
 
         if (bZenCache) {
+            //construct cache lock.
+            std::string sLockFile = cachedir + "/zcache_" + std::to_string(frame) + ".lock";
+            QLockFile lckFile(QString::fromStdString(sLockFile));
+            bool ret = lckFile.tryLock();
+            //dump cache to disk.
             session->globalComm->dumpFrameCache(frame, cacheLightCameraOnly, cacheMaterialOnly);
         } else {
             auto const& viewObjs = session->globalComm->getViewObjects();

@@ -176,7 +176,6 @@ int record_main(const QCoreApplication& app)
     }
     else
     {
-        //start optix proc directly.
         VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
 
         //start a calc proc
@@ -219,8 +218,19 @@ int record_main(const QCoreApplication& app)
         //todo: should receive the msg from optixcmd proc, e.g. recordFinished msg.
         QObject::connect(optixProc, &QProcess::readyRead, [=]() {
             QByteArray arr = optixProc->readAll();
-            int j;
-            j = 0;
+            QString retData = QString::fromUtf8(arr.data(), arr.size());
+            int idx = retData.indexOf("[optixcmd]:");
+            if (idx != -1) {
+                optixProc->terminate();
+                delete optixProc;
+                QString result = retData.mid(idx);
+                if (result.startsWith("[optixcmd]: record completed.")) {
+                    QCoreApplication::exit(0);
+                }
+                else {
+                    QCoreApplication::exit(-1);
+                }
+            }
         });
 
         QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {

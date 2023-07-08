@@ -114,39 +114,6 @@ int optixcmd(const QCoreApplication& app, int port)
 
     VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
 
-    /*
-    QTcpSocket optixClientSocket;
-    optixClientSocket.connectToHost(QHostAddress::LocalHost, port);
-    if (!optixClientSocket.waitForConnected(10000))
-    {
-        zeno::log_error("tcp optix client connection fail");
-        return -1;
-    }
-    int iSize = optixClientSocket.write(std::string("optixCmd").data());
-    if (!optixClientSocket.waitForBytesWritten(50000))
-    {
-        zeno::log_error("tcp init optix client connection fail");
-        return -1;
-    }
-    if (iSize <= 0)
-    {
-        zeno::log_error("tcp init optix client send fail");
-        return -1;
-    }
-    while (1) {
-        int j;
-        j = 0;
-    }
-    QObject::connect(&optixClientSocket, &QTcpSocket::readyRead, [&]() {
-        QByteArray arr = optixClientSocket.readAll();
-        qint64 redSize = arr.size();
-        if (redSize > 0) {
-
-            zeno::log_info("finish frame");
-        }
-    });
-    */
-
     int beginF = recInfo.frameRange.first, endF = recInfo.frameRange.second;
     auto& globalComm = zeno::getSession().globalComm;
 
@@ -154,12 +121,40 @@ int optixcmd(const QCoreApplication& app, int port)
     globalComm->initFrameRange(beginF, endF);
 
     OptixWorker worker;
-    for (int frame = beginF; frame <= endF; frame++)
+    for (int frame = beginF; frame <= endF;)
     {
+        //first check whether the cache is exist.
+        std::string dir = cachePath.toStdString() + "/" + std::to_string(1000000 + frame).substr(1);   //coupled with zeno::toDisk.
+        QDir framedir(QString::fromStdString(dir));
+
+        if (!framedir.exists())
+        {
+            Sleep(0);
+            continue;
+        }
+
+        //and then check the cache lock.
+        QString sLockFile = QString("%1/zcache_%2.lock").arg(cachePath).arg(frame);
+        QLockFile lckFile(sLockFile);
+        bool ret = lckFile.tryLock();
+        if (!ret)
+        {
+            Sleep(0);
+            continue;
+        }
+        lckFile.unlock();
+
         globalComm->newFrame();
-        //todo: check whether the cache file is ready.
         globalComm->finishFrame();
-        bool ret = worker.recordFrame_impl(recInfo, frame);
+        ret = worker.recordFrame_impl(recInfo, frame);
+        if (!ret) {
+            zeno::log_error("[optixcmd]: error occurs when recording frame {}", frame);
+            //todo: notify record process we have failed...
+            return -1;
+        }
+        ++frame;
     }
+    zeno::log_critical("[optixcmd]: record completed.");
+
     return 0;
 }
