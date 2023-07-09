@@ -320,6 +320,8 @@ struct WriteAlembic2 : INode {
             else {
                 pointsObj = OPoints (OObject( archive, 1 ), "points");
             }
+            attrs.clear();
+            user_attrs.clear();
         }
         if (!(frame_start <= frameid && frameid <= frame_end)) {
             return;
