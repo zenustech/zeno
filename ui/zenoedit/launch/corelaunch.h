@@ -5,7 +5,7 @@
 
 class IGraphsModel;
 
-void launchProgram(IGraphsModel *pModel, int beginFrame, int endFrame, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+void launchProgram(IGraphsModel *pModel, int beginFrame, int endFrame, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false, bool launchByRecord = false);
 bool initZenCache(char* cachedir);
 void killProgram();
 

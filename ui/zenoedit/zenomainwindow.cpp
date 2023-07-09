@@ -180,12 +180,6 @@ void ZenoMainWindow::initMenu()
     QVariant use_chinese = settings.value("use_chinese");
     m_ui->actionEnglish_Chinese->setChecked(use_chinese.isNull() || use_chinese.toBool());
 
-    QActionGroup *actionGroup = new QActionGroup(this);
-    actionGroup->addAction(m_ui->actionShading);
-    actionGroup->addAction(m_ui->actionSolid);
-    actionGroup->addAction(m_ui->actionOptix);
-    m_ui->actionSolid->setChecked(true);
-
     auto actions = findChildren<QAction*>(QString(), Qt::FindDirectChildrenOnly);
     for (QAction* action : actions)
     {
@@ -218,16 +212,7 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
     int actionType = -1;
     if (var.type() == QVariant::Int)
         actionType = pAction->property("ActionType").toInt();
-    if (actionType == ACTION_SHADING || actionType == ACTION_SOLID || actionType == ACTION_OPTIX) 
-    {
-        setActionIcon(m_ui->actionShading);
-        setActionIcon(m_ui->actionSolid);
-        setActionIcon(m_ui->actionOptix);
-    } 
-    else 
-    {
-        setActionIcon(pAction);
-    }
+    setActionIcon(pAction);
     switch (actionType)
     {
     case ACTION_NEWFILE: {
@@ -586,7 +571,7 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
         m_layoutRoot->type = NT_ELEM;
 
         ZTabDockWidget* onlyWid = new ZTabDockWidget(this);
-        if (onlyView == PANEL_GL_VIEW)
+        if (onlyView == PANEL_GL_VIEW || onlyView == PANEL_OPTIX_VIEW)
             onlyWid->setCurrentWidget(onlyView);
 
         addDockWidget(Qt::TopDockWidgetArea, onlyWid);
@@ -799,6 +784,21 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
     }
 }
 
+DisplayWidget* ZenoMainWindow::getOnlyViewport() const
+{
+    //find the only optix viewport
+    QVector<DisplayWidget*> views;
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    for (ZTabDockWidget* pDock : docks)
+    {
+        views.append(pDock->viewports());
+    }
+    ZASSERT_EXIT(views.size() == 1, nullptr);
+
+    DisplayWidget* pView = views[0];
+    return pView;
+}
+
 void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
 {
     VideoRecInfo recInfo;
@@ -811,20 +811,8 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.record_path = param.sPath;
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
+    recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
-
-    QDir dir(recInfo.record_path);
-    ZASSERT_EXIT(dir.exists());
-    dir.mkdir("P"); //optix worker need this directory
-    {
-        QString dir_path = recInfo.record_path + "/P/";
-        QDir qDir = QDir(dir_path);
-        qDir.setNameFilters(QStringList("*.jpg"));
-        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-        for (auto i = 0; i < fileList.size(); i++) {
-            qDir.remove(fileList.at(i));
-        }
-    }
 
     if (!param.sPixel.isEmpty())
     {
@@ -841,20 +829,6 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
         recInfo.res = { (float)1000, (float)680 };
         //viewWidget->setMinimumSize(1000, 680);
     }
-
-    connect(this, &ZenoMainWindow::runFinished, this, [=]() {
-        auto globalStatus = zeno::getSession().globalStatus.get();
-        if (globalStatus->failed())
-        {
-            zeno::log_info("process exited with {}", -1);
-            QApplication::exit(-1);
-        }
-        else {
-            OptixWorker worker;
-            worker.recordVideo(recInfo);
-            QApplication::exit(0);
-        }
-    });
 
     bool ret = openFile(param.sZsgPath);
     ZASSERT_EXIT(ret);
@@ -892,7 +866,9 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
 
     launchProgram(pModel, recInfo.frameRange.first, recInfo.frameRange.second, false, false);
 
-    //viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+    DisplayWidget* pViewport = getOnlyViewport();
+    ZASSERT_EXIT(pViewport);
+    pViewport->onRecord_slient(recInfo);
 }
 
 void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
@@ -924,6 +900,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.record_path = param.sPath;
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
+    recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
     recInfo.bRecordByCommandLine = true;
 
@@ -1417,9 +1394,7 @@ void ZenoMainWindow::initShortCut()
 {
     QStringList lst;
     lst << ShortCut_Open << ShortCut_Save << ShortCut_SaveAs << ShortCut_Import 
-        << ShortCut_Export_Graph << ShortCut_Solid << ShortCut_Optix << ShortCut_NormalCheck
-        << ShortCut_Undo << ShortCut_Redo << ShortCut_SmoothShading << ShortCut_WireFrame
-        << ShortCut_ShowGrid << ShortCut_Shading << ShortCut_ScreenShoot << ShortCut_RecordVideo
+        << ShortCut_Export_Graph << ShortCut_Undo << ShortCut_Redo << ShortCut_ScreenShoot << ShortCut_RecordVideo
         << ShortCut_NewSubgraph << ShortCut_New_File;
     updateShortCut(lst);
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString key) {
@@ -1442,24 +1417,10 @@ void ZenoMainWindow::updateShortCut(QStringList keys)
         m_ui->action_Import->setShortcut(settings.getShortCut(ShortCut_Import));
     if (keys.contains(ShortCut_Export_Graph))
         m_ui->actionExportGraph->setShortcut(settings.getShortCut(ShortCut_Export_Graph));
-    if (keys.contains(ShortCut_Optix))
-        m_ui->actionOptix->setShortcut(settings.getShortCut(ShortCut_Optix));
-    if (keys.contains(ShortCut_Solid))
-        m_ui->actionSolid->setShortcut(settings.getShortCut(ShortCut_Solid));
      if (keys.contains(ShortCut_Undo))
         m_ui->actionUndo->setShortcut(settings.getShortCut(ShortCut_Undo));
     if (keys.contains(ShortCut_Redo))
         m_ui->actionRedo->setShortcut(settings.getShortCut(ShortCut_Redo));
-    if (keys.contains(ShortCut_SmoothShading))
-        m_ui->actionSmooth_Shading->setShortcut(settings.getShortCut(ShortCut_SmoothShading));
-    if (keys.contains(ShortCut_NormalCheck))
-        m_ui->actionNormal_Check->setShortcut(settings.getShortCut(ShortCut_NormalCheck));
-    if (keys.contains(ShortCut_WireFrame))
-        m_ui->actionWireFrame->setShortcut(settings.getShortCut(ShortCut_WireFrame));
-    if (keys.contains(ShortCut_ShowGrid))
-        m_ui->actionShow_Grid->setShortcut(settings.getShortCut(ShortCut_ShowGrid));
-    if (keys.contains(ShortCut_Shading))
-        m_ui->actionShading->setShortcut(settings.getShortCut(ShortCut_Shading));
     if (keys.contains(ShortCut_ScreenShoot))
         m_ui->actionScreen_Shoot->setShortcut(settings.getShortCut(ShortCut_ScreenShoot));
     if (keys.contains(ShortCut_RecordVideo))
@@ -1563,14 +1524,6 @@ void ZenoMainWindow::setActionProperty()
     m_ui->actionEasy_Graph->setProperty("ActionType", ACTION_EASY_GRAPH);
     m_ui->actionOpen_View->setProperty("ActionType", ACTION_OPEN_VIEW);
     m_ui->actionClear_View->setProperty("ActionType", ACTION_CLEAR_VIEW);
-    m_ui->actionSmooth_Shading->setProperty("ActionType", ACTION_SMOOTH_SHADING);
-    m_ui->actionNormal_Check->setProperty("ActionType", ACTION_NORMAL_CHECK);
-    m_ui->actionWireFrame->setProperty("ActionType", ACTION_WIRE_FRAME);
-    m_ui->actionShow_Grid->setProperty("ActionType", ACTION_SHOW_GRID);
-    m_ui->actionBackground_Color->setProperty("ActionType", ACTION_BACKGROUND_COLOR);
-    m_ui->actionSolid->setProperty("ActionType", ACTION_SOLID);
-    m_ui->actionShading->setProperty("ActionType", ACTION_SHADING);
-    m_ui->actionOptix->setProperty("ActionType", ACTION_OPTIX);
     m_ui->actionBlackWhite->setProperty("ActionType", ACTION_BLACK_WHITE);
     m_ui->actionCreek->setProperty("ActionType", ACTION_GREEK);
     m_ui->actionDay_Light->setProperty("ActionType", ACTION_DAY_LIGHT);

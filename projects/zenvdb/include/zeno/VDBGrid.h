@@ -66,6 +66,7 @@ struct VDBGrid : zeno::IObject {
   virtual openvdb::Vec3d indexToWorld(openvdb::Coord &c) = 0;
   virtual openvdb::Vec3d worldToIndex(openvdb::Vec3d &c) = 0;
   virtual void setName(std::string const &name) = 0;
+  virtual void setGridClass(std::string const &gridClass) = 0;
   virtual std::string getType() const =0;
   virtual zeno::vec3f getVoxelSize() const=0;
   virtual void dilateTopo(int l) =0;
@@ -137,6 +138,17 @@ struct VDBGridWrapper : zeno::IObjectClone<VDBGridWrapper<GridT>, VDBGrid> {
 
   virtual void setName(std::string const &name) override {
       m_grid->setName(name);
+  }
+
+  virtual void setGridClass(std::string const &gridClass) override {
+      if (gridClass == "UNKNOWN")
+          m_grid->setGridClass(openvdb::GridClass::GRID_UNKNOWN);
+      else if (gridClass == "LEVEL_SET")
+          m_grid->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
+      else if (gridClass == "FOG_VOLUME")
+          m_grid->setGridClass(openvdb::GridClass::GRID_FOG_VOLUME);
+      else if (gridClass == "STAGGERED")
+          m_grid->setGridClass(openvdb::GridClass::GRID_STAGGERED);
   }
 
   virtual std::string getType() const override {
@@ -250,6 +262,17 @@ struct VDBGridWrapper<openvdb::Vec3fGrid> : zeno::IObjectClone<VDBGridWrapper<op
 
   virtual void setName(std::string const &name) override {
       m_grid->setName(name);
+  }
+
+  virtual void setGridClass(std::string const &gridClass) override {
+      if (gridClass == "UNKNOWN")
+          m_grid->setGridClass(openvdb::GridClass::GRID_UNKNOWN);
+      else if (gridClass == "LEVEL_SET")
+          m_grid->setGridClass(openvdb::GridClass::GRID_LEVEL_SET);
+      else if (gridClass == "FOG_VOLUME")
+          m_grid->setGridClass(openvdb::GridClass::GRID_FOG_VOLUME);
+      else if (gridClass == "STAGGERED")
+          m_grid->setGridClass(openvdb::GridClass::GRID_STAGGERED);
   }
 
   virtual std::string getType() const override {

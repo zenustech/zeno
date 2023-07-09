@@ -180,7 +180,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     const std::vector<const char*> compilerOptions {
         "-std=c++17", "-default-device", //"-extra-device-vectorization"
   #if !defined( NDEBUG )      
-        "-lineinfo", "-G"//"--dopt=on",
+        //"-lineinfo", "-G"//"--dopt=on",
   #endif
         //"--gpu-architecture=compute_60",
         //"--relocatable-device-code=true"
@@ -829,12 +829,12 @@ inline void createPipeline()
     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
 
-    int num_progs = 3 + rtMaterialShaders.size() * 2;
+    size_t num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
-    for(int i=0;i<rtMaterialShaders.size();i++)
+    for(size_t i=0;i<rtMaterialShaders.size();i++)
     {
         program_groups[3 + i*2] = rtMaterialShaders[i].m_radiance_hit_group;
         program_groups[3 + i*2 + 1] = rtMaterialShaders[i].m_occlusion_hit_group;

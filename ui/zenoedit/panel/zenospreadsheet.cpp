@@ -122,10 +122,16 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
             size_t num_attrs = obj->num_attrs();
             size_t num_vert = obj->verts.size();
             size_t num_tris = obj->tris.size();
+            size_t num_loops = obj->loops.size();
+            size_t num_polys = obj->polys.size();
+            size_t num_lines = obj->lines.size();
 
-            QString statusInfo = QString("Vertex: %1, Triangle: %2, UserData: %3, Attribute: %4")
+            QString statusInfo = QString("Vertex: %1, Triangle: %2, Loops: %3, Poly: %4, Lines: %5, UserData: %6, Attribute: %7")
                 .arg(num_vert)
                 .arg(num_tris)
+                .arg(num_loops)
+                .arg(num_polys)
+                .arg(num_lines)
                 .arg(sizeUserData)
                 .arg(num_attrs);
             pStatusBar->setText(statusInfo);

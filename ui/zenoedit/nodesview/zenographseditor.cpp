@@ -854,7 +854,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QVariant varCacheNum = inst.getValue("zencachenum");
 
         bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
-        bool bAutoRemove = varAutoRemove.isValid() ? varAutoRemove.toBool() : false;
+        bool bAutoRemove = varAutoRemove.isValid() ? varAutoRemove.toBool() : true;
         QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
 
@@ -899,10 +899,10 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         pLayout->addWidget(pCheckbox, 0, 1);
         pLayout->addWidget(new QLabel("cache num"), 1, 0);
         pLayout->addWidget(pSpinBox, 1, 1);
-        pLayout->addWidget(new QLabel("cache root"), 2, 0);
-        pLayout->addWidget(pathLineEdit, 2, 1);
-        pLayout->addWidget(new QLabel("temp cache directory"), 3, 0);
-        pLayout->addWidget(pAutoDelCache, 3, 1);
+        pLayout->addWidget(new QLabel("temp cache directory"), 2, 0);
+        pLayout->addWidget(pAutoDelCache, 2, 1);
+        pLayout->addWidget(new QLabel("cache root"), 3, 0);
+        pLayout->addWidget(pathLineEdit, 3, 1);
         pLayout->addWidget(pButtonBox, 4, 1);
 
         connect(pButtonBox, SIGNAL(accepted()), &dlg, SLOT(accept()));

@@ -16,6 +16,7 @@ struct ZENO_RECORD_RUN_INITPARAM {
     bool bRecord = false;
     bool bOptix = false;    //is optix view.
     bool isExportVideo = false;
+    bool needDenoise = false;
     int iFrame = 0;
     int iSFrame = 0;
     int iSample = 0;
@@ -33,6 +34,7 @@ struct ZENO_RECORD_RUN_INITPARAM {
 
 class ZenoDockWidget;
 class DisplayWidget;
+class ZOptixViewport;
 class ZTimeline;
 class LiveTcpServer;
 class LiveHttpServer;
@@ -222,6 +224,7 @@ private:
     void updateShortCut(QStringList keys);
     void shortCutDlg();
     void killOptix();
+    DisplayWidget* getOnlyViewport() const;
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;
