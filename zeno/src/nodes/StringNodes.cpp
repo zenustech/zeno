@@ -4,6 +4,7 @@
 #include <zeno/utils/format.h>
 #include <zeno/utils/fileio.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/types/ListObject.h>
 
 namespace zeno {
 namespace {
@@ -221,6 +222,43 @@ ZENDEFNODE(StringFormatNumStr, {
     {},
     {"string"},
 });
+
+
+struct FormatString : zeno::INode {
+    virtual void apply() override {
+        auto formatStr = get_input2<std::string>("str");
+
+        auto list = get_input<zeno::ListObject>("args");
+        std::string output = formatStr;
+        for (auto obj : list->arr)
+        {
+            std::shared_ptr<zeno::NumericObject> num = std::dynamic_pointer_cast<zeno::NumericObject>(obj);
+            if (num) {
+                std::visit([&](const auto& v) {
+                    output = zeno::format(output, v);
+                    }, num->value);
+            }
+            std::shared_ptr<zeno::StringObject> pStr = std::dynamic_pointer_cast<zeno::StringObject>(obj);
+            if (pStr) {
+                output = zeno::format(output, pStr->get());
+            }
+        }
+
+        set_output2("str", output);
+    }
+};
+
+ZENDEFNODE(FormatString, {
+    {
+        {"string", "str", "{}"},
+        {"list", "args"},
+    },
+    {{"string", "str"}},
+    {},
+    {"string"},
+});
+
+
 /*static int objid = 0;
 
 struct ExportPath : zeno::INode {  // deprecated
