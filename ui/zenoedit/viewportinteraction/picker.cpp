@@ -151,9 +151,17 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
     auto selected = picker->getPicked(x0, y0, x1, y1);
     // qDebug() << "pick: " << selected.c_str();
     if (scene->select_mode == zenovis::PICK_OBJECT) {
+        if (selected.empty()) {
+            selected_prims.clear();
+            return;
+        }
         load_from_str(selected, zenovis::PICK_OBJECT);
     }
     else {
+        if (selected.empty()) {
+            selected_elements.clear();
+            return;
+        }
         load_from_str(selected, scene->select_mode);
         if (picked_elems_callback) picked_elems_callback(selected_elements);
     }
