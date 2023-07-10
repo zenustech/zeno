@@ -337,85 +337,7 @@ struct InstAttr
 };
 std::unordered_map<std::string, InstAttr> g_instAttrsLUT;
 
-//------------------------------------------------------------------------------
-//
-// GLFW callbacks
-//
-//------------------------------------------------------------------------------
 
-//static void mouseButtonCallback( GLFWwindow* window, int button, int action, int mods )
-//{
-    //double xpos, ypos;
-    //glfwGetCursorPos( window, &xpos, &ypos );
-
-    //if( action == GLFW_PRESS )
-    //{
-        //mouse_button = button;
-        //trackball.startTracking( static_cast<int>( xpos ), static_cast<int>( ypos ) );
-    //}
-    //else
-    //{
-        //mouse_button = -1;
-    //}
-//}
-
-
-//static void cursorPosCallback( GLFWwindow* window, double xpos, double ypos )
-//{
-    //Params* params = static_cast<Params*>( glfwGetWindowUserPointer( window ) );
-
-    //if( mouse_button == GLFW_MOUSE_BUTTON_LEFT )
-    //{
-        //trackball.setViewMode( sutil::Trackball::LookAtFixed );
-        //trackball.updateTracking( static_cast<int>( xpos ), static_cast<int>( ypos ), params->width, params->height );
-        //camera_changed = true;
-    //}
-    //else if( mouse_button == GLFW_MOUSE_BUTTON_RIGHT )
-    //{
-        //trackball.setViewMode( sutil::Trackball::EyeFixed );
-        //trackball.updateTracking( static_cast<int>( xpos ), static_cast<int>( ypos ), params->width, params->height );
-        //camera_changed = true;
-    //}
-//}
-
-
-//static void windowSizeCallback( GLFWwindow* window, int32_t res_x, int32_t res_y )
-//{
-    //// Keep rendering at the current resolution when the window is minimized.
-    //if( minimized )
-        //return;
-
-    //// Output dimensions must be at least 1 in both x and y.
-    //sutil::ensureMinimumSize( res_x, res_y );
-
-    //Params* params = static_cast<Params*>( glfwGetWindowUserPointer( window ) );
-    //params->width  = res_x;
-    //params->height = res_y;
-    //camera_changed = true;
-    //resize_dirty   = true;
-//}
-
-
-//static void windowIconifyCallback( GLFWwindow* window, int32_t iconified )
-//{
-    //minimized = ( iconified > 0 );
-//}
-
-
-//static void keyCallback( GLFWwindow* window, int32_t key, int32_t [>scancode*/, int32_t action, int32_t /*mods<] )
-//{
-    //if( action == GLFW_PRESS )
-    //{
-        //if( key == GLFW_KEY_Q || key == GLFW_KEY_ESCAPE )
-        //{
-            //glfwSetWindowShouldClose( window, true );
-        //}
-    //}
-    //else if( key == GLFW_KEY_G )
-    //{
-        //// toggle UI draw
-    //}
-//}
 
 
 //static void scrollCallback( GLFWwindow* window, double xscroll, double yscroll )
@@ -576,25 +498,33 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.num_lights = g_lights.size();
     state.params.denoise = denoise;
+    for(int j=0;j<4;j++){
+      for(int i=0;i<4;i++){
+        state.params.tile_i = i;
+        state.params.tile_j = j;
+        state.params.tile_w = state.params.windowSpace.x/4 + 1;
+        state.params.tile_h = state.params.windowSpace.y/4 + 1;
 
-    CUDA_SYNC_CHECK();
-    CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
-                &state.params, sizeof( Params ),
-                cudaMemcpyHostToDevice
-                ) );
+        CUDA_SYNC_CHECK();
+        CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
+                    &state.params, sizeof( Params ),
+                    cudaMemcpyHostToDevice
+                    ) );
 
-    CUDA_SYNC_CHECK();
-    OPTIX_CHECK( optixLaunch(
-                state.pipeline,
-                0,
-                (CUdeviceptr)state.d_params2,
-                sizeof( Params ),
-                &state.sbt,
-                state.params.width,   // launch width
-                state.params.height,  // launch height
-                1                     // launch depth
-                ) );
+        CUDA_SYNC_CHECK();
 
+        OPTIX_CHECK( optixLaunch(
+                    state.pipeline,
+                    0,
+                    (CUdeviceptr)state.d_params2,
+                    sizeof( Params ),
+                    &state.sbt,
+                    state.params.tile_w,   // launch width
+                    state.params.tile_h,  // launch height
+                    1                     // launch depth
+                    ) );
+      }
+    }
     output_buffer.unmap();
     (*output_buffer_diffuse   ).unmap();
     (*output_buffer_specular  ).unmap();
@@ -965,14 +895,16 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         ins.visibilityMask = DefaultMatMask;
     }
     
+
     std::vector<int> meshIdxs(num_instances);
+
 
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
-    unsigned int sbt_offset = 0;
+    size_t sbt_offset = 0;
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
     {
         auto  mesh = m_meshes[i];
@@ -1553,15 +1485,16 @@ static void cleanupState( PathTracerState& state )
     }
     OptixUtil::g_vdb_cached_map.clear();
 
-        state.d_raygen_record.reset();
-        state.d_miss_records.reset();
-        state.d_hitgroup_records.reset();
-        state.d_vertices.reset();
-        state.d_gas_output_buffer.reset();
-        state.accum_buffer_p.reset();
-        state.albedo_buffer_p.reset();
-        state.normal_buffer_p.reset();
-        state.d_params.reset();
+//        state.d_raygen_record.reset();
+//        state.d_miss_records.reset();
+//        state.d_hitgroup_records.reset();
+//        state.d_vertices.reset();
+//        state.d_gas_output_buffer.reset();
+//        state.accum_buffer_p.reset();
+//        state.albedo_buffer_p.reset();
+//        state.normal_buffer_p.reset();
+//        state.d_params.reset();
+
     //state = {};
 }
 
@@ -1934,7 +1867,7 @@ void CopyInstMeshToGlobalMesh()
             auto &lightMark = instData.lightMark;
             auto &meshPieces = instData.meshPieces;
 
-            for (int i = 0; i < vertices.size(); ++i)
+            for (size_t i = 0; i < vertices.size(); ++i)
             {
                 g_vertices[vertsOffset + i] = vertices[i];
                 g_clr[vertsOffset + i] = clr[i];
@@ -1942,12 +1875,12 @@ void CopyInstMeshToGlobalMesh()
                 g_uv[vertsOffset + i] = uv[i];
                 g_tan[vertsOffset + i] = tan[i];
             }
-            for (int i = 0; i < vertices.size() / 3; ++i)
+            for (size_t i = 0; i < vertices.size() / 3; ++i)
             {
                 g_mat_indices[vertsOffset / 3 + i] = mat_indices[i];
                 g_lightMark[vertsOffset / 3 + i] = lightMark[i];
             }
-            for (int i = 0; i < meshPieces.size(); ++i)
+            for (size_t i = 0; i < meshPieces.size(); ++i)
             {
                 g_meshPieces[meshPiecesOffset + i] = meshPieces[i];
             }
@@ -2527,7 +2460,8 @@ void foreach_sphere_crowded(std::function<void( const std::string &mtlid, std::v
 void cleanupSpheres() {
 
     SpheresCrowded = {};
-
+    uniform_sphere_gas_handle = 0;
+    uniform_sphere_d_gas_output_buffer.reset();
     sphere_unique_mats.clear();
     LutSpheresTransformed.clear();
     SpheresInstanceGroupMap.clear();
@@ -3457,6 +3391,7 @@ void *optixgetimg_extra(std::string name) {
 }
 
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
+    bool imageRendered = false;
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
@@ -3470,13 +3405,15 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 //    updateState( *output_buffer_specular, state.params);
 //    updateState( *output_buffer_transmit, state.params);
 //    updateState( *output_buffer_background, state.params);
-    const int max_samples_once = 16;
 
+    const int max_samples_once = 32;
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
+
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
         launchSubframe( *output_buffer_o, state, denoise);
         state.params.subframe_index++;
     }
+
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif
@@ -3511,6 +3448,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
             stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
             stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
         }
+        imageRendered = true;
     }
 }
 
@@ -3534,32 +3472,42 @@ void optixcleanup() {
     using namespace OptixUtil;
     try {
         CUDA_SYNC_CHECK();
+        //cleanupSpheres();
+        //sphereInstanceGroupAgentList.clear();
         cleanupState( state );
         rtMaterialShaders.clear();
-        
+
         OPTIX_CHECK(optixPipelineDestroy(state.pipeline));
         OPTIX_CHECK(optixDeviceContextDestroy(state.context));
     }
     catch (sutil::Exception const& e) {
         std::cout << "OptixCleanupError: " << e.what() << std::endl;
     }
-//    state.d_vertices.reset();
-//    state.d_clr.reset();
-//    state.d_mat_indices.reset();
-//    state.d_nrm.reset();
-//    state.d_tan.reset();
-//    state.d_uv.reset();
-        std::memset((void *)&state, 0, sizeof(state));
-        //std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
-
-
-            context                  .handle=0;
-            pipeline                 .handle=0;
-            ray_module               .handle=0;
-            raygen_prog_group        .handle=0;
-            radiance_miss_group      .handle=0;
-            occlusion_miss_group     .handle=0;
-            isPipelineCreated               = false;
+////    state.d_vertices.reset();
+////    state.d_clr.reset();
+////    state.d_mat_indices.reset();
+////    state.d_nrm.reset();
+////    state.d_tan.reset();
+////    state.d_uv.reset();
+//        std::memset((void *)&state, 0, sizeof(state));
+//        //std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
+//
+//
+    context                  .handle=0;
+    pipeline                 .handle=0;
+    ray_module               .handle=0;
+    raygen_prog_group        .handle=0;
+    radiance_miss_group      .handle=0;
+    occlusion_miss_group     .handle=0;
+    output_buffer_o           .reset();
+    output_buffer_diffuse     .reset();
+    output_buffer_specular    .reset();
+    output_buffer_transmit    .reset();
+    output_buffer_background  .reset();
+    g_StaticMeshPieces        .clear();
+    g_meshPieces              .clear();
+    state = {};
+    isPipelineCreated               = false;
 
 
             
