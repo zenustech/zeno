@@ -50,6 +50,11 @@ set_target_properties(zeno
   CUDA_ARCHITECTURES ${ZS_CUDA_ARCH}
 )
 
+#
+target_sources(zeno PRIVATE
+  pyzfx/pyzfx.cpp
+)
+
 # wrangler
 target_sources(zeno PRIVATE
   wrangle/PW.cu
