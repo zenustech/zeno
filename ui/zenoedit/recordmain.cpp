@@ -221,8 +221,8 @@ int record_main(const QCoreApplication& app)
             QString retData = QString::fromUtf8(arr.data(), arr.size());
             int idx = retData.indexOf("[optixcmd]:");
             if (idx != -1) {
-                optixProc->terminate();
-                delete optixProc;
+                //optixProc->terminate();
+                //delete optixProc;
                 QString result = retData.mid(idx);
                 if (result.startsWith("[optixcmd]: record completed.")) {
                     QCoreApplication::exit(0);

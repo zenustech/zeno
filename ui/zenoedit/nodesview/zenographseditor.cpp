@@ -836,7 +836,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
             text.replace('\\', '/');
             settings.setValue("nas_loc", text);
             // refresh settings (zeno::setConfigVariable), only needed in single-process mode
-            startUp();
+            startUp(true);
         }
     }
     else if (actionType == ZenoMainWindow::ACTION_ZENCACHE) 
