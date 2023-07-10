@@ -158,6 +158,8 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
     m_name2id[newName] = ident;
 
     emit graphRenamed(oldName, newName);
+    QModelIndex subgIdx = index(newName);
+    emit dataChanged(subgIdx, subgIdx);
 }
 
 QModelIndex GraphsModel::nodeIndex(uint32_t sid, uint32_t nodeid)

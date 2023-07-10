@@ -53,6 +53,9 @@ public slots:
 signals:
     void zoomed(qreal);
 
+protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
+
 private slots:
 	void onSubGraphsToRemove(const IGraphsModel* pModel, const QModelIndex& parent, int first, int end);
 	void onModelReset();
@@ -78,6 +81,4 @@ private:
     QStandardItemModel* m_sideBarModel;
     int m_searchOpts;
 };
-
-
 #endif

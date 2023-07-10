@@ -196,7 +196,7 @@ void ZSubnetListItemDelegate::onDelete()
 
 void ZSubnetListItemDelegate::onRename(const QModelIndex &index) 
 {
-    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"));
+    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"), QLineEdit::Normal, index.data(ROLE_OBJNAME).toString());
     if (!name.isEmpty()) {
         m_model->setData(index, name, Qt::EditRole);
     }
@@ -260,4 +260,16 @@ void ZSubnetListItemDelegate::updateEditorGeometry(QWidget* editor, const QStyle
 void ZSubnetListItemDelegate::setSelectedIndexs(const QModelIndexList &list) 
 {
     m_selectedIndexs = list;
+}
+
+
+SubListSortProxyModel::SubListSortProxyModel(QObject* parent) : QSortFilterProxyModel(parent)
+{
+}
+
+bool SubListSortProxyModel::lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const
+{
+    if (source_left.data().toString().compare(source_right.data().toString(), Qt::CaseInsensitive) < 0)
+        return true;
+    return false;
 }

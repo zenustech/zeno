@@ -73,6 +73,8 @@ void ZenoGraphsEditor::initUI()
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");
     m_ui->graphsViewTab->setProperty("cssClass", "graphicsediter");
     m_ui->graphsViewTab->tabBar()->setProperty("cssClass", "graphicsediter");
+    m_ui->graphsViewTab->tabBar()->installEventFilter(this);
+    m_ui->graphsViewTab->setUsesScrollButtons(true);
     m_ui->btnSearchOpt->setIcons(":/icons/collaspe.svg", ":/icons/collaspe.svg");
     initRecentFiles();
 }
@@ -149,7 +151,11 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgr
 
     m_ui->subnetTree->setModel(pNodeModel->implModel());
     m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
-    m_ui->subnetList->setModel(pSubgraphs);
+    SubListSortProxyModel*proxyModel = new SubListSortProxyModel(this);
+    proxyModel->setSourceModel(pSubgraphs);
+    proxyModel->setDynamicSortFilter(true);
+    m_ui->subnetList->setModel(proxyModel);
+    proxyModel->sort(0, Qt::AscendingOrder);
     m_ui->subnetList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
 
@@ -223,6 +229,46 @@ void ZenoGraphsEditor::onSubGraphsToRemove(const IGraphsModel* pModel, const QMo
             }
         }
     }
+}
+
+bool ZenoGraphsEditor::eventFilter(QObject* watched, QEvent* event)
+{
+    if (watched == m_ui->graphsViewTab->tabBar() && event->type() == QEvent::Paint)
+    {
+        for (int idx = 0; idx < m_ui->graphsViewTab->count(); idx++)
+        {
+            QRectF rec = m_ui->graphsViewTab->tabBar()->tabRect(idx);
+            QPainter painter(m_ui->graphsViewTab->tabBar());
+            QColor color;
+            QString text = m_ui->graphsViewTab->tabBar()->tabText(idx);
+            if (m_pSubgraphs->index(text).isValid())
+            {
+                if (m_ui->graphsViewTab->currentIndex() == idx)
+                    color = QColor("#0064A8");
+                else
+                    color = QColor("#4578AC");
+            }
+            else
+            {
+                if (m_ui->graphsViewTab->currentIndex() == idx)
+                    color = QColor("#22252C");
+                else
+                    color = QColor("#2D3239");
+            }
+            painter.setBrush(color);
+            painter.drawRect(rec);
+            qreal y = rec.y() + (rec.height() - ZenoStyle::dpiScaled(20)) / 2;
+            QIcon icon = m_ui->graphsViewTab->tabBar()->tabIcon(idx);
+            painter.drawPixmap(QPointF(rec.x() + ZenoStyle::dpiScaled(4), y), icon.pixmap(ZenoStyle::dpiScaledSize(QSize(20, 20))));
+            QPen pen(Qt::white);
+            pen.setWidth(1);
+            painter.setPen(pen);
+            rec.adjust(ZenoStyle::dpiScaled(28), y, 0, 0);
+            painter.drawText(rec, text);
+        }
+        return true;
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
 void ZenoGraphsEditor::onModelReset()
@@ -529,12 +575,18 @@ void ZenoGraphsEditor::activateTabOfTree(const QString &path, const QString &nod
     m_mainWin->onNodesSelected(subgIdx, pView->scene()->selectNodesIndice(), true);
 }
 
-void ZenoGraphsEditor::activateTab(const QModelIndex& subgIdx, const QString& path, const QString& objId, bool isError)
+void ZenoGraphsEditor::activateTab(const QModelIndex& index, const QString& path, const QString& objId, bool isError)
 {
+    QSortFilterProxyModel* pProxyModel = qobject_cast<QSortFilterProxyModel*>(m_ui->subnetList->model());
     auto graphsMgm = zenoApp->graphsManagment();
-    IGraphsModel* pSubgraphs = UiHelper::getGraphsBySubg(subgIdx);
-    ZASSERT_EXIT(pSubgraphs);
-    QString subGraphName = subgIdx.data(ROLE_OBJNAME).toString();
+    IGraphsModel* pSubgraphs = UiHelper::getGraphsBySubg(index);
+    QString subGraphName = index.data(ROLE_OBJNAME).toString();
+    QModelIndex subgIdx = index;
+    if (!pSubgraphs)
+    {
+        pSubgraphs = m_pSubgraphs;
+        subgIdx = pSubgraphs->index(subGraphName);
+    }
     if (subGraphName == "main")
         subGraphName = "/" + subGraphName;
     int idx = tabIndexOfName(subGraphName);
