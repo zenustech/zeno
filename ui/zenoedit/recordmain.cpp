@@ -14,6 +14,7 @@
 #include "launch/corelaunch.h"
 #include <zeno/utils/log.h>
 #include "common.h"
+#include <rapidjson/document.h>
 
 //#define DEBUG_DIRECTLY
 
@@ -174,6 +175,9 @@ int record_main(const QCoreApplication& app)
         ZenoMainWindow tempWindow(nullptr, 0, !param.bOptix ? PANEL_GL_VIEW : PANEL_EMPTY);
         tempWindow.showMaximized();
         tempWindow.solidRunRender(param);
+
+        //idle
+        return app.exec();
     }
     else
     {
@@ -206,7 +210,7 @@ int record_main(const QCoreApplication& app)
 
         optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
         optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
-        optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+        optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::SeparateChannels);
         optixProc->start(QCoreApplication::applicationFilePath(), args);
 
         if (!optixProc->waitForStarted(-1)) {
@@ -216,29 +220,45 @@ int record_main(const QCoreApplication& app)
 
         optixProc->closeWriteChannel();
 
-        //todo: should receive the msg from optixcmd proc, e.g. recordFinished msg.
         QObject::connect(optixProc, &QProcess::readyRead, [=]() {
-            QByteArray arr = optixProc->readAll();
-            QString retData = QString::fromUtf8(arr.data(), arr.size());
-            int idx = retData.indexOf("[optixcmd]:");
-            if (idx != -1) {
-                //optixProc->terminate();
-                //delete optixProc;
-                QString result = retData.mid(idx);
-                if (result.startsWith("[optixcmd]: record completed.")) {
-                    QCoreApplication::exit(0);
-                }
-                else {
-                    QCoreApplication::exit(-1);
+
+            while (optixProc->canReadLine()) {
+                QByteArray content = optixProc->readLine();
+
+                if (content.startsWith("[optixcmd]:")) {
+                    static const QString sFlag = "[optixcmd]:";
+                    content = content.mid(sFlag.length());
+                    rapidjson::Document doc;
+                    doc.Parse(content);
+                    ZASSERT_EXIT(doc.IsObject());
+                    if (doc.HasMember("result")) {
+                        ZASSERT_EXIT(doc["result"].IsInt());
+                        int ret = doc["result"].GetInt();
+                        zeno::log_info("result is {}.", ret);
+                        QCoreApplication::exit(ret);
+                    }
+                    else if (doc.HasMember("frame")) {
+                        ZASSERT_EXIT(doc["frame"].IsInt());
+                        int frame = doc["frame"].GetInt();
+                        zeno::log_info("frame {} recording is finished.", frame);
+                    }
                 }
             }
         });
 
         QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
-            int j;
-            j = 0;
+            if (QProcess::Crashed == error) {
+                zeno::log_info("render process has crashed");
+                QCoreApplication::exit(-2);
+            }
         });
+
+        //QObject::connect(optixProc, &QProcess::finished, [=](int exitCode, QProcess::ExitStatus exitStatus) {
+
+        //});
+
+        //idle
+        return app.exec();
     }
-    //idle
-    return app.exec();
+
 }

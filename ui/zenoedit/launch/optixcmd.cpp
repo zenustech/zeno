@@ -148,13 +148,25 @@ int optixcmd(const QCoreApplication& app, int port)
         globalComm->finishFrame();
         ret = worker.recordFrame_impl(recInfo, frame);
         if (!ret) {
-            zeno::log_error("[optixcmd]: error occurs when recording frame {}", frame);
-            //todo: notify record process we have failed...
+            zeno::log_error("\n[optixcmd]:{\"result\" : -1}\n");
             return -1;
         }
+        else {
+            QString errMsg = QString("\n[optixcmd]: {\"frame\" : %1}\n").arg(frame);
+            zeno::log_info(errMsg.toStdString());
+        }
+
+        //test crash report.
+        /*
+        if (frame == 5) {
+            char* p = nullptr;
+            *p = 'c';
+        }
+        */
+
         ++frame;
     }
-    zeno::log_critical("[optixcmd]: record completed.");
+    zeno::log_critical("\n[optixcmd]:{\"result\" : 0}\n");
 
     return 0;
 }
