@@ -211,6 +211,7 @@ struct WhitewaterSolver : INode {
         auto TargetVelAttr = get_input2<std::string>("TargetVelAttr");
 
         auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<vec3f>("Gravity"));
+        auto dragModel = get_input2<std::string>("DragModel");
         auto air_drag = get_input2<float>("AirDrag");
         auto foam_drag = get_input2<float>("FoamDrag");
         auto bubble_drag = get_input2<float>("BubbleDrag");
@@ -254,17 +255,19 @@ struct WhitewaterSolver : INode {
                 par_life[idx] -= dt;
             }
             auto m_tarVel = vec_to_other<openvdb::Vec3f>(par_tarVel[idx]);
-#if 0
-            //second step, semi-implicit integrate drag
-            // (v_np1 - v_n) / dt = c * length(v_tar - v_n) * (v_tar - v_np1)
-            vec3f v_target = vec3f(m_tarVel[0], m_tarVel[1], m_tarVel[2]);
-            vec3f m_vel2 = vec3f(m_vel.x(), m_vel.y(), m_vel.z());
-            float v_diff = zeno::distance(v_target, m_vel2);
-            float denom = 1 + dt * air_drag * v_diff;
-            m_vel = vec_to_other<openvdb::Vec3f>((dt * air_drag * v_diff * v_target + m_vel2) / denom);
-#endif
-            // simple drag
-            m_vel += drag_coef * (m_tarVel - m_vel);
+
+            if (dragModel == "square") {
+                //second step, semi-implicit integrate drag
+                // (v_np1 - v_n) / dt = c * length(v_tar - v_n) * (v_tar - v_np1)
+                vec3f v_target = vec3f(m_tarVel[0], m_tarVel[1], m_tarVel[2]);
+                vec3f m_vel2 = vec3f(m_vel.x(), m_vel.y(), m_vel.z());
+                float v_diff = zeno::distance(v_target, m_vel2);
+                float denom = 1 + dt * air_drag * v_diff;
+                m_vel = vec_to_other<openvdb::Vec3f>((dt * air_drag * v_diff * v_target + m_vel2) / denom);
+            } else {
+                // simple drag
+                m_vel += drag_coef * (m_tarVel - m_vel);
+            }
 
             auto wcoord_new = wcoord + dt * m_vel;
             float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord_new));
@@ -290,6 +293,7 @@ ZENDEFNODE(WhitewaterSolver, {/* inputs: */
                                "SolidSDF",
                                {"string", "TargetVelAttr", "tv"},
                                {"vec3f", "Gravity", "0, -9.8, 0"},
+                               {"enum linear square", "DragModel", "linear"},
                                {"float", "AirDrag", "0.05"},
                                {"float", "FoamDrag", "0.9"},
                                {"float", "BubbleDrag", "0.1"},
