@@ -494,6 +494,14 @@ void ZOptixViewport::paintEvent(QPaintEvent* event)
     if (!m_renderImage.isNull())
     {
         QPainter painter(this);
-        painter.drawImage(0, 0, m_renderImage);
+        auto *session = m_zenovis->getSession();
+        if (session != nullptr && session->is_lock_window()) {
+            auto *scene = session->get_scene();
+            auto offset = scene->camera->viewport_offset;
+            painter.drawImage(offset[0], offset[1], m_renderImage);
+        }
+        else {
+            painter.drawImage(0, 0, m_renderImage);
+        }
     }
 }
