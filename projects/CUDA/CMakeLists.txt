@@ -49,11 +49,9 @@ set_target_properties(zeno
   CUDA_ARCHITECTURES ${ZS_CUDA_ARCH}
 )
 
-# closest point query (from ingo wald)
+#
 target_sources(zeno PRIVATE
-  iw_query/Query.cpp
-  iw_query/bvh.cpp
-  iw_query/distanceQueries.cpp
+  pyzfx/pyzfx.cpp
 )
 
 # wrangler
