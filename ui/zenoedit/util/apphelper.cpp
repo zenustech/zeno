@@ -216,5 +216,4 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
     param.tempDir = settings.value("zencache-autoremove", true).isValid() ? settings.value("zencache-autoremove", true).toBool() : false;
     param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
     param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
-    param.autoRmCurcache = settings.value("zencache-rmcurcache").isValid() ? settings.value("zencache-rmcurcache").toBool() : false;
 }

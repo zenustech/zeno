@@ -654,7 +654,11 @@ void ZenoMainWindow::initTimelineDock()
         for (DisplayWidget *view : views) {
             if (m_bAlways) {
                 mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
-                view->onRun(nFrame, nFrame);
+                LAUNCH_PARAM launchParam;
+                launchParam.beginFrame = nFrame;
+                launchParam.endFrame = nFrame;
+                AppHelper::initLaunchCacheParam(launchParam);
+                view->onRun(launchParam);
             }
             else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
                 std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
@@ -667,7 +671,13 @@ void ZenoMainWindow::initTimelineDock()
                 };
                 setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
                 mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
-                view->onRun(nFrame, nFrame, m_bAlwaysLightCamera, m_bAlwaysMaterial);
+                LAUNCH_PARAM launchParam;
+                launchParam.beginFrame = nFrame;
+                launchParam.endFrame = nFrame;
+                launchParam.applyLightAndCameraOnly = m_bAlwaysLightCamera;
+                launchParam.applyMaterialOnly = m_bAlwaysMaterial;
+                AppHelper::initLaunchCacheParam(launchParam);
+                view->onRun(launchParam);
             }
         }
     });
@@ -968,7 +978,10 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
         }
     }
 	zeno::getSession().globalComm->clearState();
-	viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+    LAUNCH_PARAM launchParam;
+    launchParam.beginFrame = recInfo.frameRange.first;
+    launchParam.endFrame = recInfo.frameRange.second;
+	viewWidget->onRun(launchParam);
 
     //ZASSERT_EXIT(ret);
     //viewWidget->runAndRecord(recInfo);
