@@ -10,6 +10,10 @@
 #include <unordered_set>
 #include <zeno/types/MaterialObject.h>
 #include <zeno/types/CameraObject.h>
+#ifdef __linux__
+    #include<unistd.h>
+    #include <sys/statfs.h>
+#endif
 
 namespace zeno {
 
@@ -98,10 +102,27 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
         poses[i].push_back(bufCaches[i].size());
         currentFrameSize += keys[i].size() + poses[i].size() * sizeof(size_t) + bufCaches[i].size();
     }
-    while ((currentFrameSize >> 20) > ((std::filesystem::space(std::filesystem::u8path(cachedir)).free >> 20) - 10*1024)) //Ensure available space 10GB larger than cache
+    size_t freeSpace = 0;
+    #ifdef __linux__
+        struct statfs diskInfo;
+        statfs(cachedir.c_str(), &diskInfo);
+        freeSpace = diskInfo.f_bsize * diskInfo.f_bavail;
+    #else
+        freeSpace = std::filesystem::space(std::filesystem::u8path(cachedir)).free;
+    #endif
+    while ((currentFrameSize >> 20) > ((freeSpace >> 20) - 10*1024) || (freeSpace >> 20) <= 10*1024) //Ensure available space 10GB larger than cache
     {
-        zeno::log_critical("Disk space almost full on {}, wait for zencache remove", std::filesystem::u8path(cachedir).root_path().string());
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        #ifdef __linux__
+            zeno::log_critical("Disk space almost full on {}, wait for zencache remove", std::filesystem::u8path(cachedir).string());
+            sleep(2);
+            statfs(cachedir.c_str(), &diskInfo);
+            freeSpace = diskInfo.f_bsize * diskInfo.f_bavail;
+
+        #else
+            zeno::log_critical("Disk space almost full on {}, wait for zencache remove", std::filesystem::u8path(cachedir).root_path().string());
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+            freeSpace = std::filesystem::space(std::filesystem::u8path(cachedir)).free;
+        #endif
     }
     for (int i = 0; i < 3; i++)
     {
@@ -265,7 +286,7 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int fra
                 {
                     for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dirToRemove))
                     {
-                        std::string& filePath = entry.path().string();
+                        std::string filePath = entry.path().string();
                         if (std::filesystem::is_directory(entry.path()) || filePath.substr(filePath.size() - 9) != ".zencache")
                         {
                             hasZencacheOnly = false;
@@ -277,6 +298,11 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int fra
                         std::filesystem::remove_all(dirToRemove);
                         zeno::log_info("remove dir: {}", dirToRemove);
                     }
+                }
+                if (frameid == endFrameNumber && std::filesystem::exists(cacheFramePath) && std::filesystem::is_empty(cacheFramePath))
+                {
+                    std::filesystem::remove(cacheFramePath);
+                    zeno::log_info("remove dir: {}", cacheFramePath);
                 }
             }
 

@@ -476,7 +476,8 @@ struct MakeCuOcean : zeno::INode {
         // end patch
 
         cuOceanObj->h_h0 = (float2 *)malloc(sizeof(float2) * cuOceanObj->spectrumSize);
-
+        unsigned int  seed = get_input<zeno::NumericObject>("seed")->get<int>();
+        srand(seed);
         generate_h0(cuOceanObj);
         //cpu to gpu
         copy(zs::mem_device, (void *)cuOceanObj->d_h0.data(), (void *)cuOceanObj->h_h0,
@@ -496,7 +497,8 @@ ZENDEFNODE(MakeCuOcean, {/* inputs:  */ {{"int", "WaveExponent", "8"},
                                          {"float", "patchSize", "100.0"},
                                          {"float", "speed", "100.0"},
                                          {"float", "timeshift", "0.0"},
-                                         {"float", "amp", "1.0"}},
+                                         {"float", "amp", "1.0"},
+                                         {"int","seed", "0" }},
                          /* outputs: */
                          {
                              "gpuOcean",
@@ -680,9 +682,9 @@ struct OceanCompute : zeno::INode {
 
 ZENDEFNODE(OceanCompute, {/* inputs:  */ {
                               "grid",
-                              "time",
-                              "depth",
-                              "dt",
+                              {"float", "time", "0"},
+                              {"float", "depth", "0"},
+                              {"float", "dt", "0.04"},
                               "ocean_FFT",
                           },
                           /* outputs: */
@@ -866,9 +868,9 @@ struct OceanCuCompute : zeno::INode {
 
 ZENDEFNODE(OceanCuCompute, {/* inputs:  */ {
                                 "grid",
-                                "time",
-                                "depth",
-                                "dt",
+                                {"float", "time", "0"},
+                                {"float", "depth", "0"},
+                                {"float", "dt", "0.04"},
                                 "ocean_FFT",
                             },
                             /* outputs: */

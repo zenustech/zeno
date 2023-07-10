@@ -8,7 +8,6 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/CameraObject.h>
 #include <zenomodel/include/uihelper.h>
-#include "launch/corelaunch.h"
 #include "zenomainwindow.h"
 #include "camerakeyframe.h"
 #include <zenoui/style/zenostyle.h>
@@ -492,7 +491,7 @@ void DisplayWidget::afterRun()
     scene->objectsMan->lightObjects.clear();
 }
 
-void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -510,12 +509,6 @@ void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCamera
         m_glView->clearTransformer();
         m_glView->getSession()->get_scene()->selected.clear();
     }
-    LAUNCH_PARAM launchParam;
-    launchParam.beginFrame = frameStart;
-    launchParam.endFrame = frameEnd;
-    launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
-    launchParam.applyMaterialOnly = applyMaterialOnly;
-    AppHelper::initLaunchCacheParam(launchParam);
     launchProgram(pModel, launchParam);
 
     if (m_glView)
@@ -642,7 +635,12 @@ void DisplayWidget::onRecord()
         {
             //clear cached objs.
             zeno::getSession().globalComm->clearState();
-            onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+            LAUNCH_PARAM launchParam;
+            launchParam.beginFrame = recInfo.frameRange.first;
+            launchParam.endFrame = recInfo.frameRange.second;
+            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+            AppHelper::initLaunchCacheParam(launchParam);
+            onRun(launchParam);
         }
 
         //setup signals issues.

@@ -57,6 +57,7 @@ static int calcFrameCountByAudio(std::string path, int fps) {
     return 0;
 }
 
+int record_main(const QCoreApplication& app);
 int record_main(const QCoreApplication& app)
 {
     ZENO_RECORD_RUN_INITPARAM param;
