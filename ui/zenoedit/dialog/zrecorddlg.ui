@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>413</width>
-    <height>386</height>
+    <height>408</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -176,7 +176,7 @@
    <item>
     <widget class="QCheckBox" name="cbRemoveAfterRender">
      <property name="text">
-      <string>removeAfterRender</string>
+      <string>remove cache after render</string>
      </property>
     </widget>
    </item>
