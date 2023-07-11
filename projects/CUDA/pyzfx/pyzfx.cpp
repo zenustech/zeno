@@ -4,12 +4,13 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 
+#include "zensim/ZpcBuiltin.hpp"
+#include "zensim/resource/Filesystem.hpp"
 #include "zensim/zpc_tpls/fmt/color.h"
 #include "zensim/zpc_tpls/fmt/format.h"
-#include "zensim/ZpcBuiltin.hpp"
 #include <cstdlib>
-#include <zeno/utils/log.h>
 #include <filesystem>
+#include <zeno/utils/log.h>
 
 namespace fs = std::filesystem;
 
@@ -23,7 +24,8 @@ struct PyZpcLite : INode {
         auto processTags = [](std::string tags, std::set<std::string> &res, std::string sep) {
             using Ti = RM_CVREF_T(std::string::npos);
             Ti st = tags.find_first_not_of(sep, 0);
-            for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos; ed = tags.find_first_of(sep, st + 1)) {
+            for (auto ed = tags.find_first_of(sep, st + 1); ed != std::string::npos;
+                 ed = tags.find_first_of(sep, st + 1)) {
                 res.insert(tags.substr(st, ed - st));
                 st = tags.find_first_not_of(sep, ed);
                 if (st == std::string::npos)
@@ -40,26 +42,32 @@ struct PyZpcLite : INode {
         processTags(p, pathLocations, ":");
         const std::string target = "python";
 #endif
-        for (const auto& path : pathLocations) {
+        for (const auto &path : pathLocations) {
             fmt::print("iterate path: {}\n", path);
             fs::path loc = path + "/" + target;
             bool ifExist = false;
             try {
                 ifExist = fs::exists(loc);
-            }
-            catch (const std::exception& e) {
+            } catch (const std::exception &e) {
                 fmt::print("\tskipping path {} due to exception (e.g. inaccessibility).\n", path);
                 continue;
             }
             if (ifExist) {
-                fmt::print("\tfound {} at {}\n", target, path);
+#if RESOURCE_AT_RELATIVE_PATH
+                auto scriptPath = zs::abs_exe_directory() + "/" + "resource/HelloWorld.py";
+#else
+                auto scriptPath = std::string{AssetDirPath} + "/" + "Scripts/HelloWorld.py";
+#endif
+                auto cmdStr = fmt::format("{} {}", loc.string(), scriptPath);
+                fmt::print("\tfound {} at \"{}\". executing \"{}\"\n", target, path, cmdStr);
+                std::system(cmdStr.c_str());
             }
         }
     }
 };
 
 ZENDEFNODE(PyZpcLite, {/* inputs: */
-                       {},
+                       {{"string", "path", ""}},
                        /* outputs: */
                        {},
                        /* params: */
