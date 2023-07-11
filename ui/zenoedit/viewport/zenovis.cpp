@@ -58,25 +58,7 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
 {
     m_perspective = perspective;
     if (session) {
-        if (session->is_lock_window())
-        {
-            int w = resolution.x(), W = 0;
-            int h = resolution.y(), H = 0;
-            float deviceRatio = (float)w / h;
-            float ratio = session->get_safe_frames();
-            if (deviceRatio > ratio) {
-                H = h;
-                W = H * ratio;
-            } else {
-                W = w;
-                H = W / ratio;
-            }
-            session->set_window_size(W, H);
-        }
-        else
-        {
-            session->set_window_size(resolution.x(), resolution.y());
-        }
+        session->set_window_size(resolution.x(), resolution.y());
         session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz,
                                   m_perspective.theta, m_perspective.phi, m_perspective.radius,
                                   m_perspective.fov, m_perspective.ortho_mode,

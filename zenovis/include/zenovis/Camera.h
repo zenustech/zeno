@@ -5,6 +5,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 #include <zeno/types/CameraObject.h>
+#include <optional>
 
 namespace zenovis {
 
@@ -23,14 +24,13 @@ struct Camera {
     float m_aperture = 0.0f;
     float focalPlaneDistance = 2.0f;
     float m_dof = -1.f;
-    float m_safe_frames = 0;
+    std::optional<float> safe_frame_ratio = std::nullopt;
 
     glm::vec3 m_lodcenter{0, 0, -1};
     glm::vec3 m_lodfront{0, 0, 1};
     glm::vec3 m_lodup{0, 1, 0};
 
     bool m_need_sync = false;
-    bool m_block_window = false;
     bool m_auto_radius = false;
 
     struct ZxxHappyLookParam {
@@ -48,12 +48,15 @@ struct Camera {
     struct ZxxHappyLookParam m_zxx;
     struct ZxxHappyLookParam m_zxx_in;
 
+    float getDeviceAspect() const {
+        return float(m_nx) / float(m_ny);
+    }
+
     float getAspect() const {
-        return (float)m_nx / (float)m_ny;
+        return safe_frame_ratio.has_value()? safe_frame_ratio.value() : getDeviceAspect();
     }
 
     void setResolution(int nx, int ny);
-    void lock_window_size(bool bLock, int nx, int ny);
     void set_safe_frames(bool bLock, int nx, int ny);
     float get_safe_frames() const;
     bool is_locked_window() const;
@@ -62,6 +65,7 @@ struct Camera {
     void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance);
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);
+    zeno::vec4i viewport() const;
 };
 
 } // namespace zenovis

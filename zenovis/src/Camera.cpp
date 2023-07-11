@@ -79,24 +79,21 @@ void Camera::setResolution(int nx, int ny) {
     m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
 }
 
-void Camera::lock_window_size(bool bLock, int nx, int ny) {
-    m_block_window = bLock;
-    m_nx = nx;
-    m_ny = ny;
-    m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
-}
-
 void Camera::set_safe_frames(bool bLock, int nx, int ny) {
-    m_block_window = bLock;
-    m_safe_frames = (float)nx / ny;
+    if (bLock) {
+        safe_frame_ratio = float(nx) / float(ny);
+    }
+    else {
+        safe_frame_ratio = std::nullopt;
+    }
 }
 
 float Camera::get_safe_frames() const {
-    return m_safe_frames;
+    return safe_frame_ratio.value();
 }
 
 bool Camera::is_locked_window() const {
-    return m_block_window;
+    return safe_frame_ratio.has_value();
 }
 
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
@@ -149,6 +146,34 @@ void Camera::set_program_uniforms(opengl::Program *pro) {
     //pro->set_uniform("mGridScale", m_grid_scale);
     //pro->set_uniform("mGridBlend", m_grid_blend);
     //pro->set_uniform("mSampleWeight", m_sample_weight);
+}
+
+zeno::vec4i Camera::viewport() const {
+    zeno::log_info("m_nx, m_ny {} {}", m_nx, m_ny);
+    zeno::vec4i out;
+    if (safe_frame_ratio.has_value()) {
+        zeno::log_info("safe_frame_ratio {}", safe_frame_ratio.value());
+        float deviceRatio = getDeviceAspect();
+        if (deviceRatio > safe_frame_ratio.value()) {
+            int w = m_ny * safe_frame_ratio.value();
+            int h = m_ny;
+            int x = (m_nx - w) / 2;
+            int y = 0;
+            out = {x, y, w, h};
+        }
+        else {
+            int w = m_nx;
+            int h = m_nx / safe_frame_ratio.value();
+            int x = 0;
+            int y = (m_ny - h) / 2;
+            out = {x, y, w, h};
+        }
+    }
+    else {
+        out = {0, 0, m_nx, m_ny};
+    }
+    zeno::log_info("viewport {}", out);
+    return out;
 }
 
 }

@@ -115,7 +115,8 @@ void Scene::draw() {
     if (renderMan->getDefaultEngineName() != "optx")
     {
         //CHECK_GL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
-        CHECK_GL(glViewport(0, 0, camera->m_nx, camera->m_ny));
+        auto [x, y, w, h] = camera->viewport();
+        CHECK_GL(glViewport(x, y, w, h));
         //CHECK_GL(glClearColor(drawOptions->bgcolor.r, drawOptions->bgcolor.g, drawOptions->bgcolor.b, 0.0f));
     }
 

@@ -65,11 +65,12 @@ struct RenderEngineBate : RenderEngine {
                 if (hudGraphics.size() > 2) {
                     Camera backup = *scene->camera;
                     scene->camera->focusCamera(0, 0, 0, 10);
-                    CHECK_GL(glViewport(0, 0, scene->camera->m_nx * 0.1, scene->camera->m_ny * 0.1));
+                    auto [x, y, w, h] = scene->camera->viewport();
+                    CHECK_GL(glViewport(x, y, w * 0.1, h * 0.1));
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                     hudGraphics[1]->draw();
                     CHECK_GL(glEnable(GL_DEPTH_TEST));
-                    CHECK_GL(glViewport(0, 0, scene->camera->m_nx, scene->camera->m_ny));
+                    CHECK_GL(glViewport(x, y, w, h));
                     *scene->camera = backup;
                 }
             }
