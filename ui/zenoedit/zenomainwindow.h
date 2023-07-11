@@ -11,6 +11,7 @@
 #include "cache/zcachemgr.h"
 #include "launch/corelaunch.h"
 #include <QTcpSocket>
+#include <QLocalSocket>
 
 class ZenoDockWidget;
 class DisplayWidget;
@@ -215,7 +216,7 @@ private:
     bool m_bOnlyOptix;          //isolate optix window.
     Ui::MainWindow* m_ui;
 
-    std::unique_ptr<QTcpSocket> optixClientSocket;
+    std::unique_ptr<QLocalSocket> optixClientSocket;
 };
 
 #endif

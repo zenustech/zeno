@@ -36,7 +36,9 @@ struct _Header { // sync with viewdecode.cpp
 ZTcpServer::ZTcpServer(QObject *parent)
     : QObject(parent)
     , m_tcpServer(nullptr)
+    , m_optixServer(nullptr)
     , m_port(0)
+    , m_tcpSocket(nullptr)
 {
 }
 
@@ -133,6 +135,9 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
 
     connect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+
+    //finally we need to send the cache path to the seperate optix process.
+    sendCacheInfoToOptix(finalPath, param.cacheNum);
 }
 
 void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
@@ -151,9 +156,68 @@ void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
     connect(optixProc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 }
 
+void ZTcpServer::onOptixNewConn()
+{
+    ZASSERT_EXIT(m_optixServer);
+    QLocalSocket* socket = m_optixServer->nextPendingConnection();
+    m_optixSockets.append(socket);
+    connect(socket, &QLocalSocket::disconnected, this, [=]() {
+        m_optixSockets.removeOne(socket);
+    });
+}
+
+void ZTcpServer::sendCacheInfoToOptix(const QString& finalCachePath, int cacheNum)
+{
+    QString objKey = QString("{\"cachedir\":\"%1\", \"cachenum\":%2}").arg(finalCachePath).arg(cacheNum);
+    QString info = QString("{\"action\":\"initCache\", \"key\":%2}\n").arg(objKey);
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::onInitFrameRange(const QString& action, int frameStart, int frameEnd)
+{
+    if (!m_optixServer || m_optixSockets.isEmpty())
+        return;
+
+    QString info = QString("{\"action\":\"%1\", \"beginFrame\":%2, \"endFrame\":%3}\n").arg(action).arg(frameStart).arg(frameEnd);
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::onFrameStarted(const QString& action, const QString& keyObj)
+{
+    bool bOK = false;
+    int frame = keyObj.toInt(&bOK);
+    ZASSERT_EXIT(bOK);
+    QString info = QString("{\"action\":\"%1\", \"key\":%2}\n").arg(action).arg(frame);
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::onFrameFinished(const QString& action, const QString& keyObj)
+{
+    bool bOK = false;
+    int frame = keyObj.toInt(&bOK);
+    ZASSERT_EXIT(bOK);
+    QString info = QString("{\"action\":\"%1\", \"key\":%2}\n").arg(action).arg(frame);
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::dispatchPacketToOptix(const QString& info)
+{
+    if (m_optixServer) {
+        for (QLocalSocket* pSocket : m_optixSockets) {
+            pSocket->write(info.toUtf8());
+        }
+    }
+}
+
 void ZTcpServer::startOptixProc()
 {
     zeno::log_info("launching optix program...");
+
+    if (!m_optixServer) {
+        m_optixServer = new QLocalServer(this);
+        m_optixServer->listen("zenooptix");
+        connect(m_optixServer, &QLocalServer::newConnection, this, &ZTcpServer::onOptixNewConn);
+    }
 
     auto optixProc = std::make_unique<QProcess>();
     //optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
@@ -231,46 +295,29 @@ void ZTcpServer::killProc()
 void ZTcpServer::onNewConnection()
 {
     ZASSERT_EXIT(m_tcpServer);
-    QTcpSocket* tcpSocket = m_tcpServer->nextPendingConnection();
-    if (!tcpSocket)
+    m_tcpSocket = m_tcpServer->nextPendingConnection();
+    if (!m_tcpSocket)
     {
         zeno::log_error("tcp connection recv failed");
     }
     else
     {
         zeno::log_debug("tcp connection succeed");
-    }
 
-    connect(tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
-    connect(tcpSocket, SIGNAL(disconnected()), this, SLOT(onDisconnect()));
+    }
+    connect(m_tcpSocket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
+    connect(m_tcpSocket, SIGNAL(disconnected()), this, SLOT(onDisconnect()));
 
     viewDecodeClear();
 }
 
 void ZTcpServer::onReadyRead()
 {
-    if (QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender()))
-    {
-        QByteArray arr = socket->readAll();
-        if (arr == "optixProcStart")
-        {
-            m_optixSocks.append(socket);
-            return;
-        }
-        qint64 redSize = arr.size();
-        for (auto socket : m_optixSocks)
-        {
-            QString retData = QString::fromUtf8(arr.data(), redSize);
-            socket->write(arr.data(), redSize);
-            while (socket->bytesToWrite() > 0) {
-                socket->waitForBytesWritten();
-            }
-        }
-
-        zeno::log_debug("qtcpsocket got {} bytes (ping test has 19)", redSize);
-        if (redSize > 0) {
-            viewDecodeAppend(arr.data(), redSize);
-        }
+    QByteArray arr = m_tcpSocket->readAll();
+    qint64 redSize = arr.size();
+    zeno::log_debug("qtcpsocket got {} bytes (ping test has 19)", redSize);
+    if (redSize > 0) {
+        viewDecodeAppend(arr.data(), redSize);
     }
 }
 
@@ -309,18 +356,6 @@ void ZTcpServer::onDisconnect()
     }
 
     viewDecodeFinish();
-
-    if (QTcpSocket* socket = qobject_cast<QTcpSocket*>(sender()))
-    {
-        if (m_optixSocks.indexOf(socket) != -1)
-        {
-            QString fin = "calcuProcFin";
-            socket->write(fin.toStdString().data(), fin.size());
-            while (socket->bytesToWrite() > 0) {
-                socket->waitForBytesWritten();
-            }
-        }
-    }
 }
 
 void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)

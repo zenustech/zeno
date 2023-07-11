@@ -21,6 +21,7 @@
 #include <string>
 #include "launch/corelaunch.h"
 #include "settings/zsettings.h"
+#include "launch/ztcpserver.h"
 
 namespace {
 
@@ -89,16 +90,27 @@ struct PacketProc {
         } else if (action == "newFrame") {
             globalCommNeedNewFrame = 1;
             clearGlobalIfNeeded();
+
+            const QString& act = QString::fromStdString(action);
+            const QString& keyObj = QString::fromStdString(objKey);
             auto mainWin = zenoApp->getMainWindow();
             if (mainWin)
-                mainWin->updateViewport(QString::fromStdString(action));
+                mainWin->updateViewport(act);
+            auto tcpServer = zenoApp->getServer();
+            if (tcpServer)
+                tcpServer->onFrameStarted(act, keyObj);
 
         } else if (action == "finishFrame") {
             zeno::getSession().globalComm->finishFrame();
             //need to notify the GL to update.
             auto mainWin = zenoApp->getMainWindow();
+            const QString& act = QString::fromStdString(action);
+            const QString& keyObj = QString::fromStdString(objKey);
             if (mainWin)
-                mainWin->updateViewport(QString::fromStdString(action));
+                mainWin->updateViewport(act);
+            auto tcpServer = zenoApp->getServer();
+            if (tcpServer)
+                tcpServer->onFrameFinished(act, keyObj);
 
         } else if (action == "frameCache") {
             auto mainWin = zenoApp->getMainWindow();
@@ -125,14 +137,9 @@ struct PacketProc {
                 zeno::getSession().globalComm->initFrameRange(beg, end);
                 zeno::getSession().globalState->frameid = beg;
 
-                //init timeline on optix proc.
-                auto mainWin = zenoApp->getMainWindow();
-                if (mainWin && mainWin->isOnlyOptixWindow())
-                {
-                    TIMELINE_INFO tlinfo;
-                    tlinfo.beginFrame = beg;
-                    tlinfo.endFrame = end;
-                    mainWin->resetTimeline(tlinfo);
+                ZTcpServer* pServer = zenoApp->getServer();
+                if (pServer) {
+                    pServer->onInitFrameRange(QString::fromStdString(action), beg, end);
                 }
             }
 
