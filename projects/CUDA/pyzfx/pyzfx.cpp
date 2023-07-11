@@ -1,5 +1,6 @@
 #include <zeno/core/INode.h>
 #include <zeno/core/defNode.h>
+#include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
@@ -18,8 +19,12 @@ namespace zeno {
 
 struct PyZpcLite : INode {
     void apply() override {
-        char *p;
-        p = getenv("PATH");
+        auto inputPath = get_input2<std::string>("path");
+        char *p = nullptr;
+        if (inputPath.empty())
+            p = getenv("PATH");
+        else
+            p = inputPath.data();
         std::set<std::string> pathLocations;
         auto processTags = [](std::string tags, std::set<std::string> &res, std::string sep) {
             using Ti = RM_CVREF_T(std::string::npos);
@@ -42,6 +47,11 @@ struct PyZpcLite : INode {
         processTags(p, pathLocations, ":");
         const std::string target = "python";
 #endif
+
+        auto inputParams = std::make_shared<DictObject>();
+        if (has_input<DictObject>("inputs"))
+            inputParams = get_input2<DictObject>("inputs");
+
         for (const auto &path : pathLocations) {
             fmt::print("iterate path: {}\n", path);
             fs::path loc = path + "/" + target;
@@ -63,13 +73,15 @@ struct PyZpcLite : INode {
                 std::system(cmdStr.c_str());
             }
         }
+
+        set_output("outputs", std::make_shared<DictObject>());
     }
 };
 
 ZENDEFNODE(PyZpcLite, {/* inputs: */
-                       {{"string", "path", ""}},
+                       {{"string", "path", ""}, {"DictObject", "inputs", ""}},
                        /* outputs: */
-                       {},
+                       {{"DictObject", "outputs", ""}},
                        /* params: */
                        {},
                        /* category: */
