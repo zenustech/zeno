@@ -8,7 +8,6 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/CameraObject.h>
 #include <zenomodel/include/uihelper.h>
-#include "launch/corelaunch.h"
 #include "zenomainwindow.h"
 #include "camerakeyframe.h"
 #include <zenoui/style/zenostyle.h>
@@ -17,7 +16,7 @@
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
 #include "dialog/zrecframeselectdlg.h"
-#include "settings/zsettings.h"
+#include "util/apphelper.h"
 
 
 using std::string;
@@ -428,7 +427,11 @@ void DisplayWidget::onSliderValueChanged(int frame)
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, frame, frame);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = frame;
+        launchParam.endFrame = frame;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     }
     else
     {
@@ -488,7 +491,7 @@ void DisplayWidget::afterRun()
     scene->objectsMan->lightObjects.clear();
 }
 
-void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly, bool applyMaterialOnly, bool launchByRecord)
+void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -506,8 +509,7 @@ void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCamera
         m_glView->clearTransformer();
         m_glView->getSession()->get_scene()->selected.clear();
     }
-
-    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly, applyMaterialOnly, launchByRecord);
+    launchProgram(pModel, launchParam);
 
     if (m_glView)
         m_glView->updateLightOnce = true;
@@ -538,7 +540,11 @@ void DisplayWidget::onRun() {
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, beginFrame, endFrame);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = beginFrame;
+        launchParam.endFrame = endFrame;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     } else {
     }
 
@@ -622,9 +628,12 @@ void DisplayWidget::onRecord()
         {
             //clear cached objs.
             zeno::getSession().globalComm->clearState();
-            QSettings settings(zsCompanyName, zsEditor);
-            settings.setValue("zencache-rmcurcache", recInfo.bAutoRemoveCache);
-            onRun(recInfo.frameRange.first, recInfo.frameRange.second, false, false, true);
+            LAUNCH_PARAM launchParam;
+            launchParam.beginFrame = recInfo.frameRange.first;
+            launchParam.endFrame = recInfo.frameRange.second;
+            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+            AppHelper::initLaunchCacheParam(launchParam);
+            onRun(launchParam);
         }
 
         //setup signals issues.

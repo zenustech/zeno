@@ -201,13 +201,13 @@ struct ProgramRunData {
 };
 #endif
 
-void launchProgramJSON(std::string progJson, bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void launchProgramJSON(std::string progJson, LAUNCH_PARAM param)
 {
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer *pServer = zenoApp->getServer();
     if (pServer)
     {
-        pServer->startProc(std::move(progJson), applyLightAndCameraOnly, applyMaterialOnly);
+        pServer->startProc(std::move(progJson), param);
     }
 #else
     std::unique_lock lck(ProgramRunData::g_mtx, std::try_to_lock);
@@ -239,20 +239,15 @@ void killProgramJSON()
 
 }
 
-void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool applyLightAndCameraOnly, bool applyMaterialOnly, bool launchByRecord)
+void launchProgram(IGraphsModel* pModel, LAUNCH_PARAM param)
 {
-    if (!launchByRecord)
-    {
-        QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencache-rmcurcache", false);
-    }
 	rapidjson::StringBuffer s;
 	RAPIDJSON_WRITER writer(s);
     {
         JsonArrayBatch batch(writer);
-        JsonHelper::AddVariantList({"setBeginFrameNumber", beginFrame}, "int", writer);
-        JsonHelper::AddVariantList({"setEndFrameNumber", endFrame}, "int", writer);
-        serializeScene(pModel, writer, applyLightAndCameraOnly, applyMaterialOnly);
+        JsonHelper::AddVariantList({"setBeginFrameNumber", param.beginFrame}, "int", writer);
+        JsonHelper::AddVariantList({"setEndFrameNumber", param.endFrame}, "int", writer);
+        serializeScene(pModel, writer, param.applyLightAndCameraOnly, param.applyMaterialOnly);
     }
     std::string progJson(s.GetString());
 #ifdef DEBUG_SERIALIZE
@@ -262,7 +257,7 @@ void launchProgram(IGraphsModel* pModel, int beginFrame, int endFrame, bool appl
     f.write(qstrJson.toUtf8());
     f.close();
 #endif
-    launchProgramJSON(std::move(progJson), applyLightAndCameraOnly, applyMaterialOnly);
+    launchProgramJSON(std::move(progJson), param);
     pModel->clearNodeDataChanged();
 }
 
