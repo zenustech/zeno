@@ -9,6 +9,9 @@
 #include "zensim/ZpcBuiltin.hpp"
 #include <cstdlib>
 #include <zeno/utils/log.h>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 namespace zeno {
 
@@ -32,11 +35,26 @@ struct PyZpcLite : INode {
         };
 #ifdef ZS_PLATFORM_WINDOWS
         processTags(p, pathLocations, ";");
+        const std::string target = "python.exe";
 #else
         processTags(p, pathLocations, ":");
+        const std::string target = "python";
 #endif
-        for (const auto &path : pathLocations)
+        for (const auto& path : pathLocations) {
             fmt::print("iterate path: {}\n", path);
+            fs::path loc = path + "/" + target;
+            bool ifExist = false;
+            try {
+                ifExist = fs::exists(loc);
+            }
+            catch (const std::exception& e) {
+                fmt::print("\tskipping path {} due to exception (e.g. inaccessibility).\n", path);
+                continue;
+            }
+            if (ifExist) {
+                fmt::print("\tfound {} at {}\n", target, path);
+            }
+        }
     }
 };
 
