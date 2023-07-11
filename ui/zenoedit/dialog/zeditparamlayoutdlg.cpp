@@ -15,7 +15,6 @@
 #include <zenomodel/include/command.h>
 #include "iotags.h"
 #include <zenoui/style/zenostyle.h>
-#include <zenomodel/src/graphsmodel.h>
 
 
 static CONTROL_ITEM_INFO controlList[] = {
@@ -975,7 +974,9 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
         bSubInput = pGroup->m_name == iotags::params::node_inputs;
         subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
         QString subgId = m_nodeIdx.data(ROLE_OBJID).toString();
-        if (qobject_cast<GraphsModel*>(m_pGraphsModel))
+        GraphsManagment* mgr = zenoApp->graphsManagment();
+        ZASSERT_EXIT(mgr);
+        if (m_pGraphsModel == mgr->sharedSubgraphs())
             subgIdx = m_pGraphsModel->index(subgName);
         else
             subgIdx = m_pGraphsModel->index(subgId, m_subgIdx);
