@@ -285,7 +285,6 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
         }
         else if (ZenoSpreadsheet* panel = qobject_cast<ZenoSpreadsheet*>(wid))
         {
-            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
             if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];
@@ -493,7 +492,7 @@ void ZTabDockWidget::onFloatTriggered()
                         Qt::WindowMaximizeButtonHint | Qt::WindowCloseButtonHint;
 
         QString filePath;
-        auto pCurrentGraph = zenoApp->graphsManagment()->currentModel();
+        auto pCurrentGraph = zenoApp->graphsManagment();
         if (pCurrentGraph)
         {
             filePath = pCurrentGraph->filePath();

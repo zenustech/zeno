@@ -146,11 +146,11 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     if (bNodeUI)
     {
         m_ui->m_coreMappingWidget->hide();
-        m_proxyModel = new NodeParamModel(m_pGraphsModel, true, this);
+        m_proxyModel = new NodeParamModel(m_pGraphsModel, true, pModel->parent());
     }
     else
     {
-        m_proxyModel = new PanelParamModel(m_pGraphsModel, this);
+        m_proxyModel = new PanelParamModel(m_pGraphsModel, pModel->parent());
     }
 
     m_proxyModel->clone(m_model);
@@ -973,7 +973,13 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
         VParamItem *pGroup = static_cast<VParamItem *>(proxyItem);
         bSubInput = pGroup->m_name == iotags::params::node_inputs;
         subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        subgIdx = m_pGraphsModel->index(subgName);
+        QString subgId = m_nodeIdx.data(ROLE_OBJID).toString();
+        GraphsManagment* mgr = zenoApp->graphsManagment();
+        ZASSERT_EXIT(mgr);
+        if (m_pGraphsModel == mgr->sharedSubgraphs())
+            subgIdx = m_pGraphsModel->index(subgName);
+        else
+            subgIdx = m_pGraphsModel->index(subgId, m_subgIdx);
     }
 
     int r = 0;

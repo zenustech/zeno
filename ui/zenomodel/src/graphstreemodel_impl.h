@@ -84,6 +84,12 @@ public:
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value);
     void initMainGraph();
     void clear();
+    void renameSubGraph(const QString &oldName, const QString &newName);
+    void appendSubGraphNode(TreeNodeItem *pSubgraph);
+    void removeSubGraphNode(TreeNodeItem *pSubgraph);
+    void onSubgrahSync(const QModelIndex& subgIdx);
+    QModelIndex extractSubGraph(const QModelIndexList& nodes, const QModelIndexList& links,
+        const QModelIndex& fromSubg, const QString& toSubg, bool enableTrans = false);
 
 private:
     void onSubIOAddRemove(TreeNodeItem* pSubgraph, const QModelIndex& addedNodeIdx, bool bInput, bool bInsert);
@@ -100,10 +106,12 @@ private:
             int searchType,
             int searchOpts,
             bool bRecursivly);
+    bool search_result(const QModelIndex& root, const QModelIndex& index, const QString& content, int searchType, int searchOpts, QList<SEARCH_RESULT>& results);
 
     TreeNodeItem* m_main;       //not invisible root.
     LinkModel* m_linkModel;
     GraphsTreeModel* m_pModel;
+    QMap<QString, QList<TreeNodeItem *>> m_treeNodeItems;//key: node name
 };
 
 #endif

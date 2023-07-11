@@ -11,6 +11,10 @@
 #include "command.h"
 #include "apilevelscope.h"
 #include "common_def.h"
+#include <zenomodel/include/nodesmgr.h>
+#include <zenoedit/zenoapplication.h>
+#include "include/graphsmanagment.h"
+#include "graphsmodel.h"
 
 
 GraphsTreeModel_impl::GraphsTreeModel_impl(GraphsTreeModel* pModel, QObject *parent)
@@ -128,9 +132,6 @@ void GraphsTreeModel_impl::onSubIOAddRemove(
 
     ZASSERT_EXIT(pSubgraph);
 
-    const QString& objId = addedNodeIdx.data(ROLE_OBJID).toString();
-    const QString& objName = addedNodeIdx.data(ROLE_OBJNAME).toString();
-
     NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(addedNodeIdx.data(ROLE_NODE_PARAMS));
 
     const QModelIndex& nameIdx = nodeParams->getParam(PARAM_PARAM, "name");
@@ -145,6 +146,7 @@ void GraphsTreeModel_impl::onSubIOAddRemove(
     QVariant ctrlProps = deflIdx.data(ROLE_VPARAM_CTRL_PROPERTIES);
     QString toolTip = nameIdx.data(ROLE_VPARAM_TOOLTIP).toString();
 
+    nodeParams = QVariantPtr<NodeParamModel>::asPtr(pSubgraph->data(ROLE_NODE_PARAMS));
     //only need to update pSubgraph node.
     if (bInsert)
     {
@@ -179,7 +181,7 @@ bool GraphsTreeModel_impl::onSubIOAdd(TreeNodeItem *pSubgraph, NODE_DATA nodeDat
 
     ZASSERT_EXIT(nodeData.params.find("name") != nodeData.params.end(), false);
     PARAM_INFO& param = nodeData.params["name"];
-    QString newSockName = UiHelper::correctSubIOName(m_pModel, pSubgraph->objClass(), param.value.toString(), bInput);
+    QString newSockName = UiHelper::correctSubIOName(pSubgraph->index(), param.value.toString(), bInput);
     param.value = newSockName;
 
     pSubgraph->addNode(nodeData, m_pModel);
@@ -249,12 +251,16 @@ void GraphsTreeModel_impl::addNode(const NODE_DATA& nodeData, const QModelIndex&
 
         TreeNodeItem* pSubgItem = static_cast<TreeNodeItem*>(itemFromIndex(subGpIdx));
         ZASSERT_EXIT(pSubgItem);
+        bool bAdd = false;
+        bAdd = onSubIOAdd(pSubgItem, nodeData);
+        if (!bAdd)
+            bAdd = onListDictAdd(pSubgItem, nodeData);
+        if (!bAdd)
+            pSubgItem->addNode(nodeData, m_pModel);
 
-        if (onSubIOAdd(pSubgItem, nodeData))
-            return;
-        if (onListDictAdd(pSubgItem, nodeData))
-            return;
-        pSubgItem->addNode(nodeData, m_pModel);
+        TreeNodeItem * childItem = pSubgItem->childItem(nodeData.ident);
+        ZASSERT_EXIT(childItem);
+        appendSubGraphNode(childItem);
     }
 }
 
@@ -325,7 +331,7 @@ TreeNodeItem* GraphsTreeModel_impl::_fork(
         pSubnetNode->appendRow(newNodeItem);
 
         //apply legacy format `subnet:nodeid`.
-        const QString &oldNodePath = QString("%1:%2").arg(subnetName).arg(snodeId);
+        const QString &oldNodePath = QString("%1/%2").arg(subnetName).arg(snodeId);
         const QString &newNodePath = currentPath + "/" + newId;
         old2new_nodePath.insert(oldNodePath, newNodePath);
 
@@ -465,6 +471,7 @@ void GraphsTreeModel_impl::removeNode(
 
         QModelIndex idx = pSubgItem->childIndex(nodeid);
         const QString &objName = idx.data(ROLE_OBJNAME).toString();
+        removeSubGraphNode(pSubgItem->childItem(nodeid));
         if (!bEnableIOProc)
         {
             //if subnode removed, the parent layer node should be update.
@@ -804,6 +811,8 @@ QList<SEARCH_RESULT> GraphsTreeModel_impl::search(
                             int searchType,
                             int searchOpts)
 {
+    if (!m_main)
+        return QList<SEARCH_RESULT>();
     const QModelIndex& mainIdx = m_main->index();
     return search_impl(mainIdx, content, searchType, searchOpts, true);
 }
@@ -822,32 +831,106 @@ QList<SEARCH_RESULT> GraphsTreeModel_impl::search_impl(
     TreeNodeItem* pRootItem = static_cast<TreeNodeItem*>(itemFromIndex(root));
     ZASSERT_EXIT(pRootItem, results);
 
-    if (SEARCH_NODEID == searchType)
+    for (int row = 0; row < pRootItem->rowCount(); row++)
     {
-        TreeNodeItem* pChildItem = pRootItem->childItem(content);
-        if (pChildItem)
+        QStandardItem* pChildItem = pRootItem->child(row);
+        if (!pChildItem)
+            continue;
+        bool bAppend = false;
+        if (SEARCH_SUBNET & searchType)
         {
-            SEARCH_RESULT result;
-            result.targetIdx = pChildItem->index();
-            result.subgIdx = root;
-            result.type = SEARCH_NODEID;
-            results.append(result);
+            if (pChildItem->data(ROLE_NODETYPE).toInt() == SUBGRAPH_NODE)
+                bAppend = search_result(root, pChildItem->index(), content, SEARCH_NODECLS, searchOpts, results);
         }
-        if (bRecursivly && results.isEmpty())
+        if (!bAppend && SEARCH_NODEID & searchType)
         {
-            for (int r = 0; r < pChildItem->rowCount(); r++)
+            bAppend = search_result(root, pChildItem->index(), content, SEARCH_NODEID, searchOpts, results);
+        }
+        if (!bAppend && (SEARCH_NODECLS & searchType))
+        {
+            bAppend = search_result(root, pChildItem->index(), content, SEARCH_NODECLS, searchOpts, results);
+        }
+        if (!bAppend && (searchType & SEARCH_CUSTOM_NAME)) 
+        {
+            bAppend = search_result(root, pChildItem->index(), content, SEARCH_CUSTOM_NAME, searchOpts, results);
+        }
+        if (!bAppend && (searchType & SEARCH_ARGS)) 
+        {
+            bAppend = search_result(root, pChildItem->index(), content, SEARCH_ARGS, searchOpts, results);
+        }
+        if (bRecursivly && pChildItem->rowCount() > 0) {
+             results.append(search_impl(pChildItem->index(), content, searchType, searchOpts, bRecursivly));
+        }
+    }
+    return results;
+}
+
+bool GraphsTreeModel_impl::search_result(const QModelIndex& root, const QModelIndex& index, const QString& content, int searchType, int searchOpts, QList<SEARCH_RESULT>& results)
+{
+    bool ret = false;
+    if (SEARCH_ARGS == searchType)
+    {
+        INPUT_SOCKETS inputs = index.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
+        for (const auto& input : inputs)
+        {
+            QVariant val = input.second.info.defaultValue;
+            if (val.type() == QVariant::String)
             {
-                pChildItem = static_cast<TreeNodeItem*>(pChildItem->child(r));
-                if (pChildItem->rowCount() > 0)
-                    results.append(search_impl(pChildItem->index(), content, searchType, searchOpts, bRecursivly));
-                if (!results.isEmpty())
+                QString str = val.toString();
+                if ((searchOpts == SEARCH_MATCH_EXACTLY && str == content)
+                    || (searchOpts != SEARCH_MATCH_EXACTLY && str.contains(content, Qt::CaseInsensitive))) {
+                    ret = true;
                     break;
+                }
             }
         }
-        return results;
+        if (!ret)
+        {
+            PARAMS_INFO params = index.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
+            for (const auto& param : params)
+            {
+                QVariant val = param.defaultValue;
+                if (val.type() == QVariant::String)
+                {
+                    QString str = val.toString();
+                    if ((searchOpts == SEARCH_MATCH_EXACTLY && str == content)
+                        || (searchOpts != SEARCH_MATCH_EXACTLY && str.contains(content, Qt::CaseInsensitive))) {
+                        ret = true;
+                        break;
+                    }
+                }
+            }
+        }
     }
-
-    //todo:
+    else
+    {
+        QString str;
+        if (SEARCH_NODEID == searchType)
+        {
+            str = index.data(ROLE_OBJID).toString();
+        }
+        else if (SEARCH_NODECLS)
+        {
+            str = index.data(ROLE_OBJNAME).toString();
+        }
+        else if (SEARCH_CUSTOM_NAME == searchType)
+        {
+            str = index.data(ROLE_CUSTOM_OBJNAME).toString();
+        }
+        if ((searchOpts == SEARCH_MATCH_EXACTLY && str == content)
+            || (searchOpts != SEARCH_MATCH_EXACTLY && str.contains(content, Qt::CaseInsensitive))) {
+            ret = true;
+        }
+    }
+    if (ret)
+    {
+        SEARCH_RESULT result;
+        result.targetIdx = index;
+        result.subgIdx = root;
+        result.type = (SearchType)searchType;
+        results.append(result);
+    }
+    return ret;
 }
 
 QRectF GraphsTreeModel_impl::viewRect(const QModelIndex &subgIdx)
@@ -880,4 +963,108 @@ void GraphsTreeModel_impl::expand(const QModelIndex &subgIdx)
 LinkModel* GraphsTreeModel_impl::linkModel(const QModelIndex &subgIdx) const
 {
     return m_linkModel;
+}
+
+void GraphsTreeModel_impl::renameSubGraph(const QString &oldName, const QString &newName) {
+    if (m_treeNodeItems.find(oldName) != m_treeNodeItems.end()) {
+        for (auto item : m_treeNodeItems[oldName]) {
+            item->setData(newName, ROLE_OBJNAME);
+        }
+
+        m_treeNodeItems[newName] = m_treeNodeItems[oldName];
+        m_treeNodeItems.remove(oldName);
+    }
+}
+
+void GraphsTreeModel_impl::appendSubGraphNode(TreeNodeItem *pSubgraph) 
+{
+    if (!IsSubGraphNode(pSubgraph->index()))
+        return;
+    QString nodeCls = pSubgraph->objClass();
+    if (m_treeNodeItems.find(nodeCls) == m_treeNodeItems.end())
+        m_treeNodeItems[nodeCls] = QList<TreeNodeItem *>();
+    m_treeNodeItems[nodeCls] << pSubgraph;
+    for (int row = 0; row < pSubgraph->rowCount(); row++) {
+        TreeNodeItem *pChildItem = static_cast<TreeNodeItem *>(pSubgraph->child(row));
+        ZASSERT_EXIT(pChildItem);
+        appendSubGraphNode(pChildItem);
+    }
+}
+
+void GraphsTreeModel_impl::removeSubGraphNode(TreeNodeItem *pSubgraph) 
+{
+    QString nodeCls = pSubgraph->objClass();
+    if (m_treeNodeItems.contains(nodeCls)) {
+        m_treeNodeItems[nodeCls].removeOne(pSubgraph);
+    }
+    for (int row = 0; row < pSubgraph->rowCount(); row++) {
+        TreeNodeItem *pChildItem = static_cast<TreeNodeItem *>(pSubgraph->child(row));
+        ZASSERT_EXIT(pChildItem);
+        removeSubGraphNode(pChildItem);
+    }
+}
+
+void GraphsTreeModel_impl::onSubgrahSync(const QModelIndex& subgIdx) 
+{
+    QString nodeCls = subgIdx.data(ROLE_OBJNAME).toString();
+    if (m_treeNodeItems.find(nodeCls) != m_treeNodeItems.end()) {
+        for (auto pItem : m_treeNodeItems[nodeCls])
+        {
+            if (subgIdx == pItem->index())
+            {
+                continue;
+            }
+            //delete old child items
+            while (pItem->rowCount() > 0)
+            {
+                TreeNodeItem *pChildItem = static_cast<TreeNodeItem*>(pItem->child(0));
+                ZASSERT_EXIT(pChildItem);
+                QString ident = pChildItem->data(ROLE_OBJID).toString();
+                removeNode(ident, pItem->index(), true);
+            }
+            LINKS_DATA links;
+            NODES_DATA childrens = NodesMgr::getChildItems(pItem->parent()->index(), nodeCls, pItem->objName(), links);
+            importNodes(childrens, links, QPointF(), pItem->index(), true);
+
+        }
+    }
+}
+QModelIndex GraphsTreeModel_impl::extractSubGraph(const QModelIndexList& nodesIndice, const QModelIndexList& links, const QModelIndex& fromSubgIdx, const QString& toSubg, bool enableTrans)
+{
+    GraphsModel* pModel = qobject_cast<GraphsModel*>(zenoApp->graphsManagment()->sharedSubgraphs());
+    ZASSERT_EXIT(pModel, QModelIndex());
+
+    if (nodesIndice.isEmpty() || !fromSubgIdx.isValid() || toSubg.isEmpty() || pModel->subGraph(toSubg))
+    {
+        return QModelIndex();
+    }
+
+    enableTrans = true;
+    if (enableTrans)
+        pModel->beginTransaction("extract a new graph");
+
+    //first, new the target subgraph
+    pModel->newSubgraph(toSubg);
+    QModelIndex toSubgIdx = pModel->index(toSubg);
+
+    //copy nodes to new subg.
+    QPair<NODES_DATA, LINKS_DATA> datas = UiHelper::dumpNodes(nodesIndice, links);
+    QMap<QString, NODE_DATA> newNodes;
+    QList<EdgeInfo> newLinks;
+    UiHelper::reAllocIdents(toSubg, datas.first, datas.second, newNodes, newLinks);
+
+    //paste nodes on new subgraph.
+    pModel->importNodes(newNodes, newLinks, QPointF(0, 0), toSubgIdx, true);
+
+    //remove nodes from old subg.
+    QStringList ids;
+    for (QModelIndex idx : nodesIndice)
+        ids.push_back(idx.data(ROLE_OBJID).toString());
+    for (QString id : ids)
+        removeNode(id, fromSubgIdx, enableTrans);
+
+    if (enableTrans)
+        pModel->endTransaction();
+
+    return toSubgIdx;
 }

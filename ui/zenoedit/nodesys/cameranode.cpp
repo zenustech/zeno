@@ -12,6 +12,7 @@
 #include "zenovis/Session.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
+#include <zenomodel/include/uihelper.h>
 
 CameraNode::CameraNode(const NodeUtilParam& params, int pattern, QGraphicsItem* parent)
     : ZenoNode(params, parent)
@@ -56,7 +57,7 @@ void CameraNode::onEditClicked()
         inputs.find("view") != inputs.end());
 
     const QString& nodeid = this->nodeId();
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = UiHelper::getGraphsBySubg(subgIndex());
     ZASSERT_EXIT(pModel);
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();
@@ -165,7 +166,7 @@ void LightNode::onEditClicked(){
     INPUT_SOCKETS inputs = index().data(ROLE_INPUTS).value<INPUT_SOCKETS>();
 
     const QString& nodeid = this->nodeId();
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel* pModel = UiHelper::getGraphsBySubg(subgIndex());
     ZASSERT_EXIT(pModel);
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();

@@ -315,17 +315,16 @@ static void appendSerializedCharArray(QString &res, const char *buf, size_t len)
 
 QString serializeSceneCpp(IGraphsModel* pModel)
 {
-
+    auto &mgr = GraphsManagment::instance();
     auto *model = pModel;
     QString res = R"RAW(/* auto generated from: )RAW";
-    res.append(model->filePath());
+    res.append(mgr.filePath());
     res.append(R"RAW( */
 #include <zeno/extra/ISubgraphNode.h>
 #include <zeno/zeno.h>
 namespace {
 )RAW");
 
-    auto &mgr = GraphsManagment::instance();
     decltype(auto) descs = mgr.descriptors();
     for (int i = 0; i < model->rowCount(); i++) {
         auto key = model->index(i, 0).data(ROLE_OBJNAME).toString();

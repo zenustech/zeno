@@ -70,8 +70,6 @@ void GraphsManagment::setGraphsModel(IGraphsModel* model, IGraphsModel* pSubgrap
 
     emit modelInited(m_pNodeModel, m_pSharedGraphs);
     connect(m_pNodeModel, SIGNAL(apiBatchFinished()), this, SIGNAL(modelDataChanged()));
-    connect(m_pNodeModel, SIGNAL(rowsAboutToBeRemoved(const QModelIndex&, int, int)),
-        this, SLOT(onRowsAboutToBeRemoved(const QModelIndex&, int, int)));
     connect(m_pNodeModel, &IGraphsModel::dirtyChanged, this, [=]() {
         emit dirtyChanged(m_pNodeModel->isDirty());
     });
@@ -279,6 +277,7 @@ void GraphsManagment::renameSubGraph(const QString& oldName, const QString& newN
                  m_subgsDesc.find(newName) == m_subgsDesc.end());
 
     NODE_DESC desc = m_subgsDesc[oldName];
+    desc.name = newName;
     m_subgsDesc[newName] = desc;
     m_subgsDesc.remove(oldName);
 
@@ -296,6 +295,19 @@ void GraphsManagment::removeGraph(const QString& subgName)
     for (QString cate : desc.categories) {
         m_nodesCate[cate].nodes.removeAll(subgName);
     }
+}
+
+void GraphsManagment::clearSubgDesc()
+{
+    for (auto desc : m_subgsDesc)
+    {
+        for (QString cate : desc.categories) {
+            m_nodesCate[cate].nodes.removeAll(desc.name);
+            if (m_nodesCate[cate].nodes.isEmpty())
+                m_nodesCate.remove(cate);
+        }
+    }
+    m_subgsDesc.clear();
 }
 
 void GraphsManagment::appendSubGraph(const NODE_DESC& desc)
@@ -331,6 +343,11 @@ NODE_TYPE GraphsManagment::nodeType(const QString& name)
     }
 }
 
+QString GraphsManagment::filePath() const 
+{
+    return m_filePath;
+}
+
 NODE_DESCS GraphsManagment::descriptors()
 {
     NODE_DESCS descs;
@@ -354,6 +371,9 @@ void GraphsManagment::onParseResult(
     //init descriptor first.
     auto subgraphs = res.subgraphs.keys();
     initSubnetDescriptors(subgraphs, res);
+
+    pNodeModel->setIOVersion(res.ver);
+    pSubgraphs->setIOVersion(res.ver);
 
     //only based on tree layout.
     ZASSERT_EXIT(pNodeModel && pSubgraphs);
@@ -385,6 +405,7 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
         onParseResult(result, pNodeModel, pSubgraphsModel);
     }
 
+    m_filePath = fn;
     pNodeModel->clearDirty();
     setGraphsModel(pNodeModel, pSubgraphsModel);
     emit fileOpened(fn);
@@ -412,7 +433,7 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
     f.close();
     zeno::log_debug("saved successfully");
 
-    m_pNodeModel->setFilePath(filePath);
+    m_filePath = filePath;
     m_pNodeModel->clearDirty();
 
     QFileInfo info(filePath);
@@ -431,6 +452,7 @@ IGraphsModel* GraphsManagment::newFile()
     pNodeModel->initSubgraphs(pSubgrahsModel);
 
     setGraphsModel(pModel, pSubgrahsModel);
+    m_filePath.clear();
     return pModel;
 }
 
@@ -473,24 +495,19 @@ void GraphsManagment::clear()
     }
     if (m_pSharedGraphs)
     {
-        m_pSharedGraphs->clear();
         delete m_pSharedGraphs;
         m_pSharedGraphs = nullptr;
+        clearSubgDesc();
     }
     emit fileClosed();
 }
 
-void GraphsManagment::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
+void GraphsManagment::removeScene(const QString& subgName)
 {
-    const QModelIndex& idx = m_pNodeModel->index(first, 0);
-    if (idx.isValid())
+    if (m_scenes.find(subgName) != m_scenes.end())
     {
-        const QString& subgName = idx.data(ROLE_OBJNAME).toString();
-        if (m_scenes.find(subgName) != m_scenes.end())
-        {
-            delete m_scenes[subgName];
-            m_scenes.remove(subgName);
-        }
+        delete m_scenes[subgName];
+        m_scenes.remove(subgName);
     }
 }
 

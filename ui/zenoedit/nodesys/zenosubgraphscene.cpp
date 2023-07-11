@@ -443,18 +443,6 @@ void ZenoSubGraphScene::clearMark()
     m_errNodes.clear();
 }
 
-void ZenoSubGraphScene::undo()
-{
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    pGraphsModel->undo();
-}
-
-void ZenoSubGraphScene::redo()
-{
-    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-    pGraphsModel->redo();
-}
-
 QModelIndexList ZenoSubGraphScene::selectNodesIndice() const
 {
     QModelIndexList nodesIndice;
@@ -927,7 +915,7 @@ void ZenoSubGraphScene::focusOutEvent(QFocusEvent* event)
 
 void ZenoSubGraphScene::clearLayout(const QModelIndex& subGpIdx)
 {
-    if (subGpIdx != m_subgIdx)
+    if (subGpIdx == m_subgIdx)
     {
 		m_nodes.clear();
 		m_links.clear();
@@ -1002,7 +990,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
             GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
             pGroup->resize(rect.size());
             pGroup->updateBlackboard();
-            pGroup->setPos(rect.topLeft());
+            pGroup->updateNodePos(rect.topLeft());
             for (auto item : selectedItems()) 
             {
                 ZenoNode *pChildNode = dynamic_cast<ZenoNode *>(item);

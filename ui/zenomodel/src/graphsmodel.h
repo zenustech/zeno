@@ -7,7 +7,7 @@
 #include <zenomodel/include/igraphsmodel.h>
 #include "subgraphmodel.h"
 #include "linkmodel.h"
-#include "modeldata.h"
+#include <zenomodel/include/modeldata.h>
 #include <stack>
 
 class SubGraphModel;
@@ -42,9 +42,6 @@ public:
     bool isDirty() const override;
     void markDirty() override;
     void clearDirty() override;
-    QString filePath() const override;
-    QString fileName() const override;
-    void setFilePath(const QString& fn) override;
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
     QModelIndex nodeIndex(uint32_t sid, uint32_t nodeid) override;
     QModelIndex subgIndex(uint32_t sid) override;
@@ -135,6 +132,7 @@ public:
     QAbstractItemModel *implModel() override {
         return nullptr;
     }
+    void onSubgrahSync(const QModelIndex& subgIdx) override;
 
 public slots:
     void onCurrentIndexChanged(int);
@@ -164,6 +162,7 @@ private:
     QString uniqueSubgraph(QString orginName);
 
     void onApiBatchFinished();
+    void updateSubgrahs(const QModelIndex& subgIdx);
 
     QHash<QString, SubGraphModel*> m_subGraphs;
     QHash<QString, int> m_key2Row;

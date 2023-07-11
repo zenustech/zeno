@@ -25,6 +25,7 @@ public:
     void appendErr(const QString& nodeName, const QString& msg);
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
+    void removeScene(const QString& subgName);
     TIMELINE_INFO timeInfo() const;
     bool getDescriptor(const QString &descName, NODE_DESC &desc);
     bool getSubgDesc(const QString& subgName, NODE_DESC& desc);
@@ -35,6 +36,7 @@ public:
     NODE_DESCS descriptors();
     NODE_CATES getCates();
     NODE_TYPE nodeType(const QString& name);
+    QString filePath() const;
 
 signals:
     void modelInited(IGraphsModel* pNodeModel, IGraphsModel* pSubgraphs);
@@ -46,7 +48,6 @@ signals:
 
 private slots:
     void onModelDataChanged(const QModelIndex& subGpIdx, const QModelIndex& idx, int role);
-    void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);
 
 private:
     GraphsManagment(QObject *parent = nullptr);
@@ -56,6 +57,7 @@ private:
     void registerCate(const NODE_DESC& desc);
     void initCoreDescriptors();
     void initSubnetDescriptors(const QList<QString>& subgraphs, const zenoio::ZSG_PARSE_RESULT& res);
+    void clearSubgDesc();
 
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;
@@ -68,6 +70,7 @@ private:
     QString m_currFile;
     TIMELINE_INFO m_timerInfo;
     QMap<QString, QGraphicsScene*> m_scenes;
+    QString m_filePath;
 };
 
 #endif

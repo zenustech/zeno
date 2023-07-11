@@ -3,7 +3,7 @@
 
 #include <QtWidgets>
 #include "nodeitem.h"
-#include "igraphsmodel.h"
+#include <zenomodel/include/igraphsmodel.h>
 
 class GraphsModel;
 class SubGraphModel;
@@ -84,9 +84,6 @@ public:
     QModelIndexList subgraphsIndice() const override;
     QList<SEARCH_RESULT> search(const QString &content, int searchType, int searchOpts) override;
     void removeGraph(int idx) override;
-    QString fileName() const override;
-    QString filePath() const override;
-    void setFilePath(const QString &fn) override;
     QRectF viewRect(const QModelIndex &subgIdx) override;
     void markDirty() override;
     void clearDirty() override;
@@ -117,6 +114,7 @@ public:
     QVariant data(const QModelIndex &, int) const override;
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QAbstractItemModel *implModel();
+    void onSubgrahSync(const QModelIndex& subgIdx) override;
 
 public:
     QModelIndex mainIndex() const;

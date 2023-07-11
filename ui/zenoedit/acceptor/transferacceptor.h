@@ -14,7 +14,6 @@ public:
     void EndSubgraph() override;
     void EndGraphs() override;
     bool setCurrentSubGraph(IGraphsModel *pModel, const QModelIndex &subgIdx) override;
-    void setFilePath(const QString &fileName) override;
     void switchSubGraph(const QString &graphName) override;
     bool addNode(const QString &nodeid, const QString &name, const QString& customName, const NODE_DESCS &descriptors) override;
     void setViewRect(const QRectF &rc) override;

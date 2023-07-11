@@ -4,6 +4,7 @@
 #include <zenomodel/include/graphsmanagment.h>
 #include "util/log.h"
 #include <zenoui/style/zenostyle.h>
+#include <zenomodel/include/uihelper.h>
 
 
 BlackboardNode::BlackboardNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -140,7 +141,7 @@ void BlackboardNode::updateBlackboard()
         info.content = m_pContent->toPlainText();
     }
     info.sz = this->boundingRect().size();
-    IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
+    IGraphsModel *pModel = UiHelper::getGraphsBySubg(subGraphIndex());
     ZASSERT_EXIT(pModel);
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), true);
 }

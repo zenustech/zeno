@@ -10,6 +10,7 @@
 #include <zenomodel/include/nodesmgr.h>
 #include "iotags.h"
 #include <zenomodel/include/graphsmanagment.h>
+#include <common_def.h>
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -47,12 +48,13 @@ bool ZsgReader::importNodes(
 
     QStringList idents;
     NODES_DATA nodeDatas;
+    NODE_DESCS descs = GraphsManagment::instance().descriptors();
     for (const auto &node : nodes.GetObject())
     {
         const QString &nodeid = node.name.GetString();
         idents.append(nodeid);
         NODE_DATA& nodeData = subgraph.nodes[nodeid];
-        if (!_parseNode(subgPath, nodeid, node.value, NODE_DESCS(), QMap<QString, SUBGRAPH_DATA>(), nodeData,
+        if (!_parseNode(subgPath, nodeid, node.value, descs, QMap<QString, SUBGRAPH_DATA>(), nodeData,
             subgraph.links))
         {
             return false;
@@ -137,10 +139,13 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
         }
     }
 
-    const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
     SUBGRAPH_DATA mainData;
-    if (!_parseSubGraph("/main", mainGraph, nodesDescs, subgraphDatas, mainData))
-        return false;
+    if (doc.HasMember("main") || graph.HasMember("main"))
+    {
+        const rapidjson::Value& mainGraph = doc.HasMember("main") ? doc["main"] : graph["main"];
+        if (!_parseSubGraph("/main", mainGraph, nodesDescs, subgraphDatas, mainData))
+            return false;
+    }
 
     if (doc.HasMember("views"))
     {
@@ -150,6 +155,69 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
     result.ver = m_ioVer;
     result.descs = nodesDescs;
     result.mainGraph = mainData;
+    result.subgraphs = subgraphDatas;
+    return true;
+}
+
+bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& result)
+{
+    QFile file(fn);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        zeno::log_error("cannot open zsg file: {} ({})", fn.toStdString(),
+            file.errorString().toStdString());
+        return false;
+    }
+
+    rapidjson::Document doc;
+    QByteArray bytes = file.readAll();
+    doc.Parse(bytes);
+
+    if (!doc.IsObject())
+    {
+        zeno::log_error("");
+        return false;
+    }
+    if (!doc.HasMember("subgraphs") && !doc.HasMember("graph"))
+        return false;
+    const rapidjson::Value& graph = doc.HasMember("subgraphs")? doc["subgraphs"] : doc["graph"];
+    if (graph.IsNull()) {
+        zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
+        return false;
+    }
+
+    ZASSERT_EXIT(doc.HasMember("descs"), false);
+    NODE_DESCS nodesDescs = _parseDescs(doc["descs"]);
+    if (!ret) {
+        return false;
+    }
+
+    QMap<QString, SUBGRAPH_DATA> subgraphDatas;
+    //init keys
+    for (const auto& subgraph : graph.GetObject())
+    {
+        const QString& graphName = subgraph.name.GetString();
+        if ("main" == graphName)
+            continue;
+        subgraphDatas[graphName] = SUBGRAPH_DATA();
+    }
+
+    for (const auto& subgraph : graph.GetObject())
+    {
+        const QString& graphName = subgraph.name.GetString();
+        if ("main" == graphName)
+            continue;
+        if (!_parseSubGraph(graphName,
+            subgraph.value,
+            nodesDescs,
+            subgraphDatas,
+            subgraphDatas[graphName]))
+        {
+            return false;
+        }
+    }
+
+    result.descs = nodesDescs;
     result.subgraphs = subgraphDatas;
     return true;
 }
@@ -205,7 +273,7 @@ bool ZsgReader::_parseNode(
     ret.ident = nodeid;
     ret.nodeCls = name;
     auto &mgr = GraphsManagment::instance();
-    ret.type = UiHelper::nodeType(name);
+    ret.type = mgr.nodeType(name);
     if (subgraphDatas.contains(name))
         ret.type = SUBGRAPH_NODE;
 
@@ -222,7 +290,10 @@ bool ZsgReader::_parseNode(
         if (subgraphDatas.find(name) != subgraphDatas.end())
         {
             ret.type = SUBGRAPH_NODE;
-            ret.children = _fork(subgPath + "/" + nodeid, subgraphDatas, name, links);
+            if (subgPath.startsWith("/main"))
+            {
+                ret.children = UiHelper::fork(subgPath + "/" + nodeid, subgraphDatas, name, links);
+            }
         }
     }
 
@@ -349,72 +420,6 @@ bool ZsgReader::_parseNode(
     }
 
     return true;
-}
-
-NODES_DATA ZsgReader::_fork(
-            const QString& currentPath,
-            const QMap<QString, SUBGRAPH_DATA>& subgraphDatas,
-            const QString& subnetName,
-            LINKS_DATA& newLinks)
-{
-    NODES_DATA newDatas;
-
-    QMap<QString, NODE_DATA> nodes;
-    QHash<QString, QString> old2new;
-    QHash<QString, QString> old2new_nodePath;
-    LINKS_DATA oldLinks;
-
-    ZASSERT_EXIT(subgraphDatas.find(subnetName) != subgraphDatas.end(), newDatas);
-    const SUBGRAPH_DATA& subgraph = subgraphDatas[subnetName];
-
-    for (QString ident : subgraph.nodes.keys())
-    {
-        NODE_DATA nodeData = subgraph.nodes[ident];
-        const QString snodeId = nodeData.ident;
-        const QString& name = nodeData.nodeCls;
-        const QString& newId = UiHelper::generateUuid(name);
-        old2new.insert(snodeId, newId);
-
-        if (subgraphDatas.find(name) != subgraphDatas.end())
-        {
-            const QString &ssubnetName = name;
-            nodeData.ident = newId;
-            nodeData.type = SUBGRAPH_NODE;
-
-            LINKS_DATA childLinks;
-            nodeData.children = UiHelper::fork(currentPath + "/" + newId, subgraphDatas, ssubnetName, childLinks);
-            newDatas.insert(newId, nodeData);
-            newLinks.append(childLinks);
-        }
-        else
-        {
-            nodeData.ident = newId;
-            newDatas.insert(newId, nodeData);
-        }
-
-        //apply legacy format `subnet:nodeid`.
-        const QString &oldNodePath = QString("%1:%2").arg(subnetName).arg(snodeId);
-        const QString &newNodePath = currentPath + "/" + newId;
-        old2new_nodePath.insert(oldNodePath, newNodePath);
-    }
-
-    for (EdgeInfo oldLink : subgraph.links)
-    {
-        //oldLink format: subg:xxx-objid:sockid
-        QString outputNode = UiHelper::getNodePath(oldLink.outSockPath);
-        QString outParamPath = UiHelper::getParamPath(oldLink.outSockPath);
-        QString inputNode = UiHelper::getNodePath(oldLink.inSockPath);
-        QString inParamPath = UiHelper::getParamPath(oldLink.inSockPath);
-
-        ZASSERT_EXIT(old2new_nodePath.find(outputNode) != old2new_nodePath.end() &&
-                     old2new_nodePath.find(inputNode) != old2new_nodePath.end(),
-                     newDatas);
-
-        const QString &newInSock = old2new_nodePath[inputNode] + cPathSeperator + inParamPath;
-        const QString &newOutSock = old2new_nodePath[outputNode] + cPathSeperator + outParamPath;
-        newLinks.append(EdgeInfo(newOutSock, newInSock));
-    }
-    return newDatas;
 }
 
 void ZsgReader::_parseChildNodes(
@@ -552,28 +557,23 @@ void ZsgReader::_parseInputs(
             int n = arr.Size();
             ZASSERT_EXIT(n == 3);
 
-            if (arr[0].IsString())
-                outId = arr[0].GetString();
-            if (arr[1].IsString())
-                outSock = arr[1].GetString();
-
             INPUT_SOCKET socket;
-            socket.info.defaultValue = _parseDeflValue(id, legacyDescs, inSock, PARAM_INPUT, arr[2]);
+            if (ret.inputs.contains(inSock))
+                socket = ret.inputs[inSock];
+            else
+                socket.info.name = inSock;
+            socket.info.defaultValue = _parseDeflValue(nodeName, legacyDescs, inSock, PARAM_INPUT, arr[2]);
 
-            if (subgPath.startsWith("/main"))
+            if (arr[0].IsString() && arr[1].IsString())
             {
+                outId = arr[0].GetString();
+                outSock = arr[1].GetString();
                 QString outLinkPath = QString("%1/%2:[node]/outputs/%3").arg(subgPath).arg(outId).arg(outSock);
                 QString inLinkPath = QString("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(inSock);
                 links.append(EdgeInfo(outLinkPath, inLinkPath));
             }
-            else
-            {
-                QString outLinkPath = QString("%1:%2:[node]/outputs/%3").arg(subgPath).arg(outId).arg(outSock);
-                QString inLinkPath = QString("%1:%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(inSock);
-                links.append(EdgeInfo(outLinkPath, inLinkPath));
-            }
 
-            ret.inputs.insert(inSock, socket);
+            ret.inputs[inSock] = socket;
         }
         else if (inputObj.IsNull())
         {
@@ -636,43 +636,42 @@ void ZsgReader::_parseSocket(
 
     PARAM_CLASS cls = bInput ? PARAM_INPUT : PARAM_OUTPUT;
 
+    if (sockObj.HasMember("type")) {
+        socket.type = sockObj["type"].GetString();
+    }
     if (sockObj.HasMember("default-value"))
     {
-        socket.defaultValue = _parseDeflValue(nodeCls, descriptors, sockName, cls, sockObj["default-value"]);
+        if (descriptors.find(sockName) != descriptors.end())
+            socket.defaultValue = _parseDeflValue(nodeCls, descriptors, sockName, cls, sockObj["default-value"]);
+        else if (!socket.type.isEmpty() && !sockObj["default-value"].IsNull()) {
+            socket.defaultValue = UiHelper::parseJsonByType(socket.type, sockObj["default-value"]);
+        }
     }
 
     //link:
     if (bInput && sockObj.HasMember("link") && sockObj["link"].IsString())
     {
         QString outLinkPath = QString::fromUtf8(sockObj["link"].GetString());
-
-        if (subgPath.startsWith("/main"))
-        {
-            QString inLinkPath = QString("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(sockName);
-            EdgeInfo fullLink(outLinkPath, inLinkPath);
-            links.append(fullLink);
-        }
-        else
-        {
-            QString inLinkPath = QString("%1:%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(sockName);
-            EdgeInfo fullLink(outLinkPath, inLinkPath);
-            links.append(fullLink);
-        }
+        QStringList lst = outLinkPath.split(cPathSeperator, QtSkipEmptyParts);
+        if (lst.size() > 2)
+            outLinkPath = UiHelper::constructObjPath(lst[0], lst[1], lst[2]);
+        QString inLinkPath = QString("%1/%2:[node]/inputs/%3").arg(subgPath).arg(id).arg(sockName);
+        EdgeInfo fullLink(outLinkPath, inLinkPath);
+        links.append(fullLink);
     }
 
     if (sockObj.HasMember("dictlist-panel"))
     {
         _parseDictPanel(subgPath, bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, ret, links);
     }
-    if (sockObj.HasMember("control")) 
+    if (sockObj.HasMember("control") && descriptors.find(nodeCls) == descriptors.end()) 
 	{
         PARAM_CONTROL ctrl;
         QVariant props;
         bool bret = JsonHelper::importControl(sockObj["control"], ctrl, props);
         if (bret){
-            //init by desc.
-            //socket.control = ctrl;
-            //socket.ctrlProps = props.toMap();
+            socket.control = ctrl;
+            socket.ctrlProps = props.toMap();
         }
     }
 
@@ -734,22 +733,14 @@ void ZsgReader::_parseDictPanel(
                 item.key = keyName;
 
                 QString outSockPath = link;
+                QStringList lst = outSockPath.split(cPathSeperator, QtSkipEmptyParts);
+                if (lst.size() > 2)
+                    outSockPath = UiHelper::constructObjPath(lst[0], lst[1], lst[2]);
                 if (!outSockPath.isEmpty())
                 {
-                    if (subgPath.startsWith("/main"))
-                    {
-                        QString inSockPath = QString("%1/%2:[node]/inputs/%3/%4").arg(subgPath).arg(id).arg(sockName).arg(keyName);
-                        EdgeInfo edge(outSockPath, inSockPath);
-                        links.append(edge);
-                        //item.links.append(edge);
-                    }
-                    else
-                    {
-                        QString inSockPath = QString("%1:%2:[node]/inputs/%3/%4").arg(subgPath).arg(id).arg(sockName).arg(keyName);
-                        EdgeInfo edge(outSockPath, inSockPath);
-                        links.append(edge);
-                        //item.links.append(edge);
-                    }
+                    QString inSockPath = QString("%1/%2:[node]/inputs/%3/%4").arg(subgPath).arg(id).arg(sockName).arg(keyName);
+                    EdgeInfo edge(outSockPath, inSockPath);
+                    links.append(edge);
                 }
                 inSocket.info.dictpanel.keys.append(item);
             }
@@ -772,6 +763,10 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
     for (const auto& outObj : outputs.GetObject())
     {
         const QString& outSock = outObj.name.GetString();
+        if (ret.outputs.find(outSock) == ret.outputs.end()) {
+            ret.outputs[outSock] = OUTPUT_SOCKET();
+            ret.outputs[outSock].info.name = outSock;
+        }
         const auto& sockObj = outObj.value;
         if (sockObj.IsObject())
         {
@@ -857,11 +852,17 @@ void ZsgReader::_parseLegacyCurves(const QString& id,
 
 NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs)
 {
-    NODE_DESCS _descs;
+    auto& mgr = GraphsManagment::instance();
+    NODE_DESCS _descs = mgr.descriptors();
     for (const auto& node : jsonDescs.GetObject())
     {
         const QString& nodeCls = node.name.GetString();
         const auto& objValue = node.value;
+
+        if (_descs.find(nodeCls) != _descs.end() && !mgr.getSubgDesc(nodeCls, NODE_DESC()))
+        {
+            continue;
+        }
 
         NODE_DESC desc;
         desc.name = nodeCls;

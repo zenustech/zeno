@@ -32,6 +32,8 @@ public:
     // painting
     void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
     QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+signals:
+    void subgrahSyncSignal(const QModelIndex subgIdx);
 
 protected:
     void initStyleOption(QStyleOptionViewItem* option, const QModelIndex& index) const override;
@@ -42,11 +44,19 @@ public slots:
     void onDelete();
 private slots:
     void onRename(const QModelIndex &index);
+    void onSaveSubgraph(const QModelIndex& index);
 
 private:
     IGraphsModel* m_model;
     QModelIndexList m_selectedIndexs;
 };
 
+class SubListSortProxyModel :public QSortFilterProxyModel
+{
+public:
+    explicit SubListSortProxyModel(QObject* parent = nullptr);
+protected:
+    bool lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const override;
+};
 
 #endif

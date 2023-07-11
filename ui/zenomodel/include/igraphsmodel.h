@@ -79,9 +79,6 @@ public:
 					int searchType,
 					int searchOpts) = 0;
 	virtual void removeGraph(int idx) = 0;
-	virtual QString fileName() const = 0;
-	virtual QString filePath() const = 0;
-	virtual void setFilePath(const QString& fn) = 0;
 	virtual QRectF viewRect(const QModelIndex& subgIdx) = 0;
 	virtual void markDirty() = 0;
 	virtual void clearDirty() = 0;
@@ -110,6 +107,8 @@ public:
     virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) = 0;
 	//temp:
     virtual QAbstractItemModel *implModel() = 0;
+
+    virtual void onSubgrahSync(const QModelIndex& subgIdx) = 0;
 
 
 signals:

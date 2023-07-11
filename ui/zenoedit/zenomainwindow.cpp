@@ -1137,6 +1137,63 @@ void ZenoMainWindow::importGraph() {
     pGraphs->importGraph(filePath);
 }
 
+void ZenoMainWindow::importSubGraph() 
+{
+    QString filePath = getOpenFileByDialog();
+    if (filePath.isEmpty())
+        return;
+
+    //todo: path validation
+    auto pGraphs = zenoApp->graphsManagment();
+    IGraphsModel *pModel = pGraphs->sharedSubgraphs();
+    if (!pModel)
+        return;
+
+    zenoio::ZSG_PARSE_RESULT res;
+    if (!zenoio::ZsgReader::getInstance().openSubgraphFile(filePath, res))
+    {
+        zeno::log_error("failed to open zsg file: {}", filePath.toStdString());
+        return;
+    }
+    QStringList subgNames;
+    for (QString subgName : res.subgraphs.keys())
+    {
+        if (!res.descs.contains(subgName))
+        {
+            zeno::log_error("failed to init {} descriptor", subgName.toStdString());
+            continue;
+        }
+        if (pGraphs->getSubgDesc(subgName, NODE_DESC()))
+        {
+            if (QMessageBox::question(this, tr("question"), tr("subgraph [%1] already exists, overwrite or not?").arg(subgName)) == QMessageBox::No)
+                continue;
+            pGraphs->updateSubgDesc(subgName, res.descs[subgName]);
+        }
+        else
+        {
+            pGraphs->appendSubGraph(res.descs[subgName]);
+        }
+        subgNames << subgName;
+    }
+    pModel->setIOProcessing(true);
+    for (QString subgName : subgNames)
+    {
+        const SUBGRAPH_DATA& subg = res.subgraphs[subgName];
+        QModelIndex& subgIdx = pModel->index(subgName);
+        if (subgIdx.isValid())
+        {
+            pModel->clearSubGraph(subgIdx);
+        }
+        else
+        {
+            pModel->newSubgraph(subgName);
+            subgIdx = pModel->index(subgName);
+        }
+        pModel->importNodes(subg.nodes, subg.links, QPointF(0, 0), subgIdx, false);
+    }
+    pModel->setIOProcessing(false);
+}
+
 static bool saveContent(const QString &strContent, QString filePath) {
     QFile f(filePath);
     zeno::log_debug("saving {} chars to file [{}]", strContent.size(), filePath.toStdString());
@@ -1492,20 +1549,20 @@ void ZenoMainWindow::save()
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel* pModel = pGraphsMgm->currentModel();
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
-    if (zenoio::VER_3 != ver)
+    QString currFilePath = pGraphsMgm->filePath();
+    if (zenoio::VER_3 != ver && !currFilePath.isEmpty())
     {
         QMessageBox msgBox(QMessageBox::Information, "", tr("The format of current zsg is old. To keep this file data trackable, we recommand you choose \"Save As\" to save it, as the format of new zsg"));
         msgBox.exec();
         bool ret = saveAs();
         if (ret) {
-            pModel->setIOVersion(zenoio::VER_2_5);
+            pModel->setIOVersion(zenoio::VER_3);
         }
     }
     else
     {
         if (pModel)
         {
-            QString currFilePath = pModel->filePath();
             if (currFilePath.isEmpty())
                 saveAs();
             else
@@ -1516,7 +1573,6 @@ void ZenoMainWindow::save()
 
 bool ZenoMainWindow::saveFile(QString filePath)
 {
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
     zenoApp->graphsManagment()->saveFile(filePath, settings);

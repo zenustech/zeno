@@ -44,11 +44,6 @@ bool TransferAcceptor::setCurrentSubGraph(IGraphsModel* pModel, const QModelInde
     return true;
 }
 
-void TransferAcceptor::setFilePath(const QString& fileName)
-{
-
-}
-
 void TransferAcceptor::switchSubGraph(const QString& graphName)
 {
 
@@ -64,7 +59,7 @@ bool TransferAcceptor::addNode(const QString& nodeid, const QString& name, const
     data.nodeCls = name;
     data.customName = customName;
     data.bCollasped = false;
-    data.type = NodesMgr::nodeType(name);
+    data.type = GraphsManagment::instance().nodeType(name);
 
     m_nodes.insert(nodeid, data);
     return true;

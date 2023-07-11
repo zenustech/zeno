@@ -136,11 +136,6 @@ void TreeAcceptor::resolveAllLinks()
     }
 }
 
-void TreeAcceptor::setFilePath(const QString& fileName)
-{
-    m_pNodeModel->setFilePath(fileName);
-}
-
 void TreeAcceptor::switchSubGraph(const QString &graphName)
 {
     //todo: deprecated.
@@ -180,7 +175,7 @@ bool TreeAcceptor::addNode(const QString &nodeid, const QString &name, const QSt
         data.nodeCls = name;
         data.customName = customName;
         data.bCollasped = false;
-        data.type = UiHelper::nodeType(name);
+        data.type = inst.nodeType(name);
         m_pNodeModel->addNode(data, m_pNodeModel->mainIndex());
     }
     return true;

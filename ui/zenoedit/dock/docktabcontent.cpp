@@ -249,7 +249,7 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
 {
     if (ZenoPropPanel* prop = findChild<ZenoPropPanel*>())
     {
-        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+        IGraphsModel* pModel = UiHelper::getGraphsBySubg(subgIdx);
         prop->reset(pModel, subgIdx, nodes, select);
 
         if (!nodes.isEmpty())

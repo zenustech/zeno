@@ -161,6 +161,7 @@ public slots:
     void onSplitDock(bool);
     void onCloseDock();
     void importGraph();
+    void importSubGraph();
     void exportGraph();
     void onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onPrimitiveSelected(const std::unordered_set<std::string>& primids);

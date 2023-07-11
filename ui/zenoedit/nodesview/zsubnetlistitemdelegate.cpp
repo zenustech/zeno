@@ -5,6 +5,9 @@
 #include "zenoapplication.h"
 #include <zenomodel/include/modelrole.h>
 #include "util/log.h"
+#include <zenoio/writer/zsgwriter.h>
+#include "zenoapplication.h"
+#include "zenomainwindow.h"
 
 
 SubgEditValidator::SubgEditValidator(QObject* parent)
@@ -124,7 +127,7 @@ void ZSubnetListItemDelegate::initStyleOption(QStyleOptionViewItem* option, cons
 	}
 }
 
-bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index)
+bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& proxyIndex)
 {
     if (event->type() == QEvent::MouseButtonPress)
     {
@@ -136,6 +139,8 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             QAction* pPasteSubnet = new QAction(tr("Paste subnet"));
             QAction* pRename = new QAction(tr("Rename"));
             QAction* pDelete = new QAction(tr("Delete"));
+            QAction* pSync = new QAction(tr("Subgrah Sync"));
+            QAction* pSave = new QAction(tr("Save Subgrah"));
 
             if (m_selectedIndexs.size() > 1) 
             {
@@ -144,9 +149,19 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             connect(pDelete, &QAction::triggered, this, [=]() {
                 onDelete();
              });
-
+            QSortFilterProxyModel* pProxyModel = qobject_cast<QSortFilterProxyModel*>(model);
+            ZASSERT_EXIT(pProxyModel, false);
+            const QModelIndex &index = pProxyModel->mapToSource(proxyIndex);
             connect(pRename, &QAction::triggered, this, [=]() {
                 onRename(index);
+            });
+
+            connect(pSync, &QAction::triggered, this, [=]() {
+                emit subgrahSyncSignal(index);
+            });
+
+            connect(pSave, &QAction::triggered, this, [=]() {
+                onSaveSubgraph(index);
             });
 
             menu->addAction(pCopySubnet);
@@ -154,10 +169,12 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->addSeparator();
             menu->addAction(pRename);
             menu->addAction(pDelete);
+            menu->addAction(pSync);
+            menu->addAction(pSave);
             menu->exec(QCursor::pos());
         }
     }
-    return QStyledItemDelegate::editorEvent(event, model, option, index);
+    return QStyledItemDelegate::editorEvent(event, model, option, proxyIndex);
 }
 
 void ZSubnetListItemDelegate::onDelete()
@@ -181,9 +198,43 @@ void ZSubnetListItemDelegate::onDelete()
 
 void ZSubnetListItemDelegate::onRename(const QModelIndex &index) 
 {
-    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"));
+    QString name = QInputDialog::getText(nullptr, tr("Rename"), tr("subgraph name:"), QLineEdit::Normal, index.data(ROLE_OBJNAME).toString());
     if (!name.isEmpty()) {
         m_model->setData(index, name, Qt::EditRole);
+    }
+}
+
+void ZSubnetListItemDelegate::onSaveSubgraph(const QModelIndex& index)
+{
+    DlgInEventLoopScope;
+    QString subgName = index.data(ROLE_OBJNAME).toString();
+    QString path = QFileDialog::getSaveFileName(nullptr, "Path to Save", subgName, "Zeno Graph File(*.zsg);; All Files(*);;");
+    if (!path.isEmpty()) {
+        QModelIndexList indexs;
+        indexs << index;
+        int count = m_model->itemCount(index);
+        for (int i = 0; i < count; i++)
+        {
+            const QModelIndex& childIdx = m_model->index(i, index);
+            if (m_model->IsSubGraphNode(childIdx))
+            {
+                const QModelIndex& subgIdx = m_model->index(childIdx.data(ROLE_OBJNAME).toString());
+                if (subgIdx.isValid() && !indexs.contains(subgIdx))
+                    indexs << subgIdx;
+            }
+        }
+        QString strJson = ZsgWriter::getInstance().dumpSubgraphStr(m_model, indexs);
+        QFile file(path);
+        zeno::log_debug("saving {} chars to file [{}]", strJson.size(), path.toStdString());
+        if (!file.open(QIODevice::WriteOnly)) {
+            qWarning() << Q_FUNC_INFO << "Failed to open" << strJson << file.errorString();
+            zeno::log_error("Failed to open file for write: {} ({})", path.toStdString(), file.errorString().toStdString());
+            return;
+        }
+
+        file.write(strJson.toUtf8());
+        file.close();
+        zeno::log_debug("saved subgraph {} successfully", subgName.toStdString());
     }
 }
 
@@ -211,4 +262,16 @@ void ZSubnetListItemDelegate::updateEditorGeometry(QWidget* editor, const QStyle
 void ZSubnetListItemDelegate::setSelectedIndexs(const QModelIndexList &list) 
 {
     m_selectedIndexs = list;
+}
+
+
+SubListSortProxyModel::SubListSortProxyModel(QObject* parent) : QSortFilterProxyModel(parent)
+{
+}
+
+bool SubListSortProxyModel::lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const
+{
+    if (source_left.data().toString().compare(source_right.data().toString(), Qt::CaseInsensitive) < 0)
+        return true;
+    return false;
 }

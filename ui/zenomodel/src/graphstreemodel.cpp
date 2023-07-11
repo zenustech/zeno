@@ -210,8 +210,8 @@ QModelIndex GraphsTreeModel::extractSubGraph(
                             const QString &toSubg,
                             bool enableTrans)
 {
-    ZASSERT_EXIT(m_pSubgraphs, QModelIndex());
-    return m_pSubgraphs->extractSubGraph(nodes, links, fromSubg, toSubg, enableTrans);
+    ZASSERT_EXIT(m_impl, QModelIndex());
+    return m_impl->extractSubGraph(nodes, links, fromSubg, toSubg, enableTrans);
 }
 
 bool GraphsTreeModel::IsSubGraphNode(const QModelIndex &nodeIdx) const
@@ -322,8 +322,8 @@ void GraphsTreeModel::initMainGraph()
 
 void GraphsTreeModel::renameSubGraph(const QString &oldName, const QString &newName)
 {
-    ZASSERT_EXIT(m_pSubgraphs);
-    m_pSubgraphs->renameSubGraph(oldName, newName);
+    ZASSERT_EXIT(m_impl);
+    m_impl->renameSubGraph(oldName, newName);
 }
 
 bool GraphsTreeModel::isDirty() const
@@ -354,23 +354,6 @@ QModelIndexList GraphsTreeModel::searchInSubgraph(
 void GraphsTreeModel::removeGraph(int idx)
 {
     //todo:
-}
-
-QString GraphsTreeModel::fileName() const
-{
-    QString fn;
-    return fn;
-}
-
-QString GraphsTreeModel::filePath() const
-{
-    return "";
-}
-
-void GraphsTreeModel::setFilePath(const QString &fn)
-{
-    m_filePath = fn;
-    emit pathChanged(m_filePath);
 }
 
 QRectF GraphsTreeModel::viewRect(const QModelIndex &subgIdx)
@@ -509,4 +492,9 @@ bool GraphsTreeModel::isApiRunningEnable() const
 bool GraphsTreeModel::setCustomName(const QModelIndex &subgIdx, const QModelIndex &idx, const QString &value)
 {
     return m_impl->setCustomName(subgIdx, idx, value);
+}
+
+void GraphsTreeModel::onSubgrahSync(const QModelIndex& subgIdx) {
+    ZASSERT_EXIT(m_impl);
+    m_impl->onSubgrahSync(subgIdx);
 }

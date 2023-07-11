@@ -19,6 +19,7 @@ namespace zenoio
     public:
         static ZsgReader& getInstance();
         bool openFile(const QString& fn, ZSG_PARSE_RESULT& ret);
+        bool openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& ret);
         bool importNodes(
                 IGraphsModel* pModel,
                 const QModelIndex& subgIdx,
@@ -119,12 +120,6 @@ namespace zenoio
                         const QString& sockName,
                         PARAM_CLASS cls,
                         const rapidjson::Value &defaultValue);
-
-        NODES_DATA _fork(
-            const QString& currentPath,
-            const QMap<QString, SUBGRAPH_DATA>& subgraphDatas,
-            const QString& subnetName,
-            LINKS_DATA& newLinks);
 
         ZSG_VERSION m_ioVer;
         bool m_bDiskReading;        //disk io read.

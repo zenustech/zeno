@@ -12,8 +12,11 @@
 QString NodesMgr::createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
 {
     zeno::log_debug("onNewNodeCreated");
-    NODE_DATA node = newNodeData(pModel, subgIdx, descName, pt);
+    LINKS_DATA links;
+    NODE_DATA node = newNodeData(pModel, subgIdx, descName, pt, links);
     pModel->addNode(node, subgIdx, true);
+    for (const auto link : links)
+        pModel->addLink(subgIdx, link, false);
     return node.ident;
 }
 
@@ -35,10 +38,9 @@ QString NodesMgr::createExtractDictNode(IGraphsModel *pModel, QModelIndex subgId
     return node.ident;
 }
 
-NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt)
+NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt, LINKS_DATA &links)
 {
     NODE_DATA node;
-    LINKS_DATA links;
 
     NODE_DESC desc;
     auto &mgr = GraphsManagment::instance();
@@ -62,51 +64,9 @@ NODE_DATA NodesMgr::newNodeData(IGraphsModel* pModel, QModelIndex subgIdx, const
     NODE_DESC _desc;
     if (mgr.getSubgDesc(descName, _desc))
     {
-        IGraphsModel* pSubgraphs = mgr.sharedSubgraphs();
-        ZASSERT_EXIT(pSubgraphs, node);
-
-        QMap<QString, SUBGRAPH_DATA> subgraphDatas;
-        for (int r = 0; r < pSubgraphs->rowCount(); r++)
-        {
-            SUBGRAPH_DATA subgData;
-            const QModelIndex& _subg = pSubgraphs->index(r, 0);
-            const QString& subgName = _subg.data(ROLE_OBJNAME).toString();
-            pSubgraphs->exportSubgraph(_subg, subgData.nodes, subgData.links);
-            subgraphDatas[subgName] = subgData;
-        }
-
-        QString objPath = subgIdx.data(ROLE_OBJPATH).toString();
-        node.children = UiHelper::fork(objPath + "/" + nodeid, subgraphDatas, descName, links);
+        node.children = getChildItems(subgIdx, descName, nodeid, links);
     }
     return node;
-}
-
-NODE_TYPE NodesMgr::nodeType(const QString& name)
-{
-    if (name == "Blackboard")
-    {
-        return BLACKBOARD_NODE;
-    }
-    else if (name == "Group")
-    {
-        return GROUP_NODE;
-    }
-    else if (name == "SubInput")
-    {
-        return SUBINPUT_NODE;
-    }
-    else if (name == "SubOutput")
-    {
-        return SUBOUTPUT_NODE;
-    }
-    else if (name == "MakeHeatmap")
-    {
-        return HEATMAP_NODE;
-    }
-    else
-    {
-        return NORMAL_NODE;
-    }
 }
 
 void NodesMgr::initInputSocks(IGraphsModel* pGraphsModel, const QString& nodeid, INPUT_SOCKETS& descInputs, bool isSubgraph)
@@ -201,4 +161,25 @@ PARAMS_INFO NodesMgr::initParamsNotDesc(const QString& name)
         paramsNotDesc["blackboard"].value = QVariant::fromValue(blackboard);
     }
     return paramsNotDesc;
+}
+
+QMap<QString, NODE_DATA> NodesMgr::getChildItems(QModelIndex subgIdx, const QString& descName, const QString &nodeid, LINKS_DATA &links) 
+{
+    QMap<QString, NODE_DATA> childs; 
+    auto &mgr = GraphsManagment::instance();
+    IGraphsModel *pSubgraphs = mgr.sharedSubgraphs();
+    ZASSERT_EXIT(pSubgraphs, childs);
+
+    QMap<QString, SUBGRAPH_DATA> subgraphDatas;
+    for (int r = 0; r < pSubgraphs->rowCount(); r++) {
+        SUBGRAPH_DATA subgData;
+        const QModelIndex &_subg = pSubgraphs->index(r, 0);
+        const QString &subgName = _subg.data(ROLE_OBJNAME).toString();
+        pSubgraphs->exportSubgraph(_subg, subgData.nodes, subgData.links);
+        subgraphDatas[subgName] = subgData;
+    }
+
+    QString objPath = subgIdx.data(ROLE_OBJPATH).toString();
+    childs = UiHelper::fork(objPath + "/" + nodeid, subgraphDatas, descName, links);
+    return childs;
 }

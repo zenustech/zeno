@@ -12,6 +12,7 @@
 #include "globalcontrolmgr.h"
 #include "dictkeymodel.h"
 #include "graphsmanagment.h"
+#include <zenoedit/zenoapplication.h>
 
 
 GraphsModel::GraphsModel(QObject *parent)
@@ -35,12 +36,6 @@ GraphsModel::~GraphsModel()
 QItemSelectionModel* GraphsModel::selectionModel() const
 {
     return m_selection;
-}
-
-void GraphsModel::setFilePath(const QString& fn)
-{
-    m_filePath = fn;
-    emit pathChanged(m_filePath);
 }
 
 SubGraphModel* GraphsModel::subGraph(const QString& name) const
@@ -163,6 +158,8 @@ void GraphsModel::renameSubGraph(const QString& oldName, const QString& newName)
     m_name2id[newName] = ident;
 
     emit graphRenamed(oldName, newName);
+    QModelIndex subgIdx = index(newName);
+    emit dataChanged(subgIdx, subgIdx);
 }
 
 QModelIndex GraphsModel::nodeIndex(uint32_t sid, uint32_t nodeid)
@@ -268,28 +265,20 @@ QModelIndex GraphsModel::parent(const QModelIndex& child) const
 QModelIndex GraphsModel::indexFromPath(const QString& path)
 {
     QStringList lst = path.split(cPathSeperator, QtSkipEmptyParts);
-    //format like: {subgraph-name}:{node-ident}:{[node|panel]param-layer-path}
     if (lst.size() == 1)
     {
-        const QString& subgName = lst[0];
-        return index(subgName);
+        const QString& nodePath = lst[0];
+        lst = nodePath.split('/', QtSkipEmptyParts);
+        if (lst[0] == "main")
+            return zenoApp->graphsManagment()->currentModel()->indexFromPath(path);
+        return nodeIndex(lst.last());
     }
     else if (lst.size() == 2)
     {
-        const QString& subgName = lst[0];
-        const QString& nodeIdent = lst[1];
-        const QModelIndex& subgIdx = index(subgName);
-        return index(nodeIdent, subgIdx);
-    }
-    else if (lst.size() >= 3)
-    {
-        const QString& subgName = lst[0];
-        const QString& nodeIdent = lst[1];
-        QString paramPath = lst[2];
-        const QModelIndex& subgIdx = index(subgName);
-        const QModelIndex& nodeIdx = index(nodeIdent, subgIdx);
-        if (!nodeIdx.isValid())
-            return QModelIndex();
+        const QString& nodePath = lst[0];
+        QModelIndex nodeIdx = indexFromPath(nodePath);
+
+        const QString& paramPath = lst[1];
         if (paramPath.startsWith("[node]"))
         {
             const QString& paramObj = paramPath.mid(QString("[node]").length());
@@ -303,6 +292,17 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
             ViewParamModel* viewParams = QVariantPtr<ViewParamModel>::asPtr(nodeIdx.data(ROLE_PANEL_PARAMS));
             QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
             return paramIdx;
+        }
+    }
+    else if (lst.size() == 3)
+    {
+        //legacy case:    main:xxx-wrangle:/inputs/prim
+        QString subnetName = lst[0];
+        QString nodeid = lst[1];
+        if (subnetName == "main")
+        {
+            QString newPath = QString("/main/%1:%2").arg(nodeid).arg(lst[2]);
+            return indexFromPath(newPath);
         }
     }
     return QModelIndex();
@@ -769,20 +769,6 @@ QString GraphsModel::uniqueSubgraph(QString orginName)
     return newSubName;
 }
 
-QString GraphsModel::filePath() const
-{
-    return m_filePath;
-}
-
-QString GraphsModel::fileName() const
-{
-    QFileInfo fi(m_filePath);
-    QString fn;
-    if (fi.isFile())
-        fn = fi.fileName();
-    return fn;
-}
-
 void GraphsModel::onCurrentIndexChanged(int row)
 {
     const QString& graphName = data(index(row, 0), ROLE_OBJNAME).toString();
@@ -1171,7 +1157,9 @@ QModelIndex GraphsModel::addLink(const QModelIndex& subgIdx, const EdgeInfo& inf
         QModelIndex outParamIdx = indexFromPath(info.outSockPath);
         if (!inParamIdx.isValid() || !outParamIdx.isValid())
         {
-            zeno::log_warn("there is not valid input or output sockets.");
+            QString inSock = UiHelper::getSockNode(info.inSockPath) + "/" + UiHelper::getSockName(info.inSockPath);
+            QString outSock = UiHelper::getSockNode(info.outSockPath) + "/" + UiHelper::getSockName(info.outSockPath);
+            zeno::log_warn("there is not valid input ({}) or output ({}) sockets.", inSock.toStdString(), outSock.toStdString());
             return QModelIndex();
         }
         if (!subgIdx.isValid())
@@ -1503,7 +1491,7 @@ bool GraphsModel::onSubIOAdd(SubGraphModel* pGraph, NODE_DATA nodeData2)
 
     ZASSERT_EXIT(nodeData2.params.find("name") != nodeData2.params.end(), false);
     PARAM_INFO& param = nodeData2.params["name"];
-    QString newSockName = UiHelper::correctSubIOName(this, pGraph->name(), param.value.toString(), bInput);
+    QString newSockName = UiHelper::correctSubIOName(pGraph, param.value.toString(), bInput);
     param.value = newSockName;
     pGraph->appendItem(nodeData2);
 
@@ -1594,18 +1582,20 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
     {
         if (bInput)
         {
-            ZASSERT_EXIT(desc.inputs.find(nameValue) == desc.inputs.end());
+            if (desc.inputs.find(nameValue) == desc.inputs.end())
+                desc.inputs[nameValue] = INPUT_SOCKET();
             desc.inputs[nameValue].info = info;
         }
         else
         {
-            ZASSERT_EXIT(desc.outputs.find(nameValue) == desc.outputs.end());
+            if (desc.outputs.find(nameValue) == desc.outputs.end())
+                desc.outputs[nameValue] = OUTPUT_SOCKET();
             desc.outputs[nameValue].info = info;
         }
 
         //sync to all subgraph nodes.
         QModelIndexList subgNodes = findSubgraphNode(subnetNodeName);
-        for (QModelIndex subgNode : subgNodes)
+        for (const QModelIndex& subgNode : subgNodes)
         {
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
             nodeParams->setAddParam(
@@ -1635,12 +1625,13 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
         }
 
         QModelIndexList subgNodes = findSubgraphNode(subnetNodeName);
-        for (QModelIndex subgNode : subgNodes)
+        for (const QModelIndex& subgNode : subgNodes)
         {
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
             nodeParams->removeParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, nameValue);
         }
     }
+    mgr.updateSubgDesc(subnetNodeName, desc);
 }
 
 QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType, int searchOpts)
@@ -1682,6 +1673,7 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
         for (const QModelIndex &subgIdx : lst)
         {
             SEARCH_RESULT result;
+            result.subgIdx = subgIdx;
             result.targetIdx = subgIdx;
             result.type = SEARCH_SUBNET;
             results.append(result);
@@ -1713,6 +1705,7 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
                             result.type = SEARCH_ARGS;
                             result.socket = inputSock.info.name;
                             results.append(result);
+                            nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
                         }
                     }
                 }
@@ -1727,6 +1720,7 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
                             result.type = SEARCH_ARGS;
                             result.socket = param.name;
                             results.append(result);
+                            nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
                         }
                     }
                 }
@@ -1743,6 +1737,9 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
             }
             if (!lst.isEmpty()) {
                 for (const QModelIndex &nodeIdx : lst) {
+                    if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
+                        continue;
+                    }
                     SEARCH_RESULT result;
                     result.targetIdx = nodeIdx;
                     result.subgIdx = subgIdx;
@@ -1758,6 +1755,10 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
                 if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
                     continue;
                 }
+                QString nodeCls = nodeIdx.data(ROLE_OBJNAME).toString();
+                if (searchOpts == SEARCH_MATCH_EXACTLY && nodeCls != content) {
+                    continue;
+                }
                 SEARCH_RESULT result;
                 result.targetIdx = nodeIdx;
                 result.subgIdx = subgIdx;
@@ -1770,6 +1771,10 @@ QList<SEARCH_RESULT> GraphsModel::search_impl(
             QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_CUSTOM_OBJNAME, content, -1, Qt::MatchContains);
             for (const QModelIndex &nodeIdx : lst) {
                 if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
+                    continue;
+                }
+                QString customName = nodeIdx.data(ROLE_CUSTOM_OBJNAME).toString();
+                if (searchOpts == SEARCH_MATCH_EXACTLY && customName != content) {
                     continue;
                 }
                 SEARCH_RESULT result;
@@ -1802,4 +1807,80 @@ void GraphsModel::setNodeData(const QModelIndex &nodeIndex, const QModelIndex &s
     SubGraphModel* pModel = this->subGraph(subGpIdx.row());
     ZASSERT_EXIT(pModel);
     pModel->setData(nodeIndex, value, role);
+}
+
+void GraphsModel::onSubgrahSync(const QModelIndex& subgIdx)
+{
+    IGraphsModel* pModel = UiHelper::getGraphsBySubg(subgIdx);
+    ZASSERT_EXIT(pModel);
+    updateSubgrahs(subgIdx);
+    pModel->onSubgrahSync(subgIdx);
+}
+
+void GraphsModel::updateSubgrahs(const QModelIndex& subgIdx)
+{
+    QString nodeCls = subgIdx.data(ROLE_OBJNAME).toString();
+    SubGraphModel* pSubgModel = subGraph(nodeCls);
+    if (pSubgModel) {
+        //delete old child items
+        while (pSubgModel->rowCount() > 0)
+        {
+            QModelIndex index = pSubgModel->index(0, 0);
+            QString ident = index.data(ROLE_OBJID).toString();
+            removeNode(ident, this->index(nodeCls), true);
+        }
+        //import nodes
+        NODE_DATA node = subgIdx.data(ROLE_OBJDATA).value<NODE_DATA>();
+        LINKS_DATA oldLinks;
+        if (IGraphsModel* pModel = UiHelper::getGraphsBySubg(subgIdx))
+        {
+            for (int i = 0; i < pModel->itemCount(subgIdx); i++)
+            {
+                const QModelIndex& childIdx = pModel->index(i, subgIdx);
+                if (childIdx.isValid())
+                {
+                    if (pModel->IsSubGraphNode(childIdx))
+                    {
+                        onSubgrahSync(childIdx);
+                    }
+                    NodeParamModel* viewParams = QVariantPtr<NodeParamModel>::asPtr(childIdx.data(ROLE_NODE_PARAMS));
+                    const QModelIndexList& lst = viewParams->getInputIndice();
+                    for (int r = 0; r < lst.size(); r++)
+                    {
+                        const QModelIndex& paramIdx = lst[r];
+                        const QString& inSock = paramIdx.data(ROLE_PARAM_NAME).toString();
+                        const int inSockProp = paramIdx.data(ROLE_PARAM_SOCKPROP).toInt();
+                        PARAM_LINKS links = paramIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        if (!links.isEmpty())
+                        {
+                            for (auto linkIdx : links)
+                            {
+                                oldLinks.append(UiHelper::exportLink(linkIdx));
+                            }
+                        }
+                        else if (inSockProp & SOCKPROP_DICTLIST_PANEL)
+                        {
+                            QAbstractItemModel* pKeyObjModel =
+                                QVariantPtr<QAbstractItemModel>::asPtr(paramIdx.data(ROLE_VPARAM_LINK_MODEL));
+                            for (int _r = 0; _r < pKeyObjModel->rowCount(); _r++)
+                            {
+                                const QModelIndex& keyIdx = pKeyObjModel->index(_r, 0);
+                                ZASSERT_EXIT(keyIdx.isValid());
+                                PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                                if (!links.isEmpty())
+                                {
+                                    const QModelIndex& linkIdx = links[0];
+                                    oldLinks.append(UiHelper::exportLink(linkIdx));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            QMap<QString, NODE_DATA> newNodes;
+            QList<EdgeInfo> newLinks;
+            UiHelper::reAllocIdents(nodeCls, node.children, oldLinks, newNodes, newLinks);
+            importNodes(newNodes, newLinks, QPointF(), this->index(nodeCls), true);
+        }
+    }
 }

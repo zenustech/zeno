@@ -21,8 +21,6 @@ public:
     ZenoSubGraphScene(QObject* parent = nullptr);
     ~ZenoSubGraphScene();
     void initModel(IGraphsModel* pGraphsModel, const QModelIndex& index);
-    void undo();
-    void redo();
     void copy();
     void paste(QPointF pos);
     QRectF nodesBoundingRect() const;

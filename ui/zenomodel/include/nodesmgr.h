@@ -12,12 +12,12 @@ class NodesMgr : public QObject
 public:
 	static QString createNewNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& descName, const QPointF& pt);
     static QString createExtractDictNode(IGraphsModel* pModel, QModelIndex subgIdx, const QString& infos);
-	static NODE_DATA newNodeData(IGraphsModel* pModel, QModelIndex subgIdx, const QString &descName, const QPointF& pt = QPointF(0, 0));
-	static NODE_TYPE nodeType(const QString& name);
+	static NODE_DATA newNodeData(IGraphsModel* pModel, QModelIndex subgIdx, const QString &descName, const QPointF& pt = QPointF(0, 0), LINKS_DATA &links = LINKS_DATA());
     static void initInputSocks(IGraphsModel* pModel, const QString& nodeid, INPUT_SOCKETS& descInputs, bool isSubgraph);
 	static void initOutputSocks(IGraphsModel* pModel, const QString& nodeid, OUTPUT_SOCKETS& descOutputs);
 	static void initParams(const QString& descName, IGraphsModel* pModel, PARAMS_INFO& params);
 	static PARAMS_INFO initParamsNotDesc(const QString& name);
+    static QMap<QString, NODE_DATA> getChildItems(QModelIndex subgIdx, const QString &descName, const QString &nodeid, LINKS_DATA &links);
 };
 
 

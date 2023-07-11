@@ -113,16 +113,6 @@ void _ZenoSubGraphView::showGrid(bool bShow)
     scene()->invalidate(rect());
 }
 
-void _ZenoSubGraphView::redo()
-{
-    m_scene->redo();
-}
-
-void _ZenoSubGraphView::undo()
-{
-    m_scene->undo();
-}
-
 void _ZenoSubGraphView::copy()
 {
     m_scene->copy();
@@ -572,7 +562,12 @@ void LayerPathWidget::setPath(const QString& path)
     while (pLayout->count() > 0)
     {
         QLayoutItem* pItem = pLayout->itemAt(pLayout->count() - 1);
+        if (pItem->widget()) {
+            pItem->widget()->deleteLater();
+        }
         pLayout->removeItem(pItem);
+        delete pItem;
+        pItem = nullptr;
     }
 
     QStringList L = m_path.split("/", QtSkipEmptyParts);
@@ -671,7 +666,7 @@ ZenoSubGraphScene* ZenoSubGraphView::scene()
     return qobject_cast<ZenoSubGraphScene*>(m_view->scene());
 }
 
-void ZenoSubGraphView::resetPath(IGraphsModel* pModel, const QString& path, const QString& subGraphName, const QString& objId, bool isError)
+void ZenoSubGraphView::resetPath(IGraphsModel* pModel, const QString& path, const QModelIndex& subgIdx, const QString& objId, bool isError)
 {
     ZASSERT_EXIT(pModel);
     if (path.isEmpty())
@@ -683,9 +678,8 @@ void ZenoSubGraphView::resetPath(IGraphsModel* pModel, const QString& path, cons
         m_pathWidget->show();
         m_pathWidget->setPath(path);
     }
-    if (!subGraphName.isEmpty() && !objId.isEmpty())
+    if (!objId.isEmpty())
     {
-        QModelIndex subgIdx = pModel->indexFromPath(subGraphName);
         QModelIndex objIdx = pModel->index(objId, subgIdx);
         ZASSERT_EXIT(objIdx.isValid());
         QPointF pos = objIdx.data(ROLE_OBJPOS).toPointF();

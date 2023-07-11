@@ -47,6 +47,40 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
     QApplication::clipboard()->setMimeData(pMimeData);
 }
 
+QString ZsgWriter::dumpSubgraphStr(IGraphsModel* pModel, QModelIndexList indexs)
+{
+    QString strJson;
+    if (indexs.isEmpty())
+        return strJson;
+
+    rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+    {
+        JsonObjBatch batch(writer);
+
+        NODE_DESCS descs;
+        writer.Key("subgraphs");
+        {
+            JsonObjBatch _batch(writer);
+            for (const auto& subgIdx : indexs)
+            {
+                const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+                writer.Key(subgName.toUtf8());
+                _dumpSubGraph(pModel, subgIdx, writer);
+                auto& mgr = GraphsManagment::instance();
+                NODE_DESC desc;
+                if (mgr.getSubgDesc(subgName, desc))
+                    descs[subgName] = desc;
+            }
+        }
+        auto& mgr = GraphsManagment::instance();
+        writer.Key("descs");
+        _dumpDescriptors(descs, writer);
+    }
+    strJson = QString::fromUtf8(s.GetString());
+    return strJson;
+}
+
 QString ZsgWriter::_dumpZsg2_5(IGraphsModel* pModel, APP_SETTINGS settings)
 {
     QString strJson;
