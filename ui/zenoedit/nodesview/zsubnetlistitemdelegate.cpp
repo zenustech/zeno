@@ -127,7 +127,7 @@ void ZSubnetListItemDelegate::initStyleOption(QStyleOptionViewItem* option, cons
 	}
 }
 
-bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index)
+bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& proxyIndex)
 {
     if (event->type() == QEvent::MouseButtonPress)
     {
@@ -149,7 +149,9 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             connect(pDelete, &QAction::triggered, this, [=]() {
                 onDelete();
              });
-
+            QSortFilterProxyModel* pProxyModel = qobject_cast<QSortFilterProxyModel*>(model);
+            ZASSERT_EXIT(pProxyModel, false);
+            const QModelIndex &index = pProxyModel->mapToSource(proxyIndex);
             connect(pRename, &QAction::triggered, this, [=]() {
                 onRename(index);
             });
@@ -172,7 +174,7 @@ bool ZSubnetListItemDelegate::editorEvent(QEvent* event, QAbstractItemModel* mod
             menu->exec(QCursor::pos());
         }
     }
-    return QStyledItemDelegate::editorEvent(event, model, option, index);
+    return QStyledItemDelegate::editorEvent(event, model, option, proxyIndex);
 }
 
 void ZSubnetListItemDelegate::onDelete()

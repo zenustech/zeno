@@ -29,7 +29,7 @@ public:
     ZenoGraphsEditor(ZenoMainWindow* pMainWin);
     ~ZenoGraphsEditor();
     void activateTabOfTree(const QString &path, const QString &nodeid = "", bool isError = false);
-    void activateTab(const QModelIndex& subgIdx, const QString& path = "", const QString& objId = "", bool isError = false);
+    void activateTab(const QString& subGraphName, const QString& path = "", const QString& objId = "", bool isError = false);
     void showFloatPanel(const QModelIndex &subgIdx, const QModelIndexList &nodes);
     void selectTab(const QString& subGraphName, const QString& path, std::vector<QString>& objId);
 
