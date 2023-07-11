@@ -18,7 +18,7 @@
 
 #include "vec.h"
 #include "box.h"
-#include <pthread.h>
+#include <mutex>
 #include <vector>
 
 namespace bvhlib {
@@ -27,26 +27,6 @@ namespace bvhlib {
   using ospcommon::vec3fa;
   using ospcommon::box3f;
   using ospcommon::box3fa;
-
-  struct Mutex {
-    inline Mutex()
-    { m = PTHREAD_MUTEX_INITIALIZER; }
-
-    pthread_mutex_t m;
-  };
-  
-  struct LockGuard {
-    inline LockGuard(Mutex &mutex)
-      : mutex(mutex)
-    {
-      pthread_mutex_lock(&mutex.m);
-    }
-    inline ~LockGuard()
-    {
-      pthread_mutex_unlock(&mutex.m);
-    }
-    Mutex &mutex;
-  };
 
   struct BuildPrim : public box3fa
   {
@@ -78,7 +58,7 @@ namespace bvhlib {
                   std::vector<size_t> &primID);
         
     std::vector<Node>   nodeList;
-    Mutex               mutex;
+    std::mutex          mutex;
   };
 
 }

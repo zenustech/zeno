@@ -37,14 +37,14 @@ namespace bvhlib {
   {
     if (primList.size() == 1) {
       size_t primID = primList[0];
-      LockGuard(this->mutex);
+      std::lock_guard (this->mutex);
       nodeList[nodeID].lower       = buildPrim[primID].lower;
       nodeList[nodeID].upper       = buildPrim[primID].upper;
       nodeList[nodeID].isLeaf      = 1;
       nodeList[nodeID].child       = primID;
       return;
     } else {
-      Mutex mutex;
+      std::mutex mutex;
 
       std::atomic<size_t> lCount(0);
       std::atomic<size_t> rCount(0);
@@ -76,7 +76,7 @@ namespace bvhlib {
             rPrim[rCount++] = primID;
           }
         }
-        LockGuard lock(mutex);
+        std::lock_guard lock(mutex);
         lCentBounds.extend(lBounds);
         rCentBounds.extend(rBounds);
       }
@@ -110,7 +110,7 @@ namespace bvhlib {
       rPrim.resize(rCount);
 
       size_t childID=0;
-      { LockGuard lock(mutex);
+      { std::lock_guard lock(mutex);
         childID = nodeList.size();
         nodeList.push_back(Node());
         nodeList.push_back(Node());
@@ -118,7 +118,7 @@ namespace bvhlib {
 
       buildRec(childID+0,lCentBounds,buildPrim,lPrim);
       buildRec(childID+1,rCentBounds,buildPrim,rPrim);
-      { LockGuard lock(mutex);
+      { std::lock_guard lock(mutex);
         nodeList[nodeID].lower = min(nodeList[childID+0].lower,
                                      nodeList[childID+1].lower);
         nodeList[nodeID].upper = max(nodeList[childID+0].upper,
@@ -140,7 +140,7 @@ namespace bvhlib {
     
     size_t blockSize = 1000;
     size_t numBlocks = (numPrimitives+blockSize-1) / blockSize;
-    Mutex mutex;
+    std::mutex mutex;
     box3fa centBounds  = ospcommon::empty;
 
 // #pragma omp for
@@ -156,7 +156,7 @@ namespace bvhlib {
         primID[i] = i;
       }
 
-      LockGuard lock(mutex);
+      std::lock_guard lock(mutex);
       centBounds.extend(blockBounds);
     }
     nodeList.push_back(Node());
