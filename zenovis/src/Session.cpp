@@ -45,17 +45,16 @@ float Session::get_safe_frames() const {
     return impl->scene->camera->get_safe_frames();
 }
 
+void Session::lock_window_size(bool bLock, int nx, int ny) {
+    impl->scene->camera->lock_window_size(bLock, nx, ny);
+}
+
 bool Session::is_lock_window() const {
     return impl->scene->camera->is_locked_window();
 }
 
 void Session::set_window_size(int nx, int ny) {
     impl->scene->camera->setResolution(nx, ny);
-}
-
-void Session::set_window_size(int nx, int ny, zeno::vec2i offset) {
-    impl->scene->camera->setResolution(nx, ny);
-    impl->scene->camera->viewport_offset = offset;
 }
 
 std::tuple<int, int> Session::get_window_size() {

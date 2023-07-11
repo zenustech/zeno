@@ -33,8 +33,6 @@ struct Camera {
     bool m_block_window = false;
     bool m_auto_radius = false;
 
-    zeno::vec2i viewport_offset = {};
-
     struct ZxxHappyLookParam {
         float cx = 0;
         float cy = 0;
@@ -55,6 +53,7 @@ struct Camera {
     }
 
     void setResolution(int nx, int ny);
+    void lock_window_size(bool bLock, int nx, int ny);
     void set_safe_frames(bool bLock, int nx, int ny);
     float get_safe_frames() const;
     bool is_locked_window() const;
