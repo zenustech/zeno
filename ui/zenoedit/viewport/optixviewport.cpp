@@ -11,15 +11,6 @@
 #include <zenovis/Camera.h>
 
 
-OptixWorker::OptixWorker(Zenovis *pzenoVis)
-    : QObject(nullptr)
-    , m_zenoVis(pzenoVis)
-    , m_bRecording(false)
-{
-    m_pTimer = new QTimer(this);
-    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
-}
-
 OptixWorker::~OptixWorker()
 {
 }
@@ -29,15 +20,20 @@ OptixWorker::OptixWorker(QObject* parent)
     , m_zenoVis(nullptr)
     , m_pTimer(nullptr)
     , m_bRecording(false)
+    , m_camera(nullptr)
 {
     //used by offline worker.
-    m_pTimer = new QTimer(this);
-    m_zenoVis = new Zenovis(this);
+    initialize();
 
-    //fake GL
+    m_pTimer = new QTimer(this);
+    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+}
+
+void OptixWorker::initialize()
+{
+    m_zenoVis = new Zenovis(this);
     m_zenoVis->initializeGL();
     m_zenoVis->setCurrentFrameId(0);    //correct frame automatically.
-
     m_zenoVis->m_camera_control = new CameraControl(m_zenoVis, nullptr, nullptr, this);
     m_zenoVis->getSession()->set_render_engine("optx");
 }
@@ -77,10 +73,91 @@ void OptixWorker::cancelRecording()
     m_bRecording = false;
 }
 
+void OptixWorker::setResolution(const QVector2D& res)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->setRes(res);
+    pCamera->updatePerspective();
+}
+
+void OptixWorker::setSimpleRenderOption()
+{
+    auto scene = m_zenoVis->getSession()->get_scene();
+    ZASSERT_EXIT(scene);
+    scene->drawOptions->simpleRender = true;
+}
+
+void OptixWorker::cameraLookTo(int dir)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->lookTo(dir);
+}
+
+void OptixWorker::updateCameraProp(float aperture, float disPlane)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->setAperture(aperture);
+    pCamera->setDisPlane(disPlane);
+    pCamera->updatePerspective();
+}
+
+void OptixWorker::resizeTransformHandler(int dir)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->resizeTransformHandler(dir);
+}
+
+void OptixWorker::fakeMousePressEvent(QMouseEvent* event)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->fakeMousePressEvent(event);
+}
+
+void OptixWorker::fakeMouseReleaseEvent(QMouseEvent* event)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->fakeMouseReleaseEvent(event);
+}
+
+void OptixWorker::fakeMouseMoveEvent(QMouseEvent* event)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->fakeMouseMoveEvent(event);
+}
+
+void OptixWorker::fakeWheelEvent(QWheelEvent* event)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->fakeWheelEvent(event);
+}
+
+void OptixWorker::fakeMouseDoubleClickEvent(QMouseEvent* event)
+{
+    CameraControl* pCamera = m_zenoVis->getCameraControl();
+    ZASSERT_EXIT(pCamera);
+    pCamera->fakeMouseDoubleClickEvent(event);
+}
+
 void OptixWorker::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
     auto scene = m_zenoVis->getSession()->get_scene();
     scene->drawOptions->updateLightCameraOnly = updateLightCameraOnly;
     scene->drawOptions->updateMatlOnly = updateMatlOnly;
+}
+
+void OptixWorker::setNumSamples(int samples)
+{
+    auto scene = m_zenoVis->getSession()->get_scene();
+    if (scene) {
+        scene->drawOptions->num_samples = samples;
+    }
 }
 
 void OptixWorker::onSetSafeFrames(bool bLock, int nx, int ny) {
@@ -174,8 +251,9 @@ void OptixWorker::stop()
     //todo: use a flag to mark, otherwise the timer will be resumed.
 }
 
-void OptixWorker::work()
+void OptixWorker::onWorkThreadStarted()
 {
+    initialize();
     m_pTimer->start(16);
 }
 
@@ -195,62 +273,44 @@ void OptixWorker::needUpdateCamera()
 
 ZOptixViewport::ZOptixViewport(QWidget* parent)
     : QWidget(parent)
-    , m_zenovis(nullptr)
-    , m_camera(nullptr)
     , updateLightOnce(false)
     , m_bMovingCamera(false)
 {
-    m_zenovis = new Zenovis(this);
-
     setFocusPolicy(Qt::ClickFocus);
 
-    connect(m_zenovis, &Zenovis::objectsUpdated, this, [=](int frameid) {
-        auto mainWin = zenoApp->getMainWindow();
-        //if (mainWin)
-        //    emit mainWin->visObjectsUpdated(this, frameid);
-    });
-
-    //no need to notify timeline to update.
-    /*
-    connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
-        auto mainWin = zenoApp->getMainWindow();
-        if (mainWin)
-            emit mainWin->visFrameUpdated(false, frameid);
-    }, Qt::BlockingQueuedConnection);
-    */
-
-    //fake GL
-    m_zenovis->initializeGL();
-    m_zenovis->setCurrentFrameId(0);    //correct frame automatically.
-
-    m_camera = new CameraControl(m_zenovis, nullptr, nullptr, this);
-    m_zenovis->m_camera_control = m_camera;
-
-    const char *e = "optx";
-    m_zenovis->getSession()->set_render_engine(e);
-
-    auto scene = m_zenovis->getSession()->get_scene();
-
-    m_worker = new OptixWorker(m_zenovis);
-    m_worker->moveToThread(&m_thdOptix);
-    connect(&m_thdOptix, &QThread::finished, m_worker, &QObject::deleteLater);
-    connect(&m_thdOptix, &QThread::started, m_worker, &OptixWorker::work);
-    connect(m_worker, &OptixWorker::renderIterate, this, [=](QImage img) {
+    OptixWorker* pWorker = new OptixWorker;
+    pWorker->moveToThread(&m_thdOptix);
+    connect(&m_thdOptix, &QThread::finished, pWorker, &QObject::deleteLater);
+    connect(&m_thdOptix, &QThread::started, pWorker, &OptixWorker::onWorkThreadStarted);
+    connect(pWorker, &OptixWorker::renderIterate, this, [=](QImage img) {
         m_renderImage = img;
         update();
     });
-    connect(this, &ZOptixViewport::cameraAboutToRefresh, m_worker, &OptixWorker::needUpdateCamera);
-    connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
-    connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
-    connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
-    connect(this, &ZOptixViewport::sig_setSafeFrames, m_worker, &OptixWorker::onSetSafeFrames);
+    connect(this, &ZOptixViewport::cameraAboutToRefresh, pWorker, &OptixWorker::needUpdateCamera);
+    connect(this, &ZOptixViewport::stopRenderOptix, pWorker, &OptixWorker::stop);
+    connect(this, &ZOptixViewport::resumeWork, pWorker, &OptixWorker::onWorkThreadStarted);
+    connect(this, &ZOptixViewport::sigRecordVideo, pWorker, &OptixWorker::recordVideo, Qt::QueuedConnection);
+    connect(this, &ZOptixViewport::sig_setSafeFrames, pWorker, &OptixWorker::onSetSafeFrames);
 
-    connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
-    connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
+    connect(pWorker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
+    connect(pWorker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixViewport::sig_frameRecordFinished);
 
-    connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
-    connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
-    connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
+    connect(this, &ZOptixViewport::sig_switchTimeFrame, pWorker, &OptixWorker::onFrameSwitched);
+    connect(this, &ZOptixViewport::sig_togglePlayButton, pWorker, &OptixWorker::onPlayToggled);
+    connect(this, &ZOptixViewport::sig_setRenderSeparately, pWorker, &OptixWorker::setRenderSeparately);
+    connect(this, &ZOptixViewport::sig_setResolution, pWorker, &OptixWorker::setResolution);
+    connect(this, &ZOptixViewport::sig_cancelRecording, pWorker, &OptixWorker::cancelRecording);
+    connect(this, &ZOptixViewport::sig_setSimpleRenderOption, pWorker, &OptixWorker::setSimpleRenderOption);
+    connect(this, &ZOptixViewport::sig_cameraLookTo, pWorker, &OptixWorker::cameraLookTo);
+    connect(this, &ZOptixViewport::sig_updateCameraProp, pWorker, &OptixWorker::updateCameraProp);
+    connect(this, &ZOptixViewport::sig_resizeTransformHandler, pWorker, &OptixWorker::resizeTransformHandler);
+    connect(this, &ZOptixViewport::sig_setNumSamples, pWorker, &OptixWorker::setNumSamples);
+    //unknown event .
+    connect(this, &ZOptixViewport::sig_fakeMousePressEvent, pWorker, &OptixWorker::fakeMousePressEvent);
+    connect(this, &ZOptixViewport::sig_fakeMouseReleaseEvent, pWorker, &OptixWorker::fakeMouseReleaseEvent);
+    connect(this, &ZOptixViewport::sig_fakeMouseMoveEvent, pWorker, &OptixWorker::fakeMouseMoveEvent);
+    connect(this, &ZOptixViewport::sig_fakeWheelEvent, pWorker, &OptixWorker::fakeWheelEvent);
+    connect(this, &ZOptixViewport::sig_fakeMouseDoubleClickEvent, pWorker, &OptixWorker::fakeMouseDoubleClickEvent);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -264,8 +324,7 @@ ZOptixViewport::~ZOptixViewport()
 
 void ZOptixViewport::setSimpleRenderOption()
 {
-    auto scene = m_zenovis->getSession()->get_scene();
-    scene->drawOptions->simpleRender = true;
+    emit sig_setSimpleRenderOption();
 }
 
 void ZOptixViewport::setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly) {
@@ -274,12 +333,12 @@ void ZOptixViewport::setRenderSeparately(bool updateLightCameraOnly, bool update
 
 void ZOptixViewport::cameraLookTo(int dir)
 {
-    m_camera->lookTo(dir);
+    emit sig_cameraLookTo(dir);
 }
 
 Zenovis* ZOptixViewport::getZenoVis() const
 {
-    return m_zenovis;
+    return nullptr;
 }
 
 bool ZOptixViewport::isCameraMoving() const
@@ -316,7 +375,7 @@ void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)
 {
-    m_worker->cancelRecording();
+    emit sig_cancelRecording();
 }
 
 void ZOptixViewport::onFrameRunFinished(int frame)
@@ -326,19 +385,17 @@ void ZOptixViewport::onFrameRunFinished(int frame)
 
 void ZOptixViewport::updateCameraProp(float aperture, float disPlane)
 {
-    m_camera->setAperture(aperture);
-    m_camera->setDisPlane(disPlane);
-    m_camera->updatePerspective();
+    emit sig_updateCameraProp(aperture, disPlane);
 }
 
 void ZOptixViewport::updatePerspective()
 {
-    m_camera->updatePerspective();
+    //only solidRunRender refer this, and this is the case for glviewport.
 }
 
 void ZOptixViewport::setCameraRes(const QVector2D& res)
 {
-    m_camera->setRes(res);
+    emit sig_setResolution(res);
 }
 
 void ZOptixViewport::setSafeFrames(bool bLock, int nx, int ny)
@@ -348,10 +405,7 @@ void ZOptixViewport::setSafeFrames(bool bLock, int nx, int ny)
 
 void ZOptixViewport::setNumSamples(int samples)
 {
-    auto scene = m_zenovis->getSession()->get_scene();
-    if (scene) {
-        scene->drawOptions->num_samples = samples;
-    }
+    emit sig_setNumSamples(samples);
 }
 
 void ZOptixViewport::resizeEvent(QResizeEvent* event)
@@ -364,8 +418,7 @@ void ZOptixViewport::resizeEvent(QResizeEvent* event)
 
     float ratio = devicePixelRatioF();
     zeno::log_trace("nx={}, ny={}, dpr={}", nx, ny, ratio);
-    m_camera->setRes(QVector2D(nx * ratio, ny * ratio));
-    m_camera->updatePerspective();
+    emit sig_setResolution(QVector2D(nx * ratio, ny * ratio));
 }
 
 void ZOptixViewport::mousePressEvent(QMouseEvent* event)
@@ -375,7 +428,7 @@ void ZOptixViewport::mousePressEvent(QMouseEvent* event)
         setSimpleRenderOption();
     }
     _base::mousePressEvent(event);
-    m_camera->fakeMousePressEvent(event);
+    emit sig_fakeMousePressEvent(event);
     update();
 }
 
@@ -385,7 +438,7 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
         m_bMovingCamera = false;
     }
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseReleaseEvent(event);
+    emit sig_fakeMouseReleaseEvent(event);
     update();
 }
 
@@ -397,14 +450,14 @@ void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
     setSimpleRenderOption();
 
     _base::mouseMoveEvent(event);
-    m_camera->fakeMouseMoveEvent(event);
+    emit sig_fakeMouseMoveEvent(event);
     update();
 }
 
 void ZOptixViewport::mouseDoubleClickEvent(QMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
-    m_camera->fakeMouseDoubleClickEvent(event);
+    emit sig_fakeMouseDoubleClickEvent(event);
     update();
 }
 
@@ -415,7 +468,7 @@ void ZOptixViewport::wheelEvent(QWheelEvent* event)
     setSimpleRenderOption();
 
     _base::wheelEvent(event);
-    m_camera->fakeWheelEvent(event);
+    emit sig_fakeWheelEvent(event);
     update();
 }
 
@@ -475,13 +528,13 @@ void ZOptixViewport::keyPressEvent(QKeyEvent* event)
 
     key = settings.getShortCut(ShortCut_InitHandler);
     if (uKey == key)
-        m_camera->resizeTransformHandler(0);
+        emit sig_resizeTransformHandler(0);
     key = settings.getShortCut(ShortCut_AmplifyHandler);
     if (uKey == key)
-        m_camera->resizeTransformHandler(1);
+        emit sig_resizeTransformHandler(1);
     key = settings.getShortCut(ShortCut_ReduceHandler);
     if (uKey == key)
-        m_camera->resizeTransformHandler(2);
+        emit sig_resizeTransformHandler(2);
 }
 
 void ZOptixViewport::keyReleaseEvent(QKeyEvent* event)

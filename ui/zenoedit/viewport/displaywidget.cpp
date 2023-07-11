@@ -205,8 +205,12 @@ bool DisplayWidget::isCameraMoving() const
 bool DisplayWidget::isPlaying() const
 {
     auto zenoVis = getZenoVis();
-    ZASSERT_EXIT(zenoVis, false);
-    return zenoVis->isPlaying();
+    if (zenoVis) {
+        return zenoVis->isPlaying();
+    }
+    else {
+        return false;
+    }
 }
 
 bool DisplayWidget::isGLViewport() const
@@ -473,8 +477,8 @@ void DisplayWidget::beforeRun()
         m_glView->clearTransformer();
     }
     Zenovis *pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    pZenoVis->getSession()->get_scene()->selected.clear();
+    if (pZenoVis)
+        pZenoVis->getSession()->get_scene()->selected.clear();
 }
 
 void DisplayWidget::afterRun()
@@ -483,9 +487,11 @@ void DisplayWidget::afterRun()
         m_glView->updateLightOnce = true;
 
     Zenovis *pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    if (pZenoVis)
+    {
+        auto scene = pZenoVis->getSession()->get_scene();
+        scene->objectsMan->lightObjects.clear();
+    }
 }
 
 void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly, bool applyMaterialOnly, bool launchByRecord)
@@ -513,9 +519,10 @@ void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCamera
         m_glView->updateLightOnce = true;
 
     Zenovis* pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+    if (pZenoVis) {
+        auto scene = pZenoVis->getSession()->get_scene();
+        scene->objectsMan->lightObjects.clear();
+    }
 }
 
 void DisplayWidget::onRun() {

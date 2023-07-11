@@ -50,6 +50,7 @@ public:
     int getCurrentFrameId();
     bool isPlaying() const;
     zenovis::Session *getSession() const;
+    CameraControl* getCameraControl() const;
     void updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective);
     void updateCameraFront(QVector3D center, QVector3D front, QVector3D up);
 

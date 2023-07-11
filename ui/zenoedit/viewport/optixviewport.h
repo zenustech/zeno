@@ -12,7 +12,6 @@ class OptixWorker : public QObject
     Q_OBJECT
 public:
     OptixWorker(QObject* parent = nullptr);
-    OptixWorker(Zenovis *pzenoVis);
     ~OptixWorker();
     QImage renderImage() const;
 
@@ -23,8 +22,9 @@ signals:
     void sig_recordCanceled();
 
 public slots:
+    void initialize();
     void stop();
-    void work();
+    void onWorkThreadStarted();
     void needUpdateCamera();
     void updateFrame();
     void recordVideo(VideoRecInfo recInfo);
@@ -32,11 +32,24 @@ public slots:
     void onFrameSwitched(int frame);
     void cancelRecording();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
+    void setNumSamples(int samples);
     void onSetSafeFrames(bool bLock, int nx, int ny);
+    void setResolution(const QVector2D& res);
+    void setSimpleRenderOption();
+    void cameraLookTo(int dir);
+    void updateCameraProp(float aperture, float disPlane);
+    void resizeTransformHandler(int dir);
+    //QMouseEvent unknown:
+    void fakeMousePressEvent(QMouseEvent* event);
+    void fakeMouseReleaseEvent(QMouseEvent* event);
+    void fakeMouseMoveEvent(QMouseEvent* event);
+    void fakeWheelEvent(QWheelEvent* event);
+    void fakeMouseDoubleClickEvent(QMouseEvent* event);
 
 private:
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
 
+    CameraControl* m_camera;
     Zenovis *m_zenoVis;
     QImage m_renderImg;
     QTimer* m_pTimer;
@@ -81,6 +94,18 @@ signals:
     void sig_setSafeFrames(bool bLock, int nx, int ny);
     void sig_cancelRecording();
     void sig_setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
+    void sig_setResolution(const QVector2D& res);
+    void sig_setSimpleRenderOption();
+    void sig_cameraLookTo(int);
+    void sig_updateCameraProp(float aperture, float disPlane);
+    void sig_resizeTransformHandler(int dir);
+    void sig_setNumSamples(int samples);
+    //QMouseEvent unknown:
+    void sig_fakeMousePressEvent(QMouseEvent* event);
+    void sig_fakeMouseReleaseEvent(QMouseEvent* event);
+    void sig_fakeMouseMoveEvent(QMouseEvent* event);
+    void sig_fakeWheelEvent(QWheelEvent* event);
+    void sig_fakeMouseDoubleClickEvent(QMouseEvent* event);
 
 public slots:
     void onFrameRunFinished(int frame);
@@ -97,13 +122,10 @@ protected:
     void keyReleaseEvent(QKeyEvent *event) override;
 
 private:
-    CameraControl* m_camera;
-    Zenovis* m_zenovis;
     QThread m_thdOptix;
     bool updateLightOnce;
     bool m_bMovingCamera;
     QImage m_renderImage;
-    OptixWorker* m_worker;
 };
 
 #endif

@@ -111,6 +111,11 @@ zenovis::Session *Zenovis::getSession() const
     return session.get();
 }
 
+CameraControl* Zenovis::getCameraControl() const
+{
+    return m_camera_control;
+}
+
 int Zenovis::setCurrentFrameId(int frameid)
 {
     if (frameid < 0 || !session)
