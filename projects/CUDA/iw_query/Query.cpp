@@ -7,6 +7,7 @@
 
 #include "bvh.h"
 #include "distanceQueries.h"
+#include "zensim/container/Bvh.hpp"
 #include "zensim/container/Vector.hpp"
 #include "zensim/geometry/AnalyticLevelSet.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
@@ -44,8 +45,10 @@ struct QueryNearestPoints : INode {
         auto &dists = points->add_attr<float>(distTag);
         auto &cps = points->add_attr<zeno::vec3f>(cpTag);
 
-        std::vector<v3i> vertIndex(prim->size());
         auto &vertices = prim->verts.values;
+
+#if 0
+        std::vector<v3i> vertIndex(prim->size());
         pol(enumerate(vertIndex), [](int id, v3i &v) { v = v3i{id, id, id}; });
 
         ///
@@ -70,11 +73,12 @@ struct QueryNearestPoints : INode {
         std::cout << "(this is " << (queryTime.count() / points->size()) << " seconds/prim)" << std::endl;
 
         rtdqDestroy(scene);
+#endif
         ///
         /// done routine
         ///
 
-#if 0
+#if 1
         using Box = AABBBox<3, float>;
         Box gbv;
         CppTimer timer;
@@ -133,6 +137,7 @@ struct QueryNearestPoints : INode {
         pol(zip(indices, xs), [&vertices](int oid, zeno::vec3f &p) { p = vertices[oid]; });
         timer.tock(fmt::format("reorder {} points", vertices.size()));
 
+        timer.tick();
         std::vector<int> locs(pos.size());
         auto locate = [&keys](float v) -> int {
             int left = 0, right = keys.size();
@@ -151,10 +156,57 @@ struct QueryNearestPoints : INode {
             // left could be -1
             return left;
         };
-        timer.tick();
         pol(zip(pos, locs), [&locate, axis](const zeno::vec3f &xi, int &loc) { loc = locate(xi[axis]); });
         timer.tock("find st locations");
 
+        timer.tick();
+        pol(enumerate(pos, locs, dists, ids, cps),
+            [&xs, &indices](int i, const auto &xi, const int loc, float &dist, int &id, vec3f &cp) {
+                int l = loc + 1;
+                float d2 = limits<float>::max();
+                int j = -1;
+                if (l < xs.size()) {
+                    d2 = lengthSquared(xs[l] - xi);
+                    j = l;
+                }
+                if (loc >= 0) {
+                    if (auto tmp = lengthSquared(xs[loc] - xi); tmp < d2) {
+                        d2 = tmp;
+                        j = loc;
+                    }
+                }
+                if (j != -1) {
+                    dist = std::sqrt(d2);
+                    id = indices[j];
+                    cp = xs[j];
+                }
+            });
+        timer.tock("compute initial distance");
+
+        timer.tick();
+        using bvh_t = LBvh<3>;
+        bvh_t bvh;
+        zs::Vector<Box> bvs(vertices.size());
+        pol(enumerate(bvs), [&vertices](int i, Box &bv) {
+            auto x = zeno::vec_to_other<zs::vec<float, 3>>(vertices[i]);
+            bv = Box{x, x};
+        });
+        bvh.build(pol, bvs);
+        timer.tock("build bvh");
+
+        timer.tick();
+        pol(enumerate(pos, dists, ids, cps),
+            [&vertices, bvh = proxy<space>(bvh)](int i, const zeno::vec3f &p, float &dist, int &id, zeno::vec3f &cp) {
+                auto x = zeno::vec_to_other<zs::vec<float, 3>>(p);
+                auto [j, d] = bvh.find_nearest_point(x, dist * dist, wrapv<true>{});
+                if (j != id) {
+                    dist = d;
+                    id = j;
+                    cp = vertices[j];
+                }
+            });
+        timer.tock("query nearest point");
+#if 0
         {
             std::vector<int> ids(pos.size());
             std::vector<float> dists(pos.size());
@@ -189,6 +241,7 @@ struct QueryNearestPoints : INode {
                 });
             timer.tock(fmt::format("query nearest points for {} points", pos.size()));
         }
+#endif
 #endif
 
         set_output("points", points);
