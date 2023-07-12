@@ -913,6 +913,19 @@ void ZenoMainWindow::optixRunClient(int port, const char* cachedir, int cachenum
                     int cacheNum = keyObj["cachenum"].GetInt();
                     zeno::getSession().globalComm->clearState();
                     zeno::getSession().globalComm->frameCache(cachedir, cachenum);
+
+                    const auto& renderObj = doc["render"];
+                    ZASSERT_EXIT(renderObj.HasMember("applyLightAndCameraOnly") && renderObj.HasMember("applyMaterialOnly"));
+                    bool updateLightCameraOnly = renderObj["applyLightAndCameraOnly"].GetInt();
+                    bool updateMatlOnly = renderObj["applyMaterialOnly"].GetInt();
+                    ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+                    ZASSERT_EXIT(pMainWin);
+                    QVector<DisplayWidget*> views = pMainWin->viewports();
+                    for (auto displayWid : views) {
+                        if (!displayWid->isGLViewport()) {
+                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                        }
+                    }
                 }
                 else if (action == "frameRange") {
                     ZASSERT_EXIT(doc.HasMember("beginFrame") &&

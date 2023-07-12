@@ -140,7 +140,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 
     //finally we need to send the cache path to the seperate optix process.
-    sendCacheInfoToOptix(finalPath, param.cacheNum);
+    sendCacheRenderInfoToOptix(finalPath, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly);
 }
 
 void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
@@ -169,10 +169,11 @@ void ZTcpServer::onOptixNewConn()
     });
 }
 
-void ZTcpServer::sendCacheInfoToOptix(const QString& finalCachePath, int cacheNum)
+void ZTcpServer::sendCacheRenderInfoToOptix(const QString& finalCachePath, int cacheNum, bool applyLightAndCameraOnly, bool applyMaterialOnly)
 {
+    QString renderKey = QString("{\"applyLightAndCameraOnly\":%1, \"applyMaterialOnly\":%2}").arg(applyLightAndCameraOnly).arg(applyMaterialOnly);
     QString objKey = QString("{\"cachedir\":\"%1\", \"cachenum\":%2}").arg(finalCachePath).arg(cacheNum);
-    QString info = QString("{\"action\":\"initCache\", \"key\":%2}\n").arg(objKey);
+    QString info = QString("{\"action\":\"initCache\", \"key\":%2, \"render\":%3}\n").arg(objKey).arg(renderKey);
     dispatchPacketToOptix(info);
 }
 
