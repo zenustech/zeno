@@ -1378,8 +1378,48 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     }
     else
     {
+        QPointF pos = event->pos();
+        for (const auto& socket : m_outSockets)
+        {
+            ZenoSocketItem* socketItem = socket->socketItem();
+            if (!socketItem)
+                continue;
+            QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
+            QRectF textRect = rect.adjusted(-ZenoStyle::dpiScaled(100), 0, -rect.width(), 0);
+            if (textRect.contains(pos))
+            {
+                QMenu* socketMenu = new QMenu;
+                QAction* pLinkHide = new QAction("Link Hide");
+                QAction* pLinkShow = new QAction("Link Show");
+                socketMenu->addAction(pLinkHide);
+                socketMenu->addAction(pLinkShow);
+                connect(pLinkHide, &QAction::triggered, this, [=]()
+                {
+                    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                    if (!pModel)
+                        return;
+                    pModel->ModelSetData(socketItem->paramIndex(), true, ROLE_VPARAM_REF);
+                    socket->socketItem()->update();
+                });
+
+                connect(pLinkShow, &QAction::triggered, this, [=]()
+                {
+                    if (socket->socketItem())
+                    {
+                        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                        if (!pModel)
+                            return;
+                        pModel->ModelSetData(socketItem->paramIndex(), false, ROLE_VPARAM_REF);
+                        socket->socketItem()->update();
+                    }
+                });
+                socketMenu->exec(QCursor::pos());
+                socketMenu->deleteLater();
+                return;
+            }
+        }
         NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
-        QPointF pos = event->screenPos();
+        pos = event->screenPos();
         ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, pos);
         menu->setEditorFocus();
         menu->exec(pos.toPoint());

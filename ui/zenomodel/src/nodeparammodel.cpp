@@ -121,6 +121,7 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         outSocket.info.sockProp = param->m_sockProp;
         outSocket.info.links = exportLinks(param->m_links);
         outSocket.info.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
+        outSocket.info.bLinkRef = param->data(ROLE_VPARAM_REF).toBool();
 
         if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
         {

@@ -320,7 +320,6 @@ bool AppHelper::updateCurve(QVariant oldVal, QVariant& newValue)
     }
     return true;
 }
-}
 
 void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
 {

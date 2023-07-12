@@ -413,6 +413,23 @@ void ModelAcceptor::setInputSocket2(
     }
 }
 
+void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef)
+{
+    if (!m_currentGraph)
+        return;
+    QString subgName;
+    subgName = m_currentGraph->name();
+    QString inSockPath = UiHelper::constructObjPath(subgName, inNode, "[node]/outputs/", inSock);
+    QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
+    ZASSERT_EXIT(sockIdx.isValid());
+    QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(sockIdx.model());
+    ZASSERT_EXIT(pModel);
+    if (bLinkRef)
+    {
+        pModel->setData(sockIdx, bLinkRef, ROLE_VPARAM_REF);
+    }
+}
+
 void ModelAcceptor::setDictPanelProperty(bool bInput, const QString& ident, const QString& sockName, bool bCollasped)
 {
     QModelIndex inNodeIdx = m_currentGraph->index(ident);

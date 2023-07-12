@@ -87,6 +87,7 @@ public:
     QPersistentModelIndex linkInfo() const;
 
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget) override;
 
     enum { Type = ZTYPE_FULLLINK };
     int type() const override;
