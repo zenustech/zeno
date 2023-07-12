@@ -161,27 +161,49 @@ struct QueryNearestPoints : INode {
 
         timer.tick();
         pol(enumerate(pos, locs, dists, ids, cps),
-            [&xs, &indices](int i, const auto &xi, const int loc, float &dist, int &id, vec3f &cp) {
+            [&xs, &indices, axis](int i, const auto &xi, const int loc, float &dist, int &id, vec3f &cp) {
                 int l = loc + 1;
                 float d2 = limits<float>::max();
                 int j = -1;
-                if (l < xs.size()) {
-                    d2 = lengthSquared(xs[l] - xi);
-                    j = l;
-                }
-                if (loc >= 0) {
-                    if (auto tmp = lengthSquared(xs[loc] - xi); tmp < d2) {
+                int cnt = 0;
+                while (l < xs.size() && cnt++ < 128) {
+                    if (zs::sqr(xs[l][axis] - xi[axis]) > d2)
+                        break;
+                    if (auto tmp = lengthSquared(xs[l] - xi); tmp < d2) {
                         d2 = tmp;
-                        j = loc;
+                        j = l;
                     }
+                    l++;
+                }
+                cnt = 0;
+                l = loc;
+                while (l >= 0 && cnt++ < 128) {
+                    if (zs::sqr(xi[axis] - xs[l][axis]) > d2)
+                        break;
+                    if (auto tmp = lengthSquared(xs[l] - xi); tmp < d2) {
+                        d2 = tmp;
+                        j = l;
+                    }
+                    l--;
                 }
                 if (j != -1) {
                     dist = std::sqrt(d2);
                     id = indices[j];
                     cp = xs[j];
+                } else {
+                    dist = d2;
+                    id = j;
+                    cp = xi;
                 }
             });
-        timer.tock("compute initial distance");
+        timer.tock("initial nearest distance (radius) estimate");
+
+#if 0
+        Box bv{zs::vec<float, 3>::constant(-1), zs::vec<float, 3>::constant(1)};
+        auto p = zs::vec<float, 3>::zeros();
+        p[1] = 1.5;
+        fmt::print(fg(fmt::color::red), "distance: {}\n", distance(p, bv));
+#endif
 
         timer.tick();
         using bvh_t = LBvh<3>;
@@ -195,17 +217,73 @@ struct QueryNearestPoints : INode {
         timer.tock("build bvh");
 
         timer.tick();
-        pol(enumerate(pos, dists, ids, cps),
-            [&vertices, bvh = proxy<space>(bvh)](int i, const zeno::vec3f &p, float &dist, int &id, zeno::vec3f &cp) {
-                auto x = zeno::vec_to_other<zs::vec<float, 3>>(p);
-                auto [j, d] = bvh.find_nearest_point(x, dist * dist, wrapv<true>{});
-                if (j != id) {
-                    dist = d;
-                    id = j;
-                    cp = vertices[j];
-                }
-            });
+        // keys.resize(pos.size());
+        // indices.resize(pos.size());
+        std::vector<u32> ks(pos.size());
+        std::vector<int> is(pos.size());
+        pol(enumerate(ks, is), [&pos, gbv, axis](int i, u32 &key, int &idx) {
+            auto p = vec_to_other<zs::vec<float, 3>>(pos[i]);
+            for (int d = 0; d != 3; ++d) {
+                if (p[d] < gbv._min[d])
+                    p[d] = gbv._min[d];
+                else if (p[d] > gbv._max[d])
+                    p[d] = gbv._max[d];
+            }
+            auto coord = gbv.getUniformCoord(p).template cast<f32>();
+            key = morton_code<3>(coord);
+            idx = i;
+        });
+        merge_sort_pair(pol, std::begin(ks), std::begin(is), pos.size(), std::less<u32>{});
+        timer.tock("sort query points");
+
+        timer.tick();
+        pol(is, [&vertices, &pos, &dists, &ids, &cps, bvh = proxy<space>(bvh)](int qid) {
+            float &dist = dists[qid];
+            int &id = ids[qid];
+            zeno::vec3f &cp = cps[qid];
+            auto p = pos[qid];
+            auto x = zeno::vec_to_other<zs::vec<float, 3>>(p);
+            auto [j, d] = bvh.find_nearest_point(x, dist * dist, id, wrapv<true>{});
+            // dist = (x - zeno::vec_to_other<zs::vec<float, 3>>(vertices[j])).norm();
+            dist = d;
+            id = j;
+            cp = vertices[j];
+        });
         timer.tock("query nearest point");
+
+#if 0
+        pol(enumerate(pos, dists, ids, cps), [&pos, &vertices, &locs, &xs, &indices, bvh = proxy<space>(bvh), axis](
+                                                 int i, const zeno::vec3f &p, float &dist, int &id, zeno::vec3f &cp) {
+            auto target = vertices[id];
+            if (auto d = zeno::length(p - target); std::abs(d - dist) > limits<float>::epsilon())
+                fmt::print("actual dist {}, cp ({}, {}, {}); calced dist {}, cp ({}, {}, {}). \n", d, target[0],
+                           target[1], target[2], dist, cp[0], cp[1], cp[2]);
+            const int loc = locs[i];
+            const auto dist2 = dist * dist;
+            {
+                auto xi = pos[i];
+                auto key = xi[axis];
+                int l = loc + 1;
+                while (l < xs.size() && zs::sqr(xs[l][axis] - key) < dist2) {
+                    if (auto d2 = zeno::lengthSquared(xs[l] - xi); std::sqrt(d2) + limits<float>::epsilon() < dist) {
+                        fmt::print("[{}] found nearer pair! real id should be {} ({}), not {} ({})\n", i, indices[l],
+                                   std::sqrt(d2), id, std::sqrt(dist2));
+                        return;
+                    }
+                    l++;
+                }
+                l = loc;
+                while (l >= 0 && zs::sqr(xs[l][axis] - key) < dist2) {
+                    if (auto d2 = zeno::lengthSquared(xs[l] - xi); std::sqrt(d2) + limits<float>::epsilon() < dist) {
+                        fmt::print("[{}] found nearer pair! real id should be {} ({}), not {} ({})\n", i, indices[l],
+                                   std::sqrt(d2), id, dist);
+                        return;
+                    }
+                    l--;
+                }
+            }
+        });
+#endif
 #if 0
         {
             std::vector<int> ids(pos.size());
