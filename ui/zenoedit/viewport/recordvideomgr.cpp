@@ -3,6 +3,7 @@
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "viewport/optixviewport.h"
+#include "viewport/zoptixviewport.h"
 #include <zenovis/DrawOptions.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/log.h>
@@ -42,7 +43,7 @@ void RecordVideoMgr::cancelRecord()
     ZASSERT_EXIT(pWid);
     if (!pWid->isGLViewport())
     {
-        ZOptixViewport* pView = pWid->optixViewport();
+        auto pView = pWid->optixViewport();
         ZASSERT_EXIT(pView);
         pView->cancelRecording(m_recordInfo);
     }
@@ -79,10 +80,10 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
     if (!pWid->isGLViewport())
     {
         //we can only record on another thread, the optix worker thread.
-        ZOptixViewport *pView = pWid->optixViewport();
+        auto pView = pWid->optixViewport();
         ZASSERT_EXIT(pView);
-        bool ret = connect(pView, &ZOptixViewport::sig_frameRecordFinished, this, &RecordVideoMgr::frameFinished);
-        ret = connect(pView, &ZOptixViewport::sig_recordFinished, this, &RecordVideoMgr::endRecToExportVideo);
+        bool ret = connect(pView, SIGNAL(sig_frameRecordFinished(int)), this, SIGNAL(frameFinished(int)));
+        ret = connect(pView, SIGNAL(sig_recordFinished()), this, SLOT(endRecToExportVideo()));
     }
     else
     {
@@ -215,10 +216,10 @@ void RecordVideoMgr::disconnectSignal()
         Zenovis *pVis = getZenovis();
         bool ret = disconnect(pVis, SIGNAL(frameDrawn(int)), this, SLOT(onFrameDrawn(int)));
     } else {
-        ZOptixViewport *pView = pWid->optixViewport();
+        auto pView = pWid->optixViewport();
         ZASSERT_EXIT(pView);
-        bool ret = disconnect(pView, &ZOptixViewport::sig_frameRecordFinished, this, &RecordVideoMgr::frameFinished);
-        ret = disconnect(pView, &ZOptixViewport::sig_recordFinished, this, &RecordVideoMgr::endRecToExportVideo);
+        bool ret = disconnect(pView, SIGNAL(sig_frameRecordFinished(int)), this, SLOT(frameFinished(int)));
+        ret = disconnect(pView, SIGNAL(sig_recordFinished()), this, SLOT(endRecToExportVideo()));
     }
 }
 

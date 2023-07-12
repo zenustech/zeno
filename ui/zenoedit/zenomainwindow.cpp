@@ -1075,9 +1075,11 @@ void ZenoMainWindow::updateViewport(const QString& action)
                     }
                     else
                     {
+                    #ifndef ZENO_OPTIX_PROC
                         ZOptixViewport* pOptix = view->optixViewport();
                         ZASSERT_EXIT(pOptix);
                         emit pOptix->sig_switchTimeFrame(ui_frame);
+                    #endif
                     }
                     view->updateFrame();
                 }

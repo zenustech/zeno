@@ -1,6 +1,7 @@
 #include "displaywidget.h"
 #include "viewportwidget.h"
 #include "optixviewport.h"
+#include "zoptixviewport.h"
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/Camera.h>
@@ -47,9 +48,13 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     }
     else
     {
+#ifdef ZENO_OPTIX_PROC
+        m_optixView = new ZOptixProcViewport;
+#else
         m_optixView = new ZOptixViewport;
+#endif
         pLayout->addWidget(m_optixView);
-        connect(this, &DisplayWidget::frameRunFinished, m_optixView, &ZOptixViewport::onFrameRunFinished);
+        connect(this, SIGNAL(frameRunFinished(int)), m_optixView, SLOT(onFrameRunFinished(int)));
     }
 
     setLayout(pLayout);
@@ -213,15 +218,21 @@ bool DisplayWidget::isGLViewport() const
     return m_bGLView;
 }
 
+#ifdef ZENO_OPTIX_PROC
+ZOptixProcViewport* DisplayWidget::optixViewport() const
+#else
 ZOptixViewport* DisplayWidget::optixViewport() const
+#endif
 {
     return m_optixView;
 }
 
 void DisplayWidget::killOptix()
 {
+#ifndef ZENO_OPTIX_PROC
     if (m_optixView)
         m_optixView->killThread();
+#endif
 }
 
 void DisplayWidget::mouseReleaseEvent(QMouseEvent* event)
@@ -263,7 +274,9 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     }
     else
     {
+#ifndef ZENO_OPTIX_PROC
         emit m_optixView->sig_togglePlayButton(bChecked);
+#endif
     }
 }
 
@@ -446,7 +459,11 @@ void DisplayWidget::onSliderValueChanged(int frame)
         else
         {
             ZASSERT_EXIT(m_optixView);
+#ifdef ZENO_OPTIX_PROC
+            m_optixView->onFrameSwitched(frame);
+#else
             emit m_optixView->sig_switchTimeFrame(frame);
+#endif
         }
         BlockSignalScope scope(timeline);
         timeline->setPlayButtonChecked(false);

@@ -15,7 +15,6 @@
 
 class ZenoDockWidget;
 class DisplayWidget;
-class ZOptixViewport;
 class ZTimeline;
 class LiveTcpServer;
 class LiveHttpServer;
