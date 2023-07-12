@@ -40,7 +40,6 @@ public:
     void resizeTransformHandler(int dir);
 
 private:
-    bool m_mmb_pressed;
     float m_theta;
     float m_phi;
     QPointF m_lastPos;

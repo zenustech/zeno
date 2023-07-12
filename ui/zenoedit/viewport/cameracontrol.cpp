@@ -21,7 +21,6 @@ CameraControl::CameraControl(
     , m_zenovis(pZenovis)
     , m_transformer(transformer)
     , m_picker(picker)
-    , m_mmb_pressed(false)
     , m_theta(0.)
     , m_phi(0.)
     , m_ortho_mode(false)
@@ -271,6 +270,10 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 }
 
 void CameraControl::updatePerspective() {
+    auto *session = m_zenovis->getSession();
+    if (session == nullptr) {
+        return;
+    }
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
     m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode,
                                                        m_aperture, m_focalPlaneDistance));
