@@ -18,6 +18,9 @@ public:
                   QObject* parent = nullptr);
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
+    float getFOV() const;
+    void setFOV(float fov);
+
     void setAperture(float aperture);
     void setDisPlane(float disPlane);
     void updatePerspective();
@@ -46,7 +49,6 @@ private:
     QPoint m_boundRectStartPos;
     QVector3D  m_center;
     bool m_ortho_mode;
-    float m_fov;
     float m_radius;
     float m_aperture;
     float m_focalPlaneDistance;

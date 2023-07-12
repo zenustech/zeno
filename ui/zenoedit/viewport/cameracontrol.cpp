@@ -24,7 +24,6 @@ CameraControl::CameraControl(
     , m_theta(0.)
     , m_phi(0.)
     , m_ortho_mode(false)
-    , m_fov(45.)
     , m_radius(5.0)
     , m_res(1, 1)
     , m_aperture(0.0f)
@@ -35,6 +34,15 @@ CameraControl::CameraControl(
 
 void CameraControl::setRes(QVector2D res) {
     m_res = res;
+}
+
+float CameraControl::getFOV() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_fov;
+}
+void CameraControl::setFOV(float fov) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_fov = fov;
 }
 
 void CameraControl::setAperture(float aperture) {
@@ -53,7 +61,6 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         m_theta = scene->camera->m_zxx_in.theta;
         m_phi = scene->camera->m_zxx_in.phi;
         m_radius = scene->camera->m_zxx_in.radius;
-        m_fov = scene->camera->m_fov;
         m_aperture = scene->camera->m_aperture;
         m_focalPlaneDistance = scene->camera->focalPlaneDistance;
         scene->camera->m_need_sync = false;
@@ -275,7 +282,7 @@ void CameraControl::updatePerspective() {
         return;
     }
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode,
+    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, getFOV(), m_ortho_mode,
                                                        m_aperture, m_focalPlaneDistance));
 }
 
@@ -288,8 +295,8 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
     float delta = dy > 0 ? 1 : -1;
     if (shift_pressed) {
-        float temp = m_fov / scale;
-        m_fov = temp < 170 ? temp : 170;
+        float temp = getFOV() / scale;
+        setFOV(temp < 170 ? temp : 170);
 
     } else if (aperture_pressed) {
         float temp = m_aperture += delta * 0.01;
@@ -342,8 +349,8 @@ void CameraControl::setKeyFrame() {
 
 void CameraControl::focus(QVector3D center, float radius) {
     m_center = center;
-    if (m_fov >= 1e-6)
-        radius /= (m_fov / 45.0f);
+    if (getFOV() >= 1e-6)
+        radius /= (getFOV() / 45.0f);
     m_radius = radius;
     updatePerspective();
 }
@@ -374,7 +381,7 @@ QVector3D CameraControl::screenToWorldRay(float x, float y) const {
     view.lookAt(realPos(), m_center, up);
     x = (x - 0.5) * 2;
     y = (y - 0.5) * (-2);
-    float v = std::tan(m_fov * M_PI / 180.f * 0.5f);
+    float v = std::tan(glm::radians(getFOV()) * 0.5f);
     float aspect = res().x() / res().y();
     auto dir = QVector3D(v * x * aspect, v * y, -1);
     dir = dir.normalized();
