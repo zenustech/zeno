@@ -26,8 +26,6 @@ CameraControl::CameraControl(
     , m_ortho_mode(false)
     , m_radius(5.0)
     , m_res(1, 1)
-    , m_aperture(0.0f)
-    , m_focalPlaneDistance(2.0f)
 {
     updatePerspective();
 }
@@ -45,11 +43,22 @@ void CameraControl::setFOV(float fov) {
     scene->camera->m_fov = fov;
 }
 
+float CameraControl::getAperture() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_aperture;
+}
+
 void CameraControl::setAperture(float aperture) {
-    m_aperture = aperture;
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_aperture = aperture;
+}
+float CameraControl::getDisPlane() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->focalPlaneDistance;
 }
 void CameraControl::setDisPlane(float disPlane) {
-    m_focalPlaneDistance = disPlane;
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->focalPlaneDistance = disPlane;
 }
 
 void CameraControl::fakeMousePressEvent(QMouseEvent *event)
@@ -61,8 +70,6 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         m_theta = scene->camera->m_zxx_in.theta;
         m_phi = scene->camera->m_zxx_in.phi;
         m_radius = scene->camera->m_zxx_in.radius;
-        m_aperture = scene->camera->m_aperture;
-        m_focalPlaneDistance = scene->camera->focalPlaneDistance;
         scene->camera->m_need_sync = false;
         if (bool(m_picker) && scene->camera->m_auto_radius) {
             this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
@@ -283,7 +290,7 @@ void CameraControl::updatePerspective() {
     }
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
     m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, getFOV(), m_ortho_mode,
-                                                       m_aperture, m_focalPlaneDistance));
+                                                       getAperture(), getDisPlane()));
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
@@ -299,20 +306,20 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         setFOV(temp < 170 ? temp : 170);
 
     } else if (aperture_pressed) {
-        float temp = m_aperture += delta * 0.01;
-        m_aperture = temp >= 0 ? temp : 0;
+        float temp = getAperture() + delta * 0.01;
+        setAperture(temp >= 0 ? temp : 0);
 
     } else if (focalPlaneDistance_pressed) {
-        float temp = m_focalPlaneDistance + delta * 0.05;
-        m_focalPlaneDistance = temp >= 0.05 ? temp : 0.05;
+        float temp = getDisPlane() + delta * 0.05;
+        setDisPlane(temp >= 0.05 ? temp : 0.05);
     } else {
         m_radius *= scale;
     }
     updatePerspective();
 
     if (zenoApp->getMainWindow()->lightPanel != nullptr) {
-        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(m_aperture));
-        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(m_focalPlaneDistance));
+        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(getAperture()));
+        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(getDisPlane()));
     }
 }
 

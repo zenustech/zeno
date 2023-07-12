@@ -20,8 +20,9 @@ public:
     QVector2D res() const { return m_res; }
     float getFOV() const;
     void setFOV(float fov);
-
+    float getAperture() const;
     void setAperture(float aperture);
+    float getDisPlane() const;
     void setDisPlane(float disPlane);
     void updatePerspective();
     void setKeyFrame();
@@ -50,8 +51,6 @@ private:
     QVector3D  m_center;
     bool m_ortho_mode;
     float m_radius;
-    float m_aperture;
-    float m_focalPlaneDistance;
     QVector2D m_res;
     QSet<int> m_pressedKeys;
 
