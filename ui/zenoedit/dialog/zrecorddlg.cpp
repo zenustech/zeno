@@ -28,9 +28,9 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui->msaaSamplerNumber->setText(settings.value("numMSAA").isValid() ? settings.value("numMSAA").toString() : "0");
     m_ui->optixSamplerNumber->setValidator(new QIntValidator);
     m_ui->optixSamplerNumber->setText(settings.value("numOptix").isValid() ? settings.value("numOptix").toString() : "1");
+    m_ui->cbRemoveAfterRender->setChecked(settings.value("rmCacheAfterRender").isValid() ? settings.value("rmCacheAfterRender").toBool() : false);
     settings.endGroup();
 
-    m_ui->cbRemoveAfterRender->setCheckState(Qt::Unchecked);
     m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
     m_ui->cbPresets->setCurrentIndex(1);
 
@@ -107,6 +107,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     settings.setValue("numOptix", info.numOptix);
     settings.setValue("width", info.res[0]);
     settings.setValue("height", info.res[1]);
+    settings.setValue("rmCacheAfterRender", m_ui->cbRemoveAfterRender->isChecked());
     settings.endGroup();
     return true;
 }

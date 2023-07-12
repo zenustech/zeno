@@ -44,6 +44,7 @@ struct GlobalComm {
     ZENO_API ViewObjects const *getViewObjects(const int frameid);
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool isFrameCompleted(int frameid) const;
+    ZENO_API int maxCachedFramesNum();
 
     ZENO_API void setTempDirEnable(bool enable);
     ZENO_API bool tempDirEnabled();

@@ -31,7 +31,9 @@ int optix_main(const QCoreApplication& app,
                 const char* cachedir,
                 int cachenum,
                 int sFrame,
-                int eFrame)
+                int eFrame,
+                int finishedFrames,
+                const char* sessionId)
 {
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
 #ifdef __linux__
@@ -44,6 +46,6 @@ int optix_main(const QCoreApplication& app,
 
     ZenoMainWindow tempWindow(nullptr, 0, PANEL_OPTIX_VIEW);
     tempWindow.showMaximized();
-    tempWindow.optixRunClient(port, cachedir, cachenum, sFrame, eFrame);
+    tempWindow.optixRunClient(port, cachedir, cachenum, sFrame, eFrame, finishedFrames, sessionId);
     return app.exec();
 }

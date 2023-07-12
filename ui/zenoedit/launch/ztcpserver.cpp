@@ -1,4 +1,6 @@
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
+#include <cstdio>
+#include <cstring>
 #include "ztcpserver.h"
 #include <zeno/extra/GlobalState.h>
 #include <zeno/extra/GlobalComm.h>
@@ -17,6 +19,7 @@
 #include <zeno/zeno.h>
 #include <zeno/extra/GlobalComm.h>
 #include "common.h"
+#include <zenomodel/include/uihelper.h>
 
 
 struct _Header { // sync with viewdecode.cpp
@@ -213,9 +216,10 @@ void ZTcpServer::startOptixProc()
 {
     zeno::log_info("launching optix program...");
 
+    static const QString sessionID = UiHelper::generateUuid("zenooptix");
     if (!m_optixServer) {
         m_optixServer = new QLocalServer(this);
-        m_optixServer->listen("zenooptix");
+        m_optixServer->listen(sessionID);
         connect(m_optixServer, &QLocalServer::newConnection, this, &ZTcpServer::onOptixNewConn);
     }
 
@@ -225,18 +229,20 @@ void ZTcpServer::startOptixProc()
     //optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
 
     //check whether there is cached result.
-    int cachenum = 0, sFrame = 0, eFrame = 0;
     auto& globalComm = zeno::getSession().globalComm;
     int nRunFrames = globalComm->numOfFinishedFrame();
+    auto mainWin = zenoApp->getMainWindow();
     auto pair = globalComm->frameRange();
 
     QStringList args = {
         "-optix", QString::number(0),
         "-port", QString::number(m_port),
         "-cachedir", QString::fromStdString(globalComm->cacheFramePath),
-        "-cachenum", QString::number(globalComm->maxCachedFrames),
+        "-cachenum", QString::number(globalComm->maxCachedFramesNum()),
         "-beginFrame", QString::number(pair.first),
-        "-endFrame", QString::number(pair.second)
+        "-endFrame", QString::number(pair.second),
+        "-finishedFrames", QString::number(nRunFrames),
+        "-sessionId", sessionID,
     };
 
     //open a new console to show log from optix.
