@@ -129,7 +129,7 @@ int optixcmd(const QCoreApplication& app, int port)
 
         if (!framedir.exists())
         {
-            Sleep(0);
+            QThread::sleep(0);
             continue;
         }
 
@@ -139,7 +139,7 @@ int optixcmd(const QCoreApplication& app, int port)
         bool ret = lckFile.tryLock();
         if (!ret)
         {
-            Sleep(0);
+            QThread::sleep(0);
             continue;
         }
         lckFile.unlock();

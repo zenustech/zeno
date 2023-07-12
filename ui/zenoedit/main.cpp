@@ -4,6 +4,7 @@
 #include "zenomainwindow.h"
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
+#include "zeno/utils/log.h"
 
 /* debug cutsom layout: ZGraphicsLayout */
 //#define DEBUG_ZENOGV_LAYOUT
@@ -57,12 +58,16 @@ int main(int argc, char *argv[])
                             const char* cachedir,
                             int cachenum,
                             int sFrame,
-                            int eFrame);
+                            int eFrame,
+                            int finishedFrames,
+                            const char* sessionId);
         int port = -1;
         if (argc >= 5 && !strcmp(argv[3], "-port"))
             port = atoi(argv[4]);
         char* cachedir = nullptr;
         int cachenum = 0, sFrame = 0, eFrame = 0;
+        int finishedFrames = 0;
+        char* sessionId = nullptr;
         if (argc >= 7 && !strcmp(argv[5], "-cachedir"))
             cachedir = argv[6];
         if (argc >= 9 && !strcmp(argv[7], "-cachenum"))
@@ -71,7 +76,11 @@ int main(int argc, char *argv[])
             sFrame = atoi(argv[10]);
         if (argc >= 13 && !strcmp(argv[11], "-endFrame"))
             eFrame = atoi(argv[12]);
-        return optix_main(a, port, cachedir, cachenum, sFrame, eFrame);
+        if (argc >= 15 && !strcmp(argv[13], "-finishedFrames"))
+            finishedFrames = atoi(argv[14]);
+        if (argc >= 17 && !strcmp(argv[15], "-sessionId"))
+            sessionId = argv[16];
+        return optix_main(a, port, cachedir, cachenum, sFrame, eFrame, finishedFrames, sessionId);
     }
 #endif
 

@@ -853,12 +853,13 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
     pViewport->onRecord_slient(recInfo);
 }
 
-void ZenoMainWindow::optixRunClient(int port, const char* cachedir, int cachenum, int sFrame, int eFrame)
+void ZenoMainWindow::optixRunClient(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId)
 {
     //MessageBox(0, "optixwin", "optixwin", MB_OK);
 
+    std::string sessionid(sessionId);
     optixClientSocket = std::make_unique<QLocalSocket>();
-    optixClientSocket->connectToServer("zenooptix");
+    optixClientSocket->connectToServer(QString::fromStdString(sessionid));
     if (!optixClientSocket->waitForConnected(10000)) {
         zeno::log_error("tcp optix client connection fail");
         return;
@@ -866,24 +867,35 @@ void ZenoMainWindow::optixRunClient(int port, const char* cachedir, int cachenum
     else {
         zeno::log_info("tcp optix client connection succeed");
     }
+    std::string cachePath(cachedir);
+    if (finishedFrames != 0)
+    {
+        zeno::getSession().globalComm->clearState();
+        zeno::getSession().globalComm->frameCache(cachePath, cachenum);
+        zeno::getSession().globalComm->initFrameRange(sFrame, eFrame);
+        zeno::getSession().globalState->frameid = sFrame;
+        for (int frame = sFrame; frame <= eFrame; frame++)
+        {
+            zeno::getSession().globalComm->newFrame();
+            zeno::getSession().globalComm->finishFrame();
+        }
 
-    //if (cachenum > 0)
-    //{
-    //    std::string cachePath(cachedir);
-    //    zeno::getSession().globalComm->frameCache(cachePath, cachenum);
-    //    zeno::getSession().globalComm->initFrameRange(sFrame, eFrame);
-    //    zeno::getSession().globalState->frameid = sFrame;
-    //    for (int frame = sFrame; frame <= eFrame; frame++)
-    //    {
-    //        zeno::getSession().globalComm->newFrame();
-    //        zeno::getSession().globalComm->finishFrame();
-    //    }
+        TIMELINE_INFO tlinfo;
+        tlinfo.beginFrame = sFrame;
+        tlinfo.endFrame = eFrame;
+        resetTimeline(tlinfo);
 
-    //    TIMELINE_INFO tlinfo;
-    //    tlinfo.beginFrame = sFrame;
-    //    tlinfo.endFrame = eFrame;
-    //    resetTimeline(tlinfo);
-    //}
+        QVector<DisplayWidget*> views = viewports();
+        for (DisplayWidget* view : views)
+        {
+            if (Zenovis* vis = view->getZenoVis())
+            {
+                vis->setCurrentFrameId(sFrame);
+                vis->startPlay(false);
+            }
+            view->updateFrame();
+        }
+    }
 
     connect(optixClientSocket.get(), &QLocalSocket::readyRead, this, [=]() {
         while (optixClientSocket->canReadLine()) {
@@ -899,6 +911,7 @@ void ZenoMainWindow::optixRunClient(int port, const char* cachedir, int cachenum
                     ZASSERT_EXIT(keyObj.HasMember("cachedir") && keyObj.HasMember("cachenum"));
                     std::string cachedir = keyObj["cachedir"].GetString();
                     int cacheNum = keyObj["cachenum"].GetInt();
+                    zeno::getSession().globalComm->clearState();
                     zeno::getSession().globalComm->frameCache(cachedir, cachenum);
                 }
                 else if (action == "frameRange") {
@@ -920,11 +933,13 @@ void ZenoMainWindow::optixRunClient(int port, const char* cachedir, int cachenum
                     ZASSERT_EXIT(doc["key"].IsInt());
                     int frame = doc["key"].GetInt();
                     zeno::getSession().globalComm->newFrame();
+                    updateViewport("newFrame");
                 }
                 else if (action == "finishFrame") {
                     ZASSERT_EXIT(doc["key"].IsInt());
                     int frame = doc["key"].GetInt();
                     zeno::getSession().globalComm->finishFrame();
+                    updateViewport("finishFrame");
                 }
             }
         }
