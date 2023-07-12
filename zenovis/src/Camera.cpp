@@ -79,6 +79,19 @@ void Camera::setResolution(int nx, int ny) {
     m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
 }
 
+void Camera::set_safe_frames(bool bLock, int nx, int ny) {
+    m_block_window = bLock;
+    m_safe_frames = (float)nx / ny;
+}
+
+float Camera::get_safe_frames() const {
+    return m_safe_frames;
+}
+
+bool Camera::is_locked_window() const {
+    return m_block_window;
+}
+
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
     placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_fov, m_near, m_far);

@@ -689,7 +689,9 @@ void FakeTransformer::doTransform() {
             // transform pos
             auto &pos = obj->attr<zeno::vec3f>("pos");
 #pragma omp parallel for
-            for (auto &po : pos) {
+            // for (auto &po : pos) {
+            for (size_t i = 0; i < pos.size(); ++i) {
+                auto& po = pos[i];
                 auto p = zeno::vec_to_other<glm::vec3>(po);
                 auto t = transform_matrix * glm::vec4(p, 1.0f);
                 auto pt = glm::vec3(t) / t.w;
@@ -700,7 +702,9 @@ void FakeTransformer::doTransform() {
             // transform nrm
             auto &nrm = obj->attr<zeno::vec3f>("nrm");
 #pragma omp parallel for
-            for (auto &vec : nrm) {
+            // for (auto &vec : nrm) {
+            for (size_t i = 0; i < nrm.size(); ++i) {
+                auto& vec = nrm[i];
                 auto n = zeno::vec_to_other<glm::vec3>(vec);
                 glm::mat3 norm_matrix(transform_matrix);
                 norm_matrix = glm::transpose(glm::inverse(norm_matrix));

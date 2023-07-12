@@ -5,6 +5,7 @@
 #include "common.h"
 #include "recordvideomgr.h"
 #include "viewportinteraction/picker.h"
+#include "launch/corelaunch.h"
 
 class ViewportWidget;
 class ZOptixViewport;
@@ -31,6 +32,7 @@ public:
     void updateCameraProp(float aperture, float disPlane);
     void updatePerspective();
     void setNumSamples(int samples);
+    void setSafeFrames(bool bLock, int nx, int ny);
     void setCameraRes(const QVector2D& res);
     void setSimpleRenderOption();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
@@ -47,8 +49,9 @@ protected:
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
-    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+    void onRun(LAUNCH_PARAM launchParam);
     void onRecord();
+    void onRecord_slient(const VideoRecInfo& recInfo);
     void onScreenShoot();
     void onKill();
     void onPlayClicked(bool);

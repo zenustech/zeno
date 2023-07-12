@@ -1589,6 +1589,33 @@ ZENDEFNODE(RetrievePrimitiveFromZSParticles, {
                                                  {"MPM"},
                                              });
 
+struct ExtractPrimitiveFromZSParticles : INode {
+    void apply() override {
+        auto parObjPtrs = RETRIEVE_OBJECT_PTRS(ZenoParticles, "ZSParticles");
+        if (parObjPtrs.size() == 0)
+            throw std::runtime_error("there are no zsparticles!");
+        if (has_input<ListObject>("ZSParticles")) {
+            auto list = std::make_shared<ListObject>();
+            for (auto &&ptr : parObjPtrs) {
+                list->arr.push_back(ptr->prim);
+                *ptr = ZenoParticles();
+            }
+            set_output("prim", list);
+        } else {
+            auto ret = parObjPtrs[0]->prim;
+            *parObjPtrs[0] = ZenoParticles();
+            set_output("prim", ret);
+        }
+    }
+};
+
+ZENDEFNODE(ExtractPrimitiveFromZSParticles, {
+                                                 {"ZSParticles"},
+                                                 {"prim"},
+                                                 {},
+                                                 {"MPM"},
+                                             });
+
 struct ZSParticlesToPrimitiveObject : INode {
     void apply() override {
         fmt::print(fg(fmt::color::green), "begin executing "

@@ -103,4 +103,27 @@ static int defSetVDBGridName = zeno::defNodeClass<SetVDBGridName>("SetVDBGridNam
                                                                                      {
                                                                                          "openvdb",
                                                                                      }});
+
+struct SetVDBGridClass : zeno::INode {
+    virtual void apply() override {
+        auto grid = get_input<VDBGrid>("grid");
+        auto VDBGridClass = get_input2<std::string>("VDBGridClass");
+
+        grid->setGridClass(VDBGridClass);
+        set_output("grid", std::move(grid));
+    }
+};
+
+ZENDEFNODE(SetVDBGridClass,
+           {/* inputs: */ {"grid", {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"}},
+            /* outputs: */
+            {
+                "grid",
+            },
+            /* params: */
+            {},
+            /* category: */
+            {
+                "openvdb",
+            }});
 }

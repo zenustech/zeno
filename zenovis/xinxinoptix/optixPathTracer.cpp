@@ -63,6 +63,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "tinyexr.h"
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -178,7 +180,7 @@ struct PathTracerState
     raii<CUdeviceptr>              d_lightMark;
     raii<CUdeviceptr>              d_mat_indices;
     raii<CUdeviceptr>              d_meshIdxs;
-    raii<CUdeviceptr>              d_meshMats;
+    
     raii<CUdeviceptr>              d_instPos;
     raii<CUdeviceptr>              d_instNrm;
     raii<CUdeviceptr>              d_instUv;
@@ -201,6 +203,10 @@ struct PathTracerState
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
+
+    raii<CUdeviceptr> albedo_buffer_p;
+    raii<CUdeviceptr> normal_buffer_p;
+
     raii<CUdeviceptr> accum_buffer_d;
     raii<CUdeviceptr> accum_buffer_s;
     raii<CUdeviceptr> accum_buffer_t;
@@ -331,85 +337,7 @@ struct InstAttr
 };
 std::unordered_map<std::string, InstAttr> g_instAttrsLUT;
 
-//------------------------------------------------------------------------------
-//
-// GLFW callbacks
-//
-//------------------------------------------------------------------------------
 
-//static void mouseButtonCallback( GLFWwindow* window, int button, int action, int mods )
-//{
-    //double xpos, ypos;
-    //glfwGetCursorPos( window, &xpos, &ypos );
-
-    //if( action == GLFW_PRESS )
-    //{
-        //mouse_button = button;
-        //trackball.startTracking( static_cast<int>( xpos ), static_cast<int>( ypos ) );
-    //}
-    //else
-    //{
-        //mouse_button = -1;
-    //}
-//}
-
-
-//static void cursorPosCallback( GLFWwindow* window, double xpos, double ypos )
-//{
-    //Params* params = static_cast<Params*>( glfwGetWindowUserPointer( window ) );
-
-    //if( mouse_button == GLFW_MOUSE_BUTTON_LEFT )
-    //{
-        //trackball.setViewMode( sutil::Trackball::LookAtFixed );
-        //trackball.updateTracking( static_cast<int>( xpos ), static_cast<int>( ypos ), params->width, params->height );
-        //camera_changed = true;
-    //}
-    //else if( mouse_button == GLFW_MOUSE_BUTTON_RIGHT )
-    //{
-        //trackball.setViewMode( sutil::Trackball::EyeFixed );
-        //trackball.updateTracking( static_cast<int>( xpos ), static_cast<int>( ypos ), params->width, params->height );
-        //camera_changed = true;
-    //}
-//}
-
-
-//static void windowSizeCallback( GLFWwindow* window, int32_t res_x, int32_t res_y )
-//{
-    //// Keep rendering at the current resolution when the window is minimized.
-    //if( minimized )
-        //return;
-
-    //// Output dimensions must be at least 1 in both x and y.
-    //sutil::ensureMinimumSize( res_x, res_y );
-
-    //Params* params = static_cast<Params*>( glfwGetWindowUserPointer( window ) );
-    //params->width  = res_x;
-    //params->height = res_y;
-    //camera_changed = true;
-    //resize_dirty   = true;
-//}
-
-
-//static void windowIconifyCallback( GLFWwindow* window, int32_t iconified )
-//{
-    //minimized = ( iconified > 0 );
-//}
-
-
-//static void keyCallback( GLFWwindow* window, int32_t key, int32_t [>scancode*/, int32_t action, int32_t /*mods<] )
-//{
-    //if( action == GLFW_PRESS )
-    //{
-        //if( key == GLFW_KEY_Q || key == GLFW_KEY_ESCAPE )
-        //{
-            //glfwSetWindowShouldClose( window, true );
-        //}
-    //}
-    //else if( key == GLFW_KEY_G )
-    //{
-        //// toggle UI draw
-    //}
-//}
 
 
 //static void scrollCallback( GLFWwindow* window, double xscroll, double yscroll )
@@ -452,8 +380,21 @@ static void initLaunchParams( PathTracerState& state )
                 reinterpret_cast<void**>( &state.accum_buffer_p.reset() ),
                 state.params.width * state.params.height * sizeof( float4 )
                 ) );
-    
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+
+    auto& params = state.params;
+
+    CUDA_CHECK( cudaMallocManaged(
+            reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
+            params.width * params.height * sizeof( float3 )
+            ) );
+    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    
+    CUDA_CHECK( cudaMallocManaged(
+            reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
+            params.width * params.height * sizeof( float3 )
+            ) );
+    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
     
     state.params.frame_buffer = nullptr;  // Will be set when output buffer is mapped
 
@@ -513,6 +454,19 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
         params.width * params.height * sizeof( float4 )
             ) );
     state.params.accum_buffer = (float4*)(CUdeviceptr)state.accum_buffer_p;
+
+    CUDA_CHECK( cudaMallocManaged(
+                reinterpret_cast<void**>( &state.albedo_buffer_p.reset()),
+                params.width * params.height * sizeof( float3 )
+                ) );
+    state.params.albedo_buffer = (float3*)(CUdeviceptr)state.albedo_buffer_p;
+    
+    CUDA_CHECK( cudaMallocManaged(
+                reinterpret_cast<void**>( &state.normal_buffer_p.reset()),
+                params.width * params.height * sizeof( float3 )
+                ) );
+    state.params.normal_buffer = (float3*)(CUdeviceptr)state.normal_buffer_p;
+    
     state.params.accum_buffer_D = (float4*)(CUdeviceptr)state.accum_buffer_d;
     state.params.accum_buffer_S = (float4*)(CUdeviceptr)state.accum_buffer_s;
     state.params.accum_buffer_T = (float4*)(CUdeviceptr)state.accum_buffer_t;
@@ -533,7 +487,7 @@ static void updateState( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params&
 }
 
 
-static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state )
+static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, PathTracerState& state, bool denoise)
 {
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
@@ -543,25 +497,34 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
     state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.num_lights = g_lights.size();
+    state.params.denoise = denoise;
+    for(int j=0;j<4;j++){
+      for(int i=0;i<4;i++){
+        state.params.tile_i = i;
+        state.params.tile_j = j;
+        state.params.tile_w = state.params.windowSpace.x/4 + 1;
+        state.params.tile_h = state.params.windowSpace.y/4 + 1;
 
-    CUDA_SYNC_CHECK();
-    CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
-                &state.params, sizeof( Params ),
-                cudaMemcpyHostToDevice
-                ) );
+        CUDA_SYNC_CHECK();
+        CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
+                    &state.params, sizeof( Params ),
+                    cudaMemcpyHostToDevice
+                    ) );
 
-    CUDA_SYNC_CHECK();
-    OPTIX_CHECK( optixLaunch(
-                state.pipeline,
-                0,
-                (CUdeviceptr)state.d_params2,
-                sizeof( Params ),
-                &state.sbt,
-                state.params.width,   // launch width
-                state.params.height,  // launch height
-                1                     // launch depth
-                ) );
+        CUDA_SYNC_CHECK();
 
+        OPTIX_CHECK( optixLaunch(
+                    state.pipeline,
+                    0,
+                    (CUdeviceptr)state.d_params2,
+                    sizeof( Params ),
+                    &state.sbt,
+                    state.params.tile_w,   // launch width
+                    state.params.tile_h,  // launch height
+                    1                     // launch depth
+                    ) );
+      }
+    }
     output_buffer.unmap();
     (*output_buffer_diffuse   ).unmap();
     (*output_buffer_specular  ).unmap();
@@ -773,7 +736,6 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
     // copy mesh data to device
     //
     const size_t vertices_size_in_bytes = mesh->verts.size() * sizeof( Vertex );
-    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &mesh->dverts.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)mesh->dverts ),
@@ -889,6 +851,10 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
         mesh->d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
     }
     state.gas_handle = mesh->gas_handle;
+
+    mesh->dverts.reset();
+    mesh->dmats.reset(); 
+    mesh->didx.reset();
 }
 
 static size_t g_staticMeshNum = 0;
@@ -929,14 +895,16 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         ins.visibilityMask = DefaultMatMask;
     }
     
+
     std::vector<int> meshIdxs(num_instances);
-    std::vector<float> meshMats(16 * num_instances);
+
+
     std::vector<float3> instPos(num_instances);
     std::vector<float3> instNrm(num_instances);
     std::vector<float3> instUv(num_instances);
     std::vector<float3> instClr(num_instances);
     std::vector<float3> instTang(num_instances);
-    unsigned int sbt_offset = 0;
+    size_t sbt_offset = 0;
     for( size_t i = 0; i < g_staticAndDynamicMeshNum; ++i )
     {
         auto  mesh = m_meshes[i];
@@ -951,14 +919,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         memcpy( optix_instance.transform, mat3r4c, sizeof( float ) * 12 );
 
         meshIdxs[i] = i; 
-        for (int j = 0; j < 12; ++j)
-        {
-            meshMats[16 * i + j] = mat3r4c[j];
-        }
-        meshMats[16 * i + 12] = 0;
-        meshMats[16 * i + 13] = 0;
-        meshMats[16 * i + 14] = 0;
-        meshMats[16 * i + 15] = 1;
+        
         instPos[i] = defaultInstPos;
         instNrm[i] = defaultInstNrm;
         instUv[i] = defaultInstUv;
@@ -995,14 +956,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                     memcpy(optix_instance.transform, instMat4x4, sizeof(float) * 12);
 
                     meshIdxs[instanceId] = meshesOffset; 
-                    for (int j = 0; j < 12; ++j)
-                    {
-                        meshMats[16 * instanceId + j] = instMat4x4[j];
-                    }
-                    meshMats[16 * instanceId + 12] = 0;
-                    meshMats[16 * instanceId + 13] = 0;
-                    meshMats[16 * instanceId + 14] = 0;
-                    meshMats[16 * instanceId + 15] = 1;
+                    
                     instPos[instanceId] = instAttrs.pos[k];
                     instNrm[instanceId] = instAttrs.nrm[k];
                     instUv[instanceId] = instAttrs.uv[k];
@@ -1027,14 +981,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 memcpy(optix_instance.transform, mat3r4c, sizeof(float) * 12);
 
                 meshIdxs[instanceId] = meshesOffset; 
-                for (int j = 0; j < 12; ++j)
-                {
-                    meshMats[16 * instanceId + j] = mat3r4c[j];
-                }
-                meshMats[16 * instanceId + 12] = 0;
-                meshMats[16 * instanceId + 13] = 0;
-                meshMats[16 * instanceId + 14] = 0;
-                meshMats[16 * instanceId + 15] = 1;
+                
                 instPos[instanceId] = defaultInstPos;
                 instNrm[instanceId] = defaultInstNrm;
                 instUv[instanceId] = defaultInstUv;
@@ -1055,14 +1002,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 sizeof(meshIdxs[0]) * meshIdxs.size(),
                 cudaMemcpyHostToDevice
                 ) );
-    state.d_meshMats.resize(sizeof(meshMats[0]) * meshMats.size(), 0);
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_meshMats.reset() ), sizeof(meshMats[0]) * meshMats.size()) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)state.d_meshMats ),
-                meshMats.data(),
-                sizeof(meshMats[0]) * meshMats.size(),
-                cudaMemcpyHostToDevice
-                ) );
+    
     state.d_instPos.resize(sizeof(instPos[0]) * instPos.size(), 0);
     // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_instPos.reset() ), sizeof(instPos[0]) * instPos.size()) );
     CUDA_CHECK( cudaMemcpy(
@@ -1261,7 +1201,6 @@ static void buildMeshAccel( PathTracerState& state )
     // copy mesh data to device
     //
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
-    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.d_vertices ) ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
@@ -1337,8 +1276,7 @@ static void buildMeshAccel( PathTracerState& state )
                 ) );
 
     d_temp_buffer.reset();
-    //d_mat_indices.reset();
-
+    
     size_t compacted_gas_size;
     CUDA_CHECK( cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost) );
 
@@ -1356,6 +1294,9 @@ static void buildMeshAccel( PathTracerState& state )
     {
         state.d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
     }
+
+    state.d_vertices.reset();
+    state.d_mat_indices.reset();
 }
 
 static void createSBT( PathTracerState& state )
@@ -1365,6 +1306,8 @@ static void createSBT( PathTracerState& state )
         state.d_hitgroup_records.reset();
         state.d_gas_output_buffer.reset();
         state.accum_buffer_p.reset();
+        state.albedo_buffer_p.reset();
+        state.normal_buffer_p.reset();
 
     raii<CUdeviceptr>  &d_raygen_record = state.d_raygen_record;
     const size_t raygen_record_size = sizeof( RayGenRecord );
@@ -1423,14 +1366,13 @@ static void createSBT( PathTracerState& state )
             hitgroup_records[sbt_idx] = {};
 
             hitgroup_records[sbt_idx].data.uniforms        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uniforms );
-            hitgroup_records[sbt_idx].data.vertices        = reinterpret_cast<float4*>( (CUdeviceptr)state.d_vertices );
             hitgroup_records[sbt_idx].data.uv              = reinterpret_cast<float4*>( (CUdeviceptr)state.d_uv );
             hitgroup_records[sbt_idx].data.nrm             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_nrm );
             hitgroup_records[sbt_idx].data.clr             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_clr );
             hitgroup_records[sbt_idx].data.tan             = reinterpret_cast<float4*>( (CUdeviceptr)state.d_tan );
             hitgroup_records[sbt_idx].data.lightMark       = reinterpret_cast<unsigned short*>( (CUdeviceptr)state.d_lightMark );
             hitgroup_records[sbt_idx].data.meshIdxs        = reinterpret_cast<int*>( (CUdeviceptr)state.d_meshIdxs );
-            hitgroup_records[sbt_idx].data.meshMats        = reinterpret_cast<float*>( (CUdeviceptr)state.d_meshMats );
+            
             hitgroup_records[sbt_idx].data.instPos         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instPos );
             hitgroup_records[sbt_idx].data.instNrm         = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instNrm );
             hitgroup_records[sbt_idx].data.instUv          = reinterpret_cast<float3*>( (CUdeviceptr)state.d_instUv );
@@ -1543,13 +1485,16 @@ static void cleanupState( PathTracerState& state )
     }
     OptixUtil::g_vdb_cached_map.clear();
 
-        state.d_raygen_record.reset();
-        state.d_miss_records.reset();
-        state.d_hitgroup_records.reset();
-        state.d_vertices.reset();
-        state.d_gas_output_buffer.reset();
-        state.accum_buffer_p.reset();
-        state.d_params.reset();
+//        state.d_raygen_record.reset();
+//        state.d_miss_records.reset();
+//        state.d_hitgroup_records.reset();
+//        state.d_vertices.reset();
+//        state.d_gas_output_buffer.reset();
+//        state.accum_buffer_p.reset();
+//        state.albedo_buffer_p.reset();
+//        state.normal_buffer_p.reset();
+//        state.d_params.reset();
+
     //state = {};
 }
 
@@ -1701,6 +1646,7 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
                                        1.0, 0.0, 6500.0);
     xinxinoptix::using_hdr_sky(false);
+    xinxinoptix::show_background(false);
 }
 
 
@@ -1921,7 +1867,7 @@ void CopyInstMeshToGlobalMesh()
             auto &lightMark = instData.lightMark;
             auto &meshPieces = instData.meshPieces;
 
-            for (int i = 0; i < vertices.size(); ++i)
+            for (size_t i = 0; i < vertices.size(); ++i)
             {
                 g_vertices[vertsOffset + i] = vertices[i];
                 g_clr[vertsOffset + i] = clr[i];
@@ -1929,12 +1875,12 @@ void CopyInstMeshToGlobalMesh()
                 g_uv[vertsOffset + i] = uv[i];
                 g_tan[vertsOffset + i] = tan[i];
             }
-            for (int i = 0; i < vertices.size() / 3; ++i)
+            for (size_t i = 0; i < vertices.size() / 3; ++i)
             {
                 g_mat_indices[vertsOffset / 3 + i] = mat_indices[i];
                 g_lightMark[vertsOffset / 3 + i] = lightMark[i];
             }
-            for (int i = 0; i < meshPieces.size(); ++i)
+            for (size_t i = 0; i < meshPieces.size(); ++i)
             {
                 g_meshPieces[meshPiecesOffset + i] = meshPieces[i];
             }
@@ -1949,14 +1895,15 @@ void UpdateGasAndIas(bool staticNeedUpdate)
 {
 //#ifdef USING_20XX
     // no archieve inst func in using20xx
-    if (using20xx) {
+    if (using20xx) 
+    {
     const size_t vertices_size_in_bytes = g_vertices.size() * sizeof( Vertex );
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
-                g_vertices.data(), vertices_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
+    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_vertices.reset() ), vertices_size_in_bytes ) );
+    // CUDA_CHECK( cudaMemcpy(
+    //             reinterpret_cast<void*>( (CUdeviceptr&)state.d_vertices ),
+    //             g_vertices.data(), vertices_size_in_bytes,
+    //             cudaMemcpyHostToDevice
+    //             ) );
     CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_clr.reset() ), vertices_size_in_bytes ) );
     CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr&)state.d_clr ),
@@ -1999,7 +1946,9 @@ void UpdateGasAndIas(bool staticNeedUpdate)
                 ) );
     buildMeshAccel( state );
 //#else
-    } else {
+    } 
+    else 
+    {
         for(int i=0;i<g_meshPieces.size();i++)
         {
             buildMeshAccelSplitMesh(state, g_meshPieces[i]);
@@ -2024,15 +1973,15 @@ void UpdateGasAndIas(bool staticNeedUpdate)
             }
         };
 #if WXL
-        realloced = state.d_vertices.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
+        //realloced = state.d_vertices.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_clr.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_uv.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_nrm.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
         state.d_tan.resize(vertices_size_in_bytes, dynamic_vertices_size_in_bytes);
-        size_t reservedCap = state.d_vertices.capacity - vertices_size_in_bytes;
+        size_t reservedCap = state.d_clr.capacity - vertices_size_in_bytes;
         if (reservedCap > 0) {
-            CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) +
-                                      vertices_size_in_bytes, 0, reservedCap));
+            // CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) +
+            //                           vertices_size_in_bytes, 0, reservedCap));
             CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) +
                                       vertices_size_in_bytes, 0, reservedCap));
             CUDA_CHECK(cudaMemset(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) +
@@ -2043,15 +1992,15 @@ void UpdateGasAndIas(bool staticNeedUpdate)
                                       vertices_size_in_bytes, 0, reservedCap));
         }
 #else
-        CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
+        //CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_vertices.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_clr.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_uv.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_nrm.reset()), vertices_size_in_bytes));
         CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&state.d_tan.reset()), vertices_size_in_bytes));
 #endif
         updateRange();
-        CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) + offset,
-                              (char *)g_vertices.data() + offset, numBytes, cudaMemcpyHostToDevice));
+        // CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices) + offset,
+        //                       (char *)g_vertices.data() + offset, numBytes, cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr) + offset, (char *)g_clr.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
         CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv) + offset, (char *)g_uv.data() + offset,
@@ -2061,8 +2010,8 @@ void UpdateGasAndIas(bool staticNeedUpdate)
         CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_tan) + offset, (char *)g_tan.data() + offset,
                               numBytes, cudaMemcpyHostToDevice));
         if (staticNeedUpdate && offset != 0) {
-            CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices),
-                                  (char *)g_vertices.data(), static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
+            // CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_vertices),
+            //                       (char *)g_vertices.data(), static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
             CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_clr), (char *)g_clr.data(),
                                   static_vertices_size_in_bytes, cudaMemcpyHostToDevice));
             CUDA_CHECK(cudaMemcpy(reinterpret_cast<char *>((CUdeviceptr &)state.d_uv), (char *)g_uv.data(),
@@ -2126,6 +2075,10 @@ void update_hdr_sky(float sky_rot, zeno::vec3f sky_rot3d, float sky_strength) {
 
 void using_hdr_sky(bool enable) {
     state.params.usingHdrSky = enable;
+}
+
+void show_background(bool enable) {
+    state.params.show_background = enable;
 }
 
 void update_procedural_sky(
@@ -2507,7 +2460,8 @@ void foreach_sphere_crowded(std::function<void( const std::string &mtlid, std::v
 void cleanupSpheres() {
 
     SpheresCrowded = {};
-
+    uniform_sphere_gas_handle = 0;
+    uniform_sphere_d_gas_output_buffer.reset();
     sphere_unique_mats.clear();
     LutSpheresTransformed.clear();
     SpheresInstanceGroupMap.clear();
@@ -3413,6 +3367,14 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     cam.aperture = aperture;
 }
 
+void write_pfm(std::string& path, int w, int h, const float *rgb) {
+    std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
+    std::vector<char> data(header.size() + w * h * sizeof(zeno::vec3f));
+    memcpy(data.data(), header.data(), header.size());
+    memcpy(data.data() + header.size(), rgb, w * h * sizeof(zeno::vec3f));
+    zeno::file_put_binary(data, path);
+}
+
 void *optixgetimg_extra(std::string name) {
     if (name == "diffuse") {
         return output_buffer_diffuse->getHostPointer();
@@ -3428,7 +3390,8 @@ void *optixgetimg_extra(std::string name) {
     }
 }
 
-void optixrender(int fbo, int samples, bool simpleRender) {
+void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
+    bool imageRendered = false;
     samples = zeno::envconfig::getInt("SAMPLES", samples);
     // 张心欣老爷请添加环境变量：export ZENO_SAMPLES=256
     zeno::log_debug("rendering samples {}", samples);
@@ -3442,13 +3405,15 @@ void optixrender(int fbo, int samples, bool simpleRender) {
 //    updateState( *output_buffer_specular, state.params);
 //    updateState( *output_buffer_transmit, state.params);
 //    updateState( *output_buffer_background, state.params);
-    const int max_samples_once = 16;
 
+    const int max_samples_once = 32;
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
+
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
-        launchSubframe( *output_buffer_o, state );
+        launchSubframe( *output_buffer_o, state, denoise);
         state.params.subframe_index++;
     }
+
 #ifdef OPTIX_BASE_GL
     displaySubframe( *output_buffer_o, *gl_display_o, state, fbo );
 #endif
@@ -3462,12 +3427,28 @@ void optixrender(int fbo, int samples, bool simpleRender) {
         stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
         ud.erase("optix_image_path");
+
+        if (denoise) {
+            const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+            //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+            auto a_path = path + ".albedo.pfm";
+            write_pfm(a_path, w, h, _albedo_buffer);
+
+            const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+            //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+            auto n_path = path + ".normal.pfm";
+            write_pfm(n_path, w, h, _normal_buffer); 
+        }
+
         // AOV
-        path = path.substr(0, path.size() - 4);
-        stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
-        stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);
-        stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
-        stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
+        if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
+            path = path.substr(0, path.size() - 4);
+            stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
+            stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);
+            stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
+            stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
+        }
+        imageRendered = true;
     }
 }
 
@@ -3491,32 +3472,42 @@ void optixcleanup() {
     using namespace OptixUtil;
     try {
         CUDA_SYNC_CHECK();
+        //cleanupSpheres();
+        //sphereInstanceGroupAgentList.clear();
         cleanupState( state );
         rtMaterialShaders.clear();
-        
+
         OPTIX_CHECK(optixPipelineDestroy(state.pipeline));
         OPTIX_CHECK(optixDeviceContextDestroy(state.context));
     }
     catch (sutil::Exception const& e) {
         std::cout << "OptixCleanupError: " << e.what() << std::endl;
     }
-//    state.d_vertices.reset();
-//    state.d_clr.reset();
-//    state.d_mat_indices.reset();
-//    state.d_nrm.reset();
-//    state.d_tan.reset();
-//    state.d_uv.reset();
-        std::memset((void *)&state, 0, sizeof(state));
-        //std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
-
-
-            context                  .handle=0;
-            pipeline                 .handle=0;
-            ray_module               .handle=0;
-            raygen_prog_group        .handle=0;
-            radiance_miss_group      .handle=0;
-            occlusion_miss_group     .handle=0;
-            isPipelineCreated               = false;
+////    state.d_vertices.reset();
+////    state.d_clr.reset();
+////    state.d_mat_indices.reset();
+////    state.d_nrm.reset();
+////    state.d_tan.reset();
+////    state.d_uv.reset();
+//        std::memset((void *)&state, 0, sizeof(state));
+//        //std::memset((void *)&rtMaterialShaders[0], 0, sizeof(rtMaterialShaders[0]) * rtMaterialShaders.size());
+//
+//
+    context                  .handle=0;
+    pipeline                 .handle=0;
+    ray_module               .handle=0;
+    raygen_prog_group        .handle=0;
+    radiance_miss_group      .handle=0;
+    occlusion_miss_group     .handle=0;
+    output_buffer_o           .reset();
+    output_buffer_diffuse     .reset();
+    output_buffer_specular    .reset();
+    output_buffer_transmit    .reset();
+    output_buffer_background  .reset();
+    g_StaticMeshPieces        .clear();
+    g_meshPieces              .clear();
+    state = {};
+    isPipelineCreated               = false;
 
 
             

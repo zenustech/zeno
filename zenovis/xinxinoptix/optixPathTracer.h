@@ -48,7 +48,6 @@ struct CameraInfo
     float aperture;
 };
 
-
 struct Params
 {
     unsigned int subframe_index;
@@ -62,8 +61,16 @@ struct Params
     uchar4*      frame_buffer_S;
     uchar4*      frame_buffer_T;
     uchar4*      frame_buffer_B;
+
+    float3*      albedo_buffer;
+    float3*      normal_buffer;
+
     unsigned int width;
     unsigned int height;
+    unsigned int tile_i;
+    unsigned int tile_j;
+    unsigned int tile_w;
+    unsigned int tile_h;
     unsigned int samples_per_launch;
 
     CameraInfo cam;
@@ -104,6 +111,16 @@ struct Params
     float sunSoftness;
     float elapsedTime;
     bool simpleRender;
+
+
+#if defined (__cudacc__)
+    const bool denoise;
+#else
+    bool denoise;
+#endif
+
+    bool show_background;
+
 };
 
 
@@ -120,14 +137,14 @@ struct MissData
 
 struct HitGroupData
 {
-    float4* vertices;
+    //float4* vertices;
     float4* uv;
     float4* nrm;
     float4* clr;
     float4* tan;
     unsigned short* lightMark;
     int* meshIdxs;
-    float* meshMats;
+    
     float3* instPos;
     float3* instNrm;
     float3* instUv;

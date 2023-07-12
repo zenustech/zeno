@@ -8,7 +8,6 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/types/CameraObject.h>
 #include <zenomodel/include/uihelper.h>
-#include "launch/corelaunch.h"
 #include "zenomainwindow.h"
 #include "camerakeyframe.h"
 #include <zenoui/style/zenostyle.h>
@@ -17,6 +16,7 @@
 #include "dialog/zrecorddlg.h"
 #include "dialog/zrecprogressdlg.h"
 #include "dialog/zrecframeselectdlg.h"
+#include "util/apphelper.h"
 
 
 using std::string;
@@ -167,6 +167,16 @@ void DisplayWidget::setCameraRes(const QVector2D& res)
     }
     else {
         m_optixView->setCameraRes(res);
+    }
+}
+
+void DisplayWidget::setSafeFrames(bool bLock, int nx, int ny)
+{
+    if (m_glView) {
+        m_glView->setSafeFrames(bLock, nx, ny);
+    }
+    else {
+        m_optixView->setSafeFrames(bLock, nx, ny);
     }
 }
 
@@ -417,7 +427,11 @@ void DisplayWidget::onSliderValueChanged(int frame)
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, frame, frame);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = frame;
+        launchParam.endFrame = frame;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     }
     else
     {
@@ -477,7 +491,7 @@ void DisplayWidget::afterRun()
     scene->objectsMan->lightObjects.clear();
 }
 
-void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
 {
     ZenoMainWindow *mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
@@ -495,8 +509,7 @@ void DisplayWidget::onRun(int frameStart, int frameEnd, bool applyLightAndCamera
         m_glView->clearTransformer();
         m_glView->getSession()->get_scene()->selected.clear();
     }
-
-    launchProgram(pModel, frameStart, frameEnd, applyLightAndCameraOnly, applyMaterialOnly);
+    launchProgram(pModel, launchParam);
 
     if (m_glView)
         m_glView->updateLightOnce = true;
@@ -527,7 +540,11 @@ void DisplayWidget::onRun() {
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, beginFrame, endFrame);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = beginFrame;
+        launchParam.endFrame = endFrame;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     } else {
     }
 
@@ -591,7 +608,11 @@ void DisplayWidget::onRecord()
     if (QDialog::Accepted == dlg.exec())
     {
         VideoRecInfo recInfo;
-        dlg.getInfo(recInfo);
+        if (!dlg.getInfo(recInfo))
+        {
+            QMessageBox::warning(nullptr, tr("Record"), tr("The output path is invalid, please choose another path."));
+            return;
+        }
         //validation.
 
         ZRecFrameSelectDlg frameDlg(this);
@@ -607,7 +628,12 @@ void DisplayWidget::onRecord()
         {
             //clear cached objs.
             zeno::getSession().globalComm->clearState();
-            onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+            LAUNCH_PARAM launchParam;
+            launchParam.beginFrame = recInfo.frameRange.first;
+            launchParam.endFrame = recInfo.frameRange.second;
+            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+            AppHelper::initLaunchCacheParam(launchParam);
+            onRun(launchParam);
         }
 
         //setup signals issues.
@@ -639,6 +665,35 @@ void DisplayWidget::onRecord()
             m_recordMgr.cancelRecord();
         }
     }
+}
+
+void DisplayWidget::onRecord_slient(const VideoRecInfo& recInfo)
+{
+    m_recordMgr.setRecordInfo(recInfo);
+
+    if (!m_bGLView)
+    {
+        ZASSERT_EXIT(m_optixView);
+        m_optixView->recordVideo(recInfo);
+    }
+    else
+    {
+        moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
+        ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        mainWin->toggleTimelinePlay(true);          // and then play.
+        //the recording implementation is RecordVideoMgr::onFrameDrawn.
+    }
+
+    connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=](QString msg) {
+        zeno::log_info("process exited with {} successfully", 0);
+        QApplication::exit(0);
+    });
+
+    connect(&m_recordMgr, &RecordVideoMgr::recordFailed, this, [=](QString msg) {
+        zeno::log_info("process exited with {} failed", -1);
+        QApplication::exit(-1);
+    });
 }
 
 void DisplayWidget::moveToFrame(int frame) {

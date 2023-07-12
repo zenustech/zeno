@@ -94,6 +94,9 @@ class BinaryReader {
     size_t cur = 0;
     std::vector<char> data;
 public:
+    bool is_eof() {
+        return cur >= data.size();
+    }
     BinaryReader(std::vector<char> data_) {
         data = std::move(data_);
     }

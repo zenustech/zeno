@@ -581,7 +581,8 @@ struct IObjectExtractor<remote::ESubjectType::HeightField> {
             for (float Height : HeightAttrs) {
                 // Map height [-255, 255] in R to [0, UINT16_MAX] in Z
                 constexpr uint16_t uint16Max = std::numeric_limits<uint16_t>::max();
-                auto NewValue = static_cast<uint16_t>(((Height + UE_LANDSCAPE_ZSCALE_INV) / (UE_LANDSCAPE_ZSCALE_INV * 2.f)) * uint16Max);
+                // LandscapeDataAccess.h: static_cast<uint16>(FMath::RoundToInt(FMath::Clamp<float>(Height * LANDSCAPE_INV_ZSCALE + MidValue, 0.f, MaxValue)))
+                auto NewValue = static_cast<uint16_t>(std::round(zeno::clamp(Height * UE_LANDSCAPE_ZSCALE + 0x8000, 0.f, static_cast<float>(uint16Max))));
                 RemappedHeightFieldData.push_back(NewValue);
             }
             remote::HeightField HeightField { N, N, RemappedHeightFieldData };
@@ -689,7 +690,7 @@ struct ReadPrimitiveFromRegistry : public INode {
         int32_t Nx = std::max(get_input2<int32_t>("nx"), Data.Nx);
         int32_t Ny = std::max(get_input2<int32_t>("ny"), Data.Ny);
         float Scale = get_input2<float>("scale");
-        return zeno::remote::ConvertHeightDataToPrimitiveObject(Data, Nx, Ny, Scale);
+        return zeno::remote::ConvertHeightDataToPrimitiveObject(Data, Nx, Ny, { Scale, Scale, Scale });
     }
 
     void apply() override {

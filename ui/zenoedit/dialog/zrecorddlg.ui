@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>413</width>
-    <height>379</height>
+    <height>408</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -151,6 +151,16 @@
     </widget>
    </item>
    <item>
+    <widget class="QCheckBox" name="cbAOV">
+     <property name="text">
+      <string>AOV</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -162,6 +172,13 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="cbRemoveAfterRender">
+     <property name="text">
+      <string>remove cache after render</string>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="btnGroup">

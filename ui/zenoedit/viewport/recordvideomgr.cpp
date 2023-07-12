@@ -64,7 +64,7 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
     ZASSERT_EXIT(dir.exists());
     dir.mkdir("P");
     // remove old image
-    {
+    if (m_recordInfo.bExportVideo) {
         QString dir_path = m_recordInfo.record_path + "/P/";
         QDir qDir = QDir(dir_path);
         qDir.setNameFilters(QStringList("*.jpg"));
@@ -110,11 +110,34 @@ void RecordVideoMgr::endRecToExportVideo()
                 auto image = zeno::readImageFile(jpg_path);
                 write_pfm(pfm_path, image);
             }
+
+            const auto albedo_pfm_path = jpg_path + ".albedo.pfm";
+            const auto normal_pfm_path = jpg_path + ".normal.pfm";
+
+            std::string auxiliaryParams; 
+            std::vector<std::function<void(void)>> auxiliaryTasks;
+
+            QFile fileAlbedo(QString::fromStdString(albedo_pfm_path));
+            if (fileAlbedo.exists()) {
+                auxiliaryParams += " --alb " + albedo_pfm_path;
+                auxiliaryTasks.push_back([&]() {
+                    fileAlbedo.remove();
+                });
+            }
+            QFile fileNormal(QString::fromStdString(normal_pfm_path));
+            if (fileNormal.exists()) {
+                auxiliaryParams += " --nrm " + normal_pfm_path;
+                auxiliaryTasks.push_back([&]() {
+                    fileNormal.remove();
+                });
+            }
+
             // cmd
             {
-                QString cmd = QString("oidnDenoise --ldr %1 -o %2").arg(QString::fromStdString(pfm_path))
-                        .arg(QString::fromStdString(pfm_dn_path));
+                QString cmd = QString("oidnDenoise --ldr %1 -o %2 %3").arg(QString::fromStdString(pfm_path))
+                        .arg(QString::fromStdString(pfm_dn_path)).arg(QString::fromStdString(auxiliaryParams));
                 qDebug() << cmd;
+
                 int ret = QProcess::execute(cmd);
                 qDebug() << ret;
                 // pfm to jpg
@@ -129,6 +152,9 @@ void RecordVideoMgr::endRecToExportVideo()
                     if (fileDn.exists()) {
                         fileDn.remove();
                     }
+                    for (auto& task : auxiliaryTasks) {
+                        task();
+                    } // auxiliaryTasks
                 }
             }
         }
@@ -224,6 +250,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             auto old_num_samples = scene->drawOptions->num_samples;
             scene->drawOptions->num_samples = m_recordInfo.numOptix;
             scene->drawOptions->msaa_samples = m_recordInfo.numMSAA;
+            scene->drawOptions->denoise = m_recordInfo.needDenoise;
 
             auto [x, y] = pVis->getSession()->get_window_size();
 

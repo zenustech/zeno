@@ -9,6 +9,11 @@
 
 #define _FLT_MAX_ 3.40282347e+38F
 #define _FLT_MIN_ 1.17549435e-38F
+
+#ifndef uint
+using uint = unsigned int;
+#endif
+
 #define MISS_HIT 0
 #define DIFFUSE_HIT 1
 #define SPECULAR_HIT 2
@@ -101,6 +106,7 @@ struct RadiancePRD
     int          curMatIdx;
     float        samplePdf;
     bool         fromDiff;
+
     unsigned char first_hit_type;
     vec3 extinction() {
         auto idx = clamp(curMatIdx, 0, 7);
@@ -117,12 +123,14 @@ struct RadiancePRD
     }
     vec3 channelPDF;
 
-    bool bad = false;
+    bool trace_denoise_albedo = false;
+    bool trace_denoise_normal = false;
+    float3 tmp_albedo {};
+    float3 tmp_normal {};
 
     // cihou nanovdb
     float vol_t0=0, vol_t1=0;
 
-    unsigned int vol_depth = 0;
     bool test_distance = false;
     bool origin_inside_vdb = false;
     bool surface_inside_vdb = false; 
