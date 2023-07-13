@@ -127,6 +127,7 @@ target_sources(zeno PRIVATE
   # geometry/VectorField.cu
   geometry/CollisionVis.cu # CHECK THIS
   # geometry/CalcSurfaceArea.cu
+  geometry/BasicGeoNodes.cu
   geometry/MarkSurfaceTag.cu
   geometry/SurfaceBinder.cu
   geometry/MarkInversion.cu
