@@ -262,7 +262,7 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
     {
         QString text = outSockIdx.data(ROLE_OBJID).toString();
         QString socketName = outSockIdx.data(ROLE_PARAM_NAME).toString();
-        text.append("-").append(socketName);
+        text = text + ": " +socketName;
         QFontMetrics fontMetrics(QApplication::font());
         qreal width = fontMetrics.width(text);
         //draw outSocket line

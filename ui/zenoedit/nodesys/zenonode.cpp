@@ -33,6 +33,7 @@
 #include "groupnode.h"
 #include "dialog/zeditparamlayoutdlg.h"
 #include "settings/zenosettingsmanager.h"
+#include <zenomodel/include/command.h>
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -1379,46 +1380,91 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     else
     {
         QPointF pos = event->pos();
-        for (const auto& socket : m_outSockets)
+        qreal maxDist = ZenoStyle::dpiScaled(100);
+        if (boundingRect().right() - pos.x() < maxDist)
         {
-            ZenoSocketItem* socketItem = socket->socketItem();
-            if (!socketItem)
-                continue;
-            QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
-            QRectF textRect = rect.adjusted(-ZenoStyle::dpiScaled(100), 0, -rect.width(), 0);
-            if (textRect.contains(pos))
+            for (const auto& socket : m_outSockets)
             {
-                QMenu* socketMenu = new QMenu;
-                QAction* pLinkHide = new QAction("Link Hide");
-                QAction* pLinkShow = new QAction("Link Show");
-                socketMenu->addAction(pLinkHide);
-                socketMenu->addAction(pLinkShow);
-                connect(pLinkHide, &QAction::triggered, this, [=]()
+                ZenoSocketItem* socketItem = socket->socketItem();
+                if (!socketItem)
+                    continue;
+                QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
+                QRectF textRect = rect.adjusted(-maxDist, 0, -rect.width(), 0);
+                if (textRect.contains(pos))
                 {
-                    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                    if (!pModel)
-                        return;
-                    pModel->ModelSetData(socketItem->paramIndex(), true, ROLE_VPARAM_REF);
-                    socket->socketItem()->update();
-                });
-
-                connect(pLinkShow, &QAction::triggered, this, [=]()
-                {
-                    if (socket->socketItem())
+                    bool bCreateRef = socketItem->paramIndex().data(ROLE_VPARAM_REF).toBool();
+                    QMenu* socketMenu = new QMenu;
+                    if (bCreateRef)
                     {
-                        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                        if (!pModel)
-                            return;
-                        pModel->ModelSetData(socketItem->paramIndex(), false, ROLE_VPARAM_REF);
-                        socket->socketItem()->update();
+                        QAction* pDeleteRef = new QAction(tr("Delete Link Label"));
+                        QAction* pCopyRef = new QAction(tr("Copy Link Label"));
+                        socketMenu->addAction(pDeleteRef);
+                        socketMenu->addAction(pCopyRef);
+                        //delete ref
+                        connect(pDeleteRef, &QAction::triggered, this, [=]()
+                        {
+                            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                            if (!pModel)
+                                return;
+                            pModel->ModelSetData(socketItem->paramIndex(), false, ROLE_VPARAM_REF);
+                            socket->socketItem()->update();
+                        });
+                        //copy ref
+                        connect(pCopyRef, &QAction::triggered, this, [=]()
+                        {
+                            QString str = socketItem->paramIndex().data(ROLE_OBJPATH).toString();
+                            QMimeData* pMimeData = new QMimeData;
+                            pMimeData->setText(str);
+                            QApplication::clipboard()->setMimeData(pMimeData);
+                        });
                     }
-                });
-                socketMenu->exec(QCursor::pos());
-                socketMenu->deleteLater();
-                return;
+                    else
+                    {
+                        QAction* pCreateRef = new QAction(tr("Create Link Label"));
+                        socketMenu->addAction(pCreateRef);
+                        //create ref
+                        connect(pCreateRef, &QAction::triggered, this, [=]()
+                        {
+                            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                            if (!pModel)
+                                return;
+                            pModel->ModelSetData(socketItem->paramIndex(), true, ROLE_VPARAM_REF);
+                            socket->socketItem()->update();
+                        });
+                    }
+
+                    socketMenu->exec(QCursor::pos());
+                    socketMenu->deleteLater();
+                    return;
+                }
             }
         }
-        NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
+        else if (pos.x() - boundingRect().left() < maxDist)
+        {
+            for (const auto& socket : m_inSockets)
+            {
+                ZenoSocketItem* socketItem = socket->socketItem();
+                if (!socketItem)
+                    continue;
+                QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
+                QRectF textRect(rect.right(), rect.top(), maxDist, rect.height());
+                if (textRect.contains(pos))
+                {
+                    QMenu* socketMenu = new QMenu;
+                    QAction* pPasteRef = new QAction(tr("Paste Link Label"));
+                    socketMenu->addAction(pPasteRef);
+                    //paste ref
+                    connect(pPasteRef, &QAction::triggered, this, [=]() {
+                        onPasteSocketRefSlot(socketItem->paramIndex());
+                    });
+                    socketMenu->exec(QCursor::pos());
+                    socketMenu->deleteLater();
+                    return;
+                }
+            }
+        }
+
+        NODE_CATES cates = pGraphsModel->getCates();
         pos = event->screenPos();
         ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, pos);
         menu->setEditorFocus();
@@ -1442,6 +1488,38 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     }
     else if (wtf.contains(m_bodyWidget))
     {
+        qreal maxDist = ZenoStyle::dpiScaled(100);
+        if (event->pos().x() - boundingRect().left() < maxDist)
+        {
+            for (const auto& socket : m_inSockets)
+            {
+                ZenoSocketItem* socketItem = socket->socketItem();
+                if (!socketItem)
+                    continue;
+                QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
+                QRectF textRect(rect.right(), rect.top(), maxDist, rect.height());
+                if (textRect.contains(event->pos()))
+                {
+                    QPersistentModelIndex linkIdx;
+                    const PARAM_LINKS& links = socketItem->paramIndex().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                    if (!links.isEmpty())
+                        linkIdx = links[0];
+                    if (linkIdx.isValid())
+                    {
+                        const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                        ZASSERT_EXIT(outSockIdx.isValid());
+                        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+                        ZASSERT_EXIT(pScene);
+                        const QModelIndex& nodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+                        ZASSERT_EXIT(nodeIdx.isValid());
+                        pScene->select(QModelIndexList() << nodeIdx);
+                        setProperty("skip_node", true);
+                    }
+                    return;
+
+                }
+            }
+        }
         const QString& name = nodeName();
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         QModelIndex subgIdx = pModel->index(name);
@@ -1473,7 +1551,10 @@ void ZenoNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    _base::mouseReleaseEvent(event);
+    if (property("skip_node").toBool())
+        setProperty("skip_node", false);
+    else
+        _base::mouseReleaseEvent(event);
     if (m_bMoving)
     {
         m_bMoving = false;
@@ -1691,5 +1772,88 @@ void ZenoNode::onUpdateFrame(QGraphicsItem* pContrl, int nFrame, QVariant val)
         pTextItem->setPlainText(UiHelper::variantToString(newVal));
         QVector<QString> properties = AppHelper::getKeyFrameProperty(val);
         pTextItem->setProperty(g_setKey, properties.first());
+    }
+}
+
+void ZenoNode::onPasteSocketRefSlot(QModelIndex toIndex) 
+{
+    const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel);
+    if (pMimeData->hasText())
+    {
+        const QString& str = pMimeData->text();
+        pGraphsModel->beginTransaction(tr("add Link"));
+        zeno::scope_exit sp([=]() { pGraphsModel->endTransaction(); });
+
+        QModelIndex fromIndex = pGraphsModel->indexFromPath(str);
+        if (fromIndex.isValid())
+        {
+            //remove the edge in inNode:inSock, if exists.
+            int inProp = toIndex.data(ROLE_PARAM_SOCKPROP).toInt();
+            if (inProp & SOCKPROP_DICTLIST_PANEL)
+            {
+                QString inSockType = toIndex.data(ROLE_PARAM_TYPE).toString();
+                SOCKET_PROPERTY outProp = (SOCKET_PROPERTY)fromIndex.data(ROLE_PARAM_SOCKPROP).toInt();
+                QString outSockType = fromIndex.data(ROLE_PARAM_TYPE).toString();
+                QAbstractItemModel* pKeyObjModel =
+                    QVariantPtr<QAbstractItemModel>::asPtr(toIndex.data(ROLE_VPARAM_LINK_MODEL));
+
+                bool outSockIsContainer = false;
+                if (inSockType == "list")
+                {
+                    outSockIsContainer = outSockType == "list";
+                }
+                else if (inSockType == "dict")
+                {
+                    const QModelIndex& fromNodeIdx = fromIndex.data(ROLE_NODE_IDX).toModelIndex();
+                    const QString& outNodeCls = fromNodeIdx.data(ROLE_OBJNAME).toString();
+                    const QString& outSockName = fromIndex.data(ROLE_PARAM_NAME).toString();
+                    outSockIsContainer = outSockType == "dict" || (outNodeCls == "FuncBegin" && outSockName == "args");
+                }
+
+                //if outSock is a container, connects it as usual.
+                if (outSockIsContainer)
+                {
+                    //legacy dict/list connection, and then we have to remove all inner dict key connection.
+                    ZASSERT_EXIT(pKeyObjModel);
+                    for (int r = 0; r < pKeyObjModel->rowCount(); r++)
+                    {
+                        const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
+                        PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        for (QPersistentModelIndex _linkIdx : links)
+                        {
+                            pGraphsModel->removeLink(_linkIdx, true);
+                        }
+                    }
+                }
+                else
+                {
+                    //check multiple links
+                    QModelIndexList fromSockets;
+                    //check selected nodes.
+                    //model: ViewParamModel
+                    QString paramName = fromIndex.data(ROLE_PARAM_NAME).toString();
+                    QString paramType = fromIndex.data(ROLE_PARAM_TYPE).toString();
+
+                    QString toSockName = toIndex.data(ROLE_OBJPATH).toString();
+
+                    // link to inner dict key automatically.
+                    int n = pKeyObjModel->rowCount();
+                    pGraphsModel->addExecuteCommand(new DictKeyAddRemCommand(true, pGraphsModel, toIndex.data(ROLE_OBJPATH).toString(), n));
+                    toIndex = pKeyObjModel->index(n, 0);
+                }
+            }
+            if (inProp != SOCKPROP_MULTILINK)
+            {
+                QPersistentModelIndex linkIdx;
+                const PARAM_LINKS& links = toIndex.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                if (!links.isEmpty())
+                    linkIdx = links[0];
+                if (linkIdx.isValid())
+                    pGraphsModel->removeLink(linkIdx, true);
+            }
+            pGraphsModel->addLink(m_subGpIndex, fromIndex, toIndex, true);
+        }
     }
 }
