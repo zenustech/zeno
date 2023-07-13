@@ -502,8 +502,8 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
       for(int i=0;i<4;i++){
         state.params.tile_i = i;
         state.params.tile_j = j;
-        state.params.tile_w = state.params.windowSpace.x/4 + 1;
-        state.params.tile_h = state.params.windowSpace.y/4 + 1;
+        state.params.tile_w = state.params.windowSpace.x;
+        state.params.tile_h = state.params.windowSpace.y;
 
         CUDA_SYNC_CHECK();
         CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
