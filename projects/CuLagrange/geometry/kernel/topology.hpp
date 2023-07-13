@@ -14,6 +14,7 @@
 #include "zensim/graph/ConnectedComponents.hpp"
 
 #include "zensim/container/Bht.hpp"
+#include "zensim/graph/Coloring.hpp"
 #include "compute_characteristic_length.hpp"
 
 
@@ -1056,176 +1057,173 @@ namespace zeno {
 
     template<typename Pol,typename VecTI/*,zs::enable_if_all<VecTI::dim == 1, (VecTI::extent >= 2), (VecTI::etent <= 4)> = 0*/>
     void topological_incidence_matrix(Pol& pol,
-            int nm_points,
+            // size_t nm_points,
             const zs::Vector<VecTI>& topos,
-            zs::SparseMatrix<int,true>& spmat) {
+            zs::SparseMatrix<zs::u32,true>& spmat) {
         using namespace zs;
         using ICoord = zs::vec<int, 2>;
         constexpr auto CDIM = VecTI::extent;
         constexpr auto space = Pol::exec_tag::value;
         constexpr auto execTag = wrapv<space>{};
 
+        zs::Vector<int> max_pi_vec{topos.get_allocator(),1};
+        max_pi_vec.setVal(0);
+        pol(zs::range(topos),[max_pi_vec = proxy<space>(max_pi_vec),execTag,CDIM] ZS_LAMBDA(const auto& topo) {
+            for(int i = 0;i != CDIM;++i) 
+                if(topo[i] >= 0)
+                    atomic_max(execTag,&max_pi_vec[0],(int)topo[i]);
+        });
+        auto nm_points = max_pi_vec.getVal(0) + 1; 
 
-        // auto cudaPol = cuda_exec();
-
-        zs::Vector<int> exclusive_offsets{topos.get_allocator(),nm_points + 1};
+        zs::Vector<int> exclusive_offsets{topos.get_allocator(),(size_t)(nm_points)};
         zs::Vector<int> p2ts{topos.get_allocator(),0};
+        zs::Vector<int> max_tp_incidences{topos.get_allocator(),1};
+        zs::Vector<int> cnts{topos.get_allocator(),(size_t)nm_points};
 
-        {
-            zs::Vector<int> cnts{topos.get_allocator(),nm_points};
+        {    
             zs::Vector<int> tab_buffer{topos.get_allocator(), topos.size() * CDIM};
             bht<int,2,int> tab{topos.get_allocator(), topos.size() * CDIM};
             tab.reset(pol, true);
 
-            cnts.reset(0);
+            // cnts.reset(0);
+            pol(zs::range(cnts),[] ZS_LAMBDA(auto& cnt) {cnt = 0;});
             pol(zs::range(topos.size()),[
                 topos = proxy<space>(topos),
                 tab = proxy<space>(tab),
                 tab_buffer = proxy<space>(tab_buffer),
                 cnts = proxy<space>(cnts)] ZS_LAMBDA(int ti) mutable {
-                    for(int i = 0;i != CDIM;++i)
+                    for(int i = 0;i != CDIM;++i) {
                         if(topos[ti][i] < 0)
                             break;
                         else{
-                            int local_offset = atomic_add(execTag,&cnts[topos[ti][i]], (int)1);
-                            if(auto id = tab.insert(ICoord{topos[ti][i],local_offset}); id != bht<int,2,int>::sentinel_v){
+                            auto local_offset = atomic_add(execTag,&cnts[topos[ti][i]], (int)1);
+                            if(auto id = tab.insert(ICoord{topos[ti][i],(int)local_offset}); id != bht<int,2,int>::sentinel_v){
                                 tab_buffer[id] = ti;
                             }
                         }
+                    }
             });
 
+            // std::cout << "finish computing tab_buffer" << std::endl;
+            // pol(zs::range(cnts.size()),[cnts = proxy<space>(cnts)] ZS_LAMBDA(int pi) mutable {printf("cnts[%d] = %d\n",pi,cnts[pi]);});
+            pol(zs::range(exclusive_offsets),[] ZS_LAMBDA(auto& eoffset) {eoffset = 0;});
+
             exclusive_scan(pol,std::begin(cnts),std::end(cnts),std::begin(exclusive_offsets));
-            auto nmPTEntries = exclusive_offsets.getVal(nm_points);
+            // pol(zs::range(exclusive_offsets.size()),[exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(int pi) mutable {printf("eooffset[%d] = %d\n",pi,exclusive_offsets[pi]);});
+            auto nmPTEntries = exclusive_offsets.getVal(nm_points - 1) + cnts.getVal(nm_points - 1);
+            // std::cout << "nmPTEntries " << nmPTEntries << std::endl;
             p2ts.resize(nmPTEntries);
 
 
+            max_tp_incidences.setVal(0);
             pol(zs::range(nm_points),[
                 topos = proxy<space>(topos),
                 tab = proxy<space>(tab),
                 cnts = proxy<space>(cnts),
+                execTag,
+                max_tp_incidences = proxy<space>(max_tp_incidences),
                 p2ts = proxy<space>(p2ts),
                 tab_buffer = proxy<space>(tab_buffer),
                 exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(int pi) mutable {
                     auto pt_count = cnts[pi];
+                    atomic_max(execTag,&max_tp_incidences[0],pt_count);
                     auto ex_offset = exclusive_offsets[pi];
                     for(int i = 0;i != pt_count;++i)
                         if(auto id = tab.query(ICoord{pi,i}); id != bht<int,2,int>::sentinel_v) {
                             auto ti = tab_buffer[id];
                             p2ts[ex_offset + i] = ti;
+                            // printf("p[%d] -> t[%d]\n",pi,ti);
                         }
             });
+
+            // std::cout << "finish computing p2ts" << std::endl;
         }
 
-        zs::Vector<int> is{topos.get_allocator(),topos.size()};
-        zs::Vector<int> js{topos.get_allocator(),topos.size()};
-        pol(enumerate(is, js), [] ZS_LAMBDA(int no, int &i, int &j) mutable { i = j = no; });
-        auto reserveStorage = [&is, &js](std::size_t n) {
-            auto size = is.size();
-            is.resize(size + n);
-            js.resize(size + n);
-            return size;
-        };
-        // auto tets_entry_offset = reserveStorage(p2ts.size());
 
-        {
-            bool success = false;
-            zs::Vector<int> cnts{topos.get_allocator(),topos.size()};
+        bht<int,2,int> tij_tab{topos.get_allocator(), topos.size() * max_tp_incidences.getVal(0) * CDIM};
+        tij_tab.reset(pol,true);
 
-            // the buffer size might need to be resized
-            bht<int,2,int> tab{topos.get_allocator(),topos.size() * CDIM * 2};
-            zs::Vector<int> tab_buffer{topos.get_allocator(), topos.size() * CDIM * 2};
-
-            cnts.reset(0);
-            pol(range(topos.size()),[
-                topos = proxy<space>(topos),
-                tab = proxy<space>(tab),
-                tab_buffer = proxy<space>(tab_buffer),
-                p2ts = proxy<space>(p2ts),
-                cnts = proxy<space>(cnts),
-                execTag,
-                CDIM,
-                exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(int ti) mutable {
-                    auto topo = topos[ti];
-                    for(int i = 0;i != CDIM;++i){
-                        auto vi = topo[i];
-                        if(vi < 0)
-                            return;
-                        auto ex_offset = exclusive_offsets[vi];
-                        auto nm_nts = exclusive_offsets[vi + 1] - exclusive_offsets[vi];
-                        for(int j = 0;j != nm_nts;++j) {
-                            auto nti = p2ts[ex_offset + j];
-                            if(nti > ti)
-                                continue;
-                            if(auto id = tab.insert(ICoord{ti,atomic_add(execTag,&cnts[ti],(int)1)}); id != bht<int,2,int>::sentinel_v){
-                                tab_buffer[id] = nti;
-                            }
-                        }
+        pol(range(topos.size()),[
+            topos = proxy<space>(topos),
+            p2ts = proxy<space>(p2ts),
+            tij_tab = proxy<space>(tij_tab),
+            execTag,
+            CDIM,
+            cnts = proxy<space>(cnts),
+            exclusive_offsets = proxy<space>(exclusive_offsets)] ZS_LAMBDA(int ti) mutable {
+                auto topo = topos[ti];
+                for(int i = 0;i != CDIM;++i){
+                    auto vi = topo[i];
+                    if(vi < 0)
+                        return;
+                    auto ex_offset = exclusive_offsets[vi];
+                    auto nm_nts = cnts[vi];
+                    for(int j = 0;j != nm_nts;++j) {
+                        auto nti = p2ts[ex_offset + j];
+                        if(nti < ti)
+                            continue;
+                        tij_tab.insert(ICoord{ti,nti});
                     }
-            });
-            exclusive_offsets.resize(topos.size() + 1);
-            exclusive_scan(pol,std::begin(cnts),std::end(cnts),std::begin(exclusive_offsets));
-            int nm_topo_incidences = exclusive_offsets.getVal(topos.size());
-            auto topo_conn_entry_offset = reserveStorage(nm_topo_incidences);
+                }
+        });
 
-            pol(range(topos.size()),[
-                topos = proxy<space>(topos),
-                topo_conn_entry_offset = topo_conn_entry_offset,
-                exclusive_offsets = proxy<space>(exclusive_offsets),
-                tab = proxy<space>(tab),
-                is = proxy<space>(is),
-                js = proxy<space>(js),
-                tab_buffer = proxy<space>(tab_buffer)] ZS_LAMBDA(int ti) mutable {
-                    auto ex_offset = exclusive_offsets[ti];
-                    auto nm_ntopos = exclusive_offsets[ti + 1] - exclusive_offsets[ti];
-                    for(int i = 0;i != nm_ntopos;++i) {
-                        if(auto id = tab.insert(ICoord{ti,i}); id != bht<int,2,int>::sentinel_v){
-                            auto nti = tab_buffer[id];
-                            is[ex_offset + i] = ti;
-                            js[ex_offset + i] = nti;
-                        }                        
-                    }
-            });
+        // std::cout << "finish computing tij_tab" << std::endl;
 
+        zs::Vector<int> is{topos.get_allocator(),tij_tab.size()};
+        zs::Vector<int> js{topos.get_allocator(),tij_tab.size()};
+        pol(zip(zs::range(tij_tab.size()),zs::range(tij_tab._activeKeys)),[is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(auto idx,const auto& pair) {
+            is[idx] = pair[0];js[idx] = pair[1];
+            // printf("pair[%d] : %d %d\n",idx,pair[0],pair[1]);
+        });
 
-        }
+        // pol(zs::range(is.size()),[is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(int i) mutable {printf("ijs[%d] : %d %d\n",i,is[i],js[i]);});
+        // std::cout << "topos.size() = " << topos.size() << std::endl;
 
-        spmat = zs::SparseMatrix<int,true>{topos.get_allocator(),(int)topos.size(),(int)topos.size()};
-        spmat.build(pol,(int)nm_points,(int)topos.size(),zs::range(is),zs::range(js)/*,zs::range(rs)*/,zs::false_c);
-        spmat.localOrdering(pol,zs::false_c);
+        // spmat = zs::SparseMatrix<u32,true>{topos.get_allocator(),(int)topos.size(),(int)topos.size()};
+        spmat.build(pol,(int)topos.size(),(int)topos.size(),zs::range(is),zs::range(js)/*,zs::range(rs)*/,zs::true_c);
+        // spmat.localOrdering(pol,zs::false_c);
         spmat._vals.resize(spmat.nnz());
-        spmat._vals.reset((int)1);
+        pol(spmat._vals, []ZS_LAMBDA(u32 &v) { v = 1; });
+        // std::cout << "done connectivity graph build" << std::endl;
+
+        // spmat._vals.reset((int)1);
     }
 
     template<typename Pol,typename VecTI>
     void topological_coloring(Pol& pol,
-            int nm_points,
+            // int nm_points,
             const zs::Vector<VecTI>& topo,
-            zs::Vector<int>& coloring) {
+            zs::Vector<float>& colors) {
         using namespace zs;
         constexpr auto space = Pol::exec_tag::value;
 
-        coloring.resize(topo.size());
-        zs::SparseMatrix<int,true> pt_incidence{};
-        topo_nodal_incidence_matrix(pol,nm_points,topo,pt_incidence);
+        colors.resize(topo.size());
+        zs::SparseMatrix<u32,true> topo_incidence_matrix{topo.get_allocator(),topo.size(),topo.size()};
+        // std::cout << "compute incidence matrix " << std::endl;
+        topological_incidence_matrix(pol,topo,topo_incidence_matrix);
+        // std::cout << "finish compute incidence matrix " << std::endl;
 
-        union_find(pol,pt_incidence,range(coloring));
-        zs::bcht<int, int, true, zs::universal_hash<int>, 16> vtab{coloring.get_allocator(),coloring.size()};        
-        pol(range(coloring.size()),[
-            vtab = proxy<space>(vtab),
-            coloring = proxy<space>(coloring)] ZS_LAMBDA(int vi) mutable {
-                auto fa = coloring[vi];
-                while(fa != coloring[fa])
-                    fa = coloring[fa];
-                coloring[vi] = fa;
-                vtab.insert(fa);
-        });     
+        auto ompPol = omp_exec();
+        constexpr auto omp_space = execspace_e::openmp;
+        zs::Vector<u32> weights(/*topo.get_allocator(),*/topo.size());
+        {
+            bht<int, 1, int> tab{weights.get_allocator(),topo.size() * 2};
+            tab.reset(ompPol, true);
+            ompPol(enumerate(weights), [tab1 = proxy<omp_space>(tab)] (int seed, u32 &w) mutable {
+                using tab_t = RM_CVREF_T(tab);
+                std::mt19937 rng;
+                rng.seed(seed);
+                u32 v = rng() % (u32)4294967291u;
+                // prevent weight duplications
+                while (tab1.insert(v) != tab_t::sentinel_v)
+                    v = rng() % (u32)4294967291u;
+                w = v;
+            });
+        }
+        weights = weights.clone(colors.memoryLocation());
 
-        pol(range(coloring.size()),[
-            coloring = proxy<space>(coloring),vtab = proxy<space>(vtab)] ZS_LAMBDA(int vi) mutable {
-                auto ancestor = coloring[vi];
-                auto setNo = vtab.query(ancestor);
-                coloring[vi] = setNo;
-        });    
+        auto iterRef = maximum_independent_sets(pol, topo_incidence_matrix, weights, colors);
+        std::cout << "nm_colors : " << iterRef << std::endl;
     }
 
     template<typename Pol,typename TopoTileVec>
