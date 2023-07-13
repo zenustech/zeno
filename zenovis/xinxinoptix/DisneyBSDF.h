@@ -1642,6 +1642,7 @@ namespace DisneyBSDF{
     static __inline__ __device__
     bool SampleDisney2(
         unsigned int& seed,
+        unsigned int& eventseed,
         vec3 baseColor,
         vec3 transmiianceColor,
         vec3 sssColor,
@@ -1692,8 +1693,8 @@ namespace DisneyBSDF{
         float eta = dot(wo, N)>0?ior:1.0f/ior;
         rotateTangent(T, B, N, anisoRotation * 2 * 3.1415926f);
         world2local(wo, T, B, N);
-        float r1 = rnd(seed);
-        float r2 = rnd(seed);
+//        float r1 = rnd(seed);
+//        float r2 = rnd(seed);
 
         vec3 Csheen, Cspec0;
         float F0;
@@ -1739,11 +1740,14 @@ namespace DisneyBSDF{
         prd->fromDiff = false;
         if(r3<p1) // diffuse + sss
         {
+            float2 r = sobolRnd(seed);
+            float r1 = r.x;
+            float r2 = r.y;
           auto first_hit_type = prd->first_hit_type;
           prd->first_hit_type = prd->depth==0?DIFFUSE_HIT:first_hit_type;
           if(wo.z<0 && subsurface>0)//inside, scattering, go out for sure
           {
-            wi = BRDFBasics::UniformSampleHemisphere(rnd(seed), rnd(seed));
+            wi = BRDFBasics::UniformSampleHemisphere(r1, r2);
             flag = transmissionEvent;
             isSS = false;
           }
@@ -1821,6 +1825,9 @@ namespace DisneyBSDF{
         }
         else if(r3<p3)//specular
         {
+            float2 r = sobolRnd(seed);
+            float r1 = r.x;
+            float r2 = r.y;
             auto first_hit_type = prd->first_hit_type;
             prd->first_hit_type = prd->depth==0?SPECULAR_HIT:first_hit_type;
             float ax, ay;
@@ -1843,6 +1850,9 @@ namespace DisneyBSDF{
             }
         }else if(r3<p4)//glass
         {
+            float2 r = sobolRnd(seed);
+            float r1 = r.x;
+            float r2 = r.y;
 
 //          SampleDisneySpecTransmission2(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance,
 //                                        wo, wi, rPdf, fPdf, reflectance, flag, medium, extinction, thin, is_inside,
@@ -1856,14 +1866,14 @@ namespace DisneyBSDF{
 
             wm = entering?wm:-wm;
 
-            float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?ior:1.0/ior);
+            float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?ior:1.0f/ior);
             float p = rnd(seed);
             if(p<F)//reflection
             {
               wi = normalize(reflect(-normalize(wo),wm));
             }else //refraction
             {
-              wi = normalize(refract(wo, wm, entering?1/ior:ior));
+              wi = normalize(refract(wo, wm, entering?1.0f/ior:ior));
               flag = transmissionEvent;
               isTrans = true;
               extinction = CalculateExtinction(transmiianceColor, scatterDistance);
@@ -1883,6 +1893,9 @@ namespace DisneyBSDF{
           prd->first_hit_type = prd->depth==0? (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT):first_hit_type;
         }else if(r3<p5)//cc
         {
+            float2 r = sobolRnd(seed);
+            float r1 = r.x;
+            float r2 = r.y;
             auto first_hit_type = prd->first_hit_type;
             prd->first_hit_type = prd->depth==0?SPECULAR_HIT:first_hit_type;
             vec3 wm = BRDFBasics::SampleGTR1(ccRough, r1, r2);
