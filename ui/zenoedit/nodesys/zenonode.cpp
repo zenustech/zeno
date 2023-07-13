@@ -1339,6 +1339,90 @@ ZenoGraphsEditor* ZenoNode::getEditorViewByViewport(QWidget* pWidget)
 void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
 {
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    QPointF pos = event->pos();
+    qreal maxDist = ZenoStyle::dpiScaled(100);
+    if (boundingRect().right() - pos.x() < maxDist)
+    {
+        for (const auto& socket : m_outSockets)
+        {
+            ZenoSocketItem* socketItem = socket->socketItem();
+            if (!socketItem)
+                continue;
+            QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
+            QRectF textRect = rect.adjusted(-maxDist, 0, -rect.width(), 0);
+            if (textRect.contains(pos))
+            {
+                bool bCreateRef = socketItem->paramIndex().data(ROLE_VPARAM_REF).toBool();
+                QMenu* socketMenu = new QMenu;
+                if (bCreateRef)
+                {
+                    QAction* pDeleteRef = new QAction(tr("Delete Link Label"));
+                    QAction* pCopyRef = new QAction(tr("Copy Link Label"));
+                    socketMenu->addAction(pDeleteRef);
+                    socketMenu->addAction(pCopyRef);
+                    //delete ref
+                    connect(pDeleteRef, &QAction::triggered, this, [=]()
+                    {
+                        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                    if (!pModel)
+                        return;
+                    pModel->ModelSetData(socketItem->paramIndex(), false, ROLE_VPARAM_REF);
+                    socket->socketItem()->update();
+                    });
+                    //copy ref
+                    connect(pCopyRef, &QAction::triggered, this, [=]()
+                    {
+                        QString str = socketItem->paramIndex().data(ROLE_OBJPATH).toString();
+                    QMimeData* pMimeData = new QMimeData;
+                    pMimeData->setText(str);
+                    QApplication::clipboard()->setMimeData(pMimeData);
+                    });
+                }
+                else
+                {
+                    QAction* pCreateRef = new QAction(tr("Create Link Label"));
+                    socketMenu->addAction(pCreateRef);
+                    //create ref
+                    connect(pCreateRef, &QAction::triggered, this, [=]()
+                    {
+                        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                    if (!pModel)
+                        return;
+                    pModel->ModelSetData(socketItem->paramIndex(), true, ROLE_VPARAM_REF);
+                    socket->socketItem()->update();
+                    });
+                }
+
+                socketMenu->exec(QCursor::pos());
+                socketMenu->deleteLater();
+                return;
+            }
+        }
+    }
+    else if (pos.x() - boundingRect().left() < maxDist)
+    {
+        for (const auto& socket : m_inSockets)
+        {
+            ZenoSocketItem* socketItem = socket->socketItem();
+            if (!socketItem)
+                continue;
+            QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
+            QRectF textRect(rect.right(), rect.top(), maxDist, rect.height());
+            if (textRect.contains(pos))
+            {
+                QMenu* socketMenu = new QMenu;
+                QAction* pPasteRef = new QAction(tr("Paste Link Label"));
+                socketMenu->addAction(pPasteRef);
+                //paste ref
+                connect(pPasteRef, &QAction::triggered, this, [=]() {
+                    onPasteSocketRefSlot(socketItem->paramIndex());
+                });
+                socketMenu->exec(QCursor::pos());
+                socketMenu->deleteLater();
+                return;
+            }
+        }
+    }
     if (pGraphsModel && pGraphsModel->IsSubGraphNode(m_index))
     {
         scene()->clearSelection();
@@ -1379,91 +1463,6 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
     }
     else
     {
-        QPointF pos = event->pos();
-        qreal maxDist = ZenoStyle::dpiScaled(100);
-        if (boundingRect().right() - pos.x() < maxDist)
-        {
-            for (const auto& socket : m_outSockets)
-            {
-                ZenoSocketItem* socketItem = socket->socketItem();
-                if (!socketItem)
-                    continue;
-                QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
-                QRectF textRect = rect.adjusted(-maxDist, 0, -rect.width(), 0);
-                if (textRect.contains(pos))
-                {
-                    bool bCreateRef = socketItem->paramIndex().data(ROLE_VPARAM_REF).toBool();
-                    QMenu* socketMenu = new QMenu;
-                    if (bCreateRef)
-                    {
-                        QAction* pDeleteRef = new QAction(tr("Delete Link Label"));
-                        QAction* pCopyRef = new QAction(tr("Copy Link Label"));
-                        socketMenu->addAction(pDeleteRef);
-                        socketMenu->addAction(pCopyRef);
-                        //delete ref
-                        connect(pDeleteRef, &QAction::triggered, this, [=]()
-                        {
-                            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                            if (!pModel)
-                                return;
-                            pModel->ModelSetData(socketItem->paramIndex(), false, ROLE_VPARAM_REF);
-                            socket->socketItem()->update();
-                        });
-                        //copy ref
-                        connect(pCopyRef, &QAction::triggered, this, [=]()
-                        {
-                            QString str = socketItem->paramIndex().data(ROLE_OBJPATH).toString();
-                            QMimeData* pMimeData = new QMimeData;
-                            pMimeData->setText(str);
-                            QApplication::clipboard()->setMimeData(pMimeData);
-                        });
-                    }
-                    else
-                    {
-                        QAction* pCreateRef = new QAction(tr("Create Link Label"));
-                        socketMenu->addAction(pCreateRef);
-                        //create ref
-                        connect(pCreateRef, &QAction::triggered, this, [=]()
-                        {
-                            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                            if (!pModel)
-                                return;
-                            pModel->ModelSetData(socketItem->paramIndex(), true, ROLE_VPARAM_REF);
-                            socket->socketItem()->update();
-                        });
-                    }
-
-                    socketMenu->exec(QCursor::pos());
-                    socketMenu->deleteLater();
-                    return;
-                }
-            }
-        }
-        else if (pos.x() - boundingRect().left() < maxDist)
-        {
-            for (const auto& socket : m_inSockets)
-            {
-                ZenoSocketItem* socketItem = socket->socketItem();
-                if (!socketItem)
-                    continue;
-                QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
-                QRectF textRect(rect.right(), rect.top(), maxDist, rect.height());
-                if (textRect.contains(pos))
-                {
-                    QMenu* socketMenu = new QMenu;
-                    QAction* pPasteRef = new QAction(tr("Paste Link Label"));
-                    socketMenu->addAction(pPasteRef);
-                    //paste ref
-                    connect(pPasteRef, &QAction::triggered, this, [=]() {
-                        onPasteSocketRefSlot(socketItem->paramIndex());
-                    });
-                    socketMenu->exec(QCursor::pos());
-                    socketMenu->deleteLater();
-                    return;
-                }
-            }
-        }
-
         NODE_CATES cates = pGraphsModel->getCates();
         pos = event->screenPos();
         ZenoNewnodeMenu *menu = new ZenoNewnodeMenu(m_subGpIndex, cates, pos);
