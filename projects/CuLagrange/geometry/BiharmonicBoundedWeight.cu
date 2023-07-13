@@ -13,7 +13,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
 
-#include "kernel/laplace_matrix.hpp"
+#include "kernel/differential_geometry.hpp"
 #include "linear_system/active_set.hpp"
 
 namespace zeno {

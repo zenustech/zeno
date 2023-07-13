@@ -106,7 +106,7 @@ target_sources(zeno PRIVATE
   geometry/file_parser/vtk_types.hpp
   geometry/linear_system/mfcg.hpp
   geometry/linear_system/active_set.hpp
-  geometry/kernel/laplace_matrix.hpp
+  geometry/kernel/differential_geometry.hpp
   geometry/kernel/gradient_field.hpp
   geometry/kernel/bary_centric_weights.hpp
   geometry/kernel/compute_characteristic_length.hpp
