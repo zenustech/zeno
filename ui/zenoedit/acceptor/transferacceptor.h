@@ -40,6 +40,12 @@ public:
                 const QString& sockProperty,
                 const rapidjson::Value& defaultValue) override;
 
+    void setOutputSocket(
+        const QString& inNode,
+        const QString& inSock,
+        const bool& bLinkRef
+    ) override;
+
     void addInnerDictKey(
         bool bInput,
         const QString& inNode,

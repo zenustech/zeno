@@ -45,6 +45,12 @@ public:
         const rapidjson::Value& defaultValue
     ) = 0;
 
+    virtual void setOutputSocket(
+        const QString& inNode,
+        const QString& inSock,
+        const bool& bLinkRef
+    ) = 0;
+
     virtual void addInnerDictKey(
             bool bInput,
             const QString& ident,

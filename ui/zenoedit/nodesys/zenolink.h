@@ -85,8 +85,10 @@ public:
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
     QPersistentModelIndex linkInfo() const;
+    QPainterPath shape() const override;
 
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget) override;
 
     enum { Type = ZTYPE_FULLLINK };
     int type() const override;

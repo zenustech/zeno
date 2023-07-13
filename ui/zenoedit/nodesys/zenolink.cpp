@@ -240,6 +240,28 @@ QPersistentModelIndex ZenoFullLink::linkInfo() const
     return m_index;
 }
 
+QPainterPath ZenoFullLink::shape() const
+{
+    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    if (outSockIdx.data(ROLE_VPARAM_REF).toBool())
+    {
+        QString text = outSockIdx.data(ROLE_OBJID).toString();
+        QString socketName = outSockIdx.data(ROLE_PARAM_NAME).toString();
+        text = text + ": " + socketName;
+        QFontMetrics fontMetrics(QApplication::font());
+        qreal width = fontMetrics.width(text);
+        qreal dist = ZenoStyle::dpiScaled(8);
+        QPainterPath path(m_srcPos + QPointF(0, dist));
+        QPointF endPos(m_srcPos.x() + dist + width, m_srcPos.y() + dist);
+        path.lineTo(endPos);
+        path.moveTo(m_dstPos + QPointF(0, dist));
+        endPos = QPointF(m_dstPos.x() - width - dist, m_dstPos.y() + dist);
+        path.lineTo(endPos);
+        return path;
+    }
+    return ZenoLink::shape();
+}
+
 QPointF ZenoFullLink::getSrcPos() const
 {
     return m_srcPos;
@@ -253,6 +275,40 @@ QPointF ZenoFullLink::getDstPos() const
 void ZenoFullLink::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     ZenoLink::mousePressEvent(event);
+}
+
+void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
+{
+    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    if (outSockIdx.data(ROLE_VPARAM_REF).toBool())
+    {
+        QString text = outSockIdx.data(ROLE_OBJID).toString();
+        QString socketName = outSockIdx.data(ROLE_PARAM_NAME).toString();
+        text = text + ": " +socketName;
+        QFontMetrics fontMetrics(QApplication::font());
+        qreal width = fontMetrics.width(text);
+        //draw line
+        QPen pen(isSelected() ? QColor(0xFA6400) : QColor("#4B9EF4"), ZenoStyle::dpiScaled(3));
+        painter->setPen(pen);
+        painter->drawPath(shape());
+
+        //draw outSocket text
+        QPen textPen(QColor("#FFFFFF"), 1);
+        painter->setPen(textPen);
+        qreal x = m_srcPos.x() + ZenoStyle::dpiScaled(8);
+        qreal y = m_srcPos.y() + ZenoStyle::dpiScaled(8) - fontMetrics.height() / 2;
+        painter->drawText(x, y, text);
+
+        //draw inSocket text
+        x = m_dstPos.x() - width - ZenoStyle::dpiScaled(8);
+        y = m_dstPos.y() + ZenoStyle::dpiScaled(8) - fontMetrics.height() / 2;
+        painter->setPen(textPen);
+        painter->drawText(x, y, text);
+
+        return;
+    }
+    ZenoLink::paint(painter, styleOptions, widget);
+
 }
 
 int ZenoFullLink::type() const

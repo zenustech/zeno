@@ -335,6 +335,20 @@ void TransferAcceptor::setInputSocket2(
     }
 }
 
+void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef)
+{
+    ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
+    NODE_DATA& data = m_nodes[inNode];
+
+    
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        if (outputs.find(inSock) != outputs.end())
+        {
+            outputs[inSock].info.bLinkRef = bLinkRef;
+            data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+        }
+}
+
 void TransferAcceptor::setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties)
 {
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
@@ -373,6 +387,7 @@ void TransferAcceptor::setToolTip(PARAM_CLASS cls, const QString & inNode, const
         }
     } 
 }
+
 void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, const QString &name,const rapidjson::Value &value) {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA& data = m_nodes[id];

@@ -192,6 +192,12 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         }
     }
 
+    if (!bInput && socket.bLinkRef)
+    {
+        writer.Key("link-ref");
+        writer.Bool(socket.bLinkRef);
+    }
+
     const QString& sockType = socket.type;
     writer.Key("type");
     writer.String(sockType.toUtf8());

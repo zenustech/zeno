@@ -30,15 +30,16 @@ public:
     QModelIndexList getOutputIndice() const;
 
     void setAddParam(
-            PARAM_CLASS cls,
-            const QString& name,
-            const QString& type,
-            const QVariant& deflValue,
-            PARAM_CONTROL ctrl,
-            QVariant ctrlProps = QVariant(),
-            SOCKET_PROPERTY prop = SOCKPROP_NORMAL,
-            DICTPANEL_INFO dictPanel = DICTPANEL_INFO(),
-            const QString& toolTip = QString()
+        PARAM_CLASS cls,
+        const QString& name,
+        const QString& type,
+        const QVariant& deflValue,
+        PARAM_CONTROL ctrl,
+        QVariant ctrlProps = QVariant(),
+        SOCKET_PROPERTY prop = SOCKPROP_NORMAL,
+        DICTPANEL_INFO dictPanel = DICTPANEL_INFO(),
+        const QString& toolTip = QString(),
+        bool bLinkLabel = false
     );
     void removeParam(PARAM_CLASS cls, const QString& name);
     QVariant getValue(PARAM_CLASS cls, const QString& name) const;

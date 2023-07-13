@@ -480,6 +480,11 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
                 QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
                 pAcceptor->setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
             }
+            if (sockObj.HasMember("link-ref"))
+            {
+                bool bLinkRef = sockObj["link-ref"].GetBool();
+                pAcceptor->setOutputSocket(id, outSock, bLinkRef);
+            }
         }
     }
 }

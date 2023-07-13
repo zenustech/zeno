@@ -121,6 +121,7 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         outSocket.info.sockProp = param->m_sockProp;
         outSocket.info.links = exportLinks(param->m_links);
         outSocket.info.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
+        outSocket.info.bLinkRef = param->data(ROLE_VPARAM_REF).toBool();
 
         if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
         {
@@ -242,7 +243,8 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
             outSocket.info.ctrlProps,
             (SOCKET_PROPERTY)outSocket.info.sockProp,
             outSocket.info.dictpanel,
-            outSocket.info.toolTip);
+            outSocket.info.toolTip,
+            outSocket.info.bLinkRef);
     }
 }
 
@@ -319,7 +321,8 @@ void NodeParamModel::setAddParam(
                 QVariant ctrlProps,
                 SOCKET_PROPERTY prop,
                 DICTPANEL_INFO dictPanel,
-                const QString& toolTip)
+                const QString& toolTip,
+                bool bLinkLabel)
 {
     VParamItem *pItem = nullptr;
     const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
@@ -344,6 +347,7 @@ void NodeParamModel::setAddParam(
         pItem->setData(type, ROLE_PARAM_TYPE);
         pItem->m_sockProp = prop;
         pItem->setData(ctrl, ROLE_PARAM_CTRL);
+        pItem->setData(bLinkLabel, ROLE_VPARAM_REF);
         pGroup->appendRow(pItem);
         if (PARAM_PARAM != cls)
             initDictSocket(pItem, dictPanel);
@@ -357,6 +361,7 @@ void NodeParamModel::setAddParam(
         pItem->setData(ctrl, ROLE_PARAM_CTRL);
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
         pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
+        pItem->setData(bLinkLabel, ROLE_VPARAM_REF);
 
         if (PARAM_PARAM != cls && 
             pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())

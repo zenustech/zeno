@@ -141,7 +141,11 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     QColor bgClr;
-    if (m_bHovered)
+    if (m_viewSockIdx.data(ROLE_VPARAM_REF).toBool() && m_status == STATUS_NOCONN)
+    {
+        bgClr = QColor("#FFA54F");
+    }
+    else if (m_bHovered)
     {
         bgClr = QColor("#5FD2FF");
     }
