@@ -498,8 +498,8 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.num_lights = g_lights.size();
     state.params.denoise = denoise;
-    for(int j=0;j<4;j++){
-      for(int i=0;i<4;i++){
+    for(int j=0;j<1;j++){
+      for(int i=0;i<1;i++){
         state.params.tile_i = i;
         state.params.tile_j = j;
         state.params.tile_w = state.params.windowSpace.x;
