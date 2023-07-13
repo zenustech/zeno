@@ -274,7 +274,18 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     }
     else
     {
-#ifndef ZENO_OPTIX_PROC
+#ifdef ZENO_OPTIX_PROC
+        if (bChecked)
+        {
+            m_pTimer->start(m_sliderFeq);
+        }
+        else
+        {
+            m_pTimer->stop();
+        }
+        if (getZenoVis())
+            getZenoVis()->startPlay(bChecked);
+#else
         emit m_optixView->sig_togglePlayButton(bChecked);
 #endif
     }
