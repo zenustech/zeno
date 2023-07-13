@@ -83,6 +83,7 @@ struct RadiancePRD
     float        prob;
     float        prob2;
     unsigned int seed;
+    unsigned int eventseed;
     unsigned int flags;
     bool         hitEnv;
     int          countEmitted;

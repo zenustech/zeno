@@ -1232,3 +1232,55 @@ __forceinline__ __device__ vec3 refract(vec3 I, vec3 N, float eta)
   else
     return -eta * I + (eta * dot(N, I) - sqrt(k)) * N;
 }
+
+__forceinline__ __device__ unsigned int laine_karras_permutation(unsigned int x, unsigned int seed) {
+    x += seed;
+    x ^= x*0x6c50b47cu;
+    x ^= x*0xb82f1e52u;
+    x ^= x*0xc7afe638u;
+    x ^= x*0x8d22f6e6u;
+    return x;
+}
+
+__forceinline__ __device__ unsigned int reverse_bits(unsigned int x) {
+    x = ((x >>  1u) & 0x55555555u) | ((x & 0x55555555u) <<  1u);
+    x = ((x >>  2u) & 0x33333333u) | ((x & 0x33333333u) <<  2u);
+    x = ((x >>  4u) & 0x0f0f0f0fu) | ((x & 0x0f0f0f0fu) <<  4u);
+    x = ((x >>  8u) & 0x00ff00ffu) | ((x & 0x00ff00ffu) <<  8u);
+    x = ((x >> 16u)              ) | ((x              ) << 16u);
+    return x;
+}
+__forceinline__ __device__ unsigned int nested_uniform_scramble(unsigned int x, unsigned int seed) {
+    x = reverse_bits(x);
+    x = laine_karras_permutation(x, seed);
+    x = reverse_bits(x);
+    return x;
+}
+__forceinline__ __device__ unsigned int hash_combine(unsigned int seed, unsigned int v) {
+    return seed ^ (v + 0x9e3779b9u + (seed << 6u) + (seed >> 2u));
+}
+
+__forceinline__ __device__ uint2 sobol_2d(unsigned int index) {
+    uint2 p = make_uint2(0u);
+    uint2 d = make_uint2(0x80000000u);
+
+    for(; index != 0u; index >>= 1u) {
+        if((index & 1u) != 0u) {
+            p.x ^= d.x;
+            p.y ^= d.y;
+        }
+
+        d.x >>= 1u;  // 1st dimension Sobol matrix, is same as base 2 Van der Corput
+        d.y ^= d.y >> 1u; // 2nd dimension Sobol matrix
+    }
+
+    return p;
+}
+
+__forceinline__ __device__ vec2 shuffled_scrambled_sobol_2d(unsigned int index, unsigned int seed) {
+    index = nested_uniform_scramble(index, seed);
+    uint2 p = sobol_2d(index);
+    p.x = nested_uniform_scramble(p.x, hash_combine(seed, 0u));
+    p.y = nested_uniform_scramble(p.y, hash_combine(seed, 1u));
+    return vec2(p.x, p.y)*exp2(-32.);
+}

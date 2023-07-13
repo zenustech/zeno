@@ -848,6 +848,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     while(DisneyBSDF::SampleDisney2(
                 prd->seed,
+                prd->eventseed,
                 basecolor,
                 sssParam,
                 sssColor,
