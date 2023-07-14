@@ -1487,38 +1487,6 @@ void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     }
     else if (wtf.contains(m_bodyWidget))
     {
-        qreal maxDist = ZenoStyle::dpiScaled(100);
-        if (event->pos().x() - boundingRect().left() < maxDist)
-        {
-            for (const auto& socket : m_inSockets)
-            {
-                ZenoSocketItem* socketItem = socket->socketItem();
-                if (!socketItem)
-                    continue;
-                QRectF rect = this->mapFromItem(socketItem, socketItem->boundingRect()).boundingRect();
-                QRectF textRect(rect.right(), rect.top(), maxDist, rect.height());
-                if (textRect.contains(event->pos()))
-                {
-                    QPersistentModelIndex linkIdx;
-                    const PARAM_LINKS& links = socketItem->paramIndex().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-                    if (!links.isEmpty())
-                        linkIdx = links[0];
-                    if (linkIdx.isValid())
-                    {
-                        const QModelIndex& outSockIdx = linkIdx.data(ROLE_OUTSOCK_IDX).toModelIndex();
-                        ZASSERT_EXIT(outSockIdx.isValid());
-                        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
-                        ZASSERT_EXIT(pScene);
-                        const QModelIndex& nodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-                        ZASSERT_EXIT(nodeIdx.isValid());
-                        pScene->select(QModelIndexList() << nodeIdx);
-                        setProperty("skip_node", true);
-                    }
-                    return;
-
-                }
-            }
-        }
         const QString& name = nodeName();
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
         QModelIndex subgIdx = pModel->index(name);
@@ -1550,10 +1518,7 @@ void ZenoNode::mouseMoveEvent(QGraphicsSceneMouseEvent* event)
 
 void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (property("skip_node").toBool())
-        setProperty("skip_node", false);
-    else
-        _base::mouseReleaseEvent(event);
+    _base::mouseReleaseEvent(event);
     if (m_bMoving)
     {
         m_bMoving = false;
