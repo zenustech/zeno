@@ -7,6 +7,7 @@
 #include <zenoui/style/zenostyle.h>
 #include "../util/log.h"
 #include "settings/zenosettingsmanager.h"
+#include "nodesys/zenosubgraphview.h"
 
 
 ZenoLink::ZenoLink(QGraphicsItem *parent)
@@ -189,7 +190,9 @@ void ZenoTempLink::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, ZenoNode* inNode)
     : ZenoLink(nullptr)
     , m_index(idx)
+    , m_bHover(false)
 {
+    setAcceptHoverEvents(true);
     ZASSERT_EXIT(inNode && outNode && idx.isValid());
 
     const QModelIndex& inSockIdx = m_index.data(ROLE_INSOCK_IDX).toModelIndex();
@@ -235,6 +238,20 @@ void ZenoFullLink::onOutSocketPosChanged()
     m_srcPos = pNode->getSocketPos(outSockIdx);
 }
 
+QRectF ZenoFullLink::getDstBoundingRect()
+{
+    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    QString text = outSockIdx.data(ROLE_OBJID).toString();
+    QString socketName = outSockIdx.data(ROLE_PARAM_NAME).toString();
+    text = text + ": " + socketName;
+    QFontMetrics fontMetrics(QApplication::font());
+    qreal width = fontMetrics.width(text);
+    qreal dist = ZenoStyle::dpiScaled(8);
+    qreal x = m_dstPos.x() - dist - width;;
+    qreal y = m_dstPos.y() - dist - fontMetrics.height() / 2;
+    return QRectF(x, y, width + dist, fontMetrics.height() + dist);
+}
+
 QPersistentModelIndex ZenoFullLink::linkInfo() const
 {
     return m_index;
@@ -251,12 +268,13 @@ QPainterPath ZenoFullLink::shape() const
         QFontMetrics fontMetrics(QApplication::font());
         qreal width = fontMetrics.width(text);
         qreal dist = ZenoStyle::dpiScaled(8);
-        QPainterPath path(m_srcPos + QPointF(0, dist));
-        QPointF endPos(m_srcPos.x() + dist + width, m_srcPos.y() + dist);
-        path.lineTo(endPos);
-        path.moveTo(m_dstPos + QPointF(0, dist));
-        endPos = QPointF(m_dstPos.x() - width - dist, m_dstPos.y() + dist);
-        path.lineTo(endPos);
+        qreal x = m_srcPos.x();
+        qreal y = m_srcPos.y() - dist - fontMetrics.height() / 2;
+        QPainterPath path;
+        path.addRect(x, y, width + dist, fontMetrics.height() + dist);
+        x = m_dstPos.x() - dist - width;
+        y = m_dstPos.y() - dist - fontMetrics.height() / 2;
+        path.addRect(x, y, width + dist, fontMetrics.height() + dist);
         return path;
     }
     return ZenoLink::shape();
@@ -277,6 +295,59 @@ void ZenoFullLink::mousePressEvent(QGraphicsSceneMouseEvent *event)
     ZenoLink::mousePressEvent(event);
 }
 
+void ZenoFullLink::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
+{
+    if (property("skip-node").toBool())
+    {
+        setProperty("skip-node", false);
+    }
+    else
+    {
+        ZenoLink::mouseReleaseEvent(event);
+    }
+}
+void ZenoFullLink::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+{
+    if (getDstBoundingRect().contains(event->pos()))
+    {
+        const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+            if (outSockIdx.isValid() && outSockIdx.data(ROLE_VPARAM_REF).toBool())
+            {
+                ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+                ZASSERT_EXIT(pScene && !pScene->views().isEmpty());
+                if (_ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pScene->views().first()))
+                {
+                    const QModelIndex& nodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+                    ZASSERT_EXIT(nodeIdx.isValid());
+                    pView->focusOn(nodeIdx.data(ROLE_OBJID).toString(), QPointF(), false);
+                }
+                setProperty("skip-node", true);
+                return;
+            }
+    }
+    ZenoLink::mouseDoubleClickEvent(event);
+}
+
+void ZenoFullLink::hoverMoveEvent(QGraphicsSceneHoverEvent* event)
+{
+    if (!m_bHover && getDstBoundingRect().contains(event->pos()))
+    {
+        m_bHover = true;
+        update();
+    }
+    ZenoLink::hoverMoveEvent(event);
+}
+
+void ZenoFullLink::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
+{
+    if (m_bHover)
+    {
+        m_bHover = false;
+        update();
+    }
+    ZenoLink::hoverLeaveEvent(event);
+}
+
 void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
 {
     const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
@@ -288,9 +359,16 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
         QFontMetrics fontMetrics(QApplication::font());
         qreal width = fontMetrics.width(text);
         //draw line
+        qreal dist = ZenoStyle::dpiScaled(8);
+        QPainterPath path(m_srcPos + QPointF(ZenoStyle::dpiScaled(4), dist));
+        QPointF endPos(m_srcPos.x() + dist + width, m_srcPos.y() + dist);
+        path.lineTo(endPos);
+        path.moveTo(m_dstPos + QPointF(-ZenoStyle::dpiScaled(4), dist));
+        endPos = QPointF(m_dstPos.x() - width - dist, m_dstPos.y() + dist);
+        path.lineTo(endPos);
         QPen pen(isSelected() ? QColor(0xFA6400) : QColor("#4B9EF4"), ZenoStyle::dpiScaled(3));
         painter->setPen(pen);
-        painter->drawPath(shape());
+        painter->drawPath(path);
 
         //draw outSocket text
         QPen textPen(QColor("#FFFFFF"), 1);
@@ -300,6 +378,8 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
         painter->drawText(x, y, text);
 
         //draw inSocket text
+        if (m_bHover)
+            textPen.setColor(QColor("#4B9EF4"));
         x = m_dstPos.x() - width - ZenoStyle::dpiScaled(8);
         y = m_dstPos.y() + ZenoStyle::dpiScaled(8) - fontMetrics.height() / 2;
         painter->setPen(textPen);

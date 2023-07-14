@@ -88,6 +88,10 @@ public:
     QPainterPath shape() const override;
 
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
+    void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     void paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget) override;
 
     enum { Type = ZTYPE_FULLLINK };
@@ -98,10 +102,14 @@ private slots:
     void onOutSocketPosChanged();
 
 private:
+    QRectF getDstBoundingRect();
+
+private:
     QPersistentModelIndex m_index;
     QPointF m_srcPos, m_dstPos;
     QString m_inNode;
     QString m_outNode;
+    bool m_bHover;
 };
 
 #endif
