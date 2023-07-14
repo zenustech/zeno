@@ -16,6 +16,7 @@ namespace zeno {
 
 struct PyZfx : INode {
     void apply() override {
+        std::vector<int> vs{1, 2, 3, 10, 20, 30, -10, -20, -30};
         Py_Initialize();
         //
         // ref: https://www.cnblogs.com/panliu/p/4485183.html
@@ -32,7 +33,7 @@ struct PyZfx : INode {
         pModule = PyImport_Import(pName);
         Py_DECREF(pName);
 
-	fmt::print("done import\n");
+        fmt::print("done import\n");
 
         long args[2] = {33, 2};
         if (pModule != NULL) {
@@ -40,7 +41,7 @@ struct PyZfx : INode {
             /* pFunc is a new reference */
 
             if (pFunc && PyCallable_Check(pFunc)) {
-                pArgs = PyTuple_New(2);
+                pArgs = PyTuple_New(4);
                 for (int i = 0; i < 2; ++i) {
                     pValue = PyLong_FromLong(args[i]);
                     if (!pValue) {
@@ -52,6 +53,14 @@ struct PyZfx : INode {
                     /* pValue reference stolen here: */
                     PyTuple_SetItem(pArgs, i, pValue);
                 }
+                // pass a string as the 3rd param
+                pValue = PyUnicode_InternFromString("|test_string|");
+                PyTuple_SetItem(pArgs, 2, pValue);
+                // pass a ptr as the 4th param
+                pValue = PyLong_FromVoidPtr(vs.data());
+                PyTuple_SetItem(pArgs, 3, pValue);
+                // PyList, PyDict
+
                 pValue = PyObject_CallObject(pFunc, pArgs);
                 Py_DECREF(pArgs);
                 if (pValue != NULL) {
