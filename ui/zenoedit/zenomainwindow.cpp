@@ -427,6 +427,7 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
 
     if (root->type == NT_HOR || root->type == NT_VERT)
     {
+        //skip optix view when enable ZENO_OPTIX_PROC
         ZTabDockWidget* pRight = new ZTabDockWidget(this);
         Qt::Orientation ori = root->type == NT_HOR ? Qt::Horizontal : Qt::Vertical;
         splitDockWidget(pLeft, pRight, ori);
@@ -441,6 +442,10 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
             PANEL_TYPE type = ZTabDockWidget::title2Type(tab);
             if (type != PANEL_EMPTY)
             {
+            #ifdef ZENO_OPTIX_PROC
+                if (type == PANEL_OPTIX_VIEW)
+                    type = PANEL_GL_VIEW;
+            #endif
                 pLeft->onAddTab(type);
             }
         }
