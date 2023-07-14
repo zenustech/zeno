@@ -89,8 +89,7 @@ public:
 
     virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
-    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event) override;
-    void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
+    void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     void paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget) override;
     bool IsLabelLink() const;
@@ -103,8 +102,10 @@ private slots:
     void onOutSocketPosChanged();
 
 private:
-    QRectF getDstBoundingRect();
-
+    QRectF getDstBoundingRect() const;
+    QRectF getSrcBoundingRect() const;
+    QString getSocketText(const QModelIndex& index) const;
+    void focusOnNode(const QModelIndex &nodeIdx);
 private:
     QPersistentModelIndex m_index;
     QPointF m_srcPos, m_dstPos;
