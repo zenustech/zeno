@@ -45,3 +45,5 @@ cmake --build build --parallel $(nproc) \
 
 # ln -s ./build/compile_commands.json ./
 cp ./build/compile_commands.json ./
+
+rm -rf /var/tmp/OptixCache_$USER/

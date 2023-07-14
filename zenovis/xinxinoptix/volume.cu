@@ -1,16 +1,10 @@
-#include "volume.h"
-
 #include "TraceStuff.h"
 
-#include "DisneyBRDF.h"
-#include "DisneyBSDF.h"
-#include "zxxglslvec.h"
-
-
+#include "volume.h"
 #include "Lighting.h"
+#include "math_constants.h"
 // #include <cuda_fp16.h>
 // #include "nvfunctional"
-#include <math_constants.h>
 #include <nanovdb/NanoVDB.h>
 #include <nanovdb/util/Ray.h>
 #include <nanovdb/util/HDDA.h>
@@ -23,7 +17,8 @@ using DataTypeNVDB0 = nanovdb::Fp32;
 using GridTypeNVDB0 = nanovdb::NanoGrid<DataTypeNVDB0>;
 //PLACEHOLDER
 
-#define USING_VDB 1
+#define _USING_NANOVDB_  true
+#define _DELTA_TRACKING_ true
 //COMMON_CODE
 
 /* w0, w1, w2, and w3 are the four cubic B-spline basis functions. */
@@ -247,7 +242,7 @@ static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn &at
         vec3 vol_sample_albedo = vec3(0.5f);
     //GENERATED_END_MARK
 
-#if USING_VDB
+#if _USING_NANOVDB_
 
     VolumeOut output;
 

@@ -1,14 +1,21 @@
 #pragma once
 
 #include <optix.h>
-
+#include <optix_device.h>
 #include "zxxglslvec.h"
 #include "optixPathTracer.h"
 
-#define _FLT_EPL_ 1.19209290e-7F
+#include <Sampling.h>
+#include <cuda/random.h>
 
-#define _FLT_MAX_ 3.40282347e+38F
-#define _FLT_MIN_ 1.17549435e-38F
+#ifndef __CUDACC_RTC__
+#include "Host.h"
+#endif
+
+#include <climits.h>
+#define _FLT_MAX_ __FLT_MAX__
+#define _FLT_MIN_ __FLT_MIN__
+#define _FLT_EPL_ __FLT_EPSILON__
 
 #ifndef uint
 using uint = unsigned int;

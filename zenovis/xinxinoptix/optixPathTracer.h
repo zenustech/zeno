@@ -1,11 +1,10 @@
 // this part of code is modified from nvidia's optix example
 #pragma once
 
-#ifndef __CUDACC_RTC__ 
-    #include "optixVolume.h"
-#else
-    #include "volume.h"
-#endif
+#include <optix.h>
+#include <Shape.h>
+
+#include <nanovdb/NanoVDB.h>
 
 enum RayType
 {
@@ -15,26 +14,56 @@ enum RayType
 };
 
 enum VisibilityMask {
-    NothingMask = 0u,
-    DefaultMatMask = 1u,
-    VolumeMatMask = 2u,
+    NothingMask    = 0u,
+    DefaultMatMask = 1u << 0,
+    VolumeMatMask  = 1u << 1,
+    LightMatMask   = 1u << 2,
     EverythingMask = 255u
 }; 
 
-enum RayLaunchSource {
-    DefaultMatSource = 0u,
-    VolumeEdgeSource = 1u,
-    VolumeEmptySource = 1u << 1,
-    VolumeScatterSource = 1u << 2
+enum LightConfigMark {
+    LightConfigNull = 0u,
+    LightConfigVisible = 1u,
+    LightConfigDoubleside = 2u
 };
 
-struct ParallelogramLight
+struct GenericLight
 {
-    float3 corner;
-    float3 v1, v2;
-    float3 normal;
+    float3 T, B, N;
     float3 emission;
-    float  cdf;
+    
+    float CDF;
+    uint8_t config;
+    uint8_t shape;
+
+    union {
+        SphereShape sphere;
+        RectShape rect;
+    };
+
+    float area() {
+        if (0==shape)
+            return this->rect.area;
+        else if(1==shape) 
+            return this->sphere.area;
+        else 
+            return 0;
+    }
+
+    void setRectData(const float3& v0, const float3& v1, const float3& v2, const float3& normal) {
+        this->rect.v0 = v0;
+        this->rect.v1 = v1;
+        this->rect.v2 = v2;
+
+        this->rect.normal = normal;
+        this->rect.area = length( cross(v1, v2) );
+    }
+
+    void setSphereData(const float3& center, float radius) {
+        this->sphere.center = center;
+        this->sphere.radius = radius;
+        this->sphere.area = CUDART_PI_F * 4 * radius * radius;
+    }
 };
 
 
@@ -71,8 +100,11 @@ struct Params
 
     CameraInfo cam;
 
-    unsigned int num_lights;
-    ParallelogramLight     *lights;
+    uint32_t num_lights;
+    GenericLight *lights;
+    uint32_t firstRectLightIdx;
+    uint32_t firstSphereLightIdx;
+
     OptixTraversableHandle handle;
 
     int usingHdrSky;
@@ -107,7 +139,6 @@ struct Params
     float sunSoftness;
     float elapsedTime;
     bool simpleRender;
-
 
 #if defined (__cudacc__)
     const bool denoise;

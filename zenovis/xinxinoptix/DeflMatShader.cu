@@ -2,6 +2,7 @@
 #include <cuda/random.h>
 #include <sutil/vec_math.h>
 #include <cuda/helpers.h>
+
 #include "optixPathTracer.h"
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
@@ -9,9 +10,13 @@
 #include "DisneyBSDF.h"
 
 #include "IOMat.h"
+#include "Shape.h"
 #include "Lighting.h"
 
+
 #define _SPHERE_ 0
+#define _LIGHT_SOURCE_ 0
+
 #define TRI_PER_MESH 4096
 //COMMON_CODE
 
@@ -176,6 +181,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     RadiancePRD*  prd = getPRD();
     MatInput attrs{};
 
+    if constexpr(_LIGHT_SOURCE_)
+    {
+        prd->attenuation2 = vec3(0.0f);
+        prd->attenuation = vec3(0.0f);
+        optixTerminateRay();
+        return;
+    }
+
 #if (_SPHERE_)
 
     float4 q;
@@ -206,6 +219,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     unsigned short isLight = 0;
 #else
+
     int inst_idx2 = optixGetInstanceIndex();
     int inst_idx = rt_data->meshIdxs[inst_idx2];
     int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
@@ -424,6 +438,86 @@ extern "C" __global__ void __closesthit__radiance()
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     auto zenotex = rt_data->textures;
+
+    if constexpr(_LIGHT_SOURCE_)
+    {
+        auto instanceId = optixGetInstanceId();
+        auto isLightGAS = ( instanceId >= OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1 );
+
+        const auto pType = optixGetPrimitiveType();
+        //optixGetPrimitiveIndex();
+        //assert(false);
+        if (params.num_lights == 0 || !isLightGAS) {
+            prd->depth += 1;
+            prd->done = true;
+            return;
+        }
+
+        uint light_idx = 0;
+
+        if (pType == OptixPrimitiveType::OPTIX_PRIMITIVE_TYPE_SPHERE) {
+            light_idx = prim_idx + params.firstSphereLightIdx;
+        } else {
+            auto rect_idx = prim_idx / 2;
+            light_idx = rect_idx + params.firstRectLightIdx;
+        }
+
+        light_idx = min(light_idx, params.num_lights - 1);
+        auto& light = params.lights[light_idx];
+
+        float prevCDF = light_idx>0? params.lights[light_idx-1].CDF : 0.0f;
+        float lightPickPDF = (light.CDF - prevCDF) / params.lights[params.num_lights-1].CDF;
+
+        auto visible = (light.config & LightConfigVisible);
+
+        if (!visible && prd->depth == 0) {
+            auto pos = ray_orig + ray_dir * optixGetRayTmax();
+            prd->geometryNormal = light.N;
+            prd->offsetUpdateRay(pos, ray_dir); 
+            return;
+        }
+
+        prd->depth += 1;
+        prd->done = true;
+
+        float3 lightDirection = optixGetWorldRayDirection(); //light_pos - P;
+        float  lightDistance  = optixGetRayTmax();  //length(lightDirection);
+
+        LightSampleRecord lsr;
+
+        if (light.shape == 0) {
+            light.rect.eval(&lsr, lightDirection, lightDistance, prd->origin);
+        } else {
+            light.sphere.eval(&lsr, lightDirection, lightDistance, prd->origin);
+        }
+
+        if (light.config & LightConfigDoubleside) {
+            lsr.NoL = abs(lsr.NoL);
+        }
+
+        if (lsr.NoL > _FLT_EPL_) {
+
+            if (1 == prd->depth) {
+                if (light.config & LightConfigVisible) {
+                    prd->radiance = light.emission;
+                }
+                prd->attenuation = vec3(1.0f); 
+                prd->attenuation2 = vec3(1.0f);
+                return;
+            }
+
+            float scatterPDF = prd->samplePdf; //BxDF direction PDF from previous hit
+            float lightPDF = lightPickPDF * lsr.PDF;
+            float misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
+
+            prd->radiance = light.emission * misWeight;
+            // if (scatterPDF > __FLT_DENORM_MIN__) {
+            //     prd->radiance /= scatterPDF;
+            // }
+        }
+        return;
+    }
+
     MatInput attrs{};
 
 #if (_SPHERE_)
@@ -1024,8 +1118,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->attenuation *= reflectance;
     prd->depth++;
 
-    auto P_OLD = P;
-    P = rtgems::offset_ray(P,  prd->geometryNormal);
+    auto shadingP = rtgems::offset_ray(P,  prd->geometryNormal);
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
 
     if(prd->depth>=3)
@@ -1070,16 +1163,16 @@ extern "C" __global__ void __closesthit__radiance()
     shadow_prd.seed = prd->seed;
     shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
     shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
- 
-    DirectLighting<true>(prd, shadow_prd, P, ray_dir, evalBxDF, &taskAux);
 
-    P = P_OLD;
     prd->direction = normalize(wi);
+
+    DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux);
+    
     if(thin<0.5f && mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (prd->next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
-        prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) <0 )? -prd->geometryNormal : prd->geometryNormal);
+        prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
 
     prd->radiance += float3(mats.emission);

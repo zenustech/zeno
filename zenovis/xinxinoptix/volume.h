@@ -1,52 +1,16 @@
 #pragma once
-
 #include <nanovdb/NanoVDB.h>
+#include <Sampling.h>
 
-#define _DELTA_TRACKING_ true
-
-#ifdef __CUDACC_RTC__
-#else
+#ifndef __CUDACC_RTC__
+#include <Host.h>
 #endif
-
-#include <optix.h>
-
-#include <cuda/random.h>
-#include <cuda/helpers.h>
-#include <sutil/vec_math.h>
 
 namespace nanovdb {
     using Fp32 = float;
 };
 
 namespace pbrt {
-
-__device__
-inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
-    
-//    if (abs(a.x) > abs(a.y))
-//        b = float3{-a.z, 0, a.x} /
-//              sqrt(max(_FLT_EPL_, a.x * a.x + a.z * a.z));
-//    else
-//        b = float3{0, a.z, -a.y} /
-//              sqrt(max(_FLT_EPL_, a.y * a.y + a.z * a.z));
-    
-    if (fabs(a.x) > fabs(a.y))
-        b = float3{-a.z, 0, a.x};
-    else
-        b = float3{0, a.z, -a.y};
-    
-    b = normalize(b);
-    c = cross(a, b);
-}
-
-inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi) {
-    return float3{sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta};
-}
-
-inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi,
-                                 const float3 &x, const float3 &y, const float3 &z) {
-    return sinTheta * cosf(phi) * x + sinTheta * sinf(phi) * y + cosTheta * z;
-}
 
 struct HenyeyGreenstein {
     float g;

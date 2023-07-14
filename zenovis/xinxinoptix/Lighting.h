@@ -1,23 +1,24 @@
 #pragma once
-
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
 
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 
+#include "Shape.h"
+
 #include <cuda/random.h>
 #include <cuda/helpers.h>
 #include <sutil/vec_math.h>
 
 static __inline__ __device__
-int GetLightIndex(float p, ParallelogramLight* lightP, int n)
+int GetLightIndex(float p, GenericLight* lightP, int n)
 {
     int s = 0, e = n-1;
     while( s < e )
     {
         int j = (s+e)/2;
-        float pc = lightP[j].cdf/lightP[n-1].cdf;
+        float pc = lightP[j].CDF/lightP[n-1].CDF;
         if(pc<p)
         {
             s = j+1;
@@ -76,78 +77,60 @@ namespace detail {
 
 template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
 static __inline__ __device__
-void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& P, const float3& ray_dir, TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
+void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
 
     const float3 wo = normalize(-ray_dir); 
-
     float3 light_attenuation = vec3(1.0f);
-    float pl = prd->rndf();
-    int lidx = GetLightIndex(pl, params.lights, params.num_lights);
-    float sum = 0.0f;
-    for(int lidx=0;lidx<params.num_lights;lidx++)
-    {
-        ParallelogramLight light = params.lights[lidx];
-        float3 light_pos = light.corner + light.v1 * 0.5 + light.v2 * 0.5;
 
-        // Calculate properties of light sample (for area based pdf)
-        float Ldist = length(light_pos - P);
-        float3 L = normalize(light_pos - P);
-        float nDl = 1.0f;//clamp(dot(N, L), 0.0f, 1.0f);
-        float LnDl = clamp(-dot(light.normal, L), 0.000001f, 1.0f);
-        float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-        sum += length(light.emission)  * nDl * LnDl * A / (M_PIf * Ldist * Ldist );
-    }
-
-    const float ProbSky = 0.5f;
-    float directionPDF = 1.0f;
+    const float ProbSky = params.num_lights>0? 0.5f : 1.0f;
+    float scatterPDF = 1.0f;
 
     if(prd->rndf() > ProbSky) {
-        bool computed = false;
-        float ppl = 0;
-        for (int lidx = 0; lidx < params.num_lights && computed == false; lidx++) {
-            ParallelogramLight light = params.lights[lidx];
-            float2 z = {prd->rndf(), prd->rndf()};
-            const float z1 = z.x;
-            const float z2 = z.y;
-            float3 light_tpos = light.corner + light.v1 * 0.5f + light.v2 * 0.5f;
-            float3 light_pos = light.corner + light.v1 * z1 + light.v2 * z2;
 
-            // Calculate properties of light sample (for area based pdf)
-            float tLdist = length(light_tpos - P);
-            float3 tL = normalize(light_tpos - P);
-            float tnDl = 1.0f; //clamp(dot(N, tL), 0.0f, 1.0f);
-            float tLnDl = clamp(-dot(light.normal, tL), 0.000001f, 1.0f);
-            float tA = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-            ppl += length(light.emission) * tnDl * tLnDl * tA / (M_PIf * tLdist * tLdist) / sum;
-            if (ppl > pl) {
-                float Ldist = length(light_pos - P) + 1e-6f;
-                float3 L = normalize(light_pos - P);
-                float nDl = 1.0f; //clamp(dot(N, L), 0.0f, 1.0f);
-                float LnDl = clamp(-dot(light.normal, L), 0.0f, 1.0f);
-                float A = length(cross(params.lights[lidx].v1, params.lights[lidx].v2));
-                float weight = 0.0f;
-                if (nDl > 0.0f && LnDl > 0.0f) {
+        float lightPickPDF = 1.0f - ProbSky;
 
-                    traceOcclusion(params.handle, P, L,
-                                   1e-5f,         // tmin
-                                   Ldist - 1e-5f, // tmax,
-                                   &shadow_prd);
+        uint lighIdx = GetLightIndex(prd->rndf(), params.lights, params.num_lights);
+        auto& light = params.lights[lighIdx];
 
-                    light_attenuation = shadow_prd.shadowAttanuation;
-                    if (fmaxf(light_attenuation) > 0.0f) {
+        float prevCDF = lighIdx>0? params.lights[lighIdx-1].CDF : 0.0f;
+        lightPickPDF *= (light.CDF - prevCDF) / params.lights[params.num_lights-1].CDF;
 
-                        weight = sum * nDl / tnDl * LnDl / tLnDl * (tLdist * tLdist) / (Ldist  * Ldist) /
-                                 (length(light.emission)+1e-6f) ;
-                    }
-                }
+        LightSampleRecord lsr{};
+        float2 uu = {prd->rndf(), prd->rndf()};
 
-                auto inverseProb = 1.0f/(1.0f-ProbSky);
-                auto bxdf_value = evalBxDF(L, wo, directionPDF);
-
-                prd->radiance = light_attenuation * weight * inverseProb * light.emission * bxdf_value;
-                computed = true;
-            }
+        if (light.shape == 0) {
+            light.rect.sample(&lsr, uu, shadingP);
+        } else {
+            light.sphere.sample(&lsr, uu, shadingP);
         }
+
+        lsr.PDF *= lightPickPDF;
+
+        lsr.p = rtgems::offset_ray(lsr.p, lsr.n);
+
+            if (light.config & LightConfigDoubleside) {
+                lsr.NoL = abs(lsr.NoL);
+            }
+
+            if (lsr.NoL > _FLT_EPL_ && lsr.PDF > __FLT_DENORM_MIN__) {
+
+                traceOcclusion(params.handle, shadingP, lsr.dir,
+                                1e-5,         // tmin
+                                lsr.dist - 2e-5f, // tmax,
+                                &shadow_prd);
+                light_attenuation = shadow_prd.shadowAttanuation;
+
+                if (length(light_attenuation) > 0.0f) {
+                    
+                    auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
+
+                    auto misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
+
+                    prd->radiance = light_attenuation * light.emission * bxdf_value;
+                    prd->radiance *= misWeight / lsr.PDF;
+                }
+            }
+
     } else {
 
         float env_weight_sum = 1e-8f;
@@ -170,7 +153,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& P, 
                                         40, // be careful
                                         .45, 15., 1.030725f * 0.3f, params.elapsedTime, tmpPdf));
 
-            auto LP = P;
+            auto LP = shadingP;
             auto Ldir = sun_dir;
 
             //LP = rtgems::offset_ray(LP, sun_dir);
@@ -182,14 +165,14 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& P, 
             light_attenuation = shadow_prd.shadowAttanuation;
 
             auto inverseProb = 1.0f/ProbSky;
-            auto bxdf_value = evalBxDF(sun_dir, wo, directionPDF, illum);
+            auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF, illum);
 
             vec3 tmp(1.0f);
 
             if constexpr(_MIS_) {
-                float misWeight = BRDFBasics::PowerHeuristic(envpdf, directionPDF);
+                float misWeight = BRDFBasics::PowerHeuristic(envpdf, scatterPDF);
                 misWeight = misWeight>0.0f?misWeight:1.0f;
-                misWeight = directionPDF>1e-5f?misWeight:0.0f;
+                misWeight = scatterPDF>1e-5f?misWeight:0.0f;
                 misWeight = envpdf>1e-5?misWeight:0.0f;
 
                 tmp = vec3(misWeight * 1.0f / (float)NSamples * light_attenuation  / envpdf * inverseProb);

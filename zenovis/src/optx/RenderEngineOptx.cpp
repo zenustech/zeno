@@ -526,6 +526,11 @@ struct GraphicsManager {
                     clr = zeno::vec3f(30000.0f, 30000.0f, 30000.0f);
                 }
 
+                auto shape = prim_in->userData().get2<int>("shape", 0);
+
+                auto visible = prim_in->userData().get2<int>("visible", 0);
+                auto doubleside = prim_in->userData().get2<int>("doubleside", 0); 
+
                 std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
                 std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
                 std::cout << "light: p"<<p2[0]<<" "<<p2[1]<<" "<<p2[2]<<"\n";
@@ -534,8 +539,8 @@ struct GraphicsManager {
                 std::cout << "light: n"<<nor[0]<<" "<<nor[1]<<" "<<nor[2]<<"\n";
                 std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
-                xinxinoptix::load_light(key, p1.data(), e1.data(), e2.data(),
-                                        nor.data(), clr.data());
+                xinxinoptix::load_light(key, p2.data(), e1.data(), e2.data(),
+                                        nor.data(), clr.data(), visible, doubleside, shape);
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;
@@ -895,8 +900,15 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             ensure_shadtmpl(_volume_shader_template);
 
             _mesh_shader_list.push_back({
-                ShaderMaker::Mesh,
-                "Default",
+                ShaderMaker::Mesh, 
+                true, "Default",
+                _default_shader_template.shadtmpl,
+                std::vector<std::string>()
+            });
+
+            _sphere_shader_list.push_back({
+                ShaderMaker::Sphere,
+                true, "Default",
                 _default_shader_template.shadtmpl,
                 std::vector<std::string>()
             });

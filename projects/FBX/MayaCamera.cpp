@@ -247,13 +247,14 @@ struct LightNode : INode {
         auto quaternion = get_input2<zeno::vec4f>("quaternion");
         auto intensity = get_input2<float>("intensity");
         auto color = get_input2<zeno::vec3f>("color");
-        std::string shape = "Plane";
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto &verts = prim->verts;
         auto &tris = prim->tris;
 
-        if(shape == "Plane"){
+        std::string shape = get_input2<std::string>("shape");
+
+        //if(shape == "Plane"){
             auto start_point = zeno::vec3f(0.5, 0, 0.5);
             float rm = 1.0f;
             float cm = 1.0f;
@@ -288,8 +289,7 @@ struct LightNode : INode {
             // Plane Indices
             tris.emplace_back(zeno::vec3i(0, 3, 1));
             tris.emplace_back(zeno::vec3i(3, 0, 2));
-
-        }
+        //}
 
         auto &clr = prim->verts.add_attr<zeno::vec3f>("clr");
         auto c = color * intensity;
@@ -306,6 +306,7 @@ struct LightNode : INode {
         }
 
         prim->userData().set2("isRealTimeObject", std::move(isL));
+
         prim->userData().set2("isL", std::move(isL));
         prim->userData().set2("ivD", std::move(inverdir));
         prim->userData().set2("pos", std::move(position));
@@ -316,6 +317,15 @@ struct LightNode : INode {
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
 
+        auto visible = get_input2<int>("visible");
+        auto doubleside = get_input2<int>("doubleside");
+
+        auto shapeID = (shape == "Sphere")? 1:0;
+
+        prim->userData().set2("shape", std::move(shapeID));
+        prim->userData().set2("visible", std::move(visible));
+        prim->userData().set2("doubleside", std::move(doubleside));
+        
         set_output("prim", std::move(prim));
     }
 };
@@ -329,7 +339,10 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "color", "1, 1, 1"},
         {"float", "intensity", "1"},
         {"bool", "islight", "1"},
-        {"bool", "invertdir", "1"}
+        {"bool", "invertdir", "1"},
+        {"bool", "visible", "0"},
+        {"bool", "doubleside", "0"},
+        {"enum Plane Sphere", "shape", "Plane"},    
     },
     {
         "prim"

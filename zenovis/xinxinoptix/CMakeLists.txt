@@ -5,18 +5,20 @@ target_sources(zenovis PRIVATE
   optixPathTracer.cpp
   optixPathTracer.h
   OptiXStuff.h
+  Host.h
 
   volume/optixVolume.cpp
   volume/optixVolume.h
   optixSphere.h
+  Shape.h
 
   ies/ies_loader.cpp
   ies/ies_loader.h
 
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
-  SDK/sutil/Camera.h            SDK/sutil/Scene.cpp
-  SDK/sutil/CUDAOutputBuffer.h  SDK/sutil/Scene.h
+  SDK/sutil/Camera.h            #SDK/sutil/Scene.cpp
+  SDK/sutil/CUDAOutputBuffer.h  #SDK/sutil/Scene.h
   SDK/sutil/Exception.h         SDK/sutil/sutilapi.h
   SDK/sutil/GLDisplay.cpp       SDK/sutil/sutil.cpp
   SDK/sutil/GLDisplay.h         SDK/sutil/sutil.h
@@ -75,6 +77,7 @@ set(FILE_LIST
     ${CUDA_PATH}/include/@cuda_fp16.h
     ${CUDA_PATH}/include/@cuda_fp16.hpp  
     # ${CUDA_PATH}/include/@nvfunctional 
+
     ${CUDA_PATH}/include/@math_constants.h
     ${CUDA_PATH}/include/@vector_types.h
     ${CUDA_PATH}/include/@vector_functions.h
@@ -92,11 +95,14 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@Lighting.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@climits.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Shape.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h
-
+    
     ${NVDB_PATH}/@nanovdb/NanoVDB.h
     ${NVDB_PATH}/@nanovdb/util/Ray.h
     ${NVDB_PATH}/@nanovdb/util/HDDA.h
