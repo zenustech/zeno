@@ -1373,9 +1373,7 @@ void ZenoNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
                     connect(pCopyRef, &QAction::triggered, this, [=]()
                     {
                         QString str = socketItem->paramIndex().data(ROLE_OBJPATH).toString();
-                    QMimeData* pMimeData = new QMimeData;
-                    pMimeData->setText(str);
-                    QApplication::clipboard()->setMimeData(pMimeData);
+                        scene()->setProperty("link_label_info", str);
                     });
                 }
                 else
@@ -1744,9 +1742,10 @@ void ZenoNode::onPasteSocketRefSlot(QModelIndex toIndex)
     const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
     IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pGraphsModel);
-    if (pMimeData->hasText())
+    const QString& str = scene()->property("link_label_info").toString();
+    if (!str.isEmpty())
     {
-        const QString& str = pMimeData->text();
+        scene()->setProperty("link_label_info", "");
         pGraphsModel->beginTransaction(tr("add Link"));
         zeno::scope_exit sp([=]() { pGraphsModel->endTransaction(); });
 
