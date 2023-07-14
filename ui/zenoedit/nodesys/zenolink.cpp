@@ -297,6 +297,24 @@ void ZenoFullLink::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void ZenoFullLink::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
+    if (IsLabelLink() && getDstBoundingRect().contains(event->pos()))
+    {
+        const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+        if (outSockIdx.isValid() && outSockIdx.data(ROLE_VPARAM_REF).toBool())
+        {
+            ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
+            ZASSERT_EXIT(pScene && !pScene->views().isEmpty());
+            if (_ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pScene->views().first()))
+            {
+                const QModelIndex& nodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+                ZASSERT_EXIT(nodeIdx.isValid());
+                pView->focusOn(nodeIdx.data(ROLE_OBJID).toString(), QPointF(), false);
+            }
+            setProperty("skip-node", true);
+            return;
+        }
+    }
+
     if (property("skip-node").toBool())
     {
         setProperty("skip-node", false);
@@ -308,23 +326,6 @@ void ZenoFullLink::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 }
 void ZenoFullLink::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
-    if (getDstBoundingRect().contains(event->pos()))
-    {
-        const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-            if (outSockIdx.isValid() && outSockIdx.data(ROLE_VPARAM_REF).toBool())
-            {
-                ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(scene());
-                ZASSERT_EXIT(pScene && !pScene->views().isEmpty());
-                if (_ZenoSubGraphView* pView = qobject_cast<_ZenoSubGraphView*>(pScene->views().first()))
-                {
-                    const QModelIndex& nodeIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-                    ZASSERT_EXIT(nodeIdx.isValid());
-                    pView->focusOn(nodeIdx.data(ROLE_OBJID).toString(), QPointF(), false);
-                }
-                setProperty("skip-node", true);
-                return;
-            }
-    }
     ZenoLink::mouseDoubleClickEvent(event);
 }
 
@@ -346,6 +347,12 @@ void ZenoFullLink::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
         update();
     }
     ZenoLink::hoverLeaveEvent(event);
+}
+
+bool ZenoFullLink::IsLabelLink() const
+{
+    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
+    return outSockIdx.data(ROLE_VPARAM_REF).toBool();
 }
 
 void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
@@ -378,8 +385,13 @@ void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styl
         painter->drawText(x, y, text);
 
         //draw inSocket text
-        if (m_bHover)
-            textPen.setColor(QColor("#4B9EF4"));
+        if (m_bHover) {
+            textPen.setColor(QColor(0xFA6400));
+            setCursor(QCursor(Qt::PointingHandCursor));
+        } else {
+            
+        }
+
         x = m_dstPos.x() - width - ZenoStyle::dpiScaled(8);
         y = m_dstPos.y() + ZenoStyle::dpiScaled(8) - fontMetrics.height() / 2;
         painter->setPen(textPen);

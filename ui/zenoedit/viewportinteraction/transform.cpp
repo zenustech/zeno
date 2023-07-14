@@ -656,6 +656,7 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 }
 
 void FakeTransformer::doTransform() {
+    /*
     // qDebug() << "transformer's objects count " << m_objects.size();
     glm::vec3 new_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
@@ -723,6 +724,7 @@ void FakeTransformer::doTransform() {
     new_objects_center /= m_objects.size();
     m_objects_center = new_objects_center;
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
+    */
 }
 
 }

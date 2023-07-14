@@ -93,6 +93,7 @@ public:
     void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     void paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget) override;
+    bool IsLabelLink() const;
 
     enum { Type = ZTYPE_FULLLINK };
     int type() const override;
