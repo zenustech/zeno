@@ -548,10 +548,14 @@ void ZenoSubGraphScene::reload(const QModelIndex& subGpIdx)
     }
 }
 
-void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem)
+void ZenoSubGraphScene::onSocketClicked(ZenoSocketItem* pSocketItem, Qt::MouseButton button)
 {
     if (m_tempLink)
         return;
+
+    if (button == Qt::RightButton) {
+        return;
+    }
 
     ZASSERT_EXIT(pSocketItem);
 
