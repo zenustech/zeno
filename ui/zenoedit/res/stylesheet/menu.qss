@@ -32,7 +32,7 @@ QMenu::indicator {
 
 QMenu::separator {
     height: 1px;
-    background: #2D3239;
+    background: #3C424E;
     margin-top: 4px;
     margin-bottom: 4px;
 }
