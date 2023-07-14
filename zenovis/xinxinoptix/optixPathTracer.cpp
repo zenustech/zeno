@@ -1747,10 +1747,9 @@ void optixinit( int argc, char* argv[] )
     else {
         parent_path = cur_path;
     }
-    std::string path = parent_path + "/hdr/studio_small_08_1k.hdr";
-    OptixUtil::sky_tex = path;
-    OptixUtil::addTexture(path);
-    xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 1);
+    OptixUtil::sky_tex = parent_path + "/hdr/studio_small_08_1k.hdr";
+    OptixUtil::addTexture(OptixUtil::sky_tex.value());
+    xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
 
 
