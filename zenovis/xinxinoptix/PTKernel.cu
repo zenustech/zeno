@@ -81,7 +81,10 @@ extern "C" __global__ void __raygen__rg()
       const int    subframe_index = params.subframe_index;
       const CameraInfo cam = params.cam;
 
-      unsigned int seed = tea<4>( idx.y*w + idx.x, subframe_index );
+      int seedy = idx.y/4, seedx = idx.x/8;
+      int sid = (idx.y%4) * 8 + idx.x%8;
+      unsigned int seed = tea<4>( idx.y * w + idx.x, subframe_index);
+      unsigned int eventseed = tea<4>( seedy * w/8 + seedx, subframe_index);
       float focalPlaneDistance = cam.focalPlaneDistance>0.01f? cam.focalPlaneDistance : 0.01f;
       float aperture = clamp(cam.aperture,0.0f,100.0f);
       aperture/=10;
@@ -95,24 +98,26 @@ extern "C" __global__ void __raygen__rg()
 
       float3 tmp_albedo{};
       float3 tmp_normal{};
-
+      unsigned int sobolseed = subframe_index;
       do
       {
           // The center of each pixel is at fraction (0.5,0.5)
-          float2 subpixel_jitter = {
-              rnd(seed),
-              rnd(seed)
-          };
+          float2 subpixel_jitter = sobolRnd(sobolseed);
+//          {
+//              rnd(seed),
+//              rnd(seed)
+//          };
 
           float2 d = 2.0f * make_float2(
                   ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                   ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                   ) - 1.0f;
           //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
-          float2 r01 = {
-              rnd(seed),
-              rnd(seed)
-          };
+          float2 r01 = sobolRnd(sobolseed);
+//          {
+//              rnd(seed),
+//              rnd(seed)
+//          };
 
           float r0 = r01.x * 2.0f * M_PIf;
           float r1 = r01.y * aperture * aperture;
@@ -137,6 +142,7 @@ extern "C" __global__ void __raygen__rg()
           prd.countEmitted = true;
           prd.done         = false;
           prd.seed         = seed;
+          prd.eventseed    = eventseed;
           prd.opacity      = 0;
           prd.flags        = 0;
           prd.next_ray_is_going_inside    = false;

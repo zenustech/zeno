@@ -86,6 +86,7 @@ static void kill_particles_inside(
         openvdb::Index original_attribute_begin = 0;
         if (offset != 0) {
           original_attribute_begin = leaf.getValue(offset - 1);
+        }
         const openvdb::Index original_attribute_end = leaf.getValue(offset);
         const auto voxel_gcoord = leaf.offsetToGlobalCoord(offset);
 
@@ -105,7 +106,7 @@ static void kill_particles_inside(
                 current_particle_count++;
               }
             }
-          }
+          
           new_attribute_offsets.push_back(current_particle_count);
         }
           // current_particle_count += original_attribute_end -

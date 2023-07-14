@@ -120,14 +120,14 @@ static __device__ __inline__
 float2 sobolRnd(unsigned int & seed)
 {
 
-    // uint2 ip = Sobol(seed);
-    // ip.x = OwenScramble(ip.x, 0xe7843fbfu);
-    // ip.y = OwenScramble(ip.y, 0x8d8fb1e0u);
-    // seed++;
-    // seed = seed&0xffffffffu;
-    // return make_float2(float(ip.x)/float(0xffffffffu), float(ip.y)/float(0xffffffffu));
+     uint2 ip = Sobol(seed);
+     ip.x = OwenScramble(ip.x, 0xe7843fbfu);
+     ip.y = OwenScramble(ip.y, 0x8d8fb1e0u);
+     seed++;
+     seed = seed&0xffffffffu;
+     return make_float2(float(ip.x)/float(0xffffffffu), float(ip.y)/float(0xffffffffu));
 
-    return make_float2(rnd(seed), rnd(seed));
+    //return make_float2(rnd(seed), rnd(seed));
 }
 
 static __device__ __inline__
