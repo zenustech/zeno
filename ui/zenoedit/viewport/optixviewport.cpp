@@ -210,14 +210,14 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
         //    emit mainWin->visObjectsUpdated(this, frameid);
     });
 
-#ifdef ZENO_OPTIX_PROC
+    //no need to notify timeline to update.
+    /*
     connect(m_zenovis, &Zenovis::frameUpdated, this, [=](int frameid) {
         auto mainWin = zenoApp->getMainWindow();
-        //update timeline
         if (mainWin)
             emit mainWin->visFrameUpdated(false, frameid);
-    });
-#endif
+    }, Qt::BlockingQueuedConnection);
+    */
 
     //fake GL
     m_zenovis->initializeGL();
@@ -232,11 +232,9 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     auto scene = m_zenovis->getSession()->get_scene();
 
     m_worker = new OptixWorker(m_zenovis);
-#ifndef ZENO_OPTIX_PROC
     m_worker->moveToThread(&m_thdOptix);
     connect(&m_thdOptix, &QThread::finished, m_worker, &QObject::deleteLater);
     connect(&m_thdOptix, &QThread::started, m_worker, &OptixWorker::work);
-#endif
     connect(m_worker, &OptixWorker::renderIterate, this, [=](QImage img) {
         m_renderImage = img;
         update();
@@ -244,12 +242,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::cameraAboutToRefresh, m_worker, &OptixWorker::needUpdateCamera);
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
-
-#ifndef ZENO_OPTIX_PROC
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
-#else
-    connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo);
-#endif
     connect(this, &ZOptixViewport::sig_setSafeFrames, m_worker, &OptixWorker::onSetSafeFrames);
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
@@ -260,25 +253,13 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
 
     setRenderSeparately(false, false);
-#ifndef ZENO_OPTIX_PROC
     m_thdOptix.start();
-#else
-    m_pauseTimer = new QTimer(this);
-    m_pauseTimer->stop();
-    connect(m_pauseTimer, &QTimer::timeout, this, [=]() {
-        m_worker->work();
-    });
-
-    m_worker->work();
-#endif
 }
 
 ZOptixViewport::~ZOptixViewport()
 {
-#ifndef ZENO_OPTIX_PROC
     m_thdOptix.quit();
     m_thdOptix.wait();
-#endif
 }
 
 void ZOptixViewport::setSimpleRenderOption()
@@ -314,28 +295,8 @@ void ZOptixViewport::updateCamera()
 void ZOptixViewport::killThread()
 {
     stopRender();
-#ifndef ZENO_OPTIX_PROC
     m_thdOptix.quit();
     m_thdOptix.wait();
-#endif
-}
-
-void ZOptixViewport::onMouseHoverMoved()
-{
-#ifdef ZENO_OPTIX_PROC
-    if (!m_bMovingCamera)
-    {
-        pauseWorkerAndResume();
-    }
-#endif
-}
-
-void ZOptixViewport::pauseWorkerAndResume()
-{
-#ifdef ZENO_OPTIX_PROC
-    m_worker->stop();
-    m_pauseTimer->start(m_resumeTime);
-#endif
 }
 
 void ZOptixViewport::stopRender()
@@ -412,7 +373,6 @@ void ZOptixViewport::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::MidButton) {
         m_bMovingCamera = true;
         setSimpleRenderOption();
-        pauseWorkerAndResume();
     }
     _base::mousePressEvent(event);
     m_camera->fakeMousePressEvent(event);
@@ -423,9 +383,6 @@ void ZOptixViewport::mouseReleaseEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::MidButton) {
         m_bMovingCamera = false;
-#ifdef ZENO_OPTIX_PROC
-        m_worker->work();
-#endif
     }
     _base::mouseReleaseEvent(event);
     m_camera->fakeMouseReleaseEvent(event);
@@ -436,7 +393,6 @@ void ZOptixViewport::mouseMoveEvent(QMouseEvent* event)
 {
     if (event->button() == Qt::MidButton) {
         m_bMovingCamera = true;
-        pauseWorkerAndResume();
     }
     setSimpleRenderOption();
 
@@ -455,7 +411,6 @@ void ZOptixViewport::mouseDoubleClickEvent(QMouseEvent* event)
 void ZOptixViewport::wheelEvent(QWheelEvent* event)
 {
     m_bMovingCamera = true;
-    pauseWorkerAndResume();
     //m_wheelEventDally->start(100);
     setSimpleRenderOption();
 
