@@ -115,7 +115,16 @@ struct QueryNearestPoints : INode {
         });
         //
         timer.tick();
+#if 1
         merge_sort_pair(pol, std::begin(keys), std::begin(indices), vertices.size(), std::less<float>{});
+#else
+        std::vector<float> sortedKeys(vertices.size());
+        std::vector<int> sortedIndices(vertices.size());
+        radix_sort_pair(pol, std::begin(keys), std::begin(indices), std::begin(sortedKeys), std::begin(sortedIndices),
+                        vertices.size());
+        keys = std::move(sortedKeys);
+        indices = std::move(sortedIndices);
+#endif
         timer.tock(fmt::format("sort {} points", vertices.size()));
 
         {
@@ -213,6 +222,7 @@ struct QueryNearestPoints : INode {
             auto x = zeno::vec_to_other<zs::vec<float, 3>>(vertices[i]);
             bv = Box{x, x};
         });
+        // bvh.buildRefit(pol, bvs);
         bvh.build(pol, bvs);
         timer.tock("build bvh");
 
