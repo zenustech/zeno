@@ -29,6 +29,7 @@ set(ZENO_EXTENSIONS
     CUDA
     CuEulerian
     CuLagrange
+    PyZpc
     Audio
     ImgCV
     GUI
