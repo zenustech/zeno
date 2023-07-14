@@ -14,7 +14,8 @@
 
 namespace zeno {
 
-struct AddGenericConstraints : zeno::INode {
+// we only need to record the topo here
+struct MakeGenericConstraintTopology : zeno::INode {
     using namespace zs;
     virtual void apply() override {
         using vec2i = zs::vec<int,2>;
@@ -23,60 +24,34 @@ struct AddGenericConstraints : zeno::INode {
 
         constexpr auto space = execspace_e::cuda;
 
-        auto zsparticles = RETRIEVE_OBJECT_PTRS(ZenoParticles, "zsparticles");
-        auto targets = get_input<ZenoParticles>("target");
-        auto constraints = RETRIEVE_OBJECT_PTRS(ZenoParticles, "constraints");
+        auto source = get_input<ZenoParticles>("source");
+        auto constraint = std::make_shared<ZenoParticles>();
 
-        set_output("zsparticles",zsparticles);
-        set_output("constraints",constraints);
+        auto type = get_param<std::string>("type");
+        auto groupID = get_param<std::string>("groupID");
+
+        // set_output("target",target);
+        set_output("source",source);
+        set_output("constraint",constraint);
     };
 };
 
-ZENDEFNODE(AddGenericConstraints, {{{"zsparticles"},{"constraints"},{"target"}},
-							{{"zsparticles"},{"constraints"}},
-							{},
-							{"PBD"}});
-
-struct UpdateConstraintTarget : zeno::INode {
-    using namespace zs;
-    virtual void apply() override {
-        auto constraints = get_input<ZenoParticles>("constraints");
-        auto targets = get_input<ZenoParticles>("target");
-
-        set_output("constraints",constraints);
-    };
-};
-
-ZENDEFNODE(UpdateConstraintTarget, {{{"constraints"},{"target"}},
+ZENDEFNODE(MakeGenericConstraintTopology, {{{"source"}},
 							{{"constraints"}},
-							{},
+							{
+                                {"enum points edges tris tets segment_angle dihedral_angle","topo_type","points"},
+                                {"string","groupID",""},
+                            },
 							{"PBD"}});
-
-struct ZSMerge : zeno::INode {
-    using namespace zs;
-    virtual void apply() override {
-        constexpr auto space = execspace_e::cuda;
-        auto zsparticles0 = RETRIEVE_OBJECT_PTRS(ZenoParticles, "zsparticles0");
-        auto zsparticles1 = RETRIEVE_OBJECT_PTRS(ZenoParticles, "zsparticles1");
-
-        set_output("zsparticles",zsparticles0);
-    };
-};
-
-ZENDEFNODE(ZSMerge, {{{"zsparticles0"},{"zsparticles1"}},
-							{{"zsparticles"}},
-							{},
-							{"PBD"}});
-
 
 struct XPBDSolve : zeno::INode {
     using namespace zs;
     virtual void apply() override {
         constexpr auto space = execspace_e::cuda;
-        auto zsparticles = RETRIEVE_OBJECT_PTRS(ZenoParticles, "zsparticles");
-        auto constraints = RETRIEVE_OBJECT_PTRS(ZenoParticles, "constraints");        
+        auto zsparticles = get_input("zsparticles");
+        auto constraints = get_input("constraints");        
 
-        set_output("constraints",zsconstraints);
+        set_output("constraints",constraints);
         set_output("zsparticles",zsparticles);
     };
 };
