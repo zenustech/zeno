@@ -1740,7 +1740,7 @@ namespace DisneyBSDF{
         prd->fromDiff = false;
         if(r3<p1) // diffuse + sss
         {
-            float2 r = sobolRnd(seed);
+            float2 r = sobolRnd(eventseed);
             float r1 = r.x;
             float r2 = r.y;
           auto first_hit_type = prd->first_hit_type;
@@ -1825,7 +1825,7 @@ namespace DisneyBSDF{
         }
         else if(r3<p3)//specular
         {
-            float2 r = sobolRnd(seed);
+            float2 r = sobolRnd(eventseed);
             float r1 = r.x;
             float r2 = r.y;
             auto first_hit_type = prd->first_hit_type;
@@ -1850,7 +1850,7 @@ namespace DisneyBSDF{
             }
         }else if(r3<p4)//glass
         {
-            float2 r = sobolRnd(seed);
+            float2 r = sobolRnd(eventseed);
             float r1 = r.x;
             float r2 = r.y;
 
@@ -1893,7 +1893,7 @@ namespace DisneyBSDF{
           prd->first_hit_type = prd->depth==0? (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT):first_hit_type;
         }else if(r3<p5)//cc
         {
-            float2 r = sobolRnd(seed);
+            float2 r = sobolRnd(eventseed);
             float r1 = r.x;
             float r2 = r.y;
             auto first_hit_type = prd->first_hit_type;
