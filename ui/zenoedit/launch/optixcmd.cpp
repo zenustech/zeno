@@ -50,6 +50,7 @@ int optixcmd(const QCoreApplication& app, int port)
         {"needDenoise", "needDenoise", "needDenoise"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
+        {"cacheautorm", "cacheautoremove", "remove cache after render"},
         });
     cmdParser.process(app);
 
@@ -71,11 +72,17 @@ int optixcmd(const QCoreApplication& app, int port)
         zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
     }
     QString cachePath;
+    bool istemp = false;
+    bool cacheautorm = true;
     if (cmdParser.isSet("cachePath")) {
         cachePath = cmdParser.value("cachePath");
         cachePath.replace('\\', '/');
         if (!QDir(cachePath).exists()) {
             QDir().mkdir(cachePath);
+        }
+        if (cmdParser.isSet("cacheautorm"))
+        {
+            cacheautorm = cmdParser.value("cacheautorm").toInt();
         }
     }
     if (cmdParser.isSet("cacheNum")) {
@@ -119,6 +126,9 @@ int optixcmd(const QCoreApplication& app, int port)
 
     globalComm->frameCache(cachePath.toStdString(), 1);
     globalComm->initFrameRange(beginF, endF);
+
+    globalComm->setTempDirEnable(istemp);
+    globalComm->setCacheAutoRmEnable(cacheautorm);
 
     OptixWorker worker;
     for (int frame = beginF; frame <= endF;)
