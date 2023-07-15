@@ -43,7 +43,7 @@ private:
     bool m_mmb_pressed;
     float m_theta;
     float m_phi;
-    QPointF m_lastPos;
+    QPointF m_lastMidButtonPos;
     QPoint m_boundRectStartPos;
     QVector3D  m_center;
     bool m_ortho_mode;
