@@ -81,6 +81,11 @@ void ZOptixProcViewport::cameraLookTo(int dir)
     m_camera->lookTo(dir);
 }
 
+void ZOptixProcViewport::updateViewport()
+{
+    m_worker->updateFrame();
+}
+
 void ZOptixProcViewport::updateCameraProp(float aperture, float disPlane)
 {
     m_camera->setAperture(aperture);

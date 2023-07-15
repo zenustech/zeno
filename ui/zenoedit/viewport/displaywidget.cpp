@@ -326,7 +326,11 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     }
     else
     {
+#ifdef ZENO_OPTIX_PROC
+        m_optixView->updateViewport();
+#else
         m_optixView->update();
+#endif
     }
 }
 
