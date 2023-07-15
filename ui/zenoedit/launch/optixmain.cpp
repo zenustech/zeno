@@ -46,6 +46,6 @@ int optix_main(const QCoreApplication& app,
 
     ZenoMainWindow tempWindow(nullptr, 0, PANEL_OPTIX_VIEW);
     tempWindow.showMaximized();
-    tempWindow.optixRunClient(port, cachedir, cachenum, sFrame, eFrame, finishedFrames, sessionId);
+    tempWindow.optixClientRun(port, cachedir, cachenum, sFrame, eFrame, finishedFrames, sessionId);
     return app.exec();
 }

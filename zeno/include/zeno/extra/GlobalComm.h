@@ -50,6 +50,7 @@ struct GlobalComm {
     ZENO_API bool tempDirEnabled();
     ZENO_API void setCacheAutoRmEnable(bool enable);
     ZENO_API bool cacheAutoRmEnabled();
+    ZENO_API std::string cachePath();
 };
 
 }

@@ -20,6 +20,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include "common.h"
 #include <zenomodel/include/uihelper.h>
+#include "util/apphelper.h"
 
 
 struct _Header { // sync with viewdecode.cpp
@@ -140,7 +141,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 
     //finally we need to send the cache path to the seperate optix process.
-    sendCacheRenderInfoToOptix(finalPath, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly);
+    sendCacheRenderInfoToOptix(finalPath, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly, param.optixProcRunBeforeRecord);
 }
 
 void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
@@ -163,17 +164,43 @@ void ZTcpServer::onOptixNewConn()
 {
     ZASSERT_EXIT(m_optixServer);
     QLocalSocket* socket = m_optixServer->nextPendingConnection();
+    connect(socket, &QLocalSocket::readyRead, this, [=]() {
+        while (socket->canReadLine()) {
+            QByteArray content = socket->readLine();
+            rapidjson::Document doc;
+            doc.Parse(content);
+            if (doc.IsObject()) {
+                ZASSERT_EXIT(doc.HasMember("action"));
+                const QString& action(doc["action"].GetString());
+                if (action == "runBeforRecord") {
+                    ZASSERT_EXIT(doc["launchparam"].IsObject());
+                    const auto& param = doc["launchparam"];
+                    ZASSERT_EXIT(param.HasMember("beginFrame") && param.HasMember("endFrame"));
+                    auto pGraphsMgr = zenoApp->graphsManagment();
+                    ZASSERT_EXIT(pGraphsMgr);
+                    IGraphsModel* pModel = pGraphsMgr->currentModel();
+                    ZASSERT_EXIT(pModel);
+                    LAUNCH_PARAM lparam;
+                    lparam.beginFrame = param["beginFrame"].GetInt();
+                    lparam.endFrame = param["endFrame"].GetInt();
+                    lparam.optixProcRunBeforeRecord = true;
+                    AppHelper::initLaunchCacheParam(lparam);
+                    launchProgram(pModel, lparam);
+                }
+            }
+        }
+        });
     m_optixSockets.append(socket);
     connect(socket, &QLocalSocket::disconnected, this, [=]() {
         m_optixSockets.removeOne(socket);
     });
 }
 
-void ZTcpServer::sendCacheRenderInfoToOptix(const QString& finalCachePath, int cacheNum, bool applyLightAndCameraOnly, bool applyMaterialOnly)
+void ZTcpServer::sendCacheRenderInfoToOptix(const QString& finalCachePath, int cacheNum, bool applyLightAndCameraOnly, bool applyMaterialOnly, bool isRunBeforeRecord)
 {
     QString renderKey = QString("{\"applyLightAndCameraOnly\":%1, \"applyMaterialOnly\":%2}").arg(applyLightAndCameraOnly).arg(applyMaterialOnly);
     QString objKey = QString("{\"cachedir\":\"%1\", \"cachenum\":%2}").arg(finalCachePath).arg(cacheNum);
-    QString info = QString("{\"action\":\"initCache\", \"key\":%2, \"render\":%3}\n").arg(objKey).arg(renderKey);
+    QString info = QString("{\"action\":\"%1\", \"key\":%2, \"render\":%3}\n").arg(isRunBeforeRecord ? "startRunBeforeRecord" : "initCache").arg(objKey).arg(renderKey);
     dispatchPacketToOptix(info);
 }
 
