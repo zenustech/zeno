@@ -626,8 +626,10 @@ void DisplayWidget::onScreenShoot() {
 void DisplayWidget::onMouseHoverMoved()
 {
     //only used to stop timer on optix.
+#ifdef ZENO_OPTIX_PROC
     if (m_optixView)
         m_optixView->onMouseHoverMoved();
+#endif
 }
 
 void DisplayWidget::onRecord()

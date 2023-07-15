@@ -861,8 +861,6 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
 
 void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId)
 {
-    //MessageBox(0, "optixwin", "optixwin", MB_OK);
-
     std::string sessionid(sessionId);
     optixClientSocket = std::make_unique<QLocalSocket>();
     optixClientSocket->connectToServer(QString::fromStdString(sessionid));
