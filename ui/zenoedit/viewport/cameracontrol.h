@@ -18,6 +18,17 @@ public:
                   QObject* parent = nullptr);
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
+
+    float getTheta() const;
+    void setTheta(float theta);
+    float getPhi() const;
+    void setPhi(float phi);
+    glm::vec3 getCenter() const;
+    void setCenter(glm::vec3 center);
+    bool getOrthoMode() const;
+    void setOrthoMode(bool OrthoMode);
+    float getRadius() const;
+    void setRadius(float radius);
     float getFOV() const;
     void setFOV(float fov);
     float getAperture() const;
@@ -44,13 +55,8 @@ public:
     void resizeTransformHandler(int dir);
 
 private:
-    float m_theta;
-    float m_phi;
     QPointF m_lastPos;
     QPoint m_boundRectStartPos;
-    QVector3D  m_center;
-    bool m_ortho_mode;
-    float m_radius;
     QVector2D m_res;
     QSet<int> m_pressedKeys;
 
