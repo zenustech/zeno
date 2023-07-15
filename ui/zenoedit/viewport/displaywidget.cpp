@@ -667,8 +667,22 @@ void DisplayWidget::onRecord()
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
             launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+#ifdef ZENO_OPTIX_PROC
+            if (!m_bGLView)
+            {
+                zeno::getSession().globalComm->setCacheAutoRmEnable(recInfo.bAutoRemoveCache);
+                QString lparam = QString("{\"beginFrame\":%1, \"endFrame\":%2}").arg(recInfo.frameRange.first).arg(recInfo.frameRange.second);
+                QString info = QString("{\"action\":\"runBeforRecord\", \"launchparam\":%2}\n").arg(lparam);
+                mainWin->optixClientSend(info);
+            }
+            else {
+                AppHelper::initLaunchCacheParam(launchParam);
+                onRun(launchParam);
+            }
+#else
             AppHelper::initLaunchCacheParam(launchParam);
             onRun(launchParam);
+#endif
         }
 
         //setup signals issues.
@@ -684,8 +698,29 @@ void DisplayWidget::onRecord()
 
         if (!m_bGLView)
         {
+            #ifdef ZENO_OPTIX_PROC
+            if (bRunBeforeRecord)
+            {
+                connect(this, &DisplayWidget::optixProcStartRecord, [=]() {
+                    for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second; frame++)
+                    {
+                        zeno::getSession().globalComm->newFrame();
+                        zeno::getSession().globalComm->finishFrame();
+                    }
+                    zeno::getSession().globalComm->initFrameRange(recInfo.frameRange.first, recInfo.frameRange.second);
+                    zeno::getSession().globalState->frameid = recInfo.frameRange.first;
+                    ZASSERT_EXIT(m_optixView);
+                m_optixView->recordVideo(recInfo);
+                    });
+            }
+            else {
+                ZASSERT_EXIT(m_optixView);
+                m_optixView->recordVideo(recInfo);
+            }
+            #else
             ZASSERT_EXIT(m_optixView);
             m_optixView->recordVideo(recInfo);
+            #endif
         }
         else
         {

@@ -369,4 +369,10 @@ ZENO_API bool GlobalComm::cacheAutoRmEnabled()
     return cacheautorm;
 }
 
+ZENO_API std::string GlobalComm::cachePath()
+{
+    std::lock_guard lck(m_mtx);
+    return cacheFramePath;
+}
+
 }
