@@ -35,7 +35,7 @@ struct Camera {
 
     float m_theta = 0;
     float m_phi = 0;
-    glm::vec3 m_center = {};
+    zeno::vec3f m_center = {};
     bool m_ortho_mode = false;
     float m_radius = 5;
 

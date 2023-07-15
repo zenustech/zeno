@@ -46,11 +46,11 @@ void CameraControl::setPhi(float phi) {
     auto *scene = m_zenovis->getSession()->get_scene();
     scene->camera->m_phi = phi;
 }
-glm::vec3 CameraControl::getCenter() const {
+zeno::vec3f CameraControl::getCenter() const {
     auto *scene = m_zenovis->getSession()->get_scene();
     return scene->camera->m_center;
 }
-void CameraControl::setCenter(glm::vec3 center) {
+void CameraControl::setCenter(zeno::vec3f center) {
     auto *scene = m_zenovis->getSession()->get_scene();
     scene->camera->m_center = center;
 }
@@ -297,7 +297,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             setCenter({float(center.x()), float(center.y()), float(center.z())});
         } else {
             setTheta(getTheta() - dy * M_PI);
-            setPhi(getTheta() + dx * M_PI);
+            setPhi(getPhi() + dx * M_PI);
         }
         m_lastPos = QPointF(xpos, ypos);
     } else if (event->buttons() & Qt::LeftButton) {

@@ -23,8 +23,8 @@ public:
     void setTheta(float theta);
     float getPhi() const;
     void setPhi(float phi);
-    glm::vec3 getCenter() const;
-    void setCenter(glm::vec3 center);
+    zeno::vec3f getCenter() const;
+    void setCenter(zeno::vec3f center);
     bool getOrthoMode() const;
     void setOrthoMode(bool OrthoMode);
     float getRadius() const;
