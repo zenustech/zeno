@@ -24,6 +24,7 @@ protected:
 
 private:
     static void customMsgHandler(QtMsgType type, const QMessageLogContext &, const QString &msg);
+    static bool isGUIThread();
 
     std::ostream &m_stream;
     std::streambuf *m_old_buf;
