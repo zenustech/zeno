@@ -222,7 +222,11 @@ int record_main(const QCoreApplication& app)
 
         optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
         optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
-        optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::SeparateChannels);
+        bool enableOptixLog = true;
+        if (enableOptixLog)
+            optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+        else
+            optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::SeparateChannels);
         optixProc->start(QCoreApplication::applicationFilePath(), args);
 
         if (!optixProc->waitForStarted(-1)) {
