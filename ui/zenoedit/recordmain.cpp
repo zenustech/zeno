@@ -181,6 +181,16 @@ int record_main(const QCoreApplication& app)
     }
     else
     {
+        QDir dir(param.sPath);
+        if (!dir.exists())
+        {
+            zeno::log_info("output path does not exist, process exit with -1.");
+            return -1;
+        }
+        else {
+            dir.mkdir("P");
+        }
+
         VideoRecInfo recInfo = AppHelper::getRecordInfo(param);
 
         //start a calc proc
@@ -203,6 +213,8 @@ int record_main(const QCoreApplication& app)
         ZASSERT_EXIT(args[1] == "--record", -1);
         args[1] = "--optixcmd";
         args[2] = QString::number(0);      //no need tcp
+        args.append("--cacheautorm");
+        args.append(QString::number(launchparam.autoRmCurcache));
         args.removeAt(0);
 
         //start optix proc to render
