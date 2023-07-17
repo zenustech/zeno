@@ -577,8 +577,6 @@ struct Blend: INode {
         auto base = get_input<PrimitiveObject>("Background");
         auto maskopacity = get_input2<float>("Mask Opacity");
 
-        //需要zeno::loginfo/logerror 吗 还是没有足够的input也要可以执行。？
-        //没做几个输入的resize
         auto compmode = get_input2<std::string>("Blending Mode");
         auto opacity1 = get_input2<float>("Foreground Opacity");
         auto opacity2 = get_input2<float>("Background Opacity");
@@ -603,7 +601,7 @@ struct Blend: INode {
             }
         }
 
-//不需要这些 就地修改比较快！
+//就地修改比较快！
 
 //todo： image1和image2大小不同的情况
 //        auto &ud2 = image2->userData();
@@ -728,7 +726,6 @@ struct Blend: INode {
                     vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c;
                     for (int k = 0; k < 3; k++) {
-                        //if ( pow(rgb2[k] , 1.0/2.2) < 0.5) {
                         if ( rgb2[k] < 0.5) {
                             c[k] = 2 * rgb1[k] * rgb2[k];
                         } else {
@@ -742,28 +739,6 @@ struct Blend: INode {
                 }
             }
         }
-/* gamma
-        else if(compmode == "OverlayOrigin") {
-#pragma omp parallel for
-            for (int i = 0; i < h1; i++) {
-                for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j];
-                    vec3f c;
-                    for (int k = 0; k < 3; k++) {
-                        if ( rgb2[k] < 0.5) {
-                            c[k] = 2 * rgb1[k] * rgb2[k];
-                        } else {
-                            c[k] = 1 - 2 * (1 - rgb1[k]) * (1 - rgb2[k]);
-                        }
-                    }
-                    c = c * opacity + rgb2 * (1 - opacity);
-                    blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
-                }
-            }
-        }
-*/
 
         else if(compmode == "Screen") {
 #pragma omp parallel for
@@ -954,8 +929,6 @@ ZENDEFNODE(CompositeCV, {
 
 
 
-
-
 // 自定义卷积核
 std::vector<std::vector<float>> createKernel(float blurValue,
                                              float l_blurValue, float r_blurValue,
@@ -968,6 +941,7 @@ std::vector<std::vector<float>> createKernel(float blurValue,
               {lb_blurValue, b_blurValue, rb_blurValue}};
     return kernel;
 }
+
 struct CompBlur : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
@@ -1193,6 +1167,7 @@ ZENDEFNODE(CompExtractChanel, {
 像，每个属性对应一个图层。
 可能需要的参数：outRemapRange，分辨率，属性名称，属性数据
 类型为float32 */
+
 struct CompImport : INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
