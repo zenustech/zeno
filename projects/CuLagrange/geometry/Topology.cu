@@ -698,12 +698,14 @@ struct DoTopogicalColoring : zeno::INode {
 			constexpr auto space = zs::execspace_e::cuda;
 
 			auto zsparticles = get_input<ZenoParticles>("zsparticles");
-			const auto& verts = zsparticles->getParticles();
+			// const auto& verts = zsparticles->getParticles();
 			auto& elms = zsparticles->getQuadraturePoints();
 			// auto& tris = (*zsparticles)[ZenoParticles::s_surfTriTag];
 			// const auto& tets = zsparticles->getQuadraturePoints();
 			auto cdim = elms.getPropertySize("inds");
 			auto color_tag = get_param<std::string>("colorTag");
+
+			auto do_sort_color = get_param<bool>("sort_color");
 
 			if(!elms.hasProperty(color_tag))
 				elms.append_channels(cudaPol,{{color_tag,1}});
@@ -722,13 +724,22 @@ struct DoTopogicalColoring : zeno::INode {
 			zs::Vector<float> colors{elms.get_allocator(),elms.size()};
 			std::cout << "do topological coloring" << std::endl;
 			topological_coloring(cudaPol,topos,colors);
+			zs::Vector<int> reordered_map{elms.get_allocator(),elms.size()};
+			cudaPol(zs::range(reordered_map.size()),[reordered_map = proxy<space>(reordered_map)] ZS_LAMBDA(int ti) mutable {reordered_map[ti] = ti;});
+			if(do_sort_color)
+				sort_topology_by_coloring_tag(cudaPol,reordered_map,colors);
 			std::cout << "finish topological coloring" << std::endl;
 
 			cudaPol(zs::range(elms.size()),[
 				elms = proxy<space>({},elms),
 				color_tag = zs::SmallString(color_tag),
+				topos = proxy<space>(topos),
+				reordered_map = proxy<space>(reordered_map),
+				cdim,
 				colors = proxy<space>(colors)] ZS_LAMBDA(int ei) mutable {
-					elms(color_tag,ei) = colors[ei];	
+					elms(color_tag,ei) = colors[reordered_map[ei]];	
+					for(int i = 0;i != cdim;++i)
+						elms("inds",i,ei) = zs::reinterpret_bits<float>(topos[reordered_map[ei]][i]);
 			});
 
 			set_output("zsparticles",zsparticles);
@@ -740,7 +751,8 @@ ZENDEFNODE(DoTopogicalColoring, {{{"zsparticles"}},
 								{"zsparticles"}
 							},
 							{
-								{"string","colorTag","colorTag"}
+								{"string","colorTag","colorTag"},
+								{"bool","sort_color","1"}
 							},
 							{"ZSGeometry"}});
 

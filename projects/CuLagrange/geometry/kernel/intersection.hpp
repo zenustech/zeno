@@ -2079,8 +2079,8 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                     tri_pairs[1] = tris.pack(dim_c<3>,topo_tag,tb,int_c);
 
                     for(int t = 0;t != 2;++t) {
-                        zs::vec<int,2> out_edges[3] = {};
-                        elm_to_edges(tri_pairs[t],out_edges);
+                        // zs::vec<int,2> out_edges[3] = {};
+                        auto out_edges = elm_to_edges(tri_pairs[t]);
                         for(int i = 0;i != 3;++i) {
                             auto a = out_edges[i][0];
                             auto b = out_edges[i][1];

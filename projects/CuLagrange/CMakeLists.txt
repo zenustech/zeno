@@ -37,6 +37,7 @@ target_sources(zeno PRIVATE
 target_sources(zeno PRIVATE
   pbd/PBDInit.cu
   pbd/PBDPipeline.cu
+  pbd/Pipeline.cu
 )
 
 # fem-cloth
