@@ -604,11 +604,6 @@ struct Blend: INode {
 //就地修改比较快！
 
 //todo： image1和image2大小不同的情况
-//        auto &ud2 = image2->userData();
-//        int w2 = ud2.get2<int>("w");
-//        int h2 = ud2.get2<int>("h");
-//                    for (int i = 0; i < h1; i++) {
-//                        for (int j = 0; j < w1; j++) {
 
 
 
@@ -616,9 +611,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = rgb1 * opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -629,9 +624,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = zeno::min(rgb1 + rgb2, vec3f(1.0f))*opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -642,9 +637,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = zeno::max(rgb2 - rgb1, vec3f(0.0f))*opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -655,9 +650,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = rgb1 * rgb2 * opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -668,9 +663,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = zeno::max(rgb1, rgb2) * opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -681,9 +676,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = zeno::min(rgb1, rgb2) * opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -719,11 +714,11 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
                     rgb1 = pow(rgb1, 1.0/2.2);
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
                     rgb2 = pow(rgb2, 1.0/2.2);
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c;
                     for (int k = 0; k < 3; k++) {
                         if ( rgb2[k] < 0.5) {
@@ -744,9 +739,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = 1 - (1 - rgb2) * (1 - rgb1) * opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -757,11 +752,11 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
                     rgb1 = pow(rgb1, 1.0/2.2);
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
                     rgb2 = pow(rgb2, 1.0/2.2);
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c;
                     for (int k = 0; k < 3; k++) {
                         if (rgb1[k] < 0.5) {
@@ -780,9 +775,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = zeno::abs(rgb1 - rgb2) * opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -793,9 +788,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c;
                     for (int k = 0; k < 3; k++) {
                         if (rgb1[k] == 0) {
@@ -815,9 +810,9 @@ struct Blend: INode {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
-                    vec3f &rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    vec3f &rgb2 = base->verts[i * w1 + j] * opacity2;
-                    vec3f &opacity = mask->verts[i * w1 + j] * maskopacity;
+                    vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
+                    vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
+                    vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c = (rgb1 + rgb2) / 2 * opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
