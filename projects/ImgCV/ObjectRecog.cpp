@@ -572,6 +572,116 @@ ZENDEFNODE(ImageEdgeDetectSobel, {
     { "image" },
 });
 
+//parallel
+struct ImageEdgeDetectMarr : INode { 
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        //auto mode = get_input2<std::string>("mode");
+        auto kerneldiameter = get_input2<int>("kernelDiameter");
+        auto sigma = get_input2<float>("sigma");
+        auto threshold = get_input2<float>("threshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        int kernel_size = kerneldiameter / 2;
+        std::vector<std::vector<float>> kernel(kerneldiameter, std::vector<float>(kerneldiameter));
+
+        for (int i = -kernel_size; i <= kernel_size; i++) {
+            for (int j = -kernel_size; j <= kernel_size; j++) {
+                float kernelvalue = exp(-((pow(j, 2) + pow(i, 2)) / (pow(sigma, 2) * 2))) * (((pow(j, 2) + pow(i, 2) - 2 * pow(sigma, 2)) / (2 * pow(sigma, 4))));
+                 kernel[i + kernel_size][j + kernel_size] = kernelvalue;
+            }
+        }
+        //std::vector<std::vector<float>> laplacian(w - kernel_size * 2, std::vector<float>(h - kernel_size * 2)); // too samll?
+        std::vector<std::vector<float>> laplacian(w, std::vector<float>(h));
+/*
+//only gray image...
+        for (int i = kernel_size; i < w - kernel_size; i++) { // w h 的顺序？
+            for (int j = kernel_size; j < h - kernel_size; j++) {
+                double sum = 0;
+                for (int x = -kernel_size; x <= kernel_size; x++){
+                    for (int y = -kernel_size; y <= kernel_size; y++) { //bound?
+                        sum +=  image->verts[(i + x) * w + j + y][0] * 255 * kernel[x + kernel_size][y + kernel_size];
+                    }
+                }
+                laplacian[i - kernel_size][j - kernel_size] = sum;
+            }
+        }
+
+
+        for (int i = 1; i < w - kernel_size * 2 - 1; i++) {//各种优化融合，，，
+            for (int j = 1; j < h - kernel_size * 2 - 1; j++) {
+                //这里的0是threshold
+                if ((laplacian[i - 1][j] * laplacian[i + 1][j] < threshold) || (laplacian[i][j + 1] * laplacian[i][j - 1] < threshold) || 
+                (laplacian[i + 1][j - 1] * laplacian[i - 1][j + 1] < threshold) || (laplacian[i - 1][j - 1] * laplacian[i + 1][j + 1] < threshold)) 
+                {
+                    image->verts[i * w + j] = {1, 1, 1};
+                    //bound
+                }
+                else {
+                    image->verts[i * w + j] = {0, 0, 0};
+                }
+            }*/
+
+#pragma omp parallel for
+        // mix the two for loop
+        for (int y = 0; y < h ; y++) {
+            for (int x = 0; x < w ; x++){
+                double sum = 0;
+                for (int i = 0; i < kerneldiameter; i++){
+                    for (int j = 0; j < kerneldiameter; j++) {
+
+                        int kernelX = x + j - kernel_size;
+                        int kernelY = y + i - kernel_size;
+
+                        if (kernelX >= 0 && kernelX < w && kernelY >= 0 && kernelY < h) {
+
+                            sum += image->verts[kernelY * w + kernelX][0] * 255 * kernel[i][j];
+                        }
+                    }
+                }
+                laplacian[y][x] = sum;
+
+            }
+        }
+
+#pragma omp parallel for  //上面有问题 这里等下再看看
+        for (int i = 1; i < h-1; i++) {//没有i/j = 0的情况，，，
+            for (int j = 1; j < w-1; j++) {
+                //这里的0是threshold
+                if ((laplacian[i - 1][j] * laplacian[i + 1][j] < threshold) || (laplacian[i][j + 1] * laplacian[i][j - 1] < threshold) || 
+                (laplacian[i + 1][j - 1] * laplacian[i - 1][j + 1] < threshold) || (laplacian[i - 1][j - 1] * laplacian[i + 1][j + 1] < threshold)) 
+                {
+                    image->verts[i * w + j] = {1, 1, 1};
+                    //bound
+                }
+                else {
+                    image->verts[i * w + j] = {0, 0, 0};
+                }
+            }
+        }
+
+
+
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageEdgeDetectMarr, {
+    {
+        { "image" },
+        { "float", "kernelDiameter", "3" },
+        { "float", "sigma", "1.6" },
+        { "float", "threshold", "0.05" },
+    },
+    {
+        { "image" }
+    },
+    {},
+    { "image" },
+});
+
 struct ImageEdgeDetectRoberts : INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
