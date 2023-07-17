@@ -262,6 +262,12 @@ ZENO_API int GlobalComm::numOfFinishedFrame() {
     return m_maxPlayFrame;
 }
 
+ZENO_API int GlobalComm::numOfInitializedFrame()
+{
+    std::lock_guard lck(m_mtx);
+    return m_frames.size();
+}
+
 ZENO_API std::pair<int, int> GlobalComm::frameRange() {
     std::lock_guard lck(m_mtx);
     return std::pair<int, int>(beginFrameNumber, endFrameNumber);

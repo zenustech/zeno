@@ -142,6 +142,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
 
     //finally we need to send the cache path to the seperate optix process.
     sendCacheRenderInfoToOptix(finalPath, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly, param.optixProcRunBeforeRecord);
+    m_lastLaunchParam = param;
 }
 
 void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
@@ -191,6 +192,7 @@ void ZTcpServer::onOptixNewConn()
         }
         });
     m_optixSockets.append(socket);
+    sendInitInfoToOptixProc();
     connect(socket, &QLocalSocket::disconnected, this, [=]() {
         m_optixSockets.removeOne(socket);
     });
@@ -238,6 +240,15 @@ void ZTcpServer::dispatchPacketToOptix(const QString& info)
             pSocket->write(info.toUtf8());
         }
     }
+}
+
+void ZTcpServer::sendInitInfoToOptixProc()
+{
+    auto& globalComm = zeno::getSession().globalComm;
+    sendCacheRenderInfoToOptix(QString::fromStdString(globalComm->cachePath()), m_lastLaunchParam.cacheNum, m_lastLaunchParam.applyLightAndCameraOnly, m_lastLaunchParam.applyMaterialOnly, false);
+    onInitFrameRange(QString::fromStdString("frameRange"), m_lastLaunchParam.beginFrame, m_lastLaunchParam.endFrame);
+    QString frameRunningState = QString("{\"action\":\"frameRunningState\", \"initializedFrames\":%1, \"finishedFrame\":%2}\n").arg(globalComm->numOfFinishedFrame()).arg(globalComm->numOfInitializedFrame());
+    dispatchPacketToOptix(frameRunningState);
 }
 
 void ZTcpServer::startOptixProc()

@@ -861,6 +861,8 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
 
 void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId)
 {
+    MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
+
     std::string sessionid(sessionId);
     optixClientSocket = std::make_unique<QLocalSocket>();
     optixClientSocket->connectToServer(QString::fromStdString(sessionid));
@@ -870,35 +872,6 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
     }
     else {
         zeno::log_info("tcp optix client connection succeed");
-    }
-    std::string cachePath(cachedir);
-    if (finishedFrames != 0)
-    {
-        zeno::getSession().globalComm->clearState();
-        zeno::getSession().globalComm->frameCache(cachePath, cachenum);
-        zeno::getSession().globalComm->initFrameRange(sFrame, eFrame);
-        zeno::getSession().globalState->frameid = sFrame;
-        for (int frame = sFrame; frame <= eFrame; frame++)
-        {
-            zeno::getSession().globalComm->newFrame();
-            zeno::getSession().globalComm->finishFrame();
-        }
-
-        TIMELINE_INFO tlinfo;
-        tlinfo.beginFrame = sFrame;
-        tlinfo.endFrame = eFrame;
-        resetTimeline(tlinfo);
-
-        QVector<DisplayWidget*> views = viewports();
-        for (DisplayWidget* view : views)
-        {
-            if (Zenovis* vis = view->getZenoVis())
-            {
-                vis->setCurrentFrameId(sFrame);
-                vis->startPlay(false);
-            }
-            view->updateFrame();
-        }
     }
 
     connect(optixClientSocket.get(), &QLocalSocket::readyRead, this, [=]() {
@@ -955,10 +928,7 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
                 else if (action == "finishFrame") {
                     ZASSERT_EXIT(doc["key"].IsInt());
                     int frame = doc["key"].GetInt();
-                    if (zeno::getSession().globalComm->maxPlayFrames() < zeno::getSession().globalComm->frameRange().second)
-                    {
-                        zeno::getSession().globalComm->finishFrame();
-                    }
+                    zeno::getSession().globalComm->finishFrame();
                     updateViewport("finishFrame");
                 }
                 else if (action == "startRunBeforeRecord")
@@ -972,6 +942,30 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
                     zeno::getSession().globalComm->frameCache(cachedir, cachenum);
                     DisplayWidget* displayWid = getOptixWidget();
                     emit displayWid->optixProcStartRecord();
+                }
+                else if (action == "frameRunningState")
+                {
+                    ZASSERT_EXIT(doc.HasMember("initializedFrames") && doc.HasMember("finishedFrame"));
+                    int initializedFrames = doc["initializedFrames"].GetInt();
+                    int finishedFrame = doc["finishedFrame"].GetInt();
+                    while (zeno::getSession().globalComm->numOfInitializedFrame() < initializedFrames)
+                    {
+                        zeno::getSession().globalComm->newFrame();
+                    }
+                    while (zeno::getSession().globalComm->numOfFinishedFrame() < finishedFrame)
+                    {
+                        zeno::getSession().globalComm->finishFrame();
+                    }
+                    QVector<DisplayWidget*> views = viewports();
+                    for (DisplayWidget* view : views)
+                    {
+                        if (Zenovis* vis = view->getZenoVis())
+                        {
+                            vis->setCurrentFrameId(sFrame);
+                            vis->startPlay(false);
+                        }
+                        view->updateFrame();
+                    }
                 }
             }
         }

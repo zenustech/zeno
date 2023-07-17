@@ -35,6 +35,7 @@ private:
     void send_packet(QTcpSocket* socket, std::string_view info, const char* buf, size_t len);
     void sendCacheRenderInfoToOptix(const QString& finalCachePath, int cacheNum, bool applyLightAndCameraOnly, bool applyMaterialOnly, bool isRunBeforeRecord);
     void dispatchPacketToOptix(const QString& info);
+    void sendInitInfoToOptixProc();
 
     QTcpServer* m_tcpServer;
     QTcpSocket* m_tcpSocket;
@@ -44,6 +45,8 @@ private:
 
     std::vector<std::unique_ptr<QProcess>> m_optixProcs;
     int m_port;
+
+    LAUNCH_PARAM m_lastLaunchParam;
 };
 
 #endif
