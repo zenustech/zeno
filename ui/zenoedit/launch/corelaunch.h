@@ -16,8 +16,6 @@ struct LAUNCH_PARAM {
     QString cacheDir = "";
     int cacheNum = 1;
     bool autoRmCurcache = false;
-
-    bool optixProcRunBeforeRecord = false;
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);

@@ -101,13 +101,13 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
 
     for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second;)
     {
+        QApplication::processEvents();
         if (!m_bRecording)
         {
             emit sig_recordCanceled();
             return;
         }
 #ifdef ZENO_OPTIX_PROC
-        std::string xx = zeno::getSession().globalComm->cachePath();
         QString cachePath = QString::fromStdString(zeno::getSession().globalComm->cachePath());
         QString frameDir = cachePath + "/" + QString::number(1000000 + frame).right(6);
         if (!QDir(frameDir).exists())

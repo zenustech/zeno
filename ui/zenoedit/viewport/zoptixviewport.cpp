@@ -47,6 +47,8 @@ ZOptixProcViewport::ZOptixProcViewport(QWidget* parent)
         m_renderImage = img;
         update();
     });
+    connect(m_worker, &OptixWorker::sig_frameRecordFinished, this, &ZOptixProcViewport::sig_frameRecordFinished);
+    connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixProcViewport::sig_recordFinished);
 
     setRenderSeparately(false, false);
     m_pauseTimer = new QTimer(this);

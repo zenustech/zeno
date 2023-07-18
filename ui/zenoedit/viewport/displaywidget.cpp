@@ -676,7 +676,7 @@ void DisplayWidget::onRecord()
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)
             {
-                zeno::getSession().globalComm->setCacheAutoRmEnable(recInfo.bAutoRemoveCache);
+                mainWin->optixClientStartRec();
                 QString lparam = QString("{\"beginFrame\":%1, \"endFrame\":%2}").arg(recInfo.frameRange.first).arg(recInfo.frameRange.second);
                 QString info = QString("{\"action\":\"runBeforRecord\", \"launchparam\":%2}\n").arg(lparam);
                 mainWin->optixClientSend(info);
@@ -707,21 +707,43 @@ void DisplayWidget::onRecord()
             #ifdef ZENO_OPTIX_PROC
             if (bRunBeforeRecord)
             {
-                connect(this, &DisplayWidget::optixProcStartRecord, [=]() {
-                    for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second; frame++)
-                    {
-                        zeno::getSession().globalComm->newFrame();
-                        zeno::getSession().globalComm->finishFrame();
-                    }
-                    zeno::getSession().globalComm->initFrameRange(recInfo.frameRange.first, recInfo.frameRange.second);
-                    zeno::getSession().globalState->frameid = recInfo.frameRange.first;
-                    ZASSERT_EXIT(m_optixView);
-                m_optixView->recordVideo(recInfo);
+                static bool optixRecFuncConnected = false;
+                if (!optixRecFuncConnected)
+                {
+                    connect(this, &DisplayWidget::optixProcStartRecord, this, [&]() {
+                        for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second; frame++)
+                        {
+                            zeno::getSession().globalComm->newFrame();
+                            zeno::getSession().globalComm->finishFrame();
+                        }
+                        zeno::getSession().globalComm->initFrameRange(recInfo.frameRange.first, recInfo.frameRange.second);
+                        zeno::getSession().globalState->frameid = recInfo.frameRange.first;
+                        ZASSERT_EXIT(m_optixView);
+                        m_optixView->recordVideo(recInfo);
+                        if (recInfo.bAutoRemoveCache)
+                            zeno::getSession().globalComm->clearFrameState();
                     });
+                    connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, [&](int frame) {
+                        if (recInfo.bAutoRemoveCache)
+                        {
+                            QString info = QString("{\"action\":\"removeCache\", \"frame\":%1}\n").arg(frame);
+                            mainWin->optixClientSend(info);
+                        }
+                    });
+                    connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [&]() {
+                        if (recInfo.bAutoRemoveCache)
+                        {
+                            QString info = QString("{\"action\":\"optixProcRecordFin\"}\n");
+                            mainWin->optixClientSend(info);
+                        }});
+                    optixRecFuncConnected = true;
+                }
             }
             else {
                 ZASSERT_EXIT(m_optixView);
                 m_optixView->recordVideo(recInfo);
+                if (recInfo.bAutoRemoveCache)
+                    zeno::getSession().globalComm->clearFrameState();
             }
             #else
             ZASSERT_EXIT(m_optixView);
