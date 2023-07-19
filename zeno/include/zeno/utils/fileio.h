@@ -144,4 +144,11 @@ public:
         return ret;
     }
 };
+
+template<typename T>
+void bin_write_le(std::vector<char> &data, T e) {
+    auto cur = data.size();
+    data.resize(cur + sizeof(T));
+    *(T*)&data[cur] = e;
+}
 }
