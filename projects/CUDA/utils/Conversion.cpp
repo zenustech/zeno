@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 
 namespace zeno {
 
-struct GltfToObj : INode {
+struct AssetConversion : INode {
     void apply() override {
         auto pathStr = get_input2<std::string>("path");
         char *p = nullptr;
@@ -49,11 +49,16 @@ struct GltfToObj : INode {
 #endif
 
         auto inputFile = get_input2<std::string>("input_model_file");
-        fs::path inputPath = inputFile, outputPath;
-        if (auto str = get_input2<std::string>("output_model_file"); str.empty())
-            outputPath = inputPath.parent_path().string() + "/" + inputPath.stem().string() + ".obj";
-        else
-            outputPath = str;
+        fs::path inputPath = inputFile;
+        auto ext = inputPath.extension().string();
+        auto outputPath = get_input2<std::string>("output_model_file");
+        auto format = fs::path(outputPath).extension().string();
+        if (format.empty())
+            format = ".obj";
+        else if (format != ".obj" && format != ".gltf" && format != ".fbx")
+            throw std::runtime_error(fmt::format("unknown output file format [{}]\n", outputPath));
+        if (outputPath.empty())
+            outputPath = inputPath.parent_path().string() + "/" + inputPath.stem().string() + "." + format;
 
         for (const auto &path : pathLocations) {
             fmt::print("iterate path: {}\n", path);
@@ -71,23 +76,25 @@ struct GltfToObj : INode {
                 std::ofstream os;
                 os.open(scriptPath);
                 std::string script = "import bpy\n";
-                script += fmt::format("bpy.ops.import_scene.gltf(filepath=\"{}\")\n", inputFile);
+                script += fmt::format("bpy.ops.import_scene{}(filepath=\"{}\")\n", ext, inputFile);
                 script +=
-                    fmt::format("bpy.ops.export_scene.obj(filepath=\"{}\", use_selection=True)\n", outputPath.string());
+                    fmt::format("bpy.ops.export_scene{}(filepath=\"{}\", use_selection=True)\n", format, outputPath);
                 os << script;
                 os.close();
 
                 /// execute this blender script
                 auto cmdStr = fmt::format("{} -b -P {}", loc.string(), scriptPath);
-                fmt::print("\tfound {} at \"{}\". executing \"{}\"\n", target, path, cmdStr);
+                fmt::print("\tfound {} at \"{}\".\n\texecuting \"{}\"\n", target, path, cmdStr);
+                fmt::print("\tscript:\n========\n{}\n========\n", script);
+
                 std::system(cmdStr.c_str());
             }
         }
     }
 };
-ZENDEFNODE(GltfToObj,
+ZENDEFNODE(AssetConversion,
            {/* inputs: */ {
-                {"string", "input_model_file", ""}, {"string", "path", ""}, {"string", "output_model_file", ""}},
+                {"string", "path", ""}, {"string", "input_model_file", ""}, {"string", "output_model_file", ""}},
             /* outputs: */
             {},
             /* params: */
