@@ -5,6 +5,7 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
+
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
 #include <cmath>
@@ -91,54 +92,7 @@ static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
             break;
     }
 }
-static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int height, std::vector<float>& dx, std::vector<float>& dy)
-{
-    dx.resize(width * height);
-    dy.resize(width * height);
-#pragma omp parallel for
-    for (int y = 1; y < height - 1; y++) {
-        for (int x = 1; x < width - 1; x++) {
-            float gx = -grayImage->verts[(y - 1) * width + x - 1][0] + grayImage->verts[(y - 1) * width + x + 1][0]
-                       - 2.0f * grayImage->verts[y * width + x - 1][0] + 2.0f * grayImage->verts[y * width + x + 1][0]
-                       - grayImage->verts[(y + 1) * width + x - 1][0] + grayImage->verts[(y + 1) * width + x + 1][0];
-            float gy = grayImage->verts[(y - 1) * width + x - 1][0] + 2.0f * grayImage->verts[(y - 1) * width + x][0] +
-                       grayImage->verts[(y - 1) * width + x + 1][0]
-                       - grayImage->verts[(y + 1) * width + x - 1][0] - 2.0f * grayImage->verts[(y + 1) * width + x][0] -
-                       grayImage->verts[(y + 1) * width + x + 1][0];
 
-            dx[y * width + x] = gx;
-            dy[y * width + x] = gy;
-        }
-    }
-}
-
-static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, int height, std::vector<float>& normal)
-{
-    std::vector<float> dx, dy;
-    sobel(grayImage, width, height, dx, dy);
-    normal.resize(width * height * 3);
-#pragma omp parallel for
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int i = y * width + x;
-            float gx = dx[i];
-            float gy = dy[i];
-
-            float normalX = -gx;
-            float normalY = -gy;
-            float normalZ = 1.0f;
-
-            float length = sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
-            normalX /= length;
-            normalY /= length;
-            normalZ /= length;
-
-            normal[i * 3 + 0] = normalX;
-            normal[i * 3 + 1] = normalY;
-            normal[i * 3 + 2] = normalZ;
-        }
-    }
-}
 
 struct ImageResize: INode {
     void apply() override {
@@ -1381,92 +1335,69 @@ ZENDEFNODE(ImageEditInvert, {
     {"image"},
 });
 
+
 /* 将灰度图像转换为法线贴图 */
 struct ImageToNormalMap : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto strength = get_input2<float>("strength");
-        auto InvertR = get_input2<bool>("InvertR");
-        auto InvertG = get_input2<bool>("InvertG");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        using normal =  std::tuple<float, float, float>;
-        normal n = {0, 0, 1};
-        float n0 = std::get<0>(n);
-        float n1 = std::get<1>(n);
-        float n2 = std::get<2>(n);
-        std::vector<normal> normalmap;
-        normalmap.resize(image->size());
-        float gx = 0;
-        float gy = 0;
-        float gz = 1;
+        auto InvertR = get_input2<bool>("InvertR");
+        auto InvertG = get_input2<bool>("InvertG");
+        auto normalmap = std::make_shared<PrimitiveObject>();
+        normalmap->verts.resize(w * h);
+        normalmap->userData().set2("isImage", 1);
+        normalmap->userData().set2("w", w);
+        normalmap->userData().set2("h", h);
 
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 int idx = i * w + j;
                 if (i == 0 || i == h || j == 0 || j == w) {
-                    normalmap[idx] = {0, 0, 1};
+                    normalmap->verts[idx] = {0, 0, 1};
                 }
             }
         }
         
+#pragma omp parallel for
         for (int i = 1; i < h-1; i++) {
             for (int j = 1; j < w-1; j++) {
-                int idx = i * w + j;
-                gx = (image->verts[idx+1][0] - image->verts[idx-1][0])/2.0f * strength;
-                gy = (image->verts[idx+w][0] - image->verts[idx-w][0])/2.0f * strength;
-                float len = sqrt(gx * gx + gy * gy + gz * gz);
-                gx /= len;
-                gy /= len;
-                gz /= len;
-                // 计算光照值
-                if((!InvertG && !InvertR) || (InvertG && InvertR)){
-                    gx = 0.5f * (gx + 1.0f) ;
-                    gy = 0.5f * (-gy + 1.0f) ;
-                    gz = 0.5f * (gz + 1.0f) ;
-                    normalmap[i * w + j] = {gx,gy,gz};
+                float gx = -image->verts[(i - 1) * w + j - 1][0] + image->verts[(i - 1) * w + j + 1][0] 
+                - 2.0f * image->verts[i * w + j - 1][0] + 2.0f * image->verts[ i * w + j + 1][0]
+                - image->verts[(i + 1) * w + j - 1][0] + image->verts[(i + 1) * w + j + 1][0]; 
+
+                float gy = image->verts[(i - 1) * w + j - 1][0] + 2.0f * image->verts[(i - 1) * w + j][0]
+                + image->verts[(i - 1) * w + j + 1][0] - image->verts[(i + 1) * w + j - 1][0]
+                - 2.0f * image->verts[(i + 1) * w + j][0] - image->verts[(i + 1) * w + j + 1][0]; 
+                
+                gx = gx * strength;
+                gy = gy * strength;
+               vec3f rgb = {gx,gy,1};
+
+                rgb /= length(rgb);
+                rgb = normalizeSafe(rgb);
+                rgb = 0.5f * (rgb + 1.0f) ;
+                if(InvertG){
+                    rgb[1] = 1 - rgb[1];
                 }
-                else if((!InvertG && InvertR) || (InvertG && !InvertR)){
-                    gx = 0.5f * (gx + 1.0f) ;
-                    gy = 0.5f * (gy + 1.0f) ;
-                    gz = 0.5f * (gz + 1.0f) ;
-                    normalmap[i * w + j] = {gx,gy,gz};
+                else if(InvertR){
+                    rgb[0] = 1 - rgb[0];
                 }
-            }
-        }
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                int idx = i * w + j;
-                if(!InvertG && !InvertR){
-                    image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
-                    image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
-                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
-                }
-                if(!InvertG && InvertR){
-                    image->verts[i * w + j][0] = std::get<1>(normalmap[i * w + j]);
-                    image->verts[i * w + j][1] = std::get<0>(normalmap[i * w + j]);
-                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
-                }
-                if(InvertG && !InvertR){
-                    image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
-                    image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
-                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
-                }
-                if(InvertG && InvertR){
-                    image->verts[i * w + j][0] = std::get<1>(normalmap[i * w + j]);
-                    image->verts[i * w + j][1] = std::get<0>(normalmap[i * w + j]);
-                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                normalmap->verts[i * w + j] = rgb;
+                
                 }
             }
-        }
-        set_output("image", image);
+
+        set_output("image", normalmap);
     }
 };
+
 ZENDEFNODE(ImageToNormalMap, {
     {
         {"image"},
-        {"float", "strength", "25"},
+        {"float", "strength", "10"},
         {"bool", "InvertR", "0"},
         {"bool", "InvertG", "0"},
     },
