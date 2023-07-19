@@ -41,6 +41,7 @@ target_link_libraries(zeno PRIVATE zshelper)
 #[=[
 target_sources(zeno PRIVATE
   test1.cu
+  test.cpp
 )
 #]=]
 set_target_properties(zeno
@@ -48,6 +49,13 @@ set_target_properties(zeno
   CUDA_SEPARABLE_COMPILATION ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_ARCHITECTURES ${ZS_CUDA_ARCH}
+)
+
+# closest point query (from ingo wald)
+target_sources(zeno PRIVATE
+  iw_query/Query.cpp
+  iw_query/bvh.cpp
+  iw_query/distanceQueries.cpp
 )
 
 # wrangler
