@@ -149,8 +149,13 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pNodeModel, IGraphsModel* pSubgr
     m_pSubgraphs = pSubgraphs;
     ZASSERT_EXIT(m_pNodeModel);
 
-    m_ui->subnetTree->setModel(pNodeModel->implModel());
+    SubListSortProxyModel* treeProxyModel = new SubListSortProxyModel(this);
+    treeProxyModel->setSourceModel(pNodeModel->implModel());
+    treeProxyModel->setDynamicSortFilter(true);
+    m_ui->subnetTree->setModel(treeProxyModel);
     m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    treeProxyModel->sort(0, Qt::AscendingOrder);
+
     SubListSortProxyModel*proxyModel = new SubListSortProxyModel(this);
     proxyModel->setSourceModel(pSubgraphs);
     proxyModel->setDynamicSortFilter(true);
@@ -667,7 +672,6 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
     if (idx.isValid())
     {
         QString objId = idx.data(ROLE_NODE_IDENT).toString();
-        const QString& msg = idx.data(Qt::DisplayRole).toString();
         QtMsgType type = (QtMsgType)idx.data(ROLE_LOGTYPE).toInt();
         if (!objId.isEmpty() && type == QtFatalMsg)
         {
@@ -867,7 +871,8 @@ void ZenoGraphsEditor::onTreeItemSelectionChanged(const QItemSelection &selected
     if (lst.isEmpty())
         return;
 
-    QModelIndex idx = lst.first();
+    QSortFilterProxyModel* pProxyModel = qobject_cast<QSortFilterProxyModel*>(m_ui->subnetTree->model());
+    QModelIndex idx = pProxyModel->mapToSource(lst.first());
     if (lst.size() == 1) 
     {
         onTreeItemActivated(idx);

@@ -297,7 +297,8 @@ bool ZsgReader::_parseNode(
         }
     }
 
-    initSockets(name, legacyDescs, ret);
+    if (!mgr.getSubgDesc(name, NODE_DESC()))
+        initSockets(name, legacyDescs, ret);
 
     if (objValue.HasMember("inputs"))
     {
@@ -664,7 +665,10 @@ void ZsgReader::_parseSocket(
     {
         _parseDictPanel(subgPath, bInput, sockObj["dictlist-panel"], id, sockName, nodeCls, ret, links);
     }
-    if (sockObj.HasMember("control") && descriptors.find(nodeCls) == descriptors.end()) 
+    if (sockObj.HasMember("control") && 
+        (descriptors.find(nodeCls) == descriptors.end() || 
+            !descriptors[nodeCls].inputs.contains(socket.name) ||
+            GraphsManagment::instance().getSubgDesc(nodeCls, NODE_DESC())))
 	{
         PARAM_CONTROL ctrl;
         QVariant props;

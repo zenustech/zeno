@@ -69,7 +69,15 @@ QVariant TreeNodeItem::data(int role) const
 {
     switch (role)
     {
-        case Qt::DisplayRole:       return m_item->objid;
+        case Qt::DisplayRole: 
+        {
+            if (m_item->objid != "main")
+            {
+                QString id = m_item->objid.left(m_item->objid.indexOf("-"));
+                return m_item->objCls + QString(" (%1)").arg(id);
+            }
+            return m_item->objid;
+        }
         case ROLE_OBJID:            return m_item->objid;
         case ROLE_OBJNAME:          return m_item->objCls;
         case ROLE_CUSTOM_OBJNAME:   return m_item->customName;
