@@ -1112,20 +1112,21 @@ namespace zeno {
 
     }
 
-    template<typename Pol,typename VecTI/*,zs::enable_if_all<VecTI::dim == 1, (VecTI::extent >= 2), (VecTI::etent <= 4)> = 0*/>
+    template<typename Pol,typename TopoRangT/*,zs::enable_if_all<VecTI::dim == 1, (VecTI::extent >= 2), (VecTI::etent <= 4)> = 0*/>
     void topological_incidence_matrix(Pol& pol,
             // size_t nm_points,
-            const zs::Vector<VecTI>& topos,
+            const TopoRangT& topos,
             zs::SparseMatrix<zs::u32,true>& spmat) {
         using namespace zs;
         using ICoord = zs::vec<int, 2>;
-        constexpr auto CDIM = VecTI::extent;
+        // constexpr auto CDIM = VecTI::extent;
+        constexpr auto CDIM = RM_CVREF_T(topos[0])::extent;
         constexpr auto space = Pol::exec_tag::value;
         constexpr auto execTag = wrapv<space>{};
 
         zs::Vector<int> max_pi_vec{topos.get_allocator(),1};
         max_pi_vec.setVal(0);
-        pol(zs::range(topos),[max_pi_vec = proxy<space>(max_pi_vec),execTag,CDIM] ZS_LAMBDA(const auto& topo) {
+        pol(zs::range(topos),[max_pi_vec = proxy<space>(max_pi_vec),execTag,CDIM] ZS_LAMBDA(const auto& topo) mutable {
             for(int i = 0;i != CDIM;++i) 
                 if(topo[i] >= 0)
                     atomic_max(execTag,&max_pi_vec[0],(int)topo[i]);
@@ -1192,8 +1193,6 @@ namespace zeno {
                             // printf("p[%d] -> t[%d]\n",pi,ti);
                         }
             });
-
-            // std::cout << "finish computing p2ts" << std::endl;
         }
 
 
@@ -1235,6 +1234,8 @@ namespace zeno {
 
         // pol(zs::range(is.size()),[is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(int i) mutable {printf("ijs[%d] : %d %d\n",i,is[i],js[i]);});
         // std::cout << "topos.size() = " << topos.size() << std::endl;
+        // for(int i = 0;i != topos.size();++i)
+        //     std::cout << topos.getVal(i)[0] << "\t" << topos.getVal(i)[1] << std::endl;
 
         // spmat = zs::SparseMatrix<u32,true>{topos.get_allocator(),(int)topos.size(),(int)topos.size()};
         spmat.build(pol,(int)topos.size(),(int)topos.size(),zs::range(is),zs::range(js)/*,zs::range(rs)*/,zs::true_c);
@@ -1246,13 +1247,15 @@ namespace zeno {
         // spmat._vals.reset((int)1);
     }
 
-    template<typename Pol,typename VecTI>
+    template<typename Pol,typename TopoRangeT,typename ColorRangeT>
     void topological_coloring(Pol& pol,
             // int nm_points,
-            const zs::Vector<VecTI>& topo,
-            zs::Vector<float>& colors) {
+            const TopoRangeT& topo,
+            ColorRangeT& colors) {
         using namespace zs;
         constexpr auto space = Pol::exec_tag::value;
+        using Ti = RM_CVREF_T(colors[0]);
+
 
         colors.resize(topo.size());
         zs::SparseMatrix<u32,true> topo_incidence_matrix{topo.get_allocator(),topo.size(),topo.size()};
@@ -1277,17 +1280,23 @@ namespace zeno {
                 w = v;
             });
         }
+
+        // pol(zs::range())
         weights = weights.clone(colors.memoryLocation());
+        // for(int i = 0;i != weights.size();++i)
+        //     printf("w[%d] : %u\n",i,weights.getVal(i));
 
         auto iterRef = maximum_independent_sets(pol, topo_incidence_matrix, weights, colors);
         std::cout << "nm_colors : " << iterRef << std::endl;
+        pol(zs::range(colors),[] ZS_LAMBDA(auto& clr) mutable {clr = clr - (Ti)1;});
+
     }
 
-    template<typename Pol>
+    template<typename Pol,typename REORDERED_MAP_RANGE,typename COLOR_RANGE,typename EXCLUSIVE_OFFSET_RANGE>
     void sort_topology_by_coloring_tag(Pol& pol,
-            // zs::Vector<VecTI>& topos,
-            zs::Vector<int>& reordered_map,
-            const zs::Vector<float>& colors) {
+            const COLOR_RANGE& colors,
+            REORDERED_MAP_RANGE& reordered_map,
+            EXCLUSIVE_OFFSET_RANGE& offset_out) {
         using namespace zs;
         constexpr auto space = Pol::exec_tag::value;
         constexpr auto exec_tag = wrapv<space>{};
@@ -1319,6 +1328,9 @@ namespace zeno {
         exclusive_scan(pol,std::begin(nm_colors),std::end(nm_colors),std::begin(exclusive_offsets));
         pol(zs::range(nm_colors),[] ZS_LAMBDA(auto& nclr) {nclr = 0;});
 
+        offset_out.resize(nm_total_colors);
+    
+        pol(zip(zs::range(exclusive_offsets.size()),exclusive_offsets),[offset_out = proxy<space>(offset_out)] ZS_LAMBDA(auto i,auto offset) mutable {offset_out[i] = offset;});
         pol(zs::range(colors.size()),[
                 nm_colors = proxy<space>(nm_colors),
                 colors = proxy<space>(colors),

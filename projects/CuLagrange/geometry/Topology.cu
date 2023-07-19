@@ -722,13 +722,15 @@ struct DoTopogicalColoring : zeno::INode {
 			});
 
 			zs::Vector<float> colors{elms.get_allocator(),elms.size()};
-			std::cout << "do topological coloring" << std::endl;
+			// std::cout << "do topological coloring" << std::endl;
 			topological_coloring(cudaPol,topos,colors);
 			zs::Vector<int> reordered_map{elms.get_allocator(),elms.size()};
 			cudaPol(zs::range(reordered_map.size()),[reordered_map = proxy<space>(reordered_map)] ZS_LAMBDA(int ti) mutable {reordered_map[ti] = ti;});
-			if(do_sort_color)
-				sort_topology_by_coloring_tag(cudaPol,reordered_map,colors);
-			std::cout << "finish topological coloring" << std::endl;
+			// if(do_sort_color)
+			zs::Vector<int> color_offset{elms.get_allocator(),0};
+			sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
+
+			// std::cout << "finish topological coloring" << std::endl;
 
 			cudaPol(zs::range(elms.size()),[
 				elms = proxy<space>({},elms),
@@ -737,11 +739,16 @@ struct DoTopogicalColoring : zeno::INode {
 				reordered_map = proxy<space>(reordered_map),
 				cdim,
 				colors = proxy<space>(colors)] ZS_LAMBDA(int ei) mutable {
-					elms(color_tag,ei) = colors[reordered_map[ei]];	
+					elms(color_tag,ei) = colors[reordered_map[ei]];
 					for(int i = 0;i != cdim;++i)
 						elms("inds",i,ei) = zs::reinterpret_bits<float>(topos[reordered_map[ei]][i]);
 			});
 
+			zsparticles->setMeta("color_offset",color_offset);
+			printf("offset : ");
+			for(int i = 0;i != color_offset.size();++i)
+				printf("%d\t",color_offset.getVal(i));
+			printf("\n");
 			set_output("zsparticles",zsparticles);
 	}
 };
@@ -752,7 +759,7 @@ ZENDEFNODE(DoTopogicalColoring, {{{"zsparticles"}},
 							},
 							{
 								{"string","colorTag","colorTag"},
-								{"bool","sort_color","1"}
+								// {"bool","sort_color","1"}
 							},
 							{"ZSGeometry"}});
 

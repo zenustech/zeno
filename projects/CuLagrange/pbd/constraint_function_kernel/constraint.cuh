@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../geometry/kernel/geo_math.hpp"
+
 namespace zeno { namespace CONSTRAINT {
 // FOR CLOTH SIMULATION
     template<typename VECTOR3d,typename SCALER>
@@ -20,8 +22,8 @@ namespace zeno { namespace CONSTRAINT {
             n /= d;
         else
         {
-            corr0.setZero();
-            corr1.setZero();
+            corr0 = VECTOR3d::uniform(0);
+            corr1 = VECTOR3d::uniform(0);;
             return true;
         }
 
@@ -33,12 +35,12 @@ namespace zeno { namespace CONSTRAINT {
         }
 
         SCALER Kinv = 0.0;
-        if (fabs(K) > static_cast<SCALER>(1e-6))
+        if (zs::abs(K) > static_cast<SCALER>(1e-6))
             Kinv = static_cast<SCALER>(1.0) / K;
         else
         {
-            corr0.setZero();
-            corr1.setZero();
+            corr0 = VECTOR3d::uniform(0);;
+            corr1 = VECTOR3d::uniform(0);;
             return true;
         }
 
@@ -53,7 +55,7 @@ namespace zeno { namespace CONSTRAINT {
 
     // ----------------------------------------------------------------------------------------------
     template<typename VECTOR3d,typename SCALER>
-    constexpr bool XPBD::solve_VolumeConstraint(
+    constexpr bool solve_VolumeConstraint(
         const VECTOR3d& p0, SCALER invMass0,
         const VECTOR3d& p1, SCALER invMass1,
         const VECTOR3d& p2, SCALER invMass2,
@@ -64,9 +66,10 @@ namespace zeno { namespace CONSTRAINT {
         SCALER& lambda,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
     {
+        constexpr SCALER eps = (SCALER)1e-6;
         SCALER volume = static_cast<SCALER>(1.0 / 6.0) * (p1 - p0).cross(p2 - p0).dot(p3 - p0);
 
-        corr0.setZero(); corr1.setZero(); corr2.setZero(); corr3.setZero();
+        corr0 = VECTOR3d::uniform(0);; corr1 = VECTOR3d::uniform(0);; corr2 = VECTOR3d::uniform(0);; corr3 = VECTOR3d::uniform(0);;
 
         VECTOR3d grad0 = (p1 - p2).cross(p3 - p2);
         VECTOR3d grad1 = (p2 - p0).cross(p3 - p0);
@@ -74,10 +77,10 @@ namespace zeno { namespace CONSTRAINT {
         VECTOR3d grad3 = (p1 - p0).cross(p2 - p0);
 
         SCALER K =
-            invMass0 * grad0.squaredNorm() +
-            invMass1 * grad1.squaredNorm() +
-            invMass2 * grad2.squaredNorm() +
-            invMass3 * grad3.squaredNorm();
+            invMass0 * grad0.l2NormSqr() +
+            invMass1 * grad1.l2NormSqr() +
+            invMass2 * grad2.l2NormSqr() +
+            invMass3 * grad3.l2NormSqr();
 
         SCALER alpha = 0.0;
         if (stiffness != 0.0)
@@ -86,7 +89,7 @@ namespace zeno { namespace CONSTRAINT {
             K += alpha;
         }
 
-        if (fabs(K) < eps)
+        if (zs::abs(K) < eps)
             return false;
 
         const SCALER C = volume - restVolume;
@@ -119,10 +122,10 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d e3 = *x[2] - *x[1];
         const VECTOR3d e4 = *x[3] - *x[1];
 
-        const SCALER c01 = MathFunctions::cotTheta(e0, e1);
-        const SCALER c02 = MathFunctions::cotTheta(e0, e2);
-        const SCALER c03 = MathFunctions::cotTheta(-e0, e3);
-        const SCALER c04 = MathFunctions::cotTheta(-e0, e4);
+        const SCALER c01 = LSL_GEO::cotTheta(e0, e1);
+        const SCALER c02 = LSL_GEO::cotTheta(e0, e2);
+        const SCALER c03 = LSL_GEO::cotTheta(-e0, e3);
+        const SCALER c04 = LSL_GEO::cotTheta(-e0, e4);
 
         const SCALER A0 = static_cast<SCALER>(0.5) * (e0.cross(e1)).norm();
         const SCALER A1 = static_cast<SCALER>(0.5) * (e0.cross(e2)).norm();
@@ -156,6 +159,7 @@ namespace zeno { namespace CONSTRAINT {
         SCALER& lambda,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
     {
+        constexpr SCALER eps = (SCALER)1e-6;
         const VECTOR3d* x[4] = { &p2, &p3, &p0, &p1 };
         SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
 
@@ -165,11 +169,11 @@ namespace zeno { namespace CONSTRAINT {
                 energy += Q(j, k) * (x[k]->dot(*x[j]));
         energy *= 0.5;
 
-        VECTOR3d gradC[4];
-        gradC[0].setZero();
-        gradC[1].setZero();
-        gradC[2].setZero();
-        gradC[3].setZero();
+        VECTOR3d gradC[4] = {};
+        gradC[0] = VECTOR3d::uniform(0);;
+        gradC[1] = VECTOR3d::uniform(0);;
+        gradC[2] = VECTOR3d::uniform(0);;
+        gradC[3] = VECTOR3d::uniform(0);;
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
                 gradC[j] += Q(j, k) * *x[k];
@@ -180,7 +184,7 @@ namespace zeno { namespace CONSTRAINT {
         {
             // compute sum of squared gradient norms
             if (invMass[j] != 0.0)
-                sum_normGradC += invMass[j] * gradC[j].squaredNorm();
+                sum_normGradC += invMass[j] * gradC[j].l2NormSqr();
         }
 
         SCALER alpha = 0.0;
@@ -191,7 +195,7 @@ namespace zeno { namespace CONSTRAINT {
         }
 
         // exit early if required
-        if (fabs(sum_normGradC) > eps)
+        if (zs::abs(sum_normGradC) > eps)
         {
             // compute impulse-based scaling factor
             const SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
@@ -322,10 +326,10 @@ namespace zeno { namespace CONSTRAINT {
         VECTOR3d d0 = p1 - p0;
         VECTOR3d d1 = p3 - p2;
 
-        SCALER a = d0.squaredNorm();
+        SCALER a = d0.l2NormSqr();
         SCALER b = -d0.dot(d1);
         SCALER c = d0.dot(d1);
-        SCALER d = -d1.squaredNorm();
+        SCALER d = -d1.l2NormSqr();
         SCALER e = (p2 - p0).dot(d0);
         SCALER f = (p2 - p0).dot(d1);
         SCALER det = a*d - b*c;
@@ -403,456 +407,456 @@ namespace zeno { namespace CONSTRAINT {
 
 // FOR ELASTIC RODS SIMULATION
 // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename SCALER,typename QUATERNION>
-    constexpr bool PositionBasedCosseratRods::solve_StretchShearConstraint(
-        const VECTOR3d& p0, SCALER invMass0,
-        const VECTOR3d& p1, SCALER invMass1,
-        const QUATERNION& q0, SCALER invMassq0,
-        const VECTOR3d& stretchingAndShearingKs,
-        const SCALER restLength,
-        VECTOR3d& corr0, VECTOR3d& corr1, QUATERNION& corrq0)
-    {
-        VECTOR3d d3;	//third director d3 = q0 * e_3 * q0_conjugate
-        d3[0] = static_cast<SCALER>(2.0) * (q0.x() * q0.z() + q0.w() * q0.y());
-        d3[1] = static_cast<SCALER>(2.0) * (q0.y() * q0.z() - q0.w() * q0.x());
-        d3[2] = q0.w() * q0.w() - q0.x() * q0.x() - q0.y() * q0.y() + q0.z() * q0.z();
+//     template<typename VECTOR3d,typename SCALER,typename QUATERNION>
+//     constexpr bool solve_StretchShearConstraint(
+//         const VECTOR3d& p0, SCALER invMass0,
+//         const VECTOR3d& p1, SCALER invMass1,
+//         const QUATERNION& q0, SCALER invMassq0,
+//         const VECTOR3d& stretchingAndShearingKs,
+//         const SCALER restLength,
+//         VECTOR3d& corr0, VECTOR3d& corr1, QUATERNION& corrq0)
+//     {
+//         VECTOR3d d3;	//third director d3 = q0 * e_3 * q0_conjugate
+//         d3[0] = static_cast<SCALER>(2.0) * (q0.x() * q0.z() + q0.w() * q0.y());
+//         d3[1] = static_cast<SCALER>(2.0) * (q0.y() * q0.z() - q0.w() * q0.x());
+//         d3[2] = q0.w() * q0.w() - q0.x() * q0.x() - q0.y() * q0.y() + q0.z() * q0.z();
 
-        VECTOR3d gamma = (p1 - p0) / restLength - d3;
-        gamma /= (invMass1 + invMass0) / restLength + invMassq0 * static_cast<SCALER>(4.0)*restLength + eps;
+//         VECTOR3d gamma = (p1 - p0) / restLength - d3;
+//         gamma /= (invMass1 + invMass0) / restLength + invMassq0 * static_cast<SCALER>(4.0)*restLength + eps;
 
-        if (std::abs(stretchingAndShearingKs[0] - stretchingAndShearingKs[1]) < eps && std::abs(stretchingAndShearingKs[0] - stretchingAndShearingKs[2]) < eps)	//all Ks are approx. equal
-            for (int i = 0; i<3; i++) gamma[i] *= stretchingAndShearingKs[i];
-        else	//diffenent stretching and shearing Ks. Transform diag(Ks[0], Ks[1], Ks[2]) into world space using Ks_w = R(q0) * diag(Ks[0], Ks[1], Ks[2]) * R^T(q0) and multiply it with gamma
-        {
-            MATRIX3d R = q0.toRotationMatrix();
-            gamma = (R.transpose() * gamma).eval();
-            for (int i = 0; i<3; i++) gamma[i] *= stretchingAndShearingKs[i];
-            gamma = (R * gamma).eval();
-        }
+//         if (std::abs(stretchingAndShearingKs[0] - stretchingAndShearingKs[1]) < eps && std::abs(stretchingAndShearingKs[0] - stretchingAndShearingKs[2]) < eps)	//all Ks are approx. equal
+//             for (int i = 0; i<3; i++) gamma[i] *= stretchingAndShearingKs[i];
+//         else	//diffenent stretching and shearing Ks. Transform diag(Ks[0], Ks[1], Ks[2]) into world space using Ks_w = R(q0) * diag(Ks[0], Ks[1], Ks[2]) * R^T(q0) and multiply it with gamma
+//         {
+//             MATRIX3d R = q0.toRotationMatrix();
+//             gamma = (R.transpose() * gamma).eval();
+//             for (int i = 0; i<3; i++) gamma[i] *= stretchingAndShearingKs[i];
+//             gamma = (R * gamma).eval();
+//         }
 
-        corr0 = invMass0 * gamma;
-        corr1 = -invMass1 * gamma;
+//         corr0 = invMass0 * gamma;
+//         corr1 = -invMass1 * gamma;
 
-        QUATERNION q_e_3_bar(q0.z(), -q0.y(), q0.x(), -q0.w());	//compute q*e_3.conjugate (cheaper than quaternion product)
-        corrq0 = QUATERNION(0.0, gamma.x(), gamma.y(), gamma.z()) * q_e_3_bar;
-        corrq0.coeffs() *= static_cast<SCALER>(2.0) * invMassq0 * restLength;
+//         QUATERNION q_e_3_bar(q0.z(), -q0.y(), q0.x(), -q0.w());	//compute q*e_3.conjugate (cheaper than quaternion product)
+//         corrq0 = QUATERNION(0.0, gamma.x(), gamma.y(), gamma.z()) * q_e_3_bar;
+//         corrq0.coeffs() *= static_cast<SCALER>(2.0) * invMassq0 * restLength;
 
-        return true;
-    }
+//         return true;
+//     }
 
-// ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename SCALER,typename QUATERNION>
-    constexpr bool PositionBasedCosseratRods::solve_BendTwistConstraint(
-        const QUATERNION& q0, SCALER invMassq0,
-        const QUATERNION& q1, SCALER invMassq1,
-        const VECTOR3d& bendingAndTwistingKs,
-        const QUATERNION& restDarbouxVector,
-        QUATERNION& corrq0, QUATERNION& corrq1)
-    {
-        QUATERNION omega = q0.conjugate() * q1;   //darboux vector
+// // ----------------------------------------------------------------------------------------------
+//     template<typename VECTOR3d,typename SCALER,typename QUATERNION>
+//     constexpr bool solve_BendTwistConstraint(
+//         const QUATERNION& q0, SCALER invMassq0,
+//         const QUATERNION& q1, SCALER invMassq1,
+//         const VECTOR3d& bendingAndTwistingKs,
+//         const QUATERNION& restDarbouxVector,
+//         QUATERNION& corrq0, QUATERNION& corrq1)
+//     {
+//         QUATERNION omega = q0.conjugate() * q1;   //darboux vector
 
-        QUATERNION omega_plus;
-        omega_plus.coeffs() = omega.coeffs() + restDarbouxVector.coeffs();     //delta Omega with -Omega_0
-        omega.coeffs() = omega.coeffs() - restDarbouxVector.coeffs();                 //delta Omega with + omega_0
-        if (omega.squaredNorm() > omega_plus.squaredNorm()) omega = omega_plus;
+//         QUATERNION omega_plus;
+//         omega_plus.coeffs() = omega.coeffs() + restDarbouxVector.coeffs();     //delta Omega with -Omega_0
+//         omega.coeffs() = omega.coeffs() - restDarbouxVector.coeffs();                 //delta Omega with + omega_0
+//         if (omega.l2NormSqr() > omega_plus.l2NormSqr()) omega = omega_plus;
 
-        for (int i = 0; i < 3; i++) omega.coeffs()[i] *= bendingAndTwistingKs[i] / (invMassq0 + invMassq1 + static_cast<SCALER>(1.0e-6));
-        omega.w() = 0.0;    //discrete Darboux vector does not have vanishing scalar part
+//         for (int i = 0; i < 3; i++) omega.coeffs()[i] *= bendingAndTwistingKs[i] / (invMassq0 + invMassq1 + static_cast<SCALER>(1.0e-6));
+//         omega.w() = 0.0;    //discrete Darboux vector does not have vanishing scalar part
 
-        corrq0 = q1 * omega;
-        corrq1 = q0 * omega;
-        corrq0.coeffs() *= invMassq0;
-        corrq1.coeffs() *= -invMassq1;
-        return true;
-    }
+//         corrq0 = q1 * omega;
+//         corrq1 = q0 * omega;
+//         corrq0.coeffs() *= invMassq0;
+//         corrq1.coeffs() *= -invMassq1;
+//         return true;
+//     }
 
-    // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename SCALER>
-    constexpr bool solve_PerpendiculaBisectorConstraint(
-        const VECTOR3d &p0, SCALER invMass0,
-        const VECTOR3d &p1, SCALER invMass1,
-        const VECTOR3d &p2, SCALER invMass2,
-        const SCALER stiffness,
-        VECTOR3d &corr0, VECTOR3d &corr1, VECTOR3d &corr2)
-    {
-        const VECTOR3d pm = 0.5 * (p0 + p1);
-        const VECTOR3d p0p2 = p0 - p2;
-        const VECTOR3d p2p1 = p2 - p1;
-        const VECTOR3d p1p0 = p1 - p0;
-        const VECTOR3d p2pm = p2 - pm;
+//     // ----------------------------------------------------------------------------------------------
+//     template<typename VECTOR3d,typename SCALER>
+//     constexpr bool solve_PerpendiculaBisectorConstraint(
+//         const VECTOR3d &p0, SCALER invMass0,
+//         const VECTOR3d &p1, SCALER invMass1,
+//         const VECTOR3d &p2, SCALER invMass2,
+//         const SCALER stiffness,
+//         VECTOR3d &corr0, VECTOR3d &corr1, VECTOR3d &corr2)
+//     {
+//         const VECTOR3d pm = 0.5 * (p0 + p1);
+//         const VECTOR3d p0p2 = p0 - p2;
+//         const VECTOR3d p2p1 = p2 - p1;
+//         const VECTOR3d p1p0 = p1 - p0;
+//         const VECTOR3d p2pm = p2 - pm;
 
-        SCALER wSum = invMass0 * p0p2.squaredNorm() + invMass1 * p2p1.squaredNorm() + invMass2 * p1p0.squaredNorm();
-        if (wSum < eps)
-            return false;
+//         SCALER wSum = invMass0 * p0p2.l2NormSqr() + invMass1 * p2p1.l2NormSqr() + invMass2 * p1p0.l2NormSqr();
+//         if (wSum < eps)
+//             return false;
 
-        const SCALER lambda = stiffness * p2pm.dot(p1p0) / wSum;
+//         const SCALER lambda = stiffness * p2pm.dot(p1p0) / wSum;
 
-        corr0 = -invMass0 * lambda * p0p2;
-        corr1 = -invMass1 * lambda * p2p1;
-        corr2 = -invMass2 * lambda * p1p0;
+//         corr0 = -invMass0 * lambda * p0p2;
+//         corr1 = -invMass1 * lambda * p2p1;
+//         corr2 = -invMass2 * lambda * p1p0;
 
-        return true;
-    }
+//         return true;
+//     }
 
-    // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename SCALER>
-    constexpr bool solve_GhostPointEdgeDistanceConstraint(
-        const VECTOR3d& p0, SCALER invMass0,
-        const VECTOR3d& p1, SCALER invMass1,
-        const VECTOR3d& p2, SCALER invMass2,
-        const SCALER stiffness, 
-        const SCALER ghostEdgeRestLength,
-        VECTOR3d& corr0, VECTOR3d&  corr1, VECTOR3d&  corr2)
-    {
-        // Ghost-Edge constraint
-        VECTOR3d pm = 0.5 * (p0 + p1);
-        VECTOR3d p2pm = p2 - pm;
-        SCALER wSum = static_cast<SCALER>(0.25) * invMass0 + static_cast<SCALER>(0.25) * invMass1 + static_cast<SCALER>(1.0) * invMass2;
+//     // ----------------------------------------------------------------------------------------------
+//     template<typename VECTOR3d,typename SCALER>
+//     constexpr bool solve_GhostPointEdgeDistanceConstraint(
+//         const VECTOR3d& p0, SCALER invMass0,
+//         const VECTOR3d& p1, SCALER invMass1,
+//         const VECTOR3d& p2, SCALER invMass2,
+//         const SCALER stiffness, 
+//         const SCALER ghostEdgeRestLength,
+//         VECTOR3d& corr0, VECTOR3d&  corr1, VECTOR3d&  corr2)
+//     {
+//         // Ghost-Edge constraint
+//         VECTOR3d pm = 0.5 * (p0 + p1);
+//         VECTOR3d p2pm = p2 - pm;
+//         SCALER wSum = static_cast<SCALER>(0.25) * invMass0 + static_cast<SCALER>(0.25) * invMass1 + static_cast<SCALER>(1.0) * invMass2;
 
-        if (wSum < eps)
-            return false;
+//         if (wSum < eps)
+//             return false;
 
-        SCALER p2pm_mag = p2pm.norm();
-        p2pm *= static_cast<SCALER>(1.0) / p2pm_mag;
+//         SCALER p2pm_mag = p2pm.norm();
+//         p2pm *= static_cast<SCALER>(1.0) / p2pm_mag;
 
-        const SCALER lambda = stiffness * (p2pm_mag - ghostEdgeRestLength) / wSum;
+//         const SCALER lambda = stiffness * (p2pm_mag - ghostEdgeRestLength) / wSum;
 
-        corr0 = 0.5 * invMass0 * lambda * p2pm;
-        corr1 = 0.5 * invMass1 * lambda * p2pm;
-        corr2 = -1.0 * invMass2 * lambda * p2pm;
+//         corr0 = 0.5 * invMass0 * lambda * p2pm;
+//         corr1 = 0.5 * invMass1 * lambda * p2pm;
+//         corr2 = -1.0 * invMass2 * lambda * p2pm;
 
-        return true;
-    }
+//         return true;
+//     }
 
-    // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename SCALER>
-    constexpr bool solve_DarbouxVectorConstraint(
-        const VECTOR3d& p0, SCALER invMass0,
-        const VECTOR3d& p1, SCALER invMass1,
-        const VECTOR3d& p2, SCALER invMass2,
-        const VECTOR3d& p3, SCALER invMass3,
-        const VECTOR3d& p4, SCALER invMass4,
-        const VECTOR3d& bendingAndTwistingKs,
-        const SCALER midEdgeLength,
-        const VECTOR3d& restDarbouxVector,
-        VECTOR3d& corr0, VECTOR3d&  corr1, VECTOR3d&  corr2, VECTOR3d&  corr3, VECTOR3d& corr4)
-    {
-        //  Single rod element:
-        //      3   4		//ghost points
-        //		|	|
-        //  --0---1---2--	// rod points
+//     // ----------------------------------------------------------------------------------------------
+//     template<typename VECTOR3d,typename SCALER>
+//     constexpr bool solve_DarbouxVectorConstraint(
+//         const VECTOR3d& p0, SCALER invMass0,
+//         const VECTOR3d& p1, SCALER invMass1,
+//         const VECTOR3d& p2, SCALER invMass2,
+//         const VECTOR3d& p3, SCALER invMass3,
+//         const VECTOR3d& p4, SCALER invMass4,
+//         const VECTOR3d& bendingAndTwistingKs,
+//         const SCALER midEdgeLength,
+//         const VECTOR3d& restDarbouxVector,
+//         VECTOR3d& corr0, VECTOR3d&  corr1, VECTOR3d&  corr2, VECTOR3d&  corr3, VECTOR3d& corr4)
+//     {
+//         //  Single rod element:
+//         //      3   4		//ghost points
+//         //		|	|
+//         //  --0---1---2--	// rod points
 
-        VECTOR3d darboux_vector;
-        MATRIX3d d0, d1;
+//         VECTOR3d darboux_vector;
+//         MATRIX3d d0, d1;
 
-        computeMaterialFrame(p0, p1, p3, d0);
-        computeMaterialFrame(p1, p2, p4, d1);
+//         computeMaterialFrame(p0, p1, p3, d0);
+//         computeMaterialFrame(p1, p2, p4, d1);
 
-        computeDarbouxVector(d0, d1, midEdgeLength, darboux_vector);
+//         computeDarbouxVector(d0, d1, midEdgeLength, darboux_vector);
 
-        MATRIX3d dajpi[3][3];
-        computeMaterialFrameDerivative(p0, p1, p3, d0,
-            dajpi[0][0], dajpi[0][1], dajpi[0][2],
-            dajpi[1][0], dajpi[1][1], dajpi[1][2],
-            dajpi[2][0], dajpi[2][1], dajpi[2][2]);
+//         MATRIX3d dajpi[3][3];
+//         computeMaterialFrameDerivative(p0, p1, p3, d0,
+//             dajpi[0][0], dajpi[0][1], dajpi[0][2],
+//             dajpi[1][0], dajpi[1][1], dajpi[1][2],
+//             dajpi[2][0], dajpi[2][1], dajpi[2][2]);
 
-        MATRIX3d dbjpi[3][3];
-        computeMaterialFrameDerivative(p1, p2, p4, d1,
-            dbjpi[0][0], dbjpi[0][1], dbjpi[0][2],
-            dbjpi[1][0], dbjpi[1][1], dbjpi[1][2],
-            dbjpi[2][0], dbjpi[2][1], dbjpi[2][2]);
+//         MATRIX3d dbjpi[3][3];
+//         computeMaterialFrameDerivative(p1, p2, p4, d1,
+//             dbjpi[0][0], dbjpi[0][1], dbjpi[0][2],
+//             dbjpi[1][0], dbjpi[1][1], dbjpi[1][2],
+//             dbjpi[2][0], dbjpi[2][1], dbjpi[2][2]);
 
-        MATRIX3d constraint_jacobian[5];
-        computeDarbouxGradient(
-            darboux_vector, midEdgeLength, d0, d1, 
-            dajpi, dbjpi, 
-            //bendingAndTwistingKs,
-            constraint_jacobian[0],
-            constraint_jacobian[1],
-            constraint_jacobian[2],
-            constraint_jacobian[3],
-            constraint_jacobian[4]);
+//         MATRIX3d constraint_jacobian[5];
+//         computeDarbouxGradient(
+//             darboux_vector, midEdgeLength, d0, d1, 
+//             dajpi, dbjpi, 
+//             //bendingAndTwistingKs,
+//             constraint_jacobian[0],
+//             constraint_jacobian[1],
+//             constraint_jacobian[2],
+//             constraint_jacobian[3],
+//             constraint_jacobian[4]);
 
-        const VECTOR3d constraint_value(bendingAndTwistingKs[0] * (darboux_vector[0] - restDarbouxVector[0]),
-                                bendingAndTwistingKs[1] * (darboux_vector[1] - restDarbouxVector[1]),
-                                bendingAndTwistingKs[2] * (darboux_vector[2] - restDarbouxVector[2]));
+//         const VECTOR3d constraint_value(bendingAndTwistingKs[0] * (darboux_vector[0] - restDarbouxVector[0]),
+//                                 bendingAndTwistingKs[1] * (darboux_vector[1] - restDarbouxVector[1]),
+//                                 bendingAndTwistingKs[2] * (darboux_vector[2] - restDarbouxVector[2]));
 
-        MATRIX3d factor_matrix;
-        factor_matrix.setZero();
+//         MATRIX3d factor_matrix;
+//         factor_matrix = VECTOR3d::uniform(0);;
 
-        MATRIX3d tmp_mat;
-        SCALER invMasses[]{ invMass0, invMass1, invMass2, invMass3, invMass4 };
-        for (int i = 0; i < 5; ++i)
-        {
-            tmp_mat = constraint_jacobian[i].transpose() * constraint_jacobian[i];
-            tmp_mat.col(0) *= invMasses[i];
-            tmp_mat.col(1) *= invMasses[i];
-            tmp_mat.col(2) *= invMasses[i];
+//         MATRIX3d tmp_mat;
+//         SCALER invMasses[]{ invMass0, invMass1, invMass2, invMass3, invMass4 };
+//         for (int i = 0; i < 5; ++i)
+//         {
+//             tmp_mat = constraint_jacobian[i].transpose() * constraint_jacobian[i];
+//             tmp_mat.col(0) *= invMasses[i];
+//             tmp_mat.col(1) *= invMasses[i];
+//             tmp_mat.col(2) *= invMasses[i];
 
-            factor_matrix += tmp_mat;
-        }
+//             factor_matrix += tmp_mat;
+//         }
 
-        VECTOR3d dp[5];
-        tmp_mat = factor_matrix.inverse();
+//         VECTOR3d dp[5];
+//         tmp_mat = factor_matrix.inverse();
 
-        for (int i = 0; i < 5; ++i)
-        {
-            constraint_jacobian[i].col(0) *= invMasses[i];
-            constraint_jacobian[i].col(1) *= invMasses[i];
-            constraint_jacobian[i].col(2) *= invMasses[i];
-            dp[i] = -(constraint_jacobian[i]) * (tmp_mat * constraint_value);
-        }
+//         for (int i = 0; i < 5; ++i)
+//         {
+//             constraint_jacobian[i].col(0) *= invMasses[i];
+//             constraint_jacobian[i].col(1) *= invMasses[i];
+//             constraint_jacobian[i].col(2) *= invMasses[i];
+//             dp[i] = -(constraint_jacobian[i]) * (tmp_mat * constraint_value);
+//         }
 
-        corr0 = dp[0];
-        corr1 = dp[1];
-        corr2 = dp[2];
-        corr3 = dp[3];
-        corr4 = dp[4];
+//         corr0 = dp[0];
+//         corr1 = dp[1];
+//         corr2 = dp[2];
+//         corr3 = dp[3];
+//         corr4 = dp[4];
 
-        return true;
-    }
+//         return true;
+//     }
 
-    // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename MATRIX3d>
-    constexpr bool computeMaterialFrame(
-        const VECTOR3d& p0, 
-        const VECTOR3d& p1, 
-        const VECTOR3d& p2, 
-        MATRIX3d& frame)
-    {
-        frame.col(2) = (p1 - p0);
-        frame.col(2).normalize();
+//     // ----------------------------------------------------------------------------------------------
+//     template<typename VECTOR3d,typename MATRIX3d>
+//     constexpr bool computeMaterialFrame(
+//         const VECTOR3d& p0, 
+//         const VECTOR3d& p1, 
+//         const VECTOR3d& p2, 
+//         MATRIX3d& frame)
+//     {
+//         frame.col(2) = (p1 - p0);
+//         frame.col(2).normalize();
 
-        frame.col(1) = (frame.col(2).cross(p2 - p0));
-        frame.col(1).normalize();
+//         frame.col(1) = (frame.col(2).cross(p2 - p0));
+//         frame.col(1).normalize();
 
-        frame.col(0) = frame.col(1).cross(frame.col(2));
-        return true;
-    }
+//         frame.col(0) = frame.col(1).cross(frame.col(2));
+//         return true;
+//     }
 
-    // ----------------------------------------------------------------------------------------------
-    template<typename SCALER,typename VECTOR3d,typename MATRIX3d>
-    constexpr bool computeDarbouxVector(const MATRIX3d& dA, const MATRIX3d& dB, const SCALER mid_edge_length, VECTOR3d& darboux_vector)
-    {
-        SCALER factor = static_cast<SCALER>(1.0) + dA.col(0).dot(dB.col(0)) + dA.col(1).dot(dB.col(1)) + dA.col(2).dot(dB.col(2));
+//     // ----------------------------------------------------------------------------------------------
+//     template<typename SCALER,typename VECTOR3d,typename MATRIX3d>
+//     constexpr bool computeDarbouxVector(const MATRIX3d& dA, const MATRIX3d& dB, const SCALER mid_edge_length, VECTOR3d& darboux_vector)
+//     {
+//         SCALER factor = static_cast<SCALER>(1.0) + dA.col(0).dot(dB.col(0)) + dA.col(1).dot(dB.col(1)) + dA.col(2).dot(dB.col(2));
 
-        factor = static_cast<SCALER>(2.0) / (mid_edge_length * factor);
+//         factor = static_cast<SCALER>(2.0) / (mid_edge_length * factor);
 
-        for (int c = 0; c < 3; ++c)
-        {
-            const int i = permutation[c][0];
-            const int j = permutation[c][1];
-            const int k = permutation[c][2];
-            darboux_vector[i] = dA.col(j).dot(dB.col(k)) - dA.col(k).dot(dB.col(j));
-        }
-        darboux_vector *= factor;
-        return true;
-    }
+//         for (int c = 0; c < 3; ++c)
+//         {
+//             const int i = permutation[c][0];
+//             const int j = permutation[c][1];
+//             const int k = permutation[c][2];
+//             darboux_vector[i] = dA.col(j).dot(dB.col(k)) - dA.col(k).dot(dB.col(j));
+//         }
+//         darboux_vector *= factor;
+//         return true;
+//     }
 
-    // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename MATRIX3d>
-    constexpr bool computeMaterialFrameDerivative(
-        const VECTOR3d& p0, const VECTOR3d& p1, const VECTOR3d& p2, const MATRIX3d& d,
-        MATRIX3d& d1p0, MATRIX3d& d1p1, MATRIX3d& d1p2,
-        MATRIX3d& d2p0, MATRIX3d& d2p1, MATRIX3d& d2p2,
-        MATRIX3d& d3p0, MATRIX3d& d3p1, MATRIX3d& d3p2)
-    {
-        //////////////////////////////////////////////////////////////////////////
-        // d3pi
-        //////////////////////////////////////////////////////////////////////////
-        const VECTOR3d p01 = p1 - p0;
-        SCALER length_p01 = p01.norm();
+//     // ----------------------------------------------------------------------------------------------
+//     template<typename VECTOR3d,typename MATRIX3d>
+//     constexpr bool computeMaterialFrameDerivative(
+//         const VECTOR3d& p0, const VECTOR3d& p1, const VECTOR3d& p2, const MATRIX3d& d,
+//         MATRIX3d& d1p0, MATRIX3d& d1p1, MATRIX3d& d1p2,
+//         MATRIX3d& d2p0, MATRIX3d& d2p1, MATRIX3d& d2p2,
+//         MATRIX3d& d3p0, MATRIX3d& d3p1, MATRIX3d& d3p2)
+//     {
+//         //////////////////////////////////////////////////////////////////////////
+//         // d3pi
+//         //////////////////////////////////////////////////////////////////////////
+//         const VECTOR3d p01 = p1 - p0;
+//         SCALER length_p01 = p01.norm();
 
-        d3p0.col(0) = d.col(2)[0] * d.col(2);
-        d3p0.col(1) = d.col(2)[1] * d.col(2);
-        d3p0.col(2) = d.col(2)[2] * d.col(2);
+//         d3p0.col(0) = d.col(2)[0] * d.col(2);
+//         d3p0.col(1) = d.col(2)[1] * d.col(2);
+//         d3p0.col(2) = d.col(2)[2] * d.col(2);
 
-        d3p0.col(0)[0] -= 1.0;
-        d3p0.col(1)[1] -= 1.0;
-        d3p0.col(2)[2] -= 1.0;
+//         d3p0.col(0)[0] -= 1.0;
+//         d3p0.col(1)[1] -= 1.0;
+//         d3p0.col(2)[2] -= 1.0;
 
-        d3p0.col(0) *= (static_cast<SCALER>(1.0) / length_p01);
-        d3p0.col(1) *= (static_cast<SCALER>(1.0) / length_p01);
-        d3p0.col(2) *= (static_cast<SCALER>(1.0) / length_p01);
+//         d3p0.col(0) *= (static_cast<SCALER>(1.0) / length_p01);
+//         d3p0.col(1) *= (static_cast<SCALER>(1.0) / length_p01);
+//         d3p0.col(2) *= (static_cast<SCALER>(1.0) / length_p01);
 
-        d3p1.col(0) = -d3p0.col(0);
-        d3p1.col(1) = -d3p0.col(1);
-        d3p1.col(2) = -d3p0.col(2);
+//         d3p1.col(0) = -d3p0.col(0);
+//         d3p1.col(1) = -d3p0.col(1);
+//         d3p1.col(2) = -d3p0.col(2);
 
-        d3p2.col(0).setZero();
-        d3p2.col(1).setZero();
-        d3p2.col(2).setZero();
+//         d3p2.col(0) = VECTOR3d::uniform(0);;
+//         d3p2.col(1) = VECTOR3d::uniform(0);;
+//         d3p2.col(2) = VECTOR3d::uniform(0);;
 
-        //////////////////////////////////////////////////////////////////////////
-        // d2pi
-        //////////////////////////////////////////////////////////////////////////
-        const VECTOR3d p02 = p2 - p0;
-        const VECTOR3d p01_cross_p02 = p01.cross(p02);
+//         //////////////////////////////////////////////////////////////////////////
+//         // d2pi
+//         //////////////////////////////////////////////////////////////////////////
+//         const VECTOR3d p02 = p2 - p0;
+//         const VECTOR3d p01_cross_p02 = p01.cross(p02);
 
-        const SCALER length_cross = p01_cross_p02.norm();
+//         const SCALER length_cross = p01_cross_p02.norm();
 
-        MATRIX3d mat;
-        mat.col(0) = d.col(1)[0] * d.col(1);
-        mat.col(1) = d.col(1)[1] * d.col(1);
-        mat.col(2) = d.col(1)[2] * d.col(1);
+//         MATRIX3d mat;
+//         mat.col(0) = d.col(1)[0] * d.col(1);
+//         mat.col(1) = d.col(1)[1] * d.col(1);
+//         mat.col(2) = d.col(1)[2] * d.col(1);
 
-        mat.col(0)[0] -= 1.0;
-        mat.col(1)[1] -= 1.0;
-        mat.col(2)[2] -= 1.0;
+//         mat.col(0)[0] -= 1.0;
+//         mat.col(1)[1] -= 1.0;
+//         mat.col(2)[2] -= 1.0;
 
-        mat.col(0) *= (-static_cast<SCALER>(1.0) / length_cross);
-        mat.col(1) *= (-static_cast<SCALER>(1.0) / length_cross);
-        mat.col(2) *= (-static_cast<SCALER>(1.0) / length_cross);
+//         mat.col(0) *= (-static_cast<SCALER>(1.0) / length_cross);
+//         mat.col(1) *= (-static_cast<SCALER>(1.0) / length_cross);
+//         mat.col(2) *= (-static_cast<SCALER>(1.0) / length_cross);
 
-        MATRIX3d product_matrix;
-        MathFunctions::crossProductMatrix(p2 - p1, product_matrix);
-        d2p0 = mat * product_matrix;
+//         MATRIX3d product_matrix;
+//         LSL_GEO::crossProductMatrix(p2 - p1, product_matrix);
+//         d2p0 = mat * product_matrix;
 
-        MathFunctions::crossProductMatrix(p0 - p2, product_matrix);
-        d2p1 = mat * product_matrix;
+//         LSL_GEO::crossProductMatrix(p0 - p2, product_matrix);
+//         d2p1 = mat * product_matrix;
 
-        MathFunctions::crossProductMatrix(p1 - p0, product_matrix);
-        d2p2 = mat * product_matrix;
+//         LSL_GEO::crossProductMatrix(p1 - p0, product_matrix);
+//         d2p2 = mat * product_matrix;
 
-        //////////////////////////////////////////////////////////////////////////
-        // d1pi
-        //////////////////////////////////////////////////////////////////////////
-        MATRIX3d product_mat_d3;
-        MATRIX3d product_mat_d2;
-        MathFunctions::crossProductMatrix(d.col(2), product_mat_d3);
-        MathFunctions::crossProductMatrix(d.col(1), product_mat_d2);
+//         //////////////////////////////////////////////////////////////////////////
+//         // d1pi
+//         //////////////////////////////////////////////////////////////////////////
+//         MATRIX3d product_mat_d3;
+//         MATRIX3d product_mat_d2;
+//         LSL_GEO::crossProductMatrix(d.col(2), product_mat_d3);
+//         LSL_GEO::crossProductMatrix(d.col(1), product_mat_d2);
 
-        d1p0 = product_mat_d2 * d3p0 - product_mat_d3 * d2p0;
-        d1p1 = product_mat_d2 * d3p1 - product_mat_d3 * d2p1;
-        d1p2 = -product_mat_d3 * d2p2;
-        return true;
-    }
+//         d1p0 = product_mat_d2 * d3p0 - product_mat_d3 * d2p0;
+//         d1p1 = product_mat_d2 * d3p1 - product_mat_d3 * d2p1;
+//         d1p2 = -product_mat_d3 * d2p2;
+//         return true;
+//     }
 
-    // ----------------------------------------------------------------------------------------------
-    template<typename SCALER,typename VECTOR3d,typename MATRIX3d>
-    constexpr bool computeDarbouxGradient(
-        const VECTOR3d& darboux_vector, const SCALER length,
-        const MATRIX3d& da, const MATRIX3d& db,
-        const MATRIX3d dajpi[3][3], const MATRIX3d dbjpi[3][3],
-        //const VECTOR3d& bendAndTwistKs,
-        MATRIX3d& omega_pa, MATRIX3d& omega_pb, MATRIX3d& omega_pc, MATRIX3d& omega_pd, MATRIX3d& omega_pe
-        )
-    {
-        SCALER X = static_cast<SCALER>(1.0) + da.col(0).dot(db.col(0)) + da.col(1).dot(db.col(1)) + da.col(2).dot(db.col(2));
-        X = static_cast<SCALER>(2.0) / (length * X);
+//     // ----------------------------------------------------------------------------------------------
+//     template<typename SCALER,typename VECTOR3d,typename MATRIX3d>
+//     constexpr bool computeDarbouxGradient(
+//         const VECTOR3d& darboux_vector, const SCALER length,
+//         const MATRIX3d& da, const MATRIX3d& db,
+//         const MATRIX3d dajpi[3][3], const MATRIX3d dbjpi[3][3],
+//         //const VECTOR3d& bendAndTwistKs,
+//         MATRIX3d& omega_pa, MATRIX3d& omega_pb, MATRIX3d& omega_pc, MATRIX3d& omega_pd, MATRIX3d& omega_pe
+//         )
+//     {
+//         SCALER X = static_cast<SCALER>(1.0) + da.col(0).dot(db.col(0)) + da.col(1).dot(db.col(1)) + da.col(2).dot(db.col(2));
+//         X = static_cast<SCALER>(2.0) / (length * X);
 
-        for (int c = 0; c < 3; ++c) 
-        {
-            const int i = permutation[c][0];
-            const int j = permutation[c][1];
-            const int k = permutation[c][2];
-            // pa
-            {
-                VECTOR3d term1(0,0,0);
-                VECTOR3d term2(0,0,0);
-                VECTOR3d tmp(0,0,0);
+//         for (int c = 0; c < 3; ++c) 
+//         {
+//             const int i = permutation[c][0];
+//             const int j = permutation[c][1];
+//             const int k = permutation[c][2];
+//             // pa
+//             {
+//                 VECTOR3d term1(0,0,0);
+//                 VECTOR3d term2(0,0,0);
+//                 VECTOR3d tmp(0,0,0);
 
-                // first term
-                term1 = dajpi[j][0].transpose() * db.col(k);
-                tmp =   dajpi[k][0].transpose() * db.col(j);
-                term1 = term1 - tmp;
-                // second term
-                for (int n = 0; n < 3; ++n) 
-                {
-                    tmp = dajpi[n][0].transpose() * db.col(n);
-                    term2 = term2 + tmp;
-                }
-                omega_pa.col(i) = X * (term1-(0.5 * darboux_vector[i] * length) * term2);
-                //omega_pa.col(i) *= bendAndTwistKs[i];
-            }
-            // pb
-            {
-                VECTOR3d term1(0, 0, 0);
-                VECTOR3d term2(0, 0, 0);
-                VECTOR3d tmp(0, 0, 0);
-                // first term
-                term1 = dajpi[j][1].transpose() * db.col(k);
-                tmp =   dajpi[k][1].transpose() * db.col(j);
-                term1 = term1 - tmp;
-                // third term
-                tmp = dbjpi[j][0].transpose() * da.col(k);
-                term1 = term1 - tmp;
+//                 // first term
+//                 term1 = dajpi[j][0].transpose() * db.col(k);
+//                 tmp =   dajpi[k][0].transpose() * db.col(j);
+//                 term1 = term1 - tmp;
+//                 // second term
+//                 for (int n = 0; n < 3; ++n) 
+//                 {
+//                     tmp = dajpi[n][0].transpose() * db.col(n);
+//                     term2 = term2 + tmp;
+//                 }
+//                 omega_pa.col(i) = X * (term1-(0.5 * darboux_vector[i] * length) * term2);
+//                 //omega_pa.col(i) *= bendAndTwistKs[i];
+//             }
+//             // pb
+//             {
+//                 VECTOR3d term1(0, 0, 0);
+//                 VECTOR3d term2(0, 0, 0);
+//                 VECTOR3d tmp(0, 0, 0);
+//                 // first term
+//                 term1 = dajpi[j][1].transpose() * db.col(k);
+//                 tmp =   dajpi[k][1].transpose() * db.col(j);
+//                 term1 = term1 - tmp;
+//                 // third term
+//                 tmp = dbjpi[j][0].transpose() * da.col(k);
+//                 term1 = term1 - tmp;
                 
-                tmp = dbjpi[k][0].transpose() * da.col(j);
-                term1 = term1 + tmp;
+//                 tmp = dbjpi[k][0].transpose() * da.col(j);
+//                 term1 = term1 + tmp;
 
-                // second term
-                for (int n = 0; n < 3; ++n) 
-                {
-                    tmp = dajpi[n][1].transpose() * db.col(n);
-                    term2 = term2 + tmp;
+//                 // second term
+//                 for (int n = 0; n < 3; ++n) 
+//                 {
+//                     tmp = dajpi[n][1].transpose() * db.col(n);
+//                     term2 = term2 + tmp;
                     
-                    tmp = dbjpi[n][0].transpose() * da.col(n);
-                    term2 = term2 + tmp;
-                }
-                omega_pb.col(i) = X * (term1-(0.5 * darboux_vector[i] * length) * term2);
-                //omega_pb.col(i) *= bendAndTwistKs[i];
-            }
-            // pc
-            {
-                VECTOR3d term1(0, 0, 0);
-                VECTOR3d term2(0, 0, 0);
-                VECTOR3d tmp(0, 0, 0);
+//                     tmp = dbjpi[n][0].transpose() * da.col(n);
+//                     term2 = term2 + tmp;
+//                 }
+//                 omega_pb.col(i) = X * (term1-(0.5 * darboux_vector[i] * length) * term2);
+//                 //omega_pb.col(i) *= bendAndTwistKs[i];
+//             }
+//             // pc
+//             {
+//                 VECTOR3d term1(0, 0, 0);
+//                 VECTOR3d term2(0, 0, 0);
+//                 VECTOR3d tmp(0, 0, 0);
                 
-                // first term
-                term1 = dbjpi[j][1].transpose() * da.col(k);
-                tmp =   dbjpi[k][1].transpose() * da.col(j);
-                term1 = term1 - tmp;
+//                 // first term
+//                 term1 = dbjpi[j][1].transpose() * da.col(k);
+//                 tmp =   dbjpi[k][1].transpose() * da.col(j);
+//                 term1 = term1 - tmp;
 
-                // second term
-                for (int n = 0; n < 3; ++n) 
-                {
-                    tmp = dbjpi[n][1].transpose() * da.col(n);
-                    term2 = term2 + tmp;
-                }
-                omega_pc.col(i) = -X*(term1+(0.5 * darboux_vector[i] * length) * term2);
-                //omega_pc.col(i) *= bendAndTwistKs[i];
-            }
-            // pd
-            {
-                VECTOR3d term1(0, 0, 0);
-                VECTOR3d term2(0, 0, 0);
-                VECTOR3d tmp(0, 0, 0);
-                // first term
-                term1 = dajpi[j][2].transpose() * db.col(k);
-                tmp =   dajpi[k][2].transpose() * db.col(j);
-                term1 = term1 - tmp;
-                // second term
-                for (int n = 0; n < 3; ++n) {
-                    tmp = dajpi[n][2].transpose() * db.col(n);
-                    term2 = term2 + tmp;
-                }
-                omega_pd.col(i) = X*(term1-(0.5 * darboux_vector[i] * length) * term2);
-                //omega_pd.col(i) *= bendAndTwistKs[i];
-            }
-            // pe
-            {
-                VECTOR3d term1(0, 0, 0);
-                VECTOR3d term2(0, 0, 0);
-                VECTOR3d tmp(0, 0, 0);
-                // first term
-                term1 = dbjpi[j][2].transpose() * da.col(k);
-                tmp = dbjpi[k][2].transpose() * da.col(j);
-                term1 -= tmp;
+//                 // second term
+//                 for (int n = 0; n < 3; ++n) 
+//                 {
+//                     tmp = dbjpi[n][1].transpose() * da.col(n);
+//                     term2 = term2 + tmp;
+//                 }
+//                 omega_pc.col(i) = -X*(term1+(0.5 * darboux_vector[i] * length) * term2);
+//                 //omega_pc.col(i) *= bendAndTwistKs[i];
+//             }
+//             // pd
+//             {
+//                 VECTOR3d term1(0, 0, 0);
+//                 VECTOR3d term2(0, 0, 0);
+//                 VECTOR3d tmp(0, 0, 0);
+//                 // first term
+//                 term1 = dajpi[j][2].transpose() * db.col(k);
+//                 tmp =   dajpi[k][2].transpose() * db.col(j);
+//                 term1 = term1 - tmp;
+//                 // second term
+//                 for (int n = 0; n < 3; ++n) {
+//                     tmp = dajpi[n][2].transpose() * db.col(n);
+//                     term2 = term2 + tmp;
+//                 }
+//                 omega_pd.col(i) = X*(term1-(0.5 * darboux_vector[i] * length) * term2);
+//                 //omega_pd.col(i) *= bendAndTwistKs[i];
+//             }
+//             // pe
+//             {
+//                 VECTOR3d term1(0, 0, 0);
+//                 VECTOR3d term2(0, 0, 0);
+//                 VECTOR3d tmp(0, 0, 0);
+//                 // first term
+//                 term1 = dbjpi[j][2].transpose() * da.col(k);
+//                 tmp = dbjpi[k][2].transpose() * da.col(j);
+//                 term1 -= tmp;
                 
-                // second term
-                for (int n = 0; n < 3; ++n) 
-                {	
-                    tmp = dbjpi[n][2].transpose() * da.col(n);
-                    term2 += tmp;
-                }
+//                 // second term
+//                 for (int n = 0; n < 3; ++n) 
+//                 {	
+//                     tmp = dbjpi[n][2].transpose() * da.col(n);
+//                     term2 += tmp;
+//                 }
 
-                omega_pe.col(i) = -X*(term1+(0.5 * darboux_vector[i] * length) * term2);
-                //omega_pe.col(i) *= bendAndTwistKs[i];
-            }
-        }
-        return true;
-    }
+//                 omega_pe.col(i) = -X*(term1+(0.5 * darboux_vector[i] * length) * term2);
+//                 //omega_pe.col(i) *= bendAndTwistKs[i];
+//             }
+//         }
+//         return true;
+//     }
 
 };
 };
