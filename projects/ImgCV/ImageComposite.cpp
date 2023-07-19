@@ -605,8 +605,6 @@ struct Blend: INode {
 
 //todo： image1和image2大小不同的情况
 
-
-
         if(compmode == "Normal") {
 #pragma omp parallel for
             for (int i = 0; i < h1; i++) {
@@ -631,7 +629,7 @@ struct Blend: INode {
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
             }
-        }
+        }                
 
         else if(compmode == "Subtract") {
 #pragma omp parallel for
@@ -715,9 +713,9 @@ struct Blend: INode {
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
                     vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    rgb1 = pow(rgb1, 1.0/2.2);
+                    //rgb1 = pow(rgb1, 1.0/2.2);
                     vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
-                    rgb2 = pow(rgb2, 1.0/2.2);
+                    //rgb2 = pow(rgb2, 1.0/2.2);
                     vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c;
                     for (int k = 0; k < 3; k++) {
@@ -727,8 +725,7 @@ struct Blend: INode {
                             c[k] = 1 - 2 * (1 - rgb1[k]) * (1 - rgb2[k]);
                         }
                     }
-                    c = pow(c, 2.2) * opacity + pow(rgb2, 2.2) * (1 - opacity);
-                    //c = c * opacity + rgb2 * (1 - opacity);
+                    c = c * opacity + rgb2 * (1 - opacity);
                     //c = pow(c, 2.2);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
@@ -753,9 +750,9 @@ struct Blend: INode {
             for (int i = 0; i < h1; i++) {
                 for (int j = 0; j < w1; j++) {
                     vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
-                    rgb1 = pow(rgb1, 1.0/2.2);
+                    //rgb1 = pow(rgb1, 1.0/2.2);
                     vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
-                    rgb2 = pow(rgb2, 1.0/2.2);
+                    //rgb2 = pow(rgb2, 1.0/2.2);
                     vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
                     vec3f c;
                     for (int k = 0; k < 3; k++) {
@@ -765,7 +762,8 @@ struct Blend: INode {
                             c[k] = 2 * rgb2[k] * (1 - rgb1[k]) + sqrt(rgb2[k]) * (2 * rgb1[k] - 1);
                         }
                     }
-                    c = pow(c, 2.2) * opacity + pow(rgb2, 2.2) * (1 - opacity);
+                    c = c * opacity + rgb2 * (1 - opacity);
+                    //c = pow(c, 2.2);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
             }
@@ -952,13 +950,10 @@ struct CompBlur : INode {
         blurredImage->userData().set2("h", h);
         blurredImage->userData().set2("w", w);
         blurredImage->userData().set2("isImage", 1);
-        /*if(image->has_attr("alpha")){
+        if(image->has_attr("alpha")){
             blurredImage->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
-        }*/
+        }
         std::vector<std::vector<float>>k = createKernel(kmid[1],kmid[0],kmid[2],ktop[1],kbot[1],ktop[0],ktop[2],kbot[0],kbot[2]);
-        //int kernelSize = s * k.size();
-        //int kernelRadius = kernelSize / 2;
-
 // 计算卷积核的中心坐标
         int anchorX = 3 / 2;
         int anchorY = 3 / 2;
@@ -970,22 +965,25 @@ struct CompBlur : INode {
                     float sum0 = 0.0f;
                     float sum1 = 0.0f;
                     float sum2 = 0.0f;
-                    for (int i = 0; i < 3; i++) {
-                        for (int j = 0; j < 3; j++) {
-
-                            int kernelX = x + j - anchorX;
-                            int kernelY = y + i - anchorY;
-
-                            if (kernelX >= 0 && kernelX < w && kernelY >= 0 && kernelY < h) {
-
+                    if (x == 0 || x == w - 1 || y == 0 || y == h - 1) {
+                        sum0 = image->verts[y * w + x][0];
+                        sum1 = image->verts[y * w + x][1];
+                        sum2 = image->verts[y * w + x][2];
+                    } 
+                    else
+                    {
+                        for (int i = 0; i < 3; i++) {
+                            for (int j = 0; j < 3; j++) {
+                                int kernelX = x + j - anchorX;
+                                int kernelY = y + i - anchorY;
                                 sum0 += image->verts[kernelY * w + kernelX][0] * k[i][j];
                                 sum1 += image->verts[kernelY * w + kernelX][1] * k[i][j];
                                 sum2 += image->verts[kernelY * w + kernelX][2] * k[i][j];
                             }
                         }
                     }
-                    // 将结果赋值给输出图像
-                    blurredImage->verts[y * w + x] = {static_cast<float>(sum0), static_cast<float>(sum1),
+                    blurredImage->verts[y * w + x] = {static_cast<float>(sum0),
+                                                      static_cast<float>(sum1),
                                                       static_cast<float>(sum2)};
                 }
             }
