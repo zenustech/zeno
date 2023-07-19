@@ -91,6 +91,7 @@ private:
     QVector<QUndoCommand*> m_commandSeq;
 
     bool m_bNodeUI;
+    bool m_bSharedNode;
 };
 
 

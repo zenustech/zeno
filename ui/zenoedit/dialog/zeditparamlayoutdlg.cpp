@@ -116,6 +116,7 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     , m_pGraphsModel(pGraphsModel)
     , m_bSubgraphNode(false)
     , m_bNodeUI(bNodeUI)
+    , m_bSharedNode(false)
 {
     m_ui = new Ui::EditParamLayoutDlg;
     m_ui->setupUi(this);
@@ -140,6 +141,12 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
     m_model = qobject_cast<ViewParamModel*>(pModel);
     ZASSERT_EXIT(m_model);
 
+    GraphsManagment* mgr = zenoApp->graphsManagment();
+    ZASSERT_EXIT(mgr);
+    if (m_pGraphsModel == mgr->sharedSubgraphs())
+    {
+        m_bSharedNode = true;
+    }
     m_bSubgraphNode = m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && m_model->isNodeModel();
     m_subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
 
@@ -296,19 +303,43 @@ QIcon ZEditParamLayoutDlg::getIcon(const QStandardItem *pItem)
 void ZEditParamLayoutDlg::initDescValueForProxy() {
     if (m_bNodeUI && m_bSubgraphNode)
     {
-        NODE_DESC desc;
-        const QString& subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-        auto &mgr = GraphsManagment::instance();
-        mgr.getDescriptor(subnetNodeName, desc);
-        NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(m_proxyModel);
-        ZASSERT_EXIT(nodeParams);
-        VParamItem* inputs = nodeParams->getInputs();
-
-        for (INPUT_SOCKET inSocket : desc.inputs)
+        if (m_bSharedNode)
         {
-            VParamItem* pItem = inputs->getItem(inSocket.info.name);
-            ZASSERT_EXIT(pItem);
-            pItem->setData(inSocket.info.defaultValue, ROLE_PARAM_VALUE);
+            NODE_DESC desc;
+            const QString& subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+            auto& mgr = GraphsManagment::instance();
+            mgr.getDescriptor(subnetNodeName, desc);
+
+            NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(m_proxyModel);
+            ZASSERT_EXIT(nodeParams);
+            VParamItem* inputs = nodeParams->getInputs();
+
+            for (INPUT_SOCKET inSocket : desc.inputs)
+            {
+                VParamItem* pItem = inputs->getItem(inSocket.info.name);
+                ZASSERT_EXIT(pItem);
+                pItem->setData(inSocket.info.defaultValue, ROLE_PARAM_VALUE);
+            }
+        }
+        else
+        {
+            NodeParamModel* nodeParams = qobject_cast<NodeParamModel*>(m_proxyModel);
+            ZASSERT_EXIT(nodeParams);
+            VParamItem* inputs = nodeParams->getInputs();
+
+            for (int r = 0; r < inputs->rowCount(); r++)
+            {
+                VParamItem* pChild = static_cast<VParamItem*>(inputs->child(r));
+                ZASSERT_EXIT(pChild);
+                const QModelIndex& subInOutput = UiHelper::findSubInOutputIdx(m_pGraphsModel, true, pChild->m_name, m_nodeIdx);
+                if (!subInOutput.isValid())
+                    continue;
+                NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subInOutput.data(ROLE_NODE_PARAMS));
+                ZASSERT_EXIT(nodeParams);
+                const QModelIndex& deflIdx = nodeParams->getParam(PARAM_PARAM, "defl");
+                pChild->setData(deflIdx.data(ROLE_PARAM_VALUE), ROLE_PARAM_VALUE);
+            }
+
         }
     }
 }
@@ -651,24 +682,33 @@ void ZEditParamLayoutDlg::switchStackProperties(int ctrl, VParamItem* pItem)
 
 void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARAM_CONTROL ctrl) 
 {
-    NODE_DESC desc;
     QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-    auto &mgr = GraphsManagment::instance();
-    mgr.getDescriptor(subnetNodeName, desc);
-    SOCKET_INFO info;
-    info.control = ctrl;
-    info.name = name;
-    info.type = "group-line";
-    info.sockProp = SOCKPROP_GROUP_LINE;
-    if (bInput) {
-        desc.inputs[name].info = info;
-    } else {
-        desc.outputs[name].info = info;
+    QModelIndexList subgNodes;
+    if (m_bSharedNode)
+    {
+        NODE_DESC desc;
+        auto& mgr = GraphsManagment::instance();
+        mgr.getDescriptor(subnetNodeName, desc);
+        SOCKET_INFO info;
+        info.control = ctrl;
+        info.name = name;
+        info.type = "group-line";
+        info.sockProp = SOCKPROP_GROUP_LINE;
+        if (bInput) {
+            desc.inputs[name].info = info;
+        }
+        else {
+            desc.outputs[name].info = info;
+        }
+        mgr.updateSubgDesc(subnetNodeName, desc);
+        subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
     }
-    mgr.updateSubgDesc(subnetNodeName, desc);
+    else
+    {
+        subgNodes << m_subgIdx;
+    }
     //sync to all subgraph nodes.
-    QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
-    for (QModelIndex subgNode : subgNodes) 
+    for (const QModelIndex& subgNode : subgNodes) 
     {
         if (subgNode == m_nodeIdx)
                 continue;
@@ -680,21 +720,29 @@ void ZEditParamLayoutDlg::addControlGroup(bool bInput, const QString &name, PARA
 
 void ZEditParamLayoutDlg::delControlGroup(bool bInput, const QString &name) 
 {
-    NODE_DESC desc;
-    QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
-    auto &mgr = GraphsManagment::instance();
-    mgr.getDescriptor(subnetNodeName, desc);
-    if (bInput) {
-        ZASSERT_EXIT(desc.inputs.find(name) != desc.inputs.end());
-        desc.inputs.remove(name);
-    } else {
-        ZASSERT_EXIT(desc.outputs.find(name) != desc.outputs.end());
-        desc.outputs.remove(name);
+    QModelIndexList subgNodes;
+    if (m_bSharedNode)
+    {
+        NODE_DESC desc;
+        QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
+        auto& mgr = GraphsManagment::instance();
+        mgr.getDescriptor(subnetNodeName, desc);
+        if (bInput) {
+            ZASSERT_EXIT(desc.inputs.find(name) != desc.inputs.end());
+            desc.inputs.remove(name);
+        }
+        else {
+            ZASSERT_EXIT(desc.outputs.find(name) != desc.outputs.end());
+            desc.outputs.remove(name);
+        }
+        mgr.updateSubgDesc(subnetNodeName, desc);
+        subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
     }
-    mgr.updateSubgDesc(subnetNodeName, desc);
+    else
+        subgNodes << m_subgIdx;
 
-    QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
-    for (QModelIndex subgNode : subgNodes) 
+
+    for (const QModelIndex& subgNode : subgNodes) 
     {
         if (subgNode == m_nodeIdx)
             continue;
@@ -705,6 +753,9 @@ void ZEditParamLayoutDlg::delControlGroup(bool bInput, const QString &name)
 
 void ZEditParamLayoutDlg::updateControlGroup(bool bInput, const QString &newName, const QString &oldName, PARAM_CONTROL ctrl, int row) 
 {
+    QModelIndexList subgNodes;
+    if (m_bSharedNode)
+    {
     NODE_DESC desc;
     QString subnetNodeName = m_nodeIdx.data(ROLE_OBJNAME).toString();
     auto &mgr = GraphsManagment::instance();
@@ -727,9 +778,12 @@ void ZEditParamLayoutDlg::updateControlGroup(bool bInput, const QString &newName
             desc.outputs.move(desc.outputs.size() - 1, row);
     }
     mgr.updateSubgDesc(subnetNodeName, desc);
+    subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
+    }
+    else
+        subgNodes << m_subgIdx;
 
-    QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subnetNodeName);
-    for (QModelIndex subgNode : subgNodes) 
+    for (const QModelIndex& subgNode : subgNodes) 
     {
         NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
         QModelIndex index = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, oldName);
@@ -974,9 +1028,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
         bSubInput = pGroup->m_name == iotags::params::node_inputs;
         subgName = m_nodeIdx.data(ROLE_OBJNAME).toString();
         QString subgId = m_nodeIdx.data(ROLE_OBJID).toString();
-        GraphsManagment* mgr = zenoApp->graphsManagment();
-        ZASSERT_EXIT(mgr);
-        if (m_pGraphsModel == mgr->sharedSubgraphs())
+        if (m_bSharedNode)
             subgIdx = m_pGraphsModel->index(subgName);
         else
             subgIdx = m_pGraphsModel->index(subgId, m_subgIdx);
@@ -1022,7 +1074,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                 NODE_DESC desc;
                 auto &mgr = GraphsManagment::instance();
                 bool ret = mgr.getDescriptor(subgName, desc);
-                if (bApplySubnetParam)
+                if (bApplySubnetParam && m_bSharedNode)
                 {
                     if (bSubInput) {
                         int sz = desc.inputs.size();
@@ -1042,6 +1094,10 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
 
                 //update the corresponding order for every subgraph node.
                 QModelIndexList subgNodes = m_pGraphsModel->findSubgraphNode(subgName);
+                if (subgNodes.isEmpty())
+                {
+                    subgNodes << subgIdx;
+                }
                 for (auto idx : subgNodes)
                 {
                     NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
