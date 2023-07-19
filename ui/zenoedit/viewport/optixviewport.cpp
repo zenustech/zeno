@@ -107,7 +107,6 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
             return;
         }
 #ifdef ZENO_OPTIX_PROC
-        std::string xx = zeno::getSession().globalComm->cachePath();
         QString cachePath = QString::fromStdString(zeno::getSession().globalComm->cachePath());
         QString frameDir = cachePath + "/" + QString::number(1000000 + frame).right(6);
         if (!QDir(frameDir).exists())

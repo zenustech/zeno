@@ -240,6 +240,14 @@ ZENO_API void GlobalComm::clearState() {
     cacheFramePath = {};
 }
 
+ZENO_API void GlobalComm::clearFrameState()
+{
+    std::lock_guard lck(m_mtx);
+    m_frames.clear();
+    m_inCacheFrames.clear();
+    m_maxPlayFrame = 0;
+}
+
 ZENO_API void GlobalComm::frameCache(std::string const &path, int gcmax) {
     std::lock_guard lck(m_mtx);
     cacheFramePath = path;
@@ -260,6 +268,12 @@ ZENO_API int GlobalComm::maxPlayFrames() {
 ZENO_API int GlobalComm::numOfFinishedFrame() {
     std::lock_guard lck(m_mtx);
     return m_maxPlayFrame;
+}
+
+ZENO_API int GlobalComm::numOfInitializedFrame()
+{
+    std::lock_guard lck(m_mtx);
+    return m_frames.size();
 }
 
 ZENO_API std::pair<int, int> GlobalComm::frameRange() {
@@ -373,6 +387,26 @@ ZENO_API std::string GlobalComm::cachePath()
 {
     std::lock_guard lck(m_mtx);
     return cacheFramePath;
+}
+
+ZENO_API bool GlobalComm::removeCache(int frame)
+{
+    std::lock_guard lck(m_mtx);
+    std::string dirToRemove = cacheFramePath + "/" + std::to_string(1000000 + frame).substr(1);
+    if (std::filesystem::exists(std::filesystem::u8path(dirToRemove)))
+    {
+        for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dirToRemove))
+        {
+            std::string filePath = entry.path().string();
+            if (std::filesystem::is_directory(entry.path()) || filePath.substr(filePath.size() - 9) != ".zencache")
+            {
+                return false;
+            }
+        }
+        std::filesystem::remove_all(dirToRemove);
+        zeno::log_info("remove dir: {}", dirToRemove);
+    }
+    return true;
 }
 
 }

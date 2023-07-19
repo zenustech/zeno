@@ -39,8 +39,10 @@ struct GlobalComm {
     ZENO_API void addViewObject(std::string const &key, std::shared_ptr<IObject> object);
     ZENO_API int maxPlayFrames();
     ZENO_API int numOfFinishedFrame();
+    ZENO_API int numOfInitializedFrame();
     ZENO_API std::pair<int, int> frameRange();
     ZENO_API void clearState();
+    ZENO_API void clearFrameState();
     ZENO_API ViewObjects const *getViewObjects(const int frameid);
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool isFrameCompleted(int frameid) const;
@@ -51,6 +53,7 @@ struct GlobalComm {
     ZENO_API void setCacheAutoRmEnable(bool enable);
     ZENO_API bool cacheAutoRmEnabled();
     ZENO_API std::string cachePath();
+    ZENO_API bool removeCache(int frame);
 };
 
 }

@@ -871,35 +871,6 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
     else {
         zeno::log_info("tcp optix client connection succeed");
     }
-    std::string cachePath(cachedir);
-    if (finishedFrames != 0)
-    {
-        zeno::getSession().globalComm->clearState();
-        zeno::getSession().globalComm->frameCache(cachePath, cachenum);
-        zeno::getSession().globalComm->initFrameRange(sFrame, eFrame);
-        zeno::getSession().globalState->frameid = sFrame;
-        for (int frame = sFrame; frame <= eFrame; frame++)
-        {
-            zeno::getSession().globalComm->newFrame();
-            zeno::getSession().globalComm->finishFrame();
-        }
-
-        TIMELINE_INFO tlinfo;
-        tlinfo.beginFrame = sFrame;
-        tlinfo.endFrame = eFrame;
-        resetTimeline(tlinfo);
-
-        QVector<DisplayWidget*> views = viewports();
-        for (DisplayWidget* view : views)
-        {
-            if (Zenovis* vis = view->getZenoVis())
-            {
-                vis->setCurrentFrameId(sFrame);
-                vis->startPlay(false);
-            }
-            view->updateFrame();
-        }
-    }
 
     connect(optixClientSocket.get(), &QLocalSocket::readyRead, this, [=]() {
         while (optixClientSocket->canReadLine()) {
@@ -930,6 +901,11 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
                             displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
                         }
                     }
+                    if (m_bOptixProcRecording)
+                    {
+                        DisplayWidget* displayWid = getOptixWidget();
+                        emit displayWid->optixProcStartRecord();
+                    }
                 }
                 else if (action == "frameRange") {
                     ZASSERT_EXIT(doc.HasMember("beginFrame") &&
@@ -949,29 +925,50 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
                 else if (action == "newFrame") {
                     ZASSERT_EXIT(doc["key"].IsInt());
                     int frame = doc["key"].GetInt();
-                    zeno::getSession().globalComm->newFrame();
+                    if (!m_bOptixProcRecording)
+                    {
+                        zeno::getSession().globalComm->newFrame();
+                    }
                     updateViewport("newFrame");
                 }
                 else if (action == "finishFrame") {
                     ZASSERT_EXIT(doc["key"].IsInt());
                     int frame = doc["key"].GetInt();
-                    if (zeno::getSession().globalComm->maxPlayFrames() < zeno::getSession().globalComm->frameRange().second)
+                    if (!m_bOptixProcRecording)
                     {
                         zeno::getSession().globalComm->finishFrame();
                     }
+                    else {
+                        if (frame == zeno::getSession().globalComm->frameRange().second)
+                        {
+                            m_bOptixProcRecording = false;
+                        }
+                    }
                     updateViewport("finishFrame");
                 }
-                else if (action == "startRunBeforeRecord")
+                else if (action == "frameRunningState")
                 {
-                    ZASSERT_EXIT(doc["key"].IsObject());
-                    const auto& keyObj = doc["key"];
-                    ZASSERT_EXIT(keyObj.HasMember("cachedir") && keyObj.HasMember("cachenum"));
-                    std::string cachedir = keyObj["cachedir"].GetString();
-                    int cacheNum = keyObj["cachenum"].GetInt();
-                    zeno::getSession().globalComm->clearState();
-                    zeno::getSession().globalComm->frameCache(cachedir, cachenum);
-                    DisplayWidget* displayWid = getOptixWidget();
-                    emit displayWid->optixProcStartRecord();
+                    ZASSERT_EXIT(doc.HasMember("initializedFrames") && doc.HasMember("finishedFrame"));
+                    int initializedFrames = doc["initializedFrames"].GetInt();
+                    int finishedFrame = doc["finishedFrame"].GetInt();
+                    while (zeno::getSession().globalComm->numOfInitializedFrame() < initializedFrames)
+                    {
+                        zeno::getSession().globalComm->newFrame();
+                    }
+                    while (zeno::getSession().globalComm->numOfFinishedFrame() < finishedFrame)
+                    {
+                        zeno::getSession().globalComm->finishFrame();
+                    }
+                    QVector<DisplayWidget*> views = viewports();
+                    for (DisplayWidget* view : views)
+                    {
+                        if (Zenovis* vis = view->getZenoVis())
+                        {
+                            vis->setCurrentFrameId(sFrame);
+                            vis->startPlay(false);
+                        }
+                        view->updateFrame();
+                    }
                 }
             }
         }
@@ -981,6 +978,11 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
 void ZenoMainWindow::optixClientSend(QString& info)
 {
     optixClientSocket->write(info.toUtf8());
+}
+
+void ZenoMainWindow::optixClientStartRec()
+{
+    m_bOptixProcRecording = true;
 }
 
 void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)

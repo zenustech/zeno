@@ -35,6 +35,8 @@ public:
 
 signals:
     void sig_frameRunFinished(int frame);
+    void sig_frameRecordFinished(int frame);
+    void sig_recordFinished();
 
 protected:
     void paintEvent(QPaintEvent* event) override;
