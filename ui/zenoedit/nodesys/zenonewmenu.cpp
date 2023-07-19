@@ -6,7 +6,7 @@
 #include <zenoui/comctrl/gv/zenoparamwidget.h>
 
 
-ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent)
+ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, const QString& text, QWidget* parent)
     : QMenu(parent)
     , m_cates(cates)
     , m_subgIdx(subgIdx)
@@ -14,6 +14,7 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     , m_searchEdit(nullptr)
     , m_pWAction(nullptr)
 {
+    setAttribute(Qt::WA_DeleteOnClose, true);
     QVBoxLayout* pLayout = new QVBoxLayout;
 
     m_pWAction = new QWidgetAction(this);
@@ -21,6 +22,7 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     m_searchEdit->setAutoFillBackground(false);
     m_searchEdit->setTextMargins(QMargins(8, 0, 0, 0));
     m_searchEdit->installEventFilter(this);
+    m_searchEdit->setText(text);
 
     QPalette palette;
     palette.setColor(QPalette::Base, QColor(25, 29, 33));
@@ -34,7 +36,7 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     addAction(m_pWAction);
 
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    QList<QAction*> actions = getCategoryActions(pModel, m_subgIdx, "", m_scenePos);
+    QList<QAction*> actions = getCategoryActions(pModel, m_subgIdx, text, m_scenePos);
     addActions(actions);
 
 	if (!m_cates.isEmpty())
@@ -86,19 +88,12 @@ bool ZenoNewnodeMenu::eventFilter(QObject* watched, QEvent* event)
 
 void ZenoNewnodeMenu::onTextChanged(const QString& text)
 {
-    QList<QAction*> acts = actions();
-
-    for (int i = 0; i < acts.size(); i++) {
-        if (acts[i] == m_pWAction) continue;
-        removeAction(acts[i]);
-        if (acts[i]->parent() == this)
-            delete acts[i];
-    }
-
-    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-    QList<QAction*> actions = getCategoryActions(pModel, m_subgIdx, text, m_scenePos);
-    addActions(actions);
-    setEditorFocus();
+    ZenoNewnodeMenu* pMenu = new ZenoNewnodeMenu(m_subgIdx, m_cates, m_scenePos, m_searchEdit->text());
+    pMenu->setEditorFocus();
+    QPoint pos = this->pos();
+    pMenu->move(pos);
+    pMenu->show();
+    this->close();
 }
 
 QList<QAction*> ZenoNewnodeMenu::getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, const QString& filter, QPointF scenePos)

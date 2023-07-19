@@ -12,7 +12,7 @@ class ZenoNewnodeMenu : public QMenu
 {
 	Q_OBJECT
 public:
-	ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent = nullptr);
+    ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, const QString& text = "", QWidget* parent = nullptr);
 	~ZenoNewnodeMenu();
 	void setEditorFocus();
 
