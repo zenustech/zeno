@@ -202,6 +202,24 @@ ZENDEFNODE(GetUserData, {
     {"lifecycle"},
 });
 
+struct GetUserData2 : zeno::INode {
+  virtual void apply() override {
+    auto object = get_input("object");
+    auto key = get_input2<std::string>("key");
+    auto hasValue = object->userData().has(key);
+    auto data = hasValue ? object->userData().get(key) : std::make_shared<DummyObject>();
+    set_output2("hasValue", hasValue);
+    set_output("data", std::move(data));
+  }
+};
+
+ZENDEFNODE(GetUserData2, {
+                            {"object",{"string", "key", ""}},
+                            {"data", {"bool", "hasValue"}},
+                            {},
+                            {"lifecycle"},
+                        });
+
 
 struct DelUserData : zeno::INode {
     virtual void apply() override {

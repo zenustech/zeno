@@ -50,7 +50,7 @@
 #define CUDA_NVRTC_OPTIONS  \
   "-std=c++11", \
   "-arch", \
-  "compute_50", \
+  "compute_75", \
   "-use_fast_math", \
   "-lineinfo", \
   "-default-device", \

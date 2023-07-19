@@ -144,7 +144,8 @@ struct SDFToPrim : zeno::INode{
         std::vector<openvdb::Vec3s> points(0);
         std::vector<openvdb::Vec3I> tris(0);
         std::vector<openvdb::Vec4I> quads(0);
-        openvdb::tools::volumeToMesh(*(sdf->m_grid), points, tris, quads, isoValue, adaptivity, true);
+        //openvdb::tools::volumeToMesh(*(sdf->m_grid), points, tris, quads, isoValue, adaptivity, true);
+        openvdb::tools::volumeToMesh(*(sdf->m_grid), points, quads, isoValue);
         mesh->resize(points.size());
         auto &meshpos = mesh->add_attr<zeno::vec3f>("pos");
 #pragma omp parallel for
@@ -153,17 +154,26 @@ struct SDFToPrim : zeno::INode{
             meshpos[i] = zeno::vec3f(points[i][0],points[i][1],points[i][2]);
         }
         if (allowQuads) {
-            mesh->tris.resize(tris.size());
-            mesh->quads.resize(quads.size());
-#pragma omp parallel for
-            for(int i=0;i<tris.size();i++)
-            {
-                mesh->tris[i] = zeno::vec3i(tris[i][2],tris[i][1],tris[i][0]);
-            }
+//            mesh->tris.resize(tris.size());
+            //mesh->quads.resize(quads.size());
+//#pragma omp parallel for
+//            for(int i=0;i<tris.size();i++)
+//            {
+//                mesh->tris[i] = zeno::vec3i(tris[i][2],tris[i][1],tris[i][0]);
+//            }
+
+            mesh->polys.resize(quads.size());
+            mesh->loops.resize(4*quads.size());
 #pragma omp parallel for
             for(int i=0;i<quads.size();i++)
             {
-                mesh->quads[i] = zeno::vec4i(quads[i][3],quads[i][2],quads[i][1],quads[i][0]);
+              mesh->polys[i] = {i*4, 4};
+              for(int k=0;k<4;k++)
+              {
+                mesh->loops[i*4+k] = quads[i][3-k];
+              }
+
+              //mesh->quads[i] = zeno::vec4i(quads[i][3],quads[i][2],quads[i][1],quads[i][0]);
             }
         } else {
             mesh->tris.resize(tris.size() + 2*quads.size());

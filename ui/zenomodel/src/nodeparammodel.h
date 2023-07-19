@@ -63,6 +63,7 @@ private:
     void initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dictpanel);
     void exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel);
     void checkExtractDict(QString &name);
+    void markNodeChanged();
 
     IGraphsModel* m_pGraphsModel;
 

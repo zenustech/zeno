@@ -146,11 +146,16 @@ void UnifiedIPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T 
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.refit(pol, bvs);
+#if ENABLE_STQ
         stBvs.refit(pol, bvs);
+#endif
         bvs.resize(seInds.size());
+        /// @note embed thickness in bvs for faster self ee iteration
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.refit(pol, bvs);
+#if ENABLE_STQ
         seBvs.refit(pol, bvs);
+#endif
         findCollisionConstraintsImpl(pol, dHat, xi, false);
     }
 
@@ -158,11 +163,15 @@ void UnifiedIPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T 
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
         bouStBvh.refit(pol, bvs);
+#if ENABLE_STQ
         bouStBvs.refit(pol, bvs);
+#endif
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.refit(pol, bvs);
+#if ENABLE_STQ
         bouSeBvs.refit(pol, bvs);
+#endif
         findCollisionConstraintsImpl(pol, dHat, xi, true);
 
         /// @note assume stBvh is already updated
@@ -170,7 +179,9 @@ void UnifiedIPCSystem::findCollisionConstraints(zs::CudaExecutionPolicy &pol, T 
             bvs.resize(stInds.size());
             retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
             stBvh.refit(pol, bvs);
+#if ENABLE_STQ
             stBvs.refit(pol, bvs);
+#endif
         }
         findBoundaryCollisionConstraintsImpl(pol, dHat, xi);
     }
@@ -555,11 +566,15 @@ void UnifiedIPCSystem::findCollisionConstraints2(zs::CudaExecutionPolicy &pol, T
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
         stBvh.refit(pol, bvs);
+#if ENABLE_STQ
         stBvs.refit(pol, bvs);
+#endif
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, 0, bvs);
         seBvh.refit(pol, bvs);
+#if ENABLE_STQ
         seBvs.refit(pol, bvs);
+#endif
         findCollisionConstraintsImpl2(pol, dHat, xi, false);
     }
 
@@ -567,11 +582,15 @@ void UnifiedIPCSystem::findCollisionConstraints2(zs::CudaExecutionPolicy &pol, T
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, coOffset, bvs);
         bouStBvh.refit(pol, bvs);
+#if ENABLE_STQ
         bouStBvs.refit(pol, bvs);
+#endif
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, coOffset, bvs);
         bouSeBvh.refit(pol, bvs);
+#if ENABLE_STQ
         bouSeBvs.refit(pol, bvs);
+#endif
         findCollisionConstraintsImpl2(pol, dHat, xi, true);
 
         /// @note assume stBvh is already updated
@@ -579,7 +598,9 @@ void UnifiedIPCSystem::findCollisionConstraints2(zs::CudaExecutionPolicy &pol, T
             bvs.resize(stInds.size());
             retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, 0, bvs);
             stBvh.refit(pol, bvs);
+#if ENABLE_STQ
             stBvs.refit(pol, bvs);
+#endif
         }
         findBoundaryCollisionConstraintsImpl2(pol, dHat, xi);
     }
@@ -947,18 +968,22 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
         bvs.resize(stInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, vtemp, "dir", alpha, 0, bvs);
         stBvh.refit(pol, bvs);
+#if ENABLE_STQ
         stBvs.refit(pol, bvs);
+#endif
         bvs.resize(seInds.size());
         retrieve_bounding_volumes(pol, vtemp, "xn", seInds, zs::wrapv<2>{}, vtemp, "dir", alpha, 0, bvs);
 
         zs::CppTimer timer;
-        timer.tick();
+        // timer.tick();
         seBvh.refit(pol, bvs);
-        timer.tock("sebvh refit");
+        // timer.tock("sebvh refit");
 
-        timer.tick();
+#if ENABLE_STQ
+        // timer.tick();
         seBvs.refit(pol, bvs);
-        timer.tock("sebvs refit");
+        // timer.tock("sebvs refit");
+#endif
 
         findCCDConstraintsImpl(pol, alpha, xi, false);
     }
@@ -972,12 +997,16 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
         bvs.resize(coEles->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEles, zs::wrapv<3>{}, vtemp, "dir", alpha, coOffset, bvs);
         bouStBvh.refit(pol, bvs);
+#if ENABLE_STQ
         bouStBvs.refit(pol, bvs);
+#endif
 
         bvs.resize(coEdges->size());
         retrieve_bounding_volumes(pol, vtemp, "xn", *coEdges, zs::wrapv<2>{}, vtemp, "dir", alpha, coOffset, bvs);
         bouSeBvh.refit(pol, bvs);
+#if ENABLE_STQ
         bouSeBvs.refit(pol, bvs);
+#endif
 
         findCCDConstraintsImpl(pol, alpha, xi, true);
 
@@ -986,7 +1015,9 @@ void UnifiedIPCSystem::findCCDConstraints(zs::CudaExecutionPolicy &pol, T alpha,
             bvs.resize(stInds.size());
             retrieve_bounding_volumes(pol, vtemp, "xn", stInds, zs::wrapv<3>{}, vtemp, "dir", alpha, 0, bvs);
             stBvh.refit(pol, bvs);
+#if ENABLE_STQ
             stBvs.refit(pol, bvs);
+#endif
         }
         findBoundaryCCDConstraintsImpl(pol, alpha, xi);
     }
@@ -1073,7 +1104,7 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
     } while (true);
     /// ee
     if (enableContactEE) {
-        if (true) { //withBoundary
+        if (!ENABLE_STQ) { //withBoundary
             const auto &sebvh = withBoundary ? bouSeBvh : seBvh;
             snapshot(csEE);
 
@@ -1082,70 +1113,40 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
                 timer.tick();
 
             do {
-                if (withBoundary)
-                    pol(Collapse{seInds.size()},
-                        [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
-                         exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
-                         csEE = csEE.port(), xi, alpha,
-                         voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
-                            auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
-                            if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
+                pol(Collapse{seInds.size()},
+                    [seInds = proxy<space>({}, seInds), sedges = proxy<space>({}, withBoundary ? *coEdges : seInds),
+                     exclDofs = proxy<space>(exclDofs), vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh),
+                     csEE = csEE.port(), xi, alpha, voffset = withBoundary ? coOffset : 0] __device__(int sei) mutable {
+                        auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
+                        if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
+                            return;
+
+                        bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
+                        auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
+                        auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
+                        auto dir0 = vtemp.pack(dim_c<3>, "dir", eiInds[0]);
+                        auto dir1 = vtemp.pack(dim_c<3>, "dir", eiInds[1]);
+                        auto bv = bv_t{get_bounding_box(v0, v0 + alpha * dir0)};
+                        merge(bv, v1);
+                        merge(bv, v1 + alpha * dir1);
+                        bv._min -= xi;
+                        bv._max += xi;
+                        bvh.iter_neighbors(bv, [&](int sej) {
+                            if (voffset == 0 && sei < sej)
+                                return;
+                            auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
+                            if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
+                                eiInds[1] == ejInds[1])
+                                return;
+                            // all affected by sticky boundary conditions
+                            if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
+                                return;
+                            if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
                                 return;
 
-                            bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
-                            auto v0 = vtemp.pack(dim_c<3>, "xn", eiInds[0]);
-                            auto v1 = vtemp.pack(dim_c<3>, "xn", eiInds[1]);
-                            auto dir0 = vtemp.pack(dim_c<3>, "dir", eiInds[0]);
-                            auto dir1 = vtemp.pack(dim_c<3>, "dir", eiInds[1]);
-                            auto bv = bv_t{get_bounding_box(v0, v0 + alpha * dir0)};
-                            merge(bv, v1);
-                            merge(bv, v1 + alpha * dir1);
-                            bv._min -= xi;
-                            bv._max += xi;
-                            bvh.iter_neighbors(bv, [&](int sej) {
-                                if (voffset == 0 && sei < sej)
-                                    return;
-                                auto ejInds = sedges.pack(dim_c<2>, "inds", sej, int_c) + voffset;
-                                if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
-                                    eiInds[1] == ejInds[1])
-                                    return;
-                                // all affected by sticky boundary conditions
-                                if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
-                                    return;
-                                if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
-                                    return;
-
-                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
-                            });
+                            csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
                         });
-                else
-                    pol(Collapse{sebvh.getNumLeaves()},
-                        [seInds = proxy<space>({}, seInds), exclDofs = proxy<space>(exclDofs),
-                         vtemp = proxy<space>({}, vtemp), bvh = proxy<space>(sebvh), csEE = csEE.port(),
-                         xi] __device__(int ii) mutable {
-                            int node = bvh._leafInds[ii];
-                            int sei = bvh._auxIndices[node];
-                            auto eiInds = seInds.pack(dim_c<2>, "inds", sei, int_c);
-                            if (exclDofs[eiInds[0]] || exclDofs[eiInds[1]])
-                                return;
-
-                            bool selfFixed = vtemp("BCorder", eiInds[0]) == 3 && vtemp("BCorder", eiInds[1]) == 3;
-
-                            bvh.self_iter_neighbors(ii, [&](int sej) {
-                                // no need for pred [sei < sej] since we're using self_iter_neighbors api
-                                auto ejInds = seInds.pack(dim_c<2>, "inds", sej, int_c);
-                                if (eiInds[0] == ejInds[0] || eiInds[0] == ejInds[1] || eiInds[1] == ejInds[0] ||
-                                    eiInds[1] == ejInds[1])
-                                    return;
-                                // all affected by sticky boundary conditions
-                                if (selfFixed && vtemp("BCorder", ejInds[0]) == 3 && vtemp("BCorder", ejInds[1]) == 3)
-                                    return;
-                                if (exclDofs[ejInds[0]] || exclDofs[ejInds[1]])
-                                    return;
-
-                                csEE.try_push(pair4_t{eiInds[0], eiInds[1], ejInds[0], ejInds[1]});
-                            });
-                        });
+                    });
                 if (allFit(csEE))
                     break;
                 resizeAndRewind(csEE);
@@ -1154,11 +1155,14 @@ void UnifiedIPCSystem::findCCDConstraintsImpl(zs::CudaExecutionPolicy &pol, T al
             if (!withBoundary)
                 timer.tock("bvh ee self ccd (bvh)");
         } else {
+#if ENABLE_STQ
             findCCDConstraintsImplEE(pol, alpha, xi);
+#endif
         }
     }
     pol.profile(false);
 }
+#if ENABLE_STQ
 void UnifiedIPCSystem::findCCDConstraintsImplEE(zs::CudaExecutionPolicy &pol, T alpha, T xi) {
     using namespace zs;
     constexpr auto space = execspace_e::cuda;
@@ -1266,6 +1270,7 @@ void UnifiedIPCSystem::findCCDConstraintsImplEE(zs::CudaExecutionPolicy &pol, T 
     }
     pol.profile(false);
 }
+#endif
 
 ///
 /// Frictions
@@ -1627,37 +1632,37 @@ typename UnifiedIPCSystem::T elasticityEnergy(zs::CudaExecutionPolicy &pol, type
         if (primHandle.isBoundary())
             return 0;
         // elasticity
-        pol(range(eles.size()),
-            [eles = proxy<space>({}, eles), vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), tag, model = model,
-             vOffset = primHandle.vOffset, n = eles.size()] __device__(int ei) mutable {
-                auto IB = eles.template pack<2, 2>("IB", ei);
-                auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
+        pol(range(eles.size()), [eles = proxy<space>({}, eles), vtemp = proxy<space>({}, vtemp), es = proxy<space>(es),
+                                 tag, model = model, vOffset = primHandle.vOffset,
+                                 n = eles.size()] __device__(int ei) mutable {
+            auto IB = eles.template pack<2, 2>("IB", ei);
+            auto inds = eles.pack(dim_c<3>, "inds", ei, int_c) + vOffset;
 
-                int BCorder[3];
-                for (int i = 0; i != 3; ++i)
-                    BCorder[i] = vtemp("BCorder", inds[i]);
-                T E;
-                if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3)
-                    E = 0;
-                else {
-                    auto vole = eles("vol", ei);
-                    vec3 xs[3] = {vtemp.pack(dim_c<3>, tag, inds[0]), vtemp.pack(dim_c<3>, tag, inds[1]),
-                                  vtemp.pack(dim_c<3>, tag, inds[2])};
-                    auto x1x0 = xs[1] - xs[0];
-                    auto x2x0 = xs[2] - xs[0];
+            int BCorder[3];
+            for (int i = 0; i != 3; ++i)
+                BCorder[i] = vtemp("BCorder", inds[i]);
+            T E;
+            if (BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 || determinant(IB) <= limits<float>::epsilon())
+                E = 0;
+            else {
+                auto vole = eles("vol", ei);
+                vec3 xs[3] = {vtemp.pack(dim_c<3>, tag, inds[0]), vtemp.pack(dim_c<3>, tag, inds[1]),
+                              vtemp.pack(dim_c<3>, tag, inds[2])};
+                auto x1x0 = xs[1] - xs[0];
+                auto x2x0 = xs[2] - xs[0];
 
-                    zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
-                    auto F = Ds * IB;
-                    auto f0 = col(F, 0);
-                    auto f1 = col(F, 1);
-                    auto f0Norm = zs::sqrt(f0.l2NormSqr());
-                    auto f1Norm = zs::sqrt(f1.l2NormSqr());
-                    auto Estretch = model.mu * vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
-                    auto Eshear = (model.mu * 0.3) * vole * zs::sqr(f0.dot(f1));
-                    E = Estretch + Eshear;
-                }
-                reduce_to(ei, n, E, es[ei / 32]);
-            });
+                zs::vec<T, 3, 2> Ds{x1x0[0], x2x0[0], x1x0[1], x2x0[1], x1x0[2], x2x0[2]};
+                auto F = Ds * IB;
+                auto f0 = col(F, 0);
+                auto f1 = col(F, 1);
+                auto f0Norm = zs::sqrt(f0.l2NormSqr());
+                auto f1Norm = zs::sqrt(f1.l2NormSqr());
+                auto Estretch = model.mu * vole * (zs::sqr(f0Norm - 1) + zs::sqr(f1Norm - 1));
+                auto Eshear = (model.mu * 0.3) * vole * zs::sqr(f0.dot(f1));
+                E = Estretch + Eshear;
+            }
+            reduce_to(ei, n, E, es[ei / 32]);
+        });
         return (reduce(pol, es) * dt * dt);
     } else if (primHandle.category == ZenoParticles::tet) {
         pol(zs::range(eles.size()),
@@ -1753,16 +1758,25 @@ typename UnifiedIPCSystem::T UnifiedIPCSystem::energy(zs::CudaExecutionPolicy &p
                 [vtemp = proxy<space>({}, vtemp), es = proxy<space>(es), bedges = proxy<space>({}, bedges), dt = dt,
                  vOffset = primHandle.vOffset, n = bedges.size()] __device__(int i) mutable {
                     auto stcl = bedges.pack(dim_c<4>, "inds", i, int_c) + vOffset;
+                    int BCorder[4];
+#pragma unroll
+                    for (int i = 0; i != 4; ++i)
+                        BCorder[i] = vtemp("BCorder", stcl[i]);
                     auto x0 = vtemp.pack(dim_c<3>, "xn", stcl[0]);
                     auto x1 = vtemp.pack(dim_c<3>, "xn", stcl[1]);
                     auto x2 = vtemp.pack(dim_c<3>, "xn", stcl[2]);
                     auto x3 = vtemp.pack(dim_c<3>, "xn", stcl[3]);
                     auto e = bedges("e", i);
                     auto h = bedges("h", i);
-                    auto k = bedges("k", i);
+                    auto k = bedges("k", i); /// @note k here also determines the validity of this bending pair
                     auto ra = bedges("ra", i);
                     auto theta = dihedral_angle(x0, x1, x2, x3);
-                    T E = k * zs::sqr(theta - ra) * e / h * dt * dt;
+                    T E;
+                    if (!(BCorder[0] == 3 && BCorder[1] == 3 && BCorder[2] == 3 && BCorder[3] == 3) &&
+                        k > limits<float>::epsilon())
+                        E = k * zs::sqr(theta - ra) * e / h * dt * dt;
+                    else
+                        E = 0;
                     reduce_to(i, n, E, es[i / 32]);
                 });
             Es.push_back(reduce(pol, es));

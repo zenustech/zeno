@@ -255,7 +255,13 @@ static void serializeGraph(
             //the output key of the dict has not descripted by the core, need to add it manually.
             if (output.info.sockProp & SOCKPROP_EDITABLE) {
                 AddStringList({"addNodeOutput", ident, output.info.name}, writer);
-            }     
+            }
+        }
+
+        QVariant varDataChanged = idx.data(ROLE_NODE_DATACHANGED);
+        if (varDataChanged.isValid() && varDataChanged.toBool())
+        {
+            AddStringList({"markNodeChanged", ident}, writer);
         }
 
         AddStringList({ "completeNode", ident }, writer);

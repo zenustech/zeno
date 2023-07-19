@@ -72,6 +72,7 @@ ViewportWidget::ViewportWidget(QWidget* parent)
         if (mainWin) {
             mainWin->visFrameUpdated(true, frameid);
         }
+        clearTransformer();
     });
 
     connect(m_pauseRenderDally, &QTimer::timeout, [&](){
@@ -183,6 +184,13 @@ void ViewportWidget::setCameraRes(const QVector2D& res)
     m_camera->setRes(res);
 }
 
+void ViewportWidget::setSafeFrames(bool bLock, int nx, int ny)
+{
+    auto scene = m_zenovis->getSession()->get_scene();
+    scene->camera->set_safe_frames(bLock, nx, ny);
+    update();
+}
+
 void ViewportWidget::updatePerspective()
 {
     m_camera->updatePerspective();
@@ -274,6 +282,14 @@ void ViewportWidget::updateCameraProp(float aperture, float disPlane) {
     m_camera->setAperture(aperture);
     m_camera->setDisPlane(disPlane);
     updatePerspective();
+}
+
+void ViewportWidget::setNumSamples(int samples)
+{
+    auto scene = getSession()->get_scene();
+    if (scene) {
+        scene->drawOptions->num_samples = samples;
+    }
 }
 
 void ViewportWidget::keyPressEvent(QKeyEvent *event)

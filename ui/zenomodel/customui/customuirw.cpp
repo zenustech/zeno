@@ -78,7 +78,7 @@ namespace zenomodel
             bool bValid = UiHelper::validateVariant(deflVal, type);
             if (bValid && !pItem->m_index.isValid()) {
                 writer.Key("value");
-                JsonHelper::AddVariant(deflVal, type, writer, true);
+                JsonHelper::AddVariant(deflVal, type, writer);
             }
 
             PARAM_CONTROL ctrl = (PARAM_CONTROL)pItem->data(ROLE_PARAM_CTRL).toInt();

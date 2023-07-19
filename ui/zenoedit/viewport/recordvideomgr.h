@@ -8,25 +8,18 @@ struct VideoRecInfo
     QString record_path;    //store screenshot img and mp4.
     QString audioPath;
     QString videoname;
-    QVector2D res;
-    QPair<int, int> frameRange;
+    QVector2D res = { 0,0 };
+    QPair<int, int> frameRange = { -1, -1 };
     QMap<int, bool> m_bFrameFinished;
-    int fps;
-    int bitrate;
+    int fps = 0;
+    int bitrate = 0;
     int numMSAA = 0;
     int numOptix = 1;
-    bool bExportVideo;
+    bool bExportVideo = false;
+    bool needDenoise = false;
     bool exitWhenRecordFinish = false;
-    bool bLaunchRunByRecord;
-    VideoRecInfo()
-        : bExportVideo(false)
-        , fps(0)
-        , bitrate(0)
-        , bLaunchRunByRecord(false)
-    {
-        res = { 0,0 };
-        frameRange = { -1, -1 };
-    }
+    bool bRecordByCommandLine = false;
+    bool bAutoRemoveCache = false;
 };
 Q_DECLARE_METATYPE(VideoRecInfo);
 

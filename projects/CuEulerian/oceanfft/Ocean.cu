@@ -180,7 +180,7 @@ struct OceanFFT : zeno::IObject {
     static_assert(sizeof(vec3f) == sizeof(vec3), "size of vec3f and vec3 should be equal!");
     zs::Vector<vec2> prevDx{}, prevDz{}, prevHf{};
     zs::Vector<vec2> curDx{}, curDz{}, curHf{};
-    zs::Vector<vec3> d_inpos{}, d_pos{}, d_vel{}, d_Dpos{}, d_mapx{}, d_repos{}, d_revel{};
+    zs::Vector<vec3> d_inpos{}, d_pos{}, d_vel{}, d_fftpos{}, d_Dpos{}, d_mapx{}, d_repos{}, d_revel{};
     // end patch
 
     // simulation parameters
@@ -468,6 +468,7 @@ struct MakeCuOcean : zeno::INode {
         cuOceanObj->d_inpos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
         cuOceanObj->d_pos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
         cuOceanObj->d_vel = zs::Vector<vec3>{zs::memsrc_e::device, 0};
+        cuOceanObj->d_fftpos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
         cuOceanObj->d_Dpos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
         cuOceanObj->d_mapx = zs::Vector<vec3>{zs::memsrc_e::device, 0};
         cuOceanObj->d_repos = zs::Vector<vec3>{zs::memsrc_e::device, 0};
@@ -475,7 +476,8 @@ struct MakeCuOcean : zeno::INode {
         // end patch
 
         cuOceanObj->h_h0 = (float2 *)malloc(sizeof(float2) * cuOceanObj->spectrumSize);
-
+        unsigned int  seed = get_input<zeno::NumericObject>("seed")->get<int>();
+        srand(seed);
         generate_h0(cuOceanObj);
         //cpu to gpu
         copy(zs::mem_device, (void *)cuOceanObj->d_h0.data(), (void *)cuOceanObj->h_h0,
@@ -495,7 +497,8 @@ ZENDEFNODE(MakeCuOcean, {/* inputs:  */ {{"int", "WaveExponent", "8"},
                                          {"float", "patchSize", "100.0"},
                                          {"float", "speed", "100.0"},
                                          {"float", "timeshift", "0.0"},
-                                         {"float", "amp", "1.0"}},
+                                         {"float", "amp", "1.0"},
+                                         {"int","seed", "0" }},
                          /* outputs: */
                          {
                              "gpuOcean",
@@ -632,6 +635,7 @@ struct OceanCompute : zeno::INode {
         }
         auto grid = std::make_shared<zeno::PrimitiveObject>(*ingrid);
         auto &inpos = ingrid->verts;
+        auto &fftpos = grid->add_attr<vec3f>("fftpos");
         auto &pos = grid->attr<vec3f>("pos");
         auto &vel = grid->add_attr<vec3f>("vel");
         auto &Dpos = grid->add_attr<vec3f>("Dpos");
@@ -653,6 +657,7 @@ struct OceanCompute : zeno::INode {
             float dzdt = periodicInterp(CalOcean->g_hDz2, CalOcean->meshSize, u, v, h, L);
             Dpos[i] = CalOcean->L_scale * zeno::vec3f(-CalOcean->choppyness * Dx, hh - depth / CalOcean->L_scale,
                                                       -CalOcean->choppyness * Dz);
+            fftpos[i] = inpos[i] + CalOcean->L_scale * zeno::vec3f(0, hh - depth / CalOcean->L_scale, 0);
             pos[i] = inpos[i] + Dpos[i];
             vel[i] = CalOcean->L_scale * zeno::vec3f(-CalOcean->choppyness * dxdt, dhdt, -CalOcean->choppyness * dzdt) *
                      dt_inv;
@@ -677,9 +682,9 @@ struct OceanCompute : zeno::INode {
 
 ZENDEFNODE(OceanCompute, {/* inputs:  */ {
                               "grid",
-                              "time",
-                              "depth",
-                              "dt",
+                              {"float", "time", "0"},
+                              {"float", "depth", "0"},
+                              {"float", "dt", "0.04"},
                               "ocean_FFT",
                           },
                           /* outputs: */
@@ -776,6 +781,7 @@ struct OceanCuCompute : zeno::INode {
         auto grid = std::make_shared<zeno::PrimitiveObject>(*ingrid);
         auto &inpos = ingrid->verts.values;
         auto &pos = grid->attr<vec3f>("pos");
+        auto &fftpos = grid->add_attr<vec3f>("fftpos");
         auto &vel = grid->add_attr<vec3f>("vel");
         auto &Dpos = grid->add_attr<vec3f>("Dpos");
         auto &mapx = grid->add_attr<vec3f>("mapx");
@@ -796,6 +802,7 @@ struct OceanCuCompute : zeno::INode {
         h2dcopy(CalOcean->d_inpos, inpos);
         CalOcean->d_pos.resize(pos.size());
         h2dcopy(CalOcean->d_pos, pos);
+        CalOcean->d_fftpos.resize(fftpos.size());
         CalOcean->d_Dpos.resize(Dpos.size());
         CalOcean->d_vel.resize(vel.size());
         CalOcean->d_mapx.resize(mapx.size());
@@ -810,6 +817,7 @@ struct OceanCuCompute : zeno::INode {
                          // primObj
                          inpos = proxy<space>(CalOcean->d_inpos), pos = proxy<space>(CalOcean->d_pos),
                          Dpos = proxy<space>(CalOcean->d_Dpos), vel = proxy<space>(CalOcean->d_vel),
+                         fftpos = proxy<space>(CalOcean->d_fftpos),
                          mapx = proxy<space>(CalOcean->d_mapx), repos = proxy<space>(CalOcean->d_repos),
                          revel = proxy<space>(CalOcean->d_revel),
                          // ocean
@@ -827,6 +835,7 @@ struct OceanCuCompute : zeno::INode {
                 float dxdt = periodic_interp(curDx.data(), meshSize, u, v, h, L);
                 float dzdt = periodic_interp(curDz.data(), meshSize, u, v, h, L);
                 Dpos[i] = L_scale * vec3{-choppyness * Dx, hh - depth / L_scale, -choppyness * Dz};
+                fftpos[i] = inpos[i] + L_scale * vec3(0,hh  - depth / L_scale,0);
                 pos[i] = inpos[i] + Dpos[i];
                 vel[i] = L_scale * vec3(-choppyness * dxdt, dhdt, -choppyness * dzdt) * dt_inv;
                 mapx[i] = opos - vec3(Dpos[i][0], 0, Dpos[i][2]);
@@ -847,6 +856,7 @@ struct OceanCuCompute : zeno::INode {
         };
         write_back(pos, CalOcean->d_pos);
         write_back(Dpos, CalOcean->d_Dpos);
+        write_back(fftpos, CalOcean->d_fftpos);
         write_back(vel, CalOcean->d_vel);
         write_back(mapx, CalOcean->d_mapx);
         write_back(repos, CalOcean->d_repos);
@@ -858,9 +868,9 @@ struct OceanCuCompute : zeno::INode {
 
 ZENDEFNODE(OceanCuCompute, {/* inputs:  */ {
                                 "grid",
-                                "time",
-                                "depth",
-                                "dt",
+                                {"float", "time", "0"},
+                                {"float", "depth", "0"},
+                                {"float", "dt", "0.04"},
                                 "ocean_FFT",
                             },
                             /* outputs: */

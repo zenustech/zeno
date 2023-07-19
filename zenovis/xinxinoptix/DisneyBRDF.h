@@ -4,6 +4,12 @@
 #include "TraceStuff.h"
 
 namespace BRDFBasics{
+static __inline__ __device__
+float PowerHeuristic(float a, float b)
+{
+  float t = a * a;
+  return t / (b * b + t);
+}
 static __inline__ __device__  float fresnel(float cosT){
     float v = clamp(1-cosT,0.0f,1.0f);
     float v2 = v *v;
@@ -76,8 +82,69 @@ static __inline__ __device__  float GGX(float cosT, float a){
     float b = cosT*cosT;
     return 2.0f/ (1.0f  + sqrtf(a2 + b - a2*b));
 }
+static __inline__ __device__ vec3 sampleUniformHemiSphere(unsigned int &seed)
+{
+  float z = rnd(seed);
+  float randv = rnd(seed);
+  float r = sqrtf(max(0.0f, 1.0f - z * z));
+  float phi = 2.0f * 3.1415926f * randv;
+  float x = r * cosf(phi);
+  float y = r * sinf(phi);
+  return vec3(x, y, z);
+}
+static __inline__ __device__  vec3 CosineSampleHemisphere(float r1, float r2)
+{
+  vec3 dir;
+  float r = sqrt(r1);
+  float phi = 2.0f * 3.1415926f  * r2;
+  dir.x = r * cos(phi);
+  dir.y = r * sin(phi);
+  dir.z = sqrt(max(0.0f, 1.0f - dir.x * dir.x - dir.y * dir.y));
+  return dir;
+}
+static __inline__ __device__  vec3 UniformSampleHemisphere(float r1, float r2)
+{
+  float r = sqrt(max(0.0, 1.0 - r1 * r1));
+  float phi = 2.0f * 3.1415926f * r2;
+  return vec3(r * cos(phi), r * sin(phi), r1);
+}
+
+static __inline__ __device__ vec3 SampleGTR1(float rgh, float r1, float r2)
+{
+  float a = max(0.001f, rgh);
+  float a2 = a * a;
+
+  float phi = r1 * 2.0f * 3.1415926f;
+
+  float cosTheta = sqrt((1.0f - pow(a2, 1.0f - r2)) / (1.0f - a2));
+  float sinTheta = clamp(sqrt(1.0f - (cosTheta * cosTheta)), 0.0f, 1.0f);
+  float sinPhi = sin(phi);
+  float cosPhi = cos(phi);
+
+  return vec3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
+}
+static __inline__ __device__ vec3 SampleGGXVNDF(vec3 V, float ax, float ay, float r1, float r2)
+{
+  vec3 Vh = normalize(vec3(ax * V.x, ay * V.y, V.z));
+
+  float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
+  vec3 T1 = lensq > 0 ? vec3(-Vh.y, Vh.x, 0.0f) * 1.0f/sqrt(lensq) : vec3(1.0f, 0.0f, 0.0f);
+  vec3 T2 = cross(Vh, T1);
+
+  float r = sqrt(r1);
+  float phi = 2.0f * M_PIf * r2;
+  float t1 = r * cos(phi);
+  float t2 = r * sin(phi);
+  float s = 0.5f * (1.0f + Vh.z);
+  t2 = (1.0f - s) * sqrt(1.0f - t1 * t1) + s * t2;
+
+  vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0f, 1.0f - t1 * t1 - t2 * t2)) * Vh;
+
+  return normalize(vec3(ax * Nh.x, ay * Nh.y, max(0.0f, Nh.z)));
+}
 static __inline__ __device__  vec3 cosSampleHemisphere(unsigned int &seed)
 {
+    //wrong code....
     float2 xy = {rnd(seed), rnd(seed)};
     const float x = xy.x;
     const float y = xy.y;
@@ -230,7 +297,7 @@ float GgxD(vec3 wh, float alphaX, float alphaY)
     if (tan2 > 1e10f) return 0.0;
     float cos4 = pow(cosTheta(wh), 4.0f);
     float e = (cosPhi2(wh) / (alphaX * alphaX) + sinPhi2(wh) / (alphaY * alphaY)) * tan2;
-    return 1.0f / (M_PIf * alphaX * alphaY * cos4 * (1.0f + e) * (1.0f + e));
+    return clamp(1.0f / (M_PIf * alphaX * alphaY * cos4 * (1.0f + e) * (1.0f + e)),0.0f,1.0f);
 }
 static __inline__ __device__
 float GgxLambda(vec3 w, float alphaX, float alphaY) {
@@ -243,6 +310,24 @@ float GgxLambda(vec3 w, float alphaX, float alphaY) {
 static __inline__ __device__
 float GgxG(vec3 wo, vec3 wi, float alphaX, float alphaY) {
     return 1.0f / (1.0f + GgxLambda(wo, alphaX, alphaY) + GgxLambda(wi, alphaX, alphaY));
+}
+static __inline__ __device__
+float DielectricFresnel(float cosThetaI, float eta)
+{
+  float sin2 = 1.0f - cosThetaI * cosThetaI;
+  float eta2 = eta * eta;
+
+  float cos2t = 1.0f - sin2 / eta2;
+  if(cos2t < 0) return 1.0f;
+
+  float t0 = sqrt(cos2t);
+  float t1 = eta * t0;
+  float t2 = eta * cosThetaI;
+
+  float rs = (cosThetaI - t1) / (cosThetaI + t1);
+  float rp = (t0 - t2) / (t0 + t2);
+
+  return 0.5f * (rs * rs + rp * rp);
 }
 
 static __inline__ __device__ 
@@ -290,7 +375,134 @@ vec3 SampleGgxVndfAnisotropic(vec3 wo, float ax, float ay, float u1, float u2)
 
 
 }
+static __inline__ __device__
+void TintColors(vec3 baseColor, float eta, float specTint, float sheenTint, float &F0, vec3 &Csheen, vec3 &Cspec0)
+{
+  float lum = Luminance(baseColor);
+  vec3 ctint = lum > 0.0 ? baseColor / lum : vec3(1.0);
+
+  F0 = (1.0 - eta) / (1.0 + eta);
+  F0 *= F0;
+
+  Cspec0 = F0 * mix(vec3(1.0), ctint, specTint);
+  Csheen = mix(vec3(1.0), ctint, sheenTint);
 }
+static __inline__ __device__
+vec3 EvalSSS(vec3 color, bool thin, vec3 L, float &pdf)
+{
+
+  pdf = abs(L.z) / M_PIf;
+  return thin? sqrt(color) / M_PIf : vec3(1.0f) / M_PIf;
+}
+static __inline__ __device__
+vec3 EvalDisneyDiffuse(vec3 baseColor, float subsurface, float roughness, float sheen, vec3 Csheen, vec3 V, vec3 L, vec3 H, float &pdf)
+{
+  pdf = 0.0;
+  if (L.z == 0.0)
+    return vec3(0.0);
+
+  float LDotH = abs(dot(L, H));
+  float LH2 = dot(L,V) + 1.0f;
+  float Rr = roughness * LH2;
+  // Diffuse
+  float FL = SchlickWeight(abs(L.z));
+  float FV = SchlickWeight(abs(V.z));
+  float Fretro = Rr * (FL + FV + FL * FV * (Rr - 1.0f));
+  float Fd = (1.0f - 0.5f * FL) * (1.0f - 0.5f * FV);
+
+
+  // Sheen
+  float FH = SchlickWeight(LDotH);
+  vec3 Fsheen = FH * sheen * Csheen;
+
+  pdf = L.z * 1.0f / M_PIf;
+  return 1.0f / M_PIf * baseColor * (Fd + Fretro) + Fsheen;
+}
+
+static __inline__ __device__
+float GTR2Aniso(float NDotH, float HDotX, float HDotY, float ax, float ay)
+{
+  float a = HDotX / ax;
+  float b = HDotY / ay;
+  float c = a * a + b * b + NDotH * NDotH;
+  return 1.0 / (M_PIf * ax * ay * c * c);
+}
+static __inline__ __device__
+float SmithGAniso(float NDotV, float VDotX, float VDotY, float ax, float ay)
+{
+  float a = VDotX * ax;
+  float b = VDotY * ay;
+  float c = NDotV;
+  return (2.0 * NDotV) / (NDotV + sqrt(a * a + b * b + c * c));
+}
+static __inline__ __device__
+vec3 EvalMicrofacetReflection(float ax, float ay, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
+{
+
+  pdf = 0.0;
+  if (L.z * V.z <= 0.0)
+    return vec3(0.0);
+
+  float D = GTR2Aniso(abs(H.z), H.x, H.y, ax, ay);
+  float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
+  float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
+
+  pdf = G1 * D / (4.0 * abs(V.z));
+  return F * D * G2 / (4.0 * L.z * V.z);
+}
+
+static __inline__ __device__
+vec3 EvalMicrofacetRefraction(vec3 baseColor, float ax, float ay, float eta, vec3 V, vec3 L, vec3 H, vec3 F, float &pdf)
+{
+//  ax = max(0.04f,ax);
+//  ay = max(0.04f,ay);
+  pdf = 0.0;
+  if (L.z == 0)
+    return vec3(0.0);
+
+  float LDotH = dot(L, H); //always negative
+  float VDotH = dot(V, H); //always positive
+
+  float D = GTR2Aniso(abs(H.z), H.x, H.y, ax, ay);
+  float G1 = SmithGAniso(abs(V.z), V.x, V.y, ax, ay);
+  float G2 = G1 * SmithGAniso(abs(L.z), L.x, L.y, ax, ay);
+  float denom = LDotH * eta + VDotH;
+  denom *= denom;
+  float eta2 = eta * eta;
+  float jacobian = abs(LDotH) / denom;
+
+  pdf = G1 * max(0.0, VDotH) * D * jacobian / abs(V.z);
+  return pow(baseColor, vec3(0.5f)) * (vec3(1.0f) - F)
+         * D * G2 * abs(VDotH) * jacobian /
+         abs(L.z * V.z);
+}
+static __inline__ __device__
+float SmithG(float NDotV, float alphaG)
+{
+  float a = alphaG * alphaG;
+  float b = NDotV * NDotV;
+  return (2.0 * NDotV) / (NDotV + sqrt(a + b - a * b));
+}
+static __inline__ __device__
+vec3 EvalClearcoat(float ccR, vec3 V, vec3 L, vec3 H, float &pdf)
+{
+  pdf = 0.0;
+  if (L.z <= 0.0)
+    return vec3(0.0);
+
+  float VDotH = abs(dot(V, H));
+
+  float F = mix(0.04, 1.0, SchlickWeight(VDotH));
+  float D = GTR1(H.z, ccR);
+  float G = SmithG(L.z, 0.25f) * SmithG(V.z, 0.25f);
+  float jacobian = 1.0f / (4.0f * VDotH);
+
+  pdf = D * H.z * jacobian;
+  return vec3(F) * D * G;
+}
+}
+
+//not used anymore
 namespace DisneyBRDF
 {   
 static __inline__ __device__ float pdf(

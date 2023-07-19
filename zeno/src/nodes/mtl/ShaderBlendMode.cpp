@@ -139,7 +139,7 @@ namespace zeno
         },
         {
             "subtract",
-            "   return max(base + blend - 1.0, 0.0);\n"
+            "  return max(base - blend , 0.0);\n"
         },
         {
             "vividLight",

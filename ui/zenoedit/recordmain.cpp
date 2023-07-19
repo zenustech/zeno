@@ -5,7 +5,10 @@
 #include "minimp3.h"
 #include <QApplication>
 #include "zenomainwindow.h"
-#include "settings/zsettings.h"
+#include "zeno/core/Session.h"
+#include "zeno/types/UserData.h"
+#include "launch/corelaunch.h"
+#include <zeno/utils/log.h>
 
 //#define DEBUG_DIRECTLY
 
@@ -49,6 +52,7 @@ static int calcFrameCountByAudio(std::string path, int fps) {
     return 0;
 }
 
+int record_main(const QCoreApplication& app);
 int record_main(const QCoreApplication& app)
 {
     ZENO_RECORD_RUN_INITPARAM param;
@@ -70,6 +74,13 @@ int record_main(const QCoreApplication& app)
         {"cachePath", "cachePath", "cachePath"},
         {"cacheNum", "cacheNum", "cacheNum"},
         {"exitWhenRecordFinish", "exitWhenRecordFinish", "exitWhenRecordFinish"},
+        {"optix", "optix", "optix mode"},
+        {"video", "video", "export video"},
+        {"aov", "aov", "aov"},
+        {"needDenoise", "needDenoise", "needDenoise"},
+        {"videoname", "videoname", "export video's name"},
+        {"subzsg", "subgraphzsg", "subgraph zsg file path"},
+        {"cacheautorm", "cacheautoremove", "remove cache after render"},
     });
     cmdParser.process(app);
 
@@ -91,19 +102,35 @@ int record_main(const QCoreApplication& app)
         param.configFilePath = cmdParser.value("configFilePath");
         zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
     }
+    LAUNCH_PARAM launchparam;
     if (cmdParser.isSet("cachePath")) {
         QString text = cmdParser.value("cachePath");
         text.replace('\\', '/');
-        QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencachedir", text);
+        launchparam.cacheDir = text;
+        launchparam.enableCache = true;
+        launchparam.tempDir = false;
         if (!QDir(text).exists()) {
             QDir().mkdir(text);
         }
+        if (cmdParser.isSet("cacheautorm"))
+        {
+            launchparam.autoRmCurcache = cmdParser.value("cacheautorm").toInt();
+        }
+        else {
+            launchparam.autoRmCurcache = true;
+        }
+        if (cmdParser.isSet("cacheNum")) {
+            launchparam.cacheNum = cmdParser.value("cacheNum").toInt();
+        }
+        else {
+            launchparam.cacheNum = 1;
+        }
     }
-    if (cmdParser.isSet("cacheNum")) {
-        QString text2 = cmdParser.value("cacheNum");
-        QSettings settings(zsCompanyName, zsEditor);
-        settings.setValue("zencachenum", text2);
+    else {
+        zeno::log_info("cachePath missed, process exited with {}", -1);
+        return -1;
+        //launchparam.enableCache = true;
+        //launchparam.tempDir = true;
     }
     if (cmdParser.isSet("exitWhenRecordFinish"))
         param.exitWhenRecordFinish = cmdParser.value("exitWhenRecordFinish").toLower() == "true";
@@ -116,18 +143,34 @@ int record_main(const QCoreApplication& app)
     }
     param.iBitrate = cmdParser.isSet("bitrate") ? cmdParser.value("bitrate").toInt() : 20000;
     param.iFps = cmdParser.isSet("fps") ? cmdParser.value("fps").toInt() : 24;
+	param.bOptix = cmdParser.isSet("optix") ? cmdParser.value("optix").toInt() : 0;
+	param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
+	param.needDenoise = cmdParser.isSet("needDenoise") ? cmdParser.value("needDenoise").toInt() : 0;
+	int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
+    auto &ud = zeno::getSession().userData();
+    ud.set2("output_aov", enableAOV != 0);
+	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
+	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 #else
-    param.sZsgPath = "E:\\zeno-fixbug\\once-bug.zsg";
-    param.sPath = "E:\\zeno-fixbug\\recordpath";
+    param.sZsgPath = "C:\\zeno\\framenum.zsg";
+    param.sPath = "C:\\recordpath";
     param.iFps = 24;
     param.iBitrate = 200000;
     param.iSFrame = 0;
     param.iFrame = 10;
+    param.iSample = 1;
+    param.bOptix = true;
     param.sPixel = "1200x800";
 #endif
 
-    ZenoMainWindow tempWindow;
-    tempWindow.showMaximized();
-    tempWindow.directlyRunRecord(param);
+    ZenoMainWindow tempWindow(nullptr, 0, param.bOptix ? PANEL_OPTIX_VIEW : PANEL_GL_VIEW);
+    if (!param.bOptix)
+    {
+        tempWindow.showMaximized();
+        tempWindow.solidRunRender(param);
+    }
+    else {
+        tempWindow.optixRunRender(param, launchparam);
+    }
     return app.exec();
 }

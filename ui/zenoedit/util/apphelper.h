@@ -10,6 +10,8 @@
 #include <zeno/types/UserData.h>
 #include <zenoui/comctrl/gv/zveceditoritem.h>
 #include <viewport/viewportwidget.h>
+#include "launch/corelaunch.h"
+#include "settings/zsettings.h"
 
 class AppHelper
 {
@@ -21,6 +23,7 @@ public:
     static QString nativeWindowTitle(const QString& currentFilePath);
     static void socketEditFinished(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
     static void modifyLightData(QPersistentModelIndex nodeIdx);
+    static void initLaunchCacheParam(LAUNCH_PARAM& param);
 };
 
 

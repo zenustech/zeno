@@ -282,6 +282,16 @@ void ZenoSubGraphScene::onDataChanged(const QModelIndex& subGpIdx, const QModelI
         ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
         m_nodes[id]->onUpdateParamsNotDesc();
     }
+    if (role == ROLE_NODE_DATACHANGED)
+    {
+        QVariant varDataChanged = idx.data(ROLE_NODE_DATACHANGED);
+        if (varDataChanged.canConvert<bool>())
+        {
+            bool ret = varDataChanged.toBool();
+            if (m_nodes.find(id) != m_nodes.end())
+                m_nodes[id]->onMarkDataChanged(ret);
+        }
+    }
 }
 
 void ZenoSubGraphScene::onLinkInserted(const QModelIndex& parent, int first, int last)

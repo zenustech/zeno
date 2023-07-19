@@ -20,15 +20,20 @@ struct Camera {
     float m_far = 20000.0f;
     float m_fov = 45.f;
 
-    float m_aperture = 0.1f;
+    float m_aperture = 0.0f;
     float focalPlaneDistance = 2.0f;
     float m_dof = -1.f;
+    float m_safe_frames = 0;
 
     glm::vec3 m_lodcenter{0, 0, -1};
     glm::vec3 m_lodfront{0, 0, 1};
     glm::vec3 m_lodup{0, 1, 0};
 
     bool m_need_sync = false;
+    bool m_block_window = false;
+    bool m_auto_radius = false;
+
+    zeno::vec2i viewport_offset = {};
 
     struct ZxxHappyLookParam {
         float cx = 0;
@@ -50,6 +55,9 @@ struct Camera {
     }
 
     void setResolution(int nx, int ny);
+    void set_safe_frames(bool bLock, int nx, int ny);
+    float get_safe_frames() const;
+    bool is_locked_window() const;
     void setCamera(zeno::CameraData const &cam);
     void placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar);
     void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance);

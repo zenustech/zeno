@@ -1,5 +1,6 @@
 #include <openvdb/tools/GridOperators.h>
 #include <openvdb/tools/Interpolation.h>
+#include <thread>
 #include <zeno/VDBGrid.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/zeno.h>
@@ -29,7 +30,6 @@ struct WhitewaterSource : INode {
         auto &Liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF")->m_grid;
         auto &Solid_sdf = get_input<VDBFloatGrid>("SolidSDF")->m_grid;
         auto &Velocity = get_input<VDBFloat3Grid>("Velocity")->m_grid;
-        auto &Pre_vel = get_input<VDBFloat3Grid>("PreVelocity")->m_grid;
 
         auto &par_pos = pars->verts.values;
         auto &par_vel = pars->add_attr<vec3f>("vel");
@@ -37,7 +37,7 @@ struct WhitewaterSource : INode {
         // pars->verts.values.push_back(vec3f{});
         // vel.push_back();
 
-        auto limit_depth = get_input2<float>("LimitDepth");
+        auto limit_depth = get_input2<vec2f>("LimitDepth");
         auto speed_range = get_input2<vec2f>("SpeedRange");
         auto curv_emit = get_input2<float>("EmitFromCurvature");
         auto max_angle = get_input2<float>("MaxVelocityAngle");
@@ -49,11 +49,14 @@ struct WhitewaterSource : INode {
 
         float dx = static_cast<float>(Velocity->voxelSize()[0]);
 
-        openvdb::Vec3fGrid::Ptr Normal, Vorticity;
+        openvdb::Vec3fGrid::Ptr Normal, Vorticity, Pre_vel;
         openvdb::FloatGrid::Ptr Curvature;
         if (curv_emit > eps) {
             Normal = openvdb::tools::gradient(*Liquid_sdf);
             Curvature = openvdb::tools::meanCurvature(*Liquid_sdf);
+        }
+        if (acc_emit > eps) {
+            Pre_vel = get_input<VDBFloat3Grid>("PreVelocity")->m_grid;
         }
         if (vor_emit > eps) {
             Vorticity = openvdb::tools::curl(*Velocity);
@@ -70,7 +73,6 @@ struct WhitewaterSource : INode {
             auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
             auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
             auto vel_axr = Velocity->getConstUnsafeAccessor();
-            auto pre_vel_axr = Pre_vel->getConstUnsafeAccessor();
 
             typename MapT::iterator posIter, velIter;
             {
@@ -86,7 +88,7 @@ struct WhitewaterSource : INode {
 
             for (auto iter = leaf.cbeginValueOn(); iter; ++iter) {
                 float m_sdf = *iter;
-                if (m_sdf < limit_depth || m_sdf > eps)
+                if (m_sdf < limit_depth[0] || m_sdf > limit_depth[1])
                     continue;
 
                 auto icoord = iter.getCoord();
@@ -104,12 +106,14 @@ struct WhitewaterSource : INode {
                     auto curv_axr = Curvature->getConstUnsafeAccessor();
 
                     float m_curv = openvdb::tools::BoxSampler::sample(curv_axr, Curvature->worldToIndex(wcoord));
+                    m_curv = std::abs(m_curv);
                     openvdb::Vec3f m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord));
                     if (!checkAngle(m_vel, m_norm, max_angle))
                         m_curv = 0;
                     generates += curv_emit * clamp_map(m_curv, curv_range);
                 }
                 if (acc_emit > eps) {
+                    auto pre_vel_axr = Pre_vel->getConstUnsafeAccessor();
                     openvdb::Vec3f m_pre_vel =
                         openvdb::tools::StaggeredBoxSampler::sample(pre_vel_axr, Pre_vel->worldToIndex(wcoord));
                     auto m_acc_vec = (m_vel - m_pre_vel) / dt;
@@ -182,7 +186,7 @@ ZENDEFNODE(WhitewaterSource, {/* inputs: */
                                "SolidSDF",
                                "Velocity",
                                "PreVelocity",
-                               {"float", "LimitDepth", "-1"},
+                               {"vec2f", "LimitDepth", "-1, 0.5"},
                                {"vec2f", "SpeedRange", "0, 1"},
                                {"float", "EmitFromCurvature", "0"},
                                {"float", "MaxVelocityAngle", "45"},
@@ -204,17 +208,21 @@ struct WhitewaterSolver : INode {
         auto dt = get_input2<float>("dt");
         auto &Liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF")->m_grid;
         auto &Solid_sdf = get_input<VDBFloatGrid>("SolidSDF")->m_grid;
-        auto &Velocity = get_input<VDBFloat3Grid>("Velocity")->m_grid;
+        auto TargetVelAttr = get_input2<std::string>("TargetVelAttr");
 
         auto gravity = vec_to_other<openvdb::Vec3f>(get_input2<vec3f>("Gravity"));
+        auto dragModel = get_input2<std::string>("DragModel");
         auto air_drag = get_input2<float>("AirDrag");
+        auto foam_drag = get_input2<float>("FoamDrag");
+        auto bubble_drag = get_input2<float>("BubbleDrag");
         auto buoyancy = get_input2<float>("Buoyancy");
 
-        float dx = static_cast<float>(Velocity->voxelSize()[0]);
+        float dx = static_cast<float>(Liquid_sdf->voxelSize()[0]);
 
         auto &par_pos = pars->verts.values;
         auto &par_vel = pars->attr<vec3f>("vel");
         auto &par_life = pars->attr<float>("life");
+        auto &par_tarVel = pars->attr<vec3f>(TargetVelAttr);
 
         auto Normal = openvdb::tools::gradient(*Solid_sdf);
 
@@ -222,29 +230,49 @@ struct WhitewaterSolver : INode {
         for (size_t idx = 0; idx < pars->size(); ++idx) {
             auto liquid_sdf_axr = Liquid_sdf->getConstUnsafeAccessor();
             auto solid_sdf_axr = Solid_sdf->getConstUnsafeAccessor();
-            auto vel_axr = Velocity->getConstUnsafeAccessor();
             auto norm_axr = Normal->getConstUnsafeAccessor();
 
             auto m_vel = vec_to_other<openvdb::Vec3f>(par_vel[idx]);
             auto wcoord = vec_to_other<openvdb::Vec3f>(par_pos[idx]);
             float m_liquid_sdf = openvdb::tools::BoxSampler::sample(liquid_sdf_axr, Liquid_sdf->worldToIndex(wcoord));
+            float drag_coef = 0;
             if (m_liquid_sdf > dx) {
                 // spray
-                m_vel += gravity * dt - air_drag * m_vel;
-            } else if (m_liquid_sdf < -dx) {
+                drag_coef = air_drag;
+                m_vel += gravity * dt;
+
+                par_life[idx] -= 0.5f * dt;
+            } else if (m_liquid_sdf < -0.3f * dx) {
                 // bubble
-                auto m_liquid_vel =
-                    openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
-                m_vel += -buoyancy * gravity * dt + air_drag * (m_liquid_vel - m_vel);
+                drag_coef = bubble_drag;
+                m_vel += -buoyancy * gravity * dt;
+
+                par_life[idx] -= 0.5f * dt;
             } else {
                 // foam
-                m_vel = openvdb::tools::StaggeredBoxSampler::sample(vel_axr, Velocity->worldToIndex(wcoord));
+                drag_coef = foam_drag;
+
                 par_life[idx] -= dt;
             }
+            auto m_tarVel = vec_to_other<openvdb::Vec3f>(par_tarVel[idx]);
+
+            if (dragModel == "square") {
+                //second step, semi-implicit integrate drag
+                // (v_np1 - v_n) / dt = c * length(v_tar - v_n) * (v_tar - v_np1)
+                vec3f v_target = vec3f(m_tarVel[0], m_tarVel[1], m_tarVel[2]);
+                vec3f m_vel2 = vec3f(m_vel.x(), m_vel.y(), m_vel.z());
+                float v_diff = zeno::distance(v_target, m_vel2);
+                float denom = 1 + dt * air_drag * v_diff;
+                m_vel = vec_to_other<openvdb::Vec3f>((dt * air_drag * v_diff * v_target + m_vel2) / denom);
+            } else {
+                // simple drag
+                m_vel += drag_coef * (m_tarVel - m_vel);
+            }
+
             auto wcoord_new = wcoord + dt * m_vel;
-            float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord));
+            float m_solid_sdf = openvdb::tools::BoxSampler::sample(solid_sdf_axr, Solid_sdf->worldToIndex(wcoord_new));
             if (m_solid_sdf < 0) {
-                auto m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord));
+                auto m_norm = openvdb::tools::BoxSampler::sample(norm_axr, Normal->worldToIndex(wcoord_new));
                 m_norm.normalize();
                 m_vel = -m_solid_sdf * m_norm / dt;
                 wcoord_new += m_vel * dt;
@@ -263,10 +291,13 @@ ZENDEFNODE(WhitewaterSolver, {/* inputs: */
                                {"float", "dt", "0.04"},
                                "LiquidSDF",
                                "SolidSDF",
-                               "Velocity",
+                               {"string", "TargetVelAttr", "tv"},
                                {"vec3f", "Gravity", "0, -9.8, 0"},
-                               {"float", "AirDrag", "0.1"},
-                               {"float", "Buoyancy", "10"}},
+                               {"enum linear square", "DragModel", "linear"},
+                               {"float", "AirDrag", "0.05"},
+                               {"float", "FoamDrag", "0.9"},
+                               {"float", "BubbleDrag", "0.1"},
+                               {"float", "Buoyancy", "5"}},
                               /* outputs: */
                               {"Primitive"},
                               /* params: */

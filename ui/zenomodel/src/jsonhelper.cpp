@@ -22,14 +22,14 @@ namespace JsonHelper
         writer.EndArray();
     }
 
-    void AddVariantList(const QVariantList& list, const QString& valType, RAPIDJSON_WRITER& writer, bool fillInvalid)
+    void AddVariantList(const QVariantList& list, const QString& valType, RAPIDJSON_WRITER& writer)
     {
         writer.StartArray();
         for (const QVariant& value : list)
         {
             //the valType is only availble for "value", for example, in phrase ["setNodeInput", "xxx-cube", "pos", (variant value)],
             // valType is only used for value, and the other phrases are parsed as string.
-            AddVariant(value, valType, writer, fillInvalid);
+            AddVariant(value, valType, writer);
 		}
         writer.EndArray();
     }
@@ -43,10 +43,10 @@ namespace JsonHelper
     )
     {
         writer.StartArray();
-        AddVariant(op, "string", writer, true);
-        AddVariant(ident, "string", writer, true);
-        AddVariant(name, "string", writer, true);
-        AddVariant(defl, descType, writer, true);
+        AddVariant(op, "string", writer);
+        AddVariant(ident, "string", writer);
+        AddVariant(name, "string", writer);
+        AddVariant(defl, descType, writer);
         writer.EndArray();
     }
 
@@ -132,20 +132,20 @@ namespace JsonHelper
         }
     }
 
-    void AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid)
+    bool AddVariant(const QVariant& value, const QString& type, RAPIDJSON_WRITER& writer)
     {
         QVariant::Type varType = value.type();
         if (varType == QVariant::Double)
         {
-            writer.Double(value.toDouble());
+            return writer.Double(value.toDouble());
         }
         else if (varType == QMetaType::Float)
         {
-            writer.Double(value.toFloat());
+            return writer.Double(value.toFloat());
         }
         else if (varType == QVariant::Int)
         {
-            writer.Int(value.toInt());
+            return writer.Int(value.toInt());
         }
         else if (varType == QVariant::String)
         {
@@ -198,7 +198,7 @@ namespace JsonHelper
                     }
                     writer.EndObject();
                 } else {
-                    ZASSERT_EXIT(false);
+                    ZASSERT_EXIT(false, true);
                     writer.Null();
                 }
             }
@@ -230,9 +230,12 @@ namespace JsonHelper
         }
         else if (varType == QVariant::Invalid)
         {
-            if (fillInvalid)
-                writer.Null();
+            writer.Null();
         }
+        else {
+            writer.Null();
+        }
+        return true;
     }
 
     void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer)

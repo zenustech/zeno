@@ -180,7 +180,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     const std::vector<const char*> compilerOptions {
         "-std=c++17", "-default-device", //"-extra-device-vectorization"
   #if !defined( NDEBUG )      
-        "-lineinfo", "-G"//"--dopt=on",
+        //"-lineinfo", "-G"//"--dopt=on",
   #endif
         //"--gpu-architecture=compute_60",
         //"--relocatable-device-code=true"
@@ -611,7 +611,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
             size_t idx = jj*nx + ii;
             float illum = 0.0f;
             auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
-            illum = zeno::dot(color, zeno::vec3f(0.2126f,0.7152f, 0.0722f));
+            illum = zeno::dot(color, zeno::vec3f(0.33333333f,0.33333333f, 0.33333333f));
             //illum = illum > 0.5? illum : 0.0f;
             illum = abs(illum) * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
 
@@ -829,12 +829,12 @@ inline void createPipeline()
     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
 
-    int num_progs = 3 + rtMaterialShaders.size() * 2;
+    size_t num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
-    for(int i=0;i<rtMaterialShaders.size();i++)
+    for(size_t i=0;i<rtMaterialShaders.size();i++)
     {
         program_groups[3 + i*2] = rtMaterialShaders[i].m_radiance_hit_group;
         program_groups[3 + i*2 + 1] = rtMaterialShaders[i].m_occlusion_hit_group;

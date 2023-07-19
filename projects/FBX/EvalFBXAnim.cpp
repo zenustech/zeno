@@ -74,8 +74,8 @@ struct EvalAnim{
         //m_CurrentFrame = fmod(m_CurrentFrame, m_animInfo.duration);
 
         //zeno::log_info("Update: F {} D {} C {}", fi, dt, m_CurrentFrame);
-        ED_COUT << "FBX: Frame " << m_CurrentFrame << " Duration " << m_animInfo.duration << " " << m_pathName.value << std::endl;
-        ED_COUT << "FBX: FrameID " << fi << " Tick " << m_animInfo.tick << " DeltaTime " << dt << std::endl;
+        //ED_COUT << "FBX: Frame " << m_CurrentFrame << " Duration " << m_animInfo.duration << " " << m_pathName.value << std::endl;
+        //ED_COUT << "FBX: FrameID " << fi << " Tick " << m_animInfo.tick << " DeltaTime " << dt << std::endl;
 
         if(m_evalOption.writeData){
             expandBoneTransform(&m_RootNode, "", aiMatrix4x4());
@@ -90,8 +90,14 @@ struct EvalAnim{
         if(m_evalOption.printAnimData) {
             std::cout << "----- >" << m_pathName.value << "\n";
         }
+//        TIMER_START(UpdateAnim_CalcTrans)
         calculateBoneTransform(&m_RootNode, aiMatrix4x4(), "");
+//        TIMER_END(UpdateAnim_CalcTrans)
+
+//        TIMER_START(UpdateAnim_CalcPrim)
         calculateFinal(prim);
+//        TIMER_END(UpdateAnim_CalcPrim)
+
         if(m_evalOption.printAnimData) {
             std::cout << "===== <" << m_pathName.value << "\n";
         }
@@ -242,27 +248,27 @@ struct EvalAnim{
     {
         float gscale = m_evalOption.globalScale;
         // TODO We didn't consider that the camera might be in the hierarchy
-        for(auto& m: m_LazyTransforms){
-            //std::cout << " ===== " << m.first << "\n";
-            if(fbxData->iCamera.value.find(m.first) != fbxData->iCamera.value.end()){
-                //zeno::log_info("----- LT Camera {}", m.first);
-                //Helper::printAiMatrix(m.second, true);
+        for(auto& ltrans: m_LazyTransforms){
+            auto namePath = ltrans.first;
 
-                SCamera cam = fbxData->iCamera.value.at(m.first);
+            for(auto &[camName, camObj]: fbxData->iCamera.value){
+                if(namePath.find(camName) != std::string::npos){
 
-                aiVector3t<float> trans;
-                aiQuaterniont<float> rotate;
-                aiVector3t<float> scale;
-                m.second.Decompose(scale, rotate, trans);
-                cam.pos = zeno::vec3f(trans.x * gscale, trans.y * gscale, trans.z * gscale);
-                aiMatrix3x3 r = rotate.GetMatrix().Transpose();
-                cam.view = zeno::vec3f(r.a1, r.a2, r.a3);
-                cam.up = zeno::vec3f(r.b1, r.b2, r.b3);
+                    SCamera cam = fbxData->iCamera.value.at(camName);
 
-                iCamera->value[m.first] = cam;
-            }else if(fbxData->iLight.value.find(m.first) != fbxData->iLight.value.end()){
-                //zeno::log_info("+++++ LT Light {}", m.first);
-                //Helper::printAiMatrix(m.second, true);
+                    aiVector3t<float> trans;
+                    aiQuaterniont<float> rotate;
+                    aiVector3t<float> scale;
+
+                    ltrans.second.Decompose(scale, rotate, trans);
+
+                    cam.pos = zeno::vec3f(trans.x * gscale, trans.y * gscale, trans.z * gscale);
+                    aiMatrix3x3 r = rotate.GetMatrix().Transpose();
+                    cam.view = zeno::vec3f(r.a1, r.a2, r.a3);
+                    cam.up = zeno::vec3f(r.b1, r.b2, r.b3);
+
+                    iCamera->value[camName] = cam;
+                }
             }
         }
     }
@@ -295,12 +301,10 @@ struct EvalAnim{
             }
             tranType = 1;
         }else{
+            pathTrans = glm::mat4(1.0);
             std::cout << "Eval: Trans None " << pathName << "\n";
             tranType = 2;
         }
-        //if(m_evalOption.printAnimData) {
-        //    std::cout << "Eval: Trans Type " << tranType << "\n";
-        //}
     }
 
     void calculateFinal(std::shared_ptr<zeno::PrimitiveObject>& prim){
@@ -308,6 +312,7 @@ struct EvalAnim{
         auto &trisInd = prim->tris;
         auto &polys = prim->polys;
         auto &loops = prim->loops;
+        auto &uvs = prim->uvs;
         auto &uv = prim->verts.add_attr<zeno::vec3f>("uv");
         auto &norm = prim->verts.add_attr<zeno::vec3f>("nrm");
         auto &posb = prim->verts.add_attr<zeno::vec3f>("posb");
@@ -335,10 +340,12 @@ struct EvalAnim{
         float gscale = m_evalOption.globalScale;
 
         // Trans
-        glm::mat4 pathTrans(1.0);
         auto pathName = m_pathName.value_oriPath;
+        glm::mat4 pathTrans(1.0);
         int tranType = -1;
-        getPathTrans(pathName, pathTrans, tranType);
+        if(pathName != "/__path__") {
+            getPathTrans(pathName, pathTrans, tranType);
+        }
 
         for(unsigned int i=0; i<m_Vertices.size(); i++){
             auto& bwe = m_Vertices[i].boneWeights;
@@ -346,6 +353,11 @@ struct EvalAnim{
             auto& uvw = m_Vertices[i].texCoord;
             auto& nor = m_Vertices[i].normal;
             auto& vco = m_Vertices[i].vectexColor;
+
+//            auto& exi = m_Vertices[i].extraInfos;
+//            if(pathName == "/__path__") {
+//                getPathTrans(exi["path"], pathTrans, tranType);
+//            }
 
             glm::vec4 tpos(0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -389,6 +401,7 @@ struct EvalAnim{
 
             ver.emplace_back(fpos.x * gscale, fpos.y * gscale, fpos.z * gscale);
             posb.emplace_back(0.0f, 0.0f, 0.0f);
+            uvs.emplace_back(uvw.x, uvw.y, uvw.z);
             uv.emplace_back(uvw.x, uvw.y, uvw.z);
             norm.emplace_back(nor.x, nor.y, nor.z);
             clr0.emplace_back(vco.r, vco.g, vco.b);
@@ -399,6 +412,7 @@ struct EvalAnim{
                 zeno::vec3i incs(m_IndicesTris[i], m_IndicesTris[i + 1], m_IndicesTris[i + 2]);
                 trisInd.push_back(incs);
             }
+            uvs.clear();
         }else{
             for (unsigned int i = 0; i < m_IndicesLoops.size(); i ++) {
                 loops.emplace_back(m_IndicesLoops[i]);
@@ -406,12 +420,14 @@ struct EvalAnim{
             for (unsigned int i = 0; i < m_IndicesPolys.size(); i ++) {
                 polys.emplace_back(m_IndicesPolys[i]);
             }
+            uv.clear();
         }
 
-        auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
-        auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
-        auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
+        // Processing UV data
         if(isTris) {
+            auto &uv0 = prim->tris.add_attr<zeno::vec3f>("uv0");
+            auto &uv1 = prim->tris.add_attr<zeno::vec3f>("uv1");
+            auto &uv2 = prim->tris.add_attr<zeno::vec3f>("uv2");
             for (unsigned int i = 0; i < trisInd.size(); i++) {
                 unsigned int _i1 = trisInd[i][0];
                 unsigned int _i2 = trisInd[i][1];
@@ -421,7 +437,13 @@ struct EvalAnim{
                 uv2[i] = zeno::vec3f(m_Vertices[_i3].texCoord[0], m_Vertices[_i3].texCoord[1], 0);
             }
         }else{
-            // TODO add uv attr to loops
+            // Crash
+            //if(prim->uvs.size()) {
+            //    prim->loops.add_attr<int>("uvs");
+            //    for (auto i = 0; i < prim->loops.size(); i++) {
+            //        prim->loops.attr<int>("uvs")[i] = /*prim->loops[i]*/ i;
+            //    }
+            //}
         }
     }
 };
@@ -438,12 +460,12 @@ struct EvalFBXAnim : zeno::INode {
 
         SFBXEvalOption evalOption;
         auto fbxData = get_input<FBXData>("data");
-        //auto fps = get_input2<float>("fps");
         auto unit = get_param<std::string>("unit");
         auto interAnimData = get_param<std::string>("interAnimData");
         auto writeData = get_param<bool>("writeData");
         auto printAnimData = get_param<bool>("printAnimData");
         auto evalBlendShape = get_param<bool>("evalBlendShape");
+
         unit == "FROM_MAYA" ? evalOption.globalScale = 0.01f : evalOption.globalScale = 1.0f;
         interAnimData == "TRUE" ? evalOption.interAnimData = true : evalOption.interAnimData = false;
         if(writeData)
@@ -460,9 +482,6 @@ struct EvalFBXAnim : zeno::INode {
         if(nodeTree == nullptr || boneTree == nullptr || animInfo == nullptr){
             zeno::log_error("FBX: Empty NodeTree, BoneTree or AnimInfo");
         }
-
-        //zeno::log_info("FBX: Eval Option InterAnimData {} WriteData {} UnitScale {}",
-        //               evalOption.interAnimData, evalOption.writeData, evalOption.globalScale);
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto transDict = std::make_shared<zeno::DictObject>();
@@ -498,12 +517,17 @@ struct EvalFBXAnim : zeno::INode {
             isVisibility->set(1);
         }
 
-        ED_COUT << " Visibility " << isVisibility->get<int>() << " Path " << fbxData->iPathName.value << "\n";
+        //ED_COUT << " Visibility " << isVisibility->get<int>() << " Path " << fbxData->iPathName.value << "\n";
 
+//        TIMER_START(EvalAnim)
         EvalAnim anim;
         anim.m_evalOption = evalOption;
         anim.initAnim(nodeTree, boneTree, fbxData, animInfo);
+//        TIMER_END(EvalAnim)
+
+//        TIMER_START(UpdateAnim)
         anim.updateAnimation(frameid, prim);
+//        TIMER_END(UpdateAnim)
         anim.updateCameraAndLight(fbxData, iCamera, iLight);
         anim.decomposeAnimation(transDict, quatDict, scaleDict);
 
@@ -518,13 +542,15 @@ struct EvalFBXAnim : zeno::INode {
         auto bsValue = fbxData->iBlendSData.value;
         float gScale = evalOption.globalScale;
 
+        // XXX When the input data is single partten
+//        TIMER_START(BlendShapeCreate)
         for(auto & [bsName, nameOfBlendShapes]: bsValue){
             glm::mat4 pathTrans(1.0);
             auto pathName = fbxData->iPathName.value_oriPath;
             int tranType = -1;
             anim.getPathTrans(pathName, pathTrans, tranType);
 
-            std::cout << "BlendShape Key " << bsName << "\n";
+            //std::cout << "BlendShape Key " << bsName << "\n";
             for(int i=0; i< nameOfBlendShapes.size(); i++){
                 auto bsprim = std::make_shared<zeno::PrimitiveObject>();
                 auto &verAttr = bsprim->verts;
@@ -533,7 +559,7 @@ struct EvalFBXAnim : zeno::INode {
                 auto &dnrmAttr = bsprim->verts.add_attr<zeno::vec3f>("dnrm");
                 auto &dposAttr = bsprim->verts.add_attr<zeno::vec3f>("dpos");
                 auto& blendShapeData = nameOfBlendShapes[i];
-                std::cout << " BlendShape " << i << "\n";
+                //std::cout << " BlendShape " << i << "\n";
 
                 auto pathTransScale = glm::vec3(glm::length(glm::vec3(pathTrans[0])),
                                                 glm::length(glm::vec3(pathTrans[1])),
@@ -559,7 +585,9 @@ struct EvalFBXAnim : zeno::INode {
                 bsPrimsOrigin->arr.emplace_back(bsprim);
             }
         }
+//        TIMER_END(BlendShapeCreate)
 
+//        TIMER_START(BlendShapeEval)
         // TODO FBXData Write BlendShape
         if(bsValue.find(meshName) != bsValue.end()){
             if(fbxData->iKeyMorph.value.find(meshName) != fbxData->iKeyMorph.value.end()){
@@ -633,6 +661,7 @@ struct EvalFBXAnim : zeno::INode {
                 std::cout << "BlendShape NotFound MorphKey " << meshName << "\n";
             }
         }
+//        TIMER_END(BlendShapeEval)
 
         //zeno::log_info("Frame {} Prims Num {} Mesh Name {}", anim.m_CurrentFrame, bsPrims->arr.size(), meshName);
         auto data2write = std::make_shared<SFBXData>();
@@ -662,9 +691,8 @@ ZENDEFNODE(EvalFBXAnim,
                },  /* outputs: */
                {
                    "prim",
-                   {"ListObject", "prims", ""},
                    "camera", "light", "matName", "meshName", "pathName", "bsPrimsOrigin",
-                   {"ListObject", "bsPrims", ""},
+                   {"list", "bsPrims", ""},
                    "transDict", "quatDict", "scaleDict",
                    "writeData", "visibility"
                },  /* params: */

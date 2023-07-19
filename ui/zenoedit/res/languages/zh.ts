@@ -108,11 +108,11 @@
         <source>Kill</source>
         <translation>终止</translation>
     </message>
-	<message>
+    <message>
         <source>RunLightCamera</source>
         <translation>运行灯光相机</translation>
     </message>
-	<message>
+    <message>
         <source>RunMaterial</source>
         <translation>运行材质</translation>
     </message>
@@ -132,13 +132,9 @@
         <source>alwaysLightCamera</source>
         <translation>实时预览灯光相机</translation>
     </message>
-	<message>
+    <message>
         <source>alwaysMaterial</source>
         <translation>实时预览材质</translation>
-    </message>
-    <message>
-        <source>RunLightCamera</source>
-        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1008,6 +1004,18 @@
         <source>Float Panel</source>
         <translation type="unfinished">弹出属性面板</translation>
     </message>
+    <message>
+        <source>View</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Bypass</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>RecFrameSelectDlg</name>
@@ -1025,7 +1033,7 @@
     </message>
     <message>
         <source>record by last run</source>
-        <translation>基于上次的运行结果录制</translation>
+        <translation type="vanished">基于上次的运行结果录制</translation>
     </message>
     <message>
         <source>Run by record frame</source>
@@ -1132,6 +1140,10 @@
     <message>
         <source>export video</source>
         <translation>是否导出视频</translation>
+    </message>
+	<message>
+        <source>remove cache after render</source>
+        <translation>渲染后删除缓存</translation>
     </message>
     <message>
         <source>record video after running.</source>
@@ -1334,7 +1346,7 @@
     </message>
     <message>
         <source>Last run frame: [%1 - %2]</source>
-        <translation>上一次运行的帧范围是：[%1 - %2]</translation>
+        <translation type="vanished">上一次运行的帧范围是：[%1 - %2]</translation>
     </message>
     <message>
         <source>Running frame: [%1 - %2]</source>
@@ -1350,7 +1362,15 @@
     </message>
     <message>
         <source>Last complete run frame: [%1 - %2], you can record the video based on it.</source>
-        <translation>上一次运行的帧范围是：[%1 - %2]，你可以基于上一次运行结果直接录制。</translation>
+        <translation type="vanished">上一次运行的帧范围是：[%1 - %2]，你可以基于上一次运行结果直接录制。</translation>
+    </message>
+    <message>
+        <source>Last complete run frame: [%1 - %2].</source>
+        <translation>上一次运行完成，其帧范围是：[%1 - %2]</translation>
+    </message>
+    <message>
+        <source>Last incomplete run frame: [%1 - %2].</source>
+        <translation>上一次运行未完成，其帧范围是：[%1 - %2]</translation>
     </message>
 </context>
 <context>
@@ -1495,6 +1515,14 @@
         <source>subgraph name:</source>
         <translation>子图名称：</translation>
     </message>
+    <message>
+        <source>Delete Subgraph</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Do you want to delete the selected subgraphs</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ZTabDockWidget</name>
@@ -1630,7 +1658,7 @@
         <source>RunLightCamera</source>
         <translation>运行灯光相机</translation>
     </message>
-	<message>
+    <message>
         <source>RunMaterial</source>
         <translation>运行材质</translation>
     </message>

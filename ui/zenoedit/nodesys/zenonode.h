@@ -57,6 +57,7 @@ public:
     QPointF nodePos() const;
     void updateNodePos(const QPointF &pos, bool enableTransaction = true);
     virtual void onUpdateParamsNotDesc();
+    void onMarkDataChanged(bool bDirty);
 
     void setMoving(bool isMoving);
     bool isMoving();
@@ -144,6 +145,7 @@ private:
     ZSimpleTextItem *m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     ZenoMinStatusBtnItem* m_pStatusWidgets;
+    ZLayoutBackground* m_dirtyMarker;
 
     QGraphicsRectItem* m_border;
     ZGraphicsLayout* m_bodyLayout;
@@ -162,6 +164,7 @@ private:
     // when zoom out the view, the view of node will be displayed as text with large size font.
     // it's convenient to view all nodes in big scale picture, but it also brings some problem.
     static const bool bEnableZoomPreview = false;
+    static const bool bShowDataChanged = false;
     GroupNode *m_groupNode;
     bool m_bVisible;
 };

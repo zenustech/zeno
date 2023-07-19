@@ -8,6 +8,8 @@
 #include <filesystem>
 #include <cstring>
 #include <zeno/utils/log.h>
+#include <zeno/utils/fileio.h>
+#include <zeno/utils/image_proc.h>
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
 #include <tinygltf/stb_image.h>
@@ -18,6 +20,7 @@
 #define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
+#include <zeno/types/HeatmapObject.h>
 
 static const float eps = 0.0001f;
 
@@ -327,13 +330,13 @@ std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
     }
     nx = std::max(nx, 1);
     ny = std::max(ny, 1);
-//    for (auto i = 0; i < ny / 2; i++) {
-//        for (auto x = 0; x < nx * 4; x++) {
-//            auto index1 = i * (nx * 4) + x;
-//            auto index2 = (ny - 1 - i) * (nx * 4) + x;
-//            std::swap(rgba[index1], rgba[index2]);
-//        }
-//    }
+    for (auto i = 0; i < ny / 2; i++) {
+        for (auto x = 0; x < nx * 4; x++) {
+            auto index1 = i * (nx * 4) + x;
+            auto index2 = (ny - 1 - i) * (nx * 4) + x;
+            std::swap(rgba[index1], rgba[index2]);
+        }
+    }
 
     auto img = std::make_shared<PrimitiveObject>();
     img->verts.resize(nx * ny);
@@ -350,20 +353,53 @@ std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path) {
     return img;
 }
 
-struct ReadImageFile : INode {
+std::shared_ptr<PrimitiveObject> readPFMFile(std::string const &path) {
+    int nx = 0;
+    int ny = 0;
+    std::ifstream file(path, std::ios::binary);
+    std::string format;
+    file >> format;
+    file >> nx >> ny;
+    float scale = 0;
+    file >> scale;
+    file.ignore(1);
+
+    auto img = std::make_shared<PrimitiveObject>();
+    int size = nx * ny;
+    img->resize(size);
+    file.read(reinterpret_cast<char*>(img->verts.data()), sizeof(vec3f) * nx * ny);
+
+    img->userData().set2("isImage", 1);
+    img->userData().set2("w", nx);
+    img->userData().set2("h", ny);
+    return img;
+}
+
+struct ReadImageFile : INode {//todo: select custom color space
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
+        auto linearize = get_input2<bool>("Linearize Non-linear Images");
         if (zeno::ends_with(path, ".exr", false)) {
             set_output("image", readExrFile(path));
         }
+        else if (zeno::ends_with(path, ".pfm", false)) {
+            set_output("image", readPFMFile(path));
+        }
         else {
-            set_output("image", readImageFile(path));
+            auto image = readImageFile(path); 
+            if (!linearize) {
+                for (auto i = 0; i < image->size(); i++) {
+                    image->verts[i] = pow(image->verts[i], 1.0/2.2f);
+                }
+            }
+            set_output("image", image);
         }
     }
 };
 ZENDEFNODE(ReadImageFile, {
     {
         {"readpath", "path"},
+        {"bool", "Linearize Non-linear Images", "1"},
     },
     {
         {"PrimitiveObject", "image"},
@@ -371,6 +407,74 @@ ZENDEFNODE(ReadImageFile, {
     {},
     {"comp"},
 });
+
+template<typename T>
+void image_flip_vertical(T *v, int w, int h) {
+    for (auto j = 0; j < h / 2; j++) {
+        for (auto i = 0; i < w; i++) {
+            auto index1 = i + j * w;
+            auto index2 = i + (h - j - 1) * w;
+            std::swap(v[index1], v[index2]);
+        }
+    }
+}
+
+struct ImageFlipVertical : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        image_flip_vertical(image->verts.data(), w, h);
+        if (image->verts.has_attr("alpha")) {
+            auto alpha = image->verts.attr<float>("alpha");
+            image_flip_vertical(alpha.data(), w, h);
+        }
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageFlipVertical, {
+    {
+        {"image"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
+void write_pfm(std::string& path, int w, int h, vec3f *rgb) {
+    std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
+    std::vector<char> data(header.size() + w * h * sizeof(vec3f));
+    memcpy(data.data(), header.data(), header.size());
+    memcpy(data.data() + header.size(), rgb, w * h * sizeof(vec3f));
+    file_put_binary(data, path);
+}
+
+void write_pfm(std::string& path, std::shared_ptr<PrimitiveObject> image) {
+    auto &ud = image->userData();
+    int w = ud.get2<int>("w");
+    int h = ud.get2<int>("h");
+    write_pfm(path, w, h, image->verts->data());
+}
+
+void write_jpg(std::string& path, std::shared_ptr<PrimitiveObject> image) {
+    int w = image->userData().get2<int>("w");
+    int h = image->userData().get2<int>("h");
+    std::vector<uint8_t> colors;
+    for (auto i = 0; i < w * h; i++) {
+        auto rgb = zeno::pow(image->verts[i], 1.0f / 2.2f);
+        int r = zeno::clamp(int(rgb[0] * 255.99), 0, 255);
+        int g = zeno::clamp(int(rgb[1] * 255.99), 0, 255);
+        int b = zeno::clamp(int(rgb[2] * 255.99), 0, 255);
+        colors.push_back(r);
+        colors.push_back(g);
+        colors.push_back(b);
+    }
+    stbi_flip_vertically_on_write(1);
+    stbi_write_jpg(path.c_str(), w, h, 3, colors.data(), 100);
+}
 
 struct WriteImageFile : INode {
     virtual void apply() override {
@@ -432,6 +536,13 @@ struct WriteImageFile : INode {
                 data2[n * i + 2] = image->verts[i][2];
                 data2[n * i + 3] = alpha[i];
             }
+            for (auto i = 0; i < h / 2; i++) {
+                for (auto x = 0; x < w * 4; x++) {
+                    auto index1 = i * (w * 4) + x;
+                    auto index2 = (h - 1 - i) * (w * 4) + x;
+                    std::swap(data2[index1], data2[index2]);
+                }
+            }
 
             // Create EXR header
             EXRHeader header;
@@ -473,6 +584,10 @@ struct WriteImageFile : INode {
                 zeno::log_info("EXR file saved successfully.");
             }
         }
+        else if (type == "pfm") {
+            path = path + ".pfm";
+            write_pfm(path, image);
+        }
         set_output("image", image);
     }
 };
@@ -480,9 +595,86 @@ ZENDEFNODE(WriteImageFile, {
     {
         {"image"},
         {"writepath", "path"},
-        {"enum png jpg exr", "type", "png"},
+        {"enum png jpg exr pfm", "type", "png"},
         {"mask"},
         {"bool", "gamma", "1"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"comp"},
+});
+
+std::vector<zeno::vec3f> float_gaussian_blur(const vec3f *data, int w, int h) {
+    float weight[5] = {0.227027f, 0.1945946f, 0.1216216f, 0.054054f, 0.016216f};
+    std::vector<zeno::vec3f> img_pass(w * h);
+
+#pragma omp parallel for
+    for (auto j = 0; j < h; j++) {
+        for (auto i = 0; i < w; i++) {
+            vec3f sum = {};
+            int index = i + w * j;
+            for (auto k = 0; k < 5; k++) {
+                if (k == 0) {
+                    sum += data[index] * weight[k];
+                }
+                else {
+                    int index_r = (i + k + w) % w + w * j;
+                    sum += data[index_r] * weight[k];
+                    int index_l = (i - k + w) % w + w * j;
+                    sum += data[index_l] * weight[k];
+                }
+            }
+            img_pass[index] = sum;
+        }
+    }
+
+    std::vector<zeno::vec3f> img_out(w * h);
+
+#pragma omp parallel for
+    for (auto j = 0; j < h; j++) {
+        for (auto i = 0; i < w; i++) {
+            vec3f sum = {};
+            int index = i + w * j;
+            for (auto k = 0; k < 5; k++) {
+                if (k == 0) {
+                    sum += img_pass[index] * weight[k];
+                }
+                else {
+                    int index_t = i + w * ((j + k + h) % h);
+                    sum += img_pass[index_t] * weight[k];
+                    int index_b = i + w * ((j - k + h) % h);
+                    sum += img_pass[index_b] * weight[k];
+                }
+            }
+            img_out[index] = sum;
+        }
+    }
+    return img_out;
+}
+
+struct ImageFloatGaussianBlur : INode {
+    virtual void apply() override {
+        auto image = get_input<PrimitiveObject>("image");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        auto img_out = std::make_shared<PrimitiveObject>();
+        img_out->resize(w * h);
+        img_out->userData().set2("w", w);
+        img_out->userData().set2("h", h);
+        img_out->userData().set2("isImage", 1);
+        img_out->verts.values = float_gaussian_blur(image->verts.data(), w, h);
+
+        set_output("image", img_out);
+    }
+};
+
+ZENDEFNODE(ImageFloatGaussianBlur, {
+    {
+        {"image"},
     },
     {
         {"image"},

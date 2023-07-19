@@ -737,7 +737,7 @@ struct ToZSTriMesh : INode {
 
         bool include_customed_properties = get_param<int>("add_customed_attr");
 
-        std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3},{"inds",1}};
+        std::vector<zs::PropertyTag> tags{{"x", 3}, {"v", 3}, {"inds", 1}};
         std::vector<zs::PropertyTag> eleTags{{"inds", 3}, {"area", 1}};
 
         std::vector<zs::PropertyTag> auxVertAttribs{};
@@ -799,7 +799,7 @@ struct ToZSTriMesh : INode {
         ompExec(Collapse{pars.size()},
                 [pars = proxy<space>({}, pars), &pos, prim, &auxVertAttribs, velsPtr](int vi) mutable {
                     pars.template tuple<3>("x", vi) = vec3::from_array(pos[vi]);
-                    pars("inds",vi) = zs::reinterpret_bits<float>(vi);
+                    pars("inds", vi, int_c) = vi;
                     auto vel = vec3::zeros();
                     if (velsPtr != nullptr)
                         vel = vec3::from_array(velsPtr[vi]);
@@ -832,7 +832,6 @@ struct ToZSTriMesh : INode {
                     eles(prop.name, ei) = tris.attr<float>(std::string{prop.name})[ei];
             }
         });
-
 
         pars = pars.clone({zs::memsrc_e::device, 0});
         eles = eles.clone({zs::memsrc_e::device, 0});
@@ -911,45 +910,40 @@ struct ToZSSurfaceMesh : INode {
                 zstris->particles = std::make_shared<tiles_t>(tags, pos.size(), zs::memsrc_e::host);
             auto &pars = zstris->getParticles<use_double>();
             ompExec(Collapse{pars.size()}, [pars = proxy<space>({}, pars), &pos, &prim](int vi) mutable {
-                using vec3 = zs::vec<double, 3>;
-                using vec3f = zs::vec<float, 3>;
-                using mat3 = zs::vec<float, 3, 3>;
-                auto p = vec3f::from_array(pos[vi]);
+                using mat3 = zs::vec<T, 3, 3>;
+                auto p = vec_to_other<zs::vec<T, 3>>(pos[vi]);
                 pars.tuple(dim_c<3>, "x", vi) = p;
                 pars.tuple(dim_c<3>, "x0", vi) = p;
-                pars.tuple(dim_c<3>, "v", vi) = vec3::zeros();
+                pars.tuple(dim_c<3>, "v", vi) = zs::vec<T, 3>::zeros();
                 if (prim->has_attr("vel"))
-                    pars.tuple(dim_c<3>, "v", vi) = vec3f::from_array(prim->attr<zeno::vec3f>("vel")[vi]);
+                    pars.tuple(dim_c<3>, "v", vi) = vec_to_other<zs::vec<T, 3>>(prim->attr<zeno::vec3f>("vel")[vi]);
                 // default boundary handling setup
                 pars.tuple(dim_c<3, 3>, "BCbasis", vi) = mat3::identity();
                 pars("BCorder", vi) = 0;
                 pars("BCfixed", vi) = 0;
-                pars.tuple(dim_c<3>, "BCtarget", vi) = vec3::zeros();
+                pars.tuple(dim_c<3>, "BCtarget", vi) = zs::vec<T, 3>::zeros();
                 // computed later
-                pars("m", vi) = 0.f;
+                pars("m", vi) = 0;
             });
 
             zstris->elements = typename ZenoParticles::particles_t(eleTags, tris.size(), zs::memsrc_e::host);
             auto &eles = zstris->getQuadraturePoints();
-            ompExec(Collapse{tris.size()},
-                    [&zsmodel, pars = proxy<space>({}, pars), eles = proxy<space>({}, eles), &tris, scaling](int ei) mutable {
-                        for (size_t i = 0; i < 3; ++i)
-                            eles("inds", i, ei) = zs::reinterpret_bits<float>(tris[ei][i]);
-                        using vec3 = zs::vec<T, 3>;
-                        using mat2 = zs::vec<float, 2, 2>;
-                        using vec4 = zs::vec<float, 4>;
-                        auto tri = tris[ei];
-                        vec3 xs[3];
-                        for (int d = 0; d != 3; ++d) {
-                            eles("inds", d, ei) = zs::reinterpret_bits<float>(tri[d]);
-                            xs[d] = pars.pack(dim_c<3>, "x", tri[d]);
-                        }
+            ompExec(Collapse{tris.size()}, [&zsmodel, pars = proxy<space>({}, pars), eles = proxy<space>({}, eles),
+                                            &tris, scaling](int ei) mutable {
+                auto tri = tris[ei];
+                using vec3 = zs::vec<double, 3>;
+                using mat2 = zs::vec<double, 2, 2>;
+                vec3 xs[3];
+                for (int d = 0; d != 3; ++d) {
+                    eles("inds", d, ei, int_c) = tri[d];
+                    xs[d] = pars.pack(dim_c<3>, "x", tri[d]);
+                }
 
-                        vec3 ds[2] = {(xs[1] - xs[0]) * scaling, (xs[2] - xs[0]) * scaling};
+                vec3 ds[2] = {(xs[1] - xs[0]) * scaling, (xs[2] - xs[0]) * scaling};
 
-                        // ref: codim-ipc
-                        // for first fundamental form
-                        mat2 B{};
+                // ref: codim-ipc
+                // for first fundamental form
+                mat2 B{};
 #if 0
               B(0, 0) = ds[0].l2NormSqr();
               B(1, 0) = B(0, 1) = ds[0].dot(ds[1]);
@@ -960,15 +954,30 @@ struct ToZSSurfaceMesh : INode {
             B(0, 1) = ds[0].dot(ds[1]) / B(0, 0);
             B(1, 1) = ds[0].cross(ds[1]).norm() / B(0, 0);
 #endif
-                        eles.template tuple<4>("IB", ei) = inverse(B);
+                auto IB = inverse(B);
+                {
+                    if (std::isnan(IB(0, 0)) || std::isnan(IB(0, 1)) || std::isnan(IB(1, 0)) || std::isnan(IB(1, 1))) {
+#if 0
+                        fmt::print(fg(fmt::color::light_golden_rod_yellow), "B[{}]: [{}, {}; {}, {}]\n", ei, B(0, 0),
+                                   B(0, 1), B(1, 0), B(1, 1));
+                        fmt::print(fg(fmt::color::light_sea_green), "IB[{}]: [{}, {}; {}, {}]\n", ei, IB(0, 0),
+                                   IB(0, 1), IB(1, 0), IB(1, 1));
+                        fmt::print(fg(fmt::color::yellow_green), "tri[{}]: <{}, {}, {}> - <{}, {}, {}> - \n", ei, IB(0, 0), IB(0, 1),
+                                   IB(1, 0), IB(1, 1));
+#else
+                        IB = mat2::zeros();
+#endif
+                    }
+                }
+                eles.template tuple<4>("IB", ei) = IB;
 
-                        auto vol = ds[0].cross(ds[1]).norm() / 2 * zsmodel->dx;
-                        eles("vol", ei) = vol;
-                        // vert masses
-                        auto vmass = vol * zsmodel->density / 3;
-                        for (int d = 0; d != 3; ++d)
-                            atomic_add(zs::exec_omp, &pars("m", tri[d]), vmass);
-                    });
+                auto vol = ds[0].cross(ds[1]).norm() / 2 * zsmodel->dx;
+                eles("vol", ei) = vol;
+                // vert masses
+                auto vmass = vol * zsmodel->density / 3;
+                for (int d = 0; d != 3; ++d)
+                    atomic_add(zs::exec_omp, &pars("m", tri[d]), (T)vmass);
+            });
 
 #if 0
       zs::HashTable<int, 2, int> surfEdgeTable{0};
@@ -1092,8 +1101,8 @@ struct ToZSSurfaceMesh : INode {
             int no = 0;
             auto sv = proxy<execspace_e::host>({}, surfEdges);
             for (auto &&edge : sedges) {
-                sv("inds", 0, no) = reinterpret_bits<float>(edge[0]);
-                sv("inds", 1, no) = reinterpret_bits<float>(edge[1]);
+                sv("inds", 0, no, int_c) = edge[0];
+                sv("inds", 1, no, int_c) = edge[1];
                 no++;
             }
             surfEdges = surfEdges.clone({zs::memsrc_e::device, 0});
@@ -1111,34 +1120,42 @@ struct ToZSSurfaceMesh : INode {
                 bendingEdges = typename ZenoParticles::particles_t(
                     {{"inds", 4}, {"k", 1}, {"ra", 1}, {"e", 1}, {"h", 1}}, bedges.size(), zs::memsrc_e::host);
 
-                ompExec(zs::range(bedges.size()),
-                        [E, nu, pars = proxy<space>({}, pars), &bedges, &zsmodel, bes = proxy<space>({}, bendingEdges),
-                         bendingStrength](int beNo) mutable {
-                            bes("inds", 0, beNo) = reinterpret_bits<float>(bedges[beNo][0]);
-                            bes("inds", 1, beNo) = reinterpret_bits<float>(bedges[beNo][1]);
-                            bes("inds", 2, beNo) = reinterpret_bits<float>(bedges[beNo][2]);
-                            bes("inds", 3, beNo) = reinterpret_bits<float>(bedges[beNo][3]);
-                            /**
+                ompExec(zs::range(bedges.size()), [E, nu, pars = proxy<space>({}, pars), &bedges, &zsmodel,
+                                                   bes = proxy<space>({}, bendingEdges),
+                                                   bendingStrength](int beNo) mutable {
+                    auto bedge = bedges[beNo];
+                    bes("inds", 0, beNo, int_c) = bedge[0];
+                    bes("inds", 1, beNo, int_c) = bedge[1];
+                    bes("inds", 2, beNo, int_c) = bedge[2];
+                    bes("inds", 3, beNo, int_c) = bedge[3];
+                    /**
                           *             x2 --- x3
                           *            /  \    /
                           *           /    \  /
                           *          x0 --- x1
                           */
-                            auto x0 = pars.pack(dim_c<3>, "x", bedges[beNo][0]);
-                            auto x1 = pars.pack(dim_c<3>, "x", bedges[beNo][1]);
-                            auto x2 = pars.pack(dim_c<3>, "x", bedges[beNo][2]);
-                            auto x3 = pars.pack(dim_c<3>, "x", bedges[beNo][3]);
-                            bes("ra", beNo) = (float)zs::dihedral_angle(x0, x1, x2, x3);
-                            auto n1 = (x1 - x0).cross(x2 - x0);
-                            auto n2 = (x2 - x3).cross(x1 - x3);
-                            float e = (x2 - x1).norm();
-                            bes("e", beNo) = e;
-                            bes("h", beNo) = (float)((n1.norm() + n2.norm()) / (e * 6));
-                            float k_bend = bendingStrength == 0.f
-                                               ? (E / (24 * (1 - nu * nu)) * zsmodel->dx * zsmodel->dx * zsmodel->dx)
-                                               : bendingStrength;
-                            bes("k", beNo) = k_bend;
-                        });
+                    auto x0 = pars.pack(dim_c<3>, "x", bedge[0]).template cast<double>();
+                    auto x1 = pars.pack(dim_c<3>, "x", bedge[1]).template cast<double>();
+                    auto x2 = pars.pack(dim_c<3>, "x", bedge[2]).template cast<double>();
+                    auto x3 = pars.pack(dim_c<3>, "x", bedge[3]).template cast<double>();
+
+                    auto testGrad = dihedral_angle_gradient(x0, x1, x2, x3);
+                    bes("ra", beNo) = (float)zs::dihedral_angle(x0, x1, x2, x3);
+                    auto n1 = (x1 - x0).cross(x2 - x0);
+                    auto n2 = (x2 - x3).cross(x1 - x3);
+                    double e = (x2 - x1).norm();
+                    bes("e", beNo) = e;
+                    auto h = (n1.norm() + n2.norm()) / (e * 6);
+                    bes("h", beNo) = h;
+                    if (zs::isnan(testGrad.dot(testGrad)))
+                        bes("k", beNo) = 0;
+                    else {
+                        double k_bend = bendingStrength == 0.f ? ((double)E / (24 * (1 - (double)nu * nu)) *
+                                                                  (double)zsmodel->dx * zsmodel->dx * zsmodel->dx)
+                                                               : bendingStrength;
+                        bes("k", beNo) = k_bend;
+                    }
+                });
                 bendingEdges = bendingEdges.clone({zs::memsrc_e::device, 0});
             }
 #endif

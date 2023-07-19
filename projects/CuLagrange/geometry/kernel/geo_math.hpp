@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vector>
+#include <zensim/math/VecInterface.hpp>
 
 namespace zeno { namespace LSL_GEO {
 
@@ -41,6 +42,37 @@ namespace zeno { namespace LSL_GEO {
         auto c = (p1 - p2).norm();
         return doublearea(a,b,c) / (typename VecT::value_type)2.0;
     }
+
+    template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
+    constexpr int orient(const zs::VecInterface<VecT>& p0,
+            const zs::VecInterface<VecT>& p1,
+            const zs::VecInterface<VecT>& p2,
+            const zs::VecInterface<VecT>& p3){ 
+        auto nrm = facet_normal(p0,p1,p2);
+        auto seg = p3 - p0;
+        auto d = nrm.dot(seg);
+        return d < 0 ? -1 : 1;        
+    }
+
+    template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
+    constexpr auto is_inside_tet(const zs::VecInterface<VecT>& p0,
+            const zs::VecInterface<VecT>& p1,
+            const zs::VecInterface<VecT>& p2,
+            const zs::VecInterface<VecT>& p3,
+            const zs::VecInterface<VecT>& p){
+        auto orient_tet = orient(p0,p1,p2,p3);
+        if(orient_tet != orient(p,p1,p2,p3))
+            return false;
+        if(orient_tet != orient(p0,p,p2,p3))
+            return false;
+        if(orient_tet != orient(p0,p1,p,p3))
+            return false; 
+        if(orient_tet != orient(p0,p1,p2,p))
+            return false;         
+
+        return true;
+    }
+
 
     template<typename T>
     constexpr T volume(const zs::vec<T, 6>& l) {
@@ -680,13 +712,82 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
         return false;
     }
 
+    template<typename DREAL>
+    constexpr bool tri_ray_intersect_d(VECTOR3 const &from_, VECTOR3 const &to_, VECTOR3 const &v0_, VECTOR3 const &v1_, VECTOR3 const &v2_,DREAL& r_) {
+        using DVECTOR3 = zs::vec<DREAL,3>; 
+
+        auto ro = from_.cast<DREAL>();
+        auto rd = to_.cast<DREAL>() - ro;
+        auto v0 = v0_.cast<DREAL>();
+        auto v1 = v1_.cast<DREAL>();
+        auto v2 = v2_.cast<DREAL>();
+
+        const DREAL eps = std::numeric_limits<DREAL>::epsilon() * 10;
+
+        DVECTOR3 u = v1 - v0;
+        DVECTOR3 v = v2 - v0;
+        DVECTOR3 n = cross(u, v);
+        // n = n/n.norm();
+        DREAL b = dot(n,rd);
+        // b = dot(n,rd);
+       
+        if (zs::abs(b) > eps) {
+            DREAL a = dot(n,v0 - ro);
+            DREAL r = a / b;
+            // rtmp = r;
+            if (r > eps) {
+                DVECTOR3 ip = ro + r * rd;
+                // ip_dist = dot(ip - v0,n);
+                DREAL uu = dot(u, u);
+                DREAL uv = dot(u, v);
+                DREAL vv = dot(v, v);
+                DVECTOR3 w = ip - v0;
+                DREAL wu = dot(w, u);
+                DREAL wv = dot(w, v);
+                // DREAL ww = dot(w, w);
+                DREAL d = uv * uv - uu * vv;
+                DREAL s = uv * wv - vv * wu;
+                DREAL t = uv * wu - uu * wv;
+                // REAL d = zs::sqrt(uu * vv - uv * uv);
+                // REAL s = zs::sqrt(uu * ww - wu * wu);
+                // real t = zs::sqrt(ww * vv - wv * wv);
+
+                // area[0] = d;
+                // area[1] = s;
+                // area[2] = t;
+
+                d = (DREAL)1.0 / d;
+                s *= d;
+                t *= d;
+                // dtmp = d;
+                // stmp = s;
+                // ttmp = t;
+
+                // bary[0] = (REAL)1.0 - s - t;
+                // bary[1] = s;
+                // bary[2] = t;
+                if (-eps <= s && s <= 1 + eps && -eps <= t && s + t <= 1 + eps * 2){
+                    r_ = (DREAL)r;
+                    if(r < (DREAL)1.0 + eps && r > (DREAL)0.0 - eps)
+                        return true;
+                    // else {
+                    //     printf("invalid r detected : %f\n",(float)r);
+                    //     return false;
+                    // }
+                    // return true;
+                }
+            }
+        }
+        r_ = std::numeric_limits<REAL>::infinity();
+        return false;
+    }
 
     constexpr REAL tri_ray_intersect(VECTOR3 const &ro, VECTOR3 const &rd, VECTOR3 const &v0, VECTOR3 const &v1, VECTOR3 const &v2) {
-        const REAL eps = (REAL)1e-6;
+        const REAL eps = std::numeric_limits<REAL>::epsilon() * 10;
         VECTOR3 u = v1 - v0;
         VECTOR3 v = v2 - v0;
         VECTOR3 n = cross(u, v);
-        n = n/n.norm();
+        // n = n/n.norm();
         REAL b = dot(n, rd);
         // b = dot(n,rd);
         if (zs::abs(b) > eps) {

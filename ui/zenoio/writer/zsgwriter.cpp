@@ -281,7 +281,12 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         bool bValid = UiHelper::validateVariant(deflVal, sockType);
         if (!bValid)
             deflVal = QVariant();
-        AddVariant(deflVal, sockType, writer, true);
+
+        bool bOK = AddVariant(deflVal, sockType, writer);
+        if (!bOK)
+        {
+            zeno::log_error("write default-value error. nodeId : {}, socket : {}", socket.nodeid.toStdString(), socket.name.toStdString());
+        }
 
         writer.Key("control");
         JsonHelper::dumpControl(socket.control, socket.ctrlProps, writer);
@@ -334,13 +339,13 @@ void ZsgWriter::dumpNode(const NODE_DATA& data, RAPIDJSON_WRITER& writer)
                 const EdgeInfo& link = inSock.info.links[0];
                 QString outputNode = UiHelper::getSockNode(link.outSockPath);
                 QString outputSock = UiHelper::getSockName(link.outSockPath);
-                AddVariantList({ outputNode, outputSock, deflVal }, sockType, writer, true);
+                AddVariantList({ outputNode, outputSock, deflVal }, sockType, writer);
             }
             else
             {
                 if (!bValid)
                     deflVal = QVariant();
-                AddVariantList({ QVariant(), QVariant(), deflVal }, sockType, writer, true);
+                AddVariantList({ QVariant(), QVariant(), deflVal }, sockType, writer);
             }
 #endif
         }
@@ -519,7 +524,7 @@ void ZsgWriter::dumpParams(const PARAM_INFO &info, RAPIDJSON_WRITER &writer)
     writer.StartObject();
 
     writer.Key("value");
-    AddVariant(info.value, info.typeDesc, writer, true);
+    AddVariant(info.value, info.typeDesc, writer);
 
     writer.Key("control");
     JsonHelper::dumpControl(info.control, info.controlProps, writer);

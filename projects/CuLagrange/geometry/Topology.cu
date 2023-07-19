@@ -566,4 +566,125 @@ ZENDEFNODE(ZSMarkIsland, {{{"zsparticles"}},
 							},
 							{"ZSGeometry"}});
 
+struct ZSManifoldCheck : zeno::INode {
+	virtual void apply() override {
+		using namespace zs;
+
+		auto cudaPol = zs::cuda_exec();
+		constexpr auto space = zs::execspace_e::cuda;
+
+		auto zsparticles = get_input<ZenoParticles>("zsparticles");
+		const auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfTriTag] : zsparticles->getQuadraturePoints();
+
+		// auto is_manifold = is_manifold_check(cudaPol,tris);
+
+		auto ret = std::make_shared<zeno::NumericObject>();
+        ret->set<bool>(is_manifold_check(cudaPol,tris));
+        set_output("is_manifold", std::move(ret));
+	}
+};
+
+ZENDEFNODE(ZSManifoldCheck, {{{"zsparticles"}},
+							{
+								{"is_manifold"}
+							},
+							{
+								// {"string","mark_tag","mark_tag"}
+							},
+							{"ZSGeometry"}});
+
+struct BuildSurfFacetTetraNeighboring : zeno::INode {
+		virtual void apply() override {
+			using namespace zs;
+			using vec2i = zs::vec<int, 2>;
+			using vec3i = zs::vec<int, 3>;
+
+			auto cudaPol = zs::cuda_exec();
+			constexpr auto space = zs::execspace_e::cuda;
+
+			auto zsparticles = get_input<ZenoParticles>("zsparticles");
+			const auto& verts = zsparticles->getParticles();
+			auto& tris = (*zsparticles)[ZenoParticles::s_surfTriTag];
+			const auto& tets = zsparticles->getQuadraturePoints();
+
+#if 0
+
+			zs::bht<int,3,int> tris_htab{tris.get_allocator(),tris.size()};
+			tris_htab.reset(cudaPol,true);
+			zs::Vector<int> tris_id{tris.get_allocator(),tris.size()};
+			cudaPol(zs::range(tris.size()),[
+				tris = proxy<space>({},tris),
+				tris_id = proxy<space>(tris_id),
+				tris_htab = proxy<space>(tris_htab)] ZS_LAMBDA(int ti) mutable {
+					auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+					order_indices(tri);
+					for(int i = 0;i != 2;++i)
+						if(tri[i] >= tri[i + 1])
+							printf("invalid ordered tri : %d %d %d\n",tri[0],tri[1],tri[2]);
+					auto no = tris_htab.insert(tri);
+						tris_id[no] = ti;
+			});
+
+			cudaPol(zs::range(tris_id),[] ZS_LAMBDA(int& ti) {
+				if(ti < 0)
+					printf("invalid ordered tri[%d]\n");
+			});
+
+			if(!tris.hasProperty("ft_inds")) {
+				tris.append_channels(cudaPol,{{"ft_inds",1}});
+			}
+			TILEVEC_OPS::fill(cudaPol,tris,"ft_inds",zs::reinterpret_bits<float>((int)-1));
+
+			cudaPol(zs::range(tets.size()),[
+				tets = proxy<space>({},tets),
+				tris = proxy<space>({},tris),
+				tris_htab = proxy<space>(tris_htab),
+				tris_id = proxy<space>(tris_id)] ZS_LAMBDA(int ei) mutable {
+					auto tet = tets.pack(dim_c<4>,"inds",ei,int_c);
+					order_indices(tet);
+					int tri_id = -1;
+					if(auto no = tris_htab.query(vec3i{tet[1],tet[2],tet[3]});no >= 0)
+						tri_id = tris_id[no];
+					if(auto no = tris_htab.query(vec3i{tet[0],tet[2],tet[3]});no >= 0)
+						tri_id = tris_id[no];
+					if(auto no = tris_htab.query(vec3i{tet[0],tet[1],tet[3]});no >= 0)
+						tri_id = tris_id[no];
+					if(auto no = tris_htab.query(vec3i{tet[0],tet[1],tet[2]});no >= 0)
+						tri_id = tris_id[no];
+					if(tri_id >= 0)
+						tris("ft_inds",tri_id) = zs::reinterpret_bits<float>(ei);
+			});
+
+			cudaPol(zs::range(tris.size()),[
+				tris = proxy<space>({},tris)] ZS_LAMBDA(int ti) mutable {
+					auto ei = zs::reinterpret_bits<int>(tris("ft_inds",ti));
+					if(ei < 0) {
+						printf("dangling surface tri %d detected\n",ti);
+					}
+			});
+
+#else
+
+			if(!tris.hasProperty("ft_inds")) {
+				tris.append_channels(cudaPol,{{"ft_inds",1}});
+			}
+			TILEVEC_OPS::fill(cudaPol,tris,"ft_inds",zs::reinterpret_bits<float>((int)-1));
+
+			compute_ft_neigh_topo(cudaPol,verts,tris,tets,"ft_inds");
+
+#endif
+
+			set_output("zsparticles",zsparticles);
+		}
+};
+
+ZENDEFNODE(BuildSurfFacetTetraNeighboring, {{{"zsparticles"}},
+							{
+								{"zsparticles"}
+							},
+							{
+								// {"string","mark_tag","mark_tag"}
+							},
+							{"ZSGeometry"}});
+
 };

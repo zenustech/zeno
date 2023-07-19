@@ -50,7 +50,7 @@ class CurveModel;
 namespace JsonHelper
 {
 	void AddStringList(const QStringList& list, RAPIDJSON_WRITER& writer);
-	void AddVariantList(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid = true);
+	void AddVariantList(const QVariantList& list, const QString& type, RAPIDJSON_WRITER& writer);
 	void AddParams(const QString& op,
 		const QString& ident,
 		const QString& name,
@@ -58,7 +58,7 @@ namespace JsonHelper
 		const QString& descType,
 		RAPIDJSON_WRITER& writer
 		);
-	void AddVariant(const QVariant& var, const QString& type, RAPIDJSON_WRITER& writer, bool fillInvalid);
+	bool AddVariant(const QVariant& var, const QString& type, RAPIDJSON_WRITER& writer);
 	void AddVariantToStringList(const QVariantList& list, RAPIDJSON_WRITER& writer);
 	void WriteVariant(const QVariant& var, RAPIDJSON_WRITER& writer);
 	void dumpControl(PARAM_CONTROL ctrl, const QVariant& props, RAPIDJSON_WRITER& writer);

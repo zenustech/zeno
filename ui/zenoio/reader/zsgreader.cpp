@@ -93,6 +93,8 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
     if (!doc.IsObject())
     {
         zeno::log_error("");
+    {
+        zeno::log_error("zsg json file is corrupted");
         return false;
     }
 

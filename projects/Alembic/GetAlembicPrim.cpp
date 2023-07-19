@@ -4,8 +4,11 @@
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveUtils.h>
+#include <zeno/extra/GlobalState.h>
+#include "ABCCommon.h"
 #include "ABCTree.h"
 #include <queue>
 #include <utility>
@@ -254,6 +257,75 @@ ZENDEFNODE(GetAlembicCamera, {
         "focal_length",
         "near",
         "far",
+    },
+    {},
+    {"alembic"},
+});
+
+struct ImportAlembicPrim : INode {
+    Alembic::Abc::v12::IArchive archive;
+    std::string usedPath;
+    virtual void apply() override {
+        int frameid;
+        if (has_input("frameid")) {
+            frameid = get_input2<int>("frameid");
+        } else {
+            frameid = getGlobalState()->frameid;
+        }
+        auto abctree = std::make_shared<ABCTree>();
+        {
+            auto path = get_input2<std::string>("path");
+            bool read_done = archive.valid() && (path == usedPath);
+            if (!read_done) {
+                archive = readABC(path);
+                usedPath = path;
+            }
+            double start, _end;
+            GetArchiveStartAndEndTime(archive, start, _end);
+            auto obj = archive.getTop();
+            traverseABC(obj, *abctree, frameid, read_done);
+        }
+        bool use_xform = get_input2<bool>("use_xform");
+        auto index = get_input2<int>("index");
+        std::shared_ptr<PrimitiveObject> outprim;
+        if (index == -1) {
+            auto prims = std::make_shared<zeno::ListObject>();
+            if (use_xform) {
+                prims = get_xformed_prims(abctree);
+            } else {
+                abctree->visitPrims([&] (auto const &p) {
+                    auto np = std::static_pointer_cast<PrimitiveObject>(p->clone());
+                    prims->arr.push_back(np);
+                });
+            }
+            outprim = zeno::primMerge(prims->getRaw<PrimitiveObject>());
+        }
+        else {
+            if (use_xform) {
+                outprim = get_xformed_prim(abctree, index);
+            } else {
+                outprim = get_alembic_prim(abctree, index);
+            }
+        }
+        flipFrontBack(outprim);
+        if (get_input2<bool>("triangulate")) {
+            zeno::primTriangulate(outprim.get());
+        }
+        outprim->userData().set2("_abc_prim_count", count_alembic_prims(abctree));
+        set_output("prim", std::move(outprim));
+    }
+};
+
+ZENDEFNODE(ImportAlembicPrim, {
+    {
+        {"readpath", "path"},
+        {"frameid"},
+        {"int", "index", "-1"},
+        {"bool", "use_xform", "0"},
+        {"bool", "triangulate", "0"},
+    },
+    {
+        "prim",
     },
     {},
     {"alembic"},

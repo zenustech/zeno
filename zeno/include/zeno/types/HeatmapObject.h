@@ -28,7 +28,10 @@ namespace zeno {
             float remapMax
     );
     std::shared_ptr<PrimitiveObject> readExrFile(std::string const &path);
-    std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path);
+    ZENO_API std::shared_ptr<PrimitiveObject> readImageFile(std::string const &path);
+    ZENO_API std::shared_ptr<PrimitiveObject> readPFMFile(std::string const &path);
+    ZENO_API void write_pfm(std::string& path, std::shared_ptr<PrimitiveObject> image);
+    ZENO_API void write_jpg(std::string& path, std::shared_ptr<PrimitiveObject> image);
     void primSampleTexture(
         std::shared_ptr<PrimitiveObject> prim,
         const std::string &srcChannel,

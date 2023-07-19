@@ -209,9 +209,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         }
         case PANEL_IMAGE:
         {
-            DockContent_Image *wid = new DockContent_Image;
-            wid->initUI();
-            return wid;
+            return new ZenoImagePanel;
         }
         case PANEL_OPTIX_VIEW:
         {
@@ -320,16 +318,16 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
                 view->getDisplayWid()->onNodeSelected(subgIdx, nodes, select);
             }
         }
-        else if (DockContent_Image *image = qobject_cast<DockContent_Image *>(wid))
+        else if (ZenoImagePanel *image = qobject_cast<ZenoImagePanel *>(wid))
         {
             if (select && nodes.size() == 1)
             {
                 const QModelIndex &idx = nodes[0];
-                image->getImagePanel()->setPrim(idx.data(ROLE_OBJID).toString().toStdString());
+                image->setPrim(idx.data(ROLE_OBJID).toString().toStdString());
             }
             if (!select)
             {
-                image->getImagePanel()->clear();
+                image->clear();
             }
         }
     }

@@ -8,6 +8,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
+#include "settings/zenosettingsmanager.h"
 
 
 Zenovis::Zenovis(QObject *parent)
@@ -15,7 +16,6 @@ Zenovis::Zenovis(QObject *parent)
     , m_solver_frameid(0)
     , m_solver_interval(0)
     , m_render_fps(0)
-    , m_resolution(QPoint(1,1))
     , m_cache_frames(10)
     , m_playing(false)
     , m_camera_keyframe(nullptr)
@@ -56,10 +56,30 @@ int Zenovis::getCurrentFrameId()
 
 void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective)
 {
-    m_resolution = resolution;
     m_perspective = perspective;
     if (session) {
-        session->set_window_size(m_resolution.x(), m_resolution.y());
+        if (session->is_lock_window())
+        {
+            zeno::vec2i offset = {};
+            int w = resolution.x(), W = 0;
+            int h = resolution.y(), H = 0;
+            float deviceRatio = (float)w / h;
+            float ratio = session->get_safe_frames();
+            if (deviceRatio > ratio) {
+                H = h;
+                W = H * ratio;
+                offset[0] = std::max((w - W) / 2, 0);
+            } else {
+                W = w;
+                H = W / ratio;
+                offset[1] = std::max((h - H) / 2, 0);
+            }
+            session->set_window_size(W, H, offset);
+        }
+        else
+        {
+            session->set_window_size(resolution.x(), resolution.y());
+        }
         session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz,
                                   m_perspective.theta, m_perspective.phi, m_perspective.radius,
                                   m_perspective.fov, m_perspective.ortho_mode,

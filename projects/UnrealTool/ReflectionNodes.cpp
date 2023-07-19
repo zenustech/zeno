@@ -13,11 +13,14 @@ struct RemoteLandscapeInput : public INode {
         std::string SubjectName = get_input2<std::string>("SubjectName");
         std::optional<remote::HeightField> Data = remote::StaticRegistry.Get<remote::HeightField>(SubjectName, zeno::remote::StaticFlags.GetCurrentSession(), true);
         if (Data.has_value()) {
-            const float Scale = Data->LandscapeScale == .0f ? 100.f : Data->LandscapeScale;
-            std::shared_ptr<zeno::PrimitiveObject> Prim = remote::ConvertHeightDataToPrimitiveObject(Data.value(), 0, 0, Scale);
+            const float ScaleX = Data->LandscapeScaleX == .0f ? 100.f : Data->LandscapeScaleX;
+            const float ScaleY = Data->LandscapeScaleY == .0f ? 100.f : Data->LandscapeScaleY;
+            const float ScaleZ = Data->LandscapeScaleZ == .0f ? 100.f : Data->LandscapeScaleZ;
+//            const float Scale = 1.0f;
+            std::shared_ptr<zeno::PrimitiveObject> Prim = remote::ConvertHeightDataToPrimitiveObject(Data.value(), 0, 0, {ScaleX, ScaleY, ScaleZ});
             set_output2("prim", Prim);
         } else {
-            zeno::log_error("Prim data not found.");
+            zeno::log_error("landscape data not found.");
         }
     }
 };
@@ -26,6 +29,26 @@ ZENO_DEFNODE(RemoteLandscapeInput)({
     {
         {"string", "SubjectName", "ReservedName_Landscape"},
     },
+    {
+        {"prim"},
+    },
+    {},
+    {"Unreal"},
+});
+
+struct RemoteSurfaceSampleInput : public INode {
+    void apply() override {
+        std::string SubjectName = get_input2<std::string>("SubjectName");
+        std::optional<remote::PointSet> Data = remote::StaticRegistry.Get<remote::PointSet>(SubjectName, zeno::remote::StaticFlags.GetCurrentSession(), true);
+        if (Data.has_value()) {
+        } else {
+            zeno::log_error("surface sample data not found.");
+        }
+    }
+};
+
+ZENO_DEFNODE(RemoteSurfaceSampleInput)({
+    {},
     {
         {"prim"},
     },

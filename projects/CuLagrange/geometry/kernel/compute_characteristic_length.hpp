@@ -30,7 +30,7 @@ namespace zeno {
             [length_sum = proxy<space>(length_sum),
                 verts = proxy<space>({},verts),
                 elms = proxy<space>({},elms),
-                elm_dim,xTag] ZS_LAMBDA(int ei) mutable {
+                elm_dim,xTag = zs::SmallString(xTag)] ZS_LAMBDA(int ei) mutable {
             for(int i = 0;i < elm_dim;++i) {
                 int e0 = reinterpret_bits<int>(elms("inds",(i + 0) % elm_dim,ei));
                 int e1 = reinterpret_bits<int>(elms("inds",(i + 1) % elm_dim,ei));

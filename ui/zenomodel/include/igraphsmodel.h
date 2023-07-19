@@ -107,6 +107,8 @@ public:
     virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) = 0;
 	//temp:
     virtual QAbstractItemModel *implModel() = 0;
+    virtual void markNodeDataChanged(const QModelIndex& idx) = 0;
+    virtual void clearNodeDataChanged() = 0;
 
     virtual void onSubgrahSync(const QModelIndex& subgIdx) = 0;
 

@@ -1,5 +1,6 @@
 #include <zenovis/Camera.h>
 #include <zenovis/opengl/shader.h>
+#include "zeno/utils/logger.h"
 
 namespace zenovis {
 
@@ -13,13 +14,36 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     this->m_aperture = cam.aperture;
     this->focalPlaneDistance = cam.focalPlaneDistance;
 
-    this->m_zxx_in.cx = cam.center[0];
-    this->m_zxx_in.cy = cam.center[1];
-    this->m_zxx_in.cz = cam.center[2];
+//    zeno::log_info("radius {}", m_zxx.radius);
 
-    this->m_zxx_in.theta = cam.theta;
-    this->m_zxx_in.phi = cam.phi;
-    this->m_zxx_in.radius = cam.radius;
+    if (cam.isSet) {
+        this->m_zxx_in.cx = cam.center[0];
+        this->m_zxx_in.cy = cam.center[1];
+        this->m_zxx_in.cz = cam.center[2];
+
+        this->m_zxx_in.theta = cam.theta;
+        this->m_zxx_in.phi = cam.phi;
+        this->m_zxx_in.radius = cam.radius;
+    }
+    else {
+        float radius = m_zxx.radius;
+        auto view = zeno::normalize(cam.view);
+        zeno::vec3f center = cam.pos + radius * zeno::normalize(cam.view);
+        float theta = M_PI_2 - glm::acos(zeno::dot(view, zeno::vec3f(0, 1, 0)));
+        float phi = M_PI_2 + std::atan2(view[2], view[0]);
+//        zeno::log_info("theta: {}", theta);
+//        zeno::log_info("phi: {}", phi);
+
+        this->m_zxx_in.cx = center[0];
+        this->m_zxx_in.cy = center[1];
+        this->m_zxx_in.cz = center[2];
+
+        this->m_zxx_in.theta = theta;
+        this->m_zxx_in.phi = phi;
+        this->m_zxx_in.radius = radius;
+    }
+
+    this->m_auto_radius = !cam.isSet;
     this->m_need_sync = true;
 }
 
@@ -55,6 +79,19 @@ void Camera::setResolution(int nx, int ny) {
     m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
 }
 
+void Camera::set_safe_frames(bool bLock, int nx, int ny) {
+    m_block_window = bLock;
+    m_safe_frames = (float)nx / ny;
+}
+
+float Camera::get_safe_frames() const {
+    return m_safe_frames;
+}
+
+bool Camera::is_locked_window() const {
+    return m_block_window;
+}
+
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
     placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_fov, m_near, m_far);
@@ -79,7 +116,7 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
     if (!(fov <= 0)) {
-        auto fnear = 0.01f;
+        auto fnear = 0.05f;
         auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
         placeCamera(center - front * radius, front, up, fov, fnear, ffar);
     } else {
