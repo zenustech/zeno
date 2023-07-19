@@ -733,7 +733,7 @@ void DisplayWidget::onRecord()
                     connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [&]() {
                         if (recInfo.bAutoRemoveCache)
                         {
-                            QString info = QString("{\"action\":\"optixProcRecordFin\"}\n");
+                            QString info = QString("{\"action\":\"clrearFrameState\"}\n");
                             mainWin->optixClientSend(info);
                         }});
                     optixRecFuncConnected = true;

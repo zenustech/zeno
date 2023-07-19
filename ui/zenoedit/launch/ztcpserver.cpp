@@ -191,7 +191,7 @@ void ZTcpServer::onOptixNewConn()
                     int frame = doc["frame"].GetInt();
                     zeno::getSession().globalComm->removeCache(frame);
                 }
-                else if (action == "optixProcRecordFin")
+                else if (action == "clrearFrameState")
                 {
                     QString cachepath = QString::fromStdString(zeno::getSession().globalComm->cachePath());
                     QDir dir(cachepath);
@@ -200,12 +200,14 @@ void ZTcpServer::onOptixNewConn()
                         dir.rmdir(cachepath);
                     }
                     zeno::getSession().globalComm->clearFrameState();
+                    QMessageBox msgBox(QMessageBox::Information, "", tr("Cache information was deleted during recording."));
+                    msgBox.exec();
                 }
             }
         }
         });
     m_optixSockets.append(socket);
-    sendInitInfoToOptixProc();
+    initializeNewOptixProc();
     connect(socket, &QLocalSocket::disconnected, this, [=]() {
         m_optixSockets.removeOne(socket);
     });
@@ -255,7 +257,7 @@ void ZTcpServer::dispatchPacketToOptix(const QString& info)
     }
 }
 
-void ZTcpServer::sendInitInfoToOptixProc()
+void ZTcpServer::initializeNewOptixProc()
 {
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);

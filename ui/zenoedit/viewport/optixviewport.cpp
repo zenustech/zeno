@@ -101,7 +101,6 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
 
     for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second;)
     {
-        QApplication::processEvents();
         if (!m_bRecording)
         {
             emit sig_recordCanceled();
