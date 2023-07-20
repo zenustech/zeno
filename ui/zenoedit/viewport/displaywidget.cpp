@@ -18,6 +18,7 @@
 #include "dialog/zrecprogressdlg.h"
 #include "dialog/zrecframeselectdlg.h"
 #include "util/apphelper.h"
+#include "launch/ztcpserver.h"
 
 
 using std::string;
@@ -720,8 +721,6 @@ void DisplayWidget::onRecord()
                         zeno::getSession().globalState->frameid = recInfo.frameRange.first;
                         ZASSERT_EXIT(m_optixView);
                         m_optixView->recordVideo(recInfo);
-                        if (recInfo.bAutoRemoveCache)
-                            zeno::getSession().globalComm->clearFrameState();
                     });
                     connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, [&](int frame) {
                         if (recInfo.bAutoRemoveCache)
@@ -742,8 +741,6 @@ void DisplayWidget::onRecord()
             else {
                 ZASSERT_EXIT(m_optixView);
                 m_optixView->recordVideo(recInfo);
-                if (recInfo.bAutoRemoveCache)
-                    zeno::getSession().globalComm->clearFrameState();
             }
             #else
             ZASSERT_EXIT(m_optixView);
@@ -761,6 +758,17 @@ void DisplayWidget::onRecord()
 
         } else {
             m_recordMgr.cancelRecord();
+        }
+
+        if (recInfo.bAutoRemoveCache) {
+#ifdef ZENO_OPTIX_PROC
+            if (m_glView) {
+                auto tcpServer = zenoApp->getServer();
+                if (tcpServer)
+                    tcpServer->onClearFrameState();
+            }
+#endif
+            zeno::getSession().globalComm->clearFrameState();
         }
     }
 }

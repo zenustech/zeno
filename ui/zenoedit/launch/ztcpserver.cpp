@@ -230,6 +230,12 @@ void ZTcpServer::onInitFrameRange(const QString& action, int frameStart, int fra
     dispatchPacketToOptix(info);
 }
 
+void ZTcpServer::onClearFrameState()
+{
+    QString info = QString("{\"action\":\"clearFrameState\"}\n");
+    dispatchPacketToOptix(info);
+}
+
 void ZTcpServer::onFrameStarted(const QString& action, const QString& keyObj)
 {
     bool bOK = false;

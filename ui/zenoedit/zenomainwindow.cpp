@@ -969,6 +969,9 @@ void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum
                         }
                         view->updateFrame();
                     }
+                }else if (action == "clearFrameState")
+                {
+                    zeno::getSession().globalComm->clearFrameState();
                 }
             }
         }

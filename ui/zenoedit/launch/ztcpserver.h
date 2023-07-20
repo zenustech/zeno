@@ -22,6 +22,7 @@ public:
     void onFrameStarted(const QString& action, const QString& keyObj);
     void onFrameFinished(const QString& action, const QString& keyObj);
     void onInitFrameRange(const QString& action, int frameStart, int frameEnd);
+    void onClearFrameState();
 
 private slots:
     void onNewConnection();
