@@ -22,21 +22,6 @@
 #include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
 
-
-struct _Header { // sync with viewdecode.cpp
-    size_t total_size;
-    size_t info_size;
-    size_t magicnum;
-    size_t checksum;
-
-    void makeValid() {
-        magicnum = 314159265;
-        checksum = total_size ^ info_size ^ magicnum;
-    }
-};
-
-
-
 ZTcpServer::ZTcpServer(QObject *parent)
     : QObject(parent)
     , m_tcpServer(nullptr)
@@ -139,9 +124,10 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
 
     connect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
-
+#ifdef ZENO_OPTIX_PROC
     //finally we need to send the cache path to the seperate optix process.
     sendCacheRenderInfoToOptix(finalPath, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly);
+#endif
 }
 
 void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
@@ -326,30 +312,6 @@ void ZTcpServer::startOptixProc()
     connect(optixProc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 
     m_optixProcs.push_back(std::move(optixProc));
-}
-
-void ZTcpServer::send_packet(QTcpSocket* socket, std::string_view info, const char* buf, size_t len)
-{
-    _Header header;
-    header.total_size = info.size() + len;
-    header.info_size = info.size();
-    header.makeValid();
-
-    std::vector<char> headbuffer(4 + sizeof(_Header) + info.size());
-    headbuffer[0] = '\a';
-    headbuffer[1] = '\b';
-    headbuffer[2] = '\r';
-    headbuffer[3] = '\t';
-    std::memcpy(headbuffer.data() + 4, &header, sizeof(_Header));
-    std::memcpy(headbuffer.data() + 4 + sizeof(_Header), info.data(), info.size());
-
-    for (char c : headbuffer) {
-        socket->write(&c, 1);
-    }
-    socket->write(buf, len);
-    while (socket->bytesToWrite() > 0) {
-        socket->waitForBytesWritten();
-    }
 }
 
 void ZTcpServer::killProc()

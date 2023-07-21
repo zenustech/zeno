@@ -33,7 +33,6 @@ private slots:
     void onProcFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
-    void send_packet(QTcpSocket* socket, std::string_view info, const char* buf, size_t len);
     void sendCacheRenderInfoToOptix(const QString& finalCachePath, int cacheNum, bool applyLightAndCameraOnly, bool applyMaterialOnly);
     void dispatchPacketToOptix(const QString& info);
     void initializeNewOptixProc();
