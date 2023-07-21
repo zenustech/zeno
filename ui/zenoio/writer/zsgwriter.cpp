@@ -206,15 +206,16 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
     {
         writer.Key("default-value");
         QVariant deflVal = socket.defaultValue;
+        bool bOK = false;
         if (deflVal.canConvert<CURVES_DATA>() && (sockType == "float" || sockType.startsWith("vec"))) {
-            AddVariant(deflVal, "curve", writer);
+            bOK = AddVariant(deflVal, "curve", writer);
         } else {
             bool bValid = UiHelper::validateVariant(deflVal, sockType);
             if (!bValid)
                 deflVal = QVariant();
+            bOK = AddVariant(deflVal, sockType, writer);
         }
 
-        bool bOK = AddVariant(deflVal, sockType, writer);
         if (!bOK)
         {
             zeno::log_error("write default-value error. nodeId : {}, socket : {}", socket.nodeid.toStdString(), socket.name.toStdString());
