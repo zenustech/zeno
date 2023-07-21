@@ -60,8 +60,8 @@ vec3 studioShading(vec3 albedo, vec3 view_dir, vec3 normal, vec3 tangent) {
     light_dir = normalize((mInvView * vec4(3., -5., 2., 0.)).xyz);
     color += vec3(0.15, 0.2, 0.22) * pbr(albedo, 0.48, 0.0, 1.0, normal, light_dir, view_dir);
 
-    color *= 1.2;
-    //color = pow(clamp(color, 0., 1.), vec3(1./2.2));
+    //color *= 1.2;
+    color = pow(clamp(color, 0., 1.), vec3(1./2.2));
     return color;
 }
 
