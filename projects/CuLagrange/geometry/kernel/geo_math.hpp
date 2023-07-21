@@ -838,5 +838,40 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
         }
         return std::numeric_limits<REAL>::infinity();
     }
+
+    constexpr REAL ray_ray_intersect(VECTOR3 const& x0,VECTOR3 const& v0,VECTOR3 const &x1,VECTOR3 const& v1,REAL thickness) {
+        auto x =  x1 - x0;
+        auto v = v1 - v0;
+        
+        if(x.norm() < thickness)
+            return (REAL)0;
+        if(x.dot(v) > 0)
+            return std::numeric_limits<REAL>::infinity();
+        // if(vv.norm() < 1e)
+
+        auto xx = x.dot(x);
+        auto vv = v.dot(v);
+        auto xv = x.dot(v);
+
+        // auto closest_dist = (x - xv / vv * v).norm();
+        // if(closest_dist > thickness)
+        //     return std::numeric_limits<REAL>::infinity();
+
+        auto delta = 4 * xv * xv - 4 * vv * (xx - thickness * thickness);
+        if(delta < 0)
+            return std::numeric_limits<REAL>::infinity();
+
+        auto sqrt_delta = zs::sqrt(delta);
+        auto alpha = xv/vv;
+        auto beta = sqrt_delta / 2 / vv;
+
+        auto t0 = -alpha + beta;
+        auto t1 = -alpha - beta;
+
+        t0 = t0 < (REAL)1.0 && t0 > (REAL)0.0 ? t0 : std::numeric_limits<REAL>::infinity();
+        t1 = t1 < (REAL)1.0 && t1 > (REAL)0.0 ? t1 : std::numeric_limits<REAL>::infinity(); 
+
+        return zs::min(t0,t1);
+    }
 };
 };

@@ -293,6 +293,164 @@ ZENDEFNODE(VisualizePBDConstraint, {{{"zsparticles"},{"constraints"}},
                             },
 							{"PBD"}});
 
+
+struct KinematicCollisionDetection : INode {
+    using T = float;
+    using tiles_t = typename ZenoParticles::particles_t;
+    using dtiles_t = zs::TileVector<T,32>;
+    using bvh_t = zs::LBvh<3, int, T>;
+    using vec3 = zs::vec<float,3>;
+    using vec2i = zs::vec<int,2>;
+    // using ICOORD = vec2i;
+    using vec3i = zs::vec<int,3>;
+    using vec4i = zs::vec<int,4>;
+    using mat4 = zs::vec<int,4,4>;
+
+    template<typename TileVecT>
+    void build_ray_bvh(zs::CudaExecutionPolicy &pol, TileVecT &verts,ZenoLinearBvh::lbvh_t &bvh) {
+        using namespace zs;
+        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+        constexpr auto space = execspace_e::cuda;
+        Vector<bv_t> bvs{verts.get_allocator(),verts.size()};
+        pol(range(verts.size()),[
+            verts = proxy<space>({},verts),bvs = proxy<space>(bvs)] ZS_LAMBDA(int vi) {
+                auto x = verts.pack(dim_c<3>,"x",vi);
+                auto px = verts.pack(dim_c<3>,"px",vi);
+                auto pscale = verts("pscale",vi);
+
+                bv_t bv{x,xp};
+                bv._min -= pscale;
+                bv._max += pscale;
+
+                bvs[vi] = bv;
+        });
+        bvh.build(pol,bvs);
+    }
+
+    template<typename TileVecT>
+    void build_particles_bvh(zs::CudaExecutionPolicy& pol,TileVecT &kverts,ZenoLinearBvh::lbvh_t& bvh) {
+        using namespace zs;
+        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+        constexpr auto space = execspace_e::cuda;
+        Vector<bv_t> bvs{kverts.get_allocator(),kverts.size()};
+        pol(range(kverts.size()),[
+            kverts = proxy<space>({},kverts),bvs = proxy<space>(bvs)] ZS_LAMBDA(int kvi) {
+                auto x = kverts.pack(dim_c<3>,"x",vi);
+                auto pscale = kverts("pscale",vi);
+                bv_t bv{x - pscale,x + pscale};
+                bvs[vi] = bv;
+        });
+        bvh.build(pol,bvs);        
+    }
+
+
+    virtual void apply() override {
+        using namespace zs;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        constexpr auto exec_tag = wrapv<space>{};
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto boundary = get_input<ZenoParticles>("kboundary");
+        auto sdf = get_input<ZenoParticles>("sdf");
+
+        auto constraints = std::make_shared<ZenoParticles>();
+
+        constraint->sprayedOffset = 0;
+        constraint->elements = typename ZenoParticles::particles_t({{"stiffness",1},{"lambda",1},{"tclr",1}}, 0, zs::memsrc_e::device,0);
+        auto &eles = constraint->getQuadraturePoints();
+
+        // auto xtag = get_param<std::string>("xtag");
+        // auto pxtag = get_param<std::string>("pxtag");
+        // auto kxtag = get_param<std::string>("kxtag");
+        // auto pkxtag = get_param<std::string>("pkxtag");
+
+        const auto& verts = zsparticles->getParticles();
+        const auto& kverts = boundary->getParticles();
+
+        // use PP collision only
+        bvh_t kbvh{};
+        build_particles_bvh(cudaPol,kverts,kbvh);
+
+        zs::Vector<int> hit_points{verts.get_allocator(),verts.size()};
+        zs:Vector<T> hit_distances{verts.get_allocator(),verts.size()};
+        pol(range(hit_points),[]ZS_LAMBDA(auto &hp) mutable {hp = -1;});
+        pol(range(hit_distance),[]ZS_LAMBDA(auto &dist) mutable { dist = std::numeric_limits<T>::infinity();});
+
+        zs::bht<int,2,int> csPP{verts.get_allocator(),verts.size()};
+        csPP.reset(pol,true);
+
+        cudaPol(zs::range(verts.size()),[
+            kverts = proxy<space>({},kverts),
+            verts = proxy<space>({},verts),
+            hit_points = proxy<space>(hit_points),
+            csPP = proxy<space>(csPP),
+            kbvh = proxy<space>(kbvh)] ZS_LAMBDA(int vi) mutable {
+                auto x = verts.pack(dim_c<3>,"x",vi);
+                auto px = verts.pack(dim_c<3>,"px",vi);
+                auto pscale = verts("pscale",vi);
+
+                auto bv = bv_t{get_bounding_box(x,px)};
+                bv._min -= pscale;
+                bv._max += pscale;
+
+                T mint = std::numeric_limits<T>::infinity();
+                int min_kvi = -1;
+
+                auto process_ccd_collision = [&](int kvi) mutable {
+                    auto kpscale = kverts("pscale",kvi);
+                    auto kx = kverts.pack(dim_c<3>,"x",kvi);
+                    auto pkx = kx;
+                    if(kverts.hasProperty("px"))
+                        pkx = kverts.pack(dim_c<3>,"px",kvi);
+
+                    auto t = LSL_GEO::ray_ray_intersect(px,x - px,pkx,kx - pkx,pscale + kpscale);
+                    if(t < mint) {
+                        mint = t;
+                        min_kvi = kvi;
+                    }
+                };
+                iter_neighbors(bv,process_ccd_collision);
+
+                if(min_kvi >= 0) {
+                    csPP.insert(vec2i{vi,min_kvi});
+                }
+
+                hit_points[vi] = min_kvi;
+                hit_distance[vi] = mint;
+        });
+
+
+    }
+};
+
+struct SelfCollisionDetection : INode {
+    virtual void apply() override {
+        using namespace zs;
+        using vec3 = zs::vec<float,3>;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using mat4 = zs::vec<int,4,4>;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        constexpr auto exec_tag = wrapv<space>{};
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+
+        auto constraints = std::make_shared<ZenoParticles>();
+
+        constraint->sprayedOffset = 0;
+        constraint->elements = typename ZenoParticles::particles_t({{"stiffness",1},{"lambda",1},{"tclr",1}}, 0, zs::memsrc_e::device,0);
+        auto &eles = constraint->getQuadraturePoints();
+
+
+
+    }
+};
+
 // solve a specific type of constraint for one iterations
 struct XPBDSolve : INode {
 
@@ -394,8 +552,7 @@ struct XPBDSolve : INode {
                         CONSTRAINT::solve_IsometricBendingConstraint(
                             p[0],minv[0],
                             p[1],minv[1],
-                            p[2],minv[2],
-                            p[3],minv[3],
+                            p[2],minv[2],XPBDCCD
                             Q,
                             s,
                             dt,
@@ -440,11 +597,11 @@ struct XPBDSolve : INode {
         set_output("zsparticles",zsparticles);
     };
 };
-
 ZENDEFNODE(XPBDSolve, {{{"zsparticles"},{"constraints"},{"float","dt","0.5"}},
 							{{"zsparticles"},{"constraints"}},
 							{{"string","ptag","X"}},
 							{"PBD"}});
+
 
 struct XPBDSolveSmooth : INode {
 
@@ -461,21 +618,30 @@ struct XPBDSolveSmooth : INode {
         constexpr auto exec_tag = wrapv<space>{};
 
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
-        auto constraints = get_input<ZenoParticles>("constraints");
+
+        auto all_constraints = RETRIEVE_OBJECT_PTRS(ZenoParticles, "constraints");
+        // auto constraints = get_input<ZenoParticles>("constraints");
         auto dt = get_input2<float>("dt");   
         auto ptag = get_param<std::string>("ptag");
 
-        auto coffsets = constraints->readMeta("color_offset",zs::wrapt<zs::Vector<int>>{});  
-        int nm_group = coffsets.size();
+        // auto coffsets = constraints->readMeta("color_offset",zs::wrapt<zs::Vector<int>>{});  
+        // int nm_group = coffsets.size();
 
         auto& verts = zsparticles->getParticles();
-        auto& cquads = constraints->getQuadraturePoints();
-        auto category = constraints->category;
+        // auto& cquads = constraints->getQuadraturePoints();
+        // auto category = constraints->category;
 
         // zs::Vector<vec3> pv_buffer{verts.get_allocator(),verts.size()};
         // zs::Vector<float> total_ghost_impulse_X{verts.get_allocator(),1};
         // zs::Vector<float> total_ghost_impulse_Y{verts.get_allocator(),1};
         // zs::Vector<float> total_ghost_impulse_Z{verts.get_allocator(),1};
+
+
+        zs::Vector<float> dv_buffer{verts.get_allocator(),verts.size() * 3};
+        pol(zs::range(dv_buffer),[]ZS_LAMBDA(auto& v) {v = 0;});
+
+        // for(auto &&constraints)
+        // how does 
 
         for(int g = 0;g != nm_group;++g) {
             auto coffset = coffsets.getVal(g);
@@ -597,5 +763,7 @@ ZENDEFNODE(XPBDSolveSmooth, {{{"zsparticles"},{"constraints"},{"float","dt","0.5
 							{{"zsparticles"},{"constraints"}},
 							{{"string","ptag","X"}},
 							{"PBD"}});
+
+
 
 };
