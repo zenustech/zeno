@@ -22,6 +22,7 @@ public:
     void onFrameStarted(const QString& action, const QString& keyObj);
     void onFrameFinished(const QString& action, const QString& keyObj);
     void onInitFrameRange(const QString& action, int frameStart, int frameEnd);
+    void onClearFrameState();
 
 private slots:
     void onNewConnection();
@@ -32,7 +33,6 @@ private slots:
     void onProcFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
 private:
-    void send_packet(QTcpSocket* socket, std::string_view info, const char* buf, size_t len);
     void sendCacheRenderInfoToOptix(const QString& finalCachePath, int cacheNum, bool applyLightAndCameraOnly, bool applyMaterialOnly);
     void dispatchPacketToOptix(const QString& info);
     void initializeNewOptixProc();
