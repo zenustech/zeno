@@ -37,12 +37,8 @@ struct SolveViscousTerm : zeno::INode {
         auto solid_sdf = get_input<VDBFloatGrid>("SolidSDF");
         auto solid_velocity = get_input<VDBFloat3Grid>("SolidVelocity");
 
-        if (has_input("ViscosityGrid") || viscosity > eps) {
-            openvdb::FloatGrid::Ptr viscosity_grid;
-            if (has_input("ViscosityGrid"))
-                viscosity_grid = get_input<VDBFloatGrid>("ViscosityGrid")->m_grid;
-            else
-                viscosity_grid = openvdb::FloatGrid::create(viscosity);
+        if (viscosity > eps) {
+            auto viscosity_grid = openvdb::FloatGrid::create(viscosity);
 
             packed_FloatGrid3 packed_velocity, packed_viscous_vel;
             packed_velocity.from_vec3(velocity->m_grid);
@@ -72,8 +68,7 @@ ZENDEFNODE(SolveViscousTerm, {
                                   "ViscousVelocity",
                                   "LiquidSDF",
                                   "SolidSDF",
-                                  "SolidVelocity",
-                                  "ViscosityGrid"},
+                                  "SolidVelocity"},
                                  /* outputs: */
                                  {},
                                  /* params: */
@@ -81,5 +76,56 @@ ZENDEFNODE(SolveViscousTerm, {
                                  /* category: */
                                  {"FLIPSolver"},
                              });
+
+struct SolveVariationalViscosity : zeno::INode {
+    static constexpr float eps = 10 * std::numeric_limits<float>::epsilon();
+
+    void apply() override {
+        auto n = get_param<int>("VelExtraLayer");
+        auto dt = get_input2<float>("dt");
+        auto dx = get_param<float>("dx");
+        if (has_input("Dx")) {
+            dx = get_input2<float>("Dx");
+        }
+        auto density = get_input2<float>("Density");
+        auto viscosity_grid = get_input2<VDBFloatGrid>("ViscosityGrid");
+        auto velocity = get_input<VDBFloat3Grid>("Velocity");
+        auto velocity_viscous = get_input<VDBFloat3Grid>("ViscousVelocity");
+        auto liquid_sdf = get_input<VDBFloatGrid>("LiquidSDF");
+        auto solid_sdf = get_input<VDBFloatGrid>("SolidSDF");
+        auto solid_velocity = get_input<VDBFloat3Grid>("SolidVelocity");
+
+        packed_FloatGrid3 packed_velocity, packed_viscous_vel;
+        packed_velocity.from_vec3(velocity->m_grid);
+        packed_viscous_vel.from_vec3(velocity_viscous->m_grid);
+
+        FLIP_vdb::solve_viscosity(packed_velocity, packed_viscous_vel, liquid_sdf->m_grid, solid_sdf->m_grid,
+                                  solid_velocity->m_grid, viscosity_grid->m_grid, density, dt);
+
+        vdb_velocity_extrapolator::union_extrapolate(n, packed_viscous_vel.v[0], packed_viscous_vel.v[1],
+                                                     packed_viscous_vel.v[2], &(liquid_sdf->m_grid->tree()));
+
+        packed_viscous_vel.to_vec3(velocity_viscous->m_grid);
+    }
+};
+
+ZENDEFNODE(SolveVariationalViscosity, {
+                                          /* inputs: */
+                                          {"dt",
+                                           "Dx",
+                                           {"float", "Density", "1000.0"},
+                                           "ViscosityGrid",
+                                           "Velocity",
+                                           "ViscousVelocity",
+                                           "LiquidSDF",
+                                           "SolidSDF",
+                                           "SolidVelocity"},
+                                          /* outputs: */
+                                          {},
+                                          /* params: */
+                                          {{"float", "dx", "0.0"}, {"int", "VelExtraLayer", "3"}},
+                                          /* category: */
+                                          {"FLIPSolver"},
+                                      });
 
 } // namespace zeno
