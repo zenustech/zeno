@@ -1353,13 +1353,13 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     {
         m_bMoving = false;
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        QPointF newPos = event->scenePos();
+        QPointF newPos = this->scenePos();
         QPointF oldPos = m_index.data(ROLE_OBJPOS).toPointF();
         if (newPos != oldPos)
         {
             STATUS_UPDATE_INFO info;
             info.role = ROLE_OBJPOS;
-            info.newValue = m_lastMovig;
+            info.newValue = m_lastMoving;
             info.oldValue = oldPos;
             pGraphsModel->updateNodeStatus(nodeId(), info, m_subGpIndex, false);
 
@@ -1370,7 +1370,7 @@ void ZenoNode::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
             emit outSocketPosChanged();
             //emit nodePosChangedSignal();
 
-            m_lastMovig = QPointF();
+            m_lastMoving = QPointF();
 
             //other selected items also need update model data
             for (QGraphicsItem *item : this->scene()->selectedItems()) {
@@ -1418,7 +1418,7 @@ QVariant ZenoNode::itemChange(GraphicsItemChange change, const QVariant &value)
     else if (change == QGraphicsItem::ItemPositionHasChanged)
     {
         m_bMoving = true;
-        m_lastMovig = value.toPointF();
+        m_lastMoving = value.toPointF();
         emit inSocketPosChanged();
         emit outSocketPosChanged();
     }
