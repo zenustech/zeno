@@ -10,6 +10,7 @@
 //#include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/container/Vector.hpp"
 #include "zensim/execution/Atomics.hpp"
+#include "zensim/geometry/AdaptiveGrid.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <random>
@@ -123,6 +124,58 @@ struct TestAdaptiveGrid : INode {
 
         std::vector<int> &cnts;
     };
+    template <typename TreeT>
+    struct VdbConverter {
+        using RootT = typename TreeT::RootNodeType;
+        using LeafT = typename TreeT::LeafNodeType;
+        using ValueT = typename LeafT::ValueType;
+        using ZSGridT = zs::AdaptiveGrid<3, ValueT, RootT::NodeChainType::template Get<0>::LOG2DIM,
+                                         RootT::NodeChainType::template Get<1>::LOG2DIM,
+                                         RootT::NodeChainType::template Get<2>::LOG2DIM>;
+        using ZSCoordT = zs::vec<int, 3>;
+
+        VdbConverter(std::vector<int> nodeCnts) : ag(std::make_shared<ZSGridT>()), success{true} {
+            // for each level, initialize allocations
+        }
+        ~VdbConverter() = default;
+
+        void operator()(RootT &rt) const {
+            ag->_background = rt->background();
+#if 0
+            openvdb::Mat4R v2w = gridPtr->transform().baseMap()->getAffineMap()->getMat4();
+            vec<float, 4, 4> lsv2w;
+            for (auto &&[r, c] : ndrange<2>(4))
+                lsv2w(r, c) = v2w[r][c];
+            ag->resetTransformation(lsv2w);
+#endif
+        }
+
+        template <typename NodeT>
+        void operator()(NodeT &node) const {
+            using namespace zs;
+            auto &level = ag->level(dim_c<NodeT::LEVEL>);
+            auto coord = node.getOrigin();
+            level.table.insert(ZSCoordT{coord[0], coord[1], coord[2]});
+            if (auto tmp = node.getValueMask().countOn(); tmp != 0) {
+                fmt::print("node [{}, {}, {}] has {} active values.\n", node.origin()[0], node.origin()[1],
+                           node.origin()[2], tmp);
+                success = false;
+                return;
+            }
+        }
+
+        void operator()(LeafT &lf) const {
+            using namespace zs;
+            auto &level = ag->level(dim_c<0>);
+        }
+
+        ZSGridT &&get() {
+            return std::move(*ag);
+        }
+
+        std::shared_ptr<ZSGridT> ag;
+        bool success;
+    };
     void apply() override {
         using namespace zs;
         openvdb::FloatGrid::Ptr sdf;
@@ -140,18 +193,22 @@ struct TestAdaptiveGrid : INode {
         fmt::print("root: {}\n", get_var_type_str(tree.root()));
 
         CppTimer timer;
-        std::vector<int>  cnts(4);
+        std::vector<int> cnts(4);
         IterateOp<TreeT> op(cnts);
-#if 1
+        // for DynamicNodeManager, op is shared
         timer.tick();
         openvdb::tree::DynamicNodeManager<TreeT> nodeManager(sdf->tree());
         nodeManager.foreachTopDown(op);
         timer.tock("dynamic");
-#endif
+
+        // for NodeManager, op is copied
         timer.tick();
         openvdb::tree::NodeManager<TreeT> nm(sdf->tree());
         nm.foreachBottomUp(op);
         timer.tock("static");
+
+        VdbConverter<TreeT> agBuilder;
+        fmt::print("examine type: {}\n", get_type_str<typename RM_CVREF_T(agBuilder)::ZSGridT>());
         ;
         std::vector<unsigned int> nodeCnts(4);
         tree.root().nodeCount(nodeCnts);
