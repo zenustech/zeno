@@ -123,27 +123,27 @@ struct Make2DGridPrimitive : INode {
             ax *= scale;
             ay *= scale;
         }
-    auto dir = get_param<std::string>("Direction");
-    if(dir == "YZ")
-    {
-        ax = zeno::vec3f(0,ax[0],0);
-        ay = zeno::vec3f(0, 0, ay[1]);
-    }
-    if(dir == "XZ")
-    {
-        ay = zeno::vec3f(0,0,ay[1]);
-    }
+        auto dir = get_param<std::string>("Direction");
+        if(dir == "YZ")
+        {
+            ax = zeno::vec3f(0,ax[0],0);
+            ay = zeno::vec3f(0, 0, ay[1]);
+        }
+        if(dir == "XZ")
+        {
+            ay = zeno::vec3f(0,0,ay[1]);
+        }
 
-    if (get_param<bool>("isCentered"))
-      o -= (ax + ay) / 2;
-    ax *= dx; ay *= dy;
+        if (get_param<bool>("isCentered"))
+            o -= (ax + ay) / 2;
+        ax *= dx; ay *= dy;
 
-    auto prim = std::make_shared<PrimitiveObject>();
-    prim->resize(nx * ny);
-    auto &pos = prim->add_attr<vec3f>("pos");
+        auto prim = std::make_shared<PrimitiveObject>();
+        prim->resize(nx * ny);
+        auto &pos = prim->add_attr<vec3f>("pos");
 
-auto layout = get_param<std::string>("Layout");
-        if (layout == "Row-major") {
+        auto layout = get_param<std::string>("Layout");
+        if (layout == "Column-major") {
 #pragma omp parallel for collapse(2)
             for (intptr_t y = 0; y < ny; y++)
                 for (intptr_t x = 0; x < nx; x++) {
@@ -227,7 +227,7 @@ ZENDEFNODE(Make2DGridPrimitive,
         {"PrimitiveObject", "prim"},
         }, /* params: */ {
         {"enum XZ XY YZ", "Direction", "XZ"}, // zhxxhappy
-        {"enum Row-major Column-major", "Layout", "Row-major"},
+        {"enum Column-major Row-major", "Layout", "Column-major"},
         {"bool", "isCentered", "0"},
         {"bool", "hasFaces", "1"},
         {"bool", "hasUV", "0"},
