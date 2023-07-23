@@ -9,8 +9,11 @@
 #include <zeno/zeno.h>
 //#include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/container/Vector.hpp"
+#include "zensim/execution/Atomics.hpp"
+#include "zensim/geometry/VdbLevelSet.h"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include <random>
+#include <zeno/VDBGrid.h>
 
 namespace zeno {
 
@@ -64,5 +67,104 @@ ZENDEFNODE(ZSLinkTest, {
                            {},
                            {"ZPCTest"},
                        });
+
+struct TestAdaptiveGrid : INode {
+    template <typename TreeT>
+    struct IterateOp {
+        using RootT = typename TreeT::RootNodeType;
+        using LeafT = typename TreeT::LeafNodeType;
+
+        IterateOp(std::vector<int> &cnts) : cnts(cnts) {
+        }
+        ~IterateOp() = default;
+
+        // Processes the root node. Required by the DynamicNodeManager
+        bool operator()(RootT &rt, size_t) const {
+            using namespace zs;
+            cnts[RootT::getLevel()]++;
+            using namespace zs;
+            atomic_add(exec_omp, &cnts[RootT::ChildNodeType::getLevel()], (int)rt.childCount());
+            return true;
+        }
+        void operator()(RootT &rt) const {
+            atomic_add(zs::exec_omp, &cnts[rt.getLevel()], 1);
+        }
+
+        // Processes the internal nodes. Required by the DynamicNodeManager
+        template <typename NodeT>
+        bool operator()(NodeT &node, size_t idx) const {
+            using namespace zs;
+            if (auto tmp = node.getValueMask().countOn(); tmp != 0)
+                fmt::print("node [{}, {}, {}] has {} active values.\n", node.origin()[0], node.origin()[1],
+                           node.origin()[2], tmp);
+            if constexpr (NodeT::ChildNodeType::LEVEL == 0) {
+                atomic_add(exec_omp, &cnts[NodeT::ChildNodeType::getLevel()], (int)node.getChildMask().countOn());
+                return true;
+            } else {
+                atomic_add(exec_omp, &cnts[NodeT::ChildNodeType::getLevel()], (int)node.getChildMask().countOn());
+                for (auto iter = node.cbeginChildOn(); iter; ++iter) {
+                }
+                if (node.getValueMask().countOn() > 0)
+                    fmt::print("there exists internal node [{}] that have adaptive values!\n", node.origin()[0]);
+            }
+            return true;
+        }
+        template <typename NodeT>
+        void operator()(NodeT &node) const {
+            atomic_add(zs::exec_omp, &cnts[node.getLevel()], 1);
+        }
+        // Processes the leaf nodes. Required by the DynamicNodeManager
+        bool operator()(LeafT &, size_t) const {
+            return true;
+        }
+        void operator()(LeafT &lf) const {
+            atomic_add(zs::exec_omp, &cnts[0], 1);
+        }
+
+        std::vector<int> &cnts;
+    };
+    void apply() override {
+        using namespace zs;
+        openvdb::FloatGrid::Ptr sdf;
+        if (has_input("sdf"))
+            sdf = get_input("sdf")->as<VDBFloatGrid>()->m_grid;
+        else {
+            sdf = zs::load_floatgrid_from_vdb_file("/home/mine/Codes/zeno2/zeno/assets/tozeno.vdb")
+                      .as<openvdb::FloatGrid::Ptr>();
+        }
+        using Adapter = openvdb::TreeAdapter<openvdb::FloatGrid>;
+        using TreeT = typename Adapter::TreeType;
+        auto &tree = Adapter::tree(*sdf);
+        // fmt::print("TreeT: {}, tree: {}\n", get_type_str<TreeT>(), get_var_type_str(tree));
+        static_assert(is_same_v<TreeT, RM_CVREF_T(tree)>, "???");
+        fmt::print("root: {}\n", get_var_type_str(tree.root()));
+
+        CppTimer timer;
+        std::vector<int>  cnts(4);
+        IterateOp<TreeT> op(cnts);
+#if 1
+        timer.tick();
+        openvdb::tree::DynamicNodeManager<TreeT> nodeManager(sdf->tree());
+        nodeManager.foreachTopDown(op);
+        timer.tock("dynamic");
+#endif
+        timer.tick();
+        openvdb::tree::NodeManager<TreeT> nm(sdf->tree());
+        nm.foreachBottomUp(op);
+        timer.tock("static");
+        ;
+        std::vector<unsigned int> nodeCnts(4);
+        tree.root().nodeCount(nodeCnts);
+        fmt::print("ref node cnts: {}, {}, {}, {}\n", nodeCnts[0], nodeCnts[1], nodeCnts[2], nodeCnts[3]);
+        fmt::print("calced node cnts: {}, {}, {}, {}\n", op.cnts[0], op.cnts[1], op.cnts[2], op.cnts[3]);
+    }
+};
+
+ZENDEFNODE(TestAdaptiveGrid, {
+                                 {"sdf"},
+                                 {},
+                                 {},
+                                 {"ZPCTest"},
+                             });
 
 } // namespace zeno
