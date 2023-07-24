@@ -2300,6 +2300,7 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
         state.params.skynx = OptixUtil::sky_nx_map[OptixUtil::sky_tex.value()];
         state.params.skyny = OptixUtil::sky_ny_map[OptixUtil::sky_tex.value()];
+        state.params.envavg = OptixUtil::sky_avg_map[OptixUtil::sky_tex.value()];
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
                               sizeof(float2)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size() ) );
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_start.reset() ),

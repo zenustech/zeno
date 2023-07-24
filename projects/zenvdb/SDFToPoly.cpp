@@ -144,8 +144,12 @@ struct SDFToPrim : zeno::INode{
         std::vector<openvdb::Vec3s> points(0);
         std::vector<openvdb::Vec3I> tris(0);
         std::vector<openvdb::Vec4I> quads(0);
-        //openvdb::tools::volumeToMesh(*(sdf->m_grid), points, tris, quads, isoValue, adaptivity, true);
-        openvdb::tools::volumeToMesh(*(sdf->m_grid), points, quads, isoValue);
+        if (allowQuads) {
+            // no adaptivity
+            openvdb::tools::volumeToMesh(*(sdf->m_grid), points, quads, isoValue);
+        } else {
+            openvdb::tools::volumeToMesh(*(sdf->m_grid), points, tris, quads, isoValue, adaptivity, true);
+        }
         mesh->resize(points.size());
         auto &meshpos = mesh->add_attr<zeno::vec3f>("pos");
 #pragma omp parallel for
