@@ -706,6 +706,23 @@ void DisplayWidget::onRecord()
         if (!m_bGLView)
         {
             #ifdef ZENO_OPTIX_PROC
+            static bool optixRmCacheFuncConnected = false;
+            if (!optixRmCacheFuncConnected)
+            {
+                connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, [&](int frame) {
+                    if (recInfo.bAutoRemoveCache)
+                    {
+                        QString info = QString("{\"action\":\"removeCache\", \"frame\":%1}\n").arg(frame);
+                        mainWin->optixClientSend(info);
+                    }});
+                connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [&]() {
+                    if (recInfo.bAutoRemoveCache)
+                    {
+                        QString info = QString("{\"action\":\"clrearFrameState\"}\n");
+                        mainWin->optixClientSend(info);
+                    }});
+                optixRmCacheFuncConnected = true;
+            }
             if (bRunBeforeRecord)
             {
                 static bool optixRecFuncConnected = false;
@@ -722,19 +739,6 @@ void DisplayWidget::onRecord()
                         ZASSERT_EXIT(m_optixView);
                         m_optixView->recordVideo(recInfo);
                     });
-                    connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, [&](int frame) {
-                        if (recInfo.bAutoRemoveCache)
-                        {
-                            QString info = QString("{\"action\":\"removeCache\", \"frame\":%1}\n").arg(frame);
-                            mainWin->optixClientSend(info);
-                        }
-                    });
-                    connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [&]() {
-                        if (recInfo.bAutoRemoveCache)
-                        {
-                            QString info = QString("{\"action\":\"clrearFrameState\"}\n");
-                            mainWin->optixClientSend(info);
-                        }});
                     optixRecFuncConnected = true;
                 }
             }
