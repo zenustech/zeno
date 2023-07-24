@@ -100,20 +100,42 @@ public:
     BinaryReader(std::vector<char> data_) {
         data = std::move(data_);
     }
+    std::string read_string(size_t len) {
+        if (cur + len > data.size()) {
+            throw std::out_of_range("BinaryReader::read_string");
+        }
+        std::string content;
+        content.reserve(len);
+        for (auto i = 0; i < len; i++) {
+            content.push_back(read_LE<char>());
+        }
+        return content;
+    }
+    std::vector<char> read_chunk(size_t len) {
+        if (cur + len > data.size()) {
+            throw std::out_of_range("BinaryReader::read_chunk");
+        }
+        std::vector<char> content;
+        content.reserve(len);
+        for (auto i = 0; i < len; i++) {
+            content.push_back(read_LE<char>());
+        }
+        return content;
+    }
     size_t current() const {
         return cur;
     }
     void skip(size_t step) {
         // must use '>' rather than '>='
         if (cur + step > data.size()) {
-            throw std::out_of_range("BinaryReader::read");
+            throw std::out_of_range("BinaryReader::skip");
         }
         cur += step;
     }
     void seek_from_begin(size_t pos) {
         // must use '>' rather than '>='
         if (pos > data.size()) {
-            throw std::out_of_range("BinaryReader::read");
+            throw std::out_of_range("BinaryReader::seek_from_begin");
         }
         cur = pos;
     }
@@ -121,7 +143,7 @@ public:
     T read_LE() {
         // must use '>' rather than '>='
         if (cur + sizeof(T) > data.size()) {
-            throw std::out_of_range("BinaryReader::read");
+            throw std::out_of_range("BinaryReader::read_LE");
         }
         T &ret = *(T *)(data.data() + cur);
         cur += sizeof(T);
@@ -133,7 +155,7 @@ public:
     T read_BE() {
         // must use '>' rather than '>='
         if (cur + sizeof(T) > data.size()) {
-            throw std::out_of_range("BinaryReader::read");
+            throw std::out_of_range("BinaryReader::read_BE");
         }
         T ret = *(T *)(data.data() + cur);
         char* ptr = (char*)&ret;

@@ -19,6 +19,7 @@ set(ZENO_EXTENSIONS
     DemBones
     FBX
     Alembic
+    GLTF
     LSystem
     Skinning
     SampleModel
