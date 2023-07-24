@@ -178,16 +178,21 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
                 reader.seek_from_begin(bv.byteOffset);
                 auto count = acc.count / 3;
                 prim->tris.resize(count);
-                for (auto i = 0; i < count; i++) {
-                    if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
+                if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
+                    for (auto i = 0; i < count; i++) {
                         auto f0 = reader.read_LE<uint16_t>();
                         auto f1 = reader.read_LE<uint16_t>();
                         auto f2 = reader.read_LE<uint16_t>();
                         prim->tris[i] = {f0, f1, f2};
                     }
-                    else {
-                        zeno::log_info("not support componentType: {}", int(acc.componentType));
+                }
+                else if (acc.componentType == ComponentType::GL_UNSIGNED_INT) {
+                    for (auto i = 0; i < count; i++) {
+                        prim->tris[i] = reader.read_LE<vec3i>();
                     }
+                }
+                else {
+                    zeno::log_info("not support componentType: {}", int(acc.componentType));
                 }
             }
         }
