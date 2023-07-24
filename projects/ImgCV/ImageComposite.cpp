@@ -739,7 +739,7 @@ struct Blend: INode {
                     vec3f rgb1 = blend->verts[i * w1 + j] * opacity1;
                     vec3f rgb2 = base->verts[i * w1 + j] * opacity2;
                     vec3f opacity = mask->verts[i * w1 + j] * maskopacity;
-                    vec3f c = 1 - (1 - rgb2) * (1 - rgb1) * opacity + rgb2 * (1 - opacity);
+                    vec3f c = (1 - (1 - rgb2) * (1 - rgb1)) * opacity + rgb2 * (1 - opacity);
                     blend->verts[i * w1 + j] = zeno::clamp(c, 0, 1);
                 }
             }
@@ -951,6 +951,8 @@ struct CompBlur : INode {
         blurredImage->userData().set2("w", w);
         blurredImage->userData().set2("isImage", 1);
         if(image->has_attr("alpha")){
+            
+            blurredImage->verts.add_attr<float>("alpha");
             blurredImage->verts.attr<float>("alpha") = image->verts.attr<float>("alpha");
         }
         std::vector<std::vector<float>>k = createKernel(kmid[1],kmid[0],kmid[2],ktop[1],kbot[1],ktop[0],ktop[2],kbot[0],kbot[2]);
