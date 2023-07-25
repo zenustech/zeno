@@ -70,7 +70,9 @@ public:
     void setColorRamps(const QString &id, const COLOR_RAMPS &colorRamps) override;
     void setBlackboard(const QString &id, const BLACKBOARD_INFO &blackboard) override;
     void setTimeInfo(const TIMELINE_INFO& info) override;
+    void setRecordInfo(const RECORD_SETTING& info) override {};
     TIMELINE_INFO timeInfo() const override;
+    RECORD_SETTING recordInfo() const override { return RECORD_SETTING(); };
     void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,

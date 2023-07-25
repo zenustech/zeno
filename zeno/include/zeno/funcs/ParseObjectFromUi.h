@@ -33,6 +33,20 @@ namespace iotags {
         constexpr const char* always = "always";
     }
 
+    namespace recordinfo {
+        constexpr const char* record_path = "record-path";
+        constexpr const char* videoname = "video-name";
+        constexpr const char* fps = "fps";
+        constexpr const char* bitrate = "bitrate";
+        constexpr const char* numMSAA = "numMSAA";
+        constexpr const char* numOptix = "numOptix";
+        constexpr const char* width = "width";
+        constexpr const char* height = "height";
+        constexpr const char* bExportVideo = "export-video";
+        constexpr const char* needDenoise = "need-denoise";
+        constexpr const char* bAutoRemoveCache = "auto-remove-cache";
+        constexpr const char* bAov = "aov";
+    }
 }
 
 }

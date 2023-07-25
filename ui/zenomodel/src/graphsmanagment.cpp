@@ -84,6 +84,7 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
         std::shared_ptr<IAcceptor> acceptor(zeno_model::createIOAcceptor(pModel, false));
         bool ret = ZsgReader::getInstance().openFile(fn, acceptor.get());
         m_timerInfo = acceptor->timeInfo();
+        m_recordInfo = acceptor->recordInfo();
         if (!ret)
             return nullptr;
     }
@@ -228,6 +229,16 @@ TIMELINE_INFO GraphsManagment::timeInfo() const
 QString GraphsManagment::zsgPath() const
 {
     return m_model ? m_model->filePath() : "";
+}
+
+RECORD_SETTING GraphsManagment::recordInfo() const
+{
+    return m_recordInfo;
+}
+
+void GraphsManagment::setRecordInfo(RECORD_SETTING& info)
+{
+    m_recordInfo = info;
 }
 
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)

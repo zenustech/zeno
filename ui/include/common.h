@@ -13,9 +13,28 @@ struct TIMELINE_INFO
     TIMELINE_INFO() : beginFrame(0), endFrame(0), currFrame(0), bAlways(false) {}
 };
 
+struct RECORD_SETTING
+{
+    QString record_path;
+    QString videoname;
+    int fps;
+    int bitrate;
+    int numMSAA;
+    int numOptix;
+    int width;
+    int height;
+    bool bExportVideo;
+    bool needDenoise;
+    bool bAutoRemoveCache;
+    bool bAov;
+
+    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(false), bAov(false) {}
+};
+
 struct APP_SETTINGS
 {
     TIMELINE_INFO timeline;
+    RECORD_SETTING recordInfo;
     //todo: other settings.
 };
 

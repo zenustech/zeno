@@ -100,6 +100,10 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     {
         _parseViews(doc["views"], pAcceptor);
     }
+    if (doc.HasMember("settings"))
+    {
+        _parseSettings(doc["settings"], pAcceptor);
+    }
     if (doc.HasMember("version"))
     {
         ZASSERT_EXIT(doc["version"].IsString(), false);
@@ -312,6 +316,40 @@ void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* 
     info.bAlways = jsonTimeline[timeline::always].GetBool();
 
     pAcceptor->setTimeInfo(info);
+}
+
+void ZsgReader::_parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* pAcceptor)
+{
+    if (jsonSettings.HasMember("recordinfo"))
+    {
+        const rapidjson::Value& jsonRecordInfo = jsonSettings["recordinfo"];
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::record_path) && jsonRecordInfo[recordinfo::record_path].IsString());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::videoname) && jsonRecordInfo[recordinfo::videoname].IsString());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::fps) && jsonRecordInfo[recordinfo::fps].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::bitrate) && jsonRecordInfo[recordinfo::bitrate].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::numMSAA) && jsonRecordInfo[recordinfo::numMSAA].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::numOptix) && jsonRecordInfo[recordinfo::numOptix].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::width) && jsonRecordInfo[recordinfo::width].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::height) && jsonRecordInfo[recordinfo::height].IsInt());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::bExportVideo) && jsonRecordInfo[recordinfo::bExportVideo].IsBool());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::needDenoise) && jsonRecordInfo[recordinfo::needDenoise].IsBool());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::bAutoRemoveCache) && jsonRecordInfo[recordinfo::bAutoRemoveCache].IsBool());
+        ZASSERT_EXIT(jsonRecordInfo.HasMember(recordinfo::bAov) && jsonRecordInfo[recordinfo::bAov].IsBool());
+        RECORD_SETTING info;
+        info.record_path = jsonRecordInfo[recordinfo::record_path].GetString();
+        info.videoname = jsonRecordInfo[recordinfo::videoname].GetString();
+        info.fps = jsonRecordInfo[recordinfo::fps].GetInt();
+        info.bitrate = jsonRecordInfo[recordinfo::bitrate].GetInt();
+        info.numMSAA = jsonRecordInfo[recordinfo::numMSAA].GetInt();
+        info.numOptix = jsonRecordInfo[recordinfo::numOptix].GetInt();
+        info.width = jsonRecordInfo[recordinfo::width].GetInt();
+        info.height = jsonRecordInfo[recordinfo::height].GetInt();
+        info.bExportVideo = jsonRecordInfo[recordinfo::bExportVideo].GetBool();
+        info.needDenoise = jsonRecordInfo[recordinfo::needDenoise].GetBool();
+        info.bAutoRemoveCache = jsonRecordInfo[recordinfo::bAutoRemoveCache].GetBool();
+        info.bAov = jsonRecordInfo[recordinfo::bAov].GetBool();
+        pAcceptor->setRecordInfo(info);
+    }
 }
 
 void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)
