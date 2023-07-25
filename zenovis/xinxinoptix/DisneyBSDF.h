@@ -615,7 +615,7 @@ namespace DisneyBSDF{
         float metalWt = metallic;
         float glassWt = (1.0 - metallic) * specTrans;
 
-        float schlickWt = BRDFBasics::SchlickWeight(abs(wo.z));
+        float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
         float psss = subsurface/(1.0f + subsurface);
         //event probability
         float diffPr = dielectricWt ;
@@ -660,7 +660,7 @@ namespace DisneyBSDF{
         }
         if(dielectricPr>0.0 && reflect)
         {
-            float F = clamp((BRDFBasics::DielectricFresnel(HoV, 1.0 / ior) - F0) / (1.0 - F0),0.0f,1.0f);
+            float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), ior);
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(roughness,anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
@@ -1693,6 +1693,9 @@ namespace DisneyBSDF{
         float eta = dot(wo, N)>0?ior:1.0f/ior;
         rotateTangent(T, B, N, anisoRotation * 2 * 3.1415926f);
         world2local(wo, T, B, N);
+        float2 r = sobolRnd(eventseed);
+        float r1 = r.x;
+        float r2 = r.y;
 //        float r1 = rnd(seed);
 //        float r2 = rnd(seed);
 
@@ -1707,7 +1710,10 @@ namespace DisneyBSDF{
         float metalWt = metallic;
         float glassWt = (1.0 - metallic) * specTrans;
 
-        float schlickWt = BRDFBasics::SchlickWeight(abs(wo.z));
+        float ax, ay;
+        BRDFBasics::CalculateAnisotropicParams(roughness,anisotropic,ax,ay);
+        vec3 wm = BRDFBasics::SampleGGXVNDF(wo, ax, ay, r1, r2);
+        float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
         float psss = subsurface/(1.0f + subsurface);
         //dielectricWt *= 1.0f - psub;
 
@@ -1740,9 +1746,7 @@ namespace DisneyBSDF{
         prd->fromDiff = false;
         if(r3<p1) // diffuse + sss
         {
-            float2 r = sobolRnd(eventseed);
-            float r1 = r.x;
-            float r2 = r.y;
+
           auto first_hit_type = prd->first_hit_type;
           prd->first_hit_type = prd->depth==0?DIFFUSE_HIT:first_hit_type;
           if(wo.z<0 && subsurface>0)//inside, scattering, go out for sure
@@ -1762,7 +1766,7 @@ namespace DisneyBSDF{
             }else
             {
               //go inside
-              wi = -BRDFBasics::UniformSampleHemisphere(rnd(seed), rnd(seed));
+              wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
               isSS = true;
               flag = transmissionEvent;
               vec3 color = mix(baseColor, sssColor, subsurface) * psss;
@@ -1825,9 +1829,7 @@ namespace DisneyBSDF{
         }
         else if(r3<p3)//specular
         {
-            float2 r = sobolRnd(eventseed);
-            float r1 = r.x;
-            float r2 = r.y;
+
             auto first_hit_type = prd->first_hit_type;
             prd->first_hit_type = prd->depth==0?SPECULAR_HIT:first_hit_type;
             float ax, ay;
@@ -1850,9 +1852,7 @@ namespace DisneyBSDF{
             }
         }else if(r3<p4)//glass
         {
-            float2 r = sobolRnd(eventseed);
-            float r1 = r.x;
-            float r2 = r.y;
+
 
 //          SampleDisneySpecTransmission2(seed, ior, roughness, anisotropic, baseColor, transmiianceColor, scatterDistance,
 //                                        wo, wi, rPdf, fPdf, reflectance, flag, medium, extinction, thin, is_inside,
@@ -1893,9 +1893,7 @@ namespace DisneyBSDF{
           prd->first_hit_type = prd->depth==0? (isReflection==1?SPECULAR_HIT:TRANSMIT_HIT):first_hit_type;
         }else if(r3<p5)//cc
         {
-            float2 r = sobolRnd(eventseed);
-            float r1 = r.x;
-            float r2 = r.y;
+
             auto first_hit_type = prd->first_hit_type;
             prd->first_hit_type = prd->depth==0?SPECULAR_HIT:first_hit_type;
             vec3 wm = BRDFBasics::SampleGTR1(ccRough, r1, r2);
