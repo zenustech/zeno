@@ -740,6 +740,7 @@ int do_global_self_intersection_analysis(Pol& pol,
                 {"pair",2},
                 {"int_points",3},
                 {"r",1},
+                {"is_broken",1}
             },max_nm_intersections};
 
         if(!halfedges.hasProperty("broken"))
@@ -747,6 +748,7 @@ int do_global_self_intersection_analysis(Pol& pol,
         TILEVEC_OPS::fill(pol,halfedges,"broken",(T)0.0);
         
         auto nm_insts = retrieve_self_intersection_tri_halfedge_list_info(pol,verts,xtag,tris,halfedges,ints_buffer);
+        TILEVEC_OPS::fill(pol,ints_buffer,"is_broken",(T)0);
         table_vec2i_type cftab{ints_buffer.get_allocator(),(size_t)nm_insts};
         cftab.reset(pol,true);
         zs::Vector<int> cfbuffer{ints_buffer.get_allocator(),(size_t)nm_insts};  
@@ -821,7 +823,9 @@ int do_global_self_intersection_analysis(Pol& pol,
 
 
                         printf("do_global_self_intersection_analysis::impossible reaching here, the hi and ohi should both have been inserted %f %f %f\n",(float)hr,(float)ohr,(float)ints_buffer("r",isi));
+                        ints_buffer("is_broken",isi) = (T)1.0;
                         atomic_add(exec_tag,&nmInvalid[0],(int)1);
+                        return;
                     }
                 }
                 auto corner_idx = zs::reinterpret_bits<int>(ints_buffer("corner_idx",isi));
@@ -854,12 +858,15 @@ int do_global_self_intersection_analysis(Pol& pol,
                 }
 
                 printf("do_global_self_intersection_analysis::impossible reaching here with broken insertion ring %f\n",(float)ints_buffer("r",isi));
+                ints_buffer("is_broken",isi) = (T)1.0;
                 atomic_add(exec_tag,&nmInvalid[0],(int)1);
         });
 
         auto nmInvalidCount = nmInvalid.getVal(0);
         if(nmInvalidCount > 0)
-            throw std::runtime_error("SELF GIA invalid state detected");
+            printf("SELF GIA invalid state detected\n");
+        // there might be some broken rings
+
 
         auto nmEntries = incidentItsTab.size();
         zs::Vector<zs::vec<int,2>> conn_topo{tris.get_allocator(),nmEntries};
@@ -870,6 +877,20 @@ int do_global_self_intersection_analysis(Pol& pol,
 
 
         auto nm_rings = mark_disconnected_island(pol,conn_topo,ringTag);
+
+        zs::Vector<int> is_broken_rings{ringTag.get_allocator(),(size_t)nm_rings};
+        pol(zs::range(is_broken_rings),[] ZS_LAMBDA(auto& is_br) mutable {is_br = 0;});
+        pol(zs::range(nm_insts),[ringTag = proxy<space>(ringTag),is_broken_rings = proxy<space>(is_broken_rings),ints_buffer = proxy<space>({},ints_buffer)] ZS_LAMBDA(int isi) mutable {
+            if(ints_buffer("is_broken",isi) > (T)0.5) {
+                auto ring_id = ringTag[isi];
+                is_broken_rings[ring_id] = 1;
+            }
+        });
+
+        std::cout << "broken_ring_tag : ";
+        for(int i = 0;i != nm_rings;++i)
+            std::cout << is_broken_rings.getVal(i) << "\t";
+        std::cout << std::endl;
 
         // std::cout << "finish Mark disconnected island with nm_rings : " << nm_rings << std::endl;
 
@@ -907,6 +928,11 @@ int do_global_self_intersection_analysis(Pol& pol,
                 atomic_add(exec_tag,&ringSize[ringTag[isi]],(int)1);
         });
 
+        // pol(zs::range(nm_rings),[ringSize = proxy<space>(ringSize),is_broken_rings = proxy<space>(is_broken_rings)] ZS_LAMBDA(int ri) mutable {
+        //     if(is_broken_rings[ri])
+        //         ringSize[ri] = 0;
+        // });
+
         zs::Vector<int> island_buffer{verts.get_allocator(),verts.size()};
         
 
@@ -929,7 +955,11 @@ int do_global_self_intersection_analysis(Pol& pol,
 
         for(int ri = 0;ri != nm_rings;++ri) {
             auto rsize = (size_t)ringSize.getVal(ri);
-
+            // if(rsize == 0)
+            //     continue;
+            auto is_broken_ring = is_broken_rings.getVal(ri);
+            if(is_broken_ring)
+                continue;
             // if(output_intermediate_information)
             // printf("ring[%d] Size : %d\n",ri,rsize);
 
