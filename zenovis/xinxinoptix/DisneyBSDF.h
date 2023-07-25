@@ -2388,7 +2388,7 @@ static __inline__ __device__ vec3 hdrSky(
     int i = u * params.skynx;
     int j = v * params.skyny;
     //float p = params.skycdf[params.skynx * params.skyny + j * params.skynx + i];
-    pdf = luminance(col) / params.envavg / (2.0f * M_PIf * M_PIf * sin(v * M_PIf));
+    pdf = luminance(col) / params.envavg / (2.0f * M_PIf * M_PIf);
     return mix(col, col2, isclamp);
 }
 
