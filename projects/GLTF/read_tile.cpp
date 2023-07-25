@@ -36,6 +36,7 @@ namespace zeno_gltf {
         int count;
         ComponentType componentType;
         Type type;
+        int byteOffset;
     };
     struct BufferView {
         int buffer;
@@ -88,6 +89,7 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
             if (a.HasMember("bufferView")) {
                 accessor.bufferView = a["bufferView"].GetInt();
             }
+            accessor.byteOffset = a.HasMember("byteOffset")? a["byteOffset"].GetInt() : 0;
             accessor.count = a["count"].GetInt();
             accessor.componentType = ComponentType(a["componentType"].GetInt());
             std::string str_type = a["type"].GetString();
@@ -119,10 +121,10 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
             bufferViews.push_back(bufferView);
         }
     }
-
-    auto prim = std::make_shared<zeno::PrimitiveObject>();
-    {
-        const auto &mesh = doc["meshes"][0];
+    auto prims = std::make_shared<zeno::ListObject>();
+    for (auto mi = 0; mi < doc["meshes"].Size(); mi++) {
+        auto prim = std::make_shared<zeno::PrimitiveObject>();
+        const auto &mesh = doc["meshes"][mi];
         const auto &primitive = mesh["primitives"][0];
         if (primitive.HasMember("extensions") && primitive["extensions"].HasMember("KHR_draco_mesh_compression")) {
             const auto &draco_info = primitive["extensions"]["KHR_draco_mesh_compression"];
@@ -164,7 +166,7 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
                 const auto &acc = accessors[position];
                 const auto &bv = bufferViews[acc.bufferView.value()];
                 auto reader = BinaryReader(buffers[bv.buffer]);
-                reader.seek_from_begin(bv.byteOffset);
+                reader.seek_from_begin(bv.byteOffset + acc.byteOffset);
                 prim->resize(acc.count);
                 for (auto i = 0; i < acc.count; i++) {
                     prim->verts[i] = reader.read_LE<vec3f>();
@@ -175,7 +177,7 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
                 const auto &acc = accessors[index];
                 const auto &bv = bufferViews[acc.bufferView.value()];
                 auto reader = BinaryReader(buffers[bv.buffer]);
-                reader.seek_from_begin(bv.byteOffset);
+                reader.seek_from_begin(bv.byteOffset + acc.byteOffset);
                 auto count = acc.count / 3;
                 prim->tris.resize(count);
                 if (acc.componentType == ComponentType::GL_UNSIGNED_SHORT) {
@@ -196,7 +198,9 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
                 }
             }
         }
+        prims->arr.push_back(prim);
     }
+    auto prim = primMerge(prims->getRaw<PrimitiveObject>());
     return prim;
 }
 
@@ -204,7 +208,11 @@ struct LoadGLTFModel : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
         auto prim = read_gltf_model(path);
-
+        if (get_input2<bool>("cm unit")) {
+            for (auto & vert : prim->verts) {
+                vert *= 0.01f;
+            }
+        }
         set_output("prim", std::move(prim));
     }
 };
@@ -212,6 +220,7 @@ struct LoadGLTFModel : INode {
 ZENDEFNODE(LoadGLTFModel, {
     {
         {"readpath", "path"},
+        {"bool", "cm unit", "0"},
     },
     {
         "prim"
