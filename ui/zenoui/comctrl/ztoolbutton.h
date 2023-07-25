@@ -136,6 +136,8 @@ private:
 
     AnimationInfo animInfo;
     int m_arrowOption;
+
+    QShortcut* m_shortcut;
 };
 
 #endif

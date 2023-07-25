@@ -11,6 +11,7 @@ ZToolButton::ZToolButton(QWidget* parent)
     , m_bHideText(false)
     , m_bHovered(false)
     , m_radius(0)
+    , m_shortcut(nullptr)
 {
     initDefault();
     setMouseTracking(true);
@@ -29,6 +30,7 @@ ZToolButton::ZToolButton(int option, const QIcon& icon, const QSize& iconSize, c
     , m_icon(icon)
     , m_iconSize(iconSize)
     , m_radius(0)
+    , m_shortcut(nullptr)
 {
     initDefault();
     setMouseTracking(true);
@@ -50,6 +52,7 @@ ZToolButton::ZToolButton(int option, const QString& icon, const QString& iconOn,
     , m_icon(QIcon(icon))
     , m_iconSize(iconSize)
     , m_radius(0)
+    , m_shortcut(nullptr)
 {
     initDefault();
     setIcon(m_iconSize, icon, "", iconOn, "");
@@ -365,8 +368,15 @@ void ZToolButton::setChecked(bool bChecked)
 
 void ZToolButton::setShortcut(QKeySequence text)
 {
-    QShortcut *shortcut = new QShortcut(text, this);
-    connect(shortcut, &QShortcut::activated, this, &ZToolButton::clicked);
+    if (!m_shortcut)
+    {
+        m_shortcut = new QShortcut(text, this);
+        connect(m_shortcut, &QShortcut::activated, this, &ZToolButton::clicked);
+    }
+    else
+    {
+        m_shortcut->setKey(text);
+    }
 }
 
 void ZToolButton::setDown(bool bDown)
