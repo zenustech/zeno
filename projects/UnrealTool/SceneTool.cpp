@@ -363,7 +363,7 @@ namespace zeno {
 
             zeno::unreal::ByteArray Buffer;
             auto& Bundle = std::get<zeno::unreal::AssetBundle>(asset_bundle->Data);
-            alpaca::serialize(Bundle, Buffer);
+            alpaca::serialize<alpaca::options::with_checksum>(Bundle, Buffer);
 
             // Save to file
             FILE* fd = fopen(output_path.c_str(), "wb");
