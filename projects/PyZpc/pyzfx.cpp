@@ -22,9 +22,14 @@ struct PyZfx : INode {
         // ref: https://www.cnblogs.com/panliu/p/4485183.html
         //
         PyRun_SimpleString("import sys");
-        PyRun_SimpleString(fmt::format("sys.path.append(\'{}\')", zs::abs_exe_directory() + "/" + "resource/").data());
+        auto pstr = fmt::format("sys.path.append(\'{}\')", zs::abs_exe_directory() + "/" + "resource/");
+        for (char &c : pstr)
+            if (c == '\\')
+                c = '/';
+        PyRun_SimpleString(pstr.data());
         // PyRun_SimpleString("print(\'Hello World\')");
 
+        fmt::print("checking appended sys path: {}\n", pstr);
         //
         // ref: https://docs.python.org/3/extending/embedding.html#pure-embedding
         //
