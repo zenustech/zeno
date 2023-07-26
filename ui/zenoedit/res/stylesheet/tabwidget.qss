@@ -64,6 +64,10 @@ QTabWidget[cssClass = "graphicsediter"]::pane {
     border: 0px;
 }
 
+QTabWidget[cssClass = "graphicsediter"] {
+    background: #2D3239;
+}
+
 QTabBar[cssClass = "graphicsediter"]::tab {
     background: #2D3239;
     color: #737B85;
