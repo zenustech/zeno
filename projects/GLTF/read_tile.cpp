@@ -44,6 +44,9 @@ namespace zeno_gltf {
         int byteLength;
         int byteStride;
     };
+    struct Material {
+        std::string name;
+    };
 namespace fs = std::filesystem;
 
 static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
@@ -78,6 +81,15 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
             auto buffer = zeno::file_get_binary(bin_path);
             zeno::log_info("{}", bin_path);
             buffers.push_back(buffer);
+        }
+    }
+    std::vector<Material> materials;
+    {
+        for (auto i = 0; i < doc["materials"].Size(); i++) {
+            const auto &m = doc["materials"][i];
+            Material material;
+            material.name = m["name"].GetString();
+            materials.push_back(material);
         }
     }
     std::vector<Accessor> accessors;
@@ -201,6 +213,10 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
         prims->arr.push_back(prim);
     }
     auto prim = primMerge(prims->getRaw<PrimitiveObject>());
+    auto &ud = prim->userData();
+    for (auto i = 0; i < materials.size(); i++) {
+        ud.set2(zeno::format("Material_{}", i), materials[i].name);
+    }
     return prim;
 }
 
