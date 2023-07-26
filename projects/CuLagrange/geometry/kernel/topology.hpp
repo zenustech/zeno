@@ -383,25 +383,82 @@ namespace zeno {
         return true;
     }
 
-    constexpr void elm_to_edges(const zs::vec<int,2>& single_edge,zs::vec<int,2> out_edges[1]) {
-        out_edges[0] = single_edge;
+    // constexpr auto elm_to_edges(const zs::vec<int,2>& single_edge) {
+    //     zs::vec<int,2> out_edges[1] = {};
+    //     out_edges[0] = single_edge;
+    //     return out_edges;
+    // }
+
+    // constexpr auto elm_to_edges(const zs::vec<int,3>& tri) {
+    //     zs::vec<int,2> out_edges[3] {};
+    //     out_edges[0] = zs::vec<int,2>{tri[0],tri[1]};
+    //     out_edges[1] = zs::vec<int,2>{tri[1],tri[2]};
+    //     out_edges[2] = zs::vec<int,2>{tri[2],tri[0]};
+    //     return out_edges;
+    // }
+
+    template<typename VecTi, zs::enable_if_all<VecTi::dim == 1, (VecTi::extent <= 4), (VecTi::extent > 1)> = 0>
+    constexpr auto elm_to_edges(const zs::VecInterface<VecTi>& elm) {
+        using Ti = typename VecTi::value_type;
+        constexpr auto CODIM = VecTi::extent;
+        constexpr auto NM_EDGES = (CODIM - 1) * (CODIM) / 2;
+
+        zs::vec<Ti,2> out_edges[NM_EDGES] = {};
+        int nm_out_edges = 0;
+        for(int i = 0;i != CODIM;++i)
+            for(int j = i + 1;j != CODIM;++j)
+                out_edges[nm_out_edges++] = zs::vec<Ti,2>{elm[i],elm[j]};
+
+        return out_edges;
     }
 
-    constexpr void elm_to_edges(const zs::vec<int,3>& tri,zs::vec<int,2> out_edges[3]) {
-        out_edges[0] = zs::vec<int,2>{tri[0],tri[1]};
-        out_edges[1] = zs::vec<int,2>{tri[1],tri[2]};
-        out_edges[2] = zs::vec<int,2>{tri[2],tri[0]};
-    }
+    // template<typename VecI,int codim>
+    // constexpr auto elm_to_edges(const VecI& tet,zs::wrapv<codim>) {
+    //     constexpr int NM_EDGES = codim * (codim - 1) / 2;
+    //     zs::vec<int,2> out_edges[NM_EDGES] = {};
+    //     if(codim == 4) {
 
-    constexpr void elm_to_edges(const zs::vec<int,4>& tet,zs::vec<int,2> out_edges[6]) {
-        out_edges[0] = zs::vec<int,2>{tet[0],tet[1]};
-        out_edges[1] = zs::vec<int,2>{tet[0],tet[2]};
-        out_edges[2] = zs::vec<int,2>{tet[0],tet[3]};
-        out_edges[3] = zs::vec<int,2>{tet[1],tet[2]};
-        out_edges[4] = zs::vec<int,2>{tet[1],tet[3]};
-        out_edges[5] = zs::vec<int,2>{tet[2],tet[3]};
-    }
+    //         out_edges[0] = zs::vec<int,2>{tet[0],tet[1]};
+    //         out_edges[1] = zs::vec<int,2>{tet[0],tet[2]};
+    //         out_edges[2] = zs::vec<int,2>{tet[0],tet[3]};
+    //         out_edges[3] = zs::vec<int,2>{tet[1],tet[2]};
+    //         out_edges[4] = zs::vec<int,2>{tet[1],tet[3]};
+    //         out_edges[5] = zs::vec<int,2>{tet[2],tet[3]};
+    //         return out_edges;
+    //     }
+    //     if(codim == 3) {
+    //         zs::vec<int,2> out_edges[3] {};
+    //         out_edges[0] = zs::vec<int,2>{tri[0],tri[1]};
+    //         out_edges[1] = zs::vec<int,2>{tri[1],tri[2]};
+    //         out_edges[2] = zs::vec<int,2>{tri[2],tri[0]};
+    //         return out_edges;
+    //     }
+    // }
+    
+    // constexpr auto elm_to_edges(const zs::vec<int,2>& single_edge) {
+    //     zs::vec<int,2> out_edges[1] = {};
+    //     out_edges[0] = single_edge;
+    //     return out_edges;
+    // }
 
+    // constexpr auto elm_to_edges(const zs::vec<int,3>& tri) {
+    //     zs::vec<int,2> out_edges[3] {};
+    //     out_edges[0] = zs::vec<int,2>{tri[0],tri[1]};
+    //     out_edges[1] = zs::vec<int,2>{tri[1],tri[2]};
+    //     out_edges[2] = zs::vec<int,2>{tri[2],tri[0]};
+    //     return out_edges;
+    // }
+
+    // constexpr auto elm_to_edges(const zs::vec<int,4>& tet) {
+    //     zs::vec<int,2> out_edges[6] = {};
+    //     out_edges[0] = zs::vec<int,2>{tet[0],tet[1]};
+    //     out_edges[1] = zs::vec<int,2>{tet[0],tet[2]};
+    //     out_edges[2] = zs::vec<int,2>{tet[0],tet[3]};
+    //     out_edges[3] = zs::vec<int,2>{tet[1],tet[2]};
+    //     out_edges[4] = zs::vec<int,2>{tet[1],tet[3]};
+    //     out_edges[5] = zs::vec<int,2>{tet[2],tet[3]};
+    //     return out_edges;
+    // }
     // template<typename Pol,typename TopoTileVec,int CODIM>
     // bool topo_to_incident_matrix(Pol& pol,
     //     const TopoTileVec& topo,
@@ -1055,20 +1112,21 @@ namespace zeno {
 
     }
 
-    template<typename Pol,typename VecTI/*,zs::enable_if_all<VecTI::dim == 1, (VecTI::extent >= 2), (VecTI::etent <= 4)> = 0*/>
+    template<typename Pol,typename TopoRangT/*,zs::enable_if_all<VecTI::dim == 1, (VecTI::extent >= 2), (VecTI::etent <= 4)> = 0*/>
     void topological_incidence_matrix(Pol& pol,
             // size_t nm_points,
-            const zs::Vector<VecTI>& topos,
+            const TopoRangT& topos,
             zs::SparseMatrix<zs::u32,true>& spmat) {
         using namespace zs;
         using ICoord = zs::vec<int, 2>;
-        constexpr auto CDIM = VecTI::extent;
+        // constexpr auto CDIM = VecTI::extent;
+        constexpr auto CDIM = RM_CVREF_T(topos[0])::extent;
         constexpr auto space = Pol::exec_tag::value;
         constexpr auto execTag = wrapv<space>{};
 
         zs::Vector<int> max_pi_vec{topos.get_allocator(),1};
         max_pi_vec.setVal(0);
-        pol(zs::range(topos),[max_pi_vec = proxy<space>(max_pi_vec),execTag,CDIM] ZS_LAMBDA(const auto& topo) {
+        pol(zs::range(topos),[max_pi_vec = proxy<space>(max_pi_vec),execTag,CDIM] ZS_LAMBDA(const auto& topo) mutable {
             for(int i = 0;i != CDIM;++i) 
                 if(topo[i] >= 0)
                     atomic_max(execTag,&max_pi_vec[0],(int)topo[i]);
@@ -1135,8 +1193,6 @@ namespace zeno {
                             // printf("p[%d] -> t[%d]\n",pi,ti);
                         }
             });
-
-            // std::cout << "finish computing p2ts" << std::endl;
         }
 
 
@@ -1178,6 +1234,8 @@ namespace zeno {
 
         // pol(zs::range(is.size()),[is = proxy<space>(is),js = proxy<space>(js)] ZS_LAMBDA(int i) mutable {printf("ijs[%d] : %d %d\n",i,is[i],js[i]);});
         // std::cout << "topos.size() = " << topos.size() << std::endl;
+        // for(int i = 0;i != topos.size();++i)
+        //     std::cout << topos.getVal(i)[0] << "\t" << topos.getVal(i)[1] << std::endl;
 
         // spmat = zs::SparseMatrix<u32,true>{topos.get_allocator(),(int)topos.size(),(int)topos.size()};
         spmat.build(pol,(int)topos.size(),(int)topos.size(),zs::range(is),zs::range(js)/*,zs::range(rs)*/,zs::true_c);
@@ -1189,16 +1247,18 @@ namespace zeno {
         // spmat._vals.reset((int)1);
     }
 
-    template<typename Pol,typename VecTI>
+    template<typename Pol,typename TopoRangeT,typename ColorRangeT>
     void topological_coloring(Pol& pol,
             // int nm_points,
-            const zs::Vector<VecTI>& topo,
-            zs::Vector<float>& colors) {
+            const TopoRangeT& topo,
+            ColorRangeT& colors) {
         using namespace zs;
         constexpr auto space = Pol::exec_tag::value;
+        using Ti = RM_CVREF_T(colors[0]);
+
 
         colors.resize(topo.size());
-        zs::SparseMatrix<u32,true> topo_incidence_matrix{topo.get_allocator(),topo.size(),topo.size()};
+        zs::SparseMatrix<u32,true> topo_incidence_matrix{topo.get_allocator(),(int)topo.size(),(int)topo.size()};
         // std::cout << "compute incidence matrix " << std::endl;
         topological_incidence_matrix(pol,topo,topo_incidence_matrix);
         // std::cout << "finish compute incidence matrix " << std::endl;
@@ -1220,10 +1280,163 @@ namespace zeno {
                 w = v;
             });
         }
+
+        // pol(zs::range())
         weights = weights.clone(colors.memoryLocation());
+        // for(int i = 0;i != weights.size();++i)
+        //     printf("w[%d] : %u\n",i,weights.getVal(i));
 
         auto iterRef = maximum_independent_sets(pol, topo_incidence_matrix, weights, colors);
         std::cout << "nm_colors : " << iterRef << std::endl;
+        pol(zs::range(colors),[] ZS_LAMBDA(auto& clr) mutable {clr = clr - (Ti)1;});
+
+    }
+
+    template<typename Pol,typename REORDERED_MAP_RANGE,typename COLOR_RANGE,typename EXCLUSIVE_OFFSET_RANGE>
+    void sort_topology_by_coloring_tag(Pol& pol,
+            const COLOR_RANGE& colors,
+            REORDERED_MAP_RANGE& reordered_map,
+            EXCLUSIVE_OFFSET_RANGE& offset_out) {
+        using namespace zs;
+        constexpr auto space = Pol::exec_tag::value;
+        constexpr auto exec_tag = wrapv<space>{};
+
+        // zs::Vector<int> reordered_map{colors.get_allocator(),colors.size()};
+        reordered_map.resize(colors.size());
+        zs::Vector<int> max_color{colors.get_allocator(),1};
+        max_color.setVal(0);
+
+        pol(zs::range(colors.size()),[
+            colors = proxy<space>(colors),\
+            exec_tag = exec_tag,
+            max_color = proxy<space>(max_color)] ZS_LAMBDA(int ci) mutable {
+                auto color = (int)colors[ci];
+                atomic_max(exec_tag,&max_color[0],color);
+        });
+
+        int nm_total_colors = max_color.getVal(0) + 1;
+        // zs::bht<int,1,int> color_buffer{}
+        zs::Vector<int> nm_colors{colors.get_allocator(),nm_total_colors};
+        pol(zs::range(nm_colors),[] ZS_LAMBDA(auto& nclr) mutable {nclr = 0;});
+        pol(zs::range(colors),[nm_colors = proxy<space>(nm_colors),exec_tag] ZS_LAMBDA(const auto& clrf) mutable {
+            auto clr = (int)clrf;
+            atomic_add(exec_tag,&nm_colors[clr],1);
+        });
+
+        zs::Vector<int> exclusive_offsets{colors.get_allocator(),nm_total_colors};
+        pol(zs::range(exclusive_offsets),[] ZS_LAMBDA(auto& eoffset) {eoffset = 0;});
+        exclusive_scan(pol,std::begin(nm_colors),std::end(nm_colors),std::begin(exclusive_offsets));
+        pol(zs::range(nm_colors),[] ZS_LAMBDA(auto& nclr) {nclr = 0;});
+
+        offset_out.resize(nm_total_colors);
+    
+        pol(zip(zs::range(exclusive_offsets.size()),exclusive_offsets),[offset_out = proxy<space>(offset_out)] ZS_LAMBDA(auto i,auto offset) mutable {offset_out[i] = offset;});
+        pol(zs::range(colors.size()),[
+                nm_colors = proxy<space>(nm_colors),
+                colors = proxy<space>(colors),
+                exec_tag,
+                exclusive_offsets = proxy<space>(exclusive_offsets),
+                reordered_map = proxy<space>(reordered_map)] ZS_LAMBDA(auto ci) mutable {
+            auto clr = (int)colors[ci];
+            auto offset = atomic_add(exec_tag,&nm_colors[clr],1);
+            auto eoffset = exclusive_offsets[clr];
+
+            reordered_map[eoffset + offset] = ci;
+        });        
+
+        // zs::Vector<VecTI> topos_copy{topos.get_allocator(),topos.size()};
+        // pol(zip(zs::range(topos.size()),topos),[topos_copy = proxy<space>(topos_copy)] ZS_LAMBDA(auto ti,const auto& topo) mutable {topos_copy[ti] = topo;});
+
+        // pol(zip(zs::range(topos.size()),topos),[
+        //     topos_copy = proxy<space>(topos_copy),
+        //     reordered_map = proxy<space>(reordered_map)] ZS_LAMBDA(auto ti,auto& topo) mutable {topo = topos_copy[reordered_map[ti]];});
+    }
+
+    template<typename Pol,typename TopoTileVec,int codim,typename VecTi = zs::vec<int,codim>>
+    zs::Vector<VecTi> tilevec_topo_to_zsvec_topo(Pol& pol,const TopoTileVec& source,zs::wrapv<codim>) {
+        zs::Vector<VecTi> out_topo{source.get_allocator(),source.size()};
+        auto sr = zs::range(source, "inds", zs::dim_c<codim>, zs::int_c);
+        pol(zip(sr, out_topo), []ZS_LAMBDA(auto id, VecTi& dst) mutable {
+            if constexpr (std::is_integral_v<RM_CVREF_T(id)>)
+                dst[0] = id;
+            else
+                dst = id;
+        });
+        return out_topo;
+    }
+
+    template<typename Pol,typename TriTileVec,typename HalfEdgeTileVec>
+    void retrieve_tri_bending_topology(Pol& pol,
+        const TriTileVec& tris,
+        const HalfEdgeTileVec& halfedges,
+        zs::Vector<zs::vec<int,4>>& tb_topos) {
+            using namespace zs;
+            constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+            constexpr auto exec_tag = wrapv<space>{};
+
+            // zs::Vector<int> nm_interior_edges{halfedges.get_allocator(),1};
+            // nm_interior_edges.setVal(0);
+
+            zs::bht<int,1,int> interior_edges{halfedges.get_allocator(),halfedges.size()};
+            interior_edges.reset(pol,true);
+
+            pol(zs::range(halfedges.size()),[
+                halfedges = proxy<space>({},halfedges),
+                exec_tag,
+                interior_edges = proxy<space>(interior_edges)] ZS_LAMBDA(int hi) mutable {
+                    auto ohi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+                    // the boundary halfedge will return -1 for opposite_he here, so it is automatically neglected
+                    if(ohi < hi)
+                        return;
+                    interior_edges.insert(hi);
+            });
+        
+            tb_topos.resize(interior_edges.size());
+            pol(zs::zip(zs::range(interior_edges.size()),interior_edges._activeKeys),[
+                tb_topos = proxy<space>(tb_topos),
+                halfedges = proxy<space>({},halfedges),
+                tris = proxy<space>({},tris)] ZS_LAMBDA(auto id,auto hi_vec) mutable {
+                    auto hi = hi_vec[0];
+                    auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+                    auto vid = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+                    auto ohi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+                    auto oti = zs::reinterpret_bits<int>(halfedges("to_face",ohi));
+                    auto ovid = zs::reinterpret_bits<int>(halfedges("local_vertex_id",ohi));
+
+                    auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+                    auto otri = tris.pack(dim_c<3>,"inds",oti,int_c);
+
+                    tb_topos[id] = zs::vec<int,4>(tri[(vid + 0) % 3],tri[(vid + 1) % 3],tri[(vid + 2) % 3],otri[(ovid + 2) % 3]);
+            });
+    }
+
+    template<typename Pol,typename VecTi,typename Ti = typename VecTi::value_type,int CDIM = VecTi::extent,int NM_EDGES = CDIM * (CDIM - 1) / 2>
+    void retrieve_edges_topology(Pol& pol,
+        const zs::Vector<VecTi>& src_topos,
+        zs::Vector<zs::vec<Ti,2>>& edges_topos) {
+            using namespace zs;
+            constexpr auto space = RM_CVREF_T(pol)::exec_tag::value;
+            // constexpr auto CDIM = VecTi::extent;
+            // constexpr auto NM_EDGES =  CDIM * (CDIM - 1) / 2;
+
+            zs::bht<int,2,int> edges_tab{src_topos.get_allocator(),src_topos.size() * 6};
+            edges_tab.reset(pol,true);
+            pol(zs::range(src_topos.size()),[
+                src_topos = proxy<space>(src_topos),
+                edges_tab = proxy<space>(edges_tab)] ZS_LAMBDA(int ei) mutable {
+                    auto elm_edges = elm_to_edges(src_topos[ei]);
+                    for(int i = 0;i != NM_EDGES;++i) {
+                        auto edge = elm_edges[i];
+                        if(edge[0] < edge[1])
+                            edges_tab.insert(zs::vec<Ti,2>{edge[0],edge[1]});
+                        else
+                            edges_tab.insert(zs::vec<Ti,2>{edge[1],edge[0]});
+                    }
+            });
+
+            edges_topos.resize(edges_tab.size());
+            pol(zip(zs::range(edges_tab.size()),zs::range(edges_tab._activeKeys)),[
+                edges_topos = proxy<space>(edges_topos)] ZS_LAMBDA(auto ei,const auto& edge){edges_topos[ei] = edge;});
     }
 
     template<typename Pol,typename TopoTileVec>
