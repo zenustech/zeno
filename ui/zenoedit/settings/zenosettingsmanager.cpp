@@ -182,7 +182,6 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo(int style)
         {ShortCut_Undo, QObject::tr("Undo"), "Ctrl+Z"},
         {ShortCut_Redo, QObject::tr("Redo"), "Ctrl+Y"},
         {ShortCut_NewSubgraph, QObject::tr("New Subgraph"), "Ctrl+E"},
-        {ShortCut_Focus, QObject::tr("Focus"), "Alt+F"},
         {ShortCut_Run, QObject::tr("Run"), "F2"},
         {ShortCut_Kill, QObject::tr("Kill"), "Shift+F2"},
         {ShortCut_SmoothShading, QObject::tr("Smooth Shading"), "F5"},
@@ -201,6 +200,7 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo(int style)
         {ShortCut_View, QObject::tr("View"), "V"},
         {ShortCut_Once, QObject::tr("Once"), "C"},
         {ShortCut_Bypass, QObject::tr("Bypass"), "B"},
+        {ShortCut_FloatPanel, QObject::tr("Float Panel"), "P"},
         {ShortCut_CoordSys, QObject::tr("CoordSys"), "M"},
         {ShortCut_InitHandler, QObject::tr("Init Handler"), "Backspace"},
         {ShortCut_ReduceHandler, QObject::tr("Reduce Handler"), "-"},
@@ -212,12 +212,12 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo(int style)
         {ShortCut_BackView, QObject::tr("Back View"), "Ctrl+1"},
         {ShortCut_LeftView, QObject::tr("Left View"), "Ctrl+3"},
         {ShortCut_UpwardView, QObject::tr("Upward View"), "Ctrl+7"},
-        {ShortCut_FloatPanel, QObject::tr("Float Panel"), "P"}, 
     };
     QVector<ShortCutInfo> diffs;
     if (style == ShortCutStyle::Default)
     {
         diffs = {
+        {ShortCut_Focus, QObject::tr("Focus"), "Alt+F"},
         {ShortCut_MovingHandler, QObject::tr("Moving Handler"), "T"},
         { ShortCut_RevolvingHandler, QObject::tr("Rotating Handler"), "R" },
         { ShortCut_ScalingHandler, QObject::tr("Scaling Handler"), "E" },
@@ -229,6 +229,7 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo(int style)
     else if (style == ShortCutStyle::Houdini)
     {
         diffs = {
+        {ShortCut_Focus, QObject::tr("Focus"), "F"},
         {ShortCut_MovingHandler, QObject::tr("Moving Handler"), "T"},
         { ShortCut_RevolvingHandler, QObject::tr("Rotating Handler"), "R" },
         { ShortCut_ScalingHandler, QObject::tr("Scaling Handler"), "E" },
@@ -240,6 +241,7 @@ QVector<ShortCutInfo> ZenoSettingsManager::getDefaultShortCutInfo(int style)
     else if (style == ShortCutStyle::Maya)
     {
         diffs = {
+        {ShortCut_Focus, QObject::tr("Focus"), "Alt+F"},
         {ShortCut_MovingHandler, QObject::tr("Moving Handler"), "W"},
         { ShortCut_RevolvingHandler, QObject::tr("Rotating Handler"), "E" },
         { ShortCut_ScalingHandler, QObject::tr("Scaling Handler"), "R" },
