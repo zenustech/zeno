@@ -101,6 +101,7 @@ namespace zeno::unreal {
         enum class Type {
             Misc,
             Tree,
+            Grass,
         };
         Type PointType;
         std::vector<Vector3f> Points;
