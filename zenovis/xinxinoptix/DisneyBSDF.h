@@ -609,7 +609,7 @@ namespace DisneyBSDF{
 
         wm = wm.z<0.0f?-wm:wm;
         BRDFBasics::TintColors(mix(baseColor, sssColor, subsurface), eta, specularTint, sheenTint, F0, Csheen, Cspec0);
-        Cspec0 = Cspec0 * specular;
+        Cspec0 = Cspec0;
         //material layer mix weight
         float dielectricWt = (1.0 - metallic) * (1.0 - specTrans);
         float metalWt = metallic;
@@ -664,7 +664,7 @@ namespace DisneyBSDF{
             float ax, ay;
             BRDFBasics::CalculateAnisotropicParams(roughness,anisotropic,ax,ay);
             vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm,
-                                          mix(Cspec0, vec3(1.0f), F), tmpPdf) * dielectricWt  * illum;
+                                          mix(Cspec0, vec3(1.0f), F) * specular * 0.5f, tmpPdf) * dielectricWt  * illum;
             sterm = sterm + s;
             f = f + s;
             fPdf += tmpPdf * dielectricPr;
@@ -690,7 +690,7 @@ namespace DisneyBSDF{
 
               vec3 wm = normalize(wi + wo);
               float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?ior:1.0/ior);
-              vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, vec3(F),
+              vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, vec3(F) * specular * 0.5f,
                                             tmpPdf) * glassWt;
               sterm = sterm + s;
               f = f + s;
@@ -1712,7 +1712,12 @@ namespace DisneyBSDF{
         float ax, ay;
         BRDFBasics::CalculateAnisotropicParams(roughness,anisotropic,ax,ay);
         vec3 wm = BRDFBasics::SampleGGXVNDF(wo, ax, ay, r1, r2);
-        float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
+        float hov1 = abs(wo.z);
+        float hov2 = abs(dot(wo, wm));
+        float c = pow(smoothstep(0.0f,0.2f,roughness),2.0f);
+
+        float hov = mix(hov1, hov2, c);
+        float schlickWt = BRDFBasics::SchlickWeight(hov);
         float psss = subsurface/(1.0f + subsurface);
         //dielectricWt *= 1.0f - psub;
 
