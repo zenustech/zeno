@@ -15,6 +15,7 @@
 #include "viewport/zenovis.h"
 #include <zenovis/DrawOptions.h>
 #include <iostream>
+#include "viewport/displaywidget.h"
 
 
 //////////////////////////////////////////////
@@ -206,6 +207,19 @@ void ZTimeline::initButtons()
     m_ui->btnForwardToEnd->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnForwardToEnd->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
+    m_ui->btnLoopPlay->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_SwitchAnimation);
+    m_ui->btnLoopPlay->setIcon(ZenoStyle::dpiScaledSize(QSize(18, 18)), ":/icons/always-off.svg", "", "", "");
+    m_ui->btnLoopPlay->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
+    m_ui->btnLoopPlay->setBackgroundClr(QColor("#FF191D21"), QColor("#FF191D21"), QColor("#4578AC"), QColor("#4578AC"));
+    m_ui->btnLoopPlay->initAnimation();
+    connect(m_ui->btnLoopPlay, &ZToolButton::toggled, this, [=](bool bChecked) {
+        ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(pMainWin);
+    DisplayWidget* dpws = pMainWin->getCurrentViewport();
+    ZASSERT_EXIT(dpws);
+    dpws->setLoopPlaying(bChecked);
+        });
+
 
     //m_ui->btnRecycle->setButtonOptions(ZToolButton::Opt_HasIcon);
     //m_ui->btnRecycle->setIcon(
@@ -285,6 +299,11 @@ int ZTimeline::value() const
 bool ZTimeline::isPlayToggled() const
 {
     return m_ui->btnPlay->isChecked();
+}
+
+void ZTimeline::setLoopPlayingStatus(bool enable)
+{
+    m_ui->btnLoopPlay->toggle(enable);
 }
 
 void ZTimeline::paintEvent(QPaintEvent* event)

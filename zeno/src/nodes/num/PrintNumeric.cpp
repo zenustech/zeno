@@ -33,6 +33,8 @@ struct PrintNumeric : zeno::INode {
         auto hint = get_param<std::string>("hint");
         std::cout << hint << ": ";
         std::visit([](auto const &val) {
+            using T = std::decay_t<decltype(val)>;
+            std::cout << (std::string)typeid(T).name() + " :";
             do_print _(val);
         }, obj->value);
         std::cout << std::endl;
