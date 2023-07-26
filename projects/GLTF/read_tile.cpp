@@ -13,6 +13,9 @@
 #include "draco/core/decoder_buffer.h"
 #include "draco/compression/decode.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 namespace zeno {
 namespace zeno_gltf {
     enum class ComponentType {
@@ -49,7 +52,12 @@ namespace zeno_gltf {
     };
 namespace fs = std::filesystem;
 
-static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
+static vec3f transform_point(glm::mat4 m, vec3f p) {
+    auto np = m * glm::vec4(p[0], p[1], p[2], 1);
+    return {np[0], np[1], np[2]};
+}
+
+static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path, bool need_transform = false) {
     rapidjson::Document doc;
     std::vector<std::vector<char>> buffers;
     if (zeno::ends_with(path, ".glb", false)) {
@@ -81,6 +89,48 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
             auto buffer = zeno::file_get_binary(bin_path);
             zeno::log_info("{}", bin_path);
             buffers.push_back(buffer);
+        }
+    }
+
+    std::map<int, int> node_parents;
+    std::vector<glm::mat4> node_self_transforms;
+    std::vector<glm::mat4> node_acc_transforms;
+    std::map<int, int> mesh_link_node;
+    if (need_transform) {
+        for (auto i = 0; i < doc["nodes"].Size(); i++) {
+            const auto &n = doc["nodes"][i];
+            if (n.HasMember("children")) {
+                for (auto j = 0; j < n["children"].Size(); j++) {
+                    auto c = n["children"][j].GetInt();
+                    node_parents[c] = i;
+                    if (c <= i) {
+                        throw std::runtime_error("child index must more than parent index!");
+                    }
+                }
+            }
+            if (n.HasMember("mesh")) {
+                auto m = n["mesh"].GetInt();
+                mesh_link_node[m] = i;
+            }
+        }
+        for (auto i = 0; i < doc["nodes"].Size(); i++) {
+            const auto &n = doc["nodes"][i];
+            if (n.HasMember("matrix")) {
+                const auto &m = n["matrix"];
+                glm::mat4 self_transform;
+                self_transform[0] = {m[0].GetFloat(), m[1].GetFloat(), m[2].GetFloat(), m[3].GetFloat()};
+                self_transform[1] = {m[4].GetFloat(), m[5].GetFloat(), m[6].GetFloat(), m[7].GetFloat()};
+                self_transform[2] = {m[8].GetFloat(), m[9].GetFloat(), m[10].GetFloat(), m[11].GetFloat()};
+                self_transform[3] = {m[12].GetFloat(), m[13].GetFloat(), m[14].GetFloat(), m[15].GetFloat()};
+                node_self_transforms.push_back(self_transform);
+            }
+            else {
+                node_self_transforms.emplace_back(1);
+            }
+        }
+        node_acc_transforms.push_back(node_self_transforms[0]);
+        for (auto i = 1; i < doc["nodes"].Size(); i++) {
+            node_acc_transforms.push_back(node_acc_transforms[node_parents[i]] * node_self_transforms[i]);
         }
     }
     std::vector<Material> materials;
@@ -212,6 +262,15 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
         }
         prims->arr.push_back(prim);
     }
+    if (need_transform) {
+        for (auto i = 0; i < prims->arr.size(); i++) {
+            auto prim = prims->getRaw<PrimitiveObject>()[i];
+            auto m = node_acc_transforms[mesh_link_node[i]];
+            for (auto &v: prim->verts) {
+                v = transform_point(m, v);
+            }
+        }
+    }
     auto prim = primMerge(prims->getRaw<PrimitiveObject>());
     auto &ud = prim->userData();
     for (auto i = 0; i < materials.size(); i++) {
@@ -223,7 +282,8 @@ static std::shared_ptr<PrimitiveObject> read_gltf_model(std::string path) {
 struct LoadGLTFModel : INode {
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
-        auto prim = read_gltf_model(path);
+        auto transform = get_input2<bool>("transform");
+        auto prim = read_gltf_model(path, transform);
         if (get_input2<bool>("cm unit")) {
             for (auto & vert : prim->verts) {
                 vert *= 0.01f;
@@ -237,6 +297,7 @@ ZENDEFNODE(LoadGLTFModel, {
     {
         {"readpath", "path"},
         {"bool", "cm unit", "0"},
+        {"bool", "transform", "1"},
     },
     {
         "prim"
