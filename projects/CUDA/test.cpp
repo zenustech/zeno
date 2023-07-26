@@ -496,6 +496,7 @@ struct TestAdaptiveGrid : INode {
                 root.addChild(int2s[i]);
             }
         }
+        fmt::print("vec3fgrid value_type: {}\n", get_type_str<typename openvdb::Vec3fGrid::ValueType>());
         set_output("vdb", ret);
     }
 };
