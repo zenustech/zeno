@@ -68,7 +68,7 @@ public:
     void addParam(const _param_ctrl &param);
 
 signals:
-    void socketClicked(ZenoSocketItem*);
+    void socketClicked(ZenoSocketItem*, Qt::MouseButton);
     void doubleClicked(const QString &nodename);
     void paramChanged(const QString& nodeid, const QString& paramName, const QVariant& var);
     void socketPosInited(const QString& nodeid, const QString& sockName, bool bInput);

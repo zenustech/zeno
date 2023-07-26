@@ -129,9 +129,7 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
     update();
-    if (event->button() == Qt::LeftButton) {
-        emit clicked(m_bInput);
-    }
+    emit clicked(m_bInput, event->button());
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)

@@ -72,7 +72,7 @@ void ZenoGraphsEditor::initUI()
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");
     m_ui->graphsViewTab->setProperty("cssClass", "graphicsediter");
     m_ui->graphsViewTab->tabBar()->setProperty("cssClass", "graphicsediter");
-
+    m_ui->btnSearchOpt->setIcons(":/icons/collaspe.svg", ":/icons/collaspe.svg");
     initRecentFiles();
 }
 
@@ -208,9 +208,13 @@ void ZenoGraphsEditor::onSearchOptionClicked()
 {
 	QMenu* pOptionsMenu = new QMenu;
 
-	QAction* pNode = new QAction(tr("Node"));
+    QAction* pNode = new QAction(tr("Node Name"));
     pNode->setCheckable(true);
     pNode->setChecked(m_searchOpts & SEARCH_NODECLS);
+
+    QAction* pNodeID = new QAction(tr("Node ID"));
+    pNodeID->setCheckable(true);
+    pNodeID->setChecked(m_searchOpts & SEARCH_NODEID);
 
 	QAction* pSubnet = new QAction(tr("Subnet"));
     pSubnet->setCheckable(true);
@@ -224,10 +228,23 @@ void ZenoGraphsEditor::onSearchOptionClicked()
     pWrangle->setCheckable(true);
     pWrangle->setChecked(m_searchOpts & SEARCH_ARGS);
 
+    QAction* pCustomName= new QAction(tr("Custom Name"));
+    pCustomName->setCheckable(true);
+    pCustomName->setChecked(m_searchOpts & SEARCH_CUSTOM_NAME);
+
 	pOptionsMenu->addAction(pNode);
+    pOptionsMenu->addAction(pNodeID);
 	pOptionsMenu->addAction(pSubnet);
 	pOptionsMenu->addAction(pAnnotation);
 	pOptionsMenu->addAction(pWrangle);
+    pOptionsMenu->addAction(pCustomName);
+
+    connect(pNodeID, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+        m_searchOpts |= SEARCH_NODEID;
+        else
+            m_searchOpts &= (~(int)SEARCH_NODEID);
+    });
 
 	connect(pNode, &QAction::triggered, this, [=](bool bChecked) {
         if (bChecked)
@@ -256,6 +273,13 @@ void ZenoGraphsEditor::onSearchOptionClicked()
 		else
 			m_searchOpts &= (~(int)SEARCH_ARGS);
 		});
+
+    connect(pCustomName, &QAction::triggered, this, [=](bool bChecked) {
+        if (bChecked)
+        m_searchOpts |= SEARCH_CUSTOM_NAME;
+        else
+            m_searchOpts &= (~(int)SEARCH_CUSTOM_NAME);
+    });
 
 	pOptionsMenu->exec(QCursor::pos());
 	pOptionsMenu->deleteLater();

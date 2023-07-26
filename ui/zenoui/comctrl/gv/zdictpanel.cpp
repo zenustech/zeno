@@ -33,9 +33,9 @@ public:
 
         m_socket = new ZenoSocketItem(m_sockKeyIdx, QSizeF(cSocketWidth, cSocketHeight));
 
-        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
+        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
             if (cbSock.cbOnSockClicked)
-                cbSock.cbOnSockClicked(m_socket);
+                cbSock.cbOnSockClicked(m_socket, button);
         });
 
         //move up button

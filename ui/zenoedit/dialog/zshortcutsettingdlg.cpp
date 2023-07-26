@@ -44,13 +44,14 @@ bool ZShortCutItemDelegate::eventFilter(QObject* object, QEvent* event)
                 pMenu->addAction(pAtion);
             }
             connect(pMenu, &QMenu::triggered, this, [=](QAction* action) {
-                QString text = lineEdit->text();
-            if (!text.isEmpty() && !text.endsWith("+"))
-            {
-                text += "+";
-            }
-            text += action->text();
-            lineEdit->setText(text);
+                QString selectedText = lineEdit->selectedText();
+                QString text = lineEdit->text().replace(selectedText, "");
+                if (!text.isEmpty() && !text.endsWith("+"))
+                {
+                    text += "+";
+                }
+                text += action->text();
+                lineEdit->setText(text);
             });
             pMenu->exec(QCursor::pos());
             pMenu->deleteLater();

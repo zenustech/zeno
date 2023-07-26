@@ -656,7 +656,6 @@ void FakeTransformer::rotate(glm::vec3 start_vec, glm::vec3 end_vec, glm::vec3 a
 }
 
 void FakeTransformer::doTransform() {
-    /*
     // qDebug() << "transformer's objects count " << m_objects.size();
     glm::vec3 new_objects_center = {0, 0, 0};
     for (auto &[obj_name, obj] : m_objects) {
@@ -690,7 +689,9 @@ void FakeTransformer::doTransform() {
             // transform pos
             auto &pos = obj->attr<zeno::vec3f>("pos");
 #pragma omp parallel for
-            for (auto &po : pos) {
+            // for (auto &po : pos) {
+            for (size_t i = 0; i < pos.size(); ++i) {
+                auto& po = pos[i];
                 auto p = zeno::vec_to_other<glm::vec3>(po);
                 auto t = transform_matrix * glm::vec4(p, 1.0f);
                 auto pt = glm::vec3(t) / t.w;
@@ -701,7 +702,9 @@ void FakeTransformer::doTransform() {
             // transform nrm
             auto &nrm = obj->attr<zeno::vec3f>("nrm");
 #pragma omp parallel for
-            for (auto &vec : nrm) {
+            // for (auto &vec : nrm) {
+            for (size_t i = 0; i < nrm.size(); ++i) {
+                auto& vec = nrm[i];
                 auto n = zeno::vec_to_other<glm::vec3>(vec);
                 glm::mat3 norm_matrix(transform_matrix);
                 norm_matrix = glm::transpose(glm::inverse(norm_matrix));
@@ -724,7 +727,6 @@ void FakeTransformer::doTransform() {
     new_objects_center /= m_objects.size();
     m_objects_center = new_objects_center;
     m_handler->setCenter({m_objects_center[0], m_objects_center[1], m_objects_center[2]});
-    */
 }
 
 }

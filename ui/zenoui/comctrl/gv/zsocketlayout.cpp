@@ -53,8 +53,8 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     QSizeF szSocket(10, 20);
     m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
     m_socket->setZValue(ZVALUE_ELEMENT);
-    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
-        cbSock.cbOnSockClicked(m_socket);
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
+        cbSock.cbOnSockClicked(m_socket, button);
     });
 
     if (m_bEditable)
@@ -200,7 +200,9 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     QSizeF szSocket(10, 20);
     m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
     m_socket->setZValue(ZVALUE_ELEMENT);
-    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() { cbSock.cbOnSockClicked(m_socket); });
+    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
+        cbSock.cbOnSockClicked(m_socket, button);
+    });
 
     m_text = new ZSocketPlainTextItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);
     m_text->setToolTip(m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString());

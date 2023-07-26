@@ -1897,10 +1897,11 @@ void GraphsModel::onSubIOAddRemove(SubGraphModel* pSubModel, const QModelIndex& 
 QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType, int searchOpts, QVector<SubGraphModel*> vec)
 {
     QList<SEARCH_RESULT> results;
-    if (content.isEmpty())
+    /* start match len*/
+    static int sStartMatch = 2;
+    if (content.isEmpty() || content.size() < sStartMatch)
         return results;
 
-    QSet<QString> nodes;
     if (searchType & SEARCH_SUBNET)
     {
         QModelIndexList lst = match(index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
@@ -1912,25 +1913,28 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType,
             results.append(result);
         }
     }
-    /* start match len*/
-    static int sStartMatch = 2;
     if (vec.isEmpty())
     {
         for (auto subg : m_subGraphs)
             vec.append(subg);
     }
+    bool bExactly = searchOpts == SEARCH_MATCH_EXACTLY;
     for (auto subgInfo : vec) {
         SubGraphModel *pModel = subgInfo;
         QModelIndex subgIdx = indexBySubModel(pModel);
-        if ((searchType & SEARCH_ARGS) && content.size() >= sStartMatch) {
-            for (int r = 0; r < pModel->rowCount(); r++) {
-                QModelIndex nodeIdx = pModel->index(r, 0);
+        for (int r = 0; r < pModel->rowCount(); r++)
+        {
+            const QModelIndex& nodeIdx = pModel->index(r, 0);
+            const QString& ident = nodeIdx.data(ROLE_OBJID).toString();
+            if ((searchType & SEARCH_ARGS))
+            {
+                bool bAppend = false;
                 INPUT_SOCKETS inputs = nodeIdx.data(ROLE_INPUTS).value<INPUT_SOCKETS>();
                 PARAMS_INFO params = nodeIdx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-                for (const INPUT_SOCKET &inputSock : inputs) {
+                for (const INPUT_SOCKET& inputSock : inputs) {
                     if (inputSock.info.type == "string" || inputSock.info.type == "multiline_string" ||
                         inputSock.info.type == "readpath" || inputSock.info.type == "writepath") {
-                        const QString &textValue = inputSock.info.defaultValue.toString();
+                        const QString& textValue = inputSock.info.defaultValue.toString();
                         if (textValue.contains(content, Qt::CaseInsensitive)) {
                             SEARCH_RESULT result;
                             result.targetIdx = nodeIdx;
@@ -1938,71 +1942,67 @@ QList<SEARCH_RESULT> GraphsModel::search(const QString& content, int searchType,
                             result.type = SEARCH_ARGS;
                             result.socket = inputSock.info.name;
                             results.append(result);
+                            bAppend = true;
+                            break;
                         }
                     }
                 }
-                for (const PARAM_INFO &param : params) {
-                    if (param.typeDesc == "string" || param.typeDesc == "multiline_string" ||
-                        param.typeDesc == "readpath" || param.typeDesc == "writepath") {
-                        const QString &textValue = param.value.toString();
-                        if (textValue.contains(content, Qt::CaseInsensitive)) {
-                            SEARCH_RESULT result;
-                            result.targetIdx = nodeIdx;
-                            result.subgIdx = subgIdx;
-                            result.type = SEARCH_ARGS;
-                            result.socket = param.name;
-                            results.append(result);
+                if (!bAppend)
+                {
+                    for (const PARAM_INFO& param : params) {
+                        if (param.typeDesc == "string" || param.typeDesc == "multiline_string" ||
+                            param.typeDesc == "readpath" || param.typeDesc == "writepath") {
+                            const QString& textValue = param.value.toString();
+                            if (textValue.contains(content, Qt::CaseInsensitive)) {
+                                SEARCH_RESULT result;
+                                result.targetIdx = nodeIdx;
+                                result.subgIdx = subgIdx;
+                                result.type = SEARCH_ARGS;
+                                result.socket = param.name;
+                                results.append(result);
+                                bAppend = true;
+                                break;
+                            }
                         }
                     }
                 }
+                if (bAppend)
+                    continue;
             }
-        }
-        if (searchType & SEARCH_NODEID) {
-            QModelIndexList lst;
-            if (searchOpts == SEARCH_MATCH_EXACTLY) {
-                QModelIndex idx = pModel->index(content);
-                if (idx.isValid())
-                    lst.append(idx);
-            } else {
-                lst = pModel->match(pModel->index(0, 0), ROLE_OBJID, content, -1, Qt::MatchContains);
-            }
-            if (!lst.isEmpty()) {
-                for (const QModelIndex &nodeIdx : lst) {
+            if (searchType & SEARCH_NODEID)
+            {
+                if ((bExactly && ident == content) || (!bExactly && ident.contains(content, Qt::CaseInsensitive))) {
                     SEARCH_RESULT result;
                     result.targetIdx = nodeIdx;
                     result.subgIdx = subgIdx;
                     result.type = SEARCH_NODEID;
                     results.append(result);
-                    nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
-                }
-            }
-        }
-        if (searchType & SEARCH_NODECLS) {
-            QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_OBJNAME, content, -1, Qt::MatchContains);
-            for (const QModelIndex &nodeIdx : lst) {
-                if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
                     continue;
                 }
-                SEARCH_RESULT result;
-                result.targetIdx = nodeIdx;
-                result.subgIdx = subgIdx;
-                result.type = SEARCH_NODECLS;
-                results.append(result);
-                nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
             }
-        }
-        if (searchType & SEARCH_CUSTOM_NAME) {
-            QModelIndexList lst = pModel->match(pModel->index(0, 0), ROLE_CUSTOM_OBJNAME, content, -1, Qt::MatchContains);
-            for (const QModelIndex &nodeIdx : lst) {
-                if (nodes.contains(nodeIdx.data(ROLE_OBJID).toString())) {
+            if (searchType & SEARCH_NODECLS)
+            {
+                const QString& nodeCls = nodeIdx.data(ROLE_OBJNAME).toString();
+                if ((bExactly && nodeCls == content) || (!bExactly && nodeCls.contains(content, Qt::CaseInsensitive))) {
+                    SEARCH_RESULT result;
+                    result.targetIdx = nodeIdx;
+                    result.subgIdx = subgIdx;
+                    result.type = SEARCH_NODECLS;
+                    results.append(result);
                     continue;
                 }
-                SEARCH_RESULT result;
-                result.targetIdx = nodeIdx;
-                result.subgIdx = subgIdx;
-                result.type = SEARCH_CUSTOM_NAME;
-                results.append(result);
-                nodes.insert(nodeIdx.data(ROLE_OBJID).toString());
+            }
+            if (searchType & SEARCH_CUSTOM_NAME)
+            {
+                const QString& name = nodeIdx.data(ROLE_CUSTOM_OBJNAME).toString();
+                if ((bExactly && name == content) || (!bExactly && name.contains(content, Qt::CaseInsensitive))) {
+                    SEARCH_RESULT result;
+                    result.targetIdx = nodeIdx;
+                    result.subgIdx = subgIdx;
+                    result.type = SEARCH_CUSTOM_NAME;
+                    results.append(result);
+                    continue;
+                }
             }
         }
     }

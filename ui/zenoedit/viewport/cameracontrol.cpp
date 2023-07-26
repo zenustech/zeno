@@ -22,15 +22,11 @@ CameraControl::CameraControl(
     , m_zenovis(pZenovis)
     , m_transformer(transformer)
     , m_picker(picker)
-    , m_mmb_pressed(false)
     , m_theta(0.)
     , m_phi(0.)
     , m_ortho_mode(false)
-    , m_fov(45.)
     , m_radius(5.0)
     , m_res(1, 1)
-    , m_aperture(0.0f)
-    , m_focalPlaneDistance(2.0f)
 {
     updatePerspective();
 }
@@ -39,11 +35,31 @@ void CameraControl::setRes(QVector2D res) {
     m_res = res;
 }
 
+float CameraControl::getFOV() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_fov;
+}
+void CameraControl::setFOV(float fov) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_fov = fov;
+}
+
+float CameraControl::getAperture() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_aperture;
+}
+
 void CameraControl::setAperture(float aperture) {
-    m_aperture = aperture;
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_aperture = aperture;
+}
+float CameraControl::getDisPlane() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->focalPlaneDistance;
 }
 void CameraControl::setDisPlane(float disPlane) {
-    m_focalPlaneDistance = disPlane;
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->focalPlaneDistance = disPlane;
 }
 
 void CameraControl::fakeMousePressEvent(QMouseEvent *event)
@@ -55,9 +71,6 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         m_theta = scene->camera->m_zxx_in.theta;
         m_phi = scene->camera->m_zxx_in.phi;
         m_radius = scene->camera->m_zxx_in.radius;
-        m_fov = scene->camera->m_fov;
-        m_aperture = scene->camera->m_aperture;
-        m_focalPlaneDistance = scene->camera->focalPlaneDistance;
         scene->camera->m_need_sync = false;
         if (bool(m_picker) && scene->camera->m_auto_radius) {
             this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
@@ -248,10 +261,10 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             up = QVector3D::crossProduct(back, right);
             right.normalize();
             up.normalize();
-            QVector3D delta = right * dx + up * dy;
+            QVector3D delta = right * dx - up * dy;
             m_center += delta * m_radius;
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
-            m_theta -= dy * M_PI;
+            m_theta += dy * M_PI;
             m_phi += dx * M_PI;
         }
         m_lastPos = QPointF(xpos, ypos);
@@ -282,9 +295,13 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 }
 
 void CameraControl::updatePerspective() {
+    auto *session = m_zenovis->getSession();
+    if (session == nullptr) {
+        return;
+    }
     float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode,
-                                                       m_aperture, m_focalPlaneDistance));
+    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, getFOV(), m_ortho_mode,
+                                                       getAperture(), getDisPlane()));
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
@@ -293,7 +310,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         dy = event->angleDelta().x();
     else
         dy = event->angleDelta().y();
-    float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
+    float scale = (dy < 0) ? 0.89 : 1 / 0.89;
     bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
     bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);
     bool focalPlaneDistance_pressed =
@@ -303,24 +320,24 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     int scaleKey = settings.getViewShortCut(ShortCut_ScalingView, button);
     if (shift_pressed) {
-        float temp = m_fov / scale;
-        m_fov = temp < 170 ? temp : 170;
+        float temp = getFOV() / scale;
+        setFOV(temp < 170 ? temp : 170);
 
     } else if (aperture_pressed) {
-        float temp = m_aperture += delta * 0.01;
-        m_aperture = temp >= 0 ? temp : 0;
+        float temp = getAperture() + delta * 0.01;
+        setAperture(temp >= 0 ? temp : 0);
 
     } else if (focalPlaneDistance_pressed) {
-        float temp = m_focalPlaneDistance + delta * 0.05;
-        m_focalPlaneDistance = temp >= 0.05 ? temp : 0.05;
+        float temp = getDisPlane() + delta * 0.05;
+        setDisPlane(temp >= 0.05 ? temp : 0.05);
     } else if (scaleKey == 0 || event->modifiers() & scaleKey){
         m_radius *= scale;
     }
     updatePerspective();
 
     if (zenoApp->getMainWindow()->lightPanel != nullptr) {
-        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(m_aperture));
-        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(m_focalPlaneDistance));
+        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(getAperture()));
+        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(getDisPlane()));
     }
 }
 
@@ -357,8 +374,8 @@ void CameraControl::setKeyFrame() {
 
 void CameraControl::focus(QVector3D center, float radius) {
     m_center = center;
-    if (m_fov >= 1e-6)
-        radius /= (m_fov / 45.0f);
+    if (getFOV() >= 1e-6)
+        radius /= (getFOV() / 45.0f);
     m_radius = radius;
     updatePerspective();
 }
@@ -389,7 +406,7 @@ QVector3D CameraControl::screenToWorldRay(float x, float y) const {
     view.lookAt(realPos(), m_center, up);
     x = (x - 0.5) * 2;
     y = (y - 0.5) * (-2);
-    float v = std::tan(m_fov * M_PI / 180.f * 0.5f);
+    float v = std::tan(glm::radians(getFOV()) * 0.5f);
     float aspect = res().x() / res().y();
     auto dir = QVector3D(v * x * aspect, v * y, -1);
     dir = dir.normalized();

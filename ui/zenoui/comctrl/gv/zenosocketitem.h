@@ -36,7 +36,7 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
 
 signals:
-    void clicked(bool bInput);
+    void clicked(bool bInput, Qt::MouseButton button);
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
