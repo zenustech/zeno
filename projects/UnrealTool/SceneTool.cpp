@@ -346,6 +346,27 @@ namespace zeno {
         }
     };
 
+    struct CreatePointSet : public INode {
+        void apply() override {
+            std::string PointType = get_input2<std::string>("PointType");
+            std::shared_ptr<PrimitiveObject> prim = get_input2<PrimitiveObject>("Prim");
+            auto& posList = prim->verts;
+
+            zeno::unreal::PointSet PointSet;
+            PointSet.Points.reserve(posList.size());
+            for (const auto& pos: posList) {
+                PointSet.Points.push_back(pos);
+            }
+            if (PointType == "Misc") PointSet.PointType = zeno::unreal::PointSet::Type::Misc;
+            else if (PointType == "Tree") PointSet.PointType = zeno::unreal::PointSet::Type::Tree;
+            else if (PointType == "Grass") PointSet.PointType = zeno::unreal::PointSet::Type::Grass;
+
+            std::shared_ptr<AssetWrapperInZeno> WrapperPtr = std::make_shared<AssetWrapperInZeno>();
+            WrapperPtr->Data = std::move(PointSet);
+            set_output("PointSet", WrapperPtr);
+        }
+    };
+
     struct SaveAssetBundle : public INode {
         void apply() override {
             std::shared_ptr<AssetWrapperInZeno> asset_bundle = get_input<AssetWrapperInZeno>("asset_bundle");
@@ -468,6 +489,18 @@ namespace zeno {
                     {"Bundle"},
                     {"string", "GUID"}
                 },
+                {},
+                {"Unreal"},
+            });
+
+        ZENDEFNODE(
+            CreatePointSet,
+            {
+                {
+                    {"Prim"},
+                    {"enum Misc Tree Grass", "PointType", "Misc"},
+                },
+                { "PointSet" },
                 {},
                 {"Unreal"},
             });
