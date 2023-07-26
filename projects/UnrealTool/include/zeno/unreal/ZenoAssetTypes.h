@@ -44,7 +44,8 @@ namespace zeno::unreal {
             ByteArray,
             struct LandscapeData,
             struct AssetBundle,
-            struct PngTextureData
+            struct PngTextureData,
+            struct PointSet
         >
     ;
 
