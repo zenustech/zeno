@@ -60,6 +60,7 @@ private slots:
     void onSearchEdited(const QString& content);
     void onMenuActionTriggered(QAction* pAction);
     void onNewSubgraph();
+    void onPageListClicked();
 
 private:
     void initUI();
