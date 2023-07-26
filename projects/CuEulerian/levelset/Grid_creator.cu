@@ -261,6 +261,135 @@ ZENDEFNODE(ZSVDBToSparseGrid, {/* inputs: */
                                /* category: */
                                {"Eulerian"}});
 
+struct ZSAdaptiveGridToVDB : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoAdaptiveGrid>("AdaptiveGrid");
+        auto attr = get_input2<std::string>("Attribute");
+        auto VDBGridClass = get_input2<std::string>("VDBGridClass");
+        auto VDBGridName = get_input2<std::string>("VDBGridName");
+
+        if (attr.empty())
+            attr = "sdf";
+
+        auto &ag = zs_grid->ag;
+
+        auto attrTag = src_tag(zs_grid, attr);
+        auto num_ch = ag.getPropertySize(attrTag);
+        if (VDBGridClass == "STAGGERED" && num_ch != 3) {
+            throw std::runtime_error("The size of Attribute is not 3 when grid_type is STAGGERED!");
+        }
+
+        if (num_ch == 3) {
+            auto vdb_ = zs::convert_adaptive_grid_to_float3grid(ag, attrTag, VDBGridName);
+            auto vdb_grid = std::make_shared<VDBFloat3Grid>();
+            vdb_grid->m_grid = vdb_.as<openvdb::Vec3fGrid::Ptr>();
+
+            set_output("VDB", vdb_grid);
+        } else {
+            zs::u32 gridClass = 0;
+            if (VDBGridClass == "UNKNOWN")
+                gridClass = 0;
+            else if (VDBGridClass == "LEVEL_SET")
+                gridClass = 1;
+            else if (VDBGridClass == "FOG_VOLUME")
+                gridClass = 2;
+
+            auto vdb_ = zs::convert_adaptive_grid_to_floatgrid(ag, attrTag, gridClass, VDBGridName);
+
+            auto vdb_grid = std::make_shared<VDBFloatGrid>();
+            vdb_grid->m_grid = vdb_.as<openvdb::FloatGrid::Ptr>();
+
+            set_output("VDB", vdb_grid);
+        }
+    }
+};
+
+ZENDEFNODE(ZSAdaptiveGridToVDB, {/* inputs: */
+                                 {"AdaptiveGrid",
+                                  {"string", "Attribute", ""},
+                                  {"enum UNKNOWN LEVEL_SET FOG_VOLUME STAGGERED", "VDBGridClass", "LEVEL_SET"},
+                                  {"string", "VDBGridName", "AdaptiveGrid"}},
+                                 /* outputs: */
+                                 {"VDB"},
+                                 /* params: */
+                                 {},
+                                 /* category: */
+                                 {"Eulerian"}});
+
+struct ZSVDBToAdaptiveGrid : INode {
+    void apply() override {
+        auto vdb = get_input<VDBGrid>("VDB");
+        auto attr = get_input2<std::string>("Attribute");
+        if (attr.empty())
+            attr = "sdf";
+
+        if (has_input("AdaptiveGrid")) {
+#if 0
+            auto zs_grid = get_input<ZenoAdaptiveGrid>("AdaptiveGrid");
+            auto &ag = zs_grid->ag;
+
+            int num_ch;
+            if (vdb->getType() == "FloatGrid")
+                num_ch = 1;
+            else if (vdb->getType() == "Vec3fGrid")
+                num_ch = 3;
+            else
+                throw std::runtime_error("Input VDB must be a FloatGrid or Vec3fGrid!");
+
+            auto attrTag = src_tag(zs_grid, attr);
+            if (ag.hasProperty(attrTag)) {
+                if (num_ch != ag.getPropertySize(attrTag)) {
+                    throw std::runtime_error(fmt::format("The channel number of [{}] doesn't match!", attr));
+                }
+            } else {
+                ag.append_channels(zs::cuda_exec(), {{attrTag, num_ch}});
+            }
+
+            if (num_ch == 1) {
+                auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
+                zs::assign_floatgrid_to_sparse_grid(vdb_->m_grid, ag, attrTag);
+            } else {
+                auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
+                zs::assign_float3grid_to_sparse_grid(vdb_->m_grid, ag, attrTag);
+            }
+
+            set_output("AdaptiveGrid", zs_grid);
+#else
+            throw std::runtime_error("openvdb grid assigning to zs adaptive grid not yet implemented");
+#endif
+        } else {
+            ZenoAdaptiveGrid::ag_t ag;
+
+            auto vdbType = vdb->getType();
+            if (vdbType == "FloatGrid") {
+                auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
+                ag = zs::convert_floatgrid_to_adaptive_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0},
+                                                            attr);
+            } else if (vdbType == "Vec3fGrid") {
+                auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
+                ag = zs::convert_float3grid_to_adaptive_grid(vdb_->m_grid, zs::MemoryHandle{zs::memsrc_e::device, 0},
+                                                             attr);
+            } else {
+                throw std::runtime_error("Input VDB must be a FloatGrid or Vec3fGrid!");
+            }
+
+            auto zsSPG = std::make_shared<ZenoAdaptiveGrid>();
+            zsSPG->ag = std::move(ag);
+
+            set_output("AdaptiveGrid", zsSPG);
+        }
+    }
+};
+
+ZENDEFNODE(ZSVDBToAdaptiveGrid, {/* inputs: */
+                                 {"VDB", "AdaptiveGrid", {"string", "Attribute", ""}},
+                                 /* outputs: */
+                                 {"AdaptiveGrid"},
+                                 /* params: */
+                                 {},
+                                 /* category: */
+                                 {"Eulerian"}});
+
 struct ZSGridVoxelSize : INode {
     void apply() override {
         auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
