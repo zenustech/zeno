@@ -7,14 +7,31 @@
 #include <filesystem>
 #include <sstream>
 #include <cctype>
+#ifdef __linux__
+#include <unistd.h>
+#include <stdio.h>
+#endif
 
 namespace zeno {
 namespace {
 
+std::string modelsDir() {
+#ifdef __linux__
+    char path[1024];
+    getcwd(path, sizeof(path));
+    auto cur_path = std::string(path);
+#else
+    auto cur_path = std::string(_pgmptr);
+    cur_path = cur_path.substr(0, cur_path.find_last_of("\\"));
+#endif
+    return cur_path + "\\models";
+}
+
 struct LoadSampleModel : INode {
     virtual void apply() override {
         auto name = get_input2<std::string>("name");
-        auto dir = getAssetDir(MODELS_DIR, name + ".obj");
+        //auto dir = getAssetDir(MODELS_DIR, name + ".obj");
+        auto dir = getAssetDir(modelsDir(), name + ".obj");  //temp fix for zeno-727 release
         log_info("found sample model path [{}]", dir);
         set_output("prim", getThisGraph()->callTempNode("ReadObjPrim", {
             {"triangulate:", objectFromLiterial(get_input2<bool>("triangulate"))},
@@ -62,7 +79,8 @@ struct LoadStringPrim : INode {
                 std::ostringstream ss;
                 ss << "ascii/" << std::setw(3) << std::setfill('0') << c << ".obj";
                 //printf("asdasd %s\n", ss.str().c_str());
-                auto path = getAssetDir(MODELS_DIR, ss.str());
+                //auto path = getAssetDir(MODELS_DIR, ss.str());
+                auto path = getAssetDir(modelsDir(), ss.str());  //temp fix for zeno-727 release
                 if (!std::filesystem::exists(path)) {
                     zeno::log_warn("LoadStringPrim got ASCII char not printable: {}", c);
                     continue;
