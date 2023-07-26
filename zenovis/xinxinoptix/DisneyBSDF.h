@@ -690,7 +690,7 @@ namespace DisneyBSDF{
 
               vec3 wm = normalize(wi + wo);
               float F = BRDFBasics::DielectricFresnel(abs(dot(wm, wo)), entering?ior:1.0/ior);
-              vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, vec3(F) * specular * 0.5f,
+              vec3 s = BRDFBasics::EvalMicrofacetReflection(ax, ay, wo, wi, wm, vec3(F) * specular,
                                             tmpPdf) * glassWt;
               sterm = sterm + s;
               f = f + s;
