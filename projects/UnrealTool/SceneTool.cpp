@@ -1,8 +1,8 @@
 #include "zeno/core/INode.h"
 #include "zeno/core/defNode.h"
+#include "zeno/types/DictObject.h"
 #include "zeno/types/PrimitiveObject.h"
 #include "zeno/types/UserData.h"
-#include "zeno/types/DictObject.h"
 #include "zeno/utils/logger.h"
 
 #include "zeno/unreal/UnrealTool.h"
@@ -21,10 +21,10 @@
         return;                                 \
     }
 
-#define CHECK_PTR_RET(ARG)                          \
+#define CHECK_PTR_RET(ARG)                      \
     if (!ARG) {                                 \
         zeno::log_error("null pointer: " #ARG); \
-        return {};                                 \
+        return {};                              \
     }
 
 namespace zeno {
@@ -135,7 +135,7 @@ namespace zeno {
         png_set_IHDR(png_ptr, info_ptr, Width, Height, BitDepth, ColorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
         png_set_write_fn(
             png_ptr, (void *) &buffer, [](png_structp png_ptr, png_bytep data, png_size_t length) {
-                auto* pBuffer = (std::vector<uint8_t> *) png_get_io_ptr(png_ptr);
+                auto *pBuffer = (std::vector<uint8_t> *) png_get_io_ptr(png_ptr);
                 pBuffer->insert(pBuffer->end(), data, data + length);
             },
             nullptr);
@@ -239,7 +239,7 @@ namespace zeno {
 
             std::optional<zeno::unreal::ByteArray> Array;
             if (type == "HeightField") {
-                const auto& heights = prim->verts.attr<float>(channel);
+                const auto &heights = prim->verts.attr<float>(channel);
 
                 std::vector<uint16_t> image_data;
                 image_data.reserve(heights.size());
@@ -265,7 +265,7 @@ namespace zeno {
                 return;
             }
             auto PngPtr = std::make_shared<AssetWrapperInZeno>();
-            auto& PngBuffer = std::get<zeno::unreal::PngTextureData>(PngPtr->Data = zeno::unreal::PngTextureData{});
+            auto &PngBuffer = std::get<zeno::unreal::PngTextureData>(PngPtr->Data = zeno::unreal::PngTextureData{});
             PngBuffer.Buffer = std::move(Array.value());
             PngBuffer.Width = nx;
             PngBuffer.Height = ny;
@@ -280,7 +280,7 @@ namespace zeno {
             const std::string nx_channel = get_input2<std::string>("NxUserDataChannel");
             const std::string ny_channel = get_input2<std::string>("NyUserDataChannel");
 
-            const auto& heights = prim->verts.attr<float>(channel);
+            const auto &heights = prim->verts.attr<float>(channel);
 
             std::vector<uint16_t> image_data;
             image_data.reserve(heights.size());
@@ -289,7 +289,7 @@ namespace zeno {
             }
 
             auto WrapperPtr = std::make_shared<AssetWrapperInZeno>();
-            auto& HeightField = std::get<zeno::unreal::LandscapeData>(WrapperPtr->Data = zeno::unreal::LandscapeData{});
+            auto &HeightField = std::get<zeno::unreal::LandscapeData>(WrapperPtr->Data = zeno::unreal::LandscapeData{});
             HeightField.Width = prim->userData().get2<int>(nx_channel);
             HeightField.Height = prim->userData().get2<int>(ny_channel);
             HeightField.HeightField = std::move(image_data);
@@ -308,7 +308,7 @@ namespace zeno {
                 return;
             }
 
-            auto& LandscapeData = std::get<zeno::unreal::LandscapeData>(WrapperPtr->Data);
+            auto &LandscapeData = std::get<zeno::unreal::LandscapeData>(WrapperPtr->Data);
             LandscapeData.BaseColorTextureRef.Guid = guid;
 
             set_output("LandscapeData", WrapperPtr);
@@ -321,8 +321,8 @@ namespace zeno {
             std::map<std::string, std::shared_ptr<AssetWrapperInZeno>> asset_map = dict->get<AssetWrapperInZeno>();
 
             std::shared_ptr<AssetWrapperInZeno> wrapper = std::make_shared<AssetWrapperInZeno>();
-            zeno::unreal::AssetBundle& Bundle = std::get<zeno::unreal::AssetBundle>(wrapper->Data = zeno::unreal::AssetBundle{});
-            for (const std::pair<std::string, std::shared_ptr<AssetWrapperInZeno>>& pair: asset_map) {
+            zeno::unreal::AssetBundle &Bundle = std::get<zeno::unreal::AssetBundle>(wrapper->Data = zeno::unreal::AssetBundle{});
+            for (const std::pair<std::string, std::shared_ptr<AssetWrapperInZeno>> &pair: asset_map) {
                 if (pair.second) {
                     // Bundle.Push(pair.second->Data);
                     Bundle.Assets[pair.first] = pair.second->Data;
@@ -343,7 +343,7 @@ namespace zeno {
                 return;
             }
 
-            zeno::unreal::AssetBundle& Bundle = std::get<zeno::unreal::AssetBundle>(BundleWrapper->Data);
+            zeno::unreal::AssetBundle &Bundle = std::get<zeno::unreal::AssetBundle>(BundleWrapper->Data);
             std::string guid = Bundle.Push(AssetWrapper->Data);
 
             set_output("Bundle", BundleWrapper);
@@ -355,16 +355,18 @@ namespace zeno {
         void apply() override {
             std::string PointType = get_input2<std::string>("PointType");
             std::shared_ptr<PrimitiveObject> prim = get_input2<PrimitiveObject>("Prim");
-            auto& posList = prim->verts;
+            auto &posList = prim->verts;
 
             zeno::unreal::PointSet PointSet;
             PointSet.Points.reserve(posList.size());
-            for (const auto& pos: posList) {
+            for (const auto &pos: posList) {
                 PointSet.Points.push_back(pos);
             }
             if (PointType == "Misc") PointSet.PointType = zeno::unreal::PointSet::Type::Misc;
-            else if (PointType == "Tree") PointSet.PointType = zeno::unreal::PointSet::Type::Tree;
-            else if (PointType == "Grass") PointSet.PointType = zeno::unreal::PointSet::Type::Grass;
+            else if (PointType == "Tree")
+                PointSet.PointType = zeno::unreal::PointSet::Type::Tree;
+            else if (PointType == "Grass")
+                PointSet.PointType = zeno::unreal::PointSet::Type::Grass;
 
             std::shared_ptr<AssetWrapperInZeno> WrapperPtr = std::make_shared<AssetWrapperInZeno>();
             WrapperPtr->Data = std::move(PointSet);
@@ -388,14 +390,69 @@ namespace zeno {
             }
 
             zeno::unreal::ByteArray Buffer;
-            auto& Bundle = std::get<zeno::unreal::AssetBundle>(asset_bundle->Data);
+            auto &Bundle = std::get<zeno::unreal::AssetBundle>(asset_bundle->Data);
             alpaca::serialize<alpaca::options::with_checksum>(Bundle, Buffer);
 
             // Save to file
-            FILE* fd = fopen(output_path.c_str(), "wb");
+            FILE *fd = fopen(output_path.c_str(), "wb");
             CHECK_PTR(fd);
             fwrite(Buffer.data(), 1, Buffer.size(), fd);
             fclose(fd);
+        }
+    };
+
+    struct ResampleToUnrealLandscape : public INode {
+        void apply() override {
+            std::shared_ptr<PrimitiveObject> OldPrim = get_input2<PrimitiveObject>("Prim");
+            std::shared_ptr<zeno::PrimitiveObject> Prim =
+                std::make_shared<zeno::PrimitiveObject>();
+            zeno::vec3f Scale = get_input2<zeno::vec3f>("Scale");
+            const std::string channel = get_input2<std::string>("HeightChannel");
+            const std::string nx_channel = get_input2<std::string>("NxUserDataChannel");
+            const std::string ny_channel = get_input2<std::string>("NyUserDataChannel");
+
+            const auto &heights = OldPrim->verts.attr<float>(channel);
+
+            std::vector<uint16_t> image_data;
+            image_data.reserve(heights.size());
+            for (const auto height: heights) {
+                image_data.push_back(MapHeightDataF32ToU16(height));
+            }
+
+            auto Nx = OldPrim->userData().get2<int32_t>(nx_channel);
+            auto Ny = OldPrim->userData().get2<int32_t>(ny_channel);
+
+            const float centerX = (float) Nx * Scale[0] * 0.5f;
+            const float centerY = (float) Ny * Scale[1] * 0.5f;
+
+            Prim->verts.reserve(Nx * Ny);
+            for (int y = 0; y < Ny; y++) {
+                for (int x = 0; x < Nx; x++) {
+                    Prim->verts.push_back(
+                        {(float) x * Scale[0] - centerX, 0.0f, (float) y * Scale[1] - centerY});
+                }
+            }
+
+            Prim->tris.reserve((Nx - 1) * (Ny - 1) * 6);
+            for (int y = 0; y < Ny - 1; y++) {
+                for (int x = 0; x < Nx - 1; x++) {
+                    Prim->tris.push_back({y * Nx + x, y * Nx + x + 1, (y + 1) * Nx + x});
+                    Prim->tris.push_back(
+                        {y * Nx + x + 1, (y + 1) * Nx + x + 1, (y + 1) * Nx + x});
+                }
+            }
+
+            auto &Arr = Prim->verts.add_attr<float>("height");
+            size_t Idx = 0;
+            for (const auto Height: image_data) {
+                Arr[Idx] = ((float) Height - 0x8000) * UE_LANDSCAPE_ZSCALE *
+                           Scale[2];// ((float)Height - MidValue) * LANDSCAPE_ZSCALE
+                Prim->verts[Idx] = {Prim->verts[Idx].at(0), Arr[Idx],
+                                    Prim->verts[Idx].at(2)};
+                Idx++;
+            }
+
+            set_output("Prim", Prim);
         }
     };
 
@@ -436,9 +493,7 @@ namespace zeno {
                     {"string", "NxUserDataChannel", "nx"},
                     {"string", "NyUserDataChannel", "ny"},
                 },
-                {
-                    {"LandscapeData"}
-                },
+                {{"LandscapeData"}},
                 {},
                 {"Unreal"},
             });
@@ -451,9 +506,7 @@ namespace zeno {
                     {"string", "channel", "clr"},
                     {"enum HeightField vec3f", "type", "vec3f"},
                 },
-                {
-                    {"pngTexture"}
-                },
+                {{"pngTexture"}},
                 {},
                 {"Unreal"},
             });
@@ -465,9 +518,7 @@ namespace zeno {
                     {"LandscapeData"},
                     {"string", "guidRef"},
                 },
-                {
-                    {"LandscapeData"}
-                },
+                {{"LandscapeData"}},
                 {},
                 {"Unreal"},
             });
@@ -478,9 +529,7 @@ namespace zeno {
                 {
                     {"dict", "AssetData"},
                 },
-                {
-                    {"Bundle"}
-                },
+                {{"Bundle"}},
                 {},
                 {"Unreal"},
             });
@@ -492,10 +541,8 @@ namespace zeno {
                     {"Bundle"},
                     {"Asset"},
                 },
-                {
-                    {"Bundle"},
-                    {"string", "GUID"}
-                },
+                {{"Bundle"},
+                 {"string", "GUID"}},
                 {},
                 {"Unreal"},
             });
@@ -507,7 +554,7 @@ namespace zeno {
                     {"Prim"},
                     {"enum Misc Tree Grass", "PointType", "Misc"},
                 },
-                { "PointSet" },
+                {"PointSet"},
                 {},
                 {"Unreal"},
             });
@@ -524,6 +571,23 @@ namespace zeno {
                 {"Unreal"},
             });
 
-    }
+        ZENDEFNODE(
+            ResampleToUnrealLandscape,
+            {
+                {
+                    {"Prim"},
+                    {"vec3f", "Scale"},
+                    {"string", "HeightChannel", "height"},
+                    {"string", "NxUserDataChannel", "nx"},
+                    {"string", "NyUserDataChannel", "ny"},
+                },
+                {
+                    {"Prim"},
+                },
+                {},
+                {"Unreal"},
+            });
+
+    }// namespace
 
 }// namespace zeno
