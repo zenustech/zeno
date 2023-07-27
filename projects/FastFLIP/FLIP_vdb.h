@@ -173,7 +173,8 @@ struct FLIP_vdb {
     openvdb::FloatGrid::Ptr &liquid_sdf,
     openvdb::FloatGrid::Ptr &solid_sdf,
     openvdb::Vec3fGrid::Ptr &solid_velocity,
-    float density, float viscosity, float dt);
+    openvdb::FloatGrid::Ptr &viscosity_grid,
+    float density, float dt);
 
   static void field_add_vector(packed_FloatGrid3 &velocity_field,
                                float x, float y, float z, float dt);

@@ -34,6 +34,7 @@ public slots:
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void onSetSafeFrames(bool bLock, int nx, int ny);
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
+    void onSetLoopPlaying(bool enbale);
 
 private:
 
@@ -81,6 +82,7 @@ signals:
     void sig_setSafeFrames(bool bLock, int nx, int ny);
     void sig_cancelRecording();
     void sig_setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
+    void sig_setLoopPlaying(bool enable);
 
 public slots:
     void onFrameRunFinished(int frame);

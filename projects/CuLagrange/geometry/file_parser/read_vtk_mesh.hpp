@@ -126,9 +126,12 @@ namespace zeno {
                 if(j != 2 || nm_points_read != (numberofpoints - 1))
                     bufferp = find_next_numeric(bufferp,buffer,fp,&line_count);
 
+                
             }
-            // printf("\n");
+            // printf("points[%d] at line[%d] : (%f %f %f)\n",nm_points_read,line_count,(float)verts[nm_points_read][0],(float)verts[nm_points_read][1],(float)verts[nm_points_read][2]);
             nm_points_read++;
+            // printf("\n");
+            
         }
         return true;
     }
@@ -143,7 +146,7 @@ namespace zeno {
 
         int nm_cells_read = 0;
 
-        // printf("numberofcells : %d\n",numberofcells);
+        printf("numberofcells : %d\n",numberofcells);
 
         while(nm_cells_read < numberofcells){
             bufferp = readline(buffer,fp,&line_count);
@@ -592,19 +595,21 @@ namespace zeno {
                 continue;
             }
             if(!strcmp(id,"POINTS")){
-                printf("reading points\n");
+                printf("reading points %d\n",line_count);
                 int numberofpoints = 0;
                 sscanf(line,"%s %d %s",id,&numberofpoints,dummy_str);
                 printf("number of points %d\n",numberofpoints);
                 parsing_verts_coord(fp,prim->verts,numberofpoints,line_count);
+                printf("finish reading points %d\n",line_count);
                 continue;
             }
             if(!strcmp(id,"CELLS")){
-                printf("reading cells\n");
+                printf("reading cells %d\n",line_count);
                 int numberofcells = 0;
                 int numberofdofs = 0;
                 sscanf(line,"%s %d %d",id,&numberofcells,&numberofdofs);
                 simplex_size = numberofdofs/numberofcells - 1;
+                printf("simplex_size %d\n",simplex_size);
                 if(simplex_size == 4)
                     parsing_cells_topology<4>(fp,prim->quads,numberofcells,line_count);
                 else if(simplex_size == 3)
@@ -616,25 +621,28 @@ namespace zeno {
                 continue;
             }            
             if(!strcmp(id,"CELL_TYPES")){
-                printf("reading cell types\n");
+                printf("reading cell types %d\n",line_count);
                 int numberofcells = 0;
                 sscanf(line,"%s %d",id,&numberofcells);
                 printf("number of cell types : %d\n",numberofcells);
                 bufferp = readline(line,fp,&line_count);
                 if(numberofcells > 0){
-                    int type = strtol(bufferp,&bufferp,0);
-                    if(type != VTK_TETRA && simplex_size == 4){
-                        printf("non-tetra cell detected on line %d parsing cell types with simplex size = 4\n",line_count);
-                        fclose(fp);
-                        return false;
-                    }else if(type != VTK_TRIANGLE && simplex_size == 3) {
-                        printf("non-triangle cell detected on line %d parsing cell types with simplex size = 3\n",line_count);
-                        fclose(fp);
-                        return false;                        
+                    for(int i = 0;i != numberofcells;++i) {
+                        int type = strtol(bufferp,&bufferp,0);
+                        if(type != VTK_TETRA && simplex_size == 4){
+                            printf("non-tetra cell detected on line %d parsing cell types with simplex size = 4\n",line_count);
+                            fclose(fp);
+                            return false;
+                        }else if(type != VTK_TRIANGLE && simplex_size == 3) {
+                            printf("non-triangle cell detected on line %d parsing cell types with simplex size = 3\n",line_count);
+                            fclose(fp);
+                            return false;                        
+                        }
+                        if(i+1 != numberofcells)
+                            bufferp = find_next_numeric(bufferp,line,fp,&line_count);
                     }
-                    bufferp = find_next_numeric(bufferp,line,fp,&line_count);
                 }
-                printf("finish cell type check\n");
+                printf("finish cell type check at %d\n",line_count);
                 continue;
             }
 

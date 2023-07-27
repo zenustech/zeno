@@ -186,6 +186,11 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     return true;
 }
 
+void OptixWorker::onSetLoopPlaying(bool enbale)
+{
+    m_zenoVis->setLoopPlaying(enbale);
+}
+
 void OptixWorker::stop()
 {
     m_pTimer->stop();
@@ -269,6 +274,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
     connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
+    connect(this, &ZOptixViewport::sig_setLoopPlaying, m_worker, &OptixWorker::onSetLoopPlaying);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();

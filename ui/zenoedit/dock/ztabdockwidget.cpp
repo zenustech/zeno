@@ -21,6 +21,7 @@
 #include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
 #include "viewport/optixviewport.h"
+#include "timeline/ztimeline.h"
 
 #include "launch/ztcpserver.h"
 
@@ -79,6 +80,13 @@ ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
                     view->setIsCurrent(false);
                 }
                 dpview->setIsCurrent(true);
+                if (Zenovis* vis = dpview->getZenoVis())    //sync loopPlaying setting to timeline
+                {
+                    if (ZTimeline* timeline = main->timeline())
+                    {
+                        timeline->setLoopPlayingStatus(vis->isLoopPlaying());
+                    }
+                }
             }
         }
         });
