@@ -574,9 +574,12 @@ size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
         auto cnorm = compute_average_edge_length(pol,verts,xtag,tris);
         cnorm *= 3;
 
+        auto max_intersections = intersect_buffers.size();
+
         pol(zs::range(halfedges.size()),[
             exec_tag,
             nmIts = proxy<space>(nmIts),
+            max_intersections = max_intersections,
             halfedges = proxy<space>({},halfedges),/*'to_vertex' 'to_face' 'opposite_he' 'next_he'*/
             verts = proxy<space>({},verts),
             nm_verts = verts.size(),
@@ -641,10 +644,12 @@ size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
                         // LSL_GEO::tri_ray_intersect_d<double>(eV[0],eV[1],tV[0],tV[1],tV[2],r);
                         if(LSL_GEO::tri_ray_intersect_d<double>(eV[0],eV[1],tV[0],tV[1],tV[2],r)) {
                             auto offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                            if(offset >= max_intersections)
+                                return;
                             auto intp = r * dir + eV[0];
                             intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{hei,ti}.reinterpret_bits(float_c);
                             intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
-                            intersect_buffers("r",offset) = r;
+                            intersect_buffers("r",offset) = (T)r;
 
                             // make sure the opposite he - tri pairs are also inserted
                             // auto opposite_hei = zs::reinterpret_bits<int>(halfedges("opposite_he",hei));
@@ -661,6 +666,10 @@ size_t retrieve_self_intersection_tri_halfedge_list_info(Pol& pol,
         });
 
         // std::cout << "initialize corner_idx : " << nmIts.getVal(0) << std::endl;
+
+        if(nmIts.getVal(0) >= max_intersections) {
+            throw std::runtime_error("max_size_of_intersections buffer reach");
+        }
 
         pol(zs::range(nmIts.getVal(0)),[
             intersect_buffers = proxy<space>({},intersect_buffers),
@@ -702,11 +711,11 @@ int do_global_self_intersection_analysis(Pol& pol,
     const PosTileVec& verts,
     const zs::SmallString& xtag,
     const TriTileVec& tris,
-    const HalfEdgeTileVec& halfedges,
+    HalfEdgeTileVec& halfedges,
     GIA_TILEVEC& gia_res,
     GIA_TILEVEC& tris_gia_res,
     // zs::bht<int,2,int>& conn_of_first_ring,
-    size_t max_nm_intersections = 10000) {
+    size_t max_nm_intersections = 50000) {
         using namespace zs;
         using T = typename PosTileVec::value_type;
         using index_type = std::make_signed_t<int>;
@@ -731,13 +740,15 @@ int do_global_self_intersection_analysis(Pol& pol,
                 {"pair",2},
                 {"int_points",3},
                 {"r",1},
+                {"is_broken",1}
             },max_nm_intersections};
 
-        // if(!halfedges.hasProperty("broken"))
-        //     halfedges.append_channels(pol,{{"broken",1}});
-        // TILEVEC_OPS::fill(pol,halfedges,"broken",(T)0.0);
+        if(!halfedges.hasProperty("broken"))
+            halfedges.append_channels(pol,{{"broken",1}});
+        TILEVEC_OPS::fill(pol,halfedges,"broken",(T)0.0);
         
         auto nm_insts = retrieve_self_intersection_tri_halfedge_list_info(pol,verts,xtag,tris,halfedges,ints_buffer);
+        TILEVEC_OPS::fill(pol,ints_buffer,"is_broken",(T)0);
         table_vec2i_type cftab{ints_buffer.get_allocator(),(size_t)nm_insts};
         cftab.reset(pol,true);
         zs::Vector<int> cfbuffer{ints_buffer.get_allocator(),(size_t)nm_insts};  
@@ -812,7 +823,9 @@ int do_global_self_intersection_analysis(Pol& pol,
 
 
                         printf("do_global_self_intersection_analysis::impossible reaching here, the hi and ohi should both have been inserted %f %f %f\n",(float)hr,(float)ohr,(float)ints_buffer("r",isi));
+                        ints_buffer("is_broken",isi) = (T)1.0;
                         atomic_add(exec_tag,&nmInvalid[0],(int)1);
+                        return;
                     }
                 }
                 auto corner_idx = zs::reinterpret_bits<int>(ints_buffer("corner_idx",isi));
@@ -845,12 +858,15 @@ int do_global_self_intersection_analysis(Pol& pol,
                 }
 
                 printf("do_global_self_intersection_analysis::impossible reaching here with broken insertion ring %f\n",(float)ints_buffer("r",isi));
+                ints_buffer("is_broken",isi) = (T)1.0;
                 atomic_add(exec_tag,&nmInvalid[0],(int)1);
         });
 
         auto nmInvalidCount = nmInvalid.getVal(0);
         if(nmInvalidCount > 0)
-            throw std::runtime_error("SELF GIA invalid state detected");
+            printf("SELF GIA invalid state detected\n");
+        // there might be some broken rings
+
 
         auto nmEntries = incidentItsTab.size();
         zs::Vector<zs::vec<int,2>> conn_topo{tris.get_allocator(),nmEntries};
@@ -862,7 +878,40 @@ int do_global_self_intersection_analysis(Pol& pol,
 
         auto nm_rings = mark_disconnected_island(pol,conn_topo,ringTag);
 
-        std::cout << "finish Mark disconnected island with nm_rings : " << nm_rings << std::endl;
+        zs::Vector<int> is_broken_rings{ringTag.get_allocator(),(size_t)nm_rings};
+        pol(zs::range(is_broken_rings),[] ZS_LAMBDA(auto& is_br) mutable {is_br = 0;});
+        pol(zs::range(nm_insts),[ringTag = proxy<space>(ringTag),is_broken_rings = proxy<space>(is_broken_rings),ints_buffer = proxy<space>({},ints_buffer)] ZS_LAMBDA(int isi) mutable {
+            if(ints_buffer("is_broken",isi) > (T)0.5) {
+                auto ring_id = ringTag[isi];
+                is_broken_rings[ring_id] = 1;
+            }
+        });
+
+        std::cout << "broken_ring_tag : ";
+        for(int i = 0;i != nm_rings;++i)
+            std::cout << is_broken_rings.getVal(i) << "\t";
+        std::cout << std::endl;
+
+        // std::cout << "finish Mark disconnected island with nm_rings : " << nm_rings << std::endl;
+
+        auto ring_mask_width = (nm_rings + 31) / 32;
+
+        gia_res.resize(verts.size() * ring_mask_width);
+        pol(zs::range(gia_res.size()),[gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int mi) mutable {
+            // nodal_colors[ni] = 0;
+            gia_res("ring_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            gia_res("color_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            gia_res("type_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            gia_res("is_loop_vertex",mi) = zs::reinterpret_bits<T>((int)0);
+        });
+        tris_gia_res.resize(tris.size() * ring_mask_width);
+        pol(zs::range(tris_gia_res.size()),[tris_gia_res = proxy<space>({},tris_gia_res)] ZS_LAMBDA(int mi) mutable {
+            // nodal_colors[ni] = 0;
+            tris_gia_res("ring_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            tris_gia_res("color_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            tris_gia_res("type_mask",mi) = zs::reinterpret_bits<T>((int)0);
+            // tris_gia_res("is_loop_vertex",ti) = zs::reinterpret_bits<T>((int)0);
+        });
 
         // return nm_rings;
 
@@ -879,24 +928,13 @@ int do_global_self_intersection_analysis(Pol& pol,
                 atomic_add(exec_tag,&ringSize[ringTag[isi]],(int)1);
         });
 
+        // pol(zs::range(nm_rings),[ringSize = proxy<space>(ringSize),is_broken_rings = proxy<space>(is_broken_rings)] ZS_LAMBDA(int ri) mutable {
+        //     if(is_broken_rings[ri])
+        //         ringSize[ri] = 0;
+        // });
+
         zs::Vector<int> island_buffer{verts.get_allocator(),verts.size()};
         
-        gia_res.resize(verts.size());
-        pol(zs::range(verts.size()),[gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int ni) mutable {
-            // nodal_colors[ni] = 0;
-            gia_res("ring_mask",ni) = zs::reinterpret_bits<T>((int)0);
-            gia_res("color_mask",ni) = zs::reinterpret_bits<T>((int)0);
-            gia_res("type_mask",ni) = zs::reinterpret_bits<T>((int)0);
-            gia_res("is_corner",ni) = zs::reinterpret_bits<T>((int)0);
-        });
-        tris_gia_res.resize(tris.size());
-        pol(zs::range(tris.size()),[tris_gia_res = proxy<space>({},tris_gia_res)] ZS_LAMBDA(int ti) mutable {
-            // nodal_colors[ni] = 0;
-            tris_gia_res("ring_mask",ti) = zs::reinterpret_bits<T>((int)0);
-            tris_gia_res("color_mask",ti) = zs::reinterpret_bits<T>((int)0);
-            tris_gia_res("type_mask",ti) = zs::reinterpret_bits<T>((int)0);
-            // tris_gia_res("is_corner",ti) = zs::reinterpret_bits<T>((int)0);
-        });
 
         zs::Vector<zs::vec<int,2>> edge_topos{tris.get_allocator(),tris.size() * 3};
         pol(range(tris.size()),[
@@ -917,8 +955,17 @@ int do_global_self_intersection_analysis(Pol& pol,
 
         for(int ri = 0;ri != nm_rings;++ri) {
             auto rsize = (size_t)ringSize.getVal(ri);
+            // if(rsize == 0)
+            //     continue;
+            auto is_broken_ring = is_broken_rings.getVal(ri);
+            if(is_broken_ring)
+                continue;
             // if(output_intermediate_information)
-            printf("ring[%d] Size : %d\n",ri,rsize);
+            // printf("ring[%d] Size : %d\n",ri,rsize);
+
+
+            int cur_ri_mask = 1 << (ri % 32);
+            int ri_offset = ri / 32;
 
             // edge_topo_type dc_edge_topos{tris.get_allocator(),rsize * 6};
             table_int_type disable_points{tris.get_allocator(),rsize * 8};
@@ -931,6 +978,9 @@ int do_global_self_intersection_analysis(Pol& pol,
                 ringTag = proxy<space>(ringTag),
                 // output_intermediate_information,
                 ri,
+                cur_ri_mask = cur_ri_mask,
+                ri_offset = ri_offset,
+                ring_mask_width = ring_mask_width,
                 halfedges = proxy<space>({},halfedges),
                 // topo_tag = zs::SmallString(topo_tag),
                 // dc_edge_topos = proxy<space>(dc_edge_topos),
@@ -949,11 +999,11 @@ int do_global_self_intersection_analysis(Pol& pol,
                     auto ti = pair[1];
 
                     int cur_ri_mask = 1 << ri;
-                    auto tring_mask = zs::reinterpret_bits<int>(tris_gia_res("ring_mask",ti));
+                    auto tring_mask = zs::reinterpret_bits<int>(tris_gia_res("ring_mask",ti * ring_mask_width + ri_offset));
                     tring_mask |= cur_ri_mask;
-                    tris_gia_res("ring_mask",ti) = zs::reinterpret_bits<T>(tring_mask);
+                    tris_gia_res("ring_mask",ti * ring_mask_width + ri_offset) = zs::reinterpret_bits<T>(tring_mask);
 
-                    // halfedges("broken",hi) = (T)1.0;
+                    halfedges("broken",hi) = (T)1.0;
                     // auto ti = pair[1];
                     // auto type = zs::reinterpret_bits<int>(ints_buffer("type",isi));
 
@@ -990,7 +1040,7 @@ int do_global_self_intersection_analysis(Pol& pol,
                     // }
                     auto corner_idx = zs::reinterpret_bits<int>(ints_buffer("corner_idx",isi));
                     if(corner_idx >= 0){
-                        gia_res("is_corner",corner_idx) = (T)1.0;
+                        gia_res("is_loop_vertex",corner_idx * ring_mask_width + ri_offset) = (T)1.0;
                         disable_points.insert(corner_idx);
                     }
 
@@ -1029,7 +1079,7 @@ int do_global_self_intersection_analysis(Pol& pol,
                 // });
                 // std::cout << "size of conn_of_first_ring : " << conn_of_first_ring.size() << std::endl;
             // }
-            std::cout << "ring[" << ri << "] : " << nm_islands << "\tnm_broken_edges : " << disable_lines.size() << "\tnm_broken_corners : " << disable_points.size() << std::endl;
+            // std::cout << "ring[" << ri << "] : " << nm_islands << "\tnm_broken_edges : " << disable_lines.size() << "\tnm_broken_corners : " << disable_points.size() << std::endl;
 
 
             zs::Vector<int> nm_cmps_every_island_count{verts.get_allocator(),(size_t)nm_islands};
@@ -1038,15 +1088,17 @@ int do_global_self_intersection_analysis(Pol& pol,
                 nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int i) mutable {
                     nm_cmps_every_island_count[i] = 0;
             });
+
+            // it is a really bad idea to use mustExclude here, as this tag might no be locally significant
             pol(zs::range(verts.size()),[
                 exec_tag,
                 verts = proxy<space>({},verts),
                 island_buffer = proxy<space>(island_buffer),
                 nm_cmps_every_island_count = proxy<space>(nm_cmps_every_island_count)] ZS_LAMBDA(int vi) mutable {
                     auto island_idx = island_buffer[vi];
-                    if(verts.hasProperty("mustExclude"))
-                        if(verts("mustExclude",vi) > (T)0.5)
-                            return; 
+                    // if(verts.hasProperty("mustExclude"))
+                    //     if(verts("mustExclude",vi) > (T)0.5)
+                    //         return; 
                     atomic_add(exec_tag,&nm_cmps_every_island_count[island_idx],(int)1);
             });
 
@@ -1070,18 +1122,22 @@ int do_global_self_intersection_analysis(Pol& pol,
                     break;
                 }
             }
-            auto cur_ri_mask = (int)1 << ri;
+
+
+            // auto cur_ri_mask = (int)1 << ri;
 
 
             for(int i = 0;i != nm_islands;++i)
                 std::cout << nm_cmps_every_island_count.getVal(i) << "\t";
-            std::cout << "max_island = " << max_island_idx << std::endl;
+            // std::cout << "max_island = " << max_island_idx << std::endl;
             // std::cout << std::endl;
 
             pol(zs::range(verts.size()),[
                 gia_res = proxy<space>({},gia_res),
                 nm_islands,
                 cur_ri_mask,
+                ri_offset = ri_offset,
+                ring_mask_width = ring_mask_width,
                 black_island_idx,
                 exec_tag,
                 // ints_types = proxy<space>(ints_types),
@@ -1091,9 +1147,9 @@ int do_global_self_intersection_analysis(Pol& pol,
                     if(island_idx == max_island_idx)
                         return;
                     // might exceed the integer range
-                    auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",vi));
-                    auto color_mask = zs::reinterpret_bits<int>(gia_res("color_mask",vi));
-                    auto type_mask = zs::reinterpret_bits<int>(gia_res("type_mask",vi));
+                    auto ring_mask = zs::reinterpret_bits<int>(gia_res("ring_mask",vi * ring_mask_width + ri_offset));
+                    auto color_mask = zs::reinterpret_bits<int>(gia_res("color_mask",vi * ring_mask_width + ri_offset));
+                    auto type_mask = zs::reinterpret_bits<int>(gia_res("type_mask",vi * ring_mask_width + ri_offset));
                     // ring_mask += ((int) << ri)
 
                     // if(island_idx != max_island_idx/* || ints_types[island_idx] == 1*/){
@@ -1103,20 +1159,23 @@ int do_global_self_intersection_analysis(Pol& pol,
                         type_mask |= cur_ri_mask;
                     if(nm_islands == 3 && island_idx == black_island_idx)
                         color_mask |= cur_ri_mask;
-                    gia_res("ring_mask",vi) = zs::reinterpret_bits<T>(ring_mask);
-                    gia_res("color_mask",vi) = zs::reinterpret_bits<T>(color_mask);
-                    gia_res("type_mask",vi) = zs::reinterpret_bits<T>(type_mask);
+                    gia_res("ring_mask",vi * ring_mask_width + ri_offset) = zs::reinterpret_bits<T>(ring_mask);
+                    gia_res("color_mask",vi * ring_mask_width + ri_offset) = zs::reinterpret_bits<T>(color_mask);
+                    gia_res("type_mask",vi * ring_mask_width + ri_offset) = zs::reinterpret_bits<T>(type_mask);
             });
         }
 
         pol(zs::range(gia_res.size()),[
-            gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int vi) mutable {
-                auto is_corner = gia_res("is_corner",vi);
-                if(is_corner > (T)0.5)
-                    gia_res("ring_mask",vi) = zs::reinterpret_bits<T>((int)0);
+            // ring_mask_width = ring_mask_width,
+            gia_res = proxy<space>({},gia_res)] ZS_LAMBDA(int mi) mutable {
+                // for(int i = 0;i != ring_mask_width;++i) {
+                    auto is_corner = gia_res("is_loop_vertex",mi);
+                    if(is_corner > (T)0.5)
+                        gia_res("ring_mask",mi) = zs::reinterpret_bits<T>((int)0);
+                // }
         });
 
-        return nm_rings;
+        return ring_mask_width;
 }
 
 template<typename Pol,typename PosTileVec,typename TriTileVec,typename InstTileVec>
@@ -2050,8 +2109,8 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                     tri_pairs[1] = tris.pack(dim_c<3>,topo_tag,tb,int_c);
 
                     for(int t = 0;t != 2;++t) {
-                        zs::vec<int,2> out_edges[3] = {};
-                        elm_to_edges(tri_pairs[t],out_edges);
+                        // zs::vec<int,2> out_edges[3] = {};
+                        auto out_edges = elm_to_edges(tri_pairs[t]);
                         for(int i = 0;i != 3;++i) {
                             auto a = out_edges[i][0];
                             auto b = out_edges[i][1];
@@ -2231,10 +2290,16 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
             edge_A[0] = tri_A[(local_vert_id_A + 0) % 3];
             edge_A[1] = tri_A[(local_vert_id_A + 1) % 3];
 
-            // auto ohei_A = zs::reinterpret_bits<int>(halfedges_A("opposite_he",hei_A));
+            auto ohei_A = zs::reinterpret_bits<int>(halfedges_A("opposite_he",hei_A));
 
-            // if(edge_A[0] > edge_A[1] && ohei_A >= 0)
-            //     return;
+            if(edge_A[0] > edge_A[1] && ohei_A >= 0)
+                return;
+
+            // if(edge_A[0] > edge_A[1]) {
+            //     auto tmp = edge_A[0];
+            //     edge_A[0] = edge_A[1];
+            //     edge_A[1] = tmp;
+            // }
 
             vec3 eV_A[2] = {}; 
             for(int i = 0;i != 2;++i)
@@ -2261,12 +2326,12 @@ int retrieve_intersection_tri_halfedge_info_of_two_meshes(Pol& pol,
                         intersect_buffers("r",offset) = (T)r;
                         // make sure the opposite he - tri pairs are also inserted
                         // auto opposite_hei_A = zs::reinterpret_bits<int>(halfedges_A("opposite_he",hei_A));
-                        // if(opposite_hei_A >= 0) {
-                        //     offset = atomic_add(exec_tag,&nmIts[0],(int)1);
-                        //     intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{opposite_hei_A,ti_B}.reinterpret_bits(float_c);
-                        //     intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
-                        //     intersect_buffers("r",offset) = (T)(1 - r);
-                        // }
+                        if(ohei_A >= 0) {
+                            offset = atomic_add(exec_tag,&nmIts[0],(int)1);
+                            intersect_buffers.tuple(dim_c<2>,"pair",offset) = zs::vec<int,2>{ohei_A,ti_B}.reinterpret_bits(float_c);
+                            intersect_buffers.tuple(dim_c<3>,"int_points",offset) = intp;
+                            intersect_buffers("r",offset) = (T)(1 - r);
+                        }
                     }
                 }                    
             };
@@ -3175,7 +3240,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                                 if(a2b_isi + _A_offset > na2b_isi + _A_offset)
                                     incidentItsTab.insert(vec2i{a2b_isi + _A_offset,na2b_isi + _A_offset});
                             }else {
-                                printf("impossible reaching here, the hi and ohi should both have been inserted\n");
+                                printf("do_global_intersection_analysis_with_connected_manifolds_new::impossible reaching here, the hi and ohi should both have been inserted\n");
                                 atomic_add(exec_tag,&nmInvalid[0],(int)1);
                             }
                         }
@@ -3203,7 +3268,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                             }
                             hb = zs::reinterpret_bits<int>(_B_halfedges("next_he",hb));
                         }
-                        printf("impossible reaching here, the intersection ring seems to be broken\n");
+                        printf("do_global_intersection_analysis_with_connected_manifolds_new::impossible reaching here, the intersection ring seems to be broken\n");
                         atomic_add(exec_tag,&nmInvalid[0],(int)1);
                 });
         };

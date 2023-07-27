@@ -687,4 +687,61 @@ ZENDEFNODE(BuildSurfFacetTetraNeighboring, {{{"zsparticles"}},
 							},
 							{"ZSGeometry"}});
 
+struct DoTopogicalColoring : zeno::INode {
+	virtual void apply() override {
+			using namespace zs;
+			using vec2i = zs::vec<int, 2>;
+			using vec3i = zs::vec<int, 3>;
+			using vec4i = zs::vec<int, 4>;
+
+			auto cudaPol = zs::cuda_exec();
+			constexpr auto space = zs::execspace_e::cuda;
+
+			auto zsparticles = get_input<ZenoParticles>("zsparticles");
+			const auto& verts = zsparticles->getParticles();
+			auto& elms = zsparticles->getQuadraturePoints();
+			// auto& tris = (*zsparticles)[ZenoParticles::s_surfTriTag];
+			// const auto& tets = zsparticles->getQuadraturePoints();
+			auto cdim = elms.getPropertySize("inds");
+			auto color_tag = get_param<std::string>("colorTag");
+
+			if(!elms.hasProperty(color_tag))
+				elms.append_channels(cudaPol,{{color_tag,1}});
+
+			zs::Vector<vec4i> topos{elms.get_allocator(),elms.size()};
+			cudaPol(zs::range(elms.size()),[
+				elms = proxy<space>({},elms),
+				cdim,
+				topos = proxy<space>(topos)] ZS_LAMBDA(int ti) mutable {
+					topos[ti] = vec4i::uniform(-1);
+					for(int i = 0;i != cdim;++i) {
+						topos[ti][i] = zs::reinterpret_bits<int>(elms("inds",i,ti));
+					}
+			});
+
+			zs::Vector<float> colors{elms.get_allocator(),elms.size()};
+			std::cout << "do topological coloring" << std::endl;
+			topological_coloring(cudaPol,topos,colors);
+			std::cout << "finish topological coloring" << std::endl;
+
+			cudaPol(zs::range(elms.size()),[
+				elms = proxy<space>({},elms),
+				color_tag = zs::SmallString(color_tag),
+				colors = proxy<space>(colors)] ZS_LAMBDA(int ei) mutable {
+					elms(color_tag,ei) = colors[ei];	
+			});
+
+			set_output("zsparticles",zsparticles);
+	}
+};
+
+ZENDEFNODE(DoTopogicalColoring, {{{"zsparticles"}},
+							{
+								{"zsparticles"}
+							},
+							{
+								{"string","colorTag","colorTag"}
+							},
+							{"ZSGeometry"}});
+
 };

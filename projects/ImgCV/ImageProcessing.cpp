@@ -2295,8 +2295,8 @@ ZENDEFNODE(ImageShape, {
 struct ImageLevels: INode {
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
-        auto inputLevels = get_input2<vec2f>("Input Levels") / 255.0f;
-        auto outputLevels = get_input2<vec2f>("Output Levels") / 255.0f;
+        auto inputLevels = get_input2<vec2f>("Input Levels");
+        auto outputLevels = get_input2<vec2f>("Output Levels");
         auto gamma = get_input2<float>("gamma");//range  0.01 - 9.99
         auto channel = get_input2<std::string>("channel");
         UserData &ud = image->userData();
@@ -2368,9 +2368,9 @@ struct ImageLevels: INode {
 ZENDEFNODE(ImageLevels, {
     {
         {"image"},
-        {"vec2f", "Input Levels", "0, 255"},
+        {"vec2f", "Input Levels", "0, 1"},
         {"float", "gamma", "1"},
-        {"vec2f", "Output Levels", "0, 255"},
+        {"vec2f", "Output Levels", "0, 1"},
         //{"bool", "auto level", "false"}, //auto level
         {"enum RGB R G B", "channel", "RGB"},
     },

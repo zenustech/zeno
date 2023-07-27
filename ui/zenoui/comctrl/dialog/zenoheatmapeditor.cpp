@@ -4,6 +4,7 @@
 #include <zenoui/nodesys/zenosvgitem.h>
 #include <zenomodel/include/uihelper.h>
 #include "zassert.h"
+#include "zeno/utils/vec.h"
 
 
 ZenoRampSelector::ZenoRampSelector(ZenoRampBar* pRampBar, QGraphicsItem* parent)
@@ -355,8 +356,8 @@ void SVColorView::mouseMoveEvent(QMouseEvent* event)
 void SVColorView::updateColorByMouse(const QPointF& pos)
 {
 	qreal m_H = m_color.hueF();
-	qreal m_S = pos.x() / this->width();
-	qreal m_V = 1 - pos.y() / this->height();
+	qreal m_S = zeno::clamp(pos.x() / this->width(), qreal(0), qreal(1));
+	qreal m_V = zeno::clamp(1 - pos.y() / this->height(), qreal(0), qreal(1));
 	setColor(QColor::fromHsvF(m_H, m_S, m_V));
 }
 

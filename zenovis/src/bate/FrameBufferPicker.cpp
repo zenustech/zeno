@@ -481,11 +481,11 @@ struct FrameBufferPicker : IPicker {
 
         string result;
         if (scene->select_mode == zenovis::PICK_OBJECT) {
-            if (!pixel.has_object()) return "";
+            if (!pixel.has_object() || !id_table.count(pixel.obj_id)) return "";
             result = id_table[pixel.obj_id];
         }
         else {
-            if (!pixel.has_object() || !pixel.has_element()) return "";
+            if (!pixel.has_object() || !pixel.has_element() || !id_table.count(pixel.obj_id)) return "";
             result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id - 1);
         }
 
@@ -517,8 +517,8 @@ struct FrameBufferPicker : IPicker {
 
         // read pixels
         int pixel_count = rect_w * rect_h;
-        auto* pixels = new PixelInfo[pixel_count];
-        CHECK_GL(glReadPixels(start_x, start_y, rect_w, rect_h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels));
+        std::vector<PixelInfo> pixels(pixel_count);
+        CHECK_GL(glReadPixels(start_x, start_y, rect_w, rect_h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels.data()));
 
         // output buffer to image
 //        auto* img_pixels = new PixelInfo[w * h];
