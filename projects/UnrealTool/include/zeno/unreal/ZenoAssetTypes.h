@@ -83,6 +83,8 @@ namespace zeno::unreal {
     };
 
     struct LandscapeData {
+        uint32_t Width = 0;
+        uint32_t Height = 0;
         std::vector<uint16_t> HeightField;
         TransformComponent Transform;
         SoftDataReference BaseColorTextureRef;

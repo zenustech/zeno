@@ -276,7 +276,9 @@ namespace zeno {
     struct ExtractVertexHeightField : public INode {
         void apply() override {
             std::shared_ptr<PrimitiveObject> prim = get_input2<PrimitiveObject>("prim");
-            std::string channel = get_input2<std::string>("HeightChannel");
+            const std::string channel = get_input2<std::string>("HeightChannel");
+            const std::string nx_channel = get_input2<std::string>("NxUserDataChannel");
+            const std::string ny_channel = get_input2<std::string>("NyUserDataChannel");
 
             const auto& heights = prim->verts.attr<float>(channel);
 
@@ -288,7 +290,10 @@ namespace zeno {
 
             auto WrapperPtr = std::make_shared<AssetWrapperInZeno>();
             auto& HeightField = std::get<zeno::unreal::LandscapeData>(WrapperPtr->Data = zeno::unreal::LandscapeData{});
+            HeightField.Width = prim->userData().get2<int>(nx_channel);
+            HeightField.Height = prim->userData().get2<int>(ny_channel);
             HeightField.HeightField = std::move(image_data);
+
             set_output("LandscapeData", WrapperPtr);
         }
     };
@@ -428,6 +433,8 @@ namespace zeno {
                 {
                     {"prim"},
                     {"string", "HeightChannel", "height"},
+                    {"string", "NxUserDataChannel", "nx"},
+                    {"string", "NyUserDataChannel", "ny"},
                 },
                 {
                     {"LandscapeData"}
