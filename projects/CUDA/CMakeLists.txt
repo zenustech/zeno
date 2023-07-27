@@ -28,9 +28,6 @@ target_include_directories(zshelper INTERFACE
 )
 target_link_libraries(zshelper INTERFACE zensim ZFX)
 target_compile_features(zshelper INTERFACE cuda_std_17)
-target_compile_options(zpc_cuda_deps
-  INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:-arch=sm_${ZS_CUDA_ARCH}>
-)
 
 target_link_options(zeno
   PRIVATE $<DEVICE_LINK:-dlto>
@@ -38,10 +35,12 @@ target_link_options(zeno
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PRIVATE zshelper)
 
-#[=[
 target_sources(zeno PRIVATE
-  test1.cu
+  #test1.cu
+  test.cu
+  test.cpp
 )
+#[=[
 #]=]
 set_target_properties(zeno
   PROPERTIES
