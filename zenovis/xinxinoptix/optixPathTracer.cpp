@@ -55,7 +55,7 @@
 #include <zeno/utils/vec.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/utils/orthonormal.h>
-#include <unordered_map>
+#include <filesystem>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -1645,8 +1645,19 @@ void optixinit( int argc, char* argv[] )
 #endif
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
                                        1.0, 0.0, 6500.0);
-    xinxinoptix::using_hdr_sky(false);
+    xinxinoptix::using_hdr_sky(true);
     xinxinoptix::show_background(false);
+    std::string parent_path;
+    auto cur_path = std::filesystem::current_path().string();
+    if (zeno::ends_with(cur_path, "bin")) {
+        parent_path = std::filesystem::current_path().parent_path().parent_path().string();
+    }
+    else {
+        parent_path = cur_path;
+    }
+    OptixUtil::sky_tex = parent_path + "/hdr/studio_small_08_1k.hdr";
+    OptixUtil::addTexture(OptixUtil::sky_tex.value());
+    xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
 
 
