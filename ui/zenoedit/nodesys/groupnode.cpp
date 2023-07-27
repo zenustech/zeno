@@ -335,7 +335,11 @@ void GroupNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
     if (m_bDragging) {
         m_bDragging = false;
         updateBlackboard();
-        updateNodePos(scenePos());
+        QPointF oldPos = index().data(ROLE_OBJPOS).toPointF();
+        if (oldPos == scenePos())
+            emit nodePosChangedSignal(); //update childitems
+        else
+            updateNodePos(scenePos());
         return;
     } 
 }

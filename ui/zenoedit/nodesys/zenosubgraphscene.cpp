@@ -1026,7 +1026,7 @@ void ZenoSubGraphScene::onRowsInserted(const QModelIndex& subgIdx, const QModelI
             GroupNode *pGroup = dynamic_cast<GroupNode *>(pNode);
             pGroup->resize(rect.size());
             pGroup->updateBlackboard();
-            pGroup->setPos(rect.topLeft());
+            pGroup->updateNodePos(rect.topLeft(), false);
             for (auto item : selectedItems()) 
             {
                 ZenoNode *pChildNode = dynamic_cast<ZenoNode *>(item);
