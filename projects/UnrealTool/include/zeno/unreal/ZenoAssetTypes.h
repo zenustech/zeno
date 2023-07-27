@@ -63,9 +63,9 @@ namespace zeno::unreal {
      * Contains the transform of an entity
      */
     struct TransformComponent {
-        Vector3f Position;
-        Vector3f Rotation;
-        Vector3f Scale;
+        Vector3f Position = {1.0f};
+        Vector3f Rotation = {1.0f};
+        Vector3f Scale = {1.0f};
     };
 
     ////////////////////////////////////////////////////////////
