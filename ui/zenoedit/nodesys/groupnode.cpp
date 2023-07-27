@@ -376,7 +376,11 @@ void GroupNode::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
     if (m_bDragging) {
         m_bDragging = false;
         updateBlackboard();
-        updateNodePos(scenePos());
+        QPointF oldPos = index().data(ROLE_OBJPOS).toPointF();
+        if (oldPos == scenePos())
+            emit nodePosChangedSignal(); //update childitems
+        else
+            updateNodePos(scenePos());
         return;
     } 
 }
@@ -438,8 +442,19 @@ bool GroupNode::isDragArea(QPointF pos) {
 void GroupNode::updateBlackboard() {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
-    info.sz = this->size();
-    info.title = m_pTextItem->text();
+    bool bUpdate = false;
+    if (info.sz != this->size())
+    {
+        info.sz = this->size();
+        bUpdate = true;
+    }
+    if (info.title != m_pTextItem->text())
+    {
+        info.title = m_pTextItem->text();
+        bUpdate = true;
+    }
+    if (!bUpdate)
+        return;
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), true);
