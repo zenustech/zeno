@@ -35,7 +35,13 @@ QString ZCacheMgr::cachePath() const
 {
     if (m_bTempDir)
     {
-        return m_spTmpCacheDir->path();
+        if (m_spTmpCacheDir)
+        {
+            return m_spTmpCacheDir->path();
+        }
+        else {
+            return "";
+        }
     }
     else
     {

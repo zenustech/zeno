@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "zwidgetostream.h"
+#include "cache/zcachemgr.h"
 #include <zeno/utils/scope_exit.h>
 
 class GraphsManagment;
@@ -22,6 +23,7 @@ public:
     void initStyleSheets();
     ZenoMainWindow* getMainWindow();
 	QWidget* getWindow(const QString& objName);
+    std::shared_ptr<ZCacheMgr> cacheMgr() const;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer* getServer();
 #endif
@@ -35,6 +37,7 @@ private:
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer* m_server;
 #endif
+    std::shared_ptr<ZCacheMgr> m_spCacheMgr;
     QDir m_appDataPath;
 };
 

@@ -1612,6 +1612,10 @@
         <source>The path of cache is invalid, please choose another path.</source>
         <translation type="unfinished"></translation>
     </message>
+	<message>
+        <source>Cache information was deleted during recording.</source>
+        <translation type="unfinished">录制过程已删除缓存信息</translation>
+    </message>
 </context>
 <context>
     <name>ZTextureBar</name>

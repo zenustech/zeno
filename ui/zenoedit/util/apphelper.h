@@ -12,6 +12,7 @@
 #include <viewport/viewportwidget.h>
 #include "launch/corelaunch.h"
 #include "settings/zsettings.h"
+#include "viewport/recordvideomgr.h"
 
 class AppHelper
 {
@@ -23,7 +24,9 @@ public:
     static QString nativeWindowTitle(const QString& currentFilePath);
     static void socketEditFinished(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
     static void modifyLightData(QPersistentModelIndex nodeIdx);
+    static VideoRecInfo getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param);
     static void initLaunchCacheParam(LAUNCH_PARAM& param);
+    static bool openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam);
     static QVector<QString> getKeyFrameProperty(const QVariant &val);
     static bool getCurveValue(QVariant & val);
     static bool updateCurve(QVariant oldVal, QVariant& val);

@@ -8,7 +8,11 @@
 #include "launch/corelaunch.h"
 
 class ViewportWidget;
+#ifdef ZENO_OPTIX_PROC
+class ZOptixProcViewport;
+#else
 class ZOptixViewport;
+#endif
 class CameraKeyframeWidget;
 
 class DisplayWidget : public QWidget
@@ -39,7 +43,11 @@ public:
     bool isCameraMoving() const;
     bool isPlaying() const;
     bool isGLViewport() const;
+#ifdef ZENO_OPTIX_PROC
+    ZOptixProcViewport* optixViewport() const;
+#else
     ZOptixViewport* optixViewport() const;
+#endif
     void killOptix();
     void moveToFrame(int frame);
     void setIsCurrent(bool isCurrent);
@@ -60,17 +68,23 @@ public slots:
     void onRunFinished();
     void onCommandDispatched(int actionType, bool bTriggered);
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
+    void onMouseHoverMoved();
 
 signals:
     void frameUpdated(int new_frame);
     void frameRunFinished(int frame);
+    void optixProcStartRecord();
 
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
 
     ViewportWidget* m_glView;
+#ifdef ZENO_OPTIX_PROC
+    ZOptixProcViewport* m_optixView;
+#else
     ZOptixViewport* m_optixView;
+#endif
     CameraKeyframeWidget* m_camera_keyframe;
     QTimer* m_pTimer;
     RecordVideoMgr m_recordMgr;

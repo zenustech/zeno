@@ -106,6 +106,24 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
             emit sig_recordCanceled();
             return;
         }
+#ifdef ZENO_OPTIX_PROC
+        QString cachePath = QString::fromStdString(zeno::getSession().globalComm->cachePath());
+        QString frameDir = cachePath + "/" + QString::number(1000000 + frame).right(6);
+        if (!QDir(frameDir).exists())
+        {
+            QThread::sleep(0);
+            continue;
+        }
+        QString sLockFile = QString("%1/zcache_%2.lock").arg(cachePath).arg(frame);
+        QLockFile lckFile(sLockFile);
+        bool ret = lckFile.tryLock();
+        if (!ret)
+        {
+            QThread::sleep(0);
+            continue;
+        }
+        lckFile.unlock();
+#endif
         bool bSucceed = recordFrame_impl(recInfo, frame);
         if (bSucceed)
         {

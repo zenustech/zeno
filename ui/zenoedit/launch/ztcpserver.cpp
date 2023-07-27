@@ -1,6 +1,9 @@
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
+#include <cstdio>
+#include <cstring>
 #include "ztcpserver.h"
 #include <zeno/extra/GlobalState.h>
+#include <zeno/extra/GlobalComm.h>
 #include <zeno/utils/log.h>
 #include <QMessageBox>
 #include <zeno/zeno.h>
@@ -12,15 +15,19 @@
 #include "zenoapplication.h"
 #include "cache/zcachemgr.h"
 #include "zenomainwindow.h"
+#include "viewport/displaywidget.h"
 #include <zeno/zeno.h>
 #include <zeno/extra/GlobalComm.h>
-
+#include "common.h"
+#include <zenomodel/include/uihelper.h>
+#include "util/apphelper.h"
 
 ZTcpServer::ZTcpServer(QObject *parent)
     : QObject(parent)
     , m_tcpServer(nullptr)
-    , m_tcpSocket(nullptr)
+    , m_optixServer(nullptr)
     , m_port(0)
+    , m_tcpSocket(nullptr)
 {
 }
 
@@ -78,7 +85,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
             QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
             return;
         }
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir);
         ZASSERT_EXIT(ret);
@@ -117,6 +124,194 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
 
     connect(m_proc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+#ifdef ZENO_OPTIX_PROC
+    //finally we need to send the cache path to the seperate optix process.
+    sendCacheRenderInfoToOptix(finalPath, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly);
+#endif
+}
+
+void ZTcpServer::startOptixCmd(const ZENO_RECORD_RUN_INITPARAM& param)
+{
+    zeno::log_info("launching optix program...");
+
+    auto optixProc = std::make_unique<QProcess>();
+    //optixProc->start(QCoreApplication::applicationFilePath(), args);
+
+    if (!optixProc->waitForStarted(-1)) {
+        zeno::log_warn("optix process failed to get started, giving up");
+        return;
+    }
+
+    connect(optixProc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
+    connect(optixProc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+}
+
+void ZTcpServer::onOptixNewConn()
+{
+    ZASSERT_EXIT(m_optixServer);
+    QLocalSocket* socket = m_optixServer->nextPendingConnection();
+    connect(socket, &QLocalSocket::readyRead, this, [=]() {
+        while (socket->canReadLine()) {
+            QByteArray content = socket->readLine();
+            rapidjson::Document doc;
+            doc.Parse(content);
+            if (doc.IsObject()) {
+                ZASSERT_EXIT(doc.HasMember("action"));
+                const QString& action(doc["action"].GetString());
+                if (action == "runBeforRecord") {
+                    ZASSERT_EXIT(doc["launchparam"].IsObject());
+                    const auto& param = doc["launchparam"];
+                    ZASSERT_EXIT(param.HasMember("beginFrame") && param.HasMember("endFrame"));
+                    auto pGraphsMgr = zenoApp->graphsManagment();
+                    ZASSERT_EXIT(pGraphsMgr);
+                    IGraphsModel* pModel = pGraphsMgr->currentModel();
+                    ZASSERT_EXIT(pModel);
+                    LAUNCH_PARAM lparam;
+                    lparam.beginFrame = param["beginFrame"].GetInt();
+                    lparam.endFrame = param["endFrame"].GetInt();
+                    AppHelper::initLaunchCacheParam(lparam);
+                    launchProgram(pModel, lparam);
+                }else if (action == "removeCache")
+                {
+                    ZASSERT_EXIT(doc.HasMember("frame"));
+                    int frame = doc["frame"].GetInt();
+                    zeno::getSession().globalComm->removeCache(frame);
+                }
+                else if (action == "clrearFrameState")
+                {
+                    QString cachepath = QString::fromStdString(zeno::getSession().globalComm->cachePath());
+                    QDir dir(cachepath);
+                    if (dir.exists() && dir.isEmpty()) {
+                        zeno::log_info("remove dir: {}", cachepath.toStdString());
+                        dir.rmdir(cachepath);
+                    }
+                    zeno::getSession().globalComm->clearFrameState();
+                    QMessageBox msgBox(QMessageBox::Information, "", tr("Cache information was deleted during recording."));
+                    msgBox.exec();
+                }
+            }
+        }
+        });
+    m_optixSockets.append(socket);
+    initializeNewOptixProc();
+    connect(socket, &QLocalSocket::disconnected, this, [=]() {
+        m_optixSockets.removeOne(socket);
+    });
+}
+
+void ZTcpServer::sendCacheRenderInfoToOptix(const QString& finalCachePath, int cacheNum, bool applyLightAndCameraOnly, bool applyMaterialOnly)
+{
+    QString renderKey = QString("{\"applyLightAndCameraOnly\":%1, \"applyMaterialOnly\":%2}").arg(applyLightAndCameraOnly).arg(applyMaterialOnly);
+    QString objKey = QString("{\"cachedir\":\"%1\", \"cachenum\":%2}").arg(finalCachePath).arg(cacheNum);
+    QString info = QString("{\"action\":\"initCache\", \"key\":%2, \"render\":%3}\n").arg(objKey).arg(renderKey);
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::onInitFrameRange(const QString& action, int frameStart, int frameEnd)
+{
+    if (!m_optixServer || m_optixSockets.isEmpty())
+        return;
+
+    QString info = QString("{\"action\":\"%1\", \"beginFrame\":%2, \"endFrame\":%3}\n").arg(action).arg(frameStart).arg(frameEnd);
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::onClearFrameState()
+{
+    QString info = QString("{\"action\":\"clearFrameState\"}\n");
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::onFrameStarted(const QString& action, const QString& keyObj)
+{
+    bool bOK = false;
+    int frame = keyObj.toInt(&bOK);
+    ZASSERT_EXIT(bOK);
+    QString info = QString("{\"action\":\"%1\", \"key\":%2}\n").arg(action).arg(frame);
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::onFrameFinished(const QString& action, const QString& keyObj)
+{
+    bool bOK = false;
+    int frame = keyObj.toInt(&bOK);
+    ZASSERT_EXIT(bOK);
+    QString info = QString("{\"action\":\"%1\", \"key\":%2}\n").arg(action).arg(frame);
+    dispatchPacketToOptix(info);
+}
+
+void ZTcpServer::dispatchPacketToOptix(const QString& info)
+{
+    if (m_optixServer) {
+        for (QLocalSocket* pSocket : m_optixSockets) {
+            pSocket->write(info.toUtf8());
+        }
+    }
+}
+
+void ZTcpServer::initializeNewOptixProc()
+{
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    auto& globalComm = zeno::getSession().globalComm;
+    sendCacheRenderInfoToOptix(mgr->cachePath(), globalComm->maxCachedFramesNum(), false, false);
+    onInitFrameRange(QString::fromStdString("frameRange"), globalComm->frameRange().first, globalComm->frameRange().second);
+    QString frameRunningState = QString("{\"action\":\"frameRunningState\", \"initializedFrames\":%1, \"finishedFrame\":%2}\n").arg(globalComm->numOfInitializedFrame()).arg(globalComm->numOfFinishedFrame());
+    dispatchPacketToOptix(frameRunningState);
+}
+
+void ZTcpServer::startOptixProc()
+{
+    zeno::log_info("launching optix program...");
+
+    static const QString sessionID = UiHelper::generateUuid("zenooptix");
+    if (!m_optixServer) {
+        m_optixServer = new QLocalServer(this);
+        m_optixServer->listen(sessionID);
+        connect(m_optixServer, &QLocalServer::newConnection, this, &ZTcpServer::onOptixNewConn);
+    }
+
+    auto optixProc = std::make_unique<QProcess>();
+    //optixProc->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+    //optixProc->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+    //optixProc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+
+    //check whether there is cached result.
+    auto& globalComm = zeno::getSession().globalComm;
+    int nRunFrames = globalComm->numOfFinishedFrame();
+    auto mainWin = zenoApp->getMainWindow();
+    auto pair = globalComm->frameRange();
+
+    QStringList args = {
+        "-optix", QString::number(0),
+        "-port", QString::number(m_port),
+        "-cachedir", QString::fromStdString(globalComm->cacheFramePath),
+        "-cachenum", QString::number(globalComm->maxCachedFramesNum()),
+        "-beginFrame", QString::number(pair.first),
+        "-endFrame", QString::number(pair.second),
+        "-finishedFrames", QString::number(nRunFrames),
+        "-sessionId", sessionID,
+    };
+
+    //open a new console to show log from optix.
+    /*
+    optixProc->setCreateProcessArgumentsModifier([](QProcess::CreateProcessArguments* args) {
+        args->flags |= CREATE_NEW_CONSOLE;
+        args->startupInfo->dwFlags &= ~STARTF_USESTDHANDLES;
+    });
+    */
+
+    optixProc->start(QCoreApplication::applicationFilePath(), args);
+
+    if (!optixProc->waitForStarted(-1)) {
+        zeno::log_warn("optix process failed to get started, giving up");
+        return;
+    }
+
+    connect(optixProc.get(), SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(onProcFinished(int, QProcess::ExitStatus)));
+    connect(optixProc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
+
+    m_optixProcs.push_back(std::move(optixProc));
 }
 
 void ZTcpServer::killProc()
@@ -158,10 +353,11 @@ void ZTcpServer::onReadyRead()
 
 void ZTcpServer::onProcPipeReady()
 {
-    if (!m_proc) {
+    QProcess* proc = qobject_cast<QProcess*>(sender());
+    if (!proc) {
         return;
     }
-    QByteArray arr = m_proc->readAll();
+    QByteArray arr = proc->readAll();
     QList<QByteArray> lst = arr.split('\n');
     for (QByteArray line : lst)
     {
@@ -175,6 +371,20 @@ void ZTcpServer::onProcPipeReady()
 
 void ZTcpServer::onDisconnect()
 {
+    auto mainWin = zenoApp->getMainWindow();
+    if (mainWin)
+    {
+        QVector<DisplayWidget*> views = mainWin->viewports();
+        for (auto pDisplay : views)
+        {
+            Zenovis* pZenovis = pDisplay->getZenoVis();
+            ZASSERT_EXIT(pZenovis);
+            auto session = pZenovis->getSession();
+            ZASSERT_EXIT(session);
+            session->set_curr_frameid(0);
+        }
+    }
+
     viewDecodeFinish();
 }
 
@@ -197,8 +407,8 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
     viewDecodeFinish();
 
     auto mainWin = zenoApp->getMainWindow();
-    ZASSERT_EXIT(mainWin);
-    emit mainWin->runFinished();
+    if (mainWin)
+        emit mainWin->runFinished();
 }
 
 #endif

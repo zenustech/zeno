@@ -4,6 +4,7 @@
 #include "zenomainwindow.h"
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
+#include "zeno/utils/log.h"
 
 /* debug cutsom layout: ZGraphicsLayout */
 //#define DEBUG_ZENOGV_LAYOUT
@@ -35,12 +36,51 @@ int main(int argc, char *argv[])
     return a.exec();
 #endif
 
-    startUp();
+    if (argc >= 3 && !strcmp(argv[1], "--optixcmd")) {
+        //MessageBox(0, "optixcmd", "optixcmd", MB_OK);
+        extern int optixcmd(const QCoreApplication & app, int port);
+        int port = atoi(argv[2]);
+        startUp(false);
+        return optixcmd(a, port);
+    }
+
+    startUp(true);
 
 #ifdef ZENO_MULTIPROCESS
     if (argc >= 2 && !strcmp(argv[1], "--runner")) {
         extern int runner_main(const QCoreApplication & app);
         return runner_main(a);
+    }
+    if (argc >= 3 && !strcmp(argv[1], "-optix")) {
+        //MessageBox(0, "runner", "runner", MB_OK);
+        extern int optix_main(const QCoreApplication & app, 
+                            int port,
+                            const char* cachedir,
+                            int cachenum,
+                            int sFrame,
+                            int eFrame,
+                            int finishedFrames,
+                            const char* sessionId);
+        int port = -1;
+        if (argc >= 5 && !strcmp(argv[3], "-port"))
+            port = atoi(argv[4]);
+        char* cachedir = nullptr;
+        int cachenum = 0, sFrame = 0, eFrame = 0;
+        int finishedFrames = 0;
+        char* sessionId = nullptr;
+        if (argc >= 7 && !strcmp(argv[5], "-cachedir"))
+            cachedir = argv[6];
+        if (argc >= 9 && !strcmp(argv[7], "-cachenum"))
+            cachenum = atoi(argv[8]);
+        if (argc >= 11 && !strcmp(argv[9], "-beginFrame"))
+            sFrame = atoi(argv[10]);
+        if (argc >= 13 && !strcmp(argv[11], "-endFrame"))
+            eFrame = atoi(argv[12]);
+        if (argc >= 15 && !strcmp(argv[13], "-finishedFrames"))
+            finishedFrames = atoi(argv[14]);
+        if (argc >= 17 && !strcmp(argv[15], "-sessionId"))
+            sessionId = argv[16];
+        return optix_main(a, port, cachedir, cachenum, sFrame, eFrame, finishedFrames, sessionId);
     }
 #endif
 

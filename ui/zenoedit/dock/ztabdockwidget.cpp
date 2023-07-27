@@ -23,6 +23,7 @@
 #include "viewport/optixviewport.h"
 #include "timeline/ztimeline.h"
 
+#include "launch/ztcpserver.h"
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
     : _base(mainWin, flags)
@@ -528,6 +529,14 @@ void ZTabDockWidget::onAddTabClicked()
         QAction* pAction = new QAction(name);
         connect(pAction, &QAction::triggered, this, [=]() {
             PANEL_TYPE type = title2Type(name);
+#ifdef ZENO_OPTIX_PROC
+            if (type == PANEL_OPTIX_VIEW)
+            {
+                ZTcpServer* pServer = zenoApp->getServer();
+                pServer->startOptixProc();
+                return;
+            }
+#endif
             QWidget* wid = createTabWidget(type);
             if (wid)
             {

@@ -4,7 +4,6 @@
 #include "dock/zenodockwidget.h"
 #include <zenomodel/include/graphsmanagment.h>
 #include <zeno/extra/EventCallbacks.h>
-#include <zeno/core/Session.h>
 #include <zeno/types/GenericObject.h>
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
@@ -19,6 +18,7 @@
 #include "tmpwidgets/ztoolbar.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/optixviewport.h"
+#include "viewport/zoptixviewport.h"
 #include "viewport/zenovis.h"
 #include "zenoapplication.h"
 #include <zeno/utils/log.h>
@@ -27,7 +27,6 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zenoio/reader/zsgreader.h>
 #include <zenoio/writer/zsgwriter.h>
-#include <zeno/core/Session.h>
 #include <zenovis/DrawOptions.h>
 #include <zenomodel/include/modeldata.h>
 #include <zenoui/style/zenostyle.h>
@@ -52,7 +51,8 @@
 
 #include <zenomodel/include/zenomodel.h>
 #include <zeno/extra/GlobalStatus.h>
-#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalState.h>
+#include "launch/viewdecode.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -65,8 +65,7 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
     , m_pTimeline(nullptr)
     , m_layoutRoot(nullptr)
     , m_nResizeTimes(0)
-    , m_spCacheMgr(nullptr)
-    , m_bMovingSeparator(false)
+    , m_bOnlyOptix(false)
 {
     liveTcpServer = new LiveTcpServer(this);
     liveHttpServer = std::make_shared<LiveHttpServer>();
@@ -82,7 +81,6 @@ ZenoMainWindow::ZenoMainWindow(QWidget *parent, Qt::WindowFlags flags, PANEL_TYP
         openFile(p);
     }
 //#endif
-    m_spCacheMgr = std::make_shared<ZCacheMgr>();
 }
 
 ZenoMainWindow::~ZenoMainWindow()
@@ -140,7 +138,6 @@ void ZenoMainWindow::initWindowProperty()
         QString title = AppHelper::nativeWindowTitle(path);
         updateNativeWinTitle(title);
     });
-    connect(this, &ZenoMainWindow::dockSeparatorMoving, this, &ZenoMainWindow::onDockSeparatorMoving);
     connect(this, &ZenoMainWindow::visFrameUpdated, this, &ZenoMainWindow::onZenovisFrameUpdate);
 }
 
@@ -431,6 +428,7 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
 
     if (root->type == NT_HOR || root->type == NT_VERT)
     {
+        //skip optix view when enable ZENO_OPTIX_PROC
         ZTabDockWidget* pRight = new ZTabDockWidget(this);
         Qt::Orientation ori = root->type == NT_HOR ? Qt::Horizontal : Qt::Vertical;
         splitDockWidget(pLeft, pRight, ori);
@@ -445,6 +443,10 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
             PANEL_TYPE type = ZTabDockWidget::title2Type(tab);
             if (type != PANEL_EMPTY)
             {
+            #ifdef ZENO_OPTIX_PROC
+                if (type == PANEL_OPTIX_VIEW)
+                    type = PANEL_GL_VIEW;
+            #endif
                 pLeft->onAddTab(type);
             }
         }
@@ -476,7 +478,7 @@ void ZenoMainWindow::loadDockLayout(QString name, bool isDefault)
 {
     QString content;
     if (isDefault) 
-	{
+    {
         QJsonObject obj = readDefaultLayout();
         bool isSuccess = false;
         if (!name.isEmpty()) 
@@ -500,30 +502,30 @@ void ZenoMainWindow::loadDockLayout(QString name, bool isDefault)
             content = doc.toJson();
         }
     } 
-	else 
-	{
+    else 
+    {
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");
         settings.beginGroup(name);
         if (settings.allKeys().indexOf("content") != -1) 
-		{
+        {
             content = settings.value("content").toString();
             settings.endGroup();
             settings.endGroup();
         } 
-		else
-		{
+        else
+        {
             loadDockLayout(name, true);
             return;
         }
     }
     if (!content.isEmpty()) 
-	{
+    {
         PtrLayoutNode root = readLayout(content);
         resetDocks(root);
     } 
-	else 
-	{
+    else 
+    {
         QMessageBox msg(QMessageBox::Warning, "", tr("layout format is invalid."));
         msg.exec();
     }
@@ -568,6 +570,7 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
     {
         m_layoutRoot = std::make_shared<LayerOutNode>();
         m_layoutRoot->type = NT_ELEM;
+        m_bOnlyOptix = onlyView == PANEL_OPTIX_VIEW;
 
         ZTabDockWidget* onlyWid = new ZTabDockWidget(this);
         if (onlyView == PANEL_GL_VIEW || onlyView == PANEL_OPTIX_VIEW)
@@ -620,7 +623,7 @@ void ZenoMainWindow::initDocks(PANEL_TYPE onlyView)
     } 
     settings.endGroup();
     settings.endGroup();
-	loadDockLayout(name, false);
+    loadDockLayout(name, false);
 
     initTimelineDock();
 }
@@ -646,7 +649,7 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         m_pTimeline->togglePlayButton(false);
         int nFrame = m_pTimeline->value();
@@ -736,10 +739,10 @@ QVector<DisplayWidget*> ZenoMainWindow::viewports() const
 
 DisplayWidget* ZenoMainWindow::getCurrentViewport() const
 {
-	auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
     QVector<DisplayWidget*> vec;
-	for (ZTabDockWidget* pDock : docks)
-	{
+    for (ZTabDockWidget* pDock : docks)
+    {
         if (pDock->isVisible())
         {
             if (ZDockTabWidget* tabwidget = qobject_cast<ZDockTabWidget*>(pDock->widget()))
@@ -845,53 +848,150 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
         //viewWidget->setMinimumSize(1000, 680);
     }
 
-    bool ret = openFile(param.sZsgPath);
-    ZASSERT_EXIT(ret);
-    if (!param.subZsg.isEmpty())
-    {
-        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        for (auto subgFilepath : param.subZsg.split(","))
-        {
-            zenoApp->graphsManagment()->importGraph(subgFilepath);
-        }
-        QModelIndex mainGraphIdx = pGraphsModel->index("main");
-
-        for (QModelIndex subgIdx : pGraphsModel->subgraphsIndice())
-        {
-            QString subgName = subgIdx.data(ROLE_OBJNAME).toString();
-            if (subgName == "main" || subgName.isEmpty())
-            {
-                continue;
-            }
-            QString subgNodeId = NodesMgr::createNewNode(pGraphsModel, mainGraphIdx, subgName, QPointF(500, 500));
-            QModelIndex subgNodeIdx = pGraphsModel->index(subgNodeId, mainGraphIdx);
-            STATUS_UPDATE_INFO info;
-            info.role = ROLE_OPTIONS;
-            info.oldValue = subgNodeIdx.data(ROLE_OPTIONS).toInt();
-            info.newValue = subgNodeIdx.data(ROLE_OPTIONS).toInt() | OPT_VIEW;
-            pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
-        }
-    }
-    zeno::getSession().globalComm->clearState();
-
-    auto pGraphsMgr = zenoApp->graphsManagment();
-    ZASSERT_EXIT(pGraphsMgr);
-    IGraphsModel* pModel = pGraphsMgr->currentModel();
-    ZASSERT_EXIT(pModel);
-
     launchparam.beginFrame = recInfo.frameRange.first;
     launchparam.endFrame = recInfo.frameRange.second;
-    launchProgram(pModel, launchparam);
+
+    bool ret = AppHelper::openZsgAndRun(param, launchparam);
+    ZASSERT_EXIT(ret);
 
     DisplayWidget* pViewport = getOnlyViewport();
     ZASSERT_EXIT(pViewport);
     pViewport->onRecord_slient(recInfo);
 }
 
+void ZenoMainWindow::optixClientRun(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId)
+{
+    std::string sessionid(sessionId);
+    optixClientSocket = std::make_unique<QLocalSocket>();
+    optixClientSocket->connectToServer(QString::fromStdString(sessionid));
+    if (!optixClientSocket->waitForConnected(10000)) {
+        zeno::log_error("tcp optix client connection fail");
+        return;
+    }
+    else {
+        zeno::log_info("tcp optix client connection succeed");
+    }
+
+    connect(optixClientSocket.get(), &QLocalSocket::readyRead, this, [=]() {
+        while (optixClientSocket->canReadLine()) {
+            QByteArray content = optixClientSocket->readLine();
+            rapidjson::Document doc;
+            doc.Parse(content);
+            if (doc.IsObject()) {
+                ZASSERT_EXIT(doc.HasMember("action"));
+                const QString& action(doc["action"].GetString());
+                if (action == "initCache") {
+                    ZASSERT_EXIT(doc["key"].IsObject());
+                    const auto& keyObj = doc["key"];
+                    ZASSERT_EXIT(keyObj.HasMember("cachedir") && keyObj.HasMember("cachenum"));
+                    std::string cachedir = keyObj["cachedir"].GetString();
+                    int cacheNum = keyObj["cachenum"].GetInt();
+                    zeno::getSession().globalComm->clearState();
+                    zeno::getSession().globalComm->frameCache(cachedir, cachenum);
+
+                    const auto& renderObj = doc["render"];
+                    ZASSERT_EXIT(renderObj.HasMember("applyLightAndCameraOnly") && renderObj.HasMember("applyMaterialOnly"));
+                    bool updateLightCameraOnly = renderObj["applyLightAndCameraOnly"].GetInt();
+                    bool updateMatlOnly = renderObj["applyMaterialOnly"].GetInt();
+                    ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
+                    ZASSERT_EXIT(pMainWin);
+                    QVector<DisplayWidget*> views = pMainWin->viewports();
+                    for (auto displayWid : views) {
+                        if (!displayWid->isGLViewport()) {
+                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                        }
+                    }
+                    if (m_bOptixProcRecording)
+                    {
+                        DisplayWidget* displayWid = getOptixWidget();
+                        emit displayWid->optixProcStartRecord();
+                    }
+                }
+                else if (action == "frameRange") {
+                    ZASSERT_EXIT(doc.HasMember("beginFrame") &&
+                        doc.HasMember("endFrame") &&
+                        doc["beginFrame"].IsInt() &&
+                        doc["endFrame"].IsInt());
+                    int startFrame = doc["beginFrame"].GetInt();
+                    int endFrame = doc["endFrame"].GetInt();
+                    zeno::getSession().globalComm->initFrameRange(startFrame, endFrame);
+                    zeno::getSession().globalState->frameid = startFrame;
+                    TIMELINE_INFO timer;
+                    timer.beginFrame = startFrame;
+                    timer.endFrame = endFrame;
+                    timer.currFrame = startFrame;
+                    resetTimeline(timer);
+                }
+                else if (action == "newFrame") {
+                    ZASSERT_EXIT(doc["key"].IsInt());
+                    int frame = doc["key"].GetInt();
+                    if (!m_bOptixProcRecording)
+                    {
+                        zeno::getSession().globalComm->newFrame();
+                    }
+                    updateViewport("newFrame");
+                }
+                else if (action == "finishFrame") {
+                    ZASSERT_EXIT(doc["key"].IsInt());
+                    int frame = doc["key"].GetInt();
+                    if (!m_bOptixProcRecording)
+                    {
+                        zeno::getSession().globalComm->finishFrame();
+                    }
+                    else {
+                        if (frame == zeno::getSession().globalComm->frameRange().second)
+                        {
+                            m_bOptixProcRecording = false;
+                        }
+                    }
+                    updateViewport("finishFrame");
+                }
+                else if (action == "frameRunningState")
+                {
+                    ZASSERT_EXIT(doc.HasMember("initializedFrames") && doc.HasMember("finishedFrame"));
+                    int initializedFrames = doc["initializedFrames"].GetInt();
+                    int finishedFrame = doc["finishedFrame"].GetInt();
+                    while (zeno::getSession().globalComm->numOfInitializedFrame() < initializedFrames)
+                    {
+                        zeno::getSession().globalComm->newFrame();
+                    }
+                    while (zeno::getSession().globalComm->numOfFinishedFrame() < finishedFrame)
+                    {
+                        zeno::getSession().globalComm->finishFrame();
+                    }
+                    QVector<DisplayWidget*> views = viewports();
+                    for (DisplayWidget* view : views)
+                    {
+                        if (Zenovis* vis = view->getZenoVis())
+                        {
+                            vis->setCurrentFrameId(sFrame);
+                            vis->startPlay(false);
+                        }
+                        view->updateFrame();
+                    }
+                }else if (action == "clearFrameState")
+                {
+                    zeno::getSession().globalComm->clearFrameState();
+                }
+            }
+        }
+    });
+}
+
+void ZenoMainWindow::optixClientSend(QString& info)
+{
+    optixClientSocket->write(info.toUtf8());
+}
+
+void ZenoMainWindow::optixClientStartRec()
+{
+    m_bOptixProcRecording = true;
+}
+
 void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
 {
-	auto& pGlobalComm = zeno::getSession().globalComm;
-	ZASSERT_EXIT(pGlobalComm);
+    auto& pGlobalComm = zeno::getSession().globalComm;
+    ZASSERT_EXIT(pGlobalComm);
 
     ZASSERT_EXIT(m_layoutRoot->pWidget);
 
@@ -944,7 +1044,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
         for (auto subgFilepath : param.subZsg.split(","))
         {
-	        zenoApp->graphsManagment()->importGraph(subgFilepath);
+            zenoApp->graphsManagment()->importGraph(subgFilepath);
         }
         QModelIndex mainGraphIdx = pGraphsModel->index("main");
 
@@ -964,7 +1064,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
             pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
         }
     }
-	zeno::getSession().globalComm->clearState();
+    zeno::getSession().globalComm->clearState();
     LAUNCH_PARAM launchParam;
     launchParam.beginFrame = recInfo.frameRange.first;
     launchParam.endFrame = recInfo.frameRange.second;
@@ -973,9 +1073,9 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     //ZASSERT_EXIT(ret);
     //viewWidget->runAndRecord(recInfo);
 
-	RecordVideoMgr* recordMgr = new RecordVideoMgr(this);
-	recordMgr->setParent(viewWidget);
-	recordMgr->setRecordInfo(recInfo);
+    RecordVideoMgr* recordMgr = new RecordVideoMgr(this);
+    recordMgr->setParent(viewWidget);
+    recordMgr->setRecordInfo(recInfo);
     connect(this, &ZenoMainWindow::runFinished, this, [=]() {
         connect(recordMgr, &RecordVideoMgr::recordFailed, this, []() {
             zeno::log_info("process exited with {}", -1);
@@ -1017,9 +1117,19 @@ void ZenoMainWindow::updateViewport(const QString& action)
                     }
                     else
                     {
+                    #ifndef ZENO_OPTIX_PROC
                         ZOptixViewport* pOptix = view->optixViewport();
                         ZASSERT_EXIT(pOptix);
                         emit pOptix->sig_switchTimeFrame(ui_frame);
+                    #else
+                        ZOptixProcViewport* pOptix = view->optixViewport();
+                        ZASSERT_EXIT(pOptix);
+                        if (Zenovis* vis = pOptix->getZenoVis())
+                        {
+                            vis->setCurrentFrameId(ui_frame);
+                            vis->startPlay(false);
+                        }
+                    #endif
                     }
                     view->updateFrame();
                 }
@@ -1118,7 +1228,7 @@ void ZenoMainWindow::onSplitDock(bool bHorzontal)
 
 void ZenoMainWindow::openFileDialog()
 {
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
     mgr->setNewCacheDir(true);
     QString filePath = getOpenFileByDialog();
@@ -1133,7 +1243,7 @@ void ZenoMainWindow::openFileDialog()
 }
 
 void ZenoMainWindow::onNewFile() {
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
     mgr->setNewCacheDir(true);
     if (saveQuit()) 
@@ -1147,17 +1257,20 @@ void ZenoMainWindow::resizeEvent(QResizeEvent *event)
     QMainWindow::resizeEvent(event);
 }
 
-std::shared_ptr<ZCacheMgr> ZenoMainWindow::cacheMgr() const
-{
-    return m_spCacheMgr;
-}
-
 void ZenoMainWindow::killOptix()
 {
     DisplayWidget* pWid = this->getOptixWidget();
     if (pWid)
     {
         pWid->killOptix();
+    }
+    if (optixClientSocket)
+    {
+        optixClientSocket->write(std::string("optixProcClose").data());
+        if (!optixClientSocket->waitForBytesWritten(50000))
+        {
+            zeno::log_error("tcp optix client close fail");
+        }
     }
 }
 
@@ -1170,7 +1283,7 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
     {
-		//save latest layout
+        //save latest layout
         QSettings settings(QSettings::UserScope, zsCompanyName, zsEditor);
         settings.beginGroup("layout");
         QString layoutInfo = exportLayout(m_layoutRoot, size());
@@ -1218,25 +1331,13 @@ bool ZenoMainWindow::event(QEvent* event)
             }
         }
     }
-    bool ret = QMainWindow::event(event);
-    if (ret) {
-        if (event->type() == QEvent::MouseMove && event->isAccepted()) {
-            QMouseEvent* pMouse = static_cast<QMouseEvent*>(event);
-            if (isSeparator(pMouse->pos())) {
-                m_bMovingSeparator = true;
-                emit dockSeparatorMoving(true);
-            }
-        }
-        else if (m_bMovingSeparator && event->type() == QEvent::Timer)
-        {
-            emit dockSeparatorMoving(true);
-        }
-        else if (m_bMovingSeparator && event->type() == QEvent::MouseButtonRelease)
-        {
-            emit dockSeparatorMoving(false);
+    if (event->type() == QEvent::HoverMove) {
+        if (m_bOnlyOptix) {
+            DisplayWidget* pWid = getCurrentViewport();
+            pWid->onMouseHoverMoved();
         }
     }
-    return ret;
+    return QMainWindow::event(event);
 }
 
 void ZenoMainWindow::mousePressEvent(QMouseEvent* event)
@@ -1273,7 +1374,7 @@ void ZenoMainWindow::dropEvent(QDropEvent* event)
         return;
     }
 
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
     mgr->setNewCacheDir(true);
 
@@ -1287,29 +1388,6 @@ void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
     if (!m_pTimeline)
         return;
     m_pTimeline->onTimelineUpdate(frameid);
-}
-
-void ZenoMainWindow::onDockSeparatorMoving(bool bMoving)
-{
-    auto docks = findChildren<ZTabDockWidget *>(QString(), Qt::FindDirectChildrenOnly);
-    for (ZTabDockWidget *pDock : docks)
-    {
-        for (int i = 0; i < pDock->count(); i++)
-        {
-            DockContent_View* pView = qobject_cast<DockContent_View*>(pDock->widget(i));
-            if (!pView)
-                continue;
-            QSize sz = pView->viewportSize();
-            QString str = QString("size: %1x%2").arg(QString::number(sz.width())).arg(QString::number(sz.height()));
-            QPoint pt = pView->mapToGlobal(QPoint(0, 10));
-            if (bMoving) {
-                QToolTip::showText(pt, str);
-            }
-            else {
-                QToolTip::hideText();
-            }
-        }
-    }
 }
 
 void ZenoMainWindow::importGraph() {
@@ -1453,6 +1531,11 @@ void ZenoMainWindow::shortCutDlg()
 {
     ZShortCutSettingDlg dlg;
     dlg.exec();
+}
+
+bool ZenoMainWindow::isOnlyOptixWindow() const
+{
+    return m_bOnlyOptix;
 }
 
 void ZenoMainWindow::sortRecentFile(QStringList &lst) 

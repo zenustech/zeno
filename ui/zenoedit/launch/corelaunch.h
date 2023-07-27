@@ -19,7 +19,7 @@ struct LAUNCH_PARAM {
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);
-bool initZenCache(char* cachedir);
+bool initZenCache(char* cachedir, int& cacheNum);
 void killProgram();
 
 #endif

@@ -133,6 +133,8 @@ int Zenovis::setCurrentFrameId(int frameid)
         int endFrame = frameRg.first + numOfFrames - 1;
         if (frameid < frameRg.first) {
             frameid = frameRg.first;
+        } else if (frameid > frameRg.second) {
+            frameid = frameRg.second;
         } else if (frameid > endFrame) {
             frameid = endFrame;
         }

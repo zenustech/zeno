@@ -7,6 +7,9 @@
 #include "../startup/zstartup.h"
 #include "variantptr.h"
 #include "viewport/displaywidget.h"
+#include "common.h"
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
@@ -131,6 +134,40 @@ void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex node
     } else {
         int ret = pModel->ModelSetData(paramIdx, newValue, ROLE_PARAM_VALUE);
     }
+}
+
+VideoRecInfo AppHelper::getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param)
+{
+    VideoRecInfo recInfo;
+    recInfo.bitrate = param.iBitrate;
+    recInfo.fps = param.iFps;
+    recInfo.frameRange = { param.iSFrame, param.iSFrame + param.iFrame - 1 };
+    recInfo.numMSAA = 0;
+    recInfo.numOptix = param.iSample;
+    recInfo.audioPath = param.audioPath;
+    recInfo.record_path = param.sPath;
+    recInfo.videoname = param.videoName;
+    recInfo.bExportVideo = param.isExportVideo;
+    recInfo.needDenoise = param.needDenoise;
+    recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
+
+    if (!param.sPixel.isEmpty())
+    {
+        QStringList tmpsPix = param.sPixel.split("x");
+        int pixw = tmpsPix.at(0).toInt();
+        int pixh = tmpsPix.at(1).toInt();
+        recInfo.res = { (float)pixw, (float)pixh };
+
+        //viewWidget->setFixedSize(pixw, pixh);
+        //viewWidget->setCameraRes(QVector2D(pixw, pixh));
+        //viewWidget->updatePerspective();
+    }
+    else {
+        recInfo.res = { (float)1000, (float)680 };
+        //viewWidget->setMinimumSize(1000, 680);
+    }
+
+    return recInfo;
 }
 
 void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
@@ -328,4 +365,42 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
     param.tempDir = settings.value("zencache-autoremove", true).isValid() ? settings.value("zencache-autoremove", true).toBool() : false;
     param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
     param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
+}
+
+bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)
+{
+    auto pGraphs = zenoApp->graphsManagment();
+    IGraphsModel* pModel = pGraphs->openZsgFile(param.sZsgPath);
+    if (!pModel)
+        return false;
+
+    if (!param.subZsg.isEmpty())
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        for (auto subgFilepath : param.subZsg.split(","))
+        {
+            zenoApp->graphsManagment()->importGraph(subgFilepath);
+        }
+        QModelIndex mainGraphIdx = pGraphsModel->index("main");
+
+        for (QModelIndex subgIdx : pGraphsModel->subgraphsIndice())
+        {
+            QString subgName = subgIdx.data(ROLE_OBJNAME).toString();
+            if (subgName == "main" || subgName.isEmpty())
+            {
+                continue;
+            }
+            QString subgNodeId = NodesMgr::createNewNode(pGraphsModel, mainGraphIdx, subgName, QPointF(500, 500));
+            QModelIndex subgNodeIdx = pGraphsModel->index(subgNodeId, mainGraphIdx);
+            STATUS_UPDATE_INFO info;
+            info.role = ROLE_OPTIONS;
+            info.oldValue = subgNodeIdx.data(ROLE_OPTIONS).toInt();
+            info.newValue = subgNodeIdx.data(ROLE_OPTIONS).toInt() | OPT_VIEW;
+            pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
+        }
+    }
+    zeno::getSession().globalComm->clearState();
+
+    launchProgram(pModel, launchParam);
+    return true;
 }

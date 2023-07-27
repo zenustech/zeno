@@ -3,7 +3,7 @@
 
 #include <string>
  
-void startUp();
+void startUp(bool bEnableCrashReport);
 void verifyVersion();
 std::string getZenoVersion();
 

@@ -1,6 +1,7 @@
 #include "displaywidget.h"
 #include "viewportwidget.h"
 #include "optixviewport.h"
+#include "zoptixviewport.h"
 #include <zenovis/RenderEngine.h>
 #include <zenovis/ObjectsManager.h>
 #include <zenovis/Camera.h>
@@ -17,6 +18,7 @@
 #include "dialog/zrecprogressdlg.h"
 #include "dialog/zrecframeselectdlg.h"
 #include "util/apphelper.h"
+#include "launch/ztcpserver.h"
 
 
 using std::string;
@@ -47,9 +49,13 @@ DisplayWidget::DisplayWidget(bool bGLView, QWidget *parent)
     }
     else
     {
+#ifdef ZENO_OPTIX_PROC
+        m_optixView = new ZOptixProcViewport;
+#else
         m_optixView = new ZOptixViewport;
+#endif
         pLayout->addWidget(m_optixView);
-        connect(this, &DisplayWidget::frameRunFinished, m_optixView, &ZOptixViewport::onFrameRunFinished);
+        connect(this, SIGNAL(frameRunFinished(int)), m_optixView, SLOT(onFrameRunFinished(int)));
     }
 
     setLayout(pLayout);
@@ -213,15 +219,21 @@ bool DisplayWidget::isGLViewport() const
     return m_bGLView;
 }
 
+#ifdef ZENO_OPTIX_PROC
+ZOptixProcViewport* DisplayWidget::optixViewport() const
+#else
 ZOptixViewport* DisplayWidget::optixViewport() const
+#endif
 {
     return m_optixView;
 }
 
 void DisplayWidget::killOptix()
 {
+#ifndef ZENO_OPTIX_PROC
     if (m_optixView)
         m_optixView->killThread();
+#endif
 }
 
 void DisplayWidget::mouseReleaseEvent(QMouseEvent* event)
@@ -284,7 +296,20 @@ void DisplayWidget::onPlayClicked(bool bChecked)
     }
     else
     {
+#ifdef ZENO_OPTIX_PROC
+        if (bChecked)
+        {
+            m_pTimer->start(m_sliderFeq);
+        }
+        else
+        {
+            m_pTimer->stop();
+        }
+        if (getZenoVis())
+            getZenoVis()->startPlay(bChecked);
+#else
         emit m_optixView->sig_togglePlayButton(bChecked);
+#endif
     }
 }
 
@@ -323,7 +348,11 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     }
     else
     {
+#ifdef ZENO_OPTIX_PROC
+        m_optixView->updateViewport();
+#else
         m_optixView->update();
+#endif
     }
 }
 
@@ -467,7 +496,11 @@ void DisplayWidget::onSliderValueChanged(int frame)
         else
         {
             ZASSERT_EXIT(m_optixView);
+#ifdef ZENO_OPTIX_PROC
+            m_optixView->onFrameSwitched(frame);
+#else
             emit m_optixView->sig_switchTimeFrame(frame);
+#endif
         }
         BlockSignalScope scope(timeline);
         timeline->setPlayButtonChecked(false);
@@ -616,6 +649,15 @@ void DisplayWidget::onScreenShoot() {
     }
 }
 
+void DisplayWidget::onMouseHoverMoved()
+{
+    //only used to stop timer on optix.
+#ifdef ZENO_OPTIX_PROC
+    if (m_optixView)
+        m_optixView->onMouseHoverMoved();
+#endif
+}
+
 void DisplayWidget::onRecord()
 {
     auto &pGlobalComm = zeno::getSession().globalComm;
@@ -653,8 +695,22 @@ void DisplayWidget::onRecord()
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
             launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+#ifdef ZENO_OPTIX_PROC
+            if (!m_bGLView)
+            {
+                mainWin->optixClientStartRec();
+                QString lparam = QString("{\"beginFrame\":%1, \"endFrame\":%2}").arg(recInfo.frameRange.first).arg(recInfo.frameRange.second);
+                QString info = QString("{\"action\":\"runBeforRecord\", \"launchparam\":%2}\n").arg(lparam);
+                mainWin->optixClientSend(info);
+            }
+            else {
+                AppHelper::initLaunchCacheParam(launchParam);
+                onRun(launchParam);
+            }
+#else
             AppHelper::initLaunchCacheParam(launchParam);
             onRun(launchParam);
+#endif
         }
 
         //setup signals issues.
@@ -670,8 +726,51 @@ void DisplayWidget::onRecord()
 
         if (!m_bGLView)
         {
+            #ifdef ZENO_OPTIX_PROC
+            static bool optixRmCacheFuncConnected = false;
+            if (!optixRmCacheFuncConnected)
+            {
+                connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, [&](int frame) {
+                    if (recInfo.bAutoRemoveCache)
+                    {
+                        QString info = QString("{\"action\":\"removeCache\", \"frame\":%1}\n").arg(frame);
+                        mainWin->optixClientSend(info);
+                    }});
+                connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [&]() {
+                    if (recInfo.bAutoRemoveCache)
+                    {
+                        QString info = QString("{\"action\":\"clrearFrameState\"}\n");
+                        mainWin->optixClientSend(info);
+                    }});
+                optixRmCacheFuncConnected = true;
+            }
+            if (bRunBeforeRecord)
+            {
+                static bool optixRecFuncConnected = false;
+                if (!optixRecFuncConnected)
+                {
+                    connect(this, &DisplayWidget::optixProcStartRecord, this, [&]() {
+                        for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second; frame++)
+                        {
+                            zeno::getSession().globalComm->newFrame();
+                            zeno::getSession().globalComm->finishFrame();
+                        }
+                        zeno::getSession().globalComm->initFrameRange(recInfo.frameRange.first, recInfo.frameRange.second);
+                        zeno::getSession().globalState->frameid = recInfo.frameRange.first;
+                        ZASSERT_EXIT(m_optixView);
+                        m_optixView->recordVideo(recInfo);
+                    });
+                    optixRecFuncConnected = true;
+                }
+            }
+            else {
+                ZASSERT_EXIT(m_optixView);
+                m_optixView->recordVideo(recInfo);
+            }
+            #else
             ZASSERT_EXIT(m_optixView);
             m_optixView->recordVideo(recInfo);
+            #endif
         }
         else
         {
@@ -684,6 +783,17 @@ void DisplayWidget::onRecord()
 
         } else {
             m_recordMgr.cancelRecord();
+        }
+
+        if (recInfo.bAutoRemoveCache) {
+#ifdef ZENO_OPTIX_PROC
+            if (m_glView) {
+                auto tcpServer = zenoApp->getServer();
+                if (tcpServer)
+                    tcpServer->onClearFrameState();
+            }
+#endif
+            zeno::getSession().globalComm->clearFrameState();
         }
     }
 }

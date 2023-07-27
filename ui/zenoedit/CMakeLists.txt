@@ -65,6 +65,10 @@ if (ZENO_MULTIPROCESS)
     endif()
 endif()
 
+if (ZENO_OPTIX_PROC)
+    target_compile_definitions(zenoedit PRIVATE -DZENO_OPTIX_PROC)
+endif()
+
 if (ZENO_INSTALL_TARGET)
     install(TARGETS zenoedit EXPORT ZenoTargets)
 endif()
