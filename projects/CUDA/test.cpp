@@ -192,7 +192,7 @@ struct TestAdaptiveGrid : INode {
 #if AG_CHECK
             if (bno + 1 == cnts[NodeT::LEVEL]) {
                 fmt::print(fg(fmt::color::green), "just inserted the last block ({}) at level {} ({:#0x}, {:#0x})\n",
-                           bno, NodeT::LEVEL, LevelT::origin_mask, LevelT::block_mask);
+                           bno, NodeT::LEVEL, LevelT::origin_mask, LevelT::cell_mask);
             }
 #endif
 
@@ -238,7 +238,7 @@ struct TestAdaptiveGrid : INode {
 #if AG_CHECK
             if (bno + 1 == cnts[0]) {
                 fmt::print(fg(fmt::color::green), "just inserted the last block ({}) at leaf level ({:#0x}, {:#0x})\n",
-                           bno, LevelT::origin_mask, LevelT::block_mask);
+                           bno, LevelT::origin_mask, LevelT::cell_mask);
             }
 #endif
 
@@ -315,6 +315,12 @@ struct TestAdaptiveGrid : INode {
         /// construct new vdb grid from ag
         /// ref: nanovdb/util/NanoToOpenVDB.h
         auto zsag = agBuilder.get();
+
+        // test ag view
+        auto zsagv = view<space>(zsag);
+        fmt::print("zs ag unnamed view type: {}\n", get_var_type_str(zsagv));
+        fmt::print("zs ag unnamed view type tuple of level views: {}\n", get_var_type_str(zsagv._levels));
+
         //openvdb::Mat4R
         auto trans = sdf->transform().baseMap()->getAffineMap()->getMat4();
         auto pol = omp_exec();

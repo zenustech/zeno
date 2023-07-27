@@ -36,11 +36,12 @@ target_link_options(zeno
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PRIVATE zshelper)
 
-#[=[
 target_sources(zeno PRIVATE
-  test1.cu
+  #test1.cu
+  test.cu
   test.cpp
 )
+#[=[
 #]=]
 set_target_properties(zeno
   PROPERTIES
