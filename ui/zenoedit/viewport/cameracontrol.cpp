@@ -261,10 +261,10 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             up = QVector3D::crossProduct(back, right);
             right.normalize();
             up.normalize();
-            QVector3D delta = right * dx - up * dy;
+            QVector3D delta = right * dx + up * dy;
             m_center += delta * m_radius;
         } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
-            m_theta += dy * M_PI;
+            m_theta -= dy * M_PI;
             m_phi += dx * M_PI;
         }
         m_lastPos = QPointF(xpos, ypos);
@@ -310,7 +310,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         dy = event->angleDelta().x();
     else
         dy = event->angleDelta().y();
-    float scale = (dy < 0) ? 0.89 : 1 / 0.89;
+    float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
     bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
     bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);
     bool focalPlaneDistance_pressed =
