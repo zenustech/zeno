@@ -22,13 +22,19 @@ print("---- Output Path", args.output)
 
 assert os.path.exists(args.input)
 
+export_all = False
+
 input = args.input
 output = args.output
-output_dir = os.path.dirname(output)
-output_json = os.path.join(output_dir, "mat_info.json")
+output_json = os.path.join(output, "info.json")
+abc_output_dir = os.path.join(output, "abc")
+if not os.path.exists(abc_output_dir):
+    os.makedirs(abc_output_dir)
+
 """
 {
-    "<mesh_unique_name>": {     # value - float,vec3
+    "<mesh_unique_name>": {          # name corresponding .abc file 
+                                     # value - float,vec3
         "base_color":           { name: "Base Color", value: "<value>" }
         "subsurface":           { name: "Subsurface", value: "<value>" }
         "subsurface_radius":    { name: "Subsurface Radius", value: "<value>" }
@@ -66,7 +72,7 @@ output_json = os.path.join(output_dir, "mat_info.json")
     }
 }
 """
-mat_info = {}
+info = {}
 
 # Replace 'your_file_path.blend' with the path to your .blend file
 blend_file_path = input
@@ -78,13 +84,26 @@ bpy.ops.wm.open_mainfile(filepath=blend_file_path)
 export_path = output
 
 # Export Alembic with animation and hierarchy
-bpy.ops.wm.alembic_export(filepath=export_path)
+if export_all:
+    bpy.ops.wm.alembic_export(filepath=export_path)
 
 # Iterate through all objects in the scene and find meshes
 for obj in bpy.context.scene.objects:
     if obj.type == 'MESH':
+        material_params = {}
+        material_textures = {}
+
         # In blender, every object has a uniqe id
-        print(" Mesh Full:", obj.name_full)
+        obj_name = obj.name_full
+        print(" Mesh Full:", obj_name)
+
+        # Select the current object and deselect all others
+        bpy.context.view_layer.objects.active = obj
+        for other_obj in bpy.data.objects:
+            other_obj.select_set(other_obj == obj)
+
+        abc_file_path = os.path.join(abc_output_dir, f"{obj_name}.abc")
+        bpy.ops.wm.alembic_export(filepath=abc_file_path, selected=True)
 
         # Check if the object has a material
         if obj.material_slots:
@@ -92,8 +111,6 @@ for obj in bpy.context.scene.objects:
             # Iterate through material slots
             for material_slot in obj.material_slots:
                 material = material_slot.material
-                material_params = {}
-                material_textures = {}
 
                 # Material name
                 print("  Material Name:", material.name)
@@ -115,7 +132,7 @@ for obj in bpy.context.scene.objects:
                             texture_record = []
 
                             # Image texture filepath
-                            img_full_path = bpy.path.abspath(texture.filepath)
+                            img_full_path = bpy.path.abspath(texture.filepath).replace("\\", "/")
                             print("   Texture Filepath:", texture.filepath, "Full:", img_full_path)
 
                             for node_out in node.outputs:
@@ -157,7 +174,16 @@ for obj in bpy.context.scene.objects:
                                             mapping_scale = link.from_node.inputs['Scale'].default_value
                                             print("    --> mapping scale:", mapping_scale)
                                             for record in texture_record:
-                                                material_textures[record]["mapping_scale"] = mapping_scale[:]
+                                                material_textures[record][img_full_path]["mapping_scale"] = mapping_scale[:]
+
+                            # fill default value
+                            for key in material_textures:
+                                for _key in material_textures[key]:
+                                    value = material_textures[key][_key]
+                                    if not "separate_name" in value:
+                                        value["separate_name"] = ""
+                                    if not "mapping_scale" in value:
+                                        value["mapping_scale"] = [1.0, 1.0, 1.0]
 
 
                             material_params["_textures"] = material_textures
@@ -192,37 +218,37 @@ for obj in bpy.context.scene.objects:
                             #weight = node.inputs['Weight'].default_value
                             print("   Base Color:", base_color[:])
 
-                            material_params["base_color"] =             {"value": base_color[:], "name": "Base Color"}
-                            material_params["subsurface"] =             {"value": subsurface, "name": "Subsurface"}
+                            material_params["base_color"] =             {"value": base_color[:],        "name": "Base Color"}
+                            material_params["subsurface"] =             {"value": subsurface,           "name": "Subsurface"}
                             material_params["subsurface_radius"] =      {"value": subsurface_radius[:], "name": "Subsurface Radius"}
-                            material_params["subsurface_color"] =       {"value": subsurface_color[:], "name": "Subsurface Color"}
-                            material_params["subsurface_ior"] =         {"value": subsurface_ior, "name": "Subsurface IOR"}
-                            material_params["subsurface_anisotropy"] =  {"value": subsurface_anisotropy, "name": "Subsurface Anisotropy"}
-                            material_params["metallic"] =               {"value": metallic, "name": "Metallic"}
-                            material_params["specular"] =               {"value": specular, "name": "Specular"}
-                            material_params["specular_tint"] =          {"value": specular_tint, "name": "Specular Tint"}
-                            material_params["roughness"] =              {"value": roughness, "name": "Roughness"}
-                            material_params["anisotropic"] =            {"value": anisotropic, "name": "Anisotropic"}
+                            material_params["subsurface_color"] =       {"value": subsurface_color[:],  "name": "Subsurface Color"}
+                            material_params["subsurface_ior"] =         {"value": subsurface_ior,       "name": "Subsurface IOR"}
+                            material_params["subsurface_anisotropy"] =  {"value": subsurface_anisotropy,"name": "Subsurface Anisotropy"}
+                            material_params["metallic"] =               {"value": metallic,             "name": "Metallic"}
+                            material_params["specular"] =               {"value": specular,             "name": "Specular"}
+                            material_params["specular_tint"] =          {"value": specular_tint,        "name": "Specular Tint"}
+                            material_params["roughness"] =              {"value": roughness,            "name": "Roughness"}
+                            material_params["anisotropic"] =            {"value": anisotropic,          "name": "Anisotropic"}
                             material_params["anisotropic_rotation"] =   {"value": anisotropic_rotation, "name": "Anisotropic Rotation"}
-                            material_params["sheen"] =                  {"value": sheen, "name": "Sheen"}
-                            material_params["sheen_tint"] =             {"value": sheen_tint, "name": "Sheen Roughness"}
-                            material_params["sheen_roughness"] =        {"value": sheen_roughness, "name": "Sheen Tint"}
-                            material_params["clearcoat"] =              {"value": clearcoat, "name": "Clearcoat"}
-                            material_params["clearcoat_roughness"] =    {"value": clearcoat_roughness, "name": "Clearcoat Roughness"}
-                            material_params["ior"] =                    {"value": ior, "name": "IOR"}
-                            material_params["transmission"] =           {"value": transmission, "name": "Transmission"}
-                            material_params["emission"] =               {"value": emission[:], "name": "Emission"}
-                            material_params["emission_strength"] =      {"value": emission_strength, "name": "Emission Strength"}
-                            material_params["alpha"] =                  {"value": alpha, "name": "Alpha"}
-                            material_params["normal"] =                 {"value": normal[:], "name": "Normal"}
-                            material_params["clearcoat_normal"] =       {"value": clearcoat_normal[:], "name": "Clearcoat Normal"}
-                            material_params["tangent"] =                {"value": tangent[:], "name": "Tangent"}
-            mat_info[obj.name_full] = material_params
+                            material_params["sheen"] =                  {"value": sheen,                "name": "Sheen"}
+                            material_params["sheen_tint"] =             {"value": sheen_tint,           "name": "Sheen Roughness"}
+                            material_params["sheen_roughness"] =        {"value": sheen_roughness,      "name": "Sheen Tint"}
+                            material_params["clearcoat"] =              {"value": clearcoat,            "name": "Clearcoat"}
+                            material_params["clearcoat_roughness"] =    {"value": clearcoat_roughness,  "name": "Clearcoat Roughness"}
+                            material_params["ior"] =                    {"value": ior,                  "name": "IOR"}
+                            material_params["transmission"] =           {"value": transmission,         "name": "Transmission"}
+                            material_params["emission"] =               {"value": emission[:],          "name": "Emission"}
+                            material_params["emission_strength"] =      {"value": emission_strength,    "name": "Emission Strength"}
+                            material_params["alpha"] =                  {"value": alpha,                "name": "Alpha"}
+                            material_params["normal"] =                 {"value": normal[:],            "name": "Normal"}
+                            material_params["clearcoat_normal"] =       {"value": clearcoat_normal[:],  "name": "Clearcoat Normal"}
+                            material_params["tangent"] =                {"value": tangent[:],           "name": "Tangent"}
+        info[obj_name] = material_params
     print("-----")
 
 
 # Serializing json
-json_object = json.dumps(mat_info, indent=4)
+json_object = json.dumps(info, indent=4)
 
 # Writing to sample.json
 with open(output_json, "w") as outfile:

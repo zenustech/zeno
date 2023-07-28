@@ -10,6 +10,8 @@
 
 #include "assimp/scene.h"
 
+#include "json.hpp"
+
 #include "Definition.h"
 
 #include <glm/vec4.hpp>
@@ -447,6 +449,30 @@ struct EvalAnim{
         }
     }
 };
+
+struct EvalBlenderFile : zeno::INode {
+    virtual void apply() override {
+
+    }
+};
+
+ZENDEFNODE(EvalBlenderFile,
+           {       /* inputs: */
+            {
+                {"readpath", "script_file"},
+                {"readpath", "blender_file"},
+                {"readpath", "output_path"},
+            },  /* outputs: */
+            {
+                "fake"
+            },  /* params: */
+            {
+
+            },  /* category: */
+            {
+                "FBX",
+            }
+           });
 
 struct EvalFBXAnim : zeno::INode {
 
