@@ -93,10 +93,8 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     size_t currentFrameSize = 0;
     for (int i = 0; i < 3; i++)
     {
-        if (poses[i].size() == 0)
-        {
+        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1))
             continue;
-        }
         keys[i].push_back('\a');
         keys[i] = "ZENCACHE" + std::to_string(poses[i].size()) + keys[i];
         poses[i].push_back(bufCaches[i].size());
@@ -126,7 +124,7 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     }
     for (int i = 0; i < 3; i++)
     {
-        if (poses[i].size() == 0)
+        if (poses[i].size() == 0 && (cacheLightCameraOnly && i != 0 || cacheMaterialOnly && i != 1))
             continue;
         log_critical("dump cache to disk {}", cachepath[i]);
         std::ofstream ofs(cachepath[i], std::ios::binary);

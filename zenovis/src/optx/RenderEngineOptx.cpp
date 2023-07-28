@@ -570,13 +570,17 @@ struct GraphicsManager {
 
         bool changelight = false;
         for (auto const &[key, obj] : objs) {
-            if (scene->drawOptions->updateMatlOnly && ins.may_emplace(key))
-            {
-                changelight = false;
-            }
-            else if(ins.may_emplace(key)) {
+            if(ins.may_emplace(key)) {
                 changelight = true;
             }
+        }
+        {   //when turn off last node in always mode
+            static int objsNum = 0;
+            if (objsNum > objs.size() && !changelight)
+                changelight = true;
+            objsNum = objs.size();
+            if (scene->drawOptions->updateMatlOnly)
+                changelight = false;
         }
 
         auto &ud = zeno::getSession().userData();
@@ -666,6 +670,12 @@ struct GraphicsManager {
                 zeno::log_info("load_object: loaded graphics to {}", ig.get());
                 ins.try_emplace(key, std::move(ig));
             }
+        }
+        {   //when turn off last node in always mode
+            static int objsNum = 0;
+            if (objsNum > objs.size() && !changed)
+                changed = true;
+            objsNum = objs.size();
         }
         // return ins.has_changed();
         return changed;
@@ -763,6 +773,23 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
     };
 
     std::set<std::string> cachedMeshesMaterials, cachedSphereMaterials;
+    std::map<std::string, int> cachedMeshMatLUT;
+    bool meshMatLUTChanged(std::map<std::string, int>& newLUT) {
+        bool changed = false;
+        if (cachedMeshMatLUT.size() != newLUT.size()) {
+            changed = true;
+        }
+        else {
+            for (auto const& [matkey, matidx] : newLUT)
+            {
+                if (cachedMeshMatLUT.count(matkey) == 0)
+                    changed = true;
+                else if (cachedMeshMatLUT[matkey] != newLUT[matkey])
+                    changed = true;
+            }
+        }
+        return changed;
+    }
 
     void ensure_shadtmpl(ShaderTemplateInfo &_template) 
     {
@@ -1077,9 +1104,18 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
             xinxinoptix::SpheresCrowded.sbt_count = _sphere_shader_list.size();
             OptixUtil::matIDtoShaderIndex = matIDtoShaderIndex;
 
-            if (meshNeedUpdate) 
+            bool bMeshMatLUTChanged = false;    //if meshMatLUT need update
+            if (scene->drawOptions->updateMatlOnly) {
+                bMeshMatLUTChanged = meshMatLUTChanged(meshMatLUT);
+            }
+            if (bMeshMatLUTChanged || matNeedUpdate && (staticNeedUpdate || meshNeedUpdate)) {
+                std::map<std::string, int>().swap(cachedMeshMatLUT);
+                cachedMeshMatLUT = meshMatLUT;
+            }
+
+            if (meshNeedUpdate || bMeshMatLUTChanged)
             {
-            
+
             OptixUtil::logInfoVRAM("Before update Mesh");
 
                 if(staticNeedUpdate)
