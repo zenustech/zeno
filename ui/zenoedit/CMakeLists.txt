@@ -72,3 +72,5 @@ endif()
 if (ZENO_INSTALL_TARGET)
     install(TARGETS zenoedit EXPORT ZenoTargets)
 endif()
+
+add_custom_command(TARGET zenoedit PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_SOURCE_DIR}/hdr ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hdr)
