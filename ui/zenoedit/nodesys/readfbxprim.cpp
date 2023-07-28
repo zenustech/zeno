@@ -473,64 +473,131 @@ void EvalBlenderFile::onEvalClicked() {
 
             ZENO_HANDLE shader_attr_Node = Zeno_AddNode(hGraph, "ShaderInputAttr");
             Zeno_SetPos(hGraph, shader_attr_Node, NodePos0);
-            Zeno_SetInputDefl(hGraph, shader_attr_Node, "attr", "uv");
+            Zeno_SetInputDefl(hGraph, shader_attr_Node, "attr", std::string("uv"));
 
             int shader_texture_count = 0;
             for(auto &[key, value] : mat_infos) {
                 std::pair<float, float> NodePos_1 = { NodePos0.first + 600.0f, NodePos0.second + 500.0f * shader_texture_count};
                 std::pair<float, float> NodePos_2 = { NodePos_1.first + 600.0f, NodePos_1.second};
+                std::pair<float, float> NodePos_3 = { NodePos_2.first + 600.0f, NodePos_2.second};
 
                 ZENO_HANDLE uv_transform_Node = Zeno_AddNode(hGraph, "FBXUVTransform");
                 Zeno_SetPos(hGraph, uv_transform_Node, NodePos_1);
                 ZENO_HANDLE shader_texture_Node = Zeno_AddNode(hGraph, "ShaderTexture2D");
                 Zeno_SetPos(hGraph, shader_texture_Node, NodePos_2);
 
+
                 Zeno_AddLink(hGraph, shader_attr_Node, "out", uv_transform_Node, "uvattr");
                 Zeno_AddLink(hGraph, uv_transform_Node, "uvw", shader_texture_Node, "coord");
 
                 Zeno_SetInputDefl(hGraph, shader_texture_Node, "texId", value.tex_id);
-//                Zeno_SetInputDefl(hGraph, uv_transform_Node, "uvtransform", zeno::vec4f(value.uv_scale_x, value.uv_scale_y, 0, 0));
 
-                if(key == "Base Color")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "basecolor");
-                else if(key == "Subsurface")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "subsurface");
-                else if(key == "Subsurface Radius")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "sssParam");
-                else if(key == "Subsurface Color")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "sssColor");
-                else if(key == "Metallic")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "metallic");
-                else if(key == "Specular")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "specular");
-                else if(key == "Specular Tint")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "specularTint");
-                else if(key == "Roughness")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "roughness");
-                else if(key == "Anisotropic")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "anisotropic");
-                else if(key == "Anisotropic Rotation")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "anisoRotation");
-                else if(key == "Sheen")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "sheen");
-                else if(key == "Sheen Tint")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "sheenTint");
-                else if(key == "Clearcoat")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "clearcoat");
-                else if(key == "Clearcoat Roughness")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "clearcoatRoughness");
-                else if(key == "IOR")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "ior");
-                else if(key == "Transmission")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "specTrans");
-                else if(key == "Emission")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "emission");
-                else if(key == "Emission Strength")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "emissionIntensity");
+                Zeno_SetInputDefl(hGraph, uv_transform_Node, "uvtransform", zeno::vec4f(value.uv_scale_x, value.uv_scale_y, 0.0f, 0.0f));
+#define PARAM_TYPE_CHECK(to_channel_name) \
+if( \
+    #to_channel_name == "metallic" || \
+    #to_channel_name == "roughness" || \
+    #to_channel_name == "specular" || \
+    #to_channel_name == "subsurface" || \
+    #to_channel_name == "specularTint" || \
+    #to_channel_name == "anisotropic" || \
+    #to_channel_name == "anisoRotation" || \
+    #to_channel_name == "sheen" || \
+    #to_channel_name == "sheenTint" || \
+    #to_channel_name == "clearcoat" || \
+    #to_channel_name == "clearcoatRoughness" || \
+    #to_channel_name == "specTrans" || \
+    #to_channel_name == "ior" || \
+    #to_channel_name == "emissionIntensity") \
+{ \
+   ZENO_HANDLE extrac_vec_Node = Zeno_AddNode(hGraph, "ShaderExtractVec"); \
+   Zeno_SetPos(hGraph, extrac_vec_Node, NodePos_3); \
+   Zeno_AddLink(hGraph, shader_texture_Node, "out", extrac_vec_Node, "vec"); \
+   Zeno_AddLink(hGraph, extrac_vec_Node, "x", shader_finalize_Node, #to_channel_name); \
+}else{                                    \
+   Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, #to_channel_name);  \
+}
 
-                if(key == "Normal")
-                    Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, "normal");
+#define PARAM_SEPARATE(to_channel_name)   \
+if(value.separate != ""){ \
+    ZENO_HANDLE extrac_vec_Node = Zeno_AddNode(hGraph, "ShaderExtractVec"); \
+    Zeno_SetPos(hGraph, extrac_vec_Node, NodePos_3); \
+    Zeno_AddLink(hGraph, shader_texture_Node, "out", extrac_vec_Node, "vec"); \
+    if(value.separate == "Red"){ \
+        Zeno_AddLink(hGraph, extrac_vec_Node, "x", shader_finalize_Node, #to_channel_name); \
+    }else if(value.separate == "Green"){ \
+        Zeno_AddLink(hGraph, extrac_vec_Node, "y", shader_finalize_Node, #to_channel_name); \
+    }else if(value.separate == "Blue"){ \
+        Zeno_AddLink(hGraph, extrac_vec_Node, "z", shader_finalize_Node, #to_channel_name); \
+    } \
+}else{ \
+    PARAM_TYPE_CHECK(to_channel_name) \
+} \
 
+                if(key == "Base Color"){
+                    PARAM_SEPARATE(basecolor)
+                }
+                else if(key == "Subsurface"){
+                    PARAM_SEPARATE(subsurface)
+                }
+                else if(key == "Subsurface Radius"){
+                    PARAM_SEPARATE(sssParam)
+                }
+                else if(key == "Subsurface Color"){
+                    PARAM_SEPARATE(sssColor)
+                }
+                else if(key == "Metallic"){
+                    PARAM_SEPARATE(metallic)
+                }
+                else if(key == "Specular"){
+                    PARAM_SEPARATE(specular)
+                }
+                else if(key == "Specular Tint"){
+                    PARAM_SEPARATE(specularTint)
+                }
+                else if(key == "Roughness"){
+                    PARAM_SEPARATE(roughness)
+                }
+                else if(key == "Anisotropic"){
+                    PARAM_SEPARATE(anisotropic)
+                }
+                else if(key == "Anisotropic Rotation"){
+                    PARAM_SEPARATE(anisoRotation)
+                }
+                else if(key == "Sheen"){
+                    PARAM_SEPARATE(sheen)
+                }
+                else if(key == "Sheen Tint"){
+                    PARAM_SEPARATE(sheenTint)
+                }
+                else if(key == "Clearcoat"){
+                    PARAM_SEPARATE(clearcoat)
+                }
+                else if(key == "Clearcoat Roughness"){
+                    PARAM_SEPARATE(clearcoatRoughness)
+                }
+                else if(key == "IOR"){
+                    PARAM_SEPARATE(ior)
+                }
+                else if(key == "Transmission"){
+                    PARAM_SEPARATE(specTrans)
+                }
+                else if(key == "Emission"){
+                    PARAM_SEPARATE(emission)
+                }
+                else if(key == "Emission Strength"){
+                    PARAM_SEPARATE(emissionIntensity)
+                }
+
+                if(key == "Normal") {
+                    ZENO_HANDLE normal_texture_Node = Zeno_AddNode(hGraph, "NormalTexture");
+                    Zeno_SetPos(hGraph, normal_texture_Node, NodePos_2);
+                    Zeno_DeleteNode(hGraph, shader_texture_Node);
+
+                    Zeno_SetInputDefl(hGraph, normal_texture_Node, "texId", value.tex_id);
+                    Zeno_AddLink(hGraph, uv_transform_Node, "uvw", normal_texture_Node, "uv");
+                    Zeno_AddLink(hGraph, normal_texture_Node, "normal", shader_finalize_Node, "normal");
+                }
                 shader_texture_count++;
             }
 
