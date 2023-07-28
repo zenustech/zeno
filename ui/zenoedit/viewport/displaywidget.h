@@ -61,6 +61,7 @@ public slots:
     void onRun(LAUNCH_PARAM launchParam);
     void onRecord();
     void onRecord_slient(const VideoRecInfo& recInfo);
+    bool onRecord_cmd(const VideoRecInfo& recInfo);
     void onScreenShoot();
     void onKill();
     void onPlayClicked(bool);

@@ -689,6 +689,12 @@ void DisplayWidget::onRecord()
 
         if (bRunBeforeRecord)
         {
+            if (!m_bGLView)
+            {
+                bool ret = onRecord_cmd(recInfo);
+                return;
+            }
+
             //clear cached objs.
             zeno::getSession().globalComm->clearState();
             LAUNCH_PARAM launchParam;
@@ -795,6 +801,94 @@ void DisplayWidget::onRecord()
 #endif
             zeno::getSession().globalComm->clearFrameState();
         }
+    }
+}
+
+bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
+{
+    //launch optix cmd directly.
+    auto& inst = zeno::getSession().globalComm;
+    auto pGraphsMgr = zenoApp->graphsManagment();
+    ZASSERT_EXIT(pGraphsMgr, false);
+
+    const QString& zsgPath = pGraphsMgr->zsgPath();
+    if (zsgPath.isEmpty()) {
+        //todo: messagebox
+        return false;
+    }
+
+    const QString& resolution = QString("%1x%2").arg(recInfo.res[0]).arg(recInfo.res[1]);
+    int nFrames = recInfo.frameRange.second - recInfo.frameRange.first + 1;
+
+    QSettings settings(zsCompanyName, zsEditor);
+    const QString& cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
+    if (cacheDir.isEmpty()) {
+        //todo: messagebox
+        return false;
+    }
+
+    QStringList args = {
+        "--record", "true",
+        "--cachePath", cacheDir,
+        "--zsg", zsgPath,
+        "--sframe", QString::number(recInfo.frameRange.first),
+        "--frame", QString::number(nFrames),
+        "--sample", QString::number(recInfo.numOptix),
+        "--optix", "1",
+        "--path", recInfo.record_path,
+        "--pixel", resolution,
+        "--cacheautorm", recInfo.bAutoRemoveCache ? "1" : "0"
+    };
+
+    QProcess* recordcmd = new QProcess(this);
+    recordcmd->setInputChannelMode(QProcess::InputChannelMode::ManagedInputChannel);
+    recordcmd->setReadChannel(QProcess::ProcessChannel::StandardOutput);
+    recordcmd->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
+    recordcmd->start(QCoreApplication::applicationFilePath(), args);
+
+    if (!recordcmd->waitForStarted(-1)) {
+        zeno::log_warn("optix process failed to get started, giving up");
+        return false;
+    }
+
+    recordcmd->closeWriteChannel();
+
+    ZRecordProgressDlg dlgProc(recInfo, this);
+
+    QObject::connect(recordcmd, &QProcess::readyRead, [&]() {
+
+        while (recordcmd->canReadLine()) {
+            QByteArray content = recordcmd->readLine();
+            if (content.startsWith("[record]")) {
+                if (content.indexOf("frame") != -1) {
+                    QRegExp rx("frame (\\d+)");
+                    if (rx.indexIn(content) != -1) {
+                        QStringList caps = rx.capturedTexts();
+                        ZASSERT_EXIT(caps.size() == 2);
+                        int frame_ = caps[1].toInt();
+                        dlgProc.onFrameFinished(frame_);
+                        //qApp->processEvents();
+                    }
+                }
+                else if (content.indexOf("result") != -1) {
+                    dlgProc.onRecordFinished("");
+                    //qApp->processEvents();
+                }
+                else if (content.indexOf("crashed") != -1) {
+                    dlgProc.onRecordFailed("crashed");
+                    //qApp->processEvents();
+                }
+                zeno::log_info(content);
+            }
+            }
+        });
+
+    if (QDialog::Accepted == dlgProc.exec()) {
+        return true;
+    }
+    else {
+        //cancel record: kill recordcmd?
+        return false;
     }
 }
 

@@ -225,6 +225,11 @@ TIMELINE_INFO GraphsManagment::timeInfo() const
     return m_timerInfo;
 }
 
+QString GraphsManagment::zsgPath() const
+{
+    return m_model ? m_model->filePath() : "";
+}
+
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
 {
     if (msg.trimmed().isEmpty())

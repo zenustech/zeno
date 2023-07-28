@@ -26,6 +26,7 @@ public:
     QGraphicsScene* gvScene(const QModelIndex& subgIdx) const;
     void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
     TIMELINE_INFO timeInfo() const;
+    QString zsgPath() const;
 
 signals:
     void modelInited(IGraphsModel*);

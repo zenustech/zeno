@@ -250,13 +250,13 @@ int record_main(const QCoreApplication& app)
                     if (doc.HasMember("result")) {
                         ZASSERT_EXIT(doc["result"].IsInt());
                         int ret = doc["result"].GetInt();
-                        zeno::log_info("result is {}.", ret);
+                        zeno::log_info("\n[record] result is {}.\n", ret);
                         QCoreApplication::exit(ret);
                     }
                     else if (doc.HasMember("frame")) {
                         ZASSERT_EXIT(doc["frame"].IsInt());
                         int frame = doc["frame"].GetInt();
-                        zeno::log_info("frame {} recording is finished.", frame);
+                        zeno::log_info("\n[record] frame {} recording is finished.\n", frame);
                     }
                 }
             }
@@ -264,7 +264,7 @@ int record_main(const QCoreApplication& app)
 
         QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
             if (QProcess::Crashed == error) {
-                zeno::log_info("render process has crashed");
+                zeno::log_info("\n[record] render process has crashed\n");
                 QCoreApplication::exit(-2);
             }
         });
