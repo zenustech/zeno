@@ -402,6 +402,10 @@ namespace zeno {
     };
 
     struct ResampleToUnrealLandscape : public INode {
+
+        template<typename T>
+        using V = std::vector<T>;
+
         void apply() override {
             std::shared_ptr<PrimitiveObject> OldPrim = get_input2<PrimitiveObject>("Prim");
             std::shared_ptr<zeno::PrimitiveObject> Prim =
@@ -430,6 +434,66 @@ namespace zeno {
                 for (int x = 0; x < Nx; x++) {
                     Prim->verts.push_back(
                         {(float) x * Scale[0] - centerX, 0.0f, (float) y * Scale[1] - centerY});
+                }
+            }
+
+            const auto& VertAttrs = OldPrim->verts.attr_keys();
+            for (const auto& Attr: VertAttrs) {
+                if (Attr == channel || Attr == "pos") continue;
+                if (std::holds_alternative<V<vec3f>>(OldPrim->verts.attr(Attr))) {
+                    Prim->verts.add_attr<vec3f>(Attr);
+                }
+                else if (std::holds_alternative<V<vec2f>>(OldPrim->verts.attr(Attr))) {
+                    Prim->verts.add_attr<vec2f>(Attr);
+                }
+                else if (std::holds_alternative<V<vec4f>>(OldPrim->verts.attr(Attr))) {
+                    Prim->verts.add_attr<vec4f>(Attr);
+                }
+                else if (std::holds_alternative<V<float>>(OldPrim->verts.attr(Attr))) {
+                    Prim->verts.add_attr<float>(Attr);
+                }
+                else if (std::holds_alternative<V<int>>(OldPrim->verts.attr(Attr))) {
+                    Prim->verts.add_attr<int>(Attr);
+                }
+                else if (std::holds_alternative<V<vec2i>>(OldPrim->verts.attr(Attr))) {
+                    Prim->verts.add_attr<vec2i>(Attr);
+                }
+                else if (std::holds_alternative<V<vec3i>>(OldPrim->verts.attr(Attr))) {
+                    Prim->verts.add_attr<vec3i>(Attr);
+                }
+                else if (std::holds_alternative<V<vec4i>>(OldPrim->verts.attr(Attr))) {
+                    Prim->verts.add_attr<vec4i>(Attr);
+                }
+            }
+
+#pragma omp parallel for
+            for (int32_t i = 0; i < Nx * Ny; i++) {
+                for (const auto& Attr: VertAttrs) {
+                    if (Attr == channel || Attr == "pos") continue;
+                    if (std::holds_alternative<V<vec3f>>(OldPrim->verts.attr(Attr))) {
+                        Prim->verts.attr<vec3f>(Attr)[i] = OldPrim->verts.attr<vec3f>(Attr)[i];
+                    }
+                    else if (std::holds_alternative<V<vec2f>>(OldPrim->verts.attr(Attr))) {
+                        Prim->verts.attr<vec2f>(Attr)[i] = OldPrim->verts.attr<vec2f>(Attr)[i];
+                    }
+                    else if (std::holds_alternative<V<vec4f>>(OldPrim->verts.attr(Attr))) {
+                        Prim->verts.attr<vec4f>(Attr)[i] = OldPrim->verts.attr<vec4f>(Attr)[i];
+                    }
+                    else if (std::holds_alternative<V<float>>(OldPrim->verts.attr(Attr))) {
+                        Prim->verts.attr<float>(Attr)[i] = OldPrim->verts.attr<float>(Attr)[i];
+                    }
+                    else if (std::holds_alternative<V<int>>(OldPrim->verts.attr(Attr))) {
+                        Prim->verts.attr<int>(Attr)[i] = OldPrim->verts.attr<int>(Attr)[i];
+                    }
+                    else if (std::holds_alternative<V<vec2i>>(OldPrim->verts.attr(Attr))) {
+                        Prim->verts.attr<vec2i>(Attr)[i] = OldPrim->verts.attr<vec2i>(Attr)[i];
+                    }
+                    else if (std::holds_alternative<V<vec3i>>(OldPrim->verts.attr(Attr))) {
+                        Prim->verts.attr<vec3i>(Attr)[i] = OldPrim->verts.attr<vec3i>(Attr)[i];
+                    }
+                    else if (std::holds_alternative<V<vec4i>>(OldPrim->verts.attr(Attr))) {
+                        Prim->verts.attr<vec4i>(Attr)[i] = OldPrim->verts.attr<vec4i>(Attr)[i];
+                    }
                 }
             }
 
