@@ -36,6 +36,22 @@ ZENDEFNODE(NumericIntVec2, {
     {"numeric"},
 });
 
+struct NumericXOR : zeno::INode {
+    virtual void apply() override {
+        auto obj = std::make_unique<zeno::NumericObject>();
+        auto x = get_param<int>("x");
+        auto y = get_param<int>("y");
+        obj->set(x ^ y);
+        set_output("vec2", std::move(obj));
+    }
+};
+
+ZENDEFNODE(NumericXOR, {
+    {},
+    {{"float", "vec2"}},
+    {{"int", "x", "0"}, {"int", "y", "0"}},
+    {"numeric"},
+});
 
 struct PackNumericIntVec2 : zeno::INode {
     virtual void apply() override {

@@ -125,6 +125,7 @@ struct ImplAssembler {
         , "exp"
         , "log"
         , "floor"
+        , "fb2i"
         , "round"
         , "ceil"
         , "abs"

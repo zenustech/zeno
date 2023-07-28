@@ -100,6 +100,7 @@ struct TypeCheck : Visitor<TypeCheck> {
                     "rsqrt",
                     "floor",
                     "ceil",
+                    "fb2i",
                     "round",
                     "abs",
                     "all",

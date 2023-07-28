@@ -34,6 +34,9 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
     Stm stm_const(float x) {
         return {ir.get(), ir->emplace_back<LiterialStmt>(x)};
     }
+    float const_stm(Stm const &stm) {
+        return static_cast<LiterialStmt *>(stm.stmt)->value;
+    }
 
     Statement *emit_op(std::string const &name, std::vector<Statement *> const &args) {
 
@@ -94,7 +97,15 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
             return stm("sqrt", stm_sqrlength(x));
+/*
+        } else if (name == "floatbitstoint") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            auto y = const_stm(x);
 
+
+            return stm("floatbitstoint", x);
+*/
         } else if (name == "normalize") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);

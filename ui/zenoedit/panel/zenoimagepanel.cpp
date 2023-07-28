@@ -131,7 +131,9 @@ void ZenoImagePanel::setPrim(std::string primid) {
                     auto &alpha = obj->verts.attr<float>("alpha");
                     for (auto i = 0; i < obj->verts.size(); i++) {
                         int h = i / width;
+                        //int h = i % height;
                         int w = i % width;
+                        //int w = i / height;
                         auto foreground = obj->verts[i];
                         if (enableGamma) {
                             foreground = zeno::pow(foreground, 1.0f / 2.2f);
@@ -150,12 +152,15 @@ void ZenoImagePanel::setPrim(std::string primid) {
                         int b = glm::clamp(int(c[2] * 255.99), 0, 255);
 
                         img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                        //img.setPixel(width - 1 - w, h, qRgb(r, g, b));
                     }
                 }
                 else{
                     for (auto i = 0; i < obj->verts.size(); i++) {
                         int h = i / width;
+                        //int h = i % height;
                         int w = i % width;
+                        //int w = i / height;
                         auto c = obj->verts[i];
                         if (enableGamma) {
                             c = zeno::pow(c, 1.0f / 2.2f);
@@ -165,6 +170,7 @@ void ZenoImagePanel::setPrim(std::string primid) {
                         int b = glm::clamp(int(c[2] * 255.99), 0, 255);
 
                         img.setPixel(w, height - 1 - h, qRgb(r, g, b));
+                        //img.setPixel(width - 1 - w, width - 1 - w, qRgb(r, g, b));
                     }
                 }
                 image_view->setImage(img);

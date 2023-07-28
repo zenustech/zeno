@@ -927,6 +927,7 @@ static inline Vec4f if_div(Vec4fb const f, Vec4f const a, Vec4f const b) {
 // even for -0.0f, -INF and -NAN
 // Note that sign_bit(Vec4f(-0.0f)) gives true, while Vec4f(-0.0f) < Vec4f(0.0f) gives false
 // (the underscore in the name avoids a conflict with a macro in Intel's mathimf.h)
+
 static inline Vec4fb sign_bit(Vec4f const a) {
     Vec4i t1 = _mm_castps_si128(a);    // reinterpret as 32-bit integer
     Vec4i t2 = t1 >> 31;               // extend sign bit
@@ -1237,6 +1238,11 @@ static inline Vec4f floor(Vec4f const a) {
 #endif
 }
 
+static inline Vec4i fb2i(Vec4f const a) {
+    Vec4i t1 = _mm_castps_si128(a);   // reinterpret as 32-bit integer
+    return t1;
+}
+
 // function ceil: round towards plus infinity. (result as float vector)
 static inline Vec4f ceil(Vec4f const a) {
 #if INSTRSET >= 5   // SSE4.1 supported
@@ -1384,6 +1390,14 @@ static inline Vec4i exponent(Vec4f const a) {
     Vec4i  t4 = Vec4i(t3) - 0x7F;      // subtract bias from exponent
     return t4;
 }
+
+
+
+static inline Vec4f ib2f(Vec4i const a) {
+    Vec4f t1 = _mm_castsi128_ps(a);   // reinterpret as 32-bit float
+    return t1;
+}
+
 
 // Extract the fraction part of a floating point number
 // a = 2^exponent(a) * fraction(a), except for a = 0

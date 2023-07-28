@@ -49,6 +49,7 @@ struct EmitAssembly : Visitor<EmitAssembly> {
         , "floor"
         , "ceil"
         , "abs"
+        , "fb2i"
         , "rsqrt"
         , "min"
         , "max"
