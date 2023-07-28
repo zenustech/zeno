@@ -28,12 +28,8 @@ struct ZSCULinkTest : INode {
             zs::AdaptiveGrid<3, float, 3, 4, 5> ag;
             using TT = RM_CVREF_T(ag);
             fmt::print("adaptive grid type: {}\n", zs::get_var_type_str(ag));
-            fmt::print("length bits: {}, global length bits: {}\n", zs::get_type_str<TT::length_bit_counts_type>(),
-                       zs::get_type_str<TT::global_length_bit_counts_type>());
-            fmt::print("side lengths: {}, global side lengths: {}\n", zs::get_type_str<TT::side_lengths_type>(),
-                       zs::get_type_str<TT::global_side_lengths_type>());
-            fmt::print("block sizes: {}, global block sizes: {}\n", zs::get_type_str<TT::block_sizes_type>(),
-                       zs::get_type_str<TT::global_block_sizes_type>());
+            fmt::print("tile bits: {}\n", zs::get_type_str<TT::tile_bits_type>());
+            fmt::print("hierarchy bits: {}\n", zs::get_type_str<TT::hierarchy_bits_type>());
 
             fmt::print("num total blocks: {}\n", ag.numTotalBlocks());
             auto hag = ag.clone({zs::memsrc_e::host, -1});

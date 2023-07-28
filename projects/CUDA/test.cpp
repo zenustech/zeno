@@ -218,7 +218,7 @@ struct TestAdaptiveGrid : INode {
             using namespace zs;
             auto &level = ag->level(dim_c<0>);
             using LevelT = RM_CVREF_T(level);
-            static_assert(LeafT::NUM_VALUES == ZSGridT::block_sizes[0], "????");
+            static_assert(LeafT::NUM_VALUES == ZSGridT::template get_tile_size<0>(), "????");
 
             auto &table = level.table;
             auto &grid = level.grid;
@@ -317,9 +317,16 @@ struct TestAdaptiveGrid : INode {
         auto zsag = agBuilder.get();
 
         // test ag view
+        using ZSCoordT = zs::vec<int, 3>;
         auto zsagv = view<space>(zsag);
+        float v, vref;
+        ZSCoordT c{0, 1, 0};
+        zsagv.probeValue(0, c, v);
+        sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref);
         fmt::print("zs ag unnamed view type: {}\n", get_var_type_str(zsagv));
         fmt::print("zs ag unnamed view type tuple of level views: {}\n", get_var_type_str(zsagv._levels));
+        fmt::print(fg(fmt::color::yellow), "background: {}\n", zsagv._background);
+        fmt::print(fg(fmt::color::green), "probed value is {} ({}) at {}, {}, {}\n", v, vref, c[0], c[1], c[2]);
 
         //openvdb::Mat4R
         auto trans = sdf->transform().baseMap()->getAffineMap()->getMat4();
@@ -329,7 +336,6 @@ struct TestAdaptiveGrid : INode {
         auto &dstGrid = ret->m_grid;
         dstGrid = openvdb::createGrid<openvdb::FloatGrid>(zsag._background);
         {
-            using ZSCoordT = zs::vec<int, 3>;
             using GridType = openvdb::FloatGrid;
             using TreeType = GridType::TreeType;
             using RootType = TreeType::RootNodeType;  // level 3 RootNode

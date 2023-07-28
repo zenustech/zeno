@@ -2,6 +2,7 @@
 #if __CUDA_ARCH__ >= 800
 #include <cooperative_groups/reduce.h>
 #endif
+#include "EulerianStructures.hpp"
 
 namespace zeno {
 
