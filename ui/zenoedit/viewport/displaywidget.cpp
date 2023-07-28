@@ -246,6 +246,27 @@ bool DisplayWidget::isCurrent()
     return bIsCurrent;
 }
 
+void DisplayWidget::setLoopPlaying(bool enable)
+{
+    if (m_glView)
+    {
+        ZASSERT_EXIT(m_glView);
+        Zenovis* vis = m_glView->getZenoVis();
+        ZASSERT_EXIT(vis);
+        vis->setLoopPlaying(enable);
+    }
+    else {
+        ZASSERT_EXIT(m_optixView);
+#ifdef ZENO_OPTIX_PROC
+        Zenovis* vis = m_optixView->getZenoVis();
+        ZASSERT_EXIT(vis);
+        vis->setLoopPlaying(enable);
+#else
+        emit m_optixView->sig_setLoopPlaying(enable);
+#endif
+    }
+}
+
 void DisplayWidget::onPlayClicked(bool bChecked)
 {
     if (m_bGLView)

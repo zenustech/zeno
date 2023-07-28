@@ -135,8 +135,9 @@ ZENDEFNODE(PrimitiveColorByHeatmap,
         }, /* params: */ {
             {"string", "attrName", "rho"},
         }, /* category: */ {
-            "deprecated",
+            "visualize",
         }});
+        
 struct PrimSample1D : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");

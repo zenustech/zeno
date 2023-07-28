@@ -512,6 +512,7 @@ Alembic::AbcGeom::IArchive readABC(std::string const &path) {
 
 struct ReadAlembic : INode {
     Alembic::Abc::v12::IArchive archive;
+    std::string usedPath;
     bool read_done = false;
     virtual void apply() override {
         int frameid;
@@ -523,6 +524,9 @@ struct ReadAlembic : INode {
         auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input<StringObject>("path")->get();
+            if (usedPath != path) {
+                read_done = false;
+            }
             if (read_done == false) {
                 archive = readABC(path);
             }
@@ -533,6 +537,7 @@ struct ReadAlembic : INode {
             auto obj = archive.getTop();
             traverseABC(obj, *abctree, frameid, read_done);
             read_done = true;
+            usedPath = path;
         }
         set_output("abctree", std::move(abctree));
     }

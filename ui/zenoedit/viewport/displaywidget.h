@@ -44,6 +44,7 @@ public:
     void moveToFrame(int frame);
     void setIsCurrent(bool isCurrent);
     bool isCurrent();
+    void setLoopPlaying(bool enable);
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 public slots:
