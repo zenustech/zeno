@@ -19,6 +19,7 @@
 #include "dialog/zrecframeselectdlg.h"
 #include "util/apphelper.h"
 #include "launch/ztcpserver.h"
+#include <zenoio/writer/zsgwriter.h>
 
 
 using std::string;
@@ -808,10 +809,31 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
 {
     //launch optix cmd directly.
     auto& inst = zeno::getSession().globalComm;
+
     auto pGraphsMgr = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgr, false);
 
-    const QString& zsgPath = pGraphsMgr->zsgPath();
+    IGraphsModel* pGraphs = pGraphsMgr->currentModel();
+    ZASSERT_EXIT(pGraphs, false);
+
+    APP_SETTINGS timeSettings;
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, false);
+    timeSettings.timeline = mainWin->timelineInfo();
+
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pGraphs, timeSettings);
+
+    QTemporaryFile tempZsg("zeno-tempfile");
+    if (!tempZsg.open()) {
+        //todo: messagebox
+        return false;
+    }
+
+    tempZsg.write(strContent.toUtf8());
+    tempZsg.close();
+
+    QFileInfo fileInfo(tempZsg.fileName());
+    const QString& zsgPath = fileInfo.filePath();
     if (zsgPath.isEmpty()) {
         //todo: messagebox
         return false;
