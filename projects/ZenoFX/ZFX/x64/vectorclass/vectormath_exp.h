@@ -69,6 +69,15 @@ static inline Vec4f vm_pow2n (Vec4f const n) {
     return d;
 }
 
+static inline Vec4f fb2i(Vec4f const x) {              
+    return _mm_cvtepi32_ps(reinterpret_i(x));
+}
+
+static inline Vec4f ib2f(Vec4f const x) {
+    Vec4i a = roundi(x);
+    return reinterpret_f(a);
+}
+
 #if MAX_VECTOR_SIZE >= 256
 
 static inline Vec4d vm_pow2n (Vec4d const n) {

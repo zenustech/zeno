@@ -101,6 +101,7 @@ struct TypeCheck : Visitor<TypeCheck> {
                     "floor",
                     "ceil",
                     "fb2i",
+                    "ib2f",
                     "round",
                     "abs",
                     "all",

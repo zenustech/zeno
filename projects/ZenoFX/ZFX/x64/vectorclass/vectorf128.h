@@ -21,7 +21,7 @@
 * (c) Copyright 2012-2020 Agner Fog.
 * Apache License version 2.0 or later.
 *****************************************************************************/
-
+//#include "zeno/utils/type_traits.h"
 #ifndef VECTORF128_H
 #define VECTORF128_H
 
@@ -1237,11 +1237,32 @@ static inline Vec4f floor(Vec4f const a) {
     return y;
 #endif
 }
+/*template<typename VTYP>
+static inline VTYP fb2i_f(Vec4f const x) {
+    typedef decltype(roundi(x)) ITYPE; 
+    VTYP ffll;
+    ffll ITYPE(reinterpret_i(x));
+    return ffll;
+    //bit_cast<int>(x);
+}*/
 
-static inline Vec4i fb2i(Vec4f const a) {
-    Vec4i t1 = _mm_castps_si128(a);   // reinterpret as 32-bit integer
+
+/*
+static inline Vec4f ib2f(Vec4i const a) {
+    Vec4f t1 = _mm_castsi128_ps(a);   // reinterpret as 32-bit float
     return t1;
 }
+*/
+
+/*static inline Vec4i fb2i(Vec4f const x) {
+    //return _mm_castps_si128(x);
+    return bit_cast<Vec4i, Vec4f>(x);
+}*/
+
+/*static inline Vec4i fb2i(Vec4f const a) {
+    Vec4i t1 = _mm_castps_si128(a);   // reinterpret as 32-bit integer
+    return t1;
+}*/
 
 // function ceil: round towards plus infinity. (result as float vector)
 static inline Vec4f ceil(Vec4f const a) {
@@ -1393,10 +1414,6 @@ static inline Vec4i exponent(Vec4f const a) {
 
 
 
-static inline Vec4f ib2f(Vec4i const a) {
-    Vec4f t1 = _mm_castsi128_ps(a);   // reinterpret as 32-bit float
-    return t1;
-}
 
 
 // Extract the fraction part of a floating point number
