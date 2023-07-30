@@ -9,7 +9,7 @@ file(GLOB_RECURSE source CONFIGURE_DEPENDS include/*.h src/*.cpp)
 if (ZENO_BUILD_SHARED)
     add_library(zeno SHARED ${source})
 else()
-    add_library(zeno OBJECT ${source} src/utils/ColorUtils.cpp)
+    add_library(zeno OBJECT ${source})
 endif()
 
 if (ZENO_ENABLE_OPENMP)
