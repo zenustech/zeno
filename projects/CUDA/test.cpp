@@ -316,7 +316,7 @@ struct TestAdaptiveGrid : INode {
         /// construct new vdb grid from ag
         /// ref: nanovdb/util/NanoToOpenVDB.h
         auto zsag = agBuilder.get();
-        // zsag.reorder(pol);
+        zsag.reorder(pol);
 
         // test ag view
         using ZSCoordT = zs::vec<int, 3>;
@@ -331,6 +331,7 @@ struct TestAdaptiveGrid : INode {
             c[2] = rng() % 30;
         }
         ZSCoordT c{0, 1, 0};
+        timer.tick();
         for (auto &c : coords) {
             bool found = zsagv.probeValue(0, c, v);
             sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref);
@@ -342,6 +343,17 @@ struct TestAdaptiveGrid : INode {
                            c[0], c[1], c[2], !found);
             }
         }
+        timer.tock("naive query (probe)");
+        timer.tick();
+        for (auto &c : coords) {
+            bool found = zsagv.probeValue(0, c, v, true_c);
+            sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref);
+            if (v != vref && found) {
+                fmt::print(fg(fmt::color::green), "probed value is {} ({}) at {}, {}, {}. is background: {}\n", v, vref,
+                           c[0], c[1], c[2], !found);
+            }
+        }
+        timer.tock("fast query (probe)");
         fmt::print("done cross-checking all values.\n");
 
         //openvdb::Mat4R
