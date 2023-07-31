@@ -27,9 +27,7 @@ DEF_FN2(atan2)
 DEF_FN2(pow)
 static void func_fb2i(float *a) { vcl::Vec4f x; x.load(a); x = vcl::fb2i(x); x.store(a); }
 static void func_ib2f(float *a) { vcl::Vec4f x; x.load(a); x = vcl::ib2f(x); x.store(a); }
-
 static void func_fmod(float *a, float *b) { vcl::Vec4f x, y; x.load(a); y.load(b); x = x - vcl::floor(x / y) * y; x.store(a); }
-//static void func_ib2f(float *a) { vcl::Vec4f x; x.load(a); x = vcl::i2f(x); x.store(a); }
 #undef DEF_FN1
 #undef DEF_FN2
 
