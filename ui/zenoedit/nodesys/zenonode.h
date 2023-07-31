@@ -67,6 +67,8 @@ public:
     GroupNode *getGroupNode();
     void addParam(const _param_ctrl &param);
 
+    virtual void setSelected(bool selected);
+
 signals:
     void socketClicked(ZenoSocketItem*, Qt::MouseButton);
     void doubleClicked(const QString &nodename);

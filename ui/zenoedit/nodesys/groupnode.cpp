@@ -502,3 +502,10 @@ void GroupNode::setSvgData(QString color)
     m_svgByte = file.readAll();
     m_svgByte.replace("#D8D8D8", color.toStdString().c_str());
 }
+
+void GroupNode::setSelected(bool selected)
+{
+    m_bSelected = true;
+    ZenoNode::setSelected(selected);
+    m_bSelected = false;
+}

@@ -45,6 +45,7 @@ class GroupNode : public ZenoNode {
     void removeChildItem(ZenoNode *pNode);
     void updateChildRelativePos(const ZenoNode *item);
     void updateBlackboard();
+    void setSelected(bool selected) override;
 
   protected:
     ZLayoutBackground *initBodyWidget(ZenoSubGraphScene *pScene) override;
