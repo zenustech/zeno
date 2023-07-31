@@ -1763,6 +1763,7 @@ bool ZenoMainWindow::saveFile(QString filePath)
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
+    settings.recordInfo = zenoApp->graphsManagment()->recordInfo();
     zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;

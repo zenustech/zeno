@@ -26,6 +26,7 @@ private:
     void dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer);
     void dumpParams(const PARAM_INFO &info, RAPIDJSON_WRITER &writer);
     void dumpSubGraphDesc(const NODE_DESC &desc, RAPIDJSON_WRITER &writer);
+    void dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writer);
 };
 
 #endif

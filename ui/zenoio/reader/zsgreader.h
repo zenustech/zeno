@@ -36,6 +36,7 @@ private:
                             IAcceptor *pAcceptor);
     void _parseViews(const rapidjson::Value& jsonViews, IAcceptor* pAcceptor);
     void _parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* pAcceptor);
+    void _parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* pAcceptor);
     void _parseDictPanel(bool bInput, const rapidjson::Value& dictPanelObj, const QString& id, const QString& inSock, const QString& nodeName, IAcceptor* pAcceptor);
     void _parseBySocketKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);
     void _parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor);

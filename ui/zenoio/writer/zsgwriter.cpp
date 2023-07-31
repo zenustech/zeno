@@ -81,6 +81,9 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
         writer.Key("descs");
         _dumpDescriptors(descs, writer);
 
+        writer.Key("settings");
+        dumpSettings(settings, writer);
+
         writer.Key("version");
         writer.String("v2.5");  //distinguish the new version ui from the stable zeno2.
     }
@@ -497,6 +500,40 @@ void ZsgWriter::dumpSubGraphDesc(const NODE_DESC &desc, RAPIDJSON_WRITER& writer
 
     writer.Key("is_subgraph");
     writer.Bool(true);
+}
+
+void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writer)
+{
+    const RECORD_SETTING& info = settings.recordInfo;
+    JsonObjBatch batch(writer);
+    {
+        writer.Key("recordinfo");
+        JsonObjBatch batch(writer);
+        writer.Key(recordinfo::record_path);
+        writer.String(info.record_path.toUtf8());
+        writer.Key(recordinfo::videoname);
+        writer.String(info.videoname.toUtf8());
+        writer.Key(recordinfo::fps);
+        writer.Int(info.fps);
+        writer.Key(recordinfo::bitrate);
+        writer.Int(info.bitrate);
+        writer.Key(recordinfo::numMSAA);
+        writer.Int(info.numMSAA);
+        writer.Key(recordinfo::numOptix);
+        writer.Int(info.numOptix);
+        writer.Key(recordinfo::width);
+        writer.Int(info.width);
+        writer.Key(recordinfo::height);
+        writer.Int(info.height);
+        writer.Key(recordinfo::bExportVideo);
+        writer.Bool(info.bExportVideo);
+        writer.Key(recordinfo::needDenoise);
+        writer.Bool(info.needDenoise);
+        writer.Key(recordinfo::bAutoRemoveCache);
+        writer.Bool(info.bAutoRemoveCache);
+        writer.Key(recordinfo::bAov);
+        writer.Bool(info.bAov);
+    }
 }
 
 void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writer)
