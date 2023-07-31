@@ -6,6 +6,7 @@
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
 #include <zeno/types/UserData.h>
+#include "settings/zenosettingsmanager.h"
 
 
 using std::string;
@@ -89,7 +90,11 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
             this->m_picker->pick_depth(mid_x, mid_y);
         }
     }
-    if (event->buttons() & Qt::MiddleButton) {
+    int button;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    settings.getViewShortCut(ShortCut_MovingView, button);
+    settings.getViewShortCut(ShortCut_RotatingView, button);
+    if (event->buttons() & button) {
         m_lastPos = event->pos();
     } else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
@@ -232,14 +237,20 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
 
-    if (event->buttons() & Qt::MiddleButton) {
+    int moveButton = Qt::NoButton;
+    int rotateButton = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    int moveKey = settings.getViewShortCut(ShortCut_MovingView, moveButton);
+    int rotateKey = settings.getViewShortCut(ShortCut_RotatingView, rotateButton);
+    if (event->buttons() & (rotateButton | moveButton)) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float xpos = event->x(), ypos = event->y();
         float dx = xpos - m_lastPos.x(), dy = ypos - m_lastPos.y();
         dx *= ratio / m_res[0];
         dy *= ratio / m_res[1];
-        bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-        if (shift_pressed) {
+        //bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
+        Qt::KeyboardModifiers modifiers = event->modifiers();
+        if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
             float cos_t = cos(m_theta);
             float sin_t = sin(m_theta);
             float cos_p = cos(m_phi);
@@ -252,7 +263,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             up.normalize();
             QVector3D delta = right * dx + up * dy;
             m_center += delta * m_radius;
-        } else {
+        } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
             m_theta -= dy * M_PI;
             m_phi += dx * M_PI;
         }
@@ -294,13 +305,20 @@ void CameraControl::updatePerspective() {
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
-    int dy = event->angleDelta().y();
+    int dy = 0;
+    if (event->modifiers() & Qt::AltModifier)
+        dy = event->angleDelta().x();
+    else
+        dy = event->angleDelta().y();
     float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
     bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
     bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);
     bool focalPlaneDistance_pressed =
         (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
     float delta = dy > 0 ? 1 : -1;
+    int button = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    int scaleKey = settings.getViewShortCut(ShortCut_ScalingView, button);
     if (shift_pressed) {
         float temp = getFOV() / scale;
         setFOV(temp < 170 ? temp : 170);
@@ -312,7 +330,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     } else if (focalPlaneDistance_pressed) {
         float temp = getDisPlane() + delta * 0.05;
         setDisPlane(temp >= 0.05 ? temp : 0.05);
-    } else {
+    } else if (scaleKey == 0 || event->modifiers() & scaleKey){
         m_radius *= scale;
     }
     updatePerspective();

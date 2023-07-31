@@ -1142,8 +1142,11 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
     }
     if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_SelectAllNodes)) 
     {
-        for (auto it : m_nodes) {
+        for (const auto& it : m_nodes) {
             it.second->setSelected(true);
+        }
+        for (const auto& it : m_links) {
+            it->setSelected(true);
         }
     } 
     else if (!event->isAccepted() && uKey == ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Once)) 

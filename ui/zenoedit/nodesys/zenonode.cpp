@@ -1315,6 +1315,11 @@ void ZenoNode::addParam(const _param_ctrl &param)
     m_params[param.param_name->text()] = param;
 }
 
+void ZenoNode::setSelected(bool selected)
+{
+    _base::setSelected(selected);
+}
+
 bool ZenoNode::sceneEventFilter(QGraphicsItem *watched, QEvent *event) {
     return _base::sceneEventFilter(watched, event);
 }

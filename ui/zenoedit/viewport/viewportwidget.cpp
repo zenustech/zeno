@@ -210,7 +210,11 @@ void ViewportWidget::paintGL()
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
-    if(event->button() == Qt::MidButton){
+    int button;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    settings.getViewShortCut(ShortCut_MovingView, button);
+    settings.getViewShortCut(ShortCut_RotatingView, button);
+    if(event->button() & button){
         m_bMovingCamera = true;
         setSimpleRenderOption();
     }
@@ -221,7 +225,11 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    if(event->button() == Qt::MidButton){
+    int button;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    settings.getViewShortCut(ShortCut_MovingView, button);
+    settings.getViewShortCut(ShortCut_RotatingView, button);
+    if(event->button() & button){
         m_bMovingCamera = true;
     }
     setSimpleRenderOption();

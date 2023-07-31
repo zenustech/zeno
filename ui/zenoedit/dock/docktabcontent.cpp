@@ -621,6 +621,7 @@ DockContent_View::DockContent_View(bool bGLView, QWidget* parent)
     , m_screenshoot(nullptr)
     , m_resizeViewport(nullptr)
     , m_bGLView(bGLView)
+    , m_background(nullptr)
 {
 }
 
@@ -755,9 +756,9 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
             QLineEdit* pHeightEdit = new QLineEdit;
             pHeightEdit->setValidator(new QIntValidator);
 
-            pLayout->addWidget(new QLabel("width"), 0, 0);
+            pLayout->addWidget(new QLabel(tr("width")), 0, 0);
             pLayout->addWidget(pWidthEdit, 0, 1);
-            pLayout->addWidget(new QLabel("height"), 1, 0);
+            pLayout->addWidget(new QLabel(tr("height")), 1, 0);
             pLayout->addWidget(pHeightEdit, 1, 1);
             pLayout->addWidget(pButtonBox, 2, 1);
             dlg.setLayout(pLayout);
@@ -816,6 +817,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->addWidget(m_smooth_shading);
     pToolLayout->addWidget(m_normal_check);
     {
+        m_background = new QCheckBox(tr("Background"));
         m_background->setStyleSheet("color: white;");
         pToolLayout->addWidget(m_background);
     }

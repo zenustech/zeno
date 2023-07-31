@@ -72,7 +72,13 @@ void ZenoGraphsEditor::initUI()
     m_ui->searchEdit->setProperty("cssClass", "searchEditor");
     m_ui->graphsViewTab->setProperty("cssClass", "graphicsediter");
     m_ui->graphsViewTab->tabBar()->setProperty("cssClass", "graphicsediter");
-
+    m_ui->graphsViewTab->setUsesScrollButtons(true);
+    m_ui->btnSearchOpt->setIcons(":/icons/collaspe.svg", ":/icons/collaspe.svg");
+    ZIconLabel* pPageListButton = new ZIconLabel(m_ui->graphsViewTab);
+    pPageListButton->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 30)), ":/icons/ic_parameter_unfold.svg", ":/icons/ic_parameter_unfold.svg");
+    connect(pPageListButton, &ZIconLabel::clicked, this, &ZenoGraphsEditor::onPageListClicked);
+    m_ui->graphsViewTab->setCornerWidget(pPageListButton);
+    m_ui->graphsViewTab->setDocumentMode(false);
     initRecentFiles();
 }
 
@@ -277,6 +283,48 @@ void ZenoGraphsEditor::onNewSubgraph()
     if (bOk) {
         m_model->newSubgraph(newSubgName);
     }
+}
+
+void ZenoGraphsEditor::onPageListClicked()
+{
+    QMenu* pMenu = new QMenu;
+    QSize size = ZenoStyle::dpiScaledSize(QSize(16, 16));
+    for (int i = 0; i < m_ui->graphsViewTab->count(); i++)
+    {
+        QWidgetAction* pAction = new QWidgetAction(pMenu);
+        QWidget* pWidget = new QWidget(pMenu);
+        QHBoxLayout* pLayout = new QHBoxLayout(pWidget);
+        pLayout->setContentsMargins(0, ZenoStyle::dpiScaled(5), 0, ZenoStyle::dpiScaled(5));
+        QString text = m_ui->graphsViewTab->tabText(i);
+        ZToolButton* ptextButton = new ZToolButton(ZToolButton::Opt_TextRightToIcon, m_ui->graphsViewTab->tabIcon(i), size, text);
+        ptextButton->setTextClr(QColor("#A3B1C0"), QColor("#FFFFFF"), QColor("#A3B1C0"), QColor("#FFFFFF"));
+        pWidget->setAttribute(Qt::WA_TranslucentBackground, true);
+        pLayout->addWidget(ptextButton);
+        pLayout->addSpacerItem(new QSpacerItem(10, 10, QSizePolicy::Expanding));
+        ZIconLabel* pDeleteButton = new ZIconLabel(pWidget);
+        pDeleteButton->setToolTip(tr("Close Tab"));
+        pDeleteButton->setIcons(size, ":/icons/closebtn.svg", ":/icons/closebtn_on.svg");
+        pLayout->addWidget(pDeleteButton);
+        pAction->setDefaultWidget(pWidget);
+        pAction->setIcon(m_ui->graphsViewTab->tabIcon(i));
+        pMenu->addAction(pAction);
+        connect(pDeleteButton, &ZIconLabel::clicked, this, [=]()
+        {
+            int idx = tabIndexOfName(m_ui->graphsViewTab->tabText(i));
+            if (idx >= 0)
+                m_ui->graphsViewTab->removeTab(idx);
+            pMenu->close();
+        });
+        connect(ptextButton, &ZToolButton::clicked, this, [=]() {
+            const QModelIndex& index = m_model->index(text);
+            if (index.isValid())
+                activateTab(text, index.data(ROLE_OBJPATH).toString());
+            pMenu->close();
+        });
+
+    }
+    pMenu->exec(cursor().pos());
+    pMenu->deleteLater();
 }
 
 void ZenoGraphsEditor::onSubnetOptionClicked()

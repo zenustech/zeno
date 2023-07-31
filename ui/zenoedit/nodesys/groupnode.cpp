@@ -16,6 +16,7 @@
 
 GroupTextItem::GroupTextItem(QGraphicsItem *parent) : 
     QGraphicsWidget(parent)
+    , m_pLineEdit(nullptr)
 {
     setFlags(ItemIsSelectable);
 }
@@ -25,6 +26,11 @@ GroupTextItem ::~GroupTextItem() {
 void GroupTextItem::setText(const QString &text) {
     m_text = text;
     update();
+}
+
+QString GroupTextItem::text() const
+{
+    return m_text;
 }
 
 void GroupTextItem::mousePressEvent(QGraphicsSceneMouseEvent *event) 
@@ -40,7 +46,39 @@ void GroupTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     emit mouseReleaseSignal(event);
 }
 
+void GroupTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
+{
+    if (!m_pLineEdit)
+    {
+        m_pLineEdit = new ZEditableTextItem(m_text, this);
+        m_pLineEdit->setPos(0, 0);
+        m_pLineEdit->setFocus();
+        connect(m_pLineEdit, &ZEditableTextItem::editingFinished, this, [=]() {
+            QString text = m_pLineEdit->toPlainText();
+            if (m_text != text)
+            {
+                m_text = m_pLineEdit->toPlainText();
+                emit textChangedSignal(m_text);
+            }
+            m_pLineEdit->hide();
+            update();
+        });
+    }
+    else
+    {
+        m_pLineEdit->show();
+    }
+    update();
+    QGraphicsWidget::mouseDoubleClickEvent(event);
+}
+
 void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
+    if (m_pLineEdit && m_pLineEdit->isVisible() && m_pLineEdit->boundingRect().size() != boundingRect().size())
+    {
+        m_pLineEdit->setFont(font());
+        m_pLineEdit->setFixedSize(boundingRect().size());
+        return;
+    }
     painter->fillRect(boundingRect(), palette().color(QPalette::Window));
     QPen pen(palette().color(QPalette::Window));
     pen.setWidthF(ZenoStyle::scaleWidth(2));
@@ -80,6 +118,9 @@ GroupNode::GroupNode(const NodeUtilParam &params, QGraphicsItem *parent)
     connect(m_pTextItem, &GroupTextItem::mousePressSignal, this, [=](QGraphicsSceneMouseEvent *event) {
         ZenoNode::mousePressEvent(event);
         m_bSelected = true;
+    });
+    connect(m_pTextItem, &GroupTextItem::textChangedSignal, this, [=]() {
+        updateBlackboard();
     });
     m_pTextItem->show();
     m_pTextItem->setZValue(0);
@@ -402,6 +443,7 @@ void GroupNode::updateBlackboard() {
     PARAMS_INFO params = index().data(ROLE_PARAMS_NO_DESC).value<PARAMS_INFO>();
     BLACKBOARD_INFO info = params["blackboard"].value.value<BLACKBOARD_INFO>();
     info.sz = this->size();
+    info.title = m_pTextItem->text();
     IGraphsModel *pModel = zenoApp->graphsManagment()->currentModel();
     ZASSERT_EXIT(pModel);
     pModel->updateBlackboard(index().data(ROLE_OBJID).toString(), QVariant::fromValue(info), subGraphIndex(), true);
@@ -459,4 +501,11 @@ void GroupNode::setSvgData(QString color)
     file.open(QIODevice::ReadOnly);
     m_svgByte = file.readAll();
     m_svgByte.replace("#D8D8D8", color.toStdString().c_str());
+}
+
+void GroupNode::setSelected(bool selected)
+{
+    m_bSelected = true;
+    ZenoNode::setSelected(selected);
+    m_bSelected = false;
 }
