@@ -138,6 +138,11 @@ struct TypeCheck : Visitor<TypeCheck> {
                 error("function `%s` takes exactly 1 argument", name.c_str());
             }
 
+        } else if (contains({"degrees", "radians"}, name)) {
+            if (stmt->args.size() != 1) {
+                error("function `%s` takes exactly 1 argument", name.c_str());
+            }
+
         } else if (contains({"length"}, name)) {
             if (stmt->args.size() != 1) {
                 error("function `%s` takes exactly 1 argument", name.c_str());
