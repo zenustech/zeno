@@ -61,6 +61,8 @@ static int calcFrameCountByAudio(std::string path, int fps) {
 int record_main(const QCoreApplication& app);
 int record_main(const QCoreApplication& app)
 {
+    //MessageBox(0, "recordcmd", "recordcmd", MB_OK);
+
     ZENO_RECORD_RUN_INITPARAM param;
 #ifndef DEBUG_DIRECTLY
     QCommandLineParser cmdParser;
@@ -250,13 +252,13 @@ int record_main(const QCoreApplication& app)
                     if (doc.HasMember("result")) {
                         ZASSERT_EXIT(doc["result"].IsInt());
                         int ret = doc["result"].GetInt();
-                        zeno::log_info("\n[record] result is {}.\n", ret);
+                        std::cout << "\n[record] result is {}.\n" << std::flush;
                         QCoreApplication::exit(ret);
                     }
                     else if (doc.HasMember("frame")) {
                         ZASSERT_EXIT(doc["frame"].IsInt());
                         int frame = doc["frame"].GetInt();
-                        zeno::log_info("\n[record] frame {} recording is finished.\n", frame);
+                        std::cout << "\n[record] frame " << frame << " recording is finished.\n" << std::flush;
                     }
                 }
             }
@@ -264,7 +266,7 @@ int record_main(const QCoreApplication& app)
 
         QObject::connect(optixProc, &QProcess::errorOccurred, [=](QProcess::ProcessError error) {
             if (QProcess::Crashed == error) {
-                zeno::log_info("\n[record] render process has crashed\n");
+                std::cout << "\n[record] render process has crashed\n" << std::flush;
                 QCoreApplication::exit(-2);
             }
         });

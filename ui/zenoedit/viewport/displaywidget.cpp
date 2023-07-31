@@ -19,6 +19,7 @@
 #include "dialog/zrecframeselectdlg.h"
 #include "util/apphelper.h"
 #include "launch/ztcpserver.h"
+#include <zenoio/writer/zsgwriter.h>
 
 
 using std::string;
@@ -808,12 +809,42 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
 {
     //launch optix cmd directly.
     auto& inst = zeno::getSession().globalComm;
+
     auto pGraphsMgr = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgr, false);
 
-    const QString& zsgPath = pGraphsMgr->zsgPath();
+    IGraphsModel* pGraphs = pGraphsMgr->currentModel();
+    if (!pGraphs) {
+        QMessageBox::warning(nullptr,
+            tr("Recording Failed"),
+            tr("No graphs available, please open the zsg and then record."));
+        return false;
+    }
+
+    APP_SETTINGS timeSettings;
+    ZenoMainWindow* mainWin = zenoApp->getMainWindow();
+    ZASSERT_EXIT(mainWin, false);
+    timeSettings.timeline = mainWin->timelineInfo();
+
+    QString strContent = ZsgWriter::getInstance().dumpProgramStr(pGraphs, timeSettings);
+
+    QTemporaryFile tempZsg("zeno-tempfile");
+    if (!tempZsg.open()) {
+        QMessageBox::information(nullptr,
+            tr("Recording Failed"),
+            tr("Failed to create tmp file for current zsg"));
+        return false;
+    }
+
+    tempZsg.write(strContent.toUtf8());
+    tempZsg.close();
+
+    QFileInfo fileInfo(tempZsg.fileName());
+    const QString& zsgPath = fileInfo.filePath();
     if (zsgPath.isEmpty()) {
-        //todo: messagebox
+        QMessageBox::information(nullptr,
+            tr("Recording Failed"),
+            tr("Failed to create tmp file for current zsg"));
         return false;
     }
 
@@ -821,9 +852,15 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
     int nFrames = recInfo.frameRange.second - recInfo.frameRange.first + 1;
 
     QSettings settings(zsCompanyName, zsEditor);
-    const QString& cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
+
+    QTemporaryDir tempCacheDir;
+    tempCacheDir.setAutoRemove(true);
+
+    const QString& cacheDir = tempCacheDir.path();
     if (cacheDir.isEmpty()) {
-        //todo: messagebox
+        QMessageBox::warning(nullptr,
+            tr("Recording Failed"),
+            tr("The temporary path of zencache failed to create, please check the disk volumn of sysmtem driver."));
         return false;
     }
 
@@ -837,7 +874,7 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
         "--optix", "1",
         "--path", recInfo.record_path,
         "--pixel", resolution,
-        "--cacheautorm", recInfo.bAutoRemoveCache ? "1" : "0"
+        "--cacheautorm", "1"
     };
 
     QProcess* recordcmd = new QProcess(this);
@@ -888,6 +925,8 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
     }
     else {
         //cancel record: kill recordcmd?
+        recordcmd->kill();
+        delete recordcmd;
         return false;
     }
 }
