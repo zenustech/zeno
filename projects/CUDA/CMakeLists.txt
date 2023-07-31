@@ -28,9 +28,6 @@ target_include_directories(zshelper INTERFACE
 )
 target_link_libraries(zshelper INTERFACE zensim ZFX)
 target_compile_features(zshelper INTERFACE cuda_std_17)
-target_compile_options(zpc_cuda_deps
-  INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:-arch=sm_${ZS_CUDA_ARCH}>
-)
 
 target_link_options(zeno
   PRIVATE $<DEVICE_LINK:-dlto>
