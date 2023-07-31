@@ -345,6 +345,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     size_t tris_count;
 
     bool invisible;
+    bool custom_color;
 
     ZhxxDrawObject pointObj;
     ZhxxDrawObject lineObj;
@@ -365,6 +366,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 pos[i] = zeno::vec3f(i * (1.0f / (pos.size() - 1)), 0, 0);
             }
         }
+        custom_color = prim->attr_is<zeno::vec3f>("clr");
         if (!prim->attr_is<zeno::vec3f>("clr")) {
             auto &clr = prim->add_attr<zeno::vec3f>("clr");
             zeno::vec3f clr0(1.0f);
@@ -630,6 +632,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             triObj.prog->set_uniform("mNormalCheck", scene->drawOptions->normal_check);
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
+            triObj.prog->set_uniformi("mCustomColor", custom_color);
 
             triObj.ebo->bind();
 
