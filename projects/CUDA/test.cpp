@@ -312,25 +312,40 @@ struct TestAdaptiveGrid : INode {
         fmt::print("ref node cnts: {}, {}, {}, {}\n", nodeCnts[0], nodeCnts[1], nodeCnts[2], nodeCnts[3]);
         fmt::print("calced node cnts: {}, {}, {}, {}\n", op.cnts[0], op.cnts[1], op.cnts[2], op.cnts[3]);
 
+        auto pol = omp_exec();
         /// construct new vdb grid from ag
         /// ref: nanovdb/util/NanoToOpenVDB.h
         auto zsag = agBuilder.get();
+        // zsag.reorder(pol);
 
         // test ag view
         using ZSCoordT = zs::vec<int, 3>;
         auto zsagv = view<space>(zsag);
         float v, vref;
+
+        std::vector<ZSCoordT> coords(10000);
+        std::mt19937 rng;
+        for (auto &c : coords) {
+            c[0] = rng() % 30;
+            c[1] = rng() % 30;
+            c[2] = rng() % 30;
+        }
         ZSCoordT c{0, 1, 0};
-        zsagv.probeValue(0, c, v);
-        sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref);
-        fmt::print("zs ag unnamed view type: {}\n", get_var_type_str(zsagv));
-        fmt::print("zs ag unnamed view type tuple of level views: {}\n", get_var_type_str(zsagv._levels));
-        fmt::print(fg(fmt::color::yellow), "background: {}\n", zsagv._background);
-        fmt::print(fg(fmt::color::green), "probed value is {} ({}) at {}, {}, {}\n", v, vref, c[0], c[1], c[2]);
+        for (auto &c : coords) {
+            bool found = zsagv.probeValue(0, c, v);
+            sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref);
+            if (v != vref && found) {
+                //fmt::print("zs ag unnamed view type: {}\n", get_var_type_str(zsagv));
+                //fmt::print("zs ag unnamed view type tuple of level views: {}\n", get_var_type_str(zsagv._levels));
+                //fmt::print(fg(fmt::color::yellow), "background: {}\n", zsagv._background);
+                fmt::print(fg(fmt::color::green), "probed value is {} ({}) at {}, {}, {}. is background: {}\n", v, vref,
+                           c[0], c[1], c[2], !found);
+            }
+        }
+        fmt::print("done cross-checking all values.\n");
 
         //openvdb::Mat4R
         auto trans = sdf->transform().baseMap()->getAffineMap()->getMat4();
-        auto pol = omp_exec();
 
         auto ret = std::make_shared<VDBFloatGrid>();
         auto &dstGrid = ret->m_grid;
