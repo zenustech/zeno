@@ -307,17 +307,29 @@ struct MatChannelInfo{
 };
 
 void EvalBlenderFile::onEvalClicked() {
-    ZENO_HANDLE hGraph = Zeno_GetGraph("main");
+    ZENO_HANDLE mGraph = Zeno_GetGraph("main");
+    ZENO_HANDLE hGraph = Zeno_CreateGraph("BlenderParsed");
 
     ZENO_HANDLE evalBlenderNode = index().internalId();
     std::pair<float, float> evalBlenderNodePos;
     Zeno_GetPos(hGraph, evalBlenderNode, evalBlenderNodePos);
 
+    // SubGraph Output
+    int out_view_count = 0;
+    ZENO_HANDLE suboutput_Node = Zeno_AddNode(hGraph, "SubOutput");
+    Zeno_SetPos(hGraph, suboutput_Node, evalBlenderNodePos);
+    ZENO_HANDLE makelist_Node = Zeno_AddNode(hGraph, "MakeList");
+    Zeno_SetPos(hGraph, makelist_Node, {evalBlenderNodePos.first - 500.0f, evalBlenderNodePos.second});
+    Zeno_AddLink(hGraph, makelist_Node, "list", suboutput_Node, "port");
+
     auto inputs = GetCurNodeInputs();
     std::string output_path = inputs[2];
     Path dir (output_path);
-    Path file ("info.json");
-    Path out_json = dir / file;
+    Path json_file ("info.json");
+    Path zsg_file ("parsed.zsg");
+    Path out_json = dir / json_file;
+    Path out_zsg = dir / zsg_file;
+
     if(! exists(out_json)){
         std::cout << "error: the info.json that script output doesn't exists\n";
         return;
@@ -335,7 +347,7 @@ void EvalBlenderFile::onEvalClicked() {
     // Eval Mesh
     for (auto& [key, val] : parseData.items())
     {
-        file = Path(key+".abc");
+        Path file = Path(key+".abc");
         Path out_abc = dir / Path("abc") / file;
         std::cout << "abc file: " << out_abc.string() << " exists: " << exists(out_abc) << "\n";
         if(exists(out_abc))
@@ -365,7 +377,10 @@ void EvalBlenderFile::onEvalClicked() {
             Zeno_AddLink(hGraph, alembic_prim_Node, "prim", bind_material_Node, "object");
 
             // Set node view
-            Zeno_SetView(hGraph, bind_material_Node, true);
+            //Zeno_SetView(hGraph, bind_material_Node, true);
+
+            Zeno_AddLink(hGraph, bind_material_Node, "object", makelist_Node, "obj"+std::to_string(out_view_count));
+            out_view_count++;
 
             abc_count++;
         }else{
@@ -417,7 +432,10 @@ void EvalBlenderFile::onEvalClicked() {
         ZENO_HANDLE shader_finalize_Node = Zeno_AddNode(hGraph, "ShaderFinalize");
         Zeno_SetPos(hGraph, shader_finalize_Node, NodePos2);
         Zeno_SetInputDefl(hGraph, shader_finalize_Node, "mtlid", key);
-        Zeno_SetView(hGraph, shader_finalize_Node, true);
+        //Zeno_SetView(hGraph, shader_finalize_Node, true);
+
+        Zeno_AddLink(hGraph, shader_finalize_Node, "mtl", makelist_Node, "obj"+std::to_string(out_view_count));
+        out_view_count++;
 
         if(val.find("base_color") != val.end()){
           auto base_color = val.at("base_color").at("value").get<std::vector<float>>(); // vec4
@@ -623,6 +641,20 @@ if(value.separate != ""){ \
 
         mat_count++;
     }
+
+    // Create Parsed-SubNode in main
+    ZENO_HANDLE parsed_blender_Node = Zeno_AddNode(mGraph, "BlenderParsed");
+    Zeno_SetPos(mGraph, parsed_blender_Node, {evalBlenderNodePos.first + 500.0f, evalBlenderNodePos.second});
+    Zeno_SetView(mGraph, parsed_blender_Node, true);
+
+    // Save zsg file
+    IGraphsModel *pModel = GraphsManagment::instance().currentModel();
+    GraphsManagment& gman = GraphsManagment::instance();
+    APP_SETTINGS settings;
+    TIMELINE_INFO info;
+    settings.timeline = info;
+    std::cout << "save zsg file: " << out_zsg.string() << "\n";
+    gman.saveFile(QString::fromStdString(out_zsg.string()), settings);
 }
 
 void EvalBlenderFile::onExecClicked() {
