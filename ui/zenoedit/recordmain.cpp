@@ -252,7 +252,7 @@ int record_main(const QCoreApplication& app)
                     if (doc.HasMember("result")) {
                         ZASSERT_EXIT(doc["result"].IsInt());
                         int ret = doc["result"].GetInt();
-                        std::cout << "\n[record] result is {}.\n" << std::flush;
+                        std::cout << "\n[record] result is " << ret << "\n" << std::flush;
                         QCoreApplication::exit(ret);
                     }
                     else if (doc.HasMember("frame")) {
