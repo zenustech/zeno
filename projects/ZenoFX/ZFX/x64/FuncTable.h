@@ -13,8 +13,7 @@ namespace zfx::x64 {
 struct FuncTable {
 #define DEF_FN1(name) static void func_##name(float *a) { vcl::Vec4f x; x.load(a); x = vcl::name(x); x.store(a); }
 #define DEF_FN2(name) static void func_##name(float *a, float *b) { vcl::Vec4f x, y; x.load(a); y.load(b); x = vcl::name(x, y); x.store(a); }
-//DEF_FN1(sin)
-static void func_sin(float *a) { vcl::Vec4f x; x.load(a); x = vcl::sin(x); x.store(a); }
+DEF_FN1(sin)
 DEF_FN1(cos)
 DEF_FN1(tan)
 DEF_FN1(asin)
@@ -26,8 +25,8 @@ DEF_FN1(floor)
 DEF_FN1(ceil)
 DEF_FN2(atan2)
 DEF_FN2(pow)
-static void func_fb2i(float *a) { vcl::Vec4f x; x.load(a); vcl::Vec4f y = vcl::fb2i(x); y.store(a); }
-static void func_ib2f(float *a) { vcl::Vec4f x; x.load(a); vcl::Vec4f y = vcl::ib2f(x); y.store(a); }
+static void func_fb2i(float *a) { vcl::Vec4f x; x.load(a); x = vcl::fb2i(x); x.store(a); }
+static void func_ib2f(float *a) { vcl::Vec4f x; x.load(a); x = vcl::ib2f(x); x.store(a); }
 
 static void func_fmod(float *a, float *b) { vcl::Vec4f x, y; x.load(a); y.load(b); x = x - vcl::floor(x / y) * y; x.store(a); }
 //static void func_ib2f(float *a) { vcl::Vec4f x; x.load(a); x = vcl::i2f(x); x.store(a); }

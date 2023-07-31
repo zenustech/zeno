@@ -340,7 +340,6 @@ _PER_FN1(atan)
 _PER_FN1(exp)
 _PER_FN1(log)
 _PER_FN1(floor)
-//_PER_FN1(fb2i)
 _PER_FN1(ceil)
 #undef _PER_FN1
 

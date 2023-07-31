@@ -945,7 +945,6 @@ ZENDEFNODE(erode_noise_sparse_convolution, {/* inputs: */ {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Gabor Noise
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 class pseudo_random_number_generator {
   public:
     void seed(unsigned s) {

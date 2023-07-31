@@ -57,7 +57,6 @@ struct ConstantFold : Visitor<ConstantFold> {
         _PER_OP(exp)
         _PER_OP(log)
         _PER_OP(floor)
-        //_PER_OP(fb2i)
         _PER_OP(ceil)
         _PER_OP(round)
 #undef _PER_OP

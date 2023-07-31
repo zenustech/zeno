@@ -254,8 +254,6 @@ static inline VTYPE sincos_f(VTYPE * cosret, VTYPE const xx) {
     }
 }
 
-
-
 // instantiations of sincos_f template:
 
 static inline Vec4f sin(Vec4f const x) {

@@ -1765,161 +1765,159 @@ ZENDEFNODE(ImageColor, {
 });
 
 
-
+//TODO:: fix sparse convolution noise
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Sparse Convolution Noise
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-std::array<int, 256> perm = {
-    225, 155, 210, 108, 175, 199, 221, 144, 203, 116, 70,  213, 69,  158, 33,  252, 5,   82,  173, 133, 222, 139,
-    174, 27,  9,   71,  90,  246, 75,  130, 91,  191, 169, 138, 2,   151, 194, 235, 81,  7,   25,  113, 228, 159,
-    205, 253, 134, 142, 248, 65,  224, 217, 22,  121, 229, 63,  89,  103, 96,  104, 156, 17,  201, 129, 36,  8,
-    165, 110, 237, 117, 231, 56,  132, 211, 152, 20,  181, 111, 239, 218, 170, 163, 51,  172, 157, 47,  80,  212,
-    176, 250, 87,  49,  99,  242, 136, 189, 162, 115, 44,  43,  124, 94,  150, 16,  141, 247, 32,  10,  198, 223,
-    255, 72,  53,  131, 84,  57,  220, 197, 58,  50,  208, 11,  241, 28,  3,   192, 62,  202, 18,  215, 153, 24,
-    76,  41,  15,  179, 39,  46,  55,  6,   128, 167, 23,  188, 106, 34,  187, 140, 164, 73,  112, 182, 244, 195,
-    227, 13,  35,  77,  196, 185, 26,  200, 226, 119, 31,  123, 168, 125, 249, 68,  183, 230, 177, 135, 160, 180,
-    12,  1,   243, 148, 102, 166, 38,  238, 251, 37,  240, 126, 64,  74,  161, 40,  184, 149, 171, 178, 101, 66,
-    29,  59,  146, 61,  254, 107, 42,  86,  154, 4,   236, 232, 120, 21,  233, 209, 45,  98,  193, 114, 78,  19,
-    206, 14,  118, 127, 48,  79,  147, 85,  30,  207, 219, 54,  88,  234, 190, 122, 95,  67,  143, 109, 137, 214,
-    145, 93,  92,  100, 245, 0,   216, 186, 60,  83,  105, 97,  204, 52};
+// std::array<int, 256> perm = {
+//     225, 155, 210, 108, 175, 199, 221, 144, 203, 116, 70,  213, 69,  158, 33,  252, 5,   82,  173, 133, 222, 139,
+//     174, 27,  9,   71,  90,  246, 75,  130, 91,  191, 169, 138, 2,   151, 194, 235, 81,  7,   25,  113, 228, 159,
+//     205, 253, 134, 142, 248, 65,  224, 217, 22,  121, 229, 63,  89,  103, 96,  104, 156, 17,  201, 129, 36,  8,
+//     165, 110, 237, 117, 231, 56,  132, 211, 152, 20,  181, 111, 239, 218, 170, 163, 51,  172, 157, 47,  80,  212,
+//     176, 250, 87,  49,  99,  242, 136, 189, 162, 115, 44,  43,  124, 94,  150, 16,  141, 247, 32,  10,  198, 223,
+//     255, 72,  53,  131, 84,  57,  220, 197, 58,  50,  208, 11,  241, 28,  3,   192, 62,  202, 18,  215, 153, 24,
+//     76,  41,  15,  179, 39,  46,  55,  6,   128, 167, 23,  188, 106, 34,  187, 140, 164, 73,  112, 182, 244, 195,
+//     227, 13,  35,  77,  196, 185, 26,  200, 226, 119, 31,  123, 168, 125, 249, 68,  183, 230, 177, 135, 160, 180,
+//     12,  1,   243, 148, 102, 166, 38,  238, 251, 37,  240, 126, 64,  74,  161, 40,  184, 149, 171, 178, 101, 66,
+//     29,  59,  146, 61,  254, 107, 42,  86,  154, 4,   236, 232, 120, 21,  233, 209, 45,  98,  193, 114, 78,  19,
+//     206, 14,  118, 127, 48,  79,  147, 85,  30,  207, 219, 54,  88,  234, 190, 122, 95,  67,  143, 109, 137, 214,
+//     145, 93,  92,  100, 245, 0,   216, 186, 60,  83,  105, 97,  204, 52};
 
-template <typename T>
-constexpr T PERM(T x) {
-    return perm[(x)&255];
-}
+// template <typename T>
+// constexpr T PERM(T x) {
+//     return perm[(x)&255];
+// }
 
-#define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
+// #define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
 
-std::random_device rd;
-std::default_random_engine engine(rd());
-std::uniform_real_distribution<float> d(0, 1);
+// std::random_device rd;
+// std::default_random_engine engine(rd());
+// std::uniform_real_distribution<float> d(0, 1);
 
-float impulseTab[256 * 4];
-void impulseTabInit() {
-    int i;
-    float *f = impulseTab;
-    for (i = 0; i < 256; i++) {
-        *f++ = d(engine);
-        *f++ = d(engine);
-        *f++ = d(engine);
-        *f++ = 1. - 2. * d(engine);
-    }
-}
+// float impulseTab[256 * 4];
+// void impulseTabInit() {
+//     int i;
+//     float *f = impulseTab;
+//     for (i = 0; i < 256; i++) {
+//         *f++ = d(engine);
+//         *f++ = d(engine);
+//         *f++ = d(engine);
+//         *f++ = 1. - 2. * d(engine);
+//     }
+// }
 
-float catrom2(float d, int griddist) {
-    float x;
-    int i;
-    static float table[401];
-    static bool initialized = 0;
-    if (d >= griddist * griddist)
-        return 0;
-    if (!initialized) {
-        for (i = 0; i < 4 * 100 + 1; i++) {
-            x = i / (float)100;
-            x = sqrtf(x);
-            if (x < 1)
-                table[i] = 0.5 * (2 + x * x * (-5 + x * 3));
-            else
-                table[i] = 0.5 * (4 + x * (-8 + x * (5 - x)));
-        }
-        initialized = 1;
-    }
-    d = d * 100 + 0.5;
-    i = floor(d);
-    if (i >= 4 * 100 + 1)
-        return 0;
-    return table[i];
-}
+// float catrom2(float d, int griddist) {
+//     float x;
+//     int i;
+//     static float table[401];
+//     static bool initialized = 0;
+//     if (d >= griddist * griddist)
+//         return 0;
+//     if (!initialized) {
+//         for (i = 0; i < 4 * 100 + 1; i++) {
+//             x = i / (float)100;
+//             x = sqrtf(x);
+//             if (x < 1)
+//                 table[i] = 0.5 * (2 + x * x * (-5 + x * 3));
+//             else
+//                 table[i] = 0.5 * (4 + x * (-8 + x * (5 - x)));
+//         }
+//         initialized = 1;
+//     }
+//     d = d * 100 + 0.5;
+//     i = floor(d);
+//     if (i >= 4 * 100 + 1)
+//         return 0;
+//     return table[i];
+// }
 
-#define NEXT(h) (((h) + 1) & 255)
+// #define NEXT(h) (((h) + 1) & 255)
 
-float scnoise(float x, float y, float z, int pulsenum, int griddist) {
-    static int initialized;
-    float *fp = nullptr;
-    int i, j, k, h, n;
-    int ix, iy, iz;
-    float sum = 0;
-    float fx, fy, fz, dx, dy, dz, distsq;
+// float scnoise(float x, float y, float z, int pulsenum, int griddist) {
+//     static int initialized;
+//     float *fp = nullptr;
+//     int i, j, k, h, n;
+//     int ix, iy, iz;
+//     float sum = 0;
+//     float fx, fy, fz, dx, dy, dz, distsq;
 
-    /* Initialize the random impulse table if necessary. */
-    if (!initialized) {
-        impulseTabInit();
-        initialized = 1;
-    }
-    ix = floor(x);
-    fx = x - ix;
-    iy = floor(y);
-    fy = y - iy;
-    iz = floor(z);
-    fz = z - iz;
+//     /* Initialize the random impulse table if necessary. */
+//     if (!initialized) {
+//         impulseTabInit();
+//         initialized = 1;
+//     }
+//     ix = floor(x);
+//     fx = x - ix;
+//     iy = floor(y);
+//     fy = y - iy;
+//     iz = floor(z);
+//     fz = z - iz;
 
-    /* Perform the sparse convolution. */
-    for (i = -griddist; i <= griddist; i++) { //周围的grid ： 2*griddist+1
-        for (j = -griddist; j <= griddist; j++) {
-            for (k = -griddist; k <= griddist; k++) {         /* Compute voxel hash code. */
-                h = INDEX(ix + i, iy + j, iz + k);            //PSN
-                for (n = pulsenum; n > 0; n--, h = NEXT(h)) { /* Convolve filter and impulse. */
-                                                              //每个cell内随机产生pulsenum个impulse
-                    fp = &impulseTab[h * 4];                  // get impulse
-                    dx = fx - (i + *fp++);                    //i + *fp++   周围几个晶胞的脉冲
-                    dy = fy - (j + *fp++);
-                    dz = fz - (k + *fp++);
-                    distsq = dx * dx + dy * dy + dz * dz;
-                    sum += catrom2(distsq, griddist) *
-                           *fp; // 第四个fp 指向的就是每个点的权重    filter kernel在gabor noise里面变成了gabor kernel。
-                }
-            }
-        }
-    }
-    return sum / pulsenum;
-}
+//     /* Perform the sparse convolution. */
+//     for (i = -griddist; i <= griddist; i++) { //周围的grid ： 2*griddist+1
+//         for (j = -griddist; j <= griddist; j++) {
+//             for (k = -griddist; k <= griddist; k++) {         /* Compute voxel hash code. */
+//                 h = INDEX(ix + i, iy + j, iz + k);            //PSN
+//                 for (n = pulsenum; n > 0; n--, h = NEXT(h)) { /* Convolve filter and impulse. */
+//                                                               //每个cell内随机产生pulsenum个impulse
+//                     fp = &impulseTab[h * 4];                  // get impulse
+//                     dx = fx - (i + *fp++);                    //i + *fp++   周围几个晶胞的脉冲
+//                     dy = fy - (j + *fp++);
+//                     dz = fz - (k + *fp++);
+//                     distsq = dx * dx + dy * dy + dz * dz;
+//                     sum += catrom2(distsq, griddist) *
+//                            *fp; // 第四个fp 指向的就是每个点的权重    filter kernel在gabor noise里面变成了gabor kernel。
+//                 }
+//             }
+//         }
+//     }
+//     return sum / pulsenum;
+// }
 
+// struct ImageNoise : INode {
+//     virtual void apply() override {
+//         auto image = std::make_shared<PrimitiveObject>();
+//         auto griddist = get_input2<int>("griddist");
+//         auto pulsenum = get_input2<int>("pulsenum");
+//         auto size = get_input2<vec2i>("Size");
+//         auto elementsize = get_input2<int>("elementsize");
+//         image->verts.resize(size[0] * size[1]);
+//         image->userData().set2("isImage", 1);
+//         image->userData().set2("w", size[0]);
+//         image->userData().set2("h", size[1]);
 
+// //#pragma omp parallel
+//         for (int i = 0; i < size[1]; i++) {
+//             for (int j = 0; j < size[0]; j++) {
+//                 i = i * 1/(elementsize);
+//                 j = j * 1/(elementsize);
+//                 //float x = (scnoise(i, 0, j, pulsenum, griddist) + 1) * 0.75;
+//                 image->verts[i * size[0] + j][0] = (scnoise(i, 0, j, pulsenum, griddist) + 1) * 0.75;
+//                 image->verts[i * size[0] + j][1] = (scnoise(j, 0, i, pulsenum, griddist) +1)*0.75;
+//                 image->verts[i * size[0] + j][2] = (scnoise(0, i, j, pulsenum, griddist)+1)*0.75;
+//             }
+//         }
 
-struct ImageNoise : INode {
-    virtual void apply() override {
-        auto image = std::make_shared<PrimitiveObject>();
-        auto griddist = get_input2<int>("griddist");
-        auto pulsenum = get_input2<int>("pulsenum");
-        auto size = get_input2<vec2i>("Size");
-        auto elementsize = get_input2<int>("elementsize");
-        image->verts.resize(size[0] * size[1]);
-        image->userData().set2("isImage", 1);
-        image->userData().set2("w", size[0]);
-        image->userData().set2("h", size[1]);
-
-//#pragma omp parallel
-        for (int i = 0; i < size[1]; i++) {
-            for (int j = 0; j < size[0]; j++) {
-                i = i * 1/(elementsize);
-                j = j * 1/(elementsize);
-                //float x = (scnoise(i, 0, j, pulsenum, griddist) + 1) * 0.75;
-                image->verts[i * size[0] + j][0] = (scnoise(i, 0, j, pulsenum, griddist) + 1) * 0.75;
-                image->verts[i * size[0] + j][1] = (scnoise(j, 0, i, pulsenum, griddist) +1)*0.75;
-                image->verts[i * size[0] + j][2] = (scnoise(0, i, j, pulsenum, griddist)+1)*0.75;
-            }
-        }
-
-        set_output("image", image);
+//         set_output("image", image);
         
-    }
-};
+//     }
+// };
 
-ZENDEFNODE(ImageNoise, {
-    {
-        {"int", "pulsenum", "3"},
-        {"vec2i", "Size", "1024,1024"},
-        {"int", "elementsize", "50"},
-        {"int", "griddist", "2"}
-    },
-    {
-        {"image"},
-    },
-    {},
-    { "image" },
-});
+// ZENDEFNODE(ImageNoise, {
+//     {
+//         {"int", "pulsenum", "3"},
+//         {"vec2i", "Size", "1024,1024"},
+//         {"int", "elementsize", "50"},
+//         {"int", "griddist", "2"}
+//     },
+//     {
+//         {"image"},
+//     },
+//     {},
+//     { "image" },
+// });
 
 
 struct ImageExtractColor : INode {
