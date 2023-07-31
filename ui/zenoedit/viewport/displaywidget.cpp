@@ -925,6 +925,8 @@ bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
     }
     else {
         //cancel record: kill recordcmd?
+        recordcmd->kill();
+        delete recordcmd;
         return false;
     }
 }

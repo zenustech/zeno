@@ -25,13 +25,6 @@
     </message>
 </context>
 <context>
-    <name>ColorWidget</name>
-    <message>
-        <source>More Color</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>DesignerMainWin</name>
     <message>
         <source>Open</source>
@@ -98,11 +91,31 @@
     </message>
     <message>
         <source>Record</source>
-        <translation type="vanished">录制场景</translation>
+        <translation>录制场景</translation>
     </message>
     <message>
         <source>Do you want kill this run, launched by this record?</source>
         <translation type="vanished">是否需要终止由录制过程产生的运行计算？</translation>
+    </message>
+    <message>
+        <source>The output path is invalid, please choose another path.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Recording Failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No graphs available, please open the zsg and then record.</source>
+        <translation>当前工程还没打开，请打开zsg工程文件再进行录制</translation>
+    </message>
+    <message>
+        <source>Failed to create tmp file for current zsg</source>
+        <translation>无法为当前的zsg文件构建临时文件</translation>
+    </message>
+    <message>
+        <source>The temporary path of zencache failed to create, please check the disk volumn of sysmtem driver.</source>
+        <translation>无法为zencache构建临时目录，请检查系统盘的容量是否已满</translation>
     </message>
 </context>
 <context>
@@ -148,15 +161,15 @@
     <name>DockContent_View</name>
     <message>
         <source>Solid</source>
-        <translation>实体</translation>
+        <translation type="vanished">实体</translation>
     </message>
     <message>
         <source>Shading</source>
-        <translation>上色</translation>
+        <translation type="vanished">上色</translation>
     </message>
     <message>
         <source>Optix</source>
-        <translation>光线追踪</translation>
+        <translation type="vanished">光线追踪</translation>
     </message>
     <message>
         <source>Smooth Shading</source>
@@ -260,6 +273,14 @@
     </message>
     <message>
         <source>resize viewport</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Free</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Customize Size</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -582,7 +603,7 @@
     </message>
     <message>
         <source>Render</source>
-        <translation type="unfinished">渲染</translation>
+        <translation type="obsolete">渲染</translation>
     </message>
     <message>
         <source>View</source>
@@ -1077,6 +1098,10 @@
         <source>Cancel</source>
         <translation>取消</translation>
     </message>
+    <message>
+        <source>Open file location</source>
+        <translation>打开文件位置</translation>
+    </message>
 </context>
 <context>
     <name>RecordVideoDlg</name>
@@ -1148,13 +1173,21 @@
         <source>export video</source>
         <translation>是否导出视频</translation>
     </message>
-	<message>
+    <message>
         <source>remove cache after render</source>
         <translation>渲染后删除缓存</translation>
     </message>
     <message>
         <source>record video after running.</source>
         <translation type="vanished">是否先运行，再录制</translation>
+    </message>
+    <message>
+        <source>denoise</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>AOV</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -1404,7 +1437,7 @@
     </message>
     <message>
         <source>Open file location</source>
-        <translation>打开文件位置</translation>
+        <translation type="vanished">打开文件位置</translation>
     </message>
     <message>
         <source>%1%</source>
@@ -1413,6 +1446,10 @@
     <message>
         <source>Recording frame %1</source>
         <translation>正在录制第%1帧...</translation>
+    </message>
+    <message>
+        <source>Finished</source>
+        <translation>完成</translation>
     </message>
 </context>
 <context>
@@ -1612,7 +1649,7 @@
         <source>The path of cache is invalid, please choose another path.</source>
         <translation type="unfinished"></translation>
     </message>
-	<message>
+    <message>
         <source>Cache information was deleted during recording.</source>
         <translation type="unfinished">录制过程已删除缓存信息</translation>
     </message>
@@ -2108,6 +2145,26 @@
     <message>
         <source>Custom Param</source>
         <translation>自定义参数</translation>
+    </message>
+    <message>
+        <source>Delete Link Label</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Copy Link Label</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Create Link Label</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paste Link Label</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>add Link</source>
+        <translation type="unfinished">添加连接</translation>
     </message>
 </context>
 <context>
