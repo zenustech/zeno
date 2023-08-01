@@ -1,3 +1,4 @@
+
 //
 // WangBo 2023/02/03.
 //
@@ -411,6 +412,28 @@ ZENO_DEFNODE(VisPrimAttrValue_Modify)( {
      {},
      {"WBTest"},
     });
+
+    ///////////////////  
+/* SetUserDate_M */
+///////////////////  
+struct SetUserData_M : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input("object");
+        //auto key = get_param<std::string>("key");
+        auto key = get_input2<std::string>("key");
+        object->userData().set(key, get_input("data"));
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(SetUserData_M, {
+    {{"string", "key", ""}, "object", "data"},
+    {"object"},
+    {
+        //{"string", "key", ""}
+    },
+    {"WBTest"},
+});
 
 
 // FDGather.cpp
