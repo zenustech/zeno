@@ -5,6 +5,16 @@
 #include <zeno/utils/vec.h>
 
 namespace zeno {
+template<typename T>
+void image_flip_vertical(T *v, int w, int h) {
+    for (auto j = 0; j < h / 2; j++) {
+        for (auto i = 0; i < w; i++) {
+            auto index1 = i + j * w;
+            auto index2 = i + (h - j - 1) * w;
+            std::swap(v[index1], v[index2]);
+        }
+    }
+}
     ZENO_API std::vector<vec3f> float_gaussian_blur(const vec3f *data, int w, int h);
 }
 
