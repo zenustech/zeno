@@ -5,11 +5,9 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/UserData.h>
-#include <zeno/utils/scope_exit.h>
 #include <stdexcept>
 #include <filesystem>
 #include <zeno/utils/log.h>
-#include <zeno/utils/fileio.h>
 #include <zeno/utils/image_proc.h>
 
 #include <png.h>
@@ -17,28 +15,33 @@
 #include <vector>
 
 static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
+    auto img = std::make_shared<zeno::PrimitiveObject>();
     FILE* file = fopen(file_path, "rb");
     if (!file) {
-        throw zeno::makeError(zeno::format("Error: File not found: {}", file_path));
+        zeno::log_error("Error: File not found: {}", file_path);
+        return img;
     }
 
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
     if (!png_ptr) {
         fclose(file);
-        throw zeno::makeError("Error: png_create_read_struct failed.");
+        zeno::log_error("Error: png_create_read_struct failed.");
+        return img;
     }
 
     png_infop info_ptr = png_create_info_struct(png_ptr);
     if (!info_ptr) {
         png_destroy_read_struct(&png_ptr, nullptr, nullptr);
         fclose(file);
-        throw zeno::makeError("Error: png_create_info_struct failed.");
+        zeno::log_error("Error: png_create_info_struct failed.");
+        return img;
     }
 
     if (setjmp(png_jmpbuf(png_ptr))) {
         png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
         fclose(file);
-        throw zeno::makeError("Error: Error during png_read_png.");
+        zeno::log_error("Error: Error during png_read_png.");
+        return img;
     }
 
     png_init_io(png_ptr, file);
@@ -74,7 +77,11 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
                     color[2] = float(b) / 65535.0f;
                 }
             } else if (bit_depth == 8) {
-                if (channels == 3) {
+                if (channels == 1) {
+                    uint8_t value = row[x];
+                    float normalized_value = float(value) / 255.0f;
+                    color = zeno::vec3f(normalized_value);
+                } else if (channels == 3) {
                     uint8_t r = row[x * 3];
                     uint8_t g = row[x * 3 + 1];
                     uint8_t b = row[x * 3 + 2];
@@ -92,7 +99,6 @@ static std::shared_ptr<zeno::PrimitiveObject> read_png(const char* file_path) {
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
     fclose(file);
     zeno::image_flip_vertical(image_data.data(), width, height);
-    auto img = std::make_shared<zeno::PrimitiveObject>();
     img->verts.values = image_data;
     img->userData().set2("isImage", 1);
     img->userData().set2("w", width);
@@ -106,6 +112,7 @@ namespace zeno {
 struct ReadPNG16 : INode {//todo: select custom color space
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
+        path = std::filesystem::u8path(path).string();
         auto img = read_png(path.c_str());
         set_output("image", img);
     }
