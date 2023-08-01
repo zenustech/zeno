@@ -347,10 +347,12 @@ struct TestAdaptiveGrid : INode {
         timer.tick();
         for (auto &c : coords) {
             bool found = zsagv.probeValue(0, c, v, true_c);
+            auto vv = zsagv.iSample(0, c.template cast<f32>());
             sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref);
-            if (v != vref && found) {
-                fmt::print(fg(fmt::color::green), "probed value is {} ({}) at {}, {}, {}. is background: {}\n", v, vref,
-                           c[0], c[1], c[2], !found);
+            if (v != vref && found || vref != vv) {
+                fmt::print(fg(fmt::color::green),
+                           "probed value is {} (vv: {}) ({}) at {}, {}, {}. is background: {} ({})\n", v, vv, vref,
+                           c[0], c[1], c[2], !found, zsag._background);
             }
         }
         timer.tock("fast query (probe)");
