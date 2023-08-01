@@ -63,6 +63,12 @@ int main(int argc, char *argv[])
         return offline_main(argv[2], begin, end);
     }
 
+    if (argc >= 3 && !strcmp(argv[1], "--blender"))
+    {
+        extern int blender_main(const QCoreApplication& app);
+        return blender_main(a);
+    }
+
     //entrance for the zenoedit-player.
     if (argc >= 2 && !strcmp(argv[1], "--record"))
     {
