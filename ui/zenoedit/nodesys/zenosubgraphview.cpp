@@ -236,6 +236,7 @@ void _ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
     setScene(m_scene);
     QRectF rect = m_scene->nodesBoundingRect();
     fitInView(rect, Qt::KeepAspectRatio);
+    target_scene_pos = rect.center();
     gentle_zoom(1.0);
 }
 
