@@ -333,6 +333,22 @@ struct TestAdaptiveGrid : INode {
         ZSCoordT c{0, 1, 0};
         timer.tick();
         for (auto &c : coords) {
+            (void)(sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref));
+        }
+        timer.tock("query (vdb probe)");
+        timer.tick();
+        for (auto &c : coords) {
+            bool found = zsagv.probeValue(0, c, v);
+        }
+        timer.tock("naive query (zs probe)");
+        timer.tick();
+        for (auto &c : coords) {
+            bool found = zsagv.probeValue(0, c, v, true_c);
+        }
+        timer.tock("fast query (zs probe)");
+
+        // probe
+        for (auto &c : coords) {
             bool found = zsagv.probeValue(0, c, v);
             sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref);
             if (v != vref && found) {
@@ -343,19 +359,40 @@ struct TestAdaptiveGrid : INode {
                            c[0], c[1], c[2], !found);
             }
         }
-        timer.tock("naive query (probe)");
-        timer.tick();
         for (auto &c : coords) {
             bool found = zsagv.probeValue(0, c, v, true_c);
-            auto vv = zsagv.iSample(0, c.template cast<f32>());
             sdf->tree().probeValue(openvdb::Coord{c[0], c[1], c[2]}, vref);
-            if (v != vref && found || vref != vv) {
-                fmt::print(fg(fmt::color::green),
-                           "probed value is {} (vv: {}) ({}) at {}, {}, {}. is background: {} ({})\n", v, vv, vref,
-                           c[0], c[1], c[2], !found, zsag._background);
+            if (v != vref && found) {
+                fmt::print(fg(fmt::color::green), "probed value is {} ({}) at {}, {}, {}. is background: {} ({})\n", v,
+                           vref, c[0], c[1], c[2], !found, zsag._background);
             }
         }
-        timer.tock("fast query (probe)");
+
+        openvdb::tools::GridSampler<openvdb::FloatGrid, openvdb::tools::BoxSampler> sampler(*sdf);
+        timer.tick();
+        for (auto &c : coords) {
+            auto cc = c.cast<f32>() / 3;
+            (void)(sampler.isSample(openvdb::Vec3R(cc[0], cc[1], cc[2])));
+        }
+        timer.tock("query (vdb sample)");
+
+        timer.tick();
+        for (auto &c : coords) {
+            auto cc = c.cast<f32>() / 3;
+            (void)(zsagv.iSample(0, cc));
+        }
+        timer.tock("query (zs sample)");
+
+        // sample
+        for (auto &c : coords) {
+            auto cc = c.cast<f32>() / 3;
+            auto vv = zsagv.iSample(0, cc);
+            openvdb::FloatGrid::ValueType vref = sampler.isSample(openvdb::Vec3R(cc[0], cc[1], cc[2]));
+            if (zs::abs(vref - vv) >= limits<float>::epsilon()) {
+                fmt::print(fg(fmt::color::green), "sampled value is {} ({}) at {}, {}, {}\n", v, vv, vref, cc[0], cc[1],
+                           cc[2]);
+            }
+        }
         fmt::print("done cross-checking all values.\n");
 
         //openvdb::Mat4R
