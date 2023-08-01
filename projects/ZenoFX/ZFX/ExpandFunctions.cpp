@@ -100,6 +100,16 @@ struct ExpandFunctions : Visitor<ExpandFunctions> {
             auto x = make_stm(args[0]);
             return x / stm("sqrt", stm_sqrlength(x));
 
+        } else if (name == "degrees") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            return x * stm_const(180.0f) / stm_const(3.1415926f);
+
+        } else if (name == "radians") {
+            ERROR_IF(args.size() != 1);
+            auto x = make_stm(args[0]);
+            return (x * stm_const(3.1415926f)) / stm_const(180.0f);
+
         } else if (name == "normalizesafe") {
             ERROR_IF(args.size() != 1);
             auto x = make_stm(args[0]);
