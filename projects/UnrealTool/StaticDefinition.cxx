@@ -4,4 +4,4 @@
 namespace zeno::remote {
     Flags StaticFlags;
     SubjectRegistry StaticRegistry;
-}
+}// namespace zeno::remote
