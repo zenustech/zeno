@@ -22,6 +22,8 @@
 
 int optixcmd(const QCoreApplication& app, int port)
 {
+    //MessageBox(0, "optixcmd", "optixcmd", MB_OK);
+
     ZENO_RECORD_RUN_INITPARAM param;
 #ifndef DEBUG_DIRECTLY
 
@@ -130,6 +132,9 @@ int optixcmd(const QCoreApplication& app, int port)
     globalComm->setTempDirEnable(istemp);
     globalComm->setCacheAutoRmEnable(cacheautorm);
 
+    RecordVideoMgr recordMgr;
+    recordMgr.initRecordInfo(recInfo);
+
     OptixWorker worker;
     for (int frame = beginF; frame <= endF;)
     {
@@ -176,6 +181,12 @@ int optixcmd(const QCoreApplication& app, int port)
 
         ++frame;
     }
+
+    if (param.isExportVideo)
+    {
+        recordMgr.endRecToExportVideo();
+    }
+
     zeno::log_critical("\n[optixcmd]:{\"result\" : 0}\n");
 
     return 0;

@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
 #endif
 
     if (argc >= 3 && !strcmp(argv[1], "--optixcmd")) {
-        //MessageBox(0, "optixcmd", "optixcmd", MB_OK);
         extern int optixcmd(const QCoreApplication & app, int port);
         int port = atoi(argv[2]);
         startUp(false);
