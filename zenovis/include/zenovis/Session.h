@@ -39,7 +39,7 @@ struct Session : zeno::disable_copy {
     void look_to_dir(float cx, float cy, float cz,
                      float dx, float dy, float dz,
                      float ux, float uy, float uz);
-    void do_screenshot(std::string path, std::string type);
+    void do_screenshot(std::string path, std::string type, bool bOptix = false);
     //void new_frame_offline(std::string path, int nsamples);
     void set_background_color(float r, float g, float b);
     std::tuple<float, float, float> get_background_color();

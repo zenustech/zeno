@@ -394,6 +394,14 @@ QGraphicsItem* ZenoSubGraphScene::getNode(const QString& id)
 
 void ZenoSubGraphScene::collectNodeSelChanged(const QString& ident, bool bSelected)
 {
+    for (auto &pair : m_selChanges)
+    {
+        if (pair.first == ident)
+        {
+            pair.second = bSelected;
+            return;
+        }
+    }
     m_selChanges.append({ident, bSelected});
 }
 
