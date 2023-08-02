@@ -107,7 +107,7 @@ namespace zeno::unreal {
             Grass,
         };
         Type PointType;
-        std::vector<Vector3f> Points;
+        std::vector<TransformComponent> Points;
     };
 
     struct AssetBundle {
