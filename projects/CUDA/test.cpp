@@ -399,6 +399,13 @@ struct TestAdaptiveGrid : INode {
         }
         timer.tock("query (zs sample)");
 
+        timer.tick();
+        for (auto &c : coords) {
+            auto cc = c.cast<f32>() / 3;
+            (void)(zsagv.iSample(zsacc, 0, cc));
+        }
+        timer.tock("further optimized query (zs sample)");
+
         // sample
         for (auto &c : coords) {
             auto cc = c.cast<f32>() / 3;
