@@ -520,6 +520,8 @@ namespace zeno {
                 Idx++;
             }
 
+            Prim->userData() = OldPrim->userData();
+
             set_output("Prim", Prim);
         }
     };
