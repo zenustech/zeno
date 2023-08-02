@@ -169,7 +169,7 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     //todo: may be the frame has not been finished, in this case, we have to wait.
 
     m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
-    m_zenoVis->getSession()->do_screenshot(record_file, extname);
+    m_zenoVis->getSession()->do_screenshot(record_file, extname, true);
     m_zenoVis->getSession()->set_window_size(x, y);
 
     //todo: emit some signal to main thread(ui)
