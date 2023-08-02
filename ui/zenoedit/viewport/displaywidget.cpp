@@ -690,11 +690,14 @@ void DisplayWidget::onRecord()
 
         if (bRunBeforeRecord)
         {
+            // recording by cmd process, to prevent cuda 700 error.
+            // but it seems that the error vanish.
+            /*
             if (!m_bGLView)
             {
                 bool ret = onRecord_cmd(recInfo);
                 return;
-            }
+            }*/
 
             //clear cached objs.
             zeno::getSession().globalComm->clearState();

@@ -371,6 +371,7 @@ void ZTcpServer::onProcPipeReady()
 
 void ZTcpServer::onDisconnect()
 {
+    /*
     auto mainWin = zenoApp->getMainWindow();
     if (mainWin)
     {
@@ -383,7 +384,7 @@ void ZTcpServer::onDisconnect()
             ZASSERT_EXIT(session);
             session->set_curr_frameid(0);
         }
-    }
+    }*/
 
     viewDecodeFinish();
 }

@@ -77,7 +77,9 @@ public:
 	void setColorRamps(const QString& id, const COLOR_RAMPS& colorRamps) override;
 	void setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard) override;
 	void setTimeInfo(const TIMELINE_INFO& info) override;
+	void setRecordInfo(const RECORD_SETTING& info) override;
 	TIMELINE_INFO timeInfo() const override;
+	RECORD_SETTING recordInfo() const override;
 	void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,
@@ -92,6 +94,7 @@ private:
     void resolveAllLinks();
 
 	TIMELINE_INFO m_timeInfo;
+	RECORD_SETTING m_recordInfo;
 	QList<EdgeInfo> m_subgLinks;	//collected links for m_currentGraph.
 	SubGraphModel* m_currentGraph;
 	GraphsModel* m_pModel;

@@ -52,9 +52,30 @@ void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
         m_timeInfo.beginFrame);
 }
 
+void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)
+{
+    m_recordInfo.record_path = info.record_path;
+    m_recordInfo.videoname = info.videoname;
+    m_recordInfo.fps = info.fps;
+    m_recordInfo.bitrate = info.bitrate;
+    m_recordInfo.numMSAA = info.numMSAA;
+    m_recordInfo.numOptix = info.numOptix;
+    m_recordInfo.width = info.width;
+    m_recordInfo.height = info.height;
+    m_recordInfo.bExportVideo = info.bExportVideo;
+    m_recordInfo.needDenoise = info.needDenoise;
+    m_recordInfo.bAutoRemoveCache = info.bAutoRemoveCache;
+    m_recordInfo.bAov = info.bAov;
+}
+
 TIMELINE_INFO ModelAcceptor::timeInfo() const
 {
     return m_timeInfo;
+}
+
+RECORD_SETTING ModelAcceptor::recordInfo() const
+{
+    return m_recordInfo;
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)
