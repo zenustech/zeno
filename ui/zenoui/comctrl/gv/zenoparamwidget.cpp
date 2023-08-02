@@ -83,6 +83,13 @@ void ZenoGvLineEdit::paintEvent(QPaintEvent* e)
     QLineEdit::paintEvent(e);
 }
 
+void ZenoGvLineEdit::focusInEvent(QFocusEvent* e)
+{
+    QLineEdit::focusInEvent(e);
+    // Remove the text selection when the line edit gets focused
+    deselect();
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ZenoParamLineEdit::ZenoParamLineEdit(const QString &text, PARAM_CONTROL ctrl, LineEditParam param, QGraphicsItem *parent)

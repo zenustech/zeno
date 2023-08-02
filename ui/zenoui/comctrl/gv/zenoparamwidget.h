@@ -59,6 +59,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *e) override;
+    void focusInEvent(QFocusEvent* e) override;
 };
 
 
