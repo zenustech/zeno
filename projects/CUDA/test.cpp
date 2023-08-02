@@ -321,6 +321,7 @@ struct TestAdaptiveGrid : INode {
         // test ag view
         using ZSCoordT = zs::vec<int, 3>;
         auto zsagv = view<space>(zsag);
+        auto zsacc = zsagv.getAccessor();
         float v, vref;
 
         std::vector<ZSCoordT> coords(10000);
@@ -338,12 +339,17 @@ struct TestAdaptiveGrid : INode {
         timer.tock("query (vdb probe)");
         timer.tick();
         for (auto &c : coords) {
-            bool found = zsagv.probeValue(0, c, v);
+            (void)(zsagv.probeValue(0, c, v /*, false_c*/));
         }
         timer.tock("naive query (zs probe)");
         timer.tick();
         for (auto &c : coords) {
-            bool found = zsagv.probeValue(0, c, v, true_c);
+            (void)(zsagv.probeValue(0, c, v, true_c));
+        }
+        timer.tock("ordered query (zs probe)");
+        timer.tick();
+        for (auto &c : coords) {
+            (void)(zsacc.probeValue(0, c, v));
         }
         timer.tock("fast query (zs probe)");
 
@@ -375,6 +381,16 @@ struct TestAdaptiveGrid : INode {
             (void)(sampler.isSample(openvdb::Vec3R(cc[0], cc[1], cc[2])));
         }
         timer.tock("query (vdb sample)");
+
+        openvdb::FloatGrid::ConstAccessor accessor = sdf->getConstAccessor();
+        openvdb::tools::GridSampler<openvdb::FloatGrid::ConstAccessor, openvdb::tools::BoxSampler> fastSampler(
+            accessor, sdf->transform());
+        timer.tick();
+        for (auto &c : coords) {
+            auto cc = c.cast<f32>() / 3;
+            (void)(fastSampler.isSample(openvdb::Vec3R(cc[0], cc[1], cc[2])));
+        }
+        timer.tock("query (fast vdb sample)");
 
         timer.tick();
         for (auto &c : coords) {
