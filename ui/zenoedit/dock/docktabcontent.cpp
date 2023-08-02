@@ -886,7 +886,9 @@ void DockContent_View::initConnections()
         {
             Zenovis *pZenoVis = m_pDisplay->getZenoVis();
             ZASSERT_EXIT(pZenoVis);
-            auto scene = pZenoVis->getSession()->get_scene();
+            auto session = pZenoVis->getSession();
+            ZASSERT_EXIT(session);
+            auto scene = session->get_scene();
             ZASSERT_EXIT(scene);
             scene->objectsMan->needUpdateLight = true;
             m_pDisplay->setSimpleRenderOption();

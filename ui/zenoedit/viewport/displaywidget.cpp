@@ -529,21 +529,31 @@ void DisplayWidget::beforeRun()
     if (m_glView)
     {
         m_glView->clearTransformer();
+
+        Zenovis* pZenoVis = getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto session = pZenoVis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        scene->selected.clear();
     }
-    Zenovis *pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    pZenoVis->getSession()->get_scene()->selected.clear();
 }
 
 void DisplayWidget::afterRun()
 {
     if (m_glView)
+    {
         m_glView->updateLightOnce = true;
 
-    Zenovis *pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+        Zenovis* pZenoVis = getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto session = pZenoVis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        scene->objectsMan->lightObjects.clear();
+    }
 }
 
 void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
