@@ -17,6 +17,7 @@ void startUp(bool bEnableCrashReport)
 #ifdef Q_OS_WIN
     if (bEnableCrashReport)
         registerExceptionFilter();
+    SetConsoleOutputCP(CP_UTF8);
 #endif
 
     zeno::setExecutableDir(QCoreApplication::applicationDirPath().toStdString());
