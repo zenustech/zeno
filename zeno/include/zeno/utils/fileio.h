@@ -94,6 +94,9 @@ class BinaryReader {
     size_t cur = 0;
     std::vector<char> data;
 public:
+    bool is_eof() {
+        return cur >= data.size();
+    }
     BinaryReader(std::vector<char> data_) {
         data = std::move(data_);
     }
@@ -141,4 +144,11 @@ public:
         return ret;
     }
 };
+
+template<typename T>
+void bin_write_le(std::vector<char> &data, T e) {
+    auto cur = data.size();
+    data.resize(cur + sizeof(T));
+    *(T*)&data[cur] = e;
+}
 }

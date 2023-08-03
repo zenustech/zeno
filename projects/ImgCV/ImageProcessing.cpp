@@ -5,11 +5,13 @@
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/types/NumericObject.h>
+#include <random>
 #include <zeno/utils/scope_exit.h>
 #include <stdexcept>
 #include <cmath>
 #include <zeno/utils/log.h>
 #include <opencv2/opencv.hpp>
+
 
 using namespace cv;
 
@@ -90,54 +92,7 @@ static void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b)
             break;
     }
 }
-static void sobel(std::shared_ptr<PrimitiveObject> & grayImage, int width, int height, std::vector<float>& dx, std::vector<float>& dy)
-{
-    dx.resize(width * height);
-    dy.resize(width * height);
-#pragma omp parallel for
-    for (int y = 1; y < height - 1; y++) {
-        for (int x = 1; x < width - 1; x++) {
-            float gx = -grayImage->verts[(y - 1) * width + x - 1][0] + grayImage->verts[(y - 1) * width + x + 1][0]
-                       - 2.0f * grayImage->verts[y * width + x - 1][0] + 2.0f * grayImage->verts[y * width + x + 1][0]
-                       - grayImage->verts[(y + 1) * width + x - 1][0] + grayImage->verts[(y + 1) * width + x + 1][0];
-            float gy = grayImage->verts[(y - 1) * width + x - 1][0] + 2.0f * grayImage->verts[(y - 1) * width + x][0] +
-                       grayImage->verts[(y - 1) * width + x + 1][0]
-                       - grayImage->verts[(y + 1) * width + x - 1][0] - 2.0f * grayImage->verts[(y + 1) * width + x][0] -
-                       grayImage->verts[(y + 1) * width + x + 1][0];
 
-            dx[y * width + x] = gx;
-            dy[y * width + x] = gy;
-        }
-    }
-}
-
-static void normalMap(std::shared_ptr<PrimitiveObject>& grayImage, int width, int height, std::vector<float>& normal)
-{
-    std::vector<float> dx, dy;
-    sobel(grayImage, width, height, dx, dy);
-    normal.resize(width * height * 3);
-#pragma omp parallel for
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int i = y * width + x;
-            float gx = dx[i];
-            float gy = dy[i];
-
-            float normalX = -gx;
-            float normalY = -gy;
-            float normalZ = 1.0f;
-
-            float length = sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
-            normalX /= length;
-            normalY /= length;
-            normalZ /= length;
-
-            normal[i * 3 + 0] = normalX;
-            normal[i * 3 + 1] = normalY;
-            normal[i * 3 + 2] = normalZ;
-        }
-    }
-}
 
 struct ImageResize: INode {
     void apply() override {
@@ -152,9 +107,9 @@ struct ImageResize: INode {
         image2->userData().set2("isImage", 1);
         image2->userData().set2("w", width);
         image2->userData().set2("h", height);
-        if(image->has_attr("alpha")){
-            image2->verts.add_attr<float>("alpha");
-        }
+        //if(image->has_attr("alpha")){
+            //image2->verts.add_attr<float>("alpha");
+        //}
 
         float scaleX = static_cast<float>(w) / width;
         float scaleY = static_cast<float>(h) / height;
@@ -165,7 +120,7 @@ struct ImageResize: INode {
             int srcX = static_cast<int>(x * scaleX);
             int srcY = static_cast<int>(y * scaleY);
             image2->verts[y * width + x] = image->verts[srcY * w + srcX];
-            image2->verts.attr<float>("alpha")[y * width + x] = image->verts.attr<float>("alpha")[srcY * w + srcX];
+            //image2->verts.attr<float>("alpha")[y * width + x] = image->verts.attr<float>("alpha")[srcY * w + srcX];
         }
         set_output("image", image2);
     }
@@ -1112,12 +1067,6 @@ struct ImageBlur : INode {
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
 
-        auto imagetmp = std::make_shared<PrimitiveObject>();
-        imagetmp->resize(w * h);
-        imagetmp->userData().set2("isImage", 1);
-        imagetmp->userData().set2("w", w);
-        imagetmp->userData().set2("h", h);
-
         cv::Mat imagecvin(h, w, CV_32FC3);
         cv::Mat imagecvout(h, w, CV_32FC3);
         for (auto a = 0; a < image->verts.size(); a++){
@@ -1311,11 +1260,12 @@ struct ImageEditContrast : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         float ContrastRatio = get_input2<float>("ContrastRatio");
+        float ContrastCenter = get_input2<float>("ContrastCenter");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
         for (auto i = 0; i < image->verts.size(); i++) {
-            image->verts[i] = image->verts[i] + (image->verts[i]-0.5) * (ContrastRatio-1);
+            image->verts[i] = image->verts[i] + (image->verts[i]-ContrastCenter) * (ContrastRatio-1);
         }
         set_output("image", image);
     }
@@ -1325,6 +1275,7 @@ ZENDEFNODE(ImageEditContrast, {
     {
         {"image"},
         {"float", "ContrastRatio", "1"},
+        {"float", "ContrastCenter", "0.5"},
     },
     {"image"},
     {},
@@ -1384,90 +1335,69 @@ ZENDEFNODE(ImageEditInvert, {
     {"image"},
 });
 
+
 /* 将灰度图像转换为法线贴图 */
 struct ImageToNormalMap : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto strength = get_input2<float>("strength");
-        auto InvertR = get_input2<bool>("InvertR");
-        auto InvertG = get_input2<bool>("InvertG");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
-        using normal =  std::tuple<float, float, float>;
-        normal n = {0, 0, 1};
-        float n0 = std::get<0>(n);
-        float n1 = std::get<1>(n);
-        float n2 = std::get<2>(n);
-        std::vector<normal> normalmap;
-        normalmap.resize(image->size());
-        float gx = 0;
-        float gy = 0;
-        float gz = 1;
+        auto InvertR = get_input2<bool>("InvertR");
+        auto InvertG = get_input2<bool>("InvertG");
+        auto normalmap = std::make_shared<PrimitiveObject>();
+        normalmap->verts.resize(w * h);
+        normalmap->userData().set2("isImage", 1);
+        normalmap->userData().set2("w", w);
+        normalmap->userData().set2("h", h);
+
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 int idx = i * w + j;
                 if (i == 0 || i == h || j == 0 || j == w) {
-                    normalmap[idx] = {0, 0, 1};
+                    normalmap->verts[idx] = {0, 0, 1};
                 }
             }
         }
+        
+#pragma omp parallel for
         for (int i = 1; i < h-1; i++) {
             for (int j = 1; j < w-1; j++) {
-                int idx = i * w + j;
-                gx = (image->verts[idx+1][0] - image->verts[idx-1][0])/2.0f * strength;
-                gy = (image->verts[idx+w][0] - image->verts[idx-w][0])/2.0f * strength;
-                float len = sqrt(gx * gx + gy * gy + gz * gz);
-                gx /= len;
-                gy /= len;
-                gz /= len;
-                // 计算光照值
-                if((!InvertG && !InvertR) || (InvertG && InvertR)){
-                    gx = 0.5f * (gx + 1.0f) ;
-                    gy = 0.5f * (-gy + 1.0f) ;
-                    gz = 0.5f * (gz + 1.0f) ;
-                    normalmap[i * w + j] = {gx,gy,gz};
+                float gx = -image->verts[(i - 1) * w + j - 1][0] + image->verts[(i - 1) * w + j + 1][0] 
+                - 2.0f * image->verts[i * w + j - 1][0] + 2.0f * image->verts[ i * w + j + 1][0]
+                - image->verts[(i + 1) * w + j - 1][0] + image->verts[(i + 1) * w + j + 1][0]; 
+
+                float gy = image->verts[(i - 1) * w + j - 1][0] + 2.0f * image->verts[(i - 1) * w + j][0]
+                + image->verts[(i - 1) * w + j + 1][0] - image->verts[(i + 1) * w + j - 1][0]
+                - 2.0f * image->verts[(i + 1) * w + j][0] - image->verts[(i + 1) * w + j + 1][0]; 
+                
+                gx = gx * strength;
+                gy = gy * strength;
+               vec3f rgb = {gx,gy,1};
+
+                rgb /= length(rgb);
+                rgb = normalizeSafe(rgb);
+                rgb = 0.5f * (rgb + 1.0f) ;
+                if(InvertG){
+                    rgb[1] = 1 - rgb[1];
                 }
-                else if((!InvertG && InvertR) || (InvertG && !InvertR)){
-                    gx = 0.5f * (gx + 1.0f) ;
-                    gy = 0.5f * (gy + 1.0f) ;
-                    gz = 0.5f * (gz + 1.0f) ;
-                    normalmap[i * w + j] = {gx,gy,gz};
+                else if(InvertR){
+                    rgb[0] = 1 - rgb[0];
                 }
-            }
-        }
-        for (int i = 0; i < h; i++) {
-            for (int j = 0; j < w; j++) {
-                int idx = i * w + j;
-                if(!InvertG && !InvertR){
-                    image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
-                    image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
-                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
-                }
-                if(!InvertG && InvertR){
-                    image->verts[i * w + j][0] = std::get<1>(normalmap[i * w + j]);
-                    image->verts[i * w + j][1] = std::get<0>(normalmap[i * w + j]);
-                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
-                }
-                if(InvertG && !InvertR){
-                    image->verts[i * w + j][0] = std::get<0>(normalmap[i * w + j]);
-                    image->verts[i * w + j][1] = std::get<1>(normalmap[i * w + j]);
-                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
-                }
-                if(InvertG && InvertR){
-                    image->verts[i * w + j][0] = std::get<1>(normalmap[i * w + j]);
-                    image->verts[i * w + j][1] = std::get<0>(normalmap[i * w + j]);
-                    image->verts[i * w + j][2] = std::get<2>(normalmap[i * w + j]);
+                normalmap->verts[i * w + j] = rgb;
+                
                 }
             }
-        }
-        set_output("image", image);
+
+        set_output("image", normalmap);
     }
 };
+
 ZENDEFNODE(ImageToNormalMap, {
     {
         {"image"},
-        {"float", "strength", "25"},
+        {"float", "strength", "10"},
         {"bool", "InvertR", "0"},
         {"bool", "InvertG", "0"},
     },
@@ -1762,15 +1692,19 @@ struct ImageErode: INode {
         int h = ud.get2<int>("h");
         cv::Mat imagecvin(h, w, CV_32FC3);
         cv::Mat imagecvout(h, w, CV_32FC3);
+//#pragma omp parallel for
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 vec3f rgb = image->verts[i * w + j];
                 imagecvin.at<cv::Vec3f>(i, j) = {rgb[0], rgb[1], rgb[2]};
             }
         }
+
         cv::Mat kernel = getStructuringElement(cv::MORPH_RECT, cv::Size(2 * kheight + 1, 2 * kwidth + 1),
                                                cv::Point(1, 1));
         cv::erode(imagecvin, imagecvout, kernel,cv::Point(-1, -1), strength);
+
+//#pragma omp parallel for
         for (int i = 0; i < h; i++) {
             for (int j = 0; j < w; j++) {
                 cv::Vec3f rgb = imagecvout.at<cv::Vec3f>(i, j);
@@ -1794,6 +1728,197 @@ ZENDEFNODE(ImageErode, {
     {},
     {"image"},
 });
+
+
+struct ImageColor : INode {
+    virtual void apply() override {
+        auto image = std::make_shared<PrimitiveObject>();
+        auto color = get_input2<vec3f>("Color");
+        auto size = get_input2<vec2i>("Size");
+        image->verts.resize(size[0] * size[1]);
+        image->userData().set2("isImage", 1);
+        image->userData().set2("w", size[0]);
+        image->userData().set2("h", size[1]);
+
+#pragma omp parallel
+        for (int i = 0; i < size[1]; i++) {
+            for (int j = 0; j < size[0]; j++) {
+                image->verts[i * size[0] + j] = {color[0], color[1], color[2]};
+            }
+        }
+
+        set_output("image", image);
+        
+    }
+};
+
+ZENDEFNODE(ImageColor, {
+    {
+        {"vec3f", "Color", "1,1,1"},
+        {"vec2i", "Size", "1024,1024"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    { "image" },
+});
+
+
+//TODO:: fix sparse convolution noise
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Sparse Convolution Noise
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// std::array<int, 256> perm = {
+//     225, 155, 210, 108, 175, 199, 221, 144, 203, 116, 70,  213, 69,  158, 33,  252, 5,   82,  173, 133, 222, 139,
+//     174, 27,  9,   71,  90,  246, 75,  130, 91,  191, 169, 138, 2,   151, 194, 235, 81,  7,   25,  113, 228, 159,
+//     205, 253, 134, 142, 248, 65,  224, 217, 22,  121, 229, 63,  89,  103, 96,  104, 156, 17,  201, 129, 36,  8,
+//     165, 110, 237, 117, 231, 56,  132, 211, 152, 20,  181, 111, 239, 218, 170, 163, 51,  172, 157, 47,  80,  212,
+//     176, 250, 87,  49,  99,  242, 136, 189, 162, 115, 44,  43,  124, 94,  150, 16,  141, 247, 32,  10,  198, 223,
+//     255, 72,  53,  131, 84,  57,  220, 197, 58,  50,  208, 11,  241, 28,  3,   192, 62,  202, 18,  215, 153, 24,
+//     76,  41,  15,  179, 39,  46,  55,  6,   128, 167, 23,  188, 106, 34,  187, 140, 164, 73,  112, 182, 244, 195,
+//     227, 13,  35,  77,  196, 185, 26,  200, 226, 119, 31,  123, 168, 125, 249, 68,  183, 230, 177, 135, 160, 180,
+//     12,  1,   243, 148, 102, 166, 38,  238, 251, 37,  240, 126, 64,  74,  161, 40,  184, 149, 171, 178, 101, 66,
+//     29,  59,  146, 61,  254, 107, 42,  86,  154, 4,   236, 232, 120, 21,  233, 209, 45,  98,  193, 114, 78,  19,
+//     206, 14,  118, 127, 48,  79,  147, 85,  30,  207, 219, 54,  88,  234, 190, 122, 95,  67,  143, 109, 137, 214,
+//     145, 93,  92,  100, 245, 0,   216, 186, 60,  83,  105, 97,  204, 52};
+
+// template <typename T>
+// constexpr T PERM(T x) {
+//     return perm[(x)&255];
+// }
+
+// #define INDEX(ix, iy, iz) PERM((ix) + PERM((iy) + PERM(iz)))
+
+// std::random_device rd;
+// std::default_random_engine engine(rd());
+// std::uniform_real_distribution<float> d(0, 1);
+
+// float impulseTab[256 * 4];
+// void impulseTabInit() {
+//     int i;
+//     float *f = impulseTab;
+//     for (i = 0; i < 256; i++) {
+//         *f++ = d(engine);
+//         *f++ = d(engine);
+//         *f++ = d(engine);
+//         *f++ = 1. - 2. * d(engine);
+//     }
+// }
+
+// float catrom2(float d, int griddist) {
+//     float x;
+//     int i;
+//     static float table[401];
+//     static bool initialized = 0;
+//     if (d >= griddist * griddist)
+//         return 0;
+//     if (!initialized) {
+//         for (i = 0; i < 4 * 100 + 1; i++) {
+//             x = i / (float)100;
+//             x = sqrtf(x);
+//             if (x < 1)
+//                 table[i] = 0.5 * (2 + x * x * (-5 + x * 3));
+//             else
+//                 table[i] = 0.5 * (4 + x * (-8 + x * (5 - x)));
+//         }
+//         initialized = 1;
+//     }
+//     d = d * 100 + 0.5;
+//     i = floor(d);
+//     if (i >= 4 * 100 + 1)
+//         return 0;
+//     return table[i];
+// }
+
+// #define NEXT(h) (((h) + 1) & 255)
+
+// float scnoise(float x, float y, float z, int pulsenum, int griddist) {
+//     static int initialized;
+//     float *fp = nullptr;
+//     int i, j, k, h, n;
+//     int ix, iy, iz;
+//     float sum = 0;
+//     float fx, fy, fz, dx, dy, dz, distsq;
+
+//     /* Initialize the random impulse table if necessary. */
+//     if (!initialized) {
+//         impulseTabInit();
+//         initialized = 1;
+//     }
+//     ix = floor(x);
+//     fx = x - ix;
+//     iy = floor(y);
+//     fy = y - iy;
+//     iz = floor(z);
+//     fz = z - iz;
+
+//     /* Perform the sparse convolution. */
+//     for (i = -griddist; i <= griddist; i++) { //周围的grid ： 2*griddist+1
+//         for (j = -griddist; j <= griddist; j++) {
+//             for (k = -griddist; k <= griddist; k++) {         /* Compute voxel hash code. */
+//                 h = INDEX(ix + i, iy + j, iz + k);            //PSN
+//                 for (n = pulsenum; n > 0; n--, h = NEXT(h)) { /* Convolve filter and impulse. */
+//                                                               //每个cell内随机产生pulsenum个impulse
+//                     fp = &impulseTab[h * 4];                  // get impulse
+//                     dx = fx - (i + *fp++);                    //i + *fp++   周围几个晶胞的脉冲
+//                     dy = fy - (j + *fp++);
+//                     dz = fz - (k + *fp++);
+//                     distsq = dx * dx + dy * dy + dz * dz;
+//                     sum += catrom2(distsq, griddist) *
+//                            *fp; // 第四个fp 指向的就是每个点的权重    filter kernel在gabor noise里面变成了gabor kernel。
+//                 }
+//             }
+//         }
+//     }
+//     return sum / pulsenum;
+// }
+
+// struct ImageNoise : INode {
+//     virtual void apply() override {
+//         auto image = std::make_shared<PrimitiveObject>();
+//         auto griddist = get_input2<int>("griddist");
+//         auto pulsenum = get_input2<int>("pulsenum");
+//         auto size = get_input2<vec2i>("Size");
+//         auto elementsize = get_input2<int>("elementsize");
+//         image->verts.resize(size[0] * size[1]);
+//         image->userData().set2("isImage", 1);
+//         image->userData().set2("w", size[0]);
+//         image->userData().set2("h", size[1]);
+
+// //#pragma omp parallel
+//         for (int i = 0; i < size[1]; i++) {
+//             for (int j = 0; j < size[0]; j++) {
+//                 i = i * 1/(elementsize);
+//                 j = j * 1/(elementsize);
+//                 //float x = (scnoise(i, 0, j, pulsenum, griddist) + 1) * 0.75;
+//                 image->verts[i * size[0] + j][0] = (scnoise(i, 0, j, pulsenum, griddist) + 1) * 0.75;
+//                 image->verts[i * size[0] + j][1] = (scnoise(j, 0, i, pulsenum, griddist) +1)*0.75;
+//                 image->verts[i * size[0] + j][2] = (scnoise(0, i, j, pulsenum, griddist)+1)*0.75;
+//             }
+//         }
+
+//         set_output("image", image);
+        
+//     }
+// };
+
+// ZENDEFNODE(ImageNoise, {
+//     {
+//         {"int", "pulsenum", "3"},
+//         {"vec2i", "Size", "1024,1024"},
+//         {"int", "elementsize", "50"},
+//         {"int", "griddist", "2"}
+//     },
+//     {
+//         {"image"},
+//     },
+//     {},
+//     { "image" },
+// });
+
 
 struct ImageExtractColor : INode {
     virtual void apply() override {
@@ -2320,6 +2445,95 @@ ZENDEFNODE(ImageShape, {
     },
     {},
     {"deprecated"},
+});
+
+struct ImageLevels: INode {
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
+        auto inputLevels = get_input2<vec2f>("Input Levels");
+        auto outputLevels = get_input2<vec2f>("Output Levels");
+        auto gamma = get_input2<float>("gamma");//range  0.01 - 9.99
+        auto channel = get_input2<std::string>("channel");
+        UserData &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+        float inputRange = inputLevels[1] - inputLevels[0];
+        float outputRange = outputLevels[1] - outputLevels[0];
+        float inputMin = inputLevels[0];
+        float outputMin = outputLevels[0];
+        float gammaCorrection = 1.0f / gamma;
+
+        if (channel == "RGB") {
+#pragma omp parallel for
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
+                vec3f &v = image->verts[i * w + j];
+                v[0] = (v[0] < inputMin) ? inputMin : v[0];
+                v[1] = (v[1] < inputMin) ? inputMin : v[1];
+                v[2] = (v[2] < inputMin) ? inputMin : v[2];
+                v = (v - inputMin) / inputRange; 
+                v = pow(v, gammaCorrection);
+                v = v * outputRange + outputMin;
+            }
+        }
+        }
+
+        else if (channel == "R") {
+#pragma omp parallel for
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) { 
+                float &v = image->verts[i * w + j][0];
+                if (v < inputMin) v = inputMin;
+                v = (v - inputMin) / inputRange;
+                v = pow(v, gammaCorrection);
+                v = v * outputRange + outputMin;
+            }
+        }
+        }
+
+        else if (channel == "G") {
+#pragma omp parallel for
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) { 
+                float &v = image->verts[i * w + j][1];
+                if (v < inputMin) v = inputMin;
+                v = (v - inputMin) / inputRange;
+                v = pow(v, gammaCorrection);
+                v = v * outputRange + outputMin;
+            }
+        }
+        }
+        
+        else if (channel == "B") {
+#pragma omp parallel for
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) { 
+                float &v = image->verts[i * w + j][2];
+                if (v < inputMin) v = inputMin;
+                v = (v - inputMin) / inputRange;
+                v = pow(v, gammaCorrection);
+                v = v * outputRange + outputMin;
+            }
+        }
+        }
+
+        set_output("image", image);
+    }
+};
+ZENDEFNODE(ImageLevels, {
+    {
+        {"image"},
+        {"vec2f", "Input Levels", "0, 1"},
+        {"float", "gamma", "1"},
+        {"vec2f", "Output Levels", "0, 1"},
+        //{"bool", "auto level", "false"}, //auto level
+        {"enum RGB R G B", "channel", "RGB"},
+    },
+    {
+        {"image"},
+    },
+    {},
+    {"image"},
 });
 }
 }

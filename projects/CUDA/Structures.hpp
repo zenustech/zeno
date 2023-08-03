@@ -1,4 +1,5 @@
 #pragma once
+#include "zensim/container/Bht.hpp"
 #include "zensim/container/Bvh.hpp"
 #include "zensim/container/HashTable.hpp"
 #include "zensim/container/IndexBuckets.hpp"
@@ -22,6 +23,10 @@
 #include <zeno/types/UserData.h>
 #include <zeno/zeno.h>
 
+namespace zs {
+template <typename T>
+constexpr bool always_false = false;
+}
 namespace zeno {
 
 using ElasticModel = zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>, zs::StvkWithHencky<float>,

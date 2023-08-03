@@ -180,7 +180,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     const std::vector<const char*> compilerOptions {
         "-std=c++17", "-default-device", //"-extra-device-vectorization"
   #if !defined( NDEBUG )      
-        "-lineinfo", "-G"//"--dopt=on",
+        //"-lineinfo", "-G"//"--dopt=on",
   #endif
         //"--gpu-architecture=compute_60",
         //"--relocatable-device-code=true"
@@ -579,6 +579,7 @@ inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_t
 inline std::optional<std::string> sky_tex;
 inline std::map<std::string, int> sky_nx_map;
 inline std::map<std::string, int> sky_ny_map;
+inline std::map<std::string, float> sky_avg_map;
 
 
 inline std::map<std::string, std::vector<float>> sky_cdf_map;
@@ -592,6 +593,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
     auto &sky_cdf = sky_cdf_map[sky_tex.value()];
     auto &sky_pdf = sky_pdf_map[sky_tex.value()];
     auto &sky_start = sky_start_map[sky_tex.value()];
+    auto &sky_avg = sky_avg_map[sky_tex.value()];
     sky_nx = nx;
     sky_ny = ny;
     //we need to recompute cdf
@@ -620,6 +622,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
         }
     }
     float total_illum = sky_cdf[sky_cdf.size()-1];
+    sky_avg = total_illum / ((float)nx * (float)ny);
     for(int ii=0;ii<sky_cdf.size();ii++)
     {
         sky_cdf[ii] /= total_illum;
@@ -829,12 +832,12 @@ inline void createPipeline()
     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
 
-    int num_progs = 3 + rtMaterialShaders.size() * 2;
+    size_t num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
-    for(int i=0;i<rtMaterialShaders.size();i++)
+    for(size_t i=0;i<rtMaterialShaders.size();i++)
     {
         program_groups[3 + i*2] = rtMaterialShaders[i].m_radiance_hit_group;
         program_groups[3 + i*2 + 1] = rtMaterialShaders[i].m_occlusion_hit_group;

@@ -264,6 +264,7 @@ ZENDEFNODE(GetAlembicCamera, {
 
 struct ImportAlembicPrim : INode {
     Alembic::Abc::v12::IArchive archive;
+    std::string usedPath;
     virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
@@ -274,9 +275,10 @@ struct ImportAlembicPrim : INode {
         auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input2<std::string>("path");
-            bool read_done = archive.valid();
+            bool read_done = archive.valid() && (path == usedPath);
             if (!read_done) {
                 archive = readABC(path);
+                usedPath = path;
             }
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);

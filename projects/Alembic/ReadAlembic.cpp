@@ -85,6 +85,31 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                 }
             }
         }
+        else if (IInt32GeomParam::matches(p)) {
+            IInt32GeomParam param(arbattrs, p.getName());
+
+            IInt32GeomParam::Sample samp = param.getIndexedValue(iSS);
+            std::vector<int> data;
+            data.resize(samp.getVals()->size());
+            for (auto i = 0; i < samp.getVals()->size(); i++) {
+                data[i] = samp.getVals()->get()[i];
+            }
+            if (!read_done) {
+                log_info("[alembic] i32 attr {}, len {}.", p.getName(), data.size());
+            }
+
+            if (prim->verts.size() == data.size()) {
+                auto &attr = prim->add_attr<int>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    attr[i] = data[i];
+                }
+            }
+            else {
+                if (!read_done) {
+                    log_error("[alembic] can not load attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                }
+            }
+        }
         else if (IV3fGeomParam::matches(p)) {
             IV3fGeomParam param(arbattrs, p.getName());
             if (!read_done) {
@@ -512,6 +537,7 @@ Alembic::AbcGeom::IArchive readABC(std::string const &path) {
 
 struct ReadAlembic : INode {
     Alembic::Abc::v12::IArchive archive;
+    std::string usedPath;
     bool read_done = false;
     virtual void apply() override {
         int frameid;
@@ -523,6 +549,9 @@ struct ReadAlembic : INode {
         auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input<StringObject>("path")->get();
+            if (usedPath != path) {
+                read_done = false;
+            }
             if (read_done == false) {
                 archive = readABC(path);
             }
@@ -533,6 +562,7 @@ struct ReadAlembic : INode {
             auto obj = archive.getTop();
             traverseABC(obj, *abctree, frameid, read_done);
             read_done = true;
+            usedPath = path;
         }
         set_output("abctree", std::move(abctree));
     }

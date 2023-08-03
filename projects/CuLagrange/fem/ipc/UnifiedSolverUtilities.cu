@@ -49,7 +49,6 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
         auto markIterEnd = vtemp.end("on_boundary", dim_c<1>, zs::wrapt<i64>{});
         // pol(range(vtemp, "on_boundary", dim_c<1>, zs::wrapt<i64>{}), [] ZS_LAMBDA(auto &mark) mutable { mark = 0; });
         pol(detail::iter_range(markIter, markIterEnd), [] ZS_LAMBDA(auto &mark) mutable { mark = 0; });
-
         for (auto &primHandle : ipcsys->prims) {
             if (primHandle.isAuxiliary())
                 continue;

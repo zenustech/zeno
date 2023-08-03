@@ -67,6 +67,10 @@ struct Params
 
     unsigned int width;
     unsigned int height;
+    unsigned int tile_i;
+    unsigned int tile_j;
+    unsigned int tile_w;
+    unsigned int tile_h;
     unsigned int samples_per_launch;
 
     CameraInfo cam;
@@ -86,6 +90,7 @@ struct Params
 
     int skynx;
     int skyny;
+    float envavg;
 
     float sky_rot;
     float sky_rot_x;
@@ -133,14 +138,14 @@ struct MissData
 
 struct HitGroupData
 {
-    float4* vertices;
+    //float4* vertices;
     float4* uv;
     float4* nrm;
     float4* clr;
     float4* tan;
     unsigned short* lightMark;
     int* meshIdxs;
-    float* meshMats;
+    
     float3* instPos;
     float3* instNrm;
     float3* instUv;

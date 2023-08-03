@@ -9,6 +9,7 @@
 #include "common.h"
 #include "layout/winlayoutrw.h"
 #include "cache/zcachemgr.h"
+#include "launch/corelaunch.h"
 
 
 struct ZENO_RECORD_RUN_INITPARAM {
@@ -16,6 +17,7 @@ struct ZENO_RECORD_RUN_INITPARAM {
     bool bRecord = false;
     bool bOptix = false;    //is optix view.
     bool isExportVideo = false;
+    bool needDenoise = false;
     int iFrame = 0;
     int iSFrame = 0;
     int iSample = 0;
@@ -179,7 +181,7 @@ public slots:
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
     void solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
-    void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
+    void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchparam);
     void onRunTriggered(bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
