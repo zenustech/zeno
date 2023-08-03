@@ -38,6 +38,7 @@ set(ZENO_EXTENSIONS
     Parameterization
     UnrealTool
     ChatZeno
+    RPC
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

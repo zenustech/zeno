@@ -1194,6 +1194,9 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
             //delete pDock;
         }
 
+        // trigger destroy event
+        zeno::getSession().eventCallbacks->triggerEvent("beginDestroy");
+
         QMainWindow::closeEvent(event);
     } 
     else 

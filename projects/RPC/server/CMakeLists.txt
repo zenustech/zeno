@@ -1,0 +1,10 @@
+OPTION(ZENO_RPC_SERVER "Run rpc server with zeno." ON)
+
+IF (ZENO_RPC_SERVER)
+    FIND_PACKAGE(Threads)
+    FILE(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.h)
+    TARGET_SOURCES(zeno PRIVATE ${SOURCE_FILES})
+    TARGET_LINK_LIBRARIES(zeno PRIVATE RPCProto)
+ELSE()
+    MESSAGE("[RPC] server disabled.")
+ENDIF()

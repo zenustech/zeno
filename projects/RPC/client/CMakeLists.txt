@@ -1,0 +1,12 @@
+OPTION(ZENO_RPC_CLIENT "Link client wrapper with zeno." ON)
+
+IF (ZENO_RPC_CLIENT)
+    FIND_PACKAGE(Threads)
+
+    FILE(GLOB_RECURSE SOURCE_FILES src/*.h)
+
+    TARGET_INCLUDE_DIRECTORIES(zeno PUBLIC include)
+    TARGET_SOURCES(zeno PRIVATE ${SOURCE_FILES})
+ELSE()
+    MESSAGE("[RPC] Client disabled.")
+ENDIF()
