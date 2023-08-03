@@ -237,7 +237,8 @@ void _ZenoSubGraphView::initScene(ZenoSubGraphScene* pScene)
     QRectF rect = m_scene->nodesBoundingRect();
     fitInView(rect, Qt::KeepAspectRatio);
     target_scene_pos = rect.center();
-    gentle_zoom(1.0);
+    editor_factor = transform().m11();
+    emit zoomed(editor_factor);
 }
 
 void _ZenoSubGraphView::setPath(const QString& path)
@@ -268,6 +269,7 @@ void _ZenoSubGraphView::scaleBy(qreal scaleFactor)
     scale(sc, sc);
     //centerOn(target_scene_pos);
     editor_factor = transform().m11();
+    m_scene->onZoomed(editor_factor);
 }
 
 void _ZenoSubGraphView::setScale(qreal scale)

@@ -792,6 +792,9 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         launchParam.endFrame = endFrame;
         launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
         launchParam.applyMaterialOnly = applyMaterialOnly;
+        QString path = pModel->filePath();
+        path = path.left(path.lastIndexOf("/"));
+        launchParam.zsgPath = path;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }

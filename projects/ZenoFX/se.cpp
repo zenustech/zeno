@@ -84,6 +84,13 @@ namespace {
                 pos0 = pos + 7;
             } else break;
 
+            while (1) if (auto pos = code.find("$ZSG", pos0); pos != std::string::npos) {
+                auto zsgPath = zeno::getConfigVariable("ZSG");
+                code.replace(pos, 4, zsgPath);
+                pos0 = pos + 4;
+            }
+            else break;
+
             //for (int i = 0; i < code.size(); i++) {
                 //if (code[i] == '$' && code[i+1] == 'F') {
                     //code.replace(i, 2, std::to_string(getGlobalState()->frameid));
