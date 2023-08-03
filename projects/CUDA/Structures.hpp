@@ -23,10 +23,6 @@
 #include <zeno/types/UserData.h>
 #include <zeno/zeno.h>
 
-namespace zs {
-template <typename T>
-constexpr bool always_false = false;
-}
 namespace zeno {
 
 using ElasticModel = zs::variant<zs::FixedCorotated<float>, zs::NeoHookean<float>, zs::StvkWithHencky<float>,
