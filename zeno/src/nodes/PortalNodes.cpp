@@ -239,19 +239,33 @@ ZENDEFNODE(GetUserData2, {
 struct DelUserData : zeno::INode {
     virtual void apply() override {
         auto object = get_input("object");
+        auto key = get_param<std::string>("key");
+        object->userData().del(key);
+    }
+};
+
+ZENDEFNODE(DelUserData, {
+    {"object"},
+    {},
+    {{"string", "key", ""}},
+    {"deprecated"},
+});
+
+struct DelUserData2 : zeno::INode {
+    virtual void apply() override {
+        auto object = get_input("object");
         auto key = get_input2<std::string>("key");
         object->userData().del(key);
         set_output("object", std::move(object));
     }
 };
 
-ZENDEFNODE(DelUserData, {
+ZENDEFNODE(DelUserData2, {
     {{"string", "key", ""}, "object"},
     {"object"},
     {},
     {"lifecycle"},
 });
-
 
 struct CopyAllUserData : zeno::INode {
     virtual void apply() override {
