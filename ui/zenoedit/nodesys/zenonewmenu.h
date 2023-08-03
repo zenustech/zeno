@@ -7,6 +7,7 @@
 
 class ZenoGvLineEdit;
 class IGraphsModel;
+class SearchResultWidget;
 
 class ZenoNewnodeMenu : public QMenu
 {
@@ -23,14 +24,20 @@ public slots:
 	void onTextChanged(const QString& text);
 
 private:
-	QList<QAction*> getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, const QString& filter, QPointF scenePos);
+	QList<QAction*> getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, QPointF scenePos);
+	void updateSearchView(const QString& filter);
 
+	bool m_preSearchMode;
 	const NODE_CATES m_cates;
 	const QModelIndex m_subgIdx;
 	const QPointF m_scenePos;
 	ZenoGvLineEdit* m_searchEdit;
-	QWidgetAction* m_pWAction;
-	QSet<QString> deprecatedNodes;
+	SearchResultWidget* m_searchView;
+	QWidgetAction* m_wactSearchEdit;
+	QWidgetAction* m_wactSearchView;
+	QMap<QString, QString> m_nodeToCate;
+	QList<QString> m_condidates;
+	QList<QAction*> m_cateActions;
 };
 
 #endif

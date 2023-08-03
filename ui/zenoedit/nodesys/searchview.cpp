@@ -10,25 +10,42 @@ SearchResultItem::SearchResultItem(QWidget* parent)
     this->setProperty("cssClass", "search_result");
 }
 
-void SearchResultItem::setResult(const QString& result, const QVector<int>& matchIndices, const QString& category)
+void SearchResultItem::setResult(const QString& result, const QVector<int>& matchIndices, const QString& category, bool enableCategory)
 {
-    QString htmlText;
+    bool deprecated = category == "deprecated";
 
-    // matchIndices is sorted, so here can use index++
-    int index = 0;
-    for (int i = 0; i < result.size(); ++i) {
-        if (index >= matchIndices.size() || i != matchIndices[index]) {
-            htmlText += result[i];
+    auto getHighlightHtml = [](const QString& text) {
+        return QString("<b style='color:DeepSkyBlue;'>%1</b>").arg(text);
+    };
+
+    auto getNormalHtml = [deprecated](const QString& text) {
+        if (!deprecated) {
+            return text;
         }
-        else {
-            htmlText += "<b style='color:DeepSkyBlue;'>";
-            htmlText += result[i];
-            htmlText += "</b>";
-            index++;
+        return QString("<span style='color:DarkGray;'>%1</span>").arg(text);
+    };
+
+    QString htmlText;
+    int left = 0;
+    for (int index : matchIndices) {
+        // [left, index - 1] is normal
+        auto normalText = result.mid(left, index - left);
+        if (!normalText.isEmpty()) {
+            htmlText += getNormalHtml(normalText);
         }
+        // [index, index] is highlight
+        auto highLightText = result.mid(index, 1);
+        htmlText += getHighlightHtml(highLightText);
+
+        left = index + 1;
     }
 
-    if (!category.isEmpty()) {
+    auto normalText = result.mid(left, result.size() - left);
+    if (!normalText.isEmpty()) {
+        htmlText += getNormalHtml(normalText);
+    }
+
+    if (enableCategory) {
         htmlText += QString("<span style='color:DarkGray;font-size:15px;'> (%1)</span>").arg(category);
     }
 
@@ -45,6 +62,7 @@ SearchResultWidget::SearchResultWidget(QWidget* parent)
     : QListWidget(parent)
     , m_enableCategory(true)
 {
+    setUniformItemSizes(true);
     setResizeMode(QListView::Adjust);
     setProperty("cssClass", "search_view");
 
@@ -71,22 +89,22 @@ void SearchResultWidget::setResult(int row, const QString& text, const QVector<i
 
     auto modelIndex = this->model()->index(row, 0);
     auto itemWidget = qobject_cast<SearchResultItem*>(this->indexWidget(modelIndex));
-    itemWidget->setResult(text, matchIndices, m_enableCategory ? category : "");
+    itemWidget->setResult(text, matchIndices, category, m_enableCategory);
 }
 
 void SearchResultWidget::resizeCount(int count)
 {
     while (this->count() < count) {
+        int index = this->count();
         this->addItem("");
         auto itemWidget = new SearchResultItem(this);
         auto modelIndex = this->model()->index(this->count() - 1, 0);
         this->setIndexWidget(modelIndex, itemWidget);
     }
     while (this->count() > count) {
-        auto item = this->takeItem(this->count() - 1);
-        if (item) {
-            delete item;
-        }
+        auto item = this->item(this->count() - 1);
+        this->removeItemWidget(item);
+        delete item; // delete will remove from list
     }
 }
 
@@ -112,6 +130,6 @@ QSize SearchResultWidget::sizeHint() const
     if (rowCount == 0) return QSize(0, 0);
 
     auto height = std::min(10, rowCount) * sizeHintForRow(0) + 10;
-    auto width = std::max(sizeHintForColumn(0), 450);
+    auto width = std::max(sizeHintForColumn(0), (int)ZenoStyle::dpiScaled(300));
     return QSize(width, height);
 }

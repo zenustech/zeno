@@ -9,7 +9,8 @@ class SearchResultItem : public QLabel
 public:
     explicit SearchResultItem(QWidget* parent = nullptr);
 
-    void setResult(const QString& result, const QVector<int>& matchIndices, const QString& category);
+    void setResult(const QString &result, const QVector<int> &matchIndices,
+                   const QString &category, bool enableCategory);
     QString result();
 
 private:
