@@ -357,6 +357,8 @@ namespace zeno {
             std::shared_ptr<PrimitiveObject> prim = get_input2<PrimitiveObject>("Prim");
             auto &posList = prim->verts;
             auto& scaleList = prim->verts.attr<float>("rad");
+            auto& pitchList = prim->verts.attr<float>("pitch");
+            auto& yawList = prim->verts.attr<float>("yaw");
 
             zeno::unreal::PointSet PointSet;
             PointSet.Points.reserve(posList.size());
@@ -364,7 +366,7 @@ namespace zeno {
                 // TODO [darc] : add other :
                 const vec3f& pos = posList[i];
                 float scale = scaleList[i];
-                PointSet.Points.push_back( { pos, { 1.0f }, { scale, scale, scale } });
+                PointSet.Points.push_back( { pos, { pitchList[i], 0.0f, yawList[i] }, { scale, scale, scale } });
             }
             if (PointType == "Misc") PointSet.PointType = zeno::unreal::PointSet::Type::Misc;
             else if (PointType == "Tree")
