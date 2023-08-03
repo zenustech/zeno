@@ -16,6 +16,7 @@ struct LAUNCH_PARAM {
     QString cacheDir = "";
     int cacheNum = 1;
     bool autoRmCurcache = false;
+    QString zsgPath;
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);

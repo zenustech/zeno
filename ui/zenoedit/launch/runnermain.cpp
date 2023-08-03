@@ -11,6 +11,7 @@
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/extra/GraphException.h>
 #include <zeno/extra/EventCallbacks.h>
+#include <zeno/extra/assetDir.h>
 #include <zeno/funcs/ObjectCodec.h>
 #include <zeno/zeno.h>
 #include <string>
@@ -79,7 +80,7 @@ static void send_packet(std::string_view info, const char *buf, size_t len) {
 #endif
 }
 
-static int runner_start(std::string const &progJson, int sessionid, bool bZenCache, int cachenum, std::string cachedir, bool cacheautorm, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
+static int runner_start(std::string const &progJson, int sessionid, bool bZenCache, int cachenum, std::string cachedir, bool cacheautorm, bool cacheLightCameraOnly, bool cacheMaterialOnly, std::string zsg_path) {
     zeno::log_trace("runner got program JSON: {}", progJson);
     //MessageBox(0, "runner", "runner", MB_OK);           //convient to attach process by debugger, at windows.
     zeno::scope_exit sp([=]() { std::cout.flush(); });
@@ -91,6 +92,9 @@ static int runner_start(std::string const &progJson, int sessionid, bool bZenCac
     session->globalComm->clearState();
     session->globalStatus->clearState();
     auto graph = session->createGraph();
+
+    //$ZSG value
+    zeno::setConfigVariable("ZSG", zsg_path);
 
     if (bZenCache) {
         zeno::getSession().globalComm->frameCache(cachedir, cachenum);
@@ -185,6 +189,7 @@ int runner_main(const QCoreApplication& app) {
     bool cacheLightCameraOnly = false;
     bool cacheMaterialOnly = false;
     bool cacheautorm = false;
+    std::string zsg_path = "";
     QCommandLineParser cmdParser;
     cmdParser.addHelpOption();
     cmdParser.addOptions({
@@ -197,6 +202,7 @@ int runner_main(const QCoreApplication& app) {
         {"cacheLightCameraOnly", "cacheLightCameraOnly", "only cache light and camera object"},
         {"cacheMaterialOnly", "cacheMaterialOnly", "only cache material object"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
+        {"zsg", "zsg", "zsg"},
         });
     cmdParser.process(app);
     if (cmdParser.isSet("sessionid"))
@@ -215,6 +221,8 @@ int runner_main(const QCoreApplication& app) {
         cacheMaterialOnly = cmdParser.value("cacheMaterialOnly").toInt();
     if (cmdParser.isSet("cacheautorm"))
         cacheautorm = cmdParser.value("cacheautorm").toInt();
+    if (cmdParser.isSet("zsg"))
+        zsg_path = cmdParser.value("zsg").toStdString();
 
     std::cerr.rdbuf(std::cout.rdbuf());
     std::clog.rdbuf(std::cout.rdbuf());
@@ -251,6 +259,6 @@ int runner_main(const QCoreApplication& app) {
     }(), 0);
 #endif
 
-    return runner_start(progJson, sessionid, enablecache, cachenum, cachedir, cacheautorm, cacheLightCameraOnly, cacheMaterialOnly);
+    return runner_start(progJson, sessionid, enablecache, cachenum, cachedir, cacheautorm, cacheLightCameraOnly, cacheMaterialOnly, zsg_path);
 }
 #endif
