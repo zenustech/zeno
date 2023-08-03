@@ -12,5 +12,5 @@
 }
 
 namespace {
-    [[maybe_unused]] static StaticServiceRegister<PingPongService> AutoRegisterForPingPongService();
+    [[maybe_unused]] StaticServiceRegister<PingPongService> AutoRegisterForPingPongService {};
 }
