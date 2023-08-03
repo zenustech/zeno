@@ -2,6 +2,7 @@ syntax = "proto3";
 package zeno.event;
 
 import "common/status.proto";
+import "common/math.proto";
 
 enum EventType {
   init = 0;
@@ -15,6 +16,42 @@ message TriggerEventQuery {
 
 message TriggerEventResponse {
   zeno.common.StatusCode Status = 1;
+}
+
+message AttributeGroup {
+  enum AttrType {
+    FLOAT = 0;
+    INT32 = 1;
+    VECTOR2F = 2;
+    VECTOR3F = 3;
+    POINT2I = 4;
+    POINT3I = 5;
+    POINT4I = 6;
+  }
+
+  string Name = 1;
+  AttrType Type = 2;
+  repeated float FloatData = 3 [packed = true];
+  repeated int32 Int32Data = 4 [packed = true];
+  repeated zeno.common.Vector2f Vector2fData = 5 [lazy = true];
+  repeated zeno.common.Vector3f Vector3fData = 6 [lazy = true];
+  repeated zeno.common.Point2i Point2iData = 7 [lazy = true];
+  repeated zeno.common.Point3i Point3iData = 8 [lazy = true];
+  repeated zeno.common.Point4i Point4iData = 9 [lazy = true];
+}
+
+message PrimitiveObject {
+  repeated AttributeGroup Vertices = 1 [lazy = true];
+  repeated AttributeGroup Points = 2 [lazy = true];
+  repeated AttributeGroup Lines = 3 [lazy = true];
+  repeated AttributeGroup Triangles = 4 [lazy = true];
+  repeated AttributeGroup Quadratics = 5 [lazy = true];
+  repeated AttributeGroup Loops = 6 [lazy = true];
+  repeated AttributeGroup Polys = 7 [lazy = true];
+  repeated AttributeGroup Edges = 8 [lazy = true];
+  repeated AttributeGroup TextureCoords = 9 [lazy = true];
+
+  // Instance Object and Material Object doesn't supported yet
 }
 
 service EventBus {
