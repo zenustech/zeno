@@ -54,6 +54,20 @@ message PrimitiveObject {
   // Instance Object and Material Object doesn't supported yet
 }
 
+message NamedPrimitiveObject {
+  string Name = 1;
+  PrimitiveObject Primitive = 2;
+}
+
+message PutPrimitiveObjectQuery {
+  repeated NamedPrimitiveObject Primitives = 1;
+}
+
+message PutPrimitiveObjectResponse {
+  zeno.common.StatusCode Status = 1;
+}
+
 service EventBus {
   rpc TriggerEvent(TriggerEventQuery) returns(TriggerEventResponse) {}
+  rpc PutPrimitiveToMemoryCache(PutPrimitiveObjectQuery) returns(PutPrimitiveObjectResponse) {}
 }

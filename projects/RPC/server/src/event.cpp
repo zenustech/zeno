@@ -13,6 +13,11 @@
     return grpc::Status::OK;
 }
 
+::grpc::Status EventBusService::PutPrimitiveToMemoryCache(::grpc::ServerContext *context, const ::zeno::event::PutPrimitiveObjectQuery *request, ::zeno::event::PutPrimitiveObjectResponse *response) {
+    // TODO [darc] : impl :
+    return grpc::Status::CANCELLED;
+}
+
 namespace {
     [[maybe_unused]] StaticServiceRegister<EventBusService> AutoRegisterForEventBusService {};
 }

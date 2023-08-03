@@ -7,4 +7,5 @@
 class EventBusService final : public zeno::event::EventBus::Service {
 public:
     ::grpc::Status TriggerEvent(::grpc::ServerContext *context, const ::zeno::event::TriggerEventQuery *request, ::zeno::event::TriggerEventResponse *response) override;
+    ::grpc::Status PutPrimitiveToMemoryCache(::grpc::ServerContext *context, const ::zeno::event::PutPrimitiveObjectQuery *request, ::zeno::event::PutPrimitiveObjectResponse *response) override;
 };
