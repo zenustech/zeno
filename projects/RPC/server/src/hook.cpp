@@ -6,6 +6,8 @@
 #include <optional>
 #include <chrono>
 
+static std::vector<std::shared_ptr<grpc::Service>> RPCServices;
+
 namespace {
     std::optional<std::thread> ServerThreadObj;
 
@@ -14,9 +16,19 @@ namespace {
     void StartRPCServer() {
         grpc::ServerBuilder Builder;
         Builder.AddListeningPort("0.0.0.0:25561", grpc::InsecureServerCredentials());
+        // Builder.SetSyncServerOption(grpc::ServerBuilder::SyncServerOption::NUM_CQS, 4);
+
+        for (const std::shared_ptr<grpc::Service>& Service : RPCServices) {
+            if (Service) {
+                Builder.RegisterService(Service.get());
+            }
+        }
+
+        std::unique_ptr<grpc::ServerCompletionQueue> CompletionQueue = Builder.AddCompletionQueue(true);
 
         RPCServer = Builder.BuildAndStart();
         RPCServer->Wait();
+        CompletionQueue->Shutdown();
     }
 
     [[maybe_unused]] int defRPCInit =
