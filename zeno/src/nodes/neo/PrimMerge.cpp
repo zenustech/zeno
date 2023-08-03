@@ -547,6 +547,10 @@ struct PrimMerge : INode {
 
         auto outprim = primMerge(primList, tagAttr);
 
+        for(auto &p:primList){
+            outprim->userData().merge(p->userData());
+        }
+
         if(matNameList.size()>0)
         {
             //add matNames to userData
