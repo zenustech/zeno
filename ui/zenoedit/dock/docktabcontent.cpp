@@ -521,7 +521,8 @@ void DockContent_Editor::initConnections()
             }
             int per = factor * 100;
             QString sPer = QString("%1%").arg(per);
-            items.append(sPer);
+            if (!items.contains(sPer))
+                items.append(sPer);
         }
         cbZoom->clear();
         cbZoom->addItems(items);
