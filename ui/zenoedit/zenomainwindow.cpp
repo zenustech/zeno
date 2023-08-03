@@ -648,12 +648,21 @@ void ZenoMainWindow::initTimelineDock()
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
+        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
         m_pTimeline->togglePlayButton(false);
         int nFrame = m_pTimeline->value();
         QVector<DisplayWidget *> views = viewports();
+        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+            QVector<DisplayWidget *> views = viewports();
+            for (auto displayWid : views) {
+                if (!displayWid->isGLViewport()) {
+                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                }
+            }
+        };
         for (DisplayWidget *view : views) {
             if (m_bAlways) {
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
+                setOptixUpdateSeparately(false, false);
                 LAUNCH_PARAM launchParam;
                 launchParam.beginFrame = nFrame;
                 launchParam.endFrame = nFrame;
@@ -661,16 +670,7 @@ void ZenoMainWindow::initTimelineDock()
                 view->onRun(launchParam);
             }
             else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
-                std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
-                    QVector<DisplayWidget *> views = viewports();
-                    for (auto displayWid : views) {
-                        if (!displayWid->isGLViewport()) {
-                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-                        }
-                    }
-                };
                 setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
                 LAUNCH_PARAM launchParam;
                 launchParam.beginFrame = nFrame;
                 launchParam.endFrame = nFrame;
