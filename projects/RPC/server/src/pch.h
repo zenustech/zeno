@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <grpc/grpc.h>
 #include <grpcpp/grpcpp.h>
 
 std::vector<std::shared_ptr<grpc::Service>>& GetRPCServiceList();
@@ -26,6 +27,6 @@ inline StaticServiceRegister<ServiceType, Args...>::StaticServiceRegister(Args..
 
     std::cout << "Registering service: " << typeid(ServiceType).name() << std::endl;
 
-    auto PTR = std::make_shared<ServiceType>(std::forward<Args>(args)...);
+    std::shared_ptr<ServiceType> PTR = std::make_shared<ServiceType>(std::forward<Args>(args)...);
     GetRPCServiceList().push_back(PTR);
 }

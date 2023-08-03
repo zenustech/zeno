@@ -1,0 +1,22 @@
+syntax = "proto3";
+package zeno.event;
+
+import "common/status.proto";
+
+enum EventType {
+  init = 0;
+  preRunnerStart = 1;
+  beginDestroy = 2;
+};
+
+message TriggerEventQuery {
+  EventType EventType = 1;
+}
+
+message TriggerEventResponse {
+  zeno.common.StatusCode Status = 1;
+}
+
+service EventBus {
+  rpc TriggerEvent(TriggerEventQuery) returns(TriggerEventResponse) {}
+}
