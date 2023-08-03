@@ -547,6 +547,10 @@ struct PrimMerge : INode {
 
         auto outprim = primMerge(primList, tagAttr);
 
+        for(auto &p:primList){
+            outprim->userData().merge(p->userData());
+        }
+
         if(matNameList.size()>0)
         {
             //add matNames to userData
@@ -559,9 +563,6 @@ struct PrimMerge : INode {
             }
         }
         int oMatNum = matNameList.size();
-        for(auto &p:primList){
-            outprim->userData().merge(p->userData());
-        }
         outprim->userData().set2("matNum", oMatNum);
         //auto outprim = std::make_shared<PrimitiveObject>(*primList[0]);
         set_output("prim", std::move(outprim));
