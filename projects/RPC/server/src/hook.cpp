@@ -36,7 +36,7 @@ namespace {
     }
 
     [[maybe_unused]] int defRPCInit =
-        zeno::getSession().eventCallbacks->hookEvent("init", [] (auto _) {
+        zeno::getSession().eventCallbacks->hookEvent("editorConstructed", [] (auto _) {
             std::cout << "Starting RPC Server..." << std::endl;
             ServerThreadObj = std::thread { StartRPCServer, &GetRPCServiceList() };
         });
