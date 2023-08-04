@@ -223,6 +223,9 @@ void _ZenoSubGraphView::focusOn(const QString& nodeId, const QPointF& pos, bool 
             QRectF rcBounding = pNode->sceneBoundingRect();
             //rcBounding.adjust(-rcBounding.width(), -rcBounding.height(), rcBounding.width(), rcBounding.height());
             fitInView(rcBounding, Qt::KeepAspectRatio);
+            target_scene_pos = rcBounding.center();
+            editor_factor = transform().m11();
+            emit zoomed(editor_factor);
         }
     }
 }
