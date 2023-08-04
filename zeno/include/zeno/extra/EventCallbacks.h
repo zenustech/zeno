@@ -2,6 +2,7 @@
 
 #include <zeno/core/Session.h>
 #include <functional>
+#include <utility>
 #include <vector>
 #include <string>
 #include <map>
@@ -12,9 +13,11 @@
 namespace zeno {
 
 struct EventCallbacks {
-    std::map<std::string, std::vector<std::function<void(std::optional<std::any>)>>> callbacks;
+    using ParameterType = std::optional<std::any>;
 
-    int hookEvent(std::string const &key, std::function<void(std::optional<std::any>)> f) {
+    std::map<std::string, std::vector<std::function<void(ParameterType)>>> callbacks;
+
+    int hookEvent(std::string const &key, std::function<void(ParameterType)> f) {
         callbacks[key].push_back(std::move(f));
         return 1;
     }
@@ -32,9 +35,15 @@ struct EventCallbacks {
         }
     }
 
-    void triggerEvent(std::string const &key, const std::any& arg) const {
+    void triggerEvent2(std::string const &key, const std::any& arg) const {
         if (auto it = callbacks.find(key); it != callbacks.end())
             for (auto const &f: it->second) f(arg);
+    }
+};
+
+struct EventRegisterHelper {
+    EventRegisterHelper(const std::string& event_name, std::function<void(EventCallbacks::ParameterType)> func) {
+        zeno::getSession().eventCallbacks->hookEvent(event_name, std::move(func));
     }
 };
 

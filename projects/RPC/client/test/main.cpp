@@ -11,6 +11,8 @@ int main(int Argc, char* Argv[]) {
     zeno::event::PutPrimitiveObjectQuery Query;
     zeno::event::PutPrimitiveObjectResponse Response;
 
+    Query.set_channel("storage");
+
     zeno::event::PrimitiveObject Obj;
     zeno::event::AttributeList PosAttr;
 
@@ -43,7 +45,7 @@ int main(int Argc, char* Argv[]) {
     if (!Status.ok()) {
         std::cout << "Failed to make rpc call." << std::endl;
         std::cout << Status.error_message() << std::endl;
-//        return 1;
+        return 1;
     }
 
     std::cout << "Status: " << Response.status() << std::endl;

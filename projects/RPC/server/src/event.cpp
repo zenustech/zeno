@@ -4,6 +4,8 @@
 #include <zeno/zeno.h>
 #include <cassert>
 
+static char* NAME_RPC_INCOMING_PRIMITIVE = "rpcIncomingPrimitive";
+
 ::grpc::Status EventBusService::TriggerEvent(::grpc::ServerContext *context, const ::zeno::event::TriggerEventQuery *request, ::zeno::event::TriggerEventResponse *response) {
     std::string requestEventName = zeno::event::EventType_Name(request->eventtype());
 
@@ -18,7 +20,7 @@
     try {
         for (const auto& InPrimitive : request->primitives()) {
             std::shared_ptr<zeno::PrimitiveObject> Primitive = FromProtobuf(&InPrimitive.second);
-            zeno::getSession().eventCallbacks->triggerEvent("rpcIncomingPrimitive", NamedPrimitiveObject {InPrimitive.first, Primitive } );
+            zeno::getSession().eventCallbacks->triggerEvent2(NAME_RPC_INCOMING_PRIMITIVE, std::any(NamedPrimitiveObject { request->channel(), InPrimitive.first, Primitive }) );
         }
     } catch (const std::runtime_error& Err) {
         std::cout << Err.what() << std::endl;
@@ -143,6 +145,17 @@ std::shared_ptr<zeno::PrimitiveObject> FromProtobuf(const zeno::event::Primitive
     return NewPrimitive;
 }
 
+void PrimitiveStorageCallback(std::optional<std::any> Args) {
+    if (Args.has_value() && Args->has_value()) {
+        if (const NamedPrimitiveObject* Value = std::any_cast<NamedPrimitiveObject>(&Args.value())) {
+            if (Value->Channel == "storage") {
+                std::cout << Value->Primitive->verts.size() << std::endl;
+            }
+        }
+    }
+}
+
 namespace {
     [[maybe_unused]] StaticServiceRegister<EventBusService> AutoRegisterForEventBusService{};
+    [[maybe_unused]] zeno::EventRegisterHelper AutoRegisterForPrimitiveStorageHandler { NAME_RPC_INCOMING_PRIMITIVE , PrimitiveStorageCallback };
 }

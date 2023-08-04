@@ -19,6 +19,7 @@ public:
 std::shared_ptr<zeno::PrimitiveObject> FromProtobuf(const zeno::event::PrimitiveObject* Object);
 
 struct NamedPrimitiveObject {
+    std::string Channel;
     std::string Name;
     std::shared_ptr<zeno::PrimitiveObject> Primitive;
 };
