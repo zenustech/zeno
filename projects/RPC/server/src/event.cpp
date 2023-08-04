@@ -13,8 +13,8 @@
     return grpc::Status::OK;
 }
 
-::grpc::Status EventBusService::PutPrimitiveToMemoryCache(::grpc::ServerContext *context, const ::zeno::event::PutPrimitiveObjectQuery *request, ::zeno::event::PutPrimitiveObjectResponse *response) {
-    // TODO [darc] : impl :
+::grpc::Status EventBusService::PushPrimitiveNotify(::grpc::ServerContext *context, const ::zeno::event::PutPrimitiveObjectQuery *request, ::zeno::event::PutPrimitiveObjectResponse *response) {
+
     return grpc::Status::CANCELLED;
 }
 

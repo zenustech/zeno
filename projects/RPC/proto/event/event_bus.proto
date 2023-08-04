@@ -61,6 +61,7 @@ message NamedPrimitiveObject {
 
 message PutPrimitiveObjectQuery {
   repeated NamedPrimitiveObject Primitives = 1;
+  string Channel = 2;
 }
 
 message PutPrimitiveObjectResponse {
@@ -69,5 +70,5 @@ message PutPrimitiveObjectResponse {
 
 service EventBus {
   rpc TriggerEvent(TriggerEventQuery) returns(TriggerEventResponse) {}
-  rpc PutPrimitiveToMemoryCache(PutPrimitiveObjectQuery) returns(PutPrimitiveObjectResponse) {}
+  rpc PushPrimitiveNotify(PutPrimitiveObjectQuery) returns(PutPrimitiveObjectResponse) {}
 }

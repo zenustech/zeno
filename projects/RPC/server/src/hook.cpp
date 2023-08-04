@@ -36,17 +36,17 @@ namespace {
     }
 
     [[maybe_unused]] int defRPCInit =
-        zeno::getSession().eventCallbacks->hookEvent("init", [] {
+        zeno::getSession().eventCallbacks->hookEvent("init", [] (auto _) {
             std::cout << "Starting RPC Server..." << std::endl;
             ServerThreadObj = std::thread { StartRPCServer, &GetRPCServiceList() };
         });
 
     [[maybe_unused]] int defRPCRunnerInit =
-        zeno::getSession().eventCallbacks->hookEvent("preRunnerStart", [] {
+        zeno::getSession().eventCallbacks->hookEvent("preRunnerStart", [] (auto _) {
         });
 
     [[maybe_unused]] int defRPCDestroy =
-        zeno::getSession().eventCallbacks->hookEvent("beginDestroy", [] {
+        zeno::getSession().eventCallbacks->hookEvent("beginDestroy", [] (auto _) {
             RPCServer->Shutdown();
             // Waiting for server shutdown
             ServerThreadObj->join();
