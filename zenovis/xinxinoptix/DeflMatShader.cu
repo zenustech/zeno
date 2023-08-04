@@ -848,6 +848,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     while(DisneyBSDF::SampleDisney2(
                 prd->seed,
+                prd->eventseed,
                 basecolor,
                 sssParam,
                 sssColor,
@@ -958,7 +959,7 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, prd->sigma_t, prd->sigma_t, channelPDF) : 1e16f;
+                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, extinction, extinction, channelPDF) : 1e16f;
                         prd->pushMat(extinction);
                     } else {
 
@@ -1232,18 +1233,18 @@ extern "C" __global__ void __closesthit__radiance()
                                                       dot(attrs.H, attrs.L), false);
             mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
         }
-        float misWeight = BRDFBasics::PowerHeuristic(envpdf, ffPdf);
+        float misWeight = BRDFBasics::PowerHeuristic(tmpPdf, ffPdf);
         misWeight = misWeight>0.0f?misWeight:1.0f;
         misWeight = ffPdf>1e-5f?misWeight:0.0f;
-        misWeight = envpdf>1e-5?misWeight:0.0f;
+        misWeight = tmpPdf>1e-5?misWeight:0.0f;
         prd->radiance += misWeight * 1.0f / (float)NSamples *
-            light_attenuation  / envpdf * 2.0f * (thin > 0.5f ? float3(mat2.reflectance) : lbrdf);
+            light_attenuation  / tmpPdf * 2.0f * (thin > 0.5f ? float3(mat2.reflectance) : lbrdf);
         prd->radiance_d = rd * vec3(misWeight * 1.0f / (float)NSamples *
-                          light_attenuation  / envpdf * 2.0f);
+                          light_attenuation  / tmpPdf * 2.0f);
         prd->radiance_s = rs * vec3(misWeight * 1.0f / (float)NSamples *
-                          light_attenuation  / envpdf * 2.0f);
+                          light_attenuation  / tmpPdf * 2.0f);
         prd->radiance_t = rt * vec3(misWeight * 1.0f / (float)NSamples *
-                          light_attenuation  / envpdf * 2.0f);
+                          light_attenuation  / tmpPdf * 2.0f);
     }
         //prd->radiance = float3(clamp(vec3(prd->radiance), vec3(0.0f), vec3(100.0f)));
     }

@@ -18,8 +18,18 @@ ZWidgetErrStream::~ZWidgetErrStream()
     m_stream.rdbuf(m_old_buf);
 }
 
+bool ZWidgetErrStream::isGUIThread()
+{
+    //return true;
+    return QThread::currentThread() == qApp->thread();
+}
+
 std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
 {
+    if (!isGUIThread()) {
+        return _base::xsputn(p, n);
+    }
+
     for (auto q = p; q != p + n; ++q) // make it visible to both real-console and luzh-log-panel
         putchar(*q);
     if (auto it = std::find(p, p + n, '\n'); it == p + n) {
@@ -42,6 +52,9 @@ std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
 void ZWidgetErrStream::appendFormatMsg(std::string const &str) {
     //format like:
     //"[I 14:15:11.810] (unknown:0) begin frame 89"
+    if (!isGUIThread()) {
+        return;
+    }
 
     QMessageLogger logger("zeno", 0, 0);
 
@@ -91,6 +104,10 @@ void ZWidgetErrStream::registerMsgHandler()
 
 void ZWidgetErrStream::customMsgHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
+    if (!isGUIThread()) {
+        return;
+    }
+
     if (!zenoApp) return;
     QString fileName = QString::fromUtf8(context.file);
     int ln = context.line;

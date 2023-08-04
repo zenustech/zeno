@@ -37,7 +37,7 @@ static unsigned int erode_random(float seed, int idx) {
     return s;
 }
 
-// 降水/蒸发
+// rain                                             用于子图：Erode_Precipitation
 struct erode_value2cond : INode {
     void apply() override {
 
@@ -217,7 +217,7 @@ ZENDEFNODE(erode_rand_dir,
                    "erode",
                }});
 
-// thermal erosion 热侵蚀
+// thermal erosion NOT slump                        用于子图：Erode_Thermal                  thermal_erosion
 struct erode_tumble_material_erosion : INode {
     void apply() override {
 
@@ -540,7 +540,7 @@ ZENDEFNODE(erode_tumble_material_erosion,
                    "erode",
                }});
 
-// smooth slump 平滑崩解 实现是错的，需要修改
+// smooth slump                                     实现有误，如需要使用，在 v1 基础上修改即可     smooth
 struct erode_tumble_material_v0 : INode {
     void apply() override {
 
@@ -863,7 +863,7 @@ ZENDEFNODE(erode_tumble_material_v0,
                    "erode",
                }});
 
-// smooth slump + calculate flow 平滑崩解 + 流场计算 实现是错的
+// smooth slump + flow                              用于子图：Erode_Smooth_Slump_Flow        smooth + flow
 struct erode_tumble_material_v1 : INode {
     void apply() override {
 
@@ -1052,7 +1052,7 @@ ZENDEFNODE(erode_tumble_material_v1,
                    "erode",
                }});
 
-// granular slump 颗粒崩解
+// granular slump                                   用于子图：Erode_Slump_Debris             granular
 struct erode_tumble_material_v2 : INode {
     void apply() override {
 
@@ -1341,7 +1341,7 @@ ZENDEFNODE(erode_tumble_material_v2,
                    "erode",
                }});
 
-// granular slump + calculate flow 颗粒崩解 + 流场计算
+// granular slump + flow                            用于子图：Erode_Granular_Slump_Flow      granular + flow
 struct erode_tumble_material_v3 : INode {
     void apply() override {
 
@@ -1651,7 +1651,7 @@ ZENDEFNODE(erode_tumble_material_v3,
                    "erode",
                }});
 
-// granular slump + erosion 颗粒崩解 + 侵蚀
+// granular slump + erosion                         用于子图：Erode_Hydro                    granular + erosion
 struct erode_tumble_material_v4 : INode {
     void apply() override {
 
@@ -2142,7 +2142,9 @@ ZENDEFNODE(erode_tumble_material_v4,
                    "erode",
                }});
 
-// smooth flow 平滑流场
+//                                                  还未实现                                granular + erosion + flow
+
+// smooth flow
 struct erode_smooth_flow : INode {
     void apply() override {
 

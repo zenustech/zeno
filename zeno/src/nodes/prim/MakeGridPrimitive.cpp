@@ -123,53 +123,92 @@ struct Make2DGridPrimitive : INode {
             ax *= scale;
             ay *= scale;
         }
-    auto dir = get_param<std::string>("Direction");
-    if(dir == "YZ")
-    {
-        ax = zeno::vec3f(0,ax[0],0);
-        ay = zeno::vec3f(0, 0, ay[1]);
-    }
-    if(dir == "XZ")
-    {
-        ay = zeno::vec3f(0,0,ay[1]);
-    }
-
-    if (get_param<bool>("isCentered"))
-      o -= (ax + ay) / 2;
-    ax *= dx; ay *= dy;
-
-    auto prim = std::make_shared<PrimitiveObject>();
-    prim->resize(nx * ny);
-    auto &pos = prim->add_attr<vec3f>("pos");
-#pragma omp parallel for collapse(2)
-    for (intptr_t y = 0; y < ny; y++)
-      for (intptr_t x = 0; x < nx; x++) {
-          intptr_t index = y * nx + x;
-          vec3f p = o + x * ax + y * ay;
-          size_t i = x + y * nx;
-          pos[i] = p;
-      }
-    if (get_param<bool>("hasUV")) {
-      auto &uv = prim->verts.add_attr<vec3f>("uv");
-      for (intptr_t y = 0; y < ny; y++)
-          for (intptr_t x = 0; x < nx; x++) {
-              size_t i = x + y * nx;
-              uv[i] = {float(x) / float(nx - 1), float(y) / float(ny - 1), 0};
-          }
-    }
-    if (get_param<bool>("hasFaces")) {
-        prim->tris.resize((nx - 1) * (ny - 1) * 2);
-#pragma omp parallel for collapse(2)
-        for (intptr_t y = 0; y < ny-1; y++) for (intptr_t x = 0; x < nx-1; x++) {
-          intptr_t index = y * (nx - 1) + x;
-          prim->tris[index * 2][2] = y * nx + x;
-          prim->tris[index * 2][1] = y * nx + x + 1;
-          prim->tris[index * 2][0] = (y + 1) * nx + x + 1;
-          prim->tris[index * 2 + 1][2] = (y + 1) * nx + x + 1;
-          prim->tris[index * 2 + 1][1] = (y + 1) * nx + x;
-          prim->tris[index * 2 + 1][0] = y * nx + x;
+        auto dir = get_param<std::string>("Direction");
+        if(dir == "YZ")
+        {
+            ax = zeno::vec3f(0,ax[0],0);
+            ay = zeno::vec3f(0, 0, ay[1]);
         }
-    }
+        if(dir == "XZ")
+        {
+            ay = zeno::vec3f(0,0,ay[1]);
+        }
+
+        if (get_param<bool>("isCentered"))
+            o -= (ax + ay) / 2;
+        ax *= dx; ay *= dy;
+
+        auto prim = std::make_shared<PrimitiveObject>();
+        prim->resize(nx * ny);
+        auto &pos = prim->add_attr<vec3f>("pos");
+
+        auto layout = get_param<std::string>("Layout");
+        if (layout == "Column-major") {
+#pragma omp parallel for collapse(2)
+            for (intptr_t y = 0; y < ny; y++)
+                for (intptr_t x = 0; x < nx; x++) {
+                    intptr_t index = y * nx + x;
+                    vec3f p = o + x * ax + y * ay;
+                    size_t i = x + y * nx;
+                    pos[i] = p;
+                }
+            if (get_param<bool>("hasUV")) {
+                auto &uv = prim->verts.add_attr<vec3f>("uv");
+                for (intptr_t y = 0; y < ny; y++)
+                    for (intptr_t x = 0; x < nx; x++) {
+                        size_t i = x + y * nx;
+                        uv[i] = {float(x) / float(nx - 1), float(y) / float(ny - 1), 0};
+                    }
+            }
+            if (get_param<bool>("hasFaces")) {
+                prim->tris.resize((nx - 1) * (ny - 1) * 2);
+#pragma omp parallel for collapse(2)
+                for (intptr_t y = 0; y < ny - 1; y++)
+                    for (intptr_t x = 0; x < nx - 1; x++) {
+                        intptr_t index = y * (nx - 1) + x;
+                        prim->tris[index * 2][2] = y * nx + x;
+                        prim->tris[index * 2][1] = y * nx + x + 1;
+                        prim->tris[index * 2][0] = (y + 1) * nx + x + 1;
+                        prim->tris[index * 2 + 1][2] = (y + 1) * nx + x + 1;
+                        prim->tris[index * 2 + 1][1] = (y + 1) * nx + x;
+                        prim->tris[index * 2 + 1][0] = y * nx + x;
+                    }
+            }
+        } else {
+#pragma omp parallel for collapse(2)
+            for (intptr_t x = 0; x < nx; x++)
+                for (intptr_t y = 0; y < ny; y++) {
+                    intptr_t index = x * ny + y;
+                    vec3f p = o + x * ax + y * ay;
+                    size_t i = x * ny + y;
+                    pos[i] = p;
+                }
+
+            if (get_param<bool>("hasUV")) {
+                auto &uv = prim->verts.add_attr<vec3f>("uv");
+                for (intptr_t x = 0; x < nx; x++)
+                    for (intptr_t y = 0; y < ny; y++) {
+                        size_t i = x * ny + y;
+                        uv[i] = {float(x) / float(nx - 1), float(y) / float(ny - 1), 0};
+                    }
+            }
+
+            if (get_param<bool>("hasFaces")) {
+                prim->tris.resize((nx - 1) * (ny - 1) * 2);
+#pragma omp parallel for collapse(2)
+                for (intptr_t x = 0; x < nx - 1; x++)
+                    for (intptr_t y = 0; y < ny - 1; y++) {
+                        intptr_t index = x * (ny - 1) + y;
+                        prim->tris[index * 2][2] = x * ny + y;
+                        prim->tris[index * 2][1] = x * ny + y + 1;
+                        prim->tris[index * 2][0] = (x + 1) * ny + y + 1;
+                        prim->tris[index * 2 + 1][2] = (x + 1) * ny + y + 1;
+                        prim->tris[index * 2 + 1][1] = (x + 1) * ny + y;
+                        prim->tris[index * 2 + 1][0] = x * ny + y;
+                    }
+            }
+        }
+
     prim->userData().set("nx", std::make_shared<NumericObject>((int)nx));//zhxx
     prim->userData().set("ny", std::make_shared<NumericObject>((int)ny));//zhxx
     set_output("prim", std::move(prim));
@@ -188,6 +227,7 @@ ZENDEFNODE(Make2DGridPrimitive,
         {"PrimitiveObject", "prim"},
         }, /* params: */ {
         {"enum XZ XY YZ", "Direction", "XZ"}, // zhxxhappy
+        {"enum Column-major Row-major", "Layout", "Column-major"},
         {"bool", "isCentered", "0"},
         {"bool", "hasFaces", "1"},
         {"bool", "hasUV", "0"},

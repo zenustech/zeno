@@ -3099,10 +3099,9 @@ void FLIP_vdb::solve_viscosity(
     openvdb::FloatGrid::Ptr &liquid_sdf,
     openvdb::FloatGrid::Ptr &solid_sdf,
     openvdb::Vec3fGrid::Ptr &solid_velocity,
-    float density, float viscosity, float dt)
+    openvdb::FloatGrid::Ptr &viscosity_grid,
+    float density, float dt)
 {
-	auto viscosity_grid = openvdb::FloatGrid::create(viscosity);
-
 	simd_uaamg::simd_viscosity3d viscosity_solver(viscosity_grid,
 		liquid_sdf, solid_sdf, velocity, solid_velocity,
     dt, density);

@@ -14,10 +14,8 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     , m_searchEdit(nullptr)
     , m_pWAction(nullptr)
 {
-    QVBoxLayout* pLayout = new QVBoxLayout;
-
     m_pWAction = new QWidgetAction(this);
-    m_searchEdit = new ZenoGvLineEdit;
+    m_searchEdit = new ZenoGvLineEdit(this);
     m_searchEdit->setAutoFillBackground(false);
     m_searchEdit->setTextMargins(QMargins(8, 0, 0, 0));
     m_searchEdit->installEventFilter(this);
@@ -148,8 +146,8 @@ QList<QAction*> ZenoNewnodeMenu::getCategoryActions(IGraphsModel* pModel, QModel
     {
         for (const NODE_CATE& cate : cates)
         {
-            QAction* pAction = new QAction(cate.name);
-            QMenu* pChildMenu = new QMenu;
+            QAction* pAction = new QAction(cate.name, this);
+            QMenu* pChildMenu = new QMenu(this);
             pChildMenu->setToolTipsVisible(true);
             for (const QString& name : cate.nodes)
             {

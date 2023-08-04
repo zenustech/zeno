@@ -249,6 +249,10 @@ struct ExtractCameraData : zeno::INode {
     virtual void apply() override {
         auto icam = get_input<ICamera>("camobject");
         auto key = get_input<zeno::StringObject>("key")->get();
+        if(icam->value.find(key) == icam->value.end()){
+            throw zeno::makeError("Camera Not Found");
+        }
+
         auto cam = icam->value.at(key);
 
         auto pos = std::make_shared<zeno::NumericObject>();

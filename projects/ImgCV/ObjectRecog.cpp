@@ -53,34 +53,6 @@ static void zenoedge(std::shared_ptr<PrimitiveObject> &grayImage, int width, int
     }
 }
 
-// 计算法向量
-static void normalMap(std::shared_ptr<PrimitiveObject> &grayImage, int width, int height, std::vector<float> &normal) {
-    std::vector<float> dx, dy;
-    zenoedge(grayImage, width, height, dx, dy);
-    normal.resize(width * height * 3);
-
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            int i = y * width + x;
-            float gx = dx[i];
-            float gy = dy[i];
-
-            float normalX = -gx;
-            float normalY = -gy;
-            float normalZ = 1.0f;
-
-            float length = sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
-            normalX /= length;
-            normalY /= length;
-            normalZ /= length;
-
-            normal[i * 3 + 0] = normalX;
-            normal[i * 3 + 1] = normalY;
-            normal[i * 3 + 2] = normalZ;
-        }
-    }
-}
-
 static void scharr2(std::shared_ptr<PrimitiveObject> &src, std::shared_ptr<PrimitiveObject> &dst, int width, int height,
         int threshold) {
     std::vector<int> gx(width * height);
@@ -123,6 +95,7 @@ struct ImageEdgeDetect : INode {
         auto mode = get_input2<std::string>("mode");
         int threshold = get_input2<int>("threshold");
         int maxThreshold = get_input2<int>("maxThreshold");
+        float kernelSize = get_input2<float>("kernelSize");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -164,26 +137,29 @@ struct ImageEdgeDetect : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114) ;//average convert to gray
                     imagecvin.at<float>(i, j) = var;
                 }
             }
 
             cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-
-            cv::Mat gradientMagnitude, gradientDirection;
-            cv::cartToPolar(gradX, gradY, imagecvout, gradientDirection, true);
+            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0, kernelSize);
+            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1, kernelSize);
+            cv::convertScaleAbs(gradX, gradX);
+            cv::convertScaleAbs(gradY, gradY);
 
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
+                    float xg = gradX.at<uchar>(i, j);
+			        float yg = gradY.at<uchar>(i, j);
+                    float xy = xg + yg;
+                    xy = xy / 255.f;
+                    image->verts[i * w + j] = {xy, xy, xy};
                 }
             }
             set_output("image", image);
         }
+
         if (mode == "sobel_threshold") {
             cv::Mat imagecvin(h, w, CV_32F);
             cv::Mat imagecvout(h, w, CV_32F);
@@ -191,7 +167,7 @@ struct ImageEdgeDetect : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -213,6 +189,7 @@ struct ImageEdgeDetect : INode {
             }
             set_output("image", image);
         }
+        
         if (mode == "roberts_gray") {
             cv::Mat imagecvin(h, w, CV_32F);
             cv::Mat imagecvout(h, w, CV_32F);
@@ -222,7 +199,7 @@ struct ImageEdgeDetect : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -252,7 +229,7 @@ struct ImageEdgeDetect : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -279,7 +256,7 @@ struct ImageEdgeDetect : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -309,7 +286,7 @@ struct ImageEdgeDetect : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -385,6 +362,7 @@ ZENDEFNODE(ImageEdgeDetect, {
         { "enum zeno_gray zeno_threshold sobel_gray sobel_threshold roberts_gray roberts_threshold prewitt_gray prewitt_threshold canny_gray canny_threshold", "mode", "sobel_gray" },
         { "float", "threshold", "50" },
         { "float", "maxThreshold", "9999" },
+        { "float", "kernelSize", "3"}
     },
     {
         { "image" }
@@ -415,7 +393,7 @@ struct ImageEdgeDetectDIY : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -449,7 +427,7 @@ struct ImageEdgeDetectDIY : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -500,6 +478,7 @@ struct ImageEdgeDetectSobel : INode {
         auto mode = get_input2<std::string>("mode");
         int threshold = get_input2<int>("threshold");
         int maxThreshold = get_input2<int>("maxThreshold");
+        float kernelSize = get_input2<float>("kernelSize");
         auto &ud = image->userData();
         int w = ud.get2<int>("w");
         int h = ud.get2<int>("h");
@@ -511,20 +490,24 @@ struct ImageEdgeDetectSobel : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114) ;//average convert to gray
                     imagecvin.at<float>(i, j) = var;
                 }
             }
+
             cv::Mat gradX, gradY;
-            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0);
-            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1);
-            cv::Mat gradientMagnitude, gradientDirection;
-            cv::cartToPolar(gradX, gradY, imagecvout, gradientDirection, true);
+            cv::Sobel(imagecvin, gradX, CV_32F, 1, 0, kernelSize);
+            cv::Sobel(imagecvin, gradY, CV_32F, 0, 1, kernelSize);
+            cv::convertScaleAbs(gradX, gradX);
+            cv::convertScaleAbs(gradY, gradY);
 
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
-                    float r = float(imagecvout.at<float>(i, j)) / 255.f;
-                    image->verts[i * w + j] = {r, r, r};
+                    float xg = gradX.at<uchar>(i, j);
+			        float yg = gradY.at<uchar>(i, j);
+                    float xy = xg + yg;
+                    xy = xy / 255.f;
+                    image->verts[i * w + j] = {xy, xy, xy};
                 }
             }
             set_output("image", image);
@@ -537,7 +520,7 @@ struct ImageEdgeDetectSobel : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -564,6 +547,86 @@ ZENDEFNODE(ImageEdgeDetectSobel, {
         { "enum sobel_gray sobel_threshold", "mode", "sobel_gray" },
         { "float", "threshold", "50" },
         { "float", "maxThreshold", "9999" },
+        { "float", "kernelSize", "3"},
+    },
+    {
+        { "image" }
+    },
+    {},
+    { "image" },
+});
+
+struct ImageEdgeDetectMarr : INode { 
+    void apply() override {
+        std::shared_ptr<PrimitiveObject> image = get_input2<PrimitiveObject>("image");
+        auto kerneldiameter = get_input2<int>("kernelDiameter");
+        auto sigma = get_input2<float>("Gaussian Standard deviation");
+        auto threshold = get_input2<float>("threshold");
+        auto &ud = image->userData();
+        int w = ud.get2<int>("w");
+        int h = ud.get2<int>("h");
+
+        int kernel_size = kerneldiameter / 2;
+        std::vector<std::vector<float>> kernel(kerneldiameter, std::vector<float>(kerneldiameter));
+
+        for (int i = -kernel_size; i <= kernel_size; i++) {
+            for (int j = -kernel_size; j <= kernel_size; j++) {
+                float kernelvalue = exp(-((pow(j, 2) + pow(i, 2)) / (pow(sigma, 2) * 2))) * (((pow(j, 2) + pow(i, 2) - 2 * pow(sigma, 2)) / (2 * pow(sigma, 4))));
+                 kernel[i + kernel_size][j + kernel_size] = kernelvalue;
+            }
+        }
+        std::vector<std::vector<float>> laplacian(w, std::vector<float>(h));
+
+#pragma omp parallel for
+        for (int y = 0; y < h ; y++) {
+            for (int x = 0; x < w ; x++){
+                float sum = 0;
+                for (int i = 0; i < kerneldiameter; i++){
+                    for (int j = 0; j < kerneldiameter; j++) {
+
+                        int kernelX = x + j - kernel_size;
+                        int kernelY = y + i - kernel_size;
+
+                        if (kernelX >= 0 && kernelX < w && kernelY >= 0 && kernelY < h) {
+
+                            sum += (image->verts[kernelY * w + kernelX][0]) * 255 * kernel[i][j];
+                        }
+                    }
+                }
+                laplacian[y][x] = sum;
+
+            }
+        }
+
+#pragma omp parallel for  
+        for (int i = 1; i < h-1; i++) {
+            for (int j = 1; j < w-1; j++) {
+                if ((laplacian[i - 1][j] * laplacian[i + 1][j] < threshold) 
+                || (laplacian[i][j + 1] * laplacian[i][j - 1] < threshold) 
+                || (laplacian[i + 1][j - 1] * laplacian[i - 1][j + 1] < threshold) 
+                || (laplacian[i - 1][j - 1] * laplacian[i + 1][j + 1] < threshold)) 
+                {
+                    image->verts[i * w + j] = {1, 1, 1};
+                    //bound
+                }
+                else {
+                    image->verts[i * w + j] = {0, 0, 0};
+                }
+            }
+        }
+
+
+
+        set_output("image", image);
+    }
+};
+
+ZENDEFNODE(ImageEdgeDetectMarr, {
+    {
+        { "image" },
+        { "float", "kernelDiameter", "5" },
+        { "float", "Gaussian Standard deviation", "0.8" },
+        { "float", "threshold", "0" },
     },
     {
         { "image" }
@@ -591,7 +654,7 @@ struct ImageEdgeDetectRoberts : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -619,7 +682,7 @@ struct ImageEdgeDetectRoberts : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -673,7 +736,7 @@ struct ImageEdgeDetectPrewitt : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }
@@ -704,7 +767,7 @@ struct ImageEdgeDetectPrewitt : INode {
             for (int i = 0; i < h; i++) {
                 for (int j = 0; j < w; j++) {
                     vec3f rgb = image->verts[i * w + j];
-                    var = 255 * (rgb[0] + rgb[1] + rgb[2]) / 3;
+                    var = 255 * (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] *0.114);
                     imagecvin.at<float>(i, j) = var;
                 }
             }

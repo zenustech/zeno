@@ -55,7 +55,7 @@
 #include <zeno/utils/vec.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/utils/orthonormal.h>
-#include <unordered_map>
+#include <filesystem>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -498,20 +498,20 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     state.params.frame_buffer_B = (*output_buffer_background).map();
     state.params.num_lights = g_lights.size();
     state.params.denoise = denoise;
-    for(int j=0;j<4;j++){
-      for(int i=0;i<4;i++){
+    for(int j=0;j<1;j++){
+      for(int i=0;i<1;i++){
         state.params.tile_i = i;
         state.params.tile_j = j;
-        state.params.tile_w = state.params.windowSpace.x/4 + 1;
-        state.params.tile_h = state.params.windowSpace.y/4 + 1;
+        state.params.tile_w = state.params.windowSpace.x;
+        state.params.tile_h = state.params.windowSpace.y;
 
-        CUDA_SYNC_CHECK();
+        //CUDA_SYNC_CHECK();
         CUDA_CHECK( cudaMemcpy((void*)state.d_params2 ,
                     &state.params, sizeof( Params ),
                     cudaMemcpyHostToDevice
                     ) );
 
-        CUDA_SYNC_CHECK();
+        //CUDA_SYNC_CHECK();
 
         OPTIX_CHECK( optixLaunch(
                     state.pipeline,
@@ -1645,8 +1645,19 @@ void optixinit( int argc, char* argv[] )
 #endif
     xinxinoptix::update_procedural_sky(zeno::vec2f(-60, 45), 1, zeno::vec2f(0, 0), 0, 0.1,
                                        1.0, 0.0, 6500.0);
-    xinxinoptix::using_hdr_sky(false);
+    xinxinoptix::using_hdr_sky(true);
     xinxinoptix::show_background(false);
+    std::string parent_path;
+    auto cur_path = std::filesystem::current_path().string();
+    if (zeno::ends_with(cur_path, "bin")) {
+        parent_path = std::filesystem::current_path().parent_path().parent_path().string();
+    }
+    else {
+        parent_path = cur_path;
+    }
+    OptixUtil::sky_tex = parent_path + "/hdr/studio_small_08_1k.hdr";
+    OptixUtil::addTexture(OptixUtil::sky_tex.value());
+    xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
 
 
@@ -2300,6 +2311,7 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
         state.params.sky_texture = OptixUtil::g_tex[OptixUtil::sky_tex.value()]->texture;
         state.params.skynx = OptixUtil::sky_nx_map[OptixUtil::sky_tex.value()];
         state.params.skyny = OptixUtil::sky_ny_map[OptixUtil::sky_tex.value()];
+        state.params.envavg = OptixUtil::sky_avg_map[OptixUtil::sky_tex.value()];
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_cdf_p.reset() ),
                               sizeof(float2)*OptixUtil::sky_cdf_map[OptixUtil::sky_tex.value()].size() ) );
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.sky_start.reset() ),
@@ -3406,7 +3418,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
 //    updateState( *output_buffer_transmit, state.params);
 //    updateState( *output_buffer_background, state.params);
 
-    const int max_samples_once = 32;
+    const int max_samples_once = 1;
     for (int f = 0; f < samples; f += max_samples_once) { // 张心欣不要改这里
 
         state.params.samples_per_launch = std::min(samples - f, max_samples_once);
