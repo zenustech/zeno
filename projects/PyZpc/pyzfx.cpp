@@ -1,6 +1,4 @@
-// ref: https://docs.python.org/3/c-api/intro.html#include-files
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include "pywrapper.hpp"
 //
 #include "Structures.hpp"
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
@@ -30,19 +28,29 @@ struct PyZfx : INode {
         // PyRun_SimpleString("print(\'Hello World\')");
 
         fmt::print("checking appended sys path: {}\n", pstr);
-        //
-        // ref: https://docs.python.org/3/extending/embedding.html#pure-embedding
-        //
+//
+// ref: https://docs.python.org/3/extending/embedding.html#pure-embedding
+//
+#if 1
         PyObject *pName, *pModule, *pFunc, *pArgs, *pValue;
         pName = PyUnicode_DecodeFSDefault("HelloWorld");
         pModule = PyImport_Import(pName);
         Py_DECREF(pName);
+#else
+        PyObject *pArgs, *pValue;
+        pyobj pName = PyUnicode_DecodeFSDefault("HelloWorld");
+        pyobj pModule = PyImport_Import(pName);
+#endif
 
         fmt::print("done import\n");
 
         long args[2] = {33, 2};
-        if (pModule != NULL) {
+        if (pModule) {
+#if 1
             pFunc = PyObject_GetAttrString(pModule, "multiply");
+#else
+            pyobj pFunc = PyObject_GetAttrString(pModule, "multiply");
+#endif
             /* pFunc is a new reference */
 
             if (pFunc && PyCallable_Check(pFunc)) {
@@ -51,7 +59,9 @@ struct PyZfx : INode {
                     pValue = PyLong_FromLong(args[i]);
                     if (!pValue) {
                         Py_DECREF(pArgs);
+#if 1
                         Py_DECREF(pModule);
+#endif
                         fprintf(stderr, "Cannot convert argument\n");
                         exit(1);
                     }
@@ -72,8 +82,10 @@ struct PyZfx : INode {
                     printf("Result of call: %ld\n", PyLong_AsLong(pValue));
                     Py_DECREF(pValue);
                 } else {
+#if 1
                     Py_DECREF(pFunc);
                     Py_DECREF(pModule);
+#endif
                     PyErr_Print();
                     fprintf(stderr, "Call failed\n");
                     exit(1);
@@ -83,8 +95,10 @@ struct PyZfx : INode {
                     PyErr_Print();
                 fprintf(stderr, "Cannot find function \"%s\"\n", "multiply");
             }
+#if 1
             Py_XDECREF(pFunc);
             Py_DECREF(pModule);
+#endif
         }
 
         Py_Finalize();
