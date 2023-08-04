@@ -75,7 +75,7 @@ struct ShaderFinalize : INode {
             get_input<IObject>("basecolor", std::make_shared<NumericObject>(vec3f(1.0f))),
             get_input<IObject>("metallic", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("roughness", std::make_shared<NumericObject>(float(0.4f))),
-            get_input<IObject>("specular", std::make_shared<NumericObject>(float(0.5f))),
+            get_input<IObject>("specular", std::make_shared<NumericObject>(float(1.0f))),
             get_input<IObject>("subsurface", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("thickness", std::make_shared<NumericObject>(float(0.0f))),
             get_input<IObject>("sssParam", std::make_shared<NumericObject>(vec3f(1.0f))),
@@ -138,6 +138,9 @@ struct ShaderFinalize : INode {
         {
             int   vol_depth = (int)get_input2<float>("vol_depth");
             float vol_extinction = get_input2<float>("vol_extinction");
+
+            auto VolumeEmissionScaler = get_input2<std::string>("VolumeEmissionScaler");
+            commonCode += "#define VolumeEmissionScaler VolumeEmissionScalerType::" + VolumeEmissionScaler + "\n";
 
             vol_depth = clamp(vol_depth, 9, 99);
 
@@ -223,7 +226,7 @@ ZENDEFNODE(ShaderFinalize, {
         {"vec3f", "basecolor", "1,1,1"},
         {"float", "metallic", "0.0"},
         {"float", "roughness", "0.4"},
-        {"float", "specular", "0.5"},
+        {"float", "specular", "1.0"},
         {"float", "subsurface", "0.0"},
         {"float", "thickness", "0.0"},
         {"vec3f", "sssParam", "1,1,1"},
@@ -256,6 +259,8 @@ ZENDEFNODE(ShaderFinalize, {
         {"string", "mtlid", "Mat1"},
         {"list", "tex2dList"},//TODO: bate's asset manager
         {"list", "tex3dList"},
+
+        {"enum Raw Density Absorption", "VolumeEmissionScaler", "Raw"},
 
         {"float", "vol_depth",     "99"},
         {"float", "vol_extinction", "1"},

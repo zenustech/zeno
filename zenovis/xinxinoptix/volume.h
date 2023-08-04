@@ -1,6 +1,7 @@
 #pragma once
-#include <nanovdb/NanoVDB.h>
+
 #include <Sampling.h>
+// #include <nanovdb/NanoVDB.h>
 
 #ifndef __CUDACC_RTC__
 #include <Host.h>
@@ -17,7 +18,7 @@ struct HenyeyGreenstein {
     __device__ HenyeyGreenstein(float g) : g(g) {}
     
     float p(const float3 &wo, const float3 &wi) const;
-    float Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const;
+    float sample(const float3 &wo, float3 &wi, const float2 &uu) const;
 };
 
 // Media Inline Functions
@@ -32,8 +33,14 @@ inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
     return PhaseHG(dot(wo, wi), g);
 }
 
-inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const float2 &uu) const {
+inline float HenyeyGreenstein::sample(const float3 &wo, float3 &wi, const float2 &uu) const {
     // Compute $\cos \theta$ for Henyey--Greenstein sample
+
+    if (fabsf(g) >= 1.0f) {
+        wi = (-g) *wo;
+        return 1.0f;
+    }
+
     float cosTheta;
     if (fabs(g) < 1e-3f)
         cosTheta = 1 - 2 * uu.x;
@@ -49,6 +56,7 @@ inline float HenyeyGreenstein::Sample_p(const float3 &wo, float3 &wi, const floa
     
     float3 v1, v2;
     CoordinateSystem(wo, v1, v2);
+    //CoordinateSystem(wo, &v1, &v2);
     wi = SphericalDirection(sinTheta, cosTheta, phi, v1, v2, wo);
 
     return PhaseHG(cosTheta, g);
