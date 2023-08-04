@@ -21,6 +21,7 @@
             zeno::getSession().eventCallbacks->triggerEvent("rpcIncomingPrimitive", NamedPrimitiveObject {InPrimitive.first, Primitive } );
         }
     } catch (const std::runtime_error& Err) {
+        std::cout << Err.what() << std::endl;
         response->set_status(zeno::common::BAD_REQUEST_BODY);
         return grpc::Status::CANCELLED;
     }
@@ -81,7 +82,7 @@ void UnpackHelper(AttrListType& AttrList, ContainerType& Conatiner) {
     for (const auto &Attr: AttrList) {
         const std::string &AttrName = Attr.first;
         if (Attr.second.numericpack_size() > Conatiner.size()) Conatiner.reserve(Attr.second.numericpack_size());
-        int32_t Type = 0;
+        int32_t Type = -1;
         for (const auto &Data: Attr.second.numericpack()) {
             if (Data.has_floatvalue()) {
                 InsertHelper(Data.floatvalue(), Conatiner, AttrName, Type);
