@@ -131,7 +131,7 @@ static void bvh_vectors_wrangle_radius(zfx::x64::Executable *exec,
     }
     lbvh->iter_neighbors_radius(pos[i], radius[i], [&](int pid) {
       if (!isBox)
-        if (lengthSquared(pos[i] - opos[pid]) > radius2 + radius[i] * radius[i])//要改 加入radius
+        if (lengthSquared(pos[i] - opos[pid]) > radius2 + radius[i] * radius[i])
           return;
       for (int k = 0; k < chs.size(); k++) {
         if (chs[k].which)
