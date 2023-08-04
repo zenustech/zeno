@@ -55,6 +55,8 @@
     <file>icons/rotate.png</file>
     <file>icons/move.png</file>
     <file>icons/scale.png</file>
+	<file>icons/loop_on.png</file>
+	<file>icons/loop_off.png</file>
     <file>icons/magnet.png</file>
     <file>icons/magnet_grid.png</file>
     <file>icons/magnet_point.png</file>

@@ -444,6 +444,8 @@ void ZsgWriter::dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer)
         writer.Int(info.currFrame);
         writer.Key(timeline::always);
         writer.Bool(info.bAlways);
+        writer.Key(timeline::fps_idx);
+        writer.Int(info.fpsIdx);
     }
 }
 

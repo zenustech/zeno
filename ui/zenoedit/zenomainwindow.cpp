@@ -1738,6 +1738,8 @@ void ZenoMainWindow::save()
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel* pModel = pGraphsMgm->currentModel();
+    if (!pModel)
+        return;
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
     {
@@ -1787,6 +1789,7 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     info.bAlways = m_bAlways;
     info.beginFrame = m_pTimeline->fromTo().first;
     info.endFrame = m_pTimeline->fromTo().second;
+    info.fpsIdx = m_pTimeline->fpsIdx();
     return info;
 }
 
@@ -1820,6 +1823,7 @@ void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
     setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
+    m_pTimeline->initFps(info.fpsIdx);
 }
 
 void ZenoMainWindow::onFeedBack()

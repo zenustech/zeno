@@ -9,8 +9,9 @@ struct TIMELINE_INFO
     int endFrame;
     int currFrame;
     bool bAlways;
+    int fpsIdx;
 
-    TIMELINE_INFO() : beginFrame(0), endFrame(0), currFrame(0), bAlways(false) {}
+    TIMELINE_INFO() : beginFrame(0), endFrame(0), currFrame(0), bAlways(false), fpsIdx(0) {}
 };
 
 struct RECORD_SETTING

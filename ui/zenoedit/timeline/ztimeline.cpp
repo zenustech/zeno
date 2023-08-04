@@ -207,11 +207,16 @@ void ZTimeline::initButtons()
     m_ui->btnForwardToEnd->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnForwardToEnd->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
 
-    m_ui->btnLoopPlay->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_SwitchAnimation);
-    m_ui->btnLoopPlay->setIcon(ZenoStyle::dpiScaledSize(QSize(18, 18)), ":/icons/always-off.svg", "", "", "");
-    m_ui->btnLoopPlay->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
-    m_ui->btnLoopPlay->setBackgroundClr(QColor("#FF191D21"), QColor("#FF191D21"), QColor("#4578AC"), QColor("#4578AC"));
-    m_ui->btnLoopPlay->initAnimation();
+    QColor bg(35, 40, 47);
+    m_ui->btnLoopPlay->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
+    m_ui->btnLoopPlay->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(16, 16)),
+        ":/icons/loop_off.png",
+        "",
+        ":/icons/loop_on.png",
+        "");
+    m_ui->btnLoopPlay->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnLoopPlay->setBackgroundClr(bg, hoverBg, bg, hoverBg);
     connect(m_ui->btnLoopPlay, &ZToolButton::toggled, this, [=](bool bChecked) {
         ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pMainWin);
@@ -284,6 +289,17 @@ void ZTimeline::initFromTo(int frameFrom, int frameTo)
     m_ui->editTo->setText(QString::number(frameTo));
     if (frameTo >= frameFrom)
         m_ui->timeliner->setFromTo(frameFrom, frameTo);
+}
+
+void ZTimeline::initFps(int fpsIdx)
+{
+    BlockSignalScope s1(m_ui->comboBox);
+    m_ui->comboBox->setCurrentIndex(fpsIdx);
+}
+
+int ZTimeline::fpsIdx()
+{
+    return m_ui->comboBox->currentIndex();
 }
 
 void ZTimeline::resetSlider()
