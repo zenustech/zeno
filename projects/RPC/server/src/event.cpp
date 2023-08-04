@@ -18,11 +18,15 @@
     try {
         for (const auto& InPrimitive : request->primitives()) {
             std::shared_ptr<zeno::PrimitiveObject> Primitive = FromProtobuf(&InPrimitive.second);
-            zeno::getSession().eventCallbacks->triggerEvent("rpcIncomingPrimitive", Primitive );
+            zeno::getSession().eventCallbacks->triggerEvent("rpcIncomingPrimitive", NamedPrimitiveObject {InPrimitive.first, Primitive } );
         }
-    } catch (const std::runtime_error& Err) {}
+    } catch (const std::runtime_error& Err) {
+        response->set_status(zeno::common::BAD_REQUEST_BODY);
+        return grpc::Status::CANCELLED;
+    }
 
-    return grpc::Status::CANCELLED;
+    response->set_status(zeno::common::SUCCESS);
+    return grpc::Status::OK;
 }
 
 inline constexpr bool CheckIsSameType(int32_t &Lhs, const int32_t Rhs) {
