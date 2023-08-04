@@ -32,51 +32,40 @@ struct PyZfx : INode {
         // ref: https://docs.python.org/3/extending/embedding.html#pure-embedding
         //
         {
-            PyObject *pArgs, *pValue;
             // pName = PyUnicode_DecodeFSDefault("HelloWorld");
             pyobj pName = PyUnicode_DecodeFSDefault("HelloWorld");
-            pyobj pModule = PyImport_Import(pName);
+            pyobj pModule = {py_module_c, pName};
+            pyobj pValue;
+            pyobj pArgs{py_tuple_c, 4};
 
             fmt::print("done import\n");
 
             long args[2] = {33, 2};
             if (pModule) {
-                pyobj pFunc = PyObject_GetAttrString(pModule, "multiply");
+                pyobj pFunc{py_func_c, pModule, "multiply"};
                 /* pFunc is a new reference */
-                if (pFunc && PyCallable_Check(pFunc)) {
-                    pArgs = PyTuple_New(4);
+                {
                     for (int i = 0; i < 2; ++i) {
-                        pValue = PyLong_FromLong(args[i]);
-                        if (!pValue) {
-                            Py_DECREF(pArgs);
-                            fprintf(stderr, "Cannot convert argument\n");
-                            exit(1);
-                        }
+                        pValue = {py_long_c, args[i]};
                         /* pValue reference stolen here: */
-                        PyTuple_SetItem(pArgs, i, pValue);
+                        PyTuple_SetItem(pArgs, i, pValue); //pyobj{py_long_c, args[i]});
                     }
                     // pass a string as the 3rd param
-                    pValue = PyUnicode_InternFromString("|test_string|");
+                    pValue = {py_string_c, "|test_string|"};
                     PyTuple_SetItem(pArgs, 2, pValue);
                     // pass a ptr as the 4th param
-                    pValue = PyLong_FromVoidPtr(vs.data());
+                    pValue = {py_long_c, vs.data()};
                     PyTuple_SetItem(pArgs, 3, pValue);
                     // PyList, PyDict
 
                     pValue = PyObject_CallObject(pFunc, pArgs);
-                    Py_DECREF(pArgs);
-                    if (pValue != NULL) {
-                        printf("Result of call: %ld\n", PyLong_AsLong(pValue));
-                        Py_DECREF(pValue);
+                    if (pValue) {
+                        printf("Result of call: %ld\n", (long)pValue);
                     } else {
                         PyErr_Print();
                         fprintf(stderr, "Call failed\n");
                         exit(1);
                     }
-                } else {
-                    if (PyErr_Occurred())
-                        PyErr_Print();
-                    fprintf(stderr, "Cannot find function \"%s\"\n", "multiply");
                 }
             }
         }
