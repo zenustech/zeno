@@ -23,6 +23,8 @@
 #include <stb_image_write.h>
 
 //#include <GLFW/glfw3.h>
+#include "XAS.h"
+#include "magic_enum.hpp"
 #include "optixPathTracer.h"
 
 #include <zeno/utils/log.h>
@@ -162,13 +164,15 @@ struct PathTracerState
 {
     OptixDeviceContext context = 0;
 
-    OptixTraversableHandle         root_handle;
-    raii<CUdeviceptr>              root_output_buffer;
+    OptixTraversableHandle         rootHandleIAS;
+    raii<CUdeviceptr>              rootBufferIAS;
 
-    OptixTraversableHandle         m_ias_handle;
+    OptixTraversableHandle         meshHandleIAS;
+    raii<CUdeviceptr>              meshBufferIAS;
+
     OptixTraversableHandle         gas_handle               = {};  // Traversable handle for triangle AS
     raii<CUdeviceptr>              d_gas_output_buffer;  // Triangle AS memory
-    raii<CUdeviceptr>              m_d_ias_output_buffer;
+
     raii<CUdeviceptr>              d_vertices;
     raii<CUdeviceptr>              d_clr;
     raii<CUdeviceptr>              d_nrm;
@@ -454,7 +458,7 @@ static void initLaunchParams( PathTracerState& state )
     state.params.handle         = state.gas_handle;
 //#else
     } else {
-    state.params.handle         = state.m_ias_handle;
+    state.params.handle         = state.rootHandleIAS;
     }
 //#endif
     CUDA_CHECK( cudaMalloc(
@@ -626,163 +630,13 @@ static void displaySubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, sut
     //output_buffer_o.getHostPointer();
 }
 
+void updateSphereXAS() {
 
-OptixTraversableHandle uniform_sphere_gas_handle {};
-raii<CUdeviceptr> uniform_sphere_d_gas_output_buffer {};
+    buildInstancedSpheresGAS(state.context, sphereInstanceGroupAgentList);
 
-void updateUniformSphereGAS() {
-
-    if (uniform_sphere_gas_handle == 0 && !xinxinoptix::LutSpheresTransformed.empty()) { 
-        
-        makeUniformSphereGAS(state.context, uniform_sphere_gas_handle, uniform_sphere_d_gas_output_buffer);
-
-        printf("uniform_spheres_gas_handle %llu \n", uniform_sphere_gas_handle);
+    if (uniformed_sphere_gas_handle == 0 && !xinxinoptix::SphereTransformedLUT.empty()) { 
+        buildUniformedSphereGAS(state.context, uniformed_sphere_gas_handle, uniformed_sphere_gas_buffer);
     }
-}
-
-struct SphereInstanceAgent {
-    SphereInstanceGroupBase base{};
-
-    std::vector<float> radius_list{};
-    std::vector<zeno::vec3f> center_list{};
-
-    raii<CUdeviceptr>      inst_sphere_gas_buffer {};
-    OptixTraversableHandle inst_sphere_gas_handle {};
-
-    SphereInstanceAgent(SphereInstanceGroupBase _base):base(_base){}
-    //SphereInstanceAgent(SphereInstanceBase &_base):base(_base){}
-
-     ~SphereInstanceAgent() {
-        inst_sphere_gas_handle = 0;
-        inst_sphere_gas_buffer.reset();
-     }
-};
-std::vector<std::shared_ptr<SphereInstanceAgent>> sphereInstanceGroupAgentList;
-
-void updateInstancedSpheresGAS() {
-
-    OptixAccelBuildOptions accel_options {};
-    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-        
-    raii<CUdeviceptr> _vertex_buffer;
-    raii<CUdeviceptr> _radius_buffer;
-
-    for (auto& sphereAgent : sphereInstanceGroupAgentList) {
-
-        const auto sphere_count = sphereAgent->center_list.size();
-        if (sphere_count == 0) continue; 
-
-        {
-            auto data_length = sizeof( zeno::vec3f ) * sphere_count;
-
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_vertex_buffer ), data_length) );
-            CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)_vertex_buffer ), sphereAgent->center_list.data(),
-                                    data_length, cudaMemcpyHostToDevice ) );
-        }
-        
-        {
-            auto data_length = sizeof( float ) * sphere_count;
-
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_radius_buffer ), data_length) );
-            CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)_radius_buffer ), sphereAgent->radius_list.data(), 
-                                    data_length, cudaMemcpyHostToDevice ) );
-        }
-
-        OptixBuildInput sphere_input{};
-
-        sphere_input.type                      = OPTIX_BUILD_INPUT_TYPE_SPHERES;
-        sphere_input.sphereArray.numVertices   = sphere_count;
-        sphere_input.sphereArray.vertexBuffers = &_vertex_buffer;
-        sphere_input.sphereArray.radiusBuffers = &_radius_buffer;
-        //sphere_input.sphereArray.singleRadius = false;
-        //sphere_input.sphereArray.vertexStrideInBytes = 12;
-        //sphere_input.sphereArray.radiusStrideInBytes = 4;
-
-        uint32_t sphere_input_flags[1] = {OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL};
-        
-        sphere_input.sphereArray.flags         = sphere_input_flags;
-        sphere_input.sphereArray.numSbtRecords = 1;
-        sphere_input.sphereArray.sbtIndexOffsetBuffer = 0;
-        sphere_input.sphereArray.sbtIndexOffsetSizeInBytes = 0;
-        sphere_input.sphereArray.sbtIndexOffsetStrideInBytes = 0;
-
-        updateSphereGAS(state.context, sphere_input, accel_options, sphereAgent->inst_sphere_gas_buffer, sphereAgent->inst_sphere_gas_handle);
-
-        _vertex_buffer.reset();
-        _radius_buffer.reset();
-
-        sphereAgent->center_list.clear();
-        sphereAgent->radius_list.clear();
-    }
-}
-
-OptixTraversableHandle       crowded_sphere_gas_handle {};
-raii<CUdeviceptr>   crowded_sphere_d_gas_output_buffer {};
-
-void updateCrowdedSpheresGAS() {
-
-    const auto& dSphereList = xinxinoptix::SpheresCrowded;
-
-    const size_t sphere_count = dSphereList.center_list.size(); 
-    if (sphere_count == 0) {return;}
-
-    OptixAccelBuildOptions accel_options {};
-    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS;
-
-    raii<CUdeviceptr> d_vertex_buffer{}; 
-    raii<CUdeviceptr> d_radius_buffer{}; 
-    raii<CUdeviceptr> d_sbtidx_buffer{}; 
-    
-    {
-        auto data_length = sizeof( zeno::vec3f ) * sphere_count;
-
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer.reset() ), data_length) );
-        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_vertex_buffer ), dSphereList.center_list.data(),
-                                data_length, cudaMemcpyHostToDevice ) );
-    }
-
-    {
-        auto data_length = sizeof( float ) * sphere_count;
-
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_radius_buffer.reset() ), data_length) );
-        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_radius_buffer ), dSphereList.radius_list.data(), 
-                                data_length, cudaMemcpyHostToDevice ) );
-    }
-
-    OptixBuildInput sphere_input{};
-
-    sphere_input.type                      = OPTIX_BUILD_INPUT_TYPE_SPHERES;
-    sphere_input.sphereArray.numVertices   = sphere_count;
-    sphere_input.sphereArray.vertexBuffers = &d_vertex_buffer;
-    sphere_input.sphereArray.radiusBuffers = &d_radius_buffer;
-    //sphere_input.sphereArray.singleRadius = false;
-    //sphere_input.sphereArray.vertexStrideInBytes = 12;
-    //sphere_input.sphereArray.radiusStrideInBytes = 4;
-    sphere_input.sphereArray.primitiveIndexOffset = 0;
-
-    {
-        auto data_length = sizeof( uint ) * sphere_count;
-
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_sbtidx_buffer.reset() ), data_length) );
-        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_sbtidx_buffer ), dSphereList.sbtoffset_list.data(), 
-                                data_length, cudaMemcpyHostToDevice ) );
-    }
-
-    std::vector<uint> sphere_input_flags(dSphereList.sbt_count, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
-    
-    sphere_input.sphereArray.flags         = sphere_input_flags.data();
-    sphere_input.sphereArray.numSbtRecords = dSphereList.sbt_count;
-    sphere_input.sphereArray.sbtIndexOffsetBuffer = d_sbtidx_buffer;
-    sphere_input.sphereArray.sbtIndexOffsetSizeInBytes = sizeof(uint);
-    sphere_input.sphereArray.sbtIndexOffsetStrideInBytes = sizeof(uint);
-
-    updateSphereGAS(state.context, sphere_input, accel_options, crowded_sphere_d_gas_output_buffer, crowded_sphere_gas_handle);
-
-    d_vertex_buffer.reset(); 
-    d_radius_buffer.reset(); 
-    d_sbtidx_buffer.reset(); 
 }
 
 static void initCameraState()
@@ -860,65 +714,8 @@ static void buildMeshAccelSplitMesh( PathTracerState& state, std::shared_ptr<sma
     accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
-    OptixAccelBufferSizes gas_buffer_sizes;
-    //char   log[2048]; size_t sizeof_log = sizeof( log );
-    OPTIX_CHECK( optixAccelComputeMemoryUsage(
-                state.context,
-                &accel_options,
-                &triangle_input,
-                1,  // num_build_inputs
-                &gas_buffer_sizes
-                ) );
-
-    raii<CUdeviceptr> d_temp_buffer;
-    CUDA_CHECK(cudaMalloc((void**)&d_temp_buffer.reset(), gas_buffer_sizes.tempSizeInBytes));
-
-    // non-compacted output
-    raii<CUdeviceptr> d_buffer_temp_output_gas_and_compacted_size;
-    size_t      compactedSizeOffset = roundUp<size_t>( gas_buffer_sizes.outputSizeInBytes, 8ull );
-    CUDA_CHECK(cudaMalloc((void**)&d_buffer_temp_output_gas_and_compacted_size.reset(), compactedSizeOffset + 8ull));
-
-    OptixAccelEmitDesc emitProperty = {};
-    emitProperty.type               = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-    emitProperty.result             = ( CUdeviceptr )( (char*)(CUdeviceptr)d_buffer_temp_output_gas_and_compacted_size + compactedSizeOffset );
-
-    OPTIX_CHECK( optixAccelBuild(
-                state.context,
-                0,                                  // CUDA stream
-                &accel_options,
-                &triangle_input,
-                1,                                  // num build inputs
-                d_temp_buffer,
-                gas_buffer_sizes.tempSizeInBytes,
-                d_buffer_temp_output_gas_and_compacted_size,
-                gas_buffer_sizes.outputSizeInBytes,
-                &mesh->gas_handle,
-                &emitProperty,                      // emitted property list
-                1                                   // num emitted properties
-                ) );
-
-    d_temp_buffer.reset();
-    //d_mat_indices.reset();
-
-    size_t compacted_gas_size;
-    CUDA_CHECK( cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost) );
-
-    if( compacted_gas_size < gas_buffer_sizes.outputSizeInBytes )
-    {
-        CUDA_CHECK(cudaMalloc((void**)&mesh->d_gas_output_buffer.reset(), compacted_gas_size));
-
-        // use handle as input and output
-        OPTIX_CHECK( optixAccelCompact( state.context, 0, 
-        mesh->gas_handle, mesh->d_gas_output_buffer, compacted_gas_size, &mesh->gas_handle ) );
-
-        d_buffer_temp_output_gas_and_compacted_size.reset();
-    }
-    else
-    {
-        mesh->d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
-    }
-    state.gas_handle = mesh->gas_handle;
-
+    buildXAS(state.context, accel_options, triangle_input, mesh->d_gas_output_buffer, mesh->gas_handle);
+    
     mesh->dverts.reset();
     mesh->dmats.reset(); 
     mesh->didx.reset();
@@ -929,8 +726,7 @@ static size_t g_staticVertNum = 0;
 static size_t g_staticAndDynamicMeshNum = 0;
 static size_t g_staticAndDynamicVertNum = 0;
 
-static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes)
-{
+static void buildMeshIAS(PathTracerState& state, int rayTypeCount, std::vector<std::shared_ptr<smallMesh>> m_meshes) {
     std::cout<<"IAS begin"<<std::endl;
     timer.tick();
     const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
@@ -1109,28 +905,40 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 cudaMemcpyHostToDevice
                 ) );
 
-    timer.tock("done IAS middle");
-    std::cout<<"IAS middle\n";
-    timer.tick();
 
-        auto optix_instance_idx = optix_instances.size();
-        //process sphere
-        if (crowded_sphere_gas_handle !=0 && SpheresCrowded.center_list.size() > 0) {
-            
+    OptixAccelBuildOptions accel_options{};
+    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+
+    buildIAS(state.context, accel_options, optix_instances, state.meshBufferIAS, state.meshHandleIAS);    
+}
+
+void buildRootIAS(int rayTypeCount)
+{
+    const float mat3r4c[12] = {1,0,0,0,0,1,0,0,0,0,1,0};
+
+    std::vector<OptixInstance> optix_instances{};
+    uint sbt_offset = 0u;
+    {
+        if (state.meshHandleIAS != 0u) {
             OptixInstance inst{};
-            optix_instance_idx;
-
-            sbt_offset = g_mtlidlut.size() * RAY_TYPE_COUNT;
 
             inst.flags = OPTIX_INSTANCE_FLAG_NONE;
-            inst.sbtOffset = sbt_offset;
-            inst.instanceId = optix_instance_idx;
+            inst.sbtOffset = 0;
+            inst.instanceId = 0;
             inst.visibilityMask = DefaultMatMask; 
-            inst.traversableHandle = crowded_sphere_gas_handle;
+            inst.traversableHandle = state.meshBufferIAS;
 
             memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
             optix_instances.push_back( inst );
         }
+    }
+
+    timer.tock("done IAS middle");
+    std::cout<<"IAS middle\n";
+    timer.tick();
+
+        auto optix_instance_idx = optix_instances.size()-1;
 
         for (auto& sphereAgent : sphereInstanceGroupAgentList) {
 
@@ -1154,9 +962,9 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
             optix_instances.push_back( inst );
         }
 
-        if (uniform_sphere_gas_handle != 0) {
+        if (uniformed_sphere_gas_handle != 0) {
 
-            for(auto& [key, dsphere] : LutSpheresTransformed) {
+            for(auto& [key, dsphere] : SphereTransformedLUT) {
 
                 auto combinedID = dsphere.materialID + ":" + std::to_string(ShaderMaker::Sphere);
                 auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
@@ -1170,7 +978,7 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
                 inst.sbtOffset = sbt_offset;
                 inst.instanceId = optix_instance_idx;
                 inst.visibilityMask = DefaultMatMask;
-                inst.traversableHandle = uniform_sphere_gas_handle;
+                inst.traversableHandle = uniformed_sphere_gas_handle;
 
                 auto transform_ptr = glm::value_ptr( dsphere.optix_transform );
                 memcpy(inst.transform, transform_ptr, sizeof(float) * 12);
@@ -1181,9 +989,9 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
         // process volume
         {  
             for ( uint i=0; i<list_volume.size(); ++i ) {
-
-                ++optix_instance_idx;
+                
                 OptixInstance optix_instance {};
+                ++optix_instance_idx;
 
                 sbt_offset = list_volume_index_in_shader_list[i] * RAY_TYPE_COUNT;
 
@@ -1198,101 +1006,47 @@ static void buildInstanceAccel(PathTracerState& state, int rayTypeCount, std::ve
             }
         }
 
-        if (lightSphereGas != 0)
-        {
-            ++optix_instance_idx;
-            OptixInstance optix_instance {};
-
-            auto combinedID = std::string("Default") + ":" + std::to_string(ShaderMaker::Sphere);
-            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
-
-            sbt_offset = shader_index * RAY_TYPE_COUNT;
-
-            optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            optix_instance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1;
-            optix_instance.sbtOffset = sbt_offset;
-            optix_instance.visibilityMask = LightMatMask;
-            optix_instance.traversableHandle = lightSphereGas;
-            memcpy(optix_instance.transform, mat3r4c, sizeof(float) * 12);
-
-            optix_instances.push_back( optix_instance );
-        }
-        
         //process light
         if (lightMeshGas != 0)
         {
             ++optix_instance_idx;
-            OptixInstance optix_instance {};
+            OptixInstance opinstance {};
 
-            sbt_offset = 0 * RAY_TYPE_COUNT;
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1;
+            opinstance.sbtOffset = 0;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightMeshGas;
+            memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
 
-            optix_instance.flags = OPTIX_INSTANCE_FLAG_NONE;
-            optix_instance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID;
-            optix_instance.sbtOffset = sbt_offset;
-            optix_instance.visibilityMask = LightMatMask;
-            optix_instance.traversableHandle = lightMeshGas;
-            memcpy(optix_instance.transform, mat3r4c, sizeof(float) * 12);
-
-            optix_instances.push_back( optix_instance );
+            optix_instances.push_back( opinstance );
         }
 
-    const size_t instances_size_in_bytes = sizeof( OptixInstance ) * optix_instances.size();
-    raii<CUdeviceptr>  d_instances;
-    CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_instances.reset() ), instances_size_in_bytes ) );
-    CUDA_CHECK( cudaMemcpy(
-                reinterpret_cast<void*>( (CUdeviceptr)d_instances ),
-                optix_instances.data(),
-                instances_size_in_bytes,
-                cudaMemcpyHostToDevice
-                ) );
+        if (lightSphereGas != 0)
+        {
+            ++optix_instance_idx;
+            OptixInstance opinstance {};
 
-    OptixBuildInput instance_input{};
-    instance_input.type                       = OPTIX_BUILD_INPUT_TYPE_INSTANCES;
-    instance_input.instanceArray.instances    = d_instances;
-    instance_input.instanceArray.numInstances = static_cast<unsigned int>( optix_instances.size() );
+            auto combinedID = std::string("Default") + ":" + std::to_string(ShaderMaker::Sphere);
+            auto shader_index = OptixUtil::matIDtoShaderIndex[combinedID];
 
+            opinstance.flags = OPTIX_INSTANCE_FLAG_NONE;
+            opinstance.instanceId = OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID;
+            opinstance.sbtOffset = shader_index * RAY_TYPE_COUNT;;
+            opinstance.visibilityMask = LightMatMask;
+            opinstance.traversableHandle = lightSphereGas;
+            memcpy(opinstance.transform, mat3r4c, sizeof(float) * 12);
+
+            optix_instances.push_back( opinstance );
+        }
+    
     OptixAccelBuildOptions accel_options{};
-    accel_options.buildFlags                  = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-    accel_options.operation                   = OPTIX_BUILD_OPERATION_BUILD;
+    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
 
-    OptixAccelBufferSizes ias_buffer_sizes;
-    OPTIX_CHECK( optixAccelComputeMemoryUsage(
-                state.context,
-                &accel_options,
-                &instance_input,
-                1, // num build inputs
-                &ias_buffer_sizes
-                ) );
-
-    raii<CUdeviceptr> d_temp_buffer;
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &d_temp_buffer.reset() ),
-                roundUp<size_t>(ias_buffer_sizes.tempSizeInBytes, 128ull)
-                ) );
-
-    CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.m_d_ias_output_buffer.reset() ),
-                roundUp<size_t>(ias_buffer_sizes.outputSizeInBytes, 128ull)
-                ) );
-
-    OPTIX_CHECK( optixAccelBuild(
-                state.context,
-                nullptr,                  // CUDA stream
-                &accel_options,
-                &instance_input,
-                1,                  // num build inputs
-                d_temp_buffer,
-                ias_buffer_sizes.tempSizeInBytes,
-                state.m_d_ias_output_buffer,
-                ias_buffer_sizes.outputSizeInBytes,
-                &state.m_ias_handle,
-                nullptr,            // emitted property list
-                0                   // num emitted properties
-                ) );
+    buildIAS(state.context, accel_options, optix_instances, state.rootBufferIAS, state.rootHandleIAS);
 
     timer.tock("done IAS build");
-    std::cout<<"IAS end\n";
-    //zeno::log_info("build IAS end");
 }
 
 static void buildMeshAccel( PathTracerState& state )
@@ -1338,62 +1092,7 @@ static void buildMeshAccel( PathTracerState& state )
     accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
-    OptixAccelBufferSizes gas_buffer_sizes;
-    //char   log[2048]; size_t sizeof_log = sizeof( log );
-    OPTIX_CHECK( optixAccelComputeMemoryUsage(
-                state.context,
-                &accel_options,
-                &triangle_input,
-                1,  // num_build_inputs
-                &gas_buffer_sizes
-                ) );
-
-    raii<CUdeviceptr> d_temp_buffer;
-    CUDA_CHECK(cudaMalloc((void**)&d_temp_buffer.reset(), gas_buffer_sizes.tempSizeInBytes));
-
-    // non-compacted output
-    raii<CUdeviceptr> d_buffer_temp_output_gas_and_compacted_size;
-    size_t      compactedSizeOffset = roundUp<size_t>( gas_buffer_sizes.outputSizeInBytes, 8ull );
-    CUDA_CHECK(cudaMalloc((void**)&d_buffer_temp_output_gas_and_compacted_size.reset(), compactedSizeOffset + 8));
-
-    OptixAccelEmitDesc emitProperty = {};
-    emitProperty.type               = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-    emitProperty.result             = ( CUdeviceptr )( (char*)(CUdeviceptr)d_buffer_temp_output_gas_and_compacted_size + compactedSizeOffset );
-
-    OPTIX_CHECK( optixAccelBuild(
-                state.context,
-                0,                                  // CUDA stream
-                &accel_options,
-                &triangle_input,
-                1,                                  // num build inputs
-                d_temp_buffer,
-                gas_buffer_sizes.tempSizeInBytes,
-                d_buffer_temp_output_gas_and_compacted_size,
-                gas_buffer_sizes.outputSizeInBytes,
-                &state.gas_handle,
-                &emitProperty,                      // emitted property list
-                1                                   // num emitted properties
-                ) );
-
-    d_temp_buffer.reset();
-    
-    size_t compacted_gas_size;
-    CUDA_CHECK( cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost) );
-
-    if( compacted_gas_size < gas_buffer_sizes.outputSizeInBytes )
-    {
-        CUDA_CHECK(cudaMalloc((void**)&state.d_gas_output_buffer.reset(), compacted_gas_size));
-
-        // use handle as input and output
-        OPTIX_CHECK( optixAccelCompact( state.context, 0, 
-        state.gas_handle, state.d_gas_output_buffer, compacted_gas_size, &state.gas_handle ) );
-
-        d_buffer_temp_output_gas_and_compacted_size.reset();
-    }
-    else
-    {
-        state.d_gas_output_buffer = std::move(d_buffer_temp_output_gas_and_compacted_size);
-    }
+    buildXAS(state.context, accel_options, triangle_input, state.d_gas_output_buffer, state.d_gas_output_buffer);
 
     state.d_vertices.reset();
     state.d_mat_indices.reset();
@@ -1546,7 +1245,7 @@ static void createSBT( PathTracerState& state )
 static void cleanupState( PathTracerState& state )
 {
     
-    OPTIX_CHECK( optixProgramGroupDestroy( state.raygen_prog_group ) );
+    OPTIX_CHECK(optixProgramGroupDestroy( state.raygen_prog_group ) );
     OPTIX_CHECK(optixProgramGroupDestroy(state.radiance_miss_group));
     OPTIX_CHECK(optixProgramGroupDestroy(state.occlusion_miss_group));
     OPTIX_CHECK(optixModuleDestroy(OptixUtil::ray_module));
@@ -1559,13 +1258,11 @@ static void cleanupState( PathTracerState& state )
 
     OPTIX_CHECK( optixModuleDestroy( OptixUtil::sphere_module));
 
-    
-    
+    lightSphereGasBuffer.reset();
+    lightMeshGasBuffer.reset();
 
-
-    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.raygenRecord ) ) );
-    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.missRecordBase ) ) );
-    //CUDA_CHECK( cudaFree( reinterpret_cast<void*>( state.sbt.hitgroupRecordBase ) ) );
+    uniformed_sphere_gas_buffer.reset();
+    sphereInstanceGroupAgentList.clear();
 
     for (auto& ele : list_volume_accel) {
         cleanupVolumeAccel(*ele);
@@ -1987,7 +1684,7 @@ void CopyInstMeshToGlobalMesh()
     }
 }
 
-void UpdateGasAndIas(bool staticNeedUpdate)
+void UpdateMeshGasAndIas(bool staticNeedUpdate)
 {
 //#ifdef USING_20XX
     // no archieve inst func in using20xx
@@ -2133,7 +1830,7 @@ void UpdateGasAndIas(bool staticNeedUpdate)
                               light_mark_size_in_bytes, cudaMemcpyHostToDevice));
         timer.tock("done dynamic mesh update");
         std::cout << "end copy\n";
-        buildInstanceAccel(state, 2, g_meshPieces);
+        buildMeshIAS(state, 2, g_meshPieces);
     }
 //#endif
 }
@@ -2270,15 +1967,6 @@ static void buildRectLightGAS( PathTracerState& state, std::vector<Vertex>& ligh
                 cudaMemcpyHostToDevice 
                 ) );
 
-    // const size_t mat_indices_size_in_bytes = g_mat_indices.size() * sizeof( uint32_t );
-    // CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &state.d_mat_indices.reset() ), mat_indices_size_in_bytes ) );
-    // CUDA_CHECK( cudaMemcpy(
-    //             reinterpret_cast<void*>( (CUdeviceptr)state.d_mat_indices ),
-    //             g_mat_indices.data(),
-    //             mat_indices_size_in_bytes,
-    //             cudaMemcpyHostToDevice
-    //             ) );
-
     std::vector<uint32_t> triangle_input_flags(1, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
 
     OptixBuildInput triangle_input                           = {};
@@ -2297,62 +1985,62 @@ static void buildRectLightGAS( PathTracerState& state, std::vector<Vertex>& ligh
     accel_options.buildFlags             = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
     accel_options.operation              = OPTIX_BUILD_OPERATION_BUILD;
 
-    OptixAccelBufferSizes gas_buffer_sizes;
-    OPTIX_CHECK( optixAccelComputeMemoryUsage(
-                state.context,
-                &accel_options,
-                &triangle_input,
-                1,  // num_build_inputs
-                &gas_buffer_sizes
-                ) );
-
-    raii<CUdeviceptr> d_temp_buffer;
-    CUDA_CHECK(cudaMalloc((void**)&d_temp_buffer.reset(), gas_buffer_sizes.tempSizeInBytes));
-
-    // non-compacted output
-    raii<CUdeviceptr> d_output_buffer;
-    size_t      compactedSizeOffset = roundUp<size_t>( gas_buffer_sizes.outputSizeInBytes, 8ull );
-    CUDA_CHECK(cudaMalloc((void**)&d_output_buffer.reset(), compactedSizeOffset + 8));
-
-    OptixAccelEmitDesc emitProperty = {};
-    emitProperty.type               = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
-    emitProperty.result             = ( CUdeviceptr )( (char*)(CUdeviceptr)d_output_buffer + compactedSizeOffset );
-
-    OPTIX_CHECK( optixAccelBuild(
-                state.context,
-                0,                                  // CUDA stream
-                &accel_options,
-                &triangle_input,
-                1,                                  // num build inputs
-                d_temp_buffer,
-                gas_buffer_sizes.tempSizeInBytes,
-                d_output_buffer,
-                gas_buffer_sizes.outputSizeInBytes,
-                &lightMeshGas,
-                &emitProperty,                      // emitted property list
-                1                                   // num emitted properties
-                ) );
-
-    d_temp_buffer.reset();
-    
-    size_t compacted_gas_size;
-    CUDA_CHECK( cudaMemcpy( &compacted_gas_size, (void*)emitProperty.result, sizeof(size_t), cudaMemcpyDeviceToHost) );
-
-    if( compacted_gas_size < gas_buffer_sizes.outputSizeInBytes )
-    {
-        CUDA_CHECK(cudaMalloc((void**)&lightMeshGasBuffer.reset(), compacted_gas_size));
-        // use handle as input and output
-        OPTIX_CHECK( optixAccelCompact( state.context, 0, 
-        lightMeshGas, lightMeshGasBuffer, compacted_gas_size, &lightMeshGas ) );
-
-        d_output_buffer.reset();
-    }
-    else
-    {
-        lightMeshGasBuffer = std::move(d_output_buffer);
-    }
+    buildXAS(state.context, accel_options, triangle_input, lightMeshGasBuffer, lightMeshGas);
 
     d_lightMesh.reset();
+}
+
+static void buildSphereLightGAS( PathTracerState& state, std::vector<Vertex>& lightSpheres) {
+
+    if (lightSpheres.empty()) {
+        lightSphereGas = 0;
+        lightSphereGasBuffer.reset();
+        return;
+    }
+
+    const size_t sphere_count = g_lightSpheres.size(); 
+    if (sphere_count == 0) {
+        lightSphereGasBuffer.reset();
+        lightSphereGas = 0u;
+        return;
+    }
+
+    OptixAccelBuildOptions accel_options {};
+    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
+    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
+
+    raii<CUdeviceptr> d_vertex_buffer{}; 
+   
+    {
+        auto data_length = sizeof( Vertex ) * sphere_count;
+
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer.reset() ), data_length) );
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_vertex_buffer ), g_lightSpheres.data(),
+                                data_length, cudaMemcpyHostToDevice ) );
+    }
+    CUdeviceptr d_radius_buffer = (CUdeviceptr) ( (char*)d_vertex_buffer.handle + 12u );  
+
+    OptixBuildInput sphere_input{};
+
+    sphere_input.type                      = OPTIX_BUILD_INPUT_TYPE_SPHERES;
+    sphere_input.sphereArray.numVertices   = sphere_count;
+    sphere_input.sphereArray.vertexBuffers = &d_vertex_buffer;
+    sphere_input.sphereArray.radiusBuffers = &d_radius_buffer;
+    sphere_input.sphereArray.singleRadius = false;
+    sphere_input.sphereArray.vertexStrideInBytes = 16;
+    sphere_input.sphereArray.radiusStrideInBytes = 16;
+    //sphere_input.sphereArray.primitiveIndexOffset = 0;
+
+    std::vector<uint> sphere_input_flags(1, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
+    
+    sphere_input.sphereArray.flags         = sphere_input_flags.data();
+    sphere_input.sphereArray.numSbtRecords = 1;
+    sphere_input.sphereArray.sbtIndexOffsetBuffer = 0;
+    // sphere_input.sphereArray.sbtIndexOffsetSizeInBytes = sizeof(uint);
+    // sphere_input.sphereArray.sbtIndexOffsetStrideInBytes = sizeof(uint);
+
+    buildXAS(state.context, accel_options, sphere_input, lightSphereGasBuffer, lightSphereGas);
+    d_vertex_buffer.reset();
 }
 
 void optixupdatelight() {
@@ -2712,73 +2400,6 @@ std::set<std::string> uniqueMatsForMesh() {
     }
 
     return result;
-}
-
-static inline std::set<std::string> sphere_unique_mats;
-
-std::set<std::string> uniqueMatsForSphere() {
-    return sphere_unique_mats;
-}
-
-void preload_sphere_transformed(std::string const &key, std::string const &mtlid, const std::string &instID, const glm::mat4& transform) 
-{
-    InfoSphereTransformed dsphere;
-    dsphere.materialID = mtlid;
-    dsphere.instanceID = instID;
-    dsphere.optix_transform = glm::transpose(transform);
-
-    LutSpheresTransformed[key] = dsphere;
-    sphere_unique_mats.insert(mtlid);
-}
-
-void preload_sphere_crowded(std::string const &key, std::string const &mtlid, const std::string &instID, const float &radius, const zeno::vec3f &center) 
-{
-    if (instID == "" || instID == "Default") {
-
-        if (SpheresCrowded.cached.count(key) > 0) {return;}
-
-        SpheresCrowded.cached.insert(key);
-        SpheresCrowded.mtlset.insert(mtlid);
-
-        SpheresCrowded.mtlid_list.push_back(mtlid);
-        SpheresCrowded.instid_list.push_back(instID);
-        SpheresCrowded.radius_list.push_back(radius);
-        SpheresCrowded.center_list.push_back(center);
-
-    } else {
-
-        SphereInstanceGroupBase base;
-        base.instanceID = instID;
-        base.materialID = mtlid;
-        base.key = key;
-
-        base.radius = radius;
-        base.center = center;
-
-        SpheresInstanceGroupMap[instID] = base;
-    }
-
-    sphere_unique_mats.insert(mtlid);
-}
-
-void foreach_sphere_crowded(std::function<void( const std::string &mtlid, std::vector<uint> &sbtoffset_list)> func) 
-{
-    auto count = SpheresCrowded.center_list.size();
-
-    for (uint i=0; i<count; ++i) {
-        auto mtlid = SpheresCrowded.mtlid_list[i];
-
-        func(mtlid, SpheresCrowded.sbtoffset_list);
-    }
-}
-
-void cleanupSpheres() {
-
-    SpheresCrowded = {};
-
-    sphere_unique_mats.clear();
-    LutSpheresTransformed.clear();
-    SpheresInstanceGroupMap.clear();
 }
 
 void splitMesh(std::vector<Vertex> & verts, std::vector<uint32_t> &mat_idx, 

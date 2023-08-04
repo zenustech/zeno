@@ -1,3 +1,6 @@
+#include "optixPathTracer.h"
+#include "vec_math.h"
+#include <memory>
 #ifdef ZENO_ENABLE_OPTIX
 #include "../../xinxinoptix/xinxinoptixapi.h"
 #include "../../xinxinoptix/SDK/sutil/sutil.h"
@@ -217,12 +220,12 @@ struct GraphicsManager {
                     auto sphere_scale = ud.get2<zeno::vec3f>("sphere_scale");
                     auto uniform_scaling = sphere_scale[0] == sphere_scale[1] && sphere_scale[2] == sphere_scale[0];
 
-                    if (uniform_scaling && instanced) { 
+                    if (instanced) { 
                         auto sphere_center = ud.get2<zeno::vec3f>("sphere_center");
                         auto sphere_radius = ud.get2<float>("sphere_radius");
-                             sphere_radius *= sphere_scale[0];
+                             sphere_radius *= fmaxf(fmaxf(sphere_scale[0], sphere_scale[1]), sphere_scale[2]);
 
-                        xinxinoptix::preload_sphere_crowded(key, mtlid, instID, sphere_radius, sphere_center);
+                        xinxinoptix::preload_sphere_instanced(key, mtlid, instID, sphere_radius, sphere_center);
                     } else {
 
                         //zeno::vec4f row0, row1, row2, row3;
@@ -1072,17 +1075,6 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::updateVolume(volume_shader_offset);
             }
 
-            xinxinoptix::foreach_sphere_crowded([&matIDtoShaderIndex, sphere_shader_offset](const std::string &mtlid, std::vector<uint> &sbtoffset_list) {
-
-                auto combinedID = mtlid + ":" + std::to_string(ShaderMaker::Sphere);
-
-                if (matIDtoShaderIndex.count(combinedID) > 0) {
-                    auto shaderIndex = matIDtoShaderIndex.at(combinedID);
-                    sbtoffset_list.push_back(shaderIndex - sphere_shader_offset);
-                }
-            });
-
-            xinxinoptix::SpheresCrowded.sbt_count = _sphere_shader_list.size();
             OptixUtil::matIDtoShaderIndex = matIDtoShaderIndex;
 
             if (meshNeedUpdate) 
@@ -1096,20 +1088,20 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
                 xinxinoptix::UpdateDynamicMesh(meshMatLUT);
 
             OptixUtil::logInfoVRAM("Before update Inst");
+
                 xinxinoptix::UpdateInst();
             OptixUtil::logInfoVRAM("After update Inst");
 
-                xinxinoptix::updateInstancedSpheresGAS();
-                xinxinoptix::updateCrowdedSpheresGAS();
-                xinxinoptix::updateUniformSphereGAS();
-
+                xinxinoptix::updateSphereXAS();
             OptixUtil::logInfoVRAM("After update Sphere");
 
                 xinxinoptix::UpdateStaticInstMesh(meshMatLUT);
                 xinxinoptix::UpdateDynamicInstMesh(meshMatLUT);
                 xinxinoptix::CopyInstMeshToGlobalMesh();
-                xinxinoptix::UpdateGasAndIas(staticNeedUpdate);
+                xinxinoptix::UpdateMeshGasAndIas(staticNeedUpdate);
             }
+
+            xinxinoptix::buildRootIAS(RAY_TYPE_COUNT);
         
             xinxinoptix::optixupdateend();
             xinxinoptix::cleanupSpheres();
