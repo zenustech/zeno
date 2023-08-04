@@ -20,9 +20,9 @@
 
 #ifndef __CUDACC_RTC__
 
-static inline bool isnan(float f) {
-    return f == INFINITY;
-}
+// static inline bool isnan(float f) {
+//     return f == INFINITY;
+// }
 
 template<typename InType, typename OutType>
 static inline OutType bitConvert(InType inValue) {

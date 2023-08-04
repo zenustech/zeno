@@ -11,12 +11,9 @@
 
 #include "IOMat.h"
 #include "Shape.h"
-#include "Lighting.h"
-
+#include "Light.h"
 
 #define _SPHERE_ 0
-#define _LIGHT_SOURCE_ 0
-
 #define TRI_PER_MESH 4096
 //COMMON_CODE
 
@@ -168,40 +165,38 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 {
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
-    const uint              prim_idx = optixGetPrimitiveIndex();
+    const uint               primIdx = optixGetPrimitiveIndex();
 
-    const float3 ray_orig        = optixGetWorldRayOrigin();
-    const float3 ray_dir         = optixGetWorldRayDirection();
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+    const float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
 
-    const float3 P    = ray_orig + optixGetRayTmax() * ray_dir;
     const auto zenotex = rt_data->textures;
 
-    RadiancePRD*  prd = getPRD();
+    RadiancePRD* prd = getPRD();
     MatInput attrs{};
 
-    if constexpr(_LIGHT_SOURCE_)
-    {
-        prd->attenuation2 = vec3(0.0f);
-        prd->attenuation = vec3(0.0f);
-        optixTerminateRay();
-        return;
-    }
+    bool sphere_external_ray = false;
 
 #if (_SPHERE_)
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
-    optixGetSphereData( gas, prim_idx, sbtGASIndex, 0.f, &q );
+    optixGetSphereData( gas, primIdx, sbtGASIndex, 0.f, &q );
 
-    float3 _pos_world_      = ray_orig + optixGetRayTmax() * ray_dir;
+    float3 _pos_world_      = P;
     float3 _pos_object_     = optixTransformPointFromWorldToObjectSpace( _pos_world_ );
 
-    float3 _normal_object_  = ( _pos_object_ - make_float3( q ) ) / q.w;
+    float3& _center_object_ = *(float3*)&q; 
+
+    float3 _normal_object_  = ( _pos_object_ - _center_object_ ) / q.w;
     float3 _normal_world_   = normalize( optixTransformNormalFromObjectToWorldSpace( _normal_object_ ) );
 
-    //float3 P = _pos_world_;
+    auto _origin_object_ = optixGetObjectRayOrigin();
+    sphere_external_ray = length(_origin_object_ - _center_object_) > q.w;
+
     float3 N = _normal_world_;
     N = faceforward( N, -ray_dir, N );
 
@@ -222,7 +217,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     int inst_idx2 = optixGetInstanceIndex();
     int inst_idx = rt_data->meshIdxs[inst_idx2];
-    int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
+    int vert_idx_offset = (inst_idx * TRI_PER_MESH + primIdx)*3;
 
     float m16[16];
     m16[12]=0; m16[13]=0; m16[14]=0; m16[15]=1;
@@ -230,15 +225,11 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     mat4& meshMat = *reinterpret_cast<mat4*>(&m16);
 
     float3 _vertices_[3];
-    optixGetTriangleVertexData( gas,
-                                prim_idx,
-                                sbtGASIndex,
-                                0,
-                                _vertices_);
+    optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
 
-    float3 av0 = _vertices_[0]; //make_float3(rt_data->vertices[vert_idx_offset + 0]);
-    float3 av1 = _vertices_[1]; //make_float3(rt_data->vertices[vert_idx_offset + 1]);
-    float3 av2 = _vertices_[2]; //make_float3(rt_data->vertices[vert_idx_offset + 2]);
+    float3& av0 = _vertices_[0]; //make_float3(rt_data->vertices[vert_idx_offset + 0]);
+    float3& av1 = _vertices_[1]; //make_float3(rt_data->vertices[vert_idx_offset + 1]);
+    float3& av2 = _vertices_[2]; //make_float3(rt_data->vertices[vert_idx_offset + 2]);
     vec4 bv0 = vec4(av0.x, av0.y, av0.z, 1);
     vec4 bv1 = vec4(av1.x, av1.y, av1.z, 1);
     vec4 bv2 = vec4(av2.x, av2.y, av2.z, 1);
@@ -314,7 +305,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     attrs.instClr = rt_data->instClr[inst_idx2];
     attrs.instTang = rt_data->instTang[inst_idx2];
 
-    unsigned short isLight = rt_data->lightMark[inst_idx * TRI_PER_MESH + prim_idx];
+    unsigned short isLight = rt_data->lightMark[inst_idx * TRI_PER_MESH + primIdx];
 #endif
 
     MatOutput mats = evalMaterial(zenotex, rt_data->uniforms, attrs);
@@ -325,6 +316,7 @@ extern "C" __global__ void __anyhit__shadow_cutout()
         attrs.tang = cross(attrs.nrm, b);
         N = mats.nrm.x * attrs.tang + mats.nrm.y * b + mats.nrm.z * attrs.nrm;
     }
+
     //end of material computation
     //mats.metallic = clamp(mats.metallic,0.01, 0.99);
     mats.roughness = clamp(mats.roughness, 0.01f,0.99f);
@@ -361,26 +353,34 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     }
     else
     {
-
         //roll a dice
         float p = rnd(prd->seed);
-        if (p < opacity){
+
+        float skip = opacity;
+        #if (_SPHERE_)
+            if (sphere_external_ray) {
+                skip *= opacity;
+            }
+        #endif
+
+        if (p < skip){
             optixIgnoreIntersection();
         }else{
+
             if(length(prd->shadowAttanuation) < 0.01f){
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
                 return;
             }
+
             if(specTrans==0.0f){
                 prd->shadowAttanuation = vec3(0.0f);
                 optixTerminateRay();
                 return;
             }
-            //prd->shadowAttanuation = vec3(0,0,0);
-            //optixTerminateRay();
             
             if(specTrans > 0.0f){
+
                 if(thin == 0.0f && ior>1.0f)
                 {
                     prd->nonThinTransHit++;
@@ -391,12 +391,24 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                     optixTerminateRay();
                     return;
                 }
-                float nDi = fabs(dot(N,ray_dir));
-                vec3 tmp = prd->shadowAttanuation;
-                tmp = tmp * (vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi));
-                prd->shadowAttanuation = tmp;
 
+                float nDi = fabs(dot(N,ray_dir));
+                vec3 fakeTrans = vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi);
+                prd->shadowAttanuation = prd->shadowAttanuation * fakeTrans;
+
+                #if (_SPHERE_)
+                    if (sphere_external_ray) {
+                        prd->shadowAttanuation *= vec3(1, 0, 0);
+                        if (nDi < (1.0f-_FLT_EPL_)) {
+                            prd->shadowAttanuation = {};
+                            optixTerminateRay(); return;
+                        } else {
+                            prd->shadowAttanuation *= fakeTrans;
+                        }
+                    }
+                #endif
                 optixIgnoreIntersection();
+                return;
             }
         }
 
@@ -431,92 +443,14 @@ extern "C" __global__ void __closesthit__radiance()
 
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
-    const uint              prim_idx = optixGetPrimitiveIndex();
+    const uint              primIdx = optixGetPrimitiveIndex();
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
+    float3 P = ray_orig + optixGetRayTmax() * ray_dir;
 
     HitGroupData* rt_data = (HitGroupData*)optixGetSbtDataPointer();
     auto zenotex = rt_data->textures;
-
-    if constexpr(_LIGHT_SOURCE_)
-    {
-        auto instanceId = optixGetInstanceId();
-        auto isLightGAS = ( instanceId >= OPTIX_DEVICE_PROPERTY_LIMIT_MAX_INSTANCE_ID-1 );
-
-        const auto pType = optixGetPrimitiveType();
-        //optixGetPrimitiveIndex();
-        //assert(false);
-        if (params.num_lights == 0 || !isLightGAS) {
-            prd->depth += 1;
-            prd->done = true;
-            return;
-        }
-
-        uint light_idx = 0;
-
-        if (pType == OptixPrimitiveType::OPTIX_PRIMITIVE_TYPE_SPHERE) {
-            light_idx = prim_idx + params.firstSphereLightIdx;
-        } else {
-            auto rect_idx = prim_idx / 2;
-            light_idx = rect_idx + params.firstRectLightIdx;
-        }
-
-        light_idx = min(light_idx, params.num_lights - 1);
-        auto& light = params.lights[light_idx];
-
-        float prevCDF = light_idx>0? params.lights[light_idx-1].CDF : 0.0f;
-        float lightPickPDF = (light.CDF - prevCDF) / params.lights[params.num_lights-1].CDF;
-
-        auto visible = (light.config & LightConfigVisible);
-
-        if (!visible && prd->depth == 0) {
-            auto pos = ray_orig + ray_dir * optixGetRayTmax();
-            prd->geometryNormal = light.N;
-            prd->offsetUpdateRay(pos, ray_dir); 
-            return;
-        }
-
-        prd->depth += 1;
-        prd->done = true;
-
-        float3 lightDirection = optixGetWorldRayDirection(); //light_pos - P;
-        float  lightDistance  = optixGetRayTmax();  //length(lightDirection);
-
-        LightSampleRecord lsr;
-
-        if (light.shape == 0) {
-            light.rect.eval(&lsr, lightDirection, lightDistance, prd->origin);
-        } else {
-            light.sphere.eval(&lsr, lightDirection, lightDistance, prd->origin);
-        }
-
-        if (light.config & LightConfigDoubleside) {
-            lsr.NoL = abs(lsr.NoL);
-        }
-
-        if (lsr.NoL > _FLT_EPL_) {
-
-            if (1 == prd->depth) {
-                if (light.config & LightConfigVisible) {
-                    prd->radiance = light.emission;
-                }
-                prd->attenuation = vec3(1.0f); 
-                prd->attenuation2 = vec3(1.0f);
-                return;
-            }
-
-            float scatterPDF = prd->samplePdf; //BxDF direction PDF from previous hit
-            float lightPDF = lightPickPDF * lsr.PDF;
-            float misWeight = BRDFBasics::PowerHeuristic(scatterPDF, lightPDF);
-
-            prd->radiance = light.emission * misWeight;
-            // if (scatterPDF > __FLT_DENORM_MIN__) {
-            //     prd->radiance /= scatterPDF;
-            // }
-        }
-        return;
-    }
 
     MatInput attrs{};
 
@@ -526,15 +460,14 @@ extern "C" __global__ void __closesthit__radiance()
 
     float4 q;
     // sphere center (q.x, q.y, q.z), sphere radius q.w
-    optixGetSphereData( gas, optixGetPrimitiveIndex(), sbtGASIndex, 0.0f, &q );
+    optixGetSphereData( gas, primIdx, sbtGASIndex, 0.0f, &q );
 
-    float3 _pos_world_      = ray_orig + optixGetRayTmax() * ray_dir;
+    float3 _pos_world_      = P;
     float3 _pos_object_     = optixTransformPointFromWorldToObjectSpace( _pos_world_ );
 
     float3 _normal_object_  = ( _pos_object_ - make_float3( q ) ) / q.w;
     float3 _normal_world_   = normalize( optixTransformNormalFromObjectToWorldSpace( _normal_object_ ) );
 
-    float3 P = _pos_world_;
     float3 N = _normal_world_;
 
     prd->geometryNormal = N;
@@ -555,7 +488,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     int inst_idx2 = optixGetInstanceIndex();
     int inst_idx = rt_data->meshIdxs[inst_idx2];
-    int vert_idx_offset = (inst_idx * TRI_PER_MESH + prim_idx)*3;
+    int vert_idx_offset = (inst_idx * TRI_PER_MESH + primIdx)*3;
 
     float m16[16];
     m16[12]=0; m16[13]=0; m16[14]=0; m16[15]=1;
@@ -563,15 +496,11 @@ extern "C" __global__ void __closesthit__radiance()
     mat4& meshMat = *reinterpret_cast<mat4*>(&m16);
 
     float3 _vertices_[3];
-    optixGetTriangleVertexData( gas,
-                                prim_idx,
-                                sbtGASIndex,
-                                0,
-                                _vertices_);
+    optixGetTriangleVertexData( gas, primIdx, sbtGASIndex, 0, _vertices_);
     
-    float3 av0 = _vertices_[0]; //make_float3(rt_data->vertices[vert_idx_offset + 0]);
-    float3 av1 = _vertices_[1]; //make_float3(rt_data->vertices[vert_idx_offset + 1]);
-    float3 av2 = _vertices_[2]; //make_float3(rt_data->vertices[vert_idx_offset + 2]);
+    float3& av0 = _vertices_[0]; //make_float3(rt_data->vertices[vert_idx_offset + 0]);
+    float3& av1 = _vertices_[1]; //make_float3(rt_data->vertices[vert_idx_offset + 1]);
+    float3& av2 = _vertices_[2]; //make_float3(rt_data->vertices[vert_idx_offset + 2]);
     vec4 bv0 = vec4(av0.x, av0.y, av0.z, 1);
     vec4 bv1 = vec4(av1.x, av1.y, av1.z, 1);
     vec4 bv2 = vec4(av2.x, av2.y, av2.z, 1);
@@ -592,8 +521,7 @@ extern "C" __global__ void __closesthit__radiance()
     
     prd->geometryNormal = N_0;
 
-    float3 P    = optixGetWorldRayOrigin() + optixGetRayTmax()*ray_dir;
-    unsigned short isLight = rt_data->lightMark[inst_idx * TRI_PER_MESH + prim_idx];
+    unsigned short isLight = rt_data->lightMark[inst_idx * TRI_PER_MESH + primIdx];
     //float w = rt_data->vertices[ vert_idx_offset+0 ].w;
 
     /* MODMA */
@@ -850,7 +778,6 @@ extern "C" __global__ void __closesthit__radiance()
         prd->done = true;
         return;
     }
-
     
     float is_refl;
     float3 inDir = ray_dir;
@@ -940,8 +867,6 @@ extern "C" __global__ void __closesthit__radiance()
     if(isDiff || prd->diffDepth>0){
         prd->diffDepth++;
     }
-    
-
 
     prd->passed = false;
     bool inToOut = false;
@@ -1008,11 +933,6 @@ extern "C" __global__ void __closesthit__radiance()
                         //printf("maxdist:%f\n",prd->maxDistance);
                         prd->channelPDF = channelPDF;
                         // already calculated in BxDF
-
-                        // if (idx.x == w/2 && idx.y == h/2) {
-                        //     printf("into sss, sigma_t, alpha: %f, %f, %f\n", prd->sigma_t.x, prd->sigma_t.y, prd->sigma_t.z,prd->ss_alpha.x, prd->ss_alpha.y, prd->ss_alpha.z);
-                        // }
-                        
                         prd->pushMat(prd->sigma_t, prd->ss_alpha);
                     }
 
@@ -1056,15 +976,6 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->isSS = false;
                     prd->maxDistance = 1e16;
                 }
-
-                // if (prd->medium != DisneyBSDF::PhaseFunctions::vacuum) {
-
-                //     prd->bad = true;
-                    
-                //     printf("%f %f %f %f %f %f %f %f \n matIdx = %d isotropic = %d \n", prd->sigma_t_queue[0].x, prd->sigma_t_queue[1].x, prd->sigma_t_queue[2].x, prd->sigma_t_queue[3].x, prd->sigma_t_queue[4].x, prd->sigma_t_queue[5].x, prd->sigma_t_queue[6].x, prd->sigma_t_queue[7].x,
-                //         prd->curMatIdx, prd->medium);
-                //     printf("matIdx = %d isotropic = %d \n\n", prd->curMatIdx, prd->medium);
-                // }
             }
         }else{
             if(prd->medium == DisneyBSDF::PhaseFunctions::isotropic){
@@ -1090,15 +1001,16 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->attenuation2 *= trans;
                     prd->attenuation *= trans;
             }
-                else
-                {
-                    prd->isSS = false;
-                    prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
-                    prd->channelPDF = vec3(1.0f/3.0f);
-                    prd->maxDistance = 1e16f;
-                }
+            else
+            {
+                prd->isSS = false;
+                prd->medium = DisneyBSDF::PhaseFunctions::vacuum;
+                prd->channelPDF = vec3(1.0f/3.0f);
+                prd->maxDistance = 1e16f;
+            }
         }
     }
+
     prd->medium = prd->next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
  
     if(thin>0.5f){
@@ -1118,7 +1030,13 @@ extern "C" __global__ void __closesthit__radiance()
     prd->attenuation *= reflectance;
     prd->depth++;
 
-    auto shadingP = rtgems::offset_ray(P,  prd->geometryNormal);
+    auto shadingP = [&]() {
+
+        bool facing = dot(-ray_dir, prd->geometryNormal) >= 0;        
+        return rtgems::offset_ray(P,  facing? prd->geometryNormal:-prd->geometryNormal);
+    }();
+
+    //shadingP = rtgems::offset_ray(P,  prd->geometryNormal);
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
 
     if(prd->depth>=3)
@@ -1166,6 +1084,10 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->direction = normalize(wi);
 
+    if (isBadVector(prd->direction)) {
+        prd->direction = vec3(1, 1, 1);
+    }
+
     DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux);
     
     if(thin<0.5f && mats.doubleSide<0.5f){
@@ -1175,7 +1097,13 @@ extern "C" __global__ void __closesthit__radiance()
         prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
 
-    prd->radiance += float3(mats.emission);
+    if (prd->medium != DisneyBSDF::vacuum) {
+        prd->_mask_ = DefaultMatMask;
+    } else {
+        prd->_mask_ = EverythingMask;
+    }
+
+    prd->radiance += mats.emission;
 }
 
 extern "C" __global__ void __closesthit__occlusion()

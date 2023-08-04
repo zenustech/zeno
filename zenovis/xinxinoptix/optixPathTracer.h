@@ -1,10 +1,10 @@
 // this part of code is modified from nvidia's optix example
 #pragma once
-
 #include <optix.h>
 #include <Shape.h>
 
-#include <nanovdb/NanoVDB.h>
+// #include <nanovdb/NanoVDB.h>
+#include <zeno/types/LightObject.h>
 
 enum RayType
 {
@@ -21,33 +21,32 @@ enum VisibilityMask {
     EverythingMask = 255u
 }; 
 
-enum LightConfigMark {
-    LightConfigNull = 0u,
-    LightConfigVisible = 1u,
-    LightConfigDoubleside = 2u
-};
-
 struct GenericLight
 {
     float3 T, B, N;
     float3 emission;
     
     float CDF;
-    uint8_t config;
-    uint8_t shape;
 
+    zeno::LightType type {};
+    zeno::LightShape shape{};
+    uint8_t config = zeno::LightConfigNull;
+
+    unsigned long long ies=0u;
+    cudaTextureObject_t tex{};
     union {
-        SphereShape sphere;
         RectShape rect;
+        SphereShape sphere;
     };
 
     float area() {
-        if (0==shape)
+        switch (this->shape) {
+        case zeno::LightShape::Plane:
             return this->rect.area;
-        else if(1==shape) 
+        case zeno::LightShape::Sphere:
             return this->sphere.area;
-        else 
-            return 0;
+        }
+        return 0.0f;
     }
 
     void setRectData(const float3& v0, const float3& v1, const float3& v2, const float3& normal) {
@@ -91,6 +90,8 @@ struct Params
     uchar4*      frame_buffer_T;
     uchar4*      frame_buffer_B;
 
+    unsigned int* seeds_buffer;
+
     float3*      albedo_buffer;
     float3*      normal_buffer;
 
@@ -104,6 +105,8 @@ struct Params
     GenericLight *lights;
     uint32_t firstRectLightIdx;
     uint32_t firstSphereLightIdx;
+
+    cudaTextureObject_t ies_list[8];
 
     OptixTraversableHandle handle;
 

@@ -60,6 +60,13 @@ static __host__ __device__ __inline__ unsigned int lcg2(unsigned int &prev)
   return prev;
 }
 
+static __host__ __device__ __inline__ unsigned int lcg32(unsigned int &prev)
+{
+  /* implicit mod 2^32 */
+  prev = (1103515245 * (prev) + 12345);
+  return prev;
+}
+
 // Generate random float in [0, 1)
 static __host__ __device__ __inline__ float rnd(unsigned int &prev)
 {

@@ -14,13 +14,13 @@ target_sources(zenovis PRIVATE
   Shape.h
   XAS.h
 
-  ies/ies_loader.cpp
-  ies/ies_loader.h
+  ies/ies.cpp
+  ies/ies.h
 
   SDK/sutil/Aabb.h              SDK/sutil/Quaternion.h
   SDK/sutil/Camera.cpp          SDK/sutil/Record.h
-  SDK/sutil/Camera.h            #SDK/sutil/Scene.cpp
-  SDK/sutil/CUDAOutputBuffer.h  #SDK/sutil/Scene.h
+  SDK/sutil/Camera.h            SDK/cuda/climits.h
+  SDK/sutil/CUDAOutputBuffer.h  SDK/cuda/cstdint.h
   SDK/sutil/Exception.h         SDK/sutil/sutilapi.h
   SDK/sutil/GLDisplay.cpp       SDK/sutil/sutil.cpp
   SDK/sutil/GLDisplay.h         SDK/sutil/sutil.h
@@ -79,29 +79,33 @@ set(FILE_LIST
     ${CUDA_PATH}/include/@cuda_fp16.h
     ${CUDA_PATH}/include/@cuda_fp16.hpp  
     # ${CUDA_PATH}/include/@nvfunctional 
-
     ${CUDA_PATH}/include/@math_constants.h
     ${CUDA_PATH}/include/@vector_types.h
     ${CUDA_PATH}/include/@vector_functions.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/random.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/climits.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/cstdint.h
+    
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/vec_math.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
+    #include <zeno/types/LightObject.h>
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../zeno/include/@zeno/types/LightObject.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@DefaultFallback.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DeflMatShader.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBRDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/@Lighting.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/@climits.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h    
     ${CMAKE_CURRENT_SOURCE_DIR}/@Shape.h
-
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Light.cu
+    ${CMAKE_CURRENT_SOURCE_DIR}/@Light.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h
     

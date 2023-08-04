@@ -1,12 +1,13 @@
 #pragma once
 #include "TraceStuff.h"
+#include "optixPathTracer.h"
+#include "zeno/types/LightObject.h"
 #include "zxxglslvec.h"
 
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 
 #include "Shape.h"
-
 #include <cuda/random.h>
 #include <cuda/helpers.h>
 #include <sutil/vec_math.h>
@@ -52,13 +53,14 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
             end = mid;
         }
     }
+    pdf = 1.0f;
     start = env_start[start];
     int i = start%nx;
     int j = start/nx;
     float theta = ((float)i + 0.5f)/(float) nx * 2.0f * 3.1415926f - 3.1415926f;
     float phi = ((float)j + 0.5f)/(float) ny * 3.1415926f;
     float twoPi2sinTheta = 2.0f * M_PIf * M_PIf * sin(phi);
-    pdf = env_cdf[start + nx*ny] / twoPi2sinTheta;
+    //pdf = env_cdf[start + nx*ny] / twoPi2sinTheta;
     vec3 dir = normalize(vec3(cos(theta), sin(phi - 0.5f * 3.1415926f), sin(theta)));
     dir = dir.rotY(to_radians(-params.sky_rot))
              .rotZ(to_radians(-params.sky_rot_z))
@@ -66,6 +68,80 @@ vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p
              .rotY(to_radians(-params.sky_rot_y));
     return dir;
 }
+
+static __inline__ __device__ float sampleIES(const float* iesProfile, float h_angle, float v_angle) {
+
+    if (iesProfile == nullptr) { return 0.0f; }
+
+    int h_num = *(int*)iesProfile; ++iesProfile;
+    int v_num = *(int*)iesProfile; ++iesProfile;
+
+    const float* h_angles = iesProfile; iesProfile+=h_num;
+    const float* v_angles = iesProfile; iesProfile+=v_num;
+    const float* intensity = iesProfile;
+
+    auto h_angle_min = h_angles[0];
+    auto h_angle_max = h_angles[h_num-1];
+
+    if (h_angle > h_angle_max || h_angle < h_angle_min) { return 0.0f; }
+
+    auto v_angle_min = v_angles[0];
+    auto v_angle_max = v_angles[v_num-1];
+
+    if (v_angle > v_angle_max || v_angle < v_angle_min) { return 0.0f; }
+
+    auto lambda = [](float angle, const float* angles, uint num) -> uint { 
+
+        auto start = 0u, end = num-1u;
+        auto _idx_ = start;
+
+        while (start<end) {
+            _idx_ = (start + end) / 2;
+
+            if(angles[_idx_] > angle) {
+                end = _idx_; continue;
+            }
+
+            if(angles[_idx_+1] < angle) {
+                start = _idx_+1; continue;
+            }
+
+            break;
+        }
+        return _idx_;
+    };
+
+    auto v_idx = lambda(v_angle, v_angles, v_num);
+    auto h_idx = lambda(h_angle, h_angles, h_num);
+
+    auto _a_ = intensity[h_idx * v_num + v_idx];
+    auto _b_ = intensity[h_idx * v_num + v_idx+1];
+
+    auto _c_ = intensity[(h_idx+1) * v_num + v_idx];
+    auto _d_ = intensity[(h_idx+1) * v_num + v_idx+1];
+
+    auto v_ratio = (v_angle-v_angles[v_idx]) / (v_angles[v_idx+1]-v_angles[v_idx]);
+    auto h_ratio = (h_angle-h_angles[h_idx]) / (h_angles[h_idx+1]-h_angles[h_idx]);
+
+    auto _ab_ = mix(_a_, _b_, v_ratio);
+    auto _cd_ = mix(_c_, _d_, v_ratio);
+
+    return mix(_ab_, _cd_, h_ratio);
+}
+
+static __inline__ __device__ float sampleSphereIES(LightSampleRecord& lsr, const float2& uu, const float3& shadingP, const float3& center, float radius) {
+
+    float3 vector = center - shadingP;
+    float dist = length(vector);
+
+    lsr.dist = dist - radius;
+    lsr.dir = normalize(vector);
+    lsr.n = -lsr.dir;
+    lsr.NoL = 1.0f;
+    lsr.p = center + radius*lsr.n;
+    lsr.PDF = 1.0f;
+}
+
 namespace detail {
     template <typename T> struct is_void {
         static constexpr bool value = false;
@@ -98,26 +174,46 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
         LightSampleRecord lsr{};
         float2 uu = {prd->rndf(), prd->rndf()};
 
-        if (light.shape == 0) {
-            light.rect.sample(&lsr, uu, shadingP);
+        float3 emission = light.emission;
+
+        if (light.ies > 0u) {
+            
+            const float* ies = reinterpret_cast<const float*>(light.ies);
+        
+            sampleSphereIES(lsr, uu, shadingP, light.sphere.center, light.sphere.radius);
+            auto v_angle = acos(dot(-lsr.dir, light.N));
+            auto h_angle = acos(dot(-lsr.dir, light.T));
+
+            auto intensity = sampleIES(ies, h_angle, v_angle);
+            emission *= intensity;
+
+        } else if (light.type == zeno::LightType::Direction) {
+
+            bool valid = light.rect.hit(&lsr, shadingP, -light.N);
+            if (!valid) { emission = {}; lsr.PDF = 0.0f; return;}
+
         } else {
-            light.sphere.sample(&lsr, uu, shadingP);
+
+            switch (light.shape) {
+                case zeno::LightShape::Plane:
+                    light.rect.sample(&lsr, uu, shadingP); break;
+                case zeno::LightShape::Sphere:
+                    light.sphere.sample(&lsr, uu, shadingP); break;
+                default: break;
+            }
         }
 
         lsr.PDF *= lightPickPDF;
+        //lsr.p = rtgems::offset_ray(lsr.p, lsr.n);
 
-        lsr.p = rtgems::offset_ray(lsr.p, lsr.n);
-
-            if (light.config & LightConfigDoubleside) {
+            if (light.config & zeno::LightConfigDoubleside) {
                 lsr.NoL = abs(lsr.NoL);
             }
 
             if (lsr.NoL > _FLT_EPL_ && lsr.PDF > __FLT_DENORM_MIN__) {
 
-                traceOcclusion(params.handle, shadingP, lsr.dir,
-                                1e-5,         // tmin
-                                lsr.dist - 2e-5f, // tmax,
-                                &shadow_prd);
+                traceOcclusion(params.handle, shadingP, lsr.dir, 0, lsr.dist-1e-5f, &shadow_prd);
+                
                 light_attenuation = shadow_prd.shadowAttanuation;
 
                 if (length(light_attenuation) > 0.0f) {
@@ -126,7 +222,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
                     auto misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
 
-                    prd->radiance = light_attenuation * light.emission * bxdf_value;
+                    prd->radiance = light_attenuation * emission * bxdf_value;
                     prd->radiance *= misWeight / lsr.PDF;
                 }
             }
@@ -156,6 +252,10 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             auto LP = shadingP;
             auto Ldir = sun_dir;
 
+            if (envpdf < __FLT_DENORM_MIN__) {
+                return;
+            }
+
             //LP = rtgems::offset_ray(LP, sun_dir);
             traceOcclusion(params.handle, LP, sun_dir,
                         1e-5f, // tmin
@@ -170,14 +270,14 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             vec3 tmp(1.0f);
 
             if constexpr(_MIS_) {
-                float misWeight = BRDFBasics::PowerHeuristic(envpdf, scatterPDF);
+                float misWeight = BRDFBasics::PowerHeuristic(tmpPdf, scatterPDF);
                 misWeight = misWeight>0.0f?misWeight:1.0f;
                 misWeight = scatterPDF>1e-5f?misWeight:0.0f;
-                misWeight = envpdf>1e-5?misWeight:0.0f;
+                misWeight = tmpPdf>1e-5?misWeight:0.0f;
 
-                tmp = vec3(misWeight * 1.0f / (float)NSamples * light_attenuation  / envpdf * inverseProb);
+                tmp = (1.0f / NSamples) * misWeight * inverseProb * light_attenuation  / tmpPdf;
             } else {
-                tmp = (1.0f / NSamples) * light_attenuation * inverseProb;
+                tmp = (1.0f / NSamples) * inverseProb * light_attenuation / tmpPdf;
             }
 
             prd->radiance += (float3)(tmp) * bxdf_value;

@@ -62,6 +62,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "tinyexr.h"
+#include "zeno/types/LightObject.h"
+#include "zeno/utils/string.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -204,7 +206,6 @@ struct PathTracerState
 
     raii<CUstream>                       stream;
     raii<CUdeviceptr> accum_buffer_p;
-
     raii<CUdeviceptr> albedo_buffer_p;
     raii<CUdeviceptr> normal_buffer_p;
 
@@ -1278,6 +1279,7 @@ static void cleanupState( PathTracerState& state )
         cleanupVolume(*val);
     }
     OptixUtil::g_vdb_cached_map.clear();
+    OptixUtil::g_ies.clear();
 
         state.d_raygen_record.reset();
         state.d_miss_records.reset();
@@ -1445,7 +1447,7 @@ void optixinit( int argc, char* argv[] )
 
 void updateVolume(uint volume_shader_offset) {
 
-    if (OptixUtil::g_vdb_cached_map.size() == 0) { return; }
+    if (OptixUtil::g_vdb_cached_map.empty()) { return; }
 
     OptixUtil::logInfoVRAM("Before update Volume");
 
@@ -1842,7 +1844,9 @@ struct LightDat{
     std::vector<float> normal;
     std::vector<float> emission;
     bool visible, doubleside;
-    uint8_t shape;
+    uint8_t shape, type;
+
+    std::string textureKey;
 };
 static std::map<std::string, LightDat> lightdats;
 
@@ -1850,7 +1854,7 @@ void unload_light(){
     lightdats.clear();
 }
 
-void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi, bool visible, bool doubleside, int shape){
+void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi, bool visible, bool doubleside, int shape, int type, std::string& textureKey){
     LightDat ld;
     ld.v0.assign(v0, v0 + 3);
     ld.v1.assign(v1, v1 + 3);
@@ -1858,7 +1862,8 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     ld.normal.assign(nor, nor + 3);
     ld.emission.assign(emi, emi + 3);
     ld.visible = visible; ld.doubleside = doubleside;
-    ld.shape = shape;
+    ld.shape = shape; ld.type = type;
+    ld.textureKey = textureKey;
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
@@ -2048,6 +2053,9 @@ void optixupdatelight() {
 
     //zeno::log_info("lights size {}", lightdats.size());
 
+    state.params.firstRectLightIdx = UINT_MAX;
+    state.params.firstSphereLightIdx = UINT_MAX;
+
     g_lights.clear();
     g_lightMesh.clear();
     g_lightColor.clear();
@@ -2073,9 +2081,9 @@ void optixupdatelight() {
     for (const auto& dat: sortedLights) {
         auto &light = g_lights.emplace_back();
 
-        uint8_t config = LightConfigNull; 
-        config |= dat.visible? LightConfigVisible: LightConfigNull; 
-        config |= dat.doubleside? LightConfigDoubleside: LightConfigNull;
+        uint8_t config = zeno::LightConfigNull; 
+        config |= dat.visible? zeno::LightConfigVisible: zeno::LightConfigNull; 
+        config |= dat.doubleside? zeno::LightConfigDoubleside: zeno::LightConfigNull;
         light.config = config;
 
         light.emission = *(float3*)dat.emission.data();
@@ -2088,16 +2096,35 @@ void optixupdatelight() {
         light.N = normalize(light.N);
         light.T = normalize(v1);
         light.B = normalize(v2);
-        light.shape = dat.shape;
 
-        if (dat.shape == 0) {
+        light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
+        light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
+
+        if (light.type == zeno::LightType::Direction) {
+            light.shape = zeno::LightShape::Plane;
+        }
+
+        if ( OptixUtil::g_ies.count(dat.textureKey) > 0 ) {
+
+            auto& val = OptixUtil::g_ies.at(dat.textureKey);
+            light.ies = val.handle;
+            light.shape = zeno::LightShape::Sphere;
+
+        } else if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
+
+            auto& val = OptixUtil::g_tex.at(dat.textureKey);
+            light.tex = val->texture;
+        }
+
+        if (light.shape == zeno::LightShape::Plane) {
 
             firstRectLightIdx = min(loopIdx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
 
             addLightMesh(v0, v2, v1, light.N, light.emission);
-        } else {
+
+        } else if (light.shape == zeno::LightShape::Sphere) {
 
             firstSphereLightIdx = min(loopIdx, firstSphereLightIdx);
 
@@ -2127,66 +2154,27 @@ void optixupdatelight() {
     // }
 
     buildRectLightGAS(state, g_lightMesh);
+    buildSphereLightGAS(state, g_lightSpheres);
+
+    if (g_lights.empty()) {
+        state.lightsbuf_p.reset(); 
+        return;
+    }
 
     CUDA_CHECK( cudaMalloc(
-                reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
-                sizeof( GenericLight ) * std::max(g_lights.size(),(size_t)1)
-                ) );
+        reinterpret_cast<void**>( &state.lightsbuf_p.reset() ),
+        sizeof( GenericLight ) * std::max(g_lights.size(),(size_t)1)
+        ) );
+
     state.params.lights = (GenericLight*)(CUdeviceptr)state.lightsbuf_p;
-    if (g_lights.size())
-        CUDA_CHECK( cudaMemcpy(
+    CUDA_CHECK( cudaMemcpy(
                 reinterpret_cast<void*>( (CUdeviceptr)state.lightsbuf_p ),
                 g_lights.data(), sizeof( GenericLight ) * g_lights.size(),
                 cudaMemcpyHostToDevice
                 ) );
-
-    const size_t sphere_count = g_lightSpheres.size(); 
-    if (sphere_count == 0) {
-        lightSphereGasBuffer.reset();
-        lightSphereGas = 0llu;
-        return;
-    }
-
-    OptixAccelBuildOptions accel_options {};
-    accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
-    accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_COMPACTION | OPTIX_BUILD_FLAG_ALLOW_RANDOM_VERTEX_ACCESS | OPTIX_BUILD_FLAG_ALLOW_RANDOM_INSTANCE_ACCESS;
-
-    raii<CUdeviceptr> d_vertex_buffer{}; 
-   
-    {
-        auto data_length = sizeof( Vertex ) * sphere_count;
-
-        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &d_vertex_buffer.reset() ), data_length) );
-        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)d_vertex_buffer ), g_lightSpheres.data(),
-                                data_length, cudaMemcpyHostToDevice ) );
-    }
-    CUdeviceptr d_radius_buffer = (CUdeviceptr) ( (char*)d_vertex_buffer.handle + 12u );  
-
-    OptixBuildInput sphere_input{};
-
-    sphere_input.type                      = OPTIX_BUILD_INPUT_TYPE_SPHERES;
-    sphere_input.sphereArray.numVertices   = sphere_count;
-    sphere_input.sphereArray.vertexBuffers = &d_vertex_buffer;
-    sphere_input.sphereArray.radiusBuffers = &d_radius_buffer;
-    sphere_input.sphereArray.singleRadius = false;
-    sphere_input.sphereArray.vertexStrideInBytes = 16;
-    sphere_input.sphereArray.radiusStrideInBytes = 16;
-    //sphere_input.sphereArray.primitiveIndexOffset = 0;
-
-    std::vector<uint> sphere_input_flags(1, OPTIX_GEOMETRY_FLAG_REQUIRE_SINGLE_ANYHIT_CALL);
-    
-    sphere_input.sphereArray.flags         = sphere_input_flags.data();
-    sphere_input.sphereArray.numSbtRecords = 1;
-    sphere_input.sphereArray.sbtIndexOffsetBuffer = 0;
-    // sphere_input.sphereArray.sbtIndexOffsetSizeInBytes = sizeof(uint);
-    // sphere_input.sphereArray.sbtIndexOffsetStrideInBytes = sizeof(uint);
-
-    updateSphereGAS(state.context, sphere_input, accel_options, lightSphereGasBuffer, lightSphereGas);
-
-    d_vertex_buffer.reset();
 }
 
-void optixupdatematerial(std::vector<ShaderPrepared> &shaders) 
+void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders) 
 {
     camera_changed = true;
 
@@ -2204,25 +2192,26 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
     OptixUtil::rtMaterialShaders.resize(0);
     OptixUtil::rtMaterialShaders.reserve(shaders.size());
 
-    const static std::string light_macro0 = "#define _LIGHT_SOURCE_ 0";
-    const static std::string light_macro1 = "#define _LIGHT_SOURCE_ 1";
-
     for (int i = 0; i < shaders.size(); i++) {
-        auto& shader_string = shaders[i].source;
+        auto& shader_string = shaders[i]->source;
         if (shader_string.empty()) zeno::log_error("shader {} is empty", i);
 
-        if (shaders[i].isLight) {
-            
-            auto macro_pos = shader_string.find(light_macro0);
-            if (macro_pos != std::string::npos) {
-                shader_string.replace(macro_pos, light_macro0.size(), light_macro1);
-            }
+        auto marker = std::string("//PLACEHOLDER");
+        auto marker_length = marker.length();
+
+        auto start_marker = shader_string.find(marker);
+
+        if (start_marker != std::string::npos) {
+            auto end_marker = shader_string.find(marker, start_marker + marker_length);
+
+            shader_string.replace(start_marker, marker_length, "/*PLACEHOLDER");
+            shader_string.replace(end_marker, marker_length, "PLACEHOLDER*/");
         }
-        
+
         const static std::string sphere_macro0 = "#define _SPHERE_ 0";
         const static std::string sphere_macro1 = "#define _SPHERE_ 1";
 
-        switch(shaders[i].mark) {
+        switch(shaders[i]->mark) {
             case(ShaderMaker::Mesh): {
 
                 auto macro_pos = shader_string.find(sphere_macro1);
@@ -2259,7 +2248,7 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
             default: {}
         }
 
-        auto& texs = shaders[i].tex_names;
+        auto& texs = shaders[i]->tex_names;
 
         if(texs.size()>0){
             std::cout<<"texSize:"<<texs.size()<<std::endl;
@@ -2283,12 +2272,11 @@ void optixupdatematerial(std::vector<ShaderPrepared> &shaders)
             printf("now compiling %d'th shader \n", i);
             if(OptixUtil::rtMaterialShaders[i].loadProgram(i, nullptr)==false)
             {
-                std::cout<<"program compile failed, using default"<<std::endl;
-                
-                OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[0].source.c_str();
-                OptixUtil::rtMaterialShaders[i].m_hittingEntry   = "";
-                OptixUtil::rtMaterialShaders[i].m_shadingEntry   = "__closesthit__radiance";
-                OptixUtil::rtMaterialShaders[i].m_occlusionEntry = "__anyhit__shadow_cutout";
+                std::cout<<"shader compiling failed, using fallback shader instead"<<std::endl;
+                OptixUtil::rtMaterialShaders[i].m_shaderFile     = shaders[i]->fallback->c_str();
+                //OptixUtil::rtMaterialShaders[i].m_hittingEntry   = "";
+                //OptixUtil::rtMaterialShaders[i].m_shadingEntry   = "__closesthit__radiance";
+                //OptixUtil::rtMaterialShaders[i].m_occlusionEntry = "__anyhit__shadow_cutout";
                 std::cout<<OptixUtil::rtMaterialShaders[i].loadProgram(i, nullptr)<<std::endl;
                 std::cout<<"shader restored to default\n";
             }

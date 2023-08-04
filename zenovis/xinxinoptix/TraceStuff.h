@@ -7,15 +7,14 @@
 
 #include <Sampling.h>
 #include <cuda/random.h>
+#include <cuda/climits.h>
+#define _FLT_MAX_ __FLT_MAX__
+#define _FLT_MIN_ __FLT_MIN__
+#define _FLT_EPL_ __FLT_EPSILON__
 
 #ifndef __CUDACC_RTC__
 #include "Host.h"
 #endif
-
-#include <climits.h>
-#define _FLT_MAX_ __FLT_MAX__
-#define _FLT_MIN_ __FLT_MIN__
-#define _FLT_EPL_ __FLT_EPSILON__
 
 #ifndef uint
 using uint = unsigned int;
@@ -144,7 +143,7 @@ struct RadiancePRD
     bool origin_inside_vdb = false;
     bool surface_inside_vdb = false; 
 
-    float trace_tmin = 0;
+    float _tmin_ = 0;
     float3 geometryNormal;
 
     void offsetRay() {
@@ -223,7 +222,7 @@ static __forceinline__ __device__ void  traceRadiance(
             tmin,
             tmax,
             0.0f,                // rayTime
-            OptixVisibilityMask( 1 | 2 ),
+            OptixVisibilityMask( 255u ),
             OPTIX_RAY_FLAG_NONE,
             RAY_TYPE_RADIANCE,        // SBT offset
             RAY_TYPE_COUNT,           // SBT stride
@@ -250,7 +249,7 @@ static __forceinline__ __device__ bool traceOcclusion(
             tmin,
             tmax,
             0.0f,                    // rayTime
-            OptixVisibilityMask( 1 | 2 ),
+            OptixVisibilityMask( 255u ),
             OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride

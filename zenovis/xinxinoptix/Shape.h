@@ -51,6 +51,40 @@ struct RectShape {
             lsr->PDF = lsr->dist * lsr->dist * PDF() / fabsf(lsr->NoL);
         }
     }
+
+    inline bool hit(LightSampleRecord* lsr, const float3& ray_orig, const float3& ray_dir) {
+
+        // assuming vectors are all normalized
+        float denom = dot(normal, -ray_dir);
+        if (denom <= __FLT_DENORM_MIN__) {return false;}
+        
+        float3 vector = ray_orig - v0;
+        float t = dot(normal, vector) / denom;
+
+        if (t <= 0) { return false; }
+
+        auto P = ray_orig + ray_dir * t;
+        auto delta = P - v0;
+
+        auto v1v1 = dot(v1, v1);
+        auto q1 = dot(delta, v1);
+        if (q1<0.0f || q1>v1v1) {return false;}
+
+        auto v2v2 = dot(v2, v2);        
+        auto q2 = dot(delta, v2);
+        if (q2<0.0f || q2>v2v2) {return false;}
+
+        lsr->dir = ray_dir;
+        lsr->dist = t;
+
+        lsr->n = normal;
+        lsr->NoL = denom;
+
+        lsr->p = P;
+        lsr->PDF = 1.0f;
+
+        return true;
+    }
 };
 
 struct SphereShape {

@@ -218,6 +218,15 @@ __forceinline__ __device__ vec4 operator*(float b, vec4 a)
     return vec4(a.x*b, a.y*b, a.z*b, a.w*b);
 }
 
+__forceinline__ __device__ vec3 operator*(float3 b, vec3 a)
+{
+    return vec3(a.x*b.x, a.y*b.y, a.z*b.z);
+}
+__forceinline__ __device__ vec4 operator*(float4 b, vec4 a)
+{
+    return vec4(a.x*b.x, a.y*b.y, a.z*b.z, a.w*b.w);
+}
+
 __forceinline__ __device__ vec2 operator/(vec2 a, float b)
 {
     return vec2(a.x/b, a.y/b);
@@ -923,6 +932,18 @@ __forceinline__ __device__ float length(vec3 a)
 __forceinline__ __device__ float length(vec4 a)
 {
     return sqrtf(dot(a,a));
+}
+__forceinline__ __device__ float average(vec2 a)
+{
+    return (a.x + a.y) / 2.0f;
+}
+__forceinline__ __device__ float average(vec3 a)
+{
+    return (a.x + a.y + a.z) / 3.0f;
+}
+__forceinline__ __device__ float average(vec4 a)
+{
+    return (a.x + a.y + a.z + a.w) / 4.0f;
 }
 __forceinline__ __device__ vec2 normalize(vec2 a)
 {

@@ -1,3 +1,4 @@
+#include <utility>
 #include <zeno/zeno.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/utils/arrayindex.h>
@@ -12,9 +13,11 @@
 #include <zeno/types/DictObject.h>
 #include <zeno/types/CameraObject.h>
 #include <zeno/types/UserData.h>
+#include <zeno/types/LightObject.h>
 
 #include "assimp/scene.h"
 
+#include "magic_enum.hpp"
 #include "Definition.h"
 #include "json.hpp"
 
@@ -252,8 +255,6 @@ struct LightNode : INode {
         auto &verts = prim->verts;
         auto &tris = prim->tris;
 
-        std::string shape = get_input2<std::string>("shape");
-
         //if(shape == "Plane"){
             auto start_point = zeno::vec3f(0.5, 0, 0.5);
             float rm = 1.0f;
@@ -313,20 +314,66 @@ struct LightNode : INode {
         prim->userData().set2("scale", std::move(scale));
         prim->userData().set2("rotate", std::move(rotate));
         prim->userData().set2("quaternion", std::move(quaternion));
-        prim->userData().set2("shape", std::move(shape));
         prim->userData().set2("color", std::move(color));
         prim->userData().set2("intensity", std::move(intensity));
 
         auto visible = get_input2<int>("visible");
         auto doubleside = get_input2<int>("doubleside");
 
-        auto shapeID = (shape == "Sphere")? 1:0;
+        std::string type = get_input2<std::string>(lightTypeKey);
+        auto typeEnum = magic_enum::enum_cast<LightType>(type).value_or(LightType::Diffuse);
+        auto typeOrder = magic_enum::enum_integer(typeEnum);
 
-        prim->userData().set2("shape", std::move(shapeID));
+        std::string shape = get_input2<std::string>(lightShapeKey);
+        auto shapeEnum = magic_enum::enum_cast<LightShape>(shape).value_or(LightShape::Plane);
+        auto shapeOrder = magic_enum::enum_integer(shapeEnum);
+
+        auto texture = get_input2<std::string>("texture");
+
+        prim->userData().set2("type", std::move(typeOrder));
+        prim->userData().set2("shape", std::move(shapeOrder));
+        
         prim->userData().set2("visible", std::move(visible));
         prim->userData().set2("doubleside", std::move(doubleside));
+        prim->userData().set2("lightTexture", std::move(texture));
         
         set_output("prim", std::move(prim));
+    }
+
+    const static inline std::string lightShapeKey = "shape";
+	
+    static std::string lightShapeDefaultString() {
+        auto name = magic_enum::enum_name(LightShape::Plane);
+        return std::string(name);
+    }
+
+    static std::string lightShapeListString() {
+        auto list = magic_enum::enum_names<LightShape>();
+
+        std::string result;
+        for (auto& ele : list) {
+            result += " ";
+            result += ele;
+        }
+        return result;
+    }
+
+    const static inline std::string lightTypeKey = "type";
+	
+    static std::string lightTypeDefaultString() {
+        auto name = magic_enum::enum_name(LightType::Diffuse);
+        return std::string(name);
+    }
+
+    static std::string lightTypeListString() {
+        auto list = magic_enum::enum_names<LightType>();
+
+        std::string result;
+        for (auto& ele : list) {
+            result += " ";
+            result += ele;
+        }
+        return result;
     }
 };
 
@@ -342,7 +389,9 @@ ZENO_DEFNODE(LightNode)({
         {"bool", "invertdir", "1"},
         {"bool", "visible", "0"},
         {"bool", "doubleside", "0"},
-        {"enum Plane Sphere", "shape", "Plane"},    
+        {"string", "texture", ""},
+        {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
+        {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()} 
     },
     {
         "prim"
