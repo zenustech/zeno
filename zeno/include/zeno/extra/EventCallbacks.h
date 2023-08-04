@@ -20,13 +20,21 @@ struct EventCallbacks {
     }
 
     template <typename ...Args>
-    void triggerEvent(std::string const &key, Args... args) const {
-        if (auto it = callbacks.find(key); it != callbacks.end())
-            if constexpr (sizeof...(Args) > 0) {
-                for (auto const &f: it->second) f(std::make_any<Args>(args)...);
+    void triggerEvent(std::string const &key, Args&&... args) const {
+        if (auto it = callbacks.find(key); it != callbacks.end()) {
+            static constexpr size_t SizeOfArgs = sizeof...(Args);
+            using Tuple = std::tuple<Args...>;
+            if constexpr (SizeOfArgs > 0) {
+                for (auto const &f : it->second) f(std::make_tuple<Tuple>(std::forward<Args...>(args)...));
             } else {
-                for (auto const &f: it->second) f(std::nullopt);
+                for (auto const &f : it->second) f(std::nullopt);
             }
+        }
+    }
+
+    void triggerEvent(std::string const &key, const std::any& arg) const {
+        if (auto it = callbacks.find(key); it != callbacks.end())
+            for (auto const &f: it->second) f(arg);
     }
 };
 

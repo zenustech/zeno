@@ -30,3 +30,14 @@ message Point4i {
   sint32 W = 4;
 }
 
+message GenericNumeric {
+  oneof Kind {
+    float FloatValue = 1;
+    sint32 Int32Value = 2;
+    Vector2f Vector2fValue = 3;
+    Vector3f Vector3fValue = 4;
+    Point2i Point2iValue = 5;
+    Point3i Point3iValue = 6;
+    Point4i Point4iValue = 7;
+  }
+}
