@@ -843,12 +843,12 @@ namespace zeno {
                         tet[facet_indices[i * 3 + 2]]};
                     int min_idx = 0;
                     int min_id = facet[i];
-                    for(int i = 1;i != 3;++i)
-                        if(facet[i] < min_id){
-                            min_idx = i;
-                            min_id = facet[i];
+                    for(int j = 1;j != 3;++j)
+                        if(facet[j] < min_id){
+                            min_idx = j;
+                            min_id = facet[j];
                         }
-                    for(int i = 0;i != min_idx;++i) {
+                    for(int j = 0;j != min_idx;++j) {
                         auto tmp = facet[0];
                         facet[0] = facet[1];
                         facet[1] = facet[2];
@@ -1258,7 +1258,7 @@ namespace zeno {
 
 
         colors.resize(topo.size());
-        zs::SparseMatrix<u32,true> topo_incidence_matrix{topo.get_allocator(),topo.size(),topo.size()};
+        zs::SparseMatrix<u32,true> topo_incidence_matrix{topo.get_allocator(),(int)topo.size(),(int)topo.size()};
         // std::cout << "compute incidence matrix " << std::endl;
         topological_incidence_matrix(pol,topo,topo_incidence_matrix);
         // std::cout << "finish compute incidence matrix " << std::endl;
@@ -1314,7 +1314,7 @@ namespace zeno {
                 atomic_max(exec_tag,&max_color[0],color);
         });
 
-        int nm_total_colors = max_color.getVal(0) + 1;
+        size_t nm_total_colors = max_color.getVal(0) + 1;
         // zs::bht<int,1,int> color_buffer{}
         zs::Vector<int> nm_colors{colors.get_allocator(),nm_total_colors};
         pol(zs::range(nm_colors),[] ZS_LAMBDA(auto& nclr) mutable {nclr = 0;});

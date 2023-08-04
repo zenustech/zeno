@@ -23,7 +23,7 @@ namespace zeno { namespace CONSTRAINT {
         else
         {
             corr0 = VECTOR3d::uniform(0);
-            corr1 = VECTOR3d::uniform(0);;
+            corr1 = VECTOR3d::uniform(0);
             return true;
         }
 
@@ -39,8 +39,8 @@ namespace zeno { namespace CONSTRAINT {
             Kinv = static_cast<SCALER>(1.0) / K;
         else
         {
-            corr0 = VECTOR3d::uniform(0);;
-            corr1 = VECTOR3d::uniform(0);;
+            corr0 = VECTOR3d::uniform(0);
+            corr1 = VECTOR3d::uniform(0);
             return true;
         }
 
@@ -52,6 +52,32 @@ namespace zeno { namespace CONSTRAINT {
         corr1 = -invMass1 * pt;
         return true;
     }
+
+    template<typename VECTOR3d,typename SCALER>
+    constexpr bool solve_DistanceConstraint(
+        const VECTOR3d &p0, SCALER invMass0, 
+        const VECTOR3d &p1, SCALER invMass1,
+        const SCALER expectedDistance,
+        VECTOR3d &corr0, VECTOR3d &corr1){		
+        VECTOR3d diff = p0 - p1;
+        SCALER distance = diff.norm();
+
+        if (zs::abs((distance - expectedDistance)) > static_cast<SCALER>(1e-5) && (invMass0 + invMass1) > static_cast<SCALER>(1e-5)){
+            VECTOR3d gradient = diff / (distance + static_cast<SCALER>(1e-6));
+            SCALER denom = invMass0 + invMass1;
+            SCALER lambda = (distance - expectedDistance) /denom;
+            auto common = lambda * gradient;
+            corr0 = -invMass0 * common;
+            corr1 = invMass1 * common;
+            return false;
+        }else{
+            corr0 = VECTOR3d::uniform(0);
+            corr1 = VECTOR3d::uniform(0);
+        }
+
+        return true;
+    }
+
 
     // ----------------------------------------------------------------------------------------------
     template<typename VECTOR3d,typename SCALER>
@@ -69,7 +95,7 @@ namespace zeno { namespace CONSTRAINT {
         constexpr SCALER eps = (SCALER)1e-6;
         SCALER volume = static_cast<SCALER>(1.0 / 6.0) * (p1 - p0).cross(p2 - p0).dot(p3 - p0);
 
-        corr0 = VECTOR3d::uniform(0);; corr1 = VECTOR3d::uniform(0);; corr2 = VECTOR3d::uniform(0);; corr3 = VECTOR3d::uniform(0);;
+        corr0 = VECTOR3d::uniform(0); corr1 = VECTOR3d::uniform(0); corr2 = VECTOR3d::uniform(0); corr3 = VECTOR3d::uniform(0);
 
         VECTOR3d grad0 = (p1 - p2).cross(p3 - p2);
         VECTOR3d grad1 = (p2 - p0).cross(p3 - p0);
@@ -145,7 +171,6 @@ namespace zeno { namespace CONSTRAINT {
 
         return true;
     }
-
 // ----------------------------------------------------------------------------------------------
     template<typename VECTOR3d,typename SCALER,typename MATRIX4d>
     constexpr bool solve_IsometricBendingConstraint(
@@ -170,10 +195,10 @@ namespace zeno { namespace CONSTRAINT {
         energy *= 0.5;
 
         VECTOR3d gradC[4] = {};
-        gradC[0] = VECTOR3d::uniform(0);;
-        gradC[1] = VECTOR3d::uniform(0);;
-        gradC[2] = VECTOR3d::uniform(0);;
-        gradC[3] = VECTOR3d::uniform(0);;
+        gradC[0] = VECTOR3d::uniform(0);
+        gradC[1] = VECTOR3d::uniform(0);
+        gradC[2] = VECTOR3d::uniform(0);
+        gradC[3] = VECTOR3d::uniform(0);
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
                 gradC[j] += Q(j, k) * *x[k];
@@ -212,6 +237,98 @@ namespace zeno { namespace CONSTRAINT {
     }
 
 
+    template<typename VECTOR3d,typename SCALER,typename MATRIX4d>
+    constexpr bool solve_IsometricBendingConstraint(
+        const VECTOR3d& p0, SCALER invMass0,
+        const VECTOR3d& p1, SCALER invMass1,
+        const VECTOR3d& p2, SCALER invMass2,
+        const VECTOR3d& p3, SCALER invMass3,
+        const MATRIX4d& Q,
+        VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3){
+        constexpr SCALER eps = (SCALER)1e-6;
+        const VECTOR3d* x[4] = { &p2, &p3, &p0, &p1 };
+        SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
+
+        SCALER energy = 0.0;
+        for (unsigned char k = 0; k < 4; k++)
+            for (unsigned char j = 0; j < 4; j++)
+                energy += Q(j, k) * (x[k]->dot(*x[j]));
+        energy *= 0.5;
+
+        VECTOR3d gradC[4] = {};
+        gradC[0] = VECTOR3d::uniform(0);
+        gradC[1] = VECTOR3d::uniform(0);
+        gradC[2] = VECTOR3d::uniform(0);
+        gradC[3] = VECTOR3d::uniform(0);
+        for (unsigned char k = 0; k < 4; k++)
+            for (unsigned char j = 0; j < 4; j++)
+                gradC[j] += Q(j, k) * *x[k];
+
+
+        SCALER sum_normGradC = 0.0;
+        for (unsigned int j = 0; j < 4; j++)
+        {
+            // compute sum of squared gradient norms
+            if (invMass[j] != 0.0)
+                sum_normGradC += invMass[j] * gradC[j].l2NormSqr();
+        }
+
+        // exit early if required
+        if (zs::abs(sum_normGradC) > eps)
+        {
+            // compute impulse-based scaling factor
+            const SCALER s = -(energy) / sum_normGradC;
+
+            corr0 = (s * invMass[2]) * gradC[2];
+            corr1 = (s * invMass[3]) * gradC[3];
+            corr2 = (s * invMass[0]) * gradC[0];
+            corr3 = (s * invMass[1]) * gradC[1];
+
+            return true;
+        }
+        return false;
+    }
+
+    template<typename VECTOR3d,typename SCALER>
+    constexpr bool solve_PlaneConstraint(
+        const VECTOR3d& p, SCALER invMass,
+        const VECTOR3d& root,
+        const VECTOR3d& nrm,
+        const SCALER& thickness,
+        const SCALER& stiffness,
+        const SCALER& dt,
+        SCALER& lambda,
+        VECTOR3d& dp) {
+            SCALER C = (p - root).dot(nrm) - thickness;
+            if(C > static_cast<SCALER>(1e-6)) {
+                dp = VECTOR3d::uniform(0);
+                return true;
+            }
+
+            SCALER K = invMass * nrm.l2NormSqr();
+
+            SCALER alpha = 0.0;
+            if(stiffness != 0.0) {
+                alpha = static_cast<SCALER>(1.0) / (stiffness * dt * dt);
+                K += alpha;                
+            }
+
+            SCALER Kinv = 0.0;
+            if(zs::abs(K) > static_cast<SCALER>(1e-6))
+                Kinv = static_cast<SCALER>(1.0) / K;
+            else                       
+            {
+                dp = VECTOR3d::uniform(0);
+                return true;
+            }     
+
+            const SCALER delta_lambda = -Kinv * (C + alpha * lambda);           
+            lambda += delta_lambda;
+            const VECTOR3d pt = nrm * delta_lambda;
+
+            dp = invMass * pt;
+            return true;
+    }
 
 // ----------------------------------------------------------------------------------------------
     template<typename VECTOR3d,typename SCALER>
@@ -582,7 +699,7 @@ namespace zeno { namespace CONSTRAINT {
 //                                 bendingAndTwistingKs[2] * (darboux_vector[2] - restDarbouxVector[2]));
 
 //         MATRIX3d factor_matrix;
-//         factor_matrix = VECTOR3d::uniform(0);;
+//         factor_matrix = VECTOR3d::uniform(0);
 
 //         MATRIX3d tmp_mat;
 //         SCALER invMasses[]{ invMass0, invMass1, invMass2, invMass3, invMass4 };
@@ -683,9 +800,9 @@ namespace zeno { namespace CONSTRAINT {
 //         d3p1.col(1) = -d3p0.col(1);
 //         d3p1.col(2) = -d3p0.col(2);
 
-//         d3p2.col(0) = VECTOR3d::uniform(0);;
-//         d3p2.col(1) = VECTOR3d::uniform(0);;
-//         d3p2.col(2) = VECTOR3d::uniform(0);;
+//         d3p2.col(0) = VECTOR3d::uniform(0);
+//         d3p2.col(1) = VECTOR3d::uniform(0);
+//         d3p2.col(2) = VECTOR3d::uniform(0);
 
 //         //////////////////////////////////////////////////////////////////////////
 //         // d2pi

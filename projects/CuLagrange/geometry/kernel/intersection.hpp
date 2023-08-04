@@ -1796,14 +1796,14 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     vec3 v1[3] = {};
                                     vec3 e0s[3] = {};
                                     vec3 e1s[3] = {};
-                                    for(int i = 0;i != 3;++i) {
-                                        v0[i] = verts.pack(dim_c<3>,xtag,tri_t0[i]);
-                                        v1[i] = verts.pack(dim_c<3>,xtag,tri_t1[i]);
+                                    for(int j = 0;j != 3;++j) {
+                                        v0[j] = verts.pack(dim_c<3>,xtag,tri_t0[j]);
+                                        v1[j] = verts.pack(dim_c<3>,xtag,tri_t1[j]);
                                     }
 
-                                    for(int i = 0;i != 3;++i) {
-                                        e0s[i] = v0[(i + 1) % 3] - v0[i];
-                                        e1s[i] = v1[(i + 1) % 3] - v1[i];
+                                    for(int j = 0;j != 3;++j) {
+                                        e0s[j] = v0[(j + 1) % 3] - v0[j];
+                                        e1s[j] = v1[(j + 1) % 3] - v1[j];
                                     }
 
                                     auto nrm0 = (v0[1] - v0[0]).cross(v0[2] - v0[0]).normalized();
@@ -1926,9 +1926,9 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                     vec3 v1[3] = {};
                                     vec3 e0s[3] = {};
                                     vec3 e1s[3] = {};
-                                    for(int i = 0;i != 3;++i) {
-                                        v0[i] = verts.pack(dim_c<3>,xtag,tri_t0[i]);
-                                        v1[i] = verts.pack(dim_c<3>,xtag,tri_t1[i]);
+                                    for(int j = 0;j != 3;++j) {
+                                        v0[j] = verts.pack(dim_c<3>,xtag,tri_t0[j]);
+                                        v1[j] = verts.pack(dim_c<3>,xtag,tri_t1[j]);
                                     }
 
                                     for(int i = 0;i != 3;++i) {
