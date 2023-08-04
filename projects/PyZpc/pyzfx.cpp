@@ -28,77 +28,57 @@ struct PyZfx : INode {
         // PyRun_SimpleString("print(\'Hello World\')");
 
         fmt::print("checking appended sys path: {}\n", pstr);
-//
-// ref: https://docs.python.org/3/extending/embedding.html#pure-embedding
-//
-#if 1
-        PyObject *pName, *pModule, *pFunc, *pArgs, *pValue;
-        pName = PyUnicode_DecodeFSDefault("HelloWorld");
-        pModule = PyImport_Import(pName);
-        Py_DECREF(pName);
-#else
-        PyObject *pArgs, *pValue;
-        pyobj pName = PyUnicode_DecodeFSDefault("HelloWorld");
-        pyobj pModule = PyImport_Import(pName);
-#endif
+        //
+        // ref: https://docs.python.org/3/extending/embedding.html#pure-embedding
+        //
+        {
+            PyObject *pArgs, *pValue;
+            // pName = PyUnicode_DecodeFSDefault("HelloWorld");
+            pyobj pName = PyUnicode_DecodeFSDefault("HelloWorld");
+            pyobj pModule = PyImport_Import(pName);
 
-        fmt::print("done import\n");
+            fmt::print("done import\n");
 
-        long args[2] = {33, 2};
-        if (pModule) {
-#if 1
-            pFunc = PyObject_GetAttrString(pModule, "multiply");
-#else
-            pyobj pFunc = PyObject_GetAttrString(pModule, "multiply");
-#endif
-            /* pFunc is a new reference */
+            long args[2] = {33, 2};
+            if (pModule) {
+                pyobj pFunc = PyObject_GetAttrString(pModule, "multiply");
+                /* pFunc is a new reference */
+                if (pFunc && PyCallable_Check(pFunc)) {
+                    pArgs = PyTuple_New(4);
+                    for (int i = 0; i < 2; ++i) {
+                        pValue = PyLong_FromLong(args[i]);
+                        if (!pValue) {
+                            Py_DECREF(pArgs);
+                            fprintf(stderr, "Cannot convert argument\n");
+                            exit(1);
+                        }
+                        /* pValue reference stolen here: */
+                        PyTuple_SetItem(pArgs, i, pValue);
+                    }
+                    // pass a string as the 3rd param
+                    pValue = PyUnicode_InternFromString("|test_string|");
+                    PyTuple_SetItem(pArgs, 2, pValue);
+                    // pass a ptr as the 4th param
+                    pValue = PyLong_FromVoidPtr(vs.data());
+                    PyTuple_SetItem(pArgs, 3, pValue);
+                    // PyList, PyDict
 
-            if (pFunc && PyCallable_Check(pFunc)) {
-                pArgs = PyTuple_New(4);
-                for (int i = 0; i < 2; ++i) {
-                    pValue = PyLong_FromLong(args[i]);
-                    if (!pValue) {
-                        Py_DECREF(pArgs);
-#if 1
-                        Py_DECREF(pModule);
-#endif
-                        fprintf(stderr, "Cannot convert argument\n");
+                    pValue = PyObject_CallObject(pFunc, pArgs);
+                    Py_DECREF(pArgs);
+                    if (pValue != NULL) {
+                        printf("Result of call: %ld\n", PyLong_AsLong(pValue));
+                        Py_DECREF(pValue);
+                    } else {
+                        PyErr_Print();
+                        fprintf(stderr, "Call failed\n");
                         exit(1);
                     }
-                    /* pValue reference stolen here: */
-                    PyTuple_SetItem(pArgs, i, pValue);
-                }
-                // pass a string as the 3rd param
-                pValue = PyUnicode_InternFromString("|test_string|");
-                PyTuple_SetItem(pArgs, 2, pValue);
-                // pass a ptr as the 4th param
-                pValue = PyLong_FromVoidPtr(vs.data());
-                PyTuple_SetItem(pArgs, 3, pValue);
-                // PyList, PyDict
-
-                pValue = PyObject_CallObject(pFunc, pArgs);
-                Py_DECREF(pArgs);
-                if (pValue != NULL) {
-                    printf("Result of call: %ld\n", PyLong_AsLong(pValue));
-                    Py_DECREF(pValue);
                 } else {
-#if 1
-                    Py_DECREF(pFunc);
-                    Py_DECREF(pModule);
-#endif
-                    PyErr_Print();
-                    fprintf(stderr, "Call failed\n");
-                    exit(1);
+                    if (PyErr_Occurred())
+                        PyErr_Print();
+                    fprintf(stderr, "Cannot find function \"%s\"\n", "multiply");
                 }
-            } else {
-                if (PyErr_Occurred())
-                    PyErr_Print();
-                fprintf(stderr, "Cannot find function \"%s\"\n", "multiply");
             }
-#if 1
-            Py_XDECREF(pFunc);
-            Py_DECREF(pModule);
-#endif
         }
 
         Py_Finalize();
