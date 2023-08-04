@@ -576,6 +576,7 @@ inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_t
 inline std::optional<std::string> sky_tex;
 inline std::map<std::string, int> sky_nx_map;
 inline std::map<std::string, int> sky_ny_map;
+inline std::map<std::string, float> sky_avg_map;
 
 inline std::map<std::string, raii<CUdeviceptr>> g_ies;
 
@@ -590,6 +591,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
     auto &sky_cdf = sky_cdf_map[sky_tex.value()];
     auto &sky_pdf = sky_pdf_map[sky_tex.value()];
     auto &sky_start = sky_start_map[sky_tex.value()];
+    auto &sky_avg = sky_avg_map[sky_tex.value()];
     sky_nx = nx;
     sky_ny = ny;
     //we need to recompute cdf
@@ -618,6 +620,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
         }
     }
     float total_illum = sky_cdf[sky_cdf.size()-1];
+    sky_avg = total_illum / ((float)nx * (float)ny);
     for(int ii=0;ii<sky_cdf.size();ii++)
     {
         sky_cdf[ii] /= total_illum;

@@ -121,6 +121,7 @@ struct Params
 
     uint32_t skynx;
     uint32_t skyny;
+    float envavg;
 
     float sky_rot;
     float sky_rot_x;
