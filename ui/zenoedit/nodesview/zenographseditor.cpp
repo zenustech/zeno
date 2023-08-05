@@ -150,11 +150,20 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_model = pModel;
     ZASSERT_EXIT(m_model);
 
-    m_ui->subnetTree->setModel(mgr->treeModel());
-    m_ui->subnetList->setModel(pModel);
-    m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    SubListSortProxyModel* treeProxyModel = new SubListSortProxyModel(this);
+    treeProxyModel->setSourceModel(mgr->treeModel());
+    treeProxyModel->setDynamicSortFilter(true);
+    m_ui->subnetTree->setModel(treeProxyModel);
+    treeProxyModel->sort(0, Qt::AscendingOrder);
     m_ui->subnetList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
+
+    SubListSortProxyModel* proxyModel = new SubListSortProxyModel(this);
+    proxyModel->setSourceModel(pModel);
+    proxyModel->setDynamicSortFilter(true);
+    m_ui->subnetList->setModel(proxyModel);
+    proxyModel->sort(0, Qt::AscendingOrder);
+    m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     ZSubnetListItemDelegate *delegate = new ZSubnetListItemDelegate(m_model, this);
     m_ui->subnetList->setItemDelegate(delegate);

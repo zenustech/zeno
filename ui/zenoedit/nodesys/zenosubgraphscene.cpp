@@ -543,7 +543,9 @@ void ZenoSubGraphScene::paste(QPointF pos)
         {
             ZASSERT_EXIT(m_nodes.find(ident) != m_nodes.end());
             m_nodes[ident]->setSelected(true);
+            collectNodeSelChanged(ident, true);
         }
+        afterSelectionChanged();
     }
 }
 
@@ -944,7 +946,7 @@ void ZenoSubGraphScene::afterSelectionChanged()
                 unSelNodes.push_back(pNode->index());
         }
         mainWin->onNodesSelected(m_subgIdx, unSelNodes, false);
-        mainWin->onNodesSelected(m_subgIdx, selNodes, true);
+        mainWin->onNodesSelected(m_subgIdx, selectNodesIndice(), true);
         updateKeyFrame();
     }
     m_selChanges.clear();

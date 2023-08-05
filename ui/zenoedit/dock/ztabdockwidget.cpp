@@ -279,14 +279,14 @@ PANEL_TYPE ZTabDockWidget::title2Type(const QString& title)
 
 void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select)
 {
-    if (nodes.count() <= 0)
-        return;
+    //if (nodes.count() <= 0)
+    //    return;
     for (int i = 0; i < m_tabWidget->count(); i++)
     {
         QWidget* wid = m_tabWidget->widget(i);
         if (DockContent_Parameter* prop = qobject_cast<DockContent_Parameter*>(wid))
         {
-            if (select && nodes.size() == 1) {
+            if (select && nodes.size() <= 1) {
                 prop->onNodesSelected(subgIdx, nodes, select);
             }
         }
@@ -318,7 +318,7 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             }
         } 
         else if (DockContent_Editor *editor = qobject_cast<DockContent_Editor *>(wid)) {
-            if (select && nodes.size() == 1)
+            if (select && nodes.size() <= 1)
             {
                 editor->getEditor()->showFloatPanel(subgIdx, nodes);
             }

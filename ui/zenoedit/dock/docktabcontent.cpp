@@ -261,12 +261,11 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
             if (select) {
                 m_plblName->setText(idx.data(ROLE_OBJID).toString());
                 m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
-            }
-            else {
-                m_plblName->setText("");
-                m_pNameLineEdit->setText("");
+                return;
             }
         }
+        m_plblName->setText("");
+        m_pNameLineEdit->setText("");
     }
 }
 
