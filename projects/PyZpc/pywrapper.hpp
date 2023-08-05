@@ -101,16 +101,20 @@ struct pyobj {
         }
     }
 
+    void setItem(size_t pos, pyobj &&item) {
+        // for item will dec ref and tuple will steal the ref
+        Py_XINCREF(item.get());
+        PyTuple_SetItem(obj, pos, item.get());
+    }
+
     /// @brief mimic shared_ptr behavior
     pyobj(pyobj &&o) {
-        pyobj tmp{};
         obj = o.get();
-        o = tmp;
+        o.obj = nullptr;
     }
     pyobj &operator=(pyobj &&o) {
-        pyobj tmp{};
         obj = o.get();
-        o = tmp;
+        o.obj = nullptr;
         return *this;
     }
     pyobj(const pyobj &o) {
@@ -142,7 +146,7 @@ struct pyobj {
         return PyLong_AsLong(obj);
     }
     operator PyObject *() const noexcept {
-        return const_cast<PyObject *>(obj);
+        return get();
     }
 
     mutable PyObject *obj{nullptr};
