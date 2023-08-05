@@ -43,20 +43,15 @@ struct PyZfx : INode {
             long args[2] = {33, 2};
             if (pModule) {
                 pyobj pFunc{py_func_c, pModule, "multiply"};
-                /* pFunc is a new reference */
                 {
-                    for (int i = 0; i < 2; ++i) {
-                        pValue = {py_long_c, args[i]};
-                        /* pValue reference stolen here: */
-                        PyTuple_SetItem(pArgs, i, pValue); //pyobj{py_long_c, args[i]});
-                    }
+                    for (int i = 0; i < 2; ++i)
+                        pArgs.setItem(i, pyobj{py_long_c, args[i]});
                     // pass a string as the 3rd param
-                    pValue = {py_string_c, "|test_string|"};
-                    PyTuple_SetItem(pArgs, 2, pValue);
+                    pArgs.setItem(2, pyobj{py_string_c, "|test_string|"});
                     // pass a ptr as the 4th param
-                    pValue = {py_long_c, vs.data()};
-                    PyTuple_SetItem(pArgs, 3, pValue);
+                    pArgs.setItem(3, pyobj(py_long_c, vs.data()));
                     // PyList, PyDict
+                    pValue = {py_dict_c};
 
                     pValue = PyObject_CallObject(pFunc, pArgs);
                     if (pValue) {
