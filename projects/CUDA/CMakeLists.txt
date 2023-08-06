@@ -74,6 +74,7 @@ target_sources(zeno PRIVATE
   utils/IndexBuckets.cu
   utils/Primitives.cu
   utils/TopoUtils.cu
+  utils/Tracing.cu
   utils/Noise.cu
   utils/Groom.cpp
 )
