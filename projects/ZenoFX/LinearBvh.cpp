@@ -68,20 +68,37 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       return bv;
     };
   else if (eleCategory == element_e::point)
-    getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"), 
-    radius = radiusAttr == "" ? std::vector<float>(prim->verts.size(), 0.0f) : prim->verts.attr<float>(radiusAttr),
+      if (radiusAttr == "") {
+        getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"),  
              defaultBox, this](Ti i) -> Box {
-      auto point = points[i];
-      Box bv = defaultBox;
-      const auto &p = refpos[point];
-      for (int d = 0; d != 3; ++d) {
-        if (p[d] - thickness - radius[i] < bv.first[d])
-          bv.first[d] = p[d] - thickness - radius[i];
-        if (p[d] + thickness + radius[i] > bv.second[d])
-          bv.second[d] = p[d] + thickness + radius[i];
-      }
+        auto point = points[i];
+        Box bv = defaultBox;
+        const auto &p = refpos[point];
+        for (int d = 0; d != 3; ++d) {
+          if (p[d] - thickness < bv.first[d])
+            bv.first[d] = p[d] - thickness ;
+          if (p[d] + thickness > bv.second[d])
+            bv.second[d] = p[d] + thickness;
+          }
       return bv;
-    };
+        };
+      } 
+      else {
+        getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"), 
+        &radius = prim->verts.attr<float>(radiusAttr),
+             defaultBox, this](Ti i) -> Box {
+        auto point = points[i];
+        Box bv = defaultBox;
+        const auto &p = refpos[point];
+        for (int d = 0; d != 3; ++d) {
+          if (p[d] - thickness - radius[i] < bv.first[d])
+            bv.first[d] = p[d] - thickness - radius[i];
+          if (p[d] + thickness + radius[i] > bv.second[d])
+            bv.second[d] = p[d] + thickness + radius[i];
+          }
+      return bv;
+      };
+    }
   else if (eleCategory == element_e::unknown)
     getBv = [defaultBox](Ti) -> Box { return defaultBox; };
   return getBv;
