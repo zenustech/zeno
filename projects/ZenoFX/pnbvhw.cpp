@@ -114,7 +114,7 @@ static void bvh_vectors_wrangle(zfx::x64::Executable *exec,
 static void bvh_vectors_wrangle_radius(zfx::x64::Executable *exec,
                                 std::vector<Buffer> const &chs,
                                 std::vector<Buffer> const &chs2,
-                                float *maskarr,
+                                const float *maskarr,
                                 std::vector<zeno::vec3f> const &pos,
                                 std::vector<float> const &radius,
                                 std::vector<zeno::vec3f> const &opos,
@@ -1128,7 +1128,7 @@ struct ParticlesNeighborBvhRadiusWrangle : zeno::INode {
       chs2[i] = iob;
     }
     std::string maskAttr = get_input2<std::string>("maskAttr");
-    auto &mask = maskAttr == "" ? std::vector<float>(prim->verts.size(), 1.0f) : prim->attr<float>(maskAttr);
+    const auto &mask = maskAttr == "" ? std::vector<float>(prim->verts.size(), 1.0f) : prim->attr<float>(maskAttr);
     bvh_vectors_wrangle_radius(exec, chs, chs2, mask.data(), prim->attr<zeno::vec3f>("pos"), radiusAttr == "" ? std::vector<float>(prim->verts.size(), 0.0f) : prim->verts.attr<float>(radiusAttr),
                         primNei->attr<zeno::vec3f>("pos"), get_input2<bool>("is_box"),
                         lbvh.get()->thickness * lbvh.get()->thickness, lbvh.get());
