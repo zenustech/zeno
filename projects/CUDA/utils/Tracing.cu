@@ -122,8 +122,8 @@ struct Onb {
 };
 
 template <typename VPosRange, typename VIndexRange, typename Bv, int codim = 3>
-static void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, VPosRange &&posR, VIndexRange &&idxR,
-                                      zs::Vector<Bv> &ret) {
+void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, VPosRange &&posR, VIndexRange &&idxR,
+                               zs::Vector<Bv> &ret) {
     using namespace zs;
     using bv_t = Bv;
     constexpr auto space = execspace_e::cuda;
@@ -145,6 +145,8 @@ struct ComputeVertexAO : INode {
         auto nrmTag = get_input2<std::string>("nrm_tag");
         auto niters = get_input2<int>("sample_iters");
         auto distCap = get_input2<float>("dist_cap");
+        if (distCap < std::numeric_limits<float>::epsilon())
+            distCap = std::numeric_limits<float>::max();
 
         using namespace zs;
         constexpr auto space = execspace_e::cuda;
@@ -152,19 +154,20 @@ struct ComputeVertexAO : INode {
         using bvh_t = ZenoLinearBvh::lbvh_t;
         using bv_t = typename bvh_t::Box;
         // zs::AABBBox<3, float>
-        auto &sceneData = scene->userData();
+
         auto allocator = get_temporary_memory_source(pol);
+        const auto &sceneTris = scene->tris.values;
+        const auto &scenePos = scene->verts.values;
+        zs::Vector<v3> pos{allocator, scenePos.size()};
+        zs::Vector<i3> indices{allocator, sceneTris.size()};
+        zs::copy(mem_device, (void *)pos.data(), (void *)scenePos.data(), sizeof(v3) * pos.size());
+        zs::copy(mem_device, (void *)indices.data(), (void *)sceneTris.data(), sizeof(i3) * indices.size());
+
+        auto &sceneData = scene->userData();
         if (!sceneData.has<ZenoLinearBvh>(zs_bvh_tag)) {
             auto zsbvh = std::make_shared<ZenoLinearBvh>();
             zsbvh->thickness = 0;
             zsbvh->et = ZenoLinearBvh::surface;
-
-            const auto &sceneTris = scene->tris.values;
-            const auto &scenePos = scene->verts.values;
-            zs::Vector<v3> pos{allocator, scenePos.size()};
-            zs::Vector<i3> indices{allocator, sceneTris.size()};
-            zs::copy(mem_device, (void *)pos.data(), (void *)scenePos.data(), sizeof(v3) * pos.size());
-            zs::copy(mem_device, (void *)indices.data(), (void *)sceneTris.data(), sizeof(i3) * indices.size());
 
             auto &bvh = zsbvh->bvh;
             zs::Vector<bv_t> bvs{indices.size(), memsrc_e::device, 0};
@@ -172,13 +175,6 @@ struct ComputeVertexAO : INode {
             bvh.build(pol, bvs);
             sceneData.set(zs_bvh_tag, zsbvh);
         } else {
-            const auto &sceneTris = scene->tris.values;
-            const auto &scenePos = scene->verts.values;
-            zs::Vector<v3> pos{allocator, scenePos.size()};
-            zs::Vector<i3> indices{allocator, sceneTris.size()};
-            zs::copy(mem_device, (void *)pos.data(), (void *)scenePos.data(), sizeof(v3) * pos.size());
-            zs::copy(mem_device, (void *)indices.data(), (void *)sceneTris.data(), sizeof(i3) * indices.size());
-
             auto zsbvh = sceneData.get<ZenoLinearBvh>(zs_bvh_tag); // std::shared_ptr<>
             auto &bvh = zsbvh->bvh;
             zs::Vector<bv_t> bvs{allocator, indices.size()};
@@ -189,21 +185,25 @@ struct ComputeVertexAO : INode {
         auto zsbvh = sceneData.get<ZenoLinearBvh>(zs_bvh_tag); // std::shared_ptr<>
         auto &bvh = zsbvh->bvh;
 
-        const auto &pos = prim->verts.values;
+        const auto &hpos = prim->verts.values;
         const auto &hnrms = prim->attr<vec3f>(nrmTag);
-        zs::Vector<v3> xs{allocator, pos.size()}, nrms{allocator, pos.size()};
-        zs::Vector<float> aos{allocator, pos.size()};
-        zs::copy(mem_device, (void *)xs.data(), (void *)pos.data(), sizeof(v3) * xs.size());
+        zs::Vector<v3> xs{allocator, hpos.size()}, nrms{allocator, hpos.size()};
+        zs::copy(mem_device, (void *)xs.data(), (void *)hpos.data(), sizeof(v3) * xs.size());
         zs::copy(mem_device, (void *)nrms.data(), (void *)hnrms.data(), sizeof(v3) * nrms.size());
+        zs::Vector<float> aos{allocator, pos.size()};
         pol(enumerate(xs, nrms, aos),
-            [bvh = view<space>(bvh), niters, distCap] ZS_LAMBDA(unsigned int i, const v3 &x, v3 nrm, float &ao) {
+            [scenePos = view<space>(pos), sceneTris = view<space>(indices), bvh = view<space>(bvh), niters,
+             distCap] ZS_LAMBDA(unsigned int i, const v3 &x, v3 nrm, float &ao) {
                 unsigned int seed = i;
                 ao = 0.f;
                 nrm = nrm.normalized();
-                // auto n0 = nrm.orthogonal().normalized();
-                // auto n1 = nrm.cross(n0);
+                auto n0 = nrm.orthogonal().normalized();
+                auto n1 = nrm.cross(n0);
+                Onb tbn = Onb(nrm);
+                tbn.m_tangent = n0;
+                tbn.m_binormal = n1;
+                int accum = 0;
                 for (int k = 0; k < niters; ++k) {
-                    Onb tbn = Onb(nrm);
                     auto r = sobolRnd(seed);
                     auto w = UniformSampleHemisphere(r[0], r[1]);
                     tbn.inverse_transform(w);
@@ -211,17 +211,39 @@ struct ComputeVertexAO : INode {
                     if (w.dot(nrm) < 0)
                         w = -w;
 
+                    bool hit = false;
+                    bvh.ray_intersect(x, w, [&x, &w, &scenePos, &sceneTris, &hit, distCap](int triNo) {
+                        if (hit)
+                            return;
+                        auto tri = sceneTris[triNo];
+                        auto t0 = scenePos[tri[0]];
+                        auto t1 = scenePos[tri[1]];
+                        auto t2 = scenePos[tri[2]];
+                        if (auto d = ray_tri_intersect(x, w, t0, t1, t2);
+                            d < distCap && d > std::numeric_limits<float>::epsilon() * 10) {
+                            hit = true;
+#if 0
+                            if (i < 2 && k < 3) {
+                                printf("[%u] iter %d dir [%f] (%f, %f, %f), dist (%f)\n", i, (int)k, w.norm(), w[0],
+                                       w[1], w[2], d);
+                            }
+#endif
+                            return;
+                        }
+                    });
+                    if (hit)
+                        accum++;
 #if 0
                     if (i < 2 && k < 3) {
                         printf("[%u] iter %d dir [%f] (%f, %f, %f), r (%f, %f)\n", i, (int)k, w.norm(), w[0], w[1],
                                w[2], r[0], r[1]);
                     }
-                    // bvh.;
 #endif
                 }
+                ao = 1.f * accum / niters;
             });
 
-        const auto &haos = prim->add_attr<vec3f>(get_input2<std::string>("ao_tag"));
+        const auto &haos = prim->add_attr<float>(get_input2<std::string>("ao_tag"));
         zs::copy(mem_device, (void *)haos.data(), (void *)aos.data(), sizeof(float) * haos.size());
 
         set_output("prim", prim);
