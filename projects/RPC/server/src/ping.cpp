@@ -1,7 +1,7 @@
 #include "ping.h"
 
 #include <iostream>
-#include "pch.h"
+#include "rpc/pch.h"
 
 ::grpc::Status PingPongService::Ping(::grpc::ServerContext *context, const ::zeno::common::PingQuery *request, ::zeno::common::PongResponse *response) {
     std::cout << "Ping!" << request->hashtoken() << std::endl;

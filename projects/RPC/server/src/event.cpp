@@ -149,7 +149,6 @@ void PrimitiveStorageCallback(std::optional<std::any> Args) {
     if (Args.has_value() && Args->has_value()) {
         if (const NamedPrimitiveObject* Value = std::any_cast<NamedPrimitiveObject>(&Args.value())) {
             if (Value->Channel == "storage") {
-                std::cout << Value->Primitive->verts.size() << std::endl;
             }
         }
     }

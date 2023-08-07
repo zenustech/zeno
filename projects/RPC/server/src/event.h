@@ -1,6 +1,6 @@
 #pragma once
 
-#include "pch.h"
+#include "rpc/pch.h"
 #include <event/event_bus.pb.h>
 #include <event/event_bus.grpc.pb.h>
 
