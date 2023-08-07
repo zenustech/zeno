@@ -1,0 +1,11 @@
+OPTION(ZENO_ROADS_DYNAMIC_LINK "Build shared link library to prevent binary too large on Windows or iOS." ON)
+
+FILE(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.h)
+
+IF (ZENO_ROADS_DYNAMIC_LINK)
+    ADD_LIBRARY(Roads SHARED ${SOURCE_FILES})
+ELSE()
+    ADD_LIBRARY(Roads STATIC ${SOURCE_FILES})
+ENDIF()
+
+TARGET_INCLUDE_DIRECTORIES(Roads PUBLIC include)

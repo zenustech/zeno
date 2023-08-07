@@ -30,7 +30,8 @@ target_link_libraries(YourTargetName RPCProto)
 You can add custom `proto` file by adding:
 
 ```cmake
-target_sources(RPCProto ${YOUR_PROTO_FILES})
+INCLUDE(../../../RPC/cmake/ProtoHelper.cmake)
+ADD_PROTO_FILES(${PROTO_FILES})
 ```
 
 Then add a custom service to server using:

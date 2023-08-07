@@ -1,6 +1,9 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.3)
 
-if (NOT ZENO_WITH_RPC)
-    message(SEND_ERROR "Add flag -DZENO_WITH_RPC=ON ")
-    message(FATAL_ERROR "You must enable RPC to use road system.")
-endif ()
+IF (NOT ZENO_WITH_RPC)
+    MESSAGE(SEND_ERROR "Add flag -DZENO_WITH_RPC=ON ")
+    MESSAGE(FATAL_ERROR "You must enable RPC to use road system.")
+ENDIF()
+
+ADD_SUBDIRECTORY(utilities)
+ADD_SUBDIRECTORY(service)
