@@ -719,6 +719,7 @@ struct BulletMakeObject : zeno::INode {
         auto object = std::make_shared<BulletObject>(
             mass, trans->trans, shape);
         object->body->setDamping(0, 0);
+        object->body->forceActivationState(4);
         set_output("object", std::move(object));
     }
 };
@@ -781,6 +782,30 @@ ZENDEFNODE(BulletObjectSetRestitution, {
     {},
     {"Bullet"},
 });
+
+struct BulletObjectForceActivation : zeno::INode {
+    virtual void apply() override {
+        std::map<std::string, int> ActvSta{{"ACTIVE_TAG", 1},         {"ISLAND_SLEEPING", 2},
+                                           {"WANTS_DEACTIVATION", 3}, {"DISABLE_DEACTIVATION", 4},
+                                           {"DISABLE_SIMULATION", 5}, {"FIXED_BASE_MULTI_BODY", 6}};
+
+        auto object = get_input<BulletObject>("object");
+        auto stateTag = get_input2<std::string>("ActivationState");
+
+        int state = ActvSta[stateTag];
+        object->body->forceActivationState(state);
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletObjectForceActivation, {
+                                            {"object",
+                                             {"enum ACTIVE_TAG ISLAND_SLEEPING WANTS_DEACTIVATION DISABLE_DEACTIVATION DISABLE_SIMULATION FIXED_BASE_MULTI_BODY",
+                                              "ActivationState", "ACTIVE_TAG"}},
+                                            {"object"},
+                                            {},
+                                            {"Bullet"},
+                                        });
 
 struct BulletObjectGetTransform : zeno::INode {
     virtual void apply() override {
