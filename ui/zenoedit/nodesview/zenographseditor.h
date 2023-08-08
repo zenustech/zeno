@@ -69,6 +69,7 @@ private:
     void initModel();
     void toggleViewForSelected(bool bOn);
     int tabIndexOfName(const QString& subGraphName);
+    void markSubgError(const QStringList &lst);
 
     ZenoMainWindow* m_mainWin;
     Ui::GraphsEditor* m_ui;

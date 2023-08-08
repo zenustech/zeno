@@ -602,6 +602,8 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
             {
                 auto lst = objId.split('/', QtSkipEmptyParts);
                 objId = lst.last();
+                lst.removeOne(objId);
+                markSubgError(lst);
             }
 
             QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
@@ -644,6 +646,25 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 }
             }
         }
+    }
+}
+
+void ZenoGraphsEditor::markSubgError(const QStringList& idents)
+{
+    for (const auto &ident : idents)
+    {
+        QModelIndex index = m_model->nodeIndex(ident);
+        ZASSERT_EXIT(index.isValid());
+        QModelIndex subgIdx = index.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+        ZASSERT_EXIT(subgIdx.isValid());
+        auto graphsMgm = zenoApp->graphsManagment();
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+        if (!pScene) {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(subgIdx, pScene);
+            pScene->initModel(subgIdx);
+        }
+        pScene->markError(ident);
     }
 }
 
