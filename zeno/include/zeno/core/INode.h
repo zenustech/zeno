@@ -106,6 +106,8 @@ protected:
     }
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
+
+    friend struct reflect;
 };
 
 }
