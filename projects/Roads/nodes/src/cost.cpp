@@ -43,7 +43,7 @@ namespace {
         DECLARE_OUTPUT_FIELD(OutputTest, "test");
     };
 
-    struct CalcPathCost_Simple : public zeno::reflect::IAutoNode<CalcPathCost_Simple, CalcPathCostParameter> {
+    struct CalcPathCost_Simple : public zeno::reflect::IAutoNode<CalcPathCostParameter> {
         GENERATE_AUTONODE_BODY(CalcPathCost_Simple);
 
         void apply() override;

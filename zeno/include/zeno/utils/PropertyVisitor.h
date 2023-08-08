@@ -269,7 +269,7 @@ namespace zeno {
             }
         };
 
-        template<typename NodeType, typename NodeParameterType>
+        template<typename NodeParameterType>
         struct IAutoNode : public INode {
             static_assert(std::is_base_of_v<NodeParameterBase, NodeParameterType>);
 
