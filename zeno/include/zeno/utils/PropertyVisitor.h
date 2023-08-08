@@ -49,6 +49,8 @@ namespace zeno {
             NodeParameterBase(NodeParameterBase&& RhsToMove) noexcept;
             NodeParameterBase(const NodeParameterBase&) = delete;
 
+            void RunInputHooks() const;
+
             virtual ~NodeParameterBase();
         };
 
@@ -72,6 +74,10 @@ namespace zeno {
 
             Field(const Field& Other) = default;
 
+            /**
+             * Note: don't call lambda returned without ownership
+             * @return
+             */
             virtual std::function<void(INode*)> ToCaptured() = 0;
         };
 
@@ -107,10 +113,6 @@ namespace zeno {
                 }
             }
 
-            /**
-             * Note: don't call lambda returned without ownership
-             * @return
-             */
             std::function<void(INode*)> ToCaptured() override {
                 return [this] (INode* Node) {
                     Read(Node);
@@ -166,8 +168,8 @@ namespace zeno {
             ZENO_API IAutoNode() = default;
 
             void preApply() override {
-                INode::preApply();
                 AutoParameter = std::make_unique<NodeParameterType>( this );
+                INode::preApply();
             }
 
             void complete() override {
