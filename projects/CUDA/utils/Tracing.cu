@@ -24,7 +24,7 @@ using float2 = zs::vec<float, 2>;
 using v3 = zs::vec<float, 3>;
 using i3 = zs::vec<int, 3>;
 
-static __device__ __inline__ uint2 Sobol(unsigned int n) {
+static __device__ __forceinline__ uint2 Sobol(unsigned int n) {
     uint2 p = uint2{0u, 0u};
     uint2 d = uint2{0x80000000u, 0x80000000u};
 
@@ -41,7 +41,7 @@ static __device__ __inline__ uint2 Sobol(unsigned int n) {
 }
 
 // adapted from: https://www.shadertoy.com/view/3lcczS
-static __device__ __inline__ unsigned int ReverseBits(unsigned int x) {
+static __device__ __forceinline__ unsigned int ReverseBits(unsigned int x) {
     x = ((x & 0xaaaaaaaau) >> 1) | ((x & 0x55555555u) << 1);
     x = ((x & 0xccccccccu) >> 2) | ((x & 0x33333333u) << 2);
     x = ((x & 0xf0f0f0f0u) >> 4) | ((x & 0x0f0f0f0fu) << 4);
@@ -51,7 +51,8 @@ static __device__ __inline__ unsigned int ReverseBits(unsigned int x) {
 
 // EDIT: updated with a new hash that fixes an issue with the old one.
 // details in the post linked at the top.
-static __device__ __inline__ unsigned int OwenHash(unsigned int x, unsigned int seed) { // works best with random seeds
+static __device__ __forceinline__ unsigned int OwenHash(unsigned int x,
+                                                        unsigned int seed) { // works best with random seeds
     x ^= x * 0x3d20adeau;
     x += seed;
     x *= (seed >> 16) | 1u;
@@ -59,12 +60,12 @@ static __device__ __inline__ unsigned int OwenHash(unsigned int x, unsigned int 
     x ^= x * 0x53a22864u;
     return x;
 }
-static __device__ __inline__ unsigned int OwenScramble(unsigned int p, unsigned int seed) {
+static __device__ __forceinline__ unsigned int OwenScramble(unsigned int p, unsigned int seed) {
     p = ReverseBits(p);
     p = OwenHash(p, seed);
     return ReverseBits(p);
 }
-static __device__ __inline__ float2 sobolRnd(unsigned int &seed) {
+static __device__ __forceinline__ float2 sobolRnd(unsigned int &seed) {
 
     uint2 ip = Sobol(seed);
     ip[0] = OwenScramble(ip[0], 0xe7843fbfu);
@@ -76,7 +77,7 @@ static __device__ __inline__ float2 sobolRnd(unsigned int &seed) {
     //return make_float2(rnd(seed), rnd(seed));
 }
 
-static __device__ __inline__ float2 sobolRnd2(unsigned int &seed) {
+static __device__ __forceinline__ float2 sobolRnd2(unsigned int &seed) {
 
     uint2 ip = Sobol(seed);
     ip[0] = OwenScramble(ip[0], 0xe7843fbfu);
@@ -88,10 +89,27 @@ static __device__ __inline__ float2 sobolRnd2(unsigned int &seed) {
     //return make_float2(rnd(seed), rnd(seed));
 }
 
-static __inline__ __device__ v3 UniformSampleHemisphere(float r1, float r2) {
+static __forceinline__ __device__ v3 UniformSampleHemisphere(float r1, float r2) {
     float r = zs::sqrt(zs::max(0.0, 1.0 - r1 * r1));
     float phi = 2.0f * 3.1415926f * r2;
     return v3(r * zs::cos(phi), r * zs::sin(phi), r1);
+}
+
+static __forceinline__ __device__ void CoordinateSystem(const v3 &a, v3 &b, v3 &c) {
+    //    if (abs(a.x) > abs(a.y))
+    //        b = float3{-a.z, 0, a.x} /
+    //              sqrt(max(_FLT_EPL_, a.x * a.x + a.z * a.z));
+    //    else
+    //        b = float3{0, a.z, -a.y} /
+    //              sqrt(max(_FLT_EPL_, a.y * a.y + a.z * a.z));
+
+    if (zs::abs(a[0]) > zs::abs(a[1]))
+        b = v3{-a[2], 0, a[0]};
+    else
+        b = v3{0, a[2], -a[1]};
+
+    b = b.normalized();
+    c = a.cross(b);
 }
 
 struct Onb {
@@ -120,6 +138,35 @@ struct Onb {
     v3 m_binormal;
     v3 m_normal;
 };
+static __forceinline__ __device__ void world2local(v3 &v, const v3 &T, const v3 &B, const v3 &N) {
+    v = v3{T.dot(v), B.dot(v), N.dot(v)}.normalized();
+}
+
+namespace rtgems {
+
+constexpr float origin() {
+    return 1.0f / 32.0f;
+}
+constexpr float int_scale() {
+    return 256.0f;
+}
+constexpr float float_scale() {
+    return 1.0f / 65536.0f;
+}
+
+// Normal points outward for rays exiting the surface, else is flipped.
+static __inline__ __device__ v3 offset_ray(const v3 &p, const v3 &n) {
+    i3 of_i{(int)(int_scale() * n[0]), (int)(int_scale() * n[1]), (int)(int_scale() * n[2])};
+
+    v3 p_i{__int_as_float(__float_as_int(p[0]) + ((p[0] < 0) ? -of_i[0] : of_i[0])),
+           __int_as_float(__float_as_int(p[1]) + ((p[1] < 0) ? -of_i[1] : of_i[1])),
+           __int_as_float(__float_as_int(p[2]) + ((p[2] < 0) ? -of_i[2] : of_i[2]))};
+
+    return v3{fabsf(p[0]) < origin() ? p[0] + float_scale() * n[0] : p_i[0],
+              fabsf(p[1]) < origin() ? p[1] + float_scale() * n[1] : p_i[1],
+              fabsf(p[2]) < origin() ? p[2] + float_scale() * n[2] : p_i[2]};
+}
+} // namespace rtgems
 
 template <typename VPosRange, typename VIndexRange, typename Bv, int codim = 3>
 void retrieve_bounding_volumes(zs::CudaExecutionPolicy &pol, VPosRange &&posR, VIndexRange &&idxR,
@@ -197,22 +244,39 @@ struct ComputeVertexAO : INode {
                 unsigned int seed = i;
                 ao = 0.f;
                 nrm = nrm.normalized();
+                Onb tbn = Onb(nrm);
+#if 1
+                v3 n0;
+                v3 n1;
+                CoordinateSystem(nrm, n0, n1);
+#else
                 auto n0 = nrm.orthogonal().normalized();
                 auto n1 = nrm.cross(n0);
-                Onb tbn = Onb(nrm);
+#endif
                 tbn.m_tangent = n0;
                 tbn.m_binormal = n1;
                 int accum = 0;
                 for (int k = 0; k < niters; ++k) {
+#if 1
                     auto r = sobolRnd(seed);
                     auto w = UniformSampleHemisphere(r[0], r[1]);
                     tbn.inverse_transform(w);
                     w = w.normalized();
                     if (w.dot(nrm) < 0)
                         w = -w;
-
+#else
+                    v3 w;
+                    do {
+                        auto r = sobolRnd(seed);
+                        w = UniformSampleHemisphere(r[0], r[1]);
+                        tbn.inverse_transform(w);
+                        w = w.normalized();
+                    } while (w.dot(nrm) < std::numeric_limits<float>::epsilon());
+#endif
                     bool hit = false;
-                    bvh.ray_intersect(x, w, [&x, &w, &scenePos, &sceneTris, &hit, distCap](int triNo) {
+                    // auto xx = rtgems::offset_ray(x, w);
+                    auto &xx = x;
+                    bvh.ray_intersect(xx, w, [&x = xx, &w, &scenePos, &sceneTris, &hit, distCap](int triNo) {
                         if (hit)
                             return;
                         auto tri = sceneTris[triNo];
