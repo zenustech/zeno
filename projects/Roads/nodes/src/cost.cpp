@@ -30,36 +30,24 @@ roads::DynamicGrid<GridType> BuildGridFromPrimitive(zeno::PrimitiveObject* InPri
 namespace {
     using namespace zeno;
 
-    struct CalcPathCostParameter : public zeno::reflect::NodeParameterBase {
-        explicit CalcPathCostParameter(INode* Node) : zeno::reflect::NodeParameterBase(Node) {
-            RunInputHooks();
-        }
+    struct CalcPathCostParameter : public zeno::reflect::INodeParameterObject<CalcPathCostParameter> {
+        GENERATE_PARAMETER_BODY(CalcPathCostParameter);
 
         std::shared_ptr<zeno::PrimitiveObject> Primitive;
-        zeno::reflect::InputField<CalcPathCostParameter, decltype(Primitive)> PrimitiveField {*this, Primitive, "prim", false};
+        DECLARE_INPUT_FIELD(Primitive, "prim");
 
         std::string OutputChannel;
-        zeno::reflect::InputField<CalcPathCostParameter, decltype(OutputChannel)> OutputChannelField { *this, OutputChannel, "output_channel" };
+        DECLARE_INPUT_FIELD(OutputChannel, "output_channel");
+
+        std::string OutputTest;
+        DECLARE_OUTPUT_FIELD(OutputTest, "test");
     };
 
-    struct CalcPathCost_Simple : public zeno::reflect::IAutoNode<CalcPathCostParameter> {
+    struct CalcPathCost_Simple : public zeno::reflect::IAutoNode<CalcPathCost_Simple, CalcPathCostParameter> {
+        GENERATE_AUTONODE_BODY(CalcPathCost_Simple);
+
         void apply() override;
     };
-
-    ZENDEFNODE(
-        CalcPathCost_Simple,
-        {
-            {
-                { "prim" },
-                { "string", "output_channel", "path_cost" },
-            },
-            {},
-            {},
-            {
-                "Unreal"
-            }
-        }
-    )
 
     void CalcPathCost_Simple::apply() {
         zeno::log_info("aaaaaaaaaaa: {}", AutoParameter->OutputChannel);
