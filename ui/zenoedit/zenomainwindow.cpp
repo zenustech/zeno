@@ -1194,6 +1194,9 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
             //delete pDock;
         }
 
+        // trigger destroy event
+        zeno::getSession().eventCallbacks->triggerEvent("beginDestroy");
+
         QMainWindow::closeEvent(event);
     } 
     else 
@@ -1896,6 +1899,6 @@ static int subprogram_dumpzsg2zsl_main(int argc, char **argv) {
     return 0;
 }
 
-static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] {
+static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] (auto _) {
     zeno::getSession().userData().set("subprogram_dumpzsg2zsl", std::make_shared<zeno::GenericObject<int(*)(int, char **)>>(subprogram_dumpzsg2zsl_main));
 });

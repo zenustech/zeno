@@ -63,8 +63,8 @@ namespace zeno::unreal {
      * Contains the transform of an entity
      */
     struct TransformComponent {
-        Vector3f Position = {1.0f};
-        Vector3f Rotation = {1.0f};
+        Vector3f Position = {0.0f};
+        Vector3f Rotation = {0.0f};
         Vector3f Scale = {1.0f};
     };
 
@@ -107,7 +107,7 @@ namespace zeno::unreal {
             Grass,
         };
         Type PointType;
-        std::vector<Vector3f> Points;
+        std::vector<TransformComponent> Points;
     };
 
     struct AssetBundle {

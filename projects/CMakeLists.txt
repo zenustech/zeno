@@ -38,6 +38,8 @@ set(ZENO_EXTENSIONS
     Parameterization
     UnrealTool
     ChatZeno
+    RPC
+    Roads
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})
