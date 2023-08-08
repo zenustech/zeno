@@ -1,12 +1,12 @@
 #include "winlayoutrw.h"
 #include "../dock/ztabdockwidget.h"
-#include <zenomodel/include/jsonhelper.h>
 #include "../dock/docktabcontent.h"
 #include "../viewport/viewportwidget.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
 #include <rapidjson/document.h>
 #include "../panel/zenolights.h"
+#include "viewport/displaywidget.h"
 
 
 PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget* pWidget)
@@ -126,8 +126,29 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
                 }
                 else if (qobject_cast<DockContent_View*>(wid)) {
                     DockContent_View* pView = qobject_cast<DockContent_View*>(wid);
-                    if (pView->isGLView())
+                    if (pView->isGLView()) {
+                        auto dpwid = pView->getDisplayWid();
+                        ZASSERT_EXIT(dpwid);
+                        auto vis = dpwid->getZenoVis();
+                        ZASSERT_EXIT(vis);
+                        auto session = vis->getSession();
+                        ZASSERT_EXIT(session);
+                        auto [r, g, b] = session->get_background_color();
+                        writer.StartObject();
+                        writer.Key("type");
                         writer.String("View");
+                        writer.Key("backgroundcolor");
+                        writer.StartArray();
+                        writer.Double(r);
+                        writer.Double(g);
+                        writer.Double(b);
+                        writer.EndArray();
+                        writer.Key("resolution");
+                        writer.Double(session->get_safe_frames());
+                        writer.Key("lock");
+                        writer.Bool(session->is_lock_window());
+                        writer.EndObject();
+                    }
                     else
                         writer.String("Optix");
                 }
@@ -167,6 +188,11 @@ void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString &file
     f.write(strJson.toUtf8());
 }
 
+void writeLayout(PtrLayoutNode root, const QSize& szMainwin, RAPIDJSON_WRITER& writer)
+{
+    _writeLayout(root, szMainwin, writer);
+}
+
 static PtrLayoutNode _readLayout(const rapidjson::Value& objValue)
 {
     if (objValue.HasMember("orientation") && objValue.HasMember("left") && objValue.HasMember("right"))
@@ -192,7 +218,21 @@ static PtrLayoutNode _readLayout(const rapidjson::Value& objValue)
         QStringList tabs;
         for (int i = 0; i < tabsObj.Size(); i++)
         {
-            ptrNode->tabs.push_back(tabsObj[i].GetString());
+            if (tabsObj[i].IsString())
+            {
+                ptrNode->tabs.push_back(tabsObj[i].GetString());
+            }
+            else if (tabsObj[i].IsObject())
+            {
+                if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "View")
+                {
+                    ptrNode->tabs.push_back("View");
+                    DockContentWidgetInfo info(tabsObj[i]["resolution"].GetDouble(),
+                        tabsObj[i]["lock"].GetBool(), tabsObj[i]["backgroundcolor"][0].GetDouble(),
+                        tabsObj[i]["backgroundcolor"][1].GetDouble(), tabsObj[i]["backgroundcolor"][2].GetDouble());
+                    ptrNode->widgetInfos.push_back(info);
+                }
+            }
         }
 
         const rapidjson::Value& geomObj = widObj["geometry"];
@@ -232,6 +272,11 @@ PtrLayoutNode readLayout(const QString& content)
     QByteArray bytes = content.toUtf8();
     doc.Parse(bytes);
     return _readLayout(doc.GetObject());
+}
+
+PtrLayoutNode readLayout(const rapidjson::Value& objValue)
+{
+    return _readLayout(objValue);
 }
 
 int getDockSize(PtrLayoutNode root, bool bHori)

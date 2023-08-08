@@ -66,6 +66,16 @@ protected:
     static const int sToolbarHeight;
 };
 
+struct DockContentWidgetInfo {
+    double resolution;
+    bool lock;
+    double colorR;
+    double colorG;
+    double colorB;
+    DockContentWidgetInfo(double res, bool block, double r, double g, double b) : resolution(res), lock(block), colorR(r), colorG(g), colorB(b) {}
+    DockContentWidgetInfo() : resolution(0.0), lock(true), colorR(0.18f), colorG(0.20f), colorB(0.22f) {}
+};
+
 class DockContent_Parameter : public DockToolbarWidget
 {
     Q_OBJECT

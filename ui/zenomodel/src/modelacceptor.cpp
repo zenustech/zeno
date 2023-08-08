@@ -69,6 +69,11 @@ void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)
     m_recordInfo.bAov = info.bAov;
 }
 
+void ModelAcceptor::setLayoutInfo(const LAYOUT_SETTING& info)
+{
+    m_layoutInfo = info;
+}
+
 TIMELINE_INFO ModelAcceptor::timeInfo() const
 {
     return m_timeInfo;
@@ -77,6 +82,11 @@ TIMELINE_INFO ModelAcceptor::timeInfo() const
 RECORD_SETTING ModelAcceptor::recordInfo() const
 {
     return m_recordInfo;
+}
+
+LAYOUT_SETTING ModelAcceptor::layoutInfo() const
+{
+    return m_layoutInfo;
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)

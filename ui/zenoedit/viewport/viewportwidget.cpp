@@ -99,6 +99,16 @@ void ViewportWidget::setSimpleRenderOption() {
     m_pauseRenderDally->start(simpleRenderTime*1000);  // Second to millisecond
 }
 
+void ViewportWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
+{
+    std::get<0>(viewInfo) = info.resolution;
+    std::get<1>(viewInfo) = info.lock;
+    std::get<2>(viewInfo) = info.colorR;
+    std::get<3>(viewInfo) = info.colorG;
+    std::get<4>(viewInfo) = info.colorB;
+    std::get<5>(viewInfo) = true;
+}
+
 ViewportWidget::~ViewportWidget()
 {
     //testCleanUp();
@@ -134,6 +144,11 @@ void ViewportWidget::initializeGL()
     m_zenovis->initializeGL();
     ZASSERT_EXIT(m_picker);
     m_picker->initialize();
+    if (std::get<5>(viewInfo))
+    {
+        m_zenovis->getSession()->get_scene()->camera->set_safe_frames(std::get<1>(viewInfo), std::get<0>(viewInfo));
+        m_zenovis->getSession()->set_background_color(std::get<2>(viewInfo), std::get<3>(viewInfo), std::get<4>(viewInfo));
+    }
 }
 
 void ViewportWidget::resizeGL(int nx, int ny)

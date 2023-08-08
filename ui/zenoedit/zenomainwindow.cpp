@@ -437,6 +437,7 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
     }
     else if (root->type == NT_ELEM)
     {
+        int dockContentViewIndex = 0;
         root->pWidget = pLeft;
         for (QString tab : root->tabs)
         {
@@ -447,7 +448,13 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
                 if (type == PANEL_OPTIX_VIEW)
                     type = PANEL_GL_VIEW;
             #endif
+                if (type == PANEL_GL_VIEW && root->widgetInfos.size() != 0)
+                {
+                pLeft->onAddTab(type, root->widgetInfos[dockContentViewIndex++]);
+                }
+                else {
                 pLeft->onAddTab(type);
+                }
             }
         }
     }
@@ -1455,6 +1462,7 @@ bool ZenoMainWindow::openFile(QString filePath)
 
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
+    resetDocks(pGraphs->layoutInfo().layerOutNode);
     return true;
 }
 
@@ -1769,6 +1777,8 @@ bool ZenoMainWindow::saveFile(QString filePath)
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
     settings.recordInfo = zenoApp->graphsManagment()->recordInfo();
+    settings.layoutInfo.layerOutNode = m_layoutRoot;
+    settings.layoutInfo.size = size();
     zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;

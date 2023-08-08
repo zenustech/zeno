@@ -84,6 +84,12 @@ void Camera::set_safe_frames(bool bLock, int nx, int ny) {
     m_safe_frames = (float)nx / ny;
 }
 
+void Camera::set_safe_frames(bool bLock, float safeframes)
+{
+    m_block_window = bLock;
+    m_safe_frames = safeframes;
+}
+
 float Camera::get_safe_frames() const {
     return m_safe_frames;
 }

@@ -48,6 +48,10 @@ namespace iotags {
         constexpr const char* bAutoRemoveCache = "auto-remove-cache";
         constexpr const char* bAov = "aov";
     }
+
+    namespace layoutinfo {
+        constexpr const char* layout = "layout";
+    }
 }
 
 }

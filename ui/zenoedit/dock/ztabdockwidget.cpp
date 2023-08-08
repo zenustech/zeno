@@ -13,7 +13,6 @@
 #include "zenomainwindow.h"
 #include "zenoapplication.h"
 #include <zenomodel/include/graphsmanagment.h>
-#include "docktabcontent.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoui/comctrl/zicontoolbutton.h>
 #include <zenomodel/include/modelrole.h>
@@ -567,6 +566,19 @@ void ZTabDockWidget::onAddTab(PANEL_TYPE type)
         int idx = m_tabWidget->addTab(wid, name);
         m_debugPanel = type;
         m_tabWidget->setCurrentIndex(idx);
+    }
+}
+
+void ZTabDockWidget::onAddTab(PANEL_TYPE type, DockContentWidgetInfo info)
+{
+    onAddTab(type);
+    QWidget* wid = m_tabWidget->currentWidget();
+    if (type == PANEL_GL_VIEW)
+    {
+        if (DockContent_View* view = qobject_cast<DockContent_View*>(wid))
+        {
+            view->getDisplayWid()->setViewWidgetInfo(info);
+        }
     }
 }
 

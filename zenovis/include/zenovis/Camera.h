@@ -56,6 +56,7 @@ struct Camera {
 
     void setResolution(int nx, int ny);
     void set_safe_frames(bool bLock, int nx, int ny);
+    void set_safe_frames(bool bLock, float safeframes);
     float get_safe_frames() const;
     bool is_locked_window() const;
     void setCamera(zeno::CameraData const &cam);

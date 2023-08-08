@@ -2,6 +2,9 @@
 #define __ZENO_COMMON_H__
 
 #include <QModelIndex>
+#include <QSize>
+
+struct LayerOutNode;
 
 struct TIMELINE_INFO
 {
@@ -32,10 +35,16 @@ struct RECORD_SETTING
     RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(false), bAov(false) {}
 };
 
+struct LAYOUT_SETTING {
+    std::shared_ptr<LayerOutNode> layerOutNode;
+    QSize size;
+};
+
 struct APP_SETTINGS
 {
     TIMELINE_INFO timeline;
     RECORD_SETTING recordInfo;
+    LAYOUT_SETTING layoutInfo;
     //todo: other settings.
 };
 
