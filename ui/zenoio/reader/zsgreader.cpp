@@ -518,11 +518,17 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
                 QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
                 pAcceptor->setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
             }
+            bool bLinkRef = false;
             if (sockObj.HasMember("link-ref"))
             {
-                bool bLinkRef = sockObj["link-ref"].GetBool();
-                pAcceptor->setOutputSocket(id, outSock, bLinkRef);
+                bLinkRef = sockObj["link-ref"].GetBool();
             }
+            QString type;
+            if (sockObj.HasMember("type"))
+            {
+                type = sockObj["type"].GetString();
+            }
+            pAcceptor->setOutputSocket(id, outSock, bLinkRef, type);
         }
     }
 }

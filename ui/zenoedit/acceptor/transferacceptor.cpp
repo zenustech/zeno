@@ -335,7 +335,7 @@ void TransferAcceptor::setInputSocket2(
     }
 }
 
-void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef)
+void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef, const QString& type)
 {
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
     NODE_DATA& data = m_nodes[inNode];
@@ -345,6 +345,7 @@ void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inS
         if (outputs.find(inSock) != outputs.end())
         {
             outputs[inSock].info.bLinkRef = bLinkRef;
+            outputs[inSock].info.type = type;
             data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
         }
 }
