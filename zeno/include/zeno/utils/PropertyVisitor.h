@@ -1,15 +1,16 @@
 #ifndef ZENO_PROPERTYVISITOR_H
 #define ZENO_PROPERTYVISITOR_H
 
+#include "Timer.h"
 #include <functional>
-#include <type_traits>
-#include <tuple>
-#include <optional>
-#include <utility>
-#include <string>
 #include <map>
-#include <zeno/zeno.h>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 #include <zeno/utils/logger.h>
+#include <zeno/zeno.h>
 
 namespace zeno {
 
@@ -90,12 +91,14 @@ namespace zeno {
             }
 
             inline void ReadObject(INode* Node) {
+                zeno::log_debug("[AutoNode] Reading zany '{}'", KeyName);
                 if (!IsOptional || Node->has_input(KeyName)) {
                     ValueRef = Node->get_input<RawType_t<Type>>(KeyName);
                 }
             }
 
             inline void ReadPrimitiveValue(INode* Node) {
+                zeno::log_debug("[AutoNode] Reading primitive value '{}'", KeyName);
                 if (!IsOptional || Node->has_input(KeyName)) {
                     ValueRef = Node->get_input2<RawType_t<Type>>(KeyName);
                 }
@@ -168,8 +171,20 @@ namespace zeno {
             ZENO_API IAutoNode() = default;
 
             void preApply() override {
+                for (auto const &[ds, bound]: inputBounds) {
+                    requireInput(ds);
+                }
+
                 AutoParameter = std::make_unique<NodeParameterType>( this );
-                INode::preApply();
+
+                log_debug("==> enter {}", myname);
+                {
+#ifdef ZENO_BENCHMARKING
+                    Timer _(myname);
+#endif
+                    apply();
+                }
+                log_debug("==> leave {}", myname);
             }
 
             void complete() override {
