@@ -258,6 +258,19 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
         if (!nodes.isEmpty())
         {
             const QModelIndex& idx = nodes[0];
+            const QAbstractItemModel* pSubgModel = idx.model();
+            if (pSubgModel)
+            {
+                connect(pSubgModel, &QAbstractItemModel::dataChanged, this, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+                    if (roles.isEmpty())
+                    return;
+                    int role = roles[0];
+                    if (role != ROLE_CUSTOM_OBJNAME)
+                        return;
+                    m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
+                });
+            }
+
             if (select) {
                 m_plblName->setText(idx.data(ROLE_OBJID).toString());
                 m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
