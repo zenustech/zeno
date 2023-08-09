@@ -263,7 +263,7 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
             {
                 connect(pSubgModel, &QAbstractItemModel::dataChanged, this, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
                     if (roles.isEmpty())
-                    return;
+                        return;
                     int role = roles[0];
                     if (role != ROLE_CUSTOM_OBJNAME)
                         return;
