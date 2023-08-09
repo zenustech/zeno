@@ -101,12 +101,13 @@ void ViewportWidget::setSimpleRenderOption() {
 
 void ViewportWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
 {
-    std::get<0>(viewInfo) = info.resolution;
-    std::get<1>(viewInfo) = info.lock;
-    std::get<2>(viewInfo) = info.colorR;
-    std::get<3>(viewInfo) = info.colorG;
-    std::get<4>(viewInfo) = info.colorB;
-    std::get<5>(viewInfo) = true;
+    std::get<0>(viewInfo) = info.resolutionX;
+    std::get<1>(viewInfo) = info.resolutionY;
+    std::get<2>(viewInfo) = info.lock;
+    std::get<3>(viewInfo) = info.colorR;
+    std::get<4>(viewInfo) = info.colorG;
+    std::get<5>(viewInfo) = info.colorB;
+    loadSettingFromZsg = true;
 }
 
 ViewportWidget::~ViewportWidget()
@@ -144,10 +145,14 @@ void ViewportWidget::initializeGL()
     m_zenovis->initializeGL();
     ZASSERT_EXIT(m_picker);
     m_picker->initialize();
-    if (std::get<5>(viewInfo))
+    if (loadSettingFromZsg)
     {
-        m_zenovis->getSession()->get_scene()->camera->set_safe_frames(std::get<1>(viewInfo), std::get<0>(viewInfo));
-        m_zenovis->getSession()->set_background_color(std::get<2>(viewInfo), std::get<3>(viewInfo), std::get<4>(viewInfo));
+        auto session = m_zenovis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        scene->camera->setResolutionInfo(std::get<2>(viewInfo), std::get<0>(viewInfo), std::get<1>(viewInfo));
+        session->set_background_color(std::get<3>(viewInfo), std::get<4>(viewInfo), std::get<5>(viewInfo));
     }
 }
 

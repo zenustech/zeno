@@ -226,6 +226,9 @@ void DisplayWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
     {
         m_glView->setViewWidgetInfo(info);
     }
+    else {
+        m_optixView->setSafeFrames(info.lock, info.resolutionX, info.resolutionY);
+    }
 }
 
 #ifdef ZENO_OPTIX_PROC

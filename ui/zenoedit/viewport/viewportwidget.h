@@ -73,7 +73,8 @@ private:
     std::shared_ptr<zeno::Picker> m_picker;
     std::shared_ptr<zeno::FakeTransformer> m_fakeTrans;
 
-    std::tuple<double, bool, double, double, double, bool>viewInfo{ 0, true, 0, 0, 0, false };
+    std::tuple<int, int, bool, double, double, double>viewInfo{ 0, 0, true, 0, 0, 0 };
+    bool loadSettingFromZsg = false;
 
 public:
     int simpleRenderTime;

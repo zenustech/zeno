@@ -448,9 +448,10 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
                 if (type == PANEL_OPTIX_VIEW)
                     type = PANEL_GL_VIEW;
             #endif
-                if (type == PANEL_GL_VIEW && root->widgetInfos.size() != 0)
+                if ((type == PANEL_GL_VIEW || type == PANEL_OPTIX_VIEW) && root->widgetInfos.size() != 0)
                 {
-                pLeft->onAddTab(type, root->widgetInfos[dockContentViewIndex++]);
+                    if (dockContentViewIndex < root->widgetInfos.size())
+                        pLeft->onAddTab(type, root->widgetInfos[dockContentViewIndex++]);
                 }
                 else {
                 pLeft->onAddTab(type);

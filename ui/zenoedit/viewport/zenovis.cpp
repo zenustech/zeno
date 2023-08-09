@@ -33,7 +33,8 @@ void Zenovis::loadGLAPI(void *procaddr)
 
 void Zenovis::initializeGL()
 {
-    session = std::make_unique<zenovis::Session>();
+    if (!session)
+        session = std::make_unique<zenovis::Session>();
 }
 
 void Zenovis::paintGL()

@@ -126,15 +126,15 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
                 }
                 else if (qobject_cast<DockContent_View*>(wid)) {
                     DockContent_View* pView = qobject_cast<DockContent_View*>(wid);
+                    auto dpwid = pView->getDisplayWid();
+                    ZASSERT_EXIT(dpwid);
+                    auto vis = dpwid->getZenoVis();
+                    ZASSERT_EXIT(vis);
+                    auto session = vis->getSession();
+                    ZASSERT_EXIT(session);
+                    writer.StartObject();
                     if (pView->isGLView()) {
-                        auto dpwid = pView->getDisplayWid();
-                        ZASSERT_EXIT(dpwid);
-                        auto vis = dpwid->getZenoVis();
-                        ZASSERT_EXIT(vis);
-                        auto session = vis->getSession();
-                        ZASSERT_EXIT(session);
                         auto [r, g, b] = session->get_background_color();
-                        writer.StartObject();
                         writer.Key("type");
                         writer.String("View");
                         writer.Key("backgroundcolor");
@@ -143,14 +143,21 @@ static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRIT
                         writer.Double(g);
                         writer.Double(b);
                         writer.EndArray();
-                        writer.Key("resolution");
-                        writer.Double(session->get_safe_frames());
-                        writer.Key("lock");
-                        writer.Bool(session->is_lock_window());
-                        writer.EndObject();
                     }
-                    else
+                    else {
+                        writer.Key("type");
                         writer.String("Optix");
+                    }
+                    std::tuple<int, int> resolution = pView->curResolution();
+                    writer.Key("blockwindow");
+                    writer.Bool(session->is_lock_window());
+                    writer.Key("resolutionX");
+                    writer.Int(std::get<0>(resolution));
+                    writer.Key("resolutionY");
+                    writer.Int(std::get<1>(resolution));
+                    writer.Key("resolution-combobox-index");
+                    writer.Int(pView->curResComboBoxIndex());
+                    writer.EndObject();
                 }
                 else if (qobject_cast<ZenoSpreadsheet*>(wid)) {
                     writer.String("Data");
@@ -227,9 +234,15 @@ static PtrLayoutNode _readLayout(const rapidjson::Value& objValue)
                 if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "View")
                 {
                     ptrNode->tabs.push_back("View");
-                    DockContentWidgetInfo info(tabsObj[i]["resolution"].GetDouble(),
-                        tabsObj[i]["lock"].GetBool(), tabsObj[i]["backgroundcolor"][0].GetDouble(),
+                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt(), tabsObj[i]["backgroundcolor"][0].GetDouble(),
                         tabsObj[i]["backgroundcolor"][1].GetDouble(), tabsObj[i]["backgroundcolor"][2].GetDouble());
+                    ptrNode->widgetInfos.push_back(info);
+                }else if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "Optix")
+                {
+                    ptrNode->tabs.push_back("Optix");
+                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt());
                     ptrNode->widgetInfos.push_back(info);
                 }
             }

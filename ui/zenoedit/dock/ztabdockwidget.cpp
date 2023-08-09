@@ -193,6 +193,7 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         {
             DockContent_View* wid = new DockContent_View(true);
             wid->initUI();
+            wid->getDisplayWid()->getZenoVis()->initializeGL();
             return wid;
         }
         case PANEL_EDITOR:
@@ -573,12 +574,11 @@ void ZTabDockWidget::onAddTab(PANEL_TYPE type, DockContentWidgetInfo info)
 {
     onAddTab(type);
     QWidget* wid = m_tabWidget->currentWidget();
-    if (type == PANEL_GL_VIEW)
+    if (DockContent_View* view = qobject_cast<DockContent_View*>(wid))
     {
-        if (DockContent_View* view = qobject_cast<DockContent_View*>(wid))
-        {
-            view->getDisplayWid()->setViewWidgetInfo(info);
-        }
+        view->getDisplayWid()->setViewWidgetInfo(info);
+        view->setResComboBoxIndex(info.comboboxindex);
+        view->initResolution(info.resolutionX, info.resolutionY);
     }
 }
 
