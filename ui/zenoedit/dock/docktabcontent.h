@@ -66,6 +66,19 @@ protected:
     static const int sToolbarHeight;
 };
 
+struct DockContentWidgetInfo {
+    int resolutionX;
+    int resolutionY;
+    bool lock;
+    int comboboxindex;
+    double colorR;
+    double colorG;
+    double colorB;
+    DockContentWidgetInfo(int resX, int resY, bool block, int index, double r, double g, double b) : resolutionX(resX), resolutionY(resY), lock(block), comboboxindex(index), colorR(r), colorG(g), colorB(b) {}
+    DockContentWidgetInfo(int resX, int resY, bool block, int index) : resolutionX(resX), resolutionY(resY), lock(block), comboboxindex(index) {}
+    DockContentWidgetInfo() : resolutionX(0), resolutionY(0), lock(false), comboboxindex(0), colorR(0.18f), colorG(0.20f), colorB(0.22f) {}
+};
+
 class DockContent_Parameter : public DockToolbarWidget
 {
     Q_OBJECT
@@ -131,6 +144,11 @@ public:
     QSize viewportSize() const;
     void onTabAboutToClose() override;
 
+    int curResComboBoxIndex();
+    void setResComboBoxIndex(int index);
+    std::tuple<int, int> curResolution();
+    void initResolution(int nx, int ny);
+
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
     QWidget *initWidget() override;
@@ -166,6 +184,7 @@ private:
     QAction *m_scale;
 
     const bool m_bGLView;
+    int nx = -1, ny = -1;   //resolution;
 };
 
 class DockContent_Log : public DockToolbarWidget

@@ -220,6 +220,17 @@ bool DisplayWidget::isGLViewport() const
     return m_bGLView;
 }
 
+void DisplayWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
+{
+    if (m_bGLView)
+    {
+        m_glView->setViewWidgetInfo(info);
+    }
+    else {
+        m_optixView->setSafeFrames(info.lock, info.resolutionX, info.resolutionY);
+    }
+}
+
 #ifdef ZENO_OPTIX_PROC
 ZOptixProcViewport* DisplayWidget::optixViewport() const
 #else

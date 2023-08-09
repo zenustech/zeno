@@ -3,6 +3,8 @@
 
 #include <memory>
 #include <QtWidgets>
+#include <zenomodel/include/jsonhelper.h>
+#include "../dock/docktabcontent.h"
 
 struct LayerOutNode;
 class ZTabDockWidget;
@@ -23,14 +25,17 @@ struct LayerOutNode {
     ZTabDockWidget *pWidget;
     QStringList tabs;
     QRectF geom;
+    QVector<DockContentWidgetInfo> widgetInfos;
 };
 
 PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget *pWidget);
 PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget *pWidget);
 void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString& filePath);
+void writeLayout(PtrLayoutNode root, const QSize& szMainwin, RAPIDJSON_WRITER& writer);
 QString exportLayout(PtrLayoutNode root, const QSize& szMainwin);
 PtrLayoutNode readLayoutFile(const QString& filePath);
 PtrLayoutNode readLayout(const QString& content);
+PtrLayoutNode readLayout(const rapidjson::Value& objValue);
 int getDockSize(PtrLayoutNode root, bool bHori);
 
 #endif

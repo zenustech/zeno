@@ -6,6 +6,7 @@
 #include "variantptr.h"
 #include <zenomodel/include/viewparammodel.h>
 #include <zenomodel/customui/customuirw.h>
+#include <zenoedit/layout/winlayoutrw.h>
 
 using namespace zeno::iotags;
 
@@ -444,6 +445,8 @@ void ZsgWriter::dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer)
         writer.Int(info.currFrame);
         writer.Key(timeline::always);
         writer.Bool(info.bAlways);
+        writer.Key(timeline::fps_idx);
+        writer.Int(info.fpsIdx);
     }
 }
 
@@ -508,7 +511,7 @@ void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writ
     JsonObjBatch batch(writer);
     {
         writer.Key("recordinfo");
-        JsonObjBatch batch(writer);
+        writer.StartObject();
         writer.Key(recordinfo::record_path);
         writer.String(info.record_path.toUtf8());
         writer.Key(recordinfo::videoname);
@@ -533,6 +536,10 @@ void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writ
         writer.Bool(info.bAutoRemoveCache);
         writer.Key(recordinfo::bAov);
         writer.Bool(info.bAov);
+        writer.EndObject();
+
+        writer.Key("layoutinfo");
+        writeLayout(settings.layoutInfo.layerOutNode, settings.layoutInfo.size, writer);
     }
 }
 

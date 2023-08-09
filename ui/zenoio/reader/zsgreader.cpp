@@ -8,6 +8,7 @@
 #include "common.h"
 #include <zenomodel/customui/customuirw.h>
 #include "iotags.h"
+#include <zenoedit/layout/winlayoutrw.h>
 
 using namespace zeno::iotags;
 using namespace zeno::iotags::curve;
@@ -314,6 +315,10 @@ void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* 
     info.endFrame = jsonTimeline[timeline::end_frame].GetInt();
     info.currFrame = jsonTimeline[timeline::curr_frame].GetInt();
     info.bAlways = jsonTimeline[timeline::always].GetBool();
+    if (jsonTimeline.HasMember(timeline::fps_idx))
+    {
+        info.fpsIdx = jsonTimeline[timeline::fps_idx].GetInt();
+    }
 
     pAcceptor->setTimeInfo(info);
 }
@@ -349,6 +354,12 @@ void ZsgReader::_parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* 
         info.bAutoRemoveCache = jsonRecordInfo[recordinfo::bAutoRemoveCache].GetBool();
         info.bAov = jsonRecordInfo[recordinfo::bAov].GetBool();
         pAcceptor->setRecordInfo(info);
+    }
+    if (jsonSettings.HasMember("layoutinfo") && jsonSettings["layoutinfo"].IsObject())
+    {
+        LAYOUT_SETTING layout;
+        layout.layerOutNode = readLayout(jsonSettings["layoutinfo"]);
+        pAcceptor->setLayoutInfo(layout);
     }
 }
 

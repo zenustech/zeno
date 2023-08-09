@@ -437,6 +437,7 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
     }
     else if (root->type == NT_ELEM)
     {
+        int dockContentViewIndex = 0;
         root->pWidget = pLeft;
         for (QString tab : root->tabs)
         {
@@ -447,7 +448,14 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
                 if (type == PANEL_OPTIX_VIEW)
                     type = PANEL_GL_VIEW;
             #endif
+                if ((type == PANEL_GL_VIEW || type == PANEL_OPTIX_VIEW) && root->widgetInfos.size() != 0)
+                {
+                    if (dockContentViewIndex < root->widgetInfos.size())
+                        pLeft->onAddTab(type, root->widgetInfos[dockContentViewIndex++]);
+                }
+                else {
                 pLeft->onAddTab(type);
+                }
             }
         }
     }
@@ -1455,6 +1463,7 @@ bool ZenoMainWindow::openFile(QString filePath)
 
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
+    resetDocks(pGraphs->layoutInfo().layerOutNode);
     return true;
 }
 
@@ -1738,6 +1747,8 @@ void ZenoMainWindow::save()
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel* pModel = pGraphsMgm->currentModel();
+    if (!pModel)
+        return;
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
     {
@@ -1767,6 +1778,8 @@ bool ZenoMainWindow::saveFile(QString filePath)
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
     settings.recordInfo = zenoApp->graphsManagment()->recordInfo();
+    settings.layoutInfo.layerOutNode = m_layoutRoot;
+    settings.layoutInfo.size = size();
     zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;
@@ -1787,6 +1800,7 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     info.bAlways = m_bAlways;
     info.beginFrame = m_pTimeline->fromTo().first;
     info.endFrame = m_pTimeline->fromTo().second;
+    info.fpsIdx = m_pTimeline->fpsIdx();
     return info;
 }
 
@@ -1820,6 +1834,7 @@ void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
     setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
+    m_pTimeline->initFps(info.fpsIdx);
 }
 
 void ZenoMainWindow::onFeedBack()
