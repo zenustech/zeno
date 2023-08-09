@@ -43,7 +43,8 @@ public:
     void setOutputSocket(
         const QString& inNode,
         const QString& inSock,
-        const bool& bLinkRef
+        const bool& bLinkRef,
+        const QString& type
     ) override;
 
     void addInnerDictKey(

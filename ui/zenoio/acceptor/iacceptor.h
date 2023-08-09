@@ -48,7 +48,8 @@ public:
     virtual void setOutputSocket(
         const QString& inNode,
         const QString& inSock,
-        const bool& bLinkRef
+        const bool& bLinkRef,
+        const QString& type
     ) = 0;
 
     virtual void addInnerDictKey(

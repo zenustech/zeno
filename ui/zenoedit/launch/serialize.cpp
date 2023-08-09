@@ -64,6 +64,34 @@ void resolveOutputSocket(
 }
 
 
+static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
+{
+    if (sockType == "int" ||
+        sockType == "float" ||
+        sockType.startsWith("vec") ||
+        (defl.type() == QVariant::String && defl.toString().startsWith("="))) {
+        if (defl.canConvert<CURVES_DATA>())
+            opStr = "setKeyFrame";
+        else if (defl.type() == QVariant::String) {
+            opStr = "setFormula";
+        }
+        else if (defl.canConvert<UI_VECSTRING>()) {
+            UI_VECSTRING vec = defl.value<UI_VECSTRING>();
+            QString code = "vec3(";
+            for (int i = 0; i < vec.size(); i++)
+            {
+                code += vec.at(i);
+                if (i < vec.size() - 1)
+                    code += ",";
+                else
+                    code += ")";
+            }
+            defl = code;
+            opStr = "setFormula";
+        }
+    }
+}
+
 static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
@@ -196,29 +224,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
                 const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
                 QString opStr = "setNodeInput";
-                if (sockType == "int" || 
-                    sockType == "float" || 
-                    sockType.startsWith("vec") ||
-                    (defl.type() == QVariant::String && defl.toString().startsWith("="))) {
-                    if (defl.canConvert<CURVES_DATA>())
-                        opStr = "setKeyFrame";
-                    else if (defl.type() == QVariant::String) {
-                        opStr = "setFormula";
-                    } else if (defl.canConvert<UI_VECSTRING>()) {
-                        UI_VECSTRING vec = defl.value<UI_VECSTRING>();
-                        QString code = "vec3(";
-                        for (int i = 0; i < vec.size(); i++)
-                        {
-                            code += vec.at(i);
-                            if (i < vec.size() - 1)
-                                code += ",";
-                            else
-                                code += ")";
-                        }
-                        defl = code;
-                        opStr = "setFormula";
-                    }
-                }
+                getOptStr(sockType, defl, opStr);
                 if (opStr == "setNodeInput") {
                     defl = UiHelper::parseVarByType(sockType, defl, nullptr);
                 }
@@ -248,7 +254,12 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             QVariant paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
             if (paramValue.isNull())
                 continue;
-            AddParams("setNodeParam", ident, param_info.name, paramValue, param_info.typeDesc, writer);
+            QString opStr = "setNodeParam";
+            getOptStr(param_info.typeDesc, paramValue, opStr);
+            QString paramName = param_info.name;
+            if (opStr != "setNodeParam")
+                paramName += ":";
+            AddParams(opStr, ident, paramName, paramValue, param_info.typeDesc, writer);
 		}
 
         if (opts & OPT_ONCE) {

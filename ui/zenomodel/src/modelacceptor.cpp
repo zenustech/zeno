@@ -434,7 +434,7 @@ void ModelAcceptor::setInputSocket2(
     }
 }
 
-void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef)
+void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef, const QString& type)
 {
     if (!m_currentGraph)
         return;
@@ -448,6 +448,10 @@ void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock
     if (bLinkRef)
     {
         pModel->setData(sockIdx, bLinkRef, ROLE_VPARAM_REF);
+    }
+    if (!type.isEmpty())
+    {
+        pModel->setData(sockIdx, type, ROLE_PARAM_TYPE);
     }
 }
 
