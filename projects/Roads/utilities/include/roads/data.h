@@ -17,6 +17,7 @@ namespace roads {
 
     struct Point : public Eigen::Vector3d {
         Point(const std::array<float, 3>& InArray) : Eigen::Vector3d(InArray[0], InArray[1], InArray[2]) {}
+        Point() = default;
     };
 
     struct Triangle : public std::array<Point, 3> {

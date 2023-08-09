@@ -18,7 +18,7 @@ roads::DynamicGrid<GridType> BuildGridFromPrimitive(const zeno::AttrVector<zeno:
 
     roads::DynamicGrid<GridType> Grid(Nx, Ny);
     for (size_t i = 0; i < Nx * Ny; ++i) {
-        Grid[i] = roads::Point { DataSource[i][0], DataSource[i][0], DataSource[i][0] };
+        Grid[i] = DataSource[i];
     }
 
     return Grid;
@@ -53,7 +53,7 @@ namespace {
         ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, PositionList, "pos", zeno::reflect::EZenoPrimitiveAttr::VERT);
 
         void apply() override {
-//            BuildGridFromPrimitive(PositionList, Nx, Ny);
+            BuildGridFromPrimitive(PositionList, Nx, Ny);
             zeno::log_info("aaa: {} {}", AutoParameter->Nx, AutoParameter->Ny);
         }
     };
