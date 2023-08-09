@@ -5,10 +5,13 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
+#include <zeno/types/CurveObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/utils/log.h>
 #include <random>
 #include <vector>
+
+#include <glm/gtx/quaternion.hpp>
 
 namespace zeno
 {
@@ -2568,6 +2571,108 @@ ZENDEFNODE(HF_maskByFeature,
                    "erode",
                }});
 
+struct HF_rotate_displacement_2d : INode {
+    void apply() override {
+        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
+        auto& var = terrain->verts.attr<vec3f>("var");
+        auto& pos = terrain->verts.attr<vec3f>("pos");
+
+        auto angle = get_input<NumericObject>("Rotate Displacement")->get<float>();
+        float gl_angle = glm::radians(angle);
+        glm::vec3 gl_axis(0.0, 1.0, 0.0);
+        glm::quat gl_quat = glm::angleAxis(gl_angle, gl_axis);
+
+#pragma omp parallel for
+        for (int i = 0; i < terrain->verts.size(); i++)
+        {
+            glm::vec3 ret{};// = glm::vec3(0, 0, 0);
+            ret = glm::rotate(
+                    gl_quat,
+                    glm::vec3(var[i][0], var[i][1], var[i][2])
+            );
+            pos[i] -= vec3f(ret.x, ret.y, ret.z);
+        }
+
+        set_output("prim_2DGrid", get_input("prim_2DGrid"));
+    }
+};
+ZENDEFNODE(HF_rotate_displacement_2d,
+           { /* inputs: */ {
+               "prim_2DGrid",
+               {"float", "Rotate Displacement", "0"}
+           }, /* outputs: */ {
+               "prim_2DGrid",
+           }, /* params: */ {
+           }, /* category: */ {
+               "erode",
+           } });
+
+struct HF_remap : INode {
+    void apply() override {
+        auto terrain = get_input<PrimitiveObject>("prim");
+        auto& var = terrain->verts.attr<float>(get_input2<std::string>("remap layer"));
+        auto inMin = get_input2<float>("input min");
+        auto inMax = get_input2<float>("input max");
+        auto outMin = get_input2<float>("output min");
+        auto outMax = get_input2<float>("output max");
+        auto curve = get_input<CurveObject>("remap ramp");
+        auto clampMin = get_input2<bool>("clamp min");
+        auto clampMax = get_input2<bool>("clamp max");
+#pragma omp parallel for
+        for (int i = 0; i < terrain->verts.size(); i++)
+        {
+            if (var[i] < inMin)
+            {
+                if (clampMin)
+                {
+                    var[i] = outMin;
+                }
+                else
+                {
+                    var[i] -= inMin;
+                    var[i] += outMin;
+                }
+            }
+            else if (var[i] > inMax)
+            {
+                if (clampMax)
+                {
+                    var[i] = outMax;
+                }
+                else
+                {
+                    var[i] -= inMax;
+                    var[i] += outMax;
+                }
+            }
+            else
+            {
+                var[i] = fit(var[i], inMin, inMax, 0, 1);
+                var[i] = curve->eval(var[i]);
+                var[i] = fit(var[i], 0, 1, outMin, outMax);
+            }
+        }
+
+        set_output("prim", get_input("prim"));
+    }
+};
+ZENDEFNODE(HF_remap,
+           { /* inputs: */ {
+               "prim",
+               {"string", "remap layer", "height"},
+               {"float", "input min", "0"},
+               {"float", "input max", "1"},
+               {"float", "output min", "0"},
+               {"float", "output max", "1"},
+               {"curve", "remap ramp"},
+               {"bool", "clamp min", "0"},
+               {"bool", "clamp max", "0"}
+           }, /* outputs: */ {
+               "prim",
+           }, /* params: */ {
+           }, /* category: */ {
+               "erode",
+           } });
 } // namespace
 } // namespace zeno

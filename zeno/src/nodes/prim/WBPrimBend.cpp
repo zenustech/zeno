@@ -1740,6 +1740,5 @@ ZENDEFNODE(PrimHasAttr,
                    "erode",
                }});
 
-
 } // namespace
 } // namespace zeno

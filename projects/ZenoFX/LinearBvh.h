@@ -31,16 +31,22 @@ struct LBvh : IObjectClone<LBvh> {
   std::vector<Box> sortedBvs;
   std::vector<Ti> auxIndices, levels, parents, leafIndices;
   float thickness{0};
+  std::string radiusAttr{""};
   element_e eleCategory{element_e::point}; // element category
 
   LBvh() noexcept = default;
   LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness = 0.f) {
-    build(prim, thickness);
+    build(prim, thickness, radiusAttr);
   }
   template <element_e et>
   LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
        element_t<et> t) {
-    build(prim, thickness, t);
+    build(prim, thickness, radiusAttr, t);
+  }
+  template <element_e et>
+  LBvh(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr,
+       element_t<et> t) {
+    build(prim, thickness, radiusAttr, t);
   }
 
   std::size_t getNumLeaves() const noexcept { return leafIndices.size(); }
@@ -48,9 +54,12 @@ struct LBvh : IObjectClone<LBvh> {
   BvFunc getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const;
 
   template <element_e et>
-  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness,
+  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr,
              element_t<et>);
-  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness);
+
+  void build(const std::shared_ptr<PrimitiveObject> &prim, float thickness, std::string radiusAttr);
+
+
   void refit();
 
   static bool intersect(const Box &box, const TV &p) noexcept {
@@ -60,6 +69,24 @@ struct LBvh : IObjectClone<LBvh> {
         return false;
     return true;
   }
+
+  static bool intersect_radius(const Box &box, const TV &p, const float radius) noexcept {
+  constexpr int dim = 3;
+  float sqDist = 0.0;
+  for (Ti d = 0; d != dim; ++d) {
+    if (p[d] < box.first[d]) {
+      float diff = box.first[d] - p[d];
+      sqDist += diff * diff;
+    } else if (p[d] > box.second[d]) {
+      float diff = p[d] - box.second[d];
+      sqDist += diff * diff;
+    }
+  }
+  float sqRadius = radius * radius;
+  return sqDist <= sqRadius;
+}
+
+
   static float distance(const Box &bv, const TV &x) {
     const auto &[mi, ma] = bv;
     TV center = (mi + ma) / 2;
@@ -175,6 +202,32 @@ struct LBvh : IObjectClone<LBvh> {
         node = auxIndices[node];
     }
   }
+
+    template <class F> void iter_neighbors_radius(TV const &pos, float radius, F &&f) const {
+    if (auto numLeaves = getNumLeaves(); numLeaves <= 2) {
+      for (Ti i = 0; i != numLeaves; ++i) {
+        if (intersect_radius(sortedBvs[i], pos, radius))
+          f(auxIndices[i]);
+      }
+      return;
+    }
+    const Ti numNodes = sortedBvs.size();
+    Ti node = 0;
+    while (node != -1 && node != numNodes) {
+      Ti level = levels[node];
+      for (; level; --level, ++node)
+        if (!intersect_radius(sortedBvs[node], pos, radius))
+          break;
+      if (level == 0) {
+        if (intersect_radius(sortedBvs[node], pos, radius))
+          f(auxIndices[node]);
+        node++;
+      } else
+        node = auxIndices[node];
+    }
+  }
+
+
 };
 
 } // namespace zeno
