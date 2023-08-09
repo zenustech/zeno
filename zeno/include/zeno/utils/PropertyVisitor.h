@@ -3,6 +3,7 @@
 
 #include "Timer.h"
 #include <functional>
+#include <iostream>
 #include <map>
 #include <optional>
 #include <string>
@@ -13,6 +14,47 @@
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 
+#if 0
+// Examples
+
+// 1. Split Parameter class and Node class
+struct CalcPathCostParameter : public zeno::reflect::INodeParameterObject<CalcPathCostParameter> {
+    GENERATE_PARAMETER_BODY(CalcPathCostParameter);
+
+    std::shared_ptr<zeno::PrimitiveObject> Primitive;
+    DECLARE_INPUT_FIELD(Primitive, "prim");
+
+    std::string OutputChannel;
+    DECLARE_INPUT_FIELD(OutputChannel, "output_channel");
+
+    std::string OutputTest;
+    DECLARE_OUTPUT_FIELD(OutputTest, "test");
+};
+
+struct CalcPathCost_Simple : public zeno::reflect::IAutoNode<CalcPathCostParameter> {
+    GENERATE_AUTONODE_BODY(CalcPathCost_Simple);
+
+    void apply() override;
+};
+
+// 2. Merge parameter with node
+struct CalcPathCost_Simple : public zeno::reflect::IParameterAutoNode<CalcPathCost_Simple> {
+    GENERATE_NODE_BODY(CalcPathCost_Simple);
+
+    std::shared_ptr<zeno::PrimitiveObject> Primitive;
+    DECLARE_INPUT_FIELD(Primitive, "prim");
+
+    std::string OutputChannel;
+    DECLARE_INPUT_FIELD(OutputChannel, "output_channel");
+
+    std::string OutputTest;
+    DECLARE_OUTPUT_FIELD(OutputTest, "test");
+
+    void apply() override;
+};
+
+#endif
+
 namespace zeno {
 
     using namespace zeno;
@@ -21,7 +63,7 @@ namespace zeno {
     struct reflect {
         static constexpr unsigned int crc_table[256] = {
             0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
-            0xe963a535, 0x9e6495a3,    0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
+            0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
             0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,
             0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7,
             0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9,
@@ -62,23 +104,20 @@ namespace zeno {
             0x40df0b66, 0x37d83bf0, 0xa9bcae53, 0xdebb9ec5, 0x47b2cf7f, 0x30b5ffe9,
             0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693,
             0x54de5729, 0x23d967bf, 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94,
-            0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
-        };
+            0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d};
 
         template<int size, int idx = 0, class dummy = void>
-        struct MM{
-            static constexpr unsigned int crc32(const char * str, unsigned int prev_crc = 0xFFFFFFFF)
-            {
-                return MM<size, idx+1>::crc32(str, (prev_crc >> 8) ^ crc_table[(prev_crc ^ str[idx]) & 0xFF] );
+        struct MM {
+            static constexpr unsigned int crc32(const char *str, unsigned int prev_crc = 0xFFFFFFFF) {
+                return MM<size, idx + 1>::crc32(str, (prev_crc >> 8) ^ crc_table[(prev_crc ^ str[idx]) & 0xFF]);
             }
         };
 
         // This is the stop-recursion function
         template<int size, class dummy>
-        struct MM<size, size, dummy>{
-            static constexpr unsigned int crc32(const char * str, unsigned int prev_crc = 0xFFFFFFFF)
-            {
-                return prev_crc^ 0xFFFFFFFF;
+        struct MM<size, size, dummy> {
+            static constexpr unsigned int crc32(const char *str, unsigned int prev_crc = 0xFFFFFFFF) {
+                return prev_crc ^ 0xFFFFFFFF;
             }
         };
 
@@ -102,14 +141,22 @@ namespace zeno {
         using RawType_t = typename RawType<T>::Type;
 
         template<typename>
-        struct ValueTypeToString {
-            inline static std::string TypeName;
-        };
+        struct ValueTypeToString { inline static std::string TypeName; };
 
         template<>
-        struct ValueTypeToString<zeno::vec3f> {
-            inline static std::string TypeName = "vec3f";
-        };
+        struct ValueTypeToString<zeno::vec3f> { inline static std::string TypeName = "vec3f"; };
+
+        template<>
+        struct ValueTypeToString<std::string> { inline static std::string TypeName = "string"; };
+
+        template<>
+        struct ValueTypeToString<int> { inline static std::string TypeName = "int"; };
+
+        template<>
+        struct ValueTypeToString<float> { inline static std::string TypeName = "float"; };
+
+        template<>
+        struct ValueTypeToString<bool> { inline static std::string TypeName = "bool"; };
 
         struct TypeAutoCallbackList {
             std::vector<std::function<void(INode *)>> InputHook;
@@ -136,14 +183,23 @@ namespace zeno {
             using Super = INodeParameterObject<T>;
             using ThisType = T;
 
-            inline static Descriptor SNDescriptor{};
+            static Descriptor &GetDescriptor() {
+                static Descriptor SNDescriptor{};
+                return SNDescriptor;
+            }
 
             explicit INodeParameterObject(INode *Node);
 
             static T &GetDefaultObject() {
+                static bool bHasInitializedDefaultObject = false;
                 static T ST{nullptr};
-                SNDescriptor.inputs.emplace_back("SRC");
-                SNDescriptor.outputs.emplace_back("DST");
+
+                if (!bHasInitializedDefaultObject) {
+                    GetDescriptor().inputs.emplace_back("SRC");
+                    GetDescriptor().outputs.emplace_back("DST");
+                    bHasInitializedDefaultObject = true;
+                }
+
                 return ST;
             }
         };
@@ -160,9 +216,6 @@ namespace zeno {
             std::string DisplayName;
             std::string DefaultValue;
             bool IsOptional = false;
-
-            inline static bool bHasInitialized = false;
-            inline static SocketDescriptor SDescriptor = {""};
 
             Field(Parent &ParentRef, Type &InValueRef, std::string InKeyName, bool InIsOptional = false, const std::optional<std::string> &InDisplayName = std::nullopt, const std::optional<std::string> &InDefaultValue = std::nullopt)
                 : ValueRef(InValueRef), KeyName(std::move(InKeyName)), IsOptional(InIsOptional) {
@@ -185,10 +238,11 @@ namespace zeno {
                 : Field<ParentType, InputType, Hash>(ParentRef, InValueRef, InKeyName, InIsOptional, InDisplayName, InDefaultValue) {
                 ParentRef.HookList.InputHook.push_back(ToCaptured());
 
+                static bool bHasInitialized = false;
+                static SocketDescriptor SDescriptor = SocketDescriptor{ValueTypeToString<Type>::TypeName, KeyName, DefaultValue, DisplayName};
                 if (!bHasInitialized) {
-                    SDescriptor = SocketDescriptor{ValueTypeToString<Type>::TypeName, KeyName, DefaultValue, DisplayName};
                     bHasInitialized = true;
-                    ParentType::SNDescriptor.inputs.push_back(SDescriptor);
+                    ParentType::GetDescriptor().inputs.push_back(SDescriptor);
                 }
             }
 
@@ -220,7 +274,9 @@ namespace zeno {
 
             std::function<void(INode *)> ToCaptured() override {
                 return [this](INode *Node) {
-                    Read(Node);
+                    if (nullptr != Node) {
+                        Read(Node);
+                    }
                 };
             }
         };
@@ -231,10 +287,12 @@ namespace zeno {
                 : Field<ParentType, InputType, Hash>(ParentRef, InValueRef, InKeyName, InIsOptional, InDisplayName) {
                 ParentRef.HookList.OutputHook.push_back(ToCaptured());
 
+                static bool bHasInitialized = false;
+                static SocketDescriptor SDescriptor = SocketDescriptor{ValueTypeToString<Type>::TypeName, KeyName, DefaultValue, DisplayName};
+
                 if (!bHasInitialized) {
-                    SDescriptor = SocketDescriptor{ValueTypeToString<Type>::TypeName, KeyName, DefaultValue, DisplayName};
                     bHasInitialized = true;
-                    ParentType::SNDescriptor.outputs.push_back(SDescriptor);
+                    ParentType::GetDescriptor().outputs.push_back(SDescriptor);
                 }
             }
 
@@ -247,6 +305,7 @@ namespace zeno {
             }
 
             inline void WritePrimitiveValue(INode *Node) {
+                zeno::log_info("write: {} to {}", KeyName, ValueRef);
                 Node->set_output2(KeyName, ValueRef);
             }
 
@@ -264,19 +323,21 @@ namespace zeno {
 
             std::function<void(INode *)> ToCaptured() override {
                 return [this](INode *Node) {
-                    Write(Node);
+                    if (nullptr != Node) {
+                        Write(Node);
+                    }
                 };
             }
         };
 
         template<typename NodeParameterType>
         struct IAutoNode : public INode {
-            static_assert(std::is_base_of_v<NodeParameterBase, NodeParameterType>);
+            // Can't check incomplete type
+            //static_assert(std::is_base_of_v<NodeParameterBase, NodeParameterType>);
 
             using ParamType = NodeParameterType;
 
             std::unique_ptr<NodeParameterType> AutoParameter = nullptr;
-            inline static bool bHasInitialized = false;
 
             void preApply() override {
                 for (auto const &[ds, bound]: inputBounds) {
@@ -292,13 +353,15 @@ namespace zeno {
 #endif
                     apply();
                 }
+
+                AutoParameter.reset();
                 log_debug("==> leave {}", myname);
             }
+        };
 
-            void complete() override {
-                INode::complete();
-                AutoParameter.reset();
-            }
+        template<typename NodeType>
+        struct IParameterAutoNode : public IAutoNode<NodeType>, public INodeParameterObject<NodeType> {
+            IParameterAutoNode(INode *Node = nullptr) : IAutoNode<NodeType>(), INodeParameterObject<NodeType>(Node) {}
         };
     };
 
@@ -307,29 +370,44 @@ namespace zeno {
     }
 }// namespace zeno
 
-#define GENERATE_AUTONODE_BODY(CLS)                                          \
-    inline static struct R {                                                 \
-        R() {                                                                \
-            const ParamType &PDO = ParamType::GetDefaultObject();            \
-            zeno::getSession().defNodeClass([]() -> std::unique_ptr<INode> { \
-                return std::make_unique<CLS>();                              \
-            },                                                               \
-                                            #CLS, ParamType::SNDescriptor);  \
-        }                                                                    \
-    } AutoStaticRegisterInstance;
+#define GENERATE_AUTONODE_BODY(CLS)                                            \
+    inline static struct R_Do_not_use {                                        \
+        R_Do_not_use() {                                                       \
+            const ParamType &PDO = ParamType::GetDefaultObject();              \
+            zeno::getSession().defNodeClass([]() -> std::unique_ptr<INode> {   \
+                return std::make_unique<CLS>();                                \
+            },                                                                 \
+                                            #CLS, ParamType::GetDescriptor()); \
+        }                                                                      \
+    } AutoStaticRegisterInstance_Do_not_use;
 
-#define GENERATE_PARAMETER_BODY(CLS)                            \
+#define GENERATE_PARAMETER_BODY(CLS)          \
     explicit CLS(INode *Node) : Super(Node) { \
-        if (nullptr != Node) {                                  \
-            RunInputHooks();                                    \
-        }                                                       \
+        if (nullptr != Node) {                \
+            RunInputHooks();                  \
+        }                                     \
     }
 
-// This don't take into account the nul char
-#define COMPILE_TIME_CRC32_STR(x) (zeno::reflect::MM<sizeof(x)-1>::crc32(x))
+#define GENERATE_NODE_BODY(CLS)                                                \
+    CLS() : zeno::reflect::IParameterAutoNode<CLS>(nullptr) {}                 \
+    explicit CLS(INode *Node) : zeno::reflect::IParameterAutoNode<CLS>(Node) {     \
+        if (nullptr != Node) { RunInputHooks(); }                              \
+    }                                                                          \
+    inline static struct R_Do_not_use {                                        \
+        R_Do_not_use() {                                                       \
+            const ParamType &PDO = ParamType::GetDefaultObject();              \
+            zeno::getSession().defNodeClass([]() -> std::unique_ptr<INode> {   \
+                return std::make_unique<CLS>();                                \
+            },                                                                 \
+                                            #CLS, ParamType::GetDescriptor()); \
+        }                                                                      \
+    } AutoStaticRegisterInstance_Do_not_use;
 
-#define DECLARE_FIELD(Type, FieldName, ...) zeno::reflect::Type<ThisType, decltype(FieldName), COMPILE_TIME_CRC32_STR(#FieldName)> FieldName##Field { *this, FieldName, __VA_ARGS__ };
-#define DECLARE_INPUT_FIELD(FieldName, ...) DECLARE_FIELD(InputField, FieldName, __VA_ARGS__)
-#define DECLARE_OUTPUT_FIELD(FieldName, ...) DECLARE_FIELD(OutputField, FieldName, __VA_ARGS__)
+// This don't take into account the nul char
+#define COMPILE_TIME_CRC32_STR(x) (zeno::reflect::MM<sizeof(x) - 1>::crc32(x))
+
+#define DECLARE_FIELD(Type, FieldName, ...) zeno::reflect::Type<ThisType, decltype(FieldName), COMPILE_TIME_CRC32_STR(#FieldName)> FieldName##Field_Do_not_use{*this, FieldName, __VA_ARGS__};
+#define DECLARE_INPUT_FIELD(FieldName, KeyName, ...) DECLARE_FIELD(InputField, FieldName, KeyName, __VA_ARGS__)
+#define DECLARE_OUTPUT_FIELD(FieldName, KeyName, ...) DECLARE_FIELD(OutputField, FieldName, KeyName, __VA_ARGS__)
 
 #endif//ZENO_PROPERTYVISITOR_H

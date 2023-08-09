@@ -30,8 +30,8 @@ roads::DynamicGrid<GridType> BuildGridFromPrimitive(zeno::PrimitiveObject* InPri
 namespace {
     using namespace zeno;
 
-    struct CalcPathCostParameter : public zeno::reflect::INodeParameterObject<CalcPathCostParameter> {
-        GENERATE_PARAMETER_BODY(CalcPathCostParameter);
+    struct CalcPathCost_Simple : public zeno::reflect::IParameterAutoNode<CalcPathCost_Simple> {
+        GENERATE_NODE_BODY(CalcPathCost_Simple);
 
         std::shared_ptr<zeno::PrimitiveObject> Primitive;
         DECLARE_INPUT_FIELD(Primitive, "prim");
@@ -41,15 +41,12 @@ namespace {
 
         std::string OutputTest;
         DECLARE_OUTPUT_FIELD(OutputTest, "test");
-    };
-
-    struct CalcPathCost_Simple : public zeno::reflect::IAutoNode<CalcPathCostParameter> {
-        GENERATE_AUTONODE_BODY(CalcPathCost_Simple);
 
         void apply() override;
     };
 
     void CalcPathCost_Simple::apply() {
         zeno::log_info("aaaaaaaaaaa: {}", AutoParameter->OutputChannel);
+        AutoParameter->OutputTest = "abcdef";
     }
 }

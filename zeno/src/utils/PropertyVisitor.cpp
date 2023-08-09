@@ -4,8 +4,10 @@
 zeno::reflect::NodeParameterBase::NodeParameterBase(zeno::INode *Node) : Target(Node) {}
 
 zeno::reflect::NodeParameterBase::~NodeParameterBase() {
-    for (const auto& Hook : HookList.OutputHook) {
-        Hook(Target);
+    if (nullptr != Target) {
+        for (const auto& Hook : HookList.OutputHook) {
+            Hook(Target);
+        }
     }
 }
 
@@ -17,7 +19,9 @@ zeno::reflect::NodeParameterBase::NodeParameterBase(zeno::reflect::NodeParameter
 }
 
 void zeno::reflect::NodeParameterBase::RunInputHooks() const {
-    for (const auto& Hook : HookList.InputHook) {
-        Hook(Target);
+    if (nullptr != Target) {
+        for (const auto& Hook : HookList.InputHook) {
+            Hook(Target);
+        }
     }
 }
