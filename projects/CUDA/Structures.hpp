@@ -680,6 +680,7 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
     using levelset_t = zs::variant<basic_ls_t, const_sdf_vel_ls_t, const_transition_ls_t>;
 
     using spls_t = typename basic_ls_t::spls_t;
+    using spvdb_t = typename basic_ls_t::spvdb_t;
     using dummy_ls_t = typename basic_ls_t::dummy_ls_t;
     using uniform_vel_ls_t = typename basic_ls_t::uniform_vel_ls_t;
 
@@ -724,6 +725,12 @@ struct ZenoLevelSet : IObjectClone<ZenoLevelSet> {
     }
     decltype(auto) getSparseLevelSet() noexcept {
         return std::get<basic_ls_t>(levelset).template getLevelSet<spls_t>();
+    }
+    decltype(auto) getVdbLevelSet() const noexcept {
+        return std::get<basic_ls_t>(levelset).template getLevelSet<spvdb_t>();
+    }
+    decltype(auto) getVdbLevelSet() noexcept {
+        return std::get<basic_ls_t>(levelset).template getLevelSet<spvdb_t>();
     }
 
     levelset_t levelset;
