@@ -16,46 +16,7 @@
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 
-#if 0
-// Examples
-
-// 1. Split Parameter class and Node class
-struct CalcPathCostParameter : public zeno::reflect::INodeParameterObject<CalcPathCostParameter> {
-    GENERATE_PARAMETER_BODY(CalcPathCostParameter);
-
-    std::shared_ptr<zeno::PrimitiveObject> Primitive;
-    DECLARE_INPUT_FIELD(Primitive, "prim");
-
-    std::string OutputChannel;
-    DECLARE_INPUT_FIELD(OutputChannel, "output_channel");
-
-    std::string OutputTest;
-    DECLARE_OUTPUT_FIELD(OutputTest, "test");
-};
-
-struct CalcPathCost_Simple : public zeno::reflect::IAutoNode<CalcPathCostParameter> {
-    GENERATE_AUTONODE_BODY(CalcPathCost_Simple);
-
-    void apply() override;
-};
-
-// 2. Merge parameter with node
-struct CalcPathCost_Simple : public zeno::reflect::IParameterAutoNode<CalcPathCost_Simple> {
-    GENERATE_NODE_BODY(CalcPathCost_Simple);
-
-    std::shared_ptr<zeno::PrimitiveObject> Primitive;
-    DECLARE_INPUT_FIELD(Primitive, "prim");
-
-    std::string OutputChannel;
-    DECLARE_INPUT_FIELD(OutputChannel, "output_channel");
-
-    std::string OutputTest;
-    DECLARE_OUTPUT_FIELD(OutputTest, "test");
-
-    void apply() override;
-};
-
-#endif
+// Examples see https://github.com/zenustech/zeno/pull/1355
 
 namespace zeno {
 
