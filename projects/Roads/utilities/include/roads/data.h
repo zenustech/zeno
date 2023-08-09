@@ -5,15 +5,20 @@
 #include <cassert>
 #include <cmath>
 #include <vector>
+#include <functional>
 
 namespace roads {
+
     enum class TriangleType {
         ACUTE = 0,
         RIGHT = 1,
         OBTUSE = 2,
     };
 
-    struct Point : public Eigen::Vector3d {};
+    struct Point : public Eigen::Vector3d {
+        Point(const std::array<float, 3>& InArray) : Eigen::Vector3d(InArray[0], InArray[1], InArray[2]) {}
+        Point() = default;
+    };
 
     struct Triangle : public std::array<Point, 3> {
         bool AnyAngleLargerThan(const double Degree) {
@@ -33,5 +38,16 @@ namespace roads {
 
     template <size_t X, size_t Y, typename GridPointType = Point>
     struct Grid : public std::array<GridPointType, X * Y> {};
+
+    template <typename GridPointType = Point>
+    struct DynamicGrid : public std::vector<GridPointType> {
+        size_t Nx, Ny;
+
+        DynamicGrid(const size_t InNx, const size_t InNy) : std::vector<GridPointType>(InNx * InNy), Nx(InNx), Ny(InNy) {}
+        DynamicGrid(DynamicGrid&& OtherGridToMove)  noexcept : std::vector<GridPointType>(std::forward<std::vector<GridPointType>>(OtherGridToMove)) {
+            Nx = OtherGridToMove.Nx;
+            Ny = OtherGridToMove.Ny;
+        }
+    };
 
 }// namespace roads
