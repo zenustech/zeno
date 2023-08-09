@@ -131,7 +131,7 @@ struct BuildPoissonRhs_withTension {
         float dtOverDxSqr = mDt / (mDx * mDx);
 
         for (auto iter = dofLeaf.beginValueOn(); iter; ++iter) {
-            float rhs = 0;
+            float rhs = 0, weight_sum = 0;
             openvdb::Coord globalCoord = iter.getCoord();
             bool hasNonZeroWeight = false;
 
@@ -161,6 +161,8 @@ struct BuildPoissonRhs_withTension {
                 weight = mWeightAxr.getValue(nextCoord)[channel];
                 phiOther = mPhiAxr.getValue(phiCoord);
                 curvOther = mCurvAxr.getValue(phiCoord);
+
+                weight_sum += weight;
                 
                 if (weight != 0.f) {
                     hasNonZeroWeight = true;
@@ -192,7 +194,7 @@ struct BuildPoissonRhs_withTension {
                 }
             }//end for 6 faces of this voxel
 
-            if (!hasNonZeroWeight) {
+            if (!hasNonZeroWeight || weight_sum < 0.1) {
                 rhs = 0;
             }
             mRhsLeaves[leafpos]->setValueOn(iter.offset(), rhs);

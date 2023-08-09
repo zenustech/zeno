@@ -20,7 +20,6 @@
 #define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
-#include <zeno/types/HeatmapObject.h>
 
 static const float eps = 0.0001f;
 
@@ -407,17 +406,6 @@ ZENDEFNODE(ReadImageFile, {
     {},
     {"comp"},
 });
-
-template<typename T>
-void image_flip_vertical(T *v, int w, int h) {
-    for (auto j = 0; j < h / 2; j++) {
-        for (auto i = 0; i < w; i++) {
-            auto index1 = i + j * w;
-            auto index2 = i + (h - j - 1) * w;
-            std::swap(v[index1], v[index2]);
-        }
-    }
-}
 
 struct ImageFlipVertical : INode {
     virtual void apply() override {

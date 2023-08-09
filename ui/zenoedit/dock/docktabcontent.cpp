@@ -356,6 +356,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
+        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
         std::function<void()> resetAlways = [=]() {
@@ -372,10 +373,8 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
         connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
         if (text == tr("alwaysAll"))
         {
-            mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
             pMainWin->setAlways(true);
             pMainWin->setAlwaysLightCameraMaterial(false, false);
-            pMainWin->onRunTriggered();
         }
         else if (text == tr("alwaysLightCamera") || text == tr("alwaysMaterial")) {
             QSettings settings(zsCompanyName, zsEditor);
@@ -388,13 +387,10 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
                 } else if (text == tr("alwaysMaterial")) {
                     pMainWin->setAlwaysLightCameraMaterial(false, true);
                 }
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
                 pMainWin->setAlways(false);
-                pMainWin->onRunTriggered();
             }
         }
         else {
-            mgr->setCacheOpt(ZCacheMgr::Opt_Undefined);
             pMainWin->setAlways(false);
             pMainWin->setAlwaysLightCameraMaterial(false, false);
         }

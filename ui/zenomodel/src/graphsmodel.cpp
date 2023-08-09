@@ -1516,7 +1516,7 @@ void GraphsModel::_markNodeChanged(const QModelIndex& nodeIdx)
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
     ZASSERT_EXIT(pModel);
     pModel->setData(nodeIdx, true, ROLE_NODE_DATACHANGED);
-    m_changedNodes.append(nodeIdx);
+    m_changedNodes.insert(nodeIdx);
 }
 
 void GraphsModel::clearNodeDataChanged()
@@ -1524,8 +1524,8 @@ void GraphsModel::clearNodeDataChanged()
     for (auto nodeIdx : m_changedNodes)
     {
         QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(nodeIdx.model());
-        ZASSERT_EXIT(pModel);
-        pModel->setData(nodeIdx, false, ROLE_NODE_DATACHANGED);
+        if (pModel)
+            pModel->setData(nodeIdx, false, ROLE_NODE_DATACHANGED);
     }
     m_changedNodes.clear();
 }

@@ -16,8 +16,7 @@ public:
         Opt_Undefined = 0,
         Opt_RunAll,
         Opt_RunLightCameraMaterial,
-        Opt_AlwaysOnAll,
-        Opt_AlwaysOnLightCameraMaterial
+        Opt_AlwaysOn
     };
     void setCacheOpt(cacheOption opt);
     void setNewCacheDir(bool setNew);

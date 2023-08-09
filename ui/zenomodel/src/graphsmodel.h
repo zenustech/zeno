@@ -194,7 +194,7 @@ private:
 
     //LinkModel* m_linkModel;
     QHash<QString, LinkModel*> m_linksGroup;
-    QList<QPersistentModelIndex> m_changedNodes;
+    QSet<QPersistentModelIndex> m_changedNodes;
 
     NODE_DESCS m_nodesDesc;
     NODE_DESCS m_subgsDesc;
