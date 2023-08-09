@@ -242,6 +242,8 @@ struct ComputeVertexAO : INode {
             [scenePos = view<space>(pos), sceneTris = view<space>(indices), bvh = view<space>(bvh), niters,
              distCap] ZS_LAMBDA(unsigned int i, const v3 &x, v3 nrm, float &ao) {
                 unsigned int seed = i;
+                // u64 sd = 1442695040888963407ull;
+                u64 sd = i;
                 ao = 0.f;
                 nrm = nrm.normalized();
                 Onb tbn = Onb(nrm);
@@ -258,8 +260,14 @@ struct ComputeVertexAO : INode {
                 int accum = 0;
                 for (int k = 0; k < niters; ++k) {
 #if 1
+#if 0
                     auto r = sobolRnd(seed);
                     auto w = UniformSampleHemisphere(r[0], r[1]);
+#else
+                    auto r0 = 1.f * zs::PCG::pcg32_random_r(sd, 1442695040888963407ull) / std::numeric_limits<u32>::max();
+                    auto r1 = 1.f * zs::PCG::pcg32_random_r(sd, 1442695040888963407ull) / std::numeric_limits<u32>::max();
+                    auto w = UniformSampleHemisphere(r0, r1);
+#endif
                     tbn.inverse_transform(w);
                     w = w.normalized();
                     if (w.dot(nrm) < 0)
@@ -274,8 +282,8 @@ struct ComputeVertexAO : INode {
                     } while (w.dot(nrm) < std::numeric_limits<float>::epsilon());
 #endif
                     bool hit = false;
-                    // auto xx = rtgems::offset_ray(x, w);
-                    auto &xx = x;
+                    auto xx = rtgems::offset_ray(x, nrm);
+                    // auto &xx = x;
                     bvh.ray_intersect(xx, w, [&x = xx, &w, &scenePos, &sceneTris, &hit, distCap](int triNo) {
                         if (hit)
                             return;
