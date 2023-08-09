@@ -528,7 +528,8 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
             {
                 type = sockObj["type"].GetString();
             }
-            pAcceptor->setOutputSocket(id, outSock, bLinkRef, type);
+            if (bLinkRef || !type.isEmpty())
+                pAcceptor->setOutputSocket(id, outSock, bLinkRef, type);
         }
     }
 }
