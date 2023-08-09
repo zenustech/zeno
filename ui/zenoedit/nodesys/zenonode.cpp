@@ -205,18 +205,18 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
     qreal margin = ZenoStyle::dpiScaled(10);
     pNameLayout->setContentsMargin(margin, margin, margin, margin);
 
-    m_NameItem = new ZSimpleTextItem(name);
-    m_NameItem->setBrush(QColor("#FFFFFF"));
     QFont font2 = QApplication::font();
     font2.setPointSize(16);
     font2.setWeight(QFont::DemiBold);
-    m_NameItem->setFont(font2);
-    m_NameItem->updateBoundingRect();
+    QString custName = m_index.data(ROLE_CUSTOM_OBJNAME).toString();
+    m_NameItem = new ZGraphicsTextItem(custName.isEmpty() ? name : custName, font2, QColor("#FFFFFF"), this);
+    m_NameItem->installEventFilter(this);
+    connect(m_NameItem, &ZGraphicsTextItem::editingFinished, this, &ZenoNode::onCustomNameChanged);
 
     pNameLayout->addItem(m_NameItem);
     if (!category.isEmpty())
     {
-        m_pCategoryItem = new ZSimpleTextItem(category);
+        m_pCategoryItem = new ZSimpleTextItem(custName.isEmpty() ? category : category + ":" + name);
         m_pCategoryItem->setBrush(QColor("#AB6E40"));
         QFont font = QApplication::font();
         m_pCategoryItem->setFont(font);
@@ -387,8 +387,18 @@ void ZenoNode::onNameUpdated(const QString& newName)
     ZASSERT_EXIT(m_NameItem);
     if (m_NameItem)
     {
-        m_NameItem->setText(newName);
-        ZGraphicsLayout::updateHierarchy(m_NameItem);
+        QString custName = m_index.data(ROLE_CUSTOM_OBJNAME).toString();
+        if (custName.isEmpty())
+        {
+            m_NameItem->setText(newName);
+            ZGraphicsLayout::updateHierarchy(m_NameItem);
+        }
+        else
+        {
+            QString text = m_pCategoryItem->text();
+            m_pCategoryItem->setText(text.left(text.indexOf(":") + 1) + newName);
+            ZGraphicsLayout::updateHierarchy(m_pCategoryItem);
+        }
     }
 }
 
@@ -1287,13 +1297,15 @@ void ZenoNode::onZoomed()
     }
     else if (m_NameItemTip == nullptr) 
     {
-        m_NameItemTip = new ZSimpleTextItem(m_NameItem->text(), this);
+        m_NameItemTip = new ZSimpleTextItem(m_NameItem->toPlainText(), this);
         m_NameItemTip->setBrush(QColor("#FFFFFF"));
         m_NameItemTip->setFlag(QGraphicsItem::ItemIgnoresTransformations);
         m_NameItemTip->show();
     }
     if (m_NameItemTip) 
     {
+        if (m_NameItemTip->text() != m_NameItem->toPlainText())
+            m_NameItemTip->setText(m_NameItem->toPlainText());
         m_NameItemTip->setPos(QPointF(m_NameItem->pos().x(), -ZenoStyle::scaleWidth(36)));
     }
     if (m_bodyWidget)
@@ -1480,11 +1492,76 @@ void ZenoNode::focusOutEvent(QFocusEvent* event)
     _base::focusOutEvent(event);
 }
 
+bool ZenoNode::eventFilter(QObject* obj, QEvent* event)
+{
+    if (obj == m_NameItem)
+    {
+        if ((event->type() == QEvent::InputMethod || event->type() == QEvent::KeyPress) && m_NameItem->textInteractionFlags() == Qt::TextEditable)
+        {
+            bool bDelete = false;
+            if (event->type() == QEvent::KeyPress)
+            {
+                QKeyEvent* pKeyEvent = static_cast<QKeyEvent*>(event);
+                int key = pKeyEvent->key();
+                if (key == Qt::Key_Delete || key == Qt::Key_Backspace)
+                    bDelete = true;
+            }
+            if (!bDelete)
+            {
+                QString name = m_index.data(ROLE_OBJNAME).toString();
+                QColor color = QColor(255, 255, 255);
+                QColor textColor = m_NameItem->defaultTextColor();
+                if (textColor != color)
+                {
+                    m_NameItem->setDefaultTextColor(color);
+                }
+
+                if (m_NameItem->toPlainText() == name)
+                {
+                    m_NameItem->setText("");
+                }
+
+                if (m_NameItem->textInteractionFlags() != Qt::TextEditorInteraction)
+                {
+                    m_NameItem->setTextInteractionFlags(Qt::TextEditorInteraction);
+                }
+            }
+        }
+        else if (event->type() == QEvent::KeyRelease && m_NameItem->textInteractionFlags() == Qt::TextEditorInteraction)
+        {
+            QString text = m_NameItem->toPlainText();
+            if (text.isEmpty())
+            {
+                QString name = m_index.data(ROLE_OBJNAME).toString();
+                m_NameItem->setText(name);
+                m_NameItem->setTextInteractionFlags(Qt::TextEditable);
+                m_NameItem->setDefaultTextColor(QColor(255, 255, 255, 40));
+            }
+        }
+    }
+    return _base::eventFilter(obj, event);
+}
+
 void ZenoNode::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseDoubleClickEvent(event);
     QList<QGraphicsItem*> wtf = scene()->items(event->scenePos());
-    if (wtf.contains(m_headerWidget))
+    if (wtf.contains(m_NameItem))
+    {
+        QString name = m_index.data(ROLE_OBJNAME).toString();
+        if (name == m_NameItem->toPlainText())
+        {
+            m_NameItem->setTextInteractionFlags(Qt::TextEditable);
+            m_NameItem->setDefaultTextColor(QColor(255, 255, 255, 40));
+        }
+        else
+        {
+            m_NameItem->setTextInteractionFlags(Qt::TextEditorInteraction);
+            m_NameItem->setDefaultTextColor(QColor(255, 255, 255));
+        }
+        m_NameItem->setFocus();
+    }
+    else if (wtf.contains(m_headerWidget))
     {
         onCollaspeBtnClicked();
     }
@@ -1823,5 +1900,47 @@ void ZenoNode::onPasteSocketRefSlot(QModelIndex toIndex)
             }
             pGraphsModel->addLink(m_subGpIndex, fromIndex, toIndex, true);
         }
+    }
+}
+
+void ZenoNode::onCustomNameChanged()
+{
+    m_NameItem->setTextInteractionFlags(Qt::NoTextInteraction);
+    QString newText = m_NameItem->toPlainText();
+    QString oldText = m_index.data(ROLE_CUSTOM_OBJNAME).toString();
+    if (newText == oldText)
+        return;
+    QString name = m_index.data(ROLE_OBJNAME).toString();
+    NODE_DESC desc;
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    pModel->getDescriptor(name, desc);
+    QString category;
+    if (!desc.categories.isEmpty())
+        category = desc.categories[0];
+
+    if (newText == name)
+        newText = "";
+    if (!pModel)
+        return;
+    if (!pModel->setCustomName(m_subGpIndex, m_index, newText))
+    {
+        newText = oldText.isEmpty() ? name : oldText;
+        QMessageBox::warning(nullptr, tr("Warring"), tr("CustomName invalid!"));
+    }
+
+    if (newText.isEmpty() || newText == name)
+    {
+        m_NameItem->setText(name);
+        m_pCategoryItem->setText(category);
+        m_NameItem->setDefaultTextColor(QColor(255, 255, 255));
+        ZGraphicsLayout::updateHierarchy(m_NameItem);
+        ZGraphicsLayout::updateHierarchy(m_pCategoryItem);
+    }
+    else
+    {
+        QString text = category + ":" + name;
+        if (text != m_pCategoryItem->text())
+            m_pCategoryItem->setText(text);
+        ZGraphicsLayout::updateHierarchy(m_pCategoryItem);
     }
 }
