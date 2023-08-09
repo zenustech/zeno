@@ -3,7 +3,6 @@
 
 #include "Timer.h"
 #include <functional>
-#include <iostream>
 #include <map>
 #include <optional>
 #include <string>
@@ -306,12 +305,10 @@ namespace zeno {
             }
 
             inline void WritePrimitiveValue(INode *Node) {
-                zeno::log_info("write: {} to {}", KeyName, ValueRef);
                 Node->set_output2(KeyName, ValueRef);
             }
 
             void Write(INode *Node) {
-                zeno::log_info("qwqqqq: {} {}", KeyName, ValueRef);
                 if (nullptr == Node) {
                     zeno::log_error("Trying to read value from a nullptr Node.");
                     return;
