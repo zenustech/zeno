@@ -406,7 +406,7 @@ namespace zeno {
 // This don't take into account the nul char
 #define COMPILE_TIME_CRC32_STR(x) (zeno::reflect::MM<sizeof(x) - 1>::crc32(x))
 
-#define DECLARE_FIELD(Type, FieldName, ...) zeno::reflect::Type<ThisType, decltype(FieldName), COMPILE_TIME_CRC32_STR(#FieldName)> FieldName##Field_Do_not_use{*this, FieldName, __VA_ARGS__};
+#define DECLARE_FIELD(Type, FieldName, ...) zeno::reflect::Type<ThisType, decltype(FieldName), COMPILE_TIME_CRC32_STR(#FieldName)> FieldName##Type##_Do_not_use{*this, FieldName, __VA_ARGS__};
 #define DECLARE_INPUT_FIELD(FieldName, KeyName, ...) DECLARE_FIELD(InputField, FieldName, KeyName, __VA_ARGS__)
 #define DECLARE_OUTPUT_FIELD(FieldName, KeyName, ...) DECLARE_FIELD(OutputField, FieldName, KeyName, __VA_ARGS__)
 

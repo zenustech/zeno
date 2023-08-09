@@ -39,14 +39,11 @@ namespace {
         std::string OutputChannel;
         DECLARE_INPUT_FIELD(OutputChannel, "output_channel");
 
-        std::string OutputTest;
-        DECLARE_OUTPUT_FIELD(OutputTest, "test");
+        DECLARE_OUTPUT_FIELD(Primitive, "prim");
 
         void apply() override;
     };
 
     void CalcPathCost_Simple::apply() {
-        zeno::log_info("aaaaaaaaaaa: {}", AutoParameter->OutputChannel);
-        AutoParameter->OutputTest = "abcdef";
     }
 }
