@@ -27,3 +27,9 @@ void zeno::reflect::NodeParameterBase::RunOutputHooks() const {
         }
     }
 }
+
+void zeno::reflect::NodeParameterBase::RunBindingHooks() const {
+    for (const auto& Hook : HookList.BindingHook) {
+        Hook();
+    }
+}

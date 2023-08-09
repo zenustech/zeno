@@ -9,7 +9,10 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <zeno/PrimitiveObject.h>
+#include <zeno/types/AttrVector.h>
 #include <zeno/core/Descriptor.h>
+#include <zeno/types/UserData.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 
@@ -140,26 +143,40 @@ namespace zeno {
         using RawType_t = typename RawType<T>::Type;
 
         template<typename>
-        struct ValueTypeToString { inline static std::string TypeName; };
+        struct ValueTypeToString {
+            inline static std::string TypeName;
+        };
 
         template<>
-        struct ValueTypeToString<zeno::vec3f> { inline static std::string TypeName = "vec3f"; };
+        struct ValueTypeToString<zeno::vec3f> {
+            inline static std::string TypeName = "vec3f";
+        };
 
         template<>
-        struct ValueTypeToString<std::string> { inline static std::string TypeName = "string"; };
+        struct ValueTypeToString<std::string> {
+            inline static std::string TypeName = "string";
+        };
 
         template<>
-        struct ValueTypeToString<int> { inline static std::string TypeName = "int"; };
+        struct ValueTypeToString<int> {
+            inline static std::string TypeName = "int";
+        };
 
         template<>
-        struct ValueTypeToString<float> { inline static std::string TypeName = "float"; };
+        struct ValueTypeToString<float> {
+            inline static std::string TypeName = "float";
+        };
 
         template<>
-        struct ValueTypeToString<bool> { inline static std::string TypeName = "bool"; };
+        struct ValueTypeToString<bool> {
+            inline static std::string TypeName = "bool";
+        };
 
         struct TypeAutoCallbackList {
             std::vector<std::function<void(INode *)>> InputHook;
             std::vector<std::function<void(INode *)>> OutputHook;
+
+            std::vector<std::function<void()>> BindingHook;
         };
 
         struct NodeParameterBase {
@@ -174,6 +191,7 @@ namespace zeno {
 
             void RunInputHooks() const;
             void RunOutputHooks() const;
+            void RunBindingHooks() const;
 
             virtual ~NodeParameterBase();
         };
@@ -363,6 +381,135 @@ namespace zeno {
         struct IParameterAutoNode : public IAutoNode<NodeType>, public INodeParameterObject<NodeType> {
             IParameterAutoNode(INode *Node = nullptr) : IAutoNode<NodeType>(), INodeParameterObject<NodeType>(Node) {}
         };
+
+        struct IPrimitiveBindingField {
+            const std::shared_ptr<PrimitiveObject> &Primitive;
+            const std::string& KeyName;
+            const bool bIsOptional;
+
+            IPrimitiveBindingField(std::shared_ptr<PrimitiveObject> &InPrimitive, const std::string& InKeyName, bool bInIsOptional) : Primitive(InPrimitive), KeyName(InKeyName), bIsOptional(bInIsOptional) {}
+        };
+
+        template<typename ParentType, typename ValueType>
+        struct PrimitiveUserDataBindingField : public IPrimitiveBindingField {
+            using Type = std::remove_cv_t<ValueType>;
+            using Parent = std::remove_cv_t<ParentType>;
+
+            Type &ValueRef;
+
+            PrimitiveUserDataBindingField(Parent &ParentRef, std::shared_ptr<PrimitiveObject> &InPrimitive, ValueType &InValueRef, const std::string &InKeyName, bool bIsOptional = false) : IPrimitiveBindingField(InPrimitive, InKeyName, bIsOptional), ValueRef(InValueRef) {
+                ParentRef.HookList.BindingHook.push_back(ToCaptured());
+            }
+
+            std::function<void()> ToCaptured() {
+                return [this]() {
+                    if (Primitive) {
+                        if constexpr (IsSharedPtr<ValueType>()) {
+                            if (!bIsOptional || Primitive->userData().has<ValueType>(KeyName)) {
+                                ValueRef = Primitive->userData().get<ValueType>(KeyName);
+                            }
+                        } else {
+                            if (!bIsOptional || Primitive->userData().has<ValueType>(KeyName)) {
+                                ValueRef = Primitive->userData().get2<ValueType>(KeyName);
+                            }
+                        }
+                    }
+                };
+            }
+        };
+
+        enum class EZenoPrimitiveAttr {
+            VERT = 0,
+            POINT = 1,
+            LINE = 2,
+            TRIANGLE = 3,
+            QUAD = 4,
+            LOOP = 5,
+            POLY = 6,
+            EDGE = 7,
+            UV = 8,
+        };
+
+        template<typename ParentType, typename ValueType, EZenoPrimitiveAttr AttrType>
+        struct PrimitiveAttributeBindingField : public IPrimitiveBindingField { /** TODO [darc] : not implemented yet : */ };
+
+        template<typename ParentType, typename ValueType, EZenoPrimitiveAttr AttrType>
+        struct PrimitiveAttributeBindingField<ParentType, zeno::AttrVector<ValueType>, AttrType> : public IPrimitiveBindingField {
+            using Type = ValueType;
+            using ArrayType = zeno::AttrVector<ValueType>;
+            using Parent = std::remove_cv_t<ParentType>;
+
+            ArrayType& ArrayRef;
+
+            PrimitiveAttributeBindingField(Parent &ParentRef, std::shared_ptr<PrimitiveObject> &InPrimitive, ArrayType &InArrayRef, const std::string &InKeyName, bool bIsOptional = false) : IPrimitiveBindingField(InPrimitive, InKeyName, bIsOptional), ArrayRef(InArrayRef) {
+                ParentRef.HookList.BindingHook.push_back(ToCaptured());
+            }
+
+            std::function<void()> ToCaptured() {
+                return [this] () {
+                    if (!Primitive) {
+                        zeno::log_error("Invalid primitive binding.");
+                        return;
+                    }
+
+                    if constexpr (AttrType == EZenoPrimitiveAttr::VERT)
+                    {
+                        if (!bIsOptional || Primitive->verts.has_attr(KeyName)) {
+                            ArrayRef = Primitive->verts.attr<Type>(KeyName);
+                        }
+                    }
+                    else if constexpr (AttrType == EZenoPrimitiveAttr::POINT)
+                    {
+                        if (!bIsOptional || Primitive->points.has_attr(KeyName)) {
+                            ArrayRef = Primitive->points.attr<Type>(KeyName);
+                        }
+                    }
+                    else if constexpr (AttrType == EZenoPrimitiveAttr::LINE)
+                    {
+                        if (!bIsOptional || Primitive->lines.has_attr(KeyName)) {
+                            ArrayRef = Primitive->lines.attr<Type>(KeyName);
+                        }
+                    }
+                    else if constexpr (AttrType == EZenoPrimitiveAttr::TRIANGLE)
+                    {
+                        if (!bIsOptional || Primitive->tris.has_attr(KeyName)) {
+                            ArrayRef = Primitive->tris.attr<Type>(KeyName);
+                        }
+                    }
+                    else if constexpr (AttrType == EZenoPrimitiveAttr::QUAD)
+                    {
+                        if (!bIsOptional || Primitive->quads.has_attr(KeyName)) {
+                            ArrayRef = Primitive->quads.attr<Type>(KeyName);
+                        }
+                    }
+                    else if constexpr (AttrType == EZenoPrimitiveAttr::LOOP)
+                    {
+                        if (!bIsOptional || Primitive->loops.has_attr(KeyName)) {
+                            ArrayRef = Primitive->loops.attr<Type>(KeyName);
+                        }
+                    }
+                    else if constexpr (AttrType == EZenoPrimitiveAttr::POLY)
+                    {
+                        if (!bIsOptional || Primitive->polys.has_attr(KeyName)) {
+                            ArrayRef = Primitive->polys.attr<Type>(KeyName);
+                        }
+                    }
+                    else if constexpr (AttrType == EZenoPrimitiveAttr::EDGE)
+                    {
+                        if (!bIsOptional || Primitive->edges.has_attr(KeyName)) {
+                            ArrayRef = Primitive->edges.attr<Type>(KeyName);
+                        }
+                    }
+                    else if constexpr (AttrType == EZenoPrimitiveAttr::UV)
+                    {
+                        if (!bIsOptional || Primitive->uvs.has_attr(KeyName)) {
+                            ArrayRef = Primitive->uvs.attr<Type>(KeyName);
+                        }
+                    }
+                };
+            }
+        };
+
     };
 
     template<typename T>
@@ -385,13 +532,17 @@ namespace zeno {
     explicit CLS(INode *Node) : Super(Node) { \
         if (nullptr != Node) {                \
             RunInputHooks();                  \
+            RunBindingHooks();                \
         }                                     \
     }
 
 #define GENERATE_NODE_BODY(CLS)                                                \
     CLS() : zeno::reflect::IParameterAutoNode<CLS>(nullptr) {}                 \
-    explicit CLS(INode *Node) : zeno::reflect::IParameterAutoNode<CLS>(Node) {     \
-        if (nullptr != Node) { RunInputHooks(); }                              \
+    explicit CLS(INode *Node) : zeno::reflect::IParameterAutoNode<CLS>(Node) { \
+        if (nullptr != Node) {                                                 \
+            RunInputHooks();                                                   \
+            RunBindingHooks();                                                 \
+        }                                                                      \
     }                                                                          \
     inline static struct R_Do_not_use {                                        \
         R_Do_not_use() {                                                       \
@@ -409,5 +560,8 @@ namespace zeno {
 #define DECLARE_FIELD(Type, FieldName, ...) zeno::reflect::Type<ThisType, decltype(FieldName), COMPILE_TIME_CRC32_STR(#FieldName)> FieldName##Type##_Do_not_use{*this, FieldName, __VA_ARGS__};
 #define DECLARE_INPUT_FIELD(FieldName, KeyName, ...) DECLARE_FIELD(InputField, FieldName, KeyName, __VA_ARGS__)
 #define DECLARE_OUTPUT_FIELD(FieldName, KeyName, ...) DECLARE_FIELD(OutputField, FieldName, KeyName, __VA_ARGS__)
+
+#define BINDING_PRIMITIVE_USERDATA(PrimitiveName, FieldName, ChannelName, ...) zeno::reflect::PrimitiveUserDataBindingField<ThisType, decltype(FieldName)> Internal##FieldName##BindingWith##PrimitiveName##ChannelName##_Do_not_use { *this, PrimitiveName, FieldName, ChannelName, __VA_ARGS__ };
+#define BINDING_PRIMITIVE_ATTRIBUTE(PrimitiveName, FieldName, ChannelName, Type, ...) zeno::reflect::PrimitiveAttributeBindingField<ThisType, decltype(FieldName), Type> Internal##FieldName##Attr##In##PrimitiveName##_Do_not_use { *this, PrimitiveName, FieldName, ChannelName, __VA_ARGS__ };
 
 #endif//ZENO_PROPERTYVISITOR_H

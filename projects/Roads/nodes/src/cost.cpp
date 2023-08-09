@@ -13,11 +13,11 @@ inline void RoadsAssert(const bool Expr, const std::string& InMsg = "[Roads] Ass
 }
 
 template <typename GridType = roads::Point>
-roads::DynamicGrid<GridType> BuildGridFromPrimitive(zeno::PrimitiveObject* InPrimitive) {
+roads::DynamicGrid<GridType> BuildGridFromPrimitive(zeno::PrimitiveObject* InPrimitive, const std::string& NxChannel, const std::string& NyChannel) {
     RoadsAssert(nullptr != InPrimitive, "[Roads] InPrimitive shouldn't be nullptr !");
 
-    const auto Nx = InPrimitive->userData().get2<int>("nx");
-    const auto Ny = InPrimitive->userData().get2<int>("ny");
+    const auto Nx = InPrimitive->userData().get2<int>(NxChannel);
+    const auto Ny = InPrimitive->userData().get2<int>(NyChannel);
 
     RoadsAssert(Nx * Ny <= InPrimitive->verts.size());
 
@@ -34,16 +34,27 @@ namespace {
         GENERATE_NODE_BODY(CalcPathCost_Simple);
 
         std::shared_ptr<zeno::PrimitiveObject> Primitive;
-        DECLARE_INPUT_FIELD(Primitive, "prim");
+        DECLARE_INPUT_FIELD(Primitive, "Prim");
+        DECLARE_OUTPUT_FIELD(Primitive, "Prim");
 
         std::string OutputChannel;
-        DECLARE_INPUT_FIELD(OutputChannel, "output_channel");
+        DECLARE_INPUT_FIELD(OutputChannel, "OutputChannel", false, "", "path_cost");
 
-        DECLARE_OUTPUT_FIELD(Primitive, "prim");
+        std::string SizeXChannel;
+        DECLARE_INPUT_FIELD(SizeXChannel, "UserData_NxChannel", false, "", "nx");
 
-        void apply() override;
+        std::string SizeYChannel;
+        DECLARE_INPUT_FIELD(SizeYChannel, "UserData_NyChannel", false, "", "ny");
+
+        int Nx = 1;
+        BINDING_PRIMITIVE_USERDATA(Primitive, Nx, SizeXChannel, true);
+
+        zeno::AttrVector<vec3f> Test2 {};
+        BINDING_PRIMITIVE_ATTRIBUTE(Primitive, Test2, "pos", zeno::reflect::EZenoPrimitiveAttr::VERT);
+
+        void apply() override {
+            zeno::log_info("aaaa: {}", AutoParameter->Nx);
+            zeno::log_info("bbbb: {}", AutoParameter->Test2.size());
+        }
     };
-
-    void CalcPathCost_Simple::apply() {
-    }
 }
