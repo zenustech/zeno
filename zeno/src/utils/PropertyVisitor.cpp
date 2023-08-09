@@ -3,13 +3,7 @@
 
 zeno::reflect::NodeParameterBase::NodeParameterBase(zeno::INode *Node) : Target(Node) {}
 
-zeno::reflect::NodeParameterBase::~NodeParameterBase() {
-    if (nullptr != Target) {
-        for (const auto& Hook : HookList.OutputHook) {
-            Hook(Target);
-        }
-    }
-}
+zeno::reflect::NodeParameterBase::~NodeParameterBase() = default;
 
 zeno::reflect::NodeParameterBase::NodeParameterBase(zeno::reflect::NodeParameterBase &&RhsToMove) noexcept {
     Target = RhsToMove.Target;
@@ -21,6 +15,14 @@ zeno::reflect::NodeParameterBase::NodeParameterBase(zeno::reflect::NodeParameter
 void zeno::reflect::NodeParameterBase::RunInputHooks() const {
     if (nullptr != Target) {
         for (const auto& Hook : HookList.InputHook) {
+            Hook(Target);
+        }
+    }
+}
+
+void zeno::reflect::NodeParameterBase::RunOutputHooks() const {
+    if (nullptr != Target) {
+        for (const auto& Hook : HookList.OutputHook) {
             Hook(Target);
         }
     }

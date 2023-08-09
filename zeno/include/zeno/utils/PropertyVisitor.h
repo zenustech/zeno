@@ -174,6 +174,7 @@ namespace zeno {
             NodeParameterBase(const NodeParameterBase &) = delete;
 
             void RunInputHooks() const;
+            void RunOutputHooks() const;
 
             virtual ~NodeParameterBase();
         };
@@ -310,6 +311,7 @@ namespace zeno {
             }
 
             void Write(INode *Node) {
+                zeno::log_info("qwqqqq: {} {}", KeyName, ValueRef);
                 if (nullptr == Node) {
                     zeno::log_error("Trying to read value from a nullptr Node.");
                     return;
@@ -354,6 +356,7 @@ namespace zeno {
                     apply();
                 }
 
+                AutoParameter->RunOutputHooks();
                 AutoParameter.reset();
                 log_debug("==> leave {}", myname);
             }
