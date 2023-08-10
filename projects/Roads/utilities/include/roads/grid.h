@@ -11,7 +11,7 @@ namespace roads {
 
     struct AdvancePoint {
         Point Position;
-        double Curvature = 0.0;
+        double Gradient = 0.0;
     };
 
     using HeightPoint = double;

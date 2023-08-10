@@ -26,6 +26,7 @@ DynamicGrid<SlopePoint> roads::CalculateSlope(const DynamicGrid<HeightPoint> &In
 
     DynamicGrid<SlopePoint> Result(SizeX, SizeY);
 
+#pragma omp parallel for
     for (int32_t y = 0; y < SizeY; ++y) {
         for (int32_t x = 0; x < SizeX; ++x) {
             const size_t OriginIdx = x + y * SizeX;

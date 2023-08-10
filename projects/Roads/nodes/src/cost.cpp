@@ -1,4 +1,5 @@
 #include "roads/roads.h"
+#include <limits>
 #include "zeno/PrimitiveObject.h"
 #include "zeno/types/UserData.h"
 #include "zeno/utils/PropertyVisitor.h"
@@ -20,7 +21,7 @@ roads::DynamicGrid<roads::AdvancePoint> BuildGridFromPrimitive(const zeno::AttrV
     roads::DynamicGrid<roads::AdvancePoint> Grid(Nx, Ny);
     for (size_t i = 0; i < Nx * Ny; ++i) {
         Grid[i].Position = PositionSource[i];
-        Grid[i].Curvature = CurvatureSource[i];
+        Grid[i].Gradient = CurvatureSource[i];
     }
 
     return Grid;
@@ -94,8 +95,8 @@ namespace {
         std::string PositionChannel;
         ZENO_DECLARE_INPUT_FIELD(PositionChannel, "Vert_PositionChannel", false, "", "pos");
 
-        std::string CurvatureChannel;
-        ZENO_DECLARE_INPUT_FIELD(CurvatureChannel, "Vert_CurvatureChannel", false, "", "curvature");
+        std::string GradientChannel;
+        ZENO_DECLARE_INPUT_FIELD(GradientChannel, "Vert_GradientChannel", false, "", "gradient");
 
         int Nx = 0;
         ZENO_BINDING_PRIMITIVE_USERDATA(Primitive, Nx, SizeXChannel, false);
@@ -106,11 +107,17 @@ namespace {
         zeno::AttrVector<vec3f> PositionList{};
         ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, PositionList, PositionChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
 
-        zeno::AttrVector<float> CurvatureList{};
-        ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, CurvatureList, CurvatureChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
+        zeno::AttrVector<float> GradientList{};
+        ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, GradientList, GradientChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
 
         void apply() override {
-            auto Grid = BuildGridFromPrimitive(AutoParameter->PositionList, AutoParameter->CurvatureList, AutoParameter->Nx, AutoParameter->Ny);
+            //auto Grid = BuildGridFromPrimitive(AutoParameter->PositionList, AutoParameter->GradientList, AutoParameter->Nx, AutoParameter->Ny);
+            // TODO [darc] : Change cost function, now just simply use gradient value :
+            if (!AutoParameter->Primitive->verts.has_attr(AutoParameter->OutputChannel)) {
+                AutoParameter->Primitive->verts.add_attr<float>(AutoParameter->OutputChannel);
+            }
+            auto Output = AutoParameter->Primitive->verts.attr<float>(AutoParameter->OutputChannel);
+            Output.insert(Output.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.end());
         }
     };
 }// namespace

@@ -1,4 +1,5 @@
 FIND_PACKAGE(Eigen3 REQUIRED NO_MODULE)
+FIND_PACKAGE(OpenMP REQUIRED)
 
 FILE(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.h)
 
@@ -9,3 +10,21 @@ TARGET_LINK_LIBRARIES(Roads PRIVATE Eigen3::Eigen)
 
 ADD_EXECUTABLE(RoadsTest test/main.cpp)
 TARGET_LINK_LIBRARIES(RoadsTest PUBLIC Roads)
+
+IF (OPENMP_FOUND)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" ${OpenMP_EXE_LINKER_FLAGS})
+    TARGET_LINK_LIBRARIES(Roads PRIVATE OpenMP::OpenMP_CXX)
+    if (MSVC)
+        include(CheckCXXCompilerFlag)
+        check_cxx_compiler_flag("/openmp:experimental" MSVC_SUPPORT_OPENMP_EXPERIMENTAL)
+        if (MSVC_SUPPORT_OPENMP_EXPERIMENTAL)
+            target_compile_options(zeno PRIVATE $<IF:$<COMPILE_LANGUAGE:CXX>,/openmp:experimental,>)
+        endif()
+        check_cxx_compiler_flag("/openmp:llvm" MSVC_SUPPORT_OPENMP_LLVM)
+        if (MSVC_SUPPORT_OPENMP_LLVM)
+            target_compile_options(zeno PRIVATE $<IF:$<COMPILE_LANGUAGE:CXX>,/openmp:llvm,>)
+        endif()
+    endif()
+ENDIF()
