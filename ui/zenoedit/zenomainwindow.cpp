@@ -1783,6 +1783,7 @@ bool ZenoMainWindow::saveFile(QString filePath)
     settings.recordInfo = zenoApp->graphsManagment()->recordInfo();
     settings.layoutInfo.layerOutNode = m_layoutRoot;
     settings.layoutInfo.size = size();
+    settings.layoutInfo.cbDumpTabsToZsg = &AppHelper::dumpTabsToZsg;
     zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;
