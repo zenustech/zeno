@@ -26,7 +26,7 @@ struct ZSCULinkTest : INode {
     void apply() override {
 
         {
-            zs::AdaptiveGrid<3, float, zs::index_sequence<3, 4, 5>> ag;
+            zs::VdbGrid<3, float, zs::index_sequence<3, 4, 5>> ag;
             using TT = RM_CVREF_T(ag);
             fmt::print("adaptive grid type: {}\n", zs::get_var_type_str(ag));
             // fmt::print("tile bits: {}\n", zs::get_type_str<TT::tile_bits_type>());
