@@ -10,7 +10,7 @@
 namespace zeno {
 
 struct ZenoAdaptiveGrid : IObjectClone<ZenoAdaptiveGrid> {
-    using ag_t = zs::AdaptiveGrid<3, zs::f32, 3, 4, 5>;
+    using ag_t = zs::AdaptiveGrid<3, zs::f32, zs::index_sequence<3, 4, 5>>;
 
     auto &getAdaptiveGrid() noexcept {
         return ag;
