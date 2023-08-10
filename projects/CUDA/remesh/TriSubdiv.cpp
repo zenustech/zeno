@@ -1,12 +1,12 @@
+#include "zensim/container/Bht.hpp"
+#include "zensim/omp/execution/ExecutionPolicy.hpp"
+#include <cstdio>
+#include <cstring>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/UserData.h>
 #include <zeno/utils/log.h>
 #include <zeno/utils/zeno_p.h>
 #include <zeno/zeno.h>
-#include <cstdio>
-#include <cstring>
-#include "zensim/container/Bht.hpp"
-#include "zensim/omp/execution/ExecutionPolicy.hpp"
 
 namespace zeno {
 
@@ -21,7 +21,8 @@ struct TrianglePrimSubdiv : INode {
         auto processTags = [](std::string tags, std::set<std::string> &res) {
             using Ti = RM_CVREF_T(std::string::npos);
             Ti st = tags.find_first_not_of(", ", 0);
-            for (auto ed = tags.find_first_of(", ", st + 1); ed != std::string::npos; ed = tags.find_first_of(", ", st + 1)) {
+            for (auto ed = tags.find_first_of(", ", st + 1); ed != std::string::npos;
+                 ed = tags.find_first_of(", ", st + 1)) {
                 res.insert(tags.substr(st, ed - st));
                 // fmt::print("extract [{}, {}): [{}]\n", st, ed, res.back());
                 st = tags.find_first_not_of(", ", ed);
@@ -42,18 +43,18 @@ struct TrianglePrimSubdiv : INode {
         for (auto str : faceAvgEdgePropTags)
             fmt::print("[{}]\t", str);
         fmt::print("\n");
-        
+
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
         auto pol = omp_exec();
 
-	    auto &verts = prim->verts;
-	    auto &tris = prim->tris;
+        auto &verts = prim->verts;
+        auto &tris = prim->tris;
         bool handleTriUV = tris.has_attr("uv0") && tris.has_attr("uv1") && tris.has_attr("uv2");
         using vec2i = zs::vec<int, 2>;
-	    for (int i = 0; i != niters; ++i) {
-        	bht<int, 2, int> tab{3 * tris.size() * 2};
-		    tab.reset(pol, true);
+        for (int i = 0; i != niters; ++i) {
+            bht<int, 2, int> tab{3 * tris.size() * 2};
+            tab.reset(pol, true);
             pol(tris.values, [tab = proxy<space>(tab)](auto tri) mutable {
                 int u = tri[2];
                 for (int d = 0; d != 3; ++d) {
@@ -71,14 +72,13 @@ struct TrianglePrimSubdiv : INode {
                 auto edge = edges[ei];
                 auto p = (verts.values[edge[0]] + verts.values[edge[1]]) / 2;
                 verts.values[vOffset + ei] = p;
-                verts.foreach_attr<AttrAcceptAll>([&](auto const &key, auto &arr) {
-                    arr[vOffset + ei] = (arr[edge[0]] + arr[edge[1]]) / 2;
-                });
+                verts.foreach_attr<AttrAcceptAll>(
+                    [&](auto const &key, auto &arr) { arr[vOffset + ei] = (arr[edge[0]] + arr[edge[1]]) / 2; });
             });
 
             /// @note tris
             int tOffset = tris.size();
-            auto numNewTris = tris.size() * 3;  // each one divided into 4 pieces
+            auto numNewTris = tris.size() * 3; // each one divided into 4 pieces
             tris.resize(tOffset + numNewTris);
             auto assignSubTriAttr = [&tris, tOffset](auto tag_c, std::string tag, int ti) {
                 using TT = typename RM_CVREF_T(tag_c)::type;
@@ -101,7 +101,7 @@ struct TrianglePrimSubdiv : INode {
                 tag2[tOffset + ti * 3 + 2] = mid_props[2];
             };
             pol(range(tOffset), [&, tab = proxy<space>(tab), vOffset, tOffset](int ti) mutable {
-                /// 
+                ///
                 auto tri = tris.values[ti];
                 int u = tri[2];
                 int ids[3]; // tri[2] - {ids[0]} - tri[0] - {ids[1]} - tri[1] - {ids[2]} - tri[2]
@@ -124,20 +124,22 @@ struct TrianglePrimSubdiv : INode {
                     if (key == "uv0" || key == "uv1" || key == "uv2")
                         return;
                     // avg_by_edge
-                    if (auto k = key.substr(0, key.size() - 1); faceAvgEdgePropTags.find(k) != faceAvgEdgePropTags.end() && (key.back() == '0' || key.back() == '1' || key.back() == '2') && k != "uv") {
+                    if (auto k = key.substr(0, key.size() - 1);
+                        faceAvgEdgePropTags.find(k) != faceAvgEdgePropTags.end() &&
+                        (key.back() == '0' || key.back() == '1' || key.back() == '2') && k != "uv") {
                         assignSubTriAttr(zs::wrapt<TT>{}, k, ti);
                         return;
                     }
                     auto val = arr[ti]; // inherent
                     if (faceInherentPropTags.find(key) == faceInherentPropTags.end())
-                        val /= 4;   // average
+                        val /= 4; // average
                     arr[ti] = val;
                     arr[tOffset + ti * 3 + 0] = val;
                     arr[tOffset + ti * 3 + 1] = val;
                     arr[tOffset + ti * 3 + 2] = val;
                 });
             });
-	    }
+        }
         set_output("prim", std::move(prim));
     }
 };
@@ -156,4 +158,4 @@ ZENO_DEFNODE(TrianglePrimSubdiv)
     {"primitive"},
 });
 
-}
+} // namespace zeno

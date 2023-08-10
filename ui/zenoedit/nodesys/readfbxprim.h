@@ -21,5 +21,19 @@ private slots:
     void onPartClicked();
 };
 
+class EvalBlenderFile : public ZenoNode
+{
+    Q_OBJECT
+  public:
+    EvalBlenderFile(const NodeUtilParam& params, QGraphicsItem* parent = nullptr);
+    ~EvalBlenderFile();
+    std::vector<std::string> GetCurNodeInputs();
+  protected:
+    ZGraphicsLayout* initCustomParamWidgets() override;
+
+  private slots:
+    void onExecClicked();
+    void onEvalClicked();
+};
 
 #endif

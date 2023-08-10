@@ -21,15 +21,7 @@ CameraControl::CameraControl(
     , m_zenovis(pZenovis)
     , m_transformer(transformer)
     , m_picker(picker)
-    , m_mmb_pressed(false)
-    , m_theta(0.)
-    , m_phi(0.)
-    , m_ortho_mode(false)
-    , m_fov(45.)
-    , m_radius(5.0)
     , m_res(1, 1)
-    , m_aperture(0.0f)
-    , m_focalPlaneDistance(2.0f)
 {
     updatePerspective();
 }
@@ -38,11 +30,72 @@ void CameraControl::setRes(QVector2D res) {
     m_res = res;
 }
 
+float CameraControl::getTheta() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_theta;
+}
+void CameraControl::setTheta(float theta) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_theta = theta;
+}
+float CameraControl::getPhi() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_phi;
+}
+void CameraControl::setPhi(float phi) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_phi = phi;
+}
+zeno::vec3f CameraControl::getCenter() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_center;
+}
+void CameraControl::setCenter(zeno::vec3f center) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_center = center;
+}
+bool CameraControl::getOrthoMode() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_ortho_mode;
+}
+void CameraControl::setOrthoMode(bool orthoMode) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_ortho_mode = orthoMode;
+}
+float CameraControl::getRadius() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_radius;
+}
+void CameraControl::setRadius(float radius) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_radius = radius;
+}
+
+float CameraControl::getFOV() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_fov;
+}
+void CameraControl::setFOV(float fov) {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_fov = fov;
+}
+
+float CameraControl::getAperture() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->m_aperture;
+}
+
 void CameraControl::setAperture(float aperture) {
-    m_aperture = aperture;
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->m_aperture = aperture;
+}
+float CameraControl::getDisPlane() const {
+    auto *scene = m_zenovis->getSession()->get_scene();
+    return scene->camera->focalPlaneDistance;
 }
 void CameraControl::setDisPlane(float disPlane) {
-    m_focalPlaneDistance = disPlane;
+    auto *scene = m_zenovis->getSession()->get_scene();
+    scene->camera->focalPlaneDistance = disPlane;
 }
 
 void CameraControl::fakeMousePressEvent(QMouseEvent *event)
@@ -50,13 +103,10 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
     if (scene->camera->m_need_sync) {
-        m_center = {scene->camera->m_zxx_in.cx, scene->camera->m_zxx_in.cy, scene->camera->m_zxx_in.cz};
-        m_theta = scene->camera->m_zxx_in.theta;
-        m_phi = scene->camera->m_zxx_in.phi;
-        m_radius = scene->camera->m_zxx_in.radius;
-        m_fov = scene->camera->m_fov;
-        m_aperture = scene->camera->m_aperture;
-        m_focalPlaneDistance = scene->camera->focalPlaneDistance;
+        setCenter({scene->camera->m_zxx_in.cx, scene->camera->m_zxx_in.cy, scene->camera->m_zxx_in.cz});
+        setTheta(scene->camera->m_zxx_in.theta);
+        setPhi(scene->camera->m_zxx_in.phi);
+        setRadius(scene->camera->m_zxx_in.radius);
         scene->camera->m_need_sync = false;
         if (bool(m_picker) && scene->camera->m_auto_radius) {
             this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
@@ -68,8 +118,8 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
                 glm::vec4 posVS = posCS / posCS.w;
                 glm::vec4 pWS = glm::inverse(scene->camera->m_view) * posVS;
                 glm::vec3 p3WS = glm::vec3(pWS.x, pWS.y, pWS.z);
-                m_radius = glm::length(scene->camera->m_lodcenter - p3WS);
-                m_center = {p3WS.x, p3WS.y, p3WS.z};
+                setRadius(glm::length(scene->camera->m_lodcenter - p3WS));
+                setCenter({p3WS.x, p3WS.y, p3WS.z});
             });
             int mid_x = int(this->res().x() * 0.5);
             int mid_y = int(this->res().y() * 0.5);
@@ -103,56 +153,59 @@ void CameraControl::lookTo(int dir) {
     auto z_axis = QVector3D(0, 0, 1);
 
     ZASSERT_EXIT(m_zenovis);
+    auto c = getCenter();
+    QVector3D center = {c[0], c[1], c[2]};
+    auto radius = getRadius();
 
     switch (dir) {
     case 0:
         // front view
-        m_theta = 0.f;
-        m_phi = 0.f;
-        m_zenovis->updateCameraFront(m_center + z_axis * m_radius, -z_axis, y_axis);
+        setTheta(0);
+        setPhi(0);
+        m_zenovis->updateCameraFront(center + z_axis * radius, -z_axis, y_axis);
         break;
     case 1:
         // right view
-        m_theta = 0.0f;
-        m_phi = -glm::pi<float>() / 2.f;
-        m_zenovis->updateCameraFront(m_center + x_axis * m_radius, -x_axis, y_axis);
+        setTheta(0);
+        setPhi(-glm::pi<float>() / 2);
+        m_zenovis->updateCameraFront(center + x_axis * radius, -x_axis, y_axis);
         break;
     case 2:
         // top view
-        m_theta = -glm::pi<float>() / 2;
-        m_phi = 0.f;
-        m_zenovis->updateCameraFront(m_center + y_axis * m_radius, -z_axis, y_axis);
+        setTheta(-glm::pi<float>() / 2);
+        setPhi(0);
+        m_zenovis->updateCameraFront(center + y_axis * radius, -z_axis, y_axis);
         break;
     case 3:
         // back view
-        m_theta = 0.f;
-        m_phi = glm::pi<float>();
-        m_zenovis->updateCameraFront(m_center - z_axis * m_radius, z_axis, y_axis);
+        setTheta(0);
+        setPhi(glm::pi<float>());
+        m_zenovis->updateCameraFront(center - z_axis * radius, z_axis, y_axis);
         break;
     case 4:
         // left view
-        m_theta = 0.f;
-        m_phi = glm::pi<float>() / 2.f;
-        m_zenovis->updateCameraFront(m_center - x_axis * m_radius, x_axis, y_axis);
+        setTheta(0);
+        setPhi(glm::pi<float>() / 2);
+        m_zenovis->updateCameraFront(center - x_axis * radius, x_axis, y_axis);
         break;
     case 5:
         // bottom view
-        m_theta = glm::pi<float>() / 2;
-        m_phi = 0.f;
-        m_zenovis->updateCameraFront(m_center - y_axis * m_radius, y_axis, z_axis);
+        setTheta(glm::pi<float>() / 2);
+        setPhi(0);
+        m_zenovis->updateCameraFront(center - y_axis * radius, y_axis, z_axis);
         break;
     case 6:
         // back to origin
-        m_center = {0, 0, 0};
-        m_radius = 5.f;
-        m_theta = 0.f;
-        m_phi = 0.f;
-        m_zenovis->updateCameraFront(m_center, -z_axis, y_axis);
+        setCenter({0, 0, 0});
+        setRadius(5);
+        setTheta(0);
+        setPhi(0);
+        m_zenovis->updateCameraFront(center, -z_axis, y_axis);
     default: break;
     }
-    m_ortho_mode = true;
+    setOrthoMode(true);
     updatePerspective();
-    m_ortho_mode = false;
+    setOrthoMode(false);
     zenoApp->getMainWindow()->updateViewport();
 }
 
@@ -227,10 +280,10 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
         dy *= ratio / m_res[1];
         bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
         if (shift_pressed) {
-            float cos_t = cos(m_theta);
-            float sin_t = sin(m_theta);
-            float cos_p = cos(m_phi);
-            float sin_p = sin(m_phi);
+            float cos_t = cos(getTheta());
+            float sin_t = sin(getTheta());
+            float cos_p = cos(getPhi());
+            float sin_p = sin(getPhi());
             QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
             QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
             QVector3D right = QVector3D::crossProduct(up, back);
@@ -238,10 +291,13 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             right.normalize();
             up.normalize();
             QVector3D delta = right * dx + up * dy;
-            m_center += delta * m_radius;
+            auto c = getCenter();
+            QVector3D center = {c[0], c[1], c[2]};
+            center += delta * getRadius();
+            setCenter({float(center.x()), float(center.y()), float(center.z())});
         } else {
-            m_theta -= dy * M_PI;
-            m_phi += dx * M_PI;
+            setTheta(getTheta() - dy * M_PI);
+            setPhi(getPhi() + dx * M_PI);
         }
         m_lastMidButtonPos = QPointF(xpos, ypos);
     } else if (event->buttons() & Qt::LeftButton) {
@@ -276,9 +332,13 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 }
 
 void CameraControl::updatePerspective() {
-    float cx = m_center[0], cy = m_center[1], cz = m_center[2];
-    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, m_theta, m_phi, m_radius, m_fov, m_ortho_mode,
-                                                       m_aperture, m_focalPlaneDistance));
+    auto *session = m_zenovis->getSession();
+    if (session == nullptr) {
+        return;
+    }
+    float cx = getCenter()[0], cy = getCenter()[1], cz = getCenter()[2];
+    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, getTheta(), getPhi(), getRadius(), getFOV(), getOrthoMode(),
+                                                       getAperture(), getDisPlane()));
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
@@ -290,24 +350,24 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
     float delta = dy > 0 ? 1 : -1;
     if (shift_pressed) {
-        float temp = m_fov / scale;
-        m_fov = temp < 170 ? temp : 170;
+        float temp = getFOV() / scale;
+        setFOV(temp < 170 ? temp : 170);
 
     } else if (aperture_pressed) {
-        float temp = m_aperture += delta * 0.01;
-        m_aperture = temp >= 0 ? temp : 0;
+        float temp = getAperture() + delta * 0.01;
+        setAperture(temp >= 0 ? temp : 0);
 
     } else if (focalPlaneDistance_pressed) {
-        float temp = m_focalPlaneDistance + delta * 0.05;
-        m_focalPlaneDistance = temp >= 0.05 ? temp : 0.05;
+        float temp = getDisPlane() + delta * 0.05;
+        setDisPlane(temp >= 0.05 ? temp : 0.05);
     } else {
-        m_radius *= scale;
+        setRadius(getRadius() * scale);
     }
     updatePerspective();
 
     if (zenoApp->getMainWindow()->lightPanel != nullptr) {
-        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(m_aperture));
-        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(m_focalPlaneDistance));
+        zenoApp->getMainWindow()->lightPanel->camApertureEdit->setText(QString::number(getAperture()));
+        zenoApp->getMainWindow()->lightPanel->camDisPlaneEdit->setText(QString::number(getDisPlane()));
     }
 }
 
@@ -343,28 +403,30 @@ void CameraControl::setKeyFrame() {
 }
 
 void CameraControl::focus(QVector3D center, float radius) {
-    m_center = center;
-    if (m_fov >= 1e-6)
-        radius /= (m_fov / 45.0f);
-    m_radius = radius;
+    setCenter({float(center.x()), float(center.y()), float(center.z())});
+    if (getFOV() >= 1e-6)
+        radius /= (getFOV() / 45.0f);
+    setRadius(radius);
     updatePerspective();
 }
 
 QVector3D CameraControl::realPos() const {
-    float cos_t = std::cos(m_theta);
-    float sin_t = std::sin(m_theta);
-    float cos_p = std::cos(m_phi);
-    float sin_p = std::sin(m_phi);
+    float cos_t = cos(getTheta());
+    float sin_t = sin(getTheta());
+    float cos_p = cos(getPhi());
+    float sin_p = sin(getPhi());
     QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    return m_center - back * m_radius;
+    auto c = getCenter();
+    QVector3D center = {c[0], c[1], c[2]};
+    return center - back * getRadius();
 }
 
 // x, y from [0, 1]
 QVector3D CameraControl::screenToWorldRay(float x, float y) const {
-    float cos_t = cos(m_theta);
-    float sin_t = sin(m_theta);
-    float cos_p = cos(m_phi);
-    float sin_p = sin(m_phi);
+    float cos_t = cos(getTheta());
+    float sin_t = sin(getTheta());
+    float cos_p = cos(getPhi());
+    float sin_p = sin(getPhi());
     QVector3D back(cos_t * sin_p, sin_t, -cos_t * cos_p);
     QVector3D up(-sin_t * sin_p, cos_t, sin_t * cos_p);
     QVector3D right = QVector3D::crossProduct(up, back);
@@ -373,10 +435,12 @@ QVector3D CameraControl::screenToWorldRay(float x, float y) const {
     up.normalize();
     QMatrix4x4 view;
     view.setToIdentity();
-    view.lookAt(realPos(), m_center, up);
+    auto c = getCenter();
+    QVector3D center = {c[0], c[1], c[2]};
+    view.lookAt(realPos(), center, up);
     x = (x - 0.5) * 2;
     y = (y - 0.5) * (-2);
-    float v = std::tan(m_fov * M_PI / 180.f * 0.5f);
+    float v = std::tan(glm::radians(getFOV()) * 0.5f);
     float aspect = res().x() / res().y();
     auto dir = QVector3D(v * x * aspect, v * y, -1);
     dir = dir.normalized();

@@ -90,6 +90,7 @@ struct Params
 
     int skynx;
     int skyny;
+    float envavg;
 
     float sky_rot;
     float sky_rot_x;

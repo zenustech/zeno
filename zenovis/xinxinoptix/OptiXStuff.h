@@ -45,6 +45,8 @@
 #include <filesystem>
 #include "ies/ies_loader.h"
 #include "zeno/utils/fileio.h"
+#include "zeno/extra/TempNode.h"
+#include "zeno/types/PrimitiveObject.h"
 #include <cudaMemMarco.hpp>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
@@ -579,6 +581,7 @@ inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_t
 inline std::optional<std::string> sky_tex;
 inline std::map<std::string, int> sky_nx_map;
 inline std::map<std::string, int> sky_ny_map;
+inline std::map<std::string, float> sky_avg_map;
 
 
 inline std::map<std::string, std::vector<float>> sky_cdf_map;
@@ -592,6 +595,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
     auto &sky_cdf = sky_cdf_map[sky_tex.value()];
     auto &sky_pdf = sky_pdf_map[sky_tex.value()];
     auto &sky_start = sky_start_map[sky_tex.value()];
+    auto &sky_avg = sky_avg_map[sky_tex.value()];
     sky_nx = nx;
     sky_ny = ny;
     //we need to recompute cdf
@@ -620,6 +624,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
         }
     }
     float total_illum = sky_cdf[sky_cdf.size()-1];
+    sky_avg = total_illum / ((float)nx * (float)ny);
     for(int ii=0;ii<sky_cdf.size();ii++)
     {
         sky_cdf[ii] /= total_illum;
@@ -687,6 +692,26 @@ inline void addTexture(std::string path)
     else if (zeno::ends_with(path, ".ies", false)) {
         auto img = IES2HDR(path);
         g_tex[path] = makeCudaTexture(img.data(), 256, 1, 3);
+    }
+    else if (zeno::getSession().nodeClasses.count("ReadPNG16") > 0 && zeno::ends_with(path, ".png", false)) {
+        auto outs = zeno::TempNodeSimpleCaller("ReadPNG16")
+                .set2("path", path)
+                .call();
+
+        // Create nodes
+        auto img = outs.get<zeno::PrimitiveObject>("image");
+        if (img->verts.size() == 0) {
+            g_tex[path] = std::make_shared<cuTexture>();
+            return;
+        }
+        int nx = std::max(img->userData().get2<int>("w"), 1);
+        int ny = std::max(img->userData().get2<int>("h"), 1);
+        if(sky_tex.value() == path)//if this is a loading of a sky texture
+        {
+            calc_sky_cdf_map(nx, ny, 3, (float *)img->verts.data());
+        }
+
+        g_tex[path] = makeCudaTexture((float *)img->verts.data(), nx, ny, 3);
     }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);

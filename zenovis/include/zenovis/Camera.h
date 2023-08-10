@@ -33,6 +33,12 @@ struct Camera {
     bool m_block_window = false;
     bool m_auto_radius = false;
 
+    float m_theta = 0;
+    float m_phi = 0;
+    zeno::vec3f m_center = {};
+    bool m_ortho_mode = false;
+    float m_radius = 5;
+
     zeno::vec2i viewport_offset = {};
 
     struct ZxxHappyLookParam {

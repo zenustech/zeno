@@ -283,6 +283,7 @@ struct FrameBufferPicker : IPicker {
         CHECK_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
         // construct prim set
+        // use focus_prim if focus_prim_name is not empty else all prims
         vector<std::pair<string, std::shared_ptr<zeno::IObject>>> prims;
         auto prims_shared = scene->objectsMan->pairsShared();
         if (!focus_prim_name.empty()) {
@@ -303,12 +304,8 @@ struct FrameBufferPicker : IPicker {
             if (prim && prim->has_attr("pos")) {
                 // prepare vertices data
                 auto const &pos = prim->attr<zeno::vec3f>("pos");
-                auto vertex_count = prim->size();
-                vector<vec3f> mem(vertex_count);
-                for (int i = 0; i < vertex_count; i++)
-                    mem[i] = pos[i];
                 vao->bind();
-                vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+                vbo->bind_data(pos.data(), pos.size() * sizeof(pos[0]));
                 vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
                 bool pick_particle = false;
@@ -324,8 +321,24 @@ struct FrameBufferPicker : IPicker {
                     scene->camera->set_program_uniforms(obj_shader);
                     CHECK_GL(glUniform1ui(glGetUniformLocation(obj_shader->pro, "gObjectIndex"), id + 1));
                     // draw prim
-                    ebo->bind_data(prim->tris.data(), prim->tris.size() * sizeof(prim->tris[0]));
-                    CHECK_GL(glDrawElements(GL_TRIANGLES, prim->tris.size() * 3, GL_UNSIGNED_INT, 0));
+                    if (prim->tris.size()) {
+                        ebo->bind_data(prim->tris.data(), prim->tris.size() * sizeof(prim->tris[0]));
+                        CHECK_GL(glDrawElements(GL_TRIANGLES, prim->tris.size() * 3, GL_UNSIGNED_INT, 0));
+                    }
+                    else if (prim->polys.size()) {
+                        std::vector<vec3i> tris;
+                        for (auto [start, len]: prim->polys) {
+                            for (auto i = 2; i < len; i++) {
+                                tris.emplace_back(
+                                    prim->loops[start],
+                                    prim->loops[start + i - 1],
+                                    prim->loops[start + i]
+                                );
+                            }
+                        }
+                        ebo->bind_data(tris.data(), tris.size() * sizeof(tris[0]));
+                        CHECK_GL(glDrawElements(GL_TRIANGLES, tris.size() * 3, GL_UNSIGNED_INT, 0));
+                    }
                     ebo->unbind();
                     CHECK_GL(glDisable(GL_DEPTH_TEST));
                 }
@@ -342,7 +355,7 @@ struct FrameBufferPicker : IPicker {
                     vert_shader->use();
                     scene->camera->set_program_uniforms(vert_shader);
                     CHECK_GL(glUniform1ui(glGetUniformLocation(vert_shader->pro, "gObjectIndex"), id + 1));
-                    CHECK_GL(glDrawArrays(GL_POINTS, 0, mem.size()));
+                    CHECK_GL(glDrawArrays(GL_POINTS, 0, pos.size()));
 
                     // ----- draw object to cover invisible points -----
                     empty_and_offset_shader->use();
@@ -481,11 +494,11 @@ struct FrameBufferPicker : IPicker {
 
         string result;
         if (scene->select_mode == zenovis::PICK_OBJECT) {
-            if (!pixel.has_object()) return "";
+            if (!pixel.has_object() || !id_table.count(pixel.obj_id)) return "";
             result = id_table[pixel.obj_id];
         }
         else {
-            if (!pixel.has_object() || !pixel.has_element()) return "";
+            if (!pixel.has_object() || !pixel.has_element() || !id_table.count(pixel.obj_id)) return "";
             result = id_table[pixel.obj_id] + ":" + std::to_string(pixel.elem_id - 1);
         }
 
@@ -517,8 +530,8 @@ struct FrameBufferPicker : IPicker {
 
         // read pixels
         int pixel_count = rect_w * rect_h;
-        auto* pixels = new PixelInfo[pixel_count];
-        CHECK_GL(glReadPixels(start_x, start_y, rect_w, rect_h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels));
+        std::vector<PixelInfo> pixels(pixel_count);
+        CHECK_GL(glReadPixels(start_x, start_y, rect_w, rect_h, GL_RGB_INTEGER, GL_UNSIGNED_INT, pixels.data()));
 
         // output buffer to image
 //        auto* img_pixels = new PixelInfo[w * h];
