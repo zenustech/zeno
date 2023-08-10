@@ -63,6 +63,54 @@ ZENDEFNODE(ZSMakeSparseGrid, {/* inputs: */
                               /* category: */
                               {"Eulerian"}});
 
+struct ZSMakeAdaptiveGrid : INode {
+    void apply() override {
+        auto attr = get_input2<std::string>("Attribute");
+        auto dx = get_input2<float>("Dx");
+        auto bg = get_input2<float>("background");
+        auto type = get_input2<std::string>("type");
+        auto structure = get_input2<std::string>("structure");
+
+        auto zsAG = std::make_shared<ZenoAdaptiveGrid>();
+        auto &ag = zsAG->getAdaptiveGrid();
+
+        int nc = 1;
+        if (type == "scalar")
+            nc = 1;
+        else if (type == "vector3")
+            nc = 3;
+
+        using namespace zs;
+        ag.level(dim_c<0>) = RM_CVREF_T(ag.level(dim_c<0>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+        ag.level(dim_c<1>) = RM_CVREF_T(ag.level(dim_c<1>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+        ag.level(dim_c<2>) = RM_CVREF_T(ag.level(dim_c<2>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+        ag.scale(dx);
+        ag._background = bg;
+
+        if (structure == "vertex-centered") {
+            auto trans = zs::vec<float, 3>::constant(-dx / 2);
+            // zs::vec<float, 3> trans{-dx / 2.f, -dx / 2.f, -dx / 2.f};
+
+            ag.translate(trans);
+        }
+
+        set_output("Grid", zsAG);
+    }
+};
+
+ZENDEFNODE(ZSMakeAdaptiveGrid, {/* inputs: */
+                                {{"string", "Attribute", ""},
+                                 {"float", "Dx", "1.0"},
+                                 {"float", "background", "0"},
+                                 {"enum scalar vector3", "type", "scalar"},
+                                 {"enum cell-centered vertex-centered", "structure", "cell-centered"}},
+                                /* outputs: */
+                                {"Grid"},
+                                /* params: */
+                                {},
+                                /* category: */
+                                {"Eulerian"}});
+
 struct ZSGridTopoCopy : INode {
     void apply() override {
         auto zs_grid = get_input<ZenoSparseGrid>("Grid");
