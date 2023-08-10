@@ -17,8 +17,15 @@ namespace roads {
 
     struct Point : public Eigen::Vector3d {
         Point(const std::array<float, 3>& InArray) : Eigen::Vector3d(InArray[0], InArray[1], InArray[2]) {}
-        Point() = default;
+
+        using Eigen::Vector3d::Vector3d;
     };
+
+    struct Point2D : public Eigen::Vector2d {
+        using Eigen::Vector2d::Vector2d;
+    };
+
+    struct IntPoint : public std::array<size_t, 3> {};
 
     struct Triangle : public std::array<Point, 3> {
         bool AnyAngleLargerThan(const double Degree) {
@@ -34,20 +41,27 @@ namespace roads {
     };
 
     template <typename T>
-    struct ArrayList : public std::vector<T> {};
+    struct ArrayList : public std::vector<T> {
+        using std::vector<T>::vector;
+    };
 
     template <size_t X, size_t Y, typename GridPointType = Point>
     struct Grid : public std::array<GridPointType, X * Y> {};
 
-    template <typename GridPointType = Point>
-    struct DynamicGrid : public std::vector<GridPointType> {
+    template<typename GridPointType>
+    struct CustomGridBase : public ArrayList<GridPointType> {
         size_t Nx, Ny;
 
-        DynamicGrid(const size_t InNx, const size_t InNy) : std::vector<GridPointType>(InNx * InNy), Nx(InNx), Ny(InNy) {}
-        DynamicGrid(DynamicGrid&& OtherGridToMove)  noexcept : std::vector<GridPointType>(std::forward<std::vector<GridPointType>>(OtherGridToMove)) {
+        CustomGridBase(const size_t InNx, const size_t InNy) : ArrayList<GridPointType>(InNx * InNy), Nx(InNx), Ny(InNy) { }
+        CustomGridBase(CustomGridBase&& OtherGridToMove)  noexcept : ArrayList<GridPointType>(std::forward<ArrayList<GridPointType>>(OtherGridToMove)) {
             Nx = OtherGridToMove.Nx;
             Ny = OtherGridToMove.Ny;
         }
+    };
+
+    template <typename GridPointType = Point>
+    struct DynamicGrid : public CustomGridBase<GridPointType> {
+        using CustomGridBase<GridPointType>::CustomGridBase;
     };
 
 }// namespace roads
