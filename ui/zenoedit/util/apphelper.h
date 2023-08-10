@@ -13,6 +13,7 @@
 #include "launch/corelaunch.h"
 #include "settings/zsettings.h"
 #include "viewport/recordvideomgr.h"
+#include "panel/zenospreadsheet.h"
 
 class AppHelper
 {
@@ -30,6 +31,7 @@ public:
     static QVector<QString> getKeyFrameProperty(const QVariant &val);
     static bool getCurveValue(QVariant & val);
     static bool updateCurve(QVariant oldVal, QVariant& val);
+    static void dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer);
 };
 
 

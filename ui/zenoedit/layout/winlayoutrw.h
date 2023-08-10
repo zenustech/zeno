@@ -5,33 +5,13 @@
 #include <QtWidgets>
 #include <zenomodel/include/jsonhelper.h>
 #include "../dock/docktabcontent.h"
+#include <zenoio/writer/zsgwriter.h>
+#include <zenoio/reader/zsgreader.h>
+#include "util/apphelper.h"
 
-struct LayerOutNode;
-class ZTabDockWidget;
-
-typedef std::shared_ptr<LayerOutNode> PtrLayoutNode;
-
-enum NodeType
-{
-    NT_HOR,
-    NT_VERT,
-    NT_ELEM,
-};
-
-struct LayerOutNode {
-    PtrLayoutNode pLeft;
-    PtrLayoutNode pRight;
-    NodeType type;
-    ZTabDockWidget *pWidget;
-    QStringList tabs;
-    QRectF geom;
-    QVector<DockContentWidgetInfo> widgetInfos;
-};
-
-PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget *pWidget);
-PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget *pWidget);
+PtrLayoutNode findNode(PtrLayoutNode root, QDockWidget*pWidget);
+PtrLayoutNode findParent(PtrLayoutNode root, QDockWidget*pWidget);
 void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString& filePath);
-void writeLayout(PtrLayoutNode root, const QSize& szMainwin, RAPIDJSON_WRITER& writer);
 QString exportLayout(PtrLayoutNode root, const QSize& szMainwin);
 PtrLayoutNode readLayoutFile(const QString& filePath);
 PtrLayoutNode readLayout(const QString& content);

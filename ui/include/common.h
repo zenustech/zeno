@@ -3,6 +3,10 @@
 
 #include <QModelIndex>
 #include <QSize>
+#include <QDockWidget>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/prettywriter.h>
+typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> RAPIDJSON_WRITER;
 
 struct LayerOutNode;
 
@@ -38,6 +42,7 @@ struct RECORD_SETTING
 struct LAYOUT_SETTING {
     std::shared_ptr<LayerOutNode> layerOutNode;
     QSize size;
+    void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&);
 };
 
 struct APP_SETTINGS
