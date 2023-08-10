@@ -4,7 +4,7 @@ target_include_directories(zeno PRIVATE .)
 
 target_link_libraries(zeno PRIVATE $<BUILD_INTERFACE:ZFX>)
 target_sources(zeno PRIVATE
-    nw.cpp pw.cpp pnw.cpp ppw.cpp p2w.cpp pmw.cpp tw.cpp ne.cpp se.cpp FDGather.cpp dbg_printf.h
+    nw.cpp pw.cpp pnw.cpp ppw.cpp p2w.cpp pmw.cpp tw.cpp ne.cpp se.cpp FDGather.cpp refutils.cpp dbg_printf.h
     )
 
 #if (ZENO_WITH_zenvdb)

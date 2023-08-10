@@ -4,6 +4,7 @@
 #include <QtWidgets>
 #include "zwidgetostream.h"
 #include "cache/zcachemgr.h"
+#include "uilogic/procclipboard.h"
 #include <zeno/utils/scope_exit.h>
 
 class GraphsManagment;
@@ -24,6 +25,7 @@ public:
     ZenoMainWindow* getMainWindow();
 	QWidget* getWindow(const QString& objName);
     std::shared_ptr<ZCacheMgr> cacheMgr() const;
+    std::shared_ptr<ProcessClipboard> procClipboard() const;
 #if defined(ZENO_MULTIPROCESS) && defined(ZENO_IPC_USE_TCP)
     ZTcpServer* getServer();
 #endif
@@ -38,6 +40,7 @@ private:
     ZTcpServer* m_server;
 #endif
     std::shared_ptr<ZCacheMgr> m_spCacheMgr;
+    std::shared_ptr<ProcessClipboard> m_spProcClipboard;
     QDir m_appDataPath;
 };
 

@@ -21,6 +21,15 @@
 #include "viewport/cameracontrol.h"
 
 
+bool sceneMenuEvent(
+    ZenoSubGraphScene* pScene,
+    const QPointF& pos,
+    const QPointF& scenePos,
+    const QList<QGraphicsItem*>& seledItems,
+    const QList<QGraphicsItem*>& items,
+    const QModelIndex& subgIdx);
+
+
 _ZenoSubGraphView::_ZenoSubGraphView(QWidget *parent)
     : QGraphicsView(parent)
     , m_scene(nullptr)
@@ -452,58 +461,16 @@ void _ZenoSubGraphView::resizeEvent(QResizeEvent* event)
 void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 {
     QPoint pos = event->pos();
+    QPointF scenePos = mapToScene(pos);
 
     QList<QGraphicsItem*> seledItems = m_scene->selectedItems();
-    QSet<ZenoNode*> nodeSets;
-    for (QGraphicsItem* pItem : seledItems)
-    {
-        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
-        {
-            nodeSets.insert(pNode);
-        }
-    }
-
-    if (nodeSets.size() > 1)
-    {
-        //todo: group operation.
-        QMenu* nodeMenu = new QMenu;
-        QAction* pCopy = new QAction("Copy");
-        QAction* pDelete = new QAction("Delete");
-
-        nodeMenu->addAction(pCopy);
-        nodeMenu->addAction(pDelete);
-
-        nodeMenu->exec(QCursor::pos());
-        nodeMenu->deleteLater();
-        return;
-    }
-
-    nodeSets.clear();
     QList<QGraphicsItem*> tempList = this->items(pos);
- 
-    for (QGraphicsItem* pItem : tempList)
-    {
-        if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
-        {
-            if (qobject_cast<GroupNode *>(pNode) == nullptr)
-                nodeSets.insert(pNode);
-        }
-    }
 
-    if (nodeSets.size() == 1)
-    {
-        //send to scene/ZenoNode.
+    bool ret = sceneMenuEvent(m_scene, pos, scenePos, seledItems, tempList, m_scene->subGraphIndex());
+    if (!ret) {
         QGraphicsView::contextMenuEvent(event);
     }
-    else
-    {
-        NODE_CATES cates = zenoApp->graphsManagment()->currentModel()->getCates();
-        QPoint pos = event->pos();
-        m_menu = new ZenoNewnodeMenu(m_scene->subGraphIndex(), cates, mapToScene(pos), "", this);
-        m_menu->setEditorFocus();
-        m_menu->exec(QCursor::pos());
-        m_menu->deleteLater();
-    }
+
 }
 
 void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)

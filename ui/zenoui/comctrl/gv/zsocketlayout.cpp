@@ -106,6 +106,11 @@ void ZSocketLayout::setControl(QGraphicsItem* pControl)
         addItem(m_control, Qt::AlignRight);
 }
 
+QGraphicsItem* ZSocketLayout::socketText() const
+{
+    return m_text;
+}
+
 QGraphicsItem* ZSocketLayout::control() const
 {
     return m_control;

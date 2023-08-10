@@ -602,6 +602,12 @@ void ZEditableTextItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
     _base::mouseReleaseEvent(event);
 }
 
+void ZEditableTextItem::contextMenuEvent(QGraphicsSceneContextMenuEvent* event)
+{
+    _base::contextMenuEvent(event);
+}
+
+
 ZSocketEditableItem::ZSocketEditableItem(
         const QPersistentModelIndex& viewSockIdx,
         const QString& sockName,
