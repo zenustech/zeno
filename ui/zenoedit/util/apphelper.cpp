@@ -404,3 +404,63 @@ bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PAR
     launchProgram(pModel, launchParam);
     return true;
 }
+
+void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer) {
+    if (ZTabDockWidget* tabDockwidget = qobject_cast<ZTabDockWidget*>(dockWidget))
+    {
+        for (int i = 0; i < tabDockwidget->count(); i++)
+        {
+            QWidget* wid = tabDockwidget->widget(i);
+            if (qobject_cast<DockContent_Parameter*>(wid)) {
+                writer.String("Parameter");
+            }
+            else if (qobject_cast<DockContent_Editor*>(wid)) {
+                writer.String("Editor");
+            }
+            else if (qobject_cast<DockContent_View*>(wid)) {
+                DockContent_View* pView = qobject_cast<DockContent_View*>(wid);
+                auto dpwid = pView->getDisplayWid();
+                ZASSERT_EXIT(dpwid);
+                auto vis = dpwid->getZenoVis();
+                ZASSERT_EXIT(vis);
+                auto session = vis->getSession();
+                ZASSERT_EXIT(session);
+                writer.StartObject();
+                if (pView->isGLView()) {
+                    auto [r, g, b] = session->get_background_color();
+                    writer.Key("type");
+                    writer.String("View");
+                    writer.Key("backgroundcolor");
+                    writer.StartArray();
+                    writer.Double(r);
+                    writer.Double(g);
+                    writer.Double(b);
+                    writer.EndArray();
+                }
+                else {
+                    writer.Key("type");
+                    writer.String("Optix");
+                }
+                std::tuple<int, int> resolution = pView->curResolution();
+                writer.Key("blockwindow");
+                writer.Bool(session->is_lock_window());
+                writer.Key("resolutionX");
+                writer.Int(std::get<0>(resolution));
+                writer.Key("resolutionY");
+                writer.Int(std::get<1>(resolution));
+                writer.Key("resolution-combobox-index");
+                writer.Int(pView->curResComboBoxIndex());
+                writer.EndObject();
+            }
+            else if (qobject_cast<ZenoSpreadsheet*>(wid)) {
+                writer.String("Data");
+            }
+            else if (qobject_cast<DockContent_Log*>(wid)) {
+                writer.String("Logger");
+            }
+            else if (qobject_cast<ZenoLights*>(wid)) {
+                writer.String("Light");
+            }
+        }
+    }
+}

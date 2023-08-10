@@ -150,11 +150,20 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
     m_model = pModel;
     ZASSERT_EXIT(m_model);
 
-    m_ui->subnetTree->setModel(mgr->treeModel());
-    m_ui->subnetList->setModel(pModel);
-    m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    SubListSortProxyModel* treeProxyModel = new SubListSortProxyModel(this);
+    treeProxyModel->setSourceModel(mgr->treeModel());
+    treeProxyModel->setDynamicSortFilter(true);
+    m_ui->subnetTree->setModel(treeProxyModel);
+    treeProxyModel->sort(0, Qt::AscendingOrder);
     m_ui->subnetList->setSelectionMode(QAbstractItemView::ExtendedSelection);
     connect(m_ui->subnetTree->selectionModel(), &QItemSelectionModel::selectionChanged, this, &ZenoGraphsEditor::onTreeItemSelectionChanged);
+
+    SubListSortProxyModel* proxyModel = new SubListSortProxyModel(this);
+    proxyModel->setSourceModel(pModel);
+    proxyModel->setDynamicSortFilter(true);
+    m_ui->subnetList->setModel(proxyModel);
+    proxyModel->sort(0, Qt::AscendingOrder);
+    m_ui->subnetTree->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
     ZSubnetListItemDelegate *delegate = new ZSubnetListItemDelegate(m_model, this);
     m_ui->subnetList->setItemDelegate(delegate);
@@ -593,6 +602,8 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
             {
                 auto lst = objId.split('/', QtSkipEmptyParts);
                 objId = lst.last();
+                lst.removeOne(objId);
+                markSubgError(lst);
             }
 
             QList<SEARCH_RESULT> results = m_model->search(objId, SEARCH_NODEID, SEARCH_MATCH_EXACTLY);
@@ -635,6 +646,25 @@ void ZenoGraphsEditor::onLogInserted(const QModelIndex& parent, int first, int l
                 }
             }
         }
+    }
+}
+
+void ZenoGraphsEditor::markSubgError(const QStringList& idents)
+{
+    for (const auto &ident : idents)
+    {
+        QModelIndex index = m_model->nodeIndex(ident);
+        ZASSERT_EXIT(index.isValid());
+        QModelIndex subgIdx = index.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+        ZASSERT_EXIT(subgIdx.isValid());
+        auto graphsMgm = zenoApp->graphsManagment();
+        ZenoSubGraphScene* pScene = qobject_cast<ZenoSubGraphScene*>(graphsMgm->gvScene(subgIdx));
+        if (!pScene) {
+            pScene = new ZenoSubGraphScene(graphsMgm);
+            graphsMgm->addScene(subgIdx, pScene);
+            pScene->initModel(subgIdx);
+        }
+        pScene->markError(ident);
     }
 }
 

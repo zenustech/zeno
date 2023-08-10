@@ -78,6 +78,10 @@ void Camera::setResolution(int nx, int ny) {
     m_ny = ny;
     m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
 }
+void Camera::setResolutionInfo(bool block, int nx, int ny)
+{
+    set_safe_frames(block, nx, ny);
+}
 
 void Camera::set_safe_frames(bool bLock, int nx, int ny) {
     m_block_window = bLock;

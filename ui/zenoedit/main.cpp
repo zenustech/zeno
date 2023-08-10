@@ -5,6 +5,8 @@
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
 #include "zeno/utils/log.h"
+#include "zeno/zeno.h"
+#include "zeno/extra/EventCallbacks.h"
 
 /* debug cutsom layout: ZGraphicsLayout */
 //#define DEBUG_ZENOGV_LAYOUT
@@ -102,6 +104,12 @@ int main(int argc, char *argv[])
         return offline_main(argv[2], begin, end);
     }
 
+    if (argc >= 3 && !strcmp(argv[1], "--blender"))
+    {
+        extern int blender_main(const QCoreApplication& app);
+        return blender_main(a);
+    }
+
     //entrance for the zenoedit-player.
     if (argc >= 2 && !strcmp(argv[1], "--record"))
     {
@@ -124,6 +132,7 @@ int main(int argc, char *argv[])
     }
 
 	ZenoMainWindow mainWindow;
+    zeno::getSession().eventCallbacks->triggerEvent("editorConstructed");
 	mainWindow.showMaximized();
 	return a.exec();
 }

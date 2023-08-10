@@ -6,6 +6,8 @@
 #include "recordvideomgr.h"
 #include "viewportinteraction/picker.h"
 #include "launch/corelaunch.h"
+#include "dock/docktabcontent.h"
+#include <zenoio/include/common.h>
 
 class ViewportWidget;
 #ifdef ZENO_OPTIX_PROC
@@ -43,6 +45,7 @@ public:
     bool isCameraMoving() const;
     bool isPlaying() const;
     bool isGLViewport() const;
+    void setViewWidgetInfo(DockContentWidgetInfo& info);
 #ifdef ZENO_OPTIX_PROC
     ZOptixProcViewport* optixViewport() const;
 #else

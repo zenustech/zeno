@@ -107,6 +107,7 @@ protected:
 	void hoverMoveEvent(QGraphicsSceneHoverEvent* event) override;
 	void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     void focusOutEvent(QFocusEvent *event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
     //ZenoNode:
     QPersistentModelIndex subGraphIndex() const;
     virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
@@ -120,6 +121,9 @@ protected:
 
     ZLayoutBackground* m_bodyWidget;
     ZLayoutBackground* m_headerWidget;
+
+private slots:
+    void onCustomNameChanged();
 
 private:
     void _drawBorderWangStyle(QPainter* painter);
@@ -146,7 +150,7 @@ private:
     FuckQMap<QString, _param_ctrl> m_params;
     QVector<ZSocketLayout*> m_outSockets;
 
-    ZSimpleTextItem* m_NameItem;
+    ZGraphicsTextItem* m_NameItem;
     ZSimpleTextItem *m_pCategoryItem;
     ZSimpleTextItem *m_NameItemTip;
     ZenoMinStatusBtnItem* m_pStatusWidgets;

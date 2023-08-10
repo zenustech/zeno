@@ -10,7 +10,7 @@ ZCacheMgr::ZCacheMgr()
 
 bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
 {
-    if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOnLightCameraMaterial)) {
+    if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOn)) {
         return true;
     }
     m_bTempDir = bTempDir;

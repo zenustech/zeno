@@ -258,15 +258,27 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
         if (!nodes.isEmpty())
         {
             const QModelIndex& idx = nodes[0];
+            const QAbstractItemModel* pSubgModel = idx.model();
+            if (pSubgModel)
+            {
+                connect(pSubgModel, &QAbstractItemModel::dataChanged, this, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+                    if (roles.isEmpty())
+                        return;
+                    int role = roles[0];
+                    if (role != ROLE_CUSTOM_OBJNAME)
+                        return;
+                    m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
+                });
+            }
+
             if (select) {
                 m_plblName->setText(idx.data(ROLE_OBJID).toString());
                 m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
-            }
-            else {
-                m_plblName->setText("");
-                m_pNameLineEdit->setText("");
+                return;
             }
         }
+        m_plblName->setText("");
+        m_pNameLineEdit->setText("");
     }
 }
 
@@ -344,6 +356,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
+        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
         std::function<void()> resetAlways = [=]() {
@@ -360,10 +373,8 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
         connect(zenoApp->graphsManagment(), &GraphsManagment::modelInited, this, resetAlways);
         if (text == tr("alwaysAll"))
         {
-            mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
             pMainWin->setAlways(true);
             pMainWin->setAlwaysLightCameraMaterial(false, false);
-            pMainWin->onRunTriggered();
         }
         else if (text == tr("alwaysLightCamera") || text == tr("alwaysMaterial")) {
             QSettings settings(zsCompanyName, zsEditor);
@@ -376,13 +387,10 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
                 } else if (text == tr("alwaysMaterial")) {
                     pMainWin->setAlwaysLightCameraMaterial(false, true);
                 }
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
                 pMainWin->setAlways(false);
-                pMainWin->onRunTriggered();
             }
         }
         else {
-            mgr->setCacheOpt(ZCacheMgr::Opt_Undefined);
             pMainWin->setAlways(false);
             pMainWin->setAlwaysLightCameraMaterial(false, false);
         }
@@ -521,7 +529,8 @@ void DockContent_Editor::initConnections()
             }
             int per = factor * 100;
             QString sPer = QString("%1%").arg(per);
-            items.append(sPer);
+            if (!items.contains(sPer))
+                items.append(sPer);
         }
         cbZoom->clear();
         cbZoom->addItems(items);
@@ -735,7 +744,6 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {
         ZASSERT_EXIT(m_pDisplay);
-        int nx = -1, ny = -1;
         bool bLock = false;
         if (newValue == tr("Free"))
         {
@@ -934,6 +942,29 @@ void DockContent_View::onTabAboutToClose()
     }
 }
 
+
+int DockContent_View::curResComboBoxIndex()
+{
+    return m_cbRes->currentIndex();
+}
+
+void DockContent_View::setResComboBoxIndex(int index)
+{
+    QFont fnt = QApplication::font();
+    QFontMetrics fontMetrics(fnt);
+    m_cbRes->setCurrentIndex(index);
+    m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(m_cbRes->currentText()) + ZenoStyle::dpiScaled(28));
+}
+
+std::tuple<int, int> DockContent_View::curResolution()
+{
+    return std::make_tuple(nx, ny);
+}
+
+void DockContent_View::initResolution(int x, int y)
+{
+    nx = x; ny = y;
+}
 
 DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)
     : DockToolbarWidget(parent)

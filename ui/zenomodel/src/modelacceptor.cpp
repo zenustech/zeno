@@ -50,6 +50,7 @@ void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
     m_timeInfo.endFrame = qMax(info.beginFrame, info.endFrame);
     m_timeInfo.currFrame = qMax(qMin(m_timeInfo.currFrame, m_timeInfo.endFrame),
         m_timeInfo.beginFrame);
+    m_timeInfo.fpsIdx = info.fpsIdx;
 }
 
 void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)
@@ -68,6 +69,11 @@ void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)
     m_recordInfo.bAov = info.bAov;
 }
 
+void ModelAcceptor::setLayoutInfo(const LAYOUT_SETTING& info)
+{
+    m_layoutInfo = info;
+}
+
 TIMELINE_INFO ModelAcceptor::timeInfo() const
 {
     return m_timeInfo;
@@ -76,6 +82,11 @@ TIMELINE_INFO ModelAcceptor::timeInfo() const
 RECORD_SETTING ModelAcceptor::recordInfo() const
 {
     return m_recordInfo;
+}
+
+LAYOUT_SETTING ModelAcceptor::layoutInfo() const
+{
+    return m_layoutInfo;
 }
 
 void ModelAcceptor::BeginSubgraph(const QString& name)
@@ -434,7 +445,7 @@ void ModelAcceptor::setInputSocket2(
     }
 }
 
-void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef)
+void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef, const QString& type)
 {
     if (!m_currentGraph)
         return;
@@ -448,6 +459,10 @@ void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock
     if (bLinkRef)
     {
         pModel->setData(sockIdx, bLinkRef, ROLE_VPARAM_REF);
+    }
+    if (!type.isEmpty())
+    {
+        pModel->setData(sockIdx, type, ROLE_PARAM_TYPE);
     }
 }
 

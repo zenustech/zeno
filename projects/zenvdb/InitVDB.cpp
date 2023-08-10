@@ -5,7 +5,7 @@
 
 namespace zeno {
 
-static int defOpenvdbInit = getSession().eventCallbacks->hookEvent("init", [] {
+static int defOpenvdbInit = getSession().eventCallbacks->hookEvent("init", [] (auto _) {
     zeno::log_debug("Initializing OpenVDB...");
     openvdb::initialize();
     zeno::log_debug("Initialized OpenVDB successfully!");

@@ -444,6 +444,8 @@ void ZsgWriter::dumpTimeline(TIMELINE_INFO info, RAPIDJSON_WRITER& writer)
         writer.Int(info.currFrame);
         writer.Key(timeline::always);
         writer.Bool(info.bAlways);
+        writer.Key(timeline::fps_idx);
+        writer.Int(info.fpsIdx);
     }
 }
 
@@ -508,7 +510,7 @@ void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writ
     JsonObjBatch batch(writer);
     {
         writer.Key("recordinfo");
-        JsonObjBatch batch(writer);
+        writer.StartObject();
         writer.Key(recordinfo::record_path);
         writer.String(info.record_path.toUtf8());
         writer.Key(recordinfo::videoname);
@@ -533,6 +535,10 @@ void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writ
         writer.Bool(info.bAutoRemoveCache);
         writer.Key(recordinfo::bAov);
         writer.Bool(info.bAov);
+        writer.EndObject();
+
+        writer.Key("layoutinfo");
+        _writeLayout(settings.layoutInfo.layerOutNode, settings.layoutInfo.size, writer, settings.layoutInfo.cbDumpTabsToZsg);
     }
 }
 
@@ -584,6 +590,75 @@ void ZsgWriter::_dumpDescriptors(const NODE_DESCS& descs, RAPIDJSON_WRITER& writ
 
             writer.Key("categories");
             AddStringList(desc.categories, writer);
+        }
+    }
+}
+
+void ZsgWriter::_writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer, void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&))
+{
+    JsonObjBatch scope(writer);
+    if (root->type == NT_HOR || root->type == NT_VERT)
+    {
+        writer.Key("orientation");
+        writer.String(root->type == NT_HOR ? "H" : "V");
+        writer.Key("left");
+        if (root->pLeft)
+            _writeLayout(root->pLeft, szMainwin, writer, cbDumpTabsToZsg);
+        else
+            writer.Null();
+
+        writer.Key("right");
+        if (root->pRight)
+            _writeLayout(root->pRight, szMainwin, writer, cbDumpTabsToZsg);
+        else
+            writer.Null();
+    }
+    else
+    {
+        writer.Key("widget");
+        if (root->pWidget == nullptr || root->pWidget->isHidden())
+        {
+            writer.Null();
+        }
+        else
+        {
+            writer.StartObject();
+            int w = szMainwin.width();
+            int h = szMainwin.height();
+            if (w == 0)
+                w = 1;
+            if (h == 0)
+                h = 1;
+
+            writer.Key("geometry");
+            writer.StartObject();
+            QRect rc = root->pWidget->geometry();
+
+            writer.Key("x");
+            float _left = (float)rc.left() / w;
+            writer.Double(_left);
+
+            writer.Key("y");
+            float _top = (float)rc.top() / h;
+            writer.Double(_top);
+
+            writer.Key("width");
+            float _width = (float)rc.width() / w;
+            writer.Double(_width);
+
+            writer.Key("height");
+            float _height = (float)rc.height() / h;
+            writer.Double(_height);
+
+            writer.EndObject();
+
+            writer.Key("tabs");
+            writer.StartArray();
+            if (cbDumpTabsToZsg)
+                cbDumpTabsToZsg(root->pWidget, writer);
+            writer.EndArray();
+
+            writer.EndObject();
         }
     }
 }

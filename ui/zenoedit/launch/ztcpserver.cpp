@@ -110,6 +110,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         "--cacheLightCameraOnly", QString::number(param.applyLightAndCameraOnly),
         "--cacheMaterialOnly", QString::number(param.applyMaterialOnly),
         "--cacheautorm", QString::number(param.autoRmCurcache),
+        "--zsg", param.zsgPath,
     };
 
     m_proc->start(QCoreApplication::applicationFilePath(), args);

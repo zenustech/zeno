@@ -437,6 +437,7 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
     }
     else if (root->type == NT_ELEM)
     {
+        int dockContentViewIndex = 0;
         root->pWidget = pLeft;
         for (QString tab : root->tabs)
         {
@@ -447,7 +448,14 @@ void ZenoMainWindow::initDocksWidget(ZTabDockWidget* pLeft, PtrLayoutNode root)
                 if (type == PANEL_OPTIX_VIEW)
                     type = PANEL_GL_VIEW;
             #endif
+                if ((type == PANEL_GL_VIEW || type == PANEL_OPTIX_VIEW) && root->widgetInfos.size() != 0)
+                {
+                    if (dockContentViewIndex < root->widgetInfos.size())
+                        pLeft->onAddTab(type, root->widgetInfos[dockContentViewIndex++]);
+                }
+                else {
                 pLeft->onAddTab(type);
+                }
             }
         }
     }
@@ -651,12 +659,21 @@ void ZenoMainWindow::initTimelineDock()
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
+        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
         m_pTimeline->togglePlayButton(false);
         int nFrame = m_pTimeline->value();
         QVector<DisplayWidget *> views = viewports();
+        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+            QVector<DisplayWidget *> views = viewports();
+            for (auto displayWid : views) {
+                if (!displayWid->isGLViewport()) {
+                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                }
+            }
+        };
         for (DisplayWidget *view : views) {
             if (m_bAlways) {
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
+                setOptixUpdateSeparately(false, false);
                 LAUNCH_PARAM launchParam;
                 launchParam.beginFrame = nFrame;
                 launchParam.endFrame = nFrame;
@@ -664,16 +681,7 @@ void ZenoMainWindow::initTimelineDock()
                 view->onRun(launchParam);
             }
             else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
-                std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
-                    QVector<DisplayWidget *> views = viewports();
-                    for (auto displayWid : views) {
-                        if (!displayWid->isGLViewport()) {
-                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-                        }
-                    }
-                };
                 setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
                 LAUNCH_PARAM launchParam;
                 launchParam.beginFrame = nFrame;
                 launchParam.endFrame = nFrame;
@@ -792,6 +800,9 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         launchParam.endFrame = endFrame;
         launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
         launchParam.applyMaterialOnly = applyMaterialOnly;
+        QString path = pModel->filePath();
+        path = path.left(path.lastIndexOf("/"));
+        launchParam.zsgPath = path;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }
@@ -1307,6 +1318,9 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
             //delete pDock;
         }
 
+        // trigger destroy event
+        zeno::getSession().eventCallbacks->triggerEvent("beginDestroy");
+
         QMainWindow::closeEvent(event);
     } 
     else 
@@ -1452,6 +1466,7 @@ bool ZenoMainWindow::openFile(QString filePath)
 
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
+    resetDocks(pGraphs->layoutInfo().layerOutNode);
     return true;
 }
 
@@ -1735,6 +1750,8 @@ void ZenoMainWindow::save()
     auto pGraphsMgm = zenoApp->graphsManagment();
     ZASSERT_EXIT(pGraphsMgm);
     IGraphsModel* pModel = pGraphsMgm->currentModel();
+    if (!pModel)
+        return;
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
     {
@@ -1764,6 +1781,9 @@ bool ZenoMainWindow::saveFile(QString filePath)
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
     settings.recordInfo = zenoApp->graphsManagment()->recordInfo();
+    settings.layoutInfo.layerOutNode = m_layoutRoot;
+    settings.layoutInfo.size = size();
+    settings.layoutInfo.cbDumpTabsToZsg = &AppHelper::dumpTabsToZsg;
     zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;
@@ -1784,6 +1804,7 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     info.bAlways = m_bAlways;
     info.beginFrame = m_pTimeline->fromTo().first;
     info.endFrame = m_pTimeline->fromTo().second;
+    info.fpsIdx = m_pTimeline->fpsIdx();
     return info;
 }
 
@@ -1817,6 +1838,7 @@ void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
     setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
+    m_pTimeline->initFps(info.fpsIdx);
 }
 
 void ZenoMainWindow::onFeedBack()
@@ -1980,6 +2002,6 @@ static int subprogram_dumpzsg2zsl_main(int argc, char **argv) {
     return 0;
 }
 
-static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] {
+static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] (auto _) {
     zeno::getSession().userData().set("subprogram_dumpzsg2zsl", std::make_shared<zeno::GenericObject<int(*)(int, char **)>>(subprogram_dumpzsg2zsl_main));
 });
