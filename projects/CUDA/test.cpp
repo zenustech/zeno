@@ -131,7 +131,7 @@ struct TestAdaptiveGrid : INode {
         using LeafT = typename TreeT::LeafNodeType;
         using ValueT = typename LeafT::ValueType;
         static_assert(RootT::LEVEL == 3, "expects a tree of 3 levels (excluding root level)");
-        using ZSGridT = zs::AdaptiveGrid<3, ValueT,
+        using ZSGridT = zs::VdbGrid<3, ValueT,
                                          zs::index_sequence<RootT::NodeChainType::template Get<0>::LOG2DIM,
                                                             RootT::NodeChainType::template Get<1>::LOG2DIM,
                                                             RootT::NodeChainType::template Get<2>::LOG2DIM>>;
