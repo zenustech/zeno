@@ -324,7 +324,6 @@ struct ZSVDBToAdaptiveGrid : INode {
             attr = "sdf";
 
         if (has_input("AdaptiveGrid")) {
-#if 0
             auto zs_grid = get_input<ZenoAdaptiveGrid>("AdaptiveGrid");
             auto &ag = zs_grid->ag;
 
@@ -345,12 +344,13 @@ struct ZSVDBToAdaptiveGrid : INode {
                 ag.append_channels(zs::cuda_exec(), {{attrTag, num_ch}});
             }
 
+#if 1
             if (num_ch == 1) {
                 auto vdb_ = std::dynamic_pointer_cast<VDBFloatGrid>(vdb);
-                zs::assign_floatgrid_to_sparse_grid(vdb_->m_grid, ag, attrTag);
+                zs::assign_floatgrid_to_adaptive_grid(vdb_->m_grid, ag, attrTag);
             } else {
                 auto vdb_ = std::dynamic_pointer_cast<VDBFloat3Grid>(vdb);
-                zs::assign_float3grid_to_sparse_grid(vdb_->m_grid, ag, attrTag);
+                zs::assign_float3grid_to_adaptive_grid(vdb_->m_grid, ag, attrTag);
             }
 
             set_output("AdaptiveGrid", zs_grid);

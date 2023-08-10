@@ -207,7 +207,7 @@ struct TestAdaptiveGrid : INode {
 #endif
             }
 
-            static_assert(sizeof(typename NodeT::NodeMaskType) == sizeof(typename LevelT::mask_type::value_type),
+            static_assert(sizeof(typename NodeT::NodeMaskType) == sizeof(typename LevelT::tile_mask_type::value_type),
                           "???");
 
             std::memcpy(&childMask[bno], &node.getChildMask(), sizeof(childMask[bno]));
@@ -253,7 +253,7 @@ struct TestAdaptiveGrid : INode {
 #endif
             }
 
-            static_assert(sizeof(typename LeafT::NodeMaskType) == sizeof(typename LevelT::mask_type::value_type),
+            static_assert(sizeof(typename LeafT::NodeMaskType) == sizeof(typename LevelT::tile_mask_type::value_type),
                           "???");
             std::memcpy(&valueMask[bno], &lf.getValueMask(), sizeof(valueMask[bno]));
         }
