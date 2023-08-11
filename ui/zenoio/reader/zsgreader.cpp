@@ -52,7 +52,7 @@ bool ZsgReader::importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, co
     return true;
 }
 
-bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
+bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor, bool bImport)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -90,11 +90,16 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     for (const auto& subgraph : graph.GetObject())
     {
         const QString& graphName = subgraph.name.GetString();
+        if (bImport && graphName == "main")
+            continue;
         if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
             return false;
     }
     pAcceptor->EndGraphs();
     pAcceptor->switchSubGraph("main");
+
+    if (bImport)
+        return true;
 
     if (doc.HasMember("views"))
     {
@@ -290,7 +295,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
-
+    pAcceptor->endNode(nodeid, name, objValue);
     return true;
 }
 
@@ -514,22 +519,6 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
             if (sockObj.HasMember("dictlist-panel")) {
                 _parseDictPanel(false, sockObj["dictlist-panel"], id, outSock, nodeName, pAcceptor);
             }
-            if (sockObj.HasMember("tooltip")) {
-                QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
-                pAcceptor->setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
-            }
-            bool bLinkRef = false;
-            if (sockObj.HasMember("link-ref"))
-            {
-                bLinkRef = sockObj["link-ref"].GetBool();
-            }
-            QString type;
-            if (sockObj.HasMember("type"))
-            {
-                type = sockObj["type"].GetString();
-            }
-            if (bLinkRef || !type.isEmpty())
-                pAcceptor->setOutputSocket(id, outSock, bLinkRef, type);
         }
     }
 }

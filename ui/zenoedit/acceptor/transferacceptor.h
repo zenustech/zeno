@@ -88,6 +88,7 @@ public:
     QList<EdgeInfo> links() const;
     void getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links);
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
+    void endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue) override;
 
 private:
     IGraphsModel* m_pModel;
