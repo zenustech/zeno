@@ -10,13 +10,35 @@
 namespace zeno {
 
 struct ZenoAdaptiveGrid : IObjectClone<ZenoAdaptiveGrid> {
-    using ag_t = zs::VdbGrid<3, zs::f32, zs::index_sequence<3, 4, 5>>;
+    using vdb_t = zs::VdbGrid<3, zs::f32, zs::index_sequence<3, 4, 5>>;
+    using att_t = zs::AdaptiveTileTree<3, zs::f32, 3, 2>; // adaptive tile tree
 
-    auto &getAdaptiveGrid() noexcept {
-        return ag;
+    bool holdsVdbGrid() const noexcept {
+        return std::holds_alternative<vdb_t>(ag);
     }
-    const auto &getAdaptiveGrid() const noexcept {
-        return ag;
+    auto &getVdbGrid() noexcept {
+        return std::get<vdb_t>(ag);
+    }
+    const auto &getVdbGrid() const noexcept {
+        return std::get<vdb_t>(ag);
+    }
+    auto &beginVdbGrid() noexcept {
+        ag = vdb_t{};
+        return std::get<vdb_t>(ag);
+    }
+
+    bool holdsTileTree() const noexcept {
+        return std::holds_alternative<att_t>(ag);
+    }
+    auto &getTileTree() noexcept {
+        return std::get<att_t>(ag);
+    }
+    const auto &getTileTree() const noexcept {
+        return std::get<att_t>(ag);
+    }
+    auto &beginTileTree() noexcept {
+        ag = att_t{};
+        return std::get<att_t>(ag);
     }
 
     template <typename T>
@@ -51,7 +73,7 @@ struct ZenoAdaptiveGrid : IObjectClone<ZenoAdaptiveGrid> {
         return false;
     }
 
-    ag_t ag;
+    std::variant<vdb_t, att_t> ag;
     std::map<std::string, std::any> metas;
 };
 
