@@ -1466,7 +1466,7 @@ bool ZenoMainWindow::openFile(QString filePath)
 
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
-    resetDocks(pGraphs->layoutInfo().layerOutNode);
+    //resetDocks(pGraphs->layoutInfo().layerOutNode);
     return true;
 }
 
