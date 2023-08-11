@@ -214,20 +214,18 @@ namespace zeno {
 
         template<typename ParentType, typename InputType, size_t Hash>
         struct InputField : public Field<ParentType, InputType, Hash> {
-            using Field<ParentType, InputType, Hash>::Parent;
-            using Field<ParentType, InputType, Hash>::Type;
             using Field<ParentType, InputType, Hash>::KeyName;
             using Field<ParentType, InputType, Hash>::ValueRef;
             using Field<ParentType, InputType, Hash>::DefaultValue;
             using Field<ParentType, InputType, Hash>::DisplayName;
             using Field<ParentType, InputType, Hash>::IsOptional;
 
-            InputField(Parent &ParentRef, Type &InValueRef, std::string InKeyName, bool InIsOptional = false, const std::optional<std::string> &InDisplayName = std::nullopt, const std::optional<std::string> &InDefaultValue = std::nullopt)
+            InputField(ParentType &ParentRef, InputType &InValueRef, std::string InKeyName, bool InIsOptional = false, const std::optional<std::string> &InDisplayName = std::nullopt, const std::optional<std::string> &InDefaultValue = std::nullopt)
                 : Field<ParentType, InputType, Hash>(ParentRef, InValueRef, InKeyName, InIsOptional, InDisplayName, InDefaultValue) {
                 ParentRef.HookList.InputHook.push_back(ToCaptured());
 
                 static bool bHasInitialized = false;
-                static SocketDescriptor SDescriptor = SocketDescriptor{ValueTypeToString<Type>::TypeName, KeyName, DefaultValue, DisplayName};
+                static SocketDescriptor SDescriptor = SocketDescriptor{ValueTypeToString<InputType>::TypeName, KeyName, DefaultValue, DisplayName};
                 if (!bHasInitialized) {
                     bHasInitialized = true;
                     ParentType::GetDescriptor().inputs.push_back(SDescriptor);
@@ -237,14 +235,14 @@ namespace zeno {
             inline void ReadObject(INode *Node) {
                 zeno::log_debug("[AutoNode] Reading zany '{}'", KeyName);
                 if (!IsOptional || Node->has_input(KeyName)) {
-                    ValueRef = Node->get_input<RawType_t<Type>>(KeyName);
+                    ValueRef = Node->get_input<RawType_t<InputType>>(KeyName);
                 }
             }
 
             inline void ReadPrimitiveValue(INode *Node) {
                 zeno::log_debug("[AutoNode] Reading primitive value '{}'", KeyName);
                 if (!IsOptional || Node->has_input(KeyName)) {
-                    ValueRef = Node->get_input2<RawType_t<Type>>(KeyName);
+                    ValueRef = Node->get_input2<RawType_t<InputType>>(KeyName);
                 }
             }
 
@@ -253,7 +251,7 @@ namespace zeno {
                     zeno::log_error("Trying to read value from a nullptr Node.");
                     return;
                 }
-                if constexpr (IsSharedPtr<Type>()) {
+                if constexpr (IsSharedPtr<InputType>()) {
                     ReadObject(Node);
                 } else {
                     ReadPrimitiveValue(Node);
@@ -279,12 +277,12 @@ namespace zeno {
             using Field<ParentType, InputType, Hash>::DisplayName;
             using Field<ParentType, InputType, Hash>::IsOptional;
 
-            OutputField(Parent &ParentRef, Type &InValueRef, std::string InKeyName, bool InIsOptional = false, const std::optional<std::string> &InDisplayName = std::nullopt, const std::optional<std::string> &InDefaultValue = std::nullopt)
+            OutputField(ParentType &ParentRef, InputType &InValueRef, std::string InKeyName, bool InIsOptional = false, const std::optional<std::string> &InDisplayName = std::nullopt, const std::optional<std::string> &InDefaultValue = std::nullopt)
                 : Field<ParentType, InputType, Hash>(ParentRef, InValueRef, InKeyName, InIsOptional, InDisplayName) {
                 ParentRef.HookList.OutputHook.push_back(ToCaptured());
 
                 static bool bHasInitialized = false;
-                static SocketDescriptor SDescriptor = SocketDescriptor{ValueTypeToString<Type>::TypeName, KeyName, DefaultValue, DisplayName};
+                static SocketDescriptor SDescriptor = SocketDescriptor{ValueTypeToString<InputType>::TypeName, KeyName, DefaultValue, DisplayName};
 
                 if (!bHasInitialized) {
                     bHasInitialized = true;
@@ -309,7 +307,7 @@ namespace zeno {
                     zeno::log_error("Trying to read value from a nullptr Node.");
                     return;
                 }
-                if constexpr (IsSharedPtr<Type>()) {
+                if constexpr (IsSharedPtr<InputType>()) {
                     WriteObject(Node);
                 } else {
                     WritePrimitiveValue(Node);
@@ -474,7 +472,7 @@ namespace zeno {
                 };
             }
         };
-    };
+    };// namespace reflect
 
     template<typename T>
     reflect::INodeParameterObject<T>::INodeParameterObject(INode *Node) : NodeParameterBase(Node) {
