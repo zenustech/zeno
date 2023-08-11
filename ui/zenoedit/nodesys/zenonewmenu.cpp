@@ -33,17 +33,17 @@ ZenoNewnodeMenu::ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& c
     m_pWAction->setDefaultWidget(m_searchEdit);
     addAction(m_pWAction);
 
+    if (!m_cates.isEmpty())
+    {
+        for (auto i : m_cates["deprecated"].nodes)
+        {
+            deprecatedNodes.insert(i);
+        }
+    }
+
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     QList<QAction*> actions = getCategoryActions(pModel, m_subgIdx, text, m_scenePos);
     addActions(actions);
-
-	if (!m_cates.isEmpty())
-	{
-		for (auto i : m_cates["deprecated"].nodes)
-		{
-			deprecatedNodes.insert(i);
-		}
-	}
 
     connect(m_searchEdit, SIGNAL(textChanged(const QString&)), this, SLOT(onTextChanged(const QString&)));
 }
