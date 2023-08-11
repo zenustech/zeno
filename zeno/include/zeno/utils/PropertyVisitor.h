@@ -214,6 +214,14 @@ namespace zeno {
 
         template<typename ParentType, typename InputType, size_t Hash>
         struct InputField : public Field<ParentType, InputType, Hash> {
+            using Field<ParentType, InputType, Hash>::Parent;
+            using Field<ParentType, InputType, Hash>::Type;
+            using Field<ParentType, InputType, Hash>::KeyName;
+            using Field<ParentType, InputType, Hash>::ValueRef;
+            using Field<ParentType, InputType, Hash>::DefaultValue;
+            using Field<ParentType, InputType, Hash>::DisplayName;
+            using Field<ParentType, InputType, Hash>::IsOptional;
+
             InputField(Parent &ParentRef, Type &InValueRef, std::string InKeyName, bool InIsOptional = false, const std::optional<std::string> &InDisplayName = std::nullopt, const std::optional<std::string> &InDefaultValue = std::nullopt)
                 : Field<ParentType, InputType, Hash>(ParentRef, InValueRef, InKeyName, InIsOptional, InDisplayName, InDefaultValue) {
                 ParentRef.HookList.InputHook.push_back(ToCaptured());
@@ -263,6 +271,14 @@ namespace zeno {
 
         template<typename ParentType, typename InputType, size_t Hash>
         struct OutputField : public Field<ParentType, InputType, Hash> {
+            using Field<ParentType, InputType, Hash>::Parent;
+            using Field<ParentType, InputType, Hash>::Type;
+            using Field<ParentType, InputType, Hash>::KeyName;
+            using Field<ParentType, InputType, Hash>::ValueRef;
+            using Field<ParentType, InputType, Hash>::DefaultValue;
+            using Field<ParentType, InputType, Hash>::DisplayName;
+            using Field<ParentType, InputType, Hash>::IsOptional;
+
             OutputField(Parent &ParentRef, Type &InValueRef, std::string InKeyName, bool InIsOptional = false, const std::optional<std::string> &InDisplayName = std::nullopt, const std::optional<std::string> &InDefaultValue = std::nullopt)
                 : Field<ParentType, InputType, Hash>(ParentRef, InValueRef, InKeyName, InIsOptional, InDisplayName) {
                 ParentRef.HookList.OutputHook.push_back(ToCaptured());
