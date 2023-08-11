@@ -6,6 +6,8 @@
 #include <QDockWidget>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
+#include <memory>
+
 typedef rapidjson::PrettyWriter<rapidjson::StringBuffer> RAPIDJSON_WRITER;
 
 struct LayerOutNode;

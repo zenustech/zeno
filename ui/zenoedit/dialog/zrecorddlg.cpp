@@ -14,7 +14,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui = new Ui::RecordVideoDlg;
     m_ui->setupUi(this);
 
-    RECORD_SETTING& info = zenoApp->graphsManagment()->recordInfo();
+    const RECORD_SETTING& info = zenoApp->graphsManagment()->recordInfo();
     m_ui->fps->setValidator(new QIntValidator);
     m_ui->fps->setText(QString::number(info.fps));
     m_ui->bitrate->setValidator(new QIntValidator);
