@@ -1,5 +1,6 @@
 #include "Structures.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
+#include "zensim/geometry/AdaptiveGridUtils.hpp"
 #include "zensim/geometry/LevelSetUtils.tpp"
 #include "zensim/geometry/SparseGrid.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
@@ -72,7 +73,6 @@ struct ZSMakeAdaptiveGrid : INode {
         auto structure = get_input2<std::string>("structure");
 
         auto zsAG = std::make_shared<ZenoAdaptiveGrid>();
-        auto &ag = zsAG->getAdaptiveGrid();
 
         int nc = 1;
         if (type == "scalar")
@@ -81,17 +81,34 @@ struct ZSMakeAdaptiveGrid : INode {
             nc = 3;
 
         using namespace zs;
-        ag.level(dim_c<0>) = RM_CVREF_T(ag.level(dim_c<0>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
-        ag.level(dim_c<1>) = RM_CVREF_T(ag.level(dim_c<1>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
-        ag.level(dim_c<2>) = RM_CVREF_T(ag.level(dim_c<2>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
-        ag.scale(dx);
-        ag._background = bg;
+        if (auto str = get_input2<std::string>("category"); str == "vdb") {
+            auto &ag = zsAG->beginVdbGrid();
 
-        if (structure == "vertex-centered") {
-            auto trans = zs::vec<float, 3>::constant(-dx / 2);
-            // zs::vec<float, 3> trans{-dx / 2.f, -dx / 2.f, -dx / 2.f};
+            ag.level(dim_c<0>) = RM_CVREF_T(ag.level(dim_c<0>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+            ag.level(dim_c<1>) = RM_CVREF_T(ag.level(dim_c<1>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+            ag.level(dim_c<2>) = RM_CVREF_T(ag.level(dim_c<2>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+            ag.scale(dx);
+            ag._background = bg;
 
-            ag.translate(trans);
+            if (structure == "vertex-centered") {
+                auto trans = zs::vec<float, 3>::constant(-dx / 2);
+                // zs::vec<float, 3> trans{-dx / 2.f, -dx / 2.f, -dx / 2.f};
+                ag.translate(trans);
+            }
+        } else {
+            auto &ag = zsAG->beginTileTree();
+
+            ag.level(dim_c<0>) = RM_CVREF_T(ag.level(dim_c<0>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+            ag.level(dim_c<1>) = RM_CVREF_T(ag.level(dim_c<1>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+            ag.level(dim_c<2>) = RM_CVREF_T(ag.level(dim_c<2>))({{attr, nc}}, 0, zs::memsrc_e::device, 0);
+            ag.scale(dx);
+            ag._background = bg;
+
+            if (structure == "vertex-centered") {
+                auto trans = zs::vec<float, 3>::constant(-dx / 2);
+                // zs::vec<float, 3> trans{-dx / 2.f, -dx / 2.f, -dx / 2.f};
+                ag.translate(trans);
+            }
         }
 
         set_output("Grid", zsAG);
@@ -99,11 +116,14 @@ struct ZSMakeAdaptiveGrid : INode {
 };
 
 ZENDEFNODE(ZSMakeAdaptiveGrid, {/* inputs: */
-                                {{"string", "Attribute", ""},
-                                 {"float", "Dx", "1.0"},
-                                 {"float", "background", "0"},
-                                 {"enum scalar vector3", "type", "scalar"},
-                                 {"enum cell-centered vertex-centered", "structure", "cell-centered"}},
+                                {
+                                    {"string", "Attribute", ""},
+                                    {"float", "Dx", "1.0"},
+                                    {"float", "background", "0"},
+                                    {"enum scalar vector3", "type", "scalar"},
+                                    {"enum cell-centered vertex-centered", "structure", "cell-centered"},
+                                    {"enum vdb tile_tree", "category", "vdb"},
+                                },
                                 /* outputs: */
                                 {"Grid"},
                                 /* params: */
@@ -319,36 +339,48 @@ struct ZSAdaptiveGridToVDB : INode {
         if (attr.empty())
             attr = "sdf";
 
-        auto &ag = zs_grid->ag;
+        using namespace zs;
+        auto converter = [&](ZenoAdaptiveGrid::vdb_t &ag) {
+            auto attrTag = src_tag(zs_grid, attr);
+            auto num_ch = ag.getPropertySize(attrTag);
+            if (VDBGridClass == "STAGGERED" && num_ch != 3) {
+                throw std::runtime_error("The size of Attribute is not 3 when grid_type is STAGGERED!");
+            }
 
-        auto attrTag = src_tag(zs_grid, attr);
-        auto num_ch = ag.getPropertySize(attrTag);
-        if (VDBGridClass == "STAGGERED" && num_ch != 3) {
-            throw std::runtime_error("The size of Attribute is not 3 when grid_type is STAGGERED!");
-        }
+            if (num_ch == 3) {
+                auto vdb_ = zs::convert_adaptive_grid_to_float3grid(ag, attrTag, VDBGridName);
+                auto vdb_grid = std::make_shared<VDBFloat3Grid>();
+                vdb_grid->m_grid = vdb_.as<openvdb::Vec3fGrid::Ptr>();
 
-        if (num_ch == 3) {
-            auto vdb_ = zs::convert_adaptive_grid_to_float3grid(ag, attrTag, VDBGridName);
-            auto vdb_grid = std::make_shared<VDBFloat3Grid>();
-            vdb_grid->m_grid = vdb_.as<openvdb::Vec3fGrid::Ptr>();
+                set_output("VDB", vdb_grid);
+            } else {
+                zs::u32 gridClass = 0;
+                if (VDBGridClass == "UNKNOWN")
+                    gridClass = 0;
+                else if (VDBGridClass == "LEVEL_SET")
+                    gridClass = 1;
+                else if (VDBGridClass == "FOG_VOLUME")
+                    gridClass = 2;
 
-            set_output("VDB", vdb_grid);
-        } else {
-            zs::u32 gridClass = 0;
-            if (VDBGridClass == "UNKNOWN")
-                gridClass = 0;
-            else if (VDBGridClass == "LEVEL_SET")
-                gridClass = 1;
-            else if (VDBGridClass == "FOG_VOLUME")
-                gridClass = 2;
+                auto vdb_ = zs::convert_adaptive_grid_to_floatgrid(ag, attrTag, gridClass, VDBGridName);
 
-            auto vdb_ = zs::convert_adaptive_grid_to_floatgrid(ag, attrTag, gridClass, VDBGridName);
+                auto vdb_grid = std::make_shared<VDBFloatGrid>();
+                vdb_grid->m_grid = vdb_.as<openvdb::FloatGrid::Ptr>();
 
-            auto vdb_grid = std::make_shared<VDBFloatGrid>();
-            vdb_grid->m_grid = vdb_.as<openvdb::FloatGrid::Ptr>();
-
-            set_output("VDB", vdb_grid);
-        }
+                set_output("VDB", vdb_grid);
+            }
+        };
+        match(converter, [&](ZenoAdaptiveGrid::att_t &ag) {
+            ZenoAdaptiveGrid::vdb_t vdb;
+            if (ag.memspace() == memsrc_e::device) {
+                auto pol = cuda_exec();
+                restructure_adaptive_grid(pol, ag, vdb);
+            } else {
+                auto pol = omp_exec();
+                restructure_adaptive_grid(pol, ag, vdb);
+            }
+            converter(vdb);
+        })(zs_grid->ag);
     }
 };
 
@@ -373,7 +405,7 @@ struct ZSVDBToAdaptiveGrid : INode {
 
         if (has_input("AdaptiveGrid")) {
             auto zs_grid = get_input<ZenoAdaptiveGrid>("AdaptiveGrid");
-            auto &ag = zs_grid->ag;
+            ZenoAdaptiveGrid::vdb_t &ag = zs_grid->getVdbGrid();
 
             int num_ch;
             if (vdb->getType() == "FloatGrid")
@@ -406,7 +438,7 @@ struct ZSVDBToAdaptiveGrid : INode {
             throw std::runtime_error("openvdb grid assigning to zs adaptive grid not yet implemented");
 #endif
         } else {
-            ZenoAdaptiveGrid::ag_t ag;
+            ZenoAdaptiveGrid::vdb_t ag;
 
             auto vdbType = vdb->getType();
             if (vdbType == "FloatGrid") {
