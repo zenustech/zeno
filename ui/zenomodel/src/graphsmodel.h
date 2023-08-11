@@ -37,7 +37,7 @@ public:
     void renameSubGraph(const QString& oldName, const QString& newName) override;
     QItemSelectionModel* selectionModel() const;
     NODE_DESCS descriptors() const override;
-    bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) override;
+    bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs, bool bImport = false) override;
     bool getDescriptor(const QString& descName, NODE_DESC& desc) override;
     bool updateSubgDesc(const QString& descName, const NODE_DESC& desc) override;
     //NODE_DESC

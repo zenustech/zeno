@@ -16,7 +16,7 @@ class ZsgReader
 {
 public:
     static ZsgReader& getInstance();
-    bool openFile(const QString& fn, IAcceptor* pAcceptor);
+    bool openFile(const QString& fn, IAcceptor* pAcceptor, bool bImport = false);
     bool importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& nodeJson, const QPointF& targetPos, IAcceptor* pAcceptor);
 
 private:

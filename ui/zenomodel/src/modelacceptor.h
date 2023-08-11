@@ -81,6 +81,7 @@ public:
 	void endParams(const QString& id, const QString& nodeCls) override;
 	void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) override;
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
+    void endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue) override;
 
 private:
     void resolveAllLinks();
