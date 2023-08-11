@@ -1,12 +1,8 @@
 #include "roads/grid.h"
 #include "Eigen/Eigen"
-#include "roads/roads.h"
+#include "boost/graph/floyd_warshall_shortest.hpp"
 
 using namespace roads;
-
-DynamicGrid<CostPoint> roads::CalcCost_Simple(const DynamicGrid<AdvancePoint> &BaseGrid) {
-    return {0, 0};
-}
 
 double roads::EuclideanDistance(const Point &Point1, const Point &Point2) {
     return std::sqrt(std::pow(Point2.x() - Point1.x(), 2) + std::pow(Point2.y() - Point1.y(), 2) + std::pow(Point2.z() - Point1.z(), 2));
@@ -48,6 +44,45 @@ DynamicGrid<SlopePoint> roads::CalculateSlope(const DynamicGrid<HeightPoint> &In
     }
 
     return Result;
+}
+
+WeightedGridUndirectedGraph roads::CreateWeightGraphFromCostGrid(const DynamicGrid<CostPoint> &InCostGrid, const ConnectiveType Type) {
+    ArrayList<IntPoint2D> Directions = { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
+    if (Type == ConnectiveType::EIGHT) {
+        Directions.insert(Directions.end(), { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } });
+    }
+
+    WeightedGridUndirectedGraph NewGraph { InCostGrid.size() };
+
+    // boost graph library seem not provide thread safe
+#pragma omp parallel for
+    for (int32_t y = 0; y < InCostGrid.Ny; ++y) {
+        for (int32_t x = 0; x < InCostGrid.Nx; ++x) {
+            const size_t OriginIdx = y * InCostGrid.Nx + x;
+            boost::property_map<WeightedGridUndirectedGraph, boost::edge_weight_t>::type WeightMap = boost::get(boost::edge_weight, NewGraph);
+            for (auto & Direction : Directions) {
+                const size_t ix = x + Direction[0];
+                const size_t iy = y + Direction[1];
+                if (ix >= InCostGrid.Nx || iy >= InCostGrid.Ny) continue;
+                const size_t TargetIdx = iy * InCostGrid.Nx + ix;
+                using EdgeDescriptor = boost::graph_traits<WeightedGridUndirectedGraph>::edge_descriptor;
+                auto [edge1, _] = boost::add_edge(OriginIdx, TargetIdx, NewGraph);
+                auto [edge2, _2] = boost::add_edge(TargetIdx, OriginIdx,  NewGraph);
+                WeightMap[edge1] = InCostGrid[TargetIdx] - InCostGrid[OriginIdx] + 30.0;
+                WeightMap[edge2] = InCostGrid[OriginIdx] - InCostGrid[TargetIdx] + 30.0;
+            }
+        }
+    }
+
+    return NewGraph;
+}
+
+ArrayList<ArrayList<double>> roads::FloydWarshallShortestPath(WeightedGridUndirectedGraph &InGraph) {
+    ArrayList<ArrayList<double>> D { InGraph.m_vertices.size() };
+    ArrayList<double> d (InGraph.m_vertices.size(), (std::numeric_limits<double>::max)());
+    printf("%llu", InGraph.m_vertices.size());
+    boost::floyd_warshall_all_pairs_shortest_paths(InGraph, D, boost::distance_map(&d[0]));
+    return D;
 }
 
 double roads::energy::CalculateStepSize(const Point2D &Pt, const Point2D &P, const Point2D &PrevX, const Point2D &CurrX) {

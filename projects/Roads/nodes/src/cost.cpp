@@ -5,6 +5,8 @@
 #include "zeno/utils/PropertyVisitor.h"
 #include "zeno/utils/logger.h"
 #include "zeno/zeno.h"
+#include "boost/graph/dijkstra_shortest_paths.hpp"
+#include <iostream>
 
 template<typename... Args>
 inline void RoadsAssert(const bool Expr, const std::string &InMsg = "[Roads] Assert Failed", Args... args) {
@@ -76,7 +78,8 @@ namespace {
         }
     };
 
-    struct CalcPathCost_Simple : public zeno::reflect::IParameterAutoNode<CalcPathCost_Simple> {
+    struct ZENO_CRTP(CalcPathCost_Simple, zeno::reflect::IParameterAutoNode) {
+    //struct CalcPathCost_Simple : public zeno::reflect::IParameterAutoNode<CalcPathCost_Simple> {
         ZENO_GENERATE_NODE_BODY(CalcPathCost_Simple);
 
         std::shared_ptr<zeno::PrimitiveObject> Primitive;
@@ -84,19 +87,22 @@ namespace {
         ZENO_DECLARE_OUTPUT_FIELD(Primitive, "Prim");
 
         std::string OutputChannel;
-        ZENO_DECLARE_INPUT_FIELD(OutputChannel, "OutputChannel", false, "", "path_cost");
+        ZENO_DECLARE_INPUT_FIELD(OutputChannel, "Output Channel (Vertex Attr)", false, "", "path_cost");
 
         std::string SizeXChannel;
-        ZENO_DECLARE_INPUT_FIELD(SizeXChannel, "UserData_NxChannel", false, "", "nx");
+        ZENO_DECLARE_INPUT_FIELD(SizeXChannel, "Nx Channel (UserData)", false, "", "nx");
 
         std::string SizeYChannel;
-        ZENO_DECLARE_INPUT_FIELD(SizeYChannel, "UserData_NyChannel", false, "", "ny");
+        ZENO_DECLARE_INPUT_FIELD(SizeYChannel, "Ny Channel (UserData)", false, "", "ny");
 
         std::string PositionChannel;
-        ZENO_DECLARE_INPUT_FIELD(PositionChannel, "Vert_PositionChannel", false, "", "pos");
+        ZENO_DECLARE_INPUT_FIELD(PositionChannel, "Position Channel (Vertex Attr)", false, "", "pos");
 
         std::string GradientChannel;
-        ZENO_DECLARE_INPUT_FIELD(GradientChannel, "Vert_GradientChannel", false, "", "gradient");
+        ZENO_DECLARE_INPUT_FIELD(GradientChannel, "Gradient Channel (Vertex Attr)", false, "", "gradient");
+
+        bool bRemoveTriangles;
+        ZENO_DECLARE_INPUT_FIELD(bRemoveTriangles, "Remove Triangles", false, "", "true");
 
         int Nx = 0;
         ZENO_BINDING_PRIMITIVE_USERDATA(Primitive, Nx, SizeXChannel, false);
@@ -113,11 +119,41 @@ namespace {
         void apply() override {
             //auto Grid = BuildGridFromPrimitive(AutoParameter->PositionList, AutoParameter->GradientList, AutoParameter->Nx, AutoParameter->Ny);
             // TODO [darc] : Change cost function, now just simply use gradient value :
-            if (!AutoParameter->Primitive->verts.has_attr(AutoParameter->OutputChannel)) {
-                AutoParameter->Primitive->verts.add_attr<float>(AutoParameter->OutputChannel);
+            AutoParameter->Nx;
+            RoadsAssert(AutoParameter->Nx * AutoParameter->Ny <= AutoParameter->GradientList.size(), "Bad nx ny.");
+
+            DynamicGrid<CostPoint> CostGrid(AutoParameter->Nx, AutoParameter->Ny);
+            CostGrid.insert(CostGrid.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.begin() + (AutoParameter->Nx * AutoParameter->Ny));
+            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, ConnectiveType::FOUR);
+            zeno::log_info("cccc: {}", boost::num_vertices(Graph));
+
+            using VertexDescriptor = boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor;
+
+            std::vector<VertexDescriptor> p(boost::num_vertices(Graph));
+            std::vector<double> d(boost::num_vertices(Graph));
+            VertexDescriptor Start { 1 };
+            VertexDescriptor Goal { 999999 };
+
+            boost::dijkstra_shortest_paths(Graph, Start, boost::predecessor_map(&p[0]).distance_map(&d[0]));
+
+            std::vector<boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor > path;
+            boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor current = Goal;
+
+            while(current!=Start)
+            {
+                path.push_back(current);
+                current = p[current];
             }
-            auto Output = AutoParameter->Primitive->verts.attr<float>(AutoParameter->OutputChannel);
-            Output.insert(Output.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.end());
+            path.push_back(Start);
+
+//            AutoParameter->Primitive = std::make_shared<zeno::PrimitiveObject>();
+            if (AutoParameter->bRemoveTriangles) {
+                AutoParameter->Primitive->tris.clear();
+            }
+            AutoParameter->Primitive->lines.resize(path.size() - 1);
+            for (size_t i = 0; i < path.size() - 1; ++i) {
+                AutoParameter->Primitive->lines[i] = zeno::vec2i(path[i], path[i+1]);
+            }
         }
     };
 }// namespace

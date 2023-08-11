@@ -15,6 +15,11 @@ namespace roads {
         OBTUSE = 2,
     };
 
+    enum class ConnectiveType {
+        FOUR = 4,
+        EIGHT = 8,
+    };
+
     struct Point : public Eigen::Vector3d {
         Point(const std::array<float, 3>& InArray) : Eigen::Vector3d(InArray[0], InArray[1], InArray[2]) {}
 
@@ -25,7 +30,9 @@ namespace roads {
         using Eigen::Vector2d::Vector2d;
     };
 
-    struct IntPoint : public std::array<size_t, 3> {};
+    struct IntPoint2D : public std::array<long, 2> {};
+
+    struct IntPoint : public std::array<long, 3> {};
 
     struct Triangle : public std::array<Point, 3> {
         bool AnyAngleLargerThan(const double Degree) {
@@ -43,6 +50,11 @@ namespace roads {
     template <typename T>
     struct ArrayList : public std::vector<T> {
         using std::vector<T>::vector;
+        using std::vector<T>::size;
+
+        bool IsValidIndex(size_t Index) const {
+            return Index < size();
+        }
     };
 
     template <size_t X, size_t Y, typename GridPointType = Point>

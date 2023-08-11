@@ -1,5 +1,8 @@
+SET(Boost_ADDITIONAL_VERSIONS "1.82.0" "1.82")
+
 FIND_PACKAGE(Eigen3 REQUIRED NO_MODULE)
 FIND_PACKAGE(OpenMP REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS graph)
 
 FILE(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.h)
 
@@ -27,4 +30,12 @@ IF (OPENMP_FOUND)
             target_compile_options(zeno PRIVATE $<IF:$<COMPILE_LANGUAGE:CXX>,/openmp:llvm,>)
         endif()
     endif()
+ELSE()
+    MESSAGE(FATAL_ERROR "Roads Module is depending on OpenMP. You have to install it first.")
+ENDIF()
+
+IF (TARGET Boost::graph)
+    TARGET_LINK_LIBRARIES(Roads PRIVATE Boost::graph)
+ELSE()
+    MESSAGE(FATAL_ERROR "Roads Module is depending on Boost::graph. You have to install it first.")
 ENDIF()
