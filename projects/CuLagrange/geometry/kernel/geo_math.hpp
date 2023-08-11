@@ -843,10 +843,10 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
         auto x =  x1 - x0;
         auto v = v1 - v0;
         
-        if(x.norm() < thickness)
-            return (REAL)0;
-        if(x.dot(v) > 0)
+        if(x.norm() < thickness && x.dot(v) > 0)
             return std::numeric_limits<REAL>::infinity();
+        if(x.norm() < thickness && x.dot(v) < 0)
+            return (REAL)0;
         // if(vv.norm() < 1e)
 
         auto xx = x.dot(x);
@@ -862,11 +862,11 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
             return std::numeric_limits<REAL>::infinity();
 
         auto sqrt_delta = zs::sqrt(delta);
-        auto alpha = xv/vv;
+        auto alpha = xv / vv;
         auto beta = sqrt_delta / 2 / vv;
 
-        auto t0 = -alpha + beta;
-        auto t1 = -alpha - beta;
+        auto t0 = alpha + beta;
+        auto t1 = alpha - beta;
 
         t0 = t0 < (REAL)1.0 && t0 > (REAL)0.0 ? t0 : std::numeric_limits<REAL>::infinity();
         t1 = t1 < (REAL)1.0 && t1 > (REAL)0.0 ? t1 : std::numeric_limits<REAL>::infinity(); 

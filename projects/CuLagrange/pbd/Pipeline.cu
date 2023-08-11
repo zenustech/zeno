@@ -433,7 +433,13 @@ struct XPBDSolve : INode {
 
         // std::cout << "SOVLE CONSTRAINT WITH GROUP : " << nm_group << "\t" << cquads.size() << std::endl;
 
+
+
         for(int g = 0;g != nm_group;++g) {
+
+            // if(category == category_c::isometric_bending_constraint)
+            //     break;
+
             auto coffset = coffsets.getVal(g);
             int group_size = 0;
             if(g == nm_group - 1)
@@ -634,6 +640,9 @@ struct SDFColliderProject : INode {
             center,
             // do_stablize,
             cv,w] ZS_LAMBDA(int vi) mutable {
+                if(verts("minv",vi) < (T)1e-6)
+                    return;
+
                 auto pred = verts.pack(dim_c<3>,ptag,vi);
                 auto pos = verts.pack(dim_c<3>,xtag,vi);
 
@@ -672,6 +681,8 @@ struct SDFColliderProject : INode {
                     dp = -tan_vel * zs::min(alpha,(T)1.0);
                     pred += dp;
                 }
+
+                // dp = dp * verts("m",vi) * verts("minv",vi);
 
                 verts.tuple(dim_c<3>,ptag,vi) = pred;    
         });
@@ -750,7 +761,615 @@ ZENDEFNODE(BuildZSLBvhFromAABB, {{{"ZSParticles"},
     }, {"ZSLBvh"}, {}, {"XPBD"}});
 
 
+struct XPBDDetangle : INode {
+    // ray trace bvh
+    template <typename TileVecT>
+    void buildRayTraceBvh(zs::CudaExecutionPolicy &pol, 
+            TileVecT &verts, 
+            const zs::SmallString& srcTag,
+            const zs::SmallString& dstTag,
+            const zs::SmallString& pscaleTag,
+                  ZenoLinearBvh::lbvh_t &bvh) {
+        using namespace zs;
+        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+        constexpr auto space = execspace_e::cuda;
+        Vector<bv_t> bvs{verts.get_allocator(), verts.size()};
+        pol(range(verts.size()),
+            [verts = proxy<space>({}, verts),
+             bvs = proxy<space>(bvs),
+             pscaleTag,srcTag,dstTag] ZS_LAMBDA(int vi) mutable {
+                auto src = verts.template pack<3>(srcTag, vi);
+                auto dst = verts.template pack<3>(dstTag, vi);
+                auto pscale = verts(pscaleTag,vi);
 
+                bv_t bv{src,dst};
+                bv._min -= pscale;
+                bv._max += pscale;
+                bvs[vi] = bv;
+            });
+        bvh.build(pol, bvs);
+    }
+    // particle sphere bvh
+    template <typename TileVecT>
+    void buildBvh(zs::CudaExecutionPolicy &pol,
+            TileVecT &verts,
+            const zs::SmallString& xtag,
+            const zs::SmallString& pscaleTag,
+            ZenoLinearBvh::lbvh_t& bvh) {
+        using namespace zs;
+        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+        constexpr auto space = execspace_e::cuda;
+        Vector<bv_t> bvs{verts.get_allocator(), verts.size()};
+
+        pol(range(verts.size()),
+            [verts = proxy<space>({}, verts),
+             bvs = proxy<space>(bvs),
+             pscaleTag,xtag] ZS_LAMBDA(int vi) mutable {
+                auto pos = verts.template pack<3>(xtag, vi);
+                auto pscale = verts(pscaleTag,vi);
+                bv_t bv{pos - pscale,pos + pscale};
+                bvs[vi] = bv;
+            });
+        bvh.build(pol, bvs);
+    }
+
+    virtual void apply() override {
+        using namespace zs;
+        using bvh_t = typename ZenoLinearBvh::lbvh_t;
+        using bv_t = typename bvh_t::Box;
+
+        using vec3 = zs::vec<float,3>;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using mat4 = zs::vec<int,4,4>;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        constexpr auto exec_tag = wrapv<space>{};
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto xtag = get_input2<std::string>("xtag");
+        auto pxtag = get_input2<std::string>("pxtag");
+        auto Xtag = get_input2<std::string>("Xtag");
+        // auto ccdTag = get_input2<std::string>("ccdTag");
+        // x
+        auto pscaleTag = get_input2<std::string>("pscaleTag");
+        // auto friction = get_input2<T>("friction");
+        
+        auto& verts = zsparticles->getParticles();     
+
+        auto spBvh = bvh_t{};
+        buildRayTraceBvh(cudaPol,verts,pxtag,xtag,pscaleTag,spBvh);       
+        
+        zs::Vector<float> ccd_buffer{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(ccd_buffer),[]ZS_LAMBDA(auto& t) mutable {t = (float)1;});
+        // zs::Vector<int> dp_count{verts.get_allocator(),verts.size()};
+        // cudaPol(zs::range(dp_count),[]ZS_LAMBDA(auto& c) mutable {c = 0;});
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            xtag = zs::SmallString(xtag),
+            Xtag = zs::SmallString(Xtag),
+            pxtag = zs::SmallString(pxtag),
+            exec_tag,
+            ccd_buffer = proxy<space>(ccd_buffer),
+            pscaleTag = zs::SmallString(pscaleTag),
+            spBvh = proxy<space>(spBvh)] ZS_LAMBDA(int vi) mutable {
+                auto dst = verts.pack(dim_c<3>,xtag,vi);
+                auto src = verts.pack(dim_c<3>,pxtag,vi);
+                auto vel = dst - src;
+                auto rpos = verts.pack(dim_c<3>,Xtag,vi);
+                // auto r = verts(ptag,vi);
+
+                auto pscale = verts(pscaleTag,vi);
+                bv_t bv{src,dst};
+                bv._min -= pscale;
+                bv._max += pscale;
+
+                auto find_particle_sphere_collision_pairs = [&] (int nvi) mutable {
+                    if(vi >= nvi)
+                        return;
+
+                    auto npscale = verts(pscaleTag,nvi);
+                    auto thickness = pscale + npscale;
+
+                    auto nrpos = verts.pack(dim_c<3>,Xtag,nvi);
+                    auto rdist = (rpos - nrpos).norm();
+                    if(rdist < thickness)
+                        return;
+
+                    auto ndst = verts.pack(dim_c<3>,xtag,nvi);
+                    auto nsrc = verts.pack(dim_c<3>,pxtag,nvi);
+                    auto nvel = ndst - nsrc;
+
+                    auto t = LSL_GEO::ray_ray_intersect(src,vel,nsrc,nvel,thickness);
+                    if(t <= (float)1 && t >= (float)0) {
+                        atomic_min(exec_tag,&ccd_buffer[vi],t);
+                        atomic_min(exec_tag,&ccd_buffer[nvi],t);
+                    }
+                };
+
+                spBvh.iter_neighbors(bv,find_particle_sphere_collision_pairs);
+        });
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            xtag = zs::SmallString(xtag),
+            pxtag = zs::SmallString(pxtag),
+            // friction,
+            ccd_buffer = proxy<space>(ccd_buffer)] ZS_LAMBDA(int vi) mutable {
+                auto src = verts.pack(dim_c<3>,pxtag,vi);
+                auto dst = verts.pack(dim_c<3>,xtag,vi);
+
+                auto vel = dst - src;
+                auto project = src + vel * ccd_buffer[vi];
+
+                verts.tuple(dim_c<3>,xtag,vi) = project;
+        });
+
+        set_output("zsparticles",zsparticles);
+    }
+
+};
+
+ZENDEFNODE(XPBDDetangle, {{{"zsparticles"},
+                                // {"float","relaxation_strength","1"},
+                                {"string","xtag","x"},
+                                {"string","pxtag","px"},
+                                {"string","Xtag","X"},
+                                {"string","pscaleTag","pscale"}
+                                // {"float","friction","0"}                            
+                            },
+							{{"zsparticles"}},
+							{
+                                // {"string","ptag","x"}
+                            },
+							{"PBD"}});
+
+
+struct XPBDDetangle2 : INode {
+    // ray trace bvh
+    template <typename TileVecT>
+    void buildRayTraceBvh(zs::CudaExecutionPolicy &pol, 
+            TileVecT &verts, 
+            const zs::SmallString& srcTag,
+            const zs::SmallString& dstTag,
+            const zs::SmallString& pscaleTag,
+                    ZenoLinearBvh::lbvh_t &bvh) {
+        using namespace zs;
+        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+        constexpr auto space = execspace_e::cuda;
+        Vector<bv_t> bvs{verts.get_allocator(), verts.size()};
+        pol(range(verts.size()),
+            [verts = proxy<space>({}, verts),
+                bvs = proxy<space>(bvs),
+                pscaleTag,srcTag,dstTag] ZS_LAMBDA(int vi) mutable {
+                auto src = verts.template pack<3>(srcTag, vi);
+                auto dst = verts.template pack<3>(dstTag, vi);
+                auto pscale = verts(pscaleTag,vi);
+
+                bv_t bv{src,dst};
+                bv._min -= pscale;
+                bv._max += pscale;
+                bvs[vi] = bv;
+            });
+        bvh.build(pol, bvs);
+    }
+    // particle sphere bvh
+    // template <typename TileVecT>
+    // void buildBvh(zs::CudaExecutionPolicy &pol,
+    //         TileVecT &verts,
+    //         const zs::SmallString& xtag,
+    //         const zs::SmallString& pscaleTag,
+    //         ZenoLinearBvh::lbvh_t& bvh) {
+    //     using namespace zs;
+    //     using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+    //     constexpr auto space = execspace_e::cuda;
+    //     Vector<bv_t> bvs{verts.get_allocator(), verts.size()};
+
+    //     pol(range(verts.size()),
+    //         [verts = proxy<space>({}, verts),
+    //             bvs = proxy<space>(bvs),
+    //             pscaleTag,xtag] ZS_LAMBDA(int vi) mutable {
+    //             auto pos = verts.template pack<3>(xtag, vi);
+    //             auto pscale = verts(pscaleTag,vi);
+    //             bv_t bv{pos - pscale,pos + pscale};
+    //             bvs[vi] = bv;
+    //         });
+    //     bvh.build(pol, bvs);
+    // }
+
+    virtual void apply() override {
+        using namespace zs;
+        using bvh_t = typename ZenoLinearBvh::lbvh_t;
+        using bv_t = typename bvh_t::Box;
+
+        using vec3 = zs::vec<float,3>;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using mat4 = zs::vec<int,4,4>;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        constexpr auto exec_tag = wrapv<space>{};
+        constexpr auto eps = (T)1e-7;
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto xtag = get_input2<std::string>("xtag");
+        auto pxtag = get_input2<std::string>("pxtag");
+        auto Xtag = get_input2<std::string>("Xtag");
+        // auto ccdTag = get_input2<std::string>("ccdTag");
+        // x
+        auto pscaleTag = get_input2<std::string>("pscaleTag");
+        // auto friction = get_input2<T>("friction");
+        
+        auto& verts = zsparticles->getParticles();    
+        
+        auto restitution_rate = get_input2<float>("restitution");
+        auto relaxation_rate = get_input2<float>("relaxation");
+
+        auto spBvh = bvh_t{};
+        buildRayTraceBvh(cudaPol,verts,pxtag,xtag,pscaleTag,spBvh);       
+        
+        // zs::Vector<float> ccd_buffer{verts.get_allocator(),verts.size()};
+        // cudaPol(zs::range(ccd_buffer),[]ZS_LAMBDA(auto& t) mutable {t = (float)1;});
+
+        zs::Vector<vec3> dp_buffer{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(dp_buffer),[]ZS_LAMBDA(auto& dp) mutable {dp = vec3::uniform(0);});
+
+        zs::Vector<int> dp_count{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(dp_count),[]ZS_LAMBDA(auto& c) mutable {c = 0;});
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            xtag = zs::SmallString(xtag),
+            Xtag = zs::SmallString(Xtag),
+            pxtag = zs::SmallString(pxtag),
+            restitution_rate = restitution_rate,
+            exec_tag,
+            eps = eps,
+            dp_buffer = proxy<space>(dp_buffer),
+            dp_count = proxy<space>(dp_count),
+            pscaleTag = zs::SmallString(pscaleTag),
+            spBvh = proxy<space>(spBvh)] ZS_LAMBDA(int vi) mutable {
+                auto dst = verts.pack(dim_c<3>,xtag,vi);
+                auto src = verts.pack(dim_c<3>,pxtag,vi);
+                auto vel = dst - src;
+                auto rpos = verts.pack(dim_c<3>,Xtag,vi);
+                // auto r = verts(ptag,vi);
+
+                auto pscale = verts(pscaleTag,vi);
+                bv_t bv{src,dst};
+                bv._min -= pscale;
+                bv._max += pscale;
+
+                auto find_particle_sphere_collision_pairs = [&] (int nvi) mutable {
+                    if(vi >= nvi)
+                        return;
+
+                    auto npscale = verts(pscaleTag,nvi);
+                    auto thickness = pscale + npscale;
+
+                    auto nrpos = verts.pack(dim_c<3>,Xtag,nvi);
+                    auto rdist = (rpos - nrpos).norm();
+                    if(rdist < thickness)
+                        return;
+
+                    auto ndst = verts.pack(dim_c<3>,xtag,nvi);
+                    auto nsrc = verts.pack(dim_c<3>,pxtag,nvi);
+                    auto nvel = ndst - nsrc;
+
+                    auto t = LSL_GEO::ray_ray_intersect(src,vel,nsrc,nvel,thickness);
+                    if(t <= (float)1 && t >= (float)0) {
+                        // atomic_min(exec_tag,&ccd_buffer[vi],t);
+                        // atomic_min(exec_tag,&ccd_buffer[nvi],t);
+                        // auto rel_vel = vel - nvel;
+                        auto CR = restitution_rate;
+
+                        auto minv_a = verts("minv",vi);
+                        auto minv_b = verts("minv",nvi);
+                        if(minv_a + minv_b < (T)2 * eps)
+                            return;
+                        
+                        auto ua = vel;
+                        auto ub = nvel;
+                        auto ur = ua - ub;
+
+                        vec3 va{},vb{};
+
+                        if(minv_a > (T)eps) {
+                            // ma / mb
+                            auto ratio = minv_b / minv_a;
+                            auto m = ratio + (T)1;
+                            auto momt = ratio * ua + ub;
+                            va = (momt - CR * ur) / m;
+                            vb = (momt + CR * ratio * ur) / m;
+
+                            if(isnan(va.norm()) || isnan(vb.norm())) {
+                                printf("nan value detected : %f %f\n",(float)va.norm(),(float)vb.norm());
+                            }
+                        }else if(minv_b > (T)eps) {
+                            // mb / ma
+                            auto ratio = minv_a / minv_b;
+                            auto m = ratio + (T)1;
+                            auto momt = ua + ratio * ub;
+                            va = (momt - CR * ratio * ur) / m;
+                            vb = (momt + CR * ur) / m;
+                            if(isnan(va.norm()) || isnan(vb.norm())) {
+                                printf("nan value detected : %f %f\n",(float)va.norm(),(float)vb.norm());
+                            }
+
+                        }else {
+                            printf("impossible reaching here\n");
+                        }
+
+                        // auto ma = verts("m",vi);
+                        // auto mb = verts("m",nvi);
+
+                        // auto m = ma + mb;
+                        // auto momt = ma * ua + mb * ub;
+
+
+                        // auto va = (momt - CR * mb * ur) / m;
+                        // auto vb = (momt + CR * ma * ur) / m;
+
+                        auto dpa = (va - ua) * (1 - t);
+                        auto dpb = (vb - ub) * (1 - t);
+
+                        // auto dpa = (va - ua);
+                        // auto dpb = (vb - ub);
+                        // printf("find collision pair : %d %d\n",vi,nvi);
+                        atomic_add(exec_tag,&dp_count[vi],1);
+                        atomic_add(exec_tag,&dp_count[nvi],1);
+
+                        for(int i = 0;i != 3;++i) {
+                            atomic_add(exec_tag,&dp_buffer[vi][i],dpa[i]);
+                            atomic_add(exec_tag,&dp_buffer[nvi][i],dpb[i]);
+                        }
+                    }
+                };
+
+                spBvh.iter_neighbors(bv,find_particle_sphere_collision_pairs);
+        });
+
+        // zs:Vector<T> dpnorm{verts.get_allocator(),1};
+        // dpnorm.setVal(0);
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            xtag = zs::SmallString(xtag),
+            relaxation_rate = relaxation_rate,
+            pxtag = zs::SmallString(pxtag),
+            exec_tag,
+            // dpnorm = proxy<space>(dpnorm),
+            dp_count = proxy<space>(dp_count),
+            dp_buffer = proxy<space>(dp_buffer)] ZS_LAMBDA(int vi) mutable {
+                if(dp_count[vi] == 0)
+                    return;
+                auto minv = verts("minv",vi);
+                auto dp = dp_buffer[vi] * relaxation_rate / (T)dp_count[vi];
+                // atomic_add(exec_tag,&dpnorm[0],dp.norm());
+                verts.tuple(dim_c<3>,xtag,vi) = verts.pack(dim_c<3>,xtag,vi) + dp;
+        });
+
+        // std::cout << "detangle_dp_norm : " << dpnorm.getVal(0) << std::endl;
+
+        set_output("zsparticles",zsparticles);
+    }
+
+};
+
+ZENDEFNODE(XPBDDetangle2, {{{"zsparticles"},
+                                // {"float","relaxation_strength","1"},
+                                {"string","xtag","x"},
+                                {"string","pxtag","px"},
+                                {"string","Xtag","X"},
+                                {"string","pscaleTag","pscale"},
+                                {"float","restitution","0.1"},
+                                {"float","relaxation","1"},
+                                // {"float","friction","0"}                            
+                            },
+                            {{"zsparticles"}},
+                            {
+                                // {"string","ptag","x"}
+                            },
+                            {"PBD"}});
+
+struct XPBDParticlesCollider : INode {
+    // particle sphere bvh
+    template <typename TileVecT>
+    void buildBvh(zs::CudaExecutionPolicy &pol,
+            TileVecT &verts,
+            const zs::SmallString& xtag,
+            const zs::SmallString& pscaleTag,
+            ZenoLinearBvh::lbvh_t& bvh) {
+        using namespace zs;
+        using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
+        constexpr auto space = execspace_e::cuda;
+        Vector<bv_t> bvs{verts.get_allocator(), verts.size()};
+
+        pol(range(verts.size()),
+            [verts = proxy<space>({}, verts),
+             bvs = proxy<space>(bvs),
+             pscaleTag,xtag] ZS_LAMBDA(int vi) mutable {
+                auto pos = verts.template pack<3>(xtag, vi);
+                auto pscale = verts(pscaleTag,vi);
+                bv_t bv{pos - pscale,pos + pscale};
+                bvs[vi] = bv;
+            });
+        bvh.build(pol, bvs);
+    }
+
+    virtual void apply() override {
+        using namespace zs;
+        using bvh_t = typename ZenoLinearBvh::lbvh_t;
+        using bv_t = typename bvh_t::Box;
+
+        using vec3 = zs::vec<float,3>;
+        using vec2i = zs::vec<int,2>;
+        using vec3i = zs::vec<int,3>;
+        using vec4i = zs::vec<int,4>;
+        using mat4 = zs::vec<int,4,4>;
+
+        constexpr auto space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+        constexpr auto exec_tag = wrapv<space>{};
+
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        // auto bvh = get_input<bvh_t>("lbvh");
+        // prex
+        auto xtag = get_input2<std::string>("xtag");
+        auto pxtag = get_input2<std::string>("pxtag");
+        auto Xtag = get_input2<std::string>("Xtag");
+        // x
+        auto ptag = get_input2<std::string>("pscaleTag");
+        auto friction = get_input2<T>("friction");
+        
+        auto& verts = zsparticles->getParticles();     
+
+        auto spBvh = bvh_t{};
+        buildBvh(cudaPol,verts,xtag,ptag,spBvh);
+
+        // auto collisionThickness = 
+
+        zs::Vector<float> dp_buffer{verts.get_allocator(),verts.size() * 3};
+        cudaPol(zs::range(dp_buffer),[]ZS_LAMBDA(auto& v) mutable {v = 0;});
+        zs::Vector<int> dp_count{verts.get_allocator(),verts.size()};
+        cudaPol(zs::range(dp_count),[]ZS_LAMBDA(auto& c) mutable {c = 0;});
+
+        // find collision pairs
+        zs::bht<int,2,int> csPT{verts.get_allocator(),100000};
+        csPT.reset(cudaPol,true);
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            xtag = zs::SmallString(xtag),
+            pxtag = zs::SmallString(pxtag),
+            Xtag = zs::SmallString(Xtag),
+            ptag = zs::SmallString(ptag),
+            spBvh = proxy<space>(spBvh),
+            csPT = proxy<space>(csPT)] ZS_LAMBDA(int vi) mutable {
+                auto pos = verts.pack(dim_c<3>,xtag,vi);
+                auto ppos = verts.pack(dim_c<3>,pxtag,vi);
+                auto vel = pos - ppos;
+                auto rpos = verts.pack(dim_c<3>,Xtag,vi);
+                auto r = verts(ptag,vi);
+                
+                auto bv = bv_t{pos - r,pos + r};
+
+                auto find_particle_sphere_collision_pairs = [&] (int nvi) {
+                    if(vi >= nvi)
+                        return;
+
+                    auto npos = verts.pack(dim_c<3>,xtag,nvi);
+                    // auto nppos = verts.pack(dim_c<3>,pxtag,nvi);
+                    // auto nvel = npos - nppos;
+
+                    auto nrpos = verts.pack(dim_c<3>,Xtag,nvi);
+                    auto nr = verts(ptag,nvi);
+
+                    auto rdist = (rpos - nrpos).norm();
+                    if(rdist < r + nr)
+                        return;
+
+                    auto dist = (pos - npos).norm();
+                    if(dist > r + nr)
+                        return;
+                    
+                    // find a collision pairs
+                    csPT.insert(zs::vec<int,2>{vi,nvi});
+                };
+
+                spBvh.iter_neighbors(bv,find_particle_sphere_collision_pairs);
+        });
+
+        // std::cout << "csPT.size() = " << csPT.size() << std::endl;
+
+        auto w = get_input2<float>("relaxation_strength");
+        // process collision pairs
+        cudaPol(zip(zs::range(csPT.size()),csPT._activeKeys),[
+            verts = proxy<space>({},verts),
+            xtag = zs::SmallString(xtag),
+            ptag = zs::SmallString(ptag),
+            pxtag = zs::SmallString(pxtag),
+            dp_buffer = proxy<space>(dp_buffer),
+            dp_count = proxy<space>(dp_count),
+            exec_tag,
+            friction] ZS_LAMBDA(auto,const auto& pair) mutable {
+                auto vi = pair[0];
+                auto nvi = pair[1];
+                auto p0 = verts.pack(dim_c<3>,xtag,vi);
+                auto p1 = verts.pack(dim_c<3>,xtag,nvi);
+                auto vel0 = p0 - verts.pack(dim_c<3>,pxtag,vi);
+                auto vel1 = p1 - verts.pack(dim_c<3>,pxtag,nvi);
+
+                auto nrm = (p0 - p1).normalized();
+
+                auto r = verts(ptag,vi) + verts(ptag,nvi);
+
+                float minv0 = verts("minv",vi);
+                float minv1 = verts("minv",nvi);
+
+                vec3 dp0{},dp1{};
+                if(!CONSTRAINT::solve_DistanceConstraint(
+                    p0,minv0,
+                    p1,minv1,
+                    r,
+                    dp0,dp1)) {
+                    // auto rel_vel = vel0 - vel1 + dp0 - dp1;
+                    // auto tan_vel = rel_vel - nrm * rel_vel.dot(nrm);
+                    // auto tan_len = tan_vel.norm();
+                    // auto max_tan_len = (dp0 - dp1).norm() * friction;
+
+                    // if(tan_len > (T)1e-6) {
+                    //     auto ratio = (T)max_tan_len / (T)tan_len;
+                    //     auto alpha = zs::min(ratio,(T)1.0);
+
+                    //     dp = -tan_vel * zs::min(alpha,(T)1.0);
+                    //     pred += dp;
+                    // }
+
+                    for(int i = 0;i != 3;++i)
+                        atomic_add(exec_tag,&dp_buffer[vi * 3 + i], dp0[i]);
+                    for(int i = 0;i != 3;++i)
+                        atomic_add(exec_tag,&dp_buffer[nvi * 3 + i],dp1[i]);
+
+                    atomic_add(exec_tag,&dp_count[vi],(int)1);
+                    atomic_add(exec_tag,&dp_count[nvi],(int)1);
+                }
+        });
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<space>({},verts),
+            xtag = zs::SmallString(xtag),
+            w,
+            dp_count = proxy<space>(dp_count),
+            dp_buffer = proxy<space>(dp_buffer)] ZS_LAMBDA(int vi) mutable {
+                if(dp_count[vi] > 0) {
+                    auto dp = vec3{dp_buffer[vi * 3 + 0],dp_buffer[vi * 3 + 1],dp_buffer[vi * 3 + 2]};
+                    verts.tuple(dim_c<3>,xtag,vi) = verts.pack(dim_c<3>,xtag,vi) + w * dp / (T)dp_count[vi];
+                }
+        });
+
+        set_output("zsparticles",zsparticles);
+    }
+};
+
+ZENDEFNODE(XPBDParticlesCollider, {{{"zsparticles"},
+                                {"float","relaxation_strength","1"},
+                                {"string","xtag","x"},
+                                {"string","pxtag","px"},
+                                {"string","Xtag","X"},
+                                {"string","pscaleTag","pscale"},
+                                {"float","friction","0"}                            
+                            },
+							{{"zsparticles"}},
+							{
+                                // {"string","ptag","x"}
+                            },
+							{"PBD"}});
 
 struct XPBDSolveSmooth : INode {
 
@@ -804,7 +1423,7 @@ struct XPBDSolveSmooth : INode {
                 verts = proxy<space>({},verts),
                 category,
                 // dt,
-                w,
+                // w,
                 exec_tag,
                 dp_buffer = proxy<space>(dp_buffer),
                 dp_count = proxy<space>(dp_count),
@@ -830,9 +1449,9 @@ struct XPBDSolveSmooth : INode {
                             dp0,dp1)) {
                         
                             for(int i = 0;i != 3;++i)
-                                atomic_add(exec_tag,&dp_buffer[edge[0] * 3 + i],dp0[i] * w);
+                                atomic_add(exec_tag,&dp_buffer[edge[0] * 3 + i],dp0[i]);
                             for(int i = 0;i != 3;++i)
-                                atomic_add(exec_tag,&dp_buffer[edge[1] * 3 + i],dp1[i] * w);
+                                atomic_add(exec_tag,&dp_buffer[edge[1] * 3 + i],dp1[i]);
 
                             atomic_add(exec_tag,&dp_count[edge[0]],(int)1);
                             atomic_add(exec_tag,&dp_count[edge[1]],(int)1);
@@ -858,7 +1477,7 @@ struct XPBDSolveSmooth : INode {
                             Q,dp[0],dp[1],dp[2],dp[3]);
                         for(int i = 0;i != 4;++i)
                             for(int j = 0;j != 3;++j)
-                                atomic_add(exec_tag,&dp_buffer[quad[i] * 3 + j],dp[i][j] * w);
+                                atomic_add(exec_tag,&dp_buffer[quad[i] * 3 + j],dp[i][j]);
                         for(int i = 0;i != 4;++i)
                             atomic_add(exec_tag,&dp_count[quad[1]],(int)1);
                     }
@@ -872,11 +1491,11 @@ struct XPBDSolveSmooth : INode {
 
         cudaPol(zs::range(verts.size()),[
             verts = proxy<space>({},verts),
-            ptag = zs::SmallString(ptag),
+            ptag = zs::SmallString(ptag),w,
             dp_count = proxy<space>(dp_count),
             dp_buffer = proxy<space>(dp_buffer)] ZS_LAMBDA(int vi) mutable {
                 if(dp_count[vi] > 0) {
-                    auto dp = vec3{dp_buffer[vi * 3 + 0],dp_buffer[vi * 3 + 1],dp_buffer[vi * 3 + 2]};
+                    auto dp = w * vec3{dp_buffer[vi * 3 + 0],dp_buffer[vi * 3 + 1],dp_buffer[vi * 3 + 2]};
                     verts.tuple(dim_c<3>,ptag,vi) = verts.pack(dim_c<3>,ptag,vi) + dp / (T)dp_count[vi];
                 }
         });
@@ -890,6 +1509,9 @@ ZENDEFNODE(XPBDSolveSmooth, {{{"zsparticles"},{"all_constraints"},{"float","rela
 							{{"zsparticles"}},
 							{{"string","ptag","x"}},
 							{"PBD"}});
+
+
+
 
 
 
