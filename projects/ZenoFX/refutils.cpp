@@ -56,7 +56,21 @@ namespace zeno {
                 }
 
                 std::string ident = ref.substr(0, itParam);
-                if (pGraph->nodes.find(ident) == pGraph->nodes.end())
+                //ident可能已经被改编过的，类似于"6875f81e-aaa/334fbddf-CreateSphere"这种形式
+                //然而editor的节点是在共享子图上的，其上的zfxcode引用并不包含上层子图节点的路径信息
+                //ref只记录了最终端节点的id，比如上述例子的334fbddf-CreateSphere。
+                //所以，唯有遍历当前Graph的节点，检查是否以ident结尾
+                bool bFound = false;
+                for (auto const& [ident_, inode] : pGraph->nodes) {
+                    if (ident_.length() >= ident.length() &&
+                        ident_.compare(ident_.length() - ident.length(), ident.length(), ident) == 0) {
+                        ident = ident_;
+                        bFound = true;
+                        break;
+                    }
+                }
+
+                if (!bFound)
                     return code;
 
                 auto& pNode = pGraph->nodes[ident];

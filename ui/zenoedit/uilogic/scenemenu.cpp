@@ -262,6 +262,25 @@ bool sceneMenuEvent(
             else {
                 QAction* pCopyRef = new QAction(QObject::tr("Copy Param Reference"));
                 QObject::connect(pCopyRef, &QAction::triggered, [=]() {
+                    QModelIndex nodeIdx = selParam.data(ROLE_NODE_IDX).toModelIndex();
+                    if (nodeIdx.isValid() && nodeIdx.data(ROLE_OBJNAME) == "SubInput")
+                    {
+                        const QString& paramName = selParam.data(ROLE_PARAM_NAME).toString();
+                        QString subgName, ident, paramPath;
+                        QString str = selParam.data(ROLE_OBJPATH).toString();
+                        UiHelper::getSocketInfo(str, subgName, ident, paramPath);
+                        if (paramName == "port") {
+                            QString refExpression = QString("ref(%1/_IN_port)").arg(ident);
+                            dumpToClipboard(refExpression);
+                            return;
+                        }
+                        else if (paramName == "hasValue") {
+                            QString refExpression = QString("ref(%1/_IN_hasValue)").arg(ident);
+                            dumpToClipboard(refExpression);
+                            return;
+                        }
+                    }
+
                     QString str = UiHelper::getNaiveParamPath(selParam);
                     QString refExpression = QString("ref(%1)").arg(str);
                     dumpToClipboard(refExpression);
