@@ -62,7 +62,7 @@ void OptixWorker::onPlayToggled(bool bToggled)
 {
     //todo: priority.
     m_zenoVis->startPlay(bToggled);
-    m_pTimer->start(16);
+    m_pTimer->start(m_slidFeq);
 }
 
 void OptixWorker::onFrameSwitched(int frame)
@@ -93,7 +93,7 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
     //for the case about recording after run.
     zeno::scope_exit sp([=] {
         m_bRecording = false;
-        m_pTimer->start(16);
+        m_pTimer->start(m_slidFeq);
     });
 
     m_bRecording = true;
@@ -191,6 +191,11 @@ void OptixWorker::onSetLoopPlaying(bool enbale)
     m_zenoVis->setLoopPlaying(enbale);
 }
 
+void OptixWorker::onSetSlidFeq(int feq)
+{
+    m_slidFeq = feq;
+}
+
 void OptixWorker::stop()
 {
     m_pTimer->stop();
@@ -199,7 +204,7 @@ void OptixWorker::stop()
 
 void OptixWorker::work()
 {
-    m_pTimer->start(16);
+    m_pTimer->start(m_slidFeq);
 }
 
 QImage OptixWorker::renderImage() const
@@ -212,7 +217,7 @@ void OptixWorker::needUpdateCamera()
     //todo: update reason.
     //m_zenoVis->getSession()->get_scene()->drawOptions->needUpdateGeo = false;	//just for teset.
     m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
-    m_pTimer->start(16);
+    m_pTimer->start(m_slidFeq);
 }
 
 
@@ -275,6 +280,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
     connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
     connect(this, &ZOptixViewport::sig_setLoopPlaying, m_worker, &OptixWorker::onSetLoopPlaying);
+    connect(this, &ZOptixViewport::sig_setSlidFeq, m_worker, &OptixWorker::onSetSlidFeq);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -321,6 +327,11 @@ void ZOptixViewport::killThread()
     stopRender();
     m_thdOptix.quit();
     m_thdOptix.wait();
+}
+
+void ZOptixViewport::setSlidFeq(int feq)
+{
+    emit sig_setSlidFeq(feq);
 }
 
 void ZOptixViewport::stopRender()

@@ -50,7 +50,7 @@ void ModelAcceptor::setTimeInfo(const TIMELINE_INFO& info)
     m_timeInfo.endFrame = qMax(info.beginFrame, info.endFrame);
     m_timeInfo.currFrame = qMax(qMin(m_timeInfo.currFrame, m_timeInfo.endFrame),
         m_timeInfo.beginFrame);
-    m_timeInfo.fpsIdx = info.fpsIdx;
+    m_timeInfo.timelinefps = info.timelinefps;
 }
 
 void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)

@@ -46,6 +46,7 @@ public:
     bool isPlaying() const;
     bool isGLViewport() const;
     void setViewWidgetInfo(DockContentWidgetInfo& info);
+    void setSliderFeq(int feq);
 #ifdef ZENO_OPTIX_PROC
     ZOptixProcViewport* optixViewport() const;
 #else
@@ -94,7 +95,7 @@ private:
     RecordVideoMgr m_recordMgr;
     bool m_bRecordRun;
     const bool m_bGLView;
-    static const int m_sliderFeq = 16;
+    int m_sliderFeq = 1000 / 24;
     bool bIsCurrent = false;
 };
 

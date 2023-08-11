@@ -231,6 +231,17 @@ void DisplayWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
     }
 }
 
+void DisplayWidget::setSliderFeq(int feq)
+{
+    if (m_bGLView)
+    {
+        m_sliderFeq = feq;
+    }
+    else {
+        m_optixView->setSlidFeq(feq);
+    }
+}
+
 #ifdef ZENO_OPTIX_PROC
 ZOptixProcViewport* DisplayWidget::optixViewport() const
 #else
@@ -492,6 +503,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = frame;
         launchParam.endFrame = frame;
+        launchParam.projectFps = mainWin->timelineInfo().timelinefps;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }
@@ -619,6 +631,7 @@ void DisplayWidget::onRun() {
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = beginFrame;
         launchParam.endFrame = endFrame;
+        launchParam.projectFps = mainWin->timelineInfo().timelinefps;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     } else {
@@ -726,6 +739,9 @@ void DisplayWidget::onRecord()
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
             launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+            auto main = zenoApp->getMainWindow();
+            ZASSERT_EXIT(main);
+            launchParam.projectFps = main->timelineInfo().timelinefps;
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)
             {

@@ -677,6 +677,7 @@ void ZenoMainWindow::initTimelineDock()
                 LAUNCH_PARAM launchParam;
                 launchParam.beginFrame = nFrame;
                 launchParam.endFrame = nFrame;
+                launchParam.projectFps = timeline()->fps();
                 AppHelper::initLaunchCacheParam(launchParam);
                 view->onRun(launchParam);
             }
@@ -687,6 +688,7 @@ void ZenoMainWindow::initTimelineDock()
                 launchParam.endFrame = nFrame;
                 launchParam.applyLightAndCameraOnly = m_bAlwaysLightCamera;
                 launchParam.applyMaterialOnly = m_bAlwaysMaterial;
+                launchParam.projectFps = timeline()->fps();
                 AppHelper::initLaunchCacheParam(launchParam);
                 view->onRun(launchParam);
             }
@@ -803,6 +805,9 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         QString path = pModel->filePath();
         path = path.left(path.lastIndexOf("/"));
         launchParam.zsgPath = path;
+        auto main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        launchParam.projectFps = main->timelineInfo().timelinefps;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }
@@ -1079,6 +1084,9 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     LAUNCH_PARAM launchParam;
     launchParam.beginFrame = recInfo.frameRange.first;
     launchParam.endFrame = recInfo.frameRange.second;
+    auto main = zenoApp->getMainWindow();
+    ZASSERT_EXIT(main);
+    launchParam.projectFps = main->timelineInfo().timelinefps;
 	viewWidget->onRun(launchParam);
 
     //ZASSERT_EXIT(ret);
@@ -1804,7 +1812,7 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     info.bAlways = m_bAlways;
     info.beginFrame = m_pTimeline->fromTo().first;
     info.endFrame = m_pTimeline->fromTo().second;
-    info.fpsIdx = m_pTimeline->fpsIdx();
+    info.timelinefps = m_pTimeline->fps();
     return info;
 }
 
@@ -1836,9 +1844,14 @@ void ZenoMainWindow::setAlwaysLightCameraMaterial(bool bAlwaysLightCamera, bool 
 
 void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
 {
+    info.timelinefps = info.timelinefps < 1 ? 1 : info.timelinefps;
     setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
-    m_pTimeline->initFps(info.fpsIdx);
+    m_pTimeline->initFps(info.timelinefps);
+    for (auto view: viewports())
+    {
+        view->setSliderFeq(1000 / info.timelinefps);
+    }
 }
 
 void ZenoMainWindow::onFeedBack()

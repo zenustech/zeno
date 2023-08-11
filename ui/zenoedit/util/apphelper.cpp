@@ -400,7 +400,7 @@ bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PAR
         }
     }
     zeno::getSession().globalComm->clearState();
-
+    launchParam.projectFps = pGraphs->timeInfo().timelinefps;
     launchProgram(pModel, launchParam);
     return true;
 }

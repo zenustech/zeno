@@ -40,11 +40,17 @@ ZTimeline::ZTimeline(QWidget* parent)
     m_ui->editFrom->setText(QString::number(deflFrom));
     m_ui->editTo->setText(QString::number(deflTo));
     m_ui->timeliner->setFromTo(deflFrom, deflTo);
+    m_ui->fpsEdit->setText("24");
     
     initStyleSheet();
     initSignals();
     initButtons();
     initSize();
+    m_ui->fpsEdit->setValidator(new QIntValidator);
+    m_ui->editFrom->setValidator(new QIntValidator);
+    m_ui->editTo->setValidator(new QIntValidator);
+    m_ui->editFrame->setValidator(new QIntValidator);
+    m_ui->comboBox->hide();
 }
 
 void ZTimeline::initSignals()
@@ -115,6 +121,16 @@ void ZTimeline::initSignals()
         QString numText = QString::number(m_ui->timeliner->value());
         m_ui->editFrame->setText(numText);
     });
+    connect(m_ui->fpsEdit, &QLineEdit::editingFinished, this, [=]() {
+        if (m_ui->fpsEdit->text().toInt() < 1)
+            m_ui->fpsEdit->setText("1");
+        auto main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        for (auto view : main->viewports())
+        {
+            view->setSliderFeq(1000 / m_ui->fpsEdit->text().toInt());
+        }
+    });
 }
 
 void ZTimeline::onFrameEditted()
@@ -149,6 +165,7 @@ void ZTimeline::initStyleSheet()
     for (QLineEdit *pLineEdit : editors) {
         pLineEdit->setProperty("cssClass", "FCurve-lineedit");
     }
+    m_ui->fpslabel->setProperty("cssClass", "proppanel");
 }
 
 void ZTimeline::initButtons()
@@ -245,6 +262,7 @@ void ZTimeline::initSize()
     m_ui->comboBox->setFixedSize(ZenoStyle::dpiScaledSize(QSize(96, 20)));
     m_ui->editFrame->setFixedSize(ZenoStyle::dpiScaledSize(QSize(38, 20)));
     m_ui->btnPlay->setFixedSize(ZenoStyle::dpiScaledSize(QSize(26, 26)));
+    m_ui->fpsEdit->setFixedSize(ZenoStyle::dpiScaledSize(QSize(38, 20)));
 }
 
 void ZTimeline::onTimelineUpdate(int frameid)
@@ -291,15 +309,15 @@ void ZTimeline::initFromTo(int frameFrom, int frameTo)
         m_ui->timeliner->setFromTo(frameFrom, frameTo);
 }
 
-void ZTimeline::initFps(int fpsIdx)
+void ZTimeline::initFps(int fps)
 {
-    BlockSignalScope s1(m_ui->comboBox);
-    m_ui->comboBox->setCurrentIndex(fpsIdx);
+    BlockSignalScope s1(m_ui->fpsEdit);
+    m_ui->fpsEdit->setText(QString::number(fps));
 }
 
-int ZTimeline::fpsIdx()
+int ZTimeline::fps()
 {
-    return m_ui->comboBox->currentIndex();
+    return m_ui->fpsEdit->text().toInt();
 }
 
 void ZTimeline::resetSlider()
