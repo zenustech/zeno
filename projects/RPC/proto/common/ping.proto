@@ -1,0 +1,19 @@
+syntax = "proto3";
+package zeno.common;
+
+import "common/status.proto";
+import "google/protobuf/timestamp.proto";
+
+
+message PingQuery {
+  string HashToken = 1;
+  google.protobuf.Timestamp Time = 2;
+}
+
+message PongResponse {
+  zeno.common.StatusCode Status = 1;
+}
+
+service HealthCheck {
+  rpc Ping(PingQuery) returns (PongResponse) {}
+}

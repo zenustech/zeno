@@ -228,13 +228,13 @@ namespace zeno {
     // Those function will be called after static initialization, it is safe. Just
     // ignore CTidy.
     [[maybe_unused]] static int defUnrealToolInit =
-        getSession().eventCallbacks->hookEvent("init", [] {
+        getSession().eventCallbacks->hookEvent("init", [] (auto _) {
             zeno::remote::StaticFlags.SetIsMainProcess(true);
             StartServerThread();
         });
 
     [[maybe_unused]] static int defUnrealToolRunnerInit =
-        getSession().eventCallbacks->hookEvent("preRunnerStart", [] {
+        getSession().eventCallbacks->hookEvent("preRunnerStart", [] (auto _) {
             zeno::remote::StaticFlags.SetIsMainProcess(false);
         });
 

@@ -188,6 +188,8 @@ struct PrimitiveConvexDecompositionV : zeno::INode {
     /*
     *  Use VHACD to do convex decomposition
     */
+    // V-HACD (Volumetric Hierarchical Approximate Convex Decomposition): 这是一种基于体积的凸分解算法，它会生成一个凸体的近似表示，这些凸体的数量和质量可以由用户控制。
+    // 该算法优先处理形状的内部，而不是边缘，从而在保留形状主要特性的同时，还能控制结果凸体的数量。这是一种生成高质量凸体集的有效方法。
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
         auto &pos = prim->attr<zeno::vec3f>("pos");
@@ -313,20 +315,50 @@ struct PrimitiveConvexDecomposition : zeno::INode {
                     zeno::vec_to_other<HACD::Vec3<long>>(prim->tris[i]));
         }
 
+        // HACD (Hierarchical Approximate Convex Decomposition): 这是一种使用图理论来进行凸分解的方法。它将形状的几何图形视为无向图，然后使用图割来进行凸分解。
+        // 这种方法能够生成比较精细和准确的凸分解，但是相比于V-HACD，它可能会生成更多的凸体。
+
         HACD::HACD hacd;
         hacd.SetPoints(points.data());
         hacd.SetNPoints(points.size());
         hacd.SetTriangles(triangles.data());
         hacd.SetNTriangles(triangles.size());
 
-        hacd.SetCompacityWeight(0.1);
-        hacd.SetVolumeWeight(0.0);
-        hacd.SetNClusters(2);
-        hacd.SetNVerticesPerCH(100);
+        
+        // 用于设置Hierarchical Approximate Convex Decomposition（HACD）算法中紧凑性的权重因子（w）。
+        // 紧凑性权重（Compacity Weight）是一个控制生成的凸体形状的参数。更具体地说，紧凑性权重决定了在生成凸体时，紧凑性（形状的体积和表面积之比）与其他因素（如生成的凸体数量等）的相对重要性。
+        // 如果设置一个较高的紧凑性权重，HACD将优先生成紧凑的凸体，这可能会增加生成的凸体数量。相反，如果设置一个较低的紧凑性权重，HACD可能会生成较少但形状较为扁平的凸体。
+        auto CompacityWeight = get_input2<float>("CompacityWeight");
+        hacd.SetCompacityWeight(CompacityWeight);
+
+
+        auto VolumeWeight = get_input2<float>("VolumeWeight");
+        hacd.SetVolumeWeight(VolumeWeight);
+
+        // 这个参数的具体含义是：HACD将尽可能地生成接近设定数量的凸体簇。例如，如果你设置了hacd.SetNClusters(10)，那么HACD将尽量生成接近10个的凸体簇。
+        // 需要注意的是，HACD可能无法生成精确数量的凸体簇，因为实际生成的数量取决于输入形状的复杂性和其他参数。此外，如果生成的凸体簇数量超过了设定的值，HACD可能会通过合并一些凸体簇来降低总数。
+        auto NClusters = get_input2<int>("NClusters");
+        hacd.SetNClusters(NClusters);
+
+        // hacd.SetNVerticesPerCH(n): 这个函数设定了每个生成的凸体（Convex Hulls）最多应包含的顶点数。该值设定的越高，凸体形状的精度就越高，但也会导致计算复杂性增加。
+        auto NVerticesPerCH = get_input2<int>("NVerticesPerCH");
+        hacd.SetNVerticesPerCH(NVerticesPerCH);
+
+        // hacd.SetConcavity(c): 这个函数设置了一个阈值，用于确定凸体生成的凹度。该值设定的越高，允许生成的凸体的凹度就越大，这可能导致生成的凸体数量减少，但凸体形状可能变得更加复杂。
+        auto Concavity = get_input2<float>("Concavity");
         hacd.SetConcavity(100.0);
-        hacd.SetAddExtraDistPoints(false);
-        hacd.SetAddNeighboursDistPoints(false);
-        hacd.SetAddFacesPoints(false);
+
+        // hacd.SetAddExtraDistPoints(b): 这个函数决定是否在凸体分解中添加额外的距离点。设置为true可以增加生成的凸体的准确度，但也会增加计算复杂性。
+        auto AddExtraDistPoints = get_input2<bool>("AddExtraDistPoints");
+        hacd.SetAddExtraDistPoints(AddExtraDistPoints);
+
+        // hacd.SetAddNeighboursDistPoints(b): 这个函数决定是否在凸体分解中添加邻近的距离点。设置为true可以增加生成的凸体的准确度，但也会增加计算复杂性。
+        auto AddNeighboursDistPoints = get_input2<bool>("AddNeighboursDistPoints");
+        hacd.SetAddNeighboursDistPoints(AddNeighboursDistPoints);
+
+        // hacd.SetAddFacesPoints(b): 这个函数决定是否在凸体分解中添加面的点。设置为true可以增加生成的凸体的准确度，但也会增加计算复杂性。
+        auto AddFacesPoints = get_input2<bool>("AddFacesPoints");
+        hacd.SetAddFacesPoints(AddFacesPoints);
 
         hacd.Compute();
         size_t nClusters = hacd.GetNClusters();
@@ -372,7 +404,18 @@ struct PrimitiveConvexDecomposition : zeno::INode {
 };
 
 ZENDEFNODE(PrimitiveConvexDecomposition, {
-    {"prim"},
+    {
+        "prim", 
+        {"float","CompacityWeight","0.1"},
+        {"float","VolumeWeight","0.0"},
+        {"int","NClusters","2"},
+        {"int","NVerticesPerCH","100"},
+        {"float","Concavity","100.0"},
+        {"bool","AddExtraDistPoints","false"},
+        {"bool","AddNeighboursDistPoints","false"},
+        {"bool","AddFacesPoints","false"}
+
+        },
     {"listPrim"},
     {},
     {"Bullet"},
@@ -494,6 +537,35 @@ struct BulletCompoundAddChild : zeno::INode {
 ZENDEFNODE(BulletCompoundAddChild, {
     {"compound", "childShape", "trans"},
     {"compound"},
+    {},
+    {"Bullet"},
+});
+
+struct BulletCompoundFinalize : zeno::INode {
+    virtual void apply() override {
+        auto compound = get_input<BulletCompoundShape>("compound_shape");
+        auto cpdShape = static_cast<btCompoundShape*>(compound->shape.get());
+
+        if (compound->children.size() != cpdShape->getNumChildShapes()) {
+            printf("ridiculous. sth is wrong.\n");
+            throw std::runtime_error("?????");
+        }
+        auto nchs = compound->children.size();
+        std::vector<float> masses(nchs, 1.f);
+        btTransform principalTrans;
+        btVector3 inertia;
+        cpdShape->calculatePrincipalAxisTransform(masses.data(), principalTrans, inertia);
+        for (int rbi = 0; rbi != nchs; ++rbi) {
+            cpdShape->updateChildTransform(rbi, principalTrans.inverse() * cpdShape->getChildTransform(rbi));
+        }
+
+        set_output("compound_shape", get_input("compound_shape"));
+    }
+};
+
+ZENDEFNODE(BulletCompoundFinalize, {
+    {"compound_shape"},
+    {"compound_shape"},
     {},
     {"Bullet"},
 });
@@ -719,6 +791,7 @@ struct BulletMakeObject : zeno::INode {
         auto object = std::make_shared<BulletObject>(
             mass, trans->trans, shape);
         object->body->setDamping(0, 0);
+        object->body->forceActivationState(4);
         set_output("object", std::move(object));
     }
 };
@@ -781,6 +854,30 @@ ZENDEFNODE(BulletObjectSetRestitution, {
     {},
     {"Bullet"},
 });
+
+struct BulletObjectForceActivation : zeno::INode {
+    virtual void apply() override {
+        std::map<std::string, int> ActvSta{{"ACTIVE_TAG", 1},         {"ISLAND_SLEEPING", 2},
+                                           {"WANTS_DEACTIVATION", 3}, {"DISABLE_DEACTIVATION", 4},
+                                           {"DISABLE_SIMULATION", 5}, {"FIXED_BASE_MULTI_BODY", 6}};
+
+        auto object = get_input<BulletObject>("object");
+        auto stateTag = get_input2<std::string>("ActivationState");
+
+        int state = ActvSta[stateTag];
+        object->body->forceActivationState(state);
+        set_output("object", std::move(object));
+    }
+};
+
+ZENDEFNODE(BulletObjectForceActivation, {
+                                            {"object",
+                                             {"enum ACTIVE_TAG ISLAND_SLEEPING WANTS_DEACTIVATION DISABLE_DEACTIVATION DISABLE_SIMULATION FIXED_BASE_MULTI_BODY",
+                                              "ActivationState", "ACTIVE_TAG"}},
+                                            {"object"},
+                                            {},
+                                            {"Bullet"},
+                                        });
 
 struct BulletObjectGetTransform : zeno::INode {
     virtual void apply() override {

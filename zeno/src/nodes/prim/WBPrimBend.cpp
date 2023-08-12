@@ -1740,41 +1740,5 @@ ZENDEFNODE(PrimHasAttr,
                    "erode",
                }});
 
-struct HF_rotate_displacement_2d : INode {
-    void apply() override {
-        auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
-
-        auto& var = terrain->verts.attr<vec3f>("var");
-        auto& pos = terrain->verts.attr<vec3f>("pos");
-
-        auto angle = get_input<NumericObject>("Rotate Displacement")->get<float>();
-        float gl_angle = glm::radians(angle);
-        glm::vec3 gl_axis(0.0, 1.0, 0.0);
-        glm::quat gl_quat = glm::angleAxis(gl_angle, gl_axis);
-
-#pragma omp parallel for
-        for (int i = 0; i < terrain->verts.size(); i++)
-        {
-            glm::vec3 ret{};// = glm::vec3(0, 0, 0);
-            ret = glm::rotate(
-                        gl_quat,
-                        glm::vec3(var[i][0], var[i][1], var[i][2])
-                    );
-            pos[i] -= vec3f(ret.x, ret.y, ret.z);
-        }
-
-        set_output("prim_2DGrid", get_input("prim_2DGrid"));
-    }
-};
-ZENDEFNODE(HF_rotate_displacement_2d,
-        { /* inputs: */ {
-               "prim_2DGrid",
-                {"float", "Rotate Displacement", "0"}
-           }, /* outputs: */ {
-               "prim_2DGrid",
-           }, /* params: */ {
-           }, /* category: */ {
-               "erode",
-           } });
 } // namespace
 } // namespace zeno
