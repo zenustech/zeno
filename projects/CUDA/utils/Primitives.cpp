@@ -832,7 +832,7 @@ struct PrimitiveFuse : INode {
         std::vector<int> fwdMap(numNewVerts);
         std::vector<std::pair<int, int>> kvs(numNewVerts);
         auto keys = vtab._activeKeys;
-        pol(enumerate(keys, kvs), [](int id, auto key, std::pair<int, int> &kv) { kv = std::make_pair(key[0], id); });
+        pol(enumerate(keys, kvs), [](int id, auto key, std::pair<int, int> &kv) { kv = std::make_pair(key, id); });
         struct {
             constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
                 return a.first < b.first;
