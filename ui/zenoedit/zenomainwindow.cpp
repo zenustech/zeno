@@ -1435,7 +1435,7 @@ void ZenoMainWindow::importGraph() {
                     if (!duplicateLst.isEmpty())
                     {
                         ZImportSubgraphsDlg dlg(duplicateLst, this);
-                        connect(&dlg, &ZImportSubgraphsDlg::selectedSignal, this, [&subgraphNames, pModel](const QStringList& lst, bool bRename) mutable {
+                        connect(&dlg, &ZImportSubgraphsDlg::selectedSignal, this, [&subgraphNames, subgraphLst](const QStringList& lst, bool bRename) mutable {
                             if (!lst.isEmpty())
                             {
                                 for (const QString name : lst)
@@ -1444,7 +1444,7 @@ void ZenoMainWindow::importGraph() {
                                     {
                                         QString newName = name;
                                         int i = 1;
-                                        while (pModel->getDescriptor(newName, NODE_DESC()))
+                                        while (subgraphLst.contains(newName))
                                         {
                                             newName = name + QString("_%1").arg(i);
                                             i++;
