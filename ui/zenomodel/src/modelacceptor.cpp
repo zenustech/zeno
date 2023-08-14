@@ -663,18 +663,6 @@ void ModelAcceptor::endNode(const QString& id, const QString& nodeCls, const rap
                     QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
                     setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
                 }
-                bool bLinkRef = false;
-                if (sockObj.HasMember("link-ref"))
-                {
-                    bLinkRef = sockObj["link-ref"].GetBool();
-                }
-                QString type;
-                if (sockObj.HasMember("type"))
-                {
-                    type = sockObj["type"].GetString();
-                }
-                if (bLinkRef || !type.isEmpty())
-                    setOutputSocket(id, outSock, bLinkRef, type);
             }
         }
     }
