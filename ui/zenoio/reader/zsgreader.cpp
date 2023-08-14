@@ -52,7 +52,7 @@ bool ZsgReader::importNodes(IGraphsModel* pModel, const QModelIndex& subgIdx, co
     return true;
 }
 
-bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor, bool bImport)
+bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
@@ -90,16 +90,11 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor, bool bImport)
     for (const auto& subgraph : graph.GetObject())
     {
         const QString& graphName = subgraph.name.GetString();
-        if (bImport && graphName == "main")
-            continue;
         if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
             return false;
     }
     pAcceptor->EndGraphs();
     pAcceptor->switchSubGraph("main");
-
-    if (bImport)
-        return true;
 
     if (doc.HasMember("views"))
     {
@@ -114,6 +109,64 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor, bool bImport)
         else
             pAcceptor->setIOVersion(zenoio::VER_2_5);
     }
+    return true;
+}
+
+bool ZsgReader::importSubgraphs(const QString& fn, IAcceptor* pAcceptor, const QMap<QString, QString>& subGraphNames, IGraphsModel* pModel)
+{
+    QFile file(fn);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        zeno::log_error("cannot open zsg file: {} ({})", fn.toStdString(),
+            file.errorString().toStdString());
+        return false;
+    }
+
+    pAcceptor->setFilePath(fn);
+
+    rapidjson::Document doc;
+    QByteArray bytes = file.readAll();
+    doc.Parse(bytes);
+
+    if (!doc.IsObject() || !doc.HasMember("graph"))
+    {
+        zeno::log_error("zsg json file is corrupted");
+        return false;
+    }
+
+    const rapidjson::Value& graph = doc["graph"];
+    if (graph.IsNull()) {
+        zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
+        return false;
+    }
+
+    ZASSERT_EXIT(doc.HasMember("descs"), false);
+    NODE_DESCS nodesDescs = _parseDescs(doc["descs"], pAcceptor);
+    NODE_DESCS subgDesc;
+    for (const auto& name : subGraphNames.keys())
+    {
+        QString newName = subGraphNames[name];
+        NODE_DESC desc = nodesDescs[name];
+        desc.name = newName;
+        subgDesc[desc.name] = desc;
+    }
+    ret = pAcceptor->setLegacyDescs(graph, subgDesc);
+    if (!ret) {
+        return false;
+    }
+
+    for (const auto& subgraph : graph.GetObject())
+    {
+        QString graphName = subgraph.name.GetString();
+        if (!subGraphNames.contains(graphName))
+            continue;
+        else
+            graphName = subGraphNames[graphName];
+
+        if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
+            return false;
+    }
+    pAcceptor->EndGraphs();
     return true;
 }
 

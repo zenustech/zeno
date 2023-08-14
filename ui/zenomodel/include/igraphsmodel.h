@@ -118,6 +118,7 @@ public:
     virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) const = 0;
     virtual void markNodeDataChanged(const QModelIndex& idx) = 0;
     virtual void clearNodeDataChanged() = 0;
+    virtual QStringList subgraphsName() const = 0;
 
 signals:
 	void clearLayout2();

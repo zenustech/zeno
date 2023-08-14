@@ -141,6 +141,7 @@ public:
     bool setCustomName(const QModelIndex &subgIdx, const QModelIndex &Idx, const QString &value) const override;
     void markNodeDataChanged(const QModelIndex& idx) override;
     void clearNodeDataChanged() override;
+    QStringList subgraphsName() const override;
 
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
