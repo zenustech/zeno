@@ -155,7 +155,6 @@ struct ColoringSelected : INode {
     using tiles_t = typename ZenoParticles::particles_t;
     void markBoundaryVerts(zs::CudaExecutionPolicy &pol, ZenoParticles *prim) {
         using namespace zs;
-        constexpr auto space = execspace_e::cuda;
         auto &vtemp = prim->getParticles();
         vtemp.append_channels(pol, std::vector<zs::PropertyTag>{{"on_boundary", 1}});
         auto markIter = vtemp.begin("on_boundary", dim_c<1>, int_c);

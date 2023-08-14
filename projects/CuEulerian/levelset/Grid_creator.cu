@@ -374,10 +374,12 @@ struct ZSAdaptiveGridToVDB : INode {
             ZenoAdaptiveGrid::vdb_t vdb;
             if (ag.memspace() == memsrc_e::device) {
                 auto pol = cuda_exec();
-                restructure_adaptive_grid(pol, ag, vdb);
+                ag.restructure(pol, vdb);
+                // restructure_adaptive_grid(pol, ag, vdb);
             } else {
                 auto pol = omp_exec();
-                restructure_adaptive_grid(pol, ag, vdb);
+                ag.restructure(pol, vdb);
+                // restructure_adaptive_grid(pol, ag, vdb);
             }
             converter(vdb);
         })(zs_grid->ag);
