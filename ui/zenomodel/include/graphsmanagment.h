@@ -19,6 +19,7 @@ public:
     bool saveFile(const QString& filePath, APP_SETTINGS settings);
     IGraphsModel* newFile();
     void importGraph(const QString& fn);
+    void importSubGraphs(const QString& fn, const QMap<QString, QString>& map);
     void clear();
     void removeCurrent();
     void appendLog(QtMsgType type, QString fileName, int ln, const QString &msg);

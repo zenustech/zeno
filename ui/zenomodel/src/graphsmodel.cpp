@@ -1535,6 +1535,11 @@ void GraphsModel::clearNodeDataChanged()
     m_changedNodes.clear();
 }
 
+QStringList GraphsModel::subgraphsName() const
+{
+    return m_subGraphs.keys();
+}
+
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
 {
     QModelIndex nodeIdx = index(nodeid, subgIdx);

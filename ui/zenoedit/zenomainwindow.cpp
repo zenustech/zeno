@@ -53,6 +53,7 @@
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/extra/GlobalState.h>
 #include "launch/viewdecode.h"
+#include "dialog/ZImportSubgraphsDlg.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -1400,7 +1401,69 @@ void ZenoMainWindow::importGraph() {
 
     //todo: path validation
     auto pGraphs = zenoApp->graphsManagment();
-    pGraphs->importGraph(filePath);
+    QMap<QString, QString> subgraphNames;//old name: new name
+    QFile file(filePath);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (ret) {
+        rapidjson::Document doc;
+        QByteArray bytes = file.readAll();
+        doc.Parse(bytes);
+
+        if (doc.IsObject()  && doc.HasMember("graph"))
+        {
+            const rapidjson::Value& graph = doc["graph"];
+            if (!graph.IsNull()) {
+                IGraphsModel *pModel = pGraphs->currentModel();
+                if (pModel)
+                {
+                    QStringList subgraphLst = pModel->subgraphsName();
+                    QStringList duplicateLst;
+                    for (const auto& subgraph : graph.GetObject())
+                    {
+                        const QString& graphName = subgraph.name.GetString();
+                        if (graphName == "main")
+                            continue;
+                        if (subgraphLst.contains(graphName))
+                        {
+                            duplicateLst << graphName;
+                        }
+                        else
+                        {
+                            subgraphNames[graphName] = graphName;
+                        }
+                    }
+                    if (!duplicateLst.isEmpty())
+                    {
+                        ZImportSubgraphsDlg dlg(duplicateLst, this);
+                        connect(&dlg, &ZImportSubgraphsDlg::selectedSignal, this, [&subgraphNames, pModel](const QStringList& lst, bool bRename) mutable {
+                            if (!lst.isEmpty())
+                            {
+                                for (const QString name : lst)
+                                {
+                                    if (bRename)
+                                    {
+                                        QString newName = name;
+                                        int i = 1;
+                                        while (pModel->getDescriptor(newName, NODE_DESC()))
+                                        {
+                                            newName = name + QString("_%1").arg(i);
+                                            i++;
+                                        }
+                                        subgraphNames[name] = newName;
+                                    }
+                                    else
+                                        subgraphNames[name] = name;
+                                }
+                            }
+                        });
+                        dlg.exec();
+                    }
+                }
+            }
+        }
+    }
+    if (!subgraphNames.isEmpty())
+        pGraphs->importSubGraphs(filePath, subgraphNames);
 }
 
 static bool saveContent(const QString &strContent, QString filePath) {
