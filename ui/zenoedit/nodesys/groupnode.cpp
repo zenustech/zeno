@@ -52,7 +52,6 @@ void GroupTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     {
         m_pLineEdit = new ZEditableTextItem(m_text, this);
         m_pLineEdit->setPos(0, 0);
-        m_pLineEdit->setFocus();
         connect(m_pLineEdit, &ZEditableTextItem::editingFinished, this, [=]() {
             QString text = m_pLineEdit->toPlainText();
             if (m_text != text)
@@ -66,17 +65,21 @@ void GroupTextItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent* event)
     }
     else
     {
+        m_pLineEdit->setText(m_text);
         m_pLineEdit->show();
     }
+    m_pLineEdit->setFocus();
     update();
     QGraphicsWidget::mouseDoubleClickEvent(event);
 }
 
 void GroupTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) {
-    if (m_pLineEdit && m_pLineEdit->isVisible() && m_pLineEdit->boundingRect().size() != boundingRect().size())
+    if (m_pLineEdit && m_pLineEdit->isVisible())
     {
-        m_pLineEdit->setFont(font());
-        m_pLineEdit->setFixedSize(boundingRect().size());
+        if (m_pLineEdit->font() != font())
+            m_pLineEdit->setFont(font());
+        if (m_pLineEdit->boundingRect().size() != boundingRect().size())
+            m_pLineEdit->setFixedSize(boundingRect().size());
         return;
     }
     painter->fillRect(boundingRect(), palette().color(QPalette::Window));
