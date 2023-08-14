@@ -27,7 +27,7 @@ std::string matlNode = "ShaderFinalize";
 
 static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &objs, bool cacheLightCameraOnly, bool cacheMaterialOnly) {
     if (cachedir.empty()) return;
-    std::string dir = cachedir + "/" + std::to_string(1000000 + frameid).substr(1);
+    std::filesystem::path dir = std::filesystem::u8path(cachedir + "/" + std::to_string(1000000 + frameid).substr(1));
     if (!std::filesystem::exists(dir) && !std::filesystem::create_directories(dir))
     {
         log_critical("can not create path: {}", dir);
@@ -88,9 +88,9 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
             }
         }
     }
-    cachepath[0] = std::filesystem::u8path(dir) / "lightCameraObj.zencache";
-    cachepath[1] = std::filesystem::u8path(dir) / "materialObj.zencache";
-    cachepath[2] = std::filesystem::u8path(dir) / "normalObj.zencache";
+    cachepath[0] = dir / "lightCameraObj.zencache";
+    cachepath[1] = dir / "materialObj.zencache";
+    cachepath[2] = dir / "normalObj.zencache";
     size_t currentFrameSize = 0;
     for (int i = 0; i < 3; i++)
     {
