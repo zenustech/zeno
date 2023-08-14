@@ -827,15 +827,29 @@ struct PrimitiveFuse : INode {
         if (vtab._buildSuccess.getVal() == 0)
             throw std::runtime_error("PrimitiveFuse hash failed!!");
 
+        /// @brief preserving vertex islands order
         auto numNewVerts = vtab.size();
+        std::vector<int> fwdMap(numNewVerts);
+        std::vector<std::pair<int, int>> kvs(numNewVerts);
+        auto keys = vtab._activeKeys;
+        pol(enumerate(keys, kvs), [](int id, auto key, std::pair<int, int> &kv) { kv = std::make_pair(key[0], id); });
+        struct {
+            constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                return a.first < b.first;
+            }
+        } lessOp;
+        std::sort(kvs.begin(), kvs.end(), lessOp);
+        pol(enumerate(kvs), [&fwdMap](int no, auto kv) { fwdMap[kv.second] = no; });
+        //
+
         newVerts.resize(numNewVerts);
         auto &newPos = newVerts.attr<vec3f>("pos");
         pol(newPos, [](zeno::vec3f &p) { p = vec3f(0, 0, 0); });
         std::vector<int> cnts(numNewVerts);
         pol(range(pos.size()),
-            [&cnts, &fas, &newPos, &pos, vtab = proxy<space>(vtab), tag = wrapv<space>{}](int vi) mutable {
+            [&cnts, &fas, &newPos, &pos, &fwdMap, vtab = proxy<space>(vtab), tag = wrapv<space>{}](int vi) mutable {
                 auto fa = fas[vi];
-                auto dst = vtab.query(fa);
+                auto dst = fwdMap[vtab.query(fa)];
                 fas[vi] = dst;
                 atomic_add(tag, &cnts[dst], 1);
                 for (int d = 0; d != 3; ++d)

@@ -402,6 +402,9 @@ struct Mesh{
             cam->GetCameraMatrix(camMatrix);
 
             SCamera sCam;
+            sCam.focL = cam->mFocalLength;
+            sCam.filmW = cam->mFilmWidth * 25.4f; // inch to mm
+            sCam.filmH = cam->mFilmHeight * 25.4f;
             std::cout << "Camera Name: " << camName << "\n";
             fbxData.iCamera.value[camName] = sCam;
 

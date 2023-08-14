@@ -235,6 +235,10 @@ ZenoNode* ZenoSubGraphScene::createNode(const QModelIndex& idx, const NodeUtilPa
     {
         return new LiveMeshNode(params);
     }
+    else if(descName == "EvalBlenderFile")
+    {
+        return new EvalBlenderFile(params);
+    }
     else
     {
         return new ZenoNode(params);

@@ -100,6 +100,8 @@ struct TypeCheck : Visitor<TypeCheck> {
                     "rsqrt",
                     "floor",
                     "ceil",
+                    "fb2i",
+                    "ib2f",
                     "round",
                     "abs",
                     "all",
@@ -132,6 +134,11 @@ struct TypeCheck : Visitor<TypeCheck> {
             }
 
         } else if (contains({"normalize", "normalizesafe"}, name)) {
+            if (stmt->args.size() != 1) {
+                error("function `%s` takes exactly 1 argument", name.c_str());
+            }
+
+        } else if (contains({"degrees", "radians"}, name)) {
             if (stmt->args.size() != 1) {
                 error("function `%s` takes exactly 1 argument", name.c_str());
             }

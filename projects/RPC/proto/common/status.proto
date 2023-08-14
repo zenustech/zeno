@@ -1,0 +1,8 @@
+syntax = "proto3";
+package zeno.common;
+
+enum StatusCode
+{
+  SUCCESS = 0; // .
+  BAD_REQUEST_BODY = 1; // Request body can't be parse
+}

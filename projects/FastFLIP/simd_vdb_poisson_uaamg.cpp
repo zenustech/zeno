@@ -131,7 +131,7 @@ struct BuildPoissonRhs_withTension {
         float dtOverDxSqr = mDt / (mDx * mDx);
 
         for (auto iter = dofLeaf.beginValueOn(); iter; ++iter) {
-            float rhs = 0;
+            float rhs = 0, weight_sum = 0;
             openvdb::Coord globalCoord = iter.getCoord();
             bool hasNonZeroWeight = false;
 
@@ -161,6 +161,8 @@ struct BuildPoissonRhs_withTension {
                 weight = mWeightAxr.getValue(nextCoord)[channel];
                 phiOther = mPhiAxr.getValue(phiCoord);
                 curvOther = mCurvAxr.getValue(phiCoord);
+
+                weight_sum += weight;
                 
                 if (weight != 0.f) {
                     hasNonZeroWeight = true;
@@ -192,7 +194,7 @@ struct BuildPoissonRhs_withTension {
                 }
             }//end for 6 faces of this voxel
 
-            if (!hasNonZeroWeight) {
+            if (!hasNonZeroWeight || weight_sum < 0.1) {
                 rhs = 0;
             }
             mRhsLeaves[leafpos]->setValueOn(iter.offset(), rhs);
@@ -2124,7 +2126,7 @@ void PoissonSolver::muCyclePreconditioner(const openvdb::FloatGrid::Ptr in_out_l
 }
 
 template<int mu_time>
-void PoissonSolver::muCycleIterative(const openvdb::FloatGrid::Ptr in_out_lhs, const openvdb::FloatGrid::Ptr in_rhs, const int level, const int n)
+void PoissonSolver::muCycleIterative(const openvdb::FloatGrid::Ptr in_out_lhs, const openvdb::FloatGrid::Ptr in_rhs, const int level, const int n, int postSmooth)
 {
     
     auto get_scheduled_weight = [n](int iteration) {
@@ -2254,6 +2256,34 @@ void PoissonSolver::muCycleIterative(const openvdb::FloatGrid::Ptr in_out_lhs, c
             break;
         }
     }
+
+    for (int i = 0; i < postSmooth && level == 0; i++) {
+        switch (mSmoother) {
+        default:
+        case SmootherOption::ScheduledRelaxedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(get_scheduled_weight(n - 1 - i));
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::WeightedJacobi:
+            mMultigridHierarchy[level]->mApplyOperator->setWeightJacobi(6.0f / 7.0f);
+            mMultigridHierarchy[level]->weightedJacobiApply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        case SmootherOption::RedBlackGaussSeidel:
+            mMultigridHierarchy[level]->mApplyOperator->set_w_sor(1.0f);
+            mMultigridHierarchy[level]->redBlackGaussSeidelApply</*red first*/false>(
+                mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            break;
+        case SmootherOption::SPAI0:
+            mMultigridHierarchy[level]->spai0Apply(
+                mMuCycleTemps[level], mMuCycleLHSs[level], mMuCycleRHSs[level]);
+            mMuCycleTemps[level].swap(mMuCycleLHSs[level]);
+            break;
+        }
+    }
 }
 
 
@@ -2323,7 +2353,7 @@ int PoissonSolver::solveMultigridPCG(openvdb::FloatGrid::Ptr in_out_presssure, o
     //line4
     auto p = level0.getZeroVectorGrid();
     level0.setGridToConstant(p, 0);
-    muCyclePreconditioner<2, true>(p, r, 0, 3);
+    muCyclePreconditioner<2, true>(p, r, 0, 4);
     float rho = levelDot(p, r);
 
     auto z = level0.getZeroVectorGrid();
@@ -2353,7 +2383,7 @@ int PoissonSolver::solveMultigridPCG(openvdb::FloatGrid::Ptr in_out_presssure, o
         }
         //line13
         level0.setGridToConstant(z, 0);
-        muCyclePreconditioner<2, true>(z, r, 0, 3);
+        muCyclePreconditioner<2, true>(z, r, 0, 4);
 
         float rho_new = levelDot(z, r);
 
@@ -2394,7 +2424,7 @@ int PoissonSolver::solvePureMultigrid(openvdb::FloatGrid::Ptr in_out_presssure, 
     }
     float nu_old = nu;
     for (; mIterationTaken < mMaxIteration; mIterationTaken++) {
-        muCycleIterative<2>(in_out_presssure, in_rhs, 0, 3);
+        muCycleIterative<2>(in_out_presssure, in_rhs, 0, 8, 8);
         level0.residualApply(r, in_out_presssure, in_rhs);
         nu_old = nu;
         nu = levelAbsMax(r);
@@ -2403,11 +2433,11 @@ int PoissonSolver::solvePureMultigrid(openvdb::FloatGrid::Ptr in_out_presssure, 
             //printf("iter:%d err:%e\n", mIterationTaken, nu);
             return PoissonSolver::SUCCESS;
         }
-        if (nu > nu_old) {
-            if (mIterationTaken > 8) {
-                return PoissonSolver::FAILED;
-            }
-        }
+//        if (nu > nu_old) {
+//            if (mIterationTaken > 8) {
+//                return PoissonSolver::FAILED;
+//            }
+//        }
     }
 
     return PoissonSolver::FAILED;

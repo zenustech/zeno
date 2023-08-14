@@ -1,0 +1,55 @@
+syntax = "proto3";
+package zeno.event;
+
+import "common/status.proto";
+import "common/math.proto";
+
+enum EventType {
+  init = 0;
+  preRunnerStart = 1;
+  beginDestroy = 2;
+};
+
+message TriggerEventQuery {
+  EventType EventType = 1;
+}
+
+message TriggerEventResponse {
+  zeno.common.StatusCode Status = 1;
+}
+
+message AttributeList {
+  repeated zeno.common.GenericNumeric NumericPack = 1;
+}
+
+message AttributeGroup {
+  map<string, AttributeList> Attributes = 1;
+}
+
+message PrimitiveObject {
+  AttributeGroup Vertices = 1 [lazy = true];
+  AttributeGroup Points = 2 [lazy = true];
+  AttributeGroup Lines = 3 [lazy = true];
+  AttributeGroup Triangles = 4 [lazy = true];
+  AttributeGroup Quadratics = 5 [lazy = true];
+  AttributeGroup Loops = 6 [lazy = true];
+  AttributeGroup Polys = 7 [lazy = true];
+  AttributeGroup Edges = 8 [lazy = true];
+  AttributeGroup TextureCoords = 9 [lazy = true];
+
+  // Instance Object and Material Object doesn't supported yet
+}
+
+message PutPrimitiveObjectQuery {
+  map<string, PrimitiveObject> Primitives = 1;
+  string Channel = 2;
+}
+
+message PutPrimitiveObjectResponse {
+  zeno.common.StatusCode Status = 1;
+}
+
+service EventBus {
+  rpc TriggerEvent(TriggerEventQuery) returns(TriggerEventResponse) {}
+  rpc PushPrimitiveNotify(PutPrimitiveObjectQuery) returns(PutPrimitiveObjectResponse) {}
+}
