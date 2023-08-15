@@ -59,6 +59,7 @@ namespace zenoui
                 return pCheckbox;
             }
             case CONTROL_READPATH:
+            case CONTROL_RELATIVE_PATH:
             case CONTROL_WRITEPATH:
             {
                 ZPathEdit *pathLineEdit = new ZPathEdit(value.toString());
@@ -373,6 +374,7 @@ namespace zenoui
         case CONTROL_INT:
         case CONTROL_FLOAT:    return qobject_cast<ZLineEdit*>(pControl) != nullptr;    //be careful type changed.
         case CONTROL_READPATH:
+        case CONTROL_RELATIVE_PATH:
         case CONTROL_WRITEPATH: return qobject_cast<ZLineEdit*>(pControl) != nullptr;
         case CONTROL_BOOL:    return qobject_cast<QCheckBox*>(pControl) != nullptr;
         case CONTROL_VEC2_FLOAT:

@@ -1,9 +1,14 @@
+#include <memory>
+#include <filesystem>
 #include <zeno/zeno.h>
 #include <zeno/types/StringObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/fileio.h>
+#include <zeno/extra/assetDir.h>
 #include <zeno/extra/GlobalState.h>
+
+#include "magic_enum.hpp"
 
 namespace zeno {
 namespace {
@@ -35,6 +40,80 @@ ZENDEFNODE(MakeReadPath, {
     {},
     {{"string", "path"}},
     {{"readpath", "path", ""}},
+    {"string"},
+});
+
+
+
+struct RelativePath : zeno::INode {
+
+    enum struct BasePath {
+        ZSGPATH, RUNPATH, NASLOC
+    };
+
+    std::string nasPath(std::string& relative) {
+
+        auto zpath = zeno::getConfigVariable("nasloc");
+
+        std::filesystem::path basePath(zpath);
+        //basePath = basePath.remove_filename();
+        basePath /= relative;
+
+        auto p = std::filesystem::canonical(basePath);
+        return p.string();
+    }
+
+    std::string zsgPath(std::string& relative) {
+    
+        auto zpath = zeno::getConfigVariable("$ZSGPATH");
+
+        std::filesystem::path basePath(zpath);
+        basePath = basePath.remove_filename();
+        basePath /= relative;
+
+        auto p = std::filesystem::canonical(basePath);
+        return p.string();
+    }
+
+    std::string runPath(std::string& relative) {
+        auto path = std::filesystem::current_path();
+        path /= relative;
+
+        auto p = std::filesystem::canonical(path);
+        return path.string();   
+    }
+
+    virtual void apply() override {
+
+        auto baseRaw = get_input2<std::string>("base:");
+        auto baseEnum = magic_enum::enum_cast<BasePath>(baseRaw).value_or(BasePath::ZSGPATH);
+
+        zeno::StringObject fullpath;
+        auto relative = get_input2<std::string>("relative");
+
+        switch (baseEnum) {
+            case BasePath::ZSGPATH: {
+                fullpath.set(zsgPath(relative));
+            }
+            case BasePath::RUNPATH: {
+                fullpath.set(runPath(relative));
+            }
+            case BasePath::NASLOC: {
+                fullpath.set(nasPath(relative));
+            }
+            default: {}
+        }
+        
+        set_output("fullpath", std::make_shared<zeno::StringObject>(fullpath));
+    }
+};
+
+ZENDEFNODE(RelativePath, {
+    {
+        {"relativepath", "relative", ""}
+    },
+    { {"string", "fullpath"} },
+    { {"enum ZSG_PATH RUN_PATH{unsupported} NASLOC{unsupported} ", "base", "ZSG_PATH"} },
     {"string"},
 });
 

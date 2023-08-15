@@ -11,6 +11,8 @@
 #include "../zpathedit.h"
 #include <QSvgRenderer>
 
+#include <filesystem>
+#include <zeno/extra/assetDir.h>
 
 ZenoParamWidget::ZenoParamWidget(QGraphicsItem* parent, Qt::WindowFlags wFlags)
     : QGraphicsProxyWidget(parent, wFlags)
@@ -274,7 +276,20 @@ void ZenoParamPathEdit::mousePressEvent(QGraphicsSceneMouseEvent *event)
             path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
         } else if (m_control == CONTROL_WRITEPATH) {
             path = QFileDialog::getSaveFileName(nullptr, "Path to Save", "", "All Files(*);;");
-        } else {
+        } 
+        else if (m_control == CONTROL_RELATIVE_PATH) {
+
+            path = QFileDialog::getOpenFileName(nullptr, "File to Open", "", "All Files(*);;");
+            std::filesystem::path selectedPath(path.toStdString());
+
+            auto zpath = zeno::getConfigVariable("$ZSGPATH");
+            std::filesystem::path basePath(zpath);
+            basePath = basePath.remove_filename();
+
+            auto relative_path = std::filesystem::relative(selectedPath, basePath);
+            path = QString(relative_path.c_str());
+        } 
+        else {
             path = QFileDialog::getExistingDirectory(nullptr, "Path to Save", "");
         }
         if (path.isEmpty()) {
