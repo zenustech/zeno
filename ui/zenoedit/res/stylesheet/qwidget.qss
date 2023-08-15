@@ -122,7 +122,6 @@ QTableWidget[cssClass="select_subgraph"]
 	color: #FFFFFF;
 	font-size: 9pt;
 	gridline-color:rgb(115,123,133);
-	show-grid: false;
 }
 
 QTableWidget[cssClass="select_subgraph"] QHeaderView
