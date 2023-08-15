@@ -237,9 +237,10 @@ void ZTimeline::initButtons()
     connect(m_ui->btnLoopPlay, &ZToolButton::toggled, this, [=](bool bChecked) {
         ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pMainWin);
-    DisplayWidget* dpws = pMainWin->getCurrentViewport();
-    ZASSERT_EXIT(dpws);
-    dpws->setLoopPlaying(bChecked);
+    for (auto view: pMainWin->viewports())
+    {
+        view->setLoopPlaying(bChecked);
+    }
         });
 
 
@@ -338,11 +339,6 @@ bool ZTimeline::isPlayToggled() const
 void ZTimeline::updateKeyFrames(const QVector<int>& keys) 
 {
     m_ui->timeliner->updateKeyFrames(keys);
-}
-
-void ZTimeline::setLoopPlayingStatus(bool enable)
-{
-    m_ui->btnLoopPlay->toggle(enable);
 }
 
 void ZTimeline::paintEvent(QPaintEvent* event)

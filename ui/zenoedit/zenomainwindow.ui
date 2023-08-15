@@ -65,9 +65,6 @@
     </property>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
-    <addaction name="action_Copy"/>
-    <addaction name="action_Paste"/>
-    <addaction name="action_Cut"/>
     <addaction name="actionCollaspe"/>
     <addaction name="actionExpand"/>
     <addaction name="actionEasy_Graph"/>
@@ -78,26 +75,12 @@
     <property name="title">
      <string>View</string>
     </property>
-    <widget class="QMenu" name="menuEnvTex">
-     <property name="title">
-      <string>EnvTex</string>
-     </property>
-     <addaction name="actionBlackWhite"/>
-     <addaction name="actionCreek"/>
-     <addaction name="actionDay_Light"/>
-     <addaction name="actionDefault"/>
-     <addaction name="actionFootballField"/>
-     <addaction name="actionForest"/>
-     <addaction name="actionLake"/>
-     <addaction name="actionSee"/>
-    </widget>
     <widget class="QMenu" name="menuCamera">
      <property name="title">
       <string>Camera</string>
      </property>
      <addaction name="actionNode_Camera"/>
     </widget>
-    <addaction name="menuEnvTex"/>
     <addaction name="menuCamera"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
@@ -117,8 +100,6 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionFeedback"/>
-    <addaction name="actionCheck_Update"/>
     <addaction name="actionAbout"/>
    </widget>
    <widget class="QMenu" name="menuOption">
