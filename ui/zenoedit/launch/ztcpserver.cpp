@@ -322,7 +322,7 @@ void ZTcpServer::startOptixProc()
 void ZTcpServer::killProc()
 {
     if (m_proc) {
-        m_proc->terminate();
+        m_proc->kill();
         m_proc = nullptr;
     }
 }
@@ -399,14 +399,14 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
     if (exitStatus == QProcess::NormalExit)
     {
         if (m_proc)
-            m_proc->terminate();
+            m_proc->kill();
         m_proc = nullptr;
         zeno::log_info("runner process normally exited with {}", exitCode);
     }
     else if (exitStatus == QProcess::CrashExit)
     {
         if (m_proc)
-            m_proc->terminate();
+            m_proc->kill();
         m_proc= nullptr;
         zeno::log_error("runner process crashed with code {}", exitCode);
     }

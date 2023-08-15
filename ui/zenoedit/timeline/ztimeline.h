@@ -23,7 +23,6 @@ public:
     void resetSlider();
     int value() const;
     bool isPlayToggled() const;
-    void setLoopPlayingStatus(bool enable);
     void updateKeyFrames(const QVector<int>& keys);
 
 protected:
