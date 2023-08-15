@@ -16,7 +16,6 @@ void CheckBoxHeaderView::setCheckState(QVector<int> columns, bool state)
 
 void CheckBoxHeaderView::paintSection(QPainter* painter, const QRect& rect, int logicalIndex) const
 {
-    painter->save();
     if (m_checkedMap.contains(logicalIndex))
     {
         QStyleOptionButton option;
@@ -30,11 +29,13 @@ void CheckBoxHeaderView::paintSection(QPainter* painter, const QRect& rect, int 
         {
             option.state = QStyle::State_Off;
         }
-        QCheckBox* check = new QCheckBox;
-        this->style()->drawControl(QStyle::CE_CheckBox, &option, painter, check);
+        this->style()->drawControl(QStyle::CE_CheckBox, &option, painter, &QCheckBox());
         int diff = size + ZenoStyle::dpiScaled(4);
-        painter->drawText(rect.adjusted(diff, 0, diff, 0), model()->headerData(logicalIndex, Qt::Horizontal).toString());
         QPen pen;
+        pen.setColor(QColor(166, 166, 166));
+        painter->setPen(pen);
+        painter->drawText(rect.adjusted(diff, 0, diff, 0), model()->headerData(logicalIndex, Qt::Horizontal).toString());
+        
         pen.setColor(QColor(115, 123, 133));
         pen.setWidthF(ZenoStyle::dpiScaled(1));
         painter->setPen(pen);
