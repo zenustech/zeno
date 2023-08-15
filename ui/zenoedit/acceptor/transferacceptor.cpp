@@ -53,7 +53,7 @@ void TransferAcceptor::switchSubGraph(const QString& graphName)
 
 }
 
-bool TransferAcceptor::addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors)
+bool TransferAcceptor::addNode(QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors)
 {
     if (m_nodes.find(nodeid) != m_nodes.end())
         return false;

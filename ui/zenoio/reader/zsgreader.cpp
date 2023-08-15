@@ -230,7 +230,7 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     return true;
 }
 
-bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
+bool ZsgReader::_parseNode(const QString& ident, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
 {
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
@@ -241,7 +241,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         const QString &tmp = objValue["customName"].GetString();
         customName = tmp;
     }
-
+    QString nodeid = ident;
     bool bSucceed = pAcceptor->addNode(nodeid, name, customName, legacyDescs);
     if (!bSucceed) {
         return false;

@@ -139,6 +139,18 @@ void ModelAcceptor::resolveAllLinks()
     //add links on this subgraph.
     for (EdgeInfo link : m_subgLinks)
     {
+        for (const auto &newId : m_oldToNewNodeIds.keys())
+        {
+            QString oldId = m_oldToNewNodeIds[newId];
+            if (link.outSockPath.contains(oldId))
+            {
+                QString subgName = UiHelper::getSockSubgraph(link.inSockPath);
+                QString paramPath = UiHelper::getParamPath(link.outSockPath);
+                QString outSockPath = UiHelper::constructObjPath(subgName, newId, paramPath);
+                link.outSockPath = outSockPath;
+                break;
+            }
+        }
         QModelIndex inSock, outSock, inNode, outNode;
         QString subgName, inNodeCls, outNodeCls, inSockName, outSockName, paramCls;
 
@@ -193,7 +205,6 @@ void ModelAcceptor::EndSubgraph()
             NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(subgNode.data(ROLE_NODE_PARAMS));
             if (!nodeParams)
                 continue;
-            //nodeParams->clearParams();
             int row = 0;
             for (const auto& input : desc.inputs)
             {
@@ -286,9 +297,9 @@ void ModelAcceptor::EndSubgraph()
             nodeParams->getOutputSockets(outputs);
             for (const auto& output : outputs)
             {
-                if (!desc.inputs.contains(output.key()))
+                if (!desc.outputs.contains(output.key()))
                 {
-                    nodeParams->removeParam(PARAM_INPUT, output.key());
+                    nodeParams->removeParam(PARAM_OUTPUT, output.key());
                 }
             }
         }
@@ -308,7 +319,7 @@ void ModelAcceptor::switchSubGraph(const QString& graphName)
     m_pModel->switchSubGraph(graphName);
 }
 
-bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& legacyDescs)
+bool ModelAcceptor::addNode(QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& legacyDescs)
 {
     if (!m_currentGraph)
         return false;
@@ -319,6 +330,12 @@ bool ModelAcceptor::addNode(const QString& nodeid, const QString& name, const QS
     }
 
     NODE_DATA data;
+    if (m_bImport)
+    {
+        QString newId = UiHelper::generateUuid(name);
+        m_oldToNewNodeIds[newId] = nodeid;
+        nodeid = newId;
+    }
     data[ROLE_OBJID] = nodeid;
     data[ROLE_OBJNAME] = name;
     data[ROLE_CUSTOM_OBJNAME] = customName;
