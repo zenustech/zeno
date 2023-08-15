@@ -17,6 +17,7 @@ struct LAUNCH_PARAM {
     int cacheNum = 1;
     bool autoRmCurcache = false;
     QString zsgPath;
+    int projectFps = 24;
 };
 
 void launchProgram(IGraphsModel *pModel, LAUNCH_PARAM param);

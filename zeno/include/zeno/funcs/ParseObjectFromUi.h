@@ -31,7 +31,7 @@ namespace iotags {
         constexpr const char* end_frame = "end-frame";
         constexpr const char* curr_frame = "curr-frame";
         constexpr const char* always = "always";
-        constexpr const char* fps_idx = "fps-idx";
+        constexpr const char* timeline_fps = "timeline-fps";
     }
 
     namespace recordinfo {

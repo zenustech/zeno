@@ -314,9 +314,9 @@ void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* 
     info.endFrame = jsonTimeline[timeline::end_frame].GetInt();
     info.currFrame = jsonTimeline[timeline::curr_frame].GetInt();
     info.bAlways = jsonTimeline[timeline::always].GetBool();
-    if (jsonTimeline.HasMember(timeline::fps_idx))
+    if (jsonTimeline.HasMember(timeline::timeline_fps))
     {
-        info.fpsIdx = jsonTimeline[timeline::fps_idx].GetInt();
+        info.timelinefps = jsonTimeline[timeline::timeline_fps].GetInt();
     }
 
     pAcceptor->setTimeInfo(info);
