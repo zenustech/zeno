@@ -3,6 +3,7 @@
 #include <optix.h>
 #include <Shape.h>
 
+#include "LightBounds.h"
 // #include <nanovdb/NanoVDB.h>
 #include <zeno/types/LightObject.h>
 
@@ -25,8 +26,6 @@ struct GenericLight
 {
     float3 T, B, N;
     float3 emission;
-    
-    float CDF;
 
     zeno::LightType type {};
     zeno::LightShape shape{};
@@ -37,7 +36,17 @@ struct GenericLight
     union {
         RectShape rect;
         SphereShape sphere;
+        ConeShape _cone_;
     };
+
+    bool isDeltaLight() {
+        if (type == zeno::LightType::Direction || type == zeno::LightType::IES)
+            return true;
+        if (shape == zeno::LightShape::Cone || shape == zeno::LightShape::Point)
+            return true;
+
+        return false;
+    }
 
     float area() {
         switch (this->shape) {
@@ -45,8 +54,35 @@ struct GenericLight
             return this->rect.area;
         case zeno::LightShape::Sphere:
             return this->sphere.area;
+        case zeno::LightShape::Cone:
+            return 0.0f;
         }
         return 0.0f;
+    }
+
+    pbrt::LightBounds bounds() {
+
+        auto Phi = dot(emission, make_float3(1.0f/3.0f));
+        bool doubleSided = config & zeno::LightConfigDoubleside;
+        
+        switch (this->shape) {
+        case zeno::LightShape::Plane:
+            return this->rect.BoundAsLight(Phi, doubleSided);
+        case zeno::LightShape::Sphere:
+            return this->sphere.BoundAsLight(Phi, doubleSided);
+        case zeno::LightShape::Cone:
+            return this->_cone_.BoundAsLight(Phi, false);
+        }
+
+        return pbrt::LightBounds();
+    }
+
+    void setConeData(const float3& p, const float3& dir, float bound, float coneAngle) {
+        this->_cone_.p = p;
+        this->_cone_.dir = dir;
+        this->_cone_.bound = bound;
+        this->_cone_.cosFalloffStart = coneAngle;
+        this->_cone_.cosFalloffEnd = coneAngle;
     }
 
     void setRectData(const float3& v0, const float3& v1, const float3& v2, const float3& normal) {
@@ -106,7 +142,7 @@ struct Params
     uint32_t firstRectLightIdx;
     uint32_t firstSphereLightIdx;
 
-    cudaTextureObject_t ies_list[8];
+    unsigned long long lightTreeSampler;
 
     OptixTraversableHandle handle;
 

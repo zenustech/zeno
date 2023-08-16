@@ -14,6 +14,10 @@ target_sources(zenovis PRIVATE
   Shape.h
   XAS.h
 
+  LightTree.cpp
+  LightTree.h
+  LightBounds.cpp
+  LightBounds.h
   ies/ies.cpp
   ies/ies.h
 
@@ -81,7 +85,7 @@ set(FILE_LIST
     # ${CUDA_PATH}/include/@nvfunctional 
     ${CUDA_PATH}/include/@math_constants.h
     ${CUDA_PATH}/include/@vector_types.h
-    ${CUDA_PATH}/include/@vector_functions.h
+    ${CUDA_PATH}/include/@vector_functions.h    
 
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/random.h
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@cuda/helpers.h
@@ -92,6 +96,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/SDK/@sutil/Preprocessor.h
     #include <zeno/types/LightObject.h>
     ${CMAKE_CURRENT_SOURCE_DIR}/../../zeno/include/@zeno/types/LightObject.h
+
     ${CMAKE_CURRENT_SOURCE_DIR}/@optixPathTracer.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@TraceStuff.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@PTKernel.cu
@@ -101,6 +106,9 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/@LightBounds.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@LightTree.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@Sampling.h    
     ${CMAKE_CURRENT_SOURCE_DIR}/@Shape.h

@@ -51,8 +51,11 @@
 #include "xinxinoptixapi.h"
 #include "OptiXStuff.h"
 #include <zeno/utils/vec.h>
+#include <zeno/utils/string.h>
 #include <zeno/utils/envconfig.h>
 #include <zeno/utils/orthonormal.h>
+#include <zeno/types/LightObject.h>
+
 #include <unordered_map>
 
 #include <glm/glm.hpp>
@@ -61,9 +64,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "tinyexr.h"
-#include "zeno/types/LightObject.h"
-#include "zeno/utils/string.h"
+#include "LightBounds.h"
+#include "LightTree.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -2048,6 +2050,10 @@ static void buildSphereLightGAS( PathTracerState& state, std::vector<Vertex>& li
     d_vertex_buffer.reset();
 }
 
+raii<CUdeviceptr> lightBitTrailsPtr;
+raii<CUdeviceptr> lightTreeNodesPtr;
+raii<CUdeviceptr> lightTreeDummyPtr;
+
 void optixupdatelight() {
     camera_changed = true;
 
@@ -2097,6 +2103,8 @@ void optixupdatelight() {
         light.T = normalize(v1);
         light.B = normalize(v2);
 
+        const auto center = v0 + v1 * 0.5f + v2 * 0.5f;
+
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
 
@@ -2107,8 +2115,13 @@ void optixupdatelight() {
         if ( OptixUtil::g_ies.count(dat.textureKey) > 0 ) {
 
             auto& val = OptixUtil::g_ies.at(dat.textureKey);
-            light.ies = val.handle;
-            light.shape = zeno::LightShape::Sphere;
+            light.ies = val.ptr.handle;
+            light.shape = zeno::LightShape::Cone;
+
+            light._cone_.cosFalloffStart = cosf(val.coneAngle);
+            light._cone_.cosFalloffEnd = cos(val.coneAngle + 0.01f);
+            light._cone_.p = center;
+            light._cone_.dir = light.N;
 
         } else if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
 
@@ -2128,7 +2141,6 @@ void optixupdatelight() {
 
             firstSphereLightIdx = min(loopIdx, firstSphereLightIdx);
 
-            auto center = v0 + v1 * 0.5f + v2 * 0.5f;
             auto radius = length(v1 + v2) * 0.5f;
 
             light.setSphereData(center, radius);       
@@ -2140,18 +2152,6 @@ void optixupdatelight() {
 
     state.params.firstRectLightIdx = firstRectLightIdx;
     state.params.firstSphereLightIdx = firstSphereLightIdx;
-
-    if(g_lights.size()) {
-        g_lights[0].CDF = g_lights[0].area();// * length(g_lights[0].emission);
-        for (int l = 1; l < g_lights.size(); l++) {
-            float prob = g_lights[l].area(); // * length(g_lights[l].emission);
-            g_lights[l].CDF = g_lights[l - 1].CDF + prob;
-        }
-    }
-
-    // for(int l=0;l<g_lights.size();l++) {
-    //     g_lights[l].cdf /= g_lights.back().cdf;
-    // }
 
     buildRectLightGAS(state, g_lightMesh);
     buildSphereLightGAS(state, g_lightSpheres);
@@ -2172,6 +2172,32 @@ void optixupdatelight() {
                 g_lights.data(), sizeof( GenericLight ) * g_lights.size(),
                 cudaMemcpyHostToDevice
                 ) );
+
+    auto lsampler = pbrt::LightTreeSampler(g_lights);
+
+    lightBitTrailsPtr.reset(); lightTreeNodesPtr.reset(); 
+
+    lsampler.upload(lightBitTrailsPtr.handle, lightTreeNodesPtr.handle);
+
+    auto tmpBounds = lsampler.bounds();
+
+    struct Dummy {
+        unsigned long long bitTrails;
+        unsigned long long treeNodes;
+        pbrt::Bounds3f bounds;
+    };
+
+    Dummy dummy = { lightBitTrailsPtr.handle, lightTreeNodesPtr.handle, tmpBounds };
+
+    {
+        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &lightTreeDummyPtr.reset() ), sizeof( dummy )) );
+
+        CUDA_CHECK( cudaMemcpy(
+                reinterpret_cast<void*>( (CUdeviceptr)lightTreeDummyPtr ),
+                &dummy, sizeof( dummy ), cudaMemcpyHostToDevice) );
+
+        state.params.lightTreeSampler = lightTreeDummyPtr.handle;
+    }
 }
 
 void optixupdatematerial(std::vector<std::shared_ptr<ShaderPrepared>> &shaders) 

@@ -9,12 +9,12 @@
 
 namespace zeno {
 
-    enum class LightType {
+    enum struct LightType {
         Diffuse=0u, Direction=1u, IES=2u    
     };
 
-    enum class LightShape {
-        Plane=0u, Sphere=1u
+    enum struct LightShape {
+        Plane=0u, Sphere=1u, Cone=2u, Point=3u
     };
 
     enum LightConfigMask {

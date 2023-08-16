@@ -1,14 +1,62 @@
 #pragma once 
-#include <cuda/climits.h>
 #include <math_constants.h>
-#include <sutil/vec_math.h>
 
+#include <cuda/climits.h>
+#include <sutil/vec_math.h>
 #include <nanovdb/NanoVDB.h>
 
-namespace pbrt {
+#ifdef __CUDACC_RTC__
+    #include "zxxglslvec.h"
+    using Vector3f = vec3;
+#else 
+    #include <zeno/utils/vec.h>
+    using Vector3f = zeno::vec<3, float>;
+#endif
 
+#ifdef __CUDACC_DEBUG__
+    #define DCHECK assert
+#else
+    #define DCHECK assert
+#endif
+
+namespace pbrt {
+    
 template <typename T>
 inline float Sqr(T v) { return v * v; }
+
+inline float SafeASin(float x) {
+    DCHECK(x >= -1.0001 && x <= 1.0001);
+    return asinf(clamp(x, -1.0f, 1.0f));
+}
+ inline float SafeACos(float x) {
+    DCHECK(x >= -1.0001 && x <= 1.0001);
+    return acosf(clamp(x, -1.0f, 1.0f));
+}
+
+inline float SafeSqrt(float x) {
+    DCHECK(x > -1e-3f);  // not too negative
+    return sqrtf(fmaxf(0.f, x));
+}
+
+inline float AbsDot(Vector3f v, Vector3f n) {
+    
+    return abs(dot(v, n));
+}
+
+inline float AngleBetween(Vector3f v1, Vector3f v2) {
+    if (dot(v1, v2) < 0)
+        return M_PIf - 2 * SafeASin(length(v1 + v2) / 2);
+    else
+        return 2 * SafeASin(length(v2 - v1) / 2);
+}
+
+inline float Radians(float deg) {
+    return (M_PIf / 180) * deg;
+}
+
+inline float Degrees(float rad) {
+    return (180 / M_PIf) * rad;
+}
 
 inline void CoordinateSystem(const float3& v1, float3 *v2, float3 *v3) {
 

@@ -19,6 +19,13 @@ class IESFile {
   int packed_size();
   void pack(float *data);
 
+  float coneAngle() {
+		if (v_angles.empty()) 
+      return 0.0f; 
+
+    return max(v_angles.front(), v_angles.back());
+  }
+
   bool load(const string &ies);
   void clear();
 

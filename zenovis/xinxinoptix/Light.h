@@ -1,4 +1,7 @@
 #pragma once
+#include "Sampling.h"
+#include "LightTree.h"
+
 #include "TraceStuff.h"
 #include "optixPathTracer.h"
 #include "zeno/types/LightObject.h"
@@ -12,25 +15,27 @@
 #include <cuda/helpers.h>
 #include <sutil/vec_math.h>
 
-static __inline__ __device__
-int GetLightIndex(float p, GenericLight* lightP, int n)
-{
-    int s = 0, e = n-1;
-    while( s < e )
-    {
-        int j = (s+e)/2;
-        float pc = lightP[j].CDF/lightP[n-1].CDF;
-        if(pc<p)
-        {
-            s = j+1;
-        }
-        else
-        {
-            e = j;
-        }
-    }
-    return e;
-}
+#define _DefaultSkyLightProb_ 0.5f
+
+// static __inline__ __device__
+// int GetLightIndex(float p, GenericLight* lightP, int n)
+// {
+//     int s = 0, e = n-1;
+//     while( s < e )
+//     {
+//         int j = (s+e)/2;
+//         float pc = lightP[j].CDF/lightP[n-1].CDF;
+//         if(pc<p)
+//         {
+//             s = j+1;
+//         }
+//         else
+//         {
+//             e = j;
+//         }
+//     }
+//     return e;
+// }
 
 static __inline__ __device__
 vec3 ImportanceSampleEnv(float* env_cdf, int* env_start, int nx, int ny, float p, float &pdf)
@@ -129,17 +134,25 @@ static __inline__ __device__ float sampleIES(const float* iesProfile, float h_an
     return mix(_ab_, _cd_, h_ratio);
 }
 
-static __inline__ __device__ float sampleSphereIES(LightSampleRecord& lsr, const float2& uu, const float3& shadingP, const float3& center, float radius) {
+static __inline__ __device__ void sampleSphereIES(LightSampleRecord& lsr, const float2& uu, const float3& shadingP, const float3& center, float radius) {
 
     float3 vector = center - shadingP;
-    float dist = length(vector);
+    float dist2 = dot(vector, vector);
+    float dist = sqrtf(dist2);
+
+    if (dist < radius) {
+        lsr.PDF = 0.0f;
+        return; 
+    }
 
     lsr.dist = dist - radius;
-    lsr.dir = normalize(vector);
+    lsr.dir = vector/dist;
     lsr.n = -lsr.dir;
     lsr.NoL = 1.0f;
     lsr.p = center + radius*lsr.n;
     lsr.PDF = 1.0f;
+
+    lsr.intensity = 1.0f / dist2;
 }
 
 namespace detail {
@@ -158,41 +171,59 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
     const float3 wo = normalize(-ray_dir); 
     float3 light_attenuation = vec3(1.0f);
 
-    const float ProbSky = params.num_lights>0? 0.5f : 1.0f;
+    const float _SKY_PROB_ = params.num_lights>0? _DefaultSkyLightProb_ : 1.0f;
+
     float scatterPDF = 1.0f;
+    float UF = prd->rndf();
 
-    if(prd->rndf() > ProbSky) {
+    if(UF > _SKY_PROB_) {
 
-        float lightPickPDF = 1.0f - ProbSky;
+        const uint3 idx = optixGetLaunchIndex();
 
-        uint lighIdx = GetLightIndex(prd->rndf(), params.lights, params.num_lights);
+        float lightPickProb = 1.0f - _SKY_PROB_;
+        UF = (UF - _SKY_PROB_) / lightPickProb;
+
+        auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
+
+        const Vector3f& SP = reinterpret_cast<const Vector3f&>(shadingP);
+        const Vector3f& SN = reinterpret_cast<const Vector3f&>(prd->geometryNormal);
+
+        auto pick = lightTree->sample(UF, SP, SN);
+
+        if (pick.prob <= 0.0f) { return; }
+
+        assert(pick.prob >= 0.0f && pick.prob <= 1.0f);
+
+        uint lighIdx = min(pick.lightIdx, params.num_lights-1);
         auto& light = params.lights[lighIdx];
 
-        float prevCDF = lighIdx>0? params.lights[lighIdx-1].CDF : 0.0f;
-        lightPickPDF *= (light.CDF - prevCDF) / params.lights[params.num_lights-1].CDF;
+        lightPickProb *= pick.prob;
 
         LightSampleRecord lsr{};
-        float2 uu = {prd->rndf(), prd->rndf()};
-
         float3 emission = light.emission;
 
-        if (light.ies > 0u) {
-            
-            const float* ies = reinterpret_cast<const float*>(light.ies);
+        const float* iesProfile = reinterpret_cast<const float*>(light.ies);
+
+        if (nullptr != iesProfile) {
         
-            sampleSphereIES(lsr, uu, shadingP, light.sphere.center, light.sphere.radius);
+            sampleSphereIES(lsr, {}, shadingP, light._cone_.p, _FLT_EPL_);
+
+            if (lsr.PDF <= 0.0f) return; 
+
             auto v_angle = acos(dot(-lsr.dir, light.N));
             auto h_angle = acos(dot(-lsr.dir, light.T));
 
-            auto intensity = sampleIES(ies, h_angle, v_angle);
-            emission *= intensity;
+            auto intensity = sampleIES(iesProfile, h_angle, v_angle);
+            emission *= intensity * lsr.intensity;
 
         } else if (light.type == zeno::LightType::Direction) {
 
-            bool valid = light.rect.hit(&lsr, shadingP, -light.N);
-            if (!valid) { emission = {}; lsr.PDF = 0.0f; return;}
+            bool valid = light.rect.hitAsLight(&lsr, shadingP, -light.N);
+            if (!valid) { emission = {}; lsr.PDF = 0.0f; return; }
 
         } else {
+
+            float2 uu = {prd->rndf(), prd->rndf()};
 
             switch (light.shape) {
                 case zeno::LightShape::Plane:
@@ -203,7 +234,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             }
         }
 
-        lsr.PDF *= lightPickPDF;
+        lsr.PDF *= lightPickProb;
         //lsr.p = rtgems::offset_ray(lsr.p, lsr.n);
 
             if (light.config & zeno::LightConfigDoubleside) {
@@ -219,8 +250,11 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 if (length(light_attenuation) > 0.0f) {
                     
                     auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
+                    float misWeight = 1.0f;
 
-                    auto misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
+                    if (!light.isDeltaLight()) {
+                        misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
+                    }
 
                     prd->radiance = light_attenuation * emission * bxdf_value;
                     prd->radiance *= misWeight / lsr.PDF;
@@ -264,7 +298,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
             light_attenuation = shadow_prd.shadowAttanuation;
 
-            auto inverseProb = 1.0f/ProbSky;
+            auto inverseProb = 1.0f/_SKY_PROB_;
             auto bxdf_value = evalBxDF(sun_dir, wo, scatterPDF, illum);
 
             vec3 tmp(1.0f);

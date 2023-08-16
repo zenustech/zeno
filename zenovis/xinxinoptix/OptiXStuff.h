@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdio>
 #include <glad/glad.h>  // Needs to be included before gl_interop
 
 #include <cuda_gl_interop.h>
@@ -554,7 +555,7 @@ inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB,
     return true;
 }
 
-inline std::vector<float> IES2DATA(const std::string& path)
+inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 {
     auto iesBuffer = zeno::file_get_binary(path);
     auto iesString = std::string(iesBuffer.data());
@@ -566,6 +567,9 @@ inline std::vector<float> IES2DATA(const std::string& path)
 
     std::vector<float> iesData(iesFile.packed_size());
     iesFile.pack(iesData.data());
+    coneAngle = iesFile.coneAngle();
+
+    printf("&&&&&&&&&&&&&&& loading IES coneAngle=%f", coneAngle);
 
     return iesData;
 }
@@ -578,7 +582,13 @@ inline std::map<std::string, int> sky_nx_map;
 inline std::map<std::string, int> sky_ny_map;
 inline std::map<std::string, float> sky_avg_map;
 
-inline std::map<std::string, raii<CUdeviceptr>> g_ies;
+
+struct WrapperIES {
+    raii<CUdeviceptr> ptr;
+    float coneAngle = 0.0f;
+};
+
+inline std::map<std::string, WrapperIES> g_ies;
 
 inline std::map<std::string, std::vector<float>> sky_cdf_map;
 inline std::map<std::string, std::vector<float>> sky_pdf_map;
@@ -613,7 +623,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
             auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
             illum = zeno::dot(color, zeno::vec3f(0.33333333f,0.33333333f, 0.33333333f));
             //illum = illum > 0.5? illum : 0.0f;
-            illum = abs(illum) * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
+            illum = abs(illum) * sinf(3.1415926f*((float)jj + 0.5f)/(float)ny);
 
             sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
             skypdf[idx] = illum;
@@ -686,7 +696,8 @@ inline void addTexture(std::string path)
         free(rgba);
     }
     else if (zeno::ends_with(path, ".ies", false)) {
-        auto iesd = IES2DATA(path);
+        float coneAngle;
+        auto iesd = loadIES(path, coneAngle);
 
         raii<CUdeviceptr> iesBuffer;
         size_t data_length = iesd.size() * sizeof(float);
@@ -698,7 +709,7 @@ inline void addTexture(std::string path)
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &iesBuffer.reset() ), data_length) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)iesBuffer ), iesd.data(), data_length, cudaMemcpyHostToDevice ) );
         
-        g_ies[path] = std::move(iesBuffer);
+        g_ies[path] = {std::move(iesBuffer), coneAngle };
     }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);

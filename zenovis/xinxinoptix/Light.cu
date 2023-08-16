@@ -11,12 +11,14 @@
 
 #include "Shape.h"
 #include "Light.h"
+#include "Sampling.h"
+#include "LightTree.h"
 
 //COMMON_CODE
 
 static __inline__ __device__ void evalSurface(float4* uniforms) {
 
-    //GENERATED_BEGIN_MARK   
+    //GENERATED_BEGIN_MARK
 
     //GENERATED_END_MARK
 }
@@ -103,8 +105,7 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-    float prevCDF = light_index>0? params.lights[light_index-1].CDF : 0.0f;
-    float lightPickPDF = (light.CDF - prevCDF) / params.lights[params.num_lights-1].CDF;
+    auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
 
     prd->depth += 1;
     prd->done = true;
@@ -132,7 +133,15 @@ extern "C" __global__ void __closesthit__radiance()
         lsr.NoL = abs(lsr.NoL);
     }
 
+    const float _SKY_PROB_ = params.num_lights>0? _DefaultSkyLightProb_ : 1.0f;
+
     if (lsr.NoL > _FLT_EPL_) {
+
+        auto PFM = lightTree->PMF(reinterpret_cast<const Vector3f&>(ray_orig), 
+                                         reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
+
+        auto lightPickPDF = (1.0f - _SKY_PROB_) * PFM;
+        assert(lightPickPDF > 0.0f && lightPickPDF < 1.0f);
 
         if (1 == prd->depth) {
             if (light.config & zeno::LightConfigVisible) {
@@ -200,9 +209,10 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     light_index = min(light_index, params.num_lights - 1);
     auto& light = params.lights[light_index];
 
-    auto visible = (light.config & zeno::LightConfigVisible);
+    bool visible = (light.config & zeno::LightConfigVisible);
 
     if (visible) {
+        prd->shadowAttanuation = {};
         prd->attenuation2 = {};
         prd->attenuation = {};
         optixTerminateRay();
