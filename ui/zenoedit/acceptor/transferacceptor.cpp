@@ -53,7 +53,7 @@ void TransferAcceptor::switchSubGraph(const QString& graphName)
 
 }
 
-bool TransferAcceptor::addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors)
+bool TransferAcceptor::addNode(QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors)
 {
     if (m_nodes.find(nodeid) != m_nodes.end())
         return false;
@@ -583,4 +583,36 @@ void TransferAcceptor::getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeIn
 
 void TransferAcceptor::setIOVersion(zenoio::ZSG_VERSION versio)
 {
+}
+
+void TransferAcceptor::endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue)
+{
+    if (objValue.HasMember("outputs"))
+    {
+        const rapidjson::Value& outputs = objValue["outputs"];
+        for (const auto& outObj : outputs.GetObject())
+        {
+            const QString& outSock = outObj.name.GetString();
+            const auto& sockObj = outObj.value;
+            if (sockObj.IsObject())
+            {
+                if (sockObj.HasMember("tooltip")) {
+                    QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
+                    setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
+                }
+                bool bLinkRef = false;
+                if (sockObj.HasMember("link-ref"))
+                {
+                    bLinkRef = sockObj["link-ref"].GetBool();
+                }
+                QString type;
+                if (sockObj.HasMember("type"))
+                {
+                    type = sockObj["type"].GetString();
+                }
+                if (bLinkRef || !type.isEmpty())
+                    setOutputSocket(id, outSock, bLinkRef, type);
+            }
+        }
+    }
 }

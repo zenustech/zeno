@@ -66,7 +66,7 @@ public:
 	virtual void setName(const QString& name, const QModelIndex& subGpIdx) = 0;
 
 	virtual NODE_DESCS descriptors() const = 0;
-    virtual bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs) = 0;
+    virtual bool appendSubnetDescsFromZsg(const QList<NODE_DESC>& descs, bool bImport = false) = 0;
 	virtual bool getDescriptor(const QString& descName, NODE_DESC& desc) = 0;
 	virtual bool updateSubgDesc(const QString& descName, const NODE_DESC& desc) = 0;
 	virtual void clearSubGraph(const QModelIndex& subGpIdx) = 0;
@@ -118,6 +118,7 @@ public:
     virtual bool setCustomName(const QModelIndex &subgIdx, const QModelIndex& Idx, const QString &value) const = 0;
     virtual void markNodeDataChanged(const QModelIndex& idx) = 0;
     virtual void clearNodeDataChanged() = 0;
+    virtual QStringList subgraphsName() const = 0;
 
 signals:
 	void clearLayout2();

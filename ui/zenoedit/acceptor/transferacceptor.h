@@ -16,7 +16,7 @@ public:
     bool setCurrentSubGraph(IGraphsModel *pModel, const QModelIndex &subgIdx) override;
     void setFilePath(const QString &fileName) override;
     void switchSubGraph(const QString &graphName) override;
-    bool addNode(const QString &nodeid, const QString &name, const QString& customName, const NODE_DESCS &descriptors) override;
+    bool addNode(QString &nodeid, const QString &name, const QString& customName, const NODE_DESCS &descriptors) override;
     void setViewRect(const QRectF &rc) override;
     void setSocketKeys(const QString &id, const QStringList &keys) override;
     void initSockets(const QString &id, const QString &name, const NODE_DESCS &legacyDescs) override;
@@ -90,6 +90,7 @@ public:
     QList<EdgeInfo> links() const;
     void getDumpData(QMap<QString, NODE_DATA>& nodes, QList<EdgeInfo>& links);
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
+    void endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue) override;
 
 private:
     IGraphsModel* m_pModel;

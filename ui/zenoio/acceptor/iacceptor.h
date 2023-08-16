@@ -18,7 +18,7 @@ public:
     virtual bool setCurrentSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx) = 0;
     virtual void setFilePath(const QString& fileName) = 0;
     virtual void switchSubGraph(const QString& graphName) = 0;
-    virtual bool addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors) = 0;
+    virtual bool addNode(QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors) = 0;
     virtual void setViewRect(const QRectF& rc) = 0;
     virtual void setSocketKeys(const QString& id, const QStringList& keys) = 0;
     virtual void initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs) = 0;
@@ -90,6 +90,7 @@ public:
     virtual QObject* currGraphObj() = 0;
     virtual void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) = 0;
     virtual void setIOVersion(zenoio::ZSG_VERSION version) = 0;
+    virtual void endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue) = 0;
     virtual ~IAcceptor() = default;
 };
 

@@ -332,3 +332,11 @@ QPushButton[cssClass="CoreParam"]
 	color: #FFFFFF;
 	padding:3px 3px;
 }
+
+QPushButton[cssClass="select_subgraph"]
+{
+	background-color: transparent;
+	color: #FFFFFF;
+	border:0;
+	text-align:left;
+}

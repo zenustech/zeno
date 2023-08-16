@@ -116,6 +116,64 @@ bool ZsgReader::openFile(const QString& fn, IAcceptor* pAcceptor)
     return true;
 }
 
+bool ZsgReader::importSubgraphs(const QString& fn, IAcceptor* pAcceptor, const QMap<QString, QString>& subGraphNames, IGraphsModel* pModel)
+{
+    QFile file(fn);
+    bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);
+    if (!ret) {
+        zeno::log_error("cannot open zsg file: {} ({})", fn.toStdString(),
+            file.errorString().toStdString());
+        return false;
+    }
+
+    pAcceptor->setFilePath(fn);
+
+    rapidjson::Document doc;
+    QByteArray bytes = file.readAll();
+    doc.Parse(bytes);
+
+    if (!doc.IsObject() || !doc.HasMember("graph"))
+    {
+        zeno::log_error("zsg json file is corrupted");
+        return false;
+    }
+
+    const rapidjson::Value& graph = doc["graph"];
+    if (graph.IsNull()) {
+        zeno::log_error("json format incorrect in zsg file: {}", fn.toStdString());
+        return false;
+    }
+
+    ZASSERT_EXIT(doc.HasMember("descs"), false);
+    NODE_DESCS nodesDescs = _parseDescs(doc["descs"], pAcceptor);
+    NODE_DESCS subgDesc;
+    for (const auto& name : subGraphNames.keys())
+    {
+        QString newName = subGraphNames[name];
+        NODE_DESC desc = nodesDescs[name];
+        desc.name = newName;
+        subgDesc[desc.name] = desc;
+    }
+    ret = pAcceptor->setLegacyDescs(graph, subgDesc);
+    if (!ret) {
+        return false;
+    }
+
+    for (const auto& subgraph : graph.GetObject())
+    {
+        QString graphName = subgraph.name.GetString();
+        if (!subGraphNames.contains(graphName))
+            continue;
+        else
+            graphName = subGraphNames[graphName];
+
+        if (!_parseSubGraph(graphName, subgraph.value, nodesDescs, pAcceptor))
+            return false;
+    }
+    pAcceptor->EndGraphs();
+    return true;
+}
+
 bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subgraph, const NODE_DESCS& descriptors, IAcceptor* pAcceptor)
 {
     if (!subgraph.IsObject() || !subgraph.HasMember("nodes"))
@@ -172,7 +230,7 @@ bool ZsgReader::_parseSubGraph(const QString& name, const rapidjson::Value& subg
     return true;
 }
 
-bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
+bool ZsgReader::_parseNode(const QString& ident, const rapidjson::Value& nodeObj, const NODE_DESCS& legacyDescs, IAcceptor* pAcceptor)
 {
     const auto& objValue = nodeObj;
     const rapidjson::Value& nameValue = objValue["name"];
@@ -183,7 +241,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
         const QString &tmp = objValue["customName"].GetString();
         customName = tmp;
     }
-
+    QString nodeid = ident;
     bool bSucceed = pAcceptor->addNode(nodeid, name, customName, legacyDescs);
     if (!bSucceed) {
         return false;
@@ -290,7 +348,7 @@ bool ZsgReader::_parseNode(const QString& nodeid, const rapidjson::Value& nodeOb
 
         pAcceptor->setBlackboard(nodeid, blackboard);
     }
-
+    pAcceptor->endNode(nodeid, name, objValue);
     return true;
 }
 
@@ -524,22 +582,6 @@ void ZsgReader::_parseOutputs(const QString &id, const QString &nodeName, const 
             if (sockObj.HasMember("dictlist-panel")) {
                 _parseDictPanel(false, sockObj["dictlist-panel"], id, outSock, nodeName, pAcceptor);
             }
-            if (sockObj.HasMember("tooltip")) {
-                QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
-                pAcceptor->setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
-            }
-            bool bLinkRef = false;
-            if (sockObj.HasMember("link-ref"))
-            {
-                bLinkRef = sockObj["link-ref"].GetBool();
-            }
-            QString type;
-            if (sockObj.HasMember("type"))
-            {
-                type = sockObj["type"].GetString();
-            }
-            if (bLinkRef || !type.isEmpty())
-                pAcceptor->setOutputSocket(id, outSock, bLinkRef, type);
         }
     }
 }

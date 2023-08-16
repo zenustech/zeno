@@ -605,7 +605,7 @@ NODE_DESCS GraphsModel::descriptors() const
     return descs;
 }
 
-bool GraphsModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets)
+bool GraphsModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets, bool bImport)
 {
     for (NODE_DESC desc : zsgSubnets)
     {
@@ -614,6 +614,11 @@ bool GraphsModel::appendSubnetDescsFromZsg(const QList<NODE_DESC>& zsgSubnets)
             desc.is_subgraph = true;
             m_subgsDesc.insert(desc.name, desc);
             registerCate(desc);
+        }
+        else if (bImport)
+        {
+            desc.is_subgraph = true;
+            m_subgsDesc[desc.name] = desc;
         }
         else
         {
@@ -1528,6 +1533,11 @@ void GraphsModel::clearNodeDataChanged()
             pModel->setData(nodeIdx, false, ROLE_NODE_DATACHANGED);
     }
     m_changedNodes.clear();
+}
+
+QStringList GraphsModel::subgraphsName() const
+{
+    return m_subGraphs.keys();
 }
 
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)

@@ -21,7 +21,7 @@ public:
     void EndGraphs() override;
 	void setFilePath(const QString& fileName) override;
 	void switchSubGraph(const QString& graphName) override;
-	bool addNode(const QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors) override;
+	bool addNode(QString& nodeid, const QString& name, const QString& customName, const NODE_DESCS& descriptors) override;
 	void setViewRect(const QRectF& rc) override;
 	void setSocketKeys(const QString& id, const QStringList& keys) override;
 	void initSockets(const QString& id, const QString& name, const NODE_DESCS& descs) override;
@@ -92,6 +92,7 @@ public:
 	void endParams(const QString& id, const QString& nodeCls) override;
 	void addCustomUI(const QString& id, const VPARAM_INFO& invisibleRoot) override;
     void setIOVersion(zenoio::ZSG_VERSION versio) override;
+    void endNode(const QString& id, const QString& nodeCls, const rapidjson::Value& objValue) override;
 
 private:
     void resolveAllLinks();
@@ -103,6 +104,7 @@ private:
 	SubGraphModel* m_currentGraph;
 	GraphsModel* m_pModel;
 	bool m_bImport;
+    QMap<QString, QString> m_oldToNewNodeIds; //<new id, old id>
 };
 
 

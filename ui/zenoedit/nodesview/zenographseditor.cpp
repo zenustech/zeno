@@ -190,6 +190,7 @@ void ZenoGraphsEditor::resetModel(IGraphsModel* pModel)
 void ZenoGraphsEditor::onModelCleared()
 {
     m_ui->mainStackedWidget->setCurrentWidget(m_ui->welcomeScrollPage);
+    m_ui->searchEdit->clear();
 }
 
 void ZenoGraphsEditor::onSubGraphsToRemove(const QModelIndex& parent, int first, int last)

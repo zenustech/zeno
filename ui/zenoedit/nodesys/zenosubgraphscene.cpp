@@ -969,7 +969,7 @@ void ZenoSubGraphScene::focusOutEvent(QFocusEvent* event)
 
 void ZenoSubGraphScene::clearLayout(const QModelIndex& subGpIdx)
 {
-    if (subGpIdx != m_subgIdx)
+    if (subGpIdx == m_subgIdx)
     {
 		m_nodes.clear();
 		m_links.clear();
