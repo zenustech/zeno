@@ -48,11 +48,13 @@ public:
     ZENO_API zany resolveInput(std::string const& id);
 
 protected:
+    ZENO_API virtual void complete();
+    ZENO_API virtual void apply() = 0;
+
+public:
     ZENO_API bool requireInput(std::string const &ds);
 
     ZENO_API virtual void preApply();
-    ZENO_API virtual void complete();
-    ZENO_API virtual void apply() = 0;
 
     ZENO_API Graph *getThisGraph() const;
     ZENO_API Session *getThisSession() const;
@@ -117,6 +119,7 @@ protected:
     }
 
     ZENO_API TempNodeCaller temp_node(std::string const &id);
+
 };
 
 }
