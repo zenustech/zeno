@@ -61,7 +61,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
         //ZENO_P(front);
         //ZENO_P(up);
         m_view = glm::lookAt(pos, pos + front, up);
-        m_proj = glm::perspectiveZO(glm::radians(fov), getAspect(), ffar, fnear);
+        m_proj = glm::perspective(glm::radians(fov), getAspect(), fnear, ffar);
         //ZENO_P(m_view);
         //ZENO_P(m_proj);
     }
@@ -76,7 +76,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
 void Camera::setResolution(int nx, int ny) {
     m_nx = nx;
     m_ny = ny;
-    m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
+    m_proj = glm::perspective(glm::radians(m_fov), getAspect(), m_near, m_far);
 }
 
 void Camera::set_safe_frames(bool bLock, int nx, int ny) {
