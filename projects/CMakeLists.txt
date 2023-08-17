@@ -41,6 +41,7 @@ set(ZENO_EXTENSIONS
     ChatZeno
     RPC
     Roads
+    ViewUI
     )
 
 foreach (name IN ITEMS ${ZENO_EXTENSIONS})

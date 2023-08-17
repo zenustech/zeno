@@ -8,6 +8,8 @@ file(GLOB SRC_LIST *.cpp *.h)
 
 # target_include_directories(zeno PRIVATE . ./calcUVCore)
 target_sources(zeno PRIVATE ${SRC_LIST})
+target_link_libraries(zeno PRIVATE assimp)
+target_include_directories(zeno PUBLIC ../FBX/assimp/code)
 # zeno_disable_warning(${SRC_LIST})
 # target_link_libraries(zeno PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 # target_link_libraries(zeno PRIVATE Threads::Threads)

@@ -1,10 +1,46 @@
 #include <zeno/zeno.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/NumericObject.h>
+#include <zeno/types/ListObject.h>
 #include <cassert>
 
 namespace zeno {
 
+struct MakePrimList : zeno::INode {
+	virtual void apply() override {
+		auto outs = std::make_shared<ListObject>();
+		auto points = get_input<StringObject>("points")->get();
+		std::string num;
+		zeno::vec3f vert;
+		int idx = 0;
+		for (auto c : points) {
+			if (c == ' ') {
+				vert[idx++] = std::stof(num);
+				if (idx == 3) {
+					idx = 0;
+					auto prim = std::make_shared<PrimitiveObject>();
+					prim->verts.resize(1);
+					prim->verts[0] = vert;
+					outs->arr.push_back(prim);
+				}
+				num = "";
+			}
+			else
+				num.push_back(c);
+		}
+		set_output("primlist", std::move(outs));
+	}
+};
+
+ZENDEFNODE(MakePrimList,
+    { /* inputs: */ {
+    {"string", "points", ""},
+    }, /* outputs: */ {
+    "primlist",
+    }, /* params: */ {
+    }, /* category: */ {
+    "primitive",
+    } });
 
 struct MakePrimitive : zeno::INode {
   virtual void apply() override {

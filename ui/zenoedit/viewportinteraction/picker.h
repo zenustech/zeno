@@ -53,6 +53,8 @@ public:
     void clear();
     void set_picked_depth_callback(std::function<void(float, int, int)>);
     void set_picked_elems_callback(std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)>);
+	void set_picked_elems_depth_callback(std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&, std::vector<zeno::vec3f>)>);
+    
     bool is_draw_mode();
     void switch_draw_mode();
 
@@ -65,6 +67,7 @@ private:
 
     std::function<void(float, int, int)> picked_depth_callback;
     std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&)> picked_elems_callback;
+    std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&, std::vector<zeno::vec3f>)> picked_elems__depth_callback;
 
     std::unordered_set<std::string> selected_prims;
     std::unordered_map<std::string, std::unordered_set<int>> selected_elements;

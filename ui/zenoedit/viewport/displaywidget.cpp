@@ -77,6 +77,40 @@ void DisplayWidget::initRecordMgr()
             [=](int frameid) { zeno::log_info("frame {} has been recorded", frameid); });
 }
 
+void DisplayWidget::transformMousePosToModelPos(int x, int y, float depth, glm::vec4 &ret)
+{
+	Zenovis* pZenovis = m_glView->getZenoVis();
+	ZASSERT_EXIT(pZenovis && pZenovis->getSession());
+	auto scene = pZenovis->getSession()->get_scene();
+	auto _near = scene->camera->m_near;
+	auto _far = scene->camera->m_far;
+	auto fov = scene->camera->m_fov;
+	auto cz = glm::length(scene->camera->m_lodcenter);
+	if (depth != 0) {
+		//                    depth = depth * 2 - 1;
+		//                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
+		glm::vec4 ndc = { 0, 0, depth, 1 };
+		glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
+		clip_c /= clip_c.w;
+		cz = -clip_c.z;
+	}
+	auto w = scene->camera->m_nx;
+	auto h = scene->camera->m_ny;
+	// zeno::log_info("fov: {}", fov);
+	// zeno::log_info("w: {}, h: {}", w, h);
+	auto u = (2.0 * x / w) - 1;
+	auto v = 1 - (2.0 * y / h);
+	// zeno::log_info("u: {}, v: {}", u, v);
+	auto cy = v * tan(glm::radians(fov) / 2) * cz;
+	auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
+	// zeno::log_info("cx: {}, cy: {}, cz: {}", cx, cy, -cz);
+	glm::vec4 cc = { cx, cy, -cz, 1 };
+	auto wc = glm::inverse(scene->camera->m_view) * cc;
+	wc /= wc.w;
+
+    ret = wc;
+}
+
 void DisplayWidget::testCleanUp()
 {
     if (m_glView)
@@ -823,34 +857,8 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             picker->switch_draw_mode();
             zeno::NodeLocation node_location(nodes[0], subgIdx);
             auto pick_callback = [nodes, node_location, this](float depth, int x, int y) {
-                Zenovis *pZenovis = m_glView->getZenoVis();
-                ZASSERT_EXIT(pZenovis && pZenovis->getSession());
-                auto scene = pZenovis->getSession()->get_scene();
-                auto _near = scene->camera->m_near;
-                auto _far = scene->camera->m_far;
-                auto fov = scene->camera->m_fov;
-                auto cz = glm::length(scene->camera->m_lodcenter);
-                if (depth != 0) {
-//                    depth = depth * 2 - 1;
-//                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
-                    glm::vec4 ndc = {0, 0, depth, 1};
-                    glm::vec4 clip_c = glm::inverse(scene->camera->m_proj) * ndc;
-                    clip_c /= clip_c.w;
-                    cz = -clip_c.z;
-                }
-                auto w = scene->camera->m_nx;
-                auto h = scene->camera->m_ny;
-                // zeno::log_info("fov: {}", fov);
-                // zeno::log_info("w: {}, h: {}", w, h);
-                auto u = (2.0 * x / w) - 1;
-                auto v = 1 - (2.0 * y / h);
-                // zeno::log_info("u: {}, v: {}", u, v);
-                auto cy = v * tan(glm::radians(fov) / 2) * cz;
-                auto cx = u * tan(glm::radians(fov) / 2) * w / h * cz;
-                // zeno::log_info("cx: {}, cy: {}, cz: {}", cx, cy, -cz);
-                glm::vec4 cc = {cx, cy, -cz, 1};
-                auto wc = glm::inverse(scene->camera->m_view) * cc;
-                wc /= wc.w;
+                glm::vec4 wc;
+                transformMousePosToModelPos(x, y, depth, wc);
                 // zeno::log_info("wx: {}, wy: {}, wz: {}", word_coord.x, word_coord.y, word_coord.z);
                 auto points = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "points");
                 zeno::log_info("fetch {}", points.c_str());
@@ -861,5 +869,99 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
         } else {
             picker->switch_draw_mode();
         }
+    }
+    if (node_id == "MakePrimList")
+    {
+		auto picker = m_glView->picker();
+		ZASSERT_EXIT(picker);
+        if (select) {
+            picker->switch_draw_mode();
+			zeno::NodeLocation node_location(nodes[0], subgIdx);
+            auto pick_callback = [nodes, node_location, this](float depth, int x, int y) {
+                glm::vec4 wc;
+                transformMousePosToModelPos(x, y, depth, wc);
+				auto points = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "points");
+				zeno::log_info("fetch {}", points.c_str());
+				points += std::to_string(wc.x) + " " + std::to_string(wc.y) + " " + std::to_string(wc.z) + " ";
+				zeno::NodeSyncMgr::GetInstance().updateNodeInputString(node_location, "points", points);
+            };
+            picker->set_picked_depth_callback(pick_callback);
+        }
+        else
+        {
+            picker->switch_draw_mode();
+        }
+    }
+    if (node_id == "PrimitiveEdit") {
+        auto scene = m_glView->getSession()->get_scene();
+        ZASSERT_EXIT(scene);
+        auto picker = m_glView->picker();
+        ZASSERT_EXIT(picker);
+        if (select) {
+            scene->select_mode = zenovis::PICK_VERTEX;
+            // check input nodes
+            auto input_nodes = zeno::NodeSyncMgr::GetInstance().getInputNodes(nodes[0], "prim");
+            if (input_nodes.size() != 1)
+                return;
+            // find prim in object manager
+            auto input_node_id = input_nodes[0].get_node_id();
+            string prim_name;
+            for (const auto& [k, v] : scene->objectsMan->pairsShared()) {
+                if (k.find(input_node_id.toStdString()) != string::npos)
+                    prim_name = k;
+            }
+            if (prim_name.empty())
+                return;
+
+            zeno::NodeLocation node_location(nodes[0], subgIdx);
+
+            // set callback to picker
+			auto callback = [this, node_location, prim_name](unordered_map<string, unordered_set<int>>& picked_elems,
+				std::vector<zeno::vec3f> select_area) -> void {
+                    std::string picked_elems_str;
+                    auto& picked_prim_elems = picked_elems[prim_name];
+                    for (auto elem : picked_prim_elems)
+                        picked_elems_str += std::to_string(elem) + ",";
+                    zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "index", picked_elems_str);
+
+                    QString areaStr = "";
+                    for (int i = 0; i < select_area.size(); i++)
+                    {
+                        auto x = select_area[i][0];
+                        auto y = select_area[i][1];
+                        auto z = select_area[i][2];
+						glm::vec4 wc;
+						transformMousePosToModelPos(x, y, z, wc);
+                        areaStr += QString("%1,%2,%3,").arg(wc.x).arg(wc.y).arg(wc.z);
+                        zeno::log_info("=====>worldpos:{},{},{}", wc.x, wc.y, wc.z);
+                    }
+                    zeno::NodeSyncMgr::GetInstance().updateNodeParamString(node_location, "area", areaStr.toStdString());
+            };
+            picker->set_picked_elems_depth_callback(callback);
+            // ----- enter node context
+            picker->save_context();
+
+            // read selected elements
+            string node_context;
+            auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
+            if (!node_selected_str.empty()) {
+                auto node_selected_qstr = QString(node_selected_str.c_str());
+                auto elements = node_selected_qstr.split(',');
+                for (auto& e : elements)
+                    if (e.size() > 0) {
+                        node_context += prim_name + ":" + e.toStdString() + " ";
+                    }
+                picker->load_from_str(node_context, scene->select_mode);
+            }
+            picker->sync_to_scene();
+            picker->focus(prim_name);
+        }
+        else {
+            scene->select_mode = zenovis::PICK_OBJECT;
+            picker->sync_to_scene();
+            picker->focus("");
+            picker->set_picked_elems_depth_callback({});
+        }
+        zenoApp->getMainWindow()->updateViewport();
     }
 }

@@ -29,7 +29,7 @@ struct PrimitiveAttrPicker : zeno::INode {
                 else
                     ss << c;
             }
-            get_split();
+            //get_split();
 
             // set new attr
             auto new_attr = get_input<StringObject>("newAttr");

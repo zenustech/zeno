@@ -68,6 +68,7 @@ signals:
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
+    void transformMousePosToModelPos(int x, int y, float z, glm::vec4& ret);
 
     ViewportWidget* m_glView;
     ZOptixViewport* m_optixView;

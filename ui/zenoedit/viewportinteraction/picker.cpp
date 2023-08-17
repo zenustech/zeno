@@ -164,12 +164,24 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
         }
         load_from_str(selected, scene->select_mode);
         if (picked_elems_callback) picked_elems_callback(selected_elements);
+        if (picked_elems__depth_callback)
+        {
+            std::vector<vec3f> pnts;
+            auto depth = picker->getDepth(x0, y0);
+            pnts.push_back({ float(x0), float(y0),depth });
+            depth = picker->getDepth(x1, y1);
+            pnts.push_back({ float(x1), float(y1),depth });
+            picked_elems__depth_callback(selected_elements, pnts);
+        }
     }
 }
 
 void Picker::pick_depth(int x, int y) {
     auto depth = picker->getDepth(x, y);
-    picked_depth_callback(depth, x, y);
+    if (picked_depth_callback != nullptr)
+    {
+        picked_depth_callback(depth, x, y);
+    }
     qDebug() << "picker: " << depth;
 }
 
@@ -286,6 +298,11 @@ void Picker::set_picked_depth_callback(std::function<void(float, int, int)> call
 
 void Picker::set_picked_elems_callback(function<void(unordered_map<string, unordered_set<int>>&)> callback) {
     picked_elems_callback = std::move(callback);
+}
+
+void Picker::set_picked_elems_depth_callback(std::function<void(std::unordered_map<std::string, std::unordered_set<int>>&, std::vector<zeno::vec3f>)> callback)
+{
+    picked_elems__depth_callback = std::move(callback);
 }
 
 bool Picker::is_draw_mode() {
