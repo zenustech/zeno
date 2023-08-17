@@ -1016,10 +1016,6 @@ void DockContent_Log::initConnections()
         if (pLogger)
             pLogger->clear();
         ZlogPanel* pLogPanel = qobject_cast<ZlogPanel*>(m_stack->widget(1));
-        if (pLogPanel)
-        {
-            pLogPanel->setSyncLog(false);
-        }
     });
 }
 

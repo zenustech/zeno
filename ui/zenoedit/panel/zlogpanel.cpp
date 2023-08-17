@@ -275,12 +275,6 @@ LogListView::LogListView(QWidget* parent)
 void LogListView::rowsInserted(const QModelIndex& parent, int start, int end)
 {
     _base::rowsInserted(parent, start, end);
-
-    connect(&m_timer, &QTimer::timeout, this, [=]() {
-        scrollToBottom();
-        m_timer.stop();
-    });
-    m_timer.start(50);
 }
 
 void LogListView::onCustomContextMenu(const QPoint& point)
@@ -334,7 +328,6 @@ ZlogPanel::ZlogPanel(QWidget* parent)
     : QWidget(parent)
     , m_pFilterModel(nullptr)
     , m_pMenu(nullptr)
-    , m_bSynLogs(false)
 {
     m_ui = new Ui::LogPanel;
     m_ui->setupUi(this);
@@ -465,7 +458,6 @@ void ZlogPanel::initSignals()
 
     connect(m_ui->btnDelete, &ZToolButton::clicked, this, [=]() {
         m_logModel->clear();
-        m_bSynLogs = false;
         //zenoApp->logModel()->clear();
     });
 
@@ -476,19 +468,11 @@ void ZlogPanel::initSignals()
     connect(zenoApp->logModel(), &QStandardItemModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
         QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
         if (pModel) {
-            if (m_bSynLogs)
+            QModelIndex idx = pModel->index(first, 0, parent);
+            int type = idx.data(ROLE_LOGTYPE).toInt();
+            if (type == QtFatalMsg)
             {
                 m_logModel->appendRow(pModel->item(first)->clone());
-            }
-            else
-            {
-                QModelIndex idx = pModel->index(first, 0, parent);
-                int type = idx.data(ROLE_LOGTYPE).toInt();
-                if (type == QtFatalMsg)
-                {
-                    m_bSynLogs = true;
-                    onSyncLogs();
-                }
             }
         }
     });
@@ -496,6 +480,7 @@ void ZlogPanel::initSignals()
 
 void ZlogPanel::onSyncLogs()
 {
+    m_logModel->clear();
     QStandardItemModel* pModel = zenoApp->logModel();
     for (int r = 0; r < pModel->rowCount(); r++)
     {
@@ -517,11 +502,6 @@ void ZlogPanel::onFilterChanged()
     if (m_ui->btnInfo->isChecked())
         filters.append(QtInfoMsg);
     m_pFilterModel->setFilters(filters, m_ui->editSearch->text());
-}
-
-void ZlogPanel::setSyncLog(bool bSynLog)
-{
-    m_bSynLogs = bSynLog;
 }
 
 //////////////////////////////////////////////////////////////////////////
