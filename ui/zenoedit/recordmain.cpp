@@ -176,7 +176,7 @@ int record_main(const QCoreApplication& app)
         //gl normal recording may not be work in cmd mode.
         ZenoMainWindow tempWindow(nullptr, 0, !param.bOptix ? PANEL_GL_VIEW : PANEL_EMPTY);
         tempWindow.showMaximized();
-        tempWindow.solidRunRender(param);
+        tempWindow.solidRunRender(param,launchparam);
 
         //idle
         return app.exec();

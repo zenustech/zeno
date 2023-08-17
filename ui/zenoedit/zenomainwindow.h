@@ -52,6 +52,7 @@ public:
     void doFrameUpdate(int frame);
     void sortRecentFile(QStringList &lst);
     bool isOnlyOptixWindow() const;
+    bool isRecordByCommandLine() const;
 
     QLineEdit* selected = nullptr;
     ZenoLights* lightPanel = nullptr;
@@ -158,7 +159,7 @@ public slots:
     void saveDockLayout();
     void loadSavedLayout();
     void onLangChanged(bool bChecked);
-    void solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param);
+    void solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM& launchparam);
     void optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchparam);
     void optixClientRun(int port, const char* cachedir, int cachenum, int sFrame, int eFrame, int finishedFrames, const char* sessionId);
     void optixClientSend(QString& info);
@@ -219,6 +220,8 @@ private:
 
     std::unique_ptr<QLocalSocket> optixClientSocket;
     bool m_bOptixProcRecording = false;
+
+    bool m_bRecordByCommandLine = false;
 };
 
 #endif
