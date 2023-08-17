@@ -1005,7 +1005,7 @@ void ZenoMainWindow::optixClientStartRec()
     m_bOptixProcRecording = true;
 }
 
-void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
+void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM& launchParam)
 {
     auto& pGlobalComm = zeno::getSession().globalComm;
     ZASSERT_EXIT(pGlobalComm);
@@ -1037,6 +1037,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
     recInfo.bRecordByCommandLine = true;
+    m_bRecordByCommandLine = true;
 
     if (!param.sPixel.isEmpty())
     {
@@ -1082,7 +1083,6 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
         }
     }
     zeno::getSession().globalComm->clearState();
-    LAUNCH_PARAM launchParam;
     launchParam.beginFrame = recInfo.frameRange.first;
     launchParam.endFrame = recInfo.frameRange.second;
     auto main = zenoApp->getMainWindow();
@@ -1622,6 +1622,11 @@ void ZenoMainWindow::shortCutDlg()
 bool ZenoMainWindow::isOnlyOptixWindow() const
 {
     return m_bOnlyOptix;
+}
+
+bool ZenoMainWindow::isRecordByCommandLine() const
+{
+    return m_bRecordByCommandLine;
 }
 
 void ZenoMainWindow::sortRecentFile(QStringList &lst) 

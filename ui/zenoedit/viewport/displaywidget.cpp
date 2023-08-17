@@ -367,7 +367,11 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     }
     if (m_bGLView)
     {
-        m_glView->update();
+        if (mainWin->isRecordByCommandLine()) {
+            m_glView->glDraw();
+        }
+        else
+            m_glView->update();
     }
     else
     {

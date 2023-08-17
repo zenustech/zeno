@@ -50,6 +50,7 @@ public:
     void unbindNodeFromPicker();
     void setSimpleRenderOption();
     void setViewWidgetInfo(DockContentWidgetInfo& info);
+    void glDraw() override;
 
 signals:
     void frameRecorded(int);
