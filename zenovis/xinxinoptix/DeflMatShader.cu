@@ -7,6 +7,7 @@
 #include "zxxglslvec.h"
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
+#include "proceduralSky.h"
 #include "IOMat.h"
 
 #define _SPHERE_ 0
@@ -375,13 +376,14 @@ extern "C" __global__ void __anyhit__shadow_cutout()
                     prd->shadowAttanuation = vec3(0,0,0);
                     optixTerminateRay();
                     return;
-                }
+                }else{
                 float nDi = fabs(dot(N,ray_dir));
                 vec3 tmp = prd->shadowAttanuation;
                 tmp = tmp * (vec3(1)-BRDFBasics::fresnelSchlick(vec3(1)-basecolor,nDi));
                 prd->shadowAttanuation = tmp;
 
                 optixIgnoreIntersection();
+                }
             }
         }
 
