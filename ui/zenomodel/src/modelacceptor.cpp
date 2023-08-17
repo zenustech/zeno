@@ -208,11 +208,17 @@ void ModelAcceptor::EndSubgraph()
             int row = 0;
             for (const auto& input : desc.inputs)
             {
+                const QModelIndex &index = nodeParams->getParam(PARAM_INPUT, input.second.info.name);
+                QVariant val;
+                if (index.isValid())
+                    val = index.data(ROLE_PARAM_VALUE);
+                else
+                    val = input.second.info.defaultValue;
                 nodeParams->setAddParam(
                     PARAM_INPUT,
                     input.second.info.name,
                     input.second.info.type,
-                    input.second.info.defaultValue,
+                    val,
                     input.second.info.control,
                     input.second.info.ctrlProps,
                     SOCKPROP_NORMAL,
@@ -234,11 +240,17 @@ void ModelAcceptor::EndSubgraph()
             row = 0;
             for (const auto& output : desc.outputs)
             {
+                const QModelIndex& index = nodeParams->getParam(PARAM_OUTPUT, output.second.info.name);
+                QVariant val;
+                if (index.isValid())
+                    val = index.data(ROLE_PARAM_VALUE);
+                else
+                    val = output.second.info.defaultValue;
                 nodeParams->setAddParam(
                     PARAM_OUTPUT,
                     output.second.info.name,
                     output.second.info.type,
-                    output.second.info.defaultValue,
+                    val,
                     output.second.info.control,
                     output.second.info.ctrlProps,
                     SOCKPROP_NORMAL,
@@ -260,11 +272,17 @@ void ModelAcceptor::EndSubgraph()
             row = 0;
             for (const auto& param : desc.params)
             {
+                const QModelIndex& index = nodeParams->getParam(PARAM_PARAM, param.name);
+                QVariant val;
+                if (index.isValid())
+                    val = index.data(ROLE_PARAM_VALUE);
+                else
+                    val = param.defaultValue;
                 nodeParams->setAddParam(
                     PARAM_PARAM,
                     param.name,
                     param.typeDesc,
-                    param.defaultValue,
+                    val,
                     param.control,
                     param.controlProps,
                     SOCKPROP_NORMAL,
