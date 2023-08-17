@@ -158,11 +158,17 @@ struct MakeSurfaceConstraintTopology : INode {
                 reordered_map = proxy<space>(reordered_map),
                 verts = proxy<space>({},verts)] ZS_LAMBDA(int oei) mutable {
                     auto ei = reordered_map[oei];
+                    printf("bd_topos[%d] : %d %d %d %d\n",ei,bd_topos[ei][0],bd_topos[ei][1],bd_topos[ei][2],bd_topos[ei][3]);
                     eles.tuple(dim_c<4>,"inds",oei) = bd_topos[ei].reinterpret_bits(float_c);
                     vec3 x[4] = {};
                     for(int i = 0;i != 4;++i)
                         x[i] = verts.pack(dim_c<3>,"x",bd_topos[ei][i]);
 
+                    mat4 Q = mat4::uniform(0);
+                    {
+                    // CONSTRAINT::init_IsometricBendingConstraint(x[0],x[1],x[2],x[3],Q);
+                    }
+                    {
                     auto e0 = x[1] - x[0];
                     auto e1 = x[2] - x[0];
                     auto e2 = x[3] - x[0];
@@ -181,7 +187,7 @@ struct MakeSurfaceConstraintTopology : INode {
                     float K[4] = { c03 + c04, c01 + c02, -c01 - c03, -c02 - c04 };
                     float K2[4] = { coef * K[0], coef * K[1], coef * K[2], coef * K[3] };
 
-                    mat4 Q = mat4::uniform(0);
+
 
                     for (unsigned char j = 0; j < 4; j++)
                     {
@@ -191,6 +197,10 @@ struct MakeSurfaceConstraintTopology : INode {
                         }
                         Q(j, j) = K[j] * K2[j];
                     }
+                    }
+
+
+                    
 
                     eles.tuple(dim_c<16>,"Q",oei) = Q;
             });
@@ -374,8 +384,8 @@ struct VisualizePBDConstraint : INode {
                 for(int i = 0;i != 4;++i)
                     cverts[i] = cvis[ci * 4 + i].to_array();
 
-                pverts[ci * 2 + 0] = (cverts[0] + cverts[1] + cverts[2]) / (T)3.0;
-                pverts[ci * 2 + 1] = (cverts[0] + cverts[1] + cverts[3]) / (T)3.0;
+                pverts[ci * 2 + 0] = (cverts[0] + cverts[2] + cverts[3]) / (T)3.0;
+                pverts[ci * 2 + 1] = (cverts[1] + cverts[2] + cverts[3]) / (T)3.0;
                 tclrs[ci * 2 + 0] = cclrs[ci];
                 tclrs[ci * 2 + 1] = cclrs[ci];
                 ltclrs[ci] = cclrs[ci];
@@ -519,8 +529,14 @@ struct XPBDSolve : INode {
                             lambda,
                             dp[0],dp[1],dp[2],dp[3]);
 
-                        for(int i = 0;i != 4;++i)
+                        
+
+                        for(int i = 0;i != 4;++i) {
+                            // printf("dp[%d][%d] : %f %f %f %f\n",gi,i,s,(float)dp[i][0],(float)dp[i][1],(float)dp[i][2]);
                             verts.tuple(dim_c<3>,ptag,quad[i]) = p[i] + dp[i];
+                        }
+
+                        
                     }
 
                     if(category == category_c::p_kp_collision_constraint) {
@@ -549,22 +565,29 @@ struct XPBDSolve : INode {
             // total_ghost_impulse_X.setVal(0);
             // total_ghost_impulse_Y.setVal(0);
             // total_ghost_impulse_Z.setVal(0);
+            if(category == category_c::isometric_bending_constraint)
+                std::cout << "isometric_bending_constraint output" << std::endl;
+            if(category == category_c::edge_length_constraint)
+                std::cout << "edge_length_constraint output" << std::endl;     
+            
             // cudaPol(zs::range(verts.size()),[
             //     verts = proxy<space>({},verts),
-            //     ptag = zs::SmallString(ptag),
-            //     exec_tag,
-            //     total_ghost_impulse_X = proxy<space>(total_ghost_impulse_X),
-            //     total_ghost_impulse_Y = proxy<space>(total_ghost_impulse_Y),
-            //     total_ghost_impulse_Z = proxy<space>(total_ghost_impulse_Z),
-            //     pv_buffer = proxy<space>(pv_buffer)] ZS_LAMBDA(int vi) mutable {
+            //     ptag = zs::SmallString(ptag)
+            //     // exec_tag,
+            //     // total_ghost_impulse_X = proxy<space>(total_ghost_impulse_X),
+            //     // total_ghost_impulse_Y = proxy<space>(total_ghost_impulse_Y),
+            //     // total_ghost_impulse_Z = proxy<space>(total_ghost_impulse_Z),
+            //     // pv_buffer = proxy<space>(pv_buffer)
+            //     ] ZS_LAMBDA(int vi) mutable {
             //         auto cv = verts.pack(dim_c<3>,ptag,vi);
-            //         auto pv = pv_buffer[vi];
-            //         auto m = verts("m",vi);
-            //         auto dv = m * (cv - pv);
+            //         // auto pv = pv_buffer[vi];
+            //         // auto m = verts("m",vi);
+            //         // auto dv = m * (cv - pv);
             //         // for(int i = 0;i != 3;++i)
-            //         atomic_add(exec_tag,&total_ghost_impulse_X[0],dv[0]);
-            //         atomic_add(exec_tag,&total_ghost_impulse_Y[0],dv[1]);
-            //         atomic_add(exec_tag,&total_ghost_impulse_Z[0],dv[2]);
+            //         // atomic_add(exec_tag,&total_ghost_impulse_X[0],dv[0]);
+            //         // atomic_add(exec_tag,&total_ghost_impulse_Y[0],dv[1]);
+            //         // atomic_add(exec_tag,&total_ghost_impulse_Z[0],dv[2]);
+            //         printf("cv[%d] : %f %f %f\n",vi,(float)cv[0],(float)cv[1],(float)cv[2]);
             // });
 
             // auto tgi = total_ghost_impulse.getVal(0);
@@ -573,6 +596,8 @@ struct XPBDSolve : INode {
             // auto tgz = total_ghost_impulse_Z.getVal(0);
             // printf("ghost_impulse[%d][%d] : %f %f %f\n",(int)coffset,(int)group_size,(float)tgx,(float)tgy,(float)tgz);
         }      
+
+        // cudaPol(zs::range(verts.size()))
 
         set_output("constraints",constraints);
         set_output("zsparticles",zsparticles);
@@ -1416,6 +1441,9 @@ struct XPBDSolveSmooth : INode {
         for(auto &&constraints : all_constraints) {
             const auto& cquads = constraints->getQuadraturePoints();
             auto category = constraints->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
+
+            if(category == category_c::edge_length_constraint)
+                continue;
 
             // std::cout << "computing smoothing for constraints" << std::endl;
 

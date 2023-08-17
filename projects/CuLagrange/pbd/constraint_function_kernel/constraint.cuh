@@ -131,7 +131,7 @@ namespace zeno { namespace CONSTRAINT {
     }
 
 // ----------------------------------------------------------------------------------------------
-    template<typename VECTOR3d,typename SCALER,typename MATRIX4d>
+    template<typename VECTOR3d,typename MATRIX4d>
     constexpr bool init_IsometricBendingConstraint(
         const VECTOR3d& p0,
         const VECTOR3d& p1,
@@ -139,14 +139,16 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d& p3,
         MATRIX4d& Q)
     {
+        using SCALER = typename VECTOR3d::value_type; 
         // Compute matrix Q for quadratic bending
-        const VECTOR3d* x[4] = { &p2, &p3, &p0, &p1 };
+        const VECTOR3d x[4] = { p2, p3, p0, p1 };
+        // Q = MATRIX4d::uniform(0);
 
-        const VECTOR3d e0 = *x[1] - *x[0];
-        const VECTOR3d e1 = *x[2] - *x[0];
-        const VECTOR3d e2 = *x[3] - *x[0];
-        const VECTOR3d e3 = *x[2] - *x[1];
-        const VECTOR3d e4 = *x[3] - *x[1];
+        const VECTOR3d e0 = x[1] - x[0];
+        const VECTOR3d e1 = x[2] - x[0];
+        const VECTOR3d e2 = x[3] - x[0];
+        const VECTOR3d e3 = x[2] - x[1];
+        const VECTOR3d e4 = x[3] - x[1];
 
         const SCALER c01 = LSL_GEO::cotTheta(e0, e1);
         const SCALER c02 = LSL_GEO::cotTheta(e0, e2);
@@ -156,7 +158,7 @@ namespace zeno { namespace CONSTRAINT {
         const SCALER A0 = static_cast<SCALER>(0.5) * (e0.cross(e1)).norm();
         const SCALER A1 = static_cast<SCALER>(0.5) * (e0.cross(e2)).norm();
 
-        const SCALER coef = -3.f / (2.f * (A0 + A1));
+        const SCALER coef = static_cast<SCALER>(-3.0 / 2.0) /  (A0 + A1);
         const SCALER K[4] = { c03 + c04, c01 + c02, -c01 - c03, -c02 - c04 };
         const SCALER K2[4] = { coef * K[0], coef * K[1], coef * K[2], coef * K[3] };
 
@@ -174,25 +176,27 @@ namespace zeno { namespace CONSTRAINT {
 // ----------------------------------------------------------------------------------------------
     template<typename VECTOR3d,typename SCALER,typename MATRIX4d>
     constexpr bool solve_IsometricBendingConstraint(
-        const VECTOR3d& p0, SCALER invMass0,
-        const VECTOR3d& p1, SCALER invMass1,
-        const VECTOR3d& p2, SCALER invMass2,
-        const VECTOR3d& p3, SCALER invMass3,
+        const VECTOR3d& p0, const SCALER& invMass0,
+        const VECTOR3d& p1, const SCALER& invMass1,
+        const VECTOR3d& p2, const SCALER& invMass2,
+        const VECTOR3d& p3, const SCALER& invMass3,
         const MATRIX4d& Q,
-        const SCALER stiffness,
-        const SCALER dt,
+        const SCALER& stiffness,
+        const SCALER& dt,
         SCALER& lambda,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
     {
-        constexpr SCALER eps = (SCALER)1e-6;
-        const VECTOR3d* x[4] = { &p2, &p3, &p0, &p1 };
+        constexpr SCALER eps = static_cast<SCALER>(1e-6);
+        const VECTOR3d x[4] = { p2, p3, p0, p1 };
         SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
 
         SCALER energy = 0.0;
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
-                energy += Q(j, k) * (x[k]->dot(*x[j]));
-        energy *= 0.5;
+                energy += Q(j, k) * (x[k].dot(x[j]));
+        energy *= static_cast<SCALER>(0.5);
+
+        // printf("isometric_bending_energy : %f\n",(float)energy);
 
         VECTOR3d gradC[4] = {};
         gradC[0] = VECTOR3d::uniform(0);
@@ -201,7 +205,7 @@ namespace zeno { namespace CONSTRAINT {
         gradC[3] = VECTOR3d::uniform(0);
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
-                gradC[j] += Q(j, k) * *x[k];
+                gradC[j] += Q(j, k) * x[k];
 
 
         SCALER sum_normGradC = 0.0;
@@ -220,10 +224,13 @@ namespace zeno { namespace CONSTRAINT {
         }
 
         // exit early if required
+        // for(int i = 0;i != 4;++i)
+        //     printf("gradC[%d] : %f %f %f\n",i,(float)gradC[i][0],(float)gradC[i][1],(float)gradC[i][2]);
+
         if (zs::abs(sum_normGradC) > eps)
         {
             // compute impulse-based scaling factor
-            const SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
+            SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
             lambda += delta_lambda;
 
             corr0 = (delta_lambda * invMass[2]) * gradC[2];
@@ -232,6 +239,11 @@ namespace zeno { namespace CONSTRAINT {
             corr3 = (delta_lambda * invMass[1]) * gradC[1];
 
             return true;
+        }else {
+            corr0 = VECTOR3d::uniform(0);
+            corr1 = VECTOR3d::uniform(0);
+            corr2 = VECTOR3d::uniform(0);
+            corr3 = VECTOR3d::uniform(0);
         }
         return false;
     }
@@ -245,14 +257,14 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d& p3, SCALER invMass3,
         const MATRIX4d& Q,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3){
-        constexpr SCALER eps = (SCALER)1e-6;
-        const VECTOR3d* x[4] = { &p2, &p3, &p0, &p1 };
+        constexpr SCALER eps = static_cast<SCALER>(1e-6);
+        const VECTOR3d x[4] = { p2, p3, p0, p1 };
         SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
 
         SCALER energy = 0.0;
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
-                energy += Q(j, k) * (x[k]->dot(*x[j]));
+                energy += Q(j, k) * (x[k].dot(x[j]));
         energy *= 0.5;
 
         VECTOR3d gradC[4] = {};
@@ -262,7 +274,7 @@ namespace zeno { namespace CONSTRAINT {
         gradC[3] = VECTOR3d::uniform(0);
         for (unsigned char k = 0; k < 4; k++)
             for (unsigned char j = 0; j < 4; j++)
-                gradC[j] += Q(j, k) * *x[k];
+                gradC[j] += Q(j, k) * x[k];
 
 
         SCALER sum_normGradC = 0.0;
@@ -285,6 +297,11 @@ namespace zeno { namespace CONSTRAINT {
             corr3 = (s * invMass[1]) * gradC[1];
 
             return true;
+        }else {
+            corr0 = VECTOR3d::uniform(0);
+            corr1 = VECTOR3d::uniform(0);
+            corr2 = VECTOR3d::uniform(0);
+            corr3 = VECTOR3d::uniform(0);
         }
         return false;
     }

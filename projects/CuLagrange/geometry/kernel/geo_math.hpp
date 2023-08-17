@@ -50,6 +50,15 @@ namespace zeno { namespace LSL_GEO {
         return (costheta / sintheta);
     }
 
+    template<typename DREAL,typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0,typename REAL = VecT::value_type>
+    constexpr auto cotTheta(const zs::VecInterface<VecT>& e0,const zs::VecInterface<VecT>& e1){
+        auto de0 = e0.cast<DREAL>();
+        auto de1 = e1.cast<DREAL>();
+        auto costheta = e0.dot(e1);
+        auto sintheta = e0.cross(e1).norm();
+        return (REAL)(costheta / sintheta);
+    }
+
     template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
     constexpr int orient(const zs::VecInterface<VecT>& p0,
             const zs::VecInterface<VecT>& p1,
