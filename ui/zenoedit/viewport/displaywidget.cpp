@@ -830,7 +830,7 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
                 auto _far = scene->camera->m_far;
                 auto fov = scene->camera->m_fov;
                 auto cz = glm::length(scene->camera->m_lodcenter);
-                if (depth != 0) {
+                if (depth != 1) {
 //                    depth = depth * 2 - 1;
 //                    cz = 2 * _near * _far / ((_far + _near) - depth * (_far - _near));
                     glm::vec4 ndc = {0, 0, depth, 1};
