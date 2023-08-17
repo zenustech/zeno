@@ -16,6 +16,7 @@ public:
     static ZsgWriter& getInstance();
     QString dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings);
     void dumpToClipboard(const QMap<QString, NODE_DATA>& nodes);
+    QString dumpSubgraphStr(IGraphsModel* pModel, const QModelIndexList &sugIndexs);
 
 private:
     ZsgWriter();

@@ -92,6 +92,38 @@ QString ZsgWriter::dumpProgramStr(IGraphsModel* pModel, APP_SETTINGS settings)
     return strJson;
 }
 
+QString ZsgWriter::dumpSubgraphStr(IGraphsModel* pModel, const QModelIndexList& subgIdxs)
+{
+    QString strJson;
+    if (!pModel)
+        return strJson;
+
+    rapidjson::StringBuffer s;
+    RAPIDJSON_WRITER writer(s);
+
+    {
+        JsonObjBatch batch(writer);
+
+        NODE_DESCS descs;
+        writer.Key("graph");
+        {
+            JsonObjBatch _batch(writer);
+            for (const auto& index : subgIdxs)
+            {
+                const QString& subgName = index.data(ROLE_OBJNAME).toString();
+                writer.Key(subgName.toUtf8());
+                _dumpSubGraph(pModel, index, writer);
+                pModel->getDescriptor(subgName, descs[subgName]);
+            }
+        }
+
+        writer.Key("descs");
+        _dumpDescriptors(descs, writer);
+    }
+    strJson = QString::fromUtf8(s.GetString());
+    return strJson;
+}
+
 void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, RAPIDJSON_WRITER& writer)
 {
     JsonObjBatch batch(writer);
