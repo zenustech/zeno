@@ -111,6 +111,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         "--cacheMaterialOnly", QString::number(param.applyMaterialOnly),
         "--cacheautorm", QString::number(param.autoRmCurcache),
         "--zsg", param.zsgPath,
+        "--projectFps", QString::number(param.projectFps),
     };
 
     m_proc->start(QCoreApplication::applicationFilePath(), args);
@@ -170,6 +171,9 @@ void ZTcpServer::onOptixNewConn()
                     LAUNCH_PARAM lparam;
                     lparam.beginFrame = param["beginFrame"].GetInt();
                     lparam.endFrame = param["endFrame"].GetInt();
+                    auto main = zenoApp->getMainWindow();
+                    ZASSERT_EXIT(main);
+                    lparam.projectFps = main->timelineInfo().timelinefps;
                     AppHelper::initLaunchCacheParam(lparam);
                     launchProgram(pModel, lparam);
                 }else if (action == "removeCache")
@@ -318,7 +322,7 @@ void ZTcpServer::startOptixProc()
 void ZTcpServer::killProc()
 {
     if (m_proc) {
-        m_proc->terminate();
+        m_proc->kill();
         m_proc = nullptr;
     }
 }
@@ -395,14 +399,14 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
     if (exitStatus == QProcess::NormalExit)
     {
         if (m_proc)
-            m_proc->terminate();
+            m_proc->kill();
         m_proc = nullptr;
         zeno::log_info("runner process normally exited with {}", exitCode);
     }
     else if (exitStatus == QProcess::CrashExit)
     {
         if (m_proc)
-            m_proc->terminate();
+            m_proc->kill();
         m_proc= nullptr;
         zeno::log_error("runner process crashed with code {}", exitCode);
     }

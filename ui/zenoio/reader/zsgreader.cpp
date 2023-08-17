@@ -372,6 +372,10 @@ void ZsgReader::_parseTimeline(const rapidjson::Value& jsonTimeline, IAcceptor* 
     info.endFrame = jsonTimeline[timeline::end_frame].GetInt();
     info.currFrame = jsonTimeline[timeline::curr_frame].GetInt();
     info.bAlways = jsonTimeline[timeline::always].GetBool();
+    if (jsonTimeline.HasMember(timeline::timeline_fps))
+    {
+        info.timelinefps = jsonTimeline[timeline::timeline_fps].GetInt();
+    }
 
     pAcceptor->setTimeInfo(info);
 }
@@ -407,6 +411,12 @@ void ZsgReader::_parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* 
         info.bAutoRemoveCache = jsonRecordInfo[recordinfo::bAutoRemoveCache].GetBool();
         info.bAov = jsonRecordInfo[recordinfo::bAov].GetBool();
         pAcceptor->setRecordInfo(info);
+    }
+    if (jsonSettings.HasMember("layoutinfo") && jsonSettings["layoutinfo"].IsObject())
+    {
+        LAYOUT_SETTING layout;
+        layout.layerOutNode = _readLayout(jsonSettings["layoutinfo"]);
+        pAcceptor->setLayoutInfo(layout);
     }
 }
 
@@ -925,4 +935,67 @@ bool ZsgReader::_parseParams2(const QString& id, const QString &nodeCls, const r
     return true;
 }
 
+PtrLayoutNode ZsgReader::_readLayout(const rapidjson::Value& objValue)
+{
+    if (objValue.HasMember("orientation") && objValue.HasMember("left") && objValue.HasMember("right"))
+    {
+        PtrLayoutNode ptrNode = std::make_shared<LayerOutNode>();
+        QString ori = objValue["orientation"].GetString();
+        ptrNode->type = (ori == "H" ? NT_HOR : NT_VERT);
+        ptrNode->pLeft = _readLayout(objValue["left"]);
+        ptrNode->pRight = _readLayout(objValue["right"]);
+        ptrNode->pWidget = nullptr;
+        return ptrNode;
+    }
+    else if (objValue.HasMember("widget"))
+    {
+        PtrLayoutNode ptrNode = std::make_shared<LayerOutNode>();
+        ptrNode->type = NT_ELEM;
+        ptrNode->pLeft = nullptr;
+        ptrNode->pRight = nullptr;
+
+        const rapidjson::Value& widObj = objValue["widget"];
+
+        auto tabsObj = widObj["tabs"].GetArray();
+        QStringList tabs;
+        for (int i = 0; i < tabsObj.Size(); i++)
+        {
+            if (tabsObj[i].IsString())
+            {
+                ptrNode->tabs.push_back(tabsObj[i].GetString());
+            }
+            else if (tabsObj[i].IsObject())
+            {
+                if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "View")
+                {
+                    ptrNode->tabs.push_back("View");
+                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt(), tabsObj[i]["backgroundcolor"][0].GetDouble(),
+                        tabsObj[i]["backgroundcolor"][1].GetDouble(), tabsObj[i]["backgroundcolor"][2].GetDouble());
+                    ptrNode->widgetInfos.push_back(info);
+                }
+                else if (tabsObj[i].HasMember("type") && QString(tabsObj[i]["type"].GetString()) == "Optix")
+                {
+                    ptrNode->tabs.push_back("Optix");
+                    DockContentWidgetInfo info(tabsObj[i]["resolutionX"].GetInt(), tabsObj[i]["resolutionY"].GetInt(),
+                        tabsObj[i]["blockwindow"].GetBool(), tabsObj[i]["resolution-combobox-index"].GetInt());
+                    ptrNode->widgetInfos.push_back(info);
+                }
+            }
+        }
+
+        const rapidjson::Value& geomObj = widObj["geometry"];
+        float x = geomObj["x"].GetFloat();
+        float y = geomObj["y"].GetFloat();
+        float width = geomObj["width"].GetFloat();
+        float height = geomObj["height"].GetFloat();
+        ptrNode->geom = QRectF(x, y, width, height);
+
+        return ptrNode;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
 

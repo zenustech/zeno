@@ -131,6 +131,11 @@ public:
     QSize viewportSize() const;
     void onTabAboutToClose() override;
 
+    int curResComboBoxIndex();
+    void setResComboBoxIndex(int index);
+    std::tuple<int, int> curResolution();
+    void initResolution(int nx, int ny);
+
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
     QWidget *initWidget() override;
@@ -166,6 +171,7 @@ private:
     QAction *m_scale;
 
     const bool m_bGLView;
+    int nx = -1, ny = -1;   //resolution;
 };
 
 class DockContent_Log : public DockToolbarWidget

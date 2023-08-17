@@ -56,6 +56,7 @@ public:
     static QString getSockName(const QString& sockPath);
     static QString getParamPath(const QString& sockPath);
     static QString getSockSubgraph(const QString& sockPath);
+    static QString getNaiveParamPath(const QModelIndex& param, int dim = -1);
     static float parseJsonNumeric(const rapidjson::Value& val, bool castStr, bool& bSucceed);
     static float parseNumeric(const QVariant& val, bool castStr, bool& bSucceed);
     static QVariant initVariantByControl(PARAM_CONTROL ctrl);

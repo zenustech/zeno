@@ -140,6 +140,20 @@ ZENO_API zany INode::get_input(std::string const &id) const {
     return safe_at(inputs, id, "input socket of node `" + myname + "`");
 }
 
+ZENO_API zany INode::resolveInput(std::string const& id) {
+    if (inputBounds.find(id) != inputBounds.end()) {
+        if (requireInput(id))
+            return get_input(id);
+        else
+            return nullptr;
+    } else {
+        auto id_ = id;
+        if (inputs.find(id_) == inputs.end())
+            id_.push_back(':');
+        return get_input(id_);
+    }
+}
+
 ZENO_API void INode::set_output(std::string const &id, zany obj) {
     outputs[id] = std::move(obj);
 }

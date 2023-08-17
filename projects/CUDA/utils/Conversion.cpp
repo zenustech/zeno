@@ -58,7 +58,7 @@ struct AssetConversion : INode {
         else if (format != ".obj" && format != ".gltf" && format != ".fbx")
             throw std::runtime_error(fmt::format("unknown output file format [{}]\n", outputPath));
         if (outputPath.empty())
-            outputPath = inputPath.parent_path().string() + "/" + inputPath.stem().string() + "." + format;
+            outputPath = inputPath.parent_path().string() + "/" + inputPath.stem().string() + format;
 
         for (const auto &path : pathLocations) {
             fmt::print("iterate path: {}\n", path);

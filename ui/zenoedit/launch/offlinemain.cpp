@@ -22,6 +22,7 @@ static int offline_start(const char *progJson) {
 
     auto graph = session->createGraph();
     graph->loadGraph(progJson);
+    session->globalState->frameid = graph->beginFrameNumber;
 
     auto chkfail = [&] {
         auto globalStatus = session->globalStatus.get();

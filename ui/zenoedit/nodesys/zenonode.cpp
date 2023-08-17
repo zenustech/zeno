@@ -1148,6 +1148,48 @@ ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
     return pItem;
 }
 
+QModelIndex ZenoNode::getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) const
+{
+    for (auto param : m_params)
+    {
+        if (bSocketText) {
+            if (param.second.param_name == uiitem)
+                return param.second.viewidx;
+        }
+        else {
+            if (param.second.param_control == uiitem)
+                return param.second.viewidx;
+        }
+    }
+    for (ZSocketLayout* sock : m_inSockets)
+    {
+        if (bSocketText) {
+            if (sock->socketText() == uiitem) {
+                return sock->viewSocketIdx();
+            }
+        }
+        else {
+            if (sock->control() == uiitem) {
+                return sock->viewSocketIdx();
+            }
+        }
+    }
+    for (ZSocketLayout* sock : m_outSockets)
+    {
+        if (bSocketText) {
+            if (sock->socketText() == uiitem) {
+                return sock->viewSocketIdx();
+            }
+        }
+        else {
+            if (sock->control() == uiitem) {
+                return sock->viewSocketIdx();
+            }
+        }
+    }
+    return QModelIndex();
+}
+
 QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
 {
     ZASSERT_EXIT(sockIdx.isValid(), QPointF());

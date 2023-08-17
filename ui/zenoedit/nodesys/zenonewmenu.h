@@ -7,30 +7,37 @@
 
 class ZenoGvLineEdit;
 class IGraphsModel;
+class SearchResultWidget;
 
 class ZenoNewnodeMenu : public QMenu
 {
-	Q_OBJECT
+    Q_OBJECT
 public:
-    ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, const QString& text = "", QWidget* parent = nullptr);
-	~ZenoNewnodeMenu();
-	void setEditorFocus();
+    ZenoNewnodeMenu(const QModelIndex& subgIdx, const NODE_CATES& cates, const QPointF& scenePos, QWidget* parent = nullptr);
+    ~ZenoNewnodeMenu();
+    void setEditorFocus();
 
 protected:
-	bool eventFilter(QObject* watched, QEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 public slots:
-	void onTextChanged(const QString& text);
+    void onTextChanged(const QString& text);
 
 private:
-	QList<QAction*> getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, const QString& filter, QPointF scenePos);
+    QList<QAction*> getCategoryActions(IGraphsModel* pModel, QModelIndex subgIdx, QPointF scenePos);
+    void updateSearchView(const QString& filter);
 
-	const NODE_CATES m_cates;
-	const QModelIndex m_subgIdx;
-	const QPointF m_scenePos;
-	ZenoGvLineEdit* m_searchEdit;
-	QWidgetAction* m_pWAction;
-	QSet<QString> deprecatedNodes;
+    bool m_preSearchMode;
+    const NODE_CATES m_cates;
+    const QModelIndex m_subgIdx;
+    const QPointF m_scenePos;
+    ZenoGvLineEdit* m_searchEdit;
+    SearchResultWidget* m_searchView;
+    QWidgetAction* m_wactSearchEdit;
+    QWidgetAction* m_wactSearchView;
+    QMap<QString, QString> m_nodeToCate;
+    QList<QString> m_condidates;
+    QList<QAction*> m_cateActions;
 };
 
 #endif

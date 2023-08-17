@@ -30,6 +30,7 @@ public:
     QString zsgPath() const;
     RECORD_SETTING recordInfo() const;
     void setRecordInfo(RECORD_SETTING& info);
+    LAYOUT_SETTING layoutInfo() const;
 
 signals:
     void modelInited(IGraphsModel*);
@@ -53,6 +54,7 @@ private:
     QString m_currFile;
     TIMELINE_INFO m_timerInfo;
     RECORD_SETTING m_recordInfo;
+    LAYOUT_SETTING m_layoutInfo;
     QMap<QString, QGraphicsScene*> m_scenes;
 };
 

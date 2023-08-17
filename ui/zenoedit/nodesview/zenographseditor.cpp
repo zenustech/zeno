@@ -1009,12 +1009,14 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
     else if (actionType == ZenoMainWindow::ACTION_UNDO) 
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        pGraphsModel->undo();
+        if (pGraphsModel)
+            pGraphsModel->undo();
     }
     else if (actionType == ZenoMainWindow::ACTION_REDO) 
     {
         IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-        pGraphsModel->redo();
+        if (pGraphsModel)
+            pGraphsModel->redo();
     }
     else if (actionType == ZenoMainWindow::ACTION_SELECT_NODE) 
     {

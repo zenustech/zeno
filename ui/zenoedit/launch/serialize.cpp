@@ -98,7 +98,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
     //scan all the nodes in the subgraph.
     for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++)
-	{
+    {
         const QModelIndex& idx = pGraphsModel->index(i, subgIdx);
         QString ident = idx.data(ROLE_OBJID).toString();
         ident = nameMangling(graphIdPrefix, ident);
@@ -246,21 +246,27 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         }
 
         const PARAMS_INFO& params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-		for (PARAM_INFO param_info : params)
-		{
+        for (PARAM_INFO param_info : params)
+        {
             //todo: validation on param value.
             //bool bValid = UiHelper::validateVariant(param_info.value, param_info.typeDesc);
             //ZASSERT_EXIT(bValid);
-            QVariant paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+            QVariant paramValue;
+            QString paramName = param_info.name;
+            QString opStr = "setNodeParam";
+            getOptStr(param_info.typeDesc, param_info.value, opStr);
+            if (opStr == "setNodeParam") {
+                paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+            }
+            else {
+                //formula/keyframe
+                paramValue = param_info.value;
+                paramName += ":";
+            }
             if (paramValue.isNull())
                 continue;
-            QString opStr = "setNodeParam";
-            getOptStr(param_info.typeDesc, paramValue, opStr);
-            QString paramName = param_info.name;
-            if (opStr != "setNodeParam")
-                paramName += ":";
             AddParams(opStr, ident, paramName, paramValue, param_info.typeDesc, writer);
-		}
+        }
 
         if (opts & OPT_ONCE) {
             AddStringList({ "addNode", "HelperOnce", noOnceIdent }, writer);
@@ -318,7 +324,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
         }
-	}
+    }
 }
 
 void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly, bool applyMaterialOnly)

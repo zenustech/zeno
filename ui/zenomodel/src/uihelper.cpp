@@ -738,6 +738,32 @@ QString UiHelper::getSockName(const QString& sockPath)
     return "";
 }
 
+QString UiHelper::getNaiveParamPath(const QModelIndex& param, int dim)
+{
+    QString str = param.data(ROLE_OBJPATH).toString();
+    QString subgName, ident, paramPath;
+    getSocketInfo(str, subgName, ident, paramPath);
+    if (paramPath.startsWith("[node]/inputs/")) {
+        paramPath = paramPath.mid(QString("[node]/inputs/").length());
+    }
+    else if (paramPath.startsWith("[node]/params/")) {
+        paramPath = paramPath.mid(QString("[node]/params/").length());
+    }
+    else if (paramPath.startsWith("[node]/outputs/")) {
+        paramPath = "[o]" + paramPath.mid(QString("[node]/outputs/").length());
+    }
+    if (dim == 0) {
+        paramPath += "/x";
+    }
+    else if (dim == 1) {
+        paramPath += "/y";
+    }
+    else if (dim == 2) {
+        paramPath += "/z";
+    }
+    return QString("%1/%2").arg(ident).arg(paramPath);
+}
+
 QString UiHelper::getSockSubgraph(const QString& sockPath)
 {
     QStringList lst = sockPath.split(cPathSeperator, QtSkipEmptyParts);

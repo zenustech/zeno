@@ -35,6 +35,7 @@ public slots:
     void onSetSafeFrames(bool bLock, int nx, int ny);
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
     void onSetLoopPlaying(bool enbale);
+    void onSetSlidFeq(int feq);
 
 private:
 
@@ -43,6 +44,7 @@ private:
     QTimer* m_pTimer;
     bool m_bRecording;
     VideoRecInfo m_recordInfo;
+    int m_slidFeq = 1000 / 24;
 };
 
 class ZOptixViewport : public QWidget
@@ -68,6 +70,7 @@ public:
     void recordVideo(VideoRecInfo recInfo);
     void cancelRecording(VideoRecInfo recInfo);
     void killThread();
+    void setSlidFeq(int feq);
 
 signals:
     void cameraAboutToRefresh();
@@ -83,6 +86,7 @@ signals:
     void sig_cancelRecording();
     void sig_setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void sig_setLoopPlaying(bool enable);
+    void sig_setSlidFeq(int feq);
 
 public slots:
     void onFrameRunFinished(int frame);

@@ -57,16 +57,22 @@ struct VDBSmooth : zeno::INode {
         int width = get_input<NumericObject>("width")->get<int>();
         int iterations = get_input<NumericObject>("iterations")->get<int>();
         auto type = get_input<zeno::StringObject>("type")->value;
+
+        openvdb::FloatGrid::Ptr mask = nullptr;
+        if(has_input("MaskGrid")) {
+            mask = get_input("MaskGrid")->as<VDBFloatGrid>()->m_grid;
+        }
+
         if (inoutVDBtype == std::string("FloatGrid")) {
             auto inoutVDB = get_input("inoutVDB")->as<VDBFloatGrid>();
             auto lsf = openvdb::tools::Filter<openvdb::FloatGrid>(*(inoutVDB->m_grid));
             lsf.setGrainSize(1);
             if(type == "Gaussian")
-              lsf.gaussian(width, iterations, nullptr);
+              lsf.gaussian(width, iterations, mask.get());
             else if(type == "Mean")
-              lsf.mean(width, iterations, nullptr);
+              lsf.mean(width, iterations, mask.get());
             else if(type == "Median")
-              lsf.median(width, iterations, nullptr);
+              lsf.median(width, iterations, mask.get());
             //openvdb::tools::ttls_internal::smoothLevelSet(*inoutSDF->m_grid, normIter, halfWidth);
             set_output("inoutVDB", get_input("inoutVDB"));
         }
@@ -75,11 +81,11 @@ struct VDBSmooth : zeno::INode {
             auto lsf = openvdb::tools::Filter<openvdb::Vec3fGrid>(*(inoutVDB->m_grid));
             lsf.setGrainSize(1);
             if(type == "Gaussian")
-              lsf.gaussian(width, iterations, nullptr);
+              lsf.gaussian(width, iterations, mask.get());
             else if(type == "Mean")
-              lsf.mean(width, iterations, nullptr);
+              lsf.mean(width, iterations, mask.get());
             else if(type == "Median")
-              lsf.median(width, iterations, nullptr);
+              lsf.median(width, iterations, mask.get());
             set_output("inoutVDB", get_input("inoutVDB"));
         }
     }
@@ -88,6 +94,7 @@ struct VDBSmooth : zeno::INode {
 ZENO_DEFNODE(VDBSmooth)(
     { /* inputs: */ {
     "inoutVDB",
+    "MaskGrid",
     {"enum Mean Gaussian Median", "type", "Gaussian"},
     {"int", "width", "1"},
     {"int", "iterations", "1"},

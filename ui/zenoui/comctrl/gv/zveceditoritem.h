@@ -11,10 +11,12 @@ class ZVecEditorItem : public ZGraphicsLayoutItem<ZenoParamWidget>
 public:
     ZVecEditorItem(const QVariant& vec, bool bFloat, LineEditParam param, QGraphicsScene* pScene, QGraphicsItem* parent = nullptr, Qt::WindowFlags wFlags = Qt::WindowFlags());
     QVariant vec() const;
+    UI_VECSTRING vecStr() const;
     void setVec(const QVariant &vec, bool bFloat, QGraphicsScene *pScene);
     void setVec(const QVariant &vec);
     bool isFloatType() const;
     void updateProperties(const QVector<QString>& properties);
+    QString findElemByControl(ZEditableTextItem* pElem) const;
 
 signals:
     void editingFinished();

@@ -618,8 +618,8 @@ namespace DisneyBSDF{
         float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
         float psss = subsurface/(1.0f + subsurface);
         //event probability
-        float diffPr = dielectricWt ;
-        float sssPr = dielectricWt   * subsurface;
+        float diffPr = dielectricWt * (1.0f - psss);
+        float sssPr = dielectricWt  * psss;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
         float glassPr = glassWt;
@@ -652,7 +652,7 @@ namespace DisneyBSDF{
         if(diffPr > 0.0 && reflect)
         {
 
-            vec3 d = BRDFBasics::EvalDisneyDiffuse(mix(baseColor,sssColor,subsurface)*(1.0f - psss), subsurface, roughness, sheen,
+            vec3 d = BRDFBasics::EvalDisneyDiffuse(mix(baseColor,sssColor,subsurface), subsurface, roughness, sheen,
                                              Csheen, wo, wi, wm, tmpPdf) * dielectricWt   * illum;
             dterm = dterm + d;
             f = f + d;
@@ -1723,8 +1723,8 @@ namespace DisneyBSDF{
         //dielectricWt *= 1.0f - psub;
 
         //event probability
-        float diffPr = dielectricWt;
-        float sssPr = dielectricWt  * subsurface;
+        float diffPr = dielectricWt * (1.0f - psss);
+        float sssPr = dielectricWt  * psss;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
         float glassPr = glassWt;

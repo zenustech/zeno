@@ -85,6 +85,7 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
         bool ret = ZsgReader::getInstance().openFile(fn, acceptor.get());
         m_timerInfo = acceptor->timeInfo();
         m_recordInfo = acceptor->recordInfo();
+        m_layoutInfo = acceptor->layoutInfo();
         if (!ret)
             return nullptr;
     }
@@ -253,6 +254,11 @@ RECORD_SETTING GraphsManagment::recordInfo() const
 void GraphsManagment::setRecordInfo(RECORD_SETTING& info)
 {
     m_recordInfo = info;
+}
+
+LAYOUT_SETTING GraphsManagment::layoutInfo() const
+{
+    return m_layoutInfo;
 }
 
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)

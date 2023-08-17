@@ -33,7 +33,8 @@ void Zenovis::loadGLAPI(void *procaddr)
 
 void Zenovis::initializeGL()
 {
-    session = std::make_unique<zenovis::Session>();
+    if (!session)
+        session = std::make_unique<zenovis::Session>();
 }
 
 void Zenovis::paintGL()
@@ -74,7 +75,10 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
                 H = W / ratio;
                 offset[1] = std::max((h - H) / 2, 0);
             }
+            if (W != 0 && H != 0)
+            {
             session->set_window_size(W, H, offset);
+            }
         }
         else
         {

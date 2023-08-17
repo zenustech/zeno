@@ -32,6 +32,7 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     m_appDataPath.setPath(locations[0]);
 #endif
     m_spCacheMgr = std::make_shared<ZCacheMgr>();
+    m_spProcClipboard = std::make_shared<ProcessClipboard>();
 }
 
 ZenoApplication::~ZenoApplication()
@@ -121,6 +122,11 @@ GraphsManagment *ZenoApplication::graphsManagment() const
 std::shared_ptr<ZCacheMgr> ZenoApplication::cacheMgr() const
 {
     return m_spCacheMgr;
+}
+
+std::shared_ptr<ProcessClipboard> ZenoApplication::procClipboard() const
+{
+    return m_spProcClipboard;
 }
 
 QStandardItemModel* ZenoApplication::logModel() const

@@ -18,10 +18,11 @@ public:
     ZTimeline(QWidget* parent = nullptr);
     QPair<int, int> fromTo() const;
     void initFromTo(int from, int to);
+    void initFps(int fps);
+    int fps();
     void resetSlider();
     int value() const;
     bool isPlayToggled() const;
-    void setLoopPlayingStatus(bool enable);
     void updateKeyFrames(const QVector<int>& keys);
 
 protected:

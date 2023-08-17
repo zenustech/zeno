@@ -1,15 +1,15 @@
 #include "winlayoutrw.h"
 #include "../dock/ztabdockwidget.h"
-#include <zenomodel/include/jsonhelper.h>
 #include "../dock/docktabcontent.h"
 #include "../viewport/viewportwidget.h"
 #include "../panel/zenospreadsheet.h"
 #include "../panel/zlogpanel.h"
 #include <rapidjson/document.h>
 #include "../panel/zenolights.h"
+#include "viewport/displaywidget.h"
 
 
-PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget* pWidget)
+PtrLayoutNode findNode(PtrLayoutNode root, QDockWidget* pWidget)
 {
     PtrLayoutNode pNode;
     if (root->pWidget != nullptr)
@@ -33,7 +33,7 @@ PtrLayoutNode findNode(PtrLayoutNode root, ZTabDockWidget* pWidget)
     return nullptr;
 }
 
-PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget* pWidget)
+PtrLayoutNode findParent(PtrLayoutNode root, QDockWidget* pWidget)
 {
     if ((root->pLeft && root->pLeft->pWidget == pWidget) ||
         (root->pRight && root->pRight->pWidget == pWidget))
@@ -55,104 +55,11 @@ PtrLayoutNode findParent(PtrLayoutNode root, ZTabDockWidget* pWidget)
     return nullptr;
 }
 
-static void _writeLayout(PtrLayoutNode root, const QSize& szMainwin, PRETTY_WRITER& writer)
-{
-    JsonObjBatch scope(writer);
-    if (root->type == NT_HOR || root->type == NT_VERT)
-    {
-        writer.Key("orientation");
-        writer.String(root->type == NT_HOR ? "H" : "V");
-        writer.Key("left");
-        if (root->pLeft)
-            _writeLayout(root->pLeft, szMainwin, writer);
-        else
-            writer.Null();
-
-        writer.Key("right");
-        if (root->pRight)
-            _writeLayout(root->pRight, szMainwin, writer);
-        else
-            writer.Null();
-    }
-    else
-    {
-        writer.Key("widget");
-        if (root->pWidget == nullptr || root->pWidget->isHidden())
-        {
-            writer.Null();
-        }
-        else
-        {
-            writer.StartObject();
-            int w = szMainwin.width();
-            int h = szMainwin.height();
-            if (w == 0)
-                w = 1;
-            if (h == 0)
-                h = 1;
-
-            writer.Key("geometry");
-            writer.StartObject();
-            QRect rc = root->pWidget->geometry();
-
-            writer.Key("x");
-            float _left = (float)rc.left() / w;
-            writer.Double(_left);
-
-            writer.Key("y");
-            float _top = (float)rc.top() / h;
-            writer.Double(_top);
-
-            writer.Key("width");
-            float _width = (float)rc.width() / w;
-            writer.Double(_width);
-
-            writer.Key("height");
-            float _height = (float)rc.height() / h;
-            writer.Double(_height);
-
-            writer.EndObject();
-
-            writer.Key("tabs");
-            writer.StartArray();
-            for (int i = 0; i < root->pWidget->count(); i++)
-            {
-                QWidget* wid = root->pWidget->widget(i);
-                if (qobject_cast<DockContent_Parameter*>(wid)) {
-                    writer.String("Parameter");
-                }
-                else if (qobject_cast<DockContent_Editor *>(wid)) {
-                    writer.String("Editor");
-                }
-                else if (qobject_cast<DockContent_View*>(wid)) {
-                    DockContent_View* pView = qobject_cast<DockContent_View*>(wid);
-                    if (pView->isGLView())
-                        writer.String("View");
-                    else
-                        writer.String("Optix");
-                }
-                else if (qobject_cast<ZenoSpreadsheet*>(wid)) {
-                    writer.String("Data");
-                }
-                else if (qobject_cast<DockContent_Log*>(wid)) {
-                    writer.String("Logger");
-                }
-                else if (qobject_cast<ZenoLights*>(wid)) {
-                    writer.String("Light");
-                }
-            }
-            writer.EndArray();
-
-            writer.EndObject();
-        }
-    }
-}
-
 QString exportLayout(PtrLayoutNode root, const QSize& szMainwin)
 {
     rapidjson::StringBuffer s;
     PRETTY_WRITER writer(s);
-    _writeLayout(root, szMainwin, writer);
+    ZsgWriter::getInstance()._writeLayout(root, szMainwin, writer, &AppHelper::dumpTabsToZsg);
     QString strJson = QString::fromUtf8(s.GetString());
     return strJson;
 }
@@ -167,49 +74,6 @@ void writeLayout(PtrLayoutNode root, const QSize& szMainwin, const QString &file
     f.write(strJson.toUtf8());
 }
 
-static PtrLayoutNode _readLayout(const rapidjson::Value& objValue)
-{
-    if (objValue.HasMember("orientation") && objValue.HasMember("left") && objValue.HasMember("right"))
-    {
-        PtrLayoutNode ptrNode = std::make_shared<LayerOutNode>();
-        QString ori = objValue["orientation"].GetString();
-        ptrNode->type = (ori == "H" ? NT_HOR : NT_VERT);
-        ptrNode->pLeft = _readLayout(objValue["left"]);
-        ptrNode->pRight = _readLayout(objValue["right"]);
-        ptrNode->pWidget = nullptr;
-        return ptrNode;
-    }
-    else if (objValue.HasMember("widget"))
-    {
-        PtrLayoutNode ptrNode = std::make_shared<LayerOutNode>();
-        ptrNode->type = NT_ELEM;
-        ptrNode->pLeft = nullptr;
-        ptrNode->pRight = nullptr;
-
-        const rapidjson::Value& widObj = objValue["widget"];
-        
-        auto tabsObj = widObj["tabs"].GetArray();
-        QStringList tabs;
-        for (int i = 0; i < tabsObj.Size(); i++)
-        {
-            ptrNode->tabs.push_back(tabsObj[i].GetString());
-        }
-
-        const rapidjson::Value& geomObj = widObj["geometry"];
-        float x = geomObj["x"].GetFloat();
-        float y = geomObj["y"].GetFloat();
-        float width = geomObj["width"].GetFloat();
-        float height = geomObj["height"].GetFloat();
-        ptrNode->geom = QRectF(x, y, width, height);
-
-        return ptrNode;
-    }
-    else
-    {
-        return nullptr;
-    }
-}
-
 PtrLayoutNode readLayoutFile(const QString& filePath)
 {
     QFile file(filePath);
@@ -222,7 +86,7 @@ PtrLayoutNode readLayoutFile(const QString& filePath)
     QByteArray bytes = file.readAll();
     doc.Parse(bytes);
 
-    return _readLayout(doc.GetObject());
+    return ZsgReader::getInstance()._readLayout(doc.GetObject());
 }
 
 
@@ -231,7 +95,12 @@ PtrLayoutNode readLayout(const QString& content)
     rapidjson::Document doc;
     QByteArray bytes = content.toUtf8();
     doc.Parse(bytes);
-    return _readLayout(doc.GetObject());
+    return ZsgReader::getInstance()._readLayout(doc.GetObject());
+}
+
+PtrLayoutNode readLayout(const rapidjson::Value& objValue)
+{
+    return ZsgReader::getInstance()._readLayout(objValue);
 }
 
 int getDockSize(PtrLayoutNode root, bool bHori)

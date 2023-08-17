@@ -62,6 +62,14 @@ namespace {
             } else break;
 
             pos0 = 0;
+            while (1) if (auto pos = code.find("$FPS", pos0); pos != std::string::npos) {
+                auto fps = zeno::getConfigVariable("FPS");
+                code.replace(pos, 4, fps);
+                pos0 = pos + 4;
+            }
+            else break;
+
+            pos0 = 0;
             while (1) if (auto pos = code.find("$F", pos0); pos != std::string::npos) {
                 std::ostringstream oss;
                 pos0 = pos + 2;
@@ -84,6 +92,7 @@ namespace {
                 pos0 = pos + 7;
             } else break;
 
+            pos0 = 0;
             while (1) if (auto pos = code.find("$ZSG", pos0); pos != std::string::npos) {
                 auto zsgPath = zeno::getConfigVariable("ZSG");
                 code.replace(pos, 4, zsgPath);

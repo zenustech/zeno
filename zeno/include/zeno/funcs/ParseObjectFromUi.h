@@ -31,6 +31,7 @@ namespace iotags {
         constexpr const char* end_frame = "end-frame";
         constexpr const char* curr_frame = "curr-frame";
         constexpr const char* always = "always";
+        constexpr const char* timeline_fps = "timeline-fps";
     }
 
     namespace recordinfo {
@@ -46,6 +47,10 @@ namespace iotags {
         constexpr const char* needDenoise = "need-denoise";
         constexpr const char* bAutoRemoveCache = "auto-remove-cache";
         constexpr const char* bAov = "aov";
+    }
+
+    namespace layoutinfo {
+        constexpr const char* layout = "layout";
     }
 }
 

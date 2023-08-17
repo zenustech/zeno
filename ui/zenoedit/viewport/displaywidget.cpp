@@ -220,6 +220,28 @@ bool DisplayWidget::isGLViewport() const
     return m_bGLView;
 }
 
+void DisplayWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
+{
+    if (m_bGLView)
+    {
+        m_glView->setViewWidgetInfo(info);
+    }
+    else {
+        m_optixView->setSafeFrames(info.lock, info.resolutionX, info.resolutionY);
+    }
+}
+
+void DisplayWidget::setSliderFeq(int feq)
+{
+    if (m_bGLView)
+    {
+        m_sliderFeq = feq;
+    }
+    else {
+        m_optixView->setSlidFeq(feq);
+    }
+}
+
 #ifdef ZENO_OPTIX_PROC
 ZOptixProcViewport* DisplayWidget::optixViewport() const
 #else
@@ -345,7 +367,11 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     }
     if (m_bGLView)
     {
-        m_glView->update();
+        if (mainWin->isRecordByCommandLine()) {
+            m_glView->glDraw();
+        }
+        else
+            m_glView->update();
     }
     else
     {
@@ -481,6 +507,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = frame;
         launchParam.endFrame = frame;
+        launchParam.projectFps = mainWin->timelineInfo().timelinefps;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }
@@ -529,21 +556,31 @@ void DisplayWidget::beforeRun()
     if (m_glView)
     {
         m_glView->clearTransformer();
+
+        Zenovis* pZenoVis = getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto session = pZenoVis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        scene->selected.clear();
     }
-    Zenovis *pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    pZenoVis->getSession()->get_scene()->selected.clear();
 }
 
 void DisplayWidget::afterRun()
 {
     if (m_glView)
+    {
         m_glView->updateLightOnce = true;
 
-    Zenovis *pZenoVis = getZenoVis();
-    ZASSERT_EXIT(pZenoVis);
-    auto scene = pZenoVis->getSession()->get_scene();
-    scene->objectsMan->lightObjects.clear();
+        Zenovis* pZenoVis = getZenoVis();
+        ZASSERT_EXIT(pZenoVis);
+        auto session = pZenoVis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        scene->objectsMan->lightObjects.clear();
+    }
 }
 
 void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
@@ -598,6 +635,7 @@ void DisplayWidget::onRun() {
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = beginFrame;
         launchParam.endFrame = endFrame;
+        launchParam.projectFps = mainWin->timelineInfo().timelinefps;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     } else {
@@ -705,6 +743,9 @@ void DisplayWidget::onRecord()
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
             launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+            auto main = zenoApp->getMainWindow();
+            ZASSERT_EXIT(main);
+            launchParam.projectFps = main->timelineInfo().timelinefps;
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)
             {

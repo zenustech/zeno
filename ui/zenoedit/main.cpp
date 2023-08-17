@@ -5,6 +5,8 @@
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
 #include "zeno/utils/log.h"
+#include "zeno/zeno.h"
+#include "zeno/extra/EventCallbacks.h"
 
 /* debug cutsom layout: ZGraphicsLayout */
 //#define DEBUG_ZENOGV_LAYOUT
@@ -37,11 +39,39 @@ int main(int argc, char *argv[])
 #endif
 
     if (argc >= 3 && !strcmp(argv[1], "--optixcmd")) {
-        //MessageBox(0, "optixcmd", "optixcmd", MB_OK);
         extern int optixcmd(const QCoreApplication & app, int port);
         int port = atoi(argv[2]);
         startUp(false);
         return optixcmd(a, port);
+    }
+
+    //entrance for the zenoedit-player.
+    if (argc >= 2 && !strcmp(argv[1], "--record"))
+    {
+        extern int record_main(const QCoreApplication & app);
+        startUp(false);
+        return record_main(a);
+    }
+
+    if (argc >= 3 && !strcmp(argv[1], "-offline")) {
+        extern int offline_main(const char* zsgfile, int beginFrame, int endFrame);
+        int begin = 0, end = 0;
+        if (argc >= 5 && !strcmp(argv[3], "-begin"))
+            begin = atoi(argv[4]);
+        if (argc >= 5 && !strcmp(argv[3], "-end"))
+            end = atoi(argv[4]);
+        if (argc >= 7 && !strcmp(argv[5], "-begin"))
+            begin = atoi(argv[6]);
+        if (argc >= 7 && !strcmp(argv[5], "-end"))
+            end = atoi(argv[6]);
+        startUp(false);
+        return offline_main(argv[2], begin, end);
+    }
+    if (argc >= 3 && !strcmp(argv[1], "--blender"))
+    {
+        extern int blender_main(const QCoreApplication & app);
+        startUp(false);
+        return blender_main(a);
     }
 
     startUp(true);
@@ -89,27 +119,6 @@ int main(int argc, char *argv[])
         return invoke_main(argc - 2, argv + 2);
     }
 
-    if (argc >= 3 && !strcmp(argv[1], "-offline")) {
-        extern int offline_main(const char *zsgfile, int beginFrame, int endFrame);
-        int begin = 0, end = 0;
-        if (argc >= 5 && !strcmp(argv[3], "-begin"))
-            begin = atoi(argv[4]);
-        if (argc >= 5 && !strcmp(argv[3], "-end"))
-            end = atoi(argv[4]);
-        if (argc >= 7 && !strcmp(argv[5], "-begin"))
-            begin = atoi(argv[6]);
-        if (argc >= 7 && !strcmp(argv[5], "-end"))
-            end = atoi(argv[6]);
-        return offline_main(argv[2], begin, end);
-    }
-
-    //entrance for the zenoedit-player.
-    if (argc >= 2 && !strcmp(argv[1], "--record"))
-    {
-        extern int record_main(const QCoreApplication& app);
-        return record_main(a);
-    }
-
     QTranslator t;
     QTranslator qtTran;
     QSettings settings(zsCompanyName, zsEditor);
@@ -124,7 +133,8 @@ int main(int argc, char *argv[])
         }
     }
 
-	ZenoMainWindow mainWindow;
-	mainWindow.showMaximized();
-	return a.exec();
+    ZenoMainWindow mainWindow;
+    zeno::getSession().eventCallbacks->triggerEvent("editorConstructed");
+    mainWindow.showMaximized();
+    return a.exec();
 }

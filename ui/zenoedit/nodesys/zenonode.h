@@ -47,6 +47,7 @@ public:
 
     QPersistentModelIndex index() { return m_index; }
     QPersistentModelIndex subgIndex() { return m_subGpIndex; }
+    QModelIndex getSocketIndex(QGraphicsItem* uiitem, bool bSocketText) const;
     QPointF getSocketPos(const QModelIndex& sockIdx);
     ZenoSocketItem* getNearestSocket(const QPointF& pos, bool bInput);
     ZenoSocketItem* getSocketItem(const QModelIndex& sockIdx);

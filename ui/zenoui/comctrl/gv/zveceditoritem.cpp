@@ -57,6 +57,16 @@ void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pS
     setLayout(pLayout);
 }
 
+UI_VECSTRING ZVecEditorItem::vecStr() const
+{
+    UI_VECSTRING vecStr;
+    for (int i = 0; i < m_editors.size(); i++)
+    {
+        vecStr.append(m_editors[i]->text());
+    }
+    return vecStr;
+}
+
 QVariant ZVecEditorItem::vec() const
 {
     QVariant value;
@@ -140,6 +150,26 @@ void ZVecEditorItem::setVec(const QVariant& vec)
 bool ZVecEditorItem::isFloatType() const
 {
     return m_bFloatVec;
+}
+
+QString ZVecEditorItem::findElemByControl(ZEditableTextItem* pElem) const
+{
+    int idx = m_editors.indexOf(pElem);
+    if (idx == 0) {
+        return "x";
+    }
+    else if (idx == 1) {
+        return "y";
+    }
+    else if (idx == 2) {
+        return "z";
+    }
+    else if (idx == 3) {
+        return "w";
+    }
+    else {
+        return "";
+    }
 }
 
 void ZVecEditorItem::updateProperties(const QVector<QString>& properties)

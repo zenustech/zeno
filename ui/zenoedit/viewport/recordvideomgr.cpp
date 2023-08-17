@@ -17,6 +17,7 @@
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/core/Session.h>
 
+
 RecordVideoMgr::RecordVideoMgr(QObject* parent)
     : QObject(parent)
     , m_currFrame(0)
@@ -53,6 +54,12 @@ void RecordVideoMgr::cancelRecord()
         if (mainWin)
             mainWin->toggleTimelinePlay(false);
     }
+}
+
+void RecordVideoMgr::initRecordInfo(const VideoRecInfo& recInfo)
+{
+    m_recordInfo = recInfo;
+    m_currFrame = m_recordInfo.frameRange.first;
 }
 
 void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
