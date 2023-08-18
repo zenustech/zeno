@@ -741,7 +741,7 @@ void DisplayWidget::onKill() {
 
 void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndexList &nodes, bool select) {
     // tmp code for Primitive Filter Node interaction
-    if (nodes.size() > 1 || !m_bGLView)
+    if (nodes.isEmpty() || nodes.size() > 1 || !m_bGLView)
         return;
 
     ZASSERT_EXIT(m_glView);
