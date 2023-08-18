@@ -24,6 +24,9 @@ public:
     void onInitFrameRange(const QString& action, int frameStart, int frameEnd);
     void onClearFrameState();
 
+signals:
+    void runFinished();
+
 private slots:
     void onNewConnection();
     void onOptixNewConn();
