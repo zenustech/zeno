@@ -1,6 +1,5 @@
 #include "Structures.hpp"
 #include "zensim/cuda/execution/ExecutionPolicy.cuh"
-#include "zensim/geometry/AdaptiveGridUtils.hpp"
 #include "zensim/geometry/LevelSetUtils.tpp"
 #include "zensim/geometry/SparseGrid.hpp"
 #include "zensim/geometry/VdbLevelSet.h"
@@ -340,11 +339,27 @@ struct ZSAdaptiveGridToVDB : INode {
             attr = "sdf";
 
         using namespace zs;
+        std::vector<u32> nodeCnts(3);
         auto converter = [&](ZenoAdaptiveGrid::vdb_t &ag) {
             auto attrTag = src_tag(zs_grid, attr);
             auto num_ch = ag.getPropertySize(attrTag);
             if (VDBGridClass == "STAGGERED" && num_ch != 3) {
                 throw std::runtime_error("The size of Attribute is not 3 when grid_type is STAGGERED!");
+            }
+            if constexpr (false) {
+                ag.nodeCount(nodeCnts);
+                fmt::print(fg(fmt::color::green), "vdb cnts: {}, {}, {}\n", nodeCnts[0], nodeCnts[1], nodeCnts[2]);
+
+                ZenoAdaptiveGrid::att_t att;
+                auto ag_ = ag; //ag.clone({memsrc_e::host, -1});
+                ag_.restructure(zs::cuda_exec(), att);
+                att.restructure(zs::cuda_exec(), ag_);
+
+                ag_.nodeCount(nodeCnts);
+                fmt::print(fg(fmt::color::green), "(restred) ag cnts: {}, {}, {}\n", nodeCnts[0], nodeCnts[1],
+                           nodeCnts[2]);
+
+                ag = ag_.clone({memsrc_e::device, 0});
             }
 
             if (num_ch == 3) {
