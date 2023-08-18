@@ -136,45 +136,51 @@ for obj in bpy.context.scene.objects:
                             print("   Texture Filepath:", texture.filepath, "Full:", img_full_path)
 
                             for node_out in node.outputs:
-                                if node_out.name == "Color":
-                                    for link in node_out.links:
-                                        if link.to_node.type == "BSDF_PRINCIPLED": # .name = "Principled BSDF":
-                                            channel_name = link.to_socket.name
-                                            print("    --> channel:", channel_name)
-                                            texture_detail = {}
-                                            texture_detail[img_full_path] = { "channel_name": channel_name }
-                                            texture_record.append(channel_name)
-                                            material_textures[channel_name] = texture_detail
+                                for link in node_out.links:
+                                    if link.to_node.type == "BSDF_PRINCIPLED": # .name = "Principled BSDF":
+                                        channel_name = link.to_socket.name
+                                        print("    --> channel:", channel_name)
+                                        texture_detail = {}
+                                        texture_detail[img_full_path] = { "channel_name": channel_name }
+                                        texture_record.append(channel_name)
+                                        material_textures[channel_name] = texture_detail
 
-                                        if link.to_node.type == "SEPARATE_COLOR": # .name = "Separate Color":
-                                            for sep_color_out in link.to_node.outputs:
-                                                for sep_link in sep_color_out.links:
-                                                    if sep_link.to_node.type == "BSDF_PRINCIPLED":
-                                                        channel_name = sep_link.to_socket.name
-                                                        print("    --> sep channel:", channel_name, sep_color_out.name)
-                                                        texture_detail = {}
-                                                        texture_detail[img_full_path] = {"channel_name": channel_name, "separate_name": sep_color_out.name}
-                                                        texture_record.append(channel_name)
-                                                        material_textures[channel_name] = texture_detail
-
-                                        if link.to_node.type == "NORMAL_MAP": # .name = "Normal Map":
-                                            for normal_map_out in link.to_node.outputs:
-                                                for normal_link in normal_map_out.links:
-                                                    channel_name = normal_link.to_socket.name
-                                                    print("    --> normal channel:", normal_link.to_socket.name)
+                                    elif link.to_node.type == "SEPARATE_COLOR": # .name = "Separate Color":
+                                        for sep_color_out in link.to_node.outputs:
+                                            for sep_link in sep_color_out.links:
+                                                if sep_link.to_node.type == "BSDF_PRINCIPLED":
+                                                    channel_name = sep_link.to_socket.name
+                                                    print("    --> sep channel:", channel_name, sep_color_out.name)
                                                     texture_detail = {}
-                                                    texture_detail[img_full_path] = {"channel_name": channel_name}
+                                                    texture_detail[img_full_path] = {"channel_name": channel_name, "separate_name": sep_color_out.name}
                                                     texture_record.append(channel_name)
                                                     material_textures[channel_name] = texture_detail
 
+                                    elif link.to_node.type == "NORMAL_MAP": # .name = "Normal Map":
+                                        for normal_map_out in link.to_node.outputs:
+                                            for normal_link in normal_map_out.links:
+                                                channel_name = normal_link.to_socket.name
+                                                print("    --> normal channel:", normal_link.to_socket.name)
+                                                texture_detail = {}
+                                                texture_detail[img_full_path] = {"channel_name": channel_name}
+                                                texture_record.append(channel_name)
+                                                material_textures[channel_name] = texture_detail
+
                             for node_in in node.inputs:
-                                if node_in.name == "Vector":
-                                    for link in node_in.links:
-                                        if link.from_node.type == "MAPPING": # .name = "Mapping"
-                                            mapping_scale = link.from_node.inputs['Scale'].default_value
-                                            print("    --> mapping scale:", mapping_scale)
-                                            for record in texture_record:
-                                                material_textures[record][img_full_path]["mapping_scale"] = mapping_scale[:]
+                                for link in node_in.links:
+                                    if link.from_node.type == "REROUTE":
+                                        for route_node_in in link.from_node.inputs:
+                                            for route_link in route_node_in.links:
+                                                if route_link.from_node.type == "MAPPING": # .name = "Mapping"
+                                                    mapping_scale = route_link.from_node.inputs['Scale'].default_value
+                                                    print("    --> mapping scale:", mapping_scale)
+                                                    for record in texture_record:
+                                                        material_textures[record][img_full_path]["mapping_scale"] = mapping_scale[:]
+                                    elif link.from_node.type == "MAPPING": # .name = "Mapping"
+                                        mapping_scale = link.from_node.inputs['Scale'].default_value
+                                        print("    --> mapping scale:", mapping_scale)
+                                        for record in texture_record:
+                                            material_textures[record][img_full_path]["mapping_scale"] = mapping_scale[:]
 
                             # fill default value
                             for key in material_textures:
