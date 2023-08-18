@@ -409,7 +409,10 @@ extern "C" __global__ void __closesthit__radiance_volume()
     testPRD.test_distance = true;
     testPRD.isSS = false;
     testPRD.opacity = 0.0f;
-    traceRadianceMasked(params.handle, ray_orig,ray_dir, 0, _FLT_MAX_, DefaultMatMask, &testPRD);
+
+    uint16_t _mask_ = EverythingMask ^ VolumeMatMask;
+
+    traceRadianceMasked(params.handle, ray_orig,ray_dir, 0, _FLT_MAX_, _mask_, &testPRD);
 
     if(testPRD.vol_t1 < t1)
     {
@@ -434,14 +437,14 @@ extern "C" __global__ void __closesthit__radiance_volume()
     auto step_scale = 1.0f/sigma_t;
 
     while(--level > 0) {
-        auto prob = rnd(prd->seed);
+        auto prob = prd->rndf();
         t_ele -= logf(1.0f-prob) * step_scale;
 
         if (t_ele >= t_max) {
 
             if (prd->surface_inside_vdb) { // Hit other material
 
-                prd->_mask_ = DefaultMatMask;
+                prd->_mask_ = _mask_;
                 prd->_tmin_ = 0;
 
                 new_orig = ray_orig;
@@ -484,7 +487,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
         }
 
         pbrt::HenyeyGreenstein hg { vol_out.anisotropy };
-        float2 uu = {rnd(prd->seed), rnd(prd->seed)};
+        float2 uu = { prd->rndf(), prd->rndf() };
         auto _ = hg.sample(-ray_dir, new_dir, uu);              
         //auto relative_prob = prob * (CUDART_PI_F * 4);
         new_dir = normalize(new_dir);
@@ -498,6 +501,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     prd->direction = new_dir;
 
     prd->emission = emitting;
+    prd->geometryNormal = new_dir; //(new_dir + -ray_dir) / 2.0f;
 
     if (v_density == 0) {
         //prd->depth += 0;
@@ -549,7 +553,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
     auto level = _vol_depth;
     while(--level > 0) {
 
-        auto prob = rnd(prd->seed);
+        auto prob = prd->rndf();
         t_ele -= log(1.0f-prob) / (sigma_t);
 
         test_point = ray_orig + (t0+t_ele) * ray_dir;
@@ -577,7 +581,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
         auto avg = dot(transmittance, make_float3(1.0f/3.0f));
         if (avg < 0.1f) {
             float q = fmax(0.05f, 1 - avg);
-            if (rnd(prd->seed) < q) { 
+            if (prd->rndf() < q) { 
                 transmittance = vec3(0);
                 break; 
             } else {

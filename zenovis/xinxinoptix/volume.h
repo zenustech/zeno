@@ -21,23 +21,36 @@ struct HenyeyGreenstein {
     float sample(const float3 &wo, float3 &wi, const float2 &uu) const;
 };
 
+inline float Schlick(float cosTheta, float k)
+{
+    return (1.0f - k * k) / (4.0f * M_PIf * pow(1.0f - k * cosTheta, 2.0f));
+}
+
 // Media Inline Functions
 inline float PhaseHG(float cosTheta, float g) {
     float gg = g * g;
     float denom = 1 + gg + 2 * g * cosTheta;
+
+    if (denom < __FLT_MIN__) {
+        return 1.0f;
+    }
+
     return (0.25f / M_PIf) * (1 - gg) / (denom * sqrtf(denom));
 }
 
 // HenyeyGreenstein Method Definitions
 inline float HenyeyGreenstein::p(const float3 &wo, const float3 &wi) const {
     return PhaseHG(dot(wo, wi), g);
+    
+    // float k = 1.55f*g - 0.55f*g*g*g;
+    // return Schlick(dot(wo, wi), k);
 }
 
 inline float HenyeyGreenstein::sample(const float3 &wo, float3 &wi, const float2 &uu) const {
     // Compute $\cos \theta$ for Henyey--Greenstein sample
 
-    if (fabsf(g) >= 1.0f) {
-        wi = (-g) *wo;
+    if (fabsf(g) >= 1.0f) { 
+        wi = copysign(1.0f, -g) * wo;
         return 1.0f;
     }
 
