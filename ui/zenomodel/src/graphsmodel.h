@@ -143,6 +143,16 @@ public:
     void clearNodeDataChanged() override;
     QStringList subgraphsName() const override;
 
+    void addNetLabel(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name) override;
+    void removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger) override;
+    void updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction = false) override;
+
+    QModelIndex getNetOutput(const QModelIndex& subgIdx, const QString& name) const override;
+    QList<QModelIndex> getNetInputs(const QModelIndex& subgIdx, const QString& name) const override;
+    QStringList dumpLabels(const QModelIndex& subgIdx) const override;
+    void addNetLabel_impl(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name, bool enableTransaction = false);
+    void removeNetLabel_impl(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& name, bool enableTransaction = false);
+
 signals:
     void graphRenamed(const QString& oldName, const QString& newName);
 

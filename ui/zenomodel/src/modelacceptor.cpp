@@ -616,7 +616,7 @@ void ModelAcceptor::setInputSocket2(
     }
 }
 
-void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef, const QString& type)
+void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const QString& netlabel, const QString& type)
 {
     if (!m_currentGraph)
         return;
@@ -627,9 +627,9 @@ void ModelAcceptor::setOutputSocket(const QString& inNode, const QString& inSock
     ZASSERT_EXIT(sockIdx.isValid());
     QAbstractItemModel* pModel = const_cast<QAbstractItemModel*>(sockIdx.model());
     ZASSERT_EXIT(pModel);
-    if (bLinkRef)
+    if (!netlabel.isEmpty())
     {
-        pModel->setData(sockIdx, bLinkRef, ROLE_VPARAM_REF);
+        m_currentGraph->addNetLabel(sockIdx, netlabel, false);
     }
     if (!type.isEmpty())
     {
@@ -674,6 +674,21 @@ void ModelAcceptor::setControlAndProperties(const QString& nodeCls, const QStrin
     } else {
          zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
     }
+}
+
+void ModelAcceptor::setNetLabel(PARAM_CLASS cls, const QString& inNode, const QString& inSock, const QString& netlabel)
+{
+    if (!m_currentGraph)
+        return;
+    QString nodeCls;
+    if (cls == PARAM_INPUT)
+        nodeCls = "inputs";
+    else if (cls == PARAM_OUTPUT)
+        nodeCls = "outputs";
+    QString inSockPath = UiHelper::constructObjPath(m_currentGraph->name(), inNode, QString("[node]/%1/").arg(nodeCls), inSock);
+    QModelIndex sockIdx = m_pModel->indexFromPath(inSockPath);
+    ZASSERT_EXIT(sockIdx.isValid());
+    m_currentGraph->addNetLabel(sockIdx, netlabel, cls == PARAM_INPUT);
 }
 
 void ModelAcceptor::setToolTip(PARAM_CLASS cls, const QString &inNode, const QString &inSock, const QString &toolTip) 
@@ -755,18 +770,18 @@ void ModelAcceptor::endNode(const QString& id, const QString& nodeCls, const rap
                     QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
                     setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
                 }
-                bool bLinkRef = false;
-                if (sockObj.HasMember("link-ref"))
+                QString netlabel;
+                if (sockObj.HasMember("netlabel"))
                 {
-                    bLinkRef = sockObj["link-ref"].GetBool();
+                    netlabel = QString::fromUtf8(sockObj["netlabel"].GetString());
                 }
                 QString type;
                 if (sockObj.HasMember("type"))
                 {
                     type = sockObj["type"].GetString();
                 }
-                if (bLinkRef || !type.isEmpty())
-                    setOutputSocket(id, outSock, bLinkRef, type);
+                if (!netlabel.isEmpty() || !type.isEmpty())
+                    setOutputSocket(id, outSock, netlabel, type);
             }
         }
     }

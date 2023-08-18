@@ -164,8 +164,21 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
 
+            //check net label.
+            const QString& netlabel = inSockIdx.data(ROLE_PARAM_NETLABEL).toString();
             const PARAM_LINKS& links = inSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-            if (links.isEmpty())
+            ZASSERT_EXIT(netlabel.isEmpty() || links.isEmpty());
+
+            if (!netlabel.isEmpty())
+            {
+                const QModelIndex& outSockIdx = pGraphsModel->getNetOutput(subgIdx, netlabel);
+                const QModelIndex& outIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+                QString newOutId, outSock;
+                // may the output socket is a key socket from a dict param.
+                resolveOutputSocket(outIdx, outSockIdx, graphIdPrefix, newOutId, outSock, writer);
+                AddStringList({ "bindNodeInput", ident, inputName, newOutId, outSock }, writer);
+            }
+            else if (links.isEmpty())
             {
                 // check whether 
                 const int inSockProp = inSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();

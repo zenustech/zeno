@@ -56,6 +56,18 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
         cbSock.cbOnSockClicked(m_socket, button);
     });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
+        if (cbSock.cbOnSockNetlabelClicked)
+            cbSock.cbOnSockNetlabelClicked();
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
+        if (cbSock.cbOnSockNetlabelEdited)
+            cbSock.cbOnSockNetlabelEdited(m_socket);
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
+        if (cbSock.cbActionTriggered)
+            cbSock.cbActionTriggered(pAction);
+    });
 
     if (m_bEditable)
     {

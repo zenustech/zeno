@@ -120,6 +120,15 @@ public:
     virtual void clearNodeDataChanged() = 0;
     virtual QStringList subgraphsName() const = 0;
 
+    /*net label*/
+    virtual void addNetLabel(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name) = 0;
+    virtual void removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger) = 0;
+    virtual void updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction = false) = 0;
+
+    virtual QModelIndex getNetOutput(const QModelIndex& subgIdx, const QString& name) const = 0;
+	virtual QList<QModelIndex> getNetInputs(const QModelIndex& subgIdx, const QString& name) const = 0;
+    virtual QStringList dumpLabels(const QModelIndex& subgIdx) const = 0;
+
 signals:
 	void clearLayout2();
 	void modelClear();

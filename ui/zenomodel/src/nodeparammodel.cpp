@@ -92,6 +92,7 @@ bool NodeParamModel::getInputSockets(INPUT_SOCKETS& inputs)
         inSocket.info.control = param->m_ctrl;
         inSocket.info.ctrlProps = param->m_customData[ROLE_VPARAM_CTRL_PROPERTIES].toMap();
         inSocket.info.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
+        inSocket.info.netlabel = param->data(ROLE_PARAM_NETLABEL).toString();
 
         if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
         {
@@ -121,7 +122,7 @@ bool NodeParamModel::getOutputSockets(OUTPUT_SOCKETS& outputs)
         outSocket.info.sockProp = param->m_sockProp;
         outSocket.info.links = exportLinks(param->m_links);
         outSocket.info.toolTip = param->m_customData[ROLE_VPARAM_TOOLTIP].toString();
-        outSocket.info.bLinkRef = param->data(ROLE_VPARAM_REF).toBool();
+        outSocket.info.netlabel = param->data(ROLE_PARAM_NETLABEL).toString();
 
         if (param->m_customData.find(ROLE_VPARAM_LINK_MODEL) != param->m_customData.end())
         {
@@ -244,7 +245,7 @@ void NodeParamModel::setOutputSockets(const OUTPUT_SOCKETS& outputs)
             (SOCKET_PROPERTY)outSocket.info.sockProp,
             outSocket.info.dictpanel,
             outSocket.info.toolTip,
-            outSocket.info.bLinkRef);
+            outSocket.info.netlabel);
     }
 }
 
@@ -322,7 +323,7 @@ void NodeParamModel::setAddParam(
                 SOCKET_PROPERTY prop,
                 DICTPANEL_INFO dictPanel,
                 const QString& toolTip,
-                bool bLinkLabel)
+                const QString& netLabel)
 {
     VParamItem *pItem = nullptr;
     const QString& nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();
@@ -347,7 +348,7 @@ void NodeParamModel::setAddParam(
         pItem->setData(type, ROLE_PARAM_TYPE);
         pItem->m_sockProp = prop;
         pItem->setData(ctrl, ROLE_PARAM_CTRL);
-        pItem->setData(bLinkLabel, ROLE_VPARAM_REF);
+        pItem->setData(netLabel, ROLE_PARAM_NETLABEL);
         pGroup->appendRow(pItem);
         if (PARAM_PARAM != cls)
             initDictSocket(pItem, dictPanel);
@@ -361,7 +362,7 @@ void NodeParamModel::setAddParam(
         pItem->setData(ctrl, ROLE_PARAM_CTRL);
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
         pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
-        pItem->setData(bLinkLabel, ROLE_VPARAM_REF);
+        pItem->setData(netLabel, ROLE_PARAM_NETLABEL);
 
         if (PARAM_PARAM != cls && 
             pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
@@ -659,6 +660,17 @@ bool NodeParamModel::setData(const QModelIndex& index, const QVariant& value, in
 
             pItem->setData(value, role);
             onSubIOEdited(oldValue, pItem);
+            break;
+        }
+        case ROLE_PARAM_NETLABEL:
+        {
+            VParamItem* pItem = static_cast<VParamItem*>(itemFromIndex(index));
+            ZERROR_EXIT(pItem, false);
+            QVariant oldValue = pItem->m_customData[role];
+            if (oldValue == value)
+                return false;
+
+            pItem->setData(value, role);
             break;
         }
     default:
@@ -977,10 +989,17 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
     }
 }
 
-void NodeParamModel::onLinkAdded(const VParamItem* pItem)
+void NodeParamModel::onLinkAdded(VParamItem* pItem)
 {
     if (m_bTempModel)
         return;
+
+    if (pItem->getParamClass() == PARAM_INPUT &&
+        !pItem->data(ROLE_PARAM_NETLABEL).toString().isEmpty())
+    {
+        //todo: remove label from subgraphmodel::m_labels.
+        pItem->setData("", ROLE_PARAM_NETLABEL);
+    }
 
     //dynamic socket from MakeList/Dict and ExtractDict
     QString nodeCls = m_nodeIdx.data(ROLE_OBJNAME).toString();

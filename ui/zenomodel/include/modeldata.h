@@ -159,7 +159,7 @@ struct SOCKET_INFO {
 
     QVariant defaultValue;  // a native value or a curvemodel.
     QList<EdgeInfo> links;  //structure for storing temp link info, cann't use to normal precedure, except copy/paste and io.
-    bool bLinkRef;
+    QString netlabel;
 
     //QList<DICTKEY_INFO> keys;
     DICTPANEL_INFO dictpanel;
@@ -167,16 +167,15 @@ struct SOCKET_INFO {
 
     CONTROL_PROPERTIES ctrlProps;
 
-    SOCKET_INFO() : control(CONTROL_NONE), sockProp(SOCKPROP_NORMAL), bLinkRef(false) {}
+    SOCKET_INFO() : control(CONTROL_NONE), sockProp(SOCKPROP_NORMAL) {}
     SOCKET_INFO(const QString& id, const QString& name)
         : nodeid(id)
         , name(name)
         , control(CONTROL_NONE)
         , sockProp(SOCKPROP_NORMAL)
-        , bLinkRef(false)
     {}
     SOCKET_INFO(const QString& id, const QString& name, PARAM_CONTROL ctrl, const QString& type, const QVariant& defl, const QString& tip)
-        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl), sockProp(SOCKPROP_NORMAL), toolTip(tip), bLinkRef(false)
+        : nodeid(id), name(name), control(ctrl), type(type), defaultValue(defl), sockProp(SOCKPROP_NORMAL), toolTip(tip)
     {}
 
 	bool operator==(const SOCKET_INFO& rhs) const {

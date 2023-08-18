@@ -1540,6 +1540,125 @@ QStringList GraphsModel::subgraphsName() const
     return m_subGraphs.keys();
 }
 
+void GraphsModel::addNetLabel(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name)
+{
+    //check repeat name
+    if (sock.data(ROLE_PARAM_NETLABEL) == name)
+        return;
+
+    beginTransaction("add net label");
+    zeno::scope_exit sp([=]() { endTransaction(); });
+
+    if (PARAM_INPUT == sock.data(ROLE_PARAM_CLASS))
+    {
+        //remove the link attached on this socket first.
+        PARAM_LINKS links = sock.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+        for (QPersistentModelIndex _linkIdx : links)
+        {
+            removeLink(_linkIdx, true);
+        }
+    }
+
+    addNetLabel_impl(subgIdx, sock, name, true);
+}
+
+void GraphsModel::addNetLabel_impl(const QModelIndex& subgIdx, const QModelIndex& sock, const QString& name, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+        SetNetLabelCommand* pCmd = new SetNetLabelCommand(this, subgIdx, sock, "", name);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        ApiLevelScope batch(this);
+        SubGraphModel* pGraph = subGraph(subgIdx.row());
+        if (!pGraph)
+            return;
+        bool bInput = PARAM_INPUT == sock.data(ROLE_PARAM_CLASS);
+        pGraph->addNetLabel(sock, name, bInput);
+    }
+}
+
+void GraphsModel::removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger)
+{
+    beginTransaction("remove net label");
+    zeno::scope_exit sp([=]() { endTransaction(); });
+
+    const QString& name = trigger.data(ROLE_PARAM_NETLABEL).toString();
+
+    if (PARAM_OUTPUT == trigger.data(ROLE_PARAM_CLASS)) {
+        //remove all net labels from input sock.
+        SubGraphModel* pGraph = subGraph(subgIdx.row());
+        if (!pGraph)
+            return;
+        auto lst = pGraph->getNetInputSocks(name);
+        for (auto inSock : lst)
+        {
+            removeNetLabel_impl(subgIdx, inSock, name, true);
+        }
+    }
+    removeNetLabel_impl(subgIdx, trigger, name, true);
+}
+
+void GraphsModel::removeNetLabel_impl(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& name, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+        SetNetLabelCommand* pCmd = new SetNetLabelCommand(this, subgIdx, trigger, name, "");
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        ApiLevelScope batch(this);
+        SubGraphModel* pGraph = subGraph(subgIdx.row());
+        if (!pGraph)
+            return;
+        pGraph->removeNetLabel(trigger, name);
+    }
+}
+
+void GraphsModel::updateNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger, const QString& oldName, const QString& newName, bool enableTransaction)
+{
+    if (enableTransaction)
+    {
+        SetNetLabelCommand* pCmd = new SetNetLabelCommand(this, subgIdx, trigger, oldName, newName);
+        m_stack->push(pCmd);
+    }
+    else
+    {
+        ApiLevelScope batch(this);
+        SubGraphModel* pGraph = subGraph(subgIdx.row());
+        if (!pGraph)
+            return;
+        pGraph->updateNetLabel(trigger, oldName, newName);
+    }
+}
+
+QList<QModelIndex> GraphsModel::getNetInputs(const QModelIndex& subgIdx, const QString& name) const
+{
+    SubGraphModel* pGraph = subGraph(subgIdx.row());
+    if (!pGraph)
+        return QList<QModelIndex>();
+    return pGraph->getNetInputSocks(name);
+}
+
+QModelIndex GraphsModel::getNetOutput(const QModelIndex& subgIdx, const QString& name) const
+{
+    SubGraphModel* pGraph = subGraph(subgIdx.row());
+    if (!pGraph)
+        return QModelIndex();
+    return pGraph->getNetOutput(name);
+}
+
+QStringList GraphsModel::dumpLabels(const QModelIndex& subgIdx) const
+{
+    SubGraphModel* pGraph = subGraph(subgIdx.row());
+    if (!pGraph)
+        return QStringList();
+    return pGraph->dumpLabels();
+}
+
 void GraphsModel::updateNodeStatus(const QString& nodeid, STATUS_UPDATE_INFO info, const QModelIndex& subgIdx, bool enableTransaction)
 {
     QModelIndex nodeIdx = index(nodeid, subgIdx);

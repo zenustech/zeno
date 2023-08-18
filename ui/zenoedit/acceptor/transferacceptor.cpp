@@ -335,7 +335,7 @@ void TransferAcceptor::setInputSocket2(
     }
 }
 
-void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const bool& bLinkRef, const QString& type)
+void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inSock, const QString& netlabel, const QString& type)
 {
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
     NODE_DATA& data = m_nodes[inNode];
@@ -344,7 +344,7 @@ void TransferAcceptor::setOutputSocket(const QString& inNode, const QString& inS
         OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
         if (outputs.find(inSock) != outputs.end())
         {
-            outputs[inSock].info.bLinkRef = bLinkRef;
+            outputs[inSock].info.netlabel = netlabel;
             outputs[inSock].info.type = type;
             data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
         }
@@ -361,6 +361,31 @@ void TransferAcceptor::setControlAndProperties(const QString& nodeCls, const QSt
         inputs[inSock].info.control = control;
         inputs[inSock].info.ctrlProps = ctrlProperties.toMap();
         data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    }
+}
+
+void TransferAcceptor::setNetLabel(PARAM_CLASS cls, const QString& inNode, const QString& inSock, const QString& netlabel)
+{
+    ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
+    NODE_DATA& data = m_nodes[inNode];
+
+    if (cls == PARAM_INPUT)
+    {
+        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        if (inputs.find(inSock) != inputs.end())
+        {
+            inputs[inSock].info.netlabel = netlabel;
+            data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+        }
+    }
+    else if (cls == PARAM_OUTPUT)
+    {
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        if (outputs.find(inSock) != outputs.end())
+        {
+            outputs[inSock].info.netlabel = netlabel;
+            data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+        }
     }
 }
 
@@ -600,18 +625,18 @@ void TransferAcceptor::endNode(const QString& id, const QString& nodeCls, const 
                     QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
                     setToolTip(PARAM_OUTPUT, id, outSock, toolTip);
                 }
-                bool bLinkRef = false;
-                if (sockObj.HasMember("link-ref"))
+                QString netlabel;
+                if (sockObj.HasMember("netlabel"))
                 {
-                    bLinkRef = sockObj["link-ref"].GetBool();
+                    netlabel = QString::fromUtf8(sockObj["netlabel"].GetString());
                 }
                 QString type;
                 if (sockObj.HasMember("type"))
                 {
                     type = sockObj["type"].GetString();
                 }
-                if (bLinkRef || !type.isEmpty())
-                    setOutputSocket(id, outSock, bLinkRef, type);
+                if (!netlabel.isEmpty() || !type.isEmpty())
+                    setOutputSocket(id, outSock, netlabel, type);
             }
         }
     }

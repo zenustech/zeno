@@ -48,7 +48,7 @@ public:
     virtual void setOutputSocket(
         const QString& inNode,
         const QString& inSock,
-        const bool& bLinkRef,
+        const QString& netlabel,
         const QString& type
     ) = 0;
 
@@ -68,6 +68,7 @@ public:
 
 	virtual void setControlAndProperties(const QString& nodeCls, const QString& inNode, const QString& inSock, PARAM_CONTROL control, const QVariant& ctrlProperties) = 0;
     virtual void setToolTip(PARAM_CLASS cls, const QString& inNode, const QString& inSock, const QString& toolTip) = 0;
+    virtual void setNetLabel(PARAM_CLASS cls, const QString& inNode, const QString& inSock, const QString& netlabel) = 0;
 
     virtual void endInputs(const QString& id, const QString& nodeCls) = 0;
     virtual void setParamValue(const QString& id, const QString& nodeCls, const QString& name, const rapidjson::Value& value) = 0;

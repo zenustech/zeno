@@ -767,3 +767,91 @@ void SubGraphModel::replaceSubGraphNode(const QString& oldName, const QString& n
     m_name2identLst.remove(oldName);
     m_name2identLst.insert(newName, sets);
 }
+
+bool SubGraphModel::addNetLabel(const QModelIndex& sock, const QString& name, bool bInput)
+{
+    int nRow = m_labels.size();
+    _LabelItem& item = m_labels[name];
+    item.name = name;
+    if (bInput)
+        item.inSocks.append(sock);
+    else
+        item.outSock = sock;
+
+    auto paramModel = const_cast<QAbstractItemModel*>(sock.model());
+    ZASSERT_EXIT(paramModel, false);
+    paramModel->setData(sock, name, ROLE_PARAM_NETLABEL);
+    return true;
+}
+
+void SubGraphModel::updateNetLabel(const QModelIndex& trigger, const QString& oldName, const QString& newName)
+{
+    if (oldName == newName || m_labels.find(oldName) == m_labels.end())
+        return;
+
+    auto item = m_labels[oldName];
+    for (QPersistentModelIndex insock : item.inSocks)
+    {
+        auto pModel = const_cast<QAbstractItemModel*>(insock.model());
+        pModel->setData(insock, newName, ROLE_PARAM_NETLABEL);
+    }
+    auto pModel = const_cast<QAbstractItemModel*>(item.outSock.model());
+    pModel->setData(item.outSock, newName, ROLE_PARAM_NETLABEL);
+
+    if (newName.isEmpty()) {
+        m_labels.remove(oldName);
+    }
+    else {
+        item.name = newName;
+        m_labels.insert(newName, item);
+        m_labels.remove(oldName);
+    }
+}
+
+void SubGraphModel::removeNetLabel(const QModelIndex& trigger, const QString& name)
+{
+    auto pModel = const_cast<QAbstractItemModel*>(trigger.model());
+    pModel->setData(trigger, "", ROLE_PARAM_NETLABEL);
+    auto iter = m_labels.find(name);
+    if (iter != m_labels.end())
+    {
+        auto& item = iter.value();
+        if (item.outSock == trigger) {
+            item.outSock = QModelIndex();
+        }
+        else if (item.inSocks.indexOf(trigger) != -1) {
+            item.inSocks.removeAll(trigger);
+        }
+    }
+}
+
+QModelIndex SubGraphModel::getNetOutput(const QString& name) const
+{
+    auto iter = m_labels.find(name);
+    if (iter == m_labels.end())
+        return QModelIndex();
+    return iter.value().outSock;
+}
+
+QModelIndexList SubGraphModel::getNetInputSocks(const QString& name) const
+{
+    auto iter = m_labels.find(name);
+    if (iter == m_labels.end())
+        return QList<QModelIndex>();
+    QModelIndexList inSocks;
+    for (auto inSock : iter.value().inSocks)
+        inSocks.append(inSock);
+    return inSocks;
+}
+
+QStringList SubGraphModel::dumpLabels() const
+{
+    QStringList names;
+    for (auto iter : m_labels)
+    {
+        if (!iter.name.isEmpty())
+            names.append(iter.name);
+    }
+    return names;
+}
+

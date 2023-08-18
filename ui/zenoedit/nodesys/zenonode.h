@@ -99,6 +99,7 @@ protected:
     bool sceneEventFilter(QGraphicsItem* watched, QEvent* event) override;
     bool sceneEvent(QEvent *event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event) override;
     void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
@@ -129,6 +130,7 @@ private:
     void _drawBorderWangStyle(QPainter* painter);
     ZSocketLayout* getSocketLayout(bool bInput, const QString& sockName);
     bool removeSocketLayout(bool bInput, const QString& sockName);
+    void focusOnNode(const QModelIndex& nodeIdx);
 
     ZenoGraphsEditor* getEditorViewByViewport(QWidget* pWidget);
     QGraphicsItem* initSocketWidget(ZenoSubGraphScene* scene, const QModelIndex& paramIdx);

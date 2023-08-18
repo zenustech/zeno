@@ -39,7 +39,7 @@ public:
         SOCKET_PROPERTY prop = SOCKPROP_NORMAL,
         DICTPANEL_INFO dictPanel = DICTPANEL_INFO(),
         const QString& toolTip = QString(),
-        bool bLinkLabel = false
+        const QString& netLabel = QString()
     );
     void removeParam(PARAM_CLASS cls, const QString& name);
     QVariant getValue(PARAM_CLASS cls, const QString& name) const;
@@ -57,7 +57,7 @@ private:
     EdgeInfo exportLink(const QModelIndex& linkIdx);
     QStringList sockNames(PARAM_CLASS cls) const;
     void onSubIOEdited(const QVariant& value, const VParamItem* pItem);
-    void onLinkAdded(const VParamItem* pItem);
+    void onLinkAdded(VParamItem* pItem);
     void clearLinks(VParamItem* pItem);
     void onModelAboutToBeReset();
     void onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last);

@@ -92,10 +92,13 @@ public:
     void hoverEnterEvent(QGraphicsSceneHoverEvent* event) override;
     void hoverLeaveEvent(QGraphicsSceneHoverEvent* event) override;
     void paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget) override;
-    bool IsLabelLink() const;
+    void transferToNetLabel();
 
     enum { Type = ZTYPE_FULLLINK };
     int type() const override;
+
+protected:
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
 private slots:
     void onInSocketPosChanged();
@@ -106,6 +109,7 @@ private:
     QRectF getSrcBoundingRect() const;
     QString getSocketText(const QModelIndex& index) const;
     void focusOnNode(const QModelIndex &nodeIdx);
+
 private:
     QPersistentModelIndex m_index;
     QPointF m_srcPos, m_dstPos;

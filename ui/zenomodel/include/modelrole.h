@@ -57,6 +57,7 @@ enum MODEL_ROLE
 	ROLE_PARAM_SOCKPROP,	//socket property, see SOCKET_PROPERTY.
 	ROLE_PARAM_CLASS,	//just tell whether the param is input socket, outputsocket or param, see PARAM_CLASS
 	ROLE_PARAM_COREIDX,		//return the core param idx under view param.
+	ROLE_PARAM_NETLABEL,	//net label reference on param.
 
 	//view param
 	ROLE_VPARAM_TYPE,		//vtype, such as group tab param, not ROLE_PARAM_TYPE
@@ -68,7 +69,6 @@ enum MODEL_ROLE
 	ROLE_VPARAM_CTRL_PROPERTIES,
 	ROLE_VPARAM_LINK_MODEL,     // a qstandarditem model to represent the collection of the links for a socket.
     ROLE_VPARAM_TOOLTIP,
-    ROLE_VPARAM_REF,
 
     ROLE_KEYFRAMES,
 };

@@ -5,6 +5,8 @@
 #include <zenoui/nodesys/zenosvgitem.h>
 #include "../../nodesys/nodesys_common.h"
 
+class ZGraphicsNetLabel;
+
 class ZenoSocketItem : public QGraphicsObject
 {
     Q_OBJECT
@@ -34,9 +36,14 @@ public:
     void setHovered(bool bHovered);
     SOCK_STATUS sockStatus() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = 0) override;
+    void onNetLabelChanged(const QString& netLabel);
+    QString netLabel() const;
 
 signals:
-    void clicked(bool bInput, Qt::MouseButton button);
+    void clicked(bool, Qt::MouseButton);
+    void netLabelClicked();
+    void netLabelEditFinished();
+    void netLabelMenuActionTriggered(QAction*);
 
 protected:
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
@@ -46,11 +53,14 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
 
 private:
+    void initLabel(const QString& label);
+
     SOCK_STATUS m_status;
     const QPersistentModelIndex m_viewSockIdx;
     QSizeF m_size;
     int m_innerSockMargin;
     int m_socketXOffset;
+    ZGraphicsNetLabel* m_netLabelItem;
     bool m_bInput;
     bool m_bInnerSock;
     bool m_bHovered;

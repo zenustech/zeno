@@ -532,11 +532,16 @@ void ZsgReader::_parseSocket(
             pAcceptor->setControlAndProperties(nodeName, id, inSock, ctrl, props);
         }
     }
-
     if (sockObj.HasMember("tooltip")) 
     {
         QString toolTip = QString::fromUtf8(sockObj["tooltip"].GetString());
-        pAcceptor->setToolTip(PARAM_INPUT, id, inSock, toolTip);
+        if (bInput)
+            pAcceptor->setToolTip(bInput ? PARAM_INPUT : PARAM_OUTPUT, id, inSock, toolTip);
+    }
+    if (sockObj.HasMember("netlabel"))
+    {
+        QString netlabel = QString::fromUtf8(sockObj["netlabel"].GetString());
+        pAcceptor->setNetLabel(bInput ? PARAM_INPUT : PARAM_OUTPUT, id, inSock, netlabel);
     }
 }
 

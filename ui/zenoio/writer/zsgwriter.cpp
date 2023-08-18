@@ -227,10 +227,10 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
         }
     }
 
-    if (!bInput && socket.bLinkRef)
+    if (!socket.netlabel.isEmpty())
     {
-        writer.Key("link-ref");
-        writer.Bool(socket.bLinkRef);
+        writer.Key("netlabel");
+        writer.String(socket.netlabel.toUtf8());
     }
 
     const QString& sockType = socket.type;

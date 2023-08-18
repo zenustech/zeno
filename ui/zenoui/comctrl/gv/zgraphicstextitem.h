@@ -35,9 +35,9 @@ protected:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
 
+    QColor m_bg;
 private:
     QString m_text;
-    QColor m_bg;
 };
 
 class ZSimpleTextItem : public QGraphicsSimpleTextItem
