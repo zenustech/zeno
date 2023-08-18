@@ -316,9 +316,7 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             }
         }
         else if (DockContent_View *view = qobject_cast<DockContent_View *>(wid)) {
-            if (select && nodes.size() == 1) {
-                view->getDisplayWid()->onNodeSelected(subgIdx, nodes, select);
-            }
+            view->getDisplayWid()->onNodeSelected(subgIdx, nodes, select);
         }
         else if (ZenoImagePanel *image = qobject_cast<ZenoImagePanel *>(wid))
         {
