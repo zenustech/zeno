@@ -130,6 +130,76 @@ namespace zeno { namespace CONSTRAINT {
         return true;
     }
 
+    template<typename VECTOR3d,typename SCALER>
+    constexpr bool solve_DihedralConstraint(
+        const VECTOR3d &p0, SCALER invMass0,		
+        const VECTOR3d &p1, SCALER invMass1,
+        const VECTOR3d &p2, SCALER invMass2,
+        const VECTOR3d &p3, SCALER invMass3,
+        const SCALER restAngle,
+        const SCALER stiffness,		
+        VECTOR3d &corr0, VECTOR3d &corr1, VECTOR3d &corr2, VECTOR3d &corr3)
+    {
+        constexpr SCALER eps = static_cast<SCALER>(1e-6);
+        if (invMass0 == 0.0 && invMass1 == 0.0)
+            return false;
+    
+        VECTOR3d e = p3-p2;
+        SCALER elen = e.norm();
+        if (elen < eps)
+            return false;
+    
+        SCALER invElen = static_cast<SCALER>(1.0) / elen;
+    
+        // auto n1 = LSL_GEO::facet_normal(p0,p2,p3);
+        // auto n2 = LSL_GEO::facet_normal(p1,p3,p2);
+        VECTOR3d n1 = (p2-p0).cross(p3-p0).normal; n1 /= n1.l2NormSqr();
+        VECTOR3d n2 = (p3 - p1).cross(p2 - p1); n2 /= n2.l2NormSqr();
+    
+        VECTOR3d d0 = elen*n1;
+        VECTOR3d d1 = elen*n2;
+        VECTOR3d d2 = (p0-p3).dot(e) * invElen * n1 + (p1-p3).dot(e) * invElen * n2;
+        VECTOR3d d3 = (p2-p0).dot(e) * invElen * n1 + (p2-p1).dot(e) * invElen * n2;
+    
+        n1 = n1.normalize();
+        n2 = n2.normalize();
+        // n1.normalize();
+        // n2.normalize();
+        SCALER dot = n1.dot(n2);
+    
+        if (dot < -1.0) dot = -1.0;
+        if (dot >  1.0) dot =  1.0;
+        SCALER phi = acos(dot);	
+    
+        // SCALER phi = (-0.6981317 * dot * dot - 0.8726646) * dot + 1.570796;	// fast approximation
+    
+        SCALER lambda = 
+            invMass0 * d0.squaredNorm() +
+            invMass1 * d1.squaredNorm() +
+            invMass2 * d2.squaredNorm() +
+            invMass3 * d3.squaredNorm();
+    
+        if (lambda == 0.0)
+            return false;	
+    
+        // stability
+        // 1.5 is the largest magic number I found to be stable in all cases :-)
+        //if (stiffness > 0.5 && fabs(phi - b.restAngle) > 1.5)		
+        //	stiffness = 0.5;
+    
+        lambda = (phi - restAngle) / lambda * stiffness;
+    
+        if (n1.cross(n2).dot(e) > 0.0)
+            lambda = -lambda;	
+    
+        corr0 = - invMass0 * lambda * d0;
+        corr1 = - invMass1 * lambda * d1;
+        corr2 = - invMass2 * lambda * d2;
+        corr3 = - invMass3 * lambda * d3;
+    
+        return true;
+    }
+
 // ----------------------------------------------------------------------------------------------
     template<typename VECTOR3d,typename MATRIX4d>
     constexpr bool init_IsometricBendingConstraint(
@@ -144,31 +214,37 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         // Q = MATRIX4d::uniform(0);
 
-        const VECTOR3d e0 = x[1] - x[0];
-        const VECTOR3d e1 = x[2] - x[0];
-        const VECTOR3d e2 = x[3] - x[0];
-        const VECTOR3d e3 = x[2] - x[1];
-        const VECTOR3d e4 = x[3] - x[1];
+        const auto e0 = x[1].cast<double>() - x[0].cast<double>();
+        const auto e1 = x[2].cast<double>() - x[0].cast<double>();
+        const auto e2 = x[3].cast<double>() - x[0].cast<double>();
+        const auto e3 = x[2].cast<double>() - x[1].cast<double>();
+        const auto e4 = x[3].cast<double>() - x[1].cast<double>();
 
-        const SCALER c01 = LSL_GEO::cotTheta(e0, e1);
-        const SCALER c02 = LSL_GEO::cotTheta(e0, e2);
-        const SCALER c03 = LSL_GEO::cotTheta(-e0, e3);
-        const SCALER c04 = LSL_GEO::cotTheta(-e0, e4);
+        // auto e0 = e0_.cast<double>();
+        // auto e1 = e1_.cast<double>();
+        // auto e2 = e2_.cast<double>();
+        // auto e3 = e3_.cast<double>();
+        // auto e4 = e4_.cast<double>();
 
-        const SCALER A0 = static_cast<SCALER>(0.5) * (e0.cross(e1)).norm();
-        const SCALER A1 = static_cast<SCALER>(0.5) * (e0.cross(e2)).norm();
+        const double c01 = LSL_GEO::cotTheta(e0, e1);
+        const double c02 = LSL_GEO::cotTheta(e0, e2);
+        const double c03 = LSL_GEO::cotTheta(-e0, e3);
+        const double c04 = LSL_GEO::cotTheta(-e0, e4);
 
-        const SCALER coef = static_cast<SCALER>(-3.0 / 2.0) /  (A0 + A1);
-        const SCALER K[4] = { c03 + c04, c01 + c02, -c01 - c03, -c02 - c04 };
-        const SCALER K2[4] = { coef * K[0], coef * K[1], coef * K[2], coef * K[3] };
+        const double A0 = static_cast<double>(0.5) * (e0.cross(e1)).norm();
+        const double A1 = static_cast<double>(0.5) * (e0.cross(e2)).norm();
+
+        const double coef = static_cast<double>(-3.0 / 2.0) /  (A0 + A1);
+        const double K[4] = { c03 + c04, c01 + c02, -c01 - c03, -c02 - c04 };
+        const double K2[4] = { coef * K[0], coef * K[1], coef * K[2], coef * K[3] };
 
         for (unsigned char j = 0; j < 4; j++)
         {
             for (unsigned char k = 0; k < j; k++)
             {
-                Q(j, k) = Q(k, j) = K[j] * K2[k];
+                Q(j, k) = Q(k, j) = (SCALER)(K[j] * K2[k]);
             }
-            Q(j, j) = K[j] * K2[j];
+            Q(j, j) = (SCALER)(K[j] * K2[j]);
         }
 
         return true;
@@ -186,7 +262,7 @@ namespace zeno { namespace CONSTRAINT {
         SCALER& lambda,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
     {
-        constexpr SCALER eps = static_cast<SCALER>(1e-6);
+        constexpr SCALER eps = static_cast<SCALER>(1e-4);
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         SCALER invMass[4] = { invMass2, invMass3, invMass0, invMass1 };
 
@@ -237,6 +313,7 @@ namespace zeno { namespace CONSTRAINT {
             corr1 = (delta_lambda * invMass[3]) * gradC[3];
             corr2 = (delta_lambda * invMass[0]) * gradC[0];
             corr3 = (delta_lambda * invMass[1]) * gradC[1];
+            // printf("update corr for iso_bending energy\n");
 
             return true;
         }else {
