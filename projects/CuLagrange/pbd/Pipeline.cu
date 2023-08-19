@@ -158,7 +158,7 @@ struct MakeSurfaceConstraintTopology : INode {
                 reordered_map = proxy<space>(reordered_map),
                 verts = proxy<space>({},verts)] ZS_LAMBDA(int oei) mutable {
                     auto ei = reordered_map[oei];
-                    printf("bd_topos[%d] : %d %d %d %d\n",ei,bd_topos[ei][0],bd_topos[ei][1],bd_topos[ei][2],bd_topos[ei][3]);
+                    // printf("bd_topos[%d] : %d %d %d %d\n",ei,bd_topos[ei][0],bd_topos[ei][1],bd_topos[ei][2],bd_topos[ei][3]);
                     eles.tuple(dim_c<4>,"inds",oei) = bd_topos[ei].reinterpret_bits(float_c);
                     vec3 x[4] = {};
                     for(int i = 0;i != 4;++i)
@@ -166,42 +166,38 @@ struct MakeSurfaceConstraintTopology : INode {
 
                     mat4 Q = mat4::uniform(0);
                     {
-                    // CONSTRAINT::init_IsometricBendingConstraint(x[0],x[1],x[2],x[3],Q);
+                        CONSTRAINT::init_IsometricBendingConstraint(x[0],x[1],x[2],x[3],Q);
                     }
                     {
-                    auto e0 = x[1] - x[0];
-                    auto e1 = x[2] - x[0];
-                    auto e2 = x[3] - x[0];
-                    auto e3 = x[2] - x[1];
-                    auto e4 = x[3] - x[1];
+                    // auto e0 = x[1] - x[0];
+                    // auto e1 = x[2] - x[0];
+                    // auto e2 = x[3] - x[0];
+                    // auto e3 = x[2] - x[1];
+                    // auto e4 = x[3] - x[1];
 
-                    auto c01 = LSL_GEO::cotTheta(e0, e1);
-                    auto c02 = LSL_GEO::cotTheta(e0, e2);
-                    auto c03 = LSL_GEO::cotTheta(-e0, e3);
-                    auto c04 = LSL_GEO::cotTheta(-e0, e4);
+                    // auto c01 = LSL_GEO::cotTheta(e0, e1);
+                    // auto c02 = LSL_GEO::cotTheta(e0, e2);
+                    // auto c03 = LSL_GEO::cotTheta(-e0, e3);
+                    // auto c04 = LSL_GEO::cotTheta(-e0, e4);
 
-                    auto A0 = 0.5f * (e0.cross(e1)).norm();
-                    auto A1 = 0.5f * (e0.cross(e2)).norm();
+                    // auto A0 = 0.5f * (e0.cross(e1)).norm();
+                    // auto A1 = 0.5f * (e0.cross(e2)).norm();
 
-                    auto coef = -3.f / (2.f * (A0 + A1));
-                    float K[4] = { c03 + c04, c01 + c02, -c01 - c03, -c02 - c04 };
-                    float K2[4] = { coef * K[0], coef * K[1], coef * K[2], coef * K[3] };
+                    // auto coef = -3.f / (2.f * (A0 + A1));
+                    // float K[4] = { c03 + c04, c01 + c02, -c01 - c03, -c02 - c04 };
+                    // float K2[4] = { coef * K[0], coef * K[1], coef * K[2], coef * K[3] };
 
 
 
-                    for (unsigned char j = 0; j < 4; j++)
-                    {
-                        for (unsigned char k = 0; k < j; k++)
-                        {
-                            Q(j, k) = Q(k, j) = K[j] * K2[k];
-                        }
-                        Q(j, j) = K[j] * K2[j];
+                    // for (unsigned char j = 0; j < 4; j++)
+                    // {
+                    //     for (unsigned char k = 0; k < j; k++)
+                    //     {
+                    //         Q(j, k) = Q(k, j) = K[j] * K2[k];
+                    //     }
+                    //     Q(j, j) = K[j] * K2[j];
+                    // }
                     }
-                    }
-
-
-                    
-
                     eles.tuple(dim_c<16>,"Q",oei) = Q;
             });
         }
@@ -565,10 +561,10 @@ struct XPBDSolve : INode {
             // total_ghost_impulse_X.setVal(0);
             // total_ghost_impulse_Y.setVal(0);
             // total_ghost_impulse_Z.setVal(0);
-            if(category == category_c::isometric_bending_constraint)
-                std::cout << "isometric_bending_constraint output" << std::endl;
-            if(category == category_c::edge_length_constraint)
-                std::cout << "edge_length_constraint output" << std::endl;     
+            // if(category == category_c::isometric_bending_constraint)
+            //     std::cout << "isometric_bending_constraint output" << std::endl;
+            // if(category == category_c::edge_length_constraint)
+            //     std::cout << "edge_length_constraint output" << std::endl;     
             
             // cudaPol(zs::range(verts.size()),[
             //     verts = proxy<space>({},verts),
@@ -1053,7 +1049,7 @@ struct XPBDDetangle2 : INode {
             Xtag = zs::SmallString(Xtag),
             pxtag = zs::SmallString(pxtag),
             restitution_rate = restitution_rate,
-            exec_tag,
+            exec_tag = exec_tag,
             eps = eps,
             dp_buffer = proxy<space>(dp_buffer),
             dp_count = proxy<space>(dp_count),
@@ -1442,8 +1438,8 @@ struct XPBDSolveSmooth : INode {
             const auto& cquads = constraints->getQuadraturePoints();
             auto category = constraints->readMeta(CONSTRAINT_KEY,wrapt<category_c>{});
 
-            if(category == category_c::edge_length_constraint)
-                continue;
+            // if(category == category_c::edge_length_constraint)
+            //     continue;
 
             // std::cout << "computing smoothing for constraints" << std::endl;
 
