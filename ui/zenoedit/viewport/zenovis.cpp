@@ -96,6 +96,15 @@ void Zenovis::updateCameraFront(QVector3D center, QVector3D front, QVector3D up)
     }
 }
 
+void Zenovis::setLoopPlaying(bool enable) {
+    m_loopPlaying = enable;
+}
+
+bool Zenovis::isLoopPlaying()
+{
+    return m_loopPlaying;
+}
+
 void Zenovis::startPlay(bool bPlaying)
 {
     m_playing = bPlaying;
@@ -175,8 +184,13 @@ void Zenovis::doFrameUpdate()
     if (inserted) {
         emit objectsUpdated(frameid);
     }
-    if (m_playing)
+    if (m_playing) {
+        if (m_loopPlaying && frameid == zeno::getSession().globalComm->frameRange().second)
+        {
+            frameid = zeno::getSession().globalComm->frameRange().first - 1;
+        }
         setCurrentFrameId(frameid + 1);
+    }
 }
 
 /*

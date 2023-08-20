@@ -21,6 +21,7 @@
 #include <zenomodel/include/uihelper.h>
 #include "util/apphelper.h"
 #include "viewport/optixviewport.h"
+#include "timeline/ztimeline.h"
 
 
 ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
@@ -78,6 +79,13 @@ ZTabDockWidget::ZTabDockWidget(ZenoMainWindow* mainWin, Qt::WindowFlags flags)
                     view->setIsCurrent(false);
                 }
                 dpview->setIsCurrent(true);
+                if (Zenovis* vis = dpview->getZenoVis())    //sync loopPlaying setting to timeline
+                {
+                    if (ZTimeline* timeline = main->timeline())
+                    {
+                        timeline->setLoopPlayingStatus(vis->isLoopPlaying());
+                    }
+                }
             }
         }
         });
@@ -315,9 +323,7 @@ void ZTabDockWidget::onNodesSelected(const QModelIndex& subgIdx, const QModelInd
             }
         }
         else if (DockContent_View *view = qobject_cast<DockContent_View *>(wid)) {
-            if (select && nodes.size() == 1) {
-                view->getDisplayWid()->onNodeSelected(subgIdx, nodes, select);
-            }
+            view->getDisplayWid()->onNodeSelected(subgIdx, nodes, select);
         }
         else if (ZenoImagePanel *image = qobject_cast<ZenoImagePanel *>(wid))
         {

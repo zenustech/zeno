@@ -85,6 +85,31 @@ static void read_attributes(std::shared_ptr<PrimitiveObject> prim, ICompoundProp
                 }
             }
         }
+        else if (IInt32GeomParam::matches(p)) {
+            IInt32GeomParam param(arbattrs, p.getName());
+
+            IInt32GeomParam::Sample samp = param.getIndexedValue(iSS);
+            std::vector<int> data;
+            data.resize(samp.getVals()->size());
+            for (auto i = 0; i < samp.getVals()->size(); i++) {
+                data[i] = samp.getVals()->get()[i];
+            }
+            if (!read_done) {
+                log_info("[alembic] i32 attr {}, len {}.", p.getName(), data.size());
+            }
+
+            if (prim->verts.size() == data.size()) {
+                auto &attr = prim->add_attr<int>(p.getName());
+                for (auto i = 0; i < prim->verts.size(); i++) {
+                    attr[i] = data[i];
+                }
+            }
+            else {
+                if (!read_done) {
+                    log_error("[alembic] can not load attr {}. Check if link to Points channel when exported from Houdini.", p.getName());
+                }
+            }
+        }
         else if (IV3fGeomParam::matches(p)) {
             IV3fGeomParam param(arbattrs, p.getName());
             if (!read_done) {
@@ -310,6 +335,111 @@ static std::shared_ptr<PrimitiveObject> foundABCMesh(Alembic::AbcGeom::IPolyMesh
     return prim;
 }
 
+static std::shared_ptr<PrimitiveObject> foundABCSubd(Alembic::AbcGeom::ISubDSchema &subd, int frameid, bool read_done) {
+    auto prim = std::make_shared<PrimitiveObject>();
+
+    std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = subd.getTimeSampling();
+    float time_per_cycle =  time->getTimeSamplingType().getTimePerCycle();
+    double start = time->getStoredTimes().front();
+    int start_frame = (int)std::round(start / time_per_cycle );
+
+    int sample_index = clamp(frameid - start_frame, 0, (int)subd.getNumSamples() - 1);
+    ISampleSelector iSS = Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index);
+    Alembic::AbcGeom::ISubDSchema::Sample mesamp = subd.getValue(iSS);
+
+    if (auto marr = mesamp.getPositions()) {
+        if (!read_done) {
+            log_debug("[alembic] totally {} positions", marr->size());
+        }
+        auto &parr = prim->verts;
+        for (size_t i = 0; i < marr->size(); i++) {
+            auto const &val = (*marr)[i];
+            parr.emplace_back(val[0], val[1], val[2]);
+        }
+    }
+
+    read_velocity(prim, mesamp.getVelocities(), read_done);
+
+    if (auto marr = mesamp.getFaceIndices()) {
+        if (!read_done) {
+            log_debug("[alembic] totally {} face indices", marr->size());
+        }
+        auto &parr = prim->loops;
+        for (size_t i = 0; i < marr->size(); i++) {
+            int ind = (*marr)[i];
+            parr.push_back(ind);
+        }
+    }
+
+    if (auto marr = mesamp.getFaceCounts()) {
+        if (!read_done) {
+            log_debug("[alembic] totally {} faces", marr->size());
+        }
+        auto &loops = prim->loops;
+        auto &parr = prim->polys;
+        int base = 0;
+        for (size_t i = 0; i < marr->size(); i++) {
+            int cnt = (*marr)[i];
+            parr.emplace_back(base, cnt);
+            base += cnt;
+        }
+    }
+    if (auto uv = subd.getUVsParam()) {
+        auto uvsamp =
+            uv.getIndexedValue(Alembic::Abc::v12::ISampleSelector((Alembic::AbcCoreAbstract::index_t)sample_index));
+        int value_size = (int)uvsamp.getVals()->size();
+        int index_size = (int)uvsamp.getIndices()->size();
+        if (!read_done) {
+            log_debug("[alembic] totally {} uv value", value_size);
+            log_debug("[alembic] totally {} uv indices", index_size);
+            if (prim->loops.size() == index_size) {
+                log_debug("[alembic] uv per face");
+            } else if (prim->verts.size() == index_size) {
+                log_debug("[alembic] uv per vertex");
+            } else {
+                log_error("[alembic] error uv indices");
+            }
+        }
+        prim->uvs.resize(value_size);
+        {
+            auto marr = uvsamp.getVals();
+            for (size_t i = 0; i < marr->size(); i++) {
+                auto const &val = (*marr)[i];
+                prim->uvs[i] = {val[0], val[1]};
+            }
+        }
+        if (prim->loops.size() == index_size) {
+            prim->loops.add_attr<int>("uvs");
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                prim->loops.attr<int>("uvs")[i] = (*uvsamp.getIndices())[i];
+            }
+        }
+        else if (prim->verts.size() == index_size) {
+            prim->loops.add_attr<int>("uvs");
+            for (auto i = 0; i < prim->loops.size(); i++) {
+                prim->loops.attr<int>("uvs")[i] = prim->loops[i];
+            }
+        }
+    }
+    if (!prim->loops.has_attr("uvs")) {
+        if (!read_done) {
+            log_warn("[alembic] Not found uv, auto fill zero.");
+        }
+        prim->uvs.resize(1);
+        prim->uvs[0] = zeno::vec2f(0, 0);
+        prim->loops.add_attr<int>("uvs");
+        for (auto i = 0; i < prim->loops.size(); i++) {
+            prim->loops.attr<int>("uvs")[i] = 0;
+        }
+    }
+    ICompoundProperty arbattrs = subd.getArbGeomParams();
+    read_attributes(prim, arbattrs, iSS, read_done);
+    ICompoundProperty usrData = subd.getUserProperties();
+    read_user_data(prim, usrData, iSS, read_done);
+
+    return prim;
+}
+
 static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchema &cam, int frameid) {
     CameraInfo cam_info;
     std::shared_ptr<Alembic::AbcCoreAbstract::v12::TimeSampling> time = cam.getTimeSampling();
@@ -463,6 +593,14 @@ void traverseABC(
             Alembic::AbcGeom::ICurves curves(obj);
             auto &curves_sch = curves.getSchema();
             tree.prim = foundABCCurves(curves_sch, frameid, read_done);
+            tree.prim->userData().set2("_abc_name", obj.getName());
+        } else if (Alembic::AbcGeom::ISubDSchema::matches(md)) {
+            if (!read_done) {
+                log_debug("[alembic] found SubD [{}]", obj.getName());
+            }
+            Alembic::AbcGeom::ISubD subd(obj);
+            auto &subd_sch = subd.getSchema();
+            tree.prim = foundABCSubd(subd_sch, frameid, read_done);
             tree.prim->userData().set2("_abc_name", obj.getName());
         }
     }

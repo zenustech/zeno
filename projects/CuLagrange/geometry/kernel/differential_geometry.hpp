@@ -68,6 +68,39 @@ namespace zeno {
         theta(5) = zs::acos(cos_theta(5));       
     }
 
+    // template<typename T>
+    // constexpr void compute_enclosed_volume_of_triangulate_mesh() {
+
+    // }
+
+    // template<typename T>
+    // constexpr void compute_area_vector_of_triangulate_mesh() {
+
+    // }
+
+    // template<typename T>
+    // constexpr void compute_total_area_of_surrface_mesh() {
+
+    // }
+
+    // template<typename T>
+    // constexpr void compute_mean_curvature_normal_of_surface_mesh() {
+
+    // }
+
+    // template<typename T>
+    // constexpr void compute_total_mean_curvature_of_surface_mesh() {
+
+    // }
+
+    // tempalte<typename T>
+    // constexpr void compute_gauss_curvature_normal_of_surface_mesh() {
+
+    // }
+ 
+
+
+
     template <int simplex_size,typename Pol,typename ETileVec,typename VTileVec,typename ETmpTileVec>
     constexpr void compute_cotmatrix(Pol &pol,const ETileVec &eles,
         const VTileVec &verts, const zs::SmallString& xTag, 

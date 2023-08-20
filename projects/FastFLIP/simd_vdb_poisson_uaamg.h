@@ -190,7 +190,7 @@ private:
     //If the mucycle is used as an iterative solver
     //The propagated error is scaled by 0.5 to cancel the effect of coarsening scaling of parent matrix
     template<int mu_time>
-    void muCycleIterative(const openvdb::FloatGrid::Ptr in_out_lhs, const openvdb::FloatGrid::Ptr in_rhs, const int level, const int n);
+    void muCycleIterative(const openvdb::FloatGrid::Ptr in_out_lhs, const openvdb::FloatGrid::Ptr in_rhs, const int level, const int n, int postSmooth = 0);
 
     void constructMultigridHierarchy();
     void constructCoarsestLevelExactSolver();

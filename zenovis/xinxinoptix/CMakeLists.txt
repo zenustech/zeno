@@ -92,6 +92,7 @@ set(FILE_LIST
     ${CMAKE_CURRENT_SOURCE_DIR}/@DisneyBSDF.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@zxxglslvec.h
     ${CMAKE_CURRENT_SOURCE_DIR}/@IOMat.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/@proceduralSky.h
 
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.cu
     ${CMAKE_CURRENT_SOURCE_DIR}/@volume.h

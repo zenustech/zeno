@@ -114,7 +114,7 @@ std::vector<NodeLocation> NodeSyncMgr::getInputNodes(const QModelIndex& node,
         return res;
 
     for (const auto& input_edge : inputs[sockName].info.links) {
-        auto input_node_id = UiHelper::getSockName(input_edge.outSockPath);
+        auto input_node_id = UiHelper::getSockNode(input_edge.outSockPath);
         auto searched_node = searchNode(input_node_id.toStdString());
         if (searched_node.has_value())
             res.emplace_back(searched_node.value());
