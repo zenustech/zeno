@@ -129,7 +129,8 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
     update();
-    emit clicked(m_bInput);
+    if (this->isEnabled())
+        emit clicked(m_bInput);
 }
 
 void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -141,7 +142,10 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     QColor bgClr;
-    if (m_bHovered)
+    if (!isEnabled()) {
+        bgClr = QColor(83, 83, 85);
+    }
+    else if (m_bHovered)
     {
         bgClr = QColor("#5FD2FF");
     }

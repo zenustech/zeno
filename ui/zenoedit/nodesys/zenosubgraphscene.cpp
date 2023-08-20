@@ -725,7 +725,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
     ZASSERT_EXIT(pGraphsModel);
 
     ZenoSocketItem* targetSock = m_tempLink->getAdsorbedSocket();
-    if (targetSock)
+    if (targetSock && targetSock->isEnabled())
     {
         bool bTargetIsInput = targetSock->isInputSocket();
 

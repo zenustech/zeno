@@ -189,7 +189,8 @@ void TransferAcceptor::setInputSocket(
         const QString& inSock,
         const QString& outNode,
         const QString& outSock,
-        const rapidjson::Value& defaultValue
+        const rapidjson::Value& defaultValue,
+        const NODE_DESCS& legacyDescs
 )
 {
 
@@ -266,11 +267,15 @@ void TransferAcceptor::setInputSocket2(
                 const QString& inSock,
                 const QString& outLinkPath,
                 const QString& sockProperty,
-                const rapidjson::Value& defaultVal)
+                const rapidjson::Value& defaultVal,
+                const NODE_DESCS& legacyDescs)
 {
     NODE_DESC desc;
     bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    ZASSERT_EXIT(ret);
+    if (ret) {
+        ZASSERT_EXIT(legacyDescs.find(nodeCls) == legacyDescs.end());
+        desc = legacyDescs[nodeCls];
+    }
 
     //parse default value.
     QVariant defaultValue;
@@ -370,7 +375,7 @@ void TransferAcceptor::setToolTip(PARAM_CLASS cls, const QString & inNode, const
         }
     } 
 }
-void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, const QString &name,const rapidjson::Value &value) {
+void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, const QString &name,const rapidjson::Value &value, const NODE_DESCS& legacyDescs) {
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
     NODE_DATA& data = m_nodes[id];
 

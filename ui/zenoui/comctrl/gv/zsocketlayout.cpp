@@ -37,6 +37,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     QString sockName;
     QString toolTip;
     int sockProp = 0;
+    bool bEnableNode = false;
     if (!m_viewSockIdx.isValid())
     {
         //test case.
@@ -48,16 +49,25 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         sockProp = m_viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
         m_bEditable = sockProp & SOCKPROP_EDITABLE;
         toolTip = m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString();
+
+        QModelIndex nodeIdx = m_viewSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+        if (nodeIdx.data(ROLE_NODETYPE) != NO_VERSION_NODE)
+        {
+            bEnableNode = true;
+        }
     }
 
     QSizeF szSocket(10, 20);
     m_socket = new ZenoSocketItem(m_viewSockIdx, ZenoStyle::dpiScaledSize(szSocket));
     m_socket->setZValue(ZVALUE_ELEMENT);
-    QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
-        cbSock.cbOnSockClicked(m_socket);
-    });
+    m_socket->setEnabled(bEnableNode);
+    if (bEnableNode) {
+        QObject::connect(m_socket, &ZenoSocketItem::clicked, [=]() {
+            cbSock.cbOnSockClicked(m_socket);
+        });
+    }
 
-    if (m_bEditable)
+    if (m_bEditable && bEnableNode)
     {
         Callback_EditContentsChange cbFuncRenameSock = [=](QString oldText, QString newText) {
             pModel->ModelSetData(m_viewSockIdx, newText, ROLE_PARAM_NAME);

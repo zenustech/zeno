@@ -80,6 +80,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             continue;
         }
 
+        if (NO_VERSION_NODE == idx.data(ROLE_NODETYPE))
+            continue;
+
         int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;
         if (opts & OPT_ONCE) {

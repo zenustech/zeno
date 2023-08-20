@@ -184,8 +184,12 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
 
+    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+
     QColor clrHeaderBg;
-    if (pGraphsModel->IsSubGraphNode(m_index))
+    if (type == NO_VERSION_NODE)
+        clrHeaderBg = QColor(83, 83, 85);
+    else if (pGraphsModel->IsSubGraphNode(m_index))
         clrHeaderBg = QColor("#1D5F51");
     else
         clrHeaderBg = headerBg.clr_normal;
@@ -686,9 +690,6 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
     }
 }
 
-
-
-
 void ZenoNode::onViewParamAboutToBeMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
 {
 
@@ -826,6 +827,8 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     const PARAM_LINKS& links = viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
     int sockProp = viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
+    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+
     ZSocketLayout* pMiniLayout = nullptr;
     if (sockProp & SOCKPROP_DICTLIST_PANEL) {
         pMiniLayout = new ZDictSocketLayout(pModel, viewSockIdx, bInput);
@@ -846,8 +849,10 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     {
         QGraphicsItem* pSocketControl = initSocketWidget(pScene, viewSockIdx);
         pMiniLayout->setControl(pSocketControl);
-        if (pSocketControl)
+        if (pSocketControl) {
             pSocketControl->setVisible(links.isEmpty());
+            pSocketControl->setEnabled(type != NO_VERSION_NODE);
+        }
     }
 
     if (bInput)
@@ -1037,7 +1042,7 @@ ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
     {
         //todo: socket now is a children of sockettext.
         ZenoSocketItem* pSocketItem = sock->socketItem();
-        if (!pSocketItem)
+        if (!pSocketItem || !pSocketItem->isEnabled())
             continue;
 
         QPointF sockPos = pSocketItem->center();
