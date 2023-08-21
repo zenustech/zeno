@@ -2271,9 +2271,9 @@ struct erode_terrainHiMeLo : INode {
         }
         auto& attr = terrain->verts.attr<float>(attrName);
 
-        float hi = 0;
+        float hi = -10000000;
         float me = 0;
-        float lo = 0;
+        float lo = 10000000;
         float all = 0;
 
 #pragma omp parallel for
@@ -2414,18 +2414,22 @@ struct HF_maskByFeature : INode {
         auto heightLayer = get_input2<std::string>("height_layer");
         auto maskLayer = get_input2<std::string>("mask_layer");
         auto smoothRadius = get_input2<int>("smooth_radius");
+        auto invertMask = get_input2<bool>("invert_mask");
 
         auto useSlope = get_input2<bool>("use_slope");
         auto minSlope = get_input2<float>("min_slopeangle");
         auto maxSlope = get_input2<float>("max_slopeangle");
+        auto curve_slope = get_input<CurveObject>("slope_ramp");
 
         auto useDir = get_input2<bool>("use_direction");
         auto goalAngle = get_input2<float>("goal_angle");
         auto angleSpread = get_input2<float>("angle_spread");
+        auto curve_dir = get_input<CurveObject>("dir_ramp");
 
         auto useHeight = get_input2<bool>("use_height");
         auto minHeight = get_input2<float>("min_height");
         auto maxHeight = get_input2<float>("max_height");
+        auto curve_height = get_input<CurveObject>("height_ramp");
 
         // 初始化网格属性
         if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
@@ -2516,7 +2520,8 @@ struct HF_maskByFeature : INode {
                 if (useSlope) {
                     float slope = 180 * acos(n[2]) / M_PI;
                     slope = fit(slope, minSlope, maxSlope, 0, 1);
-                    slope = chramp(slope);
+//                    slope = chramp(slope);
+                    slope = curve_slope->eval(slope);
                     mask[idx] *= slope;
                 }
 
@@ -2526,14 +2531,22 @@ struct HF_maskByFeature : INode {
                     direction -= 360 * floor(direction / 360);   // Get in range -180 to 180
                     direction -= 180;
                     direction = fit(direction, -angleSpread, angleSpread, 0, 1);
-                    direction = chramp(direction);
+//                    direction = chramp(direction);
+                    direction = curve_dir->eval(direction);
                     mask[idx] *= direction;
                 }
 
                 if (useHeight)
                 {
                     float h = fit(height[idx], minHeight, maxHeight, 0, 1);
-                    mask[idx] *= chramp(h);
+//                    mask[idx] *= chramp(h);
+                    mask[idx] *= curve_height->eval(h);
+                }
+
+                if(invertMask)
+                {
+                    mask[idx] = min(max(mask[idx], 0), 1);
+                    mask[idx] = 1 - mask[idx];
                 }
             }
         }
@@ -2544,20 +2557,24 @@ struct HF_maskByFeature : INode {
 ZENDEFNODE(HF_maskByFeature,
            {/* inputs: */ {
                    "HeightField",
+                   {"bool", "invert_mask", "0"},
                    {"string", "height_layer", "height"},
                    {"string", "mask_layer", "mask"},
                    {"int", "smooth_radius", "1"},
                    {"bool", "use_slope", "0"},
                    {"float", "min_slopeangle", "0"},
                    {"float", "max_slopeangle", "90"},
+                   {"curve", "slope_ramp"},
                    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                    {"bool", "use_direction", "0"},
                    {"float", "goal_angle", "0"},
                    {"float", "angle_spread", "30"},
+                   {"curve", "dir_ramp"},
                    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                    {"bool", "use_height", "0"},
                    {"float", "min_height", "0.5"},
                    {"float", "max_height", "1"},
+                   {"curve", "height_ramp"},
                },
                /* outputs: */
                {
