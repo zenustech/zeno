@@ -111,14 +111,17 @@ static void bvh_vectors_wrangle(zfx::x64::Executable *exec,
   }
 }
 
-static void bvh_vectors_wrangle_radius(zfx::x64::Executable *exec,
+static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
                                 std::vector<Buffer> const &chs,
                                 std::vector<Buffer> const &chs2,
                                 const float *maskarr,
+                                PrimitiveObject *prim,
                                 std::vector<zeno::vec3f> const &pos,
-                                std::vector<float> const &radius,
+                                std::string radiusAttr,
                                 std::vector<zeno::vec3f> const &opos,
-                                bool isBox, float radius2,
+                                PrimitiveObject *primNei,
+                                std::string neiRadiusAttr,
+                                bool isBox, float bvhradius,
                                 zeno::LBvh *lbvh) {
   if (chs.size() == 0)
     return;
@@ -130,16 +133,35 @@ static void bvh_vectors_wrangle_radius(zfx::x64::Executable *exec,
       if (!chs[k].which)
         ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
     }
-    lbvh->iter_neighbors_radius(pos[i], radius[i], [&](int pid) {
-      if (!isBox)
-        if (lengthSquared(pos[i] - opos[pid]) > radius2 + radius[i] * radius[i])
-          return;
-      for (int k = 0; k < chs.size(); k++) {
-        if (chs[k].which)
-          ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
-      }
-      ctx.execute();
-    });
+    if (radiusAttr.empty()){
+      lbvh->iter_neighbors(pos[i], [&](int pid) {// more condition~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if (!isBox)
+          //if (length(pos[i] - opos[pid]) > sqrt((bvhradius+ neiRadius[pid]) * (bvhradius+neiRadius[pid])))
+          //if (length(pos[i] - opos[pid]) > sqrt((bvhradius) * (bvhradius)))
+          if (lengthSquared(pos[i] - opos[pid]) > (bvhradius) * (bvhradius))
+            return;
+        for (int k = 0; k < chs.size(); k++) {
+          if (chs[k].which)
+            ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
+        }
+        ctx.execute();
+      });
+    }
+    else{
+      auto &radius = prim->verts.attr<float>(radiusAttr);
+      auto &neiRadius = primNei->verts.attr<float>(neiRadiusAttr);//maybe another branch
+      lbvh->iter_neighbors_radius_two(pos[i], radius[i], neiRadius, [&](int pid) {
+        if (!isBox)
+          if (lengthSquared(pos[i] - opos[pid]) > (bvhradius + radius[i]  + neiRadius[pid]) * (bvhradius + radius[i]  + neiRadius[pid]))
+          //if (length(pos[i] - opos[pid]) > sqrt((bvhradius + radius[i]  + neiRadius[pid]) * (bvhradius + radius[i]  + neiRadius[pid])))
+            return;
+        for (int k = 0; k < chs.size(); k++) {
+          if (chs[k].which)
+            ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
+        }
+        ctx.execute();
+      });
+    }
     for (int k = 0; k < chs.size(); k++) {
       if (!chs[k].which)
         if (maskarr[i] != 0) {
@@ -216,8 +238,9 @@ struct ParticlesBuildBvhRadius : zeno::INode {
     auto prim = get_input<zeno::PrimitiveObject>("prim");
     float radius = get_input2<float>("basicRadius");
     auto radiusAttr = get_input2<std::string>("radiusAttr");
+    auto neiRadiusAttr = get_input2<std::string>("neiRadiusAttr");
     auto lbvh = std::make_shared<zeno::LBvh>(
-        prim, radius, radiusAttr, zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
+        prim, radius, radiusAttr, neiRadiusAttr, zeno::LBvh::element_c<zeno::LBvh::element_e::point>);
     set_output("lbvh", std::move(lbvh));
   }
 };
@@ -225,7 +248,8 @@ struct ParticlesBuildBvhRadius : zeno::INode {
 ZENDEFNODE(ParticlesBuildBvhRadius, {
                                   {{"PrimitiveObject", "prim"},
                                    {"float", "basicRadius", "1"},
-                                   {"string", "radiusAttr", ""}},
+                                   {"string", "radiusAttr", ""},
+                                   {"string", "neiRadiusAttr", ""}},
                                   {{"LBvh", "lbvh"}},
                                   {},
                                   {"zenofx"},
@@ -929,6 +953,7 @@ struct ParticlesNeighborBvhRadiusWrangle : zeno::INode {
     auto lbvh = get_input<zeno::LBvh>("lbvh");
     auto code = get_input<zeno::StringObject>("zfxCode")->get();
     auto radiusAttr = get_input2<std::string>("radiusAttr");
+    auto neighborRadiusAttr = get_input2<std::string>("neighborRadiusAttr");	
 
     if (prim->size() == 0 || primNei->size() == 0) {
       set_output("prim", std::move(prim));
@@ -1129,9 +1154,10 @@ struct ParticlesNeighborBvhRadiusWrangle : zeno::INode {
     }
     std::string maskAttr = get_input2<std::string>("maskAttr");
     const auto &mask = maskAttr == "" ? std::vector<float>(prim->verts.size(), 1.0f) : prim->attr<float>(maskAttr);
-    bvh_vectors_wrangle_radius(exec, chs, chs2, mask.data(), prim->attr<zeno::vec3f>("pos"), radiusAttr == "" ? std::vector<float>(prim->verts.size(), 0.0f) : prim->verts.attr<float>(radiusAttr),
-                        primNei->attr<zeno::vec3f>("pos"), get_input2<bool>("is_box"),
-                        lbvh.get()->thickness * lbvh.get()->thickness, lbvh.get());
+    bvh_vectors_wrangle_radius_two(exec, chs, chs2, mask.data(), prim.get(), prim->attr<zeno::vec3f>("pos"), radiusAttr,
+                        primNei->attr<zeno::vec3f>("pos"), primNei.get(), neighborRadiusAttr, 
+                        get_input2<bool>("is_box"),
+                        lbvh.get()->thickness, lbvh.get());
 
     set_output("prim", std::move(prim));
   }
@@ -1144,6 +1170,7 @@ ZENDEFNODE(ParticlesNeighborBvhRadiusWrangle,
                 {"LBvh", "lbvh"},
                 {"bool", "is_box", "0"},
                 {"string", "radiusAttr", "radius"},
+                {"string", "neighborRadiusAttr", "neighborRadius"},
                 {"string", "maskAttr", ""}, 
                 {"string", "zfxCode"},
                 {"DictObject:NumericObject", "params"}},
@@ -1151,8 +1178,6 @@ ZENDEFNODE(ParticlesNeighborBvhRadiusWrangle,
                {},
                {"zenofx"},
            });
-
-
 
 
 } // namespace
