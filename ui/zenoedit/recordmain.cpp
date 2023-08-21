@@ -111,6 +111,8 @@ int record_main(const QCoreApplication& app)
         zeno::setConfigVariable("configFilePath", param.configFilePath.toStdString());
     }
     LAUNCH_PARAM launchparam;
+    QFileInfo fp(param.sZsgPath);
+    launchparam.zsgPath = fp.absolutePath();
     if (cmdParser.isSet("cachePath")) {
         QString text = cmdParser.value("cachePath");
         text.replace('\\', '/');
