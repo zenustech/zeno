@@ -22,15 +22,15 @@ int offline_main(const QCoreApplication& app) {
     cmdParser.addOptions({
         {"offline", "offline", "run offline"},
         {"zsg", "zsg", "zsg file path"},
-        {"frame", "frame", "frame count"},
-        {"sframe", "sframe", "start frame"},
+        {"begin", "beginframe", "start frame"},
+        {"end", "endframe", "end frame"},
         {"cachePath", "cachePath", "cachePath"},
         {"cacheNum", "cacheNum", "cacheNum"},
         {"cacheautorm", "cacheautoremove", "remove cache after render"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
         });
     cmdParser.process(app);
-    if (!cmdParser.isSet("zsg") || !cmdParser.isSet("frame") || !cmdParser.isSet("sframe")) {
+    if (!cmdParser.isSet("zsg") || !cmdParser.isSet("begin") || !cmdParser.isSet("end")) {
         zeno::log_info("missing parameter.");
         return -1;
     }
@@ -41,8 +41,8 @@ int offline_main(const QCoreApplication& app) {
         param.subZsg = cmdParser.value("subzsg");
     }
     LAUNCH_PARAM launchparam;
-    launchparam.beginFrame = cmdParser.value("sframe").toInt();
-    launchparam.endFrame = launchparam.beginFrame + cmdParser.value("frame").toInt() - 1;
+    launchparam.beginFrame = cmdParser.value("begin").toInt();
+    launchparam.endFrame = cmdParser.value("end").toInt() ;
     if (cmdParser.isSet("cachePath")) {
         QString text = cmdParser.value("cachePath");
         text.replace('\\', '/');
@@ -64,7 +64,7 @@ int offline_main(const QCoreApplication& app) {
         launchparam.enableCache = false;
     }
 
-    zeno::log_info("running in offline mode, file=[{}], begin={}, end={}", launchparam.zsgPath.toStdString(), launchparam.beginFrame, launchparam.endFrame);
+    zeno::log_info("running in offline mode, file=[{}], begin={}, end={}", param.sZsgPath.toStdString(), launchparam.beginFrame, launchparam.endFrame);
 
     ZTcpServer* server = zenoApp->getServer();
     if (server)
