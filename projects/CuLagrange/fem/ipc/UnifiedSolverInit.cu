@@ -624,16 +624,17 @@ void UnifiedIPCSystem::initialize(zs::CudaExecutionPolicy &pol) {
             pol(Collapse(tris.size()),
                 [stInds = proxy<space>({}, stInds), tris = proxy<space>({}, tris), voffset = primHandle.vOffset,
                  sfoffset = primHandle.sfOffset] __device__(int i) mutable {
-                    stInds.tuple(dim_c<3>, "inds", sfoffset + i, int_c) =
+                    stInds.mount(dim_c<3>, "inds", sfoffset + i, int_c) =
                         tris.pack(dim_c<3>, "inds", i, int_c) + (int)voffset;
                 });
         }
         auto &edges = primHandle.getSurfEdges();
-        pol(Collapse(edges.size()), [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges),
-                                     voffset = primHandle.vOffset,
-                                     seoffset = primHandle.seOffset] __device__(int i) mutable {
-            seInds.tuple(dim_c<2>, "inds", seoffset + i, int_c) = edges.pack(dim_c<2>, "inds", i, int_c) + (int)voffset;
-        });
+        pol(Collapse(edges.size()),
+            [seInds = proxy<space>({}, seInds), edges = proxy<space>({}, edges), voffset = primHandle.vOffset,
+             seoffset = primHandle.seOffset] __device__(int i) mutable {
+                seInds.mount(dim_c<2>, "inds", seoffset + i, int_c) =
+                    edges.pack(dim_c<2>, "inds", i, int_c) + (int)voffset;
+            });
         auto &points = primHandle.getSurfVerts();
         pol(Collapse(points.size()),
             [svInds = proxy<space>({}, svInds), points = proxy<space>({}, points), voffset = primHandle.vOffset,
@@ -721,22 +722,22 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
                         BCfixed = verts("BCfixed", i);
                 }
                 vtemp("BCorder", voffset + i) = BCorder;
-                vtemp.tuple(dim_c<3>, "BCtarget", voffset + i) = BCtarget;
+                vtemp.mount(dim_c<3>, "BCtarget", voffset + i) = BCtarget;
                 vtemp("BCfixed", voffset + i) = BCfixed;
 
                 vtemp("ws", voffset + i) = asBoundary || BCorder == 3 ? avgNodeMass * augLagCoeff : verts("m", i);
                 auto xtilde = x + v * dt;
                 if (BCorder == 0)
                     xtilde += a * dt * dt;
-                vtemp.tuple(dim_c<3>, "xtilde", voffset + i) = xtilde;
-                vtemp.tuple(dim_c<3>, "xn", voffset + i) = x;
+                vtemp.mount(dim_c<3>, "xtilde", voffset + i) = xtilde;
+                vtemp.mount(dim_c<3>, "xn", voffset + i) = x;
                 if (BCorder > 0) {
-                    vtemp.tuple(dim_c<3>, "vn", voffset + i) = (BCtarget - x) / dt;
+                    vtemp.mount(dim_c<3>, "vn", voffset + i) = (BCtarget - x) / dt;
                 } else {
-                    vtemp.tuple(dim_c<3>, "vn", voffset + i) = v;
+                    vtemp.mount(dim_c<3>, "vn", voffset + i) = v;
                 }
                 // vtemp.tuple<3>("xt", voffset + i) = x;
-                vtemp.tuple(dim_c<3>, "x0", voffset + i) = verts.pack<3>("x0", i);
+                vtemp.mount(dim_c<3>, "x0", voffset + i) = verts.pack<3>("x0", i);
             });
     }
     if (hasBoundary()) {
@@ -753,14 +754,14 @@ void UnifiedIPCSystem::reinitialize(zs::CudaExecutionPolicy &pol, typename Unifi
                     newX = x + v * dt;
                 }
                 vtemp("BCorder", coOffset + i) = 3;
-                vtemp.tuple(dim_c<3>, "BCtarget", coOffset + i) = newX;
+                vtemp.mount(dim_c<3>, "BCtarget", coOffset + i) = newX;
                 vtemp("BCfixed", coOffset + i) = (newX - x).l2NormSqr() == 0 ? 1 : 0;
 
                 vtemp("ws", coOffset + i) = avgNodeMass * augLagCoeff;
-                vtemp.tuple(dim_c<3>, "xtilde", coOffset + i) = newX;
-                vtemp.tuple(dim_c<3>, "xn", coOffset + i) = x;
-                vtemp.tuple(dim_c<3>, "vn", coOffset + i) = (newX - x) / dt;
-                vtemp.tuple(dim_c<3>, "x0", coOffset + i) = coverts.pack<3>("x0", i);
+                vtemp.mount(dim_c<3>, "xtilde", coOffset + i) = newX;
+                vtemp.mount(dim_c<3>, "xn", coOffset + i) = x;
+                vtemp.mount(dim_c<3>, "vn", coOffset + i) = (newX - x) / dt;
+                vtemp.mount(dim_c<3>, "x0", coOffset + i) = coverts.pack<3>("x0", i);
             });
     }
 
@@ -823,17 +824,17 @@ void UnifiedIPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename Uni
         [vtemp = proxy<space>({}, vtemp), coOffset = coOffset, dt = dt, a = extForce] __device__(int vi) mutable {
             int BCorder = vtemp("BCorder", vi);
             auto xn = vtemp.pack(dim_c<3>, "xn", vi);
-            vtemp.tuple(dim_c<3>, "xhat", vi) = xn;
+            vtemp.mount(dim_c<3>, "xhat", vi) = xn;
             auto deltaX = vtemp.pack(dim_c<3>, "vn", vi) * dt;
             auto xtilde = xn + deltaX;
             if (BCorder == 0)
                 xtilde += a * dt * dt;
-            vtemp.tuple(dim_c<3>, "xtilde", vi) = xtilde;
+            vtemp.mount(dim_c<3>, "xtilde", vi) = xtilde;
 
             // update "BCfixed", "BCtarget" for dofs under boundary influence
             /// @note if BCorder > 0, "vn" remains constant throughout this frame
             if (BCorder > 0) {
-                vtemp.tuple(dim_c<3>, "BCtarget", vi) = xtilde;
+                vtemp.mount(dim_c<3>, "BCtarget", vi) = xtilde;
                 vtemp("BCfixed", vi) = deltaX.l2NormSqr() == 0 ? 1 : 0;
             }
         });
@@ -843,13 +844,13 @@ void UnifiedIPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename Uni
                                coOffset = coOffset, dt = dt] __device__(int i) mutable {
             auto xhat = vtemp.pack(dim_c<3>, "xhat", coOffset + i);
             auto xn = vtemp.pack(dim_c<3>, "xn", coOffset + i);
-            vtemp.tuple(dim_c<3>, "xhat", coOffset + i) = xn;
+            vtemp.mount(dim_c<3>, "xhat", coOffset + i) = xn;
             auto deltaX = vtemp.pack(dim_c<3>, "vn", coOffset + i) * dt;
             vec3 newX = xn + deltaX;
 
-            vtemp.tuple(dim_c<3>, "BCtarget", coOffset + i) = newX;
+            vtemp.mount(dim_c<3>, "BCtarget", coOffset + i) = newX;
             vtemp("BCfixed", coOffset + i) = (newX - xn).l2NormSqr() == 0 ? 1 : 0;
-            vtemp.tuple(dim_c<3>, "xtilde", coOffset + i) = newX;
+            vtemp.mount(dim_c<3>, "xtilde", coOffset + i) = newX;
         });
     }
     /// @brief additional hard constraints
@@ -864,11 +865,11 @@ void UnifiedIPCSystem::advanceSubstep(zs::CudaExecutionPolicy &pol, typename Uni
                     auto deltaX = vtemp.pack(dim_c<3>, "BCtarget", inds[1]) - vtemp.pack(dim_c<3>, "xhat", inds[1]);
                     //
                     auto xn = vtemp.pack(dim_c<3>, "xn", inds[0]);
-                    vtemp.tuple(dim_c<3>, "BCtarget", inds[0]) = xn + deltaX;
-                    vtemp.tuple(dim_c<3>, "xtilde", inds[0]) = xn + deltaX;
+                    vtemp.mount(dim_c<3>, "BCtarget", inds[0]) = xn + deltaX;
+                    vtemp.mount(dim_c<3>, "xtilde", inds[0]) = xn + deltaX;
                     vtemp("BCfixed", inds[0]) = deltaX.l2NormSqr() == 0 ? 1 : 0;
                     vtemp("BCorder", inds[0]) = 3;
-                    vtemp.tuple(dim_c<3>, "xtilde", inds[0]) = xn + deltaX;
+                    vtemp.mount(dim_c<3>, "xtilde", inds[0]) = xn + deltaX;
                 });
         }
     }
@@ -887,7 +888,7 @@ void UnifiedIPCSystem::updateVelocities(zs::CudaExecutionPolicy &pol) {
 #else
             auto vn = (vtemp.pack(dim_c<3>, "xn", vi) - vtemp.pack(dim_c<3>, "xhat", vi)) / dt;
 #endif
-            vtemp.tuple(dim_c<3>, "vn", vi) = vn;
+            vtemp.mount(dim_c<3>, "vn", vi) = vn;
         }
     });
 }
@@ -902,9 +903,9 @@ void UnifiedIPCSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &
         pol(zs::range(verts.size()),
             [vtemp = proxy<space>({}, vtemp), verts = proxy<space>({}, verts), vOffset = primHandle.vOffset,
              asBoundary = primHandle.isBoundary()] __device__(int vi) mutable {
-                verts.tuple(dim_c<3>, "x", vi) = vtemp.pack(dim_c<3>, "xn", vOffset + vi);
+                verts.mount(dim_c<3>, "x", vi) = vtemp.pack(dim_c<3>, "xn", vOffset + vi);
                 if (!asBoundary)
-                    verts.tuple(dim_c<3>, "v", vi) = vtemp.pack(dim_c<3>, "vn", vOffset + vi);
+                    verts.mount(dim_c<3>, "v", vi) = vtemp.pack(dim_c<3>, "vn", vOffset + vi);
             });
     }
     // not sure if this is necessary for numerical reasons
@@ -915,8 +916,8 @@ void UnifiedIPCSystem::writebackPositionsAndVelocities(zs::CudaExecutionPolicy &
              loVerts = proxy<space>({}, *const_cast<tiles_t *>(coLowResVerts)),
              coOffset = coOffset] ZS_LAMBDA(int vi) mutable {
                 auto newX = vtemp.pack(dim_c<3>, "xn", coOffset + vi);
-                verts.tuple(dim_c<3>, "x", vi) = newX;
-                loVerts.tuple(dim_c<3>, "x", vi) = newX;
+                verts.mount(dim_c<3>, "x", vi) = newX;
+                loVerts.mount(dim_c<3>, "x", vi) = newX;
                 // no need to update v here. positions are moved accordingly
                 // also, boundary velocies are set elsewhere
             });
