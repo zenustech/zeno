@@ -828,6 +828,11 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     int sockProp = viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
     NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+    bool bSocketEnable = true;
+    if (SOCKPROP_LEGACY == viewSockIdx.data(ROLE_PARAM_SOCKPROP) || type == NO_VERSION_NODE)
+    {
+        bSocketEnable = false;
+    }
 
     ZSocketLayout* pMiniLayout = nullptr;
     if (sockProp & SOCKPROP_DICTLIST_PANEL) {
@@ -851,7 +856,7 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         pMiniLayout->setControl(pSocketControl);
         if (pSocketControl) {
             pSocketControl->setVisible(links.isEmpty());
-            pSocketControl->setEnabled(type != NO_VERSION_NODE);
+            pSocketControl->setEnabled(bSocketEnable);
         }
     }
 

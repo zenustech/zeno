@@ -316,6 +316,10 @@ QModelIndex GraphsModel::indexFromPath(const QString& path)
             QModelIndex paramIdx = viewParams->indexFromPath(paramPath);
             return paramIdx;
         }
+        else if (paramPath.startsWith("[legacy]"))
+        {
+            //todo
+        }
     }
     return QModelIndex();
 }

@@ -81,6 +81,7 @@ class ZenoFullLink : public ZenoLink
     Q_OBJECT
 public:
     ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, ZenoNode* inNode);
+    ~ZenoFullLink();
 
     virtual QPointF getSrcPos() const override;
     virtual QPointF getDstPos() const override;
@@ -91,6 +92,8 @@ public:
     enum { Type = ZTYPE_FULLLINK };
     int type() const override;
 
+    void paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget) override;
+
 private slots:
     void onInSocketPosChanged();
     void onOutSocketPosChanged();
@@ -100,6 +103,7 @@ private:
     QPointF m_srcPos, m_dstPos;
     QString m_inNode;
     QString m_outNode;
+    bool m_bLegacyLink;
 };
 
 #endif

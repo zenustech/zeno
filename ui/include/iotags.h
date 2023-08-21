@@ -12,6 +12,11 @@ namespace iotags {
         constexpr const char* panel_params = "Parameters";
         constexpr const char* panel_outputs = "Out Sockets";
         constexpr const char* params_valueKey = "value";
+
+        //legacy desc params
+        constexpr const char* legacy_inputs = "legacy_inputs";
+        constexpr const char* legacy_params = "legacy_params";
+        constexpr const char* legacy_outputs = "legacy_outputs";
     }
 }
 

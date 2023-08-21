@@ -386,6 +386,12 @@ void ModelAcceptor::setInputSocket2(
     }
     else
     {
+        QModelIndex inNodeIdx = m_currentGraph->index(inNode);
+        ZASSERT_EXIT(inNodeIdx.isValid());
+        //the layout should be standard inputs desc by latest descriptors.
+        NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(inNodeIdx.data(ROLE_NODE_PARAMS));
+        ZASSERT_EXIT(nodeParams);
+
         //Dynamic socket
         if (nodeCls == "MakeList" || nodeCls == "MakeDict")
         {
@@ -402,12 +408,6 @@ void ModelAcceptor::setInputSocket2(
                 m_subgLinks.append(fullLink);
             }
 
-            QModelIndex inNodeIdx = m_currentGraph->index(inNode);
-            ZASSERT_EXIT(inNodeIdx.isValid());
-
-            //the layout should be standard inputs desc by latest descriptors.
-
-            NodeParamModel* nodeParams = QVariantPtr<NodeParamModel>::asPtr(inNodeIdx.data(ROLE_NODE_PARAMS));
             if (prop == SOCKPROP_EDITABLE) {
                 nodeParams->setAddParam(PARAM_INPUT, sockName, "string", "", CONTROL_NONE, QVariant(), prop);
             } else {
@@ -416,7 +416,24 @@ void ModelAcceptor::setInputSocket2(
         }
         else
         {
-            zeno::log_warn("{}: no such input socket {}", nodeCls.toStdString(), inSock.toStdString());
+            NODE_DESC legacyDesc = legacyDescs[nodeCls];
+            if (legacyDesc.inputs.find(inSock) == legacyDesc.inputs.end())
+            {
+                return;
+            }
+            SOCKET_INFO& info = legacyDesc.inputs[inSock].info;
+
+            /*
+            nodeParams->setAddParam(PARAM_INPUT, inSock, info.type, info.defaultValue, info.control, QVariant(), SOCKPROP_LEGACY);
+            if (!outLinkPath.isEmpty())
+            {
+                //collect edge, because output socket may be not initialized.
+                EdgeInfo fullLink(outLinkPath, inSockPath);
+                m_subgLinks.append(fullLink);
+            }
+            */
+
+            zeno::log_warn("{}: input socket {} is at legacy version", nodeCls.toStdString(), inSock.toStdString());
         }
     }
 }

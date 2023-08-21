@@ -51,7 +51,8 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
         toolTip = m_viewSockIdx.data(ROLE_VPARAM_TOOLTIP).toString();
 
         QModelIndex nodeIdx = m_viewSockIdx.data(ROLE_NODE_IDX).toModelIndex();
-        if (nodeIdx.data(ROLE_NODETYPE) != NO_VERSION_NODE)
+        if (nodeIdx.data(ROLE_NODETYPE) != NO_VERSION_NODE &&
+            SOCKPROP_LEGACY != m_viewSockIdx.data(ROLE_PARAM_SOCKPROP))
         {
             bEnableNode = true;
         }

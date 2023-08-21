@@ -126,6 +126,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         for (QModelIndex inSockIdx : inputsIndice)
         {
+            if (SOCKPROP_LEGACY == inSockIdx.data(ROLE_PARAM_SOCKPROP))
+                continue;
+
             bool bCoreParam = inSockIdx.data(ROLE_VPARAM_IS_COREPARAM).toBool();
             QString inputName = inSockIdx.data(ROLE_PARAM_NAME).toString();
             const QString& inSockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
@@ -207,7 +210,12 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 const QModelIndex& link = links[0];
 
                 const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
+                if (NO_VERSION_NODE == outIdx.data(ROLE_NODETYPE))
+                    continue;
+
                 const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                if (SOCKPROP_LEGACY == outSockIdx.data(ROLE_PARAM_SOCKPROP))
+                    continue;
 
                 QString newOutId, outSock;
                 // may the output socket is a key socket from a dict param.
@@ -217,8 +225,8 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         }
 
         const PARAMS_INFO& params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-		for (PARAM_INFO param_info : params)
-		{
+        for (PARAM_INFO param_info : params)
+        {
             //todo: validation on param value.
             //bool bValid = UiHelper::validateVariant(param_info.value, param_info.typeDesc);
             //ZASSERT_EXIT(bValid);
@@ -226,7 +234,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             if (paramValue.isNull())
                 continue;
             AddParams("setNodeParam", ident, param_info.name, paramValue, param_info.typeDesc, writer);
-		}
+        }
 
         if (opts & OPT_ONCE) {
             AddStringList({ "addNode", "HelperOnce", noOnceIdent }, writer);
