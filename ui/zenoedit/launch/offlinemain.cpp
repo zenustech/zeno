@@ -43,6 +43,8 @@ int offline_main(const QCoreApplication& app) {
     LAUNCH_PARAM launchparam;
     launchparam.beginFrame = cmdParser.value("begin").toInt();
     launchparam.endFrame = cmdParser.value("end").toInt() ;
+    QFileInfo fp(param.sZsgPath);
+    launchparam.zsgPath = fp.absolutePath();
     if (cmdParser.isSet("cachePath")) {
         QString text = cmdParser.value("cachePath");
         text.replace('\\', '/');
