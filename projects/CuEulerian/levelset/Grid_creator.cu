@@ -392,8 +392,9 @@ struct ZSAdaptiveGridToVDB : INode {
                 ag.restructure(pol, vdb);
                 // restructure_adaptive_grid(pol, ag, vdb);
             } else {
-                auto pol = omp_exec();
-                ag.restructure(pol, vdb);
+                auto pol = cuda_exec();
+                auto ag_ = ag.clone({ memsrc_e::device, 0 });
+                ag_.restructure(pol, vdb);
                 // restructure_adaptive_grid(pol, ag, vdb);
             }
             converter(vdb);
