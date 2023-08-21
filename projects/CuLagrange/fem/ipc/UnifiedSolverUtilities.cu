@@ -127,7 +127,7 @@ struct UnifiedIPCSystemClothBinding : INode { // usually called once before step
 #endif
                 if (j != -1) {
                     auto no = atomic_add(exec_cuda, &cnt[0], 1);
-                    eles.tuple(dim_c<2>, "inds", no, int_c) = zs::vec<int, 2>{i, j};
+                    eles.mount(dim_c<2>, "inds", no, int_c) = zs::vec<int, 2>{i, j};
                     eles("vol", no) = 1;
                     eles("k", no) = k;
                     eles("rl", no) = zs::min(dist / 4, rl);
