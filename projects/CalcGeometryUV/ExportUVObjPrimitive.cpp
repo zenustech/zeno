@@ -51,9 +51,21 @@ struct ExportUVObjPrimitive :  zeno::INode  {
     virtual void apply() override {
         auto path = get_input<zeno::StringObject>("path")->get();
         auto prim = get_input<zeno::PrimitiveObject>("prim");
-        auto &pos = prim->attr<zeno::vec3f>("pos");
-        auto &uvs = prim->attr<zeno::vec3f>("uv");
-        writeobj(pos, uvs, prim->tris, path.c_str());
+        //auto &pos = prim->attr<zeno::vec3f>("pos");
+        if (prim->has_attr("uv"))
+        {
+			auto& uvs = prim->attr<zeno::vec3f>("uv");
+			writeobj(prim->verts, uvs, prim->tris, path.c_str());
+        }
+        else
+        {
+            writeobj(prim->verts, {}, prim->tris, path.c_str());
+        }
+        
+
+		auto result = std::make_shared<zeno::StringObject>();
+        result->set(path);
+		set_output("path", result);
     }
 };
 
@@ -64,7 +76,7 @@ ZENDEFNODE(ExportUVObjPrimitive,
         "prim",
     }, 
     /* outputs: */ 
-    {}, 
+    {"path"},
     /* params: */ 
     {}, 
     /* category: */ 

@@ -860,7 +860,16 @@ struct PrimSetAttr : INode {
                   if (index < attr_arr.size()) {
                       attr_arr[index] = val;
                   }
-              } else {
+              } else if (method == "line") {
+                  if (!prim->lines.has_attr(name)) {
+                      prim->lines.add_attr<T>(name);
+                  }
+                  auto &attr_arr = prim->lines.attr<T>(name);
+                  auto val = value->get<T>();
+                  if (index < attr_arr.size()) {
+                      attr_arr[index] = val;
+                  }
+              }else {
                   throw Exception("bad type: " + method);
               }
             },
@@ -876,7 +885,7 @@ ZENDEFNODE(PrimSetAttr,
                    {"int", "value", "0"},
                    {"string", "name", "index"},
                    {"enum float vec2f vec3f vec4f int vec2i vec3i vec4i", "type", "int"},
-                   {"enum vert tri", "method", "tri"},
+                   {"enum vert tri line", "method", "tri"},
                    {"int", "index", "0"},
                }, /* outputs: */ {
                    "prim",

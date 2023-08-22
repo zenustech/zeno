@@ -157,22 +157,24 @@ void Picker::pick(int x0, int y0, int x1, int y1) {
         }
         load_from_str(selected, zenovis::PICK_OBJECT);
     }
-    else {
+    else {		
         if (selected.empty()) {
             selected_elements.clear();
-            return;
         }
-        load_from_str(selected, scene->select_mode);
-        if (picked_elems_callback) picked_elems_callback(selected_elements);
-        if (picked_elems__depth_callback)
+        else
         {
-            std::vector<vec3f> pnts;
-            auto depth = picker->getDepth(x0, y0);
-            pnts.push_back({ float(x0), float(y0),depth });
-            depth = picker->getDepth(x1, y1);
-            pnts.push_back({ float(x1), float(y1),depth });
-            picked_elems__depth_callback(selected_elements, pnts);
+			load_from_str(selected, scene->select_mode);
+			if (picked_elems_callback) picked_elems_callback(selected_elements);
         }
+		if (picked_elems__depth_callback)
+		{
+			std::vector<vec3f> pnts;
+			auto depth = picker->getDepth(x0, y0);
+			pnts.push_back({ float(x0), float(y0),depth });
+			depth = picker->getDepth(x1, y1);
+			pnts.push_back({ float(x1), float(y1),depth });
+			picked_elems__depth_callback(selected_elements, pnts);
+		}               
     }
 }
 
