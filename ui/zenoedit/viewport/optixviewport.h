@@ -28,6 +28,7 @@ public slots:
     void needUpdateCamera();
     void updateFrame();
     void recordVideo(VideoRecInfo recInfo);
+    void screenShoot(QString path, QString type, int resx, int resy);
     void onPlayToggled(bool bToggled);
     void onFrameSwitched(int frame);
     void cancelRecording();
@@ -69,6 +70,7 @@ public:
     void stopRender();
     void resumeRender();
     void recordVideo(VideoRecInfo recInfo);
+    void screenshoot(QString path, QString type, int resx, int resy);
     void cancelRecording(VideoRecInfo recInfo);
     void killThread();
     void setSlidFeq(int feq);
@@ -88,6 +90,7 @@ signals:
     void sig_setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void sig_setLoopPlaying(bool enable);
     void sig_setSlidFeq(int feq);
+    void sigscreenshoot(QString, QString, int, int);
 
 public slots:
     void onFrameRunFinished(int frame);

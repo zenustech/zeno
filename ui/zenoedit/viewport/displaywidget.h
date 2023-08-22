@@ -97,6 +97,8 @@ private:
     const bool m_bGLView;
     int m_sliderFeq = 1000 / 24;
     bool bIsCurrent = false;
+
+    int m_resx = -1, m_resy = -1;   //resolution;
 };
 
 #endif

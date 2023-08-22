@@ -185,6 +185,7 @@ void DisplayWidget::setSafeFrames(bool bLock, int nx, int ny)
     else {
         m_optixView->setSafeFrames(bLock, nx, ny);
     }
+    m_resx = nx, m_resy = ny;
 }
 
 void DisplayWidget::setSimpleRenderOption()
@@ -684,7 +685,19 @@ void DisplayWidget::onScreenShoot() {
     {
         Zenovis* pZenoVis = getZenoVis();
         ZASSERT_EXIT(pZenoVis);
-        pZenoVis->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+        if (!m_bGLView)
+        {
+            m_optixView->screenshoot(path, ext, m_resx, m_resy);
+        }
+        else {
+            auto [x, y] = pZenoVis->getSession()->get_window_size();
+            zeno::vec2i offset = pZenoVis->getSession()->get_viewportOffset();
+            if (pZenoVis->getSession()->is_lock_window())
+                pZenoVis->getSession()->set_window_size(m_resx, m_resy, zeno::vec2i{ 0,0 });
+            pZenoVis->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
+            if (pZenoVis->getSession()->is_lock_window())
+                pZenoVis->getSession()->set_window_size(x, y, offset);
+        }
     }
 }
 
@@ -706,6 +719,7 @@ void DisplayWidget::onRecord()
     ZenoMainWindow* mainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(mainWin);
 
+    int curSlidFeq = m_sliderFeq;
     ZRecordVideoDlg dlg(this);
     if (QDialog::Accepted == dlg.exec())
     {
@@ -825,6 +839,7 @@ void DisplayWidget::onRecord()
         }
         else
         {
+            m_sliderFeq = 1000 / 24;
             moveToFrame(recInfo.frameRange.first);      // first, set the time frame start end.
             mainWin->toggleTimelinePlay(true);          // and then play.
             //the recording implementation is RecordVideoMgr::onFrameDrawn.
@@ -847,6 +862,7 @@ void DisplayWidget::onRecord()
             zeno::getSession().globalComm->clearFrameState();
         }
     }
+    m_sliderFeq = curSlidFeq;
 }
 
 bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)

@@ -156,6 +156,19 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
     emit sig_recordFinished();
 }
 
+void OptixWorker::screenShoot(QString path, QString type, int resx, int resy)
+{
+    bool aov = zeno::getSession().userData().has("output_aov") ? zeno::getSession().userData().get2<bool>("output_aov") : false;
+    zeno::getSession().userData().set2("output_aov", false);
+    auto [x, y] = m_zenoVis->getSession()->get_window_size();
+    if (!m_zenoVis->getSession()->is_lock_window())
+        resx = x, resy = y;
+    m_zenoVis->getSession()->set_window_size(resx, resy);
+    m_zenoVis->getSession()->do_screenshot(path.toStdString(), type.toStdString(), true);
+    m_zenoVis->getSession()->set_window_size(x, y);
+    zeno::getSession().userData().set2("output_aov", aov);
+}
+
 bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
 {
     auto record_file = zeno::format("{}/P/{:07d}.jpg", recInfo.record_path.toStdString(), frame);
@@ -290,6 +303,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
+    connect(this, &ZOptixViewport::sigscreenshoot, m_worker, &OptixWorker::screenShoot, Qt::QueuedConnection);
     connect(this, &ZOptixViewport::sig_setSafeFrames, m_worker, &OptixWorker::onSetSafeFrames);
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
@@ -366,6 +380,11 @@ void ZOptixViewport::resumeRender()
 void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 {
     emit sigRecordVideo(recInfo);
+}
+
+void ZOptixViewport::screenshoot(QString path, QString type, int resx, int resy)
+{
+    emit sigscreenshoot(path, type, resx, resy);
 }
 
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)
