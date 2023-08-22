@@ -3,6 +3,7 @@
 #include <zeno/types/NumericObject.h>
 #include <zeno/utils/format.h>
 #include <zeno/utils/fileio.h>
+#include <zeno/types/ListObject.h>
 #include <zeno/extra/GlobalState.h>
 
 namespace zeno {
@@ -312,6 +313,37 @@ ZENDEFNODE(StringToNumber, {{
                                 /* category: */
                                 "string",
                             }});
+
+struct StringToList : zeno::INode {
+    virtual void apply() override {
+        auto stringlist = get_input2<std::string>("string");
+        auto list = std::make_shared<ListObject>();
+        auto separator = get_input2<std::string>("Separator");
+        std::istringstream iss(stringlist);
+        std::vector<std::string> strings;
+        std::string word;
+        while (std::getline(iss, word, separator[0])) {
+            strings.push_back(word);
+        }
+        for(const auto &string : strings) {
+            auto obj = std::make_unique<StringObject>();
+            obj->set(string);
+            list->arr.push_back(std::move(obj));
+        }
+        set_output("list", std::move(list));
+    }
+};
+
+ZENDEFNODE(StringToList, {
+    {
+        {"string", "string", ""},
+        {"string", "Separator", " "},
+    },
+    {{"list"},
+    },
+    {},
+    {"string"},
+});
 
 }
 }
