@@ -5,11 +5,14 @@
 namespace zenovis {
 
 void Camera::setCamera(zeno::CameraData const &cam) {
+    m_far = cam.ffar;
+    m_near = cam.fnear;
+    m_ortho_mode = cam.fov <= 0;
+    m_fov = cam.fov;
     this->placeCamera(
             glm::vec3(cam.pos[0], cam.pos[1], cam.pos[2]),
             glm::vec3(cam.view[0], cam.view[1], cam.view[2]),
-            glm::vec3(cam.up[0], cam.up[1], cam.up[2]), cam.fov <= 0,
-            cam.fov, cam.fnear, cam.ffar);
+            glm::vec3(cam.up[0], cam.up[1], cam.up[2]));
     //this->m_dof = cam.dof;
     this->m_aperture = cam.aperture;
     this->focalPlaneDistance = cam.focalPlaneDistance;
@@ -47,32 +50,29 @@ void Camera::setCamera(zeno::CameraData const &cam) {
     this->m_need_sync = true;
 }
 
-void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, bool ortho_mode, float fov, float fnear, float ffar) {
-    zeno::log_info("Camera::placeCamera {}", fov);
+void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
+    zeno::log_info("Camera::placeCamera {}", m_fov);
     front = glm::normalize(front);
     up = glm::normalize(up);
 
-    if (ortho_mode) {
+    if (m_ortho_mode) {
         auto radius = glm::length(pos);
         m_view = glm::lookAt(pos, pos + front, up);
         m_proj = glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
-                radius, ffar, fnear);
+                radius, m_far, m_near);
     } else {
         //ZENO_P(pos);
         //ZENO_P(front);
         //ZENO_P(up);
         m_view = glm::lookAt(pos, pos + front, up);
-        m_proj = glm::perspectiveZO(glm::radians(fov), getAspect(), ffar, fnear);
+        m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
         //ZENO_P(m_view);
         //ZENO_P(m_proj);
-        m_fov = fov;
     }
     //m_ortho_mode = ortho_mode;
     m_lodcenter = pos;
     m_lodfront = front;
     m_lodup = up;
-    m_near = fnear;
-    m_far = ffar;
 }
 
 void Camera::setResolution(int nx, int ny) {
@@ -96,7 +96,7 @@ bool Camera::is_locked_window() const {
 
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
-    placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_ortho_mode, m_fov, m_near, m_far);
+    placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup);
 }
 void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance) {
     zeno::log_info("Camera::lookCamera {}", fov);
@@ -118,12 +118,14 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
     glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
+    m_ortho_mode = ortho_mode;
     if (!ortho_mode) {
-        auto fnear = 0.05f;
-        auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
-        placeCamera(center - front * radius, front, up, ortho_mode, fov, fnear, ffar);
+        m_fov = fov;
+        m_near = 0.05f;
+        m_far = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
+        placeCamera(center - front * radius, front, up);
     } else {
-        placeCamera(center - front * radius * 0.4f, front, up, ortho_mode, 0.f, -100.f, 100.f);
+        placeCamera(center - front * radius * 0.4f, front, up);
     }
     m_aperture = aperture;
     this->focalPlaneDistance = focalPlaneDistance;
