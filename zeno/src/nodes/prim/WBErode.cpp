@@ -2684,11 +2684,11 @@ struct HF_maskbyOcclusion : INode {
     void apply() override {
         auto terrain = get_input<PrimitiveObject>("prim");
 
+        auto invert_mask = get_input2<bool>("invert mask");
         auto view_radius = get_input2<int>("view distance");
         auto step_scale = get_input2<float>("step scale");
         auto axis_count = get_input2<int>("num of searches");
         auto dohemisphere = get_input2<bool>("dohemisphere");
-
 
         int nx, nz;
         auto &ud = terrain->userData();
@@ -2840,7 +2840,8 @@ struct HF_maskbyOcclusion : INode {
                 // The bounds of this value should already be in [0, 1], but do
                 // a last clamp anyway to cull any possible floating point error
                 total_fov = clamp(total_fov, 0.0f, 1.0f);
-                ao[idx] = total_fov;
+
+                ao[idx] = invert_mask ? 1-total_fov : total_fov;
             }
         }
 
@@ -2852,6 +2853,7 @@ struct HF_maskbyOcclusion : INode {
 ZENDEFNODE(HF_maskbyOcclusion,
            { /* inputs: */ {
                    "prim",
+                   {"bool", "invert mask", "0"},
                    {"int", "view distance", "200"},
                    {"float", "step scale", "1"},
                    {"int", "num of searches", "16"},
