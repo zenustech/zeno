@@ -48,6 +48,7 @@ void Camera::setCamera(zeno::CameraData const &cam) {
 }
 
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float fnear, float ffar) {
+    zeno::log_info("Camera::placeCamera {}", fov);
     front = glm::normalize(front);
     up = glm::normalize(up);
 
@@ -64,13 +65,13 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov
         m_proj = glm::perspectiveZO(glm::radians(fov), getAspect(), ffar, fnear);
         //ZENO_P(m_view);
         //ZENO_P(m_proj);
+        m_fov = fov;
     }
     m_lodcenter = pos;
     m_lodfront = front;
     m_lodup = up;
     m_near = fnear;
     m_far = ffar;
-    m_fov = fov;
 }
 
 void Camera::setResolution(int nx, int ny) {
@@ -96,7 +97,8 @@ void Camera::focusCamera(float cx, float cy, float cz, float radius) {
     auto center = glm::vec3(cx, cy, cz);
     placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup, m_fov, m_near, m_far);
 }
-void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, float fov, float aperture, float focalPlaneDistance) {
+void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance) {
+    zeno::log_info("Camera::lookCamera {}", fov);
     m_zxx.cx = cx;
     m_zxx.cy = cy;
     m_zxx.cz = cz;
@@ -104,7 +106,7 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     m_zxx.phi = phi;
     m_zxx.radius = radius;
     m_zxx.fov = fov;
-    m_zxx.ortho_mode = fov <= 0.0f;
+    m_zxx.ortho_mode = ortho_mode;
     m_zxx.aperture = aperture;
     m_zxx.focalPlaneDistance = focalPlaneDistance;
 
@@ -115,7 +117,7 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
     glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
 
-    if (!(fov <= 0)) {
+    if (!ortho_mode) {
         auto fnear = 0.05f;
         auto ffar = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
         placeCamera(center - front * radius, front, up, fov, fnear, ffar);

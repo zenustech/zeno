@@ -165,7 +165,7 @@ void Session::do_screenshot(std::string path, std::string type) {
 void Session::look_perspective(float cx, float cy, float cz, float theta,
                                float phi, float radius, float fov,
                                bool ortho_mode, float aperture, float focalPlaneDistance) {
-    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov, aperture, focalPlaneDistance);
+    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode, fov, aperture, focalPlaneDistance);
 }
 
 void Session::look_to_dir(float cx, float cy, float cz,
