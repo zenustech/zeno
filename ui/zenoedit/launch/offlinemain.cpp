@@ -11,68 +11,70 @@
 #include <zeno/extra/GlobalState.h>
 #include <zeno/utils/logger.h>
 #include <zeno/core/Graph.h>
+#include <zeno/extra/assetDir.h>
+#include "util/apphelper.h"
+#include "launch/ztcpserver.h"
 
-static int offline_start(const char *progJson) {
-    zeno::log_trace("program JSON: {}", progJson);
-
-    auto session = &zeno::getSession();
-    session->globalComm->clearState();
-    session->globalState->clearState();
-    session->globalStatus->clearState();
-
-    auto graph = session->createGraph();
-    graph->loadGraph(progJson);
-    session->globalState->frameid = graph->beginFrameNumber;
-
-    auto chkfail = [&] {
-        auto globalStatus = session->globalStatus.get();
-        if (globalStatus->failed()) {
-            zeno::log_error("error in {}, message {}", globalStatus->nodeName, globalStatus->error->message);
-            return true;
-        }
-        return false;
-    };
-
-    if (chkfail()) return 1;
-
-    session->globalComm->initFrameRange(graph->beginFrameNumber, graph->endFrameNumber);
-    for (int frame = graph->beginFrameNumber; frame <= graph->endFrameNumber; frame++) {
-        zeno::log_info("begin frame {}", frame);
-        session->globalComm->newFrame();
-        session->globalState->frameBegin();
-        while (session->globalState->substepBegin())
-        {
-            graph->applyNodesToExec();
-            session->globalState->substepEnd();
-            if (chkfail()) return 1;
-        }
-        session->globalState->frameEnd();
-        session->globalComm->finishFrame();
-        zeno::log_debug("end frame {}", frame);
-        if (chkfail()) return 1;
+int offline_main(const QCoreApplication& app);
+int offline_main(const QCoreApplication& app) {
+    QCommandLineParser cmdParser;
+    cmdParser.addHelpOption();
+    cmdParser.addOptions({
+        {"offline", "offline", "run offline"},
+        {"zsg", "zsg", "zsg file path"},
+        {"begin", "beginframe", "start frame"},
+        {"end", "endframe", "end frame"},
+        {"cachePath", "cachePath", "cachePath"},
+        {"cacheNum", "cacheNum", "cacheNum"},
+        {"cacheautorm", "cacheautoremove", "remove cache after render"},
+        {"subzsg", "subgraphzsg", "subgraph zsg file path"},
+        });
+    cmdParser.process(app);
+    if (!cmdParser.isSet("zsg") || !cmdParser.isSet("begin") || !cmdParser.isSet("end")) {
+        zeno::log_info("missing parameter.");
+        return -1;
     }
-    if (chkfail())
-        return 1;
-    zeno::log_info("program finished");
-    return 0;
-}
-
-int offline_main(const char *zsgfile, int beginFrame, int endFrame);
-int offline_main(const char *zsgfile, int beginFrame, int endFrame) {
-    zeno::log_info("running in offline mode, file=[{}], begin={}, end={}", zsgfile, beginFrame, endFrame);
-
-    GraphsManagment& gman = GraphsManagment::instance();
-    gman.openZsgFile(zsgfile);
-    IGraphsModel *pModel = gman.currentModel();
-    ZASSERT_EXIT(pModel, 1);
-
-	rapidjson::StringBuffer s;
-	RAPIDJSON_WRITER writer(s);
+    ZENO_RECORD_RUN_INITPARAM param;
+    param.sZsgPath = cmdParser.value("zsg");
+    if (cmdParser.isSet("subzsg"))
     {
-        JsonArrayBatch batch(writer);
-        JsonHelper::AddVariantList({"setBeginFrameNumber", beginFrame}, "int", writer);
-        JsonHelper::AddVariantList({"setEndFrameNumber", endFrame}, "int", writer);
-        serializeScene(pModel, writer);
+        param.subZsg = cmdParser.value("subzsg");
     }
-    return offline_start(s.GetString());
+    LAUNCH_PARAM launchparam;
+    launchparam.beginFrame = cmdParser.value("begin").toInt();
+    launchparam.endFrame = cmdParser.value("end").toInt() ;
+    QFileInfo fp(param.sZsgPath);
+    launchparam.zsgPath = fp.absolutePath();
+    if (cmdParser.isSet("cachePath")) {
+        QString text = cmdParser.value("cachePath");
+        text.replace('\\', '/');
+        launchparam.cacheDir = text;
+        launchparam.enableCache = true;
+        launchparam.tempDir = false;
+        if (!QDir(text).exists())
+            QDir().mkdir(text);
+        if (cmdParser.isSet("cacheautorm"))
+            launchparam.autoRmCurcache = cmdParser.value("cacheautorm").toInt();
+        else
+            launchparam.autoRmCurcache = true;
+        if (cmdParser.isSet("cacheNum"))
+            launchparam.cacheNum = cmdParser.value("cacheNum").toInt();
+        else
+            launchparam.cacheNum = 1;
+    }
+    else {
+        launchparam.enableCache = false;
+    }
+
+    zeno::log_info("running in offline mode, file=[{}], begin={}, end={}", param.sZsgPath.toStdString(), launchparam.beginFrame, launchparam.endFrame);
+
+    ZTcpServer* server = zenoApp->getServer();
+    if (server)
+        QObject::connect(server, &ZTcpServer::runFinished, [=]() {
+            zeno::log_info("program finished");
+            QApplication::exit(0);
+            });
+    AppHelper::openZsgAndRun(param, launchparam);
+
+    return app.exec();
 }

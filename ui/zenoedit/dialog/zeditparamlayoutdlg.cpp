@@ -139,14 +139,14 @@ ZEditParamLayoutDlg::ZEditParamLayoutDlg(QStandardItemModel* pModel, bool bNodeU
 
     m_model = qobject_cast<ViewParamModel*>(pModel);
     ZASSERT_EXIT(m_model);
-
-    m_bSubgraphNode = m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && m_model->isNodeModel();
+    bool isNodeParamModel = qobject_cast<NodeParamModel*>(m_model) != nullptr;
+    m_bSubgraphNode = m_pGraphsModel->IsSubGraphNode(m_nodeIdx) && isNodeParamModel;
     m_subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
 
     if (bNodeUI)
     {
         m_ui->m_coreMappingWidget->hide();
-        m_proxyModel = new NodeParamModel(m_subgIdx, m_model->nodeIdx(), m_pGraphsModel, true, this);
+        m_proxyModel = new NodeParamModel(m_model->nodeIdx(), m_pGraphsModel, this);
     }
     else
     {
@@ -1043,7 +1043,7 @@ void ZEditParamLayoutDlg::applyForItem(QStandardItem* proxyItem, QStandardItem* 
                     QModelIndex parent = pGroup->index();
                     nodeParams->moveRow(parent, srcRow, parent, dstRow);
                 }
-                if (!m_model->isNodeModel()) 
+                if (qobject_cast<NodeParamModel*>(m_model) == nullptr)
                 {
                     PanelParamModel *panelParams = QVariantPtr<PanelParamModel>::asPtr(m_model->nodeIdx().data(ROLE_PANEL_PARAMS));
                     ZASSERT_EXIT(panelParams);

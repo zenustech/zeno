@@ -415,6 +415,8 @@ void ZTcpServer::onProcFinished(int exitCode, QProcess::ExitStatus exitStatus)
     auto mainWin = zenoApp->getMainWindow();
     if (mainWin)
         emit mainWin->runFinished();
+    else
+        emit runFinished();
 }
 
 #endif

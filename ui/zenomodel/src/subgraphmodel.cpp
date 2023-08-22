@@ -118,7 +118,9 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
 
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
-    ret.nodeParams = new NodeParamModel(subgIdx, nodeIdx, m_pGraphsModel, false, this);
+    ret.nodeParams = new NodeParamModel(nodeIdx, m_pGraphsModel, this);
+
+    int sz = sizeof(NodeParamModel);
 
     INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
     PARAMS_INFO params = data[ROLE_PARAMETERS].value<PARAMS_INFO>();
@@ -765,6 +767,12 @@ bool SubGraphModel::_insertNode(int row, const NODE_DATA& nodeData, const QModel
     QModelIndex subgIdx = m_pGraphsModel->indexBySubModel(this);
 
     importNodeItem(nodeData, nodeIdx, item);
+
+    if (nodeData.find(ROLE_NODETYPE) != nodeData.end() &&
+        nodeData[ROLE_NODETYPE] == NO_VERSION_NODE)
+    {
+        m_pGraphsModel->markNotDescNode();
+    }
 
     m_pGraphsModel->markDirty();
     return true;

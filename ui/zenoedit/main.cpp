@@ -53,19 +53,10 @@ int main(int argc, char *argv[])
         return record_main(a);
     }
 
-    if (argc >= 3 && !strcmp(argv[1], "-offline")) {
-        extern int offline_main(const char* zsgfile, int beginFrame, int endFrame);
-        int begin = 0, end = 0;
-        if (argc >= 5 && !strcmp(argv[3], "-begin"))
-            begin = atoi(argv[4]);
-        if (argc >= 5 && !strcmp(argv[3], "-end"))
-            end = atoi(argv[4]);
-        if (argc >= 7 && !strcmp(argv[5], "-begin"))
-            begin = atoi(argv[6]);
-        if (argc >= 7 && !strcmp(argv[5], "-end"))
-            end = atoi(argv[6]);
+    if (argc >= 3 && !strcmp(argv[1], "--offline")) {
+        extern int offline_main(const QCoreApplication & app);
         startUp(false);
-        return offline_main(argv[2], begin, end);
+        return offline_main(a);
     }
     if (argc >= 3 && !strcmp(argv[1], "--blender"))
     {

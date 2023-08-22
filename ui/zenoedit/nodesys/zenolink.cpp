@@ -194,6 +194,7 @@ void ZenoTempLink::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, ZenoNode* inNode)
     : ZenoLink(nullptr)
     , m_index(idx)
+    , m_bLegacyLink(false)
     , m_bHover(false)
 {
     setAcceptHoverEvents(true);
@@ -213,6 +214,12 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
     }
     setFlag(QGraphicsItem::ItemIsSelectable);
 
+    if (SOCKPROP_LEGACY == inSockIdx.data(ROLE_PARAM_SOCKPROP) ||
+        SOCKPROP_LEGACY == outSockIdx.data(ROLE_PARAM_SOCKPROP))
+    {
+        m_bLegacyLink = true;
+    }
+
     m_inNode = idx.data(ROLE_INNODE).toString();
     m_outNode = idx.data(ROLE_OUTNODE).toString();
 
@@ -221,6 +228,15 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
 
     connect(inNode, SIGNAL(inSocketPosChanged()), this, SLOT(onInSocketPosChanged()));
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
+}
+
+bool ZenoFullLink::isLegacyLink() const
+{
+    return m_bLegacyLink;
+}
+
+ZenoFullLink::~ZenoFullLink()
+{
 }
 
 void ZenoFullLink::onInSocketPosChanged()
@@ -340,14 +356,29 @@ void ZenoFullLink::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     ZenoLink::hoverLeaveEvent(event);
 }
 
-void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
-{
-    ZenoLink::paint(painter, styleOptions, widget);
-}
-
 int ZenoFullLink::type() const
 {
     return Type;
+}
+
+void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
+{
+    if (m_bLegacyLink)
+    {
+        painter->save();
+        QPen pen;
+        pen.setColor(isSelected() ? QColor(0xFA6400) : QColor(83, 83, 85));
+        pen.setWidthF(ZenoStyle::scaleWidth(3));
+        painter->setRenderHint(QPainter::Antialiasing);
+        painter->setPen(pen);
+        painter->setBrush(Qt::NoBrush);
+        painter->drawPath(shape());
+        painter->restore();
+    }
+    else
+    {
+        ZenoLink::paint(painter, styleOptions, widget);
+    }
 }
 
 void ZenoFullLink::transferToNetLabel()

@@ -1828,6 +1828,21 @@ void ZenoMainWindow::save()
     IGraphsModel* pModel = pGraphsMgm->currentModel();
     if (!pModel)
         return;
+
+    if (pModel->hasNotDescNode())
+    {
+        int flag = QMessageBox::question(this, "",
+            tr("there is some nodes which are not descriped by the current version\n"
+                "the save action will lose them, we recommand you choose \"Save As\" to save it"),
+            QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (flag & QMessageBox::No)
+        {
+            return;
+        }
+        saveAs();
+        return;
+    }
+
     zenoio::ZSG_VERSION ver = pModel->ioVersion();
     if (zenoio::VER_2 == ver)
     {

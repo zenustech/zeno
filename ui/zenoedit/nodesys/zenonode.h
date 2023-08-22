@@ -113,7 +113,7 @@ protected:
     QPersistentModelIndex subGraphIndex() const;
     virtual ZLayoutBackground* initBodyWidget(ZenoSubGraphScene* pScene);
     virtual ZLayoutBackground* initHeaderWidget(IGraphsModel* pGraphsModel);
-    virtual ZGraphicsLayout* initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene);
+    virtual ZGraphicsLayout* initSockets(QStandardItem* socketItems, QStandardItem* legacyItems, const bool bInput, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initParams(QStandardItem* paramItems, ZenoSubGraphScene* pScene);
     virtual ZGraphicsLayout* initCustomParamWidgets();
 

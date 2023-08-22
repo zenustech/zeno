@@ -34,6 +34,7 @@
 #include "dialog/zeditparamlayoutdlg.h"
 #include "settings/zenosettingsmanager.h"
 #include <zenomodel/include/command.h>
+#include <zenomodel/include/nodeparammodel.h>
 
 
 ZenoNode::ZenoNode(const NodeUtilParam &params, QGraphicsItem *parent)
@@ -185,8 +186,12 @@ ZLayoutBackground* ZenoNode::initHeaderWidget(IGraphsModel* pGraphsModel)
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
 
+    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+
     QColor clrHeaderBg;
-    if (pGraphsModel->IsSubGraphNode(m_index))
+    if (type == NO_VERSION_NODE)
+        clrHeaderBg = QColor(83, 83, 85);
+    else if (pGraphsModel->IsSubGraphNode(m_index))
         clrHeaderBg = QColor("#1D5F51");
     else
         clrHeaderBg = headerBg.clr_normal;
@@ -259,16 +264,16 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     m_bodyLayout->setContentsMargin(margin, bdrWidth, 0, bdrWidth);
 
     ZASSERT_EXIT(m_index.isValid(), nullptr);
-    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
+    NodeParamModel* viewParams = QVariantPtr<NodeParamModel>::asPtr(m_index.data(ROLE_NODE_PARAMS));
     ZASSERT_EXIT(viewParams, nullptr);
 
-    QStandardItem* inv_root = viewParams->invisibleRootItem();
-    ZASSERT_EXIT(inv_root, nullptr);
-
     //see ViewParamModel::initNode()
-    QStandardItem* inputsItem = inv_root->child(0);
-    QStandardItem* paramsItem = inv_root->child(1);
-    QStandardItem* outputsItem = inv_root->child(2);
+    QStandardItem* inputsItem = viewParams->getInputs();
+    QStandardItem* paramsItem = viewParams->getParams();
+    QStandardItem* outputsItem = viewParams->getOutputs();
+    QStandardItem* legacyInputs = viewParams->getLegacyInputs();
+    QStandardItem* legacyParams = viewParams->getLegacyParams();
+    QStandardItem* legacyOutputs = viewParams->getLegacyOutputs();
 
     connect(viewParams, &QStandardItemModel::rowsInserted, this, &ZenoNode::onViewParamInserted);
     connect(viewParams, &QStandardItemModel::rowsAboutToBeRemoved, this, &ZenoNode::onViewParamAboutToBeRemoved);
@@ -278,18 +283,12 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
 
     //params.
     m_paramsLayout = initParams(paramsItem, pScene);
-    if (m_paramsLayout)
-        m_paramsLayout->setDebugName("Params Layout");
     m_bodyLayout->addLayout(m_paramsLayout);
 
-    m_inputsLayout = initSockets(inputsItem, true, pScene);
-    if (m_inputsLayout)
-        m_inputsLayout->setDebugName("inputs layout");
+    m_inputsLayout = initSockets(inputsItem, legacyInputs, true, pScene);
     m_bodyLayout->addLayout(m_inputsLayout);
 
-    m_outputsLayout = initSockets(outputsItem, false, pScene);
-    if (m_outputsLayout)
-        m_outputsLayout->setDebugName("outputs layout");
+    m_outputsLayout = initSockets(outputsItem, legacyOutputs, false, pScene);
     m_bodyLayout->addLayout(m_outputsLayout);
 
     m_dirtyMarker = new ZLayoutBackground;
@@ -734,7 +733,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
             }
             else if (groupName == iotags::params::node_inputs)
             {
-                ZGraphicsLayout* playout = initSockets(pGroup, true, pScene);
+                ZGraphicsLayout* playout = initSockets(pGroup, nullptr, true, pScene);
                 if (m_inputsLayout)
                 {
                     m_inputsLayout->clear();
@@ -746,7 +745,7 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
             }
             else if (groupName == iotags::params::node_outputs)
             {
-                ZGraphicsLayout* playout = initSockets(pGroup, false, pScene);
+                ZGraphicsLayout* playout = initSockets(pGroup, nullptr, false, pScene);
                 if (m_outputsLayout)
                 {
                     m_outputsLayout->clear();
@@ -782,9 +781,6 @@ void ZenoNode::onViewParamInserted(const QModelIndex& parent, int first, int las
         m_paramsLayout->addLayout(addParam(viewParamIdx, pScene));
     }
 }
-
-
-
 
 void ZenoNode::onViewParamAboutToBeMoved(const QModelIndex& parent, int start, int end, const QModelIndex& destination, int row)
 {
@@ -897,7 +893,7 @@ void ZenoNode::focusOnNode(const QModelIndex& nodeIdx)
     }
 }
 
-ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bInput, ZenoSubGraphScene* pScene)
+ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, QStandardItem* legacyItems, const bool bInput, ZenoSubGraphScene* pScene)
 {
     ZASSERT_EXIT(socketItems, nullptr);
 
@@ -910,6 +906,16 @@ ZGraphicsLayout* ZenoNode::initSockets(QStandardItem* socketItems, const bool bI
         const QModelIndex& viewIdx = pItem->index();
         ZSocketLayout *pSocketLayout = addSocket(viewIdx, bInput, pScene);
         pSocketsLayout->addLayout(pSocketLayout);
+    }
+    if (legacyItems)
+    {
+        for (int r = 0; r < legacyItems->rowCount(); r++)
+        {
+            const QStandardItem* pItem = legacyItems->child(r);
+            const QModelIndex& viewIdx = pItem->index();
+            ZSocketLayout* pSocketLayout = addSocket(viewIdx, bInput, pScene);
+            pSocketsLayout->addLayout(pSocketLayout);
+        }
     }
     return pSocketsLayout;
 }
@@ -1009,6 +1015,13 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     const PARAM_LINKS& links = viewSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
     int sockProp = viewSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
 
+    NODE_TYPE type = static_cast<NODE_TYPE>(m_index.data(ROLE_NODETYPE).toInt());
+    bool bSocketEnable = true;
+    if (SOCKPROP_LEGACY == viewSockIdx.data(ROLE_PARAM_SOCKPROP) || type == NO_VERSION_NODE)
+    {
+        bSocketEnable = false;
+    }
+
     ZSocketLayout* pMiniLayout = nullptr;
     if (sockProp & SOCKPROP_DICTLIST_PANEL) {
         pMiniLayout = new ZDictSocketLayout(pModel, viewSockIdx, bInput);
@@ -1029,8 +1042,10 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
     {
         QGraphicsItem* pSocketControl = initSocketWidget(pScene, viewSockIdx);
         pMiniLayout->setControl(pSocketControl);
-        if (pSocketControl)
+        if (pSocketControl) {
             pSocketControl->setVisible(links.isEmpty());
+            pSocketControl->setEnabled(bSocketEnable);
+    }
     }
 
     if (bInput)
@@ -1248,7 +1263,7 @@ ZenoSocketItem* ZenoNode::getNearestSocket(const QPointF& pos, bool bInput)
     {
         //todo: socket now is a children of sockettext.
         ZenoSocketItem* pSocketItem = sock->socketItem();
-        if (!pSocketItem)
+        if (!pSocketItem || !pSocketItem->isEnabled())
             continue;
 
         QPointF sockPos = pSocketItem->center();
@@ -1314,9 +1329,9 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
     {
         PARAM_CLASS coreCls = (PARAM_CLASS)sockIdx.data(ROLE_PARAM_CLASS).toInt();
         QRectF rc = m_headerWidget->sceneBoundingRect();
-        if (coreCls == PARAM_INPUT || coreCls == PARAM_INNER_INPUT) {
+        if (coreCls == PARAM_INPUT || coreCls == PARAM_INNER_INPUT || coreCls == PARAM_LEGACY_INPUT) {
             return QPointF(rc.left(), rc.center().y());
-        } else if (coreCls == PARAM_OUTPUT || coreCls == PARAM_INNER_OUTPUT) {
+        } else if (coreCls == PARAM_OUTPUT || coreCls == PARAM_INNER_OUTPUT || coreCls == PARAM_LEGACY_OUTPUT) {
             return QPointF(rc.right(), rc.center().y());
         } else {
             return QPointF(0, 0);
@@ -1325,7 +1340,7 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
     else
     {
         PARAM_CLASS cls = (PARAM_CLASS)sockIdx.data(ROLE_PARAM_CLASS).toInt();
-        if (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT)
+        if (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT || cls == PARAM_LEGACY_INPUT)
         {
             for (ZSocketLayout* socklayout : m_inSockets)
             {
@@ -1335,7 +1350,7 @@ QPointF ZenoNode::getSocketPos(const QModelIndex& sockIdx)
                     return pos;
             }
         }
-        else if (cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT)
+        else if (cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT || cls == PARAM_LEGACY_OUTPUT)
         {
             for (ZSocketLayout* socklayout : m_outSockets)
             {

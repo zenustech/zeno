@@ -108,6 +108,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
             continue;
         }
 
+        if (NO_VERSION_NODE == idx.data(ROLE_NODETYPE))
+            continue;
+
         int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;
         if (opts & OPT_ONCE) {
@@ -151,6 +154,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         for (QModelIndex inSockIdx : inputsIndice)
         {
+            if (SOCKPROP_LEGACY == inSockIdx.data(ROLE_PARAM_SOCKPROP))
+                continue;
+
             bool bCoreParam = inSockIdx.data(ROLE_VPARAM_IS_COREPARAM).toBool();
             QString inputName = inSockIdx.data(ROLE_PARAM_NAME).toString();
             const QString& inSockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
@@ -260,7 +266,12 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 const QModelIndex& link = links[0];
 
                 const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
+                if (NO_VERSION_NODE == outIdx.data(ROLE_NODETYPE))
+                    continue;
+
                 const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                if (SOCKPROP_LEGACY == outSockIdx.data(ROLE_PARAM_SOCKPROP))
+                    continue;
 
                 QString newOutId, outSock;
                 // may the output socket is a key socket from a dict param.
