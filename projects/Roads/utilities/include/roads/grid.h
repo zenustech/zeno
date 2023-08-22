@@ -2,6 +2,7 @@
 
 #include "pch.h"
 #include <numeric>
+#include <functional>
 
 //#include "boost/graph/use_mpi.hpp"
 #include "boost/graph/graph_traits.hpp"
@@ -30,7 +31,7 @@ namespace roads {
 
     ROADS_API DynamicGrid<SlopePoint> CalculateSlope(const DynamicGrid<HeightPoint>& InHeightField);
 
-    ROADS_API WeightedGridUndirectedGraph CreateWeightGraphFromCostGrid(const DynamicGrid<CostPoint >& InCostGrid, ConnectiveType Type, float PowParam = 1.5f);
+    ROADS_API WeightedGridUndirectedGraph CreateWeightGraphFromCostGrid(const DynamicGrid<CostPoint >& InCostGrid, ConnectiveType Type, std::function<double(double)> GradientMappingFunc = [] (double v) { return v; });
 
     ROADS_API ArrayList<ArrayList<double>> FloydWarshallShortestPath(WeightedGridUndirectedGraph &InGraph);
 
