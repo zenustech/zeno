@@ -55,8 +55,8 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, bool orth
     if (ortho_mode) {
         auto radius = glm::length(pos);
         m_view = glm::lookAt(pos, pos + front, up);
-        m_proj = glm::ortho(-radius * getAspect(), radius * getAspect(), -radius,
-                radius, fnear, ffar);
+        m_proj = glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
+                radius, ffar, fnear);
     } else {
         //ZENO_P(pos);
         //ZENO_P(front);
