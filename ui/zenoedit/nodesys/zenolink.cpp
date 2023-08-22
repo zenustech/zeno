@@ -356,11 +356,6 @@ void ZenoFullLink::hoverLeaveEvent(QGraphicsSceneHoverEvent* event)
     ZenoLink::hoverLeaveEvent(event);
 }
 
-void ZenoFullLink::paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget)
-{
-    ZenoLink::paint(painter, styleOptions, widget);
-}
-
 int ZenoFullLink::type() const
 {
     return Type;
