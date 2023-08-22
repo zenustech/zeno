@@ -57,7 +57,8 @@ public:
             const QString& ident,
             const QString& sockName,
             const QString& keyName,
-            const QString& link
+            const QString& link,
+            const QString& netLabel
     ) = 0;
     virtual void setDictPanelProperty(
             bool bInput,

@@ -1,5 +1,6 @@
 #include <QtWidgets>
 #include "../nodesys/zenonode.h"
+#include "../nodesys/groupnode.h"
 #include "zenoapplication.h"
 #include "../nodesys/zenosubgraphscene.h"
 #include "../nodesys/zenonewmenu.h"
@@ -108,6 +109,43 @@ static void dumpToClipboard(const QString& copyInfo)
     QApplication::clipboard()->setMimeData(pMimeData);
 }
 
+static void dealDictSocket(const QModelIndex& fromSockIdx, bool bInput, QModelIndex &sock)
+{
+    SOCKET_PROPERTY inProp = (SOCKET_PROPERTY)sock.data(ROLE_PARAM_SOCKPROP).toInt();
+    if (bInput && (inProp & SOCKPROP_DICTLIST_PANEL))
+    {
+        IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+        ZASSERT_EXIT(pGraphsModel);
+        QString inSockType = sock.data(ROLE_PARAM_TYPE).toString();
+        if (!fromSockIdx.isValid())
+            return;
+        QString outSockType = fromSockIdx.data(ROLE_PARAM_TYPE).toString();
+
+        bool outSockIsContainer = false;
+        if (inSockType == "list")
+        {
+            outSockIsContainer = outSockType == "list";
+        }
+        else if (inSockType == "dict")
+        {
+            const QModelIndex& fromNodeIdx = fromSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+            const QString& outNodeCls = fromNodeIdx.data(ROLE_OBJNAME).toString();
+            const QString& outSockName = fromSockIdx.data(ROLE_PARAM_NAME).toString();
+            outSockIsContainer = outSockType == "dict" || (outNodeCls == "FuncBegin" && outSockName == "args");
+        }
+
+        if (!outSockIsContainer)
+        {
+            // link to inner dict key automatically.
+            QAbstractItemModel* pKeyObjModel =
+                QVariantPtr<QAbstractItemModel>::asPtr(sock.data(ROLE_VPARAM_LINK_MODEL));
+            int n = pKeyObjModel->rowCount();
+            pGraphsModel->addExecuteCommand(
+                new DictKeyAddRemCommand(true, pGraphsModel, sock.data(ROLE_OBJPATH).toString(), n));
+            sock = pKeyObjModel->index(n, 0);
+        }
+    }
+}
 
 bool sceneMenuEvent(
     ZenoSubGraphScene* pScene,
@@ -141,6 +179,10 @@ bool sceneMenuEvent(
 
     for (QGraphicsItem* pItem : items)
     {
+        if (GroupNode* pGroup = dynamic_cast<GroupNode*>(pItem))
+        {
+            continue;
+        }
         if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(pItem))
         {
             nodeSets.insert(pNode);
@@ -371,20 +413,28 @@ bool sceneMenuEvent(
                     auto procClipbrd = zenoApp->procClipboard();
                     ZASSERT_EXIT(procClipbrd, false);
                     const QString& lblName = procClipbrd->getCopiedAddress();
-                    if (!lblName.isEmpty())
-                    {
-                        QAction* pPasteNetlbl = new QAction(QObject::tr("Paste Net Label"));
-                        QObject::connect(pPasteNetlbl, &QAction::triggered, [=]() {
-                            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                            ZASSERT_EXIT(pModel);
-                            pModel->addNetLabel(subgIdx, selParam, lblName);
-                        });
-                        socketMenu->addAction(pPasteNetlbl);
-                        socketMenu->addSeparator();
-                    }
-
                     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
                     ZASSERT_EXIT(pModel, false);
+                    if (!lblName.isEmpty())
+                    {
+                        const QModelIndex& netOutput = pModel->getNetOutput(subgIdx, lblName);
+                        if (netOutput.isValid())
+                        {
+                            QString selIdent = selParam.data(ROLE_OBJID).toString();
+                            QString netOutputIdent = netOutput.data(ROLE_OBJID).toString();
+                            if (selIdent != netOutputIdent)
+                            {
+                                QAction* pPasteNetlbl = new QAction(QObject::tr("Paste Net Label"));
+                                QObject::connect(pPasteNetlbl, &QAction::triggered, [=]() {
+                                    QModelIndex sock = selParam;
+                                    dealDictSocket(netOutput, true, sock);
+                                    pModel->addNetLabel(subgIdx, sock, lblName);
+                                });
+                                socketMenu->addAction(pPasteNetlbl);
+                                socketMenu->addSeparator();
+                            }
+                        }
+                    }
 
                     QStringList labels = pModel->dumpLabels(subgIdx);
                     if (!labels.isEmpty())

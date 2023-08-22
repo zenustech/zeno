@@ -58,7 +58,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     });
     QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
         if (cbSock.cbOnSockNetlabelClicked)
-            cbSock.cbOnSockNetlabelClicked();
+            cbSock.cbOnSockNetlabelClicked(m_socket->netLabel());
     });
     QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
         if (cbSock.cbOnSockNetlabelEdited)
@@ -66,7 +66,7 @@ void ZSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cbSock
     });
     QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
         if (cbSock.cbActionTriggered)
-            cbSock.cbActionTriggered(pAction);
+            cbSock.cbActionTriggered(pAction, m_viewSockIdx);
     });
 
     if (m_bEditable)
@@ -219,6 +219,18 @@ void ZDictSocketLayout::initUI(IGraphsModel* pModel, const CallbackForSocket& cb
     m_socket->setZValue(ZVALUE_ELEMENT);
     QObject::connect(m_socket, &ZenoSocketItem::clicked, [=](bool bInput, Qt::MouseButton button) {
         cbSock.cbOnSockClicked(m_socket, button);
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
+        if (cbSock.cbOnSockNetlabelClicked)
+        cbSock.cbOnSockNetlabelClicked(m_socket->netLabel());
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
+        if (cbSock.cbOnSockNetlabelEdited)
+        cbSock.cbOnSockNetlabelEdited(m_socket);
+    });
+    QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
+        if (cbSock.cbActionTriggered)
+        cbSock.cbActionTriggered(pAction, m_viewSockIdx);
     });
 
     m_text = new ZSocketPlainTextItem(m_viewSockIdx, sockName, m_bInput, cbSock.cbOnSockClicked);

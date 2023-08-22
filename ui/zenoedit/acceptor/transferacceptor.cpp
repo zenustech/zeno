@@ -219,7 +219,8 @@ void TransferAcceptor::addInnerDictKey(
         const QString& inNode,
         const QString& sockName,
         const QString& keyName,
-        const QString& link
+        const QString& link,
+        const QString& netLabel
     )
 {
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
@@ -241,6 +242,10 @@ void TransferAcceptor::addInnerDictKey(
         {
             item.links.append(edge);
             m_links.append(edge);
+        }
+        if (!netLabel.isEmpty())
+        {
+            item.netLabel = netLabel;
         }
         inSocket.info.dictpanel.keys.append(item);
         data[ROLE_INPUTS] = QVariant::fromValue(inputs);

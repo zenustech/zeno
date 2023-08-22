@@ -135,6 +135,7 @@ private:
     NODE_DATA item2NodeData(const _NodeItem& item) const;
     void importNodeItem(const NODE_DATA& data, const QModelIndex& nodeIdx, _NodeItem& ret);
     bool checkCustomName(const QString &name);
+    void _removeNetLabels(const NodeParamModel* nodeParams);
 
     QString m_name;
     QHash<QString, int> m_key2Row;

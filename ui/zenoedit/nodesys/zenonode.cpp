@@ -928,10 +928,9 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         emit inSocketPosChanged();
         emit outSocketPosChanged();
     };
-    cbSocket.cbOnSockNetlabelClicked = [=]() {
+    cbSocket.cbOnSockNetlabelClicked = [=](QString netlabel) {
         if (perSockIdx.isValid()) {
             bool bInput = PARAM_INPUT == perSockIdx.data(ROLE_PARAM_CLASS);
-            const QString& netlabel = perSockIdx.data(ROLE_PARAM_NETLABEL).toString();
             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
             QMenu* menu = nullptr;
             if (bInput)
@@ -978,19 +977,28 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         const QString& label = pSocketItem->netLabel();
         QModelIndex sockIdx = pSocketItem->paramIndex();
         IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-
         const QString& oldName = sockIdx.data(ROLE_PARAM_NETLABEL).toString();
+        //check label
+        if (oldName == label)
+            return;
+        QStringList labels = pModel->dumpLabels(m_subGpIndex);
+        if (labels.contains(label))
+        {
+            QMessageBox::warning(nullptr, tr("Warring"), tr("Net label invalid!"));
+            pSocketItem->onNetLabelChanged(oldName);
+            return;
+        }
         pModel->updateNetLabel(m_subGpIndex, sockIdx, oldName, label, true);
 
         auto procClipbrd = zenoApp->procClipboard();
         ZASSERT_EXIT(procClipbrd);
         procClipbrd->setCopiedAddress("");
     };
-    cbSocket.cbActionTriggered = [=](QAction* pAction) {
+    cbSocket.cbActionTriggered = [=](QAction* pAction, const QModelIndex& socketIdx) {
         if (pAction->text() == "Delete Net Label") {
             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
             ZASSERT_EXIT(pModel);
-            pModel->removeNetLabel(m_subGpIndex, perSockIdx);
+            pModel->removeNetLabel(m_subGpIndex, socketIdx);
         }
     };
 

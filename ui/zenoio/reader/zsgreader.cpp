@@ -571,7 +571,13 @@ void ZsgReader::_parseDictPanel(
             {
                 link = QString::fromUtf8(inputObj["link"].GetString());
             }
-            pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link);
+
+            QString netlabel;
+            if (inputObj.HasMember("netlabel"))
+            {
+                netlabel = QString::fromUtf8(inputObj["netlabel"].GetString());
+            }
+            pAcceptor->addInnerDictKey(bInput, id, inSock, keyName, link, netlabel);
         }
     }
 }

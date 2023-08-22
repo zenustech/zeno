@@ -141,6 +141,7 @@ Q_DECLARE_METATYPE(EdgeInfo)
 struct DICTKEY_INFO
 {
     QString key;
+    QString netLabel;
     QList<EdgeInfo> links;
 };
 

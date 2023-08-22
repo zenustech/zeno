@@ -216,6 +216,7 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
     }
     if (item.nodeParams)
     {
+        _removeNetLabels(item.nodeParams);
         item.nodeParams->clearParams();
         delete item.nodeParams;
         item.nodeParams = nullptr;
@@ -243,6 +244,52 @@ bool SubGraphModel::_removeRow(const QModelIndex& index)
 
     m_pGraphsModel->markDirty();
     return true;
+}
+
+void SubGraphModel::_removeNetLabels(const NodeParamModel* nodeParams)
+{
+    for (const auto& inputSocketIdx : nodeParams->getInputIndice())
+    {
+        QString netLabel = inputSocketIdx.data(ROLE_PARAM_NETLABEL).toString();
+        if (!netLabel.isEmpty())
+        {
+            removeNetLabel(inputSocketIdx, netLabel);
+        }
+        if (QAbstractItemModel* pKeyObjModel =
+            QVariantPtr<QAbstractItemModel>::asPtr(inputSocketIdx.data(ROLE_VPARAM_LINK_MODEL)))
+        {
+            for (int i = 0; i < pKeyObjModel->rowCount(); i++)
+            {
+                const QModelIndex& idx = pKeyObjModel->index(i, 0);
+                netLabel = idx.data(ROLE_PARAM_NETLABEL).toString();
+                if (!netLabel.isEmpty())
+                {
+                    removeNetLabel(idx, netLabel);
+                }
+            }
+        }
+    }
+    for (const auto& outputSocketIdx : nodeParams->getOutputIndice())
+    {
+        QString netLabel = outputSocketIdx.data(ROLE_PARAM_NETLABEL).toString();
+        if (!netLabel.isEmpty())
+        {
+            removeNetLabel(outputSocketIdx, netLabel);
+        }
+        if (QAbstractItemModel* pKeyObjModel =
+            QVariantPtr<QAbstractItemModel>::asPtr(outputSocketIdx.data(ROLE_VPARAM_LINK_MODEL)))
+        {
+            for (int i = 0; i < pKeyObjModel->rowCount(); i++)
+            {
+                const QModelIndex& idx = pKeyObjModel->index(i, 0);
+                netLabel = idx.data(ROLE_PARAM_NETLABEL).toString();
+                if (!netLabel.isEmpty())
+                {
+                    removeNetLabel(idx, netLabel);
+                }
+            }
+        }
+    }
 }
 
 void SubGraphModel::removeNodeByDescName(const QString& descName)
@@ -786,7 +833,9 @@ bool SubGraphModel::addNetLabel(const QModelIndex& sock, const QString& name, bo
 
 void SubGraphModel::updateNetLabel(const QModelIndex& trigger, const QString& oldName, const QString& newName)
 {
-    if (oldName == newName || m_labels.find(oldName) == m_labels.end())
+    if (oldName == newName
+        || m_labels.find(oldName) == m_labels.end() 
+        || m_labels.find(newName) != m_labels.end())
         return;
 
     auto item = m_labels[oldName];
@@ -810,6 +859,8 @@ void SubGraphModel::updateNetLabel(const QModelIndex& trigger, const QString& ol
 
 void SubGraphModel::removeNetLabel(const QModelIndex& trigger, const QString& name)
 {
+    if (!trigger.isValid())
+        return;
     auto pModel = const_cast<QAbstractItemModel*>(trigger.model());
     pModel->setData(trigger, "", ROLE_PARAM_NETLABEL);
     auto iter = m_labels.find(name);
@@ -817,7 +868,14 @@ void SubGraphModel::removeNetLabel(const QModelIndex& trigger, const QString& na
     {
         auto& item = iter.value();
         if (item.outSock == trigger) {
-            item.outSock = QModelIndex();
+            for (auto inSocket : item.inSocks)
+            {
+                if (!inSocket.isValid())
+                    continue;
+                if (auto pInSocketModel = const_cast<QAbstractItemModel*>(inSocket.model()))
+                    pInSocketModel->setData(inSocket, "", ROLE_PARAM_NETLABEL);
+            }
+            m_labels.remove(name);
         }
         else if (item.inSocks.indexOf(trigger) != -1) {
             item.inSocks.removeAll(trigger);
