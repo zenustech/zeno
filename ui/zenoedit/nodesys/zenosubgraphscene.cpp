@@ -147,6 +147,16 @@ void ZenoSubGraphScene::initModel(const QModelIndex& index)
         }
     }
 
+    LinkModel* pLegacyLinks = pGraphsModel->legacyLinks(m_subgIdx);
+    if (pLegacyLinks)
+    {
+        for (int r = 0; r < pLegacyLinks->rowCount(); r++)
+        {
+            QModelIndex linkIdx = pLegacyLinks->index(r, 0);
+            initLink(linkIdx);
+        }
+    }
+
     //a more effecient way is collect scene togther and send msg to specific scene.
 	connect(pGraphsModel, SIGNAL(reloaded(const QModelIndex&)), this, SLOT(reload(const QModelIndex&)));
     connect(pGraphsModel, SIGNAL(clearLayout(const QModelIndex&)), this, SLOT(clearLayout(const QModelIndex&)));
@@ -489,7 +499,9 @@ QModelIndexList ZenoSubGraphScene::selectNodesIndice() const
     {
         if (ZenoNode *pNode = qgraphicsitem_cast<ZenoNode *>(item))
         {
-            nodesIndice.append(pNode->index());
+            QModelIndex idx = pNode->index();
+            if (NO_VERSION_NODE != idx.data(ROLE_NODETYPE))
+                nodesIndice.append(idx);
         }
     }
     return nodesIndice;
@@ -503,6 +515,8 @@ QModelIndexList ZenoSubGraphScene::selectLinkIndice() const
     {
         if (ZenoFullLink* pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
         {
+            if (pLink->isLegacyLink())
+                continue;
             const QPersistentModelIndex& idx = pLink->linkInfo();
             linkIndice.append(idx);
         }
@@ -740,7 +754,7 @@ void ZenoSubGraphScene::onTempLinkClosed()
     ZASSERT_EXIT(pGraphsModel);
 
     ZenoSocketItem* targetSock = m_tempLink->getAdsorbedSocket();
-    if (targetSock)
+    if (targetSock && targetSock->isEnabled())
     {
         bool bTargetIsInput = targetSock->isInputSocket();
 
@@ -1107,7 +1121,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
         {
             QList<QGraphicsItem*> selItems = this->selectedItems();
             QList<QPersistentModelIndex> nodes;
-            QList<QPersistentModelIndex> links;
+            QList<QPersistentModelIndex> links, legacylinks;
             for (auto item : selItems)
             {
                 if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
@@ -1116,14 +1130,20 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 }
                 else if (ZenoFullLink* pLink = qgraphicsitem_cast<ZenoFullLink*>(item))
                 {
-                    links.append(pLink->linkInfo());
+                    if (pLink->isLegacyLink())
+                    {
+                        legacylinks.append(pLink->linkInfo());
+                        removeItem(pLink);
+                    }
+                    else
+                        links.append(pLink->linkInfo());
                 }
             }
+
+            IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+            ZASSERT_EXIT(pGraphsModel);
             if (!nodes.isEmpty() || !links.isEmpty())
             {
-                IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
-                ZASSERT_EXIT(pGraphsModel);
-
                 pGraphsModel->beginTransaction("remove nodes and links");
                 zeno::scope_exit scope([=]() { pGraphsModel->endTransaction(); });
 
@@ -1136,6 +1156,10 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                     QString id = nodeIdx.data(ROLE_OBJID).toString();
                     pGraphsModel->removeNode(id, m_subgIdx, true);
                 }
+            }
+            for (auto linkIdx : legacylinks)
+            {
+                pGraphsModel->removeLegacyLink(linkIdx);
             }
         }
     }

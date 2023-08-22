@@ -39,7 +39,8 @@ enum NODE_TYPE {
     BLACKBOARD_NODE,
     SUBINPUT_NODE,
     SUBOUTPUT_NODE,
-    GROUP_NODE
+    GROUP_NODE,
+    NO_VERSION_NODE
 };
 
 enum VPARAM_TYPE
@@ -61,6 +62,9 @@ enum PARAM_CLASS
     PARAM_OUTPUT,
     PARAM_INNER_INPUT,      //socket in socket, like key in dict param.
     PARAM_INNER_OUTPUT,
+    PARAM_LEGACY_INPUT,     //params described by legacy zsgfile.
+    PARAM_LEGACY_PARAM,
+    PARAM_LEGACY_OUTPUT
 };
 
 enum NODE_OPTION {
@@ -77,6 +81,7 @@ enum SOCKET_PROPERTY {
     SOCKPROP_MULTILINK = 1 << 2,
     SOCKPROP_DICTLIST_PANEL = 1 << 3,
     SOCKPROP_GROUP_LINE = 1 << 4,
+    SOCKPROP_LEGACY = 1 << 5,
 };
 
 struct PARAM_INFO {

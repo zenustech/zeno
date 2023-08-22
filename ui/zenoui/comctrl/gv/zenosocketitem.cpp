@@ -20,8 +20,9 @@ ZenoSocketItem::ZenoSocketItem(
 {
     PARAM_CLASS cls = (PARAM_CLASS)viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
     ZASSERT_EXIT(cls == PARAM_INNER_INPUT || cls == PARAM_INPUT ||
-                 cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT);
-    m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT);
+                 cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT ||
+                 cls == PARAM_LEGACY_INPUT || cls == PARAM_LEGACY_OUTPUT);
+    m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT || cls == PARAM_LEGACY_INPUT);
     m_bInnerSock = (cls == PARAM_INNER_INPUT || cls == PARAM_INNER_OUTPUT);
     m_innerSockMargin = ZenoStyle::dpiScaled(15);
     m_socketXOffset = ZenoStyle::dpiScaled(24);
@@ -135,7 +136,8 @@ void ZenoSocketItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* event)
 {
     _base::mouseReleaseEvent(event);
     update();
-    emit clicked(m_bInput, event->button());
+    if (this->isEnabled())
+        emit clicked(m_bInput, event->button());
 }
 
 QString ZenoSocketItem::netLabel() const
@@ -204,7 +206,10 @@ void ZenoSocketItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* op
     painter->setRenderHint(QPainter::Antialiasing, true);
 
     QColor bgClr;
-    if (m_bHovered)
+    if (!isEnabled()) {
+        bgClr = QColor(83, 83, 85);
+    }
+    else if (m_bHovered)
     {
         bgClr = QColor("#5FD2FF");
     }

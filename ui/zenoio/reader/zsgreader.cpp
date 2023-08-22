@@ -256,7 +256,7 @@ bool ZsgReader::_parseNode(const QString& ident, const rapidjson::Value& nodeObj
     if (objValue.HasMember("params"))
     {
         if (_parseParams2(nodeid, name, objValue["params"], pAcceptor) == false)
-			_parseParams(nodeid, name, objValue["params"], pAcceptor);
+			_parseParams(nodeid, name, legacyDescs, objValue["params"], pAcceptor);
     }
     if (objValue.HasMember("outputs"))
     {
@@ -471,15 +471,15 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
                 outId = arr[0].GetString();
             if (arr[1].IsString())
                 outSock = arr[1].GetString();
-            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2]);
+            pAcceptor->setInputSocket(nodeName, id, inSock, outId, outSock, arr[2], legacyDescs);
         }
         else if (inputObj.IsNull())
         {
-            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value());
+            pAcceptor->setInputSocket(nodeName, id, inSock, "", "", rapidjson::Value(), legacyDescs);
         }
         else if (inputObj.IsObject())
         {
-            _parseSocket(id, nodeName, inSock, true, inputObj, pAcceptor);
+            _parseSocket(id, nodeName, legacyDescs, inSock, true, inputObj, pAcceptor);
         }
         else
         {
@@ -492,6 +492,7 @@ void ZsgReader::_parseInputs(const QString& id, const QString& nodeName, const N
 void ZsgReader::_parseSocket(
         const QString& id,
         const QString& nodeName,
+        const NODE_DESCS& legacyDescs,
         const QString& inSock,
         bool bInput,
         const rapidjson::Value& sockObj,
@@ -512,11 +513,11 @@ void ZsgReader::_parseSocket(
 
     if (sockObj.HasMember("default-value"))
     {
-        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"]);
+        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, sockObj["default-value"], legacyDescs);
     }
     else
     {
-        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value());
+        pAcceptor->setInputSocket2(nodeName, id, inSock, link, sockProp, rapidjson::Value(), legacyDescs);
     }
 
     if (sockObj.HasMember("dictlist-panel"))
@@ -870,7 +871,7 @@ NODE_DESCS ZsgReader::_parseDescs(const rapidjson::Value& jsonDescs, IAcceptor* 
     return _descs;
 }
 
-void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
+void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const NODE_DESCS& descriptors, const rapidjson::Value& jsonParams, IAcceptor* pAcceptor)
 {
     if (jsonParams.IsObject())
     {
@@ -878,7 +879,7 @@ void ZsgReader::_parseParams(const QString& id, const QString& nodeName, const r
         {
             const QString& name = paramObj.name.GetString();
             const rapidjson::Value& val = paramObj.value;
-            pAcceptor->setParamValue(id, nodeName, name, val);
+            pAcceptor->setParamValue(id, nodeName, name, val, descriptors);
         }
         pAcceptor->endParams(id, nodeName);
     } else {
