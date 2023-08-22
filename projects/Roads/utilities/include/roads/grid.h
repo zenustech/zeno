@@ -18,7 +18,11 @@ namespace roads {
 
     using HeightPoint = double;
     using SlopePoint = double;
-    using CostPoint = double;
+    struct CostPoint {
+        double Height;
+        double Gradient; // slope
+        double Curvature;
+    };
 
     using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
     using WeightedGridUndirectedGraph = boost::adjacency_list<boost::listS,boost::vecS,boost::directedS,boost::no_property,EdgeWeightProperty>;
@@ -31,7 +35,7 @@ namespace roads {
 
     ROADS_API DynamicGrid<SlopePoint> CalculateSlope(const DynamicGrid<HeightPoint>& InHeightField);
 
-    ROADS_API WeightedGridUndirectedGraph CreateWeightGraphFromCostGrid(const DynamicGrid<CostPoint >& InCostGrid, ConnectiveType Type, std::function<double(double)> GradientMappingFunc = [] (double v) { return v; });
+    ROADS_API WeightedGridUndirectedGraph CreateWeightGraphFromCostGrid(const DynamicGrid<CostPoint >& InCostGrid, ConnectiveType Type, const std::function<double(double)>& HeightMappingFunc = [] (double v) { return v; }, const std::function<double(double)>& GradientMappingFunc = [] (double v) { return v; }, const std::function<double(double)>& CurvatureMappingFunc = [] (double v) { return v; });
 
     ROADS_API ArrayList<ArrayList<double>> FloydWarshallShortestPath(WeightedGridUndirectedGraph &InGraph);
 

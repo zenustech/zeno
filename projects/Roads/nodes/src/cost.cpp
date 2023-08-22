@@ -157,14 +157,23 @@ namespace {
         std::string GradientChannel;
         ZENO_DECLARE_INPUT_FIELD(GradientChannel, "Gradient Channel (Vertex Attr)", false, "", "gradient");
 
+        std::string CurvatureChannel;
+        ZENO_DECLARE_INPUT_FIELD(CurvatureChannel, "Curvature Channel (Vertex Attr)", false, "", "curvature");
+
         zeno::reflect::ConnectiveTypeInput PathConnective;
         ZENO_DECLARE_INPUT_FIELD(PathConnective, "Path Connective", false, "", "16");
 
         zeno::reflect::PathAlgorithmTypeInput Algorithm;
         ZENO_DECLARE_INPUT_FIELD(Algorithm, "Path Finding Algorithm", false, "", "Dijkstra");
 
+        std::shared_ptr<zeno::CurveObject> HeightCurve = nullptr;
+        ZENO_DECLARE_INPUT_FIELD(HeightCurve, "Height Cost Control", true);
+
         std::shared_ptr<zeno::CurveObject> GradientCurve = nullptr;
         ZENO_DECLARE_INPUT_FIELD(GradientCurve, "Gradient Cost Control", true);
+
+        std::shared_ptr<zeno::CurveObject> CurvatureCurve = nullptr;
+        ZENO_DECLARE_INPUT_FIELD(CurvatureCurve, "Curvature Cost Control", true);
 
         bool bRemoveTriangles;
         ZENO_DECLARE_INPUT_FIELD(bRemoveTriangles, "Remove Triangles", false, "", "true");
@@ -180,6 +189,9 @@ namespace {
 
         zeno::AttrVector<float> GradientList{};
         ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, GradientList, GradientChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
+
+        zeno::AttrVector<float> CurvatureList{};
+        ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, CurvatureList, CurvatureChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
 
         void apply() override {
             //auto Grid = BuildGridFromPrimitive(AutoParameter->PositionList, AutoParameter->GradientList, AutoParameter->Nx, AutoParameter->Ny);
@@ -198,16 +210,27 @@ namespace {
                 Connective = ConnectiveType::FOURTY;
             }
 
-            auto GradientMapFunc = [Curve = AutoParameter->GradientCurve] (double In) -> double {
+            auto MapFuncGen = [] (const std::shared_ptr<zeno::CurveObject>& Curve) -> std::function<double(double)> {
                 if (Curve) {
-                    return Curve->eval(float(In));
+                    return [Curve] (double In) -> double {
+                        return Curve->eval(float(In));
+                    };
+                } else {
+                    zeno::log_warn("[Roads] Invalid Curve !");
+                    return [] (double In) -> double {
+                        return In;
+                    };
                 }
-                return In;
             };
 
             DynamicGrid<CostPoint> CostGrid(AutoParameter->Nx, AutoParameter->Ny);
-            CostGrid.insert(CostGrid.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.begin() + (AutoParameter->Nx * AutoParameter->Ny));
-            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, Connective, GradientMapFunc);
+            CostGrid.resize(AutoParameter->Nx*AutoParameter->Ny);
+#pragma omp parallel for
+            for (size_t i = 0; i < AutoParameter->Nx * AutoParameter->Ny; ++i) {
+                CostGrid[i] = (CostPoint { AutoParameter->PositionList[i].at(1), AutoParameter->GradientList[i], AutoParameter->CurvatureList[i] });
+            }
+            // CostGrid.insert(CostGrid.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.begin() + (AutoParameter->Nx * AutoParameter->Ny));
+            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, Connective, MapFuncGen(AutoParameter->HeightCurve), MapFuncGen(AutoParameter->GradientCurve), MapFuncGen(AutoParameter->CurvatureCurve));
             zeno::log_info("cccc: {}", boost::num_vertices(Graph));
 
             using VertexDescriptor = boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor;
