@@ -68,7 +68,7 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       return bv;
     };
   else if (eleCategory == element_e::point)
-      if (radiusAttr.empty()) {
+      if (radiusAttr.empty() && neiRadiusAttr.empty()) {
         getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"),  
              defaultBox, this](Ti i) -> Box {
         auto point = points[i];
@@ -83,7 +83,23 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
       return bv;
         };
       } 
-      else {
+      else if(!radiusAttr.empty() && neiRadiusAttr.empty()) {
+        getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"), 
+        &radius = prim->verts.attr<float>(radiusAttr),
+             defaultBox, this](Ti i) -> Box {
+        auto point = points[i];
+        Box bv = defaultBox;
+        const auto &p = refpos[point];
+        for (int d = 0; d != 3; ++d) {
+          if (p[d] - thickness - radius[i] < bv.first[d])
+            bv.first[d] = p[d] - thickness - radius[i];
+          if (p[d] + thickness + radius[i]  > bv.second[d])
+            bv.second[d] = p[d] + thickness + radius[i];
+          }
+      return bv;
+      };
+    }
+      else if(!radiusAttr.empty() && !neiRadiusAttr.empty()) {
         getBv = [&points = prim->points, &refpos = prim->attr<vec3f>("pos"), 
         &radius = prim->verts.attr<float>(radiusAttr),
         &neiRadius = prim->verts.attr<float>(neiRadiusAttr),
@@ -92,14 +108,17 @@ LBvh::getBvFunc(const std::shared_ptr<PrimitiveObject> &prim) const {
         Box bv = defaultBox;
         const auto &p = refpos[point];
         for (int d = 0; d != 3; ++d) {
-          if (p[d] - thickness - radius[i] - neiRadius[auxIndices[i]] < bv.first[d])
-            bv.first[d] = p[d] - thickness - radius[i]- neiRadius[auxIndices[i]] ;
-          if (p[d] + thickness + radius[i]  + neiRadius[auxIndices[i]]> bv.second[d])
-            bv.second[d] = p[d] + thickness + radius[i] + neiRadius[auxIndices[i]];
+          if (p[d] - thickness - radius[i] - neiRadius[point] < bv.first[d])
+            bv.first[d] = p[d] - thickness - radius[i]- neiRadius[point] ;
+          if (p[d] + thickness + radius[i]  + neiRadius[point]> bv.second[d])
+            bv.second[d] = p[d] + thickness + radius[i] + neiRadius[point];
           }
       return bv;
       };
     }
+      else{
+          throw std::runtime_error("neiRadiusAttr should be empty when radiusAttr is empty");
+      }
   else if (eleCategory == element_e::unknown)
     getBv = [defaultBox](Ti) -> Box { return defaultBox; };
   return getBv;

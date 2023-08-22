@@ -79,7 +79,6 @@ struct LBvh : IObjectClone<LBvh> {
   static bool intersect_radius(const Box &box, const TV &p, const float &radius) noexcept {
   constexpr int dim = 3;
   float sqDist = 0.0;
-  
   for (Ti d = 0; d != dim; ++d) {
     if (p[d] < box.first[d]) {
       float diff = box.first[d] - p[d];
@@ -104,11 +103,10 @@ struct LBvh : IObjectClone<LBvh> {
       sqDist += diff * diff;
     }
   }
-  float sqRadius = (radius + neiradius) * (radius + neiradius);  //neiradius!!!!!!!!!!!!  crash
-  return sqDist <= sqRadius;
-
   //auto dist = distance(box, p);
   //return dist <= radius + neiradius;
+  float sqRadius = (radius + neiradius) * (radius + neiradius);
+  return sqDist <= sqRadius;
 }
 
   static float distance(const Box &bv, const TV &x) {
@@ -253,10 +251,12 @@ struct LBvh : IObjectClone<LBvh> {
   }
 
       template <class F> void iter_neighbors_radius_two(TV const &pos, const float &radius, std::vector<float> const &neiRadius, F &&f) const {
+    auto psize = neiRadius.size();
     if (auto numLeaves = getNumLeaves(); numLeaves <= 2) {
       for (Ti i = 0; i != numLeaves; ++i) {
-        if (intersect_radius_two(sortedBvs[i], pos, radius, neiRadius[auxIndices[i]]))
-          f(auxIndices[i]);
+          if (intersect_radius_two(sortedBvs[i], pos, radius, neiRadius[auxIndices[i]]))
+            f(auxIndices[i]);
+        
       }
       return;
     }
@@ -265,7 +265,7 @@ struct LBvh : IObjectClone<LBvh> {
     while (node != -1 && node != numNodes) {
       Ti level = levels[node];
       for (; level; --level, ++node)
-        if (!intersect_radius_two(sortedBvs[node], pos, radius, neiRadius[auxIndices[node]]))
+        if (!intersect_radius_two(sortedBvs[node], pos, radius, 0))
           break;
       if (level == 0) {
         if (intersect_radius_two(sortedBvs[node], pos, radius, neiRadius[auxIndices[node]]))

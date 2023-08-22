@@ -133,11 +133,9 @@ static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
       if (!chs[k].which)
         ctx.channel(k)[0] = chs[k].base[chs[k].stride * i];
     }
-    if (radiusAttr.empty()){
-      lbvh->iter_neighbors(pos[i], [&](int pid) {// more condition~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if (radiusAttr.empty()&&neiRadiusAttr.empty()){
+      lbvh->iter_neighbors(pos[i], [&](int pid) {
         if (!isBox)
-          //if (length(pos[i] - opos[pid]) > sqrt((bvhradius+ neiRadius[pid]) * (bvhradius+neiRadius[pid])))
-          //if (length(pos[i] - opos[pid]) > sqrt((bvhradius) * (bvhradius)))
           if (lengthSquared(pos[i] - opos[pid]) > (bvhradius) * (bvhradius))
             return;
         for (int k = 0; k < chs.size(); k++) {
@@ -147,9 +145,22 @@ static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
         ctx.execute();
       });
     }
-    else{
+    else if(!radiusAttr.empty()&&neiRadiusAttr.empty()){
       auto &radius = prim->verts.attr<float>(radiusAttr);
-      auto &neiRadius = primNei->verts.attr<float>(neiRadiusAttr);//maybe another branch
+      lbvh->iter_neighbors_radius(pos[i], radius[i], [&](int pid) {
+        if (!isBox)
+          if (lengthSquared(pos[i] - opos[pid]) > (bvhradius + radius[i]) * (bvhradius + radius[i]))
+            return;
+        for (int k = 0; k < chs.size(); k++) {
+          if (chs[k].which)
+            ctx.channel(k)[0] = chs2[k].base[chs2[k].stride * pid];
+        }
+        ctx.execute();
+      });
+    }
+    else if(!radiusAttr.empty()&&!neiRadiusAttr.empty()){
+      auto &radius = prim->verts.attr<float>(radiusAttr);
+      auto &neiRadius = primNei->verts.attr<float>(neiRadiusAttr);
       lbvh->iter_neighbors_radius_two(pos[i], radius[i], neiRadius, [&](int pid) {
         if (!isBox)
           if (lengthSquared(pos[i] - opos[pid]) > (bvhradius + radius[i]  + neiRadius[pid]) * (bvhradius + radius[i]  + neiRadius[pid]))
@@ -161,6 +172,9 @@ static void bvh_vectors_wrangle_radius_two(zfx::x64::Executable *exec,
         }
         ctx.execute();
       });
+    }
+    else{
+        throw zeno::makeError("neiRadiusAttr need to be empty when radiusAttr is empty");
     }
     for (int k = 0; k < chs.size(); k++) {
       if (!chs[k].which)
