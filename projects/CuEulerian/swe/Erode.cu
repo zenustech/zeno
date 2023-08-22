@@ -3558,5 +3558,164 @@ namespace zeno {
             "erode",
         }});
 
+    struct zs_HF_maskbyOcclusion : INode {
+        void apply() override {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            auto terrain = get_input<PrimitiveObject>("prim");
+
+            auto invert_mask = get_input2<bool>("invert mask");
+            auto view_radius = get_input2<int>("view distance");
+            auto step_scale = get_input2<float>("step scale");
+            auto axis_count = get_input2<int>("num of searches");
+            auto dohemisphere = get_input2<bool>("dohemisphere");
+
+            int nx, nz;
+            auto &ud = terrain->userData();
+            if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+                zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+            nx = ud.get2<int>("nx");
+            nz = ud.get2<int>("nz");
+            auto &pos = terrain->verts;
+            float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
+            float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
+            float cellSize = zeno::max(pos_delta_x, pos_delta_z);
+
+//        auto heightLayer = get_input2<std::string>("height_layer");
+//        if (!terrain->verts.has_attr(heightLayer)) {
+//            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}'.",
+//                            heightLayer);
+//        }
+            auto &height = terrain->verts.attr<float>("height");
+
+            auto &ao = terrain->verts.add_attr<float>("ao");
+            std::fill(ao.begin(), ao.end(), 0.0f);
+//            auto &attr_ao = terrain->verts.attr<float>("ao");
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            auto pol = cuda_exec();
+            auto zs_height = to_device_vector(height);
+            auto zs_ao = to_device_vector(ao, false);
+
+            pol(range((std::size_t)nz * (std::size_t)nx), [=, _height = view<space>(zs_height), _ao = view<space>(zs_ao)] __device__(std::size_t idx) mutable {
+                    auto id_x = idx % nx; // inner index
+                    auto id_z = idx / nx; // outer index
+                    float h_start = _height[idx];
+
+                    step_scale = zs::max(step_scale, 0.5f);
+                    if (view_radius) step_scale = zs::min(step_scale, 0.499f * view_radius);
+
+                    int step_limit = view_radius > 0.0f ?
+                                     zs::ceil(view_radius / (cellSize * step_scale) ) :
+                                     zs::ceil(zs::sqrt((float)(nx*nx+nz*nz)) / step_scale);
+
+                    float sweep_angle = 3.14159f / (float) zs::max((float)axis_count, 1.0f);
+                    float cur_angle = 0.0f;
+
+                    float total_fov = 0.0f;
+                    float successful_rays = 0;
+
+
+                    float z_step = zs::sin(cur_angle);
+                    float x_step = zs::cos(cur_angle);
+                    x_step *= step_scale;
+                    z_step *= step_scale;
+
+                    for (int i = 0; i < axis_count; i++) {
+                        float z_step = zs::sin(cur_angle);
+                        float x_step = zs::cos(cur_angle);
+                        x_step *= step_scale;
+                        z_step *= step_scale;
+
+                        float speed = zs::sqrt(x_step*x_step+z_step*z_step) * cellSize;
+
+                        for (int j = 0; j < 2; j++) {
+                            float x = id_x + x_step;
+                            float z = id_z + z_step;
+                            float distance = speed;
+                            int steps = 1;
+
+                            float start_slope;
+
+                            float finalslope = 0.0f;
+                            float maxslope = -1e10f;
+                            while (steps < step_limit &&
+                                   x > 0 && x < (nx-1) &&
+                                   z > 0 && z < (nz-1)) {
+
+                                x = zs::clamp(x, 0.0f, (float)(nx-1));
+                                z = zs::clamp(z, 0.0f, (float)(nz-1));
+
+                                const int int_x = (int)zs::floor(x);
+                                const int int_z = (int)zs::floor(z);
+
+                                const float fract_x = x - int_x;
+                                const float fract_z = z - int_z;
+
+                                int srcidx = Pos2Idx(int_x, int_z, nx);
+                                const float i00 = _height[srcidx];
+                                const float i10 = _height[srcidx + 1];
+                                const float i01 = _height[srcidx + nz];
+                                const float i11 = _height[srcidx + nz + 1];
+
+                                float h_current = (i00 * (1-fract_x) + i10 * (fract_x)) * (1-fract_z) +
+                                                  (i01 * (1-fract_x) + i11 * (fract_x)) * (  fract_z);
+
+                                // Calculate the slope
+                                float dh = h_current - h_start;
+                                float curslope = dh / distance;
+                                if (steps == 1) start_slope = curslope;
+                                maxslope = zs::max(maxslope, curslope);
+                                finalslope = maxslope;
+
+                                x += x_step;
+                                z += z_step;
+                                distance += speed;
+                                steps++;
+                            }
+
+                            if (steps > 1) {
+                                successful_rays += 1.0f;
+
+                                if (dohemisphere) start_slope = 0;
+                                float slope = zs::max(start_slope, finalslope);
+                                total_fov += 1 - slope / zs::sqrt(slope*slope+1.0f);
+                            }
+
+                            x_step = -x_step;
+                            z_step = -z_step;
+                        }
+
+                        cur_angle += sweep_angle;
+                    }
+
+                    if (successful_rays != 0) total_fov /= successful_rays;
+
+                    total_fov = zs::clamp(total_fov, 0.0f, 1.0f);
+                    _ao[idx] = invert_mask ? 1-total_fov : total_fov;
+            });
+
+            retrieve_device_vector(ao, zs_ao);
+
+            set_output("prim", get_input("prim"));
+        }
+    };
+    ZENDEFNODE(zs_HF_maskbyOcclusion,
+               { /* inputs: */ {
+                       "prim",
+                       {"bool", "invert mask", "0"},
+                       {"int", "view distance", "200"},
+                       {"float", "step scale", "1"},
+                       {"int", "num of searches", "16"},
+                       {"bool", "dohemisphere", "0"},
+                   }, /* outputs: */ {
+                       "prim",
+                   }, /* params: */ {
+                   }, /* category: */ {
+                       "erode",
+                   } });
 
 }   // namespace zeno
