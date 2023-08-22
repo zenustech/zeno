@@ -253,6 +253,8 @@ namespace zeno {
                 }
                 if constexpr (IsSharedPtr<InputType>()) {
                     ReadObject(Node);
+                } else if constexpr(std::is_base_of_v<std::string, InputType>) {
+                    ValueRef = InputType(Node->get_input2<std::string>(KeyName));
                 } else {
                     ReadPrimitiveValue(Node);
                 }
