@@ -8,6 +8,8 @@
 #include <zeno/types/AttrVector.h>
 #include <zeno/funcs/LiterialConverter.h>
 
+const char* vecElementName[] = {"x", "y", "z", "w"};
+
 using zeno::AttrAcceptAll;
 
 PrimAttrTableModel::PrimAttrTableModel(QObject* parent)
@@ -53,28 +55,28 @@ int PrimAttrTableModel::rowCount(const QModelIndex &parent) const {
 int PrimAttrTableModel::columnCount(const QModelIndex &parent) const {
     if (m_prim) {
         if (sel_attr == "Vertex") {
-            return 1 + (int)m_prim->verts.num_attrs<AttrAcceptAll>();
+            return m_prim->verts.total_dim();
         }
         else if (sel_attr == "Tris") {
-            return 1 + (int)m_prim->tris.num_attrs<AttrAcceptAll>();
+            return m_prim->tris.total_dim();
         }
         else if (sel_attr == "Points") {
-            return 1 + (int)m_prim->points.num_attrs<AttrAcceptAll>();
+            return m_prim->points.total_dim();
         }
         else if (sel_attr == "Lines") {
-            return 1 + (int)m_prim->lines.num_attrs<AttrAcceptAll>();
+            return m_prim->lines.total_dim();
         }
         else if (sel_attr == "Quads") {
-            return 1 + (int)m_prim->quads.num_attrs<AttrAcceptAll>();
+            return m_prim->quads.total_dim();
         }
         else if (sel_attr == "Polys") {
-            return 1 + (int)m_prim->polys.num_attrs<AttrAcceptAll>();
+            return m_prim->polys.total_dim();
         }
         else if (sel_attr == "Loops") {
-            return 1 + (int)m_prim->loops.num_attrs<AttrAcceptAll>();
+            return m_prim->loops.total_dim();
         }
         else if (sel_attr == "UVs") {
-            return 1 + (int)m_prim->uvs.num_attrs<AttrAcceptAll>();
+            return m_prim->uvs.total_dim();
         }
         else {
             return m_prim->userData().size();
@@ -169,6 +171,14 @@ QVariant PrimAttrTableModel::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
+template<typename T>
+QString attrName(const zeno::AttrVector<T>& attr, zeno::AttrVectorIndex index) {
+    if (index.attrIndex == 0) {
+        return QString("pos");
+    }
+    return QString(attr.attr_keys<AttrAcceptAll>()[index.attrIndex - 1].c_str());
+}
+
 QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (Qt::DisplayRole != role)
@@ -177,68 +187,44 @@ QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation
     if (orientation == Qt::Horizontal)
     {
         if (sel_attr == "Vertex") {
-            if (section == 0) {
-                return QString("pos");
-            }
-            else {
-                return QString(m_prim->verts.attr_keys<AttrAcceptAll>()[section - 1].c_str());
-            }
+            auto index = m_prim->verts.attr_index(section);
+            auto name = attrName(m_prim->verts, index);
+            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
         }
         else if (sel_attr == "Tris") {
-            if (section == 0) {
-                return QString("pos");
-            }
-            else {
-                return QString(m_prim->tris.attr_keys<AttrAcceptAll>()[section - 1].c_str());
-            }
+            auto index = m_prim->tris.attr_index(section);
+            auto name = attrName(m_prim->tris, index);
+            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
         }
         else if (sel_attr == "Points") {
-            if (section == 0) {
-                return QString("pos");
-            }
-            else {
-                return QString(m_prim->points.attr_keys<AttrAcceptAll>()[section - 1].c_str());
-            }
+            auto index = m_prim->points.attr_index(section);
+            auto name = attrName(m_prim->points, index);
+            return QString("%1").arg(name);
         }
         else if (sel_attr == "Lines") {
-            if (section == 0) {
-                return QString("pos");
-            }
-            else {
-                return QString(m_prim->lines.attr_keys<AttrAcceptAll>()[section - 1].c_str());
-            }
+            auto index = m_prim->lines.attr_index(section);
+            auto name = attrName(m_prim->lines, index);
+            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
         }
         else if (sel_attr == "Quads") {
-            if (section == 0) {
-                return QString("pos");
-            }
-            else {
-                return QString(m_prim->quads.attr_keys<AttrAcceptAll>()[section - 1].c_str());
-            }
+            auto index = m_prim->quads.attr_index(section);
+            auto name = attrName(m_prim->quads, index);
+            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
         }
         else if (sel_attr == "Polys") {
-            if (section == 0) {
-                return QString("pos");
-            }
-            else {
-                return QString(m_prim->polys.attr_keys<AttrAcceptAll>()[section - 1].c_str());
-            }
+            auto index = m_prim->polys.attr_index(section);
+            auto name = attrName(m_prim->polys, index);
+            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
         }
         else if (sel_attr == "Loops") {
-            if (section == 0) {
-                return QString("pos");
-            }
-            else {
-                return QString(m_prim->loops.attr_keys<AttrAcceptAll>()[section - 1].c_str());
-            }
+            auto index = m_prim->loops.attr_index(section);
+            auto name = attrName(m_prim->loops, index);
+            return QString("%1").arg(name);
         }
         else if (sel_attr == "UVs") {
-            if (section == 0) {
-                return QString("pos");
-            }
-            else {
-                return QString(m_prim->uvs.attr_keys<AttrAcceptAll>()[section - 1].c_str());
-            }
+            auto index = m_prim->uvs.attr_index(section);
+            auto name = attrName(m_prim->uvs, index);
+            return QString("%1[%2]").arg(name).arg(vecElementName[index.elementIndex]);
         }
         else {
             auto it = m_prim->userData().begin();
@@ -274,37 +260,50 @@ void PrimAttrTableModel::setSelAttr(std::string sel_attr_) {
 }
 
 template<typename T>
-QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex &index) {
-    std::string attr_name = attr.template attr_keys<AttrAcceptAll>().at(index.column() - 1);
+QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex& modelIndex) {
+    int row = modelIndex.row();
+    int column = modelIndex.column();
+
+    auto index = attr.attr_index(column);
+    if (index.attrIndex == 0) {
+        if constexpr (zeno::is_vec_v<T>) {
+            return attr.at(row)[index.elementIndex];
+        }
+        else {
+            return attr.at(row);
+        }
+    }
+
+    std::string attr_name = attr.template attr_keys<AttrAcceptAll>().at(index.attrIndex - 1);
     if (attr.template attr_is<float>(attr_name)) {
-        return attr.template attr<float>(attr_name).at(index.row());
+        return attr.template attr<float>(attr_name).at(row);
     }
     else if (attr.template attr_is<zeno::vec2f>(attr_name)) {
-        auto v = attr.template attr<zeno::vec2f>(attr_name).at(index.row());
-        return QString("%1, %2").arg(v[0]).arg(v[1]);
+        auto v = attr.template attr<zeno::vec2f>(attr_name).at(row);
+        return v[index.elementIndex];
     }
     else if (attr.template attr_is<zeno::vec3f>(attr_name)) {
-        auto v = attr.template attr<zeno::vec3f>(attr_name).at(index.row());
-        return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
+        auto v = attr.template attr<zeno::vec3f>(attr_name).at(row);
+        return v[index.elementIndex];
     }
     else if (attr.template attr_is<zeno::vec4f>(attr_name)) {
-        auto v = attr.template attr<zeno::vec4f>(attr_name).at(index.row());
-        return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+        auto v = attr.template attr<zeno::vec4f>(attr_name).at(row);
+        return v[index.elementIndex];
     }
     else if (attr.template attr_is<int>(attr_name)) {
-        return attr.template attr<int>(attr_name).at(index.row());
+        return attr.template attr<int>(attr_name).at(row);
     }
     else if (attr.template attr_is<zeno::vec2i>(attr_name)) {
-        auto v = attr.template attr<zeno::vec2i>(attr_name).at(index.row());
-        return QString("%1, %2").arg(v[0]).arg(v[1]);
+        auto v = attr.template attr<zeno::vec2i>(attr_name).at(row);
+        return v[index.elementIndex];
     }
     else if (attr.template attr_is<zeno::vec3i>(attr_name)) {
-        auto v = attr.template attr<zeno::vec3i>(attr_name).at(index.row());
-        return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
+        auto v = attr.template attr<zeno::vec3i>(attr_name).at(row);
+        return v[index.elementIndex];
     }
     else if (attr.template attr_is<zeno::vec4i>(attr_name)) {
-        auto v = attr.template attr<zeno::vec4i>(attr_name).at(index.row());
-        return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
+        auto v = attr.template attr<zeno::vec4i>(attr_name).at(row);
+        return v[index.elementIndex];
     }
     else {
         return QVariant();
@@ -312,75 +311,27 @@ QVariant attrData(const zeno::AttrVector<T> &attr, const QModelIndex &index) {
 }
 
 QVariant PrimAttrTableModel::vertexData(const QModelIndex &index) const {
-    if (index.column() == 0) {
-        auto v = m_prim->verts.at(index.row());
-        return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-    }
-    else {
-        return attrData(m_prim->verts, index);
-    }
+    return attrData(m_prim->verts, index);
 }
 
 QVariant PrimAttrTableModel::trisData(const QModelIndex &index) const {
-    if (index.column() == 0) {
-        auto v = m_prim->tris.at(index.row());
-        return QString("%1, %2, %3").arg(v[0]).arg(v[1]).arg(v[2]);
-    }
-    else {
-        return attrData(m_prim->tris, index);
-    }
+    return attrData(m_prim->tris, index);
 }
 QVariant PrimAttrTableModel::pointsData(const QModelIndex &index) const {
-    if (index.column() == 0) {
-        auto v = m_prim->points.at(index.row());
-        return v;
-    }
-    else {
-        return attrData(m_prim->points, index);
-    }
+    return attrData(m_prim->points, index);
 }
 QVariant PrimAttrTableModel::linesData(const QModelIndex &index) const {
-    if (index.column() == 0) {
-        auto v = m_prim->lines.at(index.row());
-        return QString("%1, %2").arg(v[0]).arg(v[1]);
-    }
-    else {
-        return attrData(m_prim->lines, index);
-    }
+    return attrData(m_prim->lines, index);
 }
 QVariant PrimAttrTableModel::quadsData(const QModelIndex &index) const {
-    if (index.column() == 0) {
-        auto v = m_prim->quads.at(index.row());
-        return QString("%1, %2, %3, %4").arg(v[0]).arg(v[1]).arg(v[2]).arg(v[3]);
-    }
-    else {
-        return attrData(m_prim->quads, index);
-    }
+    return attrData(m_prim->quads, index);
 }
 QVariant PrimAttrTableModel::polysData(const QModelIndex &index) const {
-    if (index.column() == 0) {
-        auto v = m_prim->polys.at(index.row());
-        return QString("%1, %2").arg(v[0]).arg(v[1]);
-    }
-    else {
-        return attrData(m_prim->polys, index);
-    }
+    return attrData(m_prim->polys, index);
 }
 QVariant PrimAttrTableModel::loopsData(const QModelIndex &index) const {
-    if (index.column() == 0) {
-        auto v = m_prim->loops.at(index.row());
-        return v;
-    }
-    else {
-        return attrData(m_prim->loops, index);
-    }
+    return attrData(m_prim->loops, index);
 }
 QVariant PrimAttrTableModel::uvsData(const QModelIndex &index) const {
-    if (index.column() == 0) {
-        auto v = m_prim->uvs.at(index.row());
-        return QString("%1, %2").arg(v[0]).arg(v[1]);
-    }
-    else {
-        return attrData(m_prim->uvs, index);
-    }
+    return attrData(m_prim->uvs, index);
 }

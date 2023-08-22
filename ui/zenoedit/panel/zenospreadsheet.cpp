@@ -58,10 +58,14 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 
     pMainLayout->addLayout(pTitleLayout);
 
+    auto sortModel = new QSortFilterProxyModel(this);
+    sortModel->setSourceModel(dataModel);
+
     QTableView *prim_attr_view = new QTableView();
     prim_attr_view->setAlternatingRowColors(true);
+    prim_attr_view->setSortingEnabled(true);
     prim_attr_view->setProperty("cssClass", "proppanel");
-    prim_attr_view->setModel(dataModel);
+    prim_attr_view->setModel(sortModel);
     pMainLayout->addWidget(prim_attr_view);
 
 //    pStatusBar->setAlignment(Qt::AlignRight);
@@ -86,6 +90,16 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
                 setPrim(key);
             }
         }
+    });
+
+    // corner button of tableview
+    auto cornerBtn = prim_attr_view->findChild<QAbstractButton*>();
+    // do not select all when clicked
+    cornerBtn->disconnect();
+    // reset sort order
+    connect(cornerBtn, &QAbstractButton::clicked, this, [sortModel, prim_attr_view]() {
+        sortModel->sort(-1);
+        prim_attr_view->horizontalHeader()->setSortIndicator(-1, Qt::SortOrder::AscendingOrder);
     });
 }
 
