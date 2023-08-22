@@ -3,6 +3,7 @@
 #include "roads/roads.h"
 #include "zeno/PrimitiveObject.h"
 #include "zeno/types/UserData.h"
+#include "zeno/types/CurveObject.h"
 #include "zeno/utils/PropertyVisitor.h"
 #include "zeno/utils/logger.h"
 #include "zeno/zeno.h"
@@ -112,11 +113,28 @@ namespace {
         PathDistanceHeuristic(Vertex Goal) : m_Goal(Goal) {}
 
         CostType operator()(Vertex u) {
-            return 0;
+            return std::abs<CostType>(m_Goal - u);
         }
 
     private:
         Vertex m_Goal;
+    };
+
+    struct FoundGoal {};
+
+    template < class Vertex >
+    class PathDistanceVisitor : public boost::default_astar_visitor
+    {
+    public:
+        PathDistanceVisitor(Vertex goal) : m_goal(goal) {}
+        template < class Graph > void examine_vertex(Vertex u, Graph& g)
+        {
+            if (u == m_goal)
+                throw FoundGoal();
+        }
+
+    private:
+        Vertex m_goal;
     };
 
     struct ZENO_CRTP(CalcPathCost_Simple, zeno::reflect::IParameterAutoNode) {
@@ -126,9 +144,6 @@ namespace {
         std::shared_ptr<zeno::PrimitiveObject> Primitive;
         ZENO_DECLARE_INPUT_FIELD(Primitive, "Prim");
         ZENO_DECLARE_OUTPUT_FIELD(Primitive, "Prim");
-
-        std::string OutputChannel;
-        ZENO_DECLARE_INPUT_FIELD(OutputChannel, "Output Channel (Vertex Attr)", false, "", "path_cost");
 
         std::string SizeXChannel;
         ZENO_DECLARE_INPUT_FIELD(SizeXChannel, "Nx Channel (UserData)", false, "", "nx");
@@ -147,6 +162,9 @@ namespace {
 
         zeno::reflect::PathAlgorithmTypeInput Algorithm;
         ZENO_DECLARE_INPUT_FIELD(Algorithm, "Path Finding Algorithm", false, "", "Dijkstra");
+
+        std::shared_ptr<zeno::CurveObject> GradientCurve = nullptr;
+        ZENO_DECLARE_INPUT_FIELD(GradientCurve, "Gradient Cost Control", true);
 
         bool bRemoveTriangles;
         ZENO_DECLARE_INPUT_FIELD(bRemoveTriangles, "Remove Triangles", false, "", "true");
@@ -180,9 +198,16 @@ namespace {
                 Connective = ConnectiveType::FOURTY;
             }
 
+            auto GradientMapFunc = [Curve = AutoParameter->GradientCurve] (double In) -> double {
+                if (Curve) {
+                    return Curve->eval(float(In));
+                }
+                return In;
+            };
+
             DynamicGrid<CostPoint> CostGrid(AutoParameter->Nx, AutoParameter->Ny);
             CostGrid.insert(CostGrid.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.begin() + (AutoParameter->Nx * AutoParameter->Ny));
-            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, Connective, 2);
+            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, Connective, GradientMapFunc);
             zeno::log_info("cccc: {}", boost::num_vertices(Graph));
 
             using VertexDescriptor = boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor;
@@ -195,7 +220,10 @@ namespace {
             if (AutoParameter->Algorithm == "Dijkstra") {
                 boost::dijkstra_shortest_paths(Graph, Start, boost::predecessor_map(&p[0]).distance_map(&d[0]));
             } else if (AutoParameter->Algorithm == "A*") {
-                boost::astar_search_tree(Graph, Start, PathDistanceHeuristic<WeightedGridUndirectedGraph, double>(Goal), boost::predecessor_map(&p[0]).distance_map(&d[0]).visitor(boost::astar_visitor()));
+                try {
+                    boost::astar_search_tree(Graph, Start, PathDistanceHeuristic<WeightedGridUndirectedGraph, double>(Goal), boost::predecessor_map(&p[0]).distance_map(&d[0]).visitor(PathDistanceVisitor(Goal)));
+                } catch (FoundGoal) {
+                }
             }
 
             std::vector<boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor > path;
