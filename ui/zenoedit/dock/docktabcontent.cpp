@@ -827,6 +827,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     {
         m_background = new QCheckBox(tr("Background"));
         m_background->setStyleSheet("color: white;");
+        auto& ud = zeno::getSession().userData();
+        m_background->setChecked(ud.get2<bool>("optix_show_background", false));
         pToolLayout->addWidget(m_background);
     }
 
@@ -964,6 +966,12 @@ std::tuple<int, int> DockContent_View::curResolution()
 void DockContent_View::initResolution(int x, int y)
 {
     nx = x; ny = y;
+}
+
+void DockContent_View::setOptixBackgroundState(bool checked)
+{
+    if (!m_bGLView)
+        m_background->setChecked(checked);
 }
 
 DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)

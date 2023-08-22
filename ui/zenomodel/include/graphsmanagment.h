@@ -31,6 +31,8 @@ public:
     RECORD_SETTING recordInfo() const;
     void setRecordInfo(RECORD_SETTING& info);
     LAYOUT_SETTING layoutInfo() const;
+    void setUserDataInfo(USERDATA_SETTING& info);
+    USERDATA_SETTING userdataInfo();
 
 signals:
     void modelInited(IGraphsModel*);
@@ -55,6 +57,7 @@ private:
     TIMELINE_INFO m_timerInfo;
     RECORD_SETTING m_recordInfo;
     LAYOUT_SETTING m_layoutInfo;
+    USERDATA_SETTING m_userdataInfo;
     QMap<QString, QGraphicsScene*> m_scenes;
 };
 

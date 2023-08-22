@@ -100,6 +100,16 @@ LAYOUT_SETTING ModelAcceptor::layoutInfo() const
     return m_layoutInfo;
 }
 
+USERDATA_SETTING ModelAcceptor::userdataInfo() const
+{
+    return m_userdatInfo;
+}
+
+void ModelAcceptor::setUserDataInfo(const USERDATA_SETTING& info)
+{
+    m_userdatInfo = info;
+}
+
 void ModelAcceptor::BeginSubgraph(const QString& name)
 {
     if (m_bImport && name == "main")

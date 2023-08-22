@@ -77,9 +77,11 @@ public:
     void setTimeInfo(const TIMELINE_INFO& info) override;
     void setRecordInfo(const RECORD_SETTING& info) override {};
     void setLayoutInfo(const LAYOUT_SETTING& info) override {};
+    void setUserDataInfo(const USERDATA_SETTING& info) override {};
     TIMELINE_INFO timeInfo() const override;
     RECORD_SETTING recordInfo() const override { return RECORD_SETTING(); };
     LAYOUT_SETTING layoutInfo() const override { return LAYOUT_SETTING(); };
+    USERDATA_SETTING userdataInfo() const override { return USERDATA_SETTING(); };
     void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,
