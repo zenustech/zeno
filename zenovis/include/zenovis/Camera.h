@@ -69,6 +69,7 @@ struct Camera {
     void lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance);
     void focusCamera(float cx, float cy, float cz, float radius);
     void set_program_uniforms(opengl::Program *pro);
+    void updateMatrix();
 };
 
 } // namespace zenovis
