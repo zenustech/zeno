@@ -46,10 +46,15 @@ DynamicGrid<SlopePoint> roads::CalculateSlope(const DynamicGrid<HeightPoint> &In
     return Result;
 }
 
-WeightedGridUndirectedGraph roads::CreateWeightGraphFromCostGrid(const DynamicGrid<CostPoint> &InCostGrid, const ConnectiveType Type) {
+WeightedGridUndirectedGraph roads::CreateWeightGraphFromCostGrid(const DynamicGrid<CostPoint> &InCostGrid, const ConnectiveType Type, float PowParam/*=1.5f*/) {
     ArrayList<IntPoint2D> Directions = { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
-    if (Type == ConnectiveType::EIGHT) {
+    if (Type >= ConnectiveType::EIGHT) {
         Directions.insert(Directions.end(), { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } });
+    }
+    if (Type >= ConnectiveType::SIXTEEN) {
+        Directions.insert(Directions.end(), { { -1, -2 }, { 1, -2 }, { -2, -1 }, { 2, -1 }, { -2, 1 }, { 2, 1 }, { -1, 2 }, { 1, 2 } });
+    }
+    if (Type >= ConnectiveType::FOURTY) {
     }
 
     WeightedGridUndirectedGraph NewGraph { InCostGrid.size() };
@@ -68,8 +73,10 @@ WeightedGridUndirectedGraph roads::CreateWeightGraphFromCostGrid(const DynamicGr
                 using EdgeDescriptor = boost::graph_traits<WeightedGridUndirectedGraph>::edge_descriptor;
                 auto [edge1, _] = boost::add_edge(OriginIdx, TargetIdx, NewGraph);
                 auto [edge2, _2] = boost::add_edge(TargetIdx, OriginIdx,  NewGraph);
-                WeightMap[edge1] = InCostGrid[TargetIdx] - InCostGrid[OriginIdx] + 30.0;
-                WeightMap[edge2] = InCostGrid[OriginIdx] - InCostGrid[TargetIdx] + 30.0;
+//                WeightMap[edge1] = std::pow(InCostGrid[TargetIdx] - InCostGrid[OriginIdx] > 0 ? std::min(InCostGrid[TargetIdx] - InCostGrid[OriginIdx] - 20.0, InCostGrid[TargetIdx] - InCostGrid[OriginIdx] - 10.0) : InCostGrid[TargetIdx] - InCostGrid[OriginIdx], 2);
+//                WeightMap[edge2] = std::pow(InCostGrid[OriginIdx] - InCostGrid[TargetIdx] > 0 ? std::min(InCostGrid[OriginIdx] - InCostGrid[TargetIdx] - 20.0, InCostGrid[OriginIdx] - InCostGrid[TargetIdx] - 10.0) : InCostGrid[OriginIdx] - InCostGrid[TargetIdx], 2);
+                WeightMap[edge1] = std::pow(InCostGrid[TargetIdx] - InCostGrid[OriginIdx], PowParam);
+                WeightMap[edge2] = std::pow(InCostGrid[OriginIdx] - InCostGrid[TargetIdx], PowParam);
             }
         }
     }

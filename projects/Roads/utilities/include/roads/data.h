@@ -18,6 +18,8 @@ namespace roads {
     enum class ConnectiveType {
         FOUR = 4,
         EIGHT = 8,
+        SIXTEEN = 16,
+        FOURTY = 40,
     };
 
     struct Point : public Eigen::Vector3d {

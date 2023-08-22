@@ -127,7 +127,7 @@ namespace {
 
             DynamicGrid<CostPoint> CostGrid(AutoParameter->Nx, AutoParameter->Ny);
             CostGrid.insert(CostGrid.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.begin() + (AutoParameter->Nx * AutoParameter->Ny));
-            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, ConnectiveType::FOUR);
+            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, ConnectiveType::SIXTEEN);
             zeno::log_info("cccc: {}", boost::num_vertices(Graph));
 
             using VertexDescriptor = boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor;
@@ -135,7 +135,7 @@ namespace {
             std::vector<VertexDescriptor> p(boost::num_vertices(Graph));
             std::vector<double> d(boost::num_vertices(Graph));
             VertexDescriptor Start { 1 };
-            VertexDescriptor Goal { 999999 };
+            VertexDescriptor Goal { 933333 };
 
             boost::dijkstra_shortest_paths(Graph, Start, boost::predecessor_map(&p[0]).distance_map(&d[0]));
 
