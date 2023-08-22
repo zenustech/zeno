@@ -205,7 +205,6 @@ void CameraControl::lookTo(int dir) {
     }
     setOrthoMode(true);
     updatePerspective();
-    setOrthoMode(false);
     zenoApp->getMainWindow()->updateViewport();
 }
 
@@ -296,6 +295,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             center += delta * getRadius();
             setCenter({float(center.x()), float(center.y()), float(center.z())});
         } else {
+            setOrthoMode(false);
             setTheta(getTheta() - dy * M_PI);
             setPhi(getPhi() + dx * M_PI);
         }
