@@ -46,6 +46,14 @@ DynamicGrid<SlopePoint> roads::CalculateSlope(const DynamicGrid<HeightPoint> &In
     return Result;
 }
 
+IntPoint2D InterpolatePoints(const IntPoint2D& A, const IntPoint2D& B, float t)
+{
+    IntPoint2D result;
+    result[0] = long(std::round(float(A[0]) + t * float(B[0] - A[0])));
+    result[1] = long(std::round(float(A[1]) + t * float(B[1] - A[1])));
+    return result;
+}
+
 WeightedGridUndirectedGraph roads::CreateWeightGraphFromCostGrid(const DynamicGrid<CostPoint> &InCostGrid, const ConnectiveType Type, float PowParam/*=1.5f*/) {
     ArrayList<IntPoint2D> Directions = { { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 } };
     if (Type >= ConnectiveType::EIGHT) {
@@ -55,6 +63,12 @@ WeightedGridUndirectedGraph roads::CreateWeightGraphFromCostGrid(const DynamicGr
         Directions.insert(Directions.end(), { { -1, -2 }, { 1, -2 }, { -2, -1 }, { 2, -1 }, { -2, 1 }, { 2, 1 }, { -1, 2 }, { 1, 2 } });
     }
     if (Type >= ConnectiveType::FOURTY) {
+        // Directions.insert(Directions.end(), { { -2, -2 }, { -2, -1 }, { -2, 0 }, { -2, 1 }, { -2, 2 }, { -1, -2 }, { -1, 2 }, { 0, -2 }, { 0, 2 }, { 1, -2 }, { 1, 2 }, { 2, -2 }, { 2, -1 }, { 2, 0 }, { 2, 1 }, { 2, 2 } });
+        size_t original_size = Directions.size();
+        for(size_t i = 0; i + 1 < original_size; ++i) {
+            Directions.push_back(InterpolatePoints(Directions[i], Directions[i + 1], 1.0 / 3.0));
+            Directions.push_back(InterpolatePoints(Directions[i], Directions[i + 1], 2.0 / 3.0));
+        }
     }
 
     WeightedGridUndirectedGraph NewGraph { InCostGrid.size() };
@@ -75,8 +89,8 @@ WeightedGridUndirectedGraph roads::CreateWeightGraphFromCostGrid(const DynamicGr
                 auto [edge2, _2] = boost::add_edge(TargetIdx, OriginIdx,  NewGraph);
 //                WeightMap[edge1] = std::pow(InCostGrid[TargetIdx] - InCostGrid[OriginIdx] > 0 ? std::min(InCostGrid[TargetIdx] - InCostGrid[OriginIdx] - 20.0, InCostGrid[TargetIdx] - InCostGrid[OriginIdx] - 10.0) : InCostGrid[TargetIdx] - InCostGrid[OriginIdx], 2);
 //                WeightMap[edge2] = std::pow(InCostGrid[OriginIdx] - InCostGrid[TargetIdx] > 0 ? std::min(InCostGrid[OriginIdx] - InCostGrid[TargetIdx] - 20.0, InCostGrid[OriginIdx] - InCostGrid[TargetIdx] - 10.0) : InCostGrid[OriginIdx] - InCostGrid[TargetIdx], 2);
-                WeightMap[edge1] = std::pow(InCostGrid[TargetIdx] - InCostGrid[OriginIdx], PowParam);
-                WeightMap[edge2] = std::pow(InCostGrid[OriginIdx] - InCostGrid[TargetIdx], PowParam);
+                WeightMap[edge1] = InCostGrid[TargetIdx] - InCostGrid[OriginIdx] + 30.0f;
+                WeightMap[edge2] = InCostGrid[OriginIdx] - InCostGrid[TargetIdx] + 30.0f;
             }
         }
     }

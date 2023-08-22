@@ -1,4 +1,5 @@
 #include "boost/graph/dijkstra_shortest_paths.hpp"
+#include "boost/graph/astar_search.hpp"
 #include "roads/roads.h"
 #include "zeno/PrimitiveObject.h"
 #include "zeno/types/UserData.h"
@@ -30,6 +31,28 @@ roads::DynamicGrid<roads::AdvancePoint> BuildGridFromPrimitive(const zeno::AttrV
     }
 
     return Grid;
+}
+
+namespace zeno::reflect {
+
+    struct ConnectiveTypeInput : std::string {
+        using std::string::string;
+    };
+
+    struct PathAlgorithmTypeInput : std::string {
+        using std::string::string;
+    };
+
+    template<>
+    struct ValueTypeToString<ConnectiveTypeInput> {
+        inline static std::string TypeName = "enum 4 8 16 40";
+    };
+
+    template<>
+    struct ValueTypeToString<PathAlgorithmTypeInput> {
+        inline static std::string TypeName = "enum Dijkstra A*";
+    };
+
 }
 
 namespace {
@@ -81,6 +104,21 @@ namespace {
         }
     };
 
+    template <typename Graph, typename CostType>
+    class PathDistanceHeuristic : public boost::astar_heuristic<Graph, CostType> {
+        typedef typename boost::graph_traits< Graph >::vertex_descriptor Vertex;
+
+    public:
+        PathDistanceHeuristic(Vertex Goal) : m_Goal(Goal) {}
+
+        CostType operator()(Vertex u) {
+            return 0;
+        }
+
+    private:
+        Vertex m_Goal;
+    };
+
     struct ZENO_CRTP(CalcPathCost_Simple, zeno::reflect::IParameterAutoNode) {
     //struct CalcPathCost_Simple : public zeno::reflect::IParameterAutoNode<CalcPathCost_Simple> {
         ZENO_GENERATE_NODE_BODY(CalcPathCost_Simple);
@@ -104,6 +142,12 @@ namespace {
         std::string GradientChannel;
         ZENO_DECLARE_INPUT_FIELD(GradientChannel, "Gradient Channel (Vertex Attr)", false, "", "gradient");
 
+        zeno::reflect::ConnectiveTypeInput PathConnective;
+        ZENO_DECLARE_INPUT_FIELD(PathConnective, "Path Connective", false, "", "16");
+
+        zeno::reflect::PathAlgorithmTypeInput Algorithm;
+        ZENO_DECLARE_INPUT_FIELD(Algorithm, "Path Finding Algorithm", false, "", "Dijkstra");
+
         bool bRemoveTriangles;
         ZENO_DECLARE_INPUT_FIELD(bRemoveTriangles, "Remove Triangles", false, "", "true");
 
@@ -125,9 +169,20 @@ namespace {
             AutoParameter->Nx;
             RoadsAssert(AutoParameter->Nx * AutoParameter->Ny <= AutoParameter->GradientList.size(), "Bad nx ny.");
 
+            ConnectiveType Connective = ConnectiveType::SIXTEEN;
+            if (AutoParameter->PathConnective == "4") {
+                Connective = ConnectiveType::FOUR;
+            } else if (AutoParameter->PathConnective == "8") {
+                Connective = ConnectiveType::EIGHT;
+            } else if (AutoParameter->PathConnective == "16") {
+                Connective = ConnectiveType::SIXTEEN;
+            } else if (AutoParameter->PathConnective == "40") {
+                Connective = ConnectiveType::FOURTY;
+            }
+
             DynamicGrid<CostPoint> CostGrid(AutoParameter->Nx, AutoParameter->Ny);
             CostGrid.insert(CostGrid.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.begin() + (AutoParameter->Nx * AutoParameter->Ny));
-            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, ConnectiveType::SIXTEEN);
+            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, Connective, 2);
             zeno::log_info("cccc: {}", boost::num_vertices(Graph));
 
             using VertexDescriptor = boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor;
@@ -137,7 +192,11 @@ namespace {
             VertexDescriptor Start { 1 };
             VertexDescriptor Goal { 933333 };
 
-            boost::dijkstra_shortest_paths(Graph, Start, boost::predecessor_map(&p[0]).distance_map(&d[0]));
+            if (AutoParameter->Algorithm == "Dijkstra") {
+                boost::dijkstra_shortest_paths(Graph, Start, boost::predecessor_map(&p[0]).distance_map(&d[0]));
+            } else if (AutoParameter->Algorithm == "A*") {
+                boost::astar_search_tree(Graph, Start, PathDistanceHeuristic<WeightedGridUndirectedGraph, double>(Goal), boost::predecessor_map(&p[0]).distance_map(&d[0]).visitor(boost::astar_visitor()));
+            }
 
             std::vector<boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor > path;
             boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor current = Goal;
@@ -149,13 +208,12 @@ namespace {
             }
             path.push_back(Start);
 
-//            AutoParameter->Primitive = std::make_shared<zeno::PrimitiveObject>();
             if (AutoParameter->bRemoveTriangles) {
                 AutoParameter->Primitive->tris.clear();
             }
             AutoParameter->Primitive->lines.resize(path.size() - 1);
             for (size_t i = 0; i < path.size() - 1; ++i) {
-                AutoParameter->Primitive->lines[i] = zeno::vec2i(path[i], path[i+1]);
+                AutoParameter->Primitive->lines[i] = zeno::vec2i(int(path[i]), int(path[i+1]));
             }
         }
     };
