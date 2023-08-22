@@ -62,6 +62,9 @@ enum PARAM_CLASS
     PARAM_OUTPUT,
     PARAM_INNER_INPUT,      //socket in socket, like key in dict param.
     PARAM_INNER_OUTPUT,
+    PARAM_LEGACY_INPUT,     //params described by legacy zsgfile.
+    PARAM_LEGACY_PARAM,
+    PARAM_LEGACY_OUTPUT
 };
 
 enum NODE_OPTION {

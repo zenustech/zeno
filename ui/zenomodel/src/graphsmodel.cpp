@@ -22,6 +22,7 @@ GraphsModel::GraphsModel(QObject *parent)
     , m_bIOProcessing(false)
     , m_version(zenoio::VER_2_5)
     , m_bApiEnableRun(true)
+    , m_bHasNotDesc(false)
 {
     m_selection = new QItemSelectionModel(this);
     initDescriptors();
@@ -1215,13 +1216,22 @@ bool GraphsModel::IsSubGraphNode(const QModelIndex& nodeIdx) const
 
 void GraphsModel::removeNode(int row, const QModelIndex& subGpIdx)
 {
-	SubGraphModel* pGraph = subGraph(subGpIdx.row());
+    SubGraphModel* pGraph = subGraph(subGpIdx.row());
     ZASSERT_EXIT(pGraph);
-	if (pGraph)
-	{
+    if (pGraph)
+    {
         QModelIndex idx = pGraph->index(row, 0);
         pGraph->removeNode(row);
-	}
+    }
+}
+
+void GraphsModel::removeLegacyLink(const QModelIndex& linkIdx)
+{
+    if (!linkIdx.isValid())
+        return;
+
+    auto linkModel = const_cast<QAbstractItemModel*>(linkIdx.model());
+    linkModel->removeRow(linkIdx.row());
 }
 
 void GraphsModel::removeLink(const QModelIndex& linkIdx, bool enableTransaction)
@@ -1326,6 +1336,28 @@ QModelIndex GraphsModel::addLink(const QModelIndex& subgIdx, const EdgeInfo& inf
         pOutputs->setData(outParamIdx, linkIdx, ROLE_ADDLINK);
         return linkIdx;
     }
+}
+
+void GraphsModel::addLegacyLink(const QModelIndex& subgIdx, const QModelIndex& fromSock, const QModelIndex& toSock)
+{
+    if (!subgIdx.isValid())
+    {
+        zeno::log_warn("addlink: the subgraph has not been specified.");
+        return;
+    }
+
+    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+    auto iter = m_legacyLinks.find(subgName);
+    LinkModel* pLinkModel = nullptr;
+    if (iter == m_legacyLinks.end())
+    {
+        pLinkModel = new LinkModel(this);
+        m_legacyLinks.insert(subgName, pLinkModel);
+    }
+    else {
+        pLinkModel = iter.value();
+    }
+    pLinkModel->addLink(fromSock, toSock);
 }
 
 void GraphsModel::setIOProcessing(bool bIOProcessing)
@@ -1464,6 +1496,16 @@ void GraphsModel::_markSubnodesChange(SubGraphModel* pSubg)
             _markNodeChanged(node);
         }
     }
+}
+
+void GraphsModel::markNotDescNode()
+{
+    m_bHasNotDesc = true;
+}
+
+bool GraphsModel::hasNotDescNode() const
+{
+    return m_bHasNotDesc;
 }
 
 void GraphsModel::markNodeDataChanged(const QModelIndex& nodeIdx)
@@ -1635,6 +1677,17 @@ LinkModel* GraphsModel::linkModel(const QModelIndex& subgIdx) const
     auto iterGroup = m_linksGroup.find(subgName);
     ZASSERT_EXIT(iterGroup != m_linksGroup.end(), nullptr);
     LinkModel *pLinkModel = iterGroup.value();
+    ZASSERT_EXIT(pLinkModel, nullptr);
+    return pLinkModel;
+}
+
+LinkModel* GraphsModel::legacyLinks(const QModelIndex& subgIdx) const
+{
+    const QString& subgName = subgIdx.data(ROLE_OBJNAME).toString();
+    auto iterGroup = m_legacyLinks.find(subgName);
+    if (iterGroup == m_legacyLinks.end())
+        return nullptr;
+    LinkModel* pLinkModel = iterGroup.value();
     ZASSERT_EXIT(pLinkModel, nullptr);
     return pLinkModel;
 }

@@ -34,6 +34,12 @@ void ZsgWriter::dumpToClipboard(const QMap<QString, NODE_DATA>& nodes)
             for (const QString& nodeId : nodes.keys())
             {
                 const NODE_DATA& nodeData = nodes[nodeId];
+                if (nodeData.find(ROLE_NODETYPE) != nodeData.end() &&
+                    NO_VERSION_NODE == nodeData[ROLE_NODETYPE])
+                {
+                    continue;
+                }
+
                 writer.Key(nodeId.toUtf8());
                 dumpNode(nodeData, writer);
             }
@@ -104,6 +110,10 @@ void ZsgWriter::_dumpSubGraph(IGraphsModel* pModel, const QModelIndex& subgIdx, 
         {
             const QModelIndex& idx = pModel->index(i, subgIdx);
             const NODE_DATA& node = pModel->itemData(idx, subgIdx);
+            if (node.find(ROLE_NODETYPE) != node.end() && NO_VERSION_NODE == node[ROLE_NODETYPE])
+            {
+                continue;
+            }
             const QString& id = node[ROLE_OBJID].toString();
             writer.Key(id.toUtf8());
             dumpNode(node, writer);

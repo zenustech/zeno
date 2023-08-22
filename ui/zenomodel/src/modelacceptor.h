@@ -89,6 +89,7 @@ private:
 
 	TIMELINE_INFO m_timeInfo;
 	QList<EdgeInfo> m_subgLinks;	//collected links for m_currentGraph.
+    QList<EdgeInfo> m_subgLegacyLinks;  //links with legacy param.
 	SubGraphModel* m_currentGraph;
 	GraphsModel* m_pModel;
 	bool m_bImport;

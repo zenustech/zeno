@@ -222,6 +222,11 @@ ZenoFullLink::ZenoFullLink(const QPersistentModelIndex& idx, ZenoNode* outNode, 
     connect(outNode, SIGNAL(outSocketPosChanged()), this, SLOT(onOutSocketPosChanged()));
 }
 
+bool ZenoFullLink::isLegacyLink() const
+{
+    return m_bLegacyLink;
+}
+
 ZenoFullLink::~ZenoFullLink()
 {
 }

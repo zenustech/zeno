@@ -18,8 +18,9 @@ ZenoSocketItem::ZenoSocketItem(
 {
     PARAM_CLASS cls = (PARAM_CLASS)viewSockIdx.data(ROLE_PARAM_CLASS).toInt();
     ZASSERT_EXIT(cls == PARAM_INNER_INPUT || cls == PARAM_INPUT ||
-                 cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT);
-    m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT);
+                 cls == PARAM_INNER_OUTPUT || cls == PARAM_OUTPUT ||
+                 cls == PARAM_LEGACY_INPUT || cls == PARAM_LEGACY_OUTPUT);
+    m_bInput = (cls == PARAM_INNER_INPUT || cls == PARAM_INPUT || cls == PARAM_LEGACY_INPUT);
     m_bInnerSock = (cls == PARAM_INNER_INPUT || cls == PARAM_INNER_OUTPUT);
     m_innerSockMargin = ZenoStyle::dpiScaled(15);
     m_socketXOffset = ZenoStyle::dpiScaled(24);

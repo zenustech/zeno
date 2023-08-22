@@ -93,6 +93,7 @@ public:
     int type() const override;
 
     void paint(QPainter* painter, QStyleOptionGraphicsItem const* styleOptions, QWidget* widget) override;
+    bool isLegacyLink() const;
 
 private slots:
     void onInSocketPosChanged();

@@ -71,8 +71,6 @@ void NodeParamModel::initUI()
     auto inputs = new VParamItem(VPARAM_GROUP, iotags::params::node_inputs);
     auto params = new VParamItem(VPARAM_GROUP, iotags::params::node_params);
     auto outputs = new VParamItem(VPARAM_GROUP, iotags::params::node_outputs);
-
-    auto root = invisibleRootItem();
     appendRow(inputs);
     appendRow(params);
     appendRow(outputs);
@@ -416,6 +414,33 @@ void NodeParamModel::setAddParam(
     case PARAM_INPUT: pGroup = getInputs(); break;
     case PARAM_PARAM: pGroup = getParams(); break;
     case PARAM_OUTPUT: pGroup = getOutputs(); break;
+    case PARAM_LEGACY_INPUT:
+    {
+        pGroup = getLegacyInputs();
+        if (!pGroup) {
+            pGroup = new VParamItem(VPARAM_GROUP, iotags::params::legacy_inputs);
+            appendRow(pGroup);
+        }
+        break;
+    }
+    case PARAM_LEGACY_PARAM:
+    {
+        pGroup = getLegacyParams();
+        if (!pGroup) {
+            pGroup = new VParamItem(VPARAM_GROUP, iotags::params::legacy_params);
+            appendRow(pGroup);
+        }
+        break;
+    }
+    case PARAM_LEGACY_OUTPUT:
+    {
+        pGroup = getLegacyOutputs();
+        if (!pGroup) {
+            pGroup = new VParamItem(VPARAM_GROUP, iotags::params::legacy_outputs);
+            appendRow(pGroup);
+        }
+        break;
+    }
     }
 
     ZASSERT_EXIT(pGroup);
@@ -523,6 +548,33 @@ QModelIndex NodeParamModel::getParam(PARAM_CLASS cls, const QString& name) const
             return pItem->index();
         }
     }
+    else if (PARAM_LEGACY_INPUT == cls)
+    {
+        auto pInputs = getLegacyInputs();
+        if (pInputs)
+        {
+            if (VParamItem* pItem = pInputs->getItem(name))
+                return pItem->index();
+        }
+    }
+    else if (PARAM_LEGACY_PARAM == cls)
+    {
+        auto pParams = getLegacyParams();
+        if (pParams)
+        {
+            if (VParamItem* pItem = pParams->getItem(name))
+                return pItem->index();
+        }
+    }
+    else if (PARAM_LEGACY_OUTPUT == cls)
+    {
+        auto pOutputs = getLegacyOutputs();
+        if (pOutputs)
+        {
+            if (VParamItem* pItem = pOutputs->getItem(name))
+                return pItem->index();
+        }
+    }
     return QModelIndex();
 }
 
@@ -559,6 +611,12 @@ QVariant NodeParamModel::data(const QModelIndex& index, int role) const
             return PARAM_OUTPUT;
         else if (iotags::params::node_params == parentItem->m_name)
             return PARAM_PARAM;
+        else if (iotags::params::legacy_inputs == parentItem->m_name)
+            return PARAM_LEGACY_INPUT;
+        else if (iotags::params::legacy_params == parentItem->m_name)
+            return PARAM_LEGACY_PARAM;
+        else if (iotags::params::legacy_outputs == parentItem->m_name)
+            return PARAM_LEGACY_OUTPUT;
         return PARAM_UNKNOWN;
     }
     case ROLE_VPARAM_LINK_MODEL:
@@ -622,6 +680,17 @@ QModelIndex NodeParamModel::indexFromPath(const QString& path)
             return pItem->index();
         }
     }
+    else if (group == iotags::params::legacy_inputs)
+    {
+        auto plegacyInputs = getLegacyInputs();
+        if (plegacyInputs)
+        {
+            if (VParamItem* pItem = plegacyInputs->getItem(name))
+            {
+                return pItem->index();
+            }
+        }
+    }
     else if (group == iotags::params::node_params)
     {
         auto pParams = getParams();
@@ -630,6 +699,14 @@ QModelIndex NodeParamModel::indexFromPath(const QString& path)
         if (VParamItem* pItem = pParams->getItem(name))
         {
             return pItem->index();
+        }
+    }
+    else if (group == iotags::params::legacy_params)
+    {
+        auto plegacyParams = getLegacyParams();
+        if (plegacyParams) {
+            if (VParamItem* pItem = plegacyParams->getItem(name))
+                return pItem->index();
         }
     }
     else if (group == iotags::params::node_outputs)
@@ -648,6 +725,14 @@ QModelIndex NodeParamModel::indexFromPath(const QString& path)
                 }
             }
             return pItem->index();
+        }
+    }
+    else if (group == iotags::params::legacy_outputs)
+    {
+        auto plegacyOutputs = getLegacyOutputs();
+        if (plegacyOutputs) {
+            if (VParamItem* pItem = plegacyOutputs->getItem(name))
+                return pItem->index();
         }
     }
     return QModelIndex();
