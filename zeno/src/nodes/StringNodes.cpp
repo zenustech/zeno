@@ -319,10 +319,18 @@ struct StringToList : zeno::INode {
         auto stringlist = get_input2<std::string>("string");
         auto list = std::make_shared<ListObject>();
         auto separator = get_input2<std::string>("Separator");
-        std::istringstream iss(stringlist);
         std::vector<std::string> strings;
+        size_t pos = 0;
+        size_t posbegin = 0;
         std::string word;
-        while (std::getline(iss, word, separator[0])) {
+        while ((pos = stringlist.find(separator, pos)) != std::string::npos) {
+            word = stringlist.substr(posbegin, pos-posbegin);
+            strings.push_back(word);
+            pos += separator.length();
+            posbegin = pos;
+        }
+        if (posbegin < stringlist.length()) { //push last word
+            word = stringlist.substr(posbegin);
             strings.push_back(word);
         }
         for(const auto &string : strings) {
@@ -337,7 +345,7 @@ struct StringToList : zeno::INode {
 ZENDEFNODE(StringToList, {
     {
         {"string", "string", ""},
-        {"string", "Separator", " "},
+        {"string", "Separator", ""},
     },
     {{"list"},
     },
