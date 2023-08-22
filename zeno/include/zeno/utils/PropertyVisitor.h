@@ -13,6 +13,7 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/types/AttrVector.h>
 #include <zeno/types/UserData.h>
+#include <zeno/types/CUrveObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 
@@ -131,6 +132,11 @@ namespace zeno {
         template<>
         struct ValueTypeToString<bool> {
             inline static std::string TypeName = "bool";
+        };
+
+        template<>
+        struct ValueTypeToString<std::shared_ptr<zeno::CurveObject>> {
+            inline static std::string TypeName = "curve";
         };
 
         struct TypeAutoCallbackList {
