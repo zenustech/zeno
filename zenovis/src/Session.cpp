@@ -174,7 +174,8 @@ void Session::look_to_dir(float cx, float cy, float cz,
     auto fov = impl->scene->camera->m_fov;
     auto fnear = impl->scene->camera->m_near;
     auto ffar = impl->scene->camera->m_far;
-    impl->scene->camera->placeCamera({cx, cy, cz}, {dx, dy, dz}, {ux, uy, uz}, fov, fnear, ffar);
+    auto ortho_mode = impl->scene->camera->m_ortho_mode;
+    impl->scene->camera->placeCamera({cx, cy, cz}, {dx, dy, dz}, {ux, uy, uz}, ortho_mode, fov, fnear, ffar);
 }
 
 void Session::set_background_color(float r, float g, float b) {
