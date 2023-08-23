@@ -54,9 +54,8 @@ int Zenovis::getCurrentFrameId()
     return session->get_curr_frameid();
 }
 
-void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective)
+void Zenovis::updatePerspective(QVector2D const &resolution)
 {
-    m_perspective = perspective;
     if (session) {
         if (session->is_lock_window())
         {
@@ -80,10 +79,7 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
         {
             session->set_window_size(resolution.x(), resolution.y());
         }
-        session->look_perspective(m_perspective.cx, m_perspective.cy, m_perspective.cz,
-                                  m_perspective.theta, m_perspective.phi, m_perspective.radius,
-                                  m_perspective.fov, m_perspective.ortho_mode,
-                                  m_perspective.aperture, m_perspective.focalPlaneDistance);
+        session->look_perspective();
     }
 }
 

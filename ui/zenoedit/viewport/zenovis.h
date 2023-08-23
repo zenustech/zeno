@@ -49,7 +49,7 @@ public:
     int getCurrentFrameId();
     bool isPlaying() const;
     zenovis::Session *getSession() const;
-    void updatePerspective(QVector2D const &resolution, PerspectiveInfo const &perspective);
+    void updatePerspective(QVector2D const &resolution);
     void updateCameraFront(QVector3D center, QVector3D front, QVector3D up);
     void setLoopPlaying(bool enable);
     bool isLoopPlaying();
@@ -62,7 +62,6 @@ public:
     int m_solver_frameid;
     int m_solver_interval;
     int m_render_fps;
-    PerspectiveInfo m_perspective;
     int m_cache_frames;
     bool m_playing;
     CameraKeyframeWidget* m_camera_keyframe{};

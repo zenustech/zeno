@@ -331,9 +331,7 @@ void CameraControl::updatePerspective() {
     if (session == nullptr) {
         return;
     }
-    float cx = getCenter()[0], cy = getCenter()[1], cz = getCenter()[2];
-    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, getTheta(), getPhi(), getRadius(), getFOV(), getOrthoMode(),
-                                                       getAperture(), getDisPlane()));
+    m_zenovis->updatePerspective(m_res);
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
