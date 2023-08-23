@@ -34,7 +34,7 @@
 #include <viewportinteraction/picker.h>
 #include "settings/zenosettingsmanager.h"
 #include "timeline/ztimeline.h"
-
+#include <zenoui/comctrl/gv/zgraphicsnetlabel.h>
 
 ZenoSubGraphScene::ZenoSubGraphScene(QObject *parent)
     : QGraphicsScene(parent)
@@ -551,6 +551,7 @@ void ZenoSubGraphScene::paste(QPointF pos)
         QList<EdgeInfo> links;
         QString subgName = m_subgIdx.data(ROLE_OBJNAME).toString();
         UiHelper::reAllocIdents(subgName, acceptor.nodes(), acceptor.links(), nodes, links);
+        UiHelper::renameNetLabels(pGraphsModel, m_subgIdx, nodes);
 
         //todo: ret value for api.
         pGraphsModel->importNodes(nodes, links, pos, m_subgIdx, true);
@@ -1122,6 +1123,7 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
             QList<QGraphicsItem*> selItems = this->selectedItems();
             QList<QPersistentModelIndex> nodes;
             QList<QPersistentModelIndex> links, legacylinks;
+            QList<QPersistentModelIndex> netLabels;
             for (auto item : selItems)
             {
                 if (ZenoNode* pNode = qgraphicsitem_cast<ZenoNode*>(item))
@@ -1138,11 +1140,15 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                     else
                         links.append(pLink->linkInfo());
                 }
+                else if (ZGraphicsNetLabel* pNetLabel = qgraphicsitem_cast<ZGraphicsNetLabel*>(item))
+                {
+                    netLabels.append(pNetLabel->paramIdx());
+                }
             }
 
             IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
             ZASSERT_EXIT(pGraphsModel);
-            if (!nodes.isEmpty() || !links.isEmpty())
+            if (!nodes.isEmpty() || !links.isEmpty() || !netLabels.isEmpty())
             {
                 pGraphsModel->beginTransaction("remove nodes and links");
                 zeno::scope_exit scope([=]() { pGraphsModel->endTransaction(); });
@@ -1155,6 +1161,13 @@ void ZenoSubGraphScene::keyPressEvent(QKeyEvent* event)
                 {
                     QString id = nodeIdx.data(ROLE_OBJID).toString();
                     pGraphsModel->removeNode(id, m_subgIdx, true);
+                }
+                if (nodes.isEmpty() && !netLabels.isEmpty())
+                {
+                    for (const QPersistentModelIndex& socketIdx : netLabels)
+                    {
+                        pGraphsModel->removeNetLabel(m_subgIdx, socketIdx);
+                    }
                 }
             }
             for (auto linkIdx : legacylinks)

@@ -215,6 +215,11 @@ void ZsgWriter::dumpSocket(SOCKET_INFO socket, bool bInput, RAPIDJSON_WRITER& wr
                     else
                         writer.String(otherLinkSock.toUtf8());
                 }
+                if (!info.netLabel.isEmpty())
+                {
+                    writer.Key("netlabel");
+                    writer.String(info.netLabel.toUtf8());
+                }
                 writer.EndObject();
             }
             writer.EndObject();

@@ -37,7 +37,18 @@ public:
             if (cbSock.cbOnSockClicked)
                 cbSock.cbOnSockClicked(m_socket, button);
         });
-
+        QObject::connect(m_socket, &ZenoSocketItem::netLabelClicked, [=]() {
+            if (cbSock.cbOnSockNetlabelClicked)
+            cbSock.cbOnSockNetlabelClicked(m_socket->netLabel());
+        });
+        QObject::connect(m_socket, &ZenoSocketItem::netLabelEditFinished, [=]() {
+            if (cbSock.cbOnSockNetlabelEdited)
+            cbSock.cbOnSockNetlabelEdited(m_socket);
+        });
+        QObject::connect(m_socket, &ZenoSocketItem::netLabelMenuActionTriggered, [=](QAction* pAction) {
+            if (cbSock.cbActionTriggered)
+            cbSock.cbActionTriggered(pAction, m_sockKeyIdx);
+        });
         //move up button
         ImageElement elem;
         elem.image = ":/icons/moveUp.svg";
@@ -260,6 +271,12 @@ void ZDictPanel::onKeysModelDataChanged(const QModelIndex& topLeft, const QModel
         ZDictItemLayout* pItemLayout = static_cast<ZDictItemLayout*>(m_layout->itemAt(topLeft.row())->pLayout);
         const QString &newKeyName = topLeft.data(Qt::DisplayRole).toString();
         pItemLayout->updateName(newKeyName);
+    }
+    if (roles.contains(ROLE_PARAM_NETLABEL))
+    {
+        ZDictItemLayout* pItemLayout = static_cast<ZDictItemLayout*>(m_layout->itemAt(topLeft.row())->pLayout);
+        const QString& label = topLeft.data(ROLE_PARAM_NETLABEL).toString();
+        pItemLayout->socketItem()->onNetLabelChanged(label);
     }
 }
 

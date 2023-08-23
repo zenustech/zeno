@@ -1860,6 +1860,59 @@ void UiHelper::reAllocIdents(const QString& targetSubgraph,
     }
 }
 
+void UiHelper::renameNetLabels(const IGraphsModel* pModel, const QModelIndex& subgIdx, NODES_DATA& nodes)
+{
+    QMap<QString, QString> labelMap;
+    for (QString id : nodes.keys())
+    {
+        NODE_DATA& data = nodes[id];
+        OUTPUT_SOCKETS outputs = data[ROLE_OUTPUTS].value<OUTPUT_SOCKETS>();
+        QStringList labels = pModel->dumpLabels(subgIdx);
+        for (OUTPUT_SOCKET& outputSocket : outputs)
+        {
+            if (!outputSocket.info.netlabel.isEmpty() && labels.contains(outputSocket.info.netlabel))
+            {
+                QString newLabel = id + "/[o]" + outputSocket.info.name;
+                labelMap[outputSocket.info.netlabel] = newLabel;
+                outputSocket.info.netlabel = newLabel;
+            }
+            for (DICTKEY_INFO& info : outputSocket.info.dictpanel.keys)
+            {
+                if (!info.netLabel.isEmpty() && labels.contains(info.netLabel))
+                {
+                    QString newLabel = id + "/[o]" + outputSocket.info.name + "/" + info.key;
+                    labelMap[info.netLabel] = newLabel;
+                    info.netLabel = newLabel;
+                }
+            }
+        }
+        data[ROLE_OUTPUTS] = QVariant::fromValue(outputs);
+    }
+
+    for (QString id : nodes.keys())
+    {
+        NODE_DATA& data = nodes[id];
+        INPUT_SOCKETS inputs = data[ROLE_INPUTS].value<INPUT_SOCKETS>();
+        for (INPUT_SOCKET& inputSocket : inputs)
+        {
+            if (!inputSocket.info.netlabel.isEmpty() && labelMap.contains(inputSocket.info.netlabel))
+            {
+                QString newLabel = labelMap[inputSocket.info.netlabel];
+                inputSocket.info.netlabel = newLabel;
+            }
+            for (DICTKEY_INFO& info : inputSocket.info.dictpanel.keys)
+            {
+                if (!info.netLabel.isEmpty() && labelMap.contains(info.netLabel))
+                {
+                    QString newLabel = labelMap[info.netLabel];
+                    info.netLabel = newLabel;
+                }
+            }
+        }
+        data[ROLE_INPUTS] = QVariant::fromValue(inputs);
+    }
+}
+
 static std::string getZenoVersion()
 {
     const char *date = __DATE__;

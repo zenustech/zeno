@@ -864,6 +864,7 @@ NODE_DATA GraphsModel::_fork(const QString& forkSubgName)
     UiHelper::reAllocIdents(forkName, nodes, links, /*oldGraphsToNew*/ newNodes, newLinks);
 
     QModelIndex newSubgIdx = indexBySubModel(pForkModel);
+    UiHelper::renameNetLabels(this, newSubgIdx, newNodes);
 
     // import new nodes and links into the new created subgraph.
     importNodes(newNodes, newLinks, QPointF(), newSubgIdx, false);
@@ -1189,6 +1190,7 @@ QModelIndex GraphsModel::extractSubGraph(
     QMap<QString, NODE_DATA> newNodes;
     QList<EdgeInfo> newLinks;
     UiHelper::reAllocIdents(toSubg, datas.first, datas.second, newNodes, newLinks);
+    UiHelper::renameNetLabels(this, toSubgIdx, newNodes);
 
     //paste nodes on new subgraph.
     importNodes(newNodes, newLinks, QPointF(0, 0), toSubgIdx, true);
@@ -1595,7 +1597,8 @@ void GraphsModel::addNetLabel(const QModelIndex& subgIdx, const QModelIndex& soc
     beginTransaction("add net label");
     zeno::scope_exit sp([=]() { endTransaction(); });
 
-    if (PARAM_INPUT == sock.data(ROLE_PARAM_CLASS))
+    int cls = sock.data(ROLE_PARAM_CLASS).toInt();
+    if (PARAM_INPUT == cls || PARAM_INNER_INPUT == cls)
     {
         //remove the link attached on this socket first.
         PARAM_LINKS links = sock.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
@@ -1621,19 +1624,23 @@ void GraphsModel::addNetLabel_impl(const QModelIndex& subgIdx, const QModelIndex
         SubGraphModel* pGraph = subGraph(subgIdx.row());
         if (!pGraph)
             return;
-        bool bInput = PARAM_INPUT == sock.data(ROLE_PARAM_CLASS);
+        int cls = sock.data(ROLE_PARAM_CLASS).toInt();
+        bool bInput = (PARAM_INPUT == cls || PARAM_INNER_INPUT == cls);
         pGraph->addNetLabel(sock, name, bInput);
     }
 }
 
 void GraphsModel::removeNetLabel(const QModelIndex& subgIdx, const QModelIndex& trigger)
 {
+    if (!trigger.isValid())
+        return;
     beginTransaction("remove net label");
     zeno::scope_exit sp([=]() { endTransaction(); });
 
     const QString& name = trigger.data(ROLE_PARAM_NETLABEL).toString();
 
-    if (PARAM_OUTPUT == trigger.data(ROLE_PARAM_CLASS)) {
+    int cls = trigger.data(ROLE_PARAM_CLASS).toInt();
+    if (PARAM_OUTPUT == cls || PARAM_INNER_OUTPUT == cls) {
         //remove all net labels from input sock.
         SubGraphModel* pGraph = subGraph(subgIdx.row());
         if (!pGraph)

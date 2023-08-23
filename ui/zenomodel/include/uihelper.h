@@ -93,6 +93,7 @@ public:
                                const LINKS_DATA& inLinks,
                                NODES_DATA& outNodes,
                                LINKS_DATA& outLinks);
+    static void renameNetLabels(const IGraphsModel* pModel, const QModelIndex &subgIdx, NODES_DATA& nodes);
 private:
     static std::pair<qreal, qreal> getRxx2(QRectF r, qreal xRadius, qreal yRadius, bool AbsoluteSize);
 };

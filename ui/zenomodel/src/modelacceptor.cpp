@@ -793,7 +793,8 @@ void ModelAcceptor::addInnerDictKey(
             const QString& ident,
             const QString& sockName,
             const QString& keyName,
-            const QString& link
+            const QString& link,
+            const QString& netLabel
             )
 {
     QModelIndex inNodeIdx = m_currentGraph->index(ident);
@@ -814,6 +815,10 @@ void ModelAcceptor::addInnerDictKey(
         QString keySockPath = newKeyIdx.data(ROLE_OBJPATH).toString();
         EdgeInfo fullLink(link, keySockPath);
         m_subgLinks.append(fullLink);
+    }
+    if (!netLabel.isEmpty())
+    {
+        m_currentGraph->addNetLabel(newKeyIdx, netLabel, bInput);
     }
 }
 

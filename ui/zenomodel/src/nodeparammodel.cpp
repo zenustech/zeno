@@ -286,7 +286,8 @@ void NodeParamModel::setInputSockets(const INPUT_SOCKETS& inputs)
                     inSocket.info.ctrlProps,
                     (SOCKET_PROPERTY)inSocket.info.sockProp,
                     inSocket.info.dictpanel,
-                    inSocket.info.toolTip
+                    inSocket.info.toolTip,
+                    inSocket.info.netlabel
             );
     }
 }
@@ -460,8 +461,12 @@ void NodeParamModel::setAddParam(
         pItem->setData(type, ROLE_PARAM_TYPE);
         pItem->m_sockProp = prop;
         pItem->setData(ctrl, ROLE_PARAM_CTRL);
-        pItem->setData(netLabel, ROLE_PARAM_NETLABEL);
         pGroup->appendRow(pItem);
+        if (!netLabel.isEmpty())
+        {
+            const QModelIndex& subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+            m_pGraphsModel->addNetLabel(subgIdx, pItem->index(), netLabel);
+        }
         if (PARAM_PARAM != cls)
             initDictSocket(pItem, dictPanel);
     }
@@ -474,7 +479,11 @@ void NodeParamModel::setAddParam(
         pItem->setData(ctrl, ROLE_PARAM_CTRL);
         pItem->setData(ctrlProps, ROLE_VPARAM_CTRL_PROPERTIES);
         pItem->setData(toolTip, ROLE_VPARAM_TOOLTIP);
-        pItem->setData(netLabel, ROLE_PARAM_NETLABEL);
+        if (!netLabel.isEmpty())
+        {
+            const QModelIndex& subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+            m_pGraphsModel->addNetLabel(subgIdx, pItem->index(), netLabel);
+        }
 
         if (PARAM_PARAM != cls && 
             pItem->m_customData.find(ROLE_VPARAM_LINK_MODEL) != pItem->m_customData.end())
@@ -487,6 +496,11 @@ void NodeParamModel::setAddParam(
                     pDictModel->insertRow(r);
                     QModelIndex newIdx = pDictModel->index(r, 0);
                     pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
+                    if (!keyInfo.netLabel.isEmpty())
+                    {
+                        const QModelIndex& subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+                        m_pGraphsModel->addNetLabel(subgIdx, newIdx, keyInfo.netLabel);
+                    }
                 }
             }
         }
@@ -977,6 +991,11 @@ void NodeParamModel::initDictSocket(VParamItem* pItem, const DICTPANEL_INFO& dic
             pDictModel->insertRow(r);
             QModelIndex newIdx = pDictModel->index(r, 0);
             pDictModel->setData(newIdx, keyInfo.key, ROLE_PARAM_NAME);
+            if (!keyInfo.netLabel.isEmpty())
+            {
+                const QModelIndex& subgIdx = m_nodeIdx.data(ROLE_SUBGRAPH_IDX).toModelIndex();
+                m_pGraphsModel->addNetLabel(subgIdx, newIdx, keyInfo.netLabel);
+            }
         }
         pItem->m_customData[ROLE_VPARAM_LINK_MODEL] = QVariantPtr<DictKeyModel>::asVariant(pDictModel);
     }
@@ -998,6 +1017,7 @@ void NodeParamModel::exportDictkeys(DictKeyModel* pModel, DICTPANEL_INFO& panel)
 
         DICTKEY_INFO keyInfo;
         keyInfo.key = key;
+        keyInfo.netLabel = keyIdx.data(ROLE_PARAM_NETLABEL).toString();
 
         PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
         for (auto linkIdx : links)

@@ -60,7 +60,8 @@ public:
         const QString& inNode,
         const QString& inSock,
         const QString& keyName,
-        const QString& link
+        const QString& link,
+        const QString& netLabel
     ) override;
 
     void setDictPanelProperty(

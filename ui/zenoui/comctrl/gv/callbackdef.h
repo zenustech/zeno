@@ -2,7 +2,7 @@
 #define __CALLBACK_DEF_H__
 
 typedef std::function<void(QString, QString)> Callback_EditContentsChange;
-typedef std::function<void()> Callback_OnClicked;
+typedef std::function<void(QString)> Callback_OnClicked;
 
 class ZenoSocketItem;
 
@@ -15,7 +15,7 @@ typedef std::function<void(QVariant state)> Callback_EditFinished;
 typedef std::function<void(bool bOn)> CALLBACK_SWITCH;
 
 typedef std::function<void(const QModelIndex& idx)> Callback_NodeSelected;
-typedef std::function<void(QAction* pAction)> Callback_ActionTriggered;
+typedef std::function<void(QAction* pAction, const QModelIndex& idx)> Callback_ActionTriggered;
 
 typedef std::function<QVariant()> Callback_GetIndexData;
 

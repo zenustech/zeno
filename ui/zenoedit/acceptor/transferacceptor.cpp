@@ -220,7 +220,8 @@ void TransferAcceptor::addInnerDictKey(
         const QString& inNode,
         const QString& sockName,
         const QString& keyName,
-        const QString& link
+        const QString& link,
+        const QString& netLabel
     )
 {
     ZASSERT_EXIT(m_nodes.find(inNode) != m_nodes.end());
@@ -233,6 +234,7 @@ void TransferAcceptor::addInnerDictKey(
         INPUT_SOCKET& inSocket = inputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
+        item.netLabel = netLabel;
 
         QString newKeyPath = "[node]/inputs/" + sockName + "/" + keyName;
         QString inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, newKeyPath);
@@ -253,6 +255,7 @@ void TransferAcceptor::addInnerDictKey(
         OUTPUT_SOCKET& outSocket = outputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
+        item.netLabel = netLabel;
 
         QString newKeyPath = "[node]/outputs/" + sockName + "/" + keyName;
         outSocket.info.dictpanel.keys.append(item);
