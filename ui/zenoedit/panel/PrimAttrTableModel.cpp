@@ -176,7 +176,8 @@ QString attrName(const zeno::AttrVector<T>& attr, zeno::AttrVectorIndex index) {
     if (index.attrIndex == 0) {
         return QString("pos");
     }
-    return QString(attr.attr_keys<AttrAcceptAll>()[index.attrIndex - 1].c_str());
+
+    return QString(attr.template attr_keys<AttrAcceptAll>()[index.attrIndex - 1].c_str());
 }
 
 QVariant PrimAttrTableModel::headerData(int section, Qt::Orientation orientation, int role) const
