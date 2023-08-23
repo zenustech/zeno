@@ -830,7 +830,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
         m_background->setStyleSheet("color: white;");
         auto& ud = zeno::getSession().userData();
         m_background->setChecked(ud.get2<bool>("optix_show_background", false));
-        pToolLayout->addWidget(m_background);
+        if (!m_bGLView)
+            pToolLayout->addWidget(m_background);
     }
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
