@@ -209,6 +209,11 @@ bool sceneMenuEvent(
                 selParam = pNode->getSocketIndex(pSocketText, true);
                 break;
             }
+            else if (ZenoSocketItem* pSocketItem= qgraphicsitem_cast<ZenoSocketItem*>(pItem))
+            {
+                selParam = pSocketItem->paramIndex();
+                break;
+            }
         }
 
         if (selParam.isValid())
@@ -378,7 +383,7 @@ bool sceneMenuEvent(
                 }
             }
 
-            if (PARAM_INPUT == coreCls) {
+            if (PARAM_INPUT == coreCls || PARAM_INNER_INPUT == coreCls) {
 
                 //input socket menu
                 QAction* pCopyRef = new QAction(QObject::tr("Copy Param Reference"));
