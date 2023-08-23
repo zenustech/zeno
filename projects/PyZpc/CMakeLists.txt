@@ -23,3 +23,8 @@ message("Python3_LIBRARIES: ${Python3_LIBRARIES}")
 target_sources(zeno PRIVATE
   pyzfx.cpp
 )
+
+set(ZENO_PYZPC_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Lib)
+configure_file(zeno_PyZpc_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/zeno_PyZpc_config.h @ONLY)
+target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+zeno_add_asset_dir(${ZENO_PYZPC_MODULE_DIR})

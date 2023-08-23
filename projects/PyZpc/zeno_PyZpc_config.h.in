@@ -1,0 +1,3 @@
+#pragma once
+
+#define ZENO_PYZPC_MODULE_DIR "@ZENO_PYZPC_MODULE_DIR@"
