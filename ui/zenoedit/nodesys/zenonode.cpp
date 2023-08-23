@@ -1230,10 +1230,16 @@ void ZenoNode::markError(bool isError)
 {
     m_bError = isError;
     ZASSERT_EXIT(m_headerWidget);
+    IGraphsModel* pGraphsModel = zenoApp->graphsManagment()->currentModel();
+    ZASSERT_EXIT(pGraphsModel);
+    QColor clrHeaderBg;
     if (m_bError)
-        m_headerWidget->setColors(false, QColor(200, 84, 79), QColor(), QColor());
+        clrHeaderBg = QColor(200, 84, 79);
+    else if (pGraphsModel->IsSubGraphNode(m_index))
+        clrHeaderBg = QColor("#1D5F51");
     else
-        m_headerWidget->setColors(false, m_renderParams.headerBg.clr_normal, QColor(), QColor());
+        clrHeaderBg = m_renderParams.headerBg.clr_normal;
+    m_headerWidget->setColors(false, clrHeaderBg, QColor(), QColor());
     update();
 }
 
