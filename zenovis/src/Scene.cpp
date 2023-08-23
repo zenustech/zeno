@@ -59,29 +59,6 @@ void* Scene::getOptixImg(int& w, int& h)
 #endif
 }
 
-std::vector<float> Scene::getCameraProp(){
-    std::vector<float> camProp;
-    camProp.push_back(this->camera->m_lodcenter.x);
-    camProp.push_back(this->camera->m_lodcenter.y);
-    camProp.push_back(this->camera->m_lodcenter.z);
-    camProp.push_back(this->camera->m_lodfront.x);
-    camProp.push_back(this->camera->m_lodfront.y);
-    camProp.push_back(this->camera->m_lodfront.z);
-    camProp.push_back(this->camera->m_lodup.x);
-    camProp.push_back(this->camera->m_lodup.y);
-    camProp.push_back(this->camera->m_lodup.z);
-    camProp.push_back(this->camera->m_fov);
-    camProp.push_back(this->camera->m_aperture);
-    camProp.push_back(this->camera->focalPlaneDistance);
-    camProp.push_back(this->camera->m_zxx.cx);
-    camProp.push_back(this->camera->m_zxx.cy);
-    camProp.push_back(this->camera->m_zxx.cz);
-    camProp.push_back(this->camera->m_zxx.theta);
-    camProp.push_back(this->camera->m_zxx.phi);
-    camProp.push_back(this->camera->m_zxx.radius);
-    return camProp;
-}
-
 bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius) {
     for (auto const &[key, ptr]: this->objectsMan->pairs()) {
         if (nodeid == key.substr(0, key.find_first_of(':'))) {

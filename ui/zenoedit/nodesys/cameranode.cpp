@@ -10,6 +10,7 @@
 #include "viewport/displaywidget.h"
 #include <viewport/zenovis.h>
 #include "zenovis/Session.h"
+#include "zenovis/Camera.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalState.h>
 
@@ -82,24 +83,24 @@ void CameraNode::onEditClicked()
         pModel->beginTransaction("update camera info");
         zeno::scope_exit scope([=]() { pModel->endTransaction(); });
 
+        auto camera = *(scene->camera.get());
+
         INPUT_SOCKET pos = inputs["pos"];
-        //vec = {scene->camera->m_lodcenter.x, scene->camera->m_lodcenter.y, scene->camera->m_lodcenter.z};
-        std::vector<float> camProp = scene->getCameraProp();
-        vec = {camProp[0], camProp[1], camProp[2]};
+        vec = {camera.m_lodcenter[0], camera.m_lodcenter[1], camera.m_lodcenter[2]};
         info.name = "pos";
         info.oldValue = pos.info.defaultValue;
         info.newValue = QVariant::fromValue(vec);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
         INPUT_SOCKET up = inputs["up"];
-        vec = {camProp[6], camProp[7], camProp[8]};
+        vec = {camera.m_lodup[0], camera.m_lodup[1], camera.m_lodup[2]};
         info.name = "up";
         info.oldValue = up.info.defaultValue;
         info.newValue = QVariant::fromValue(vec);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
         INPUT_SOCKET view = inputs["view"];
-        vec = {camProp[3], camProp[4], camProp[5]};
+        vec = {camera.m_lodfront[0], camera.m_lodfront[1], camera.m_lodfront[2]};
         info.name = "view";
         info.oldValue = view.info.defaultValue;
         info.newValue = QVariant::fromValue(vec);
@@ -108,19 +109,19 @@ void CameraNode::onEditClicked()
         INPUT_SOCKET fov = inputs["fov"];
         info.name = "fov";
         info.oldValue = fov.info.defaultValue;
-        info.newValue = QVariant::fromValue(camProp[9]);
+        info.newValue = QVariant::fromValue(camera.m_fov);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
         INPUT_SOCKET aperture = inputs["aperture"];
         info.name = "aperture";
         info.oldValue = aperture.info.defaultValue;
-        info.newValue = QVariant::fromValue(camProp[10]);
+        info.newValue = QVariant::fromValue(camera.m_aperture);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
         INPUT_SOCKET focalPlaneDistance = inputs["focalPlaneDistance"];
         info.name = "focalPlaneDistance";
         info.oldValue = focalPlaneDistance.info.defaultValue;
-        info.newValue = QVariant::fromValue(camProp[11]);
+        info.newValue = QVariant::fromValue(camera.focalPlaneDistance);
         pModel->updateSocketDefl(nodeid, info, this->subgIndex(), true);
 
         // Is CameraNode
@@ -136,8 +137,12 @@ void CameraNode::onEditClicked()
 
             INPUT_SOCKET other = inputs["other"];
             std::string other_prop;
-            for (int i = 12; i < camProp.size(); i++)
-                other_prop += std::to_string(camProp[i]) + ",";
+            other_prop += zeno::format("{},", camera.m_zxx.cx);
+            other_prop += zeno::format("{},", camera.m_zxx.cy);
+            other_prop += zeno::format("{},", camera.m_zxx.cz);
+            other_prop += zeno::format("{},", camera.m_zxx.theta);
+            other_prop += zeno::format("{},", camera.m_zxx.phi);
+            other_prop += zeno::format("{},", camera.m_zxx.radius);
             info.name = "other";
             info.oldValue = other.info.defaultValue;
             info.newValue = QVariant::fromValue(QString(other_prop.c_str()));
@@ -186,11 +191,11 @@ void LightNode::onEditClicked(){
 
     PARAM_UPDATE_INFO info;
 
-    std::vector<float> camProp = scene->getCameraProp();
-    auto original_pos = glm::vec3(camProp[0], camProp[1], camProp[2]);
-    auto pos = glm::normalize(glm::vec3(camProp[0], camProp[1], camProp[2]));
-    auto view = -1.0f * glm::normalize(glm::vec3(camProp[3], camProp[4], camProp[5]));
-    auto up = glm::normalize(glm::vec3(camProp[6], camProp[7], camProp[8]));
+    auto camera = *(scene->camera.get());
+    auto original_pos = glm::vec3(camera.m_lodcenter);
+//    auto pos = glm::normalize(glm::vec3(camProp[0], camProp[1], camProp[2]));
+    auto view = -1.0f * glm::normalize(camera.m_lodfront);
+    auto up = glm::normalize(camera.m_lodup);
     auto right = glm::normalize(glm::cross(up, view));
 
     glm::mat3 rotation(right, up, view);
