@@ -85,7 +85,6 @@ void Zenovis::updatePerspective(QVector2D const &resolution, PerspectiveInfo con
                                   m_perspective.fov, m_perspective.ortho_mode,
                                   m_perspective.aperture, m_perspective.focalPlaneDistance);
     }
-    emit perspectiveUpdated(perspective);
 }
 
 void Zenovis::updateCameraFront(QVector3D center, QVector3D front, QVector3D up) {

@@ -34,7 +34,6 @@ signals:
     void frameUpdated(int);
     void objectsUpdated(int);
     void frameDrawn(int);
-    void perspectiveUpdated(PerspectiveInfo);
 
 public slots:
     void startPlay(bool bPlaying);
