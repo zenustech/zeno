@@ -63,13 +63,12 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
 }
 
 void Camera::updateMatrix() {
+    m_view = glm::lookAt(m_lodcenter, m_lodcenter + m_lodfront, m_lodup);
     if (m_ortho_mode) {
         auto radius = glm::length(m_lodcenter);
-        m_view = glm::lookAt(m_lodcenter, m_lodcenter + m_lodfront, m_lodup);
         m_proj = glm::orthoZO(-radius * getAspect(), radius * getAspect(), -radius,
                 radius, m_far, m_near);
     } else {
-        m_view = glm::lookAt(m_lodcenter, m_lodcenter + m_lodfront, m_lodup);
         m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
     }
 }
