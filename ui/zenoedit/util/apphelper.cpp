@@ -446,13 +446,13 @@ void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)
                     writer.Key("type");
                     writer.String("Optix");
                 }
-                std::tuple<int, int> resolution = pView->curResolution();
+                std::tuple<int, int, bool> displayinfo = pView->getOriginWindowSizeInfo();
                 writer.Key("blockwindow");
-                writer.Bool(session->is_lock_window());
+                writer.Bool(std::get<2>(displayinfo));
                 writer.Key("resolutionX");
-                writer.Int(std::get<0>(resolution));
+                writer.Int(std::get<0>(displayinfo));
                 writer.Key("resolutionY");
-                writer.Int(std::get<1>(resolution));
+                writer.Int(std::get<1>(displayinfo));
                 writer.Key("resolution-combobox-index");
                 writer.Int(pView->curResComboBoxIndex());
                 writer.EndObject();

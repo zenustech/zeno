@@ -30,6 +30,7 @@ struct Session : zeno::disable_copy {
     void set_window_size(int nx, int ny);
     void set_window_size(int nx, int ny, zeno::vec2i offset);
     std::tuple<int, int> get_window_size();
+    zeno::vec2i get_viewportOffset();
     void set_curr_frameid(int frameid);
     int get_curr_frameid();
     void set_show_grid(bool flag);

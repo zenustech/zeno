@@ -743,6 +743,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {
+        int nx = -1, ny = -1;
         ZASSERT_EXIT(m_pDisplay);
         bool bLock = false;
         if (newValue == tr("Free"))
@@ -958,14 +959,9 @@ void DockContent_View::setResComboBoxIndex(int index)
     m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(m_cbRes->currentText()) + ZenoStyle::dpiScaled(28));
 }
 
-std::tuple<int, int> DockContent_View::curResolution()
+std::tuple<int, int, bool> DockContent_View::getOriginWindowSizeInfo()
 {
-    return std::make_tuple(nx, ny);
-}
-
-void DockContent_View::initResolution(int x, int y)
-{
-    nx = x; ny = y;
+    return m_pDisplay->getOriginWindowSizeInfo();
 }
 
 void DockContent_View::setOptixBackgroundState(bool checked)

@@ -133,8 +133,7 @@ public:
 
     int curResComboBoxIndex();
     void setResComboBoxIndex(int index);
-    std::tuple<int, int> curResolution();
-    void initResolution(int nx, int ny);
+    std::tuple<int, int, bool> getOriginWindowSizeInfo();
     void setOptixBackgroundState(bool checked);
 
 protected:
@@ -172,7 +171,6 @@ private:
     QAction *m_scale;
 
     const bool m_bGLView;
-    int nx = -1, ny = -1;   //resolution;
 };
 
 class DockContent_Log : public DockToolbarWidget
