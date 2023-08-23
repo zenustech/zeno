@@ -47,7 +47,13 @@ namespace zenoui
                 pLineEdit->setNumSlider(UiHelper::getSlideStep("", ctrl));
                 QObject::connect(pLineEdit, &ZLineEdit::editingFinished, [=]() {
                     // be careful about the dynamic type.
-                    const QVariant &newValue = UiHelper::parseStringByType(pLineEdit->text(), type);
+                    QString text = pLineEdit->text();
+                    const QVariant& newValue = UiHelper::parseStringByType(text, type);
+                    if (newValue.type() == QVariant::String && ctrl != CONTROL_STRING)
+                    {
+                        if (!text.startsWith("="))
+                            zeno::log_error("The formula '{}' need start with '='", text.toStdString());
+                    }
                     cbSet.cbEditFinished(newValue);
                     });
                 return pLineEdit;

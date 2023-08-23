@@ -66,27 +66,43 @@ void resolveOutputSocket(
 
 static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
 {
-    if (sockType == "int" ||
-        sockType == "float" ||
-        sockType.startsWith("vec") ||
-        (defl.type() == QVariant::String && defl.toString().startsWith("="))) {
-        if (defl.canConvert<CURVES_DATA>())
-            opStr = "setKeyFrame";
-        else if (defl.type() == QVariant::String) {
-            opStr = "setFormula";
-        }
-        else if (defl.canConvert<UI_VECSTRING>()) {
+    if (sockType != "curve" && defl.canConvert<CURVES_DATA>())
+        opStr = "setKeyFrame";
+    else if (defl.toString().startsWith("=") || defl.canConvert<UI_VECSTRING>())
+    {
+        if (defl.canConvert<UI_VECSTRING>()) {
             UI_VECSTRING vec = defl.value<UI_VECSTRING>();
             QString code = "vec3(";
+            bool bFormula = false;
             for (int i = 0; i < vec.size(); i++)
             {
-                code += vec.at(i);
+                QString text = vec.at(i);
+                if (text.startsWith("="))
+                {
+                    text.replace(0, 1, "");
+                    bFormula = true;
+                }
+                code += text;
                 if (i < vec.size() - 1)
                     code += ",";
                 else
                     code += ")";
             }
+            if (bFormula)
+            {
+                opStr = "setFormula";
+            }
             defl = code;
+        }
+        else if (sockType == "int" || sockType == "float")
+        {
+            QString str = defl.toString();
+            str.replace(0, 1, "");
+            defl = str;
+            opStr = "setFormula";
+        }
+        else
+        {
             opStr = "setFormula";
         }
     }
