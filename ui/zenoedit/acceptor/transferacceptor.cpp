@@ -234,6 +234,7 @@ void TransferAcceptor::addInnerDictKey(
         INPUT_SOCKET& inSocket = inputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
+        item.netLabel = netLabel;
 
         QString newKeyPath = "[node]/inputs/" + sockName + "/" + keyName;
         QString inSockPath = UiHelper::constructObjPath(m_currSubgraph, inNode, newKeyPath);
@@ -243,10 +244,6 @@ void TransferAcceptor::addInnerDictKey(
         {
             item.links.append(edge);
             m_links.append(edge);
-        }
-        if (!netLabel.isEmpty())
-        {
-            item.netLabel = netLabel;
         }
         inSocket.info.dictpanel.keys.append(item);
         data[ROLE_INPUTS] = QVariant::fromValue(inputs);
@@ -258,6 +255,7 @@ void TransferAcceptor::addInnerDictKey(
         OUTPUT_SOCKET& outSocket = outputs[sockName];
         DICTKEY_INFO item;
         item.key = keyName;
+        item.netLabel = netLabel;
 
         QString newKeyPath = "[node]/outputs/" + sockName + "/" + keyName;
         outSocket.info.dictpanel.keys.append(item);

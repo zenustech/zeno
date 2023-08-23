@@ -321,7 +321,7 @@ bool sceneMenuEvent(
                 socketMenu->addAction(pCopyElem->menuAction());
             }
             else {
-                if (PARAM_OUTPUT == coreCls) {
+                if (PARAM_OUTPUT == coreCls || PARAM_INNER_OUTPUT == coreCls) {
                     QString netlbl = selParam.data(ROLE_PARAM_NETLABEL).toString();
                     if (netlbl.isEmpty()) {
                         QAction* pCopyCreateLabel = new QAction(QObject::tr("Copy and Create Net Label"));

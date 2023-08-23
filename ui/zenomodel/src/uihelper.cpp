@@ -1880,7 +1880,7 @@ void UiHelper::renameNetLabels(const IGraphsModel* pModel, const QModelIndex& su
             {
                 if (!info.netLabel.isEmpty() && labels.contains(info.netLabel))
                 {
-                    QString newLabel = id + "/[o]" + info.key;
+                    QString newLabel = id + "/[o]" + outputSocket.info.name + "/" + info.key;
                     labelMap[info.netLabel] = newLabel;
                     info.netLabel = newLabel;
                 }
