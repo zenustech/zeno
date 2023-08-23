@@ -3,6 +3,7 @@
 #include "pch.h"
 #include <numeric>
 #include <functional>
+#include <queue>
 
 //#include "boost/graph/use_mpi.hpp"
 #include "boost/graph/graph_traits.hpp"
@@ -66,6 +67,55 @@ namespace roads {
 
     namespace energy {
         ROADS_API double CalculateStepSize(const Point2D &Pt, const Point2D &P, const Point2D &PrevX, const Point2D &CurrX);
+
+        template <typename IntLikeT>
+        IntLikeT GreatestCommonDivisor(IntLikeT i, IntLikeT j) {
+            if (0 == j)
+                return i;
+            return GreatestCommonDivisor(j, i % j);
+        }
+
+        template <typename PointType = IntPoint2D>
+        void RoadsShortestPath(const PointType& StartPoint, const PointType& GoalPoint, size_t MaskK, std::map<const PointType&, const PointType&>& PredecessorList, std::map<PointType, float>& CostTo, const std::function<float(PointType, IntPoint2D)>& CostFunction) {
+            // Adding Chebyshev distance as heuristic function
+            auto NewCostFunc = [CostFunction] (const PointType& a, const PointType& b) -> float {
+                return CostFunction(a, b) + std::max(std::abs(a[0] - b[0]), std::abs(a[1] - b[1]));
+            };
+
+            // initialize a priority queue Q with the initial point StartPoint
+            auto Comparator = [&CostTo](const PointType& Point1, const PointType& Point2) { return CostTo[Point1] < CostTo[Point2]; };
+
+            std::priority_queue<PointType, ArrayList<PointType>, decltype(Comparator)> Q(Comparator);
+            Q.push(StartPoint);
+
+            // while Q is not empty
+            while (!Q.empty()) {
+                // select the point p_ij from the priority queue with the smallest cost value c(p_ij)
+                PointType Point = Q.top();
+                Q.pop();
+
+                // if destination has been found p_ij = b, stop the algorithm
+                if (GoalPoint == Point) {
+                    break;
+                }
+
+                // for all points q ∈ M_k(p_ij)
+                for (int32_t dx = -int32_t(MaskK); dx <= MaskK; ++dx) {
+                    for (int32_t dy = -int32_t(MaskK); dy <= MaskK; ++dy) {
+                        if (GreatestCommonDivisor(std::abs(dx), std::abs(dy)) == 1) {
+                            PointType NeighbourPoint { Point[0] + dx, Point[1] + dy };
+                            float NewCost = CostTo[Point] + NewCostFunc(Point, NeighbourPoint);
+
+                            if (CostTo.find(NeighbourPoint) == CostTo.end() || NewCost < CostTo[NeighbourPoint]) {
+                                PredecessorList[NeighbourPoint] = Point;
+                                CostTo[NeighbourPoint] = NewCost;
+                                Q.push(NeighbourPoint);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }// namespace energy
 
 }// namespace roads
