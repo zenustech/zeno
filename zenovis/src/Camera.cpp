@@ -59,10 +59,7 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
     m_lodcenter = pos;
     m_lodfront = front;
     m_lodup = up;
-    updateMatrix();
-}
 
-void Camera::updateMatrix() {
     m_view = glm::lookAt(m_lodcenter, m_lodcenter + m_lodfront, m_lodup);
     if (m_ortho_mode) {
         auto radius = glm::length(m_lodcenter);
@@ -70,6 +67,24 @@ void Camera::updateMatrix() {
                 radius, m_far, m_near);
     } else {
         m_proj = glm::perspectiveZO(glm::radians(m_fov), getAspect(), m_far, m_near);
+    }
+}
+
+void Camera::updateMatrix() {
+    zeno::log_info("Camera::updateMatrix {} {}", m_ortho_mode, m_fov);
+
+    auto center = zeno::vec_to_other<glm::vec3>(m_center) ;
+    float cos_t = glm::cos(m_theta), sin_t = glm::sin(m_theta);
+    float cos_p = glm::cos(m_phi), sin_p = glm::sin(m_phi);
+    glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+
+    if (!m_ortho_mode) {
+        m_near = 0.05f;
+        m_far = 20000.0f * std::max(1.0f, (float)m_radius / 10000.f);
+        placeCamera(center - front * m_radius, front, up);
+    } else {
+        placeCamera(center - front * m_radius * 0.4f, front, up);
     }
 }
 
@@ -110,24 +125,11 @@ void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, fl
     m_zxx.aperture = aperture;
     m_zxx.focalPlaneDistance = focalPlaneDistance;
 
-    auto center = glm::vec3(cx, cy, cz);
-
-    float cos_t = glm::cos(theta), sin_t = glm::sin(theta);
-    float cos_p = glm::cos(phi), sin_p = glm::sin(phi);
-    glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
-    glm::vec3 up(-sin_t * sin_p, cos_t, sin_t * cos_p);
-
     m_ortho_mode = ortho_mode;
-    if (!ortho_mode) {
-        m_fov = fov;
-        m_near = 0.05f;
-        m_far = 20000.0f * std::max(1.0f, (float)radius / 10000.f);
-        placeCamera(center - front * radius, front, up);
-    } else {
-        placeCamera(center - front * radius * 0.4f, front, up);
-    }
     m_aperture = aperture;
     this->focalPlaneDistance = focalPlaneDistance;
+
+    updateMatrix();
 }
 
 void Camera::set_program_uniforms(opengl::Program *pro) {
