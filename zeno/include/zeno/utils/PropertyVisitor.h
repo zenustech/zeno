@@ -110,6 +110,11 @@ namespace zeno {
         };
 
         template<>
+        struct ValueTypeToString<zeno::vec2f> {
+            inline static std::string TypeName = "vec2f";
+        };
+
+        template<>
         struct ValueTypeToString<zeno::vec3f> {
             inline static std::string TypeName = "vec3f";
         };
