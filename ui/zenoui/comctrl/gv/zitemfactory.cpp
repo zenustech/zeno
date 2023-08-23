@@ -118,6 +118,11 @@ namespace zenoui
                     // be careful about the dynamic type.
                     const QString textVal = pLineEdit->toPlainText();
                     const QVariant& newValue = UiHelper::parseStringByType(textVal, type);
+                    if (newValue.type() == QVariant::String && ctrl != CONTROL_STRING)
+                    {
+                        if (!textVal.startsWith("="))
+                            zeno::log_error("The formula '{}' need start with '='", textVal.toStdString());
+                    }
                     cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pLineEdit;
