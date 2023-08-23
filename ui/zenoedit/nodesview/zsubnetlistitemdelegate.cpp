@@ -275,7 +275,7 @@ SubListSortProxyModel::SubListSortProxyModel(QObject* parent) : QSortFilterProxy
 
 bool SubListSortProxyModel::lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const
 {
-    if (source_right.data().toString().contains("main"))
+    if (source_right.data().toString() == "main")
         return false;
     if (source_left.data().toString().compare(source_right.data().toString(), Qt::CaseInsensitive) < 0)
         return true;
