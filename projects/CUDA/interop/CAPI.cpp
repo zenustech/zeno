@@ -1,6 +1,45 @@
 #include <zeno/extra/CAPI.h>
+#include "Vector.hpp"
 #include "vec.hpp"
 using namespace zeno; 
+
+#define DEFINE_CREATE_ZS_VEC_SCALAR_TYPE(type) ZENO_CAPI Zeno_Error ZS_CreateObjectZsSmallVec_##type##_scalar(Zeno_Object *objectRet_) ZENO_CAPI_NOEXCEPT { \
+    return PyZeno::lastError.catched([=] { \
+        *objectRet_ = PyZeno::lutObject.create(std::make_shared<SmallVecObject>(type {})); \
+    });  \
+}
+#define DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, dim) ZENO_CAPI Zeno_Error ZS_CreateObjectZsSmallVec_##type##_##dim(Zeno_Object *objectRet_) ZENO_CAPI_NOEXCEPT { \
+    return PyZeno::lastError.catched([=] { \
+        *objectRet_ = PyZeno::lutObject.create(std::make_shared<SmallVecObject>(zs::vec<type, dim>{})); \
+    });  \
+}
+#define DEFINE_CREATE_ZS_VEC_1D_TYPE(type) DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, 1) DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, 2) DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, 3) DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, 4)
+#define DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, dim_y) ZENO_CAPI Zeno_Error ZS_CreateObjectZsSmallVec_##type##_##dim_x##x##dim_y(Zeno_Object *objectRet_) ZENO_CAPI_NOEXCEPT { \
+    return PyZeno::lastError.catched([=] { \
+        *objectRet_ = PyZeno::lutObject.create(std::make_shared<SmallVecObject>(zs::vec<type, dim_x, dim_y>{})); \
+    });  \
+}
+#define DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, dim_x) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, 1) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, 2) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, 3) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, 4)
+#define DEFINE_CREATE_ZS_VEC_2D_TYPE(type) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, 1) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, 2) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, 3) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, 4)
+
+
+#define INSTANTIATE_ZPC_VECTOR_ZENO_APIS(T)                                                      \
+  ZENO_CAPI Zeno_Error container_obj##__##v##_##T(Zeno_Object* ptr,                              \
+      const zs::ZSPmrAllocator<false> *allocator, zs::size_t size) ZENO_CAPI_NOEXCEPT {          \
+    return PyZeno::lastError.catched([=] {                                                       \
+        *ptr = PyZeno::lutObject.create(                                                         \
+        std::make_shared<VectorViewLiteObject>(                                                  \
+          zs::Vector<T, zs::ZSPmrAllocator<false>>{*allocator, size}));                          \
+    });                                                                                          \
+  }                                                                                              \
+  ZENO_CAPI Zeno_Error container_obj##__##v##_##T##_virtual(Zeno_Object* ptr,                     \
+      const zs::ZSPmrAllocator<true> *allocator, zs::size_t size) ZENO_CAPI_NOEXCEPT {          \
+    return PyZeno::lastError.catched([=] {                                                       \
+        *ptr = PyZeno::lutObject.create(                                                         \
+        std::make_shared<VectorViewLiteObject>(                                                  \
+          zs::Vector<T, zs::ZSPmrAllocator<true>>{*allocator, size}));                           \
+    });                                                                                          \
+  }                                                                                              
 
 namespace PyZeno
 {
@@ -21,25 +60,6 @@ ZS_DataType getZSdataType()
 }
 
 extern "C" {
-    #define DEFINE_CREATE_ZS_VEC_SCALAR_TYPE(type) ZENO_CAPI Zeno_Error ZS_CreateObjectZsSmallVec_##type##_scalar(Zeno_Object *objectRet_) ZENO_CAPI_NOEXCEPT { \
-        return PyZeno::lastError.catched([=] { \
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<SmallVecObject>(type {})); \
-        });  \
-    }
-    #define DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, dim) ZENO_CAPI Zeno_Error ZS_CreateObjectZsSmallVec_##type##_##dim(Zeno_Object *objectRet_) ZENO_CAPI_NOEXCEPT { \
-        return PyZeno::lastError.catched([=] { \
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<SmallVecObject>(zs::vec<type, dim>{})); \
-        });  \
-    }
-    #define DEFINE_CREATE_ZS_VEC_1D_TYPE(type) DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, 1) DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, 2) DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, 3) DEFINE_CREATE_ZS_VEC_1D_TYPE_DIM(type, 4)
-    #define DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, dim_y) ZENO_CAPI Zeno_Error ZS_CreateObjectZsSmallVec_##type##_##dim_x##x##dim_y(Zeno_Object *objectRet_) ZENO_CAPI_NOEXCEPT { \
-        return PyZeno::lastError.catched([=] { \
-            *objectRet_ = PyZeno::lutObject.create(std::make_shared<SmallVecObject>(zs::vec<type, dim_x, dim_y>{})); \
-        });  \
-    }
-    #define DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, dim_x) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, 1) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, 2) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, 3) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX_DIMY(type, dim_x, 4)
-    #define DEFINE_CREATE_ZS_VEC_2D_TYPE(type) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, 1) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, 2) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, 3) DEFINE_CREATE_ZS_VEC_2D_TYPE_DIMX(type, 4)
-
     DEFINE_CREATE_ZS_VEC_SCALAR_TYPE(int) DEFINE_CREATE_ZS_VEC_SCALAR_TYPE(float) DEFINE_CREATE_ZS_VEC_SCALAR_TYPE(double)
     DEFINE_CREATE_ZS_VEC_1D_TYPE(int) DEFINE_CREATE_ZS_VEC_1D_TYPE(float) DEFINE_CREATE_ZS_VEC_1D_TYPE(double)
     DEFINE_CREATE_ZS_VEC_2D_TYPE(int) DEFINE_CREATE_ZS_VEC_2D_TYPE(float) DEFINE_CREATE_ZS_VEC_2D_TYPE(double)
@@ -69,5 +89,9 @@ extern "C" {
             }, vec); 
         }); 
     }
+
+    INSTANTIATE_ZPC_VECTOR_ZENO_APIS(int)
+    INSTANTIATE_ZPC_VECTOR_ZENO_APIS(float)
+    INSTANTIATE_ZPC_VECTOR_ZENO_APIS(double)
 }
 

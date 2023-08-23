@@ -4,16 +4,71 @@
 #include "zensim/omp/execution/ExecutionPolicy.hpp"
 #include "zensim/resource/Filesystem.hpp"
 #include "zensim/zpc_tpls/fmt/color.h"
+#include <zeno_PyZpc_config.h>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
+#include <zeno/zeno.h>
+#include <zeno/extra/assetDir.h>
+#include <zeno/extra/EventCallbacks.h>
+#include <zeno/utils/log.h>
+#include <zeno/types/GenericObject.h>
+#include <zeno/types/FunctionObject.h>
+#include <zeno/types/UserData.h>
+#include <zeno/core/Graph.h>
+#include <zeno/utils/zeno_p.h>
+#include <zeno/utils/string.h>
+#include <zeno/utils/scope_exit.h>
+#include <zeno/extra/CAPIInternals.h>
+#include <cwchar>
+#include <utility>
+#include <thread>
 
 namespace zeno {
+namespace {
+static int subprogram_python_main(int argc, char **argv) {
+    return Py_BytesMain(argc, argv);
+}
 
+static std::wstring s2ws(std::string const &s) {
+    std::wstring ws(s.size(), L' '); // Overestimate number of code points.
+    ws.resize(std::mbstowcs(ws.data(), s.data(), s.size())); // Shrink to fit.
+    return ws;
+}
+
+using callback_t = std::function<void(std::optional<std::any>)>; 
+
+static callback_t zpc_init_callback = [] (auto _) {
+    log_debug("Initializing Python...");
+    // static std::string execenvvar = "zenoedit_executable=" + getConfigVariable("EXECFILE") + "\0";
+    // putenv(execenvvar.data());
+    Py_Initialize();
+    std::string libpath = getAssetDir(ZENO_PYZPC_MODULE_DIR);
+#ifdef _WIN32
+    libpath = replace_all(libpath, "\\", "\\\\");
+#endif
+    // std::string dllfile = ZENO_PYTHON_DLL_FILE;
+    if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import zpy;").c_str()) < 0) {
+        log_warn("Failed to initialize Python module");
+        return;
+    }
+    log_debug("Initialized Python successfully!");
+    getSession().userData().set("subprogram_python", std::make_shared<GenericObject<int(*)(int, char **)>>(subprogram_python_main));
+}; 
+static int defPyZpcInit = getSession().eventCallbacks->hookEvent("init", zpc_init_callback);
+
+static callback_t zpc_exit_callback = [] (auto _) {
+    Py_Finalize();
+}; 
+static int defPyZpcExit = getSession().eventCallbacks->hookEvent("exit", zpc_exit_callback);
+}
+
+// ref: PythonScript node by Archibate
 struct PyZfx : INode {
     void apply() override {
+#if 0 
         std::vector<int> vs{1, 2, 3, 10, 20, 30, -10, -20, -30};
         Py_Initialize();
         //
@@ -51,7 +106,7 @@ struct PyZfx : INode {
                     // pass a ptr as the 4th param
                     pArgs.setItem(3, pyobj(py_long_c, vs.data()));
                     // PyList, PyDict
-                    pValue = {py_dict_c};
+                    // pValue = {py_dict_c};
 
                     pValue = PyObject_CallObject(pFunc, pArgs);
                     if (pValue) {
@@ -67,16 +122,107 @@ struct PyZfx : INode {
 
         Py_Finalize();
         fmt::print(fg(fmt::color::blue), "done pyzfx node test.\n");
+#endif 
+        auto args = has_input("args") ? get_input<DictObject>("args") : std::make_shared<DictObject>();
+        auto path = get_input2<std::string>("path");
+        int ret;
+        PyObject *argsDict = PyDict_New();
+        scope_exit argsDel = [=] {
+            Py_DECREF(argsDict);
+        };
+        PyObject *retsDict = PyDict_New();
+        scope_exit retsDel = [=] {
+            Py_DECREF(retsDict);
+        };
+        std::vector<Zeno_Object> needToDel;
+        scope_exit needToDelEraser = [&] {
+            for (auto handle: needToDel) {
+                capiEraseObjectSharedPtr(handle);
+            }
+        };
+        for (auto const &[k, v]: args->lut) {
+            auto handle = capiLoadObjectSharedPtr(v);
+            needToDel.push_back(handle);
+            PyObject *handleLong = PyLong_FromUnsignedLongLong(handle);
+            scope_exit handleDel = [=] {
+                Py_DECREF(handleLong);
+            };
+            if (PyDict_SetItemString(argsDict, k.c_str(), handleLong) < 0) {
+                throw makeError("failed to invoke PyDict_SetItemString");
+            }
+        }
+        PyObject *mainMod = PyImport_AddModule("__main__");
+        if (!mainMod) throw makeError("failed to get module '__main__'");
+        PyObject *globals = PyModule_GetDict(mainMod);
+        PyObject *zenoMod = PyImport_AddModule("zpy");
+        PyObject *zenoModDict = PyModule_GetDict(zenoMod);
+        if (PyDict_SetItemString(zenoModDict, "_rets", retsDict) < 0)
+            throw makeError("failed to set zpy._rets");
+        if (PyDict_SetItemString(zenoModDict, "_args", argsDict) < 0)
+            throw makeError("failed to set zpy._args");
+        if (PyRun_SimpleString("zpy.update_args()") < 0) {
+            throw makeError("failed to update zpy.args");
+        }
+ 
+        if (path.empty()) {
+            auto code = get_input2<std::string>("code");
+            mainMod = PyRun_StringFlags(code.c_str(), Py_file_input, globals, globals, NULL);
+        } else {
+            FILE *fp = fopen(path.c_str(), "r");
+            if (!fp) {
+                perror(path.c_str());
+                throw makeError("cannot open file for read: " + path);
+            } else {
+                mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, globals, 1, NULL);
+            }
+        }
+        //currGraphLongReset.reset();
+        //currGraphEraser.reset();
+        needToDelEraser.reset();
+        if (!mainMod) {
+            PyErr_Print();
+            throw makeError("Python exception occurred, see console for more details");
+        }
+        auto rets = std::make_shared<DictObject>();
+        {
+            PyObject *key, *value;
+            Py_ssize_t pos = 0;
+            while (PyDict_Next(retsDict, &pos, &key, &value)) {
+                Py_ssize_t keyLen = 0;
+                const char *keyDat = PyUnicode_AsUTF8AndSize(key, &keyLen);
+                if (keyDat == nullptr) {
+                    throw makeError("failed to cast rets key as string");
+                }
+                std::string keyStr(keyDat, keyLen);
+                Zeno_Object handle = PyLong_AsUnsignedLongLong(value);
+                if (handle == -1 && PyErr_Occurred()) {
+                    throw makeError("failed to cast rets value as integer");
+                }
+                rets->lut.emplace(std::move(keyStr), capiFindObjectSharedPtr(handle));
+            }
+        }
+        {
+            PyObject *retsRAIIDict = PyDict_GetItemString(zenoModDict, "_retsRAII");
+            PyDict_Clear(retsRAIIDict);
+        }
+        set_output("rets", std::move(rets));
     }
 };
-ZENDEFNODE(PyZfx, {/* inputs: */ {},
-                   /* outputs: */
-                   {},
-                   /* params: */
-                   {},
-                   /* category: */
-                   {
-                       "pyzfx",
-                   }});
+ZENDEFNODE(PyZfx, {/* inputs: */ 
+    {
+        {"string", "code", ""},
+        {"readpath", "path", ""},
+        {"DictObject", "args"},
+    },
+    /* outputs: */
+    {
+        {"DictObject", "rets"},
+    },
+    /* params: */
+    {},
+    /* category: */
+    {
+        "pyzfx",
+    }});
 
 } // namespace zeno
