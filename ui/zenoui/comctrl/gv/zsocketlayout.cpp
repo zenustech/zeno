@@ -171,7 +171,8 @@ QPersistentModelIndex ZSocketLayout::viewSocketIdx() const
 
 void ZSocketLayout::setVisible(bool bVisible) 
 {
-    if (m_socket->sockStatus() != ZenoSocketItem::STATUS_CONNECTED && m_control) {
+    const QString& netLabel = m_viewSockIdx.data(ROLE_PARAM_NETLABEL).toString();
+    if (netLabel.isEmpty() && m_socket->sockStatus() != ZenoSocketItem::STATUS_CONNECTED && m_control) {
         m_control->setVisible(bVisible);
     }
     if (m_text) {
