@@ -15,9 +15,23 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     : QObject(nullptr)
     , m_zenoVis(pzenoVis)
     , m_bRecording(false)
+    , m_pTimer(nullptr)
+    , m_playTimer(nullptr)
 {
     m_pTimer = new QTimer(this);
-    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+    connect(m_pTimer, &QTimer::timeout, this, [=]() {
+        ZASSERT_EXIT(m_zenoVis);
+        bool isPlaying = m_zenoVis->isPlaying();
+        m_zenoVis->startPlay(false);
+        zeno::scope_exit sp([=]() { m_zenoVis->startPlay(isPlaying); });
+        //only update current frame
+        updateFrame();
+    });
+
+    m_playTimer = new QTimer(this);
+    connect(m_playTimer, &QTimer::timeout, this, [=]() {
+        updateFrame();
+    });
 }
 
 OptixWorker::~OptixWorker()
@@ -28,10 +42,12 @@ OptixWorker::OptixWorker(QObject* parent)
     : QObject(parent)
     , m_zenoVis(nullptr)
     , m_pTimer(nullptr)
+    , m_playTimer(nullptr)
     , m_bRecording(false)
 {
     //used by offline worker.
     m_pTimer = new QTimer(this);
+    m_playTimer = new QTimer(this);
     m_zenoVis = new Zenovis(this);
 
     //fake GL
@@ -60,9 +76,11 @@ void OptixWorker::updateFrame()
 
 void OptixWorker::onPlayToggled(bool bToggled)
 {
-    //todo: priority.
     m_zenoVis->startPlay(bToggled);
-    m_pTimer->start(m_slidFeq);
+    if (bToggled)
+        m_playTimer->start(m_slidFeq);
+    else
+        m_playTimer->stop();
 }
 
 void OptixWorker::onFrameSwitched(int frame)
@@ -93,11 +111,12 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
     //for the case about recording after run.
     zeno::scope_exit sp([=] {
         m_bRecording = false;
-        m_pTimer->start(m_slidFeq);
+        m_pTimer->start(m_sampleFeq);
     });
 
     m_bRecording = true;
     m_pTimer->stop();
+    m_playTimer->stop();
 
     for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second;)
     {
@@ -204,7 +223,7 @@ void OptixWorker::stop()
 
 void OptixWorker::work()
 {
-    m_pTimer->start(m_slidFeq);
+    m_pTimer->start(m_sampleFeq);
 }
 
 QImage OptixWorker::renderImage() const
@@ -217,7 +236,7 @@ void OptixWorker::needUpdateCamera()
     //todo: update reason.
     //m_zenoVis->getSession()->get_scene()->drawOptions->needUpdateGeo = false;	//just for teset.
     m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
-    m_pTimer->start(m_slidFeq);
+    m_pTimer->start(m_sampleFeq);
 }
 
 
