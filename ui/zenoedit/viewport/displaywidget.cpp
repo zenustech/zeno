@@ -185,7 +185,9 @@ void DisplayWidget::setSafeFrames(bool bLock, int nx, int ny)
     else {
         m_optixView->setSafeFrames(bLock, nx, ny);
     }
-    m_resx = nx, m_resy = ny;
+    std::get<0>(originWindowSizeInfo) = nx;
+    std::get<1>(originWindowSizeInfo) = ny;
+    std::get<2>(originWindowSizeInfo) = bLock;
 }
 
 void DisplayWidget::setSimpleRenderOption()
@@ -230,6 +232,9 @@ void DisplayWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
     else {
         m_optixView->setSafeFrames(info.lock, info.resolutionX, info.resolutionY);
     }
+    std::get<0>(originWindowSizeInfo) = info.resolutionX;
+    std::get<1>(originWindowSizeInfo) = info.resolutionY;
+    std::get<2>(originWindowSizeInfo) = info.lock;
 }
 
 void DisplayWidget::setSliderFeq(int feq)
@@ -301,6 +306,11 @@ void DisplayWidget::setLoopPlaying(bool enable)
         emit m_optixView->sig_setLoopPlaying(enable);
 #endif
     }
+}
+
+std::tuple<int, int, bool> DisplayWidget::getOriginWindowSizeInfo()
+{
+    return originWindowSizeInfo;
 }
 
 void DisplayWidget::onPlayClicked(bool bChecked)
@@ -687,16 +697,17 @@ void DisplayWidget::onScreenShoot() {
         ZASSERT_EXIT(pZenoVis);
         if (!m_bGLView)
         {
-            m_optixView->screenshoot(path, ext, m_resx, m_resy);
+            m_optixView->screenshoot(path, ext, std::get<0>(originWindowSizeInfo), std::get<1>(originWindowSizeInfo));
         }
         else {
-            auto [x, y] = pZenoVis->getSession()->get_window_size();
+            std::tuple<int, int> winsize = pZenoVis->getSession()->get_window_size();
             zeno::vec2i offset = pZenoVis->getSession()->get_viewportOffset();
+            zeno::scope_exit scope([=]() { 
+                if (pZenoVis->getSession()->is_lock_window())
+                    pZenoVis->getSession()->set_window_size(std::get<0>(winsize), std::get<1>(winsize), offset); });
             if (pZenoVis->getSession()->is_lock_window())
-                pZenoVis->getSession()->set_window_size(m_resx, m_resy, zeno::vec2i{ 0,0 });
+                pZenoVis->getSession()->set_window_size(std::get<0>(originWindowSizeInfo), std::get<1>(originWindowSizeInfo), zeno::vec2i{ 0,0 });
             pZenoVis->getSession()->do_screenshot(path.toStdString(), ext.toStdString());
-            if (pZenoVis->getSession()->is_lock_window())
-                pZenoVis->getSession()->set_window_size(x, y, offset);
         }
     }
 }
