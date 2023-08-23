@@ -47,11 +47,18 @@ struct LAYOUT_SETTING {
     void(*cbDumpTabsToZsg)(QDockWidget*, RAPIDJSON_WRITER&);
 };
 
+struct USERDATA_SETTING
+{
+    bool optix_show_background;
+    USERDATA_SETTING() : optix_show_background(false) {}
+};
+
 struct APP_SETTINGS
 {
     TIMELINE_INFO timeline;
     RECORD_SETTING recordInfo;
     LAYOUT_SETTING layoutInfo;
+    USERDATA_SETTING userdataInfo;
     //todo: other settings.
 };
 

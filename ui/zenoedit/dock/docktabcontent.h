@@ -135,6 +135,7 @@ public:
     void setResComboBoxIndex(int index);
     std::tuple<int, int> curResolution();
     void initResolution(int nx, int ny);
+    void setOptixBackgroundState(bool checked);
 
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
@@ -163,7 +164,7 @@ private:
     QAction *m_back;
     QAction *m_right;
     QAction *m_left;
-    QAction *m_top;
+    QAction *m_top; 
     QAction *m_bottom;
 
     QAction *m_move;

@@ -401,6 +401,11 @@ bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PAR
     }
     zeno::getSession().globalComm->clearState();
     launchParam.projectFps = pGraphs->timeInfo().timelinefps;
+
+    //set userdata from zsg
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix_show_background", pGraphs->userdataInfo().optix_show_background);
+
     launchProgram(pModel, launchParam);
     return true;
 }

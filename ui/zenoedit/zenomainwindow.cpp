@@ -1537,6 +1537,7 @@ bool ZenoMainWindow::openFile(QString filePath)
 
     resetTimeline(pGraphs->timeInfo());
     recordRecentFile(filePath);
+    initUserdata(pGraphs->userdataInfo());
     //resetDocks(pGraphs->layoutInfo().layerOutNode);
     return true;
 }
@@ -1875,6 +1876,8 @@ bool ZenoMainWindow::saveFile(QString filePath)
     settings.layoutInfo.layerOutNode = m_layoutRoot;
     settings.layoutInfo.size = size();
     settings.layoutInfo.cbDumpTabsToZsg = &AppHelper::dumpTabsToZsg;
+    auto& ud = zeno::getSession().userData();
+    settings.userdataInfo.optix_show_background = ud.get2<bool>("optix_show_background", false);
     zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
     return true;
@@ -1934,6 +1937,25 @@ void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
     for (auto view: viewports())
     {
         view->setSliderFeq(1000 / info.timelinefps);
+    }
+}
+
+void ZenoMainWindow::initUserdata(USERDATA_SETTING info)
+{
+    auto& ud = zeno::getSession().userData();
+    ud.set2("optix_show_background", info.optix_show_background);
+    auto docks = findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    QVector<DisplayWidget*> vec;
+    for (ZTabDockWidget* pDock : docks)
+    {
+        if (pDock->isVisible())
+            if (ZDockTabWidget* tabwidget = qobject_cast<ZDockTabWidget*>(pDock->widget()))
+                for (int i = 0; i < tabwidget->count(); i++)
+                {
+                    QWidget* wid = tabwidget->widget(i);
+                    if (DockContent_View* pView = qobject_cast<DockContent_View*>(wid))
+                        pView->setOptixBackgroundState(info.optix_show_background);
+                }
     }
 }
 

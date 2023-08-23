@@ -84,9 +84,11 @@ public:
     virtual void setTimeInfo(const TIMELINE_INFO& info) = 0;
     virtual void setRecordInfo(const RECORD_SETTING& info) = 0;
     virtual void setLayoutInfo(const LAYOUT_SETTING& info) = 0;
+    virtual void setUserDataInfo(const USERDATA_SETTING& info) = 0;
     virtual TIMELINE_INFO timeInfo() const = 0;
     virtual RECORD_SETTING recordInfo() const = 0;
     virtual LAYOUT_SETTING layoutInfo() const = 0;
+    virtual USERDATA_SETTING userdataInfo() const = 0;
     virtual void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,

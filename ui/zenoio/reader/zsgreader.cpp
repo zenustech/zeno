@@ -418,6 +418,12 @@ void ZsgReader::_parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* 
         layout.layerOutNode = _readLayout(jsonSettings["layoutinfo"]);
         pAcceptor->setLayoutInfo(layout);
     }
+    if (jsonSettings.HasMember("userdatainfo") && jsonSettings["userdatainfo"].IsObject())
+    {
+        USERDATA_SETTING userdata;
+        userdata.optix_show_background = jsonSettings["userdatainfo"][userdatainfo::optixShowBackground].GetBool();
+        pAcceptor->setUserDataInfo(userdata);
+    }
 }
 
 void ZsgReader::_parseDictKeys(const QString& id, const rapidjson::Value& objValue, IAcceptor* pAcceptor)

@@ -586,6 +586,12 @@ void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writ
 
         writer.Key("layoutinfo");
         _writeLayout(settings.layoutInfo.layerOutNode, settings.layoutInfo.size, writer, settings.layoutInfo.cbDumpTabsToZsg);
+
+        writer.Key("userdatainfo");
+        writer.StartObject();
+        writer.Key(userdatainfo::optixShowBackground);
+        writer.Bool(settings.userdataInfo.optix_show_background);
+        writer.EndObject();
     }
 }
 

@@ -42,6 +42,7 @@ public:
     bool isAlwaysLightCamera() const;
     bool isAlwaysMaterial() const;
     void resetTimeline(TIMELINE_INFO info);
+    void initUserdata(USERDATA_SETTING info);
     ZTimeline* timeline() const;
     QVector<DisplayWidget*> viewports() const;
     DisplayWidget* getCurrentViewport() const;
