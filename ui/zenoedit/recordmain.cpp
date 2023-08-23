@@ -214,11 +214,16 @@ int record_main(const QCoreApplication& app)
         ZASSERT_EXIT(idxCachePath != -1 && idxCachePath + 1 < args.length(), -1);
         args[idxCachePath + 1] = zenCacheDir;
 
+        auto pGraphs = zenoApp->graphsManagment();
+        ZASSERT_EXIT(pGraphs, -1);
+
         ZASSERT_EXIT(args[1] == "--record", -1);
         args[1] = "--optixcmd";
         args[2] = QString::number(0);      //no need tcp
         args.append("--cacheautorm");
         args.append(QString::number(launchparam.autoRmCurcache));
+        args.append("--optixShowBackground");
+        args.append(QString::number(pGraphs->userdataInfo().optix_show_background));
         args.removeAt(0);
 
         //start optix proc to render
