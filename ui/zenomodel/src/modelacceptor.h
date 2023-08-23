@@ -81,10 +81,12 @@ public:
 	void setBlackboard(const QString& id, const BLACKBOARD_INFO& blackboard) override;
 	void setTimeInfo(const TIMELINE_INFO& info) override;
 	void setRecordInfo(const RECORD_SETTING& info) override;
-	void setLayoutInfo(const LAYOUT_SETTING& info) override;
+    void setLayoutInfo(const LAYOUT_SETTING& info) override;
+    void setUserDataInfo(const USERDATA_SETTING& info) override;
 	TIMELINE_INFO timeInfo() const override;
 	RECORD_SETTING recordInfo() const override;
-	LAYOUT_SETTING layoutInfo() const override;
+    LAYOUT_SETTING layoutInfo() const override;
+    USERDATA_SETTING userdataInfo() const override;
 	void setLegacyCurve(
         const QString& id,
         const QVector<QPointF>& pts,
@@ -102,6 +104,7 @@ private:
 	TIMELINE_INFO m_timeInfo;
 	RECORD_SETTING m_recordInfo;
 	LAYOUT_SETTING m_layoutInfo;
+    USERDATA_SETTING m_userdatInfo;
 	QList<EdgeInfo> m_subgLinks;	//collected links for m_currentGraph.
     QList<EdgeInfo> m_subgLegacyLinks;  //links with legacy param.
 	SubGraphModel* m_currentGraph;

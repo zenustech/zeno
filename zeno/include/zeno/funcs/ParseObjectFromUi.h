@@ -52,6 +52,10 @@ namespace iotags {
     namespace layoutinfo {
         constexpr const char* layout = "layout";
     }
+
+    namespace userdatainfo {
+        constexpr const char* optixShowBackground = "optix-show-background";
+    }
 }
 
 }

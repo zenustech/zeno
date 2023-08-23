@@ -7,6 +7,8 @@
 #include <zeno/utils/scope_exit.h>
 #include "common_def.h"
 #include <zenoio/writer/zsgwriter.h>
+#include <zeno/core/Session.h>
+#include <zeno/types/UserData.h>
 
 
 class IOBreakingScope
@@ -86,6 +88,7 @@ IGraphsModel* GraphsManagment::openZsgFile(const QString& fn)
         m_timerInfo = acceptor->timeInfo();
         m_recordInfo = acceptor->recordInfo();
         m_layoutInfo = acceptor->layoutInfo();
+        m_userdataInfo = acceptor->userdataInfo();
         if (!ret)
             return nullptr;
     }
@@ -259,6 +262,16 @@ void GraphsManagment::setRecordInfo(RECORD_SETTING& info)
 LAYOUT_SETTING GraphsManagment::layoutInfo() const
 {
     return m_layoutInfo;
+}
+
+void GraphsManagment::setUserDataInfo(USERDATA_SETTING& info)
+{
+    m_userdataInfo = info;
+}
+
+USERDATA_SETTING GraphsManagment::userdataInfo()
+{
+    return m_userdataInfo;
 }
 
 void GraphsManagment::appendErr(const QString& nodeName, const QString& msg)
