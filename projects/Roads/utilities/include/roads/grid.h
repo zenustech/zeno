@@ -133,7 +133,7 @@ namespace roads {
                     break;
                 }
 
-                printf("-- P(%d,%d) %f\n", Point[0], Point[1], CostTo[Point]);
+                //printf("-- P(%d,%d) %f\n", Point[0], Point[1], CostTo[Point]);
 
                 // for all points q ∈ M_k(p_ij)
                 for (int32_t dx = -MaskK; dx <= MaskK; ++dx) {
