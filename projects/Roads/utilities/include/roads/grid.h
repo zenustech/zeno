@@ -98,14 +98,59 @@ namespace roads {
                 //return CostFunction(a, b) + std::abs<float>(GoalPoint[0] - b[0]) + std::abs<float>(GoalPoint[1] - b[1]);
             };
 
+            std::unordered_map<std::pair<PointType, PointType>, float> SimpleCost;
+            std::function<float(const PointType &, const PointType &, bool)> StraightCost = [NewCostFunc, MaskK, &SimpleCost, &StraightCost](const PointType &From, const PointType &To, bool bMoveX = true) mutable -> float {
+                auto CurrentPair = std::make_pair(From, To);
+                if (SimpleCost.count(CurrentPair)) {
+                    return SimpleCost[CurrentPair];
+                }
+
+                if (From == To) {
+                    SimpleCost[CurrentPair] = 0.0f;
+                    return 0.0f;
+                }
+
+                PointType NextPoint = From;
+
+                if (bMoveX) {
+                    if (To[0] != From[0]) {
+                        if (std::abs<int32_t>(From[0] - To[0]) <= MaskK) {
+                            NextPoint[0] = To[0];
+                        } else if (From[0] < To[0]) {
+                            NextPoint[0] += 1;
+                        } else {
+                            NextPoint[0] -= 1;
+                        }
+                    }
+                } else {
+                    if (To[1] != From[1]) {
+                        if (std::abs<int32_t>(From[1] - To[1]) <= MaskK) {
+                            NextPoint[1] = To[1];
+                        } else if (From[1] < To[1]) {
+                            NextPoint[1] += 1;
+                        } else {
+                            NextPoint[1] -= 1;
+                        }
+                    }
+                }
+
+                float Cost = NewCostFunc(From, NextPoint) + StraightCost(NextPoint, To, !bMoveX);
+                SimpleCost[CurrentPair] = Cost;
+                return Cost;
+            };
+
             // Adding Chebyshev distance as heuristic function
-            auto Comparator = [&CostTo, &GoalPoint, &Bounds](const PointType &Point1, const PointType &Point2) {
+            auto Comparator = [&CostTo, &GoalPoint, &Bounds, &StraightCost](const PointType &Point1, const PointType &Point2) {
                 //float DeltaA = std::max(std::abs<int32_t>(Point1[0] - GoalPoint[0]) / Bounds[0], std::abs<int32_t>(Point1[1] - GoalPoint[1]) / Bounds[1]);
                 //float DeltaB = std::max(std::abs<int32_t>(Point2[0] - GoalPoint[0]) / Bounds[0], std::abs<int32_t>(Point2[1] - GoalPoint[1]) / Bounds[1]);
-                float DeltaA = std::abs<int32_t>(Point1[0] - GoalPoint[0]) + std::abs<int32_t>(Point1[1] - GoalPoint[1]);
-                float DeltaB = std::abs<int32_t>(Point2[0] - GoalPoint[0]) + std::abs<int32_t>(Point2[1] - GoalPoint[1]);
+                //float DeltaA = std::abs<int32_t>(Point1[0] - GoalPoint[0]) + std::abs<int32_t>(Point1[1] - GoalPoint[1]);
+                //float DeltaB = std::abs<int32_t>(Point2[0] - GoalPoint[0]) + std::abs<int32_t>(Point2[1] - GoalPoint[1]);
                 //float DeltaA = std::sqrt(std::pow(Point1[0] - GoalPoint[0], 2) + std::pow(Point1[1] - GoalPoint[1], 2));
                 //float DeltaB = std::sqrt(std::pow(Point2[0] - GoalPoint[0], 2) + std::pow(Point2[1] - GoalPoint[1], 2));
+
+                float DeltaA = StraightCost(Point1, GoalPoint, true);
+                float DeltaB = StraightCost(Point2, GoalPoint, true);
+
                 float CostA = CostTo[Point1] + DeltaA;
                 float CostB = CostTo[Point2] + DeltaB;
                 return CostA > CostB;
@@ -117,7 +162,7 @@ namespace roads {
             CostTo[StartPoint] = 0.f;
             for (size_t x = 0; x < Bounds[0]; x++) {
                 for (size_t y = 0; y < Bounds[1]; y++) {
-                    PointType Point {x, y};
+                    PointType Point{x, y};
                     if (Point != StartPoint) { CostTo[Point] = std::numeric_limits<float>::max(); }
                 }
             }
@@ -135,7 +180,7 @@ namespace roads {
 
                 //printf("-- P(%d,%d) %f\n", Point[0], Point[1], CostTo[Point]);
 
-                // for all points q ∈ M_k(p_ij)
+                // step3. for all points q ∈ M_k(p_ij)
                 for (int32_t dx = -MaskK; dx <= MaskK; ++dx) {
                     for (int32_t dy = -MaskK; dy <= MaskK; ++dy) {
                         if (GreatestCommonDivisor(std::abs(dx), std::abs(dy)) == 1) {
@@ -169,6 +214,14 @@ namespace std {
         size_t operator()(const roads::CostPoint &rhs) const {
             constexpr size_t Seed = 10086;
             return (rhs[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 2));
+        }
+    };
+
+    template<>
+    struct hash<std::pair<roads::CostPoint, roads::CostPoint>> {
+        size_t operator()(const std::pair<roads::CostPoint, roads::CostPoint> &rhs) const {
+            constexpr size_t Seed = 10086;
+            return (rhs.first[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs.first[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 2)) ^ (rhs.second[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs.second[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 2));
         }
     };
 }// namespace std
