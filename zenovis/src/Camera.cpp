@@ -21,30 +21,22 @@ void Camera::setCamera(zeno::CameraData const &cam) {
 //    zeno::log_info("radius {}", m_zxx.radius);
 
     if (cam.isSet) {
-        this->m_zxx_in.cx = cam.center[0];
-        this->m_zxx_in.cy = cam.center[1];
-        this->m_zxx_in.cz = cam.center[2];
-
-        this->m_zxx_in.theta = cam.theta;
-        this->m_zxx_in.phi = cam.phi;
-        this->m_zxx_in.radius = cam.radius;
+        m_center = cam.center;
+        m_theta = cam.theta;
+        m_phi = cam.phi;
+        m_radius = cam.radius;
     }
     else {
-        float radius = m_zxx.radius;
         auto view = zeno::normalize(cam.view);
-        zeno::vec3f center = cam.pos + radius * zeno::normalize(cam.view);
+        zeno::vec3f center = cam.pos + m_radius * zeno::normalize(cam.view);
         float theta = M_PI_2 - glm::acos(zeno::dot(view, zeno::vec3f(0, 1, 0)));
         float phi = M_PI_2 + std::atan2(view[2], view[0]);
 //        zeno::log_info("theta: {}", theta);
 //        zeno::log_info("phi: {}", phi);
 
-        this->m_zxx_in.cx = center[0];
-        this->m_zxx_in.cy = center[1];
-        this->m_zxx_in.cz = center[2];
-
-        this->m_zxx_in.theta = theta;
-        this->m_zxx_in.phi = phi;
-        this->m_zxx_in.radius = radius;
+        m_center = center;
+        m_theta = theta;
+        m_phi = phi;
     }
 
     this->m_auto_radius = !cam.isSet;

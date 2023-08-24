@@ -103,10 +103,6 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
     if (scene->camera->m_need_sync) {
-        setCenter({scene->camera->m_zxx_in.cx, scene->camera->m_zxx_in.cy, scene->camera->m_zxx_in.cz});
-        setTheta(scene->camera->m_zxx_in.theta);
-        setPhi(scene->camera->m_zxx_in.phi);
-        setRadius(scene->camera->m_zxx_in.radius);
         scene->camera->m_need_sync = false;
         if (bool(m_picker) && scene->camera->m_auto_radius) {
             this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {

@@ -41,6 +41,7 @@ struct Camera {
 
     zeno::vec2i viewport_offset = {};
 
+    // only used in real-shader
     struct ZxxHappyLookParam {
         float cx = 0;
         float cy = 0;
@@ -54,7 +55,6 @@ struct Camera {
         float focalPlaneDistance = 0;
     };
     struct ZxxHappyLookParam m_zxx;
-    struct ZxxHappyLookParam m_zxx_in;
 
     float getAspect() const {
         return (float)m_nx / (float)m_ny;
