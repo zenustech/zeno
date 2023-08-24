@@ -19,6 +19,7 @@ namespace roads {
         FOUR = 4,
         EIGHT = 8,
         SIXTEEN = 16,
+        THIRDTY_TWO = 32,
         FOURTY = 40,
     };
 
@@ -53,6 +54,8 @@ namespace roads {
     struct ArrayList : public std::vector<T> {
         using std::vector<T>::vector;
         using std::vector<T>::size;
+        using std::vector<T>::begin;
+        using std::vector<T>::end;
 
         bool IsValidIndex(size_t Index) const {
             return Index < size();

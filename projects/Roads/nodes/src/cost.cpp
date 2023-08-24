@@ -1,9 +1,9 @@
-#include "boost/graph/dijkstra_shortest_paths.hpp"
 #include "boost/graph/astar_search.hpp"
+#include "boost/graph/dijkstra_shortest_paths.hpp"
 #include "roads/roads.h"
 #include "zeno/PrimitiveObject.h"
-#include "zeno/types/UserData.h"
 #include "zeno/types/CurveObject.h"
+#include "zeno/types/UserData.h"
 #include "zeno/utils/PropertyVisitor.h"
 #include "zeno/utils/logger.h"
 #include "zeno/zeno.h"
@@ -54,7 +54,7 @@ namespace zeno::reflect {
         inline static std::string TypeName = "enum Dijkstra A*";
     };
 
-}
+}// namespace zeno::reflect
 
 namespace {
     using namespace zeno;
@@ -100,14 +100,14 @@ namespace {
             if (!AutoParameter->Primitive->verts.has_attr(AutoParameter->OutputChannel)) {
                 AutoParameter->Primitive->verts.add_attr<float>(AutoParameter->OutputChannel);
             }
-            std::vector<float>& SlopeAttr = AutoParameter->Primitive->verts.attr<float>(AutoParameter->OutputChannel);
+            std::vector<float> &SlopeAttr = AutoParameter->Primitive->verts.attr<float>(AutoParameter->OutputChannel);
             SlopeAttr.insert(SlopeAttr.begin(), SlopeField.begin(), SlopeField.end());
         }
     };
 
-    template <typename Graph, typename CostType>
+    template<typename Graph, typename CostType>
     class PathDistanceHeuristic : public boost::astar_heuristic<Graph, CostType> {
-        typedef typename boost::graph_traits< Graph >::vertex_descriptor Vertex;
+        typedef typename boost::graph_traits<Graph>::vertex_descriptor Vertex;
 
     public:
         PathDistanceHeuristic(Vertex Goal) : m_Goal(Goal) {}
@@ -122,13 +122,12 @@ namespace {
 
     struct FoundGoal {};
 
-    template < class Vertex >
-    class PathDistanceVisitor : public boost::default_astar_visitor
-    {
+    template<class Vertex>
+    class PathDistanceVisitor : public boost::default_astar_visitor {
     public:
         PathDistanceVisitor(Vertex goal) : m_goal(goal) {}
-        template < class Graph > void examine_vertex(Vertex u, Graph& g)
-        {
+        template<class Graph>
+        void examine_vertex(Vertex u, Graph &g) {
             if (u == m_goal)
                 throw FoundGoal();
         }
@@ -138,7 +137,7 @@ namespace {
     };
 
     struct ZENO_CRTP(CalcPathCost_Simple, zeno::reflect::IParameterAutoNode) {
-    //struct CalcPathCost_Simple : public zeno::reflect::IParameterAutoNode<CalcPathCost_Simple> {
+        //struct CalcPathCost_Simple : public zeno::reflect::IParameterAutoNode<CalcPathCost_Simple> {
         ZENO_GENERATE_NODE_BODY(CalcPathCost_Simple);
 
         std::shared_ptr<zeno::PrimitiveObject> Primitive;
@@ -160,11 +159,14 @@ namespace {
         std::string CurvatureChannel;
         ZENO_DECLARE_INPUT_FIELD(CurvatureChannel, "Curvature Channel (Vertex Attr)", false, "", "curvature");
 
-        zeno::reflect::ConnectiveTypeInput PathConnective;
-        ZENO_DECLARE_INPUT_FIELD(PathConnective, "Path Connective", false, "", "16");
+        int ConnectiveMask;
+        ZENO_DECLARE_INPUT_FIELD(ConnectiveMask, "Connective Mask", false, "", "3");
 
-        zeno::reflect::PathAlgorithmTypeInput Algorithm;
-        ZENO_DECLARE_INPUT_FIELD(Algorithm, "Path Finding Algorithm", false, "", "Dijkstra");
+        zeno::vec2f Start;
+        ZENO_DECLARE_INPUT_FIELD(Start, "Start Point");
+
+        zeno::vec2f Goal;
+        ZENO_DECLARE_INPUT_FIELD(Goal, "Goal Point");
 
         std::shared_ptr<zeno::CurveObject> HeightCurve = nullptr;
         ZENO_DECLARE_INPUT_FIELD(HeightCurve, "Height Cost Control", true);
@@ -194,77 +196,66 @@ namespace {
         ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, CurvatureList, CurvatureChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
 
         void apply() override {
-            //auto Grid = BuildGridFromPrimitive(AutoParameter->PositionList, AutoParameter->GradientList, AutoParameter->Nx, AutoParameter->Ny);
-            // TODO [darc] : Change cost function, now just simply use gradient value :
-            AutoParameter->Nx;
             RoadsAssert(AutoParameter->Nx * AutoParameter->Ny <= AutoParameter->GradientList.size(), "Bad nx ny.");
 
-            ConnectiveType Connective = ConnectiveType::SIXTEEN;
-            if (AutoParameter->PathConnective == "4") {
-                Connective = ConnectiveType::FOUR;
-            } else if (AutoParameter->PathConnective == "8") {
-                Connective = ConnectiveType::EIGHT;
-            } else if (AutoParameter->PathConnective == "16") {
-                Connective = ConnectiveType::SIXTEEN;
-            } else if (AutoParameter->PathConnective == "40") {
-                Connective = ConnectiveType::FOURTY;
-            }
+            CostPoint GoalPoint { static_cast<size_t>(AutoParameter->Goal[0]), static_cast<size_t>(AutoParameter->Goal[1]) };
+            CostPoint StartPoint {static_cast<size_t>(AutoParameter->Start[0]), static_cast<size_t>(AutoParameter->Start[1])};
 
-            auto MapFuncGen = [] (const std::shared_ptr<zeno::CurveObject>& Curve) -> std::function<double(double)> {
+            auto MapFuncGen = [](const std::shared_ptr<zeno::CurveObject> &Curve) -> std::function<float(float)> {
                 if (Curve) {
-                    return [Curve] (double In) -> double {
+                    return [Curve](float In) -> float {
                         return Curve->eval(float(In));
                     };
                 } else {
                     zeno::log_warn("[Roads] Invalid Curve !");
-                    return [] (double In) -> double {
+                    return [](float In) -> float {
                         return In;
                     };
                 }
             };
 
+            auto HeightCostFunc = MapFuncGen(AutoParameter->HeightCurve);
+            auto GradientCostFunc = MapFuncGen(AutoParameter->GradientCurve);
+            auto CurvatureCostFunc = MapFuncGen(AutoParameter->CurvatureCurve);
+
             DynamicGrid<CostPoint> CostGrid(AutoParameter->Nx, AutoParameter->Ny);
-            CostGrid.resize(AutoParameter->Nx*AutoParameter->Ny);
-#pragma omp parallel for
+            CostGrid.resize(AutoParameter->Nx * AutoParameter->Ny);
+//#pragma omp parallel for
             for (size_t i = 0; i < AutoParameter->Nx * AutoParameter->Ny; ++i) {
-                CostGrid[i] = (CostPoint { AutoParameter->PositionList[i].at(1), AutoParameter->GradientList[i], AutoParameter->CurvatureList[i] });
-            }
-            // CostGrid.insert(CostGrid.begin(), AutoParameter->GradientList.begin(), AutoParameter->GradientList.begin() + (AutoParameter->Nx * AutoParameter->Ny));
-            auto Graph = CreateWeightGraphFromCostGrid(CostGrid, Connective, MapFuncGen(AutoParameter->HeightCurve), MapFuncGen(AutoParameter->GradientCurve), MapFuncGen(AutoParameter->CurvatureCurve));
-            zeno::log_info("cccc: {}", boost::num_vertices(Graph));
-
-            using VertexDescriptor = boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor;
-
-            std::vector<VertexDescriptor> p(boost::num_vertices(Graph));
-            std::vector<double> d(boost::num_vertices(Graph));
-            VertexDescriptor Start { 1 };
-            VertexDescriptor Goal { 933333 };
-
-            if (AutoParameter->Algorithm == "Dijkstra") {
-                boost::dijkstra_shortest_paths(Graph, Start, boost::predecessor_map(&p[0]).distance_map(&d[0]));
-            } else if (AutoParameter->Algorithm == "A*") {
-                try {
-                    boost::astar_search_tree(Graph, Start, PathDistanceHeuristic<WeightedGridUndirectedGraph, double>(Goal), boost::predecessor_map(&p[0]).distance_map(&d[0]).visitor(PathDistanceVisitor(Goal)));
-                } catch (FoundGoal) {
-                }
+                size_t x = i % AutoParameter->Nx;
+                size_t y = i / AutoParameter->Ny;
+                CostGrid[i] = (CostPoint{x, y, AutoParameter->PositionList[i].at(1), AutoParameter->GradientList[i], AutoParameter->CurvatureList[i]});
             }
 
-            std::vector<boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor > path;
-            boost::graph_traits<WeightedGridUndirectedGraph>::vertex_descriptor current = Goal;
+            std::function<float(const CostPoint&, const CostPoint&)> CostFunc = [HeightCostFunc, GradientCostFunc, CurvatureCostFunc, &CostGrid, Nx = AutoParameter->Nx] (const CostPoint& A, const CostPoint& B) -> float {
+                size_t ia = A[0] + A[1] * Nx;
+                size_t ib = B[0] + B[1] * Nx;
+                float Cost = HeightCostFunc(float(std::abs(CostGrid[ia].Height - CostGrid[ib].Height))) + GradientCostFunc(float(std::abs(CostGrid[ia].Gradient - CostGrid[ib].Gradient)) + CurvatureCostFunc(float(std::abs(CostGrid[ia].Curvature - CostGrid[ib].Curvature))));
+                return Cost;
+            };
 
-            while(current!=Start)
-            {
-                path.push_back(current);
-                current = p[current];
+            std::unordered_map<CostPoint, CostPoint> Predecessor;
+            std::unordered_map<CostPoint, float> CostMap;
+            roads::energy::RoadsShortestPath(StartPoint, GoalPoint, CostPoint { static_cast<size_t>(AutoParameter->Nx), static_cast<size_t>(AutoParameter->Ny) }, AutoParameter->ConnectiveMask, Predecessor, CostMap, CostFunc);
+
+            zeno::log_info("qwq: {}, {}", Predecessor.size(), CostMap.size());
+
+            CostPoint Current = GoalPoint;
+
+            ArrayList<size_t> Path;
+            while (Current != StartPoint) {
+                Path.push_back( Current[0] + Current[1] * AutoParameter->Nx );
+                Current = Predecessor[Current];
             }
-            path.push_back(Start);
+            Path.push_back(StartPoint[0] + StartPoint[1] * AutoParameter->Nx);
 
             if (AutoParameter->bRemoveTriangles) {
                 AutoParameter->Primitive->tris.clear();
             }
-            AutoParameter->Primitive->lines.resize(path.size() - 1);
-            for (size_t i = 0; i < path.size() - 1; ++i) {
-                AutoParameter->Primitive->lines[i] = zeno::vec2i(int(path[i]), int(path[i+1]));
+
+            AutoParameter->Primitive->lines.resize(Path.size() - 1);
+            for (size_t i = 0; i < Path.size() - 1; ++i) {
+                AutoParameter->Primitive->lines[i] = zeno::vec2i(int(Path[i]), int(Path[i+1]));
             }
         }
     };
@@ -316,19 +307,24 @@ namespace {
         ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, WaterMask, WaterChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
 
         void apply() override {
-            auto& Prim = AutoParameter->Primitive;
-            auto& HeightField = AutoParameter->Heightmap;
-            auto& Water = AutoParameter->WaterMask;
+            auto &Prim = AutoParameter->Primitive;
+            auto &HeightField = AutoParameter->Heightmap;
+            auto &Water = AutoParameter->WaterMask;
             const auto SizeX = AutoParameter->Nx;
             const auto SizeY = AutoParameter->Ny;
             const size_t NumVert = SizeX * SizeY;
 
-            auto& River = Prim->add_attr<float>(AutoParameter->RiverChannel);
+            auto &River = Prim->add_attr<float>(AutoParameter->RiverChannel);
 
-            static const std::array<IntPoint2D, 8> SDirection {
-                IntPoint2D { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 },
-                { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 }
-            };
+            static const std::array<IntPoint2D, 8> SDirection{
+                IntPoint2D{0, -1},
+                {0, 1},
+                {-1, 0},
+                {1, 0},
+                {-1, -1},
+                {1, -1},
+                {-1, 1},
+                {1, 1}};
 
             std::stack<size_t> Stack;
 
@@ -351,7 +347,7 @@ namespace {
                     River[idx] = 1;
                     long y = idx / SizeX;
                     long x = idx % SizeX;
-                    for (const IntPoint2D& Dir : SDirection) {
+                    for (const IntPoint2D &Dir: SDirection) {
                         long ix = x + Dir[0];
                         long iy = y + Dir[1];
                         if (ix > 0 && iy > 0 && ix < SizeX && iy < SizeX) {
@@ -363,7 +359,6 @@ namespace {
                     }
                 }
             }
-
         }
     };
 }// namespace

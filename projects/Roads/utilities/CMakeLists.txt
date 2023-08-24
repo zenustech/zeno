@@ -3,6 +3,7 @@ SET(Boost_ADDITIONAL_VERSIONS "1.82.0" "1.82")
 FIND_PACKAGE(Eigen3 REQUIRED NO_MODULE)
 FIND_PACKAGE(OpenMP REQUIRED)
 FIND_PACKAGE(Boost COMPONENTS graph)
+find_package(TBB CONFIG REQUIRED COMPONENTS tbb tbbmalloc)
 
 FILE(GLOB_RECURSE SOURCE_FILES src/*.cpp src/*.h)
 
@@ -39,3 +40,5 @@ IF (TARGET Boost::graph)
 ELSE()
     MESSAGE(FATAL_ERROR "Roads Module is depending on Boost::graph. You have to install it first.")
 ENDIF()
+
+TARGET_LINK_LIBRARIES(Roads PRIVATE TBB::tbb TBB::tbbmalloc)
