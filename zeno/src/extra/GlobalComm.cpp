@@ -14,7 +14,7 @@
     #include<unistd.h>
     #include <sys/statfs.h>
 #endif
-#define MIN_DISKSPACE 10
+#define MIN_DISKSPACE_MB 1024
 
 namespace zeno {
 
@@ -109,7 +109,8 @@ static void toDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects &o
     #else
         freeSpace = std::filesystem::space(std::filesystem::u8path(cachedir)).free;
     #endif
-    while ((currentFrameSize >> 20) > ((freeSpace >> 20) - MIN_DISKSPACE*1024) || (freeSpace >> 20) <= MIN_DISKSPACE *1024) //Ensure available space 10GB larger than cache
+    //wait in two case: 1. available space minus current frame size less than 1024MB, 2. available space less or equal than 1024MB
+    while ( ((freeSpace >> 20) - MIN_DISKSPACE_MB) < (currentFrameSize >> 20)  || (freeSpace >> 20) <= MIN_DISKSPACE_MB)
     {
         #ifdef __linux__
             zeno::log_critical("Disk space almost full on {}, wait for zencache remove", std::filesystem::u8path(cachedir).string());
