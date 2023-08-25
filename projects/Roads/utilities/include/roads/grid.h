@@ -20,17 +20,18 @@ namespace roads {
 
     using HeightPoint = double;
     using SlopePoint = double;
-    struct CostPoint : std::array<size_t, 2> {
+    struct CostPoint : std::array<size_t, 3> {
         CostPoint() = default;
 
-        CostPoint(size_t x, size_t y, double InHeight = 0.0, double InGradient = 0.0/*, double InCurvature = 0.0**/)
-            : std::array<size_t, 2>(), Height(InHeight), Gradient(InGradient) {
+        CostPoint(size_t x, size_t y, size_t a = 0, double InHeight = 0.0, double InGradient = 0.0/*, double InCurvature = 0.0**/)
+            : std::array<size_t, 3>(), Height(InHeight), Gradient(InGradient) {
             at(0) = x;
             at(1) = y;
+            at(2) = a;
         }
 
         bool operator==(const CostPoint &Rhs) {
-            return at(0) == Rhs.at(0) && at(1) == Rhs.at(1);
+            return at(0) == Rhs.at(0) && at(1) == Rhs.at(1) && at(2) == Rhs.at(2);
         }
 
         double Height;
@@ -94,8 +95,8 @@ namespace roads {
         }
 
         template<typename PointType = IntPoint2D>
-        void RoadsShortestPath(const PointType &StartPoint, const PointType &GoalPoint, const PointType &Bounds, const int32_t MaskK, const float WeightHeuristic, std::unordered_map<PointType, PointType> &PredecessorList, std::unordered_map<PointType, float> &CostTo, const std::function<float(const PointType &, const PointType &)> &CostFunction) {
-            auto NewCostFunc = [CostFunction, GoalPoint, Bounds](const PointType &a, const PointType &b) -> float {
+        void RoadsShortestPath(const PointType &StartPoint, const PointType &GoalPoint, const PointType &Bounds, const int32_t MaskK, const int32_t MaskA, const float WeightHeuristic, std::unordered_map<PointType, PointType> &PredecessorList, std::unordered_map<PointType, float> &CostTo, const std::function<float(const PointType &, const PointType &)> &CostFunction) {
+            auto NewCostFunc = [&CostFunction, &GoalPoint, &Bounds](const PointType &a, const PointType &b) -> float {
                 float Result = CostFunction(a, b);
                 if (Result < 0) {
                     printf("[Roads] Minus cost P1(%d,%d) P2(%d,%d) Cost=%f.", a[0], a[1], b[0], b[1], Result);
@@ -106,13 +107,13 @@ namespace roads {
             };
 
             std::unordered_map<std::pair<PointType, PointType>, float> SimpleCost;
-            std::function<float(const PointType &, const PointType &, bool)> StraightCost = [NewCostFunc, MaskK, &SimpleCost, &StraightCost](const PointType &From, const PointType &To, bool bMoveX = true) mutable -> float {
+            std::function<float(const PointType &, const PointType &, bool)> StraightCost = [&NewCostFunc, MaskK, &SimpleCost, &StraightCost](const PointType &From, const PointType &To, bool bMoveX = true) mutable -> float {
                 auto CurrentPair = std::make_pair(From, To);
                 if (SimpleCost.count(CurrentPair)) {
                     return SimpleCost[CurrentPair];
                 }
 
-                if (From == To) {
+                if (From[0] == To[0] && From[1] == To[1]) {
                     SimpleCost[CurrentPair] = 0.0f;
                     return 0.0f;
                 }
@@ -138,6 +139,8 @@ namespace roads {
                     }
                 }
 
+                //printf("---- A(%d,%d) B(%d,%d)\n", NextPoint[0], NextPoint[0], To[1], To[1]);
+
                 float Cost = NewCostFunc(From, NextPoint) + StraightCost(NextPoint, To, !bMoveX);
                 SimpleCost[CurrentPair] = Cost;
                 return Cost;
@@ -162,12 +165,19 @@ namespace roads {
 
             // initialize a priority queue Q with the initial point StartPoint
             std::priority_queue<PointType, ArrayList<PointType>, decltype(Comparator)> Q(Comparator);
+            for (size_t a = 0; a < MaskA; a++) {
+                PointType NewPoint = StartPoint;
+                NewPoint[2] = a;
+                CostTo[StartPoint] = 0.f;
+            }
+            PredecessorList[StartPoint] = StartPoint;
             Q.push(StartPoint);
-            CostTo[StartPoint] = 0.f;
             for (size_t x = 0; x < Bounds[0]; x++) {
                 for (size_t y = 0; y < Bounds[1]; y++) {
-                    PointType Point{x, y};
-                    if (Point != StartPoint) { CostTo[Point] = std::numeric_limits<float>::max(); }
+                    for (size_t a = 0; a < MaskA; a++) {
+                        PointType Point{x, y, a};
+                        if (Point[0] != StartPoint[0] || Point[1] != StartPoint[1]) { CostTo[Point] = std::numeric_limits<float>::max(); }
+                    }
                 }
             }
 
@@ -191,23 +201,26 @@ namespace roads {
 
                 //printf("-- P(%d,%d) %f\n", Point[0], Point[1], CostTo[Point]);
 
-                // step3. for all points q ∈ M_k(p_ij)
-                for (int32_t dx = -MaskK; dx <= MaskK; ++dx) {
-                    for (int32_t dy = -MaskK; dy <= MaskK; ++dy) {
-                        if (GreatestCommonDivisor(std::abs(dx), std::abs(dy)) == 1) {
-                            PointType NeighbourPoint{Point[0] + dx, Point[1] + dy};
-                            if (NeighbourPoint[0] < 0 || NeighbourPoint[1] < 0 || NeighbourPoint[0] >= Bounds[0] || NeighbourPoint[1] >= Bounds[1]) continue;
+                // extended mask for angle
+                for (size_t angle = 0; angle < MaskA; ++angle) {
+                    // step3. for all points q ∈ M_k(p_ij)
+                    for (int32_t dx = -MaskK; dx <= MaskK; ++dx) {
+                        for (int32_t dy = -MaskK; dy <= MaskK; ++dy) {
+                            if (GreatestCommonDivisor(std::abs(dx), std::abs(dy)) == 1) {
+                                PointType NeighbourPoint{Point[0] + dx, Point[1] + dy, angle};
+                                if (NeighbourPoint[0] < 0 || NeighbourPoint[1] < 0 || NeighbourPoint[0] >= Bounds[0] || NeighbourPoint[1] >= Bounds[1]) continue;
 
-                            float NewCost = CostTo[Point] + NewCostFunc(Point, NeighbourPoint);
-                            if (NewCost < 0) {
-                                throw std::runtime_error("[Roads] Graph should not have negative weight. Check your curve !");
-                            }
-                            //printf("---- N(%d,%d) %f\n", NeighbourPoint[0], NeighbourPoint[1], NewCost);
+                                float NewCost = CostTo[Point] + NewCostFunc(Point, NeighbourPoint);
+                                if (NewCost < 0) {
+                                    throw std::runtime_error("[Roads] Graph should not have negative weight. Check your curve !");
+                                }
+                                //printf("---- N(%d,%d) %f\n", NeighbourPoint[0], NeighbourPoint[1], NewCost);
 
-                            if (NewCost < CostTo[NeighbourPoint]) {
-                                PredecessorList[NeighbourPoint] = Point;
-                                CostTo[NeighbourPoint] = NewCost;
-                                Q.push(NeighbourPoint);
+                                if (NewCost < CostTo[NeighbourPoint]) {
+                                    PredecessorList[NeighbourPoint] = Point;
+                                    CostTo[NeighbourPoint] = NewCost;
+                                    Q.push(NeighbourPoint);
+                                }
                             }
                         }
                     }
@@ -224,7 +237,7 @@ namespace std {
     struct hash<roads::CostPoint> {
         size_t operator()(const roads::CostPoint &rhs) const {
             constexpr size_t Seed = 10086;
-            return (rhs[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 2));
+            return (rhs[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 4)) ^ (rhs[2] + 0x9e3779b9 + (Seed << 8) + (Seed >> 6));
         }
     };
 
@@ -232,7 +245,8 @@ namespace std {
     struct hash<std::pair<roads::CostPoint, roads::CostPoint>> {
         size_t operator()(const std::pair<roads::CostPoint, roads::CostPoint> &rhs) const {
             constexpr size_t Seed = 10086;
-            return (rhs.first[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs.first[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 2)) ^ (rhs.second[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs.second[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 2));
+            auto h = hash<roads::CostPoint>();
+            return (h(rhs.first) + (Seed << 4) + (Seed >> 2)) ^ (h(rhs.second) + (Seed << 6) + (Seed >> 4));
         }
     };
 }// namespace std

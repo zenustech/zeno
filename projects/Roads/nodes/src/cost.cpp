@@ -160,7 +160,10 @@ namespace {
         //ZENO_DECLARE_INPUT_FIELD(CurvatureChannel, "Curvature Channel (Vertex Attr)", false, "", "curvature");
 
         int ConnectiveMask;
-        ZENO_DECLARE_INPUT_FIELD(ConnectiveMask, "Connective Mask", false, "", "3");
+        ZENO_DECLARE_INPUT_FIELD(ConnectiveMask, "Connective Mask", false, "", "4");
+
+        int AngleMask;
+        ZENO_DECLARE_INPUT_FIELD(AngleMask, "Angle Mask", false, "", "8");
 
         float WeightHeuristic;
         ZENO_DECLARE_INPUT_FIELD(WeightHeuristic, "Weight of Heuristic Function", false, "", "0.3");
@@ -201,12 +204,18 @@ namespace {
         //zeno::AttrVector<float> CurvatureList{};
         //ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, CurvatureList, CurvatureChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
 
+        //std::unordered_map<size_t, float> CurvatureCache;
+
         void apply() override {
-            zeno::log_info("[Roads] Generating trajectory...");
             RoadsAssert(AutoParameter->Nx * AutoParameter->Ny <= AutoParameter->GradientList.size(), "Bad nx ny.");
 
-            CostPoint GoalPoint{static_cast<size_t>(AutoParameter->Goal[0]), static_cast<size_t>(AutoParameter->Goal[1])};
-            CostPoint StartPoint{static_cast<size_t>(AutoParameter->Start[0]), static_cast<size_t>(AutoParameter->Start[1])};
+            CostPoint GoalPoint{static_cast<size_t>(AutoParameter->Goal[0]), static_cast<size_t>(AutoParameter->Goal[1]), 0};
+            CostPoint StartPoint{static_cast<size_t>(AutoParameter->Start[0]), static_cast<size_t>(AutoParameter->Start[1]), 0};
+
+            std::unordered_map<CostPoint, CostPoint> Predecessor;
+            std::unordered_map<CostPoint, float> CostMap;
+
+            size_t Nx = AutoParameter->Nx, Ny = AutoParameter->Ny;
 
             auto MapFuncGen = [](const std::shared_ptr<zeno::CurveObject> &Curve, float Threshold) -> std::function<float(float)> {
                 if (Curve) {
@@ -237,52 +246,48 @@ namespace {
             for (size_t i = 0; i < AutoParameter->Nx * AutoParameter->Ny; ++i) {
                 size_t x = i % AutoParameter->Nx;
                 size_t y = i / AutoParameter->Ny;
-                CostGrid[i] = (CostPoint{x, y, AutoParameter->PositionList[i].at(1), AutoParameter->GradientList[i]});
+                CostGrid[i] = (CostPoint{x, y, 0, AutoParameter->PositionList[i].at(1), AutoParameter->GradientList[i]});
             }
 
-            const size_t IndexMax = AutoParameter->Nx * AutoParameter->Ny - 1;
-            std::unordered_map<size_t, float> CurvatureCache;
+            auto CalcCurvature = [&CostGrid, Nx] (const CostPoint& A, const CostPoint& B, const CostPoint& C) -> float {
+                size_t ia = A[0] + A[1] * Nx;
+                size_t ib = B[0] + B[1] * Nx;
+                size_t ic = C[0] + C[1] * Nx;
 
-            std::function<float(const CostPoint &, const CostPoint &)> CostFunc = [&CurvatureCache, &HeightCostFunc, &GradientCostFunc, &CurvatureCostFunc, &CostGrid, IndexMax, Nx = AutoParameter->Nx, Ny = AutoParameter->Ny](const CostPoint &A, const CostPoint &B) mutable -> float {
+                Eigen::Vector4f BA = { float(A[0] - B[0]), float(A[1] - B[1]), float(CostGrid[ia].Height - CostGrid[ib].Height), float(A[2] - B[2]) };
+
+                Eigen::Vector4f BC = { float(C[0] - B[0]), float(C[1] - B[1]), float(CostGrid[ic].Height - CostGrid[ib].Height), float(C[2] - B[2]) };
+
+                float Magnitude_BC = BC.norm();
+
+                Eigen::Vector4f Change = BC.normalized() - BA.normalized();
+
+                float Magnitude_Change = Change.norm();
+
+                return Magnitude_Change / (Magnitude_BC * Magnitude_BC);
+            };
+
+            const size_t IndexMax = AutoParameter->Nx * AutoParameter->Ny - 1;
+            std::function<float(const CostPoint &, const CostPoint &)> CostFunc = [ &CalcCurvature, &HeightCostFunc, &GradientCostFunc, &CurvatureCostFunc, &CostGrid, &Predecessor, IndexMax, Nx, Ny](const CostPoint &A, const CostPoint &B) mutable -> float {
                 size_t ia = A[0] + A[1] * Nx;
                 size_t ib = B[0] + B[1] * Nx;
 
-                constexpr size_t Seed = 12306;
-                size_t Hash = (ia + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (ib * 0x9e3779b9 + (Seed << 2) + (Seed >> 4));
+                //constexpr size_t Seed = 12306;
+                //size_t Hash = (ia + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (ib * 0x9e3779b9 + (Seed << 2) + (Seed >> 4));
 
-                float Curvature;
-                if (CurvatureCache.find(Hash) != std::end(CurvatureCache)) {
-                    Curvature = CurvatureCache[Hash];
-                } else {
-                    Eigen::Vector2f Dir = (Eigen::Vector2f(A[0], A[1]) - Eigen::Vector2f(B[0], B[1])).normalized();
-                    size_t NearbyIndexPlus1 = std::clamp<size_t>(ia + 1, 0, IndexMax);
-                    size_t NearbyIndexMinus1 = std::clamp<size_t>(ia - 1, 0, IndexMax);
-                    size_t NearbyIndexPlusY = std::clamp<size_t>(ia + Ny, 0, IndexMax);
-                    size_t NearbyIndexMinusY = std::clamp<size_t>(ia - Ny, 0, IndexMax);
-                    double height_x_plus = CostGrid[NearbyIndexPlus1].Height;
-                    double height_x_minus = CostGrid[NearbyIndexMinus1].Height;
-                    double height_y_plus = CostGrid[NearbyIndexPlusY].Height;
-                    double height_y_minus = CostGrid[NearbyIndexMinusY].Height;
+                // We assume that A already searched and have a predecessor
+                const CostPoint& PrevPoint = Predecessor[A];
 
-                    float dHeight_dx = float(height_x_plus - height_x_minus) / 2.0f;
-                    float dHeight_dy = float(height_y_plus - height_x_minus) / 2.0f;
-                    float d2Height_dx2 = float(height_x_plus - 2 * CostGrid[ia].Height + height_x_minus);
-                    float d2Height_dy2 = float(height_y_plus - 2 * CostGrid[ia].Height + height_y_minus);
-
-                    Eigen::Matrix2f Hessian;
-                    Hessian << d2Height_dx2, dHeight_dy, dHeight_dx, d2Height_dy2;
-
-                    Curvature = Dir.transpose() * Hessian * Dir;
-                    CurvatureCache[Hash] = Curvature;
-                }
+                // Calc curvature
+                float Curvature = CalcCurvature(PrevPoint, A, B);
 
                 float Cost = HeightCostFunc(float(std::abs(CostGrid[ia].Height - CostGrid[ib].Height))) + GradientCostFunc(float(std::abs(CostGrid[ia].Gradient - CostGrid[ib].Gradient))) + CurvatureCostFunc(float(std::abs(Curvature)));
                 return Cost;
             };
 
-            std::unordered_map<CostPoint, CostPoint> Predecessor;
-            std::unordered_map<CostPoint, float> CostMap;
-            roads::energy::RoadsShortestPath(StartPoint, GoalPoint, CostPoint{static_cast<size_t>(AutoParameter->Nx), static_cast<size_t>(AutoParameter->Ny)}, AutoParameter->ConnectiveMask, AutoParameter->WeightHeuristic, Predecessor, CostMap, CostFunc);
+            zeno::log_info("[Roads] Generating trajectory...");
+
+            roads::energy::RoadsShortestPath(StartPoint, GoalPoint, CostPoint{static_cast<size_t>(AutoParameter->Nx), static_cast<size_t>(AutoParameter->Ny)}, AutoParameter->ConnectiveMask, AutoParameter->AngleMask, AutoParameter->WeightHeuristic, Predecessor, CostMap, CostFunc);
 
             zeno::log_info("[Roads] Result Predecessor Size: {}; CostMap Size: {}", Predecessor.size(), CostMap.size());
 

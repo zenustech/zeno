@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Eigen/Eigen"
+#include "boost/math/constants/constants.hpp"
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -80,5 +81,8 @@ namespace roads {
     struct DynamicGrid : public CustomGridBase<GridPointType> {
         using CustomGridBase<GridPointType>::CustomGridBase;
     };
+
+    constexpr double PI = boost::math::constants::pi<double>();
+    constexpr double PI2 = boost::math::constants::pi<double>() * 2.0;
 
 }// namespace roads
