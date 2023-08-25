@@ -23,8 +23,8 @@ namespace roads {
     struct CostPoint : std::array<size_t, 2> {
         CostPoint() = default;
 
-        CostPoint(size_t x, size_t y, double InHeight = 0.0, double InGradient = 0.0, double InCurvature = 0.0)
-            : std::array<size_t, 2>(), Height(InHeight), Gradient(InGradient), Curvature(InCurvature) {
+        CostPoint(size_t x, size_t y, double InHeight = 0.0, double InGradient = 0.0/*, double InCurvature = 0.0**/)
+            : std::array<size_t, 2>(), Height(InHeight), Gradient(InGradient) {
             at(0) = x;
             at(1) = y;
         }
@@ -35,7 +35,9 @@ namespace roads {
 
         double Height;
         double Gradient;// slope
-        double Curvature;
+
+        // We need directional curvature, we cannot pre calculate it
+        //double Curvature;
     };
 
     using EdgeWeightProperty = boost::property<boost::edge_weight_t, double>;
@@ -92,9 +94,14 @@ namespace roads {
         }
 
         template<typename PointType = IntPoint2D>
-        void RoadsShortestPath(const PointType &StartPoint, const PointType &GoalPoint, const PointType &Bounds, const int32_t MaskK, std::unordered_map<PointType, PointType> &PredecessorList, std::unordered_map<PointType, float> &CostTo, const std::function<float(const PointType &, const PointType &)> &CostFunction) {
+        void RoadsShortestPath(const PointType &StartPoint, const PointType &GoalPoint, const PointType &Bounds, const int32_t MaskK, const float WeightHeuristic, std::unordered_map<PointType, PointType> &PredecessorList, std::unordered_map<PointType, float> &CostTo, const std::function<float(const PointType &, const PointType &)> &CostFunction) {
             auto NewCostFunc = [CostFunction, GoalPoint, Bounds](const PointType &a, const PointType &b) -> float {
-                return CostFunction(a, b);
+                float Result = CostFunction(a, b);
+                if (Result < 0) {
+                    printf("[Roads] Minus cost P1(%d,%d) P2(%d,%d) Cost=%f.", a[0], a[1], b[0], b[1], Result);
+                    throw std::runtime_error("[Roads] Minus edge weight detected.");
+                }
+                return Result;
                 //return CostFunction(a, b) + std::abs<float>(GoalPoint[0] - b[0]) + std::abs<float>(GoalPoint[1] - b[1]);
             };
 
@@ -112,25 +119,22 @@ namespace roads {
 
                 PointType NextPoint = From;
 
-                if (bMoveX) {
-                    if (To[0] != From[0]) {
-                        if (std::abs<int32_t>(From[0] - To[0]) <= MaskK) {
-                            NextPoint[0] = To[0];
-                        } else if (From[0] < To[0]) {
-                            NextPoint[0] += 1;
-                        } else {
-                            NextPoint[0] -= 1;
-                        }
+                if (To[0] != From[0]) {
+                    if (std::abs<int32_t>(From[0] - To[0]) <= MaskK) {
+                        NextPoint[0] = To[0];
+                    } else if (From[0] < To[0]) {
+                        NextPoint[0] += std::max(1, MaskK / 2);
+                    } else {
+                        NextPoint[0] -= std::max(1, MaskK / 2);
                     }
-                } else {
-                    if (To[1] != From[1]) {
-                        if (std::abs<int32_t>(From[1] - To[1]) <= MaskK) {
-                            NextPoint[1] = To[1];
-                        } else if (From[1] < To[1]) {
-                            NextPoint[1] += 1;
-                        } else {
-                            NextPoint[1] -= 1;
-                        }
+                }
+                if (To[1] != From[1]) {
+                    if (std::abs<int32_t>(From[1] - To[1]) <= MaskK) {
+                        NextPoint[1] = To[1];
+                    } else if (From[1] < To[1]) {
+                        NextPoint[1] += std::max(1, MaskK / 2);
+                    } else {
+                        NextPoint[1] -= std::max(1, MaskK / 2);
                     }
                 }
 
@@ -140,7 +144,7 @@ namespace roads {
             };
 
             // Adding Chebyshev distance as heuristic function
-            auto Comparator = [&CostTo, &GoalPoint, &Bounds, &StraightCost](const PointType &Point1, const PointType &Point2) {
+            auto Comparator = [&CostTo, &GoalPoint, &Bounds, &StraightCost, WeightHeuristic](const PointType &Point1, const PointType &Point2) {
                 //float DeltaA = std::max(std::abs<int32_t>(Point1[0] - GoalPoint[0]) / Bounds[0], std::abs<int32_t>(Point1[1] - GoalPoint[1]) / Bounds[1]);
                 //float DeltaB = std::max(std::abs<int32_t>(Point2[0] - GoalPoint[0]) / Bounds[0], std::abs<int32_t>(Point2[1] - GoalPoint[1]) / Bounds[1]);
                 //float DeltaA = std::abs<int32_t>(Point1[0] - GoalPoint[0]) + std::abs<int32_t>(Point1[1] - GoalPoint[1]);
@@ -151,8 +155,8 @@ namespace roads {
                 float DeltaA = StraightCost(Point1, GoalPoint, true);
                 float DeltaB = StraightCost(Point2, GoalPoint, true);
 
-                float CostA = CostTo[Point1] + DeltaA;
-                float CostB = CostTo[Point2] + DeltaB;
+                float CostA = CostTo[Point1] + WeightHeuristic * DeltaA;
+                float CostB = CostTo[Point2] + WeightHeuristic * DeltaB;
                 return CostA > CostB;
             };
 
@@ -167,6 +171,8 @@ namespace roads {
                 }
             }
 
+            std::unordered_map<PointType, bool> Visual;
+
             // while Q is not empty
             while (!Q.empty()) {
                 // select the point p_ij from the priority queue with the smallest cost value c(p_ij)
@@ -177,6 +183,11 @@ namespace roads {
                 if (GoalPoint == Point) {
                     break;
                 }
+
+                if (Visual.find(Point) != std::end(Visual)) {
+                    continue;
+                }
+                Visual[Point] = 1;
 
                 //printf("-- P(%d,%d) %f\n", Point[0], Point[1], CostTo[Point]);
 
@@ -193,7 +204,7 @@ namespace roads {
                             }
                             //printf("---- N(%d,%d) %f\n", NeighbourPoint[0], NeighbourPoint[1], NewCost);
 
-                            if (CostTo.find(NeighbourPoint) == CostTo.end() || NewCost < CostTo[NeighbourPoint]) {
+                            if (NewCost < CostTo[NeighbourPoint]) {
                                 PredecessorList[NeighbourPoint] = Point;
                                 CostTo[NeighbourPoint] = NewCost;
                                 Q.push(NeighbourPoint);

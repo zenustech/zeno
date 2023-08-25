@@ -156,11 +156,17 @@ namespace {
         std::string GradientChannel;
         ZENO_DECLARE_INPUT_FIELD(GradientChannel, "Gradient Channel (Vertex Attr)", false, "", "gradient");
 
-        std::string CurvatureChannel;
-        ZENO_DECLARE_INPUT_FIELD(CurvatureChannel, "Curvature Channel (Vertex Attr)", false, "", "curvature");
+        //std::string CurvatureChannel;
+        //ZENO_DECLARE_INPUT_FIELD(CurvatureChannel, "Curvature Channel (Vertex Attr)", false, "", "curvature");
 
         int ConnectiveMask;
         ZENO_DECLARE_INPUT_FIELD(ConnectiveMask, "Connective Mask", false, "", "3");
+
+        float WeightHeuristic;
+        ZENO_DECLARE_INPUT_FIELD(WeightHeuristic, "Weight of Heuristic Function", false, "", "0.3");
+
+        float CurvatureThreshold;
+        ZENO_DECLARE_INPUT_FIELD(CurvatureThreshold, "Curvature Threshold", false, "", "0.4");
 
         zeno::vec2f Start;
         ZENO_DECLARE_INPUT_FIELD(Start, "Start Point");
@@ -192,59 +198,89 @@ namespace {
         zeno::AttrVector<float> GradientList{};
         ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, GradientList, GradientChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
 
-        zeno::AttrVector<float> CurvatureList{};
-        ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, CurvatureList, CurvatureChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
+        //zeno::AttrVector<float> CurvatureList{};
+        //ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Primitive, CurvatureList, CurvatureChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
 
         void apply() override {
+            zeno::log_info("[Roads] Generating trajectory...");
             RoadsAssert(AutoParameter->Nx * AutoParameter->Ny <= AutoParameter->GradientList.size(), "Bad nx ny.");
 
-            CostPoint GoalPoint { static_cast<size_t>(AutoParameter->Goal[0]), static_cast<size_t>(AutoParameter->Goal[1]) };
-            CostPoint StartPoint {static_cast<size_t>(AutoParameter->Start[0]), static_cast<size_t>(AutoParameter->Start[1])};
+            CostPoint GoalPoint{static_cast<size_t>(AutoParameter->Goal[0]), static_cast<size_t>(AutoParameter->Goal[1])};
+            CostPoint StartPoint{static_cast<size_t>(AutoParameter->Start[0]), static_cast<size_t>(AutoParameter->Start[1])};
 
-            auto MapFuncGen = [](const std::shared_ptr<zeno::CurveObject> &Curve) -> std::function<float(float)> {
+            auto MapFuncGen = [](const std::shared_ptr<zeno::CurveObject> &Curve, float Threshold) -> std::function<float(float)> {
                 if (Curve) {
-                    return [Curve](float In) -> float {
+                    return [Curve, Threshold](float In) -> float {
+                        if (Threshold > 0 && In > Threshold) {
+                            return 9e06f;
+                        }
                         return Curve->eval(float(In));
                     };
                 } else {
                     zeno::log_warn("[Roads] Invalid Curve !");
-                    return [](float In) -> float {
+                    return [Threshold](float In) -> float {
+                        if (Threshold > 0 && In > Threshold) {
+                            return 9e06f;
+                        }
                         return In;
                     };
                 }
             };
 
-            auto HeightCostFunc = MapFuncGen(AutoParameter->HeightCurve);
-            auto GradientCostFunc = MapFuncGen(AutoParameter->GradientCurve);
-            auto CurvatureCostFunc = MapFuncGen(AutoParameter->CurvatureCurve);
+            auto HeightCostFunc = MapFuncGen(AutoParameter->HeightCurve, -1.0f);
+            auto GradientCostFunc = MapFuncGen(AutoParameter->GradientCurve, -1.0f);
+            auto CurvatureCostFunc = MapFuncGen(AutoParameter->CurvatureCurve, AutoParameter->CurvatureThreshold);
 
             DynamicGrid<CostPoint> CostGrid(AutoParameter->Nx, AutoParameter->Ny);
             CostGrid.resize(AutoParameter->Nx * AutoParameter->Ny);
-//#pragma omp parallel for
+            //#pragma omp parallel for
             for (size_t i = 0; i < AutoParameter->Nx * AutoParameter->Ny; ++i) {
                 size_t x = i % AutoParameter->Nx;
                 size_t y = i / AutoParameter->Ny;
-                CostGrid[i] = (CostPoint{x, y, AutoParameter->PositionList[i].at(1), AutoParameter->GradientList[i], AutoParameter->CurvatureList[i]});
+                CostGrid[i] = (CostPoint{x, y, AutoParameter->PositionList[i].at(1), AutoParameter->GradientList[i]});
             }
 
-            std::function<float(const CostPoint&, const CostPoint&)> CostFunc = [HeightCostFunc, GradientCostFunc, CurvatureCostFunc, &CostGrid, Nx = AutoParameter->Nx] (const CostPoint& A, const CostPoint& B) -> float {
+            const size_t IndexMax = AutoParameter->Nx * AutoParameter->Ny - 1;
+
+            std::function<float(const CostPoint &, const CostPoint &)> CostFunc = [&HeightCostFunc, &GradientCostFunc, &CurvatureCostFunc, &CostGrid, IndexMax, Nx = AutoParameter->Nx, Ny = AutoParameter->Ny](const CostPoint &A, const CostPoint &B) -> float {
                 size_t ia = A[0] + A[1] * Nx;
                 size_t ib = B[0] + B[1] * Nx;
-                float Cost = HeightCostFunc(float(std::abs(CostGrid[ia].Height - CostGrid[ib].Height))) + GradientCostFunc(float(std::abs(CostGrid[ia].Gradient - CostGrid[ib].Gradient)) + CurvatureCostFunc(float(std::abs(CostGrid[ia].Curvature - CostGrid[ib].Curvature))));
+
+                Eigen::Vector2f Dir = (Eigen::Vector2f(A[0], A[1]) - Eigen::Vector2f(B[0], B[1])).normalized();
+                size_t NearbyIndexPlus1 = std::clamp<size_t>(ia + 1, 0, IndexMax);
+                size_t NearbyIndexMinus1 = std::clamp<size_t>(ia - 1, 0, IndexMax);
+                size_t NearbyIndexPlusY = std::clamp<size_t>(ia + Ny, 0, IndexMax);
+                size_t NearbyIndexMinusY = std::clamp<size_t>(ia - Ny, 0, IndexMax);
+                double height_x_plus = CostGrid[NearbyIndexPlus1].Height;
+                double height_x_minus = CostGrid[NearbyIndexMinus1].Height;
+                double height_y_plus = CostGrid[NearbyIndexPlusY].Height;
+                double height_y_minus = CostGrid[NearbyIndexMinusY].Height;
+
+                float dHeight_dx = float(height_x_plus - height_x_minus) / 2.0f;
+                float dHeight_dy = float(height_y_plus - height_x_minus) / 2.0f;
+                float d2Height_dx2 = float(height_x_plus - 2 * CostGrid[ia].Height + height_x_minus);
+                float d2Height_dy2 = float(height_y_plus - 2 * CostGrid[ia].Height + height_y_minus);
+
+                Eigen::Matrix2f Hessian;
+                Hessian << d2Height_dx2, dHeight_dy, dHeight_dx, d2Height_dy2;
+
+                float Curvature = Dir.transpose() * Hessian * Dir;
+
+                float Cost = HeightCostFunc(float(std::abs(CostGrid[ia].Height - CostGrid[ib].Height))) + GradientCostFunc(float(std::abs(CostGrid[ia].Gradient - CostGrid[ib].Gradient))) + CurvatureCostFunc(float(std::abs(Curvature)));
                 return Cost;
             };
 
             std::unordered_map<CostPoint, CostPoint> Predecessor;
             std::unordered_map<CostPoint, float> CostMap;
-            roads::energy::RoadsShortestPath(StartPoint, GoalPoint, CostPoint { static_cast<size_t>(AutoParameter->Nx), static_cast<size_t>(AutoParameter->Ny) }, AutoParameter->ConnectiveMask, Predecessor, CostMap, CostFunc);
+            roads::energy::RoadsShortestPath(StartPoint, GoalPoint, CostPoint{static_cast<size_t>(AutoParameter->Nx), static_cast<size_t>(AutoParameter->Ny)}, AutoParameter->ConnectiveMask, AutoParameter->WeightHeuristic, Predecessor, CostMap, CostFunc);
 
-            zeno::log_info("qwq: {}, {}", Predecessor.size(), CostMap.size());
+            zeno::log_info("[Roads] Result Predecessor Size: {}; CostMap Size: {}", Predecessor.size(), CostMap.size());
 
             CostPoint Current = GoalPoint;
 
             ArrayList<size_t> Path;
             while (Current != StartPoint) {
-                Path.push_back( Current[0] + Current[1] * AutoParameter->Nx );
+                Path.push_back(Current[0] + Current[1] * AutoParameter->Nx);
                 Current = Predecessor[Current];
             }
             Path.push_back(StartPoint[0] + StartPoint[1] * AutoParameter->Nx);
@@ -255,7 +291,7 @@ namespace {
 
             AutoParameter->Primitive->lines.resize(Path.size() - 1);
             for (size_t i = 0; i < Path.size() - 1; ++i) {
-                AutoParameter->Primitive->lines[i] = zeno::vec2i(int(Path[i]), int(Path[i+1]));
+                AutoParameter->Primitive->lines[i] = zeno::vec2i(int(Path[i]), int(Path[i + 1]));
             }
         }
     };
