@@ -123,18 +123,18 @@ namespace roads {
                     if (std::abs<int32_t>(From[0] - To[0]) <= MaskK) {
                         NextPoint[0] = To[0];
                     } else if (From[0] < To[0]) {
-                        NextPoint[0] += std::max(1, MaskK / 2);
+                        NextPoint[0] += MaskK;
                     } else {
-                        NextPoint[0] -= std::max(1, MaskK / 2);
+                        NextPoint[0] -= MaskK;
                     }
                 }
                 if (To[1] != From[1]) {
                     if (std::abs<int32_t>(From[1] - To[1]) <= MaskK) {
                         NextPoint[1] = To[1];
                     } else if (From[1] < To[1]) {
-                        NextPoint[1] += std::max(1, MaskK / 2);
+                        NextPoint[1] += MaskK;
                     } else {
-                        NextPoint[1] -= std::max(1, MaskK / 2);
+                        NextPoint[1] -= MaskK;
                     }
                 }
 

@@ -241,30 +241,40 @@ namespace {
             }
 
             const size_t IndexMax = AutoParameter->Nx * AutoParameter->Ny - 1;
+            std::unordered_map<size_t, float> CurvatureCache;
 
-            std::function<float(const CostPoint &, const CostPoint &)> CostFunc = [&HeightCostFunc, &GradientCostFunc, &CurvatureCostFunc, &CostGrid, IndexMax, Nx = AutoParameter->Nx, Ny = AutoParameter->Ny](const CostPoint &A, const CostPoint &B) -> float {
+            std::function<float(const CostPoint &, const CostPoint &)> CostFunc = [&CurvatureCache, &HeightCostFunc, &GradientCostFunc, &CurvatureCostFunc, &CostGrid, IndexMax, Nx = AutoParameter->Nx, Ny = AutoParameter->Ny](const CostPoint &A, const CostPoint &B) mutable -> float {
                 size_t ia = A[0] + A[1] * Nx;
                 size_t ib = B[0] + B[1] * Nx;
 
-                Eigen::Vector2f Dir = (Eigen::Vector2f(A[0], A[1]) - Eigen::Vector2f(B[0], B[1])).normalized();
-                size_t NearbyIndexPlus1 = std::clamp<size_t>(ia + 1, 0, IndexMax);
-                size_t NearbyIndexMinus1 = std::clamp<size_t>(ia - 1, 0, IndexMax);
-                size_t NearbyIndexPlusY = std::clamp<size_t>(ia + Ny, 0, IndexMax);
-                size_t NearbyIndexMinusY = std::clamp<size_t>(ia - Ny, 0, IndexMax);
-                double height_x_plus = CostGrid[NearbyIndexPlus1].Height;
-                double height_x_minus = CostGrid[NearbyIndexMinus1].Height;
-                double height_y_plus = CostGrid[NearbyIndexPlusY].Height;
-                double height_y_minus = CostGrid[NearbyIndexMinusY].Height;
+                constexpr size_t Seed = 12306;
+                size_t Hash = (ia + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (ib * 0x9e3779b9 + (Seed << 2) + (Seed >> 4));
 
-                float dHeight_dx = float(height_x_plus - height_x_minus) / 2.0f;
-                float dHeight_dy = float(height_y_plus - height_x_minus) / 2.0f;
-                float d2Height_dx2 = float(height_x_plus - 2 * CostGrid[ia].Height + height_x_minus);
-                float d2Height_dy2 = float(height_y_plus - 2 * CostGrid[ia].Height + height_y_minus);
+                float Curvature;
+                if (CurvatureCache.find(Hash) != std::end(CurvatureCache)) {
+                    Curvature = CurvatureCache[Hash];
+                } else {
+                    Eigen::Vector2f Dir = (Eigen::Vector2f(A[0], A[1]) - Eigen::Vector2f(B[0], B[1])).normalized();
+                    size_t NearbyIndexPlus1 = std::clamp<size_t>(ia + 1, 0, IndexMax);
+                    size_t NearbyIndexMinus1 = std::clamp<size_t>(ia - 1, 0, IndexMax);
+                    size_t NearbyIndexPlusY = std::clamp<size_t>(ia + Ny, 0, IndexMax);
+                    size_t NearbyIndexMinusY = std::clamp<size_t>(ia - Ny, 0, IndexMax);
+                    double height_x_plus = CostGrid[NearbyIndexPlus1].Height;
+                    double height_x_minus = CostGrid[NearbyIndexMinus1].Height;
+                    double height_y_plus = CostGrid[NearbyIndexPlusY].Height;
+                    double height_y_minus = CostGrid[NearbyIndexMinusY].Height;
 
-                Eigen::Matrix2f Hessian;
-                Hessian << d2Height_dx2, dHeight_dy, dHeight_dx, d2Height_dy2;
+                    float dHeight_dx = float(height_x_plus - height_x_minus) / 2.0f;
+                    float dHeight_dy = float(height_y_plus - height_x_minus) / 2.0f;
+                    float d2Height_dx2 = float(height_x_plus - 2 * CostGrid[ia].Height + height_x_minus);
+                    float d2Height_dy2 = float(height_y_plus - 2 * CostGrid[ia].Height + height_y_minus);
 
-                float Curvature = Dir.transpose() * Hessian * Dir;
+                    Eigen::Matrix2f Hessian;
+                    Hessian << d2Height_dx2, dHeight_dy, dHeight_dx, d2Height_dy2;
+
+                    Curvature = Dir.transpose() * Hessian * Dir;
+                    CurvatureCache[Hash] = Curvature;
+                }
 
                 float Cost = HeightCostFunc(float(std::abs(CostGrid[ia].Height - CostGrid[ib].Height))) + GradientCostFunc(float(std::abs(CostGrid[ia].Gradient - CostGrid[ib].Gradient))) + CurvatureCostFunc(float(std::abs(Curvature)));
                 return Cost;
