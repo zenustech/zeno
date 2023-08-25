@@ -15,8 +15,6 @@
 #include <cuda/helpers.h>
 #include <sutil/vec_math.h>
 
-#define _DefaultSkyLightProb_ 0.5f
-
 // static __inline__ __device__
 // int GetLightIndex(float p, GenericLight* lightP, int n)
 // {
@@ -138,18 +136,24 @@ static __inline__ __device__ void sampleSphereIES(LightSampleRecord& lsr, const 
 
     float3 vector = center - shadingP;
     float dist2 = dot(vector, vector);
-    float dist = sqrtf(dist2);
 
-    if (dist < radius) {
+    if (dist2 < radius * radius) {
         lsr.PDF = 0.0f;
         return; 
     }
 
-    lsr.dist = dist - radius;
-    lsr.dir = vector/dist;
+    lsr.dist = sqrtf(dist2);
+    lsr.dir = vector/lsr.dist;
     lsr.n = -lsr.dir;
+
+    lsr.p = center;
+    if (radius > 0) {
+        lsr.p += radius * lsr.n;
+        lsr.p = rtgems::offset_ray(lsr.p, lsr.n);
+        lsr.dist = length(lsr.p - shadingP);
+    }
+
     lsr.NoL = 1.0f;
-    lsr.p = center + radius*lsr.n;
     lsr.PDF = 1.0f;
 
     lsr.intensity = 1.0f / dist2;
@@ -171,14 +175,12 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
     const float3 wo = normalize(-ray_dir); 
     float3 light_attenuation = vec3(1.0f);
 
-    const float _SKY_PROB_ = params.num_lights>0? _DefaultSkyLightProb_ : 1.0f;
+    const float _SKY_PROB_ = params.skyLightProbablity();
 
-    float scatterPDF = 1.0f;
+    float scatterPDF = 1.f;
     float UF = prd->rndf();
 
     if(UF > _SKY_PROB_) {
-
-        const uint3 idx = optixGetLaunchIndex();
 
         float lightPickProb = 1.0f - _SKY_PROB_;
         UF = (UF - _SKY_PROB_) / lightPickProb;
@@ -189,10 +191,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
         const Vector3f& SN = reinterpret_cast<const Vector3f&>(prd->geometryNormal);
 
         auto pick = lightTree->sample(UF, SP, SN);
-
         if (pick.prob <= 0.0f) { return; }
-
-        assert(pick.prob >= 0.0f && pick.prob <= 1.0f);
 
         uint lighIdx = min(pick.lightIdx, params.num_lights-1);
         auto& light = params.lights[lighIdx];
@@ -204,62 +203,79 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
 
         const float* iesProfile = reinterpret_cast<const float*>(light.ies);
 
-        if (nullptr != iesProfile) {
-        
-            sampleSphereIES(lsr, {}, shadingP, light._cone_.p, _FLT_EPL_);
+        if (light.type == zeno::LightType::IES && nullptr != iesProfile) {
 
+            auto radius = (light.shape == zeno::LightShape::Sphere)? light.sphere.radius : 0.0f;
+        
+            sampleSphereIES(lsr, {}, shadingP, light.cone.p, radius);
             if (lsr.PDF <= 0.0f) return; 
 
             auto v_angle = acos(dot(-lsr.dir, light.N));
             auto h_angle = acos(dot(-lsr.dir, light.T));
 
             auto intensity = sampleIES(iesProfile, h_angle, v_angle);
-            emission *= intensity * lsr.intensity;
+            if (intensity <= 0.0f) return;
+
+            emission *= intensity;
 
         } else if (light.type == zeno::LightType::Direction) {
 
-            bool valid = light.rect.hitAsLight(&lsr, shadingP, -light.N);
-            if (!valid) { emission = {}; lsr.PDF = 0.0f; return; }
+            bool valid = false;
+            switch (light.shape) {
+                case zeno::LightShape::Plane:
+                    valid = light.rect.hitAsLight(&lsr, shadingP, -light.N);  break;
+                case zeno::LightShape::Sphere:
+                    valid = light.sphere.hitAsLight(&lsr, shadingP, -light.N); break;
+                default: return;
+            }
+            if (!valid) { return; }
 
-        } else {
+            lsr.intensity = 1.0f;
+            lsr.PDF = 1.0f;
+            lsr.NoL = 1.0f;
+
+        } else { // Diffuse
 
             float2 uu = {prd->rndf(), prd->rndf()};
 
             switch (light.shape) {
                 case zeno::LightShape::Plane:
-                    light.rect.sample(&lsr, uu, shadingP); break;
+                    light.rect.SampleAsLight(&lsr, uu, shadingP);   break;
                 case zeno::LightShape::Sphere:
-                    light.sphere.sample(&lsr, uu, shadingP); break;
+                    light.sphere.SampleAsLight(&lsr, uu, shadingP); break;
+                case zeno::LightShape::Point:
+                    light.point.SampleAsLight(&lsr, uu, shadingP);  break;
                 default: break;
             }
         }
 
         lsr.PDF *= lightPickProb;
-        //lsr.p = rtgems::offset_ray(lsr.p, lsr.n);
 
-            if (light.config & zeno::LightConfigDoubleside) {
-                lsr.NoL = abs(lsr.NoL);
-            }
+        if (light.config & zeno::LightConfigDoubleside) {
+            lsr.NoL = abs(lsr.NoL);
+        }
 
-            if (lsr.NoL > _FLT_EPL_ && lsr.PDF > __FLT_DENORM_MIN__) {
+        if (lsr.NoL > _FLT_EPL_ && lsr.PDF > _FLT_EPL_) {
 
-                traceOcclusion(params.handle, shadingP, lsr.dir, 0, lsr.dist-1e-5f, &shadow_prd);
+            traceOcclusion(params.handle, shadingP, lsr.dir, 0, lsr.dist, &shadow_prd);
+            
+            light_attenuation = shadow_prd.shadowAttanuation;
+
+            if (length(light_attenuation) > 0.0f) {
                 
-                light_attenuation = shadow_prd.shadowAttanuation;
+                auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
+                auto misWeight = 1.0f;
 
-                if (length(light_attenuation) > 0.0f) {
-                    
-                    auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
-                    float misWeight = 1.0f;
-
-                    if (!light.isDeltaLight()) {
-                        misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
-                    }
-
-                    prd->radiance = light_attenuation * emission * bxdf_value;
-                    prd->radiance *= misWeight / lsr.PDF;
+                if (!light.isDeltaLight() && !lsr.isDelta) {
+                    misWeight = BRDFBasics::PowerHeuristic(lsr.PDF, scatterPDF);
                 }
+
+                emission *= lsr.intensity;
+
+                prd->radiance = light_attenuation * emission * bxdf_value;
+                prd->radiance *= misWeight / lsr.PDF;             
             }
+        }
 
     } else {
 
@@ -282,6 +298,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             auto illum = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
                                         40, // be careful
                                         .45, 15., 1.030725f * 0.3f, params.elapsedTime, tmpPdf));
+            if(tmpPdf <= 0.0f) { return; }
 
             auto LP = shadingP;
             auto Ldir = sun_dir;

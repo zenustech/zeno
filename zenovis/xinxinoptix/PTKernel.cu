@@ -130,6 +130,7 @@ extern "C" __global__ void __raygen__rg()
         prd.maxDistance  = 1e16f;
         prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;
 
+        prd.origin = ray_origin;
         prd.depth = 0;
         prd.diffDepth = 0;
         prd.isSS = false;

@@ -36,53 +36,45 @@ struct GenericLight
     union {
         RectShape rect;
         SphereShape sphere;
-        ConeShape _cone_;
+
+        ConeShape cone;
+        PointShape point;
     };
 
     bool isDeltaLight() {
         if (type == zeno::LightType::Direction || type == zeno::LightType::IES)
             return true;
-        if (shape == zeno::LightShape::Cone || shape == zeno::LightShape::Point)
-            return true;
-
-        return false;
-    }
-
-    float area() {
-        switch (this->shape) {
-        case zeno::LightShape::Plane:
-            return this->rect.area;
-        case zeno::LightShape::Sphere:
-            return this->sphere.area;
-        case zeno::LightShape::Cone:
-            return 0.0f;
-        }
-        return 0.0f;
+        else 
+            return false;
     }
 
     pbrt::LightBounds bounds() {
 
         auto Phi = dot(emission, make_float3(1.0f/3.0f));
         bool doubleSided = config & zeno::LightConfigDoubleside;
+
+        if (this->type == zeno::LightType::IES) {
+            return  this->cone.BoundAsLight(Phi, false);
+        }
         
         switch (this->shape) {
         case zeno::LightShape::Plane:
             return this->rect.BoundAsLight(Phi, doubleSided);
         case zeno::LightShape::Sphere:
-            return this->sphere.BoundAsLight(Phi, doubleSided);
-        case zeno::LightShape::Cone:
-            return this->_cone_.BoundAsLight(Phi, false);
+            return this->sphere.BoundAsLight(Phi, false);
+        case zeno::LightShape::Point:
+            return this->point.BoundAsLight(Phi, false);
         }
 
         return pbrt::LightBounds();
     }
 
-    void setConeData(const float3& p, const float3& dir, float bound, float coneAngle) {
-        this->_cone_.p = p;
-        this->_cone_.dir = dir;
-        this->_cone_.bound = bound;
-        this->_cone_.cosFalloffStart = coneAngle;
-        this->_cone_.cosFalloffEnd = coneAngle;
+    void setConeData(const float3& p, const float3& dir, float range, float coneAngle) {
+        this->cone.p = p;
+        this->cone.dir = dir;
+        this->cone.range = range;
+        this->cone.cosFalloffStart = cosf(coneAngle);
+        this->cone.cosFalloffEnd = cosf(coneAngle + __FLT_EPSILON__);
     }
 
     void setRectData(const float3& v0, const float3& v1, const float3& v2, const float3& normal) {
@@ -97,7 +89,7 @@ struct GenericLight
     void setSphereData(const float3& center, float radius) {
         this->sphere.center = center;
         this->sphere.radius = radius;
-        this->sphere.area = CUDART_PI_F * 4 * radius * radius;
+        this->sphere.area = M_PIf * 4 * radius * radius;
     }
 };
 
@@ -126,8 +118,7 @@ struct Params
     uchar4*      frame_buffer_T;
     uchar4*      frame_buffer_B;
 
-    unsigned int* seeds_buffer;
-
+    float3*      debug_buffer;
     float3*      albedo_buffer;
     float3*      normal_buffer;
 
@@ -141,6 +132,19 @@ struct Params
     GenericLight *lights;
     uint32_t firstRectLightIdx;
     uint32_t firstSphereLightIdx;
+
+    float skyLightProbablity() {
+
+        static float DefaultSkyLightProbablity = 0.5f;
+
+        if (sky_strength <= 0.0f)
+            return -0.0f;
+
+        if (sky_texture == 0llu || skycdf == nullptr) 
+            return -0.0f;
+
+        return this->num_lights>0? DefaultSkyLightProbablity : 1.0f;
+    }
 
     unsigned long long lightTreeSampler;
 

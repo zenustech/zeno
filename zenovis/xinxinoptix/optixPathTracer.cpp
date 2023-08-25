@@ -2108,43 +2108,38 @@ void optixupdatelight() {
         light.type  = magic_enum::enum_cast<zeno::LightType>(dat.type).value_or(zeno::LightType::Diffuse);
         light.shape = magic_enum::enum_cast<zeno::LightShape>(dat.shape).value_or(zeno::LightShape::Plane);
 
-        if (light.type == zeno::LightType::Direction) {
-            light.shape = zeno::LightShape::Plane;
-        }
-
-        if ( OptixUtil::g_ies.count(dat.textureKey) > 0 ) {
-
-            auto& val = OptixUtil::g_ies.at(dat.textureKey);
-            light.ies = val.ptr.handle;
-            light.shape = zeno::LightShape::Cone;
-
-            light._cone_.cosFalloffStart = cosf(val.coneAngle);
-            light._cone_.cosFalloffEnd = cos(val.coneAngle + 0.01f);
-            light._cone_.p = center;
-            light._cone_.dir = light.N;
-
-        } else if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
-
-            auto& val = OptixUtil::g_tex.at(dat.textureKey);
-            light.tex = val->texture;
-        }
-
         if (light.shape == zeno::LightShape::Plane) {
 
             firstRectLightIdx = min(loopIdx, firstRectLightIdx);
 
             light.setRectData(v0, v1, v2, light.N);
-
             addLightMesh(v0, v2, v1, light.N, light.emission);
 
         } else if (light.shape == zeno::LightShape::Sphere) {
 
             firstSphereLightIdx = min(loopIdx, firstSphereLightIdx);
 
-            auto radius = length(v1 + v2) * 0.5f;
-
+            auto radius = fminf(length(v1), length(v2)) * 0.5f;
             light.setSphereData(center, radius);       
             addLightSphere(center, radius);
+
+        } else if (light.shape == zeno::LightShape::Point) {
+            light.point = {center};
+        }
+
+        if ( OptixUtil::g_ies.count(dat.textureKey) > 0 ) {
+
+            auto& val = OptixUtil::g_ies.at(dat.textureKey);
+            light.ies = val.ptr.handle;
+            light.type = zeno::LightType::IES;
+            //light.shape = zeno::LightShape::Point;
+            auto radius = length(v1 + v2) * 0.5f;
+            light.setConeData(center, light.N, radius, val.coneAngle);
+
+        } else if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
+
+            auto& val = OptixUtil::g_tex.at(dat.textureKey);
+            light.tex = val->texture;
         }
 
         ++loopIdx;

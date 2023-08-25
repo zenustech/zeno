@@ -501,7 +501,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     prd->direction = new_dir;
 
     prd->emission = emitting;
-    prd->geometryNormal = new_dir; //(new_dir + -ray_dir) / 2.0f;
+    prd->geometryNormal = {}; //(new_dir + -ray_dir) / 2.0f;
 
     if (v_density == 0) {
         //prd->depth += 0;

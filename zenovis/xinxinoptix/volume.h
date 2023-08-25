@@ -50,7 +50,7 @@ inline float HenyeyGreenstein::sample(const float3 &wo, float3 &wi, const float2
     // Compute $\cos \theta$ for Henyey--Greenstein sample
 
     if (fabsf(g) >= 1.0f) { 
-        wi = copysign(1.0f, -g) * wo;
+        wi = copysignf(1.0f, -g) * wo;
         return 1.0f;
     }
 

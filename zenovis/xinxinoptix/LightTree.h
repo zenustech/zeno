@@ -98,7 +98,7 @@ struct CompactLightBounds {
     bool isDoubleSided() const { return meta.doubleSided; }
     
     float CosTheta_o() const { return 2 * (meta.qCosTheta_o / 32767.f) - 1; }
-    float CosTheta_e() const { return 2 * (meta.qCosTheta_e / 32767.f) - 1; }\
+    float CosTheta_e() const { return 2 * (meta.qCosTheta_e / 32767.f) - 1; }
 
     inline float lerp(float t, const float a, const float b) const {
         return a + t*(b-a);
@@ -131,13 +131,13 @@ struct CompactLightBounds {
             if (cosTheta_a > cosTheta_b)
                 return 1;
             return cosTheta_a * cosTheta_b + sinTheta_a * sinTheta_b;
-        };
+        }; // cos( theta_a - theta_b )
 
         auto sinSubClamped = [](float sinTheta_a, float cosTheta_a, float sinTheta_b, float cosTheta_b) -> float {
             if (cosTheta_a > cosTheta_b)
                 return 0;
             return sinTheta_a * cosTheta_b - cosTheta_a * sinTheta_b;
-        };
+        }; // sin( theta_a - theta_b )
 
         // Compute sine and cosine of angle to vector _w_, $\theta_\roman{w}$
         Vector3f wi = normalize(p - pc);
@@ -155,13 +155,12 @@ struct CompactLightBounds {
         float cosTheta_x = cosSubClamped(sinTheta_w, cosTheta_w, sinTheta_o, cosTheta_o);
         float sinTheta_x = sinSubClamped(sinTheta_w, cosTheta_w, sinTheta_o, cosTheta_o);
         float cosThetap  = cosSubClamped(sinTheta_x, cosTheta_x, sinTheta_b, cosTheta_b);
-        if (cosThetap <= cosTheta_e)
+        if (cosThetap <= cosTheta_e || cosThetap < 0.0f)
             return 0;
 
         // Return final importance at reference point
         float importance = phi * cosThetap / d2;
-        DCHECK(importance >= -1e-3);
-        // Account for $\cos\theta_\roman{i}$ in importance at surfaces
+        DCHECK(importance >= -1e-3f);
 
         if (n[0]!=0 && n[1]!=0 && n[2]!=0) {
 
@@ -223,7 +222,7 @@ struct alignas(32) LightTreeNode {
 
 struct SelectedLight {
     uint32_t lightIdx;
-    float prob = -1.0f;
+    float prob = 0.0f;
 };
 
 // BVHLightSampler Definition
@@ -273,11 +272,12 @@ struct LightTreeSampler {
             LightTreeNode& node = nodes[nodeIndex];
             if (!node.meta.isLeaf) {
                 // Compute light BVH child node importances
-                const LightTreeNode *children[2] = {&nodes[nodeIndex + 1],
-                                                   &nodes[node.meta.childOrLightIndex]};
+                const LightTreeNode *child0 = &nodes[nodeIndex + 1];
+                const LightTreeNode *child1 = &nodes[node.meta.childOrLightIndex];
+                
                 float ci[3] = { 0.0f,
-                    children[0]->lightBounds.Importance(p, n, rootBounds),
-                    children[1]->lightBounds.Importance(p, n, rootBounds) };
+                    child0->lightBounds.Importance(p, n, rootBounds),
+                    child1->lightBounds.Importance(p, n, rootBounds) };
 
                 DCHECK(ci[1] >= 0 && ci[2] >= 0);
                 

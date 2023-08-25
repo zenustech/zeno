@@ -17,7 +17,10 @@ struct LightSampleRecord {
     float3 dir;
     float dist;
 
+    float2 uv;
+
     float intensity = 1.0f;
+    bool isDelta = false;
 };
 
 struct PointShape {
@@ -25,7 +28,7 @@ struct PointShape {
 
     inline float PDF() {return 0.25f / M_PIf;}
 
-    inline void sample(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {
+    inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {
 
         auto vector = p - shadingP;
         auto dist2 = dot(vector, vector);
@@ -34,22 +37,23 @@ struct PointShape {
         lsr->dist = dist;
         lsr->dir = vector / dist;
         lsr->p = p;
-        lsr->n = lsr->dir;
+        lsr->n = -lsr->dir;
 
-        lsr->PDF = PDF();
+        lsr->PDF = 1.0f; //PDF();
         lsr->NoL = 1.0f;
-        lsr->intensity = 1.0 / dist2;
+        lsr->intensity = M_PIf / dist2;
+        lsr->isDelta = true;
     }
 
-    pbrt::LightBounds BoundAsLight() {
+    pbrt::LightBounds BoundAsLight(float phi, bool doubleSided) {
 
-        float phi = 4 * M_PIf; 
+        float Phi = 4 * M_PIf * phi; 
 
         auto& tmp = reinterpret_cast<Vector3f&>(p);
-        auto _bounds_ = pbrt::Bounds3f{tmp, tmp};
+        auto bounds = pbrt::Bounds3f{tmp, tmp};
         
-        return pbrt::LightBounds(_bounds_, Vector3f(0, 0, 1), 
-            phi, cosf(M_PIf), cosf(M_PIf / 2), false);
+        return pbrt::LightBounds(bounds, Vector3f(0, 0, 1), 
+            Phi, cosf(M_PIf), cosf(M_PIf / 2), false);
     }
 };
 
@@ -62,7 +66,7 @@ struct RectShape {
         return 1.0f / area;
     }
 
-    inline void eval(LightSampleRecord* lsr, const float3& dir, const float& dist, const float3& shadingP) {
+    inline void EvalAfterHit(LightSampleRecord* lsr, const float3& dir, const float& dist, const float3& shadingP) {
 
         float lightNoL = dot(-dir, normal);
         float lightPDF = dist * dist * PDF() / lightNoL;
@@ -76,19 +80,26 @@ struct RectShape {
         lsr->NoL = lightNoL;
     }  
 
-    inline void sample(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {    
+    inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {    
 
-        lsr->p = v0 + v1 * uu.x + v2 * uu.y;
         lsr->n = normalize(normal);
+        lsr->p = v0 + v1 * uu.x + v2 * uu.y;
 
-        lsr->dir  = lsr->p - shadingP;
+        lsr->uv = uu;
+
+        lsr->dir = (lsr->p - shadingP);
+        //lsr->dir = normalize(lsr->dir);
+        auto sign = copysignf(1.0f, dot(lsr->n, -lsr->dir));
+        
+        lsr->p = rtgems::offset_ray(lsr->p, lsr->n * sign);
+        lsr->dir = lsr->p - shadingP;
         lsr->dist = length(lsr->dir);
-        lsr->dir  = normalize(lsr->dir);
+        lsr->dir = lsr->dir / lsr->dist;
 
         lsr->NoL = dot(-lsr->dir, lsr->n);
         lsr->PDF = 0.0f;
         
-        if (fabsf(lsr->NoL) > __FLT_DENORM_MIN__) {
+        if (fabsf(lsr->NoL) > __FLT_EPSILON__) {
             lsr->PDF = lsr->dist * lsr->dist * PDF() / fabsf(lsr->NoL);
         }
     }
@@ -158,10 +169,9 @@ struct RectShape {
 
 struct ConeShape {
     float3 p;
+    float range;
+
     float3 dir;
-
-    float bound;
-
     float cosFalloffStart;
     float cosFalloffEnd;
 
@@ -192,6 +202,8 @@ struct ConeShape {
 
     pbrt::LightBounds BoundAsLight(float phi, bool doubleSided) {
 
+        auto Phi = M_PIf * 4 * phi;
+
         float cosTheta_e = cosf(acosf(cosFalloffEnd) - acosf(cosFalloffStart));
         // Allow a little slop here to deal with fp round-off error in the computation of
         // cosTheta_p in the importance function.
@@ -202,7 +214,7 @@ struct ConeShape {
         auto& tmp = reinterpret_cast<Vector3f&>(p);
         auto bounds = pbrt::Bounds3f{tmp, tmp};
 
-        return pbrt::LightBounds(bounds, w, 4 * M_PIf * phi, cosFalloffStart, cosTheta_e, false);
+        return pbrt::LightBounds(bounds, w, Phi, cosFalloffStart, cosTheta_e, false);
     }
 };
 
@@ -215,46 +227,86 @@ struct SphereShape {
         return 1.0f / area;
     }
 
-    inline float PDF(const float3& shadingP) {
+    inline float PDF(const float3& shadingP, float dist2, float NoL) {
 
-        float3 vector = center - shadingP;
-
-        auto dist2 = dot(vector, vector);
-        auto dist = sqrtf(dist2);
-
-        if (dist < radius) {
-            return 1.0f / area;
+        if (dist2 < radius * radius) {
+            return dist2 / fabsf(NoL);
         }
 
         float sinThetaMax2 = clamp( radius * radius / dist2, 0.0, 1.0);
+
+        if (sinThetaMax2 <= __FLT_EPSILON__) {
+            return 1.0f; // point light
+        }
+
         float cosThetaMax = sqrtf( 1.0 - sinThetaMax2 );
-        return 1.0f / ( 2.0f * CUDART_PI_F * (1.0 - cosThetaMax) );
+        return 1.0f / ( 2.0f * M_PIf * (1.0 - cosThetaMax) );
     }
 
-    inline void eval(LightSampleRecord* lsr, const float3& dir, const float& _dist_, const float3& shadingP) {
+    inline bool hitAsLight(LightSampleRecord* lsr, const float3& ray_origin, const float3& ray_dir) {
+
+        float3 f = ray_origin - center;
+        float b2 = dot(f, ray_dir);
+		float r2 = radius * radius;
+
+		float3 fd = f - b2 * ray_dir;
+		float discriminant = r2 - dot(fd, fd);
+
+		if (discriminant >= 0.0f)
+		{
+			float c = dot(f, f) - r2;
+			float sqrtVal = sqrt(discriminant);
+
+			// include Press, William H., Saul A. Teukolsky, William T. Vetterling, and Brian P. Flannery, 
+			// "Numerical Recipes in C," Cambridge University Press, 1992.
+			float q = (b2 >= 0) ? -sqrtVal - b2 : sqrtVal - b2;
+
+            lsr->dir = ray_dir;
+            lsr->dist = fminf(c/q, q);
+            lsr->p = ray_origin + ray_dir * lsr->dist;
+
+            // lsr->n = normalize(lsr->p - center);
+            // lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
+            // lsr->dist = length(lsr->p - ray_origin);
+            return true;
+
+			// we don't bother testing for division by zero
+			//ReportHit(c / q, 0, sphrAttr);
+			// more distant hit - not needed if we know we will intersect with the outside of the sphere
+			//ReportHit(q / a, 0, sphrAttr);
+		}
+        return false;
+    }
+
+    inline void EvalAfterHit(LightSampleRecord* lsr, const float3& dir, const float& distance, const float3& shadingP) {
 
         auto vector = center - shadingP;
         auto dist2 = dot(vector, vector);
         auto dist = sqrtf(dist2);
 
-        lsr->PDF = PDF(shadingP);
-        lsr->p = shadingP + dir * _dist_;
+        lsr->p = shadingP + dir * distance;
         lsr->n = normalize(lsr->p - center);
+        if (dist2 < radius * radius) {
+            lsr->n *= -1;
+        }
+
+        lsr->NoL = dot(lsr->n, -dir);
+        lsr->PDF = PDF(shadingP, dist2, lsr->NoL);
 
         lsr->dir = dir;
-        lsr->dist = _dist_;
-
-        lsr->NoL = dot(-lsr->dir, lsr->n); 
+        lsr->dist = distance;
     }
 
-    inline void sample(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {
+    inline void SampleAsLight(LightSampleRecord* lsr, const float2& uu, const float3& shadingP) {
 
         float3 vector = center - shadingP;
         float  dist2 = dot(vector, vector);
         float  dist = sqrtf(dist2);
         float3 dir = vector / dist;
 
-        if (dist <= radius) { // inside sphere
+        float radius2 = radius * radius;
+
+        if (dist2 <= radius2) { // inside sphere
             
             auto localP = pbrt::UniformSampleSphere(uu);
             auto worldP = center + localP * radius;
@@ -262,29 +314,59 @@ struct SphereShape {
             auto localN = -localP; //facing center
             auto worldN =  localN; 
 
-            lsr->p = worldP;
+            lsr->p = rtgems::offset_ray(worldP, worldN);
             lsr->n = worldN;
-            lsr->PDF = 1.0f / (4.0f * CUDART_PI_F);
 
-            lsr->dir  = worldP - shadingP;
-            lsr->dist = length(lsr->dir);
-            lsr->dir  = normalize(lsr->dir);
+            vector = lsr->p - shadingP;
+            dist2 = dot(vector, vector);
+
+            if (dist2 == 0) {
+                lsr->PDF = 0.0f; return;
+            }
+
+            dist = sqrtf(dist2);
+            dir = vector / dist;
+
+            lsr->dist = dist;
+            lsr->dir  = dir;
 
             lsr->NoL = dot(-dir, worldN);
+            lsr->PDF = lsr->dist * lsr->dist / lsr->NoL;
             return;       
         }
 
+        assert(dist > radius);
+
         // Sample sphere uniformly inside subtended cone
-        float invDc = 1 / dist;
+        float invDc = 1.0f / dist;
         float3& wc = dir; float3 wcX, wcY;
-        // Compute coordinate system for sphere sampling
         pbrt::CoordinateSystem(wc, wcX, wcY);
 
         // Compute $\theta$ and $\phi$ values for sample in cone
         float sinThetaMax = radius * invDc;
-        float sinThetaMax2 = sinThetaMax * sinThetaMax;
-        float invSinThetaMax = 1 / sinThetaMax;
-        float cosThetaMax = sqrtf(fmaxf(0.0f, 1.0f - sinThetaMax2));
+        const float sinThetaMax2 = sinThetaMax * sinThetaMax;
+        float invSinThetaMax = 1.0f / sinThetaMax;
+
+        assert(sinThetaMax2 > 0);
+        const float cosThetaMax = sqrtf(1.0f - clamp(sinThetaMax2, 0.0f, 1.0f));
+
+        auto epsilon = 2e-3f;
+
+        if (sinThetaMax < epsilon) {
+            
+            lsr->p = center - dir * radius;
+            lsr->p = rtgems::offset_ray(lsr->p, -dir);
+
+            lsr->n = -dir;
+            lsr->dir = dir;
+            lsr->dist = length(lsr->p - shadingP);
+
+            lsr->PDF = 1.0f;
+            lsr->NoL = 1.0f;
+            lsr->intensity = M_PIf * radius2 / (lsr->dist * lsr->dist);
+            lsr->isDelta = true;
+            return;
+        } // point light
 
         float cosTheta  = (cosThetaMax - 1) * uu.x + 1;
         float sinTheta2 = 1 - cosTheta * cosTheta;
@@ -298,22 +380,26 @@ struct SphereShape {
 
         // Compute angle $\alpha$ from center of sphere to sampled point on surface
         float cosAlpha = sinTheta2 * invSinThetaMax +
-            cosTheta * sqrtf(fmaxf(0.f, 1.f - sinTheta2 * invSinThetaMax * invSinThetaMax));
-        float sinAlpha = sqrtf(fmaxf(0.f, 1.f - cosAlpha*cosAlpha));
-        float phi = uu.y * 2 * CUDART_PI_F;
+              cosTheta * sqrtf(fmaxf(0.f, 1.f - sinTheta2 * invSinThetaMax * invSinThetaMax));
+        float sinAlpha = sqrtf(fmaxf(0.f, 1.f - cosAlpha * cosAlpha));
+        float phi = uu.y * 2 * M_PIf;
 
         // Compute surface normal and sampled point on sphere
         float3 nWorld = pbrt::SphericalDirection(sinAlpha, cosAlpha, phi, -wcX, -wcY, -wc);
-        float3 pWorld = center + radius * make_float3(nWorld.x, nWorld.y, nWorld.z);
+        float3 pWorld = center + radius * nWorld;
 
-        lsr->p = pWorld;
+        lsr->p = rtgems::offset_ray(pWorld, nWorld);
         lsr->n = nWorld;
-        lsr->PDF = 1.0f / (2.0f * CUDART_PI_F * (1.0f - cosThetaMax)); // Uniform cone PDF.
 
-        lsr->dir  = (pWorld - shadingP);
-        lsr->dist = length(lsr->dir);
-        lsr->dir  = normalize(lsr->dir);
+        vector = lsr->p - shadingP;
+        dist2 = dot(vector, vector);
+        dist = sqrtf(dist2);
+        dir = vector / dist;
 
+        lsr->dist = dist;
+        lsr->dir  = dir;
+        
+        lsr->PDF = 1.0f / (2.0f * M_PIf * (1.0f - cosThetaMax)); // Uniform cone PDF.
         lsr->NoL = dot(-lsr->dir, lsr->n); 
     }
 

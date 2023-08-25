@@ -202,12 +202,15 @@ inline DirectionCone BoundSubtendedDirections(const Bounds3f &b, Vector3f p) {
     // Compute bounding sphere for _b_ and check if _p_ is inside
     float radius; Vector3f pCenter;
     b.BoundingSphere(&pCenter, &radius);
-    if (lengthSquared(pCenter - p) < Sqr(radius))
+
+    float lenSquared = lengthSquared(pCenter - p);
+
+    if (lenSquared < Sqr(radius))
         return DirectionCone::EntireSphere();
 
     // Compute and return _DirectionCone_ for bounding sphere
     Vector3f w = normalize(pCenter - p);
-    float sin2ThetaMax = Sqr(radius) / lengthSquared(pCenter - p);
+    float sin2ThetaMax = Sqr(radius) / lenSquared;
     float cosThetaMax = SafeSqrt(1 - sin2ThetaMax);
     return DirectionCone(w, cosThetaMax);
 }

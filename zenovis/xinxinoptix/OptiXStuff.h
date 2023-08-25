@@ -559,8 +559,7 @@ inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 {
     auto iesBuffer = zeno::file_get_binary(path);
     auto iesString = std::string(iesBuffer.data());
-
-    std::cout << iesString << std::endl;
+    //std::cout << iesString << std::endl;
 
     blender::IESFile iesFile;
     iesFile.load(iesString);
@@ -568,8 +567,6 @@ inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
     std::vector<float> iesData(iesFile.packed_size());
     iesFile.pack(iesData.data());
     coneAngle = iesFile.coneAngle();
-
-    printf("&&&&&&&&&&&&&&& loading IES coneAngle=%f", coneAngle);
 
     return iesData;
 }
@@ -702,9 +699,9 @@ inline void addTexture(std::string path)
         raii<CUdeviceptr> iesBuffer;
         size_t data_length = iesd.size() * sizeof(float);
 
-        for (auto f : iesd) {
-            std::cout << f << std::endl;
-        }
+        // for (auto f : iesd) {
+        //     std::cout << f << std::endl;
+        // }
 
         CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &iesBuffer.reset() ), data_length) );
         CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)iesBuffer ), iesd.data(), data_length, cudaMemcpyHostToDevice ) );

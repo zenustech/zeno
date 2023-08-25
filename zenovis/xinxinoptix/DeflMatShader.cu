@@ -1031,7 +1031,7 @@ extern "C" __global__ void __closesthit__radiance()
     prd->depth++;
 
     auto shadingP = [&]() {
-
+        
         bool facing = dot(-ray_dir, prd->geometryNormal) >= 0;        
         return rtgems::offset_ray(P,  facing? prd->geometryNormal:-prd->geometryNormal);
     }();
@@ -1089,14 +1089,14 @@ extern "C" __global__ void __closesthit__radiance()
     }
 
     DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux);
-    
+
     if(thin<0.5f && mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (prd->next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
         prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);
     }
-
+    
     if (prd->medium != DisneyBSDF::vacuum) {
         prd->_mask_ = DefaultMatMask;
     } else {

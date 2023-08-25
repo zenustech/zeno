@@ -105,8 +105,6 @@ extern "C" __global__ void __closesthit__radiance()
         return;
     }
 
-    auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
-
     prd->depth += 1;
     prd->done = true;
 
@@ -117,15 +115,17 @@ extern "C" __global__ void __closesthit__radiance()
     float3 emission = light.emission;
 
     if (light.type != zeno::LightType::Diffuse) {
-        auto pos = ray_orig + ray_dir * optixGetRayTmax();
-        prd->geometryNormal = normalize(light.sphere.center - ray_orig);
-        prd->offsetUpdateRay(pos, ray_dir);
+        // auto pos = ray_orig + ray_dir * optixGetRayTmax();
+        // prd->geometryNormal = normalize(light.sphere.center - ray_orig);
+        // prd->offsetUpdateRay(pos, ray_dir);
         return;
     } else {
         if (light.shape == zeno::LightShape::Plane) {
-            light.rect.eval(&lsr, lightDirection, lightDistance, prd->origin);
-        } else if (light.shape == zeno::LightShape::Sphere){
-            light.sphere.eval(&lsr, lightDirection, lightDistance, prd->origin);
+            light.rect.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        } else if (light.shape == zeno::LightShape::Sphere) {
+            light.sphere.EvalAfterHit(&lsr, lightDirection, lightDistance, prd->origin);
+        } else {
+            return;
         }
     }
 
@@ -133,15 +133,17 @@ extern "C" __global__ void __closesthit__radiance()
         lsr.NoL = abs(lsr.NoL);
     }
 
-    const float _SKY_PROB_ = params.num_lights>0? _DefaultSkyLightProb_ : 1.0f;
+    const float _SKY_PROB_ = params.skyLightProbablity();
 
     if (lsr.NoL > _FLT_EPL_) {
 
-        auto PFM = lightTree->PMF(reinterpret_cast<const Vector3f&>(ray_orig), 
+        auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
+
+        auto PMF = lightTree->PMF(reinterpret_cast<const Vector3f&>(ray_orig), 
                                          reinterpret_cast<const Vector3f&>(prd->geometryNormal), light_index);
 
-        auto lightPickPDF = (1.0f - _SKY_PROB_) * PFM;
-        assert(lightPickPDF > 0.0f && lightPickPDF < 1.0f);
+        auto lightPickPDF = (1.0f - _SKY_PROB_) * PMF;
+        DCHECK(lightPickPDF > 0.0f && lightPickPDF < 1.0f);
 
         if (1 == prd->depth) {
             if (light.config & zeno::LightConfigVisible) {

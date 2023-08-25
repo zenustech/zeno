@@ -9,6 +9,7 @@
     #include "zxxglslvec.h"
     using Vector3f = vec3;
 #else 
+    #include "Host.h"
     #include <zeno/utils/vec.h>
     using Vector3f = zeno::vec<3, float>;
 #endif
@@ -16,7 +17,11 @@
 #ifdef __CUDACC_DEBUG__
     #define DCHECK assert
 #else
-    #define DCHECK assert
+
+#define DCHECK(x) \
+    do {          \
+    } while (false) /* swallow semicolon */
+
 #endif
 
 namespace pbrt {
@@ -39,7 +44,6 @@ inline float SafeSqrt(float x) {
 }
 
 inline float AbsDot(Vector3f v, Vector3f n) {
-    
     return abs(dot(v, n));
 }
 
@@ -72,17 +76,17 @@ inline void CoordinateSystem(const float3& v1, float3 *v2, float3 *v3) {
     
 inline void CoordinateSystem(const float3& a, float3& b, float3& c) {
     
-   if (fabsf(a.x) > fabsf(a.y))
-       b = float3{-a.z, 0, a.x} /
-             sqrtf(fmaxf(__FLT_DENORM_MIN__, a.x * a.x + a.z * a.z));
-   else
-       b = float3{0, a.z, -a.y} /
-             sqrtf(fmaxf(__FLT_DENORM_MIN__, a.y * a.y + a.z * a.z));
+//    if (fabsf(a.x) > fabsf(a.y))
+//        b = float3{-a.z, 0, a.x} /
+//              sqrtf(fmaxf(__FLT_DENORM_MIN__, a.x * a.x + a.z * a.z));
+//    else
+//        b = float3{0, a.z, -a.y} /
+//              sqrtf(fmaxf(__FLT_DENORM_MIN__, a.y * a.y + a.z * a.z));
     
-    // if (fabs(a.x) > fabs(a.y))
-    //     b = float3{-a.z, 0, a.x};
-    // else
-    //     b = float3{0, a.z, -a.y};
+    if (fabs(a.x) > fabs(a.y))
+        b = float3{-a.z, 0, a.x};
+    else
+        b = float3{0, a.z, -a.y};
 
     b = normalize(b);
     c = cross(a, b);
@@ -100,11 +104,38 @@ inline float3 SphericalDirection(float sinTheta, float cosTheta, float phi,
  inline float3 UniformSampleSphere(const float2 &uu) {
     float z = 1 - 2 * uu.x;
     float r = sqrtf(fmaxf(0.0f, 1.0f - z * z));
-    float phi = 2 * CUDART_PI_F * uu.y;
+    float phi = 2 * M_PIf * uu.y;
     return make_float3(r * cosf(phi), r * sinf(phi), z);
 }
 
 } // namespace pbrt
+
+
+namespace rtgems {
+
+    constexpr float origin()      { return 1.0f / 16.0f; }
+    constexpr float int_scale()   { return 3.0f * 256.0f; }
+    constexpr float float_scale() { return 3.0f / 65536.0f; }
+    
+    // Normal points outward for rays exiting the surface, else is flipped.
+    static __inline__ __device__ float3 offset_ray(const float3 p, const float3 n)
+    {
+        int3 of_i {
+            (int)(int_scale() * n.x),
+            (int)(int_scale() * n.y), 
+            (int)(int_scale() * n.z) };
+
+        float3 p_i {
+            __int_as_float(__float_as_int(p.x) + ((p.x < 0) ? -of_i.x : of_i.x)),
+            __int_as_float(__float_as_int(p.y) + ((p.y < 0) ? -of_i.y : of_i.y)),
+            __int_as_float(__float_as_int(p.z) + ((p.z < 0) ? -of_i.z : of_i.z)) };
+
+        return float3{
+                fabsf(p.x) < origin() ? p.x+float_scale()*n.x : p_i.x,
+                fabsf(p.y) < origin() ? p.y+float_scale()*n.y : p_i.y,
+                fabsf(p.z) < origin() ? p.z+float_scale()*n.z : p_i.z };
+    }
+}
 
 // *Really* minimal PCG32 code / (c) 2014 M.E. O'Neill / pcg-random.org
 // Licensed under Apache License 2.0 (NO WARRANTY, etc. see website)
