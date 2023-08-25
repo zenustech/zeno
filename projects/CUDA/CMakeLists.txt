@@ -39,7 +39,9 @@ target_sources(zeno PRIVATE
   #test1.cu
   test.cu
   test.cpp
+  # vktest.cpp
 )
+# target_link_libraries(zeno PRIVATE vulkan shaderc_shared SPIRV)
 #[=[
 #]=]
 set_target_properties(zeno
