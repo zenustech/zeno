@@ -29,7 +29,8 @@ void CheckBoxHeaderView::paintSection(QPainter* painter, const QRect& rect, int 
         {
             option.state = QStyle::State_Off;
         }
-        this->style()->drawControl(QStyle::CE_CheckBox, &option, painter, &QCheckBox());
+        QCheckBox checkbox;
+        this->style()->drawControl(QStyle::CE_CheckBox, &option, painter, &checkbox);
         int diff = size + ZenoStyle::dpiScaled(4);
         QPen pen;
         pen.setColor(QColor(166, 166, 166));
