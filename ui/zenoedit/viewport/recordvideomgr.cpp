@@ -263,9 +263,18 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             auto [x, y] = pVis->getSession()->get_window_size();
 
             auto extname = QFileInfo(QString::fromStdString(record_file)).suffix().toStdString();
-            pVis->getSession()->set_window_size((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y());
-            pVis->getSession()->do_screenshot(record_file, extname);
-            pVis->getSession()->set_window_size(x, y);
+            if (pVis->getSession()->is_lock_window())
+            {
+                zeno::vec2i offset = pVis->getSession()->get_viewportOffset();
+                pVis->getSession()->set_window_size((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y(), zeno::vec2i{0,0});
+                pVis->getSession()->do_screenshot(record_file, extname);
+                pVis->getSession()->set_window_size(x, y, offset);
+            }
+            else {
+                pVis->getSession()->set_window_size((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y());
+                pVis->getSession()->do_screenshot(record_file, extname);
+                pVis->getSession()->set_window_size(x, y);
+            }
             scene->drawOptions->num_samples = old_num_samples;
 
             m_recordInfo.m_bFrameFinished[currFrame] = true;

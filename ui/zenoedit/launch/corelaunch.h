@@ -15,7 +15,8 @@ struct LAUNCH_PARAM {
     bool tempDir = false;
     QString cacheDir = "";
     int cacheNum = 1;
-    bool autoRmCurcache = false;
+    bool autoRmCurcache = false;    //auto remove cache when recording
+    bool autoCleanCacheInCacheRoot = true;    //auto remove cachedir in cache root
     QString zsgPath;
     int projectFps = 24;
 };

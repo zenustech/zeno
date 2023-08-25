@@ -375,6 +375,9 @@ bool sceneMenuEvent(
                         const QMimeData* pMimeData = QApplication::clipboard()->mimeData();
                         if (pMimeData) {
                             QString refExp = pMimeData->text();
+                            if (!refExp.startsWith("=")) {
+                                refExp = "=" + refExp;
+                            }
                             IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
                             pModel->ModelSetData(selParam, refExp, ROLE_PARAM_VALUE);
                         }
@@ -383,7 +386,7 @@ bool sceneMenuEvent(
                 }
             }
 
-            if (PARAM_INPUT == coreCls || PARAM_INNER_INPUT == coreCls) {
+            if (PARAM_INPUT == coreCls || PARAM_INNER_INPUT == coreCls || PARAM_PARAM == coreCls) {
 
                 //input socket menu
                 QAction* pCopyRef = new QAction(QObject::tr("Copy Param Reference"));
@@ -411,70 +414,69 @@ bool sceneMenuEvent(
                     QString refExpression = QString("ref(%1)").arg(str);
                     dumpToClipboard(refExpression);
                 });
+                socketMenu->addAction(pCopyRef);
 
-                QString netlbl = selParam.data(ROLE_PARAM_NETLABEL).toString();
-                if (netlbl.isEmpty()) {
-
-                    auto procClipbrd = zenoApp->procClipboard();
-                    ZASSERT_EXIT(procClipbrd, false);
-                    const QString& lblName = procClipbrd->getCopiedAddress();
-                    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                    ZASSERT_EXIT(pModel, false);
-                    if (!lblName.isEmpty())
+                if (PARAM_PARAM != coreCls)
+                {
+                    QString netlbl = selParam.data(ROLE_PARAM_NETLABEL).toString();
+                    if (netlbl.isEmpty())
                     {
-                        const QModelIndex& netOutput = pModel->getNetOutput(subgIdx, lblName);
-                        if (netOutput.isValid())
+                        auto procClipbrd = zenoApp->procClipboard();
+                        ZASSERT_EXIT(procClipbrd, false);
+                        const QString& lblName = procClipbrd->getCopiedAddress();
+                        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                        ZASSERT_EXIT(pModel, false);
+                        if (!lblName.isEmpty())
                         {
-                            QString selIdent = selParam.data(ROLE_OBJID).toString();
-                            QString netOutputIdent = netOutput.data(ROLE_OBJID).toString();
-                            if (selIdent != netOutputIdent)
+                            const QModelIndex& netOutput = pModel->getNetOutput(subgIdx, lblName);
+                            if (netOutput.isValid())
                             {
-                                QAction* pPasteNetlbl = new QAction(QObject::tr("Paste Net Label"));
-                                QObject::connect(pPasteNetlbl, &QAction::triggered, [=]() {
-                                    QModelIndex sock = selParam;
-                                    dealDictSocket(netOutput, true, sock);
-                                    pModel->addNetLabel(subgIdx, sock, lblName);
-                                });
-                                socketMenu->addAction(pPasteNetlbl);
-                                socketMenu->addSeparator();
+                                QString selIdent = selParam.data(ROLE_OBJID).toString();
+                                QString netOutputIdent = netOutput.data(ROLE_OBJID).toString();
+                                if (selIdent != netOutputIdent)
+                                {
+                                    QAction* pPasteNetlbl = new QAction(QObject::tr("Paste Net Label"));
+                                    QObject::connect(pPasteNetlbl, &QAction::triggered, [=]() {
+                                        QModelIndex sock = selParam;
+                                        dealDictSocket(netOutput, true, sock);
+                                        pModel->addNetLabel(subgIdx, sock, lblName);
+                                        });
+                                    socketMenu->addAction(pPasteNetlbl);
+                                    socketMenu->addSeparator();
+                                }
                             }
                         }
-                    }
 
-                    QStringList labels = pModel->dumpLabels(subgIdx);
-                    if (!labels.isEmpty())
-                    {
-                        QMenu* pLabelsMenu = new QMenu(QObject::tr("Net Labels"));
-                        for (auto lbl : labels)
+                        QStringList labels = pModel->dumpLabels(subgIdx);
+                        if (!labels.isEmpty())
                         {
-                            QAction* pLblAction = new QAction(lbl);
-                            QObject::connect(pLblAction, &QAction::triggered, [=]() {
-                                IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                                ZASSERT_EXIT(pModel);
-                                pModel->addNetLabel(subgIdx, selParam, lbl);
-                            });
-                            pLabelsMenu->addAction(pLblAction);
+                            QMenu* pLabelsMenu = new QMenu(QObject::tr("Net Labels"));
+                            for (auto lbl : labels)
+                            {
+                                QAction* pLblAction = new QAction(lbl);
+                                QObject::connect(pLblAction, &QAction::triggered, [=]() {
+                                    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                                    ZASSERT_EXIT(pModel);
+                                    pModel->addNetLabel(subgIdx, selParam, lbl);
+                                    });
+                                pLabelsMenu->addAction(pLblAction);
+                            }
+                            socketMenu->addAction(pLabelsMenu->menuAction());
+                            socketMenu->addSeparator();
                         }
-                        socketMenu->addAction(pLabelsMenu->menuAction());
+                    }
+                    else {
+                        QAction* pRemoveNetlbl = new QAction(QObject::tr("Delete Net Label"));
+                        QObject::connect(pRemoveNetlbl, &QAction::triggered, [=]() {
+                            const QString& netlabel = selParam.data(ROLE_PARAM_NETLABEL).toString();
+                            IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+                            ZASSERT_EXIT(pModel);
+                            pModel->removeNetLabel(subgIdx, selParam);
+                            });
+                        socketMenu->addAction(pRemoveNetlbl);
                         socketMenu->addSeparator();
                     }
                 }
-                else {
-                    QAction* pRemoveNetlbl = new QAction(QObject::tr("Delete Net Label"));
-                    QObject::connect(pRemoveNetlbl, &QAction::triggered, [=]() {
-                        const QString& netlabel = selParam.data(ROLE_PARAM_NETLABEL).toString();
-                        IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
-                        ZASSERT_EXIT(pModel);
-                        pModel->removeNetLabel(subgIdx, selParam);
-                    });
-                    socketMenu->addAction(pRemoveNetlbl);
-                    socketMenu->addSeparator();
-                }
-                socketMenu->addAction(pCopyRef);
-            }
-            else if (PARAM_PARAM == coreCls) {
-                int j;
-                j = 0;
             }
             else if (PARAM_OUTPUT == coreCls) {
                 

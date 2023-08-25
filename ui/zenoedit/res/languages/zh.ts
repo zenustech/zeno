@@ -1988,6 +1988,26 @@
         <source>ZENCACHENUM</source>
         <translation type="vanished">ZENCACHE上限</translation>
     </message>
+	<message>
+        <source>Enable cache</source>
+        <translation>启用cache</translation>
+    </message>
+	<message>
+        <source>Cache num</source>
+        <translation>cache加载上限</translation>
+    </message>
+	<message>
+        <source>Temp cache directory</source>
+        <translation>临时目录</translation>
+    </message>
+	<message>
+        <source>Cache root</source>
+        <translation>自定义目录</translation>
+    </message>
+	<message>
+        <source>Cache auto clean up</source>
+        <translation>自动清理cache</translation>
+    </message>
     <message>
         <source>Info</source>
         <translation type="unfinished">信息</translation>

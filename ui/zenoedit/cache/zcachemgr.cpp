@@ -8,11 +8,13 @@ ZCacheMgr::ZCacheMgr()
 {
 }
 
-bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot)
+bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCache)
 {
     if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOn)) {
-        return true;
+         return true;
     }
+    if (!bTempDir && bAutoCleanCache)
+        cleanCacheDir(dirCacheRoot);
     m_bTempDir = bTempDir;
     if (m_bTempDir) {
         m_spTmpCacheDir.reset(new QTemporaryDir);
@@ -70,4 +72,40 @@ void ZCacheMgr::setNewCacheDir(bool setNew) {
 
 ZCacheMgr::cacheOption ZCacheMgr::getCacheOption() {
     return m_cacheOpt;
+}
+
+void ZCacheMgr::cleanCacheDir(QDir dirCacheRoot)
+{
+    QString selfPath = QCoreApplication::applicationDirPath();
+
+    dirCacheRoot.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot);
+    for (auto info : dirCacheRoot.entryInfoList())
+    {
+        QDir dataTimeCacheDir = info.filePath();
+        bool dataTimeCacheDirEmpty = true;
+        if (hasCacheOnly(dataTimeCacheDir, dataTimeCacheDirEmpty) && !dataTimeCacheDirEmpty && dataTimeCacheDir.path() != selfPath && !dataTimeCacheDir.path().contains("."))
+        {
+            dataTimeCacheDir.removeRecursively();
+            zeno::log_info("remove dir: {}", dataTimeCacheDir.absolutePath().toStdString());
+        }
+    }
+}
+
+bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
+{
+    bool bHasCacheOnly = true;
+    dir.setFilter(QDir::AllDirs | QDir::Files | QDir::Hidden | QDir::NoSymLinks | QDir::NoDotAndDotDot);
+    dir.setSorting(QDir::DirsLast);
+    for (auto info : dir.entryInfoList())
+    {
+        if (info.isFile()) {
+            empty = false;
+            if (info.fileName().right(9) != ".zencache")
+                return false;
+        }
+        else if (info.isDir())
+            if (!hasCacheOnly(info.filePath(), empty))
+                return false;
+    }
+    return bHasCacheOnly;
 }

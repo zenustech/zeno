@@ -58,8 +58,6 @@ public:
 //private:
     void doFrameUpdate();
 
-    //static QString sIoPath;
-
     int m_solver_frameid;
     int m_solver_interval;
     int m_render_fps;

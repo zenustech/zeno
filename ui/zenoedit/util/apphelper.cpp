@@ -365,6 +365,7 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
     param.tempDir = settings.value("zencache-autoremove", true).isValid() ? settings.value("zencache-autoremove", true).toBool() : false;
     param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
     param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
+    param.autoCleanCacheInCacheRoot = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;
 }
 
 bool AppHelper::openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam)
@@ -446,13 +447,13 @@ void AppHelper::dumpTabsToZsg(QDockWidget* dockWidget, RAPIDJSON_WRITER& writer)
                     writer.Key("type");
                     writer.String("Optix");
                 }
-                std::tuple<int, int> resolution = pView->curResolution();
+                std::tuple<int, int, bool> displayinfo = pView->getOriginWindowSizeInfo();
                 writer.Key("blockwindow");
-                writer.Bool(session->is_lock_window());
+                writer.Bool(std::get<2>(displayinfo));
                 writer.Key("resolutionX");
-                writer.Int(std::get<0>(resolution));
+                writer.Int(std::get<0>(displayinfo));
                 writer.Key("resolutionY");
-                writer.Int(std::get<1>(resolution));
+                writer.Int(std::get<1>(displayinfo));
                 writer.Key("resolution-combobox-index");
                 writer.Int(pView->curResComboBoxIndex());
                 writer.EndObject();

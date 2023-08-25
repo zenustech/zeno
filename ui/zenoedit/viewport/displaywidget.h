@@ -57,6 +57,7 @@ public:
     void setIsCurrent(bool isCurrent);
     bool isCurrent();
     void setLoopPlaying(bool enable);
+    std::tuple<int, int, bool> getOriginWindowSizeInfo();
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 public slots:
@@ -97,6 +98,8 @@ private:
     const bool m_bGLView;
     int m_sliderFeq = 1000 / 24;
     bool bIsCurrent = false;
+
+    std::tuple<int, int, bool> originWindowSizeInfo{-1, -1, false};
 };
 
 #endif

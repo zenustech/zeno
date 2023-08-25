@@ -28,6 +28,7 @@ public slots:
     void needUpdateCamera();
     void updateFrame();
     void recordVideo(VideoRecInfo recInfo);
+    void screenShoot(QString path, QString type, int resx, int resy);
     void onPlayToggled(bool bToggled);
     void onFrameSwitched(int frame);
     void cancelRecording();
@@ -38,13 +39,14 @@ public slots:
     void onSetSlidFeq(int feq);
 
 private:
-
     Zenovis *m_zenoVis;
     QImage m_renderImg;
-    QTimer* m_pTimer;
+    QTimer* m_pTimer;           //optix sample timer
+    QTimer* m_playTimer;        //control play.
     bool m_bRecording;
     VideoRecInfo m_recordInfo;
     int m_slidFeq = 1000 / 24;
+    const int m_sampleFeq = 16;
 };
 
 class ZOptixViewport : public QWidget
@@ -68,6 +70,7 @@ public:
     void stopRender();
     void resumeRender();
     void recordVideo(VideoRecInfo recInfo);
+    void screenshoot(QString path, QString type, int resx, int resy);
     void cancelRecording(VideoRecInfo recInfo);
     void killThread();
     void setSlidFeq(int feq);
@@ -87,6 +90,7 @@ signals:
     void sig_setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void sig_setLoopPlaying(bool enable);
     void sig_setSlidFeq(int feq);
+    void sigscreenshoot(QString, QString, int, int);
 
 public slots:
     void onFrameRunFinished(int frame);

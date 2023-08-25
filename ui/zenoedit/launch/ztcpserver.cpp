@@ -87,7 +87,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         }
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
-        bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir);
+        bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir, param.autoCleanCacheInCacheRoot);
         ZASSERT_EXIT(ret);
         finalPath = mgr->cachePath();
         int cnum = param.cacheNum;

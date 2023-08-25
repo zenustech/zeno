@@ -568,7 +568,6 @@ void ZTabDockWidget::onAddTab(PANEL_TYPE type, DockContentWidgetInfo info)
     {
         view->getDisplayWid()->setViewWidgetInfo(info);
         view->setResComboBoxIndex(info.comboboxindex);
-        view->initResolution(info.resolutionX, info.resolutionY);
     }
 }
 

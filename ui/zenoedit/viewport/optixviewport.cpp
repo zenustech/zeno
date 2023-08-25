@@ -15,9 +15,23 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     : QObject(nullptr)
     , m_zenoVis(pzenoVis)
     , m_bRecording(false)
+    , m_pTimer(nullptr)
+    , m_playTimer(nullptr)
 {
     m_pTimer = new QTimer(this);
-    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
+    connect(m_pTimer, &QTimer::timeout, this, [=]() {
+        ZASSERT_EXIT(m_zenoVis);
+        bool isPlaying = m_zenoVis->isPlaying();
+        m_zenoVis->startPlay(false);
+        zeno::scope_exit sp([=]() { m_zenoVis->startPlay(isPlaying); });
+        //only update current frame
+        updateFrame();
+    });
+
+    m_playTimer = new QTimer(this);
+    connect(m_playTimer, &QTimer::timeout, this, [=]() {
+        updateFrame();
+    });
 }
 
 OptixWorker::~OptixWorker()
@@ -28,10 +42,12 @@ OptixWorker::OptixWorker(QObject* parent)
     : QObject(parent)
     , m_zenoVis(nullptr)
     , m_pTimer(nullptr)
+    , m_playTimer(nullptr)
     , m_bRecording(false)
 {
     //used by offline worker.
     m_pTimer = new QTimer(this);
+    m_playTimer = new QTimer(this);
     m_zenoVis = new Zenovis(this);
 
     //fake GL
@@ -60,9 +76,11 @@ void OptixWorker::updateFrame()
 
 void OptixWorker::onPlayToggled(bool bToggled)
 {
-    //todo: priority.
     m_zenoVis->startPlay(bToggled);
-    m_pTimer->start(m_slidFeq);
+    if (bToggled)
+        m_playTimer->start(m_slidFeq);
+    else
+        m_playTimer->stop();
 }
 
 void OptixWorker::onFrameSwitched(int frame)
@@ -93,11 +111,12 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
     //for the case about recording after run.
     zeno::scope_exit sp([=] {
         m_bRecording = false;
-        m_pTimer->start(m_slidFeq);
+        m_pTimer->start(m_sampleFeq);
     });
 
     m_bRecording = true;
     m_pTimer->stop();
+    m_playTimer->stop();
 
     for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second;)
     {
@@ -135,6 +154,19 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
         }
     }
     emit sig_recordFinished();
+}
+
+void OptixWorker::screenShoot(QString path, QString type, int resx, int resy)
+{
+    bool aov = zeno::getSession().userData().has("output_aov") ? zeno::getSession().userData().get2<bool>("output_aov") : false;
+    zeno::getSession().userData().set2("output_aov", false);
+    auto [x, y] = m_zenoVis->getSession()->get_window_size();
+    if (!m_zenoVis->getSession()->is_lock_window())
+        resx = x, resy = y;
+    m_zenoVis->getSession()->set_window_size(resx, resy);
+    m_zenoVis->getSession()->do_screenshot(path.toStdString(), type.toStdString(), true);
+    m_zenoVis->getSession()->set_window_size(x, y);
+    zeno::getSession().userData().set2("output_aov", aov);
 }
 
 bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
@@ -204,7 +236,7 @@ void OptixWorker::stop()
 
 void OptixWorker::work()
 {
-    m_pTimer->start(m_slidFeq);
+    m_pTimer->start(m_sampleFeq);
 }
 
 QImage OptixWorker::renderImage() const
@@ -217,7 +249,7 @@ void OptixWorker::needUpdateCamera()
     //todo: update reason.
     //m_zenoVis->getSession()->get_scene()->drawOptions->needUpdateGeo = false;	//just for teset.
     m_zenoVis->getSession()->get_scene()->drawOptions->needRefresh = true;
-    m_pTimer->start(m_slidFeq);
+    m_pTimer->start(m_sampleFeq);
 }
 
 
@@ -271,6 +303,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::stopRenderOptix, m_worker, &OptixWorker::stop);
     connect(this, &ZOptixViewport::resumeWork, m_worker, &OptixWorker::work);
     connect(this, &ZOptixViewport::sigRecordVideo, m_worker, &OptixWorker::recordVideo, Qt::QueuedConnection);
+    connect(this, &ZOptixViewport::sigscreenshoot, m_worker, &OptixWorker::screenShoot, Qt::QueuedConnection);
     connect(this, &ZOptixViewport::sig_setSafeFrames, m_worker, &OptixWorker::onSetSafeFrames);
 
     connect(m_worker, &OptixWorker::sig_recordFinished, this, &ZOptixViewport::sig_recordFinished);
@@ -347,6 +380,11 @@ void ZOptixViewport::resumeRender()
 void ZOptixViewport::recordVideo(VideoRecInfo recInfo)
 {
     emit sigRecordVideo(recInfo);
+}
+
+void ZOptixViewport::screenshoot(QString path, QString type, int resx, int resy)
+{
+    emit sigscreenshoot(path, type, resx, resy);
 }
 
 void ZOptixViewport::cancelRecording(VideoRecInfo recInfo)
@@ -529,6 +567,14 @@ void ZOptixViewport::paintEvent(QPaintEvent* event)
     if (!m_renderImage.isNull())
     {
         QPainter painter(this);
-        painter.drawImage(0, 0, m_renderImage);
+        auto *session = m_zenovis->getSession();
+        if (session != nullptr && session->is_lock_window()) {
+            auto *scene = session->get_scene();
+            auto offset = scene->camera->viewport_offset;
+            painter.drawImage(offset[0], offset[1], m_renderImage);
+        }
+        else {
+            painter.drawImage(0, 0, m_renderImage);
+        }
     }
 }

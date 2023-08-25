@@ -65,6 +65,11 @@ std::tuple<int, int> Session::get_window_size() {
     };
 }
 
+zeno::vec2i Session::get_viewportOffset()
+{
+    return impl->scene->camera->viewport_offset;
+}
+
 void Session::set_show_grid(bool show_grid) {
     impl->scene->drawOptions->show_grid = show_grid;
 }
