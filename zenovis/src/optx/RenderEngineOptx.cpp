@@ -534,8 +534,8 @@ struct GraphicsManager {
 
                 auto visible = prim_in->userData().get2<int>("visible", 0);
                 auto doubleside = prim_in->userData().get2<int>("doubleside", 0);
-                auto lightTexturePath = prim_in->userData().get2<std::string>("lightTexture", ""); 
-                OptixUtil::addTexture(lightTexturePath);
+                auto lightProfilePath = prim_in->userData().get2<std::string>("lightProfile", ""); 
+                OptixUtil::addTexture(lightProfilePath);
 
                 std::cout << "light: p"<<p0[0]<<" "<<p0[1]<<" "<<p0[2]<<"\n";
                 std::cout << "light: p"<<p1[0]<<" "<<p1[1]<<" "<<p1[2]<<"\n";
@@ -546,7 +546,7 @@ struct GraphicsManager {
                 std::cout << "light: c"<<clr[0]<<" "<<clr[1]<<" "<<clr[2]<<"\n";
 
                 xinxinoptix::load_light(key, p2.data(), e1.data(), e2.data(),
-                                        nor.data(), clr.data(), visible, doubleside, shape, type, lightTexturePath);
+                                        nor.data(), clr.data(), visible, doubleside, shape, type, lightProfilePath);
             }
             else if (prim_in->userData().get2<int>("ProceduralSky", 0) == 1) {
                 sky_found = true;

@@ -1848,7 +1848,7 @@ struct LightDat{
     bool visible, doubleside;
     uint8_t shape, type;
 
-    std::string textureKey;
+    std::string profileKey;
 };
 static std::map<std::string, LightDat> lightdats;
 
@@ -1856,7 +1856,7 @@ void unload_light(){
     lightdats.clear();
 }
 
-void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi, bool visible, bool doubleside, int shape, int type, std::string& textureKey){
+void load_light(std::string const &key, float const*v0,float const*v1,float const*v2, float const*nor,float const*emi, bool visible, bool doubleside, int shape, int type, std::string& profileKey){
     LightDat ld;
     ld.v0.assign(v0, v0 + 3);
     ld.v1.assign(v1, v1 + 3);
@@ -1865,7 +1865,7 @@ void load_light(std::string const &key, float const*v0,float const*v1,float cons
     ld.emission.assign(emi, emi + 3);
     ld.visible = visible; ld.doubleside = doubleside;
     ld.shape = shape; ld.type = type;
-    ld.textureKey = textureKey;
+    ld.profileKey = profileKey;
     //zeno::log_info("light clr after read: {} {} {}", ld.emission[0],ld.emission[1],ld.emission[2]);
     lightdats[key] = ld;
 }
@@ -2127,18 +2127,18 @@ void optixupdatelight() {
             light.point = {center};
         }
 
-        if ( OptixUtil::g_ies.count(dat.textureKey) > 0 ) {
+        if ( OptixUtil::g_ies.count(dat.profileKey) > 0 ) {
 
-            auto& val = OptixUtil::g_ies.at(dat.textureKey);
+            auto& val = OptixUtil::g_ies.at(dat.profileKey);
             light.ies = val.ptr.handle;
             light.type = zeno::LightType::IES;
             //light.shape = zeno::LightShape::Point;
             auto radius = length(v1 + v2) * 0.5f;
             light.setConeData(center, light.N, radius, val.coneAngle);
 
-        } else if ( OptixUtil::g_tex.count(dat.textureKey) > 0 ) {
+        } else if ( OptixUtil::g_tex.count(dat.profileKey) > 0 ) {
 
-            auto& val = OptixUtil::g_tex.at(dat.textureKey);
+            auto& val = OptixUtil::g_tex.at(dat.profileKey);
             light.tex = val->texture;
         }
 

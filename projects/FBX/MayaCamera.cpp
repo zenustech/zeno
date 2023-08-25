@@ -328,14 +328,14 @@ struct LightNode : INode {
         auto shapeEnum = magic_enum::enum_cast<LightShape>(shape).value_or(LightShape::Plane);
         auto shapeOrder = magic_enum::enum_integer(shapeEnum);
 
-        auto texture = get_input2<std::string>("texture");
+        auto profile = get_input2<std::string>("profile");
 
         prim->userData().set2("type", std::move(typeOrder));
         prim->userData().set2("shape", std::move(shapeOrder));
         
         prim->userData().set2("visible", std::move(visible));
         prim->userData().set2("doubleside", std::move(doubleside));
-        prim->userData().set2("lightTexture", std::move(texture));
+        prim->userData().set2("lightProfile", std::move(profile));
         
         set_output("prim", std::move(prim));
     }
@@ -389,7 +389,7 @@ ZENO_DEFNODE(LightNode)({
         {"bool", "invertdir", "1"},
         {"bool", "visible", "0"},
         {"bool", "doubleside", "0"},
-        {"string", "texture", ""},
+        {"string", "profile", ""},
         {"enum " + LightNode::lightShapeListString(), LightNode::lightShapeKey, LightNode::lightShapeDefaultString()},   
         {"enum " + LightNode::lightTypeListString(), LightNode::lightTypeKey, LightNode::lightTypeDefaultString()} 
     },
