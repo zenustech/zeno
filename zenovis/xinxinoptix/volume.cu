@@ -237,7 +237,7 @@ static __inline__ __device__ vec2 samplingVDB(const unsigned long long grid_ptr,
     return vec2 { nanoSampling<decltype(_acc), DataTypeNVDB, Order>(_acc, pos_indexed), _grid->tree().root().maximum() };
 }
 
-static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn &attrs) {
+static __inline__ __device__ VolumeOut evalVolume(float4* uniforms, VolumeIn &attrs, RadiancePRD &prd) {
 
     auto att_pos = attrs.pos;
     auto att_clr = vec3(0);
@@ -466,7 +466,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
         VolumeIn vol_in { new_orig };
         
-        vol_out = evalVolume(sbt_data->uniforms, vol_in);
+        vol_out = evalVolume(sbt_data->uniforms, vol_in, *prd);
         v_density = vol_out.density;
 
         if constexpr(VolumeEmissionScaler == VolumeEmissionScalerType::Raw) {
@@ -563,7 +563,7 @@ extern "C" __global__ void __anyhit__occlusion_volume()
         } // over shoot, outside of volume
 
         VolumeIn vol_in { test_point };
-        VolumeOut vol_out = evalVolume(sbt_data->uniforms, vol_in);
+        VolumeOut vol_out = evalVolume(sbt_data->uniforms, vol_in, *prd);
 
         const auto v_density = vol_out.density;
 

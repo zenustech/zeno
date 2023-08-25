@@ -88,6 +88,7 @@ struct RadiancePRD
 
     __forceinline__ float rndf() {
         return rnd(this->seed);
+        //return (float)pcg_rng(this->seed) / (float)UINT_MAX; 
     }
 
     unsigned char first_hit_type;
