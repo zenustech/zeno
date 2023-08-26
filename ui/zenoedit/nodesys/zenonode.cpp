@@ -1043,9 +1043,10 @@ ZSocketLayout* ZenoNode::addSocket(const QModelIndex& viewSockIdx, bool bInput, 
         QGraphicsItem* pSocketControl = initSocketWidget(pScene, viewSockIdx);
         pMiniLayout->setControl(pSocketControl);
         if (pSocketControl) {
-            pSocketControl->setVisible(links.isEmpty());
+            const QString& netLabel = viewSockIdx.data(ROLE_PARAM_NETLABEL).toString();
+            pSocketControl->setVisible(links.isEmpty() && netLabel.isEmpty());
             pSocketControl->setEnabled(bSocketEnable);
-    }
+        }
     }
 
     if (bInput)
