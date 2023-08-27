@@ -35,6 +35,7 @@ target_link_options(zeno
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PRIVATE zshelper)
 
+# find_package(Vulkan REQUIRED)
 target_sources(zeno PRIVATE
   #test1.cu
   test.cu
@@ -42,6 +43,7 @@ target_sources(zeno PRIVATE
   # vktest.cpp
 )
 # target_link_libraries(zeno PRIVATE vulkan shaderc_shared SPIRV)
+# target_link_libraries(zeno PRIVATE Vulkan::Vulkan ${Vulkan_LIBRARY})
 #[=[
 #]=]
 set_target_properties(zeno
