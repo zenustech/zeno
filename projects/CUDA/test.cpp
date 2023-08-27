@@ -16,7 +16,124 @@
 #include <random>
 #include <zeno/VDBGrid.h>
 
+#include "zensim/execution/ConcurrencyPrimitive.hpp"
+
 namespace zeno {
+
+struct spinlock {
+  std::atomic<bool> lock_ = {0};
+
+  void lock() noexcept {
+    for (;;) {
+      // Optimistically assume the lock is free on the first try
+      if (!lock_.exchange(true, std::memory_order_acquire)) {
+        return;
+      }
+      // Wait for lock to be released without generating cache misses
+      while (lock_.load(std::memory_order_relaxed)) {
+        // Issue X86 PAUSE or ARM YIELD instruction to reduce contention between
+        // hyper-threads
+        zs::pause_cpu();
+      }
+    }
+  }
+
+  bool try_lock() noexcept {
+    // First do a relaxed load to check if lock is free in order to prevent
+    // unnecessary cache misses if someone does while(!try_lock())
+    return !lock_.load(std::memory_order_relaxed) &&
+           !lock_.exchange(true, std::memory_order_acquire);
+  }
+
+  void unlock() noexcept {
+    lock_.store(false, std::memory_order_release);
+  }
+};
+
+struct ZSConcurrencyTest : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+
+        constexpr int N = 10000000;
+        constexpr int M = 10;
+        u64 sum = 0;
+
+        // zs::Vector<int> keys{N};
+        auto pol = zs::omp_exec();
+
+        for (int i = 0; i < N; ++i)
+            sum += i;
+        fmt::print("ref sum is: {}\n", sum);
+        /// init
+        CppTimer timer;
+        sum = 0;
+        timer.tick();
+        seq_exec()(range(N), [&](int i) {
+            for (int d = 0; d != M; ++d)
+                atomic_add(exec_seq, &sum, (u64)i);
+        });
+        timer.tock("ref (serial)");
+        fmt::print("serial sum is: {}\n", sum);
+
+        sum = 0;
+        timer.tick();
+        pol(range(N), [&](int i) {
+            for (int d = 0; d != M; ++d)
+                atomic_add(exec_omp, &sum, (u64)i);
+        });
+        timer.tock("ref (atomic)");
+        fmt::print("atomic sum is: {}\n", sum);
+
+        sum = 0;
+        timer.tick();
+        std::mutex mtx;
+        pol(range(N), [&](int i) {
+            std::lock_guard<std::mutex> lk(mtx);
+            for (int d = 0; d != M; ++d)
+                sum += i;
+        });
+        timer.tock("ref (std mutex)");
+        fmt::print("std mutex sum is: {}\n", sum);
+
+#if 0
+        sum = 0;
+        timer.tick();
+        {
+            spinlock mtx;
+            pol(range(N), [&](int i) {
+                mtx.lock();
+                for (int d = 0; d != M; ++d)
+                    sum += i;
+                mtx.unlock();
+                });
+        }
+        timer.tock("ref (spinlock)");
+        fmt::print("spinlock sum is: {}\n", sum);
+#endif
+
+        sum = 0;
+        timer.tick();
+        {
+            Mutex mtx;
+            pol(range(N), [&](int i) {
+                mtx.lock();
+                for (int d = 0; d != M; ++d)
+                    sum += i;
+                mtx.unlock();
+                });
+        }
+        timer.tock("ref (fast mutex)");
+        fmt::print("fast mutex sum is: {}\n", sum);
+    }
+};
+
+ZENDEFNODE(ZSConcurrencyTest, {
+                           {},
+                           {},
+                           {},
+                           {"ZPCTest"},
+                       });
 
 struct ZSLinkTest : INode {
     void apply() override {
