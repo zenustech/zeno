@@ -21,33 +21,32 @@
 namespace zeno {
 
 struct spinlock {
-  std::atomic<bool> lock_ = {0};
+    std::atomic<bool> lock_ = {0};
 
-  void lock() noexcept {
-    for (;;) {
-      // Optimistically assume the lock is free on the first try
-      if (!lock_.exchange(true, std::memory_order_acquire)) {
-        return;
-      }
-      // Wait for lock to be released without generating cache misses
-      while (lock_.load(std::memory_order_relaxed)) {
-        // Issue X86 PAUSE or ARM YIELD instruction to reduce contention between
-        // hyper-threads
-        zs::pause_cpu();
-      }
+    void lock() noexcept {
+        for (;;) {
+            // Optimistically assume the lock is free on the first try
+            if (!lock_.exchange(true, std::memory_order_acquire)) {
+                return;
+            }
+            // Wait for lock to be released without generating cache misses
+            while (lock_.load(std::memory_order_relaxed)) {
+                // Issue X86 PAUSE or ARM YIELD instruction to reduce contention between
+                // hyper-threads
+                zs::pause_cpu();
+            }
+        }
     }
-  }
 
-  bool try_lock() noexcept {
-    // First do a relaxed load to check if lock is free in order to prevent
-    // unnecessary cache misses if someone does while(!try_lock())
-    return !lock_.load(std::memory_order_relaxed) &&
-           !lock_.exchange(true, std::memory_order_acquire);
-  }
+    bool try_lock() noexcept {
+        // First do a relaxed load to check if lock is free in order to prevent
+        // unnecessary cache misses if someone does while(!try_lock())
+        return !lock_.load(std::memory_order_relaxed) && !lock_.exchange(true, std::memory_order_acquire);
+    }
 
-  void unlock() noexcept {
-    lock_.store(false, std::memory_order_release);
-  }
+    void unlock() noexcept {
+        lock_.store(false, std::memory_order_release);
+    }
 };
 
 struct ZSConcurrencyTest : INode {
@@ -55,8 +54,13 @@ struct ZSConcurrencyTest : INode {
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
 
+#if 1
         constexpr int N = 10000000;
-        constexpr int M = 10;
+        constexpr int M = 1;
+#else
+        constexpr int N = 16;
+        constexpr int M = 10000000;
+#endif
         u64 sum = 0;
 
         // zs::Vector<int> keys{N};
@@ -111,6 +115,35 @@ struct ZSConcurrencyTest : INode {
         timer.tock("ref (spinlock)");
         fmt::print("spinlock sum is: {}\n", sum);
 #endif
+        sum = 0;
+        timer.tick();
+        {
+            std::mutex mtx;
+            pol(range(N), [&](int i) {
+                while (!mtx.try_lock())
+                    ;
+                for (int d = 0; d != M; ++d)
+                    sum += i;
+                mtx.unlock();
+            });
+        }
+        timer.tock("ref (std mutex trylock)");
+        fmt::print("std mutex trylock sum is: {}\n", sum);
+
+        sum = 0;
+        timer.tick();
+        {
+            Mutex mtx;
+            pol(range(N), [&](int i) {
+                while (!mtx.try_lock())
+                    ;
+                for (int d = 0; d != M; ++d)
+                    sum += i;
+                mtx.unlock();
+            });
+        }
+        timer.tock("ref (fast mutex trylock)");
+        fmt::print("fast mutex trylock sum is: {}\n", sum);
 
         sum = 0;
         timer.tick();
@@ -121,19 +154,69 @@ struct ZSConcurrencyTest : INode {
                 for (int d = 0; d != M; ++d)
                     sum += i;
                 mtx.unlock();
-                });
+            });
         }
         timer.tock("ref (fast mutex)");
         fmt::print("fast mutex sum is: {}\n", sum);
+
+        timer.tick();
+        {
+            std::mutex mtx;
+            seq_exec()(range(N), [&](int i) {
+                mtx.lock();
+                mtx.unlock();
+            });
+        }
+        timer.tock("purely std lock/unlock");
+        timer.tick();
+        {
+            Mutex mtx;
+            seq_exec()(range(N), [&](int i) {
+                mtx.lock();
+                mtx.unlock();
+            });
+        }
+        timer.tock("purely custom lock/unlock");
+
+        timer.tick();
+        {
+            std::mutex mtx;
+            seq_exec()(range(N), [&](int i) { mtx.try_lock(); });
+        }
+        timer.tock("purely std try lock (mostly fail)");
+        timer.tick();
+        {
+            Mutex mtx;
+            seq_exec()(range(N), [&](int i) { mtx.try_lock(); });
+        }
+        timer.tock("purely custom try lock (mostly fail)");
+        timer.tick();
+        {
+            std::mutex mtx;
+            seq_exec()(range(N), [&](int i) {
+                if (mtx.try_lock())
+                    mtx.unlock();
+            });
+        }
+        timer.tock("purely std try lock");
+        timer.tick();
+        {
+            Mutex mtx;
+            seq_exec()(range(N), [&](int i) {
+                if (mtx.try_lock())
+                    mtx.unlock();
+            });
+        }
+        timer.tock("purely custom try lock");
     }
 };
 
 ZENDEFNODE(ZSConcurrencyTest, {
-                           {},
-                           {},
-                           {},
-                           {"ZPCTest"},
-                       });
+                                  {},
+                                  {},
+                                  {},
+                                  {"ZPCTest"},
+                              });
 
 struct ZSLinkTest : INode {
     void apply() override {
@@ -249,9 +332,9 @@ struct TestAdaptiveGrid : INode {
         using ValueT = typename LeafT::ValueType;
         static_assert(RootT::LEVEL == 3, "expects a tree of 3 levels (excluding root level)");
         using ZSGridT = zs::VdbGrid<3, ValueT,
-                                         zs::index_sequence<RootT::NodeChainType::template Get<0>::LOG2DIM,
-                                                            RootT::NodeChainType::template Get<1>::LOG2DIM,
-                                                            RootT::NodeChainType::template Get<2>::LOG2DIM>>;
+                                    zs::index_sequence<RootT::NodeChainType::template Get<0>::LOG2DIM,
+                                                       RootT::NodeChainType::template Get<1>::LOG2DIM,
+                                                       RootT::NodeChainType::template Get<2>::LOG2DIM>>;
         using ZSCoordT = zs::vec<int, 3>;
 
         VdbConverter(const std::vector<unsigned int> &nodeCnts)
@@ -395,6 +478,8 @@ struct TestAdaptiveGrid : INode {
             sdf = zs::load_floatgrid_from_vdb_file("/home/mine/Codes/zeno2/zeno/assets/tozeno.vdb")
                       .as<openvdb::FloatGrid::Ptr>();
         }
+        CppTimer timer;
+#if 0
         using Adapter = openvdb::TreeAdapter<openvdb::FloatGrid>;
         using TreeT = typename Adapter::TreeType;
         auto &tree = Adapter::tree(*sdf);
@@ -402,7 +487,6 @@ struct TestAdaptiveGrid : INode {
         static_assert(is_same_v<TreeT, RM_CVREF_T(tree)>, "???");
         fmt::print("root: {}\n", get_var_type_str(tree.root()));
 
-        CppTimer timer;
         std::vector<int> cnts(4);
         IterateOp<TreeT> op(cnts);
         // for DynamicNodeManager, op is shared
@@ -429,12 +513,18 @@ struct TestAdaptiveGrid : INode {
 
         fmt::print("ref node cnts: {}, {}, {}, {}\n", nodeCnts[0], nodeCnts[1], nodeCnts[2], nodeCnts[3]);
         fmt::print("calced node cnts: {}, {}, {}, {}\n", op.cnts[0], op.cnts[1], op.cnts[2], op.cnts[3]);
+#endif
 
         auto pol = omp_exec();
         /// construct new vdb grid from ag
         /// ref: nanovdb/util/NanoToOpenVDB.h
-        auto zsag = agBuilder.get();
+        // auto zsag = agBuilder.get();
+        auto zsag = convert_floatgrid_to_adaptive_grid(sdf, MemoryHandle{memsrc_e::host, -1}, "sdf");
         zsag.reorder(pol);
+
+        AdaptiveTileTree<3, zs::f32, 3, 2> att;
+        // zsag.restructure(pol, att);
+        // att.restructure(pol, zsag);
 
         // test ag view
         using ZSCoordT = zs::vec<int, 3>;
@@ -541,180 +631,6 @@ struct TestAdaptiveGrid : INode {
 
         auto ret = std::make_shared<VDBFloatGrid>();
         auto &dstGrid = ret->m_grid;
-        dstGrid = openvdb::createGrid<openvdb::FloatGrid>(zsag._background);
-        {
-            using GridType = openvdb::FloatGrid;
-            using TreeType = GridType::TreeType;
-            using RootType = TreeType::RootNodeType;  // level 3 RootNode
-            using Int2Type = RootType::ChildNodeType; // level 2 InternalNode
-            using Int1Type = Int2Type::ChildNodeType; // level 1 InternalNode
-            using LeafType = TreeType::LeafNodeType;  // level 0 LeafNode
-            using ValueType = LeafType::ValueType;
-
-            fmt::print("leaf node type: {}\n", get_type_str<LeafType>());
-            fmt::print("lv1 node type: {}\n", get_type_str<Int1Type>());
-            fmt::print("lv2 node type: {}\n", get_type_str<Int2Type>());
-            fmt::print("root node type: {}\n", get_type_str<RootType>());
-
-            dstGrid->setName("test_zs_ag");
-            dstGrid->setGridClass(openvdb::GRID_LEVEL_SET);
-            dstGrid->setTransform(openvdb::math::Transform::createLinearTransform(trans));
-
-            /// @note process tree from bottom up
-            // build leaf
-            auto &l0 = zsag.level(dim_c<0>);
-
-            timer.tick();
-            auto nlvs = l0.numBlocks();
-            std::vector<LeafType *> lvs(nlvs);
-            pol(enumerate(l0.originRange(), lvs),
-                [grid = proxy<space>(l0.grid), vms = proxy<space>(l0.valueMask)] ZS_LAMBDA(size_t i, const auto &origin,
-                                                                                           LeafType *&pleaf) {
-                    pleaf = new LeafType();
-                    LeafType &leaf = const_cast<LeafType &>(*pleaf);
-                    leaf.setOrigin(openvdb::Coord{origin[0], origin[1], origin[2]});
-                    typename LeafType::NodeMaskType vm;
-                    std::memcpy(&vm, &vms[i], sizeof(vm));
-                    static_assert(sizeof(vm) == sizeof(vms[i]), "???");
-                    leaf.setValueMask(vm);
-
-                    auto block = grid.tile(i);
-                    static_assert(LeafType::SIZE == RM_CVREF_T(grid)::lane_width, "???");
-                    int src = 0;
-                    for (ValueType *dst = leaf.buffer().data(), *end = dst + LeafType::SIZE; dst != end;
-                         dst += 4, src += 4) {
-                        dst[0] = block(0, src);
-                        dst[1] = block(0, src + 1);
-                        dst[2] = block(0, src + 2);
-                        dst[3] = block(0, src + 3);
-                    }
-                });
-            timer.tock(fmt::format("build vdb leaf level ({} blocks) from adaptive grid", nlvs));
-
-            // build level 1
-            auto &l1 = zsag.level(dim_c<1>);
-
-            timer.tick();
-            auto nInt1s = l1.numBlocks();
-            std::vector<Int1Type *> int1s(nInt1s);
-            // @note use the child table, not from this level
-            pol(enumerate(l1.originRange(), int1s),
-                [grid = proxy<space>(l1.grid), cms = proxy<space>(l1.childMask), vms = proxy<space>(l1.valueMask),
-                 tb = proxy<space>(l0.table), &lvs] ZS_LAMBDA(size_t i, const auto &origin, Int1Type *&pnode) mutable {
-                    pnode = new Int1Type();
-                    Int1Type &node = const_cast<Int1Type &>(*pnode);
-                    auto bcoord = openvdb::Coord{origin[0], origin[1], origin[2]};
-                    node.setOrigin(bcoord);
-
-                    typename Int1Type::NodeMaskType m;
-                    static_assert(sizeof(m) == sizeof(vms[i]) && sizeof(m) == sizeof(cms[i]), "???");
-                    std::memcpy(&m, &vms[i], sizeof(m));
-                    const_cast<typename Int1Type::NodeMaskType &>(node.getValueMask()) = m;
-                    // node.setValueMask(m);
-                    std::memcpy(&m, &cms[i], sizeof(m));
-                    // node.setChildMask(m);
-                    const_cast<typename Int1Type::NodeMaskType &>(node.getChildMask()) = m;
-
-                    auto block = grid.tile(i);
-                    auto *dstTable = const_cast<typename Int1Type::UnionType *>(node.getTable());
-
-#if 1
-                    for (u32 n = 0; n < Int1Type::NUM_VALUES; ++n) {
-                        if (m.isOn(n)) {
-                            // childNodes.emplace_back(n, srcData->getChild(n));
-                            auto childCoord = node.offsetToGlobalCoord(n);
-                            auto chNo = tb.query(ZSCoordT{childCoord[0], childCoord[1], childCoord[2]});
-#if AG_CHECK
-                            if (chNo >= 0 && chNo < lvs.size()) {
-#endif
-                                typename Int1Type::ChildNodeType *chPtr =
-                                    const_cast<typename Int1Type::ChildNodeType *>(lvs[chNo]);
-                                static_assert(is_same_v<typename Int1Type::ChildNodeType, LeafType>, "!!!!");
-
-                                dstTable[n].setChild(chPtr);
-
-#if AG_CHECK
-                                //fmt::print("found child block {}, {}, {} at {}\n", childCoord[0], childCoord[1],
-                                //           childCoord[2], chNo);
-                            } else {
-                                fmt::print("child block {}, {}, {} not found!\n", childCoord[0], childCoord[1],
-                                           childCoord[2]);
-                            }
-#endif
-                        } else {
-                            dstTable[n].setValue(block(0, n));
-                        }
-                    }
-#endif
-                    static_assert(Int1Type::NUM_VALUES == RM_CVREF_T(grid)::lane_width, "???");
-                });
-            timer.tock(fmt::format("build vdb level 1 ({} blocks) from adaptive grid", nInt1s));
-            // build level 2
-            auto &l2 = zsag.level(dim_c<2>);
-
-            timer.tick();
-            auto nInt2s = l2.numBlocks();
-            std::vector<Int2Type *> int2s(nInt2s);
-            // Int2Type *pInt2s = new Int2Type[nInt2s];
-            // @note use the child table, not from this level
-            pol(enumerate(l2.originRange(), int2s),
-                [grid = proxy<space>(l2.grid), cms = proxy<space>(l2.childMask), vms = proxy<space>(l2.valueMask),
-                 tb = proxy<space>(l1.table),
-                 &int1s] ZS_LAMBDA(size_t i, const auto &origin, Int2Type *&pnode) mutable {
-                    pnode = new Int2Type();
-                    Int2Type &node = const_cast<Int2Type &>(*pnode);
-                    auto bcoord = openvdb::Coord{origin[0], origin[1], origin[2]};
-                    node.setOrigin(bcoord);
-
-                    typename Int2Type::NodeMaskType m;
-                    static_assert(sizeof(m) == sizeof(vms[i]) && sizeof(m) == sizeof(cms[i]), "???");
-                    std::memcpy(&m, &vms[i], sizeof(m));
-                    const_cast<typename Int2Type::NodeMaskType &>(node.getValueMask()) = m;
-                    // node.setValueMask(m);
-                    std::memcpy(&m, &cms[i], sizeof(m));
-                    // node.setChildMask(m);
-                    const_cast<typename Int2Type::NodeMaskType &>(node.getChildMask()) = m;
-
-                    auto block = grid.tile(i);
-                    auto *dstTable = const_cast<typename Int2Type::UnionType *>(node.getTable());
-
-#if 1
-                    for (u32 n = 0; n < Int2Type::NUM_VALUES; ++n) {
-                        if (m.isOn(n)) {
-                            // childNodes.emplace_back(n, srcData->getChild(n));
-                            auto childCoord = node.offsetToGlobalCoord(n);
-                            auto chNo = tb.query(ZSCoordT{childCoord[0], childCoord[1], childCoord[2]});
-#if AG_CHECK
-                            if (chNo >= 0 && chNo < int1s.size()) {
-#endif
-                                typename Int2Type::ChildNodeType *chPtr =
-                                    const_cast<typename Int2Type::ChildNodeType *>(int1s[chNo]);
-                                static_assert(is_same_v<typename Int2Type::ChildNodeType, Int1Type>, "!!!!");
-
-                                dstTable[n].setChild(chPtr);
-
-#if AG_CHECK
-                                //fmt::print("found child block {}, {}, {} at {}\n", childCoord[0], childCoord[1],
-                                //           childCoord[2], chNo);
-                            } else {
-                                fmt::print("child block {}, {}, {} not found!\n", childCoord[0], childCoord[1],
-                                           childCoord[2]);
-                            }
-#endif
-                        } else {
-                            dstTable[n].setValue(block(0, n));
-                        }
-                    }
-#endif
-                    static_assert(Int2Type::NUM_VALUES == RM_CVREF_T(grid)::lane_width, "???");
-                });
-            timer.tock(fmt::format("build vdb level 2 ({} blocks) from adaptive grid", nInt2s));
-            // build root
-            auto &root = dstGrid->tree().root();
-            for (u32 i = 0; i != nInt2s; ++i) {
-                root.addChild(int2s[i]);
-            }
-        }
         fmt::print("vec3fgrid value_type: {}\n", get_type_str<typename openvdb::Vec3fGrid::ValueType>());
         set_output("vdb", ret);
     }
