@@ -2,9 +2,10 @@ import sys
 from typing import Any
 from .types import ZenoObject
 from functools import partial
+from .zeno import init_zeno_lib
 
 # ref: ze lib by Archibate
-
+zeno_lib_path = None 
 _args: dict[str, int] = {}
 _rets: dict[str, int] = {}
 _retsRAII: dict[str, Any] = {}
