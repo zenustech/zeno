@@ -703,22 +703,24 @@ struct BVHNearestAttr : INode {
 
         auto bvhIdTag = get_input<StringObject>("bvhIdTag")->get();
         auto& bvh_id = prim->verts.attr<float>(bvhIdTag);
+        auto bvhAttributesType = get_input2<std::string>("bvhAttributesType");
         auto bvhWeightTag = get_input<StringObject>("bvhWeightTag")->get();
         auto& bvh_ws = prim->verts.attr<vec3f>(bvhWeightTag);
 
+        std::visit([&](auto attrty) {
+            using T = decltype(attrty);
         auto attr_tag = get_input<StringObject>("bvhAttrTag")->get();
         if (!primNei->verts.has_attr(attr_tag))
         {
             zeno::log_error("primNei has no such Data named '{}'.", attr_tag);
         }
-        auto& inAttr = primNei->verts.attr<float>(attr_tag);
+        auto& inAttr = primNei->verts.attr<T>(attr_tag);
         if (!prim->verts.has_attr(attr_tag))
         {
-            prim->add_attr<float>(attr_tag);
+            prim->add_attr<T>(attr_tag);
         }
-        auto& outAttr = prim->verts.attr<float>(attr_tag);
-
-#pragma omp parallel for
+        auto& outAttr = prim->verts.attr<T>(attr_tag);
+        #pragma omp parallel for
         for (int i = 0; i < prim->size(); i++)
         {
             vec3i vertsIdx = primNei->tris[(int)bvh_id[i]];
@@ -729,6 +731,8 @@ struct BVHNearestAttr : INode {
 
             outAttr[i] = bvh_ws[i][0] * attr0 + bvh_ws[i][1] * attr1 + bvh_ws[i][2] * attr2;
         }
+        }, enum_variant<std::variant<float, vec3f>>(array_index({"float", "vec3f"}, bvhAttributesType)));
+
 
         set_output("prim", get_input("prim"));
     }
@@ -740,6 +744,7 @@ ZENDEFNODE(BVHNearestAttr,
                    {"string", "bvhIdTag", "bvh_id"},
                    {"string", "bvhWeightTag", "bvh_ws"},
                    {"string", "bvhAttrTag", "bvh_attr"},
+                     {"enum float vec3f", "bvhAttributesType", "float"},
                }, /* outputs: */ {
                    "prim"
                }, /* params: */ {

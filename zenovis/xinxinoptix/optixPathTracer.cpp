@@ -513,6 +513,8 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
 
         //CUDA_SYNC_CHECK();
 
+            /* printf("mama%d\n", std::this_thread::get_id()); */
+            /* fflush(stdout); */
         OPTIX_CHECK( optixLaunch(
                     state.pipeline,
                     0,

@@ -2271,9 +2271,9 @@ struct erode_terrainHiMeLo : INode {
         }
         auto& attr = terrain->verts.attr<float>(attrName);
 
-        float hi = 0;
+        float hi = -10000000;
         float me = 0;
-        float lo = 0;
+        float lo = 10000000;
         float all = 0;
 
 #pragma omp parallel for
@@ -2414,18 +2414,22 @@ struct HF_maskByFeature : INode {
         auto heightLayer = get_input2<std::string>("height_layer");
         auto maskLayer = get_input2<std::string>("mask_layer");
         auto smoothRadius = get_input2<int>("smooth_radius");
+        auto invertMask = get_input2<bool>("invert_mask");
 
         auto useSlope = get_input2<bool>("use_slope");
         auto minSlope = get_input2<float>("min_slopeangle");
         auto maxSlope = get_input2<float>("max_slopeangle");
+        auto curve_slope = get_input<CurveObject>("slope_ramp");
 
         auto useDir = get_input2<bool>("use_direction");
         auto goalAngle = get_input2<float>("goal_angle");
         auto angleSpread = get_input2<float>("angle_spread");
+        auto curve_dir = get_input<CurveObject>("dir_ramp");
 
         auto useHeight = get_input2<bool>("use_height");
         auto minHeight = get_input2<float>("min_height");
         auto maxHeight = get_input2<float>("max_height");
+        auto curve_height = get_input<CurveObject>("height_ramp");
 
         // 初始化网格属性
         if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
@@ -2516,7 +2520,8 @@ struct HF_maskByFeature : INode {
                 if (useSlope) {
                     float slope = 180 * acos(n[2]) / M_PI;
                     slope = fit(slope, minSlope, maxSlope, 0, 1);
-                    slope = chramp(slope);
+//                    slope = chramp(slope);
+                    slope = curve_slope->eval(slope);
                     mask[idx] *= slope;
                 }
 
@@ -2526,14 +2531,22 @@ struct HF_maskByFeature : INode {
                     direction -= 360 * floor(direction / 360);   // Get in range -180 to 180
                     direction -= 180;
                     direction = fit(direction, -angleSpread, angleSpread, 0, 1);
-                    direction = chramp(direction);
+//                    direction = chramp(direction);
+                    direction = curve_dir->eval(direction);
                     mask[idx] *= direction;
                 }
 
                 if (useHeight)
                 {
                     float h = fit(height[idx], minHeight, maxHeight, 0, 1);
-                    mask[idx] *= chramp(h);
+//                    mask[idx] *= chramp(h);
+                    mask[idx] *= curve_height->eval(h);
+                }
+
+                if(invertMask)
+                {
+                    mask[idx] = min(max(mask[idx], 0), 1);
+                    mask[idx] = 1 - mask[idx];
                 }
             }
         }
@@ -2544,20 +2557,24 @@ struct HF_maskByFeature : INode {
 ZENDEFNODE(HF_maskByFeature,
            {/* inputs: */ {
                    "HeightField",
+                   {"bool", "invert_mask", "0"},
                    {"string", "height_layer", "height"},
                    {"string", "mask_layer", "mask"},
                    {"int", "smooth_radius", "1"},
                    {"bool", "use_slope", "0"},
                    {"float", "min_slopeangle", "0"},
                    {"float", "max_slopeangle", "90"},
+                   {"curve", "slope_ramp"},
                    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                    {"bool", "use_direction", "0"},
                    {"float", "goal_angle", "0"},
                    {"float", "angle_spread", "30"},
+                   {"curve", "dir_ramp"},
                    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                    {"bool", "use_height", "0"},
                    {"float", "min_height", "0.5"},
                    {"float", "max_height", "1"},
+                   {"curve", "height_ramp"},
                },
                /* outputs: */
                {
@@ -2575,12 +2592,12 @@ struct HF_rotate_displacement_2d : INode {
     void apply() override {
         auto terrain = get_input<PrimitiveObject>("prim_2DGrid");
 
-        auto& var = terrain->verts.attr<vec3f>("var");
-        auto& pos = terrain->verts.attr<vec3f>("pos");
+        auto& var = terrain->verts.attr<vec3f>("var"); // hardcode
+        auto& pos = terrain->verts.attr<vec3f>("tempPos"); // hardcode
 
         auto angle = get_input<NumericObject>("Rotate Displacement")->get<float>();
         float gl_angle = glm::radians(angle);
-        glm::vec3 gl_axis(0.0, 1.0, 0.0);
+        glm::vec3 gl_axis(0.0, 1.0, 0.0); // hardcode
         glm::quat gl_quat = glm::angleAxis(gl_angle, gl_axis);
 
 #pragma omp parallel for
@@ -2611,7 +2628,12 @@ ZENDEFNODE(HF_rotate_displacement_2d,
 struct HF_remap : INode {
     void apply() override {
         auto terrain = get_input<PrimitiveObject>("prim");
-        auto& var = terrain->verts.attr<float>(get_input2<std::string>("remap layer"));
+        auto remapLayer = get_input2<std::string>("remap layer");
+        if (!terrain->verts.has_attr(remapLayer)) {
+            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}'.",
+                            remapLayer);
+        }
+        auto& var = terrain->verts.attr<float>(remapLayer);
         auto inMin = get_input2<float>("input min");
         auto inMax = get_input2<float>("input max");
         auto outMin = get_input2<float>("output min");
@@ -2674,5 +2696,190 @@ ZENDEFNODE(HF_remap,
            }, /* category: */ {
                "erode",
            } });
+
+struct HF_maskbyOcclusion : INode {
+    void apply() override {
+        auto terrain = get_input<PrimitiveObject>("prim");
+
+        auto invert_mask = get_input2<bool>("invert mask");
+        auto view_radius = get_input2<int>("view distance");
+        auto step_scale = get_input2<float>("step scale");
+        auto axis_count = get_input2<int>("num of searches");
+        auto dohemisphere = get_input2<bool>("dohemisphere");
+
+        int nx, nz;
+        auto &ud = terrain->userData();
+        if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+            zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+        nx = ud.get2<int>("nx");
+        nz = ud.get2<int>("nz");
+        auto &pos = terrain->verts;
+        vec3f p0 = pos[0];
+        vec3f p1 = pos[1];
+        float cellSize = length(p1 - p0);
+
+//        auto heightLayer = get_input2<std::string>("height_layer");
+//        if (!terrain->verts.has_attr(heightLayer)) {
+//            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}'.",
+//                            heightLayer);
+//        }
+        auto &height = terrain->verts.attr<float>("height");
+
+        auto &ao = terrain->verts.add_attr<float>("ao");
+        std::fill(ao.begin(), ao.end(), 0.0);
+
+#pragma omp parallel for
+        for (int id_z = 0; id_z < nz; id_z++) {
+            for (int id_x = 0; id_x < nx; id_x++) {
+                int idx = Pos2Idx(id_x, id_z, nx);
+
+                float h_start = height[idx];
+
+                // Lower bound the step scale to at least 0.5
+                step_scale = max(step_scale, 0.5f);
+                // If we have a finite view radius, upper bound the step scale
+                // at half that view radius so each ray can get at least two samples.
+                if (view_radius) step_scale = min(step_scale, 0.499f * view_radius);
+
+                // The step limit is the number of world units that fit in the
+                // view radius. If the view radius is <= 0, we use the full world
+                // size as the limit.
+                int step_limit = view_radius > 0.0f ?
+                                 ceil(view_radius / (cellSize * step_scale)) :
+                                 ceil((hypot(nx, nz)) / step_scale);
+
+                // Calculate the sweep angle for each concavity axis
+                float sweep_angle = 3.14159f / (float) max(axis_count, 1);
+                float cur_angle = 0.0f;
+
+                // Accumulate field of view
+                float total_fov = 0.0f;
+                float successful_rays = 0;
+
+
+                // Calculate the step in the x and y direction
+                // based on the light direction
+                float z_step = sin(cur_angle);
+                float x_step = cos(cur_angle);
+                x_step *= step_scale;
+                z_step *= step_scale;
+
+                // Sweep a full circle around the point
+                for (int i = 0; i < axis_count; i++) {
+                    // Calculate the step in the x and y direction
+                    // based on the light direction
+                    float z_step = sin(cur_angle);
+                    float x_step = cos(cur_angle);
+                    x_step *= step_scale;
+                    z_step *= step_scale;
+
+                    float speed = hypot(x_step, z_step) * cellSize;
+
+                    // Walk a line that intersects this point.
+                    // We start from our point and walk twice in opposite directions.
+                    for (int j = 0; j < 2; j++) {
+                        // Start from the current point
+                        float x = id_x + x_step;
+                        float z = id_z + z_step;
+                        float distance = speed;
+                        int steps = 1;
+
+                        float start_slope;
+
+                        // Find the max slope in our current direction
+                        float finalslope = 0.0f;
+                        float maxslope = -1e10f;
+                        while (steps < step_limit &&
+                               x > 0 && x < (nx-1) &&
+                               z > 0 && z < (nz-1)) {
+                            // Calculate the height at our current position
+                            // by doing a bilerp with the nearest 4 points
+
+                            // tofix: out of bound possibility?
+                            // clamp to boundaries
+                            x = clamp(x, 0.0f, nx-1);
+                            z = clamp(z, 0.0f, nz-1);
+
+                            const int int_x = (int)floor(x);
+                            const int int_z = (int)floor(z);
+
+                            const float fract_x = x - int_x;
+                            const float fract_z = z - int_z;
+
+                            int srcidx = Pos2Idx(int_x, int_z, nx);
+                            const float i00 = height[srcidx];
+                            const float i10 = height[srcidx + 1];
+                            const float i01 = height[srcidx + nz];
+                            const float i11 = height[srcidx + nz + 1];
+
+                            float h_current = (i00 * (1-fract_x) + i10 * (fract_x)) * (1-fract_z) +
+                                              (i01 * (1-fract_x) + i11 * (fract_x)) * (  fract_z);
+
+                            // Calculate the slope
+                            float dh = h_current - h_start;
+                            float curslope = dh / distance;
+                            if (steps == 1) start_slope = curslope;
+                            maxslope = max(maxslope, curslope);
+                            finalslope = maxslope;
+
+                            x += x_step;
+                            z += z_step;
+                            distance += speed;
+                            steps++;
+                        }
+
+                        if (steps > 1) {
+                            successful_rays += 1.0f;
+
+                            // Add the cosine of the max slope to our field of view.
+                            // The cosine of the slope is essentially a measure of
+                            // the 'breadth' of the view from the vertical.
+                            // No light comes from below the horizon, so a negative
+                            // slope is exposed to as much light as a zero slope.
+                            if (dohemisphere) start_slope = 0;
+                            float slope = max(start_slope, finalslope);
+                            total_fov += 1 - slope / hypot(slope, 1);
+                        }
+
+                        // Walk in the reverse direction next iteration
+                        x_step = -x_step;
+                        z_step = -z_step;
+                    }
+
+                    // Proceed to the next sweep angle
+                    cur_angle += sweep_angle;
+                }
+
+                // Normalize the value
+                if (successful_rays != 0)
+                    total_fov /= successful_rays;
+
+                // The bounds of this value should already be in [0, 1], but do
+                // a last clamp anyway to cull any possible floating point error
+                total_fov = clamp(total_fov, 0.0f, 1.0f);
+
+                ao[idx] = invert_mask ? 1-total_fov : total_fov;
+            }
+        }
+
+
+
+        set_output("prim", get_input("prim"));
+    }
+};
+ZENDEFNODE(HF_maskbyOcclusion,
+           { /* inputs: */ {
+                   "prim",
+                   {"bool", "invert mask", "0"},
+                   {"int", "view distance", "200"},
+                   {"float", "step scale", "1"},
+                   {"int", "num of searches", "16"},
+                   {"bool", "dohemisphere", "0"},
+               }, /* outputs: */ {
+                   "prim",
+               }, /* params: */ {
+               }, /* category: */ {
+                   "erode",
+               } });
 } // namespace
 } // namespace zeno

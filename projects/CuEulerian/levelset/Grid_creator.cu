@@ -626,6 +626,43 @@ ZENDEFNODE(ZSGridReduction, {/* inputs: */
                              /* category: */
                              {"Eulerian"}});
 
+struct ZSGridVoxelPos : INode {
+    void apply() override {
+        auto zs_grid = get_input<ZenoSparseGrid>("SparseGrid");
+        auto attrTag = get_input2<std::string>("PosAttr");
+
+        auto &spg = zs_grid->getSparseGrid();
+        auto pol = zs::cuda_exec();
+        constexpr auto space = zs::execspace_e::cuda;
+
+        if (!spg.hasProperty(attrTag)) {
+            spg.append_channels(pol, {{attrTag, 3}});
+        } else {
+            int m_nchns = spg.getPropertySize(attrTag);
+            if (m_nchns != 3)
+                throw std::runtime_error("the size of the PosAttr is not 3!");
+        }
+
+        pol(zs::Collapse{spg.numBlocks(), spg.block_size},
+            [spgv = zs::proxy<space>(spg), tag = zs::SmallString{attrTag}] __device__(int blockno, int cellno) mutable {
+                auto wcoord = spgv.wCoord(blockno, cellno);
+                auto block = spgv.block(blockno);
+                block.template tuple<3>(tag, cellno) = wcoord;
+            });
+
+        set_output("SparseGrid", zs_grid);
+    }
+};
+
+ZENDEFNODE(ZSGridVoxelPos, {/* inputs: */
+                            {"SparseGrid", {"string", "PosAttr", "wPos"}},
+                            /* outputs: */
+                            {"SparseGrid"},
+                            /* params: */
+                            {},
+                            /* category: */
+                            {"Eulerian"}});
+
 struct ZSMakeDenseSDF : INode {
     void apply() override {
         float dx = get_input2<float>("dx");
