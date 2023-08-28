@@ -163,13 +163,13 @@ namespace {
         ZENO_DECLARE_INPUT_FIELD(ConnectiveMask, "Connective Mask", false, "", "4");
 
         int AngleMask;
-        ZENO_DECLARE_INPUT_FIELD(AngleMask, "Angle Mask", false, "", "8");
+        ZENO_DECLARE_INPUT_FIELD(AngleMask, "Angle Mask", false, "", "4");
 
         float WeightHeuristic;
-        ZENO_DECLARE_INPUT_FIELD(WeightHeuristic, "Weight of Heuristic Function", false, "", "0.3");
+        ZENO_DECLARE_INPUT_FIELD(WeightHeuristic, "Weight of Heuristic Function", false, "", "1.0");
 
         float CurvatureThreshold;
-        ZENO_DECLARE_INPUT_FIELD(CurvatureThreshold, "Curvature Threshold", false, "", "0.4");
+        ZENO_DECLARE_INPUT_FIELD(CurvatureThreshold, "Curvature Threshold", false, "", "0.2");
 
         zeno::vec2f Start;
         ZENO_DECLARE_INPUT_FIELD(Start, "Start Point");
@@ -262,7 +262,7 @@ namespace {
                 Eigen::Vector4f BC_Normalized = BC.normalized();
 
                 float Magnitude_Change = (BC_Normalized - BA_Normalized).norm();
-                return Magnitude_Change / (Magnitude_BC * Magnitude_BC);
+                return Magnitude_Change / (Magnitude_BC * Magnitude_BC) * BC.z();
             };
 
             const size_t IndexMax = AutoParameter->Nx * AutoParameter->Ny - 1;
