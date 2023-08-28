@@ -212,8 +212,8 @@ namespace {
             CostPoint GoalPoint{static_cast<size_t>(AutoParameter->Goal[0]), static_cast<size_t>(AutoParameter->Goal[1]), 0};
             CostPoint StartPoint{static_cast<size_t>(AutoParameter->Start[0]), static_cast<size_t>(AutoParameter->Start[1]), 0};
 
-            std::unordered_map<CostPoint, CostPoint> Predecessor;
-            std::unordered_map<CostPoint, float> CostMap;
+            DefaultedHashMap<CostPoint, CostPoint> Predecessor;
+            DefaultedHashMap<CostPoint, float> CostMap;
 
             size_t Nx = AutoParameter->Nx, Ny = AutoParameter->Ny;
 
@@ -249,26 +249,24 @@ namespace {
                 CostGrid[i] = (CostPoint{x, y, 0, AutoParameter->PositionList[i].at(1), AutoParameter->GradientList[i]});
             }
 
-            auto CalcCurvature = [&CostGrid, Nx] (const CostPoint& A, const CostPoint& B, const CostPoint& C) -> float {
-                size_t ia = A[0] + A[1] * Nx;
-                size_t ib = B[0] + B[1] * Nx;
-                size_t ic = C[0] + C[1] * Nx;
+            auto CalcCurvature = [&CostGrid, Nx](const CostPoint &A, const CostPoint &B, const CostPoint &C) -> float {
+                float Height_A = float(CostGrid[A[0] + A[1] * Nx].Height);
+                float Height_B = float(CostGrid[B[0] + B[1] * Nx].Height);
+                float Height_C = float(CostGrid[C[0] + C[1] * Nx].Height);
 
-                Eigen::Vector4f BA = { float(A[0] - B[0]), float(A[1] - B[1]), float(CostGrid[ia].Height - CostGrid[ib].Height), float(A[2] - B[2]) };
-
-                Eigen::Vector4f BC = { float(C[0] - B[0]), float(C[1] - B[1]), float(CostGrid[ic].Height - CostGrid[ib].Height), float(C[2] - B[2]) };
-
+                Eigen::Vector4f BA = {float(A[0] - B[0]), float(A[1] - B[1]), float(Height_A - Height_B), float(A[2] - B[2])};
+                Eigen::Vector4f BC = {float(C[0] - B[0]), float(C[1] - B[1]), float(Height_C - Height_B), float(C[2] - B[2])};
                 float Magnitude_BC = BC.norm();
 
-                Eigen::Vector4f Change = BC.normalized() - BA.normalized();
+                Eigen::Vector4f BA_Normalized = BA.normalized();
+                Eigen::Vector4f BC_Normalized = BC.normalized();
 
-                float Magnitude_Change = Change.norm();
-
+                float Magnitude_Change = (BC_Normalized - BA_Normalized).norm();
                 return Magnitude_Change / (Magnitude_BC * Magnitude_BC);
             };
 
             const size_t IndexMax = AutoParameter->Nx * AutoParameter->Ny - 1;
-            std::function<float(const CostPoint &, const CostPoint &)> CostFunc = [ &CalcCurvature, &HeightCostFunc, &GradientCostFunc, &CurvatureCostFunc, &CostGrid, &Predecessor, IndexMax, Nx, Ny](const CostPoint &A, const CostPoint &B) mutable -> float {
+            std::function<float(const CostPoint &, const CostPoint &)> CostFunc = [&CalcCurvature, &HeightCostFunc, &GradientCostFunc, &CurvatureCostFunc, &CostGrid, &Predecessor, IndexMax, Nx, Ny](const CostPoint &A, const CostPoint &B) mutable -> float {
                 size_t ia = A[0] + A[1] * Nx;
                 size_t ib = B[0] + B[1] * Nx;
 
@@ -276,7 +274,7 @@ namespace {
                 //size_t Hash = (ia + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (ib * 0x9e3779b9 + (Seed << 2) + (Seed >> 4));
 
                 // We assume that A already searched and have a predecessor
-                const CostPoint& PrevPoint = Predecessor[A];
+                const CostPoint &PrevPoint = Predecessor[A];
 
                 // Calc curvature
                 float Curvature = CalcCurvature(PrevPoint, A, B);

@@ -7,6 +7,7 @@
 #include <cmath>
 #include <vector>
 #include <functional>
+#include <unordered_map>
 
 namespace roads {
 
@@ -84,5 +85,19 @@ namespace roads {
 
     constexpr double PI = boost::math::constants::pi<double>();
     constexpr double PI2 = boost::math::constants::pi<double>() * 2.0;
+
+    template <typename KeyType, typename ValueType>
+    struct DefaultedHashMap : public std::unordered_map<KeyType, ValueType> {
+        using std::unordered_map<KeyType, ValueType>::unordered_map;
+
+        ValueType& DefaultAt(const KeyType& InKey, const ValueType& DefaultValue = ValueType()) {
+            const auto Target = this->_Find_last(InKey, this->_Traitsobj(InKey));
+            if (Target._Duplicate) {
+                return Target._Duplicate->_Myval.second;
+            }
+
+            return const_cast<ValueType&>(DefaultValue);
+        }
+    };
 
 }// namespace roads

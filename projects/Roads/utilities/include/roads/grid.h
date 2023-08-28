@@ -95,7 +95,7 @@ namespace roads {
         }
 
         template<typename PointType = IntPoint2D>
-        void RoadsShortestPath(const PointType &StartPoint, const PointType &GoalPoint, const PointType &Bounds, const int32_t MaskK, const int32_t MaskA, const float WeightHeuristic, std::unordered_map<PointType, PointType> &PredecessorList, std::unordered_map<PointType, float> &CostTo, const std::function<float(const PointType &, const PointType &)> &CostFunction) {
+        void RoadsShortestPath(const PointType &StartPoint, const PointType &GoalPoint, const PointType &Bounds, const int32_t MaskK, const int32_t MaskA, const float WeightHeuristic, DefaultedHashMap<PointType, PointType> &PredecessorList, DefaultedHashMap<PointType, float> &CostTo, const std::function<float(const PointType &, const PointType &)> &CostFunction) {
             auto NewCostFunc = [&CostFunction, &GoalPoint, &Bounds](const PointType &a, const PointType &b) -> float {
                 float Result = CostFunction(a, b);
                 if (Result < 0) {
@@ -158,28 +158,22 @@ namespace roads {
                 float DeltaA = StraightCost(Point1, GoalPoint, true);
                 float DeltaB = StraightCost(Point2, GoalPoint, true);
 
-                float CostA = CostTo[Point1] + WeightHeuristic * DeltaA;
-                float CostB = CostTo[Point2] + WeightHeuristic * DeltaB;
+                float CostA = CostTo.DefaultAt(Point1, std::numeric_limits<float>::max()) + WeightHeuristic * DeltaA;
+                float CostB = CostTo.DefaultAt(Point2, std::numeric_limits<float>::max()) + WeightHeuristic * DeltaB;
                 return CostA > CostB;
             };
 
             // initialize a priority queue Q with the initial point StartPoint
+            CostTo.reserve(Bounds[0]*Bounds[1]*MaskA);
             std::priority_queue<PointType, ArrayList<PointType>, decltype(Comparator)> Q(Comparator);
             for (size_t a = 0; a < MaskA; a++) {
                 PointType NewPoint = StartPoint;
                 NewPoint[2] = a;
                 CostTo[StartPoint] = 0.f;
             }
+
             PredecessorList[StartPoint] = StartPoint;
             Q.push(StartPoint);
-            for (size_t x = 0; x < Bounds[0]; x++) {
-                for (size_t y = 0; y < Bounds[1]; y++) {
-                    for (size_t a = 0; a < MaskA; a++) {
-                        PointType Point{x, y, a};
-                        if (Point[0] != StartPoint[0] || Point[1] != StartPoint[1]) { CostTo[Point] = std::numeric_limits<float>::max(); }
-                    }
-                }
-            }
 
             std::unordered_map<PointType, bool> Visual;
 
@@ -216,7 +210,7 @@ namespace roads {
                                 }
                                 //printf("---- N(%d,%d) %f\n", NeighbourPoint[0], NeighbourPoint[1], NewCost);
 
-                                if (NewCost < CostTo[NeighbourPoint]) {
+                                if (NewCost < CostTo.DefaultAt(NeighbourPoint, std::numeric_limits<float>::max())) {
                                     PredecessorList[NeighbourPoint] = Point;
                                     CostTo[NeighbourPoint] = NewCost;
                                     Q.push(NeighbourPoint);
@@ -237,7 +231,8 @@ namespace std {
     struct hash<roads::CostPoint> {
         size_t operator()(const roads::CostPoint &rhs) const {
             constexpr size_t Seed = 10086;
-            return (rhs[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 4)) ^ (rhs[2] + 0x9e3779b9 + (Seed << 8) + (Seed >> 6));
+            size_t Result = (rhs[0] + 0x9e3779b9 + (Seed << 4) + (Seed >> 2)) ^ (rhs[1] + 0x9e3779b9 + (Seed << 6) + (Seed >> 4)) ^ (rhs[2] + 0x9e3779b9 + (Seed << 8) + (Seed >> 6));
+            return Result;
         }
     };
 
