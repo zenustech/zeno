@@ -44,7 +44,6 @@ void Camera::setCamera(zeno::CameraData const &cam) {
 }
 
 void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
-    zeno::log_info("Camera::placeCamera {} {}", m_ortho_mode, m_fov);
     front = glm::normalize(front);
     up = glm::normalize(up);
 
@@ -63,8 +62,6 @@ void Camera::placeCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up) {
 }
 
 void Camera::updateMatrix() {
-    zeno::log_info("Camera::updateMatrix {} {}", m_ortho_mode, m_fov);
-
     auto center = zeno::vec_to_other<glm::vec3>(m_center) ;
     float cos_t = glm::cos(m_theta), sin_t = glm::sin(m_theta);
     float cos_p = glm::cos(m_phi), sin_p = glm::sin(m_phi);
@@ -100,12 +97,10 @@ bool Camera::is_locked_window() const {
 }
 
 void Camera::focusCamera(float cx, float cy, float cz, float radius) {
-    zeno::log_info("Camera::focusCamera");
     auto center = glm::vec3(cx, cy, cz);
     placeCamera(center - m_lodfront * radius, m_lodfront, m_lodup);
 }
 void Camera::lookCamera(float cx, float cy, float cz, float theta, float phi, float radius, bool ortho_mode, float fov, float aperture, float focalPlaneDistance) {
-    zeno::log_info("Camera::lookCamera {} {}", ortho_mode, fov);
     m_zxx.cx = cx;
     m_zxx.cy = cy;
     m_zxx.cz = cz;

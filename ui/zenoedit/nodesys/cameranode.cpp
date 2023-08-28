@@ -137,12 +137,11 @@ void CameraNode::onEditClicked()
 
             INPUT_SOCKET other = inputs["other"];
             std::string other_prop;
-            other_prop += zeno::format("{},", camera.m_zxx.cx);
-            other_prop += zeno::format("{},", camera.m_zxx.cy);
-            other_prop += zeno::format("{},", camera.m_zxx.cz);
-            other_prop += zeno::format("{},", camera.m_zxx.theta);
-            other_prop += zeno::format("{},", camera.m_zxx.phi);
-            other_prop += zeno::format("{},", camera.m_zxx.radius);
+            auto center = camera.m_center;
+            other_prop += zeno::format("{},{},{},", center[0], center[1], center[2]);
+            other_prop += zeno::format("{},", camera.m_theta);
+            other_prop += zeno::format("{},", camera.m_phi);
+            other_prop += zeno::format("{},", camera.m_radius);
             info.name = "other";
             info.oldValue = other.info.defaultValue;
             info.newValue = QVariant::fromValue(QString(other_prop.c_str()));
