@@ -216,7 +216,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
 
     //draw keyframes
     for (auto frame : m_keyframes) {
-        int x = _frameToPos(frame) + painter.pen().width();
+        int x = _frameToPos(frame - m_from) + painter.pen().width();
         int h = ZenoStyle::dpiScaled(scaleH);
         int y = height() - h;
         int w = (qreal)(width() - 2 * m_sHMargin) / ((m_to - m_from) == 0 ? 1 : (m_to - m_from));
