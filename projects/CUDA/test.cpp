@@ -218,6 +218,34 @@ ZENDEFNODE(ZSConcurrencyTest, {
                                   {"ZPCTest"},
                               });
 
+struct ZSFileTest : INode {
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        auto vallocator = get_virtual_memory_source(memsrc_e::host, -1, (size_t)1 << (size_t)23, "STACK");
+
+        vallocator.commit(0, sizeof(double) * 40);
+        auto ptr = (double *)vallocator.address(0);
+        for (int i = 0; i < 10; ++i) {
+            *(ptr + i) = i;
+        }
+        pol(range(10), [&](int i) { fmt::print("tid[{}]: {}\n", i, *(ptr + i)); });
+
+        CppTimer timer;
+        timer.tick();
+        timer.tock("...");
+    }
+};
+
+ZENDEFNODE(ZSFileTest, {
+                           {},
+                           {},
+                           {},
+                           {"ZPCTest"},
+                       });
+
 struct ZSLinkTest : INode {
     void apply() override {
         using namespace zs;
