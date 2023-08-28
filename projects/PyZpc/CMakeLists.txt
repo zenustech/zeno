@@ -24,7 +24,38 @@ target_sources(zeno PRIVATE
   pyzfx.cpp
 )
 
-set(ZENO_PYZPC_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Lib)
-configure_file(zeno_PyZpc_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/zeno_PyZpc_config.h @ONLY)
+if (WIN32)
+    set(ZENO_PYZPC_DLL_FILE zeno.dll)
+elseif (APPLE)
+    set(ZENO_PYZPC_DLL_FILE libzeno.dylib)
+else()
+    set(ZENO_PYZPC_DLL_FILE libzeno.so)
+endif()
 target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-zeno_add_asset_dir(${ZENO_PYZPC_MODULE_DIR})
+
+if (DEFINED CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set(RESOURCE_BASE_DIR ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+elseif (DEFINED CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  set(RESOURCE_BASE_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+else()
+  set(RESOURCE_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
+
+add_custom_target(copy_zpy)
+add_dependencies(zeno copy_zpy)
+set(PY_LIBS_DIR ${RESOURCE_BASE_DIR}/resource/py_libs)
+add_custom_command(
+  TARGET copy_zpy
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${PY_LIBS_DIR}/zpy
+  COMMENT "creating resource Python module directory at ${PY_LIBS_DIR}/zpy"
+)
+file(GLOB ZPY_SRC ${CMAKE_CURRENT_SOURCE_DIR}/Lib/zpy/*.py)
+foreach(ZPY_FILE IN LISTS ZPY_SRC)
+    add_custom_command(
+                TARGET copy_zpy POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZPY_FILE} ${RESOURCE_BASE_DIR}/resource/py_libs/zpy
+                COMMENT "Copying zpy src file: ${ZPY_FILE}")
+endforeach()
+
+configure_file(zeno_PyZpc_config.h.in ${CMAKE_CURRENT_BINARY_DIR}/zeno_PyZpc_config.h @ONLY)

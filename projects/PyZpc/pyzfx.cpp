@@ -25,6 +25,7 @@
 #include <cwchar>
 #include <utility>
 #include <thread>
+#include <cstdlib>
 
 namespace zeno {
 namespace {
@@ -42,15 +43,16 @@ using callback_t = std::function<void(std::optional<std::any>)>;
 
 static callback_t zpc_init_callback = [] (auto _) {
     log_debug("Initializing Python...");
-    // static std::string execenvvar = "zenoedit_executable=" + getConfigVariable("EXECFILE") + "\0";
-    // putenv(execenvvar.data());
     Py_Initialize();
-    std::string libpath = getAssetDir(ZENO_PYZPC_MODULE_DIR);
 #ifdef _WIN32
     libpath = replace_all(libpath, "\\", "\\\\");
 #endif
-    // std::string dllfile = ZENO_PYTHON_DLL_FILE;
-    if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + libpath + "'); import zpy;").c_str()) < 0) {
+    auto exe_dir = zs::abs_exe_directory();  
+    auto zeno_lib_path = exe_dir + "/" + ZENO_PYZPC_DLL_FILE; 
+    auto py_libs_dir = exe_dir + "/resource/py_libs"; 
+    if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + 
+        py_libs_dir + "'); import zpy; zpy.init_zeno_lib('" + zeno_lib_path + 
+        "'); zpy.zeno_lib_path = '" + zeno_lib_path + "'").c_str()) < 0) {
         log_warn("Failed to initialize Python module");
         return;
     }
@@ -176,8 +178,6 @@ struct PyZfx : INode {
                 mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, globals, 1, NULL);
             }
         }
-        //currGraphLongReset.reset();
-        //currGraphEraser.reset();
         needToDelEraser.reset();
         if (!mainMod) {
             PyErr_Print();
@@ -208,7 +208,7 @@ struct PyZfx : INode {
         set_output("rets", std::move(rets));
     }
 };
-ZENDEFNODE(PyZfx, {/* inputs: */ 
+ZENO_DEFNODE(PyZfx)({/* inputs: */ 
     {
         {"string", "code", ""},
         {"readpath", "path", ""},
