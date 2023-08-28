@@ -1,3 +1,4 @@
+#pragma once
 #include <variant>
 #include <zeno/core/IObject.h>
 #include "zensim/math/Vec.h"
