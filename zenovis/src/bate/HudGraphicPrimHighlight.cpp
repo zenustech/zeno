@@ -132,6 +132,9 @@ struct PrimitiveHighlight : IGraphicDraw {
                     }
                 }
             }
+            if (prim == nullptr) {
+                return;
+            }
             auto selected_count = elements.size();
             // ----- prepare data -----
             auto const &pos = prim->attr<zeno::vec3f>("pos");
