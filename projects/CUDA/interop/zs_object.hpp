@@ -1,3 +1,4 @@
+#pragma once
 #include <zeno/core/IObject.h>
 
 namespace zeno
