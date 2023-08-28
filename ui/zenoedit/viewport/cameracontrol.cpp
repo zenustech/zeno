@@ -103,10 +103,6 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
     if (scene->camera->m_need_sync) {
-        setCenter({scene->camera->m_zxx_in.cx, scene->camera->m_zxx_in.cy, scene->camera->m_zxx_in.cz});
-        setTheta(scene->camera->m_zxx_in.theta);
-        setPhi(scene->camera->m_zxx_in.phi);
-        setRadius(scene->camera->m_zxx_in.radius);
         scene->camera->m_need_sync = false;
         if (bool(m_picker) && scene->camera->m_auto_radius) {
             this->m_picker->set_picked_depth_callback([&] (float depth, int x, int y) {
@@ -205,7 +201,6 @@ void CameraControl::lookTo(int dir) {
     }
     setOrthoMode(true);
     updatePerspective();
-    setOrthoMode(false);
     zenoApp->getMainWindow()->updateViewport();
 }
 
@@ -296,6 +291,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             center += delta * getRadius();
             setCenter({float(center.x()), float(center.y()), float(center.z())});
         } else {
+            setOrthoMode(false);
             setTheta(getTheta() - dy * M_PI);
             setPhi(getPhi() + dx * M_PI);
         }
@@ -331,9 +327,7 @@ void CameraControl::updatePerspective() {
     if (session == nullptr) {
         return;
     }
-    float cx = getCenter()[0], cy = getCenter()[1], cz = getCenter()[2];
-    m_zenovis->updatePerspective(m_res, PerspectiveInfo(cx, cy, cz, getTheta(), getPhi(), getRadius(), getFOV(), getOrthoMode(),
-                                                       getAperture(), getDisPlane()));
+    m_zenovis->updatePerspective(m_res);
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
