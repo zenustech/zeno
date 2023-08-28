@@ -10,6 +10,7 @@ class ZenoObject:
 
     @staticmethod
     def from_handle(handle):
+        zeno_lib.call('Zeno_ObjectIncReference', c_uint64(handle)) 
         return ZenoObject(handle)
 
     def as_type(self, obj_type):
