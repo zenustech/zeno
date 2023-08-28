@@ -80,23 +80,7 @@ struct ScaleHandler final : IGraphicHandler {
     }
 
     void draw() override {
-        std::vector<zeno::vec3f> mem;
-
-        float cx = scene->camera->m_zxx.cx;
-        float cy = scene->camera->m_zxx.cy;
-        float cz = scene->camera->m_zxx.cz;
-        float theta = scene->camera->m_zxx.theta;
-        float phi = scene->camera->m_zxx.phi;
-        float radius = scene->camera->m_zxx.radius;
-
-        auto camera_center = glm::vec3(cx, cy, cz);
-        float cos_t = glm::cos(theta), sin_t = glm::sin(theta);
-        float cos_p = glm::cos(phi), sin_p = glm::sin(phi);
-        glm::vec3 front(cos_t * sin_p, sin_t, -cos_t * cos_p);
-
-        auto camera_pos = camera_center - front * radius;
-
-        auto dist = glm::distance(camera_pos, glm::vec3(center[0], center[1], center[2]));
+        auto dist = glm::distance(scene->camera->m_lodcenter, glm::vec3(center[0], center[1], center[2]));
 
         bound = dist / 5.0f * scale;
 
