@@ -1,6 +1,7 @@
 #include <variant>
 #include <zeno/core/IObject.h>
 #include "zensim/math/Vec.h"
+#include "zs_object.hpp"
 
 namespace zs {
 #define DEFINE_VEC(dim, type, tail) using vec##dim##tail = zs::vec<type, dim>;
@@ -30,44 +31,5 @@ using SmallVecValue =
 } // namespace zs
 
 namespace zeno {
-// reference: NumericObject.h by archibate
-struct SmallVecObject : IObjectClone<SmallVecObject> {
-    zs::SmallVecValue value;
-
-    SmallVecObject() = default;
-    SmallVecObject(zs::SmallVecValue const &value) : value(value) {
-    }
-
-    zs::SmallVecValue &get() {
-        return value;
-    }
-
-    zs::SmallVecValue const &get() const {
-        return value;
-    }
-
-    template <class T>
-    T get() const {
-        return std::visit(
-            [](auto const &val) -> T {
-                using V = std::decay_t<decltype(val)>;
-                if constexpr (!std::is_constructible_v<T, V>) {
-                    throw makeError<TypeError>(typeid(T), typeid(V), "return::get<T>");
-                } else {
-                    return T(val);
-                }
-            },
-            value);
-    }
-
-    template <class T>
-    bool is() const {
-        return std::holds_alternative<T>(value);
-    }
-
-    template <class T>
-    void set(T const &x) {
-        value = x;
-    }
-};
+using SmallVecObject = ZsObject<zs::SmallVecValue>; 
 } // namespace zeno
