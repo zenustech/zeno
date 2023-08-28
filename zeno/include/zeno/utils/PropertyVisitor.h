@@ -282,8 +282,6 @@ namespace zeno {
 
         template<typename ParentType, typename InputType, size_t Hash>
         struct OutputField : public Field<ParentType, InputType, Hash> {
-            using Field<ParentType, InputType, Hash>::Parent;
-            using Field<ParentType, InputType, Hash>::Type;
             using Field<ParentType, InputType, Hash>::KeyName;
             using Field<ParentType, InputType, Hash>::ValueRef;
             using Field<ParentType, InputType, Hash>::DefaultValue;
