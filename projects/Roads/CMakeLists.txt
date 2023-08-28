@@ -5,6 +5,8 @@ IF (NOT ZENO_WITH_RPC)
     MESSAGE(FATAL_ERROR "You must enable RPC to use road system.")
 ENDIF()
 
+ADD_SUBDIRECTORY(libraries/nanospline)
+
 ADD_SUBDIRECTORY(utilities)
 ADD_SUBDIRECTORY(service)
 ADD_SUBDIRECTORY(nodes)

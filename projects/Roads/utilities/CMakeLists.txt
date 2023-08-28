@@ -42,3 +42,4 @@ ELSE()
 ENDIF()
 
 TARGET_LINK_LIBRARIES(Roads PRIVATE TBB::tbb TBB::tbbmalloc)
+TARGET_LINK_LIBRARIES(Roads PRIVATE nanospline::nanospline)
