@@ -635,10 +635,11 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             triObj.prog->set_uniformi("mCustomColor", custom_color);
 
             triObj.ebo->bind();
-
-            CHECK_GL(glDrawElements(GL_TRIANGLES,
-                                    /*count=*/triObj.count * 3,
-                                    GL_UNSIGNED_INT, /*first=*/0));
+            if (!scene->drawOptions->render_wireframe) {
+                CHECK_GL(glDrawElements(GL_TRIANGLES,
+                        /*count=*/triObj.count * 3,
+                                        GL_UNSIGNED_INT, /*first=*/0));
+            }
             bool selected = scene->selected.count(nameid) > 0;
 
             if (scene->drawOptions->render_wireframe || selected) {
