@@ -232,9 +232,11 @@ namespace roads {
         class tinyspline::BSpline GenerateBSplineFromSegment(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments);
 
         //template<typename PointContainerType = ArrayList<std::array<float, 3>>, typename SegmentContainerType = ArrayList<std::array<int, 2>>>
-        ArrayList<Eigen::Vector3f> GenerateAndSamplePointsFromSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints = 1000);
+        ArrayList<Eigen::Vector3f> GenerateAndSamplePointsFromSegments(const class tinyspline::BSpline& Spline, int32_t SamplePoints = 1000);
 
-        ArrayList<Eigen::Vector3f> SmoothAndResampleSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints = 1000);
+        float Distance(const Eigen::Vector3d &point, const tinyspline::BSpline &bSpline, float t);
+
+        float FindNearestPoint(const Eigen::Vector3d &point, const tinyspline::BSpline &bSpline, float& t, float step = 0.01, float tolerance = 1e-6);
     }// namespace spline
 
 }// namespace roads

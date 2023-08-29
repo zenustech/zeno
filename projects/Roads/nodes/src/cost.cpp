@@ -13,6 +13,8 @@
 #include <queue>
 #include <stack>
 
+#include "roads/thirdparty/tinysplinecxx.h"
+
 template<typename... Args>
 inline void RoadsAssert(const bool Expr, const std::string &InMsg = "[Roads] Assert Failed", Args... args) {
     if (!Expr) {
@@ -55,6 +57,16 @@ namespace zeno::reflect {
     };
 
 }// namespace zeno::reflect
+
+namespace zeno {
+    struct RoadBSplineObject : public IObject {
+
+        explicit RoadBSplineObject(const tinyspline::BSpline& Lhs): Spline(Lhs) {}
+        explicit RoadBSplineObject(tinyspline::BSpline&& LhsToMove) : Spline(std::forward<tinyspline::BSpline&&>(LhsToMove)) {}
+
+        tinyspline::BSpline Spline;
+    };
+}// namespace zeno
 
 namespace {
     using namespace zeno;
@@ -423,6 +435,9 @@ namespace {
         int SampleNum = 1;
         ZENO_DECLARE_INPUT_FIELD(SampleNum, "Sample Points", false, "", "1000");
 
+        std::shared_ptr<zeno::RoadBSplineObject> Spline;
+        ZENO_DECLARE_OUTPUT_FIELD(Spline, "Spline");
+
         void apply() override {
             auto& Prim = AutoParameter->Primitive;
 
@@ -430,9 +445,10 @@ namespace {
             ArrayList<std::array<int, 2>> Lines(Prim->lines.begin(), Prim->lines.end());
 
             ROADS_TIMING_PRE_GENERATED;
-            ROADS_TIMING_BLOCK("Resample segments", auto Result = spline::SmoothAndResampleSegments(Vertices, Lines, AutoParameter->SampleNum));
+            ROADS_TIMING_BLOCK("Spline Creation", auto Spline = spline::GenerateBSplineFromSegment(Vertices, Lines));
+            ROADS_TIMING_BLOCK("Resample segments", auto Result = spline::GenerateAndSamplePointsFromSegments(Spline, AutoParameter->SampleNum));
 
-            //auto Lines = ArrayList<Eigen::Vector3f>{};
+            AutoParameter->Spline = std::make_shared<zeno::RoadBSplineObject>(Spline);
 
             Prim = std::make_shared<zeno::PrimitiveObject>();
 
@@ -447,6 +463,20 @@ namespace {
             }
 
             zeno::log_info("[Roads] Vertices Num: {}, Lines Num: {}", Prim->verts.size(), Prim->lines.size());
+        }
+    };
+
+    struct ZENO_CRTP(PrimRefineWithSpline, zeno::reflect::IParameterAutoNode) {
+        ZENO_GENERATE_NODE_BODY(PrimRefineWithSpline);
+
+        std::shared_ptr<zeno::PrimitiveObject> Primitive;
+        ZENO_DECLARE_INPUT_FIELD(Primitive, "Prim");
+        ZENO_DECLARE_OUTPUT_FIELD(Primitive, "Prim");
+
+        std::shared_ptr<zeno::RoadBSplineObject> Spline;
+        ZENO_DECLARE_INPUT_FIELD(Spline, "Spline");
+
+        void apply() override {
         }
     };
 

@@ -122,25 +122,20 @@ double roads::energy::CalculateStepSize(const Point2D &Pt, const Point2D &P, con
     return 0.0;
 }
 
-ArrayList<Eigen::Vector3f> spline::SmoothAndResampleSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints) {
-    return GenerateAndSamplePointsFromSegments(InPoints, Segments, SamplePoints);
-}
-
 tinyspline::BSpline spline::GenerateBSplineFromSegment(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments) {
     using namespace tinyspline;
 
     ArrayList<float> Points;
 
-    for (const auto& Seg : Segments) {
-        Points.insert(std::end(Points), { float(InPoints[Seg[0]][0]), float(InPoints[Seg[0]][1]), float(InPoints[Seg[0]][2]) });
+    for (const auto &Seg: Segments) {
+        Points.insert(std::end(Points), {float(InPoints[Seg[0]][0]), float(InPoints[Seg[0]][1]), float(InPoints[Seg[0]][2])});
     }
-    Points.insert(std::end(Points), { float(InPoints[Segments[Segments.size() - 1][1]][0]), float(InPoints[Segments[Segments.size() - 1][1]][1]), float(InPoints[Segments[Segments.size() - 1][1]][2]) });
+    Points.insert(std::end(Points), {float(InPoints[Segments[Segments.size() - 1][1]][0]), float(InPoints[Segments[Segments.size() - 1][1]][1]), float(InPoints[Segments[Segments.size() - 1][1]][2])});
 
     return BSpline::interpolateCatmullRom(Points, 3);
 }
 
-ArrayList<Eigen::Vector3f> spline::GenerateAndSamplePointsFromSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints) {
-    auto Spline = GenerateBSplineFromSegment(InPoints, Segments);
+ArrayList<Eigen::Vector3f> spline::GenerateAndSamplePointsFromSegments(const class tinyspline::BSpline& Spline, int32_t SamplePoints) {
     float Step = 1.0f / float(SamplePoints);
 
     ArrayList<Eigen::Vector3f> Result;
@@ -149,8 +144,33 @@ ArrayList<Eigen::Vector3f> spline::GenerateAndSamplePointsFromSegments(const Arr
 #pragma omp parallel for
     for (int32_t i = 0; i < SamplePoints; i++) {
         auto Point = Spline.eval(float(i) * Step).resultVec3();
-        Result[i] = Eigen::Vector3f { Point.x(), Point.y(), Point.z() };
+        Result[i] = Eigen::Vector3f{Point.x(), Point.y(), Point.z()};
     }
 
     return Result;
+}
+
+float spline::Distance(const Eigen::Vector3d &point, const tinyspline::BSpline &bSpline, float t) {
+    tinyspline::DeBoorNet net = bSpline.eval(t);
+    auto Result = net.resultVec3();
+
+    Eigen::Vector3d splinePoint(Result.x(), Result.y(), Result.z());
+    return float((splinePoint - point).norm());
+}
+
+float spline::FindNearestPoint(const Eigen::Vector3d &point, const tinyspline::BSpline &bSpline, float& t, float step, float tolerance) {
+    // initial guess
+    t = 0.0;
+    while (step > tolerance) {
+        float f_current = Distance(point, bSpline, t);
+        float f_next = Distance(point, bSpline, t + step);
+
+        if (f_next < f_current) {
+            t += step;
+        } else {
+            step *= 0.5;
+        }
+    }
+
+    return t;
 }
