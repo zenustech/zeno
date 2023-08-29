@@ -53,6 +53,7 @@ void ZSlider::setSliderValue(int value)
     if (newVal == m_value)
         return;
     m_value = newVal;
+    m_finishedFrame = -1;
     update();
     emit sliderValueChange(m_value);
 }
