@@ -718,27 +718,31 @@ struct BVHNearestAttr : INode {
             prim->add_attr<T>(attr_tag);
         }
         auto& outAttr = prim->verts.attr<T>(attr_tag);
+
+
+        if(targetType == "tris"){
+        auto bvhWeightTag = get_input2<std::string>("bvhWeightTag");
+        auto& bvh_ws = prim->verts.attr<vec3f>(bvhWeightTag);
+        auto& bvh_id = prim->verts.attr<float>(bvhIdTag);
         #pragma omp parallel for
-        for (int i = 0; i < prim->size(); i++)
-        {
-            if(targetType == "tris"){
-            auto bvhWeightTag = get_input2<std::string>("bvhWeightTag");
-            auto& bvh_ws = prim->verts.attr<vec3f>(bvhWeightTag);
-            auto& bvh_id = prim->verts.attr<float>(bvhIdTag);
+        for (int i = 0; i < prim->size(); i++){
             vec3i vertsIdx = primNei->tris[(int)bvh_id[i]];
             int id0 = vertsIdx[0], id1 = vertsIdx[1], id2 = vertsIdx[2];
             auto attr0 = inAttr[id0];
             auto attr1 = inAttr[id1];
             auto attr2 = inAttr[id2];
-
             outAttr[i] = bvh_ws[i][0] * attr0 + bvh_ws[i][1] * attr1 + bvh_ws[i][2] * attr2;
             }
-            else if(targetType == "points"){
-                auto& bvh_id = prim->verts.attr<int>(bvhIdTag);//int type for querynearestpoints node
+        }
+        else if(targetType == "points"){
+             auto& bvh_id = prim->verts.attr<int>(bvhIdTag);//int type for querynearestpoints node
+            #pragma omp parallel for
+            for (int i = 0; i < prim->size(); i++){
                 int id = bvh_id[i];
                 outAttr[i] = inAttr[id];
             }
         }
+
         }, enum_variant<std::variant<float, vec3f>>(array_index({"float", "vec3f"}, bvhAttributesType)));
 
 
