@@ -312,6 +312,16 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
     pLinkLineShape = new ZToolBarButton(true, ":/icons/timeline-curvemap.svg",":/icons/timeline-curvemap.svg");
 
+    pListView->setToolTip(tr("Subnet List"));
+    pTreeView->setToolTip(tr("Node List"));
+    pSubnetMgr->setToolTip(tr("Subnet Manager"));
+    pFold->setToolTip(tr("Fold"));
+    pUnfold->setToolTip(tr("Unfold"));
+    pCustomParam->setToolTip(tr("Customize Parameters"));
+    pGroup->setToolTip(tr("Create Group"));
+    pSearchBtn->setToolTip(tr("Search"));
+    pSettings->setToolTip(tr("Settings"));
+
     m_btnRun = new ZToolMenuButton;
     m_btnKill = new ZToolButton;
 
@@ -402,6 +412,9 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool());
     pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool());
     pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(zsLinkLineShape).toBool());
+    pShowGrid->setToolTip(pShowGrid->isChecked() ? tr("Hide Grid") : tr("Show Grid"));
+    pSnapGrid->setToolTip(pSnapGrid->isChecked() ? tr("UnSnap Grid") : tr("Snap Grid"));
+    pLinkLineShape->setToolTip(pLinkLineShape->isChecked() ? tr("Straight Link") : tr("Curve Link"));
 
     QStringList items;
     QVector<qreal> factors = UiHelper::scaleFactors();
@@ -584,10 +597,17 @@ void DockContent_Editor::initConnections()
         if (name == zsShowGrid) 
         {
             pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
+            pShowGrid->setToolTip(pShowGrid->isChecked() ? tr("Hide Grid") : tr("Show Grid"));
         } 
         else if (name == zsSnapGrid) 
         {
             pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
+            pSnapGrid->setToolTip(pSnapGrid->isChecked() ? tr("UnSnap Grid") : tr("Snap Grid"));
+        }
+        else if (name == zsLinkLineShape)
+        {
+            pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
+            pLinkLineShape->setToolTip(pLinkLineShape->isChecked() ? tr("Straight Link") : tr("Curve Link"));
         }
     });
 
@@ -985,6 +1005,9 @@ void DockContent_Log::initToolbar(QHBoxLayout* pToolLayout)
     m_pDeleteLog = new ZToolBarButton(false, ":/icons/toolbar_delete_idle.svg", ":/icons/toolbar_delete_light.svg");
     m_pBtnPlainLog->setChecked(true);
     m_pBtnFilterLog->setChecked(false);
+    m_pBtnFilterLog->setToolTip(tr("Filter Log Panel"));
+    m_pBtnPlainLog->setToolTip(tr("Plain Log Panel"));
+    m_pDeleteLog->setToolTip(tr("Delete Log"));
 
     pToolLayout->addWidget(m_pBtnPlainLog);
     pToolLayout->addWidget(m_pBtnFilterLog);
@@ -1021,6 +1044,20 @@ void DockContent_Log::initConnections()
         if (pLogger)
             pLogger->clear();
         ZlogPanel* pLogPanel = qobject_cast<ZlogPanel*>(m_stack->widget(1));
+    });
+
+    connect(zenoApp->logModel(), &QStandardItemModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
+        if (m_pBtnFilterLog->isChecked())
+            return;
+        QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
+        if (pModel) {
+            QModelIndex idx = pModel->index(first, 0, parent);
+            int type = idx.data(ROLE_LOGTYPE).toInt();
+            if (type == QtFatalMsg)
+            {
+                m_pBtnFilterLog->toggle(true);
+            }
+        }
     });
 }
 

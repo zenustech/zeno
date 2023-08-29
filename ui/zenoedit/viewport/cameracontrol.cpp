@@ -127,7 +127,10 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     settings.getViewShortCut(ShortCut_MovingView, button);
     settings.getViewShortCut(ShortCut_RotatingView, button);
-    if (event->buttons() & button) {
+    bool bTransform = false;
+    if (m_transformer)
+        bTransform = m_transformer->isTransformMode();
+    if (!bTransform && (event->buttons() & button)) {
         m_lastMidButtonPos = event->pos();
     } else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
@@ -278,7 +281,10 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     int moveKey = settings.getViewShortCut(ShortCut_MovingView, moveButton);
     int rotateKey = settings.getViewShortCut(ShortCut_RotatingView, rotateButton);
-    if (event->buttons() & (rotateButton | moveButton)) {
+    bool bTransform = false;
+    if (m_transformer)
+        bTransform = m_transformer->isTransformMode();
+    if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
         dx *= ratio / m_res[0];

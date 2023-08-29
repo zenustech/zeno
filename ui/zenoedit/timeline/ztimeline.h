@@ -24,6 +24,7 @@ public:
     int value() const;
     bool isPlayToggled() const;
     void updateKeyFrames(const QVector<int>& keys);
+    void setFinishedFrame(int frame);
 
 protected:
     void paintEvent(QPaintEvent* event) override;

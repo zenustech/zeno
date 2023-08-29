@@ -25,6 +25,13 @@
     </message>
 </context>
 <context>
+    <name>ColorWidget</name>
+    <message>
+        <source>More Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>DesignerMainWin</name>
     <message>
         <source>Open</source>
@@ -162,7 +169,7 @@
     </message>
     <message>
         <source>This function can only be used in cache mode.</source>
-        <translation>该功能仅支持在缓存模式下运行</translation>
+        <translation>该功能仅支持在缓存模式下运行。</translation>
     </message>
     <message>
         <source>disable</source>
@@ -179,6 +186,81 @@
     <message>
         <source>alwaysMaterial</source>
         <translation>实时预览材质</translation>
+    </message>
+    <message>
+        <source>Subnet List</source>
+        <translation>子图列表</translation>
+    </message>
+    <message>
+        <source>Node List</source>
+        <translation>节点列表</translation>
+    </message>
+    <message>
+        <source>Subnet Manager</source>
+        <translation>子图管理</translation>
+    </message>
+    <message>
+        <source>Fold</source>
+        <translation>折叠</translation>
+    </message>
+    <message>
+        <source>Unfold</source>
+        <translation>展开</translation>
+    </message>
+    <message>
+        <source>Customize Parameters</source>
+        <translation>自定义参数</translation>
+    </message>
+    <message>
+        <source>Create Group</source>
+        <translation>创建分组</translation>
+    </message>
+    <message>
+        <source>Search</source>
+        <translation>查询</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>设置</translation>
+    </message>
+    <message>
+        <source>Hide Grid</source>
+        <translation>隐藏网格</translation>
+    </message>
+    <message>
+        <source>Show Grid</source>
+        <translation>显示网格</translation>
+    </message>
+    <message>
+        <source>UnSnap Grid</source>
+        <translation>取消网格吸附</translation>
+    </message>
+    <message>
+        <source>Snap Grid</source>
+        <translation>网格吸附</translation>
+    </message>
+    <message>
+        <source>Straight Link</source>
+        <translation>直线连接</translation>
+    </message>
+    <message>
+        <source>Curve Link</source>
+        <translation>曲线连接</translation>
+    </message>
+</context>
+<context>
+    <name>DockContent_Log</name>
+    <message>
+        <source>Filter Log Panel</source>
+        <translation>日志筛选面板</translation>
+    </message>
+    <message>
+        <source>Plain Log Panel</source>
+        <translation>普通日志面板</translation>
+    </message>
+    <message>
+        <source>Delete Log</source>
+        <translation>删除日志</translation>
     </message>
 </context>
 <context>
@@ -654,7 +736,7 @@
     </message>
     <message>
         <source>EnvTex</source>
-        <translation type="unfinished">环境贴图</translation>
+        <translation type="obsolete">环境贴图</translation>
     </message>
     <message>
         <source>Camera</source>
@@ -1118,6 +1200,66 @@
         <source>Scaling View</source>
         <translation type="unfinished">视图缩放</translation>
     </message>
+    <message>
+        <source>add Link</source>
+        <translation type="unfinished">添加连接</translation>
+    </message>
+    <message>
+        <source>copy vec param</source>
+        <translation type="unfinished">复制向量参数</translation>
+    </message>
+    <message>
+        <source>copy vec.x</source>
+        <translation type="unfinished">复制向量x</translation>
+    </message>
+    <message>
+        <source>copy vec.y</source>
+        <translation type="unfinished">复制向量y</translation>
+    </message>
+    <message>
+        <source>copy vec.z</source>
+        <translation type="unfinished">复制向量z</translation>
+    </message>
+    <message>
+        <source>copy vec.w</source>
+        <translation type="unfinished">复制向量w</translation>
+    </message>
+    <message>
+        <source>Copy and Create Net Label</source>
+        <translation type="unfinished">创建并且复制标签</translation>
+    </message>
+    <message>
+        <source>Copy Net Label</source>
+        <translation type="unfinished">复制标签</translation>
+    </message>
+    <message>
+        <source>Delete Net Label</source>
+        <translation type="unfinished">删除标签</translation>
+    </message>
+    <message>
+        <source>Paste Reference</source>
+        <translation type="unfinished">粘贴引用</translation>
+    </message>
+    <message>
+        <source>Copy Param Reference</source>
+        <translation type="unfinished">复制参数引用</translation>
+    </message>
+    <message>
+        <source>Paste Net Label</source>
+        <translation type="unfinished">粘贴标签</translation>
+    </message>
+    <message>
+        <source>Net Labels</source>
+        <translation type="unfinished">标签</translation>
+    </message>
+    <message>
+        <source>transfer to net label</source>
+        <translation type="unfinished">转为标签</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation type="unfinished">删除</translation>
+    </message>
 </context>
 <context>
     <name>RecFrameSelectDlg</name>
@@ -1297,6 +1439,10 @@
         <source>30 fpbs</source>
         <translation type="vanished">30帧/秒</translation>
     </message>
+    <message>
+        <source>FPS</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>WelcomePage</name>
@@ -1346,6 +1492,14 @@
     <message>
         <source>Close</source>
         <translation type="unfinished">关闭</translation>
+    </message>
+    <message>
+        <source>Add Tab</source>
+        <translation type="unfinished">增加选项卡</translation>
+    </message>
+    <message>
+        <source>Layout Manager</source>
+        <translation type="unfinished">布局管理</translation>
     </message>
 </context>
 <context>
@@ -1412,6 +1566,40 @@
     <message>
         <source>The param name already exists</source>
         <translation>参数名字已存在</translation>
+    </message>
+</context>
+<context>
+    <name>ZGraphicsNetLabel</name>
+    <message>
+        <source>Delete Net Label</source>
+        <translation type="unfinished">删除标签</translation>
+    </message>
+    <message>
+        <source>Edit Net Label</source>
+        <translation type="unfinished">编辑标签</translation>
+    </message>
+</context>
+<context>
+    <name>ZImportSubgraphsDlg</name>
+    <message>
+        <source>Replace or Skip</source>
+        <translation>替换或跳过</translation>
+    </message>
+    <message>
+        <source>Replace All</source>
+        <translation>全部替换</translation>
+    </message>
+    <message>
+        <source>Skip All</source>
+        <translation>全部跳过</translation>
+    </message>
+    <message>
+        <source>Select Subgraphs</source>
+        <translation>选择子图</translation>
+    </message>
+    <message>
+        <source>include %1 subgraphs with the same name</source>
+        <translation>有%1个同名子图</translation>
     </message>
 </context>
 <context>
@@ -1584,35 +1772,62 @@
     <name>ZShortCutSettingDlg</name>
     <message>
         <source>Description</source>
-        <translation type="unfinished">描述</translation>
+        <translation>描述</translation>
     </message>
     <message>
         <source>ShortCut</source>
-        <translation type="unfinished">快捷键</translation>
+        <translation>快捷键</translation>
     </message>
     <message>
         <source>OK</source>
-        <translation type="unfinished">确定</translation>
+        <translation>确定</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation type="unfinished">取消</translation>
+        <translation>取消</translation>
     </message>
     <message>
         <source>Shortcut Setting</source>
-        <translation type="unfinished">快捷键设置</translation>
+        <translation>快捷键设置</translation>
     </message>
     <message>
         <source>Default</source>
-        <translation type="unfinished">默认</translation>
+        <translation>默认</translation>
     </message>
     <message>
         <source>Houdini</source>
-        <translation type="unfinished">胡迪尼</translation>
+        <translation>胡迪尼</translation>
     </message>
     <message>
         <source>Maya</source>
-        <translation type="unfinished">玛雅</translation>
+        <translation>玛雅</translation>
+    </message>
+</context>
+<context>
+    <name>ZSubgraphsListDlg</name>
+    <message>
+        <source>List of subgraphs</source>
+        <translation>子图列表</translation>
+    </message>
+    <message>
+        <source>Name</source>
+        <translation>名称</translation>
+    </message>
+    <message>
+        <source>Replace</source>
+        <translation>替换</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>重命名</translation>
+    </message>
+    <message>
+        <source>OK</source>
+        <translation>确定</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>取消</translation>
     </message>
 </context>
 <context>
@@ -1647,11 +1862,15 @@
     </message>
     <message>
         <source>Delete Subgraph</source>
-        <translation type="unfinished">删除子图</translation>
+        <translation>删除子图</translation>
     </message>
     <message>
         <source>Do you want to delete the selected subgraphs</source>
-        <translation type="unfinished">是否删除所选子图</translation>
+        <translation>是否删除所选子图</translation>
+    </message>
+    <message>
+        <source>Save Subgrah</source>
+        <translation>保存子图</translation>
     </message>
 </context>
 <context>
@@ -1781,6 +2000,30 @@
         <source>Run</source>
         <translation type="vanished">运行</translation>
     </message>
+    <message>
+        <source>Back To Start</source>
+        <translation>返回开始</translation>
+    </message>
+    <message>
+        <source>Backward</source>
+        <translation>向后</translation>
+    </message>
+    <message>
+        <source>Play</source>
+        <translation>播放</translation>
+    </message>
+    <message>
+        <source>Forward</source>
+        <translation>向前</translation>
+    </message>
+    <message>
+        <source>Forward To End</source>
+        <translation>前进到结束</translation>
+    </message>
+    <message>
+        <source>Loop Play</source>
+        <translation>循环播放</translation>
+    </message>
 </context>
 <context>
     <name>ZToolMenuButton</name>
@@ -1887,6 +2130,21 @@
     </message>
 </context>
 <context>
+    <name>ZenoFullLink</name>
+    <message>
+        <source>trace to output socket</source>
+        <translation type="unfinished">追踪到输出端</translation>
+    </message>
+    <message>
+        <source>trace to input socket</source>
+        <translation type="unfinished">追踪到输入端</translation>
+    </message>
+    <message>
+        <source>transfer to net label</source>
+        <translation type="unfinished">转为标签</translation>
+    </message>
+</context>
+<context>
     <name>ZenoGraphsEditor</name>
     <message>
         <source>Node</source>
@@ -1988,23 +2246,23 @@
         <source>ZENCACHENUM</source>
         <translation type="vanished">ZENCACHE上限</translation>
     </message>
-	<message>
+    <message>
         <source>Enable cache</source>
         <translation>启用cache</translation>
     </message>
-	<message>
+    <message>
         <source>Cache num</source>
         <translation>cache加载上限</translation>
     </message>
-	<message>
+    <message>
         <source>Temp cache directory</source>
         <translation>临时目录</translation>
     </message>
-	<message>
+    <message>
         <source>Cache root</source>
         <translation>自定义目录</translation>
     </message>
-	<message>
+    <message>
         <source>Cache auto clean up</source>
         <translation>自动清理cache</translation>
     </message>
@@ -2019,6 +2277,14 @@
     <message>
         <source>Close Tab</source>
         <translation type="unfinished">关闭</translation>
+    </message>
+    <message>
+        <source>Search Option</source>
+        <translation type="unfinished">搜索选项</translation>
+    </message>
+    <message>
+        <source>Tab List</source>
+        <translation type="unfinished">选项卡列表</translation>
     </message>
 </context>
 <context>
@@ -2237,6 +2503,11 @@
         <source>The format of current zsg is old. To keep this file data trackable, we recommand you choose &quot;Save As&quot; to save it, as the format of new zsg</source>
         <translation>当前zsg为旧格式文件，为了确保不被新格式覆盖，只能通过“另存为”操作保存为新格式</translation>
     </message>
+    <message>
+        <source>there is some nodes which are not descriped by the current version
+the save action will lose them, we recommand you choose &quot;Save As&quot; to save it</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ZenoNode</name>
@@ -2258,23 +2529,39 @@
     </message>
     <message>
         <source>Delete Link Label</source>
-        <translation type="unfinished">删除连接标签</translation>
+        <translation type="obsolete">删除连接标签</translation>
     </message>
     <message>
         <source>Copy Link Label</source>
-        <translation type="unfinished">复制连接标签</translation>
+        <translation type="obsolete">复制连接标签</translation>
     </message>
     <message>
         <source>Create Link Label</source>
-        <translation type="unfinished">创建连接标签</translation>
+        <translation type="obsolete">创建连接标签</translation>
     </message>
     <message>
         <source>Paste Link Label</source>
-        <translation type="unfinished">粘贴连接标签</translation>
+        <translation type="obsolete">粘贴连接标签</translation>
     </message>
     <message>
         <source>add Link</source>
         <translation type="unfinished">添加连接</translation>
+    </message>
+    <message>
+        <source>jump to %1</source>
+        <translation type="unfinished">跳转至%1</translation>
+    </message>
+    <message>
+        <source>Warring</source>
+        <translation type="unfinished">警告</translation>
+    </message>
+    <message>
+        <source>Net label invalid!</source>
+        <translation type="unfinished">标签不合法！</translation>
+    </message>
+    <message>
+        <source>CustomName invalid!</source>
+        <translation type="unfinished">自定义名称不合法！</translation>
     </message>
 </context>
 <context>
@@ -2678,7 +2965,19 @@ All Files (*)</source>
     </message>
     <message>
         <source>Trace Error</source>
-        <translation type="unfinished">错误追踪</translation>
+        <translation>错误追踪</translation>
+    </message>
+    <message>
+        <source>Sync Log</source>
+        <translation>同步日志</translation>
+    </message>
+    <message>
+        <source>Delete Log</source>
+        <translation>删除日志</translation>
+    </message>
+    <message>
+        <source>Settings</source>
+        <translation>设置</translation>
     </message>
 </context>
 </TS>

@@ -1103,6 +1103,7 @@ void ZenoSubGraphScene::updateKeyFrame()
     for (const QModelIndex &index : selectNodesIndice()) {
         keys << index.data(ROLE_KEYFRAMES).value<QVector<int>>();
     }
+    qSort(keys.begin(), keys.end());
     keys.erase(std::unique(keys.begin(), keys.end()), keys.end());
     zenoApp->getMainWindow()->timeline()->updateKeyFrames(keys);
 }

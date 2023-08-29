@@ -74,7 +74,9 @@ void ZenoGraphsEditor::initUI()
     m_ui->graphsViewTab->tabBar()->setProperty("cssClass", "graphicsediter");
     m_ui->graphsViewTab->setUsesScrollButtons(true);
     m_ui->btnSearchOpt->setIcons(":/icons/collaspe.svg", ":/icons/collaspe.svg");
+    m_ui->btnSearchOpt->setToolTip(tr("Search Option"));
     ZIconLabel* pPageListButton = new ZIconLabel(m_ui->graphsViewTab);
+    pPageListButton->setToolTip(tr("Tab List"));
     pPageListButton->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 30)), ":/icons/ic_parameter_unfold.svg", ":/icons/ic_parameter_unfold.svg");
     connect(pPageListButton, &ZIconLabel::clicked, this, &ZenoGraphsEditor::onPageListClicked);
     m_ui->graphsViewTab->setCornerWidget(pPageListButton);

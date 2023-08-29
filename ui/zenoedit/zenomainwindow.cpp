@@ -1125,6 +1125,7 @@ void ZenoMainWindow::updateViewport(const QString& action)
         {
             int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
             int ui_frame = m_pTimeline->value();
+            m_pTimeline->setFinishedFrame(endFrame);
             if (ui_frame == endFrame)
             {
                 for (DisplayWidget *view : views)
@@ -1934,6 +1935,7 @@ void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
     setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
     m_pTimeline->initFps(info.timelinefps);
+    m_pTimeline->setFinishedFrame(-1);
     for (auto view: viewports())
     {
         view->setSliderFeq(1000 / info.timelinefps);

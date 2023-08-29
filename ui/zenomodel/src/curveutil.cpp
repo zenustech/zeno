@@ -140,11 +140,14 @@ namespace curve_util
         bool ret = false;
         for (auto& point : curve.points) 
         {
-            if (point.point.x() == newPos.x() && point.point.y() != newPos.y()) {
-                point.point.setY(newPos.y());
-                curve.rg.yTo = curve.rg.yTo > newPos.y() ? curve.rg.yTo : newPos.y();
-                curve.rg.yFrom = curve.rg.yFrom > newPos.y() ? newPos.y() : curve.rg.yFrom;
-                ret = true;
+            if (point.point.y() != newPos.y())
+            {
+                if (point.point.x() == newPos.x() || curve.points.size() == 1) {
+                    point.point.setY(newPos.y());
+                    curve.rg.yTo = curve.rg.yTo > newPos.y() ? curve.rg.yTo : newPos.y();
+                    curve.rg.yFrom = curve.rg.yFrom > newPos.y() ? newPos.y() : curve.rg.yFrom;
+                    ret = true;
+                }
             }
         }
         return ret;
