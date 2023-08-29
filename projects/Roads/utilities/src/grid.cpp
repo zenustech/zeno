@@ -136,7 +136,7 @@ tinyspline::BSpline spline::GenerateBSplineFromSegment(const ArrayList<std::arra
     }
     Points.insert(std::end(Points), { float(InPoints[Segments[Segments.size() - 1][1]][0]), float(InPoints[Segments[Segments.size() - 1][1]][1]), float(InPoints[Segments[Segments.size() - 1][1]][2]) });
 
-    return BSpline::interpolateCubicNatural(Points, 3);
+    return BSpline::interpolateCatmullRom(Points, 3);
 }
 
 ArrayList<Eigen::Vector3f> spline::GenerateAndSamplePointsFromSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints) {
@@ -144,11 +144,12 @@ ArrayList<Eigen::Vector3f> spline::GenerateAndSamplePointsFromSegments(const Arr
     float Step = 1.0f / float(SamplePoints);
 
     ArrayList<Eigen::Vector3f> Result;
-    Result.reserve(SamplePoints);
+    Result.resize(SamplePoints);
 
+#pragma omp parallel for
     for (int32_t i = 0; i < SamplePoints; i++) {
         auto Point = Spline.eval(float(i) * Step).resultVec3();
-        Result.push_back( Eigen::Vector3f { Point.x(), Point.y(), Point.z() } );
+        Result[i] = Eigen::Vector3f { Point.x(), Point.y(), Point.z() };
     }
 
     return Result;
