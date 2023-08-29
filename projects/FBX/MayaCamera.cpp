@@ -248,8 +248,12 @@ struct LightNode : INode {
         auto scale = get_input2<zeno::vec3f>("scale");
         auto rotate = get_input2<zeno::vec3f>("rotate");
         auto quaternion = get_input2<zeno::vec4f>("quaternion");
-        auto intensity = get_input2<float>("intensity");
+        
         auto color = get_input2<zeno::vec3f>("color");
+
+        auto exposure = get_input2<float>("exposure");
+        auto intensity = get_input2<float>("intensity");
+        intensity *= pow(2.0, exposure);
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();
         auto &verts = prim->verts;
@@ -384,6 +388,7 @@ ZENO_DEFNODE(LightNode)({
         {"vec3f", "rotate", "0, 0, 0"},
         {"vec4f", "quaternion", "1, 0, 0, 0"},
         {"vec3f", "color", "1, 1, 1"},
+        {"float", "exposure", "0"},
         {"float", "intensity", "1"},
         {"bool", "islight", "1"},
         {"bool", "invertdir", "1"},
