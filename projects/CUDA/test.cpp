@@ -1,6 +1,7 @@
 //#include "Structures.hpp"
 //#include "Utils.hpp"
 #include <cassert>
+#include <chrono>
 #include <zeno/types/DictObject.h>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/NumericObject.h>
@@ -240,6 +241,82 @@ struct ZSFileTest : INode {
 };
 
 ZENDEFNODE(ZSFileTest, {
+                           {},
+                           {},
+                           {},
+                           {"ZPCTest"},
+                       });
+
+struct ZSLoopTest : INode {
+
+    using clock = std::chrono::high_resolution_clock;
+    using ns = std::chrono::nanoseconds;
+    using us = std::chrono::microseconds;
+    using ms = std::chrono::milliseconds;
+    template <typename TimeUnit, typename Duration>
+    double timeCast(const Duration &interval) {
+        return std::chrono::duration_cast<TimeUnit>(interval).count() * 1.;
+    }
+
+    void updateUI(double tSlice) {
+        ;
+    }
+    void draw() {
+        ;
+    }
+
+    void stepSimulation(double tSlice) {
+        ;
+    }
+    void executionThread() {
+    }
+
+    void apply() override {
+        using namespace zs;
+        constexpr auto space = execspace_e::openmp;
+        auto pol = omp_exec();
+
+        // std::chrono::high_resolution_clock::now();
+        // std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - m_Start).count()
+        constexpr float t_display_slice = 1.f / 60; // 60 fps
+        bool running = true;
+        double tAccum = 0.;
+        clock::time_point tNow, tLast = clock::now();
+        clock::time_point origin = tLast;
+        u64 sum = 0;
+        bool show = false;
+
+        // std::thread computeWorker{executionThread};
+
+        /// high-frequency loop
+        while (running) {
+            tNow = clock::now();
+            double dt = timeCast<ns>(tNow - tLast) * (0.001 * 0.001 * 0.001);
+            tLast = tNow;
+            tAccum += dt;
+
+            while (tAccum > t_display_slice) {
+                updateUI(t_display_slice);
+                tAccum -= t_display_slice;
+
+                sum++;
+                show = true;
+            }
+            draw();
+
+            if (sum % 100 == 0 && show) {
+                fmt::print("[{}] slices elapsed {}\n", sum, timeCast<ns>(tNow - origin) * (0.001 * 0.001 * 0.001));
+                show = false;
+            }
+            if (sum > 1000)
+                break;
+        }
+
+        // computeWorker.join();
+    }
+};
+
+ZENDEFNODE(ZSLoopTest, {
                            {},
                            {},
                            {},
