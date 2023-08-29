@@ -381,6 +381,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
         ":/icons/logger-sync-light.svg",
         "",
         "");
+    m_ui->btnSyncLog->setToolTip(tr("Sync Log"));
 
     m_ui->btnDelete->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
     m_ui->btnDelete->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
@@ -388,6 +389,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
         ":/icons/toolbar_delete_light.svg",
         "",
         "");
+    m_ui->btnDelete->setToolTip(tr("Delete Log"));
 
     m_ui->btnSetting->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
     m_ui->btnSetting->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
@@ -395,6 +397,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
         ":/icons/settings-on.svg",
         "",
         "");
+    m_ui->btnSetting->setToolTip(tr("Settings"));
 
     initSignals();
     initModel();

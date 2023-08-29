@@ -183,6 +183,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnBackToStart->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnBackToStart->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnBackToStart->setToolTip(tr("Back To Start"));
 
     m_ui->btnBackward->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnBackward->setIcon(
@@ -193,6 +194,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnBackward->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnBackward->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnBackward->setToolTip(tr("Backward"));
 
     m_ui->btnPlay->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
     m_ui->btnPlay->setIcon(
@@ -203,6 +205,7 @@ void ZTimeline::initButtons()
         ":/icons/timeline_play_hover.svg");
     m_ui->btnPlay->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnPlay->setBackgroundClr(QColor(), QColor(), QColor(), QColor());
+    m_ui->btnPlay->setToolTip(tr("Play"));
 
     m_ui->btnForward->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnForward->setIcon(
@@ -213,6 +216,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnForward->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnForward->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnForward->setToolTip(tr("Forward"));
 
     m_ui->btnForwardToEnd->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnForwardToEnd->setIcon(
@@ -223,6 +227,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnForwardToEnd->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnForwardToEnd->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnForwardToEnd->setToolTip(tr("Forward To End"));
 
     QColor bg(35, 40, 47);
     m_ui->btnLoopPlay->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
@@ -234,6 +239,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnLoopPlay->setMargins(QMargins(3, 2, 2, 3));
     m_ui->btnLoopPlay->setBackgroundClr(bg, hoverBg, bg, hoverBg);
+    m_ui->btnLoopPlay->setToolTip(tr("Loop Play"));
     connect(m_ui->btnLoopPlay, &ZToolButton::toggled, this, [=](bool bChecked) {
         ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pMainWin);
