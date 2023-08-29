@@ -305,7 +305,7 @@ struct LightTreeSampler {
 
             } else {
                 // Confirm light has nonzero importance before returning light sample
-                if (nodeIndex > 0 && node.lightBounds.Importance(p, n, rootBounds) > 0) {
+                if (nodeIndex >= 0 && node.lightBounds.Importance(p, n, rootBounds) > 0) {
                     return SelectedLight{ node.meta.childOrLightIndex, pmf};
                 }
                 
