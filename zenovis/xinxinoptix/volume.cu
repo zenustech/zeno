@@ -516,8 +516,15 @@ extern "C" __global__ void __closesthit__radiance_volume()
             float2 uu = {rnd(prd->seed), rnd(prd->seed)};
             auto prob = hg.Sample_p(-ray_dir, new_dir, uu);              
             //auto relative_prob = prob * (CUDART_PI_F * 4);
-            ray_dir = normalize(new_dir);;
+            new_dir = normalize(new_dir);
+            if (prd->trace_denoise_normal) {
+                prd->tmp_normal = 0.5f * (-ray_dir + new_dir);
+            }
+            ray_dir = new_dir;
 
+            if(prd->trace_denoise_albedo) {
+                prd->tmp_albedo = vol_out.albedo;
+            }
             scattering = s_prob_rgb * (_prob_rgb - a_prob_rgb) / _prob_rgb; // scattering prob
             break;
         } else {
@@ -565,7 +572,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
     shadow_prd.nonThinTransHit = 0;
     shadow_prd.shadowAttanuation = make_float3(1.0f);
 
-    scattering *= vol_out.albedo;
+    scattering = vol_out.albedo;
     
     if(rnd(prd->seed)<=0.5f) {
         bool computed = false;
@@ -638,10 +645,12 @@ extern "C" __global__ void __closesthit__radiance_volume()
         float ray_prob = hg.p(-ray_dir, sun_dir);
         float3 lbrdf = scattering * clamp(ray_prob, 0.0f, 1.0f);
 
-        prd->radiance = light_attenuation * params.sunLightIntensity * 2.0f * lbrdf *
-                        float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
-                                       10, // be careful
-                                       .45f, 15.f, 1.030725f * 0.3f, params.elapsedTime));
+        float tmpPdf;
+        auto illum = float3(envSky(sun_dir, sunLightDir, make_float3(0., 0., 1.),
+                                     40, // be careful
+                                     .45, 15., 1.030725f * 0.3f, params.elapsedTime, tmpPdf));
+
+        prd->radiance = light_attenuation * params.sunLightIntensity * 2.0f * lbrdf * illum;
     }
 
     prd->CH = 1.0;

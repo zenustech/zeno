@@ -452,6 +452,8 @@ static std::shared_ptr<CameraInfo> foundABCCamera(Alembic::AbcGeom::ICameraSchem
     cam_info.focal_length = samp.getFocalLength();
     cam_info._near = samp.getNearClippingPlane();
     cam_info._far = samp.getFarClippingPlane();
+    cam_info.horizontalAperture = samp.getHorizontalAperture() * 10;
+    cam_info.verticalAperture = samp.getVerticalAperture() * 10;
     log_info(
         "[alembic] Camera focal_length: {}, near: {}, far: {}",
         cam_info.focal_length,

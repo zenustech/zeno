@@ -34,9 +34,7 @@ struct Session : zeno::disable_copy {
     void set_curr_frameid(int frameid);
     int get_curr_frameid();
     void set_show_grid(bool flag);
-    void look_perspective(float cx, float cy, float cz, float theta,
-                          float phi, float radius, float fov,
-                          bool ortho_mode, float aperture, float focalPlaneDistance);
+    void look_perspective();
     void look_to_dir(float cx, float cy, float cz,
                      float dx, float dy, float dz,
                      float ux, float uy, float uz);
