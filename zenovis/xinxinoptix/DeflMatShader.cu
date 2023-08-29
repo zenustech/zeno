@@ -1030,13 +1030,13 @@ extern "C" __global__ void __closesthit__radiance()
     prd->attenuation *= reflectance;
     prd->depth++;
 
-    auto shadingP = [&]() {
-        
-        bool facing = dot(-ray_dir, prd->geometryNormal) >= 0;        
-        return rtgems::offset_ray(P,  facing? prd->geometryNormal:-prd->geometryNormal);
-    }();
+    // auto shadingP = [&]() {
+    //     auto cosine = dot(-ray_dir, prd->geometryNormal);
+    //     auto sign = copysignf(1.0f, cosine);        
+    //     return rtgems::offset_ray(P,  prd->geometryNormal * sign);
+    // }();
 
-    //shadingP = rtgems::offset_ray(P,  prd->geometryNormal);
+    auto shadingP = rtgems::offset_ray(P,  prd->geometryNormal);
     prd->radiance = make_float3(0.0f,0.0f,0.0f);
 
     if(prd->depth>=3)
@@ -1098,7 +1098,7 @@ extern "C" __global__ void __closesthit__radiance()
     }
     
     if (prd->medium != DisneyBSDF::vacuum) {
-        prd->_mask_ = DefaultMatMask;
+        prd->_mask_ = (uint8_t)(EverythingMask ^ VolumeMatMask);
     } else {
         prd->_mask_ = EverythingMask;
     }

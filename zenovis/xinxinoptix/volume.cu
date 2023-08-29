@@ -412,7 +412,7 @@ extern "C" __global__ void __closesthit__radiance_volume()
 
     uint16_t _mask_ = EverythingMask ^ VolumeMatMask;
 
-    traceRadianceMasked(params.handle, ray_orig,ray_dir, 0, _FLT_MAX_, _mask_, &testPRD);
+    traceRadiance(params.handle, ray_orig,ray_dir, 0, _FLT_MAX_, &testPRD, _mask_);
 
     if(testPRD.vol_t1 < t1)
     {
@@ -572,6 +572,8 @@ extern "C" __global__ void __anyhit__occlusion_volume()
 
         pbrt::HenyeyGreenstein hg { vol_out.anisotropy };
         auto prob_continue = hg.p(-ray_dir, ray_dir) * prob_scatter;
+        prob_continue = clamp(prob_continue, 0.0, 1.0f);
+        //printf("prob_continue %f \n", prob_continue);
 
         auto tr = transmittance * prob_nulling;
         tr += transmittance * prob_continue * vol_out.albedo;

@@ -31,7 +31,7 @@ inline float PhaseHG(float cosTheta, float g) {
     float gg = g * g;
     float denom = 1 + gg + 2 * g * cosTheta;
 
-    if (denom < __FLT_MIN__) {
+    if (denom < __FLT_EPSILON__) {
         return 1.0f;
     }
 

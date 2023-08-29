@@ -136,7 +136,7 @@ struct RadiancePRD
         offsetRay(this->origin, new_dir);
     }
 
-    char _mask_ = EverythingMask;
+    uint8_t _mask_ = EverythingMask;
 
     void updateAttenuation(float3& multiplier) {
         attenuation2 = attenuation;
@@ -176,71 +176,14 @@ struct RadiancePRD
     
 };
 
-
-static __forceinline__ __device__ void  traceRadiance(
-        OptixTraversableHandle handle,
-        float3                 ray_origin,
-        float3                 ray_direction,
-        float                  tmin,
-        float                  tmax,
-        RadiancePRD*           prd
-        )
-{
-    // TODO: deduce stride from num ray-types passed in params
-
-    unsigned int u0, u1;
-    packPointer( prd, u0, u1 );
-    optixTrace(
-            handle,
-            ray_origin,
-            ray_direction,
-            tmin,
-            tmax,
-            0.0f,                // rayTime
-            OptixVisibilityMask( 255u ),
-            OPTIX_RAY_FLAG_NONE,
-            RAY_TYPE_RADIANCE,        // SBT offset
-            RAY_TYPE_COUNT,           // SBT stride
-            RAY_TYPE_RADIANCE,        // missSBTIndex
-            u0, u1 );
-}
-
-
-static __forceinline__ __device__ bool traceOcclusion(
-        OptixTraversableHandle handle,
-        float3                 ray_origin,
-        float3                 ray_direction,
-        float                  tmin,
-        float                  tmax,
-        RadiancePRD*           prd
-        )
-{
-    unsigned int u0, u1;
-    packPointer( prd, u0, u1 );
-    optixTrace(
-            handle,
-            ray_origin,
-            ray_direction,
-            tmin,
-            tmax,
-            0.0f,                    // rayTime
-            OptixVisibilityMask( 255u ),
-            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
-            RAY_TYPE_OCCLUSION,      // SBT offset
-            RAY_TYPE_COUNT,          // SBT stride
-            RAY_TYPE_OCCLUSION,       // missSBTIndex
-            u0, u1);
-        return false;//???
-}
-
-static __forceinline__ __device__ void traceRadianceMasked(
+static __forceinline__ __device__ void traceRadiance(
 	OptixTraversableHandle handle,
 	float3                 ray_origin,
 	float3                 ray_direction,
 	float                  tmin,
 	float                  tmax,
-	char                   mask,
-	RadiancePRD           *prd)
+	RadiancePRD           *prd,
+    OptixVisibilityMask    mask=255u)
 {
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
@@ -249,7 +192,7 @@ static __forceinline__ __device__ void traceRadianceMasked(
             ray_origin, ray_direction,
             tmin, tmax,
             0.0f,                     // rayTime
-            OptixVisibilityMask(mask),
+            (mask),
             OPTIX_RAY_FLAG_DISABLE_ANYHIT,
             RAY_TYPE_RADIANCE,        // SBT offset
             RAY_TYPE_COUNT,           // SBT stride
@@ -258,14 +201,14 @@ static __forceinline__ __device__ void traceRadianceMasked(
 }
 
 
-static __forceinline__ __device__ void traceOcclusionMasked(
+static __forceinline__ __device__ void traceOcclusion(
         OptixTraversableHandle handle,
         float3                 ray_origin,
         float3                 ray_direction,
         float                  tmin,
         float                  tmax,
-        char                   mask,
-        RadiancePRD           *prd)
+        RadiancePRD           *prd,
+        OptixVisibilityMask    mask=255u)
 {
     unsigned int u0, u1;
     packPointer( prd, u0, u1 );
@@ -274,8 +217,8 @@ static __forceinline__ __device__ void traceOcclusionMasked(
             ray_origin, ray_direction,
             tmin, tmax,
             0.0f,  // rayTime
-            OptixVisibilityMask(mask),
-            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,  //OPTIX_RAY_FLAG_NONE,
+            (mask),
+            OPTIX_RAY_FLAG_ENFORCE_ANYHIT,
             RAY_TYPE_OCCLUSION,      // SBT offset
             RAY_TYPE_COUNT,          // SBT stride
             RAY_TYPE_OCCLUSION,      // missSBTIndex

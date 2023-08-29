@@ -182,16 +182,11 @@ struct Params
 
     float sunSoftness;
     float elapsedTime;
-    bool simpleRender;
 
-#if defined (__cudacc__)
-    const bool denoise;
-#else
-    bool denoise;
-#endif
+    bool simpleRender     :1;
+    bool show_background  :1;
 
-    bool show_background;
-
+    bool denoise : 1;
 };
 
 

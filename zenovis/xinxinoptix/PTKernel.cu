@@ -153,7 +153,7 @@ extern "C" __global__ void __raygen__rg()
         }
 
         // Primary Ray
-        traceRadianceMasked(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, _mask_, &prd);
+        traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
 
         tmp_albedo = prd.tmp_albedo;
         tmp_normal = prd.tmp_normal;
@@ -222,7 +222,7 @@ extern "C" __global__ void __raygen__rg()
             if(prd.countEmitted == true)
                 prd.passed = true;
 
-            traceRadianceMasked(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, _mask_, &prd);
+            traceRadiance(params.handle, ray_origin, ray_direction, _tmin_, prd.maxDistance, &prd, _mask_);
         }
         result_b += prd.first_hit_type == 0 ? make_float3(0, 0, 0)
                                             : make_float3(1, 1, 1);
