@@ -11,6 +11,10 @@
 #include "boost/graph/graph_concepts.hpp"
 #include "boost/graph/graph_traits.hpp"
 
+namespace tinyspline {
+    class BSpline;
+}
+
 namespace roads {
 
     struct AdvancePoint {
@@ -23,7 +27,7 @@ namespace roads {
     struct CostPoint : std::array<size_t, 3> {
         CostPoint() = default;
 
-        CostPoint(size_t x, size_t y, size_t a = 0, double InHeight = 0.0, double InGradient = 0.0/*, double InCurvature = 0.0**/)
+        CostPoint(size_t x, size_t y, size_t a = 0, double InHeight = 0.0, double InGradient = 0.0 /*, double InCurvature = 0.0**/)
             : std::array<size_t, 3>(), Height(InHeight), Gradient(InGradient) {
             at(0) = x;
             at(1) = y;
@@ -164,7 +168,7 @@ namespace roads {
             };
 
             // initialize a priority queue Q with the initial point StartPoint
-            CostTo.reserve(Bounds[0]*Bounds[1]*MaskA);
+            CostTo.reserve(Bounds[0] * Bounds[1] * MaskA);
             std::priority_queue<PointType, ArrayList<PointType>, decltype(Comparator)> Q(Comparator);
             for (size_t a = 0; a < MaskA; a++) {
                 PointType NewPoint = StartPoint;
@@ -224,7 +228,14 @@ namespace roads {
     }// namespace energy
 
     namespace spline {
-    }
+        //template<typename PointContainerType = ArrayList<std::array<float, 3>>, typename SegmentContainerType = std::array<int, 2>>
+        class tinyspline::BSpline GenerateBSplineFromSegment(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments);
+
+        //template<typename PointContainerType = ArrayList<std::array<float, 3>>, typename SegmentContainerType = ArrayList<std::array<int, 2>>>
+        ArrayList<Eigen::Vector3f> GenerateAndSamplePointsFromSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints = 1000);
+
+        ArrayList<Eigen::Vector3f> SmoothAndResampleSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints = 1000);
+    }// namespace spline
 
 }// namespace roads
 

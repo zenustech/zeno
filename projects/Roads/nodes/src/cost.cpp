@@ -426,22 +426,23 @@ namespace {
         void apply() override {
             auto& Prim = AutoParameter->Primitive;
 
+            ArrayList<std::array<float, 3>> Vertices(Prim->verts.begin(), Prim->verts.end());
+            ArrayList<std::array<int, 2>> Lines(Prim->lines.begin(), Prim->lines.end());
+
             ROADS_TIMING_PRE_GENERATED;
-            //ROADS_TIMING_BLOCK("Generate BSpline List", auto Splines = spline::GenerateBSplineWithSegment(Prim->verts, Prim->lines));
-            //ROADS_TIMING_BLOCK("Concat Splines", auto Spline = spline::Concatenate(Splines));
-            //zeno::log_info("Degree {}", Splines[0].get_degree());
-            //ROADS_TIMING_BLOCK("Resample Lines", auto Lines = spline::SamplePointsFromSpline(Splines, AutoParameter->SampleNum));
-            auto Lines = ArrayList<Eigen::Vector3f>{};
+            ROADS_TIMING_BLOCK("Resample segments", auto Result = spline::SmoothAndResampleSegments(Vertices, Lines, AutoParameter->SampleNum));
+
+            //auto Lines = ArrayList<Eigen::Vector3f>{};
 
             Prim = std::make_shared<zeno::PrimitiveObject>();
 
-            Prim->verts.reserve(Lines.size());
-            for (const auto& line : Lines) {
+            Prim->verts.reserve(Result.size());
+            for (const auto& line : Result) {
                 Prim->verts.emplace_back(line.x(), line.y(), line.z());
             }
 
-            Prim->lines.resize(Lines.size() - 1);
-            for (int i = 0; i < Lines.size() - 1; i++) {
+            Prim->lines.resize(Result.size() - 1);
+            for (int i = 0; i < Result.size() - 1; i++) {
                 Prim->lines[i] = zeno::vec2i { i, i + 1 };
             }
 

@@ -2,6 +2,8 @@
 #include "Eigen/Eigen"
 #include "boost/graph/floyd_warshall_shortest.hpp"
 
+#include "roads/thirdparty/tinysplinecxx.h"
+
 using namespace roads;
 
 double roads::EuclideanDistance(const Point &Point1, const Point &Point2) {
@@ -118,4 +120,36 @@ double roads::energy::CalculateStepSize(const Point2D &Pt, const Point2D &P, con
     const double LengthPrevXToCurrX = EuclideanDistance(PrevX, CurrX);
 
     return 0.0;
+}
+
+ArrayList<Eigen::Vector3f> spline::SmoothAndResampleSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints) {
+    return GenerateAndSamplePointsFromSegments(InPoints, Segments, SamplePoints);
+}
+
+tinyspline::BSpline spline::GenerateBSplineFromSegment(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments) {
+    using namespace tinyspline;
+
+    ArrayList<float> Points;
+
+    for (const auto& Seg : Segments) {
+        Points.insert(std::end(Points), { float(InPoints[Seg[0]][0]), float(InPoints[Seg[0]][1]), float(InPoints[Seg[0]][2]) });
+    }
+    Points.insert(std::end(Points), { float(InPoints[Segments[Segments.size() - 1][1]][0]), float(InPoints[Segments[Segments.size() - 1][1]][1]), float(InPoints[Segments[Segments.size() - 1][1]][2]) });
+
+    return BSpline::interpolateCubicNatural(Points, 3);
+}
+
+ArrayList<Eigen::Vector3f> spline::GenerateAndSamplePointsFromSegments(const ArrayList<std::array<float, 3>> &InPoints, const ArrayList<std::array<int, 2>> &Segments, int32_t SamplePoints) {
+    auto Spline = GenerateBSplineFromSegment(InPoints, Segments);
+    float Step = 1.0f / float(SamplePoints);
+
+    ArrayList<Eigen::Vector3f> Result;
+    Result.reserve(SamplePoints);
+
+    for (int32_t i = 0; i < SamplePoints; i++) {
+        auto Point = Spline.eval(float(i) * Step).resultVec3();
+        Result.push_back( Eigen::Vector3f { Point.x(), Point.y(), Point.z() } );
+    }
+
+    return Result;
 }
