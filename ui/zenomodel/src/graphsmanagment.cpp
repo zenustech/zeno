@@ -118,7 +118,7 @@ bool GraphsManagment::saveFile(const QString& filePath, APP_SETTINGS settings)
 
     f.write(strContent.toUtf8());
     f.close();
-    zeno::log_debug("saved successfully");
+    zeno::log_info("saved '{}' successfully", filePath.toStdString());
 
     m_model->setFilePath(filePath);
     m_model->clearDirty();
