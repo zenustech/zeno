@@ -94,7 +94,6 @@ struct ScaleHandler final : IGraphicHandler {
         float theta = scene->camera->m_zxx.theta;
         float phi = scene->camera->m_zxx.phi;
         float radius = scene->camera->m_zxx.radius;
-        const auto& view = scene->camera->m_view;
 
         auto camera_center = glm::vec3(cx, cy, cz);
         float cos_t = glm::cos(theta), sin_t = glm::sin(theta);
@@ -151,6 +150,7 @@ struct ScaleHandler final : IGraphicHandler {
         if (mode == INTERACT_NONE || mode == INTERACT_XY)
             drawSquare(center, x_axis, y_axis, {0.2, 0.2, 0.6}, square_size, vbo);
 
+        const auto& view = scene->camera->m_view;
         if (mode == INTERACT_NONE || mode == INTERACT_XYZ) {
             // http://www.opengl-tutorial.org/cn/intermediate-tutorials/billboards-particles/billboards/
             // always face camera
