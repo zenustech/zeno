@@ -44,10 +44,10 @@ using callback_t = std::function<void(std::optional<std::any>)>;
 static callback_t zpc_init_callback = [] (auto _) {
     log_debug("Initializing Python...");
     Py_Initialize();
-#ifdef _WIN32
-    libpath = replace_all(libpath, "\\", "\\\\");
-#endif
     auto exe_dir = zs::abs_exe_directory();  
+#ifdef _WIN32
+    exe_dir = replace_all(exe_dir, "\\", "/");
+#endif
     auto zeno_lib_path = exe_dir + "/" + ZENO_PYZPC_DLL_FILE; 
     auto py_libs_dir = exe_dir + "/resource/py_libs"; 
     if (PyRun_SimpleString(("__import__('sys').path.insert(0, '" + 
