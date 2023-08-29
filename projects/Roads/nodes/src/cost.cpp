@@ -285,7 +285,9 @@ namespace {
 
             zeno::log_info("[Roads] Generating trajectory...");
 
-            roads::energy::RoadsShortestPath(StartPoint, GoalPoint, CostPoint{static_cast<size_t>(AutoParameter->Nx), static_cast<size_t>(AutoParameter->Ny)}, AutoParameter->ConnectiveMask, AutoParameter->AngleMask, AutoParameter->WeightHeuristic, Predecessor, CostMap, CostFunc);
+            ROADS_TIMING_PRE_GENERATED;
+
+            ROADS_TIMING_BLOCK("AStar Extended", roads::energy::RoadsShortestPath(StartPoint, GoalPoint, CostPoint{static_cast<size_t>(AutoParameter->Nx), static_cast<size_t>(AutoParameter->Ny)}, AutoParameter->ConnectiveMask, AutoParameter->AngleMask, AutoParameter->WeightHeuristic, Predecessor, CostMap, CostFunc));
 
             zeno::log_info("[Roads] Result Predecessor Size: {}; CostMap Size: {}", Predecessor.size(), CostMap.size());
 
@@ -316,13 +318,13 @@ namespace {
         ZENO_DECLARE_INPUT_FIELD(Primitive, "Prim");
         ZENO_DECLARE_OUTPUT_FIELD(Primitive, "Prim");
 
-        bool bShouldSmooth;
+        bool bShouldSmooth = false;
         ZENO_DECLARE_INPUT_FIELD(bShouldSmooth, "Enable Smooth", false, "", "false");
 
-        float DeltaAltitudeThreshold;
+        float DeltaAltitudeThreshold = 1e-06;
         ZENO_DECLARE_INPUT_FIELD(DeltaAltitudeThreshold, "Delta Altitude Threshold", false, "", "1e-06");
 
-        float HeuristicRatio;
+        float HeuristicRatio = 0.3;
         ZENO_DECLARE_INPUT_FIELD(HeuristicRatio, "Heuristic Ratio (0 - 1)", false, "", "0.3");
 
         std::string SizeXChannel;
@@ -410,4 +412,54 @@ namespace {
             }
         }
     };
+
+    struct ZENO_CRTP(PrimLineClothoidSmooth, zeno::reflect::IParameterAutoNode) {
+        ZENO_GENERATE_NODE_BODY(PrimLineClothoidSmooth);
+
+        std::shared_ptr<zeno::PrimitiveObject> Primitive;
+        ZENO_DECLARE_INPUT_FIELD(Primitive, "Prim");
+        ZENO_DECLARE_OUTPUT_FIELD(Primitive, "Prim");
+
+        int SampleNum = 1;
+        ZENO_DECLARE_INPUT_FIELD(SampleNum, "Sample Points", false, "", "1000");
+
+        void apply() override {
+            auto& Prim = AutoParameter->Primitive;
+
+            ROADS_TIMING_PRE_GENERATED;
+            //ROADS_TIMING_BLOCK("Generate BSpline List", auto Splines = spline::GenerateBSplineWithSegment(Prim->verts, Prim->lines));
+            //ROADS_TIMING_BLOCK("Concat Splines", auto Spline = spline::Concatenate(Splines));
+            //zeno::log_info("Degree {}", Splines[0].get_degree());
+            //ROADS_TIMING_BLOCK("Resample Lines", auto Lines = spline::SamplePointsFromSpline(Splines, AutoParameter->SampleNum));
+            auto Lines = ArrayList<Eigen::Vector3f>{};
+
+            Prim = std::make_shared<zeno::PrimitiveObject>();
+
+            Prim->verts.reserve(Lines.size());
+            for (const auto& line : Lines) {
+                Prim->verts.emplace_back(line.x(), line.y(), line.z());
+            }
+
+            Prim->lines.resize(Lines.size() - 1);
+            for (int i = 0; i < Lines.size() - 1; i++) {
+                Prim->lines[i] = zeno::vec2i { i, i + 1 };
+            }
+
+            zeno::log_info("[Roads] Vertices Num: {}, Lines Num: {}", Prim->verts.size(), Prim->lines.size());
+        }
+    };
+
+#if _MSC_VER
+#include "Windows.h"
+    // Windows Debug
+    struct ZENO_CRTP(WindowsWaitForDebugger, zeno::reflect::IParameterAutoNode) {
+        ZENO_GENERATE_NODE_BODY(WindowsWaitForDebugger);
+
+        void apply() override {
+            while (!IsDebuggerPresent()) {
+                ;
+            }
+        }
+    };
+#endif
 }// namespace

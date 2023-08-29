@@ -25,6 +25,3 @@
 [submodule "projects/python/CPython"]
 	path = projects/Python/CPython
 	url = https://github.com/zenustech/python-cmake-buildsystem.git
-[submodule "projects/Roads/libraries/nanospline"]
-	path = projects/Roads/libraries/nanospline
-	url = https://github.com/qnzhou/nanospline.git

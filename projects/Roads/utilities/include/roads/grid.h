@@ -223,6 +223,9 @@ namespace roads {
         }
     }// namespace energy
 
+    namespace spline {
+    }
+
 }// namespace roads
 
 
