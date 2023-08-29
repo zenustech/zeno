@@ -15,6 +15,7 @@ ZSlider::ZSlider(QWidget* parent)
     , smallScaleH(ZenoStyle::dpiScaled(5))
     , fontHeight(ZenoStyle::dpiScaled(15))
     , fontScaleSpacing(ZenoStyle::dpiScaled(4))
+    , m_finishedFrame(-1)
 {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 }
@@ -101,6 +102,12 @@ int ZSlider::value() const
 void ZSlider::updateKeyFrames(const QVector<int> &keys) 
 {
     m_keyframes = keys;
+    update();
+}
+
+void ZSlider::setFinishedFrame(int frame)
+{
+    m_finishedFrame = frame;
     update();
 }
 
@@ -222,6 +229,17 @@ void ZSlider::paintEvent(QPaintEvent* event)
         int w = (qreal)(width() - 2 * m_sHMargin) / ((m_to - m_from) == 0 ? 1 : (m_to - m_from));
         QRect rec(x, y, w, h);
         painter.fillRect(rec, QColor("#3A6E64"));
+    }
+
+    //draw finished frame
+    if (m_finishedFrame != -1)
+    {
+        int x = left - painter.pen().width();
+        int h = ZenoStyle::dpiScaled(scaleH);
+        int y = height() - h;
+        int w = _frameToPos(m_finishedFrame - m_from) - x;
+        QRect rec(x, y, w, h);
+        painter.fillRect(rec, QColor(169, 169, 169, 100));
     }
 }
 

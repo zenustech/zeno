@@ -1055,8 +1055,7 @@ void DockContent_Log::initConnections()
             int type = idx.data(ROLE_LOGTYPE).toInt();
             if (type == QtFatalMsg)
             {
-                m_pBtnFilterLog->setChecked(true);
-                emit m_pBtnFilterLog->toggled(true);
+                m_pBtnFilterLog->toggle(true);
             }
         }
     });
