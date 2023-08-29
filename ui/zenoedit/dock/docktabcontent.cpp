@@ -1045,6 +1045,21 @@ void DockContent_Log::initConnections()
             pLogger->clear();
         ZlogPanel* pLogPanel = qobject_cast<ZlogPanel*>(m_stack->widget(1));
     });
+
+    connect(zenoApp->logModel(), &QStandardItemModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
+        if (m_pBtnFilterLog->isChecked())
+            return;
+        QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
+        if (pModel) {
+            QModelIndex idx = pModel->index(first, 0, parent);
+            int type = idx.data(ROLE_LOGTYPE).toInt();
+            if (type == QtFatalMsg)
+            {
+                m_pBtnFilterLog->setChecked(true);
+                emit m_pBtnFilterLog->toggled(true);
+            }
+        }
+    });
 }
 
 
