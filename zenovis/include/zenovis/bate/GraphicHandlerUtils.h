@@ -116,10 +116,11 @@ void drawSquare(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::uniqu
 }
 
 void drawCircle(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::unique_ptr<Buffer> &vbo) {
+    constexpr int point_num = 100;
+    constexpr double step = 1.0 / point_num;
     std::vector<vec3f> mem;
+    mem.reserve(point_num * 2);
 
-    double point_num = 100;
-    double step = 1.0 / point_num;
     for (double t = 0; t < 1.0; t += step) {
         double theta = 2.0 * PI * t;
         auto p = pos + size * cos(theta) * a + size * sin(theta) * b;
@@ -133,13 +134,43 @@ void drawCircle(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::uniqu
     vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 6, GL_FLOAT, 3);
     vbo->attribute(1, sizeof(float) * 3, sizeof(float) * 6, GL_FLOAT, 3);
 
-    CHECK_GL(glDrawArrays(GL_LINE_STRIP, 0, vertex_count));
+    CHECK_GL(glDrawArrays(GL_LINE_LOOP, 0, vertex_count));
 
     vbo->disable_attribute(0);
     vbo->disable_attribute(1);
     vbo->unbind();
 }
 
+void drawCircle(vec3f pos, vec3f a, vec3f b, vec3f color, float size, float width, std::unique_ptr<Buffer> &vbo) {
+    constexpr int point_num = 100;
+    constexpr double step = 1.0 / point_num;
+    std::vector<vec3f> mem;
+    mem.reserve(point_num * 4);
+
+    float inner_size = size - width / 2.0;
+    float outer_size = size + width / 2.0;
+    for (double t = 0; t < 1.0 + step; t += step) {
+        double theta = 2.0 * PI * t;
+        auto p1 = pos + inner_size * cos(theta) * a + inner_size * sin(theta) * b;
+        auto p2 = pos + outer_size * cos(theta) * a + outer_size * sin(theta) * b;
+        mem.push_back(p1);
+        mem.push_back(color);
+        mem.push_back(p2);
+        mem.push_back(color);
+    }
+
+    auto vertex_count = mem.size() / 2;
+    vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+
+    vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 6, GL_FLOAT, 3);
+    vbo->attribute(1, sizeof(float) * 3, sizeof(float) * 6, GL_FLOAT, 3);
+
+    CHECK_GL(glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count));
+
+    vbo->disable_attribute(0);
+    vbo->disable_attribute(1);
+    vbo->unbind();
+}
 
 void drawCube(vec3f pos, vec3f a, vec3f b, vec3f color, float size, std::unique_ptr<Buffer> &vbo) {
     std::vector<vec3f> mem;

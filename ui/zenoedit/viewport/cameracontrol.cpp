@@ -123,7 +123,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
         }
     }
     if (event->buttons() & Qt::MiddleButton) {
-        m_lastPos = event->pos();
+        m_lastMidButtonPos = event->pos();
     } else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
         // check if clicked a selected object
@@ -266,11 +266,11 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
 {
     auto session = m_zenovis->getSession();
     auto scene = session->get_scene();
+    float xpos = event->x(), ypos = event->y();
 
     if (event->buttons() & Qt::MiddleButton) {
         float ratio = QApplication::desktop()->devicePixelRatio();
-        float xpos = event->x(), ypos = event->y();
-        float dx = xpos - m_lastPos.x(), dy = ypos - m_lastPos.y();
+        float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
         dx *= ratio / m_res[0];
         dy *= ratio / m_res[1];
         bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
@@ -295,20 +295,25 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             setTheta(getTheta() - dy * M_PI);
             setPhi(getPhi() + dx * M_PI);
         }
-        m_lastPos = QPointF(xpos, ypos);
+        m_lastMidButtonPos = QPointF(xpos, ypos);
     } else if (event->buttons() & Qt::LeftButton) {
         if (m_transformer)
         {
             if (m_transformer->isTransforming()) {
                 auto dir = screenToWorldRay(event->pos().x() / res().x(), event->pos().y() / res().y());
                 auto camera_pos = realPos();
-                auto x = event->x() * 1.0f;
-                auto y = event->y() * 1.0f;
-                x = (2 * x / res().x()) - 1;
-                y = 1 - (2 * y / res().y());
-                auto mouse_pos = glm::vec2(x, y);
+
+                // mouse pos
+                auto mouse_pos = glm::vec2(xpos, ypos);
+                mouse_pos[0] = (2 * mouse_pos[0] / res().x()) - 1;
+                mouse_pos[1] = 1 - (2 * mouse_pos[1] / res().y());
+                // mouse start
+                auto mouse_start = glm::vec2(m_boundRectStartPos.x(), m_boundRectStartPos.y());
+                mouse_start[0] = (2 * mouse_start[0] / res().x()) - 1;
+                mouse_start[1] = 1 - (2 * mouse_start[1] / res().y());
+
                 auto vp = scene->camera->m_proj * scene->camera->m_view;
-                m_transformer->transform(camera_pos, mouse_pos, dir, scene->camera->m_lodfront, vp);
+                m_transformer->transform(camera_pos, dir, mouse_start, mouse_pos, scene->camera->m_lodfront, vp);
                 zenoApp->getMainWindow()->updateViewport();
             } else {
                 float min_x = std::min((float)m_boundRectStartPos.x(), (float)event->x()) / m_res.x();
