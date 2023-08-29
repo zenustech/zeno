@@ -693,27 +693,25 @@ ZENDEFNODE(BVHNearestPos,
                    "prim"
                }, /* params: */ {
                }, /* category: */ {
-                   "primitive"
+                   "deprecated"
                }});
 
 struct BVHNearestAttr : INode {
     void apply() override {
         auto prim = get_input<PrimitiveObject>("prim");
         auto primNei = get_input<PrimitiveObject>("primNei");
-
-        auto bvhIdTag = get_input<StringObject>("bvhIdTag")->get();
-        auto& bvh_id = prim->verts.attr<float>(bvhIdTag);
+        auto bvhIdTag = get_input2<std::string>("bvhIdTag");
         auto bvhAttributesType = get_input2<std::string>("bvhAttributesType");
-        auto bvhWeightTag = get_input<StringObject>("bvhWeightTag")->get();
-        auto& bvh_ws = prim->verts.attr<vec3f>(bvhWeightTag);
+        auto targetType = get_input2<std::string>("targetPrimType");
+        auto attr_tag = get_input2<std::string>("bvhAttrTag");
 
-        std::visit([&](auto attrty) {
-            using T = decltype(attrty);
-        auto attr_tag = get_input<StringObject>("bvhAttrTag")->get();
         if (!primNei->verts.has_attr(attr_tag))
         {
             zeno::log_error("primNei has no such Data named '{}'.", attr_tag);
         }
+
+        std::visit([&](auto attrty) {
+            using T = decltype(attrty);
         auto& inAttr = primNei->verts.attr<T>(attr_tag);
         if (!prim->verts.has_attr(attr_tag))
         {
@@ -723,6 +721,10 @@ struct BVHNearestAttr : INode {
         #pragma omp parallel for
         for (int i = 0; i < prim->size(); i++)
         {
+            if(targetType == "tris"){
+            auto bvhWeightTag = get_input2<std::string>("bvhWeightTag");
+            auto& bvh_ws = prim->verts.attr<vec3f>(bvhWeightTag);
+            auto& bvh_id = prim->verts.attr<float>(bvhIdTag);
             vec3i vertsIdx = primNei->tris[(int)bvh_id[i]];
             int id0 = vertsIdx[0], id1 = vertsIdx[1], id2 = vertsIdx[2];
             auto attr0 = inAttr[id0];
@@ -730,6 +732,12 @@ struct BVHNearestAttr : INode {
             auto attr2 = inAttr[id2];
 
             outAttr[i] = bvh_ws[i][0] * attr0 + bvh_ws[i][1] * attr1 + bvh_ws[i][2] * attr2;
+            }
+            else if(targetType == "points"){
+                auto& bvh_id = prim->verts.attr<int>(bvhIdTag);//int type for querynearestpoints node
+                int id = bvh_id[i];
+                outAttr[i] = inAttr[id];
+            }
         }
         }, enum_variant<std::variant<float, vec3f>>(array_index({"float", "vec3f"}, bvhAttributesType)));
 
@@ -744,7 +752,8 @@ ZENDEFNODE(BVHNearestAttr,
                    {"string", "bvhIdTag", "bvh_id"},
                    {"string", "bvhWeightTag", "bvh_ws"},
                    {"string", "bvhAttrTag", "bvh_attr"},
-                     {"enum float vec3f", "bvhAttributesType", "float"},
+                   {"enum float vec3f", "bvhAttributesType", "float"},
+                   {"enum tris points", "targetPrimType", "tris"},
                }, /* outputs: */ {
                    "prim"
                }, /* params: */ {
