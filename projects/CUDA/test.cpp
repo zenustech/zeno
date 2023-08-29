@@ -268,8 +268,8 @@ struct ZSLoopTest : INode {
     void stepSimulation(double tSlice) {
         ;
     }
-    void executionThread() {
-    }
+
+    std::atomic<zs::u64> workerCounter;
 
     void apply() override {
         using namespace zs;
@@ -278,7 +278,7 @@ struct ZSLoopTest : INode {
 
         // std::chrono::high_resolution_clock::now();
         // std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - m_Start).count()
-        constexpr float t_display_slice = 1.f / 60; // 60 fps
+        constexpr float t_replay_slice = 1.f / 60; // 60 fps
         bool running = true;
         double tAccum = 0.;
         clock::time_point tNow, tLast = clock::now();
@@ -286,7 +286,13 @@ struct ZSLoopTest : INode {
         u64 sum = 0;
         bool show = false;
 
-        // std::thread computeWorker{executionThread};
+        workerCounter.store(0);
+        std::thread computeWorker([this]() {
+            using namespace std::chrono_literals;
+            // asynchronously write contents to files
+            while (workerCounter.fetch_add(1) < 10)
+                std::this_thread::sleep_for(2s);
+        });
 
         /// high-frequency loop
         while (running) {
@@ -295,9 +301,11 @@ struct ZSLoopTest : INode {
             tLast = tNow;
             tAccum += dt;
 
-            while (tAccum > t_display_slice) {
-                updateUI(t_display_slice);
-                tAccum -= t_display_slice;
+            /// check msg queue (optional, active when DOP is engaging)
+            /// rolling windows (ring buffer) for caching frames, preload enough frames
+            while (tAccum > t_replay_slice) {
+                updateUI(t_replay_slice);
+                tAccum -= t_replay_slice;
 
                 sum++;
                 show = true;
@@ -305,14 +313,16 @@ struct ZSLoopTest : INode {
             draw();
 
             if (sum % 100 == 0 && show) {
-                fmt::print("[{}] slices elapsed {}\n", sum, timeCast<ns>(tNow - origin) * (0.001 * 0.001 * 0.001));
+                fmt::print("[{}] slices elapsed {}. worker iter id {}\n", sum,
+                           timeCast<ns>(tNow - origin) * (0.001 * 0.001 * 0.001),
+                           workerCounter.load(std::memory_order_acquire));
                 show = false;
             }
             if (sum > 1000)
                 break;
         }
 
-        // computeWorker.join();
+        computeWorker.join();
     }
 };
 
