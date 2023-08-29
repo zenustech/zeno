@@ -92,13 +92,13 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         finalPath = mgr->cachePath();
         int cnum = param.cacheNum;
         viewDecodeSetFrameCache(finalPath.toStdString().c_str(), cnum);
+        zeno::getSession().globalComm->setTempDirEnable(param.tempDir);
+        zeno::getSession().globalComm->setCacheAutoRmEnable(param.autoRmCurcache);
     }
     else
     {
         viewDecodeSetFrameCache("", 0);
     }
-    zeno::getSession().globalComm->setTempDirEnable(param.tempDir);
-    zeno::getSession().globalComm->setCacheAutoRmEnable(param.autoRmCurcache);
 
     QStringList args = {
         "--runner", "1",

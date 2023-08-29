@@ -112,6 +112,9 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
     zeno::scope_exit sp([=] {
         m_bRecording = false;
         m_pTimer->start(m_sampleFeq);
+        auto main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        m_zenoVis->setCurrentFrameId(main->timelineInfo().currFrame);
     });
 
     m_bRecording = true;

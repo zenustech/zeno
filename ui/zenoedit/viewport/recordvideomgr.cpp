@@ -16,6 +16,7 @@
 #include "launch/corelaunch.h"
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/core/Session.h>
+#include "launch/ztcpserver.h"
 
 
 RecordVideoMgr::RecordVideoMgr(QObject* parent)

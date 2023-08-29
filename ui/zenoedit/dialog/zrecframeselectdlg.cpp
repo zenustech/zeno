@@ -122,6 +122,11 @@ QPair<int, int> ZRecFrameSelectDlg::recordFrameRange(bool& runBeforeRun) const
     return {m_recStartF, m_recEndF};
 }
 
+bool ZRecFrameSelectDlg::isRunProcWorking()
+{
+    return m_state == RUNNING;
+}
+
 void ZRecFrameSelectDlg::onRunNow()
 {
     if (m_recStartF > m_recEndF) {

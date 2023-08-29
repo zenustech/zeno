@@ -13,7 +13,7 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
     if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOn)) {
          return true;
     }
-    if (!bTempDir && bAutoCleanCache)
+    if (!bTempDir && bAutoCleanCache && m_cacheOpt != Opt_RunLightCameraMaterial && m_cacheOpt != Opt_AlwaysOn)
         cleanCacheDir(dirCacheRoot);
     m_bTempDir = bTempDir;
     if (m_bTempDir) {
@@ -88,6 +88,11 @@ void ZCacheMgr::cleanCacheDir(QDir dirCacheRoot)
             dataTimeCacheDir.removeRecursively();
             zeno::log_info("remove dir: {}", dataTimeCacheDir.absolutePath().toStdString());
         }
+        if (dataTimeCacheDirEmpty && QDateTime::fromString(dataTimeCacheDir.dirName(), "yyyy-MM-dd hh-mm-ss").isValid())
+        {
+            dataTimeCacheDir.rmdir(dataTimeCacheDir.path());
+            zeno::log_info("remove dir: {}", dataTimeCacheDir.absolutePath().toStdString());
+        }
     }
 }
 
@@ -100,7 +105,7 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
     {
         if (info.isFile()) {
             empty = false;
-            if (info.fileName().right(9) != ".zencache")
+            if (info.fileName().right(9) != ".zencache" && info.fileName().left(7) != "zcache_")    //not zencache file or cachelock file
                 return false;
         }
         else if (info.isDir())

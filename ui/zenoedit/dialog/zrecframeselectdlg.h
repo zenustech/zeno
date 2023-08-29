@@ -23,6 +23,7 @@ class ZRecFrameSelectDlg : public QDialog
 public:
     ZRecFrameSelectDlg(QWidget* parent = nullptr);
     QPair<int, int> recordFrameRange(bool& runBeforeRun) const;
+    bool isRunProcWorking();
 
 private slots:
     void onRunNow();

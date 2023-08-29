@@ -747,9 +747,27 @@ void DisplayWidget::onRecord()
         if (QDialog::Rejected == ret) {
             return;
         }
+        std::function<void()> killRunProcIfCancel = [&]() {
+            if (!frameDlg.isRunProcWorking())
+            {
+                ZTcpServer* server = zenoApp->getServer();
+                ZASSERT_EXIT(server);
+                server->killProc();
+            }
+        };
 
         bool bRunBeforeRecord = false;
         recInfo.frameRange = frameDlg.recordFrameRange(bRunBeforeRecord);
+
+        LAUNCH_PARAM launchParam;
+        AppHelper::initLaunchCacheParam(launchParam);
+        const QString& cacheRootdir = launchParam.cacheDir;
+        QDir dirCacheRoot(cacheRootdir);
+        if (launchParam.enableCache && !QFileInfo(cacheRootdir).isDir() && !launchParam.tempDir)
+        {
+            QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
+            return;
+        }
 
         if (bRunBeforeRecord)
         {
@@ -764,10 +782,9 @@ void DisplayWidget::onRecord()
 
             //clear cached objs.
             zeno::getSession().globalComm->clearState();
-            LAUNCH_PARAM launchParam;
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
-            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache && launchParam.enableCache;
             auto main = zenoApp->getMainWindow();
             ZASSERT_EXIT(main);
             launchParam.projectFps = main->timelineInfo().timelinefps;
@@ -780,25 +797,29 @@ void DisplayWidget::onRecord()
                 mainWin->optixClientSend(info);
             }
             else {
-                AppHelper::initLaunchCacheParam(launchParam);
                 onRun(launchParam);
             }
 #else
-            AppHelper::initLaunchCacheParam(launchParam);
             onRun(launchParam);
 #endif
+        }
+        else {
+            zeno::getSession().globalComm->setTempDirEnable(launchParam.tempDir);
+            zeno::getSession().globalComm->setCacheAutoRmEnable(recInfo.bAutoRemoveCache && launchParam.enableCache);
         }
 
         //setup signals issues.
         m_recordMgr.setRecordInfo(recInfo);
 
         ZRecordProgressDlg dlgProc(recInfo, this);
+        connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, [](int frame) {zeno::getSession().globalComm->removeCache(frame);});
         connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
         connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
         connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
         connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
+        connect(&dlgProc, &ZRecordProgressDlg::cancelTriggered, this, [&]() {killRunProcIfCancel();});
 
         if (!m_bGLView)
         {
@@ -860,9 +881,10 @@ void DisplayWidget::onRecord()
 
         } else {
             m_recordMgr.cancelRecord();
+            killRunProcIfCancel();
         }
 
-        if (recInfo.bAutoRemoveCache) {
+        if (recInfo.bAutoRemoveCache && launchParam.enableCache) {
 #ifdef ZENO_OPTIX_PROC
             if (m_glView) {
                 auto tcpServer = zenoApp->getServer();

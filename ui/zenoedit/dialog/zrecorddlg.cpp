@@ -37,6 +37,11 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
     m_ui->cbPresets->setCurrentIndex(1);
 
+    QSettings settings(zsCompanyName, zsEditor);
+    bool enableCache = settings.value("zencache-enable").isValid() ? settings.value("zencache-enable").toBool() : true;
+    if (!enableCache)
+        m_ui->cbRemoveAfterRender->setVisible(false);
+
     connect(m_ui->cbPresets, &QComboBox::currentTextChanged, this, [=](auto res) {
         auto v = std::map<QString, std::tuple<int, int>> {
                 {"540P", {960, 540}},

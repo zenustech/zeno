@@ -38,7 +38,7 @@ struct RECORD_SETTING
     bool bAutoRemoveCache;
     bool bAov;
 
-    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(false), bAov(false) {}
+    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(true), bAov(false) {}
 };
 
 struct LAYOUT_SETTING {
