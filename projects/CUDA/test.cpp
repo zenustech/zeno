@@ -226,6 +226,7 @@ ZENDEFNODE(ZSConcurrencyTest, {
 #include <sys/types.h>
 #include <unistd.h>
 #elif defined(ZS_PLATFORM_WINDOWS)
+#include <fileapi.h>
 #endif
 
 struct ZSFileTest : INode {
@@ -239,7 +240,7 @@ struct ZSFileTest : INode {
         auto vallocator = get_virtual_memory_source(memsrc_e::host, -1, (size_t)1 << (size_t)23, "STACK");
 
         vallocator.commit(0, sizeof(double) * 40);
-        auto ptr = (double *)vallocator.address(0);
+        auto ptr = (double*)vallocator.address(0);
         for (int i = 0; i < 10; ++i) {
             *(ptr + i) = i;
         }
@@ -255,13 +256,14 @@ struct ZSFileTest : INode {
         // ref: https://www.man7.org/linux/man-pages/man2/mmap.2.html
         int fd = open(fn.data(), /* int flag */ O_RDWR, /* mode_t mode */ S_IRUSR | S_IWUSR);
         struct stat st;
-        char *addr;
+        char* addr;
         if (fstat(fd, &st) == -1) {
             addr = nullptr;
             fmt::print("unable to query file size.\n");
-        } else {
-            addr = (char *)mmap(NULL, st.st_size, /* int prot */ PROT_READ | PROT_WRITE, /* int flags */ MAP_SHARED,
-                                /* int file_handle */ fd, /* offset */ 0);
+        }
+        else {
+            addr = (char*)mmap(NULL, st.st_size, /* int prot */ PROT_READ | PROT_WRITE, /* int flags */ MAP_SHARED,
+                /* int file_handle */ fd, /* offset */ 0);
         }
         /// ...
         fmt::print("====begin====\n");
@@ -274,7 +276,42 @@ struct ZSFileTest : INode {
         munmap(addr, st.st_size);
         close(fd);
 #elif defined(ZS_PLATFORM_WINDOWS)
+        fmt::print("error code 0: {}\n", GetLastError());
+        HANDLE fd = CreateFileA(fn.data(), /*dwDesiredAccess*/GENERIC_READ | GENERIC_WRITE, /*dwShareMode*/FILE_SHARE_READ | FILE_SHARE_WRITE, /*lpSecurityAttributes*/NULL, /*dwCreationDisposition*/OPEN_EXISTING, /*dwFlagsAndAttributes*/FILE_ATTRIBUTE_NORMAL, /*hTemplateFile*/NULL);
+        fmt::print("error code after createfile: {}\n", GetLastError());
+        HANDLE fm;
+        size_t sz = 0;
+        char* addr = nullptr;
+        if (fd != INVALID_HANDLE_VALUE) {
+            sz = GetFileSize(fd, NULL);
+            fmt::print("file size: {}\n", sz);
+            fm = CreateFileMappingA(fd, NULL, /*flProtect*/PAGE_READWRITE, 0, 0, /* lpName */NULL);
+            fmt::print("error code after filemapping: {}\n", GetLastError());
+            if (fm != INVALID_HANDLE_VALUE) {
+                addr = (char*)MapViewOfFile(fm, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+                fmt::print("error code after view: {}\n", GetLastError());
+                if (addr == nullptr) {
+                    fmt::print("wtf??");
+                    fmt::print("error code: {}\n", GetLastError());
+                }
+            }
+            else {
+                fmt::print("failed to create file mapping\n");
+            }
+        }
+        else {
+            fmt::print("failed to open file\n");
+        }
+        fmt::print("====begin====\n");
+        for (int i = 0; addr != nullptr && i < 20 && i < sz; ++i) {
+            fmt::print("{}", addr[i]);
+            addr[i] = ::toupper(addr[i]);
+        }
+        fmt::print("\n====done====\n");
 
+        UnmapViewOfFile(addr);
+        CloseHandle(fm);
+        CloseHandle(fd);
 #endif
         // fn;
     }
