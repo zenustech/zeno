@@ -128,23 +128,24 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
     settings.getViewShortCut(ShortCut_MovingView, button);
     settings.getViewShortCut(ShortCut_RotatingView, button);
     bool bTransform = false;
+    auto front = scene->camera->m_lodfront;
+    auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
     if (m_transformer)
-        bTransform = m_transformer->isTransformMode();
+    {
+        if (!scene->selected.empty() && m_transformer->isTransformMode() &&
+            m_transformer->clickedAnyHandler(realPos(), dir, front))
+        {
+            bTransform = true;
+        }
+    }
     if (!bTransform && (event->buttons() & button)) {
         m_lastMidButtonPos = event->pos();
     } else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
         // check if clicked a selected object
-        auto front = scene->camera->m_lodfront;
-        auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
-
-        if (m_transformer)
+        if (bTransform)
         {
-            if (!scene->selected.empty() && m_transformer->isTransformMode() &&
-                m_transformer->clickedAnyHandler(realPos(), dir, front))
-            {
-                m_transformer->startTransform();
-            }
+            m_transformer->startTransform();
         }
     }
 }
@@ -283,7 +284,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     int rotateKey = settings.getViewShortCut(ShortCut_RotatingView, rotateButton);
     bool bTransform = false;
     if (m_transformer)
-        bTransform = m_transformer->isTransformMode();
+        bTransform = m_transformer->isTransforming();
     if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
