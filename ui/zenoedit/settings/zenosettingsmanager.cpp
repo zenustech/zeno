@@ -37,6 +37,8 @@ QVariant ZenoSettingsManager::getValue(const QString& zsName) const
 {
     if (zsName == zsShortCut)
         return QVariant::fromValue(m_shortCutInfos);
+    else if (zsName == zsShortCutStyle)
+        return m_shortCutStyle;
 
     QSettings settings(zsCompanyName, zsEditor);
     QVariant val = settings.value(zsName);
@@ -144,12 +146,13 @@ void ZenoSettingsManager::writeShortCutInfo(const QVector<ShortCutInfo> &infos, 
     setValue(zsShortCut, strJson);
 
     setValue(zsShortCutStyle, index);
+    m_shortCutStyle = index;
 }
 
 void ZenoSettingsManager::initShortCutInfos() 
 {
-    int style = getValue(zsShortCutStyle).toInt();
-    m_shortCutInfos = getDefaultShortCutInfo(style);
+    m_shortCutStyle = getValue(zsShortCutStyle).toInt();
+    m_shortCutInfos = getDefaultShortCutInfo(m_shortCutStyle);
     QSettings settings(zsCompanyName, zsEditor);
     QVariant value = settings.value(zsShortCut);
     rapidjson::Document doc;
