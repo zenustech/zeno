@@ -219,12 +219,23 @@ ZENDEFNODE(ZSConcurrencyTest, {
                                   {"ZPCTest"},
                               });
 
+#if defined(ZS_PLATFORM_LINUX)
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#elif defined(ZS_PLATFORM_WINDOWS)
+#endif
+
 struct ZSFileTest : INode {
     void apply() override {
         using namespace zs;
         constexpr auto space = execspace_e::openmp;
         auto pol = omp_exec();
 
+        auto fn = get_input2<std::string>("file");
+#if 0
         auto vallocator = get_virtual_memory_source(memsrc_e::host, -1, (size_t)1 << (size_t)23, "STACK");
 
         vallocator.commit(0, sizeof(double) * 40);
@@ -237,11 +248,24 @@ struct ZSFileTest : INode {
         CppTimer timer;
         timer.tick();
         timer.tock("...");
+#endif
+
+#if defined(ZS_PLATFORM_LINUX)
+        // ref: https://man7.org/linux/man-pages/man2/open.2.html
+        // ref: https://www.man7.org/linux/man-pages/man2/mmap.2.html
+        int fd = open(fn.data(), /* int flag */ O_RDWR, /* mode_t mode */ S_IRUSR | S_IWUSR);
+        struct stat st;
+        fstat(fd, &st);
+        auto addr = mmap(NULL, st.st_size, /* int prot */ PROT_READ | PROT_WRITE, /* int flags */ MAP_SHARED,
+                         /* int file_handle */ fd, /* offset */ 0);
+#elif defined(ZS_PLATFORM_WINDOWS)
+#endif
+        // fn;
     }
 };
 
 ZENDEFNODE(ZSFileTest, {
-                           {},
+                           {"string", "file", ""},
                            {},
                            {},
                            {"ZPCTest"},
@@ -303,6 +327,7 @@ struct ZSLoopTest : INode {
 
             /// check msg queue (optional, active when DOP is engaging)
             /// rolling windows (ring buffer) for caching frames, preload enough frames
+            /// virtual mem caching
             while (tAccum > t_replay_slice) {
                 updateUI(t_replay_slice);
                 tAccum -= t_replay_slice;
