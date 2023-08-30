@@ -255,17 +255,33 @@ struct ZSFileTest : INode {
         // ref: https://www.man7.org/linux/man-pages/man2/mmap.2.html
         int fd = open(fn.data(), /* int flag */ O_RDWR, /* mode_t mode */ S_IRUSR | S_IWUSR);
         struct stat st;
-        fstat(fd, &st);
-        auto addr = mmap(NULL, st.st_size, /* int prot */ PROT_READ | PROT_WRITE, /* int flags */ MAP_SHARED,
-                         /* int file_handle */ fd, /* offset */ 0);
+        char *addr;
+        if (fstat(fd, &st) == -1) {
+            addr = nullptr;
+            fmt::print("unable to query file size.\n");
+        } else {
+            addr = (char *)mmap(NULL, st.st_size, /* int prot */ PROT_READ | PROT_WRITE, /* int flags */ MAP_SHARED,
+                                /* int file_handle */ fd, /* offset */ 0);
+        }
+        /// ...
+        fmt::print("====begin====\n");
+        for (int i = 0; i < 20 && i < st.st_size; ++i) {
+            fmt::print("{}", addr[i]);
+            addr[i] = ::toupper(addr[i]);
+        }
+        fmt::print("\n====done====");
+
+        munmap(addr, st.st_size);
+        close(fd);
 #elif defined(ZS_PLATFORM_WINDOWS)
+
 #endif
         // fn;
     }
 };
 
 ZENDEFNODE(ZSFileTest, {
-                           {"string", "file", ""},
+                           {{"string", "file", ""}},
                            {},
                            {},
                            {"ZPCTest"},
