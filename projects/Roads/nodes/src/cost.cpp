@@ -466,8 +466,8 @@ namespace {
         }
     };
 
-    struct ZENO_CRTP(PrimRefineWithSpline, zeno::reflect::IParameterAutoNode) {
-        ZENO_GENERATE_NODE_BODY(PrimRefineWithSpline);
+    struct ZENO_CRTP(RoadsPrimRefineWithSpline, zeno::reflect::IParameterAutoNode) {
+        ZENO_GENERATE_NODE_BODY(RoadsPrimRefineWithSpline);
 
         std::shared_ptr<zeno::PrimitiveObject> Primitive;
         ZENO_DECLARE_INPUT_FIELD(Primitive, "Prim");
