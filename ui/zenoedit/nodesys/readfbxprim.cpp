@@ -306,21 +306,70 @@ struct MatChannelInfo{
     std::string texture_path = "";
 };
 
+#define PARAM_TYPE_CHECK(CHANNEL_NAME) \
+auto connect_node = shader_texture_Node; \
+auto conn_param = "out";  \
+if(#CHANNEL_NAME == "metallic" || #CHANNEL_NAME == "roughness" || \
+   #CHANNEL_NAME == "specular" || #CHANNEL_NAME == "subsurface" || \
+   #CHANNEL_NAME == "specularTint" || #CHANNEL_NAME == "anisotropic" || \
+   #CHANNEL_NAME == "anisoRotation" || #CHANNEL_NAME == "sheen" || \
+   #CHANNEL_NAME == "sheenTint" || #CHANNEL_NAME == "clearcoat" || \
+   #CHANNEL_NAME == "clearcoatRoughness" || #CHANNEL_NAME == "specTrans" || \
+   #CHANNEL_NAME == "ior" || #CHANNEL_NAME == "emissionIntensity") \
+{ \
+   ZENO_HANDLE extrac_vec_Node = Zeno_AddNode(pGraph, "ShaderExtractVec"); \
+   Zeno_SetPos(pGraph, extrac_vec_Node, NodePos_3); \
+   Zeno_AddLink(pGraph, shader_texture_Node, "out", extrac_vec_Node, "vec"); \
+   connect_node = extrac_vec_Node; conn_param = "x"; \
+} \
+if(#CHANNEL_NAME == "basecolor"){                                       \
+   ZENO_HANDLE pow2dot2_Node = Zeno_AddNode(pGraph, "ShaderBinaryMath"); \
+   Zeno_SetPos(pGraph, pow2dot2_Node, NodePos_4); \
+   Zeno_AddLink(pGraph, shader_texture_Node, "out", pow2dot2_Node, "in1");   \
+   Zeno_SetInputDefl(pGraph, pow2dot2_Node, "in2", 2.2); \
+   Zeno_SetInputDefl(pGraph, pow2dot2_Node, "op", std::string("pow")); \
+   connect_node = pow2dot2_Node; conn_param = "out";    \
+}                                       \
+Zeno_AddLink(pGraph, connect_node, conn_param, shader_finalize_Node, #CHANNEL_NAME);  \
+
+#define PARAM_SEPARATE(CHANNEL_NAME)   \
+if(value.separate != ""){ \
+    ZENO_HANDLE extrac_vec_Node = Zeno_AddNode(pGraph, "ShaderExtractVec"); \
+    Zeno_SetPos(pGraph, extrac_vec_Node, NodePos_3); \
+    Zeno_AddLink(pGraph, shader_texture_Node, "out", extrac_vec_Node, "vec"); \
+    if(value.separate == "Red"){ \
+        Zeno_AddLink(pGraph, extrac_vec_Node, "x", shader_finalize_Node, #CHANNEL_NAME); \
+    }else if(value.separate == "Green"){ \
+        Zeno_AddLink(pGraph, extrac_vec_Node, "y", shader_finalize_Node, #CHANNEL_NAME); \
+    }else if(value.separate == "Blue"){ \
+        Zeno_AddLink(pGraph, extrac_vec_Node, "z", shader_finalize_Node, #CHANNEL_NAME); \
+    } \
+}else{ \
+    PARAM_TYPE_CHECK(CHANNEL_NAME) \
+} \
+
 void EvalBlenderFile::onEvalClicked() {
     ZENO_HANDLE mGraph = Zeno_GetGraph("main");
-    ZENO_HANDLE hGraph = Zeno_CreateGraph("BlenderParsed");
+    ZENO_HANDLE hGraph = Zeno_CreateGraph("BlenderMeshParsed");
+    ZENO_HANDLE pGraph = Zeno_CreateGraph("BlenderMaterialParsed");
 
     ZENO_HANDLE evalBlenderNode = index().internalId();
     std::pair<float, float> evalBlenderNodePos;
     Zeno_GetPos(hGraph, evalBlenderNode, evalBlenderNodePos);
 
-    // SubGraph Output
-    int out_view_count = 0;
-    ZENO_HANDLE suboutput_Node = Zeno_AddNode(hGraph, "SubOutput");
-    Zeno_SetPos(hGraph, suboutput_Node, evalBlenderNodePos);
-    ZENO_HANDLE makelist_Node = Zeno_AddNode(hGraph, "MakeList");
-    Zeno_SetPos(hGraph, makelist_Node, {evalBlenderNodePos.first - 500.0f, evalBlenderNodePos.second});
-    Zeno_AddLink(hGraph, makelist_Node, "list", suboutput_Node, "port");
+    // SubGraph Output Mesh
+    ZENO_HANDLE h_suboutput_Node = Zeno_AddNode(hGraph, "SubOutput");
+    Zeno_SetPos(hGraph, h_suboutput_Node, evalBlenderNodePos);
+    ZENO_HANDLE h_makelist_Node = Zeno_AddNode(hGraph, "MakeList");
+    Zeno_SetPos(hGraph, h_makelist_Node, {evalBlenderNodePos.first - 500.0f, evalBlenderNodePos.second});
+    Zeno_AddLink(hGraph, h_makelist_Node, "list", h_suboutput_Node, "port");
+
+    // SubGraph Output Mat
+    ZENO_HANDLE p_suboutput_Node = Zeno_AddNode(pGraph, "SubOutput");
+    Zeno_SetPos(pGraph, p_suboutput_Node, evalBlenderNodePos);
+    ZENO_HANDLE p_makelist_Node = Zeno_AddNode(pGraph, "MakeList");
+    Zeno_SetPos(pGraph, p_makelist_Node, {evalBlenderNodePos.first - 500.0f, evalBlenderNodePos.second});
+    Zeno_AddLink(pGraph, p_makelist_Node, "list", p_suboutput_Node, "port");
 
     auto inputs = GetCurNodeInputs();
     std::string output_path = inputs[2];
@@ -343,6 +392,7 @@ void EvalBlenderFile::onEvalClicked() {
     }
     Json parseData = Json::parse(str);
 
+    int out_view_count = 0;
     int abc_count = 0;
     // Eval Mesh
     for (auto& [key, val] : parseData.items())
@@ -379,7 +429,7 @@ void EvalBlenderFile::onEvalClicked() {
             // Set node view
             //Zeno_SetView(hGraph, bind_material_Node, true);
 
-            Zeno_AddLink(hGraph, bind_material_Node, "object", makelist_Node, "obj"+std::to_string(out_view_count));
+            Zeno_AddLink(hGraph, bind_material_Node, "object", h_makelist_Node, "obj"+std::to_string(out_view_count));
             out_view_count++;
 
             abc_count++;
@@ -389,6 +439,7 @@ void EvalBlenderFile::onEvalClicked() {
     }
 
     int mat_count = 0;
+    out_view_count = 0;
     // Eval Material
     for (auto& [key, val] : parseData.items()){
 
@@ -429,12 +480,11 @@ void EvalBlenderFile::onEvalClicked() {
         }
 
         std::pair<float, float> NodePos2 = { evalBlenderNodePos.first + 3000.0f * mat_count + 800.0f, evalBlenderNodePos.second - 2000.0f};
-        ZENO_HANDLE shader_finalize_Node = Zeno_AddNode(hGraph, "ShaderFinalize");
-        Zeno_SetPos(hGraph, shader_finalize_Node, NodePos2);
-        Zeno_SetInputDefl(hGraph, shader_finalize_Node, "mtlid", key);
-        //Zeno_SetView(hGraph, shader_finalize_Node, true);
+        ZENO_HANDLE shader_finalize_Node = Zeno_AddNode(pGraph, "ShaderFinalize");
+        Zeno_SetPos(pGraph, shader_finalize_Node, NodePos2);
+        Zeno_SetInputDefl(pGraph, shader_finalize_Node, "mtlid", key);
 
-        Zeno_AddLink(hGraph, shader_finalize_Node, "mtl", makelist_Node, "obj"+std::to_string(out_view_count));
+        Zeno_AddLink(pGraph, shader_finalize_Node, "mtl", p_makelist_Node, "obj"+std::to_string(out_view_count));
         out_view_count++;
 
         if(val.find("base_color") != val.end()){
@@ -464,24 +514,24 @@ void EvalBlenderFile::onEvalClicked() {
           auto clearcoat_normal = val.at("clearcoat_normal").at("value").get<std::vector<float>>(); //vec3
           auto tangent = val.at("tangent").at("value").get<std::vector<float>>(); //vec3
 
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "basecolor", zeno::vec3f(base_color[0],base_color[1],base_color[2]));
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "metallic", metallic);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "roughness", roughness);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "specular", specular);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "subsurface", subsurface);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "sssParam", zeno::vec3f(subsurface_radius[0],subsurface_radius[1],subsurface_radius[2]));
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "sssColor", zeno::vec3f(subsurface_color[0],subsurface_color[1],subsurface_color[2]));
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "specularTint", specular_tint);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "anisotropic", anisotropic);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "anisoRotation", anisotropic_rotation);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "sheen", sheen);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "sheenTint", sheen_tint);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "clearcoat", clearcoat);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "clearcoatRoughness", clearcoat_roughness);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "specTrans", transmission);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "ior", ior);
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "emission", zeno::vec3f(emission[0],emission[1],emission[2]));
-          Zeno_SetInputDefl(hGraph, shader_finalize_Node, "emissionIntensity", emission_strength);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "basecolor", zeno::vec3f(base_color[0],base_color[1],base_color[2]));
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "metallic", metallic);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "roughness", roughness);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "specular", specular);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "subsurface", subsurface);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "sssParam", zeno::vec3f(subsurface_radius[0],subsurface_radius[1],subsurface_radius[2]));
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "sssColor", zeno::vec3f(subsurface_color[0],subsurface_color[1],subsurface_color[2]));
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "specularTint", specular_tint);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "anisotropic", anisotropic);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "anisoRotation", anisotropic_rotation);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "sheen", sheen);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "sheenTint", sheen_tint);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "clearcoat", clearcoat);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "clearcoatRoughness", clearcoat_roughness);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "specTrans", transmission);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "ior", ior);
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "emission", zeno::vec3f(emission[0],emission[1],emission[2]));
+          Zeno_SetInputDefl(pGraph, shader_finalize_Node, "emissionIntensity", emission_strength);
         }
 
         if(mat_infos.size())
@@ -489,68 +539,28 @@ void EvalBlenderFile::onEvalClicked() {
             std::pair<float, float> NodePos0 = { evalBlenderNodePos.first + 3000.0f * mat_count, evalBlenderNodePos.second};
             std::pair<float, float> NodePos1 = { evalBlenderNodePos.first + 3000.0f * mat_count, evalBlenderNodePos.second + 1000.0f};
 
-            ZENO_HANDLE shader_attr_Node = Zeno_AddNode(hGraph, "ShaderInputAttr");
-            Zeno_SetPos(hGraph, shader_attr_Node, NodePos0);
-            Zeno_SetInputDefl(hGraph, shader_attr_Node, "attr", std::string("uv"));
+            ZENO_HANDLE shader_attr_Node = Zeno_AddNode(pGraph, "ShaderInputAttr");
+            Zeno_SetPos(pGraph, shader_attr_Node, NodePos0);
+            Zeno_SetInputDefl(pGraph, shader_attr_Node, "attr", std::string("uv"));
 
             int shader_texture_count = 0;
             for(auto &[key, value] : mat_infos) {
                 std::pair<float, float> NodePos_1 = { NodePos0.first + 600.0f, NodePos0.second + 500.0f * shader_texture_count};
                 std::pair<float, float> NodePos_2 = { NodePos_1.first + 600.0f, NodePos_1.second};
                 std::pair<float, float> NodePos_3 = { NodePos_2.first + 600.0f, NodePos_2.second};
+                std::pair<float, float> NodePos_4 = { NodePos_3.first + 600.0f, NodePos_3.second};
 
-                ZENO_HANDLE uv_transform_Node = Zeno_AddNode(hGraph, "FBXUVTransform");
-                Zeno_SetPos(hGraph, uv_transform_Node, NodePos_1);
-                ZENO_HANDLE shader_texture_Node = Zeno_AddNode(hGraph, "ShaderTexture2D");
-                Zeno_SetPos(hGraph, shader_texture_Node, NodePos_2);
+                ZENO_HANDLE uv_transform_Node = Zeno_AddNode(pGraph, "FBXUVTransform");
+                Zeno_SetPos(pGraph, uv_transform_Node, NodePos_1);
+                ZENO_HANDLE shader_texture_Node = Zeno_AddNode(pGraph, "ShaderTexture2D");
+                Zeno_SetPos(pGraph, shader_texture_Node, NodePos_2);
 
+                Zeno_AddLink(pGraph, shader_attr_Node, "out", uv_transform_Node, "uvattr");
+                Zeno_AddLink(pGraph, uv_transform_Node, "uvw", shader_texture_Node, "coord");
 
-                Zeno_AddLink(hGraph, shader_attr_Node, "out", uv_transform_Node, "uvattr");
-                Zeno_AddLink(hGraph, uv_transform_Node, "uvw", shader_texture_Node, "coord");
+                Zeno_SetInputDefl(pGraph, shader_texture_Node, "texId", value.tex_id);
 
-                Zeno_SetInputDefl(hGraph, shader_texture_Node, "texId", value.tex_id);
-
-                Zeno_SetInputDefl(hGraph, uv_transform_Node, "uvtransform", zeno::vec4f(value.uv_scale_x, value.uv_scale_y, 0.0f, 0.0f));
-#define PARAM_TYPE_CHECK(to_channel_name) \
-if( \
-    #to_channel_name == "metallic" || \
-    #to_channel_name == "roughness" || \
-    #to_channel_name == "specular" || \
-    #to_channel_name == "subsurface" || \
-    #to_channel_name == "specularTint" || \
-    #to_channel_name == "anisotropic" || \
-    #to_channel_name == "anisoRotation" || \
-    #to_channel_name == "sheen" || \
-    #to_channel_name == "sheenTint" || \
-    #to_channel_name == "clearcoat" || \
-    #to_channel_name == "clearcoatRoughness" || \
-    #to_channel_name == "specTrans" || \
-    #to_channel_name == "ior" || \
-    #to_channel_name == "emissionIntensity") \
-{ \
-   ZENO_HANDLE extrac_vec_Node = Zeno_AddNode(hGraph, "ShaderExtractVec"); \
-   Zeno_SetPos(hGraph, extrac_vec_Node, NodePos_3); \
-   Zeno_AddLink(hGraph, shader_texture_Node, "out", extrac_vec_Node, "vec"); \
-   Zeno_AddLink(hGraph, extrac_vec_Node, "x", shader_finalize_Node, #to_channel_name); \
-}else{                                    \
-   Zeno_AddLink(hGraph, shader_texture_Node, "out", shader_finalize_Node, #to_channel_name);  \
-}
-
-#define PARAM_SEPARATE(to_channel_name)   \
-if(value.separate != ""){ \
-    ZENO_HANDLE extrac_vec_Node = Zeno_AddNode(hGraph, "ShaderExtractVec"); \
-    Zeno_SetPos(hGraph, extrac_vec_Node, NodePos_3); \
-    Zeno_AddLink(hGraph, shader_texture_Node, "out", extrac_vec_Node, "vec"); \
-    if(value.separate == "Red"){ \
-        Zeno_AddLink(hGraph, extrac_vec_Node, "x", shader_finalize_Node, #to_channel_name); \
-    }else if(value.separate == "Green"){ \
-        Zeno_AddLink(hGraph, extrac_vec_Node, "y", shader_finalize_Node, #to_channel_name); \
-    }else if(value.separate == "Blue"){ \
-        Zeno_AddLink(hGraph, extrac_vec_Node, "z", shader_finalize_Node, #to_channel_name); \
-    } \
-}else{ \
-    PARAM_TYPE_CHECK(to_channel_name) \
-} \
+                Zeno_SetInputDefl(pGraph, uv_transform_Node, "uvtransform", zeno::vec4f(value.uv_scale_x, value.uv_scale_y, 0.0f, 0.0f));
 
                 if(key == "Base Color"){
                     PARAM_SEPARATE(basecolor)
@@ -608,44 +618,47 @@ if(value.separate != ""){ \
                 }
 
                 if(key == "Normal") {
-                    ZENO_HANDLE normal_texture_Node = Zeno_AddNode(hGraph, "NormalTexture");
-                    Zeno_SetPos(hGraph, normal_texture_Node, NodePos_2);
-                    Zeno_DeleteNode(hGraph, shader_texture_Node);
+                    ZENO_HANDLE normal_texture_Node = Zeno_AddNode(pGraph, "NormalTexture");
+                    Zeno_SetPos(pGraph, normal_texture_Node, NodePos_2);
+                    Zeno_DeleteNode(pGraph, shader_texture_Node);
 
-                    Zeno_SetInputDefl(hGraph, normal_texture_Node, "texId", value.tex_id);
-                    Zeno_AddLink(hGraph, uv_transform_Node, "uvw", normal_texture_Node, "uv");
-                    Zeno_AddLink(hGraph, normal_texture_Node, "normal", shader_finalize_Node, "normal");
+                    Zeno_SetInputDefl(pGraph, normal_texture_Node, "texId", value.tex_id);
+                    Zeno_AddLink(pGraph, uv_transform_Node, "uvw", normal_texture_Node, "uv");
+                    Zeno_AddLink(pGraph, normal_texture_Node, "normal", shader_finalize_Node, "normal");
                 }
                 shader_texture_count++;
             }
 
-            ZENO_HANDLE make_list_Node = Zeno_AddNode(hGraph, "MakeList");
-            Zeno_SetPos(hGraph, make_list_Node, NodePos1);
+            ZENO_HANDLE make_list_Node = Zeno_AddNode(pGraph, "MakeList");
+            Zeno_SetPos(pGraph, make_list_Node, NodePos1);
 
             int texture_2d_count = 0;
             for(auto& tex_path :mat_texs){
                 std::pair<float, float> NodePos_1 = { NodePos1.first - 700.0f, NodePos1.second + 500.0f * texture_2d_count};
 
-                ZENO_HANDLE texture_2d_Node = Zeno_AddNode(hGraph, "MakeTexture2D");
-                Zeno_SetPos(hGraph, texture_2d_Node, NodePos_1);
+                ZENO_HANDLE texture_2d_Node = Zeno_AddNode(pGraph, "MakeTexture2D");
+                Zeno_SetPos(pGraph, texture_2d_Node, NodePos_1);
 
-                Zeno_AddLink(hGraph, texture_2d_Node, "tex", make_list_Node, "obj"+std::to_string(texture_2d_count));
+                Zeno_AddLink(pGraph, texture_2d_Node, "tex", make_list_Node, "obj"+std::to_string(texture_2d_count));
 
-                Zeno_SetInputDefl(hGraph, texture_2d_Node, "path", tex_path);
+                Zeno_SetInputDefl(pGraph, texture_2d_Node, "path", tex_path);
 
                 texture_2d_count++;
             }
 
-            Zeno_AddLink(hGraph, make_list_Node, "list", shader_finalize_Node, "tex2dList");
+            Zeno_AddLink(pGraph, make_list_Node, "list", shader_finalize_Node, "tex2dList");
         }
 
         mat_count++;
     }
 
     // Create Parsed-SubNode in main
-    ZENO_HANDLE parsed_blender_Node = Zeno_AddNode(mGraph, "BlenderParsed");
-    Zeno_SetPos(mGraph, parsed_blender_Node, {evalBlenderNodePos.first + 500.0f, evalBlenderNodePos.second});
-    Zeno_SetView(mGraph, parsed_blender_Node, true);
+    ZENO_HANDLE mesh_parsed_blender_Node = Zeno_AddNode(mGraph, "BlenderMeshParsed");
+    ZENO_HANDLE mat_parsed_blender_Node = Zeno_AddNode(mGraph, "BlenderMaterialParsed");
+    Zeno_SetPos(mGraph, mesh_parsed_blender_Node, {evalBlenderNodePos.first + 500.0f, evalBlenderNodePos.second});
+    Zeno_SetView(mGraph, mesh_parsed_blender_Node, true);
+    Zeno_SetPos(mGraph, mat_parsed_blender_Node, {evalBlenderNodePos.first + 500.0f, evalBlenderNodePos.second + 500.0f});
+    Zeno_SetView(mGraph, mat_parsed_blender_Node, true);
 
     // Save zsg file
     IGraphsModel *pModel = GraphsManagment::instance().currentModel();
