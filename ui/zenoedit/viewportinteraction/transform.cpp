@@ -159,7 +159,7 @@ bool FakeTransformer::clickedAnyHandler(QVector3D ori, QVector3D dir, glm::vec3 
     return m_operation_mode != zenovis::INTERACT_NONE;
 }
 
-void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVector3D ray_dir, glm::vec3 front, glm::mat4 vp) {
+void FakeTransformer::transform(QVector3D camera_pos, QVector3D ray_dir, glm::vec2 mouse_start, glm::vec2 mouse_pos, glm::vec3 front, glm::mat4 vp) {
     if (m_operation == NONE) return;
 
     auto pZenovis = m_viewport->getZenoVis();
@@ -256,9 +256,17 @@ void FakeTransformer::transform(QVector3D camera_pos, glm::vec2 mouse_pos, QVect
         }
     }
     else if (m_operation == SCALE) {
+        // make a circle, center is m_objects_center
+        // when mouse press, get the circle's radius, r = len(m_objects_center - mouse_start)
+        // when mouse move, get the len from center to mouse_pos, d = len(m_objects_center - mouse_pos)
+        // so the scale is d / r
         auto t_ctr = vp * glm::vec4(m_objects_center, 1.0f);
         glm::vec2 ctr = t_ctr / t_ctr[3];
-        auto scale_size = glm::length(ctr - mouse_pos);
+        auto len_ctr_start = glm::length(ctr - mouse_start);
+        if (len_ctr_start < 0.001) return;
+
+        auto len_ctr_pos = glm::length(ctr - mouse_pos);
+        auto scale_size = len_ctr_pos / len_ctr_start;
         if (m_operation_mode == zenovis::INTERACT_X) {
             scale(scale_size, {1, 0, 0});
         }
@@ -635,8 +643,8 @@ void FakeTransformer::translate(glm::vec3 start, glm::vec3 end, glm::vec3 axis) 
 
 void FakeTransformer::scale(float scale_size, vec3i axis) {
     glm::vec3 scale(1.0f);
-    for (int i=0; i<3; i++)
-        if (axis[i] == 1) scale[i] = fmax(scale_size * 3, 0.1);
+    for (int i = 0; i < 3; i++)
+        if (axis[i] == 1) scale[i] = std::max(scale_size, 0.1f);
     m_scale = scale;
     doTransform();
 }
@@ -689,7 +697,9 @@ void FakeTransformer::doTransform() {
             // transform pos
             auto &pos = obj->attr<zeno::vec3f>("pos");
 #pragma omp parallel for
-            for (auto &po : pos) {
+            // for (auto &po : pos) {
+            for (size_t i = 0; i < pos.size(); ++i) {
+                auto& po = pos[i];
                 auto p = zeno::vec_to_other<glm::vec3>(po);
                 auto t = transform_matrix * glm::vec4(p, 1.0f);
                 auto pt = glm::vec3(t) / t.w;
@@ -700,7 +710,9 @@ void FakeTransformer::doTransform() {
             // transform nrm
             auto &nrm = obj->attr<zeno::vec3f>("nrm");
 #pragma omp parallel for
-            for (auto &vec : nrm) {
+            // for (auto &vec : nrm) {
+            for (size_t i = 0; i < nrm.size(); ++i) {
+                auto& vec = nrm[i];
                 auto n = zeno::vec_to_other<glm::vec3>(vec);
                 glm::mat3 norm_matrix(transform_matrix);
                 norm_matrix = glm::transpose(glm::inverse(norm_matrix));

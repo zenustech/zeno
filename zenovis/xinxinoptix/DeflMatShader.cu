@@ -163,6 +163,7 @@ static __inline__ __device__ float3 sphereUV(float3 &direction) {
 
 extern "C" __global__ void __anyhit__shadow_cutout()
 {
+
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint               primIdx = optixGetPrimitiveIndex();
@@ -214,10 +215,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     unsigned short isLight = 0;
 #else
-
-    int inst_idx2 = optixGetInstanceIndex();
-    int inst_idx = rt_data->meshIdxs[inst_idx2];
-    int vert_idx_offset = (inst_idx * TRI_PER_MESH + primIdx)*3;
+    size_t inst_idx2 = optixGetInstanceIndex();
+    size_t inst_idx = rt_data->meshIdxs[inst_idx2];
+    size_t vert_idx_offset = (inst_idx * TRI_PER_MESH + primIdx)*3;
 
     float m16[16];
     m16[12]=0; m16[13]=0; m16[14]=0; m16[15]=1;
@@ -441,9 +441,11 @@ extern "C" __global__ void __closesthit__radiance()
     }
     prd->test_distance = false;
 
+
     const OptixTraversableHandle gas = optixGetGASTraversableHandle();
     const uint           sbtGASIndex = optixGetSbtGASIndex();
     const uint              primIdx = optixGetPrimitiveIndex();
+
 
     const float3 ray_orig = optixGetWorldRayOrigin();
     const float3 ray_dir  = optixGetWorldRayDirection();
@@ -486,9 +488,9 @@ extern "C" __global__ void __closesthit__radiance()
 
 #else
 
-    int inst_idx2 = optixGetInstanceIndex();
-    int inst_idx = rt_data->meshIdxs[inst_idx2];
-    int vert_idx_offset = (inst_idx * TRI_PER_MESH + primIdx)*3;
+    size_t inst_idx2 = optixGetInstanceIndex();
+    size_t inst_idx = rt_data->meshIdxs[inst_idx2];
+    size_t vert_idx_offset = (inst_idx * TRI_PER_MESH + primIdx)*3;
 
     float m16[16];
     m16[12]=0; m16[13]=0; m16[14]=0; m16[15]=1;
@@ -812,6 +814,7 @@ extern "C" __global__ void __closesthit__radiance()
 
     while(DisneyBSDF::SampleDisney2(
                 prd->seed,
+                prd->eventseed,
                 basecolor,
                 sssParam,
                 sssColor,
@@ -920,7 +923,7 @@ extern "C" __global__ void __closesthit__radiance()
                     prd->channelPDF = vec3(1.0f/3.0f);
                     if (isTrans) {
                         vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, prd->sigma_t, prd->sigma_t, channelPDF) : 1e16f;
+                        prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, extinction, extinction, channelPDF) : 1e16f;
                         prd->pushMat(extinction);
                     } else {
 

@@ -58,6 +58,9 @@ struct CihouMayaCameraFov : INode {
         float u_aspect = m_ny&&m_nx? m_nx/m_ny : c_aspect;
         zeno::log_info("cam nx {} ny {} fw {} fh {} aspect {} {}",
                        m_nx, m_ny, m_fw, m_fh, u_aspect, c_aspect);
+        std::cout << "m_fit_gate:" << m_fit_gate << "\n";
+        std::cout << "u_aspect:" << u_aspect << "\n";
+        std::cout << "c_aspect:" << c_aspect << "\n";
         if(m_fit_gate == 1){
             c_fov = 2.0f * std::atan(m_fh/(u_aspect/c_aspect) / (2.0f * m_focL) ) * (180.0f / M_PI);
         }else if(m_fit_gate == 2){

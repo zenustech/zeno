@@ -421,6 +421,7 @@ void ZToolButton::mouseReleaseEvent(QMouseEvent* e)
     else if (m_options & Opt_SwitchAnimation)
     {
         emit toggled(!animInfo.mOnOff);
+        setChecked(!animInfo.mOnOff);
     }
     emit clicked();
 }

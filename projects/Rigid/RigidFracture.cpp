@@ -1024,17 +1024,34 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         ///
         ///
         /// @note does not allow duplicate entries
-        auto comp = [](const std::shared_ptr<BulletObject> &a, const std::shared_ptr<BulletObject> &b) {
-            return (std::uintptr_t)a.get() < (std::uintptr_t)b.get();
-        };
-        std::sort(std::begin(rbs), std::end(rbs), comp);
-        auto find_id = [&rbs, nrbs](const BulletObject *target) {
+        // auto comp = [](const std::shared_ptr<BulletObject> &a, const std::shared_ptr<BulletObject> &b) {
+        //     return (std::uintptr_t)a.get() < (std::uintptr_t)b.get();
+        // };
+        // std::sort(std::begin(rbs), std::end(rbs), comp);
+        std::vector<int> rbIndices(nrbs);
+        std::vector<std::pair<BulletObject *, int>> kvs(nrbs);
+        {
+            pol(enumerate(rbs, kvs), [](int id, auto key, std::pair<BulletObject *, int> &kv) { kv = std::make_pair(key.get(), id); });
+            struct {
+                constexpr bool operator()(const std::pair<BulletObject *, int> &a, const std::pair<BulletObject *, int> &b) const {
+                    return a.first < b.first;
+                }
+            } lessOp;
+            std::sort(kvs.begin(), kvs.end(), lessOp);
+            // sort rbs (ptr) in ascending order
+            pol(enumerate(kvs), [&rbIndices/*, &rbs*/](int no, auto kv) { 
+                rbIndices[no] = kv.second; 
+                // rbs[no] = kv.first;
+            });
+        }
+
+        auto find_id = [&rbs = kvs, nrbs](const BulletObject *target) {
             int st = 0, ed = nrbs - 1, mid;
             while (ed >= st) {
                 mid = st + (ed - st) / 2;
-                if (target == rbs[mid].get())
+                if (target == rbs[mid].first)
                     return mid;
-                if (target < rbs[mid].get())
+                if (target < rbs[mid].first)
                     ed = mid - 1;
                 else
                     st = mid + 1;
@@ -1050,8 +1067,8 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         std::vector<int> consJs(ncons); // might contain -1 when unary constraints exist
         for (std::size_t k = 0; k != ncons; ++k) {
             auto &rel = relationships[k];
-            auto i = find_id(rel->rb0);
-            auto j = find_id(rel->rb1);
+            auto i = rbIndices[find_id(rel->rb0)];
+            auto j = rbIndices[find_id(rel->rb1)];
             consIs[k] = i;
             consJs[k] = j;
             if (rel->isGlueConstraint()) {
@@ -1079,16 +1096,35 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         auto ncompounds = tab.size();
         std::vector<int> cpdSizes(ncompounds);
 
+        /// 
+        /// sort compounds upon minimum index within
+        /// 
+        std::vector<int> fwdMap(ncompounds);
+        {
+            std::vector<std::pair<int, int>> kvs(ncompounds);
+            auto keys = tab._activeKeys;
+            pol(enumerate(keys, kvs), [](int id, auto key, std::pair<int, int> &kv) { kv = std::make_pair(key[0], id); });
+            struct {
+                constexpr bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const {
+                    return a.first < b.first;
+                }
+            } lessOp;
+            std::sort(kvs.begin(), kvs.end(), lessOp);
+            pol(enumerate(kvs), [&fwdMap](int no, auto kv) { fwdMap[kv.second] = no; });
+        }
+
         // map rigid body indices to target compound indices
         std::vector<int> rbDstCompId(nrbs);
-        pol(range(nrbs), [&fas, &rbDstCompId, &cpdSizes, tab = proxy<space>(tab)](int rbi) mutable {
+        pol(range(nrbs), [&fas, &rbDstCompId, &cpdSizes, &fwdMap, tab = proxy<space>(tab)](int rbi) mutable {
             auto fa = fas[rbi];
-            auto compId = tab.query(fa);
+            auto compId = fwdMap[tab.query(fa)];
             rbDstCompId[rbi] = compId;
             atomic_add(exec_omp, &cpdSizes[compId], 1);
         });
         pol(range(nrbs), [&rbDstCompId, &cpdSizes, &isRbCompound](int rbi) {
             auto compId = rbDstCompId[rbi];
+            // if (rbi < 10)
+            //     printf("rb[%d] belongs to cpd [%d]\n", rbi, (int)compId);
             isRbCompound[rbi] = cpdSizes[compId] > 1;
         });
 
@@ -1180,7 +1216,7 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         /// @note isolated rigid bodies are delegated to this BulletObject list here!
         // determine compound or not pass on rbs that are does not belong in any compound
         std::vector<int> isCompound(ncompounds);
-        pol(range(nrbs), [&isCompound, &isRbCompound, &rbDstCompId, &fas, &rbs, tab = proxy<space>(tab),
+        pol(range(nrbs), [&isCompound, &isRbCompound, &rbDstCompId, &fas, &rbs, 
                           &groupList = groupList->arr](int rbi) mutable {
             auto isRbCpd = isRbCompound[rbi];
             auto compId = rbDstCompId[rbi];
@@ -1192,7 +1228,7 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
 
         std::vector<int> consMarks(ncons + 1); // 0: discard, 1: preserve
         pol(range(ncons),
-            [&consMarks, &relationships, &rbDstCompId, &consIs, &consJs, &fas, tab = proxy<space>(tab)](int k) mutable {
+            [&consMarks, &relationships, &rbDstCompId, &consIs, &consJs, &fas](int k) mutable {
                 auto &rel = relationships[k];
                 if (!rel->isGlueConstraint()) {
                     if (rel->isUnaryConstraint())
@@ -1242,10 +1278,8 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         std::vector<float> cpdAngularDampings(ncompounds);
         std::vector<float> cpdFrictions(ncompounds);
         std::vector<float> cpdRestitutions(ncompounds);
-        pol(enumerate(rbs), [&cpdMasses, &cpdLinearDampings, &cpdAngularDampings, &cpdFrictions, &cpdRestitutions, &fas,
-                             tab = proxy<space>(tab)](int rbi, const auto &rb) {
-            auto fa = fas[rbi];
-            auto compId = tab.query(fa);
+        pol(enumerate(rbs), [&cpdMasses, &cpdLinearDampings, &cpdAngularDampings, &cpdFrictions, &cpdRestitutions, &fas, &rbDstCompId](int rbi, const auto &rb) {
+            auto compId = rbDstCompId[rbi];
             auto &body = rb->body;
             auto m = body->getMass();
             atomic_add(exec_omp, &cpdMasses[compId], m);
@@ -1270,10 +1304,9 @@ struct BulletMaintainRigidBodiesAndConstraints : zeno::INode {
         /// @note assemble shapes, masses
         std::vector<std::mutex> comLocks(ncompounds);
         std::vector<std::vector<btScalar>> cpdChildMasses(ncompounds);
-        pol(range(nrbs), [&, tab = proxy<space>(tab)](int rbi) mutable {
+        pol(range(nrbs), [&](int rbi) mutable {
             std::unique_ptr<btRigidBody> &bodyPtr = rbs[rbi]->body;
-            auto fa = fas[rbi];
-            auto compId = tab.query(fa);
+            auto compId = rbDstCompId[rbi];
             if (isCompound[compId]) {
                 std::lock_guard<std::mutex> guard(comLocks[compId]);
                 auto &cpdPtr = btCpdShapes[compId];

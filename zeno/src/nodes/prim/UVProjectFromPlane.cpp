@@ -20,7 +20,6 @@
 #define STB_IMAGE_WRITE_STATIC
 #include <tinygltf/stb_image_write.h>
 #include <vector>
-#include <zeno/types/HeatmapObject.h>
 
 static const float eps = 0.0001f;
 
@@ -375,9 +374,10 @@ std::shared_ptr<PrimitiveObject> readPFMFile(std::string const &path) {
     return img;
 }
 
-struct ReadImageFile : INode {
+struct ReadImageFile : INode {//todo: select custom color space
     virtual void apply() override {
         auto path = get_input2<std::string>("path");
+        auto linearize = get_input2<bool>("Linearize Non-linear Images");
         if (zeno::ends_with(path, ".exr", false)) {
             set_output("image", readExrFile(path));
         }
@@ -385,13 +385,20 @@ struct ReadImageFile : INode {
             set_output("image", readPFMFile(path));
         }
         else {
-            set_output("image", readImageFile(path));
+            auto image = readImageFile(path); 
+            if (!linearize) {
+                for (auto i = 0; i < image->size(); i++) {
+                    image->verts[i] = pow(image->verts[i], 1.0/2.2f);
+                }
+            }
+            set_output("image", image);
         }
     }
 };
 ZENDEFNODE(ReadImageFile, {
     {
         {"readpath", "path"},
+        {"bool", "Linearize Non-linear Images", "1"},
     },
     {
         {"PrimitiveObject", "image"},
@@ -399,17 +406,6 @@ ZENDEFNODE(ReadImageFile, {
     {},
     {"comp"},
 });
-
-template<typename T>
-void image_flip_vertical(T *v, int w, int h) {
-    for (auto j = 0; j < h / 2; j++) {
-        for (auto i = 0; i < w; i++) {
-            auto index1 = i + j * w;
-            auto index2 = i + (h - j - 1) * w;
-            std::swap(v[index1], v[index2]);
-        }
-    }
-}
 
 struct ImageFlipVertical : INode {
     virtual void apply() override {

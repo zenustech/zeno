@@ -4,6 +4,7 @@
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
 #include "math_constants.h"
+
 // #include <cuda_fp16.h>
 // #include "nvfunctional"
 #include <nanovdb/NanoVDB.h>
@@ -492,6 +493,14 @@ extern "C" __global__ void __closesthit__radiance_volume()
         //auto relative_prob = prob * (CUDART_PI_F * 4);
         new_dir = normalize(new_dir);
         scattering = vol_out.albedo;
+
+        if (prd->trace_denoise_normal) {
+            prd->tmp_normal = normalize(-ray_dir + new_dir);
+        }
+        if(prd->trace_denoise_albedo) {
+            prd->tmp_albedo = vol_out.albedo;
+        }
+
         break;
     }
 

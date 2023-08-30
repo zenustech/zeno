@@ -168,6 +168,11 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     return true;
 }
 
+void OptixWorker::onSetLoopPlaying(bool enbale)
+{
+    m_zenoVis->setLoopPlaying(enbale);
+}
+
 void OptixWorker::stop()
 {
     m_pTimer->stop();
@@ -251,6 +256,7 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_switchTimeFrame, m_worker, &OptixWorker::onFrameSwitched);
     connect(this, &ZOptixViewport::sig_togglePlayButton, m_worker, &OptixWorker::onPlayToggled);
     connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
+    connect(this, &ZOptixViewport::sig_setLoopPlaying, m_worker, &OptixWorker::onSetLoopPlaying);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -494,6 +500,14 @@ void ZOptixViewport::paintEvent(QPaintEvent* event)
     if (!m_renderImage.isNull())
     {
         QPainter painter(this);
-        painter.drawImage(0, 0, m_renderImage);
+        auto *session = m_zenovis->getSession();
+        if (session != nullptr && session->is_lock_window()) {
+            auto *scene = session->get_scene();
+            auto offset = scene->camera->viewport_offset;
+            painter.drawImage(offset[0], offset[1], m_renderImage);
+        }
+        else {
+            painter.drawImage(0, 0, m_renderImage);
+        }
     }
 }

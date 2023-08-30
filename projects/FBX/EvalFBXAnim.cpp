@@ -10,6 +10,8 @@
 
 #include "assimp/scene.h"
 
+#include "json.hpp"
+
 #include "Definition.h"
 
 #include <glm/vec4.hpp>
@@ -448,6 +450,30 @@ struct EvalAnim{
     }
 };
 
+struct EvalBlenderFile : zeno::INode {
+    virtual void apply() override {
+
+    }
+};
+
+ZENDEFNODE(EvalBlenderFile,
+           {       /* inputs: */
+            {
+                {"readpath", "script_file"},
+                {"readpath", "blender_file"},
+                {"readpath", "output_path"},
+            },  /* outputs: */
+            {
+                "fake"
+            },  /* params: */
+            {
+
+            },  /* category: */
+            {
+                "FBX",
+            }
+           });
+
 struct EvalFBXAnim : zeno::INode {
 
     virtual void apply() override {
@@ -481,6 +507,10 @@ struct EvalFBXAnim : zeno::INode {
 
         if(nodeTree == nullptr || boneTree == nullptr || animInfo == nullptr){
             zeno::log_error("FBX: Empty NodeTree, BoneTree or AnimInfo");
+            std::cout << "nodeTree == nullptr?" << (nodeTree == nullptr) << "\n";
+            std::cout << "boneTree == nullptr?" << (boneTree == nullptr) << "\n";
+            std::cout << "animInfo == nullptr?" << (animInfo == nullptr) << "\n";
+            throw zeno::makeError("Empty FBX Data");
         }
 
         auto prim = std::make_shared<zeno::PrimitiveObject>();

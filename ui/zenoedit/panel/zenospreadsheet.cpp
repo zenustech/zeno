@@ -58,10 +58,14 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
 
     pMainLayout->addLayout(pTitleLayout);
 
+    auto sortModel = new QSortFilterProxyModel(this);
+    sortModel->setSourceModel(dataModel);
+
     QTableView *prim_attr_view = new QTableView();
     prim_attr_view->setAlternatingRowColors(true);
+    prim_attr_view->setSortingEnabled(true);
     prim_attr_view->setProperty("cssClass", "proppanel");
-    prim_attr_view->setModel(dataModel);
+    prim_attr_view->setModel(sortModel);
     pMainLayout->addWidget(prim_attr_view);
 
 //    pStatusBar->setAlignment(Qt::AlignRight);
@@ -86,6 +90,16 @@ ZenoSpreadsheet::ZenoSpreadsheet(QWidget *parent) : QWidget(parent) {
                 setPrim(key);
             }
         }
+    });
+
+    // corner button of tableview
+    auto cornerBtn = prim_attr_view->findChild<QAbstractButton*>();
+    // do not select all when clicked
+    cornerBtn->disconnect();
+    // reset sort order
+    connect(cornerBtn, &QAbstractButton::clicked, this, [sortModel, prim_attr_view]() {
+        sortModel->sort(-1);
+        prim_attr_view->horizontalHeader()->setSortIndicator(-1, Qt::SortOrder::AscendingOrder);
     });
 }
 
@@ -122,10 +136,16 @@ void ZenoSpreadsheet::setPrim(std::string primid) {
             size_t num_attrs = obj->num_attrs();
             size_t num_vert = obj->verts.size();
             size_t num_tris = obj->tris.size();
+            size_t num_loops = obj->loops.size();
+            size_t num_polys = obj->polys.size();
+            size_t num_lines = obj->lines.size();
 
-            QString statusInfo = QString("Vertex: %1, Triangle: %2, UserData: %3, Attribute: %4")
+            QString statusInfo = QString("Vertex: %1, Triangle: %2, Loops: %3, Poly: %4, Lines: %5, UserData: %6, Attribute: %7")
                 .arg(num_vert)
                 .arg(num_tris)
+                .arg(num_loops)
+                .arg(num_polys)
+                .arg(num_lines)
                 .arg(sizeUserData)
                 .arg(num_attrs);
             pStatusBar->setText(statusInfo);

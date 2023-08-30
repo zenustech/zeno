@@ -6,7 +6,6 @@
 #include <zeno/extra/EventCallbacks.h>
 #include <zeno/core/Session.h>
 #include <zeno/types/GenericObject.h>
-#include "launch/corelaunch.h"
 #include "launch/serialize.h"
 #include "nodesview/zenographseditor.h"
 #include "dock/ztabdockwidget.h"
@@ -649,26 +648,36 @@ void ZenoMainWindow::initTimelineDock()
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
         ZASSERT_EXIT(mgr);
+        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
         m_pTimeline->togglePlayButton(false);
         int nFrame = m_pTimeline->value();
         QVector<DisplayWidget *> views = viewports();
+        std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
+            QVector<DisplayWidget *> views = viewports();
+            for (auto displayWid : views) {
+                if (!displayWid->isGLViewport()) {
+                    displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
+                }
+            }
+        };
         for (DisplayWidget *view : views) {
             if (m_bAlways) {
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnAll);
-                view->onRun(nFrame, nFrame);
+                setOptixUpdateSeparately(false, false);
+                LAUNCH_PARAM launchParam;
+                launchParam.beginFrame = nFrame;
+                launchParam.endFrame = nFrame;
+                AppHelper::initLaunchCacheParam(launchParam);
+                view->onRun(launchParam);
             }
             else if (m_bAlwaysLightCamera || m_bAlwaysMaterial) {
-                std::function<void(bool, bool)> setOptixUpdateSeparately = [=](bool updateLightCameraOnly, bool updateMatlOnly) {
-                    QVector<DisplayWidget *> views = viewports();
-                    for (auto displayWid : views) {
-                        if (!displayWid->isGLViewport()) {
-                            displayWid->setRenderSeparately(updateLightCameraOnly, updateMatlOnly);
-                        }
-                    }
-                };
                 setOptixUpdateSeparately(m_bAlwaysLightCamera, m_bAlwaysMaterial);
-                mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOnLightCameraMaterial);
-                view->onRun(nFrame, nFrame, m_bAlwaysLightCamera, m_bAlwaysMaterial);
+                LAUNCH_PARAM launchParam;
+                launchParam.beginFrame = nFrame;
+                launchParam.endFrame = nFrame;
+                launchParam.applyLightAndCameraOnly = m_bAlwaysLightCamera;
+                launchParam.applyMaterialOnly = m_bAlwaysMaterial;
+                AppHelper::initLaunchCacheParam(launchParam);
+                view->onRun(launchParam);
             }
         }
     });
@@ -775,7 +784,13 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
         IGraphsModel* pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
-        launchProgram(pModel, beginFrame, endFrame, applyLightAndCameraOnly, applyMaterialOnly);
+        LAUNCH_PARAM launchParam;
+        launchParam.beginFrame = beginFrame;
+        launchParam.endFrame = endFrame;
+        launchParam.applyLightAndCameraOnly = applyLightAndCameraOnly;
+        launchParam.applyMaterialOnly = applyMaterialOnly;
+        AppHelper::initLaunchCacheParam(launchParam);
+        launchProgram(pModel, launchParam);
     }
 
     for (auto view : views)
@@ -799,7 +814,7 @@ DisplayWidget* ZenoMainWindow::getOnlyViewport() const
     return pView;
 }
 
-void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
+void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchparam)
 {
     VideoRecInfo recInfo;
     recInfo.bitrate = param.iBitrate;
@@ -813,19 +828,6 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.bExportVideo = param.isExportVideo;
     recInfo.needDenoise = param.needDenoise;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
-
-    QDir dir(recInfo.record_path);
-    ZASSERT_EXIT(dir.exists());
-    dir.mkdir("P"); //optix worker need this directory
-    {
-        QString dir_path = recInfo.record_path + "/P/";
-        QDir qDir = QDir(dir_path);
-        qDir.setNameFilters(QStringList("*.jpg"));
-        QStringList fileList = qDir.entryList(QDir::Files | QDir::NoDotAndDotDot);
-        for (auto i = 0; i < fileList.size(); i++) {
-            qDir.remove(fileList.at(i));
-        }
-    }
 
     if (!param.sPixel.isEmpty())
     {
@@ -877,7 +879,9 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     IGraphsModel* pModel = pGraphsMgr->currentModel();
     ZASSERT_EXIT(pModel);
 
-    launchProgram(pModel, recInfo.frameRange.first, recInfo.frameRange.second, false, false);
+    launchparam.beginFrame = recInfo.frameRange.first;
+    launchparam.endFrame = recInfo.frameRange.second;
+    launchProgram(pModel, launchparam);
 
     DisplayWidget* pViewport = getOnlyViewport();
     ZASSERT_EXIT(pViewport);
@@ -961,7 +965,10 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
         }
     }
 	zeno::getSession().globalComm->clearState();
-	viewWidget->onRun(recInfo.frameRange.first, recInfo.frameRange.second);
+    LAUNCH_PARAM launchParam;
+    launchParam.beginFrame = recInfo.frameRange.first;
+    launchParam.endFrame = recInfo.frameRange.second;
+	viewWidget->onRun(launchParam);
 
     //ZASSERT_EXIT(ret);
     //viewWidget->runAndRecord(recInfo);
@@ -1186,6 +1193,9 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
             }
             //delete pDock;
         }
+
+        // trigger destroy event
+        zeno::getSession().eventCallbacks->triggerEvent("beginDestroy");
 
         QMainWindow::closeEvent(event);
     } 
@@ -1889,6 +1899,6 @@ static int subprogram_dumpzsg2zsl_main(int argc, char **argv) {
     return 0;
 }
 
-static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] {
+static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] (auto _) {
     zeno::getSession().userData().set("subprogram_dumpzsg2zsl", std::make_shared<zeno::GenericObject<int(*)(int, char **)>>(subprogram_dumpzsg2zsl_main));
 });

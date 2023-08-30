@@ -29,3 +29,6 @@ else()
     target_include_directories(zeno PRIVATE Alembic/openexr/Imath/src/Imath)
     target_include_directories(zeno PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/Alembic/openexr/Imath/config)
 endif()
+
+find_package(PNG REQUIRED)
+target_link_libraries(zeno PRIVATE PNG::PNG)

@@ -33,6 +33,15 @@ if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    if(WIN32)
+        target_compile_options(zeno # MSVC, GNU, Clang, Intel
+            PUBLIC $<$<COMPILE_LANGUAGE:CXX>: /openmp:llvm /openmp:experimental>
+        )
+    else()
+        target_compile_options(zeno # MSVC, GNU, Clang, Intel
+            PUBLIC $<$<COMPILE_LANGUAGE:CXX>: $<IF:$<CXX_COMPILER_ID:AppleClang>, -Xpreprocessor -fopenmp, -fopenmp> >
+        )
+    endif()
 endif()
 
 set(FLIP_SOURCE levelset_util.cpp FLIP_vdb.h FLIP_vdb.cpp simd_vdb_poisson.h simd_vdb_poisson.cpp simd_vdb_poisson_uaamg.h simd_vdb_poisson_uaamg.cpp simd_viscosity3d.h simd_viscosity3d.cpp vdb_velocity_extrapolator.h vdb_velocity_extrapolator.cpp volume_fractions.h volume_fractions.cpp whitewater.cpp)

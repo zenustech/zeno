@@ -18,7 +18,22 @@ public:
                   QObject* parent = nullptr);
     void setRes(QVector2D res);
     QVector2D res() const { return m_res; }
+
+    float getTheta() const;
+    void setTheta(float theta);
+    float getPhi() const;
+    void setPhi(float phi);
+    zeno::vec3f getCenter() const;
+    void setCenter(zeno::vec3f center);
+    bool getOrthoMode() const;
+    void setOrthoMode(bool OrthoMode);
+    float getRadius() const;
+    void setRadius(float radius);
+    float getFOV() const;
+    void setFOV(float fov);
+    float getAperture() const;
     void setAperture(float aperture);
+    float getDisPlane() const;
     void setDisPlane(float disPlane);
     void updatePerspective();
     void setKeyFrame();
@@ -40,17 +55,8 @@ public:
     void resizeTransformHandler(int dir);
 
 private:
-    bool m_mmb_pressed;
-    float m_theta;
-    float m_phi;
-    QPointF m_lastPos;
+    QPointF m_lastMidButtonPos;
     QPoint m_boundRectStartPos;
-    QVector3D  m_center;
-    bool m_ortho_mode;
-    float m_fov;
-    float m_radius;
-    float m_aperture;
-    float m_focalPlaneDistance;
     QVector2D m_res;
     QSet<int> m_pressedKeys;
 

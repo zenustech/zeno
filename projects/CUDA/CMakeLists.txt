@@ -28,9 +28,6 @@ target_include_directories(zshelper INTERFACE
 )
 target_link_libraries(zshelper INTERFACE zensim ZFX)
 target_compile_features(zshelper INTERFACE cuda_std_17)
-target_compile_options(zpc_cuda_deps
-  INTERFACE $<$<COMPILE_LANGUAGE:CUDA>:-arch=sm_${ZS_CUDA_ARCH}>
-)
 
 target_link_options(zeno
   PRIVATE $<DEVICE_LINK:-dlto>
@@ -41,6 +38,7 @@ target_link_libraries(zeno PRIVATE zshelper)
 #[=[
 target_sources(zeno PRIVATE
   test1.cu
+  test.cpp
 )
 #]=]
 set_target_properties(zeno
@@ -48,6 +46,13 @@ set_target_properties(zeno
   CUDA_SEPARABLE_COMPILATION ON
   CUDA_RESOLVE_DEVICE_SYMBOLS ON
   CUDA_ARCHITECTURES ${ZS_CUDA_ARCH}
+)
+
+# closest point query (from ingo wald)
+target_sources(zeno PRIVATE
+  iw_query/Query.cpp
+  iw_query/bvh.cpp
+  iw_query/distanceQueries.cpp
 )
 
 # wrangler
@@ -69,6 +74,7 @@ target_sources(zeno PRIVATE
   utils/IndexBuckets.cu
   utils/Primitives.cu
   utils/TopoUtils.cu
+  utils/Tracing.cu
   utils/Noise.cu
   utils/Groom.cpp
 )

@@ -1,6 +1,6 @@
 #include <zeno/zeno.h>
 #include <zeno/utils/logger.h>
-#include <zeno/utils/prim_ops.h>
+#include <glm/glm.hpp>
 #include <zeno/types/ListObject.h>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/StringObject.h>
@@ -242,19 +242,42 @@ struct GetAlembicCamera : INode {
         set_output("up", std::make_shared<NumericObject>(zeno::vec3f((float)up.x, (float)up.y, (float)up.z)));
         set_output("right", std::make_shared<NumericObject>(zeno::vec3f((float)right.x, (float)right.y, (float)right.z)));
 
+        auto _up = zeno::vec3f((float)up.x, (float)up.y, (float)up.z);
+        auto _right = zeno::vec3f((float)right.x, (float)right.y, (float)right.z);
+        auto view = zeno::cross(_up, _right);
+        set_output("view", std::make_shared<NumericObject>(view));
+
         set_output("focal_length", std::make_shared<NumericObject>(focal_length));
         set_output("near", std::make_shared<NumericObject>((float)cam_info.value()._near));
         set_output("far", std::make_shared<NumericObject>((float)cam_info.value()._far));
+        set_output("horizontalAperture", std::make_shared<NumericObject>((float)cam_info->horizontalAperture));
+        set_output("verticalAperture", std::make_shared<NumericObject>((float)cam_info->verticalAperture));
+        auto m_nx = get_input2<float>("nx");
+        auto m_ny = get_input2<float>("ny");
+        float m_ha = (float)cam_info->horizontalAperture;
+        float m_va = (float)cam_info->verticalAperture;
+        float c_aspect = m_ha/m_va;
+        float u_aspect = m_nx/m_ny;
+        float fov_y = glm::degrees(2.0f * std::atan(m_va/(u_aspect/c_aspect) / (2.0f * focal_length)));
+        set_output("fov_y", std::make_shared<NumericObject>(fov_y));
     }
 };
 
 ZENDEFNODE(GetAlembicCamera, {
-    {{"ABCTree", "abctree"}},
+    {
+        {"ABCTree", "abctree"},
+        {"int", "nx", "1920"},
+        {"int", "ny", "1080"},
+    },
     {
         "pos",
         "up",
+        "view",
         "right",
+        "fov_y",
         "focal_length",
+        "horizontalAperture",
+        "verticalAperture",
         "near",
         "far",
     },
@@ -264,6 +287,7 @@ ZENDEFNODE(GetAlembicCamera, {
 
 struct ImportAlembicPrim : INode {
     Alembic::Abc::v12::IArchive archive;
+    std::string usedPath;
     virtual void apply() override {
         int frameid;
         if (has_input("frameid")) {
@@ -274,9 +298,10 @@ struct ImportAlembicPrim : INode {
         auto abctree = std::make_shared<ABCTree>();
         {
             auto path = get_input2<std::string>("path");
-            bool read_done = archive.valid();
+            bool read_done = archive.valid() && (path == usedPath);
             if (!read_done) {
                 archive = readABC(path);
+                usedPath = path;
             }
             double start, _end;
             GetArchiveStartAndEndTime(archive, start, _end);

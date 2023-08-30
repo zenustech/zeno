@@ -1141,6 +1141,10 @@
         <source>export video</source>
         <translation>是否导出视频</translation>
     </message>
+	<message>
+        <source>remove cache after render</source>
+        <translation>渲染后删除缓存</translation>
+    </message>
     <message>
         <source>record video after running.</source>
         <translation type="vanished">是否先运行，再录制</translation>

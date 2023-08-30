@@ -20,7 +20,12 @@ using AttrAcceptAll = std::variant
     , vec4i
     >;
 
+struct AttrVectorIndex {
+    size_t attrIndex = 0;
+    size_t elementIndex = 0;
+};
 
+// AttrVector = BaseVector + attrs
 template <class ValT>
 struct AttrVector {
     using AttrVectorVariant = std::variant
@@ -283,6 +288,65 @@ struct AttrVector {
     }
 #endif
     */
+
+    template<class T>
+    size_t type_dim() const {
+        if constexpr (is_vec_v<T>) {
+            return is_vec_n<T>;
+        }
+        else {
+            return 1;
+        }
+    }
+
+    size_t total_dim() const {
+        size_t dim = 0;
+        // base
+        dim += type_dim<value_type>();
+        // attr
+        for (auto& [key, arr] : attrs) {
+            auto const& k = key;
+            std::visit([&](auto& arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (variant_contains<T, AttrAcceptAll>::value) {
+                    dim += type_dim<T>();
+                }
+            }, arr);
+        }
+        return dim;
+    }
+
+    AttrVectorIndex attr_index(size_t index) const {
+        size_t attrIndex = 0;
+        size_t elementIndex = 0;
+        size_t dim = 0;
+        // base
+        dim += type_dim<value_type>();
+        if (index < dim) {
+            return { attrIndex, index % dim };
+        }
+        attrIndex++;
+        // attr
+        // attr is std::map, it's sorted, so here attrIndex++ is right.
+        for (auto& [key, arr] : attrs) {
+            auto const& k = key;
+            std::visit([&](auto& arr) {
+                using T = std::decay_t<decltype(arr[0])>;
+                if constexpr (variant_contains<T, AttrAcceptAll>::value) {
+                    auto current_dim = type_dim<T>();
+                    if (index < dim + current_dim) {
+                        elementIndex = (index - dim) % current_dim;
+                    }
+                    dim += current_dim;
+                }
+            }, arr);
+            if (index < dim) {
+                break;
+            }
+            attrIndex++;
+        }
+        return { attrIndex, elementIndex };
+    }
 
     template <class Accept = std::variant<vec3f, float>>
     size_t num_attrs() const {

@@ -48,6 +48,8 @@
 #include "ies/ies.h"
 
 #include "zeno/utils/fileio.h"
+#include "zeno/extra/TempNode.h"
+#include "zeno/types/PrimitiveObject.h"
 #include <cudaMemMarco.hpp>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
@@ -704,6 +706,26 @@ inline void addTexture(std::string path)
         
         g_ies[path] = {std::move(iesBuffer), coneAngle };
     }
+    else if (zeno::getSession().nodeClasses.count("ReadPNG16") > 0 && zeno::ends_with(path, ".png", false)) {
+        auto outs = zeno::TempNodeSimpleCaller("ReadPNG16")
+                .set2("path", path)
+                .call();
+
+        // Create nodes
+        auto img = outs.get<zeno::PrimitiveObject>("image");
+        if (img->verts.size() == 0) {
+            g_tex[path] = std::make_shared<cuTexture>();
+            return;
+        }
+        int nx = std::max(img->userData().get2<int>("w"), 1);
+        int ny = std::max(img->userData().get2<int>("h"), 1);
+        if(sky_tex.value() == path)//if this is a loading of a sky texture
+        {
+            calc_sky_cdf_map(nx, ny, 3, (float *)img->verts.data());
+        }
+
+        g_tex[path] = makeCudaTexture((float *)img->verts.data(), nx, ny, 3);
+    }
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
@@ -845,12 +867,12 @@ inline void createPipeline()
     pipeline_link_options.debugLevel               = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
 
-    int num_progs = 3 + rtMaterialShaders.size() * 2;
+    size_t num_progs = 3 + rtMaterialShaders.size() * 2;
     OptixProgramGroup* program_groups = new OptixProgramGroup[num_progs];
     program_groups[0] = raygen_prog_group;
     program_groups[1] = radiance_miss_group;
     program_groups[2] = occlusion_miss_group;
-    for(int i=0;i<rtMaterialShaders.size();i++)
+    for(size_t i=0;i<rtMaterialShaders.size();i++)
     {
         program_groups[3 + i*2] = rtMaterialShaders[i].m_radiance_hit_group;
         program_groups[3 + i*2 + 1] = rtMaterialShaders[i].m_occlusion_hit_group;

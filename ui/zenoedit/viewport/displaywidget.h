@@ -5,6 +5,7 @@
 #include "common.h"
 #include "recordvideomgr.h"
 #include "viewportinteraction/picker.h"
+#include "launch/corelaunch.h"
 
 class ViewportWidget;
 class ZOptixViewport;
@@ -43,12 +44,13 @@ public:
     void moveToFrame(int frame);
     void setIsCurrent(bool isCurrent);
     bool isCurrent();
+    void setLoopPlaying(bool enable);
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 public slots:
     void updateFrame(const QString& action = "");
     void onRun();
-    void onRun(int frameStart, int frameEnd, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false);
+    void onRun(LAUNCH_PARAM launchParam);
     void onRecord();
     void onRecord_slient(const VideoRecInfo& recInfo);
     void onScreenShoot();

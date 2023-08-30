@@ -9,6 +9,7 @@
 
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
+#include "proceduralSky.h"
 
 #include "Shape.h"
 #include <cuda/random.h>
