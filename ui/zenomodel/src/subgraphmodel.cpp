@@ -109,7 +109,9 @@ void SubGraphModel::importNodeItem(const NODE_DATA& data, const QModelIndex& nod
 {
     ret.objid = data[ROLE_OBJID].toString();
     ret.objCls = data[ROLE_OBJNAME].toString();
-    ret.customName = data[ROLE_CUSTOM_OBJNAME].toString();
+    QString customName = data[ROLE_CUSTOM_OBJNAME].toString();
+    if (checkCustomName(customName))
+        ret.customName = customName;
     ret.viewpos = data[ROLE_OBJPOS].toPointF();
     ret.bCollasped = data[ROLE_COLLASPED].toBool();
     ret.options = data[ROLE_OPTIONS].toInt();
