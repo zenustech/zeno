@@ -3258,7 +3258,7 @@ void set_perspective(float const *U, float const *V, float const *W, float const
     cam.aperture = aperture;
 }
 
-void write_pfm(std::string& path, int w, int h, const float *rgb) {
+static void write_pfm(std::string& path, int w, int h, const float *rgb) {
     std::string header = zeno::format("PF\n{} {}\n-1.0\n", w, h);
     std::vector<char> data(header.size() + w * h * sizeof(zeno::vec3f));
     memcpy(data.data(), header.data(), header.size());
