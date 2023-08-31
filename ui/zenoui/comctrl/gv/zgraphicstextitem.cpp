@@ -349,7 +349,7 @@ ZSocketPlainTextItem::ZSocketPlainTextItem(
     , m_viewSockIdx(viewSockIdx)
     , m_socket(nullptr)
 {
-    setBrush(QColor("#C3D2DF"));
+    setBrush(QColor("#dee6ed"));
     QFont font = QApplication::font();
     font.setPointSize(12);
     font.setWeight(QFont::DemiBold);

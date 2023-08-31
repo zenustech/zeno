@@ -13,7 +13,7 @@ ZDockTabWidget::ZDockTabWidget(QWidget* parent)
     initStyleSheet();
 
     QPalette pal = palette();
-    pal.setColor(QPalette::Window, QColor("#2D3239"));
+    pal.setColor(QPalette::Window, QColor("#2d3239"));
     setAutoFillBackground(true);
     setPalette(pal);
 

@@ -425,7 +425,7 @@ void _ZenoSubGraphView::wheelEvent(QWheelEvent* event)
         //executing zoom
         QVector<qreal> factors = UiHelper::scaleFactors();
         qreal zoomFactor = transform().m11();
-        qreal spread = zoomFactor/10;
+        qreal spread = zoomFactor / 5;
         if (event->angleDelta().y() > 0)
             zoomFactor += spread;
         else if (event->angleDelta().y() < 0)
@@ -481,7 +481,7 @@ void _ZenoSubGraphView::contextMenuEvent(QContextMenuEvent* event)
 void _ZenoSubGraphView::drawGrid(QPainter* painter, const QRectF& rect)
 {
     //background color
-    painter->fillRect(rect, QColor("#13191f"));
+    painter->fillRect(rect, QColor("#1d1d1d"));
     bool showGrid = ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool();
     if (showGrid)
     {

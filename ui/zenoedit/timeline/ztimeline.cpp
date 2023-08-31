@@ -363,6 +363,6 @@ void ZTimeline::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     QPen pen(QColor("#000000"), 1);
     painter.setPen(pen);
-    painter.setBrush(QColor(45,50,57));
+    painter.setBrush(QColor("#2d3239"));
     painter.drawRect(rect().adjusted(0, 0, -1, -1));
 }

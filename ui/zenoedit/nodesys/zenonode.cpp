@@ -259,7 +259,6 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
 
     m_bodyLayout = new ZGraphicsLayout(false);
     m_bodyLayout->setDebugName("Body Layout");
-    m_bodyLayout->setSpacing(ZenoStyle::dpiScaled(5));
     qreal margin = ZenoStyle::dpiScaled(16);
     m_bodyLayout->setContentsMargin(margin, bdrWidth, 0, bdrWidth);
 
@@ -284,6 +283,9 @@ ZLayoutBackground* ZenoNode::initBodyWidget(ZenoSubGraphScene* pScene)
     //params.
     m_paramsLayout = initParams(paramsItem, pScene);
     m_bodyLayout->addLayout(m_paramsLayout);
+
+    if (m_paramsLayout->count() > 0)
+        m_bodyLayout->addSpacing(24, QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
 
     m_inputsLayout = initSockets(inputsItem, legacyInputs, true, pScene);
     m_bodyLayout->addLayout(m_inputsLayout);

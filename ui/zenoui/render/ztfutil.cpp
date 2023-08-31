@@ -462,7 +462,7 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     param.nameFont = font;
     param.nameFont.setBold(true);
 
-    font.setPointSize(11);
+    font.setPointSize(12);
     font.setWeight(QFont::DemiBold);
     param.socketFont = font;
 
@@ -472,7 +472,7 @@ NodeUtilParam ZtfUtil::toUtilParam(const NodeParam& nodeParam)
     QColor clr(226, 226, 226);
     //clr.setAlphaF(0.4);
     param.nameClr = clr;
-    param.socketClr = QColor(188, 188, 188);
+    param.socketClr = QColor("#dee6ed");
     clr = QColor(255, 255, 255);
     clr.setAlphaF(0.7);
     param.paramClr = clr;
