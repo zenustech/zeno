@@ -64,6 +64,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "tinyexr.h"
+#include "zeno/utils/image_proc.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -154,10 +155,10 @@ typedef Record<HitGroupData> HitGroupRecord;
 //};
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_diffuse;
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_specular;
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_transmit;
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_background;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_diffuse;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_specular;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_transmit;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_background;
 using Vertex = float4;
 std::vector<Vertex> g_lightMesh;
 std::vector<Vertex> g_lightColor;
@@ -3403,7 +3404,19 @@ void *optixgetimg_extra(std::string name) {
         return output_buffer_background->getHostPointer();
     }
 }
-
+static void save_exr(float3* ptr, int w, int h, std::string path) {
+    std::vector<float3> data(w * h);
+    std::copy_n(ptr, w * h, data.data());
+    zeno::image_flip_vertical(data.data(), w, h);
+    const char *err = nullptr;
+    int ret = SaveEXR((float *) data.data(), w, h, 3, 1, path.c_str(), &err);
+    if (ret != TINYEXR_SUCCESS) {
+        if (err) {
+            zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
+            FreeEXRErrorMessage(err);
+        }
+    }
+}
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     bool imageRendered = false;
     samples = zeno::envconfig::getInt("SAMPLES", samples);
@@ -3457,10 +3470,10 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         // AOV
         if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
             path = path.substr(0, path.size() - 4);
-            stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
-            stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);
-            stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
-            stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
+            save_exr((float3 *)optixgetimg_extra("diffuse"), w, h, path + ".diffuse.exr");
+            save_exr((float3 *)optixgetimg_extra("specular"), w, h, path + ".specular.exr");
+            save_exr((float3 *)optixgetimg_extra("transmit"), w, h, path + ".transmit.exr");
+            save_exr((float3 *)optixgetimg_extra("background"), w, h, path + ".background.exr");
         }
         imageRendered = true;
     }

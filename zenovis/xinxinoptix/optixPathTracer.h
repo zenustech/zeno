@@ -57,10 +57,10 @@ struct Params
     float4*      accum_buffer_T;
     float4*      accum_buffer_B;
     uchar4*      frame_buffer;
-    uchar4*      frame_buffer_D;
-    uchar4*      frame_buffer_S;
-    uchar4*      frame_buffer_T;
-    uchar4*      frame_buffer_B;
+    float3*      frame_buffer_D;
+    float3*      frame_buffer_S;
+    float3*      frame_buffer_T;
+    float3*      frame_buffer_B;
 
     float3*      albedo_buffer;
     float3*      normal_buffer;
