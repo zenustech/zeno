@@ -7,6 +7,7 @@
 #include "zeno/utils/PropertyVisitor.h"
 #include "zeno/utils/logger.h"
 #include "zeno/zeno.h"
+#include <Eigen/Core>
 #include <iostream>
 #include <limits>
 #include <numeric>
@@ -466,17 +467,34 @@ namespace {
         }
     };
 
-    struct ZENO_CRTP(RoadsPrimRefineWithSpline, zeno::reflect::IParameterAutoNode) {
-        ZENO_GENERATE_NODE_BODY(RoadsPrimRefineWithSpline);
+    struct ZENO_CRTP(RoadsPrimRefineWithLine, zeno::reflect::IParameterAutoNode) {
+        ZENO_GENERATE_NODE_BODY(RoadsPrimRefineWithLine);
 
-        std::shared_ptr<zeno::PrimitiveObject> Primitive;
-        ZENO_DECLARE_INPUT_FIELD(Primitive, "Prim");
-        ZENO_DECLARE_OUTPUT_FIELD(Primitive, "Prim");
+        std::shared_ptr<zeno::PrimitiveObject> Mesh;
+        ZENO_DECLARE_INPUT_FIELD(Mesh, "MeshPrim");
+        ZENO_DECLARE_OUTPUT_FIELD(Mesh, "MeshPrim");
 
-        std::shared_ptr<zeno::RoadBSplineObject> Spline;
-        ZENO_DECLARE_INPUT_FIELD(Spline, "Spline");
+        std::shared_ptr<zeno::PrimitiveObject> Lines;
+        ZENO_DECLARE_INPUT_FIELD(Lines, "LinePrim");
 
         void apply() override {
+            ArrayList<Eigen::VectorXf> Result;
+
+            auto& Points = AutoParameter->Mesh->verts;
+            auto& LineVertices = AutoParameter->Lines->verts;
+            auto& Lines = AutoParameter->Lines->lines;
+
+            Result.reserve(Points.size());
+            for (auto& p : Points) {
+                Eigen::VectorXf Point(3);
+
+                Point(0) = p[0];
+                Point(1) = p[1];
+                Point(2) = p[2];
+
+                Result.push_back(Point);
+            }
+
         }
     };
 

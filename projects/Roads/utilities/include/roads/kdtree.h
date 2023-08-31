@@ -10,18 +10,20 @@
 namespace roads {
     using namespace Eigen;
 
-    struct KDTreeNode {
+    struct KDTreeNode : std::enable_shared_from_this<KDTreeNode> {
         VectorXf Point;
         std::shared_ptr<KDTreeNode> Left;
         std::shared_ptr<KDTreeNode> Right;
 
         explicit KDTreeNode(VectorXf Value);
+
+        virtual ~KDTreeNode() = default;
     };
 
     class KDTree {
-        std::shared_ptr<KDTreeNode> Root;
+        std::shared_ptr<KDTreeNode> Root = nullptr;
 
-        std::shared_ptr<KDTreeNode> BuildKdTree_Impl(ArrayList<VectorXf> &Data, uint32_t Lower, uint32_t Upper, uint32_t Depth);
+        static KDTreeNode* BuildKdTree_Impl(ArrayList<VectorXf> Data, int64_t Lower, int64_t Upper, uint32_t Depth);
 
         std::shared_ptr<KDTreeNode> Insert_Impl(const std::shared_ptr<KDTreeNode> &Node, VectorXf Point, uint32_t Depth);
 
@@ -32,7 +34,7 @@ namespace roads {
 
         ArrayList<VectorXf> SearchRadius(const VectorXf& Point, float Radius);
 
-        static std::shared_ptr<KDTree> BuildKdTree(ArrayList<VectorXf> Data);
+        static KDTree* BuildKdTree(const ArrayList<VectorXf>& Data);
     };
 
 }// namespace roads

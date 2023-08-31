@@ -1,40 +1,38 @@
 
 #include "roads/kdtree.h"
+#include <stack>
+#include <utility>
 
 using namespace roads;
 using namespace Eigen;
 
-KDTreeNode::KDTreeNode(VectorXf Value) : Point(std::move(Value)), Left(nullptr), Right(nullptr) {}
+KDTreeNode::KDTreeNode(VectorXf Value) : Point(std::move(Value)) {}
 
-std::shared_ptr<KDTreeNode> KDTree::BuildKdTree_Impl(ArrayList<VectorXf> &Data, uint32_t Lower, uint32_t Upper, uint32_t Depth) {
-    if (Lower >= Upper || Data.empty()) {
+KDTreeNode* KDTree::BuildKdTree_Impl(ArrayList<VectorXf> Data, int64_t Lower, int64_t Upper, uint32_t Depth) {
+    if (Lower >= Upper) {
         return nullptr;
     }
 
-    // check all data, they must have same dimension.
-    const uint32_t Dim = Data[0].rows();
-    if (Depth == 0 && std::any_of(std::begin(Data), std::end(Data), [Dim] (const VectorXf& Value) { return Value.rows() != Dim; })) {
-        return nullptr;
-    }
+    int64_t Axis = Depth % Data[0].size();
+    auto MiddleIter = Data.begin() + Lower + (Upper - Lower) / 2;
+    std::nth_element(
+        Data.begin() + Lower, MiddleIter, Data.begin() + Upper,
+        [Axis](const Eigen::VectorXf &a, const Eigen::VectorXf &b) {
+            return a[Axis] < b[Axis];
+        });
+    MiddleIter = Data.begin() + Lower + (Upper - Lower) / 2;
 
-    uint32_t Axis = Depth % Data[0].rows();
-
-    std::sort(std::begin(Data) + Lower, std::begin(Data) + Upper, [Axis] (const VectorXf &a, const VectorXf &b) {
-        return a[Axis] < b[Axis];
-    });
-
-    uint32_t MedianIndex = (Lower + Upper) / 2;
-    auto Node = std::make_shared<KDTreeNode>(Data[MedianIndex]);
-
-    Node->Left = BuildKdTree_Impl(Data, Lower, MedianIndex, Depth + 1);
-    Node->Right = BuildKdTree_Impl(Data, MedianIndex + 1, Upper, Depth + 1);
+    auto* Node = new KDTreeNode(*MiddleIter);
+    Node->Left = std::shared_ptr<KDTreeNode>(BuildKdTree_Impl(Data, Lower, MiddleIter - Data.begin(), Depth + 1));
+    Node->Right = std::shared_ptr<KDTreeNode>(BuildKdTree_Impl(Data, MiddleIter - Data.begin() + 1, Upper, Depth + 1));
 
     return Node;
 }
 
-std::shared_ptr<KDTree> KDTree::BuildKdTree(ArrayList<VectorXf> Data) {
-    std::shared_ptr<KDTree> NewTree = std::make_shared<KDTree>();
-    NewTree->Root = NewTree->BuildKdTree_Impl(Data, 0, Data.size(), 0);
+KDTree* KDTree::BuildKdTree(const ArrayList<VectorXf>& Data) {
+    auto* NewTree = new KDTree;
+    auto* Root = (BuildKdTree_Impl(Data, 0, int64_t(Data.size() - 1), 0));
+    NewTree->Root = std::shared_ptr<KDTreeNode>(Root);
 
     if (!NewTree->Root) {
         throw std::invalid_argument("[Roads] KdTree built with invalid arguments.");
