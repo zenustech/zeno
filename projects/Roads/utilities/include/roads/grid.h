@@ -204,7 +204,7 @@ namespace roads {
 
         float FindNearestPoint(const Eigen::Vector3d &point, const tinyspline::BSpline &bSpline, float& t, float step = 0.01, float tolerance = 1e-6);
 
-        ArrayList<float> CalcRoadMask(const std::vector<std::array<float, 3>>& Points, const tinyspline::BSpline& SplineQwQ, int32_t Width, int32_t Nx);
+        ArrayList<float> CalcRoadMask(const std::vector<std::array<float, 3>>& Points, const tinyspline::BSpline& SplineQwQ, float MaxDistance);
     }// namespace spline
 
 }// namespace roads

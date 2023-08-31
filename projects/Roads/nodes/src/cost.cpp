@@ -494,8 +494,8 @@ namespace {
         }
     };
 
-    struct ZENO_CRTP(RoadsPrimRefineWithLine, zeno::reflect::IParameterAutoNode) {
-        ZENO_GENERATE_NODE_BODY(RoadsPrimRefineWithLine);
+    struct ZENO_CRTP(RoadCalcMask, zeno::reflect::IParameterAutoNode) {
+        ZENO_GENERATE_NODE_BODY(RoadCalcMask);
 
         std::shared_ptr<zeno::PrimitiveObject> Mesh;
         ZENO_DECLARE_INPUT_FIELD(Mesh, "Mesh Prim");
@@ -507,14 +507,17 @@ namespace {
         std::shared_ptr<zeno::RoadBSplineObject> Spline;
         ZENO_DECLARE_INPUT_FIELD(Spline, "Spline");
 
-        int32_t RoadWidth = 3;
-        ZENO_DECLARE_INPUT_FIELD(RoadWidth, "Road Radius", false, "", "5");
+        std::string OutputChannel;
+        ZENO_DECLARE_INPUT_FIELD(OutputChannel, "Road Distance Channel (Vert)", false, "", "roadDis");
 
-        std::string SizeXChannel;
-        ZENO_DECLARE_INPUT_FIELD(SizeXChannel, "Nx Channel (UserData)", false, "", "nx");
+        float MaxDistance = 3;
+        ZENO_DECLARE_INPUT_FIELD(MaxDistance, "Road Radius", false, "", "5");
 
-        int Nx = 0;
-        ZENO_BINDING_PRIMITIVE_USERDATA(Mesh, Nx, SizeXChannel, false);
+        //std::string SizeXChannel;
+        //ZENO_DECLARE_INPUT_FIELD(SizeXChannel, "Nx Channel (UserData)", false, "", "nx");
+
+        //int Nx = 0;
+        //ZENO_BINDING_PRIMITIVE_USERDATA(Mesh, Nx, SizeXChannel, false);
 
         void apply() override {
             using namespace boost::geometry;
@@ -548,9 +551,9 @@ namespace {
             std::vector<std::array<float, 3>> New(Points.begin(), Points.end());
 
             tinyspline::BSpline& SplineQwQ = AutoParameter->Spline->Spline;
-            auto DistanceAttr = spline::CalcRoadMask(New, SplineQwQ, AutoParameter->RoadWidth, AutoParameter->Nx);
+            auto DistanceAttr = spline::CalcRoadMask(New, SplineQwQ, AutoParameter->MaxDistance);
 
-            auto& DisAttr = AutoParameter->Mesh->verts.add_attr<float>("roadDis");
+            auto& DisAttr = AutoParameter->Mesh->verts.add_attr<float>(AutoParameter->OutputChannel);
             DisAttr.swap(DistanceAttr);
         }
     };
