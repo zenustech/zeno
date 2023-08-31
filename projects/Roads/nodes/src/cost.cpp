@@ -1,5 +1,6 @@
+#include "boost/geometry.hpp"
+#include "boost/geometry/index/rtree.hpp"
 #include "boost/graph/astar_search.hpp"
-#include "boost/graph/dijkstra_shortest_paths.hpp"
 #include "roads/roads.h"
 #include "zeno/PrimitiveObject.h"
 #include "zeno/types/CurveObject.h"
@@ -59,11 +60,37 @@ namespace zeno::reflect {
 
 }// namespace zeno::reflect
 
+namespace boost::geometry {
+    template<>
+    struct point_type<zeno::vec3f> {
+        using type = zeno::vec3f;
+    };
+}// namespace boost::geometry
+
+namespace boost::geometry::index {
+    template<typename Ptr>
+    struct indexable<Ptr *> {
+
+        typedef Ptr *V;
+        typedef Ptr const &result_type;
+
+        result_type operator()(V const &v) const { return *v; }
+    };
+
+    template<typename Box>
+    struct indexable<std::shared_ptr<Box>> {
+        typedef std::shared_ptr<Box> V;
+
+        typedef Box const &result_type;
+        result_type operator()(V const &v) const { return *v; }
+    };
+}// namespace boost::geometry::index
+
 namespace zeno {
     struct RoadBSplineObject : public IObject {
 
-        explicit RoadBSplineObject(const tinyspline::BSpline& Lhs): Spline(Lhs) {}
-        explicit RoadBSplineObject(tinyspline::BSpline&& LhsToMove) : Spline(std::forward<tinyspline::BSpline&&>(LhsToMove)) {}
+        explicit RoadBSplineObject(const tinyspline::BSpline &Lhs) : Spline(Lhs) {}
+        explicit RoadBSplineObject(tinyspline::BSpline &&LhsToMove) : Spline(std::forward<tinyspline::BSpline &&>(LhsToMove)) {}
 
         tinyspline::BSpline Spline;
     };
@@ -440,7 +467,7 @@ namespace {
         ZENO_DECLARE_OUTPUT_FIELD(Spline, "Spline");
 
         void apply() override {
-            auto& Prim = AutoParameter->Primitive;
+            auto &Prim = AutoParameter->Primitive;
 
             ArrayList<std::array<float, 3>> Vertices(Prim->verts.begin(), Prim->verts.end());
             ArrayList<std::array<int, 2>> Lines(Prim->lines.begin(), Prim->lines.end());
@@ -454,13 +481,13 @@ namespace {
             Prim = std::make_shared<zeno::PrimitiveObject>();
 
             Prim->verts.reserve(Result.size());
-            for (const auto& line : Result) {
+            for (const auto &line: Result) {
                 Prim->verts.emplace_back(line.x(), line.y(), line.z());
             }
 
             Prim->lines.resize(Result.size() - 1);
             for (int i = 0; i < Result.size() - 1; i++) {
-                Prim->lines[i] = zeno::vec2i { i, i + 1 };
+                Prim->lines[i] = zeno::vec2i{i, i + 1};
             }
 
             zeno::log_info("[Roads] Vertices Num: {}, Lines Num: {}", Prim->verts.size(), Prim->lines.size());
@@ -471,30 +498,60 @@ namespace {
         ZENO_GENERATE_NODE_BODY(RoadsPrimRefineWithLine);
 
         std::shared_ptr<zeno::PrimitiveObject> Mesh;
-        ZENO_DECLARE_INPUT_FIELD(Mesh, "MeshPrim");
-        ZENO_DECLARE_OUTPUT_FIELD(Mesh, "MeshPrim");
+        ZENO_DECLARE_INPUT_FIELD(Mesh, "Mesh Prim");
+        ZENO_DECLARE_OUTPUT_FIELD(Mesh, "Mesh Prim");
 
-        std::shared_ptr<zeno::PrimitiveObject> Lines;
-        ZENO_DECLARE_INPUT_FIELD(Lines, "LinePrim");
+        //std::shared_ptr<zeno::PrimitiveObject> Lines;
+        //ZENO_DECLARE_INPUT_FIELD(Lines, "Line Prim");
+
+        std::shared_ptr<zeno::RoadBSplineObject> Spline;
+        ZENO_DECLARE_INPUT_FIELD(Spline, "Spline");
+
+        int32_t RoadWidth = 3;
+        ZENO_DECLARE_INPUT_FIELD(RoadWidth, "Road Radius", false, "", "5");
+
+        std::string SizeXChannel;
+        ZENO_DECLARE_INPUT_FIELD(SizeXChannel, "Nx Channel (UserData)", false, "", "nx");
+
+        int Nx = 0;
+        ZENO_BINDING_PRIMITIVE_USERDATA(Mesh, Nx, SizeXChannel, false);
 
         void apply() override {
-            ArrayList<Eigen::VectorXf> Result;
+            using namespace boost::geometry;
 
-            auto& Points = AutoParameter->Mesh->verts;
-            auto& LineVertices = AutoParameter->Lines->verts;
-            auto& Lines = AutoParameter->Lines->lines;
+            //            using PointType = model::point<float, 3, cs::cartesian>;
+            //            using BoxType = model::box<PointType>;
+            //            using BoxPtr = std::shared_ptr<BoxType>;
 
-            Result.reserve(Points.size());
-            for (auto& p : Points) {
-                Eigen::VectorXf Point(3);
+            //            index::rtree<BoxPtr, index::linear<128, 4>> RTree;
 
-                Point(0) = p[0];
-                Point(1) = p[1];
-                Point(2) = p[2];
+            //auto& LineVertices = AutoParameter->Lines->verts;
+            //auto& Lines = AutoParameter->Lines->lines;
 
-                Result.push_back(Point);
-            }
+            //            for (const auto& p : Points) {
+            //                PointType Point { p[0], p[1], p[2] };
+            //                BoxPtr b = std::make_shared<BoxType>( Point, Point );
+            //                RTree.insert(b);
+            //            }
+            //
+            //            for (const auto& Seg : Lines) {
+            //                PointType a { LineVertices[Seg[0]][0], LineVertices[Seg[0]][1], LineVertices[Seg[0]][2] };
+            //                std::vector<BoxPtr> n;
+            //                RTree.query(index::nearest(PointType(0, 0, 0), 5), std::back_inserter(n));
+            //                for (const auto& a : n) {
+            //                    std::cout << a->min_corner().get<0>() << ", " << a->min_corner().get<1>() << ", " << a->min_corner().get<2>() << std::endl;
+            //                }
+            //            }
 
+            auto &Points = AutoParameter->Mesh->verts;
+
+            std::vector<std::array<float, 3>> New(Points.begin(), Points.end());
+
+            tinyspline::BSpline& SplineQwQ = AutoParameter->Spline->Spline;
+            auto DistanceAttr = spline::CalcRoadMask(New, SplineQwQ, AutoParameter->RoadWidth, AutoParameter->Nx);
+
+            auto& DisAttr = AutoParameter->Mesh->verts.add_attr<float>("roadDis");
+            DisAttr.swap(DistanceAttr);
         }
     };
 

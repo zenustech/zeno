@@ -37,4 +37,39 @@ namespace roads {
         static KDTree* BuildKdTree(const ArrayList<VectorXf>& Data);
     };
 
+
+    class Octree {
+    public:
+        using Point3D = Eigen::Vector3f;
+
+    private:
+        class Node {
+        public:
+            Point3D* point;
+            std::array<float, 6> bounds; // minX, maxX, minY, maxY, minZ, maxZ
+            std::array<std::unique_ptr<Node>, 8> children;
+
+            explicit Node(std::array<float, 6>& bounds): bounds(bounds), point(nullptr), children({nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}) {}
+        };
+
+        std::unique_ptr<Node> root;
+        unsigned int maxDepth;
+
+    public:
+        Octree(float minX, float maxX, float minY, float maxY, float minZ, float maxZ, unsigned int maxDepth);
+
+        void addPoint(Point3D* point);
+
+        std::vector<Point3D*> findNearestNeighbours(float x, float y, float z, unsigned int k);
+
+        std::vector<Point3D*> findPointsInRadius(float x, float y, float z, float radius);
+
+    private:
+        void findNearestNeighbours(Node* node, Point3D* target, std::vector<Point3D*>& nearestNeighbours, unsigned int depth);
+
+        void addPoint(Node* node, Point3D* point, unsigned int depth);
+
+        void findPointsInRadius(Node* node, Point3D* center, float radius, std::vector<Point3D*>& pointsInRadius);
+    };
+
 }// namespace roads

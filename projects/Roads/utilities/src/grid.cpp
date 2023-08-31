@@ -98,5 +98,39 @@ float spline::FindNearestPoint(const Eigen::Vector3d &point, const tinyspline::B
         }
     }
 
-    return t;
+    return Distance(point, bSpline, t);
+}
+
+ArrayList<float> spline::CalcRoadMask(const std::vector<std::array<float, 3>> &Points, const tinyspline::BSpline &SplineQwQ, int32_t Width, int32_t Nx) {
+    ArrayList<float> Result;
+    Result.resize(Points.size(), std::numeric_limits<float>::max() - 1);
+
+    int32_t Ny = int32_t(Points.size()) / Nx;
+
+#pragma omp parallel for
+    for (int32_t i = 0; i < Points.size(); ++i) {
+        float t = 0;
+        const std::array<float, 3>& zp = Points[i];
+        Eigen::Vector3d ep(zp[0], zp[1], zp[2]);
+        float Distance = spline::FindNearestPoint(ep, SplineQwQ, t);
+        //auto sp = SplineQwQ.eval(t).resultVec3();
+
+        for (int32_t dx = -Width; dx <= Width; ++dx) {
+            for (int32_t dy = -Width; dy <= Width; ++dy) {
+                int32_t ix = (i % Nx) + dx;
+                int32_t iy = (i / Nx) + dy;
+                int32_t idx = ix + iy * Nx;
+                if (ix >= 0 && ix < Nx && iy >= 0 && iy < Ny && Result.IsValidIndex(idx)) {
+                    Result[idx] = std::min(Distance, Result[idx]);
+                }
+            }
+        }
+//        if (Distance >= LittleR && Distance <= BigR) {
+//            zp[1] = float((1 - OriginHeightInterpretationRatio) * sp.y() + OriginHeightInterpretationRatio * zp[1]) * 0.5f;
+//        } else if (Distance < LittleR) {
+//            zp[1] = float(sp.y());
+//        }
+    }
+
+    return Result;
 }

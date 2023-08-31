@@ -87,3 +87,106 @@ ArrayList<VectorXf> KDTree::SearchRadius(const VectorXf &Point, float Radius) {
 
     return Result;
 }
+
+Octree::Octree(float minX, float maxX, float minY, float maxY, float minZ, float maxZ, unsigned int maxDepth) :
+    maxDepth(maxDepth) {
+    std::array<float, 6> bounds = {minX, maxX, minY, maxY, minZ, maxZ};
+    root = std::make_unique<Node>(bounds);
+}
+
+void Octree::addPoint(Octree::Point3D *point) {
+    addPoint(root.get(), point, 1);
+}
+
+std::vector<Octree::Point3D *> Octree::findNearestNeighbours(float x, float y, float z, unsigned int k) {
+    Point3D point(x, y, z);
+    std::vector<Point3D*> nearestNeighbours(k);
+    findNearestNeighbours(root.get(), &point, nearestNeighbours, 1);
+    return nearestNeighbours;
+}
+
+void Octree::findNearestNeighbours(Octree::Node *node, Octree::Point3D *target, std::vector<Point3D *> &nearestNeighbours, unsigned int depth) {
+    if(node == nullptr){
+        return;
+    }
+
+    if(node->point){
+        Point3D& current = *node->point;
+        float dist = (current - *target).squaredNorm();
+
+        for(auto& neighbour : nearestNeighbours){
+            // 首先，确保即将添加的点不是已经添加到 `nearestNeighbours` 中的点。
+            if(neighbour == node->point){
+                return;
+            }
+
+            if(neighbour == nullptr || dist < (*neighbour - *target).squaredNorm()){
+                neighbour = node->point;
+                dist = (*neighbour - *target).squaredNorm();
+            }
+        }
+    }
+
+    if(depth < maxDepth){
+        for(auto& child : node->children){
+            findNearestNeighbours(child.get(), target, nearestNeighbours, depth + 1);
+        }
+    }
+}
+
+void Octree::addPoint(Octree::Node *node, Octree::Point3D *point, unsigned int depth) {
+    if(depth >= maxDepth){
+        node->point = point;
+    } else {
+        unsigned index = 0;
+        index |= (*point)[0] > node->bounds[0] ? 1 : 0;
+        index |= (*point)[1] > node->bounds[2] ? 2 : 0;
+        index |= (*point)[2] > node->bounds[4] ? 4 : 0;
+
+        if(node->children[index] == nullptr){
+            std::array<float, 6> bounds{};
+            bounds[0] = (index & 1 ? node->bounds[0] : (*point)[0]);
+            bounds[1] = (index & 1 ? (*point)[0] : node->bounds[1]);
+            bounds[2] = (index & 2 ? node->bounds[2] : (*point)[1]);
+            bounds[3] = (index & 2 ? (*point)[1] : node->bounds[3]);
+            bounds[4] = (index & 4 ? node->bounds[4] : (*point)[2]);
+            bounds[5] = (index & 4 ? (*point)[2] : node->bounds[5]);
+
+            node->children[index] = std::make_unique<Node>(bounds);
+        }
+
+        addPoint(node->children[index].get(), point, depth + 1);
+    }
+}
+
+std::vector<Octree::Point3D *> Octree::findPointsInRadius(float x, float y, float z, float radius) {
+    Point3D center(x, y, z);
+    std::vector<Point3D*> pointsInRadius;
+    findPointsInRadius(root.get(), &center, radius, pointsInRadius);
+    return pointsInRadius;
+}
+
+void Octree::findPointsInRadius(Octree::Node *node, Octree::Point3D *center, float radius, std::vector<Point3D *> &pointsInRadius) {
+    if(node == nullptr){
+        return;
+    }
+
+    if(node->point){
+        Point3D& current = *node->point;
+        float dist = (*center - current).squaredNorm();
+
+        if(dist <= radius * radius){
+            pointsInRadius.push_back(node->point);
+        }
+    }
+
+    float deltaX = std::max(node->bounds[0] - center->x(), center->x() - node->bounds[1]);
+    float deltaY = std::max(node->bounds[2] - center->y(), center->y() - node->bounds[3]);
+    float deltaZ = std::max(node->bounds[4] - center->z(), center->z() - node->bounds[5]);
+
+    if (deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ < radius * radius) {
+        for(auto& child : node->children){
+            findPointsInRadius(child.get(), center, radius, pointsInRadius);
+        }
+    }
+}
