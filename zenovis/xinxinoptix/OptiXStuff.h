@@ -495,7 +495,7 @@ inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB,
     std::filesystem::path filePath = path;
 
     if ( !std::filesystem::exists(filePath) ) {
-        std::cout << filePath.string() << " doesn't exist";
+        std::cout << filePath.string() << " doesn't exist" << std::endl;
         return false;
     }
 
@@ -559,6 +559,13 @@ inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB,
 
 inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 {
+    std::filesystem::path filePath = path;
+
+    if ( !std::filesystem::exists(filePath) ) {
+        std::cout << filePath.string() << " doesn't exist" << std::endl;
+        return {};
+    }
+
     auto iesBuffer = zeno::file_get_binary(path);
     auto iesString = std::string(iesBuffer.data());
     //std::cout << iesString << std::endl;
@@ -697,6 +704,11 @@ inline void addTexture(std::string path)
     else if (zeno::ends_with(path, ".ies", false)) {
         float coneAngle;
         auto iesd = loadIES(path, coneAngle);
+
+        if (iesd.empty()) {
+            g_ies.erase(path);
+            return;
+        }
 
         raii<CUdeviceptr> iesBuffer;
         size_t data_length = iesd.size() * sizeof(float);
