@@ -155,6 +155,7 @@ typedef Record<HitGroupData> HitGroupRecord;
 //};
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_color;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_diffuse;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_specular;
 std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_transmit;
@@ -428,6 +429,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     resize_dirty = false;
 
     output_buffer.resize( params.width, params.height );
+    (*output_buffer_color).resize( params.width, params.height );
     (*output_buffer_diffuse).resize( params.width, params.height );
     (*output_buffer_specular).resize( params.width, params.height );
     (*output_buffer_transmit).resize( params.width, params.height );
@@ -493,6 +495,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
+    state.params.frame_buffer_C = (*output_buffer_color     ).map();
     state.params.frame_buffer_D = (*output_buffer_diffuse   ).map();
     state.params.frame_buffer_S = (*output_buffer_specular  ).map();
     state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
@@ -529,6 +532,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
       }
     }
     output_buffer.unmap();
+    (*output_buffer_color   ).unmap();
     (*output_buffer_diffuse   ).unmap();
     (*output_buffer_specular  ).unmap();
     (*output_buffer_transmit  ).unmap();
@@ -1608,6 +1612,14 @@ void optixinit( int argc, char* argv[] )
           state.params.height
       );
       output_buffer_o->setStream( 0 );
+    }
+    if (!output_buffer_color) {
+      output_buffer_color.emplace(
+          output_buffer_type,
+          state.params.width,
+          state.params.height
+      );
+      output_buffer_color->setStream( 0 );
     }
     if (!output_buffer_diffuse) {
       output_buffer_diffuse.emplace(
@@ -3403,6 +3415,9 @@ void *optixgetimg_extra(std::string name) {
     else if (name == "background") {
         return output_buffer_background->getHostPointer();
     }
+    else if (name == "color") {
+        return output_buffer_color->getHostPointer();
+    }
 }
 static void save_exr(float3* ptr, int w, int h, std::string path) {
     std::vector<float3> data(w * h);
@@ -3470,6 +3485,7 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         // AOV
         if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
             path = path.substr(0, path.size() - 4);
+            save_exr((float3 *)optixgetimg_extra("color"), w, h, path + ".color.exr");
             save_exr((float3 *)optixgetimg_extra("diffuse"), w, h, path + ".diffuse.exr");
             save_exr((float3 *)optixgetimg_extra("specular"), w, h, path + ".specular.exr");
             save_exr((float3 *)optixgetimg_extra("transmit"), w, h, path + ".transmit.exr");

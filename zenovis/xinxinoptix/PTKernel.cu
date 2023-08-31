@@ -299,6 +299,7 @@ extern "C" __global__ void __raygen__rg()
       float3 out_color_t = accum_color_t;
       float3 out_color_b = accum_color_b;
       params.frame_buffer[ image_index ] = make_color ( out_color );
+      params.frame_buffer_C[ image_index ] = accum_color;
       params.frame_buffer_D[ image_index ] = accum_color_d;
       params.frame_buffer_S[ image_index ] = accum_color_s;
       params.frame_buffer_T[ image_index ] = accum_color_t;
