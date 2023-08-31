@@ -4,16 +4,18 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cmath>
 #include <cstring>
 #include <memory>
+
+#define _USE_MATH_DEFINES
 #include <math.h>
+#include <cmath>
 
 #include "Host.h"
 #include "ies.h"
 
 #ifndef M_PI_F
-#define M_PI_F M_PIf
+#define M_PI_F M_PI
 #endif
 
 namespace blender {
