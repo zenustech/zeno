@@ -34,7 +34,7 @@ namespace zeno
         vectorObj->set(zs::Vector<T, zs::ZSPmrAllocator<false>>{allocator, 0});                \
     }
 
-            auto vectorObj = std::make_shared<VectorViewLiteObject>();
+            auto vectorObj = std::make_shared<ZsVectorObject>();
             MAKE_VECTOR_OBJ_T(int)
             MAKE_VECTOR_OBJ_T(float)
             MAKE_VECTOR_OBJ_T(double)
@@ -62,7 +62,7 @@ namespace zeno
     {
         void apply() override
         {
-            auto vectorObj = get_input<VectorViewLiteObject>("ZsVector");
+            auto vectorObj = get_input<ZsVectorObject>("ZsVector");
             auto opStr = get_input2<std::string>("op"); 
             auto &vector = vectorObj->value;
 
@@ -73,8 +73,6 @@ namespace zeno
                 using val_t = typename vector_t::value_type; 
                 zs::Vector<val_t> res{1, zs::memsrc_e::device, 0};
                 auto host_vector = vector.clone({zs::memsrc_e::host, -1}); 
-                // NOTE: for debugging 
-                fmt::print("vector[0] = {}, opStr = {}\n", host_vector[0], opStr); 
                 if (opStr == "add")
                     zs::reduce(pol, std::begin(vector), std::end(vector), std::begin(res), 
                         static_cast<val_t>(0), zs::plus<val_t>{});
@@ -84,12 +82,8 @@ namespace zeno
                 else 
                     zs::reduce(pol, std::begin(vector), std::end(vector), std::begin(res), 
                         zs::limits<val_t>::max(), zs::getmin<val_t>{});
-                // NOTE: for debugging 
-                fmt::print("res.getVal(): {}\n", res.getVal()); 
                 result = static_cast<float>(res.getVal()); 
             }, vector); 
-            // NOTE: for debugging 
-            fmt::print("reduce result: {}\n", result); 
             set_output2("result", result); 
         }
     }; 
