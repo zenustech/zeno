@@ -131,7 +131,7 @@ extern "C"
     INSTANTIATE_ZS_VECTOR_ZENO_APIS(float)
     INSTANTIATE_ZS_VECTOR_ZENO_APIS(double)
 
-    ZENO_CAPI Zeno_Error Zs_GetVectorData(Zeno_Object object, void **ptrRet, int *memsrcRet,
+    ZENO_CAPI Zeno_Error ZS_GetVectorData(Zeno_Object object, void **ptrRet, int *memsrcRet,
                                           size_t *sizeRet, ZS_DataType *dtypeRet, zs::ProcID *devIdRet,
                                           bool *is_virtual) ZENO_CAPI_NOEXCEPT
     {
@@ -153,7 +153,7 @@ extern "C"
     INSTANTIATE_ZS_TILEVECTOR_ZENO_APIS(float)
     INSTANTIATE_ZS_TILEVECTOR_ZENO_APIS(double)
 
-    ZENO_CAPI Zeno_Error Zs_GetTileVectorData(Zeno_Object object, void **ptrRet, int *memsrcRet,
+    ZENO_CAPI Zeno_Error ZS_GetTileVectorData(Zeno_Object object, void **ptrRet, int *memsrcRet,
                                               std::vector<zs::PropertyTag> *tagsRet, 
                                               size_t *sizeRet, ZS_DataType *dtypeRet, size_t *length,
                                               zs::ProcID *devIdRet, bool *is_virtual) ZENO_CAPI_NOEXCEPT

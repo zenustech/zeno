@@ -72,7 +72,6 @@ namespace zeno
                 using vector_t = RM_CVREF_T(vector); 
                 using val_t = typename vector_t::value_type; 
                 zs::Vector<val_t> res{1, zs::memsrc_e::device, 0};
-                auto host_vector = vector.clone({zs::memsrc_e::host, -1}); 
                 if (opStr == "add")
                     zs::reduce(pol, std::begin(vector), std::end(vector), std::begin(res), 
                         static_cast<val_t>(0), zs::plus<val_t>{});
