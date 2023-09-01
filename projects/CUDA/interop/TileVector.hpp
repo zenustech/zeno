@@ -2,9 +2,8 @@
 #include <variant>
 #include <zeno/core/IObject.h>
 #include "zs_object.hpp"
-#include "zensim/container/Vector.hpp"
+#include "zensim/container/TileVector.hpp"
 #include "zensim/math/Vec.h"
-#include "zensim/py_interop/VectorView.hpp"
 
 namespace zs
 {
