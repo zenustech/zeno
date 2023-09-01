@@ -2,15 +2,15 @@
 #include <variant>
 #include <zeno/core/IObject.h>
 #include "zs_object.hpp"
-#include "zensim/container/Vector.hpp"
+#include "zensim/container/TileVector.hpp"
 #include "zensim/math/Vec.h"
-#include "zensim/py_interop/VectorView.hpp"
+#include "zensim/py_interop/TileVectorView.hpp"
 
 namespace zs
 {
     template <class T, bool isVirtual>
     using vec_value_t = zs::Vector<T, zs::ZSPmrAllocator<isVirtual>>;
-    using VectorViewLiteValue = std::variant<
+    using VectorObject = std::variant<
         vec_value_t<int, false>, vec_value_t<int, true>,
         vec_value_t<double, false>, vec_value_t<double, true>,
         vec_value_t<float, false>, vec_value_t<float, true>>;
@@ -19,5 +19,5 @@ namespace zs
 namespace zeno
 {
     // C API: create & get data
-    using VectorViewLiteObject = ZsObject<zs::VectorViewLiteValue>;
+    using ZsVectorObject = ZsObject<zs::VectorObject>;
 }
