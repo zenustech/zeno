@@ -123,7 +123,10 @@ namespace zenoui
                         if (!textVal.startsWith("="))
                             zeno::log_error("The formula '{}' need start with '='", textVal.toStdString());
                     }
-                    cbSet.cbEditFinished(newValue);
+                    if (pLineEdit->showSlider())
+                        cbSet.cbEditFinishedWithSlider(newValue);
+                    else
+                        cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pLineEdit;
 #endif
@@ -254,7 +257,10 @@ namespace zenoui
 
                 QObject::connect(pVecEditor, &ZVecEditorItem::editingFinished, [=]() {
                     const QVariant &newValue = pVecEditor->vec();
-                    cbSet.cbEditFinished(newValue);
+                    if (pVecEditor->hasSliderShow())
+                        cbSet.cbEditFinishedWithSlider(newValue);
+                    else
+                        cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pVecEditor;
                 break;

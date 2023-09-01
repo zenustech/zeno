@@ -119,20 +119,25 @@ void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex node
     ZenoMainWindow *main = zenoApp->getMainWindow();
     if (!pModel || !main)
         return;
+    int ret = pModel->ModelSetData(paramIdx, newValue, ROLE_PARAM_VALUE);
+}
+
+void AppHelper::socketEditFinishedWithSlider(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx)
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZenoMainWindow* main = zenoApp->getMainWindow();
     if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" &&
         nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
         (main->isAlways() || main->isAlwaysLightCamera()))
     {
         //only update nodes.
-        zeno::scope_exit sp([=] { pModel->setApiRunningEnable(true);});
+        zeno::scope_exit sp([=] { pModel->setApiRunningEnable(true); });
         pModel->setApiRunningEnable(false);
 
-        QAbstractItemModel *paramsModel = const_cast<QAbstractItemModel *>(paramIdx.model());
+        QAbstractItemModel* paramsModel = const_cast<QAbstractItemModel*>(paramIdx.model());
         ZASSERT_EXIT(paramsModel);
         paramsModel->setData(paramIdx, newValue, ROLE_PARAM_VALUE);
         modifyLightData(nodeIdx);
-    } else {
-        int ret = pModel->ModelSetData(paramIdx, newValue, ROLE_PARAM_VALUE);
     }
 }
 
