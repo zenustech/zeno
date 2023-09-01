@@ -827,6 +827,7 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
     recInfo.needDenoise = param.needDenoise;
+    recInfo.bExportEXR = param.export_exr;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
     if (!param.sPixel.isEmpty())
@@ -918,6 +919,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
     recInfo.needDenoise = param.needDenoise;
+    recInfo.bExportEXR = param.export_exr;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
     recInfo.bRecordByCommandLine = true;
 
