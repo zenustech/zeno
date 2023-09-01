@@ -60,7 +60,7 @@ namespace zeno
     if (intput_elem_type == #T)                                                                \
     {                                                                                          \
         auto allocator = zs::get_memory_source(memsrc, static_cast<zs::ProcID>(intput_devid)); \
-        tvObj->set(zs::TileVector<T, 8, zs::ZSPmrAllocator<false>>{allocator, tags, 0});       \
+        tvObj->set(zs::TileVector<T, 32, zs::ZSPmrAllocator<false>>{allocator, tags, 0});       \
     }
 
             auto tvObj = std::make_shared<ZsTileVectorObject>();
