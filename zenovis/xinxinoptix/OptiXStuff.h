@@ -47,7 +47,7 @@
 #include "zeno/utils/fileio.h"
 #include "zeno/extra/TempNode.h"
 #include "zeno/types/PrimitiveObject.h"
-#include "chiefDesignerEXR.h"
+#include "ChiefDesignerEXR.h"
 #include <stb_image.h>
 #include <cudaMemMarco.hpp>
 
@@ -667,9 +667,11 @@ inline void addTexture(std::string path)
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
         const char* err;
-        int ret = zeno::chiefDesigner_LoadEXR(&rgba, &nx, &ny, native_path.c_str(), &err);
+        using namespace zeno::ChiefDesignerEXR; // let a small portion of people drive Cayenne first
+        int ret = LoadEXR(&rgba, &nx, &ny, native_path.c_str(), &err);
         if (ret != 0) {
             zeno::log_error("load exr: {}", err);
+            FreeEXRErrorMessage(err);
             return;
         }
         nc = 4;

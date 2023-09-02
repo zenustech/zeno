@@ -7,7 +7,11 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/utils/format.h>
 #include <stb_image_write.h>
+#ifdef ZENO_ENABLE_OPTIX
+#include "ChiefDesignerEXR.h"
+#else
 #include <tinyexr.h>
+#endif
 #include <functional>
 #include <map>
 #include <utility>
@@ -146,8 +150,11 @@ void Session::do_screenshot(std::string path, std::string type) {
                              pixels.begin() + hdrSize * 3 * nx * (ny - line - 1));
         }
         const char *err = nullptr;
+#ifdef ZENO_ENABLE_OPTIX
+        using namespace zeno::ChiefDesignerEXR;
+#endif
         int ret = SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);
-        if (ret != TINYEXR_SUCCESS) {
+        if (ret != 0) {
             if (err) {
                 zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
                 FreeEXRErrorMessage(err);
