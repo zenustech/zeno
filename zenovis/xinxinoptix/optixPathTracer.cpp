@@ -3402,6 +3402,7 @@ void *optixgetimg_extra(std::string name) {
     else if (name == "background") {
         return output_buffer_background->getHostPointer();
     }
+    throw std::runtime_error("invalid optixgetimg_extra name: " + name);
 }
 
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
