@@ -112,9 +112,6 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
     zeno::scope_exit sp([=] {
         m_bRecording = false;
         m_pTimer->start(m_sampleFeq);
-        auto main = zenoApp->getMainWindow();
-        ZASSERT_EXIT(main);
-        m_zenoVis->setCurrentFrameId(main->timelineInfo().currFrame);
     });
 
     m_bRecording = true;
@@ -157,6 +154,12 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
         }
     }
     emit sig_recordFinished();
+
+    bool empty = false;
+    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+    ZASSERT_EXIT(mgr);
+    if (mgr->hasCacheOnly(QString::fromStdString(zeno::getSession().globalComm->cachePath()), empty))
+        zeno::getSession().globalComm->removeCachePath();
 }
 
 void OptixWorker::screenShoot(QString path, QString type, int resx, int resy)
@@ -209,6 +212,7 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
 
     //todo: emit some signal to main thread(ui)
     emit sig_frameRecordFinished(frame);
+    zeno::getSession().globalComm->removeCache(frame);
 
     if (1) {
         //update ui.

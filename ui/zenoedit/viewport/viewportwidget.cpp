@@ -110,7 +110,7 @@ void ViewportWidget::setViewWidgetInfo(DockContentWidgetInfo& info)
     loadSettingFromZsg = true;
 }
 
-void ViewportWidget::glDraw()
+void ViewportWidget::glDrawForCommandLine()
 {
     QGLWidget::glDraw();
 }

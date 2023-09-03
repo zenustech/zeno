@@ -379,7 +379,7 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     if (m_bGLView)
     {
         if (mainWin->isRecordByCommandLine()) {
-            m_glView->glDraw();
+            m_glView->glDrawForCommandLine();
         }
         else
             m_glView->update();
@@ -742,6 +742,9 @@ void DisplayWidget::onRecord()
         }
         //validation.
 
+        LAUNCH_PARAM launchParam;
+        AppHelper::initLaunchCacheParam(launchParam);
+
         ZRecFrameSelectDlg frameDlg(this);
         int ret = frameDlg.exec();
         if (QDialog::Rejected == ret) {
@@ -755,12 +758,22 @@ void DisplayWidget::onRecord()
                 server->killProc();
             }
         };
+        std::function<void()> clearFrameState = [=]() {
+            if (recInfo.bAutoRemoveCache && launchParam.enableCache) {
+                #ifdef ZENO_OPTIX_PROC
+                if (m_glView) {
+                    auto tcpServer = zenoApp->getServer();
+                    if (tcpServer)
+                        tcpServer->onClearFrameState();
+                }
+                #endif
+                zeno::getSession().globalComm->clearFrameState();
+            }
+        };
 
         bool bRunBeforeRecord = false;
         recInfo.frameRange = frameDlg.recordFrameRange(bRunBeforeRecord);
 
-        LAUNCH_PARAM launchParam;
-        AppHelper::initLaunchCacheParam(launchParam);
         const QString& cacheRootdir = launchParam.cacheDir;
         QDir dirCacheRoot(cacheRootdir);
         if (launchParam.enableCache && !QFileInfo(cacheRootdir).isDir() && !launchParam.tempDir)
@@ -812,7 +825,6 @@ void DisplayWidget::onRecord()
         m_recordMgr.setRecordInfo(recInfo);
 
         ZRecordProgressDlg dlgProc(recInfo, this);
-        connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, [](int frame) {zeno::getSession().globalComm->removeCache(frame);});
         connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
         connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
         connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
@@ -820,6 +832,7 @@ void DisplayWidget::onRecord()
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
         connect(&dlgProc, &ZRecordProgressDlg::cancelTriggered, this, [&]() {killRunProcIfCancel();});
+        connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=]() {clearFrameState(); });
 
         if (!m_bGLView)
         {
@@ -882,17 +895,6 @@ void DisplayWidget::onRecord()
         } else {
             m_recordMgr.cancelRecord();
             killRunProcIfCancel();
-        }
-
-        if (recInfo.bAutoRemoveCache && launchParam.enableCache) {
-#ifdef ZENO_OPTIX_PROC
-            if (m_glView) {
-                auto tcpServer = zenoApp->getServer();
-                if (tcpServer)
-                    tcpServer->onClearFrameState();
-            }
-#endif
-            zeno::getSession().globalComm->clearFrameState();
         }
     }
     m_sliderFeq = curSlidFeq;

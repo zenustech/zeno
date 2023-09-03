@@ -1900,7 +1900,6 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     info.beginFrame = m_pTimeline->fromTo().first;
     info.endFrame = m_pTimeline->fromTo().second;
     info.timelinefps = m_pTimeline->fps();
-    info.currFrame = m_pTimeline->value();
     return info;
 }
 

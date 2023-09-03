@@ -380,9 +380,9 @@ ZENO_API bool GlobalComm::removeCache(int frame)
             }
             if (hasZencacheOnly)
             {
+                m_frames[frame - beginFrameNumber].b_frame_completed = false;
                 std::filesystem::remove_all(dirToRemove);
                 zeno::log_info("remove dir: {}", dirToRemove);
-                m_frames[frame - beginFrameNumber].b_frame_completed = false;
             }
         }
         if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)) && std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
@@ -392,6 +392,20 @@ ZENO_API bool GlobalComm::removeCache(int frame)
         }
     }
     return true;
+}
+
+ZENO_API void GlobalComm::removeCachePath()
+{
+    std::lock_guard lck(m_mtx);
+    if (cacheautorm)
+    {
+        std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath);
+        if (std::filesystem::exists(dirToRemove) && cacheFramePath.find(".") == std::string::npos)
+        {
+            std::filesystem::remove_all(dirToRemove);
+            zeno::log_info("remove dir: {}", dirToRemove);
+        }
+    }
 }
 
 }

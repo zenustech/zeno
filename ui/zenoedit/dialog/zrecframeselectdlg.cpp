@@ -42,7 +42,12 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         m_ui->editRecFrom->setValidator(new QIntValidator);
         m_ui->editRecTo->setValidator(new QIntValidator);
 
-        if (nRunFrames == 0)
+        int completedFrameStart = pair.first;
+        while (completedFrameStart <= pair.second && !zeno::getSession().globalComm->isFrameCompleted(completedFrameStart))
+            completedFrameStart++;
+        completedFrameStart++;
+
+        if (nRunFrames == 0 || completedFrameStart > pair.second || completedFrameStart > (zeno::getSession().globalComm->maxPlayFrames() - 1))
         {
             m_ui->lblRunFrame->setText(tr("The scene has not been run yet."));
             m_ui->btnRecordNow->setVisible(false);
@@ -56,8 +61,8 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         }
         else
         {
-            int nLastRunFrom = pair.first;
-            int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() -1;
+            int nLastRunFrom = completedFrameStart;
+            int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() - 1;
             ZASSERT_EXIT(nLastRunTo >= nLastRunFrom);
 
             m_ui->btnRecordNow->setVisible(true);
