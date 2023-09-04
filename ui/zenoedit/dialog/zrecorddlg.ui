@@ -131,6 +131,16 @@
     </layout>
    </item>
    <item>
+    <widget class="QCheckBox" name="cbExportEXR">
+     <property name="text">
+      <string>export exr</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QCheckBox" name="cbExportVideo">
      <property name="text">
       <string>export video</string>

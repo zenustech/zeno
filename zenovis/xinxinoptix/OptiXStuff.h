@@ -26,8 +26,8 @@
 #include "optixVolume.h"
 #include "raiicuda.h"
 #include "zeno/types/TextureObject.h"
+#include "zeno/utils/log.h"
 #include "zeno/utils/string.h"
-#include "tinyexr.h"
 #include <filesystem>
 
 //#include <GLFW/glfw3.h>
@@ -50,6 +50,8 @@
 #include "zeno/utils/fileio.h"
 #include "zeno/extra/TempNode.h"
 #include "zeno/types/PrimitiveObject.h"
+#include "ChiefDesignerEXR.h"
+#include <stb_image.h>
 #include <cudaMemMarco.hpp>
 
 static void context_log_cb( unsigned int level, const char* tag, const char* message, void* /*cbdata */ )
@@ -579,8 +581,6 @@ inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 
     return iesData;
 }
-
-#include <stb_image.h>
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
 inline std::optional<std::string> sky_tex;
@@ -678,9 +678,11 @@ inline void addTexture(std::string path)
     if (zeno::ends_with(path, ".exr", false)) {
         float* rgba;
         const char* err;
+        using namespace zeno::ChiefDesignerEXR; // let a small portion of people drive Cayenne first
         int ret = LoadEXR(&rgba, &nx, &ny, native_path.c_str(), &err);
         if (ret != 0) {
             zeno::log_error("load exr: {}", err);
+            FreeEXRErrorMessage(err);
             return;
         }
         nc = 4;
@@ -741,7 +743,7 @@ inline void addTexture(std::string path)
     else if (stbi_is_hdr(native_path.c_str())) {
         float *img = stbi_loadf(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
-            zeno::log_error("loading texture failed:{}", path);
+            zeno::log_error("loading hdr texture failed:{}", path);
             g_tex[path] = std::make_shared<cuTexture>();
             return;
         }
@@ -758,7 +760,7 @@ inline void addTexture(std::string path)
     else {
         unsigned char *img = stbi_load(native_path.c_str(), &nx, &ny, &nc, 0);
         if(!img){
-            zeno::log_error("loading hdr texture failed:{}", path);
+            zeno::log_error("loading ldr texture failed:{}", path);
             g_tex[path] = std::make_shared<cuTexture>();
             return;
         }
