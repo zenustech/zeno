@@ -3418,6 +3418,7 @@ void *optixgetimg_extra(std::string name) {
     else if (name == "color") {
         return output_buffer_color->getHostPointer();
     }
+    throw std::runtime_error("invalid optixgetimg_extra name: " + name);
 }
 static void save_exr(float3* ptr, int w, int h, std::string path) {
     std::vector<float3> data(w * h);
