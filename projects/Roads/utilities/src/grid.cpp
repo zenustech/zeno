@@ -3,6 +3,7 @@
 #include "boost/graph/floyd_warshall_shortest.hpp"
 
 #include "roads/thirdparty/tinysplinecxx.h"
+#include <random>
 
 using namespace roads;
 
@@ -115,7 +116,8 @@ ArrayList<float> spline::CalcRoadMask(const std::vector<std::array<float, 3>> &P
         float t = 0;
         const std::array<float, 3>& zp = Points[i];
         Eigen::Vector3d ep(zp[0], zp[1], zp[2]);
-        float Distance = spline::FindNearestPoint(ep, SplineQwQ, t);
+        //float Distance = spline::FindNearestPoint(ep, SplineQwQ, t);
+        float Distance = spline::FindNearestPointSA(ep, SplineQwQ);
 
         if (std::abs<float>(Distance) < MaxDistance) {
             Result[i] = t;
@@ -123,4 +125,34 @@ ArrayList<float> spline::CalcRoadMask(const std::vector<std::array<float, 3>> &P
     }
 
     return Result;
+}
+
+float spline::FindNearestPointSA(const Eigen::Vector3d &Point, const tinyspline::BSpline &Spline) {
+    std::mt19937 gen(std::random_device{}());
+    std::uniform_real_distribution<float> distr(0.0, 1.0);
+
+    float T = 1.0; // initial temperature
+    float T_min = 0.001; // minial temperature
+    float CoolingRate = 0.99; // sink rate
+
+    float t = distr(gen); // select a initial value
+    float BestT = t; // best value
+
+    while (T > T_min) {
+        float NewT = distr(gen); // generate new value
+        float CurrentDistance = Distance(Point, Spline, t); // distance to current value
+        float NewDistance = Distance(Point, Spline, NewT); // distance to new value
+        float dE = NewDistance - CurrentDistance; // delta value
+
+        // Randomly accept new value even if become worse
+        if (dE < 0 || distr(gen) < std::exp(-dE / T)) {
+            t = NewT;
+            if (NewDistance < Distance(Point, Spline, BestT)) {
+                BestT = NewT; // update best value
+            }
+        }
+        T *= CoolingRate; // decrease temperature
+    }
+
+    return Distance(Point, Spline, BestT);
 }
