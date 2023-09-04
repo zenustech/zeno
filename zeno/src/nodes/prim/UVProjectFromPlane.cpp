@@ -517,7 +517,6 @@ struct WriteImageFile : INode {
         }
         else if(type == "exr"){
             std::vector<float> data2(w * h * n);
-            constexpr float gamma = 2.2f;
             for (int i = 0; i < w * h; i++) {
                 data2[n * i + 0] = image->verts[i][0];
                 data2[n * i + 1] = image->verts[i][1];
@@ -532,39 +531,13 @@ struct WriteImageFile : INode {
                 }
             }
 
-            // Create EXR header
-            EXRHeader header;
-            InitEXRHeader(&header);
-
-            // Set image width, height, and number of channels
-            header.num_channels = n;
-
-            // Create EXR image
-            EXRImage exrImage;
-            InitEXRImage(&exrImage);
-
-            // Set image data
-            exrImage.num_channels = n;
-            exrImage.width = w;
-            exrImage.height = h;
-            exrImage.images = reinterpret_cast<unsigned char**>(&data2[0]);
-
-            // Set image channel names (optional)
-            std::vector<std::string> channelNames = {"R", "G", "B", "A"};
-            header.channels = new EXRChannelInfo[n];
-            for (int i = 0; i < n; ++i) {
-                strncpy(header.channels[i].name, channelNames[i].c_str(), 255);
-                header.channels[i].name[strlen(channelNames[i].c_str())] = '\0';
-                header.channels[i].pixel_type = TINYEXR_PIXELTYPE_FLOAT;
-            }
-
             const char* err;
             path += ".exr";
             std::string native_path = std::filesystem::u8path(path).string();
-            int ret = SaveEXR(data2.data(),w,h,n,0,native_path.c_str(),&err);
+            int ret = SaveEXR(data2.data(),w,h,n,1,native_path.c_str(),&err);
 
             if (ret != TINYEXR_SUCCESS) {
-                zeno::log_error("Error saving EXR file: %s\n", err);
+                zeno::log_error("Error saving EXR file: {}\n", err);
                 FreeEXRErrorMessage(err); // free memory allocated by the library
                 return;
             }
