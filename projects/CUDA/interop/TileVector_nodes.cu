@@ -10,7 +10,7 @@
 
 // NOTE: assume this tv is on the device for now
 template <class TV>
-static typename TV::value_type extractScalarFromTileVector(const TV &tv, 
+typename TV::value_type extractScalarFromTileVector(const TV &tv, 
     zs::SmallString tagName, int dim, int index)
 {
     auto pol = zs::cuda_exec();
