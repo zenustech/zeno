@@ -55,7 +55,6 @@ inline void FreeEXRErrorMessage(const char *err) {
 
 inline int SaveEXR(float *pixels, int width, int height, int channels,
                    int asfp16, const char *filepath, const char **err) {
-    if (channels != 4) throw std::runtime_error("SaveEXR only support RGBA for now");
     if (asfp16 != 1) throw std::runtime_error("SaveEXR only support FP16 for now");
     try {
         using namespace Imf;
@@ -69,23 +68,34 @@ inline int SaveEXR(float *pixels, int width, int height, int channels,
         header.displayWindow() = displayWindow;
 
         // Create the frame buffer and add the R, G, B, A channels
-        Rgba* pixelsBuffer = new Rgba[width * height];
-        for (int i = 0; i < width * height; i++) {
-            pixelsBuffer[i].r = pixels[4 * i];
-            pixelsBuffer[i].g = pixels[4 * i + 1];
-            pixelsBuffer[i].b = pixels[4 * i + 2];
-            pixelsBuffer[i].a = pixels[4 * i + 3];
+        std::vector<Rgba> pixelsBuffer(width * height);q
+        if (channels == 4) {
+            for (int i = 0; i < width * height; i++) {
+                pixelsBuffer[i].r = pixels[4 * i];
+                pixelsBuffer[i].g = pixels[4 * i + 1];
+                pixelsBuffer[i].b = pixels[4 * i + 2];
+                pixelsBuffer[i].a = pixels[4 * i + 3];
+            }
+        }
+        else if (channels == 3) {
+            for (int i = 0; i < width * height; i++) {
+                pixelsBuffer[i].r = pixels[3 * i];
+                pixelsBuffer[i].g = pixels[3 * i + 1];
+                pixelsBuffer[i].b = pixels[3 * i + 2];
+                pixelsBuffer[i].a = 1;
+            }
+        }
+        else {
+            throw std::runtime_error("SaveEXR only support RGBA and RGB for now");
         }
 
         // Create the output file
         RgbaOutputFile file(filepath, header);
 
         // Write the pixels to the file
-        file.setFrameBuffer(pixelsBuffer, 1, width);
+        file.setFrameBuffer(pixelsBuffer.data(), 1, width);
         file.writePixels(height);
 
-        // Clean up
-        delete[] pixelsBuffer;
         return 0;
     } catch (const std::exception& e) {
         *err = strdup(e.what());

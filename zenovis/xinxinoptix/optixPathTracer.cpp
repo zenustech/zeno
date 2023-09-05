@@ -63,7 +63,9 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "tinyexr.h"
+#include "ChiefDesignerEXR.h"
+using namespace zeno::ChiefDesignerEXR;
+
 #include "zeno/utils/image_proc.h"
 
 #ifndef M_PI
@@ -3426,7 +3428,7 @@ static void save_exr(float3* ptr, int w, int h, std::string path) {
     zeno::image_flip_vertical(data.data(), w, h);
     const char *err = nullptr;
     int ret = SaveEXR((float *) data.data(), w, h, 3, 1, path.c_str(), &err);
-    if (ret != TINYEXR_SUCCESS) {
+    if (ret != 0) {
         if (err) {
             zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
             FreeEXRErrorMessage(err);
