@@ -132,8 +132,9 @@ int optixcmd(const QCoreApplication& app, int port)
     globalComm->frameCache(cachePath.toStdString(), 1);
     globalComm->initFrameRange(beginF, endF);
 
-    globalComm->setTempDirEnable(istemp);
-    globalComm->setCacheAutoRmEnable(cacheautorm);
+    RECORD_SETTING recordSetting;     //only for autoremove cache
+    recordSetting.bAutoRemoveCache = cacheautorm;
+    zenoApp->graphsManagment()->setRecordInfo(recordSetting);
 
     RecordVideoMgr recordMgr;
     recordMgr.initRecordInfo(recInfo);

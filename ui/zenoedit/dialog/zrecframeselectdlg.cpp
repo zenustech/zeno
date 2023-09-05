@@ -37,17 +37,25 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     connect(m_ui->btnRecordNow, SIGNAL(clicked()), this, SLOT(onRecordNow()));
     connect(m_ui->btnCancelRecord, SIGNAL(clicked()), this, SLOT(onCancelRecord()));
 
-    if (!bWorking)
+    if (zeno::getSession().globalComm->numOfInitializedFrame() > 0 && nRunFrames > 0 && !zeno::getSession().globalComm->isFrameCompleted(pair.first))
+    {
+        m_ui->lblRunFrame->setText(tr("Frame range incomplete, please rerun."));
+        m_ui->btnRunFirst->setVisible(true);
+        m_ui->btnRecordNow->setVisible(false);
+
+        m_ui->editRecFrom->setValidator(new QIntValidator);
+        m_ui->editRecTo->setValidator(new QIntValidator);
+
+        m_ui->editRecFrom->setText(QString::number(pair.first));
+        m_ui->editRecTo->setText(QString::number(pair.second));
+        m_state = NO_RUN;
+    }
+    else if (!bWorking)
     {
         m_ui->editRecFrom->setValidator(new QIntValidator);
         m_ui->editRecTo->setValidator(new QIntValidator);
 
-        int completedFrameStart = pair.first;
-        while (completedFrameStart <= pair.second && !zeno::getSession().globalComm->isFrameCompleted(completedFrameStart))
-            completedFrameStart++;
-        completedFrameStart++;
-
-        if (nRunFrames == 0 || completedFrameStart > pair.second || completedFrameStart > (zeno::getSession().globalComm->maxPlayFrames() - 1))
+        if (nRunFrames == 0)
         {
             m_ui->lblRunFrame->setText(tr("The scene has not been run yet."));
             m_ui->btnRecordNow->setVisible(false);
@@ -61,7 +69,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         }
         else
         {
-            int nLastRunFrom = completedFrameStart;
+            int nLastRunFrom = pair.first;
             int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() - 1;
             ZASSERT_EXIT(nLastRunTo >= nLastRunFrom);
 

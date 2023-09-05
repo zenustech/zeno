@@ -330,30 +330,6 @@ ZENO_API int GlobalComm::maxCachedFramesNum()
     return maxCachedFrames;
 }
 
-ZENO_API void GlobalComm::setTempDirEnable(bool enable)
-{
-    std::lock_guard lck(m_mtx);
-    isTempDir = enable;
-}
-
-ZENO_API bool GlobalComm::tempDirEnabled()
-{
-    std::lock_guard lck(m_mtx);
-    return isTempDir;
-}
-
-ZENO_API void GlobalComm::setCacheAutoRmEnable(bool enable)
-{
-    std::lock_guard lck(m_mtx);
-    cacheautorm = enable;
-}
-
-ZENO_API bool GlobalComm::cacheAutoRmEnabled()
-{
-    std::lock_guard lck(m_mtx);
-    return cacheautorm;
-}
-
 ZENO_API std::string GlobalComm::cachePath()
 {
     std::lock_guard lck(m_mtx);
@@ -363,33 +339,30 @@ ZENO_API std::string GlobalComm::cachePath()
 ZENO_API bool GlobalComm::removeCache(int frame)
 {
     std::lock_guard lck(m_mtx);
-    if (cacheautorm)
+    bool hasZencacheOnly = true;
+    std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frame).substr(1));
+    if (std::filesystem::exists(dirToRemove))
     {
-        bool hasZencacheOnly = true;
-        std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frame).substr(1));
-        if (std::filesystem::exists(dirToRemove))
+        for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dirToRemove))
         {
-            for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dirToRemove))
+            std::string filePath = entry.path().string();
+            if (std::filesystem::is_directory(entry.path()) || filePath.substr(filePath.size() - 9) != ".zencache")
             {
-                std::string filePath = entry.path().string();
-                if (std::filesystem::is_directory(entry.path()) || filePath.substr(filePath.size() - 9) != ".zencache")
-                {
-                    hasZencacheOnly = false;
-                    break;
-                }
-            }
-            if (hasZencacheOnly)
-            {
-                m_frames[frame - beginFrameNumber].b_frame_completed = false;
-                std::filesystem::remove_all(dirToRemove);
-                zeno::log_info("remove dir: {}", dirToRemove);
+                hasZencacheOnly = false;
+                break;
             }
         }
-        if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)) && std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
+        if (hasZencacheOnly)
         {
-            std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
-            zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
+            m_frames[frame - beginFrameNumber].b_frame_completed = false;
+            std::filesystem::remove_all(dirToRemove);
+            zeno::log_info("remove dir: {}", dirToRemove);
         }
+    }
+    if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)) && std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
+    {
+        std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
+        zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
     }
     return true;
 }
@@ -397,14 +370,11 @@ ZENO_API bool GlobalComm::removeCache(int frame)
 ZENO_API void GlobalComm::removeCachePath()
 {
     std::lock_guard lck(m_mtx);
-    if (cacheautorm)
+    std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath);
+    if (std::filesystem::exists(dirToRemove) && cacheFramePath.find(".") == std::string::npos)
     {
-        std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath);
-        if (std::filesystem::exists(dirToRemove) && cacheFramePath.find(".") == std::string::npos)
-        {
-            std::filesystem::remove_all(dirToRemove);
-            zeno::log_info("remove dir: {}", dirToRemove);
-        }
+        std::filesystem::remove_all(dirToRemove);
+        zeno::log_info("remove dir: {}", dirToRemove);
     }
 }
 

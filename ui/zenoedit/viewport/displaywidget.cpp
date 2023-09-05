@@ -758,18 +758,6 @@ void DisplayWidget::onRecord()
                 server->killProc();
             }
         };
-        std::function<void()> clearFrameState = [=]() {
-            if (recInfo.bAutoRemoveCache && launchParam.enableCache) {
-                #ifdef ZENO_OPTIX_PROC
-                if (m_glView) {
-                    auto tcpServer = zenoApp->getServer();
-                    if (tcpServer)
-                        tcpServer->onClearFrameState();
-                }
-                #endif
-                zeno::getSession().globalComm->clearFrameState();
-            }
-        };
 
         bool bRunBeforeRecord = false;
         recInfo.frameRange = frameDlg.recordFrameRange(bRunBeforeRecord);
@@ -784,6 +772,9 @@ void DisplayWidget::onRecord()
 
         if (bRunBeforeRecord)
         {
+            ZTcpServer* server = zenoApp->getServer();
+            ZASSERT_EXIT(server);
+            server->killProc();
             // recording by cmd process, to prevent cuda 700 error.
             // but it seems that the error vanish.
             /*
@@ -816,10 +807,6 @@ void DisplayWidget::onRecord()
             onRun(launchParam);
 #endif
         }
-        else {
-            zeno::getSession().globalComm->setTempDirEnable(launchParam.tempDir);
-            zeno::getSession().globalComm->setCacheAutoRmEnable(recInfo.bAutoRemoveCache && launchParam.enableCache);
-        }
 
         //setup signals issues.
         m_recordMgr.setRecordInfo(recInfo);
@@ -832,7 +819,6 @@ void DisplayWidget::onRecord()
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
         connect(&dlgProc, &ZRecordProgressDlg::cancelTriggered, this, [&]() {killRunProcIfCancel();});
-        connect(&m_recordMgr, &RecordVideoMgr::recordFinished, this, [=]() {clearFrameState(); });
 
         if (!m_bGLView)
         {
@@ -895,6 +881,17 @@ void DisplayWidget::onRecord()
         } else {
             m_recordMgr.cancelRecord();
             killRunProcIfCancel();
+        }
+
+        if (recInfo.bAutoRemoveCache && launchParam.enableCache && !frameDlg.isRunProcWorking()) {
+#ifdef ZENO_OPTIX_PROC
+            if (m_glView) {
+                auto tcpServer = zenoApp->getServer();
+                if (tcpServer)
+                    tcpServer->onClearFrameState();
+            }
+#endif
+            zeno::getSession().globalComm->clearFrameState();
         }
     }
     m_sliderFeq = curSlidFeq;

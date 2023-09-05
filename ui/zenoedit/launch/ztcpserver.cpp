@@ -92,8 +92,6 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         finalPath = mgr->cachePath();
         int cnum = param.cacheNum;
         viewDecodeSetFrameCache(finalPath.toStdString().c_str(), cnum);
-        zeno::getSession().globalComm->setTempDirEnable(param.tempDir);
-        zeno::getSession().globalComm->setCacheAutoRmEnable(param.autoRmCurcache);
     }
     else
     {
@@ -178,9 +176,11 @@ void ZTcpServer::onOptixNewConn()
                     launchProgram(pModel, lparam);
                 }else if (action == "removeCache")
                 {
+                    const RECORD_SETTING& recordSetting = zenoApp->graphsManagment()->recordInfo();
                     ZASSERT_EXIT(doc.HasMember("frame"));
                     int frame = doc["frame"].GetInt();
-                    zeno::getSession().globalComm->removeCache(frame);
+                    if (recordSetting.bAutoRemoveCache)
+                        zeno::getSession().globalComm->removeCache(frame);
                 }
                 else if (action == "clrearFrameState")
                 {

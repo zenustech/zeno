@@ -83,7 +83,7 @@ void ZCacheMgr::cleanCacheDir(QDir dirCacheRoot)
     {
         QDir dataTimeCacheDir = info.filePath();
         bool dataTimeCacheDirEmpty = true;
-        if (hasCacheOnly(dataTimeCacheDir, dataTimeCacheDirEmpty) && !dataTimeCacheDirEmpty && dataTimeCacheDir.path() != selfPath && !dataTimeCacheDir.path().contains("."))
+        if (hasCacheOnly(dataTimeCacheDir, dataTimeCacheDirEmpty) && !dataTimeCacheDirEmpty && dataTimeCacheDir.path() != selfPath && dataTimeCacheDir.path() != ".")
         {
             dataTimeCacheDir.removeRecursively();
             zeno::log_info("remove dir: {}", dataTimeCacheDir.absolutePath().toStdString());

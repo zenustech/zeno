@@ -1646,6 +1646,10 @@
 </context>
 <context>
     <name>ZRecFrameSelectDlg</name>
+	<message>
+        <source>Frame range incomplete, please rerun.</source>
+        <translation>帧范围不完整，请重新录制。</translation>
+    </message>
     <message>
         <source>The scene has not been run yet.</source>
         <translation>当前场景还没运行计算。</translation>
