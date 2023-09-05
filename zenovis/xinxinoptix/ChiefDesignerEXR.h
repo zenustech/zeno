@@ -68,7 +68,7 @@ inline int SaveEXR(float *pixels, int width, int height, int channels,
         header.displayWindow() = displayWindow;
 
         // Create the frame buffer and add the R, G, B, A channels
-        std::vector<Rgba> pixelsBuffer(width * height);q
+        std::vector<Rgba> pixelsBuffer(width * height);
         if (channels == 4) {
             for (int i = 0; i < width * height; i++) {
                 pixelsBuffer[i].r = pixels[4 * i];
