@@ -1,5 +1,8 @@
 #pragma once
 
+#include <ImfMultiPartOutputFile.h>
+#include <ImfOutputPart.h>
+#include <ImfChannelList.h>
 #include <ImfHeader.h>
 #include <ImfRgbaFile.h>
 #include <ImfArray.h>
@@ -100,6 +103,52 @@ inline int SaveEXR(float *pixels, int width, int height, int channels,
     } catch (const std::exception& e) {
         *err = strdup(e.what());
         return 1;
+    }
+}
+inline void SaveMultiLayerEXR(
+    std::vector<float*> pixels, int width, int height, std::vector<std::string> names,
+    const char *filepath
+ ) {
+    int layer_count = names.size();
+    using namespace Imf;
+    using namespace Imath;
+    std::vector<Header> headers(layer_count);
+    for (auto l = 0; l < layer_count; l++) {
+
+        // Create the header with the image size
+        headers[l] = Header(width, height);
+        headers[l].setName(names[l]);
+
+        // Set the display window (region of the image that should be displayed)
+        Box2i displayWindow(V2i(0, 0), V2i(width - 1, height - 1));
+        headers[l].displayWindow() = displayWindow;
+    }
+    MultiPartOutputFile multiPartFile(filepath, headers.data(), layer_count);
+
+    // Create the frame buffer and add the R, G, B, A channels
+    for (auto l = 0; l < layer_count; l++) {
+        OutputPart outputPart(multiPartFile, l);
+
+        std::vector<Rgba> pixelsBuffer(width * height);
+        for (int i = 0; i < width * height; i++) {
+            pixelsBuffer[i].r = pixels[l][3 * i];
+            pixelsBuffer[i].g = pixels[l][3 * i + 1];
+            pixelsBuffer[i].b = pixels[l][3 * i + 2];
+            pixelsBuffer[i].a = 1;
+        }
+
+        size_t xs = 1 * sizeof (Rgba);
+        size_t ys = width * sizeof (Rgba);
+
+        FrameBuffer fb;
+
+        fb.insert ("R", Slice (HALF, (char*) &pixelsBuffer[0].r, xs, ys));
+        fb.insert ("G", Slice (HALF, (char*) &pixelsBuffer[0].g, xs, ys));
+        fb.insert ("B", Slice (HALF, (char*) &pixelsBuffer[0].b, xs, ys));
+        fb.insert ("A", Slice (HALF, (char*) &pixelsBuffer[0].a, xs, ys));
+
+        outputPart.setFrameBuffer(fb);
+        outputPart.writePixels(height);
     }
 }
 
