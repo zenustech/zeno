@@ -379,7 +379,7 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     if (m_bGLView)
     {
         if (mainWin->isRecordByCommandLine()) {
-            m_glView->glDraw();
+            m_glView->glDrawForCommandLine();
         }
         else
             m_glView->update();
@@ -742,17 +742,39 @@ void DisplayWidget::onRecord()
         }
         //validation.
 
+        LAUNCH_PARAM launchParam;
+        AppHelper::initLaunchCacheParam(launchParam);
+
         ZRecFrameSelectDlg frameDlg(this);
         int ret = frameDlg.exec();
         if (QDialog::Rejected == ret) {
             return;
         }
+        std::function<void()> killRunProcIfCancel = [&]() {
+            if (!frameDlg.isRunProcWorking())
+            {
+                ZTcpServer* server = zenoApp->getServer();
+                ZASSERT_EXIT(server);
+                server->killProc();
+            }
+        };
 
         bool bRunBeforeRecord = false;
         recInfo.frameRange = frameDlg.recordFrameRange(bRunBeforeRecord);
 
+        const QString& cacheRootdir = launchParam.cacheDir;
+        QDir dirCacheRoot(cacheRootdir);
+        if (launchParam.enableCache && !QFileInfo(cacheRootdir).isDir() && !launchParam.tempDir)
+        {
+            QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
+            return;
+        }
+
         if (bRunBeforeRecord)
         {
+            ZTcpServer* server = zenoApp->getServer();
+            ZASSERT_EXIT(server);
+            server->killProc();
             // recording by cmd process, to prevent cuda 700 error.
             // but it seems that the error vanish.
             /*
@@ -764,10 +786,9 @@ void DisplayWidget::onRecord()
 
             //clear cached objs.
             zeno::getSession().globalComm->clearState();
-            LAUNCH_PARAM launchParam;
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
-            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache && launchParam.enableCache;
             auto main = zenoApp->getMainWindow();
             ZASSERT_EXIT(main);
             launchParam.projectFps = main->timelineInfo().timelinefps;
@@ -780,11 +801,9 @@ void DisplayWidget::onRecord()
                 mainWin->optixClientSend(info);
             }
             else {
-                AppHelper::initLaunchCacheParam(launchParam);
                 onRun(launchParam);
             }
 #else
-            AppHelper::initLaunchCacheParam(launchParam);
             onRun(launchParam);
 #endif
         }
@@ -799,6 +818,7 @@ void DisplayWidget::onRecord()
         connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
+        connect(&dlgProc, &ZRecordProgressDlg::cancelTriggered, this, [&]() {killRunProcIfCancel();});
 
         if (!m_bGLView)
         {
@@ -860,9 +880,10 @@ void DisplayWidget::onRecord()
 
         } else {
             m_recordMgr.cancelRecord();
+            killRunProcIfCancel();
         }
 
-        if (recInfo.bAutoRemoveCache) {
+        if (recInfo.bAutoRemoveCache && launchParam.enableCache && !frameDlg.isRunProcWorking()) {
 #ifdef ZENO_OPTIX_PROC
             if (m_glView) {
                 auto tcpServer = zenoApp->getServer();

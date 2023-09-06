@@ -108,6 +108,7 @@ public:
     void setValidator(const QValidator* pValidator);
     void setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps);
     QString text() const;
+    bool showSlider() const;
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;

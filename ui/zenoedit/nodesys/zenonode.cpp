@@ -328,6 +328,9 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         }
         pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
+    auto cbUpdateSocketDefldWithSlider = [=](QVariant newValue) {
+        AppHelper::socketEditFinishedWithSlider(newValue, m_index, perIdx);
+    };
 
     auto cbSwith = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
@@ -339,6 +342,7 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
 
     CallbackCollection cbSet;
     cbSet.cbEditFinished = cbUpdateParam;
+    cbSet.cbEditFinishedWithSlider = cbUpdateSocketDefldWithSlider;
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
 
@@ -1160,6 +1164,9 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
         }
         AppHelper::socketEditFinished(newValue, m_index, perIdx);
     };
+    auto cbUpdateSocketDefldWithSlider = [=](QVariant newValue) {
+        AppHelper::socketEditFinishedWithSlider(newValue, m_index, perIdx);
+    };
 
     auto cbSwith = [=](bool bOn) {
         zenoApp->getMainWindow()->setInDlgEventLoop(bOn);
@@ -1175,6 +1182,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
 
     CallbackCollection cbSet;
     cbSet.cbEditFinished = cbUpdateSocketDefl;
+    cbSet.cbEditFinishedWithSlider = cbUpdateSocketDefldWithSlider;
     cbSet.cbSwitch = cbSwith;
     cbSet.cbGetIndexData = cbGetIndexData;
 

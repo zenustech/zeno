@@ -292,34 +292,6 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int fra
             if (!ret)
                 return nullptr;
 
-            if (!isTempDir && cacheautorm)
-            {
-                bool hasZencacheOnly = true;
-                std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frameid).substr(1));
-                if (std::filesystem::exists(dirToRemove))
-                {
-                    for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(dirToRemove))
-                    {
-                        std::string filePath = entry.path().string();
-                        if (std::filesystem::is_directory(entry.path()) || filePath.substr(filePath.size() - 9) != ".zencache")
-                        {
-                            hasZencacheOnly = false;
-                            break;
-                        }
-                    }
-                    if (hasZencacheOnly)
-                    {
-                        std::filesystem::remove_all(dirToRemove);
-                        zeno::log_info("remove dir: {}", dirToRemove);
-                    }
-                }
-                if (frameid == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)) && std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
-                {
-                    std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
-                    zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
-                }
-            }
-
             m_inCacheFrames.insert(frameid);
             // and dump one as balance:
             if (m_inCacheFrames.size() && m_inCacheFrames.size() > maxCachedFrames) { // notindisk then dumpit
@@ -358,30 +330,6 @@ ZENO_API int GlobalComm::maxCachedFramesNum()
     return maxCachedFrames;
 }
 
-ZENO_API void GlobalComm::setTempDirEnable(bool enable)
-{
-    std::lock_guard lck(m_mtx);
-    isTempDir = enable;
-}
-
-ZENO_API bool GlobalComm::tempDirEnabled()
-{
-    std::lock_guard lck(m_mtx);
-    return isTempDir;
-}
-
-ZENO_API void GlobalComm::setCacheAutoRmEnable(bool enable)
-{
-    std::lock_guard lck(m_mtx);
-    cacheautorm = enable;
-}
-
-ZENO_API bool GlobalComm::cacheAutoRmEnabled()
-{
-    std::lock_guard lck(m_mtx);
-    return cacheautorm;
-}
-
 ZENO_API std::string GlobalComm::cachePath()
 {
     std::lock_guard lck(m_mtx);
@@ -391,6 +339,7 @@ ZENO_API std::string GlobalComm::cachePath()
 ZENO_API bool GlobalComm::removeCache(int frame)
 {
     std::lock_guard lck(m_mtx);
+    bool hasZencacheOnly = true;
     std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath + "/" + std::to_string(1000000 + frame).substr(1));
     if (std::filesystem::exists(dirToRemove))
     {
@@ -399,13 +348,34 @@ ZENO_API bool GlobalComm::removeCache(int frame)
             std::string filePath = entry.path().string();
             if (std::filesystem::is_directory(entry.path()) || filePath.substr(filePath.size() - 9) != ".zencache")
             {
-                return false;
+                hasZencacheOnly = false;
+                break;
             }
         }
+        if (hasZencacheOnly)
+        {
+            m_frames[frame - beginFrameNumber].b_frame_completed = false;
+            std::filesystem::remove_all(dirToRemove);
+            zeno::log_info("remove dir: {}", dirToRemove);
+        }
+    }
+    if (frame == endFrameNumber && std::filesystem::exists(std::filesystem::u8path(cacheFramePath)) && std::filesystem::is_empty(std::filesystem::u8path(cacheFramePath)))
+    {
+        std::filesystem::remove(std::filesystem::u8path(cacheFramePath));
+        zeno::log_info("remove dir: {}", std::filesystem::u8path(cacheFramePath).string());
+    }
+    return true;
+}
+
+ZENO_API void GlobalComm::removeCachePath()
+{
+    std::lock_guard lck(m_mtx);
+    std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath);
+    if (std::filesystem::exists(dirToRemove) && cacheFramePath.find(".") == std::string::npos)
+    {
         std::filesystem::remove_all(dirToRemove);
         zeno::log_info("remove dir: {}", dirToRemove);
     }
-    return true;
 }
 
 }

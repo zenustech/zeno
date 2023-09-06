@@ -17,6 +17,7 @@ public:
     bool isFloatType() const;
     void updateProperties(const QVector<QString>& properties);
     QString findElemByControl(ZEditableTextItem* pElem) const;
+    bool hasSliderShow();
 
 signals:
     void editingFinished();

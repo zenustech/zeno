@@ -178,6 +178,14 @@ QString ZVecEditorItem::findElemByControl(ZEditableTextItem* pElem) const
     }
 }
 
+bool ZVecEditorItem::hasSliderShow()
+{
+    for (int i = 0; i < m_editors.size(); i++)
+        if (m_editors[i]->showSlider())
+            return true;
+    return false;
+}
+
 void ZVecEditorItem::updateProperties(const QVector<QString>& properties)
 {
     for (int i = 0; i < m_editors.size(); i++)

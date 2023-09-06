@@ -490,6 +490,11 @@ QString ZEditableTextItem::text() const
     return toPlainText();
 }
 
+bool ZEditableTextItem::showSlider() const
+{
+    return m_bShowSlider;
+}
+
 void ZEditableTextItem::setNumSlider(QGraphicsScene* pScene, const QVector<qreal>& steps)
 {
     if (!pScene)

@@ -104,6 +104,10 @@
 </context>
 <context>
     <name>DisplayWidget</name>
+	<message>
+        <source>The path of cache is invalid, please choose another path.</source>
+        <translation type="unfinished">缓存路径不合法，请选择其他路径。</translation>
+    </message>
     <message>
         <source>Run the graph before recording</source>
         <translation type="vanished">开始录制前请先点一下“运行”按钮</translation>
@@ -1642,6 +1646,10 @@
 </context>
 <context>
     <name>ZRecFrameSelectDlg</name>
+	<message>
+        <source>Frame range incomplete, please rerun.</source>
+        <translation>帧范围不完整，请重新录制。</translation>
+    </message>
     <message>
         <source>The scene has not been run yet.</source>
         <translation>当前场景还没运行计算。</translation>

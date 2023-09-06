@@ -119,20 +119,25 @@ void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex node
     ZenoMainWindow *main = zenoApp->getMainWindow();
     if (!pModel || !main)
         return;
+    int ret = pModel->ModelSetData(paramIdx, newValue, ROLE_PARAM_VALUE);
+}
+
+void AppHelper::socketEditFinishedWithSlider(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx)
+{
+    IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
+    ZenoMainWindow* main = zenoApp->getMainWindow();
     if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" &&
         nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
         (main->isAlways() || main->isAlwaysLightCamera()))
     {
         //only update nodes.
-        zeno::scope_exit sp([=] { pModel->setApiRunningEnable(true);});
+        zeno::scope_exit sp([=] { pModel->setApiRunningEnable(true); });
         pModel->setApiRunningEnable(false);
 
-        QAbstractItemModel *paramsModel = const_cast<QAbstractItemModel *>(paramIdx.model());
+        QAbstractItemModel* paramsModel = const_cast<QAbstractItemModel*>(paramIdx.model());
         ZASSERT_EXIT(paramsModel);
         paramsModel->setData(paramIdx, newValue, ROLE_PARAM_VALUE);
         modifyLightData(nodeIdx);
-    } else {
-        int ret = pModel->ModelSetData(paramIdx, newValue, ROLE_PARAM_VALUE);
     }
 }
 
@@ -362,7 +367,7 @@ void AppHelper::initLaunchCacheParam(LAUNCH_PARAM& param)
 {
     QSettings settings(zsCompanyName, zsEditor);
     param.enableCache = settings.value("zencache-enable").isValid() ? settings.value("zencache-enable").toBool() : true;
-    param.tempDir = settings.value("zencache-autoremove", true).isValid() ? settings.value("zencache-autoremove", true).toBool() : false;
+    param.tempDir = settings.value("zencache-autoremove").isValid() ? settings.value("zencache-autoremove").toBool() : false;
     param.cacheDir = settings.value("zencachedir").isValid() ? settings.value("zencachedir").toString() : "";
     param.cacheNum = settings.value("zencachenum").isValid() ? settings.value("zencachenum").toInt() : 1;
     param.autoCleanCacheInCacheRoot = settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true;

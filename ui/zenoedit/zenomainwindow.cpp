@@ -1082,6 +1082,10 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
             pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
         }
     }
+    RECORD_SETTING recordSetting;     //only for autoremove cache
+    recordSetting.bAutoRemoveCache = launchParam.autoRmCurcache;
+    zenoApp->graphsManagment()->setRecordInfo(recordSetting);
+
     zeno::getSession().globalComm->clearState();
     launchParam.beginFrame = recInfo.frameRange.first;
     launchParam.endFrame = recInfo.frameRange.second;
