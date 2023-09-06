@@ -26,6 +26,7 @@ option(ZENO_ENABLE_OPTIX "Enable NVIDIA OptiX in ZENO for path tracing" OFF)
 if (ZENO_ENABLE_OPTIX)
     add_subdirectory(xinxinoptix)  # this in-place modify zenovis
     target_compile_definitions(zenovis PRIVATE -DZENO_ENABLE_OPTIX)
+    target_include_directories(zenovis PRIVATE xinxinoptix)
 endif()
 
 # the check of cuda display device fails on some user env, and the 

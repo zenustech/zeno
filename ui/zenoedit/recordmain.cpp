@@ -85,6 +85,7 @@ int record_main(const QCoreApplication& app)
         {"optix", "optix", "optix mode"},
         {"video", "video", "export video"},
         {"aov", "aov", "aov"},
+        {"exr", "exr", "exr"},
         {"needDenoise", "needDenoise", "needDenoise"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
@@ -157,8 +158,10 @@ int record_main(const QCoreApplication& app)
 	param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
 	param.needDenoise = cmdParser.isSet("needDenoise") ? cmdParser.value("needDenoise").toInt() : 0;
 	int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
+	param.export_exr = cmdParser.isSet("exr") && cmdParser.value("exr").toInt() != 0;
     auto &ud = zeno::getSession().userData();
     ud.set2("output_aov", enableAOV != 0);
+    ud.set2("output_exr", param.export_exr);
 	param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
 	param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
 #else

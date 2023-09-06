@@ -70,6 +70,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
 {
     auto &ud = zeno::getSession().userData();
     ud.set2("output_aov", m_ui->cbAOV->checkState() == Qt::Checked);
+    ud.set2("output_exr", m_ui->cbExportEXR->checkState() == Qt::Checked);
     auto &path = info.record_path;
     auto &fn = info.videoname;
     info.fps = m_ui->fps->text().toInt();
@@ -80,6 +81,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     info.res[1] = m_ui->lineHeight->text().toFloat();
     path = m_ui->linePath->text();
     info.bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
+    info.bExportEXR = m_ui->cbExportEXR->checkState() == Qt::Checked;
     info.needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
     info.bAutoRemoveCache = m_ui->cbRemoveAfterRender->checkState() == Qt::Checked;
     if (path.isEmpty())

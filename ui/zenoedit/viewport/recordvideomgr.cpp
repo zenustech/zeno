@@ -102,6 +102,10 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
 
 void RecordVideoMgr::endRecToExportVideo()
 {
+    if (m_recordInfo.bExportEXR) {
+        emit recordFinished(m_recordInfo.record_path);
+        return;
+    }
     // denoising
     if (m_recordInfo.needDenoise) {
         QString dir_path = m_recordInfo.record_path + "/P/";
