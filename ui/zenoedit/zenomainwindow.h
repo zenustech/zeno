@@ -14,28 +14,6 @@
 #include <QLocalSocket>
 
 
-struct ZENO_RECORD_RUN_INITPARAM {
-    QString sZsgPath = "";
-    bool bRecord = false;
-    bool bOptix = false;    //is optix view.
-    bool isExportVideo = false;
-    bool needDenoise = false;
-    bool export_exr = false;
-    int iFrame = 0;
-    int iSFrame = 0;
-    int iSample = 0;
-    int iBitrate = 0;
-    int iFps = 0;
-    QString sPixel = "";
-    QString sPath = "";
-    QString audioPath = "";
-    QString configFilePath = "";
-    QString videoName = "";
-    QString subZsg = "";
-    bool exitWhenRecordFinish = false;
-};
-
-
 class ZenoDockWidget;
 class DisplayWidget;
 class ZTimeline;
