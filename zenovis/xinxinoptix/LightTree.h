@@ -1,10 +1,5 @@
 #pragma once
 
-
-#include <optix.h>
-#include <sutil/vec_math.h>
-
-#include "Sampling.h"
 #include "LightBounds.h"
 #include "optixPathTracer.h"
 

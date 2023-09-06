@@ -10,7 +10,6 @@
 #include "DisneyBSDF.h"
 
 #include "IOMat.h"
-#include "Shape.h"
 #include "Light.h"
 
 #define _SPHERE_ 0
@@ -1032,12 +1031,6 @@ extern "C" __global__ void __closesthit__radiance()
     prd->countEmitted = false;
     prd->attenuation *= reflectance;
     prd->depth++;
-
-    // auto shadingP = [&]() {
-    //     auto cosine = dot(-ray_dir, prd->geometryNormal);
-    //     auto sign = copysignf(1.0f, cosine);        
-    //     return rtgems::offset_ray(P,  prd->geometryNormal * sign);
-    // }();
 
     auto shadingP = rtgems::offset_ray(P,  prd->geometryNormal);
     prd->radiance = make_float3(0.0f,0.0f,0.0f);

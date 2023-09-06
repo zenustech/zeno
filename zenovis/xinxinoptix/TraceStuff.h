@@ -31,7 +31,6 @@ static __forceinline__ __device__ void* unpackPointer( unsigned int i0, unsigned
     return ptr;
 }
 
-
 static __forceinline__ __device__ void  packPointer( void* ptr, unsigned int& i0, unsigned int& i1 )
 {
     const unsigned long long uptr = reinterpret_cast<unsigned long long>( ptr );

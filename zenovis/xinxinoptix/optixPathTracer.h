@@ -1,5 +1,5 @@
-// this part of code is modified from nvidia's optix example
 #pragma once
+
 #include <optix.h>
 #include <Shape.h>
 

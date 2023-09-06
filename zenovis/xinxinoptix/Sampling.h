@@ -1,9 +1,9 @@
 #pragma once 
 #include <math_constants.h>
+#include <sutil/vec_math.h>
 
 #include <cuda/climits.h>
-#include <sutil/vec_math.h>
-#include <nanovdb/NanoVDB.h>
+#include <cuda/cstdint.h>
 
 #ifdef __CUDACC_RTC__
     #include "zxxglslvec.h"

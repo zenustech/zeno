@@ -3,18 +3,9 @@
 #include "LightTree.h"
 
 #include "TraceStuff.h"
-#include "optixPathTracer.h"
-#include "zeno/types/LightObject.h"
-#include "zxxglslvec.h"
-
 #include "DisneyBRDF.h"
-#include "DisneyBSDF.h"
+// #include "DisneyBSDF.h"
 #include "proceduralSky.h"
-
-#include "Shape.h"
-#include <cuda/random.h>
-#include <cuda/helpers.h>
-#include <sutil/vec_math.h>
 
 // static __inline__ __device__
 // int GetLightIndex(float p, GenericLight* lightP, int n)
@@ -170,7 +161,7 @@ namespace detail {
 }
 
 template<bool _MIS_, typename TypeEvalBxDF, typename TypeAux = void>
-static __inline__ __device__
+static __forceinline__ __device__
 void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& shadingP, const float3& ray_dir, TypeEvalBxDF& evalBxDF, TypeAux* taskAux=nullptr) {
 
     const float3 wo = normalize(-ray_dir); 
@@ -325,7 +316,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
                 float misWeight = BRDFBasics::PowerHeuristic(tmpPdf, scatterPDF);
                 misWeight = misWeight>0.0f?misWeight:1.0f;
                 misWeight = scatterPDF>1e-5f?misWeight:0.0f;
-                misWeight = tmpPdf>1e-5?misWeight:0.0f;
+                misWeight = tmpPdf>1e-5f?misWeight:0.0f;
 
                 tmp = (1.0f / NSamples) * misWeight * inverseProb * light_attenuation  / tmpPdf;
             } else {

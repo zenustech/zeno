@@ -1,10 +1,6 @@
 #pragma once
 
 #include <Sampling.h>
-#include <sutil/vec_math.h>
-
-#include <cuda/climits.h>
-#include <math_constants.h>
 
 #ifndef __CUDACC_RTC__
     #include <zeno/utils/vec.h>
@@ -26,11 +22,11 @@
 
 namespace zeno {
 
-    Vector3f min(Vector3f a, Vector3f b) {
+    inline Vector3f min(Vector3f a, Vector3f b) {
         return fminf(a, b);
     }
 
-    Vector3f max(Vector3f a, Vector3f b) {
+    inline Vector3f max(Vector3f a, Vector3f b) {
         return fmaxf(a, b);
     }
 }

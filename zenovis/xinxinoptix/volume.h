@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Sampling.h>
-// #include <nanovdb/NanoVDB.h>
 
 #ifndef __CUDACC_RTC__
 #include <Host.h>
