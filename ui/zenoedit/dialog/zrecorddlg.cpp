@@ -33,6 +33,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui->linePath->setText(info.record_path);
     m_ui->lineName->setText(info.videoname);;
     m_ui->cbAOV->setChecked(info.bAov);
+    m_ui->cbExportEXR->setChecked(info.bExr);
 
     m_ui->cbPresets->addItems({"540P", "720P", "1080P", "2K", "4K"});
     m_ui->cbPresets->setCurrentIndex(1);
@@ -122,6 +123,7 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
     record_info.needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
     record_info.bAutoRemoveCache = m_ui->cbRemoveAfterRender->checkState() == Qt::Checked;
     record_info.bAov = m_ui->cbAOV->checkState() == Qt::Checked;
+    record_info.bExr = m_ui->cbExportEXR->checkState() == Qt::Checked;
     zenoApp->graphsManagment()->setRecordInfo(record_info);
     return true;
 }

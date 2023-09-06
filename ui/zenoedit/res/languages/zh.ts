@@ -1389,6 +1389,10 @@
         <source>filename</source>
         <translation type="vanished">文件名：</translation>
     </message>
+	<message>
+        <source>export exr</source>
+        <translation>导出Exr</translation>
+    </message>
     <message>
         <source>export video</source>
         <translation>是否导出视频</translation>

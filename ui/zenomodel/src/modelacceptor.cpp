@@ -78,6 +78,7 @@ void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)
     m_recordInfo.needDenoise = info.needDenoise;
     m_recordInfo.bAutoRemoveCache = info.bAutoRemoveCache;
     m_recordInfo.bAov = info.bAov;
+    m_recordInfo.bExr = info.bExr;
 }
 
 void ModelAcceptor::setLayoutInfo(const LAYOUT_SETTING& info)

@@ -582,6 +582,8 @@ void ZsgWriter::dumpSettings(const APP_SETTINGS settings, RAPIDJSON_WRITER& writ
         writer.Bool(info.bAutoRemoveCache);
         writer.Key(recordinfo::bAov);
         writer.Bool(info.bAov);
+        writer.Key(recordinfo::bExr);
+        writer.Bool(info.bExr);
         writer.EndObject();
 
         writer.Key("layoutinfo");
