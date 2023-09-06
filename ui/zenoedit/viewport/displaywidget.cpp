@@ -750,17 +750,20 @@ void DisplayWidget::onRecord()
         if (QDialog::Rejected == ret) {
             return;
         }
-        std::function<void()> killRunProcIfCancel = [&]() {
-            if (!frameDlg.isExternalRunning())
+
+        bool bRunBeforeRecord = false;
+        recInfo.frameRange = frameDlg.recordFrameRange(bRunBeforeRecord);
+
+        std::function<void()> killRunProcIfCancel = [bRunBeforeRecord]() {
+            // record run, should kill the runner proc.
+            const bool bWorking = zeno::getSession().globalState->working;
+            if (bWorking && bRunBeforeRecord)
             {
                 ZTcpServer* server = zenoApp->getServer();
                 ZASSERT_EXIT(server);
                 server->killProc();
             }
         };
-
-        bool bRunBeforeRecord = false;
-        recInfo.frameRange = frameDlg.recordFrameRange(bRunBeforeRecord);
 
         const QString& cacheRootdir = launchParam.cacheDir;
         QDir dirCacheRoot(cacheRootdir);
@@ -881,19 +884,6 @@ void DisplayWidget::onRecord()
         } else {
             m_recordMgr.cancelRecord();
             killRunProcIfCancel();
-        }
-
-        if (recInfo.bAutoRemoveCache && launchParam.enableCache && bRunBeforeRecord) {
-#ifdef ZENO_OPTIX_PROC
-            if (m_glView) {
-                auto tcpServer = zenoApp->getServer();
-                if (tcpServer)
-                    tcpServer->onClearFrameState();
-            }
-#endif
-            // remove all frame state, after run recording, because `record run` is not a `offical` run.
-            // and should mark by the process bar, rather than the global state.
-            zeno::getSession().globalComm->clearFrameState();
         }
     }
     m_sliderFeq = curSlidFeq;
