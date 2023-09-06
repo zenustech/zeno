@@ -47,6 +47,7 @@ namespace iotags {
         constexpr const char* needDenoise = "need-denoise";
         constexpr const char* bAutoRemoveCache = "auto-remove-cache";
         constexpr const char* bAov = "aov";
+        constexpr const char* bExr = "exr";
     }
 
     namespace layoutinfo {

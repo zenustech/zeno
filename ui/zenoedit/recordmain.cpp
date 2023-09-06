@@ -227,6 +227,10 @@ int record_main(const QCoreApplication& app)
         args.append(QString::number(launchparam.autoRmCurcache));
         args.append("--optixShowBackground");
         args.append(QString::number(pGraphs->userdataInfo().optix_show_background));
+        args.append("--aov");
+        args.append(QString::number(enableAOV));
+        args.append("--exr");
+        args.append(QString::number(param.export_exr));
         args.removeAt(0);
 
         //start optix proc to render
