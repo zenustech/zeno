@@ -1,5 +1,4 @@
-param( [string]$a )
-Write-Host $a
+param( [string]$p, [string]$b)
 
 if (Get-Command "cmake" -errorAction SilentlyContinue)
 {
@@ -41,7 +40,7 @@ if ($null -eq $env:VS_PATH) {
         Write-Output '$Env:VS_PATH="C:\Program Files\Microsoft Visual Studio\2022\Community"'
 
         $env:VS_PATH = Read-Host 'VS_PATH'
-        return;
+        # return;
     }
 } 
 
@@ -49,7 +48,7 @@ Import-Module ("$env:VS_PATH\\Common7\\Tools\\Microsoft.VisualStudio.DevShell.dl
 Enter-VsDevShell -VsInstallPath "${env:VS_PATH}" -SkipAutomaticLocation -DevCmdArguments "-arch=x64 -host_arch=x64"
 
 $shell_name = (Get-Process -Id $PID).name
-echo $shell_name
+Write-Host $shell_name
 
 # if ("pwsh" -eq $shell_name) {
 #     cmd /K '"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" && pwsh.exe'
@@ -57,17 +56,27 @@ echo $shell_name
 #     cmd /K '"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" && powershell.exe'
 # }
 
-if ($a.ToLower() -ne "full") {
+if ($b.ToLower() -ne "debug") {
+    $b = "Release"
+} else {
+    $b = "Debug"
+}
+
+Write-Host $p
+Write-Host $b
+
+if ($p.ToLower() -ne "full") {
 
 Write-Output "Making minimum build with Optix..."
 
-cmake -G Ninja -B ninja -DCMAKE_BUILD_TYPE=Release `
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE="${b}" `
     -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" `
     -DZENO_WITH_zenvdb:BOOL=ON `
-    -DZENO_SYSTEM_OPENVDB=OFF `
+    -DZENO_SYSTEM_OPENVDB:BOOL=OFF `
     -DZENO_WITH_ZenoFX:BOOL=ON `
     -DZENO_ENABLE_OPTIX:BOOL=ON `
     -DZENO_WITH_FBX:BOOL=ON `
+    -DZENO_WITH_Alembic:BOOL=ON `
     -DZENO_WITH_MeshSubdiv:BOOL=ON `
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
@@ -75,11 +84,12 @@ cmake -G Ninja -B ninja -DCMAKE_BUILD_TYPE=Release `
 
 Write-Output "Making full build..."
 
-cmake -G Ninja -B ninja -DCMAKE_BUILD_TYPE=Release `
+cmake -B build -DCMAKE_BUILD_TYPE="${b}" `
     -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" `
+    -DZENO_WITH_CUDA:BOOL=ON `
     -DZENO_WITH_ZenoFX:BOOL=ON `
     -DZENO_ENABLE_OPTIX:BOOL=ON `
-    -DZENO_SYSTEM_OPENVDB=OFF `
+    -DZENO_SYSTEM_OPENVDB:BOOL=OFF `
     -DZENOFX_ENABLE_OPENVDB:BOOL=ON `
     -DZENOFX_ENABLE_LBVH:BOOL=ON `
     -DZENO_WITH_zenvdb:BOOL=ON `
@@ -107,6 +117,5 @@ cmake -G Ninja -B ninja -DCMAKE_BUILD_TYPE=Release `
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 }
 
-cmake --build ninja --config Release
-
-cp ./ninja/compile_commands.json ./
+cmake --build build --config Release
+cp ./build/compile_commands.json ./
