@@ -751,7 +751,7 @@ void DisplayWidget::onRecord()
             return;
         }
         std::function<void()> killRunProcIfCancel = [&]() {
-            if (!frameDlg.isRunProcWorking())
+            if (!frameDlg.isExternalRunning())
             {
                 ZTcpServer* server = zenoApp->getServer();
                 ZASSERT_EXIT(server);
@@ -883,7 +883,7 @@ void DisplayWidget::onRecord()
             killRunProcIfCancel();
         }
 
-        if (recInfo.bAutoRemoveCache && launchParam.enableCache && !frameDlg.isRunProcWorking()) {
+        if (recInfo.bAutoRemoveCache && launchParam.enableCache && bRunBeforeRecord) {
 #ifdef ZENO_OPTIX_PROC
             if (m_glView) {
                 auto tcpServer = zenoApp->getServer();
@@ -891,6 +891,8 @@ void DisplayWidget::onRecord()
                     tcpServer->onClearFrameState();
             }
 #endif
+            // remove all frame state, after run recording, because `record run` is not a `offical` run.
+            // and should mark by the process bar, rather than the global state.
             zeno::getSession().globalComm->clearFrameState();
         }
     }

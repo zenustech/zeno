@@ -1648,7 +1648,7 @@
     <name>ZRecFrameSelectDlg</name>
 	<message>
         <source>Frame range incomplete, please rerun.</source>
-        <translation>帧范围不完整，请重新录制。</translation>
+        <translation>上一次解算里，部分帧的zencache在录制时已被删除，请重新运行录制。</translation>
     </message>
     <message>
         <source>The scene has not been run yet.</source>
@@ -1668,7 +1668,7 @@
     </message>
     <message>
         <source>invalid frame range</source>
-        <translation>不合法的帧范围</translation>
+        <translation>要运行的帧的范围不合法</translation>
     </message>
     <message>
         <source>Last complete run frame: [%1 - %2], you can record the video based on it.</source>

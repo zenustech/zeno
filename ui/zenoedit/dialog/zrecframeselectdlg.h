@@ -17,13 +17,13 @@ class ZRecFrameSelectDlg : public QDialog
         NO_RUN,
         RUN_INCOMPLETE,
         RUN_COMPLELTE,
-        RUNNING,
+        RUNNING,        //external running, not record running.
     };
 
 public:
     ZRecFrameSelectDlg(QWidget* parent = nullptr);
     QPair<int, int> recordFrameRange(bool& runBeforeRun) const;
-    bool isRunProcWorking();
+    bool isExternalRunning();
 
 private slots:
     void onRunNow();
@@ -35,6 +35,7 @@ private slots:
 private:
     Ui::RecFrameSelectDlg* m_ui;
     bool validateFrame();
+    bool hasBrokenFrameData();
 
     int m_recStartF;
     int m_recEndF;

@@ -21,7 +21,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     m_ui = new Ui::RecFrameSelectDlg;
     m_ui->setupUi(this);
 
-    const bool bWorking = zeno::getSession().globalState->working;
+    const bool bWorking = zeno::getSession().globalState->working;  //external running
     int nRunFrames = zeno::getSession().globalComm->numOfFinishedFrame();
     auto pair = zeno::getSession().globalComm->frameRange();
 
@@ -37,7 +37,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     connect(m_ui->btnRecordNow, SIGNAL(clicked()), this, SLOT(onRecordNow()));
     connect(m_ui->btnCancelRecord, SIGNAL(clicked()), this, SLOT(onCancelRecord()));
 
-    if (zeno::getSession().globalComm->numOfInitializedFrame() > 0 && nRunFrames > 0 && !zeno::getSession().globalComm->isFrameCompleted(pair.first))
+    if (hasBrokenFrameData())
     {
         m_ui->lblRunFrame->setText(tr("Frame range incomplete, please rerun."));
         m_ui->btnRunFirst->setVisible(true);
@@ -115,6 +115,19 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     onRecToEdited();
 }
 
+bool ZRecFrameSelectDlg::hasBrokenFrameData()
+{
+    auto& gblComm = zeno::getSession().globalComm;
+    ZASSERT_EXIT(gblComm, false);
+    auto pair = zeno::getSession().globalComm->frameRange();
+
+    int nRunFrames = gblComm->numOfFinishedFrame();
+    if (nRunFrames > 0 && !gblComm->isFrameCompleted(pair.first))
+        return true;
+    else
+        return false;
+}
+
 void ZRecFrameSelectDlg::onRecFromEdited()
 {
     bool bOk = false;
@@ -135,8 +148,9 @@ QPair<int, int> ZRecFrameSelectDlg::recordFrameRange(bool& runBeforeRun) const
     return {m_recStartF, m_recEndF};
 }
 
-bool ZRecFrameSelectDlg::isRunProcWorking()
+bool ZRecFrameSelectDlg::isExternalRunning()
 {
+    //running trigger by button `run`, and not by record running.
     return m_state == RUNNING;
 }
 
