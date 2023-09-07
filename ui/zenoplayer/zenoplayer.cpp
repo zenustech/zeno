@@ -18,6 +18,7 @@
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalStatus.h>
 #include <zeno/utils/logger.h>
+#include <zenoui/ColorEditor/ColorEditor.h>
 
 
 ZenoPlayer::ZenoPlayer(ZENO_PLAYER_INIT_PARAM param, QWidget *parent) 
@@ -109,7 +110,7 @@ QMenuBar *ZenoPlayer::initMenu()
         connect(pAction, &QAction::triggered, this, [=]() {
             auto [r, g, b] = Zenovis::GetInstance().getSession()->get_background_color();
             auto c = QColor::fromRgbF(r, g, b);
-            c = QColorDialog::getColor(c);
+            c = ColorEditor::getColor(c);
             if (c.isValid()) {
                 Zenovis::GetInstance().getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
                 ((ZenoPlayer *)zenoApp->getWindow("ZenoPlayer"))->updateFrame();

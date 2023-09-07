@@ -8,6 +8,7 @@
 #include <zenoui/comctrl/zcombobox.h>
 #include <zenoui/comctrl/zlabel.h>
 #include <zenoui/style/zenostyle.h>
+#include <zenoui/ColorEditor/ColorEditor.h>
 #include <zenomodel/include/graphsmanagment.h>
 #include <zenomodel/include/modelrole.h>
 #include <zenomodel/include/igraphsmodel.h>
@@ -113,7 +114,7 @@ namespace zenoui
                 pBtn->setFixedSize(ZenoStyle::dpiScaled(100), ZenoStyle::dpiScaled(30));
                 pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
                 QObject::connect(pBtn, &QPushButton::clicked, [=]() {
-                    QColor color = QColorDialog::getColor(pBtn->palette().window().color());
+                    QColor color = ColorEditor::getColor(pBtn->palette().window().color());
                     if (color.isValid()) 
                     {
                         pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));

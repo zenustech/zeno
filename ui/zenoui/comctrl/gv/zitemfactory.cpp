@@ -2,6 +2,7 @@
 #include <zenomodel/include/uihelper.h>
 #include <zenoui/render/ztfutil.h>
 #include <zenoui/comctrl/gv/zlineedititem.h>
+#include <zenoui/ColorEditor/ColorEditor.h>
 #include <zenomodel/include/curvemodel.h>
 #include "zveceditoritem.h"
 #include "style/zenostyle.h"
@@ -208,7 +209,7 @@ namespace zenoui
                 pEditBtn->setProperty("color", value.value<QColor>().name());
 
                 QObject::connect(pEditBtn, &ZenoParamPushButton::clicked, [=]() {
-                    QColor color = QColorDialog::getColor(QColor(pEditBtn->property("color").toString()));
+                    QColor color = ColorEditor::getColor(QColor(pEditBtn->property("color").toString()));
                     if (color.isValid()) 
                     {
                         pEditBtn->setProperty("color", color.name());
