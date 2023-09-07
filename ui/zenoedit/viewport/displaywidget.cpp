@@ -885,6 +885,15 @@ void DisplayWidget::onRecord()
             m_recordMgr.cancelRecord();
             killRunProcIfCancel();
         }
+
+        if (!m_bGLView)
+        {
+            //for optix case, the current frame indicated by timeline and zenovis are not align.
+            //we need to reset the current frame to which timeline is indicating.
+            ZASSERT_EXIT(m_optixView);
+            int uiframe = mainWin->timelineInfo().currFrame;
+            emit m_optixView->sig_switchTimeFrame(uiframe);
+        }
     }
     m_sliderFeq = curSlidFeq;
 }
