@@ -890,9 +890,11 @@ void DisplayWidget::onRecord()
         {
             //for optix case, the current frame indicated by timeline and zenovis are not align.
             //we need to reset the current frame to which timeline is indicating.
+        #ifndef ZENO_OPTIX_PROC
             ZASSERT_EXIT(m_optixView);
             int uiframe = mainWin->timelineInfo().currFrame;
             emit m_optixView->sig_switchTimeFrame(uiframe);
+        #endif
         }
     }
     m_sliderFeq = curSlidFeq;
