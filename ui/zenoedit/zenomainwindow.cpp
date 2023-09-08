@@ -1446,10 +1446,8 @@ void ZenoMainWindow::onCheckUpdate()
         if (bUpdate)
         {
             //start install proc
-            QProcess process;
-            QStringList args;
-            args << "/c" << "zenoinstall.exe --version " + version + " --url " + url;
-            process.startDetached("cmd.exe", args);
+            QString sCmd = "--version " + version + " --url " + url;
+            ShellExecuteA(NULL, NULL, "zenoinstall.exe", sCmd.toLocal8Bit().data(), NULL, SW_SHOWNORMAL);
 
             killProgram();
             killOptix();

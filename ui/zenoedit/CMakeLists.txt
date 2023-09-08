@@ -44,7 +44,7 @@ if (NOT ZENO_MULTIPROCESS OR NOT ZENO_IPC_USE_TCP)
     target_link_libraries(zenoedit PRIVATE Threads::Threads)
 endif()
 target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
-target_link_libraries(zenoedit PRIVATE ws2_32.lib winmm.lib wldap32.lib Advapi32.lib)
+target_link_libraries(zenoedit PRIVATE ws2_32.lib winmm.lib wldap32.lib Advapi32.lib Crypt32.lib)
 
 if (WIN32)
     target_link_libraries(zenoedit PRIVATE Dbghelp Version)
