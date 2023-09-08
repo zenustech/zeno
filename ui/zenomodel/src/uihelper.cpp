@@ -1344,9 +1344,21 @@ QVariant UiHelper::parseJsonByType(const QString& descType, const rapidjson::Val
                 for (int i = 0; i < values.Size(); i++)
                 {
                     if (values[i].IsFloat())
+                    {
                         vec.append(values[i].GetFloat());
+                    }
+                    else if (values[i].IsDouble())
+                    {
+                        vec.append(values[i].GetDouble());
+                    }
+                    else if (values[i].IsInt())
+                    {
+                        vec.append(values[i].GetInt());
+                    }
                     else if (values[i].IsString())
+                    {
                         strVec.append(values[i].GetString());
+                    }
                 }
             }
             else if (val.IsString())
