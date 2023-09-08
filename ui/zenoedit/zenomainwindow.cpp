@@ -54,6 +54,8 @@
 #include <zeno/extra/GlobalState.h>
 #include "launch/viewdecode.h"
 #include "dialog/ZImportSubgraphsDlg.h"
+#include "dialog/zcheckupdatedlg.h"
+#include "dialog/zrestartdlg.h"
 
 const QString g_latest_layout = "LatestLayout";
 
@@ -274,6 +276,7 @@ void ZenoMainWindow::onMenuActionTriggered(bool bTriggered)
         break;
     }
     case ACTION_CHECKUPDATE: {
+        onCheckUpdate();
         break;
     }
     default: {
@@ -1412,6 +1415,54 @@ void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
     if (!m_pTimeline)
         return;
     m_pTimeline->onTimelineUpdate(frameid);
+}
+
+void ZenoMainWindow::onCheckUpdate()
+{
+    ZCheckUpdateDlg dlg(this);
+    connect(&dlg, &ZCheckUpdateDlg::updateSignal, this, [=](const QString& version, const QString &url) {
+        auto pGraphsMgm = zenoApp->graphsManagment();
+        ZASSERT_EXIT(pGraphsMgm, true);
+        IGraphsModel* pModel = pGraphsMgm->currentModel();
+        bool bUpdate = true;
+        if (!zeno::envconfig::get("OPEN") && pModel && pModel->isDirty()) 
+        {
+            ZRestartDlg restartDlg;
+            connect(&restartDlg, &ZRestartDlg::saveSignal, [=](bool bSaveAs) {
+                if (bSaveAs)
+                {
+                    saveAs();
+                }
+                else
+                {
+                    save();
+                }
+            });
+            if (restartDlg.exec() != QDialog::Accepted)
+            {
+                bUpdate = false;
+            }
+        }
+        if (bUpdate)
+        {
+            //start install proc
+            QProcess process;
+            QStringList args;
+            args << "/c" << "zenoinstall.exe --version " + version + " --url " + url;
+            process.startDetached("cmd.exe", args);
+
+            killProgram();
+            killOptix();
+            zeno::getSession().eventCallbacks->triggerEvent("beginDestroy");
+            zenoApp->quit();
+        }
+    });
+    connect(&dlg, &ZCheckUpdateDlg::remindSignal, this, [=]() {
+        QTimer timer;
+        //10mins remind
+        timer.singleShot(10 * 60 * 1000, this, &ZenoMainWindow::onCheckUpdate);
+    });
+    dlg.exec();
 }
 
 void ZenoMainWindow::importGraph() {
