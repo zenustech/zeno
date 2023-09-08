@@ -290,12 +290,12 @@ class ColorEditor : public QDialog
 public:
     explicit ColorEditor(QWidget* parent = nullptr);
     explicit ColorEditor(const QColor& initial, QWidget* parent = nullptr);
-    ~ColorEditor();
 
     static QColor getColor(const QColor& initial, QWidget* parent = nullptr, const QString& title = "");
 
     void setCurrentColor(const QColor& color);
     QColor currentColor() const;
+    QColor selectedColor() const;
 
     void setColorCombinations(const QVector<colorcombo::ICombination*> combinations);
 

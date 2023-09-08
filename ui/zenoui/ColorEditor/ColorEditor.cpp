@@ -6,6 +6,7 @@
 #include <QCursor>
 #include <QDebug>
 #include <QDesktopWidget>
+#include <QDialogButtonBox>
 #include <QDrag>
 #include <QGridLayout>
 #include <QGroupBox>
@@ -1137,13 +1138,13 @@ public:
     ColorSpinHSlider* sSlider;
     ColorSpinHSlider* vSlider;
 
-    QColor initialColor;
-    QColor curColor;
+    QColor currentColor;
+    QColor selectedColor;
     ColorEditorData colorData;
 
     Private(const QColor& color, QDialog* parent)
     {
-        initialColor = color;
+        selectedColor = color;
         // left
         picker = new ColorPicker(parent);
         pickerBtn = new QPushButton(parent);
@@ -1172,7 +1173,7 @@ public:
 
         auto leftWidget = new QWidget(parent);
         auto leftLayout = new QGridLayout(leftWidget);
-        // leftLayout->setMargin(0);
+        leftLayout->setContentsMargins(0, 0, 5, 0);
         leftLayout->setSpacing(0);
         leftLayout->addWidget(wheel, 0, 0);
         leftLayout->addWidget(colorText, 1, 0, Qt::AlignRight);
@@ -1188,21 +1189,17 @@ public:
         sSlider = new ColorSpinHSlider("S", parent);
         vSlider = new ColorSpinHSlider("V", parent);
 
-        auto rgbSlider = new QWidget(parent);
-        auto rgbSliderLayout = new QVBoxLayout(rgbSlider);
-        rgbSliderLayout->setMargin(0);
-        rgbSliderLayout->setSpacing(2);
-        rgbSliderLayout->addWidget(rSlider);
-        rgbSliderLayout->addWidget(gSlider);
-        rgbSliderLayout->addWidget(bSlider);
-
-        auto hsvSlider = new QWidget(parent);
-        auto hsvSliderLayout = new QVBoxLayout(hsvSlider);
-        hsvSliderLayout->setMargin(0);
-        hsvSliderLayout->setSpacing(2);
-        hsvSliderLayout->addWidget(hSlider);
-        hsvSliderLayout->addWidget(sSlider);
-        hsvSliderLayout->addWidget(vSlider);
+        auto colorSlider = new QWidget(parent);
+        auto colorSliderLayout = new QVBoxLayout(colorSlider);
+        colorSliderLayout->setMargin(0);
+        colorSliderLayout->setSpacing(2);
+        colorSliderLayout->addWidget(rSlider);
+        colorSliderLayout->addWidget(gSlider);
+        colorSliderLayout->addWidget(bSlider);
+        colorSliderLayout->addSpacing(5);
+        colorSliderLayout->addWidget(hSlider);
+        colorSliderLayout->addWidget(sSlider);
+        colorSliderLayout->addWidget(vSlider);
 
         rSlider->setRange(0, 255);
         gSlider->setRange(0, 255);
@@ -1218,24 +1215,35 @@ public:
         setGradientS(color);
         setGradientV(color);
 
-        auto rightWidget = new QWidget(parent);
-        auto rightLayout = new QVBoxLayout(rightWidget);
-        // rightLayout->setMargin(0);
-        rightLayout->addWidget(palette);
-        rightLayout->addWidget(rgbSlider);
-        rightLayout->addWidget(hsvSlider);
-        // splitter
-        auto splitter = new QSplitter(parent);
-        splitter->addWidget(leftWidget);
-        splitter->addWidget(rightWidget);
-        splitter->setStretchFactor(0, 3);
-        splitter->setStretchFactor(1, 7);
-        splitter->setCollapsible(0, false);
-        splitter->setCollapsible(1, false);
+        auto rightSplitter = new QSplitter(Qt::Vertical, parent);
+        rightSplitter->addWidget(palette);
+        rightSplitter->addWidget(colorSlider);
+        rightSplitter->setCollapsible(0, false);
+        rightSplitter->setCollapsible(1, false);
+        auto equalH = std::max(palette->minimumSizeHint().height(), colorSlider->minimumSizeHint().height());
+        rightSplitter->setSizes({equalH * 2, equalH * 1}); // setStretchFactor not always work well
+
+        auto mainSplitter = new QSplitter(parent);
+        mainSplitter->addWidget(leftWidget);
+        mainSplitter->addWidget(rightSplitter);
+        mainSplitter->setStretchFactor(0, 3);
+        mainSplitter->setStretchFactor(1, 7);
+        mainSplitter->setCollapsible(0, false);
+        mainSplitter->setCollapsible(1, false);
+        // buttons
+        auto buttons = new QDialogButtonBox(parent);
+        auto okBtn = buttons->addButton(QDialogButtonBox::Ok);
+        auto cancleBtn = buttons->addButton(QDialogButtonBox::Cancel);
+        connect(okBtn, &QPushButton::clicked, parent, [this, parent]() {
+            selectedColor = currentColor;
+            parent->accept();
+        });
+        connect(cancleBtn, &QPushButton::clicked, parent, &QDialog::reject);
 
         auto layout = new QVBoxLayout(parent);
-        layout->setMargin(0);
-        layout->addWidget(splitter);
+        layout->setMargin(5);
+        layout->addWidget(mainSplitter);
+        layout->addWidget(buttons);
     }
 
     void blockColorSignals(bool block)
@@ -1255,12 +1263,12 @@ public:
 
     void setGradient(const QColor& color)
     {
-        bool rChanged = color.red() != curColor.red();
-        bool gChanged = color.green() != curColor.green();
-        bool bChanged = color.blue() != curColor.blue();
-        bool hChanged = color.hsvHue() != curColor.hsvHue();
-        bool sChanged = color.hsvSaturation() != curColor.hsvSaturation();
-        bool vChanged = color.value() != curColor.value();
+        bool rChanged = color.red() != currentColor.red();
+        bool gChanged = color.green() != currentColor.green();
+        bool bChanged = color.blue() != currentColor.blue();
+        bool hChanged = color.hsvHue() != currentColor.hsvHue();
+        bool sChanged = color.hsvSaturation() != currentColor.hsvSaturation();
+        bool vChanged = color.value() != currentColor.value();
 
         if (gChanged || bChanged) {
             setGradientR(color);
@@ -1324,9 +1332,10 @@ ColorEditor::ColorEditor(const QColor& initial, QWidget* parent)
     : QDialog(parent)
     , p(new Private(initial, this))
 {
+    //setProperty("cssClass", "coloreditor");
     setWindowFlag(Qt::WindowContextHelpButtonHint, false);
     setWindowTitle(tr("ColorEditor"));
-    setMinimumSize(700, 500);
+    setMinimumSize(700, 550);
     initSlots();
     // init combinations
     p->combo->addCombination(new colorcombo::Analogous(this));
@@ -1362,15 +1371,18 @@ void ColorEditor::setCurrentColor(const QColor& color)
     }
     p->blockColorSignals(false);
 
-    p->curColor = color;
+    p->currentColor = color;
 }
 
 QColor ColorEditor::currentColor() const
 {
-    return p->preview->currentColor();
+    return p->currentColor;
 }
 
-ColorEditor::~ColorEditor() {}
+QColor ColorEditor::selectedColor() const
+{
+    return p->selectedColor;
+}
 
 void ColorEditor::setColorCombinations(const QVector<colorcombo::ICombination*> combinations)
 {
@@ -1411,27 +1423,27 @@ void ColorEditor::initSlots()
     });
     // color slider
     connect(p->rSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor(value, p->curColor.green(), p->curColor.blue());
+        auto color = QColor(value, p->currentColor.green(), p->currentColor.blue());
         setCurrentColor(color);
     });
     connect(p->gSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor(p->curColor.red(), value, p->curColor.blue());
+        auto color = QColor(p->currentColor.red(), value, p->currentColor.blue());
         setCurrentColor(color);
     });
     connect(p->bSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor(p->curColor.red(), p->curColor.green(), value);
+        auto color = QColor(p->currentColor.red(), p->currentColor.green(), value);
         setCurrentColor(color);
     });
     connect(p->hSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor::fromHsv(value, p->curColor.hsvSaturation(), p->curColor.value());
+        auto color = QColor::fromHsv(value, p->currentColor.hsvSaturation(), p->currentColor.value());
         setCurrentColor(color);
     });
     connect(p->sSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor::fromHsv(p->curColor.hsvHue(), value, p->curColor.value());
+        auto color = QColor::fromHsv(p->currentColor.hsvHue(), value, p->currentColor.value());
         setCurrentColor(color);
     });
     connect(p->vSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor::fromHsv(p->curColor.hsvHue(), p->curColor.hsvSaturation(), value);
+        auto color = QColor::fromHsv(p->currentColor.hsvHue(), p->currentColor.hsvSaturation(), value);
         setCurrentColor(color);
     });
 }
@@ -1441,5 +1453,5 @@ QColor ColorEditor::getColor(const QColor& initial, QWidget* parent, const QStri
     ColorEditor dlg(initial, parent);
     if (!title.isEmpty()) dlg.setWindowTitle(title);
     dlg.exec();
-    return dlg.currentColor();
+    return dlg.selectedColor();
 }
