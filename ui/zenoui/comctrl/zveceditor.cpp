@@ -102,7 +102,7 @@ QVariant ZVecEditor::vec() const
         }
         else {
             bool bOK = false;
-            float val = m_editors[i]->text().toInt(&bOK);
+            int val = m_editors[i]->text().toInt(&bOK);
             if (bOK && vecStr.isEmpty())
                 vec.append(val);
             else {
