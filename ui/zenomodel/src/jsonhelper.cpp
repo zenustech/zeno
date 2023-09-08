@@ -177,6 +177,9 @@ namespace JsonHelper
                     }
                     writer.EndArray();
                 }
+                else {
+                    writer.Null();
+                }
             }
             else if (value.userType() == QMetaTypeId<UI_VECSTRING>::qt_metatype_id()) {
                 UI_VECSTRING vec = value.value<UI_VECSTRING>();
@@ -190,10 +193,14 @@ namespace JsonHelper
 
                     writer.EndArray();
                 }
+                else {
+                    writer.Null();
+                }
             }
             else if (value.userType() == QMetaTypeId<CURVES_DATA>::qt_metatype_id())
             {
-                if (type == "curve" || value.canConvert<CURVES_DATA>()) {
+                if (type == "curve" || value.canConvert<CURVES_DATA>())
+                {
                     CURVES_DATA curves = value.value<CURVES_DATA>();
                     writer.StartObject();
                     writer.Key(key_objectType);
@@ -210,9 +217,11 @@ namespace JsonHelper
                         dumpCurve(curve, writer);
                     }
                     writer.EndObject();
-                } else {
-                    ZASSERT_EXIT(false, true);
+                }
+                else
+                {
                     writer.Null();
+                    ZASSERT_EXIT(false, true);
                 }
             }
             else
