@@ -249,6 +249,13 @@ QString GraphsManagment::zsgPath() const
     return m_model ? m_model->filePath() : "";
 }
 
+QString GraphsManagment::zsgDir() const
+{
+    const QString& zsgpath = zsgPath();
+    QFileInfo fp(zsgpath);
+    return fp.absolutePath();
+}
+
 RECORD_SETTING GraphsManagment::recordInfo() const
 {
     return m_recordInfo;

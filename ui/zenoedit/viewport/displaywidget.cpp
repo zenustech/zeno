@@ -795,6 +795,8 @@ void DisplayWidget::onRecord()
             auto main = zenoApp->getMainWindow();
             ZASSERT_EXIT(main);
             launchParam.projectFps = main->timelineInfo().timelinefps;
+            launchParam.zsgPath = zenoApp->graphsManagment()->zsgDir();
+
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)
             {

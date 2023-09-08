@@ -75,7 +75,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
     m_proc->setProcessChannelMode(QProcess::ProcessChannelMode::ForwardedErrorChannel);
     int sessionid = zeno::getSession().globalState->sessionid;
 
-    QString finalPath;
+    QString cachedir;
     if (param.enableCache)
     {
         const QString& cacheRootdir = param.cacheDir;
@@ -89,22 +89,29 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         ZASSERT_EXIT(mgr);
         bool ret = mgr->initCacheDir(param.tempDir, cacheRootdir, param.autoCleanCacheInCacheRoot);
         ZASSERT_EXIT(ret);
-        finalPath = mgr->cachePath();
+        cachedir = mgr->cachePath();
         int cnum = param.cacheNum;
-        viewDecodeSetFrameCache(finalPath.toStdString().c_str(), cnum);
+        viewDecodeSetFrameCache(cachedir.toStdString().c_str(), cnum);
     }
     else
     {
         viewDecodeSetFrameCache("", 0);
     }
 
+    if (param.zsgPath.isEmpty())
+    {
+        auto pGraphsMgr = zenoApp->graphsManagment();
+        ZASSERT_EXIT(pGraphsMgr);
+        param.zsgPath = pGraphsMgr->zsgDir();
+    }
+
     QStringList args = {
         "--runner", "1",
         "--sessionid", QString::number(sessionid),
         "--port", QString::number(m_port),
-        "--enablecache", QString::number(param.enableCache && QFileInfo(finalPath).isDir() && param.cacheNum),
+        "--enablecache", QString::number(param.enableCache && QFileInfo(cachedir).isDir() && param.cacheNum),
         "--cachenum", QString::number(param.cacheNum),
-        "--cachedir", finalPath,
+        "--cachedir", cachedir,
         "--cacheLightCameraOnly", QString::number(param.applyLightAndCameraOnly),
         "--cacheMaterialOnly", QString::number(param.applyMaterialOnly),
         "--cacheautorm", QString::number(param.autoRmCurcache),
@@ -126,7 +133,7 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
     connect(m_proc.get(), SIGNAL(readyRead()), this, SLOT(onProcPipeReady()));
 #ifdef ZENO_OPTIX_PROC
     //finally we need to send the cache path to the seperate optix process.
-    sendCacheRenderInfoToOptix(finalPath, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly);
+    sendCacheRenderInfoToOptix(cachedir, param.cacheNum, param.applyLightAndCameraOnly, param.applyMaterialOnly);
 #endif
 }
 
