@@ -1667,8 +1667,8 @@ void UiHelper::getAllParamsIndex(
     ZASSERT_EXIT(nodeParams);
 
     inputs = nodeParams->getInputIndice();
-    params = nodeParams->getInputIndice();
-    outputs = nodeParams->getInputIndice();
+    params = nodeParams->getParamIndice();
+    outputs = nodeParams->getOutputIndice();
 
     if (bEnsureSRCDST_lastKey)
     {
