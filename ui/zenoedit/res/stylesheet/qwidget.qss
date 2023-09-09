@@ -8,7 +8,7 @@ QDialog
     background: rgb(45,50,57);
 }
 
-QDialog QPushButton
+QDialog .QPushButton
 {
     background: #596270;
 	color:#C3D2DF;
@@ -17,19 +17,19 @@ QDialog QPushButton
     font-weight: 600;
 }
 
-QDialog QPushButton:hover
+QDialog .QPushButton:hover
 {
     background: #6A93BC;
 	color:#CFDBE5;
 }
 
-QDialog QPushButton:default
+QDialog .QPushButton:default
 {
     background: #4578AC;
 	color:#C3D2DF;
 }
 
-QDialog QPushButton:disabled
+QDialog .QPushButton:disabled
 {
     background: #8A919A;
 	color:#9BAAB4;
