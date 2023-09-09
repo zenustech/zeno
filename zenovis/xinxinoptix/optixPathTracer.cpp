@@ -871,7 +871,7 @@ void buildRootIAS(int rayTypeCount)
             inst.sbtOffset = 0;
             inst.instanceId = 0;
             inst.visibilityMask = DefaultMatMask; 
-            inst.traversableHandle = state.meshBufferIAS;
+            inst.traversableHandle = state.meshHandleIAS;
 
             memcpy(inst.transform, mat3r4c, sizeof(float) * 12);
             optix_instances.push_back( inst );
