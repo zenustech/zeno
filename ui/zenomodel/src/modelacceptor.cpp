@@ -602,7 +602,7 @@ void ModelAcceptor::setInputSocket2(
 
     NODE_DESC desc;
     bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
-    if (isCoreDesc) {
+    if (!isCoreDesc) {
         ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
         desc = legacyDescs[nodeCls];
     }
@@ -900,8 +900,8 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
         return;
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    if (ret) {
+    bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
+    if (!isCoreDesc) {
         ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
         desc = legacyDescs[nodeCls];
     }
