@@ -1419,6 +1419,9 @@ void ZenoMainWindow::onZenovisFrameUpdate(bool bGLView, int frameid)
 
 void ZenoMainWindow::onCheckUpdate()
 {
+#ifdef __linux__
+    return;
+#else
     ZCheckUpdateDlg dlg(this);
     connect(&dlg, &ZCheckUpdateDlg::updateSignal, this, [=](const QString& version, const QString &url) {
         auto pGraphsMgm = zenoApp->graphsManagment();
@@ -1461,6 +1464,7 @@ void ZenoMainWindow::onCheckUpdate()
         timer.singleShot(10 * 60 * 1000, this, &ZenoMainWindow::onCheckUpdate);
     });
     dlg.exec();
+#endif
 }
 
 void ZenoMainWindow::importGraph() {

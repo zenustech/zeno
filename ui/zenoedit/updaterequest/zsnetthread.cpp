@@ -37,6 +37,9 @@ void ZsNetThread::run()
 
 void ZsNetThread::netGet()
 {
+#ifdef __linux__
+    return;
+#else
     CURL* curl;
     CURLcode res;
     std::string strData;
@@ -69,4 +72,5 @@ void ZsNetThread::netGet()
     }
 
     emit netReqFinish(data, m_id);
+#endif
 }

@@ -1,6 +1,6 @@
 ﻿#include "zrestartdlg.h"
 #include "ui_zrestartdlg.h"
-#include "updateRequest/zsinstance.h"
+#include "updaterequest/zsinstance.h"
 #include "startup/zstartup.h"
 #include <zeno/utils/logger.h>
 #include <zenoui/style/zenostyle.h>
