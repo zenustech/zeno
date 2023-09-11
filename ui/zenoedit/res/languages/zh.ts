@@ -95,7 +95,7 @@
     </message>
     <message>
         <source>Play</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">播放</translation>
     </message>
     <message>
         <source>View</source>
@@ -1511,6 +1511,57 @@
     </message>
 </context>
 <context>
+    <name>ZCheckUpdateDlg</name>
+    <message>
+        <source>Check Update</source>
+        <translation>检查更新</translation>
+    </message>
+    <message>
+        <source>Version Notes</source>
+        <translation>版本说明</translation>
+    </message>
+    <message>
+        <source>Ignore this update</source>
+        <translation>忽略本次更新</translation>
+    </message>
+    <message>
+        <source>Remind me later</source>
+        <translation>稍后提醒我</translation>
+    </message>
+    <message>
+        <source>Update</source>
+        <translation>更新</translation>
+    </message>
+    <message>
+        <source>Checking for updates...</source>
+        <translation>正在检查更新...</translation>
+    </message>
+    <message>
+        <source>It is the latest version!</source>
+        <translation>已是最新版本！</translation>
+    </message>
+    <message>
+        <source>current version %1 (Release) (64 bit)</source>
+        <translation>当前版本%1（正式版本）（64位）</translation>
+    </message>
+    <message>
+        <source>The latest version of ZENO is unavailable!</source>
+        <translation>Zeno最新版本不可用！</translation>
+    </message>
+    <message>
+        <source>The latest version of ZENO is available!</source>
+        <translation>新版本ZENO可用！</translation>
+    </message>
+    <message>
+        <source>The %1 version of ZENO is available. The version you installed is %2, do you want to download the latest version?</source>
+        <translation>ZENO%1现在可用。您安装的版本是%2.现在要下载这个新版本吗？</translation>
+    </message>
+    <message>
+        <source>Can not find cuda!</source>
+        <translation>未找到CUDA！</translation>
+    </message>
+</context>
+<context>
     <name>ZDockLayoutMangeDlg</name>
     <message>
         <source>Layout Manage</source>
@@ -1731,6 +1782,29 @@
     <message>
         <source>File to Save</source>
         <translation>文件保存路径</translation>
+    </message>
+</context>
+<context>
+    <name>ZRestartDlg</name>
+    <message>
+        <source>Check Update</source>
+        <translation>检查更新</translation>
+    </message>
+    <message>
+        <source>The current project file has not been saved. Do you want to restart after saving?</source>
+        <translation>当前工程未保存，是否保存后重启？</translation>
+    </message>
+    <message>
+        <source>Restart</source>
+        <translation>直接重启</translation>
+    </message>
+    <message>
+        <source>Save As and Restart</source>
+        <translation>另存并保存</translation>
+    </message>
+    <message>
+        <source>Save and Restart</source>
+        <translation>保存并重启</translation>
     </message>
 </context>
 <context>

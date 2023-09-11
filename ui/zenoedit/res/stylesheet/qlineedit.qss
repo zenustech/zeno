@@ -132,6 +132,11 @@ QTextEdit:focus {
     border: 2px solid #4B9EF4;
 }
 
+QTextEdit#m_notesText, QTextEdit#m_notesText:focus {
+    border: 0;
+	background-color:#1D2025;
+}
+
 QPlainTextEdit[cssClass="logpanel"]
 {
     color: #A3B1C0; 

@@ -340,3 +340,15 @@ QPushButton[cssClass="select_subgraph"]
 	border:0;
 	text-align:left;
 }
+
+QPushButton#closebtn
+{
+	background-color: transparent;
+    background-image: url(:/icons/closebtn.svg);
+	border:0;
+}
+
+QPushButton#closebtn:hover
+{
+	background-image: url(:/icons/closebtn_on.svg);
+}

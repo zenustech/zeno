@@ -47,6 +47,7 @@ target_link_libraries(zenoedit PRIVATE Qt5::Widgets Qt5::OpenGL Qt5::Network)
 
 if (WIN32)
     target_link_libraries(zenoedit PRIVATE Dbghelp Version)
+    target_link_libraries(zenoedit PRIVATE ws2_32.lib winmm.lib wldap32.lib Advapi32.lib Crypt32.lib)
 endif()
 target_link_libraries(zenoedit PRIVATE zenoui zenoio zenomodel zenovis)
 target_link_libraries(zenoedit PRIVATE zeno)
@@ -57,6 +58,23 @@ if(ZENO_LIVESYNC)
     target_link_libraries(zenoedit PRIVATE Crow::Crow)
     target_compile_definitions(zenoedit PRIVATE -DZENO_LIVESYNC)
 endif()
+
+if (WIN32)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_link_libraries(zenoedit PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/debug/libcrypto.lib
+                ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/debug/libcurl.lib
+                ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/debug/libssl.lib)
+    else()
+        target_link_libraries(zenoedit PRIVATE
+                ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/release/libcrypto.lib
+                ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/release/libcurl.lib
+                ${CMAKE_CURRENT_SOURCE_DIR}/./thr/libs/x64/static/release/libssl.lib)
+    endif()
+endif()
+
+target_include_directories(zenoedit PRIVATE . .. ./thr/include)
+
 
 if (ZENO_MULTIPROCESS)
     target_compile_definitions(zenoedit PRIVATE -DZENO_MULTIPROCESS)

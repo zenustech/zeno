@@ -170,7 +170,7 @@ public slots:
     void updateNativeWinTitle(const QString& title);
     void toggleTimelinePlay(bool bOn);
     void onZenovisFrameUpdate(bool bGLView, int frameid);
-
+    void onCheckUpdate();
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;

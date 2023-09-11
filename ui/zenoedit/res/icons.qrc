@@ -347,5 +347,7 @@
     <file>icons/ZENO-logo256.png</file>
     <file>icons/ZENO-logo128.png</file>
     <file>icons/ZENO-logo64.png</file>
+	<file>icons/update_main.png</file>
+	<file>icons/update-reboot.png</file>
 </qresource>
 </RCC>
