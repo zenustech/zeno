@@ -47,7 +47,6 @@ struct GlobalComm {
 
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
-    ZENO_API void removeCachePath();
 };
 
 }

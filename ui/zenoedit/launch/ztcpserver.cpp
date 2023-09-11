@@ -183,7 +183,7 @@ void ZTcpServer::onOptixNewConn()
                     launchProgram(pModel, lparam);
                 }else if (action == "removeCache")
                 {
-                    const RECORD_SETTING& recordSetting = zenoApp->graphsManagment()->recordInfo();
+                    const RECORD_SETTING& recordSetting = zenoApp->graphsManagment()->recordSettings();
                     ZASSERT_EXIT(doc.HasMember("frame"));
                     int frame = doc["frame"].GetInt();
                     if (recordSetting.bAutoRemoveCache)

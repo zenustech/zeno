@@ -284,8 +284,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             m_recordInfo.m_bFrameFinished[currFrame] = true;
             emit frameFinished(currFrame);
 
-            const RECORD_SETTING& recordSetting = zenoApp->graphsManagment()->recordInfo();
-            if (recordSetting.bAutoRemoveCache)
+            if (m_recordInfo.bAutoRemoveCache)
                 zeno::getSession().globalComm->removeCache(currFrame);
         }
 
@@ -300,13 +299,6 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
 
             //clear issues:
             m_recordInfo = VideoRecInfo();
-
-            const RECORD_SETTING& recordSetting = zenoApp->graphsManagment()->recordInfo();
-            bool empty = false;
-            std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-            ZASSERT_EXIT(mgr);
-            if (recordSetting.bAutoRemoveCache && mgr->hasCacheOnly(QString::fromStdString(zeno::getSession().globalComm->cachePath()), empty))
-                zeno::getSession().globalComm->removeCachePath();
         }
     }
 }

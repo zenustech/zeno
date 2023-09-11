@@ -154,13 +154,6 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
         }
     }
     emit sig_recordFinished();
-
-    const RECORD_SETTING& recordSetting = zenoApp->graphsManagment()->recordInfo();
-    bool empty = false;
-    std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
-    ZASSERT_EXIT(mgr);
-    if (recordSetting.bAutoRemoveCache && mgr->hasCacheOnly(QString::fromStdString(zeno::getSession().globalComm->cachePath()), empty))
-        zeno::getSession().globalComm->removeCachePath();
 }
 
 void OptixWorker::screenShoot(QString path, QString type, int resx, int resy)
@@ -205,10 +198,7 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
 
     int actualFrame = m_zenoVis->setCurrentFrameId(frame);
     m_zenoVis->doFrameUpdate();
-    //todo: may be the frame has not been finished, in this case, we have to wait.
-
-    const RECORD_SETTING& recordSetting = zenoApp->graphsManagment()->recordInfo();
-    if (recordSetting.bAutoRemoveCache)
+    if (recInfo.bAutoRemoveCache)
         zeno::getSession().globalComm->removeCache(frame);
 
     m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());

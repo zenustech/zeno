@@ -29,10 +29,10 @@ public:
     TIMELINE_INFO timeInfo() const;
     QString zsgPath() const;
     QString zsgDir() const;
-    RECORD_SETTING recordInfo() const;
-    void setRecordInfo(RECORD_SETTING& info);
+    RECORD_SETTING recordSettings() const;
+    void setRecordSettings(const RECORD_SETTING& info);
     LAYOUT_SETTING layoutInfo() const;
-    void setUserDataInfo(USERDATA_SETTING& info);
+    void setUserDataInfo(const USERDATA_SETTING& info);
     USERDATA_SETTING userdataInfo();
 
 signals:

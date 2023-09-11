@@ -256,12 +256,12 @@ QString GraphsManagment::zsgDir() const
     return fp.absolutePath();
 }
 
-RECORD_SETTING GraphsManagment::recordInfo() const
+RECORD_SETTING GraphsManagment::recordSettings() const
 {
     return m_recordInfo;
 }
 
-void GraphsManagment::setRecordInfo(RECORD_SETTING& info)
+void GraphsManagment::setRecordSettings(const RECORD_SETTING& info)
 {
     m_recordInfo = info;
 }
@@ -271,7 +271,7 @@ LAYOUT_SETTING GraphsManagment::layoutInfo() const
     return m_layoutInfo;
 }
 
-void GraphsManagment::setUserDataInfo(USERDATA_SETTING& info)
+void GraphsManagment::setUserDataInfo(const USERDATA_SETTING& info)
 {
     m_userdataInfo = info;
 }

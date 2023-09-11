@@ -367,15 +367,4 @@ ZENO_API bool GlobalComm::removeCache(int frame)
     return true;
 }
 
-ZENO_API void GlobalComm::removeCachePath()
-{
-    std::lock_guard lck(m_mtx);
-    std::filesystem::path dirToRemove = std::filesystem::u8path(cacheFramePath);
-    if (std::filesystem::exists(dirToRemove) && cacheFramePath.find(".") == std::string::npos)
-    {
-        std::filesystem::remove_all(dirToRemove);
-        zeno::log_info("remove dir: {}", dirToRemove);
-    }
-}
-
 }

@@ -14,7 +14,7 @@ ZRecordVideoDlg::ZRecordVideoDlg(QWidget* parent)
     m_ui = new Ui::RecordVideoDlg;
     m_ui->setupUi(this);
 
-    const RECORD_SETTING& info = zenoApp->graphsManagment()->recordInfo();
+    const RECORD_SETTING& info = zenoApp->graphsManagment()->recordSettings();
     m_ui->fps->setValidator(new QIntValidator);
     m_ui->fps->setText(QString::number(info.fps));
     m_ui->bitrate->setValidator(new QIntValidator);
@@ -110,20 +110,22 @@ bool ZRecordVideoDlg::getInfo(VideoRecInfo &info)
         }
         fn += suffix;
     }
-    RECORD_SETTING record_info;
-    record_info.record_path = m_ui->linePath->text();
-    record_info.videoname = m_ui->lineName->text();
-    record_info.fps = m_ui->fps->text().toInt();
-    record_info.bitrate = m_ui->bitrate->text().toInt();
-    record_info.numMSAA = m_ui->msaaSamplerNumber->text().toInt();
-    record_info.numOptix = m_ui->optixSamplerNumber->text().toInt();
-    record_info.width = m_ui->lineWidth->text().toInt();
-    record_info.height = m_ui->lineHeight->text().toInt();
-    record_info.bExportVideo = m_ui->cbExportVideo->checkState() == Qt::Checked;
-    record_info.needDenoise = m_ui->cbNeedDenoise->checkState() == Qt::Checked;
-    record_info.bAutoRemoveCache = m_ui->cbRemoveAfterRender->checkState() == Qt::Checked;
-    record_info.bAov = m_ui->cbAOV->checkState() == Qt::Checked;
-    record_info.bExr = m_ui->cbExportEXR->checkState() == Qt::Checked;
-    zenoApp->graphsManagment()->setRecordInfo(record_info);
+    RECORD_SETTING record_settings;
+    record_settings.record_path = m_ui->linePath->text();
+    record_settings.videoname = m_ui->lineName->text();
+    record_settings.fps = info.fps;
+    record_settings.bitrate = info.bitrate;
+    record_settings.numMSAA = info.numMSAA;
+    record_settings.numOptix = info.numOptix;
+    record_settings.width = info.res[0];
+    record_settings.height = info.res[1];
+    record_settings.bExportVideo = info.bExportVideo;
+    record_settings.needDenoise = info.needDenoise;
+    record_settings.bAutoRemoveCache = info.bAutoRemoveCache;
+    record_settings.bAov = m_ui->cbAOV->checkState() == Qt::Checked;
+    record_settings.bExr = info.bExportEXR;
+
+    zenoApp->graphsManagment()->setRecordSettings(record_settings);
+
     return true;
 }
