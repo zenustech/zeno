@@ -68,6 +68,11 @@ QDialog QLineEdit:disabled {
     color: #8f9ba8;
 }
 
+QDialog QGroupBox {
+    font-size: 8pt;
+	font-weight: 500;
+    color: #A3B1C0;
+}
 
 QDialog QCheckBox{
     font-size: 9pt;
@@ -96,6 +101,10 @@ QDialog QSpinBox::up-button
 QDialog QSpinBox::down-button
 {
 	border: none;
+}
+
+QDialog QSpinBox:disabled {
+    background-color: #2F2F2F;
 }
 
 QDialog QTableWidget

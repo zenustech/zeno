@@ -22,7 +22,7 @@ public:
     virtual QString name();
     virtual QVector<QColor> genColors(const QColor& color);
     void setRange(double min, double max);
-    void serValue(double value);
+    void setValue(double value);
     double min() const;
     double max() const;
     double getValue() const;
@@ -162,7 +162,7 @@ class ColorButton : public QPushButton
 public:
     explicit ColorButton(QWidget* parent);
     void setColor(const QColor& color);
-    void setBolderWidth(int width);
+    void setBolderWidth(int top, int bottom, int left, int right);
     QColor color() const;
 
 signals:
