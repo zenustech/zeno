@@ -513,38 +513,8 @@ namespace {
         float MaxDistance = 3;
         ZENO_DECLARE_INPUT_FIELD(MaxDistance, "Road Radius", false, "", "5");
 
-        //std::string SizeXChannel;
-        //ZENO_DECLARE_INPUT_FIELD(SizeXChannel, "Nx Channel (UserData)", false, "", "nx");
-
-        //int Nx = 0;
-        //ZENO_BINDING_PRIMITIVE_USERDATA(Mesh, Nx, SizeXChannel, false);
-
         void apply() override {
             using namespace boost::geometry;
-
-            //            using PointType = model::point<float, 3, cs::cartesian>;
-            //            using BoxType = model::box<PointType>;
-            //            using BoxPtr = std::shared_ptr<BoxType>;
-
-            //            index::rtree<BoxPtr, index::linear<128, 4>> RTree;
-
-            //auto& LineVertices = AutoParameter->Lines->verts;
-            //auto& Lines = AutoParameter->Lines->lines;
-
-            //            for (const auto& p : Points) {
-            //                PointType Point { p[0], p[1], p[2] };
-            //                BoxPtr b = std::make_shared<BoxType>( Point, Point );
-            //                RTree.insert(b);
-            //            }
-            //
-            //            for (const auto& Seg : Lines) {
-            //                PointType a { LineVertices[Seg[0]][0], LineVertices[Seg[0]][1], LineVertices[Seg[0]][2] };
-            //                std::vector<BoxPtr> n;
-            //                RTree.query(index::nearest(PointType(0, 0, 0), 5), std::back_inserter(n));
-            //                for (const auto& a : n) {
-            //                    std::cout << a->min_corner().get<0>() << ", " << a->min_corner().get<1>() << ", " << a->min_corner().get<2>() << std::endl;
-            //                }
-            //            }
 
             auto &Points = AutoParameter->Mesh->verts;
 
@@ -555,6 +525,87 @@ namespace {
 
             auto& DisAttr = AutoParameter->Mesh->verts.add_attr<float>(AutoParameter->OutputChannel);
             DisAttr.swap(DistanceAttr);
+        }
+    };
+
+    struct ZENO_CRTP(RoadBDozerSimulate, zeno::reflect::IParameterAutoNode) {
+        ZENO_GENERATE_NODE_BODY(RoadBDozerSimulate);
+
+        std::shared_ptr<zeno::PrimitiveObject> Mesh;
+        ZENO_DECLARE_INPUT_FIELD(Mesh, "Mesh Prim");
+        ZENO_DECLARE_OUTPUT_FIELD(Mesh, "Mesh Prim");
+
+        int SmoothRadius = 3;
+        ZENO_DECLARE_INPUT_FIELD(SmoothRadius, "Smooth Radius", false, "", "3");
+
+        int Epochs = 5;
+        ZENO_DECLARE_INPUT_FIELD(Epochs, "Epochs", false, "", "5");
+
+        std::string RoadChannel;
+        ZENO_DECLARE_INPUT_FIELD(RoadChannel, "Road Distance Channel (Vert)", false, "", "roadMask");
+
+        std::string SizeXChannel;
+        ZENO_DECLARE_INPUT_FIELD(SizeXChannel, "Nx Channel (UserData)", false, "", "nx");
+
+        std::string SizeYChannel;
+        ZENO_DECLARE_INPUT_FIELD(SizeYChannel, "Ny Channel (UserData)", false, "", "ny");
+
+        int Nx = 0;
+        ZENO_BINDING_PRIMITIVE_USERDATA(Mesh, Nx, SizeXChannel, false);
+
+        int Ny = 0;
+        ZENO_BINDING_PRIMITIVE_USERDATA(Mesh, Ny, SizeYChannel, false);
+
+        zeno::AttrVector<float> RoadMask{};
+        ZENO_BINDING_PRIMITIVE_ATTRIBUTE(Mesh, RoadMask, RoadChannel, zeno::reflect::EZenoPrimitiveAttr::VERT);
+
+        void apply() override {
+            Mesh = AutoParameter->Mesh;
+            SmoothRadius = AutoParameter->SmoothRadius;
+            Epochs = AutoParameter->Epochs;
+            RoadChannel = AutoParameter->RoadChannel;
+            Nx = AutoParameter->Nx;
+            Ny = AutoParameter->Ny;
+
+            zeno::AttrVector<zeno::vec3f>& PositionAttr = Mesh->verts;
+            zeno::AttrVector<float>& RoadMaskk = AutoParameter->RoadMask;
+
+            std::vector<float> UpdatedHeightField(PositionAttr.size());
+
+            for (int32_t Epoch = 0; Epoch < Epochs; ++Epoch) {
+#pragma omp parallel for
+                for (int32_t y = 0; y < Ny; ++y) {
+                    for (int32_t x = 0; x < Nx; ++x) {
+                        int32_t Idx = y * Nx + x;
+                        if (0 != RoadMaskk[Idx]) {
+                            float Summary = 0.0f;
+                            int32_t Count = 0;
+
+                            for (int32_t dx = -SmoothRadius; dx <= SmoothRadius; ++dx) {
+                                for (int32_t dy = -SmoothRadius; dy <= SmoothRadius; ++dy) {
+                                    int32_t nx = x + dx;
+                                    int32_t ny = y + dy;
+
+                                    if (nx >= 0 && ny >= 0 && nx < Nx && ny < Ny) {
+                                        Summary += PositionAttr[ny * Nx + nx].at(1);
+                                        ++Count;
+                                    }
+                                }
+                            }
+
+                            if (Count > 0) {
+                                UpdatedHeightField[Idx] = Summary / float(Count);
+                            }
+                        }
+                    }
+                }
+            }
+
+#pragma omp parallel for
+            for (int32_t i = 0; i < UpdatedHeightField.size(); ++i) {
+                if (0 != RoadMaskk[i])
+                    PositionAttr[i][1] = UpdatedHeightField[i];
+            }
         }
     };
 
