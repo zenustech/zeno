@@ -578,8 +578,8 @@ namespace {
                     for (int32_t x = 0; x < Nx; ++x) {
                         int32_t Idx = y * Nx + x;
                         if (0 != RoadMaskk[Idx]) {
-                            float Summary = 0.0f;
-                            int32_t Count = 0;
+                            float HeightSummary = 0.0f;
+                            float WeightSummary = 0;
 
                             for (int32_t dx = -SmoothRadius; dx <= SmoothRadius; ++dx) {
                                 for (int32_t dy = -SmoothRadius; dy <= SmoothRadius; ++dy) {
@@ -587,14 +587,15 @@ namespace {
                                     int32_t ny = y + dy;
 
                                     if (nx >= 0 && ny >= 0 && nx < Nx && ny < Ny) {
-                                        Summary += PositionAttr[ny * Nx + nx].at(1);
-                                        ++Count;
+                                        float Weight = std::exp(-(dx*dx + dy*dy) / (2.0f * SmoothRadius * SmoothRadius));
+                                        HeightSummary += PositionAttr[ny * Nx + nx].at(1) * Weight;
+                                        WeightSummary += Weight;
                                     }
                                 }
                             }
 
-                            if (Count > 0) {
-                                UpdatedHeightField[Idx] = Summary / float(Count);
+                            if (WeightSummary > 0) {
+                                UpdatedHeightField[Idx] = HeightSummary / WeightSummary;
                             }
                         }
                     }
