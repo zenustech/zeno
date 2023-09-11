@@ -21,7 +21,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     m_ui = new Ui::RecFrameSelectDlg;
     m_ui->setupUi(this);
 
-    const bool bWorking = zeno::getSession().globalState->working;
+    const bool bWorking = zeno::getSession().globalState->working;  //external running
     int nRunFrames = zeno::getSession().globalComm->numOfFinishedFrame();
     auto pair = zeno::getSession().globalComm->frameRange();
 
@@ -37,7 +37,20 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     connect(m_ui->btnRecordNow, SIGNAL(clicked()), this, SLOT(onRecordNow()));
     connect(m_ui->btnCancelRecord, SIGNAL(clicked()), this, SLOT(onCancelRecord()));
 
-    if (!bWorking)
+    if (hasBrokenFrameData())
+    {
+        m_ui->lblRunFrame->setText(tr("Frame range incomplete, please rerun."));
+        m_ui->btnRunFirst->setVisible(true);
+        m_ui->btnRecordNow->setVisible(false);
+
+        m_ui->editRecFrom->setValidator(new QIntValidator);
+        m_ui->editRecTo->setValidator(new QIntValidator);
+
+        m_ui->editRecFrom->setText(QString::number(pair.first));
+        m_ui->editRecTo->setText(QString::number(pair.second));
+        m_state = NO_RUN;
+    }
+    else if (!bWorking)
     {
         m_ui->editRecFrom->setValidator(new QIntValidator);
         m_ui->editRecTo->setValidator(new QIntValidator);
@@ -57,7 +70,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         else
         {
             int nLastRunFrom = pair.first;
-            int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() -1;
+            int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() - 1;
             ZASSERT_EXIT(nLastRunTo >= nLastRunFrom);
 
             m_ui->btnRecordNow->setVisible(true);
@@ -102,6 +115,19 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     onRecToEdited();
 }
 
+bool ZRecFrameSelectDlg::hasBrokenFrameData()
+{
+    auto& gblComm = zeno::getSession().globalComm;
+    ZASSERT_EXIT(gblComm, false);
+    auto pair = zeno::getSession().globalComm->frameRange();
+
+    int nRunFrames = gblComm->numOfFinishedFrame();
+    if (nRunFrames > 0 && !gblComm->isFrameCompleted(pair.first))
+        return true;
+    else
+        return false;
+}
+
 void ZRecFrameSelectDlg::onRecFromEdited()
 {
     bool bOk = false;
@@ -120,6 +146,12 @@ QPair<int, int> ZRecFrameSelectDlg::recordFrameRange(bool& runBeforeRun) const
 {
     runBeforeRun = m_bRunBeforeRecord;
     return {m_recStartF, m_recEndF};
+}
+
+bool ZRecFrameSelectDlg::isExternalRunning()
+{
+    //running trigger by button `run`, and not by record running.
+    return m_state == RUNNING;
 }
 
 void ZRecFrameSelectDlg::onRunNow()

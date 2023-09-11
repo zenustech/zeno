@@ -11,6 +11,7 @@ typedef std::function<void(ZenoSocketItem*, Qt::MouseButton)> Callback_OnSockCli
 typedef std::function<void(ZenoSocketItem*)> Callback_OnSockLabelEdited;
 
 typedef std::function<void(QVariant state)> Callback_EditFinished;
+typedef std::function<void(QVariant state)> Callback_EditFinishedWithSlider;
 
 typedef std::function<void(bool bOn)> CALLBACK_SWITCH;
 
@@ -36,6 +37,7 @@ struct CallbackForSocket
 struct CallbackCollection
 {
     Callback_EditFinished cbEditFinished;
+    Callback_EditFinishedWithSlider cbEditFinishedWithSlider;
     CALLBACK_SWITCH cbSwitch;
     Callback_NodeSelected cbNodeSelected;
     Callback_GetIndexData cbGetIndexData;

@@ -259,30 +259,6 @@ void ZenoFullLink::onOutSocketPosChanged()
     m_srcPos = pNode->getSocketPos(outSockIdx);
 }
 
-QRectF ZenoFullLink::getDstBoundingRect() const
-{
-    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-    QString text = getSocketText(outSockIdx);
-    QFontMetrics fontMetrics(QApplication::font());
-    qreal width = fontMetrics.width(text);
-    qreal dist = ZenoStyle::dpiScaled(8);
-    qreal x = m_dstPos.x() - dist - width;
-    qreal y = m_dstPos.y() - dist - fontMetrics.height() / 2;
-    return QRectF(x, y, width + dist, fontMetrics.height() + dist);
-}
-
-QRectF ZenoFullLink::getSrcBoundingRect() const
-{
-    const QModelIndex& outSockIdx = m_index.data(ROLE_OUTSOCK_IDX).toModelIndex();
-    QString text = getSocketText(outSockIdx);
-    QFontMetrics fontMetrics(QApplication::font());
-    qreal width = fontMetrics.width(text);
-    qreal dist = ZenoStyle::dpiScaled(8);
-    qreal x = m_srcPos.x();
-    qreal y = m_srcPos.y() - dist - fontMetrics.height() / 2;
-    return QRectF(x, y, width + dist, fontMetrics.height() + dist);
-}
-
 QString ZenoFullLink::getSocketText(const QModelIndex& index) const
 {
     QString text = index.data(ROLE_OBJID).toString();

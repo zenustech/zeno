@@ -325,3 +325,13 @@ void ZOptixProcViewport::pauseWorkerAndResume()
     m_worker->stop();
     m_pauseTimer->start(m_resumeTime);
 }
+
+void ZOptixProcViewport::screenshoot(QString path, QString type, int resx, int resy)
+{
+    //todo
+}
+
+void ZOptixProcViewport::setSlidFeq(int feq)
+{
+    //todo
+}

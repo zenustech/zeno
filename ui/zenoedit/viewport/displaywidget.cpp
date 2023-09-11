@@ -379,7 +379,7 @@ void DisplayWidget::updateFrame(const QString &action) // cihou optix
     if (m_bGLView)
     {
         if (mainWin->isRecordByCommandLine()) {
-            m_glView->glDraw();
+            m_glView->glDrawForCommandLine();
         }
         else
             m_glView->update();
@@ -742,6 +742,9 @@ void DisplayWidget::onRecord()
         }
         //validation.
 
+        LAUNCH_PARAM launchParam;
+        AppHelper::initLaunchCacheParam(launchParam);
+
         ZRecFrameSelectDlg frameDlg(this);
         int ret = frameDlg.exec();
         if (QDialog::Rejected == ret) {
@@ -751,8 +754,30 @@ void DisplayWidget::onRecord()
         bool bRunBeforeRecord = false;
         recInfo.frameRange = frameDlg.recordFrameRange(bRunBeforeRecord);
 
+        std::function<void()> killRunProcIfCancel = [bRunBeforeRecord]() {
+            // record run, should kill the runner proc.
+            const bool bWorking = zeno::getSession().globalState->working;
+            if (bWorking && bRunBeforeRecord)
+            {
+                ZTcpServer* server = zenoApp->getServer();
+                ZASSERT_EXIT(server);
+                server->killProc();
+            }
+        };
+
+        const QString& cacheRootdir = launchParam.cacheDir;
+        QDir dirCacheRoot(cacheRootdir);
+        if (launchParam.enableCache && !QFileInfo(cacheRootdir).isDir() && !launchParam.tempDir)
+        {
+            QMessageBox::warning(nullptr, tr("ZenCache"), tr("The path of cache is invalid, please choose another path."));
+            return;
+        }
+
         if (bRunBeforeRecord)
         {
+            ZTcpServer* server = zenoApp->getServer();
+            ZASSERT_EXIT(server);
+            server->killProc();
             // recording by cmd process, to prevent cuda 700 error.
             // but it seems that the error vanish.
             /*
@@ -764,13 +789,14 @@ void DisplayWidget::onRecord()
 
             //clear cached objs.
             zeno::getSession().globalComm->clearState();
-            LAUNCH_PARAM launchParam;
             launchParam.beginFrame = recInfo.frameRange.first;
             launchParam.endFrame = recInfo.frameRange.second;
-            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache;
+            launchParam.autoRmCurcache = recInfo.bAutoRemoveCache && launchParam.enableCache;
             auto main = zenoApp->getMainWindow();
             ZASSERT_EXIT(main);
             launchParam.projectFps = main->timelineInfo().timelinefps;
+            launchParam.zsgPath = zenoApp->graphsManagment()->zsgDir();
+
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)
             {
@@ -780,11 +806,9 @@ void DisplayWidget::onRecord()
                 mainWin->optixClientSend(info);
             }
             else {
-                AppHelper::initLaunchCacheParam(launchParam);
                 onRun(launchParam);
             }
 #else
-            AppHelper::initLaunchCacheParam(launchParam);
             onRun(launchParam);
 #endif
         }
@@ -799,6 +823,7 @@ void DisplayWidget::onRecord()
         connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
+        connect(&dlgProc, &ZRecordProgressDlg::cancelTriggered, this, [&]() {killRunProcIfCancel();});
 
         if (!m_bGLView)
         {
@@ -860,17 +885,18 @@ void DisplayWidget::onRecord()
 
         } else {
             m_recordMgr.cancelRecord();
+            killRunProcIfCancel();
         }
 
-        if (recInfo.bAutoRemoveCache) {
-#ifdef ZENO_OPTIX_PROC
-            if (m_glView) {
-                auto tcpServer = zenoApp->getServer();
-                if (tcpServer)
-                    tcpServer->onClearFrameState();
-            }
-#endif
-            zeno::getSession().globalComm->clearFrameState();
+        if (!m_bGLView)
+        {
+            //for optix case, the current frame indicated by timeline and zenovis are not align.
+            //we need to reset the current frame to which timeline is indicating.
+        #ifndef ZENO_OPTIX_PROC
+            ZASSERT_EXIT(m_optixView);
+            int uiframe = mainWin->timelineInfo().currFrame;
+            emit m_optixView->sig_switchTimeFrame(uiframe);
+        #endif
         }
     }
     m_sliderFeq = curSlidFeq;

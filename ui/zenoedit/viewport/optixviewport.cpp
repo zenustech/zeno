@@ -198,7 +198,8 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
 
     int actualFrame = m_zenoVis->setCurrentFrameId(frame);
     m_zenoVis->doFrameUpdate();
-    //todo: may be the frame has not been finished, in this case, we have to wait.
+    if (recInfo.bAutoRemoveCache)
+        zeno::getSession().globalComm->removeCache(frame);
 
     m_zenoVis->getSession()->set_window_size((int)recInfo.res.x(), (int)recInfo.res.y());
     m_zenoVis->getSession()->do_screenshot(record_file, extname, true);

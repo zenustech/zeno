@@ -102,6 +102,10 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
 
 void RecordVideoMgr::endRecToExportVideo()
 {
+    if (m_recordInfo.bExportEXR) {
+        emit recordFinished(m_recordInfo.record_path);
+        return;
+    }
     // denoising
     if (m_recordInfo.needDenoise) {
         QString dir_path = m_recordInfo.record_path + "/P/";
@@ -279,6 +283,9 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
 
             m_recordInfo.m_bFrameFinished[currFrame] = true;
             emit frameFinished(currFrame);
+
+            if (m_recordInfo.bAutoRemoveCache)
+                zeno::getSession().globalComm->removeCache(currFrame);
         }
 
         if (currFrame == m_recordInfo.frameRange.second)
@@ -292,7 +299,6 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
 
             //clear issues:
             m_recordInfo = VideoRecInfo();
-
         }
     }
 }

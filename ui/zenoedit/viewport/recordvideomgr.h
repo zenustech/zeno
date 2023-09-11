@@ -20,6 +20,7 @@ struct VideoRecInfo
     bool exitWhenRecordFinish = false;
     bool bRecordByCommandLine = false;
     bool bAutoRemoveCache = false;
+    bool bExportEXR = false;
 };
 Q_DECLARE_METATYPE(VideoRecInfo);
 

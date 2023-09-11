@@ -43,11 +43,6 @@ void ZVecEditorItem::initUI(const QVariant& vec, bool bFloat, QGraphicsScene* pS
         pLineEdit->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(64, 24)));
         pLineEdit->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
 
-        if (bFloat && n != 3)
-            pLineEdit->setValidator(new QDoubleValidator);
-        else if (!bFloat)
-            pLineEdit->setValidator(new QIntValidator);
-
         pLineEdit->setNumSlider(pScene, UiHelper::getSlideStep("", bFloat ? CONTROL_FLOAT : CONTROL_INT));
         m_editors.append(pLineEdit);
         connect(pLineEdit, SIGNAL(editingFinished()), this, SIGNAL(editingFinished()));
@@ -94,7 +89,7 @@ QVariant ZVecEditorItem::vec() const
         else
         {
             bool bOK = false;
-            float val = m_editors[i]->text().toInt(&bOK);
+            int val = m_editors[i]->text().toInt(&bOK);
             if (bOK && vecStr.isEmpty())
                 vec.append(val);
             else {
@@ -176,6 +171,14 @@ QString ZVecEditorItem::findElemByControl(ZEditableTextItem* pElem) const
     else {
         return "";
     }
+}
+
+bool ZVecEditorItem::hasSliderShow()
+{
+    for (int i = 0; i < m_editors.size(); i++)
+        if (m_editors[i]->showSlider())
+            return true;
+    return false;
 }
 
 void ZVecEditorItem::updateProperties(const QVector<QString>& properties)

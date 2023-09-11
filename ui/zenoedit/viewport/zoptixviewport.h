@@ -32,6 +32,8 @@ public:
     void cancelRecording(VideoRecInfo recInfo);
     void onMouseHoverMoved();
     void onFrameSwitched(int frame);
+    void screenshoot(QString path, QString type, int resx, int resy);
+    void setSlidFeq(int feq);
 
 signals:
     void sig_frameRunFinished(int frame);

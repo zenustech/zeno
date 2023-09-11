@@ -97,7 +97,9 @@ static int runner_start(std::string const &progJson, int sessionid, bool bZenCac
     zeno::setConfigVariable("ZSG", zsg_path);
     //$FPS, getFrameTime value
     zeno::setConfigVariable("FPS", projectFps);
-    zeno::getSession().globalState->frame_time = 1.f / std::stof(projectFps);
+
+    float fps = std::stof(projectFps);
+    zeno::getSession().globalState->frame_time = (fps > 0) ? (1.f / fps) : 24;
 
     if (bZenCache) {
         zeno::getSession().globalComm->frameCache(cachedir, cachenum);

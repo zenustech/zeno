@@ -37,8 +37,9 @@ struct RECORD_SETTING
     bool needDenoise;
     bool bAutoRemoveCache;
     bool bAov;
+    bool bExr;
 
-    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(false), bAov(false) {}
+    RECORD_SETTING() : fps(24), bitrate(200000), numMSAA(0), numOptix(1), width(1280), height(720), bExportVideo(false), needDenoise(false), bAutoRemoveCache(true), bAov(false), bExr(false) {}
 };
 
 struct LAYOUT_SETTING {
@@ -101,6 +102,7 @@ struct ZENO_RECORD_RUN_INITPARAM {
     bool bOptix = false;    //is optix view.
     bool isExportVideo = false;
     bool needDenoise = false;
+    bool export_exr = false;
     int iFrame = 0;
     int iSFrame = 0;
     int iSample = 0;

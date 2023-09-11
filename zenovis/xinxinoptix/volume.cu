@@ -5,6 +5,7 @@
 #include "DisneyBRDF.h"
 #include "DisneyBSDF.h"
 #include "zxxglslvec.h"
+#include "proceduralSky.h"
 
 // #include <cuda_fp16.h>
 // #include "nvfunctional"

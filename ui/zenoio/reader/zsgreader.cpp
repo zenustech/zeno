@@ -410,6 +410,8 @@ void ZsgReader::_parseSettings(const rapidjson::Value& jsonSettings, IAcceptor* 
         info.needDenoise = jsonRecordInfo[recordinfo::needDenoise].GetBool();
         info.bAutoRemoveCache = jsonRecordInfo[recordinfo::bAutoRemoveCache].GetBool();
         info.bAov = jsonRecordInfo[recordinfo::bAov].GetBool();
+        if (jsonRecordInfo.HasMember(recordinfo::bExr) && jsonRecordInfo[recordinfo::bExr].IsBool())
+            info.bExr = jsonRecordInfo[recordinfo::bExr].GetBool();
         pAcceptor->setRecordInfo(info);
     }
     if (jsonSettings.HasMember("layoutinfo") && jsonSettings["layoutinfo"].IsObject())

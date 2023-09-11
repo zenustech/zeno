@@ -28,10 +28,11 @@ public:
     void addScene(const QModelIndex& subgIdx, QGraphicsScene* scene);
     TIMELINE_INFO timeInfo() const;
     QString zsgPath() const;
-    RECORD_SETTING recordInfo() const;
-    void setRecordInfo(RECORD_SETTING& info);
+    QString zsgDir() const;
+    RECORD_SETTING recordSettings() const;
+    void setRecordSettings(const RECORD_SETTING& info);
     LAYOUT_SETTING layoutInfo() const;
-    void setUserDataInfo(USERDATA_SETTING& info);
+    void setUserDataInfo(const USERDATA_SETTING& info);
     USERDATA_SETTING userdataInfo();
 
 signals:
@@ -53,7 +54,6 @@ private:
     QAbstractItemModel* m_pTreeModel;
     QStandardItemModel* m_logModel;     //connection with scene.
     mutable std::mutex m_mtx;
-    QString m_currFile;
     TIMELINE_INFO m_timerInfo;
     RECORD_SETTING m_recordInfo;
     LAYOUT_SETTING m_layoutInfo;

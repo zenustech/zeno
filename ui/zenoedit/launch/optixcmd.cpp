@@ -49,6 +49,7 @@ int optixcmd(const QCoreApplication& app, int port)
         {"optix", "optix", "optix mode"},
         {"video", "video", "export video"},
         {"aov", "aov", "aov"},
+        {"exr", "exr", "exr"},
         {"needDenoise", "needDenoise", "needDenoise"},
         {"videoname", "videoname", "export video's name"},
         {"subzsg", "subgraphzsg", "subgraph zsg file path"},
@@ -106,9 +107,11 @@ int optixcmd(const QCoreApplication& app, int port)
     param.isExportVideo = cmdParser.isSet("video") ? cmdParser.value("video").toInt() : 0;
     param.needDenoise = cmdParser.isSet("needDenoise") ? cmdParser.value("needDenoise").toInt() : 0;
     int enableAOV = cmdParser.isSet("aov") ? cmdParser.value("aov").toInt() : 0;
+    int exportExr = cmdParser.isSet("exr") ? cmdParser.value("exr").toInt() : 0;
     int optixShowBackground = cmdParser.isSet("optixShowBackground") ? cmdParser.value("optixShowBackground").toInt() : 0;
     auto& ud = zeno::getSession().userData();
     ud.set2("output_aov", enableAOV != 0);
+    ud.set2("output_exr", exportExr != 0);
     ud.set2("optix_show_background", optixShowBackground);
     param.videoName = cmdParser.isSet("videoname") ? cmdParser.value("videoname") : "output.mp4";
     param.subZsg = cmdParser.isSet("subzsg") ? cmdParser.value("subzsg") : "";
@@ -132,8 +135,7 @@ int optixcmd(const QCoreApplication& app, int port)
     globalComm->frameCache(cachePath.toStdString(), 1);
     globalComm->initFrameRange(beginF, endF);
 
-    globalComm->setTempDirEnable(istemp);
-    globalComm->setCacheAutoRmEnable(cacheautorm);
+    recInfo.bAutoRemoveCache = cacheautorm;
 
     RecordVideoMgr recordMgr;
     recordMgr.initRecordInfo(recInfo);

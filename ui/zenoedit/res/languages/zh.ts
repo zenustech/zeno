@@ -104,6 +104,10 @@
 </context>
 <context>
     <name>DisplayWidget</name>
+	<message>
+        <source>The path of cache is invalid, please choose another path.</source>
+        <translation type="unfinished">缓存路径不合法，请选择其他路径。</translation>
+    </message>
     <message>
         <source>Run the graph before recording</source>
         <translation type="vanished">开始录制前请先点一下“运行”按钮</translation>
@@ -1385,6 +1389,10 @@
         <source>filename</source>
         <translation type="vanished">文件名：</translation>
     </message>
+	<message>
+        <source>export exr</source>
+        <translation>导出Exr</translation>
+    </message>
     <message>
         <source>export video</source>
         <translation>是否导出视频</translation>
@@ -1693,6 +1701,10 @@
 </context>
 <context>
     <name>ZRecFrameSelectDlg</name>
+	<message>
+        <source>Frame range incomplete, please rerun.</source>
+        <translation>上一次解算里，部分帧的zencache在录制时已被删除，请重新运行录制。</translation>
+    </message>
     <message>
         <source>The scene has not been run yet.</source>
         <translation>当前场景还没运行计算。</translation>
@@ -1711,7 +1723,7 @@
     </message>
     <message>
         <source>invalid frame range</source>
-        <translation>不合法的帧范围</translation>
+        <translation>要运行的帧的范围不合法</translation>
     </message>
     <message>
         <source>Last complete run frame: [%1 - %2], you can record the video based on it.</source>

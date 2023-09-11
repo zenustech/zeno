@@ -166,6 +166,9 @@ ZENO_API zany INode::get_keyframe(std::string const &id) const
 {
     auto value = safe_at(inputs, id, "input socket of node `" + myname + "`");
     auto curves = dynamic_cast<zeno::CurveObject *>(value.get());
+    if (!curves) {
+        return value;
+    }
     int frame = getGlobalState()->frameid;
     if (curves->keys.size() == 1) {
         auto val = curves->keys.begin()->second.eval(frame);

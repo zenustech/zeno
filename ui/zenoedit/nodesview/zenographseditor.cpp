@@ -936,7 +936,7 @@ void ZenoGraphsEditor::onAction(QAction* pAction, const QVariantList& args, bool
         QVariant varAutoCleanCache = inst.getValue("zencache-autoclean");
 
         bool bEnableCache = varEnableCache.isValid() ? varEnableCache.toBool() : false;
-        bool bTempCacheDir = varTempCacheDir.isValid() ? varTempCacheDir.toBool() : true;
+        bool bTempCacheDir = varTempCacheDir.isValid() ? varTempCacheDir.toBool() : false;
         QString cacheRootDir = varCacheRoot.isValid() ? varCacheRoot.toString() : "";
         int cacheNum = varCacheNum.isValid() ? varCacheNum.toInt() : 1;
         bool bAutoCleanCache = varAutoCleanCache.isValid() ? varAutoCleanCache.toBool() : true;

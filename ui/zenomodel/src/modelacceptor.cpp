@@ -78,6 +78,7 @@ void ModelAcceptor::setRecordInfo(const RECORD_SETTING& info)
     m_recordInfo.needDenoise = info.needDenoise;
     m_recordInfo.bAutoRemoveCache = info.bAutoRemoveCache;
     m_recordInfo.bAov = info.bAov;
+    m_recordInfo.bExr = info.bExr;
 }
 
 void ModelAcceptor::setLayoutInfo(const LAYOUT_SETTING& info)
@@ -601,7 +602,7 @@ void ModelAcceptor::setInputSocket2(
 
     NODE_DESC desc;
     bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
-    if (isCoreDesc) {
+    if (!isCoreDesc) {
         ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
         desc = legacyDescs[nodeCls];
     }
@@ -899,8 +900,8 @@ void ModelAcceptor::setParamValue(const QString& id, const QString& nodeCls, con
         return;
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    if (ret) {
+    bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
+    if (!isCoreDesc) {
         ZASSERT_EXIT(legacyDescs.find(nodeCls) != legacyDescs.end());
         desc = legacyDescs[nodeCls];
     }

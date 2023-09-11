@@ -850,6 +850,7 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
     recInfo.needDenoise = param.needDenoise;
+    recInfo.bExportEXR = param.export_exr;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
     if (!param.sPixel.isEmpty())
@@ -1038,8 +1039,10 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
     recInfo.needDenoise = param.needDenoise;
+    recInfo.bExportEXR = param.export_exr;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
     recInfo.bRecordByCommandLine = true;
+    recInfo.bAutoRemoveCache = launchParam.autoRmCurcache;
     m_bRecordByCommandLine = true;
 
     if (!param.sPixel.isEmpty())
@@ -1085,6 +1088,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
             pGraphsModel->updateNodeStatus(subgNodeId, info, mainGraphIdx, true);
         }
     }
+
     zeno::getSession().globalComm->clearState();
     launchParam.beginFrame = recInfo.frameRange.first;
     launchParam.endFrame = recInfo.frameRange.second;
@@ -1926,7 +1930,7 @@ bool ZenoMainWindow::saveFile(QString filePath)
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     APP_SETTINGS settings;
     settings.timeline = timelineInfo();
-    settings.recordInfo = zenoApp->graphsManagment()->recordInfo();
+    settings.recordInfo = zenoApp->graphsManagment()->recordSettings();
     settings.layoutInfo.layerOutNode = m_layoutRoot;
     settings.layoutInfo.size = size();
     settings.layoutInfo.cbDumpTabsToZsg = &AppHelper::dumpTabsToZsg;
@@ -1953,6 +1957,7 @@ TIMELINE_INFO ZenoMainWindow::timelineInfo()
     info.beginFrame = m_pTimeline->fromTo().first;
     info.endFrame = m_pTimeline->fromTo().second;
     info.timelinefps = m_pTimeline->fps();
+    info.currFrame = m_pTimeline->value();
     return info;
 }
 

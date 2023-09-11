@@ -96,8 +96,10 @@ void TransferAcceptor::setSocketKeys(const QString& id, const QStringList& keys)
 void TransferAcceptor::initSockets(const QString& id, const QString& name, const NODE_DESCS& legacyDescs)
 {
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(name, desc);
-    ZASSERT_EXIT(ret);
+    bool isCoreDesc = m_pModel->getDescriptor(name, desc);
+    if (!isCoreDesc) {
+        return; //no need to copy anything.
+    }
     ZASSERT_EXIT(m_nodes.find(id) != m_nodes.end());
 
     //params
@@ -274,10 +276,9 @@ void TransferAcceptor::setInputSocket2(
                 const NODE_DESCS& legacyDescs)
 {
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    if (ret) {
-        ZASSERT_EXIT(legacyDescs.find(nodeCls) == legacyDescs.end());
-        desc = legacyDescs[nodeCls];
+    bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
+    if (!isCoreDesc) {
+        return;
     }
 
     //parse default value.
@@ -426,8 +427,9 @@ void TransferAcceptor::setParamValue(const QString &id, const QString &nodeCls, 
     NODE_DATA& data = m_nodes[id];
 
     NODE_DESC desc;
-    bool ret = m_pModel->getDescriptor(nodeCls, desc);
-    ZASSERT_EXIT(ret);
+    bool isCoreDesc = m_pModel->getDescriptor(nodeCls, desc);
+    if (!isCoreDesc)
+        return;
 
     QVariant var;
     if (!value.IsNull())

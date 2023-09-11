@@ -108,8 +108,6 @@ private slots:
     void onOutSocketPosChanged();
 
 private:
-    QRectF getDstBoundingRect() const;
-    QRectF getSrcBoundingRect() const;
     QString getSocketText(const QModelIndex& index) const;
     void focusOnNode(const QModelIndex &nodeIdx);
 

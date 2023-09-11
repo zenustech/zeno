@@ -20,11 +20,12 @@ std::string modelsDir() {
     char path[1024];
     getcwd(path, sizeof(path));
     auto cur_path = std::string(path);
+    return cur_path + "/models";
 #else
     auto cur_path = std::string(_pgmptr);
     cur_path = cur_path.substr(0, cur_path.find_last_of("\\"));
-#endif
     return cur_path + "\\models";
+#endif
 }
 
 struct LoadSampleModel : INode {

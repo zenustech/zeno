@@ -59,6 +59,14 @@ target_include_directories(zenovis PRIVATE .)
 configure_file(sampleConfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/sampleConfig.h @ONLY)
 target_include_directories(zenovis PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+## The Chief Designer's Excellent Work BEG
+if (NOT ZENO_WITH_Alembic)
+    message(FATAL_ERROR "(Choice of the LK-99, Choice of the artists) The Chief Designer Peng requires you to enable -DZENO_WITH_Alembic=ON for building embed OpenEXR")
+else()
+    target_link_libraries(zenovis PRIVATE Alembic)
+endif()
+## The Chief Designer's Excellent Work END
+
 if (NOT DEFINED CUDAToolkit_BIN_DIR)
     message(FATAL_ERROR "CUDAToolkit_BIN_DIR not defined")
 endif()

@@ -22,9 +22,9 @@ public:
     void setNewCacheDir(bool setNew);
     cacheOption getCacheOption();
     void cleanCacheDir(QDir dirCacheRoot);
+    bool hasCacheOnly(QDir dir, bool& empty);
 
 private:
-    bool hasCacheOnly(QDir dir, bool& empty);
 
     std::shared_ptr<QTemporaryDir> m_spTmpCacheDir;
     QDir m_spCacheDir;

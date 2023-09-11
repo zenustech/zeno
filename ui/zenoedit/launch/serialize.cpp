@@ -170,9 +170,6 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
         for (QModelIndex inSockIdx : inputsIndice)
         {
-            if (SOCKPROP_LEGACY == inSockIdx.data(ROLE_PARAM_SOCKPROP))
-                continue;
-
             bool bCoreParam = inSockIdx.data(ROLE_VPARAM_IS_COREPARAM).toBool();
             QString inputName = inSockIdx.data(ROLE_PARAM_NAME).toString();
             const QString& inSockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
