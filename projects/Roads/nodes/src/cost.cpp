@@ -541,6 +541,12 @@ namespace {
         int Epochs = 5;
         ZENO_DECLARE_INPUT_FIELD(Epochs, "Epochs", false, "", "5");
 
+        float SlopeThreshold = 0.5f;
+        ZENO_DECLARE_INPUT_FIELD(SlopeThreshold, "Slope Threshold", false, "", "0.5");
+
+        float OverThresholdWeightRatio = 0.1f;
+        ZENO_DECLARE_INPUT_FIELD(OverThresholdWeightRatio, "Over Threshold Weight Ratio", false, "", "0.1");
+
         std::string RoadChannel;
         ZENO_DECLARE_INPUT_FIELD(RoadChannel, "Road Distance Channel (Vert)", false, "", "roadMask");
 
@@ -566,6 +572,8 @@ namespace {
             RoadChannel = AutoParameter->RoadChannel;
             Nx = AutoParameter->Nx;
             Ny = AutoParameter->Ny;
+            SlopeThreshold = AutoParameter->SlopeThreshold;
+            OverThresholdWeightRatio = AutoParameter->OverThresholdWeightRatio;
 
             zeno::AttrVector<zeno::vec3f>& PositionAttr = Mesh->verts;
             zeno::AttrVector<float>& RoadMaskk = AutoParameter->RoadMask;
@@ -587,7 +595,19 @@ namespace {
                                     int32_t ny = y + dy;
 
                                     if (nx >= 0 && ny >= 0 && nx < Nx && ny < Ny) {
+                                        float Distance = std::sqrt(dx * dx + dy * dy);
+                                        float Slope = 0.0f;
+
+                                        if (Distance > 1e-3) {
+                                            Slope = std::abs<float>(PositionAttr[y*Nx + x][1] - PositionAttr[ny*Nx + nx][1]) / Distance;
+                                        }
+
                                         float Weight = std::exp(-(dx*dx + dy*dy) / (2.0f * SmoothRadius * SmoothRadius));
+
+                                        if (Slope > SlopeThreshold) {
+                                            Weight *= OverThresholdWeightRatio;
+                                        }
+
                                         HeightSummary += PositionAttr[ny * Nx + nx].at(1) * Weight;
                                         WeightSummary += Weight;
                                     }
