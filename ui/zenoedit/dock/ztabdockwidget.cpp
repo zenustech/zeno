@@ -185,7 +185,12 @@ QWidget* ZTabDockWidget::createTabWidget(PANEL_TYPE type)
         {
             DockContent_View* wid = new DockContent_View(true);
             wid->initUI();
-            wid->getDisplayWid()->getZenoVis()->initializeGL();
+
+            DisplayWidget* pDisplay = wid->getDisplayWid();
+            ZASSERT_EXIT(pDisplay, nullptr);
+            Zenovis* pZenoVis = pDisplay->getZenoVis();
+            ZASSERT_EXIT(pZenoVis, nullptr);
+            pZenoVis->initializeGL();
             return wid;
         }
         case PANEL_EDITOR:
