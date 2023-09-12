@@ -10,7 +10,7 @@ void preload_sphere_transformed(std::string const &key, std::string const &mtlid
     dsphere.instanceID = instID;
     dsphere.optix_transform = glm::transpose(transform);
 
-    SphereTransformedLUT[key] = dsphere;
+    SphereTransformedTable[key] = dsphere;
     sphere_unique_mats.insert(mtlid);
 }
 
@@ -119,7 +119,8 @@ void buildInstancedSpheresGAS(const OptixDeviceContext &context, std::vector<std
         sphere_input.sphereArray.sbtIndexOffsetSizeInBytes = 0;
         sphere_input.sphereArray.sbtIndexOffsetStrideInBytes = 0;
 
-        buildXAS(context, accel_options, sphere_input, sphereAgent->inst_sphere_gas_buffer, sphereAgent->inst_sphere_gas_handle);
+        std::cout << "sphere_count: " << sphere_count << std::endl;
+        buildXAS(context, accel_options, sphere_input, sphereAgent->inst_sphere_gas_buffer, sphereAgent->inst_sphere_gas_handle, true);
 
         _vertex_buffer.reset();
         _radius_buffer.reset();

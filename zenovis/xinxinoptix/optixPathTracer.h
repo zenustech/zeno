@@ -137,6 +137,8 @@ struct Params
     GenericLight *lights;
     uint32_t firstRectLightIdx;
     uint32_t firstSphereLightIdx;
+    
+    unsigned long long lightTreeSampler;
 
     float skyLightProbablity() {
 
@@ -150,8 +152,6 @@ struct Params
 
         return this->num_lights>0? DefaultSkyLightProbablity : 1.0f;
     }
-
-    unsigned long long lightTreeSampler;
 
     OptixTraversableHandle handle;
 

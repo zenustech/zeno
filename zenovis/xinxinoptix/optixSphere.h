@@ -27,7 +27,7 @@ struct InfoSphereTransformed {
     glm::mat4 optix_transform;
 };
 
-inline std::map<std::string, InfoSphereTransformed> SphereTransformedLUT;
+inline std::map<std::string, InfoSphereTransformed> SphereTransformedTable;
 void preload_sphere_transformed(std::string const &key, std::string const &mtlid, const std::string &instID, const glm::mat4& transform);
 
 struct SphereInstanceGroupBase {
@@ -45,12 +45,6 @@ void preload_sphere_instanced(std::string const &key, std::string const &mtlid, 
 inline std::set<std::string> sphere_unique_mats;
 inline std::set<std::string> uniqueMatsForSphere() {
     return sphere_unique_mats;
-}
-
-inline void cleanupSpheres() {
-    sphere_unique_mats.clear();
-    SphereTransformedLUT.clear();
-    SpheresInstanceGroupMap.clear();
 }
 
 inline OptixTraversableHandle uniformed_sphere_gas_handle {};
@@ -80,5 +74,24 @@ inline std::vector<std::shared_ptr<SphereInstanceAgent>> sphereInstanceGroupAgen
 void buildInstancedSpheresGAS(const OptixDeviceContext &context, std::vector<std::shared_ptr<SphereInstanceAgent>>& agentList);
 
 void updateSphereXAS();
+
+inline OptixTraversableHandle sphereHandleXAS {};
+inline raii<CUdeviceptr>      sphereBufferXAS {};
+
+inline void cleanupSpheresCPU() {
+    sphere_unique_mats.clear();
+    SphereTransformedTable.clear();
+    SpheresInstanceGroupMap.clear();
+}
+
+inline void cleanupSpheresGPU() {
+    uniformed_sphere_gas_buffer.reset();
+    uniformed_sphere_gas_handle = 0llu;
+
+    sphereInstanceGroupAgentList.clear();
+
+    sphereBufferXAS.reset();
+    sphereHandleXAS = 0llu;
+}
 
 } // NAMESPACE END

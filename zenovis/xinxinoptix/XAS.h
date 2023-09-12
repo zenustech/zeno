@@ -4,10 +4,30 @@
 #include "optix.h"
 #include "raiicuda.h"
 
+#include <sstream>
+#include <iostream>
+#include <functional>
+
+#define CUDA_SAFE_CHECK( call )                                                \
+({                                                                             \
+        cudaError_t error = call;                                              \
+        if( error != cudaSuccess )                                             \
+        {                                                                      \
+            std::cerr << "CUDA call (" << #call << " ) failed with error: '"   \
+               << cudaGetErrorString( error )                                  \
+               << "' (" __FILE__ << ":" << __LINE__ << ")\n";                  \
+        }                                                                      \
+        error;                                                                 \
+})                                                                             \
+
+
 namespace xinxinoptix {
 
     inline void buildXAS(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
-                         raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_) {
+                         raii<CUdeviceptr>& _bufferXAS_, OptixTraversableHandle& _handleXAS_, bool verbose=false) {
+
+        _bufferXAS_.reset();
+        _handleXAS_ = 0llu;
 
         size_t temp_buffer_size {};  
         size_t output_buffer_size {};
@@ -22,16 +42,26 @@ namespace xinxinoptix {
 
             temp_buffer_size = roundUp<size_t>(xas_buffer_sizes.tempSizeInBytes, 128u);
             output_buffer_size = roundUp<size_t>( xas_buffer_sizes.outputSizeInBytes, 128u );
+
+            if (verbose) {
+
+                float temp_mb   = (float)temp_buffer_size   / (1024 *  1024);
+                float output_mb = (float)output_buffer_size / (1024 *  1024);
+                
+                printf("Requires %f MB temp buffer and %f MB output buffer \n", temp_mb, output_mb);
+            }
         }
 
-        raii<CUdeviceptr> bufferTemp;
-        CUDA_CHECK( cudaMalloc(reinterpret_cast<void**>( &bufferTemp.reset() ), temp_buffer_size ) );
+        raii<CUdeviceptr> bufferTemp{};
+        cudaError_t error = CUDA_SAFE_CHECK( cudaMalloc(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size ) );
+        if (error != cudaSuccess) return;
 
         const bool COMPACTION = accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
 
         if (!COMPACTION) {
 
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_.reset() ), output_buffer_size ) );
+            error = CUDA_SAFE_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_.reset() ), output_buffer_size ) );
+            if (error != cudaSuccess) return;
 
             OPTIX_CHECK( optixAccelBuild(   context,
                                             nullptr,  // CUDA stream
@@ -49,7 +79,8 @@ namespace xinxinoptix {
             _bufferXAS_.reset();
 
             raii<CUdeviceptr> output_buffer_xas {};
-            CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t)) );
+            error = CUDA_SAFE_CHECK( cudaMalloc( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t)) );
+            if (error != cudaSuccess) return;
 
             OptixAccelEmitDesc emitProperty {};
             emitProperty.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
@@ -74,8 +105,9 @@ namespace xinxinoptix {
 
             if( compacted_size < output_buffer_size )
             {
-                CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size ) );
-                // use handle as input and output
+                error = CUDA_SAFE_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size ) );
+                if (error != cudaSuccess) return;
+
                 OPTIX_CHECK( optixAccelCompact( context, 0, _handleXAS_, _bufferXAS_, compacted_size, &_handleXAS_ ) );
             }
             else

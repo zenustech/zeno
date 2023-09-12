@@ -896,31 +896,14 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
         }
 
         if (sizeNeedUpdate || camNeedUpdate) {
-        zeno::log_debug("[zeno-optix] updating camera");
-        //xinxinoptix::set_show_grid(opt.show_grid);
-        //xinxinoptix::set_normal_check(opt.normal_check);
-        //xinxinoptix::set_enable_gi(opt.enable_gi);
-        //xinxinoptix::set_smooth_shading(opt.smooth_shading);
-        //xinxinoptix::set_render_wireframe(opt.render_wireframe);
-        //xinxinoptix::set_background_color(opt.bgcolor.r, opt.bgcolor.g, opt.bgcolor.b);
-        //xinxinoptix::setDOF(cam.m_dof);
-        //xinxinoptix::setAperature(cam.m_aperture);
-        auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
-        auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
-        //zeno::log_warn("lodup = {}", zeno::other_to_vec<3>(cam.m_lodup));
-        //zeno::log_warn("lodfront = {}", zeno::other_to_vec<3>(cam.m_lodfront));
-        //zeno::log_warn("lodright = {}", zeno::other_to_vec<3>(lodright));
-        xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
-                                     glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
-                                     cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
-        //xinxinoptix::set_projection(glm::value_ptr(cam.m_proj));
-        }
+            zeno::log_debug("[zeno-optix] updating camera");
 
-        if(lightNeedUpdate){
-            //zeno::log_debug("[zeno-optix] updating light");
-            xinxinoptix::optixupdatelight();
-
-            lightNeedUpdate = false;
+            auto lodright = glm::normalize(glm::cross(cam.m_lodfront, cam.m_lodup));
+            auto lodup = glm::normalize(glm::cross(lodright, cam.m_lodfront));
+        
+            xinxinoptix::set_perspective(glm::value_ptr(lodright), glm::value_ptr(lodup),
+                                        glm::value_ptr(cam.m_lodfront), glm::value_ptr(cam.m_lodcenter),
+                                        cam.getAspect(), cam.m_fov, cam.focalPlaneDistance, cam.m_aperture);
         }
 
         if (meshNeedUpdate || matNeedUpdate || staticNeedUpdate) {
@@ -1137,34 +1120,44 @@ struct RenderEngineOptx : RenderEngine, zeno::disable_copy {
 
             if (meshNeedUpdate || bMeshMatLUTChanged)
             {
+                OptixUtil::logInfoVRAM("Before update Mesh");
 
-            OptixUtil::logInfoVRAM("Before update Mesh");
-
-                if(staticNeedUpdate)
+                if(staticNeedUpdate) {
                     xinxinoptix::UpdateStaticMesh(meshMatLUT);
-
+                }
                 xinxinoptix::UpdateDynamicMesh(meshMatLUT);
 
-            OptixUtil::logInfoVRAM("Before update Inst");
+                OptixUtil::logInfoVRAM("Before update Inst");
 
                 xinxinoptix::UpdateInst();
-            OptixUtil::logInfoVRAM("After update Inst");
+                OptixUtil::logInfoVRAM("After update Inst");
 
                 xinxinoptix::updateSphereXAS();
-            OptixUtil::logInfoVRAM("After update Sphere");
+                OptixUtil::logInfoVRAM("After update Sphere");
 
                 xinxinoptix::UpdateStaticInstMesh(meshMatLUT);
                 xinxinoptix::UpdateDynamicInstMesh(meshMatLUT);
                 xinxinoptix::CopyInstMeshToGlobalMesh();
                 xinxinoptix::UpdateMeshGasAndIas(staticNeedUpdate);
-            }
+            
+                xinxinoptix::cleanupSpheresCPU();
 
-            xinxinoptix::buildRootIAS(RAY_TYPE_COUNT);
-        
-            xinxinoptix::optixupdateend();
-            std::cout<<"optix update End\n";
-            xinxinoptix::cleanupSpheres();
-            std::cout<<"cleanupSpheres\n";
+                xinxinoptix::optixupdateend();
+                std::cout<<"Finish optix update" << std::endl;
+            }
+            
+        }
+
+        if(lightNeedUpdate){
+            CppTimer timer; timer.tick();
+            xinxinoptix::buildLightTree();
+            timer.tock("Build LightTree");
+        }
+
+        if (lightNeedUpdate || matNeedUpdate || meshNeedUpdate || staticNeedUpdate) {
+
+            lightNeedUpdate = false;
+            xinxinoptix::buildRootIAS();
 
             matNeedUpdate = false;
             meshNeedUpdate = false;
