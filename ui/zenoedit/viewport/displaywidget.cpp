@@ -313,6 +313,14 @@ std::tuple<int, int, bool> DisplayWidget::getOriginWindowSizeInfo()
     return originWindowSizeInfo;
 }
 
+void DisplayWidget::cameraLookTo(int dir)
+{
+    if (m_bGLView)
+        m_glView->cameraLookTo(dir);
+    else
+        m_optixView->cameraLookTo(dir);
+}
+
 void DisplayWidget::onPlayClicked(bool bChecked)
 {
     if (m_bGLView)
@@ -509,7 +517,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
 
     ZTimeline *timeline = mainWin->timeline();
     ZASSERT_EXIT(timeline);
-    if (mainWin->isAlways())
+    if (mainWin->isAlways() || mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel *pModel = pGraphsMgr->currentModel();
@@ -519,6 +527,13 @@ void DisplayWidget::onSliderValueChanged(int frame)
         launchParam.beginFrame = frame;
         launchParam.endFrame = frame;
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
+        if (mainWin->isAlwaysLightCamera() || mainWin->isAlwaysMaterial()) {
+            for (auto displayWid : mainWin->viewports())
+                if (!displayWid->isGLViewport())
+                    displayWid->setRenderSeparately(mainWin->isAlwaysLightCamera(), mainWin->isAlwaysMaterial());
+            launchParam.applyLightAndCameraOnly = mainWin->isAlwaysLightCamera();
+            launchParam.applyMaterialOnly = mainWin->isAlwaysMaterial();
+        }
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
     }
@@ -719,6 +734,42 @@ void DisplayWidget::onMouseHoverMoved()
     if (m_optixView)
         m_optixView->onMouseHoverMoved();
 #endif
+}
+
+void DisplayWidget::onDockViewAction(bool triggered)
+{
+    QAction* action = qobject_cast<QAction*>(sender());
+    DockViewActionType viewType = DockViewActionType(action->property("DockViewActionType").toInt());
+    switch (viewType)
+    {
+        case ACTION_ORIGIN_VIEW:
+            cameraLookTo(viewType);
+            break;
+        case ACTION_FRONT_VIEW: {
+            cameraLookTo(viewType);
+            break;
+        }
+        case ACTION_BACK_VIEW: {
+            cameraLookTo(viewType);
+            break;
+        }
+        case ACTION_RIGHT_VIEW: {
+            cameraLookTo(viewType);
+            break;
+        }
+        case ACTION_LEFT_VIEW: {
+            cameraLookTo(viewType);
+            break;
+        }
+        case ACTION_TOP_VIEW: {
+            cameraLookTo(viewType);
+            break;
+        }
+        case ACTION_BOTTOM_VIEW: {
+            cameraLookTo(viewType);
+            break;
+        }
+    }
 }
 
 void DisplayWidget::onRecord()

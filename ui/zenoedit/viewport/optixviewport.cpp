@@ -125,7 +125,7 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
             QThread::sleep(0);
             continue;
         }
-        QString sLockFile = QString("%1/zcache_%2.lock").arg(cachePath).arg(frame);
+        QString sLockFile = QString("%1/zencache_lockfile_%2.lock").arg(cachePath).arg(frame);
         QLockFile lckFile(sLockFile);
         bool ret = lckFile.tryLock();
         if (!ret)

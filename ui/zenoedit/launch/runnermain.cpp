@@ -154,7 +154,7 @@ static int runner_start(std::string const &progJson, int sessionid, bool bZenCac
 
         if (bZenCache) {
             //construct cache lock.
-            std::string sLockFile = cachedir + "/zcache_" + std::to_string(frame) + ".lock";
+            std::string sLockFile = cachedir + "/zencache_lockfile_" + std::to_string(frame) + ".lock";
             QLockFile lckFile(QString::fromStdString(sLockFile));
             bool ret = lckFile.tryLock();
             //dump cache to disk.

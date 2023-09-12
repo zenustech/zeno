@@ -154,7 +154,7 @@ int optixcmd(const QCoreApplication& app, int port)
         }
 
         //and then check the cache lock.
-        QString sLockFile = QString("%1/zcache_%2.lock").arg(cachePath).arg(frame);
+        QString sLockFile = QString("%1/zencache_lockfile_%2.lock").arg(cachePath).arg(frame);
         QLockFile lckFile(sLockFile);
         bool ret = lckFile.tryLock();
         if (!ret)

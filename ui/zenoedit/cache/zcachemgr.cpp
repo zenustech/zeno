@@ -101,7 +101,7 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
     {
         if (info.isFile()) {
             empty = false;
-            if (info.fileName().right(9) != ".zencache" && info.fileName().left(7) != "zcache_")    //not zencache file or cachelock file
+            if (info.fileName().right(9) != ".zencache" && info.fileName().left(18) != "zencache_lockfile_")    //not zencache file or cachelock file
                 return false;
         }
         else if (info.isDir())

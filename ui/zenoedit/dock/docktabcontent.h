@@ -165,10 +165,9 @@ private:
     QAction *m_left;
     QAction *m_top; 
     QAction *m_bottom;
-
-    QAction *m_move;
-    QAction *m_rotate;
-    QAction *m_scale;
+    
+    QMenu* m_menuView;
+    QMenu* m_menuViewport;
 
     const bool m_bGLView;
 };

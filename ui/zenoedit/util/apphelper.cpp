@@ -130,14 +130,7 @@ void AppHelper::socketEditFinishedWithSlider(QVariant newValue, QPersistentModel
         nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
         (main->isAlways() || main->isAlwaysLightCamera()))
     {
-        //only update nodes.
-        zeno::scope_exit sp([=] { pModel->setApiRunningEnable(true); });
-        pModel->setApiRunningEnable(false);
-
-        QAbstractItemModel* paramsModel = const_cast<QAbstractItemModel*>(paramIdx.model());
-        ZASSERT_EXIT(paramsModel);
-        paramsModel->setData(paramIdx, newValue, ROLE_PARAM_VALUE);
-        modifyLightData(nodeIdx);
+        modifyLightData(newValue, nodeIdx, paramIdx);
     }
 }
 
@@ -175,17 +168,29 @@ VideoRecInfo AppHelper::getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param)
     return recInfo;
 }
 
-void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
+void AppHelper::modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx) {
     QStandardItemModel *viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
     ZASSERT_EXIT(viewParams);
     QStandardItem *inv_root = viewParams->invisibleRootItem();
     ZASSERT_EXIT(inv_root);
     QStandardItem *inputsItem = inv_root->child(0);
     std::string name = nodeIdx.data(ROLE_OBJID).toString().toStdString();
-    const UI_VECTYPE posVec = inputsItem->child(0)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
-    const UI_VECTYPE scaleVec = inputsItem->child(1)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
-    const UI_VECTYPE rotateVec = inputsItem->child(2)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
-    const UI_VECTYPE colorVec = inputsItem->child(4)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+    UI_VECTYPE posVec = inputsItem->child(0)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+    UI_VECTYPE scaleVec = inputsItem->child(1)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+    UI_VECTYPE rotateVec = inputsItem->child(2)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+    UI_VECTYPE colorVec = inputsItem->child(4)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
+    float intensity = inputsItem->child(5)->index().data(ROLE_PARAM_VALUE).value<float>();
+    QString paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
+    if (paramName == "position")
+        posVec = newValue.value<UI_VECTYPE>();
+    else if (paramName == "scale")
+        scaleVec = newValue.value<UI_VECTYPE>();
+    else if (paramName == "rotate")
+        rotateVec = newValue.value<UI_VECTYPE>();
+    else if (paramName == "color")
+        colorVec = newValue.value<UI_VECTYPE>();
+    else if (paramName == "intensity")
+        intensity = newValue.value<float>();
     float posX = posVec[0];
     float posY = posVec[1];
     float posZ = posVec[2];
@@ -199,10 +204,10 @@ void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
     float g = colorVec[1];
     float b = colorVec[2];
 
-    float intensity = inputsItem->child(5)->index().data(ROLE_PARAM_VALUE).value<float>();
     zeno::vec3f pos = zeno::vec3f(posX, posY, posZ);
     zeno::vec3f scale = zeno::vec3f(scaleX, scaleY, scaleZ);
     zeno::vec3f rotate = zeno::vec3f(rotateX, rotateY, rotateZ);
+    zeno::vec3f color = zeno::vec3f(r, g, b);
     auto verts = ZenoLights::computeLightPrim(pos, rotate, scale);
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();
@@ -232,13 +237,25 @@ void AppHelper::modifyLightData(QPersistentModelIndex nodeIdx) {
             prim_verts[1] = verts[1];
             prim_verts[2] = verts[2];
             prim_verts[3] = verts[3];
-            prim_in->verts.attr<zeno::vec3f>("clr")[0] = zeno::vec3f(r, g, b) * intensity;
 
-            prim_in->userData().setLiterial<zeno::vec3f>("pos", zeno::vec3f(posX, posY, posZ));
-            prim_in->userData().setLiterial<zeno::vec3f>("scale", zeno::vec3f(scaleX, scaleY, scaleZ));
-            prim_in->userData().setLiterial<zeno::vec3f>("rotate", zeno::vec3f(rotateX, rotateY, rotateZ));
+            if (!inputsItem->child(0)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+                pos = prim_in->userData().get2<zeno::vec3f>("pos");
+            if (!inputsItem->child(1)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+                scale = prim_in->userData().get2<zeno::vec3f>("scale");
+            if (!inputsItem->child(2)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+                rotate = prim_in->userData().get2<zeno::vec3f>("rotate");
+            if (!inputsItem->child(4)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+                color = prim_in->userData().get2<zeno::vec3f>("color");
+            if (!inputsItem->child(5)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+                intensity = prim_in->userData().get2<float>("intensity");
+
+            prim_in->verts.attr<zeno::vec3f>("clr")[0] = color * intensity;
+
+            prim_in->userData().setLiterial<zeno::vec3f>("pos", std::move(pos));
+            prim_in->userData().setLiterial<zeno::vec3f>("scale", std::move(scale));
+            prim_in->userData().setLiterial<zeno::vec3f>("rotate", std::move(rotate));
             if (prim_in->userData().has("intensity")) {
-                prim_in->userData().setLiterial<zeno::vec3f>("color", zeno::vec3f(r, g, b));
+                prim_in->userData().setLiterial<zeno::vec3f>("color", std::move(color));
                 prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
             }
 
