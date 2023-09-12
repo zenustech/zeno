@@ -79,7 +79,6 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
                 QString text = vec.at(i);
                 if (text.startsWith("="))
                 {
-                    text.replace(0, 1, "");
                     bFormula = true;
                 }
                 code += text;
@@ -97,7 +96,6 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
         else if (sockType == "int" || sockType == "float")
         {
             QString str = defl.toString();
-            str.replace(0, 1, "");
             defl = str;
             opStr = "setFormula";
         }
