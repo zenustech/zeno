@@ -72,13 +72,18 @@ static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
     {
         if (defl.canConvert<UI_VECSTRING>()) {
             UI_VECSTRING vec = defl.value<UI_VECSTRING>();
-            QString code = "vec3(";
+            if (vec.size() != 3) {
+                return;
+            }
+
+            QString code = "=vec3(";
             bool bFormula = false;
             for (int i = 0; i < vec.size(); i++)
             {
                 QString text = vec.at(i);
                 if (text.startsWith("="))
                 {
+                    text.replace(0, 1, "");
                     bFormula = true;
                 }
                 code += text;
