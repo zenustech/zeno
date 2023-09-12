@@ -1395,7 +1395,7 @@
     </message>
     <message>
         <source>export video</source>
-        <translation>是否导出视频</translation>
+        <translation>导出视频</translation>
     </message>
     <message>
         <source>remove cache after render</source>

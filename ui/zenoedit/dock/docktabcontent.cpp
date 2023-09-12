@@ -9,6 +9,7 @@
 #include "../panel/zlogpanel.h"
 #include <zenoedit/panel/zenoimagepanel.h>
 #include "nodesview/zenographseditor.h"
+#include "nodesys/zenosubgraphview.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "zenoapplication.h"
@@ -691,51 +692,53 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     m_resizeViewport = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
     m_resizeViewport->setToolTip(tr("resize viewport"));
 
-    QMenu *pView = new QMenu(tr("View"));
+    m_menuView = new QMenu(tr("View"));
     {
+        m_menuViewport = new QMenu(tr("Viewport"));
         m_pFocus = new QAction(tr("Focus"));
-        //pAction->setShortcut(QKeySequence("F5"));
-        QMenu *Viewport = new QMenu(tr("Viewport"));
         m_pOrigin = new QAction(tr("Origin"));
-        //pAction->setShortcut(QKeySequence("F5"));
         m_front = new QAction(tr("Front"));
-        //m_front->setShortcut(QKeySequence("F5"));
-        m_back = new QAction(tr("Back"));
-        //m_back->setShortcut(QKeySequence("F5"));
         m_right = new QAction(tr("Right"));
-        //m_right->setShortcut(QKeySequence("F5"));
-        m_left = new QAction(tr("Left"));
-        //m_left->setShortcut(QKeySequence("F5"));
         m_top = new QAction(tr("Top"));
-        //m_top->setShortcut(QKeySequence("F5"));
+        m_back = new QAction(tr("Back"));
+        m_left = new QAction(tr("Left"));
         m_bottom = new QAction(tr("Bottom"));
-        //m_bottom->setShortcut(QKeySequence("F5"));
+        ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+        m_pFocus->setShortcut(settings.getShortCut(ShortCut_Focus));
+        m_pFocus->setShortcutContext(Qt::WidgetShortcut);
+        m_pOrigin->setShortcut(settings.getShortCut(ShortCut_InitViewPos));
+        m_pOrigin->setShortcutContext(Qt::WidgetShortcut);
+        m_front->setShortcut(settings.getShortCut(ShortCut_FrontView));
+        m_front->setShortcutContext(Qt::WidgetShortcut);
+        m_right->setShortcut(settings.getShortCut(ShortCut_RightView));
+        m_right->setShortcutContext(Qt::WidgetShortcut);
+        m_top->setShortcut(settings.getShortCut(ShortCut_VerticalView));
+        m_top->setShortcutContext(Qt::WidgetShortcut);
+        m_back->setShortcut(settings.getShortCut(ShortCut_BackView));
+        m_back->setShortcutContext(Qt::WidgetShortcut);
+        m_left->setShortcut(settings.getShortCut(ShortCut_LeftView));
+        m_left->setShortcutContext(Qt::WidgetShortcut);
+        m_bottom->setShortcut(settings.getShortCut(ShortCut_UpwardView));
+        m_bottom->setShortcutContext(Qt::WidgetShortcut);
 
-        Viewport->addAction(m_pOrigin);
-        Viewport->addAction(m_front);
-        Viewport->addAction(m_back);
-        Viewport->addAction(m_right);
-        Viewport->addAction(m_left);
-        Viewport->addAction(m_top);
-        Viewport->addAction(m_bottom);
+        m_pOrigin->setProperty("DockViewActionType", DisplayWidget::ACTION_ORIGIN_VIEW);
+        m_front->setProperty("DockViewActionType", DisplayWidget::ACTION_FRONT_VIEW);
+        m_back->setProperty("DockViewActionType", DisplayWidget::ACTION_BACK_VIEW);
+        m_right->setProperty("DockViewActionType", DisplayWidget::ACTION_RIGHT_VIEW);
+        m_left->setProperty("DockViewActionType", DisplayWidget::ACTION_LEFT_VIEW);
+        m_top->setProperty("DockViewActionType", DisplayWidget::ACTION_TOP_VIEW);
+        m_bottom->setProperty("DockViewActionType", DisplayWidget::ACTION_BOTTOM_VIEW);
 
-        pView->addAction(m_pFocus);
-        pView->addMenu(Viewport);
-    }
-    QMenu *pObject = new QMenu(tr("Object"));
-    {
-        QMenu *pTransform = new QMenu(tr("Transform"));
-        m_move = new QAction(tr("Move"));
+        m_menuViewport->addAction(m_pOrigin);
+        m_menuViewport->addAction(m_front);
+        m_menuViewport->addAction(m_right);
+        m_menuViewport->addAction(m_top);
+        m_menuViewport->addAction(m_back);
+        m_menuViewport->addAction(m_left);
+        m_menuViewport->addAction(m_bottom);
 
-        m_rotate = new QAction(tr("Rotate"));
-
-        m_scale = new QAction(tr("Scale"));
-
-        pTransform->addAction(m_move);
-        pTransform->addAction(m_rotate);
-        pTransform->addAction(m_scale);
-
-        pObject->addMenu(pTransform);
+        m_menuView->addAction(m_pFocus);
+        m_menuView->addMenu(m_menuViewport);
     }
 
     QMenuBar *pMenuBar = new QMenuBar(this);
@@ -746,8 +749,7 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     font.setWeight(QFont::Medium);
     pMenuBar->setFont(font);
 
-    pMenuBar->addMenu(pView);
-    pMenuBar->addMenu(pObject);
+    pMenuBar->addMenu(m_menuView);
 
     QStringList items = {
         tr("Free"),
@@ -834,17 +836,17 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
     pToolLayout->addStretch(1);
 
-    pToolLayout->addWidget(m_moveBtn);
-    pToolLayout->addWidget(m_rotateBtn);
-    pToolLayout->addWidget(m_scaleBtn);
-
-    pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
-
-    pToolLayout->addWidget(m_show_grid);
-    pToolLayout->addWidget(m_background_clr);
-    pToolLayout->addWidget(m_wire_frame);
-    pToolLayout->addWidget(m_smooth_shading);
-    pToolLayout->addWidget(m_normal_check);
+    if (m_bGLView) {
+        pToolLayout->addWidget(m_moveBtn);
+        pToolLayout->addWidget(m_rotateBtn);
+        pToolLayout->addWidget(m_scaleBtn);
+        pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
+        pToolLayout->addWidget(m_show_grid);
+        pToolLayout->addWidget(m_background_clr);
+        pToolLayout->addWidget(m_wire_frame);
+        pToolLayout->addWidget(m_smooth_shading);
+        pToolLayout->addWidget(m_normal_check);
+    }
     {
         m_background = new QCheckBox(tr("Background"));
         m_background->setStyleSheet("color: white;");
@@ -931,6 +933,35 @@ void DockContent_View::initConnections()
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
 
     });
+
+    QList<QAction*> actions;
+    actions = m_menuViewport->actions();
+    for (QAction* action : actions)
+    {
+        connect(action, &QAction::triggered, m_pDisplay, &DisplayWidget::onDockViewAction);
+    }
+
+    connect(m_pFocus, &QAction::triggered, this, [=]() {
+        auto main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        auto docks = main->findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget* pDock : docks)
+            if (pDock->isVisible())
+                if (ZenoGraphsEditor* editor = pDock->getAnyEditor())
+                    if (ZenoSubGraphView* subgrahView = editor->getCurrentSubGraphView())
+                        subgrahView->cameraFocus();
+    });
+
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString name) {
+        m_pFocus->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Focus));
+        m_pOrigin->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_InitViewPos));
+        m_front->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_FrontView));
+        m_right->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_RightView));
+        m_top->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_VerticalView));
+        m_back->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_BackView));
+        m_left->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_LeftView));
+        m_bottom->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_UpwardView));
+        });
 }
 
 void DockContent_View::onCommandDispatched(QAction *pAction, bool bTriggered)

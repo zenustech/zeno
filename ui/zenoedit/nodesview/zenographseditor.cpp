@@ -12,7 +12,6 @@
 #include <comctrl/ziconbutton.h>
 #include <zenoui/style/zenostyle.h>
 #include "zenomainwindow.h"
-#include "nodesys/zenosubgraphview.h"
 #include "ui_zenographseditor.h"
 #include "nodesview/zsubnetlistitemdelegate.h"
 #include "searchitemdelegate.h"
@@ -497,6 +496,16 @@ void ZenoGraphsEditor::selectTab(const QString& subGraphName, const QString& pat
 
     pScene->select(objIds);
 }
+
+ZenoSubGraphView* ZenoGraphsEditor::getCurrentSubGraphView()
+{
+    if (ZenoSubGraphView* pView = qobject_cast<ZenoSubGraphView*>(m_ui->graphsViewTab->currentWidget()))
+    {
+        return pView;
+    }
+    return nullptr;
+}
+
 void ZenoGraphsEditor::activateTab(const QString& subGraphName, const QString& path, const QString& objId, bool isError)
 {
 	auto graphsMgm = zenoApp->graphsManagment();

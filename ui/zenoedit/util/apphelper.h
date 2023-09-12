@@ -25,7 +25,7 @@ public:
     static QString nativeWindowTitle(const QString& currentFilePath);
     static void socketEditFinished(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
     static void socketEditFinishedWithSlider(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
-    static void modifyLightData(QPersistentModelIndex nodeIdx);
+    static void modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
     static VideoRecInfo getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param);
     static void initLaunchCacheParam(LAUNCH_PARAM& param);
     static bool openZsgAndRun(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchParam);
