@@ -14,7 +14,7 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
          return true;
     }
     if (!bTempDir && bAutoCleanCache && m_cacheOpt != Opt_RunLightCameraMaterial && m_cacheOpt != Opt_AlwaysOn)
-        cleanCacheDir(dirCacheRoot);
+        cleanCacheDir();
     m_bTempDir = bTempDir;
     if (m_bTempDir) {
         m_spTmpCacheDir.reset(new QTemporaryDir);
@@ -28,6 +28,7 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
             ret = m_spCacheDir.cd(tempDirPath);
             ZASSERT_EXIT(ret, false);
             m_isNew = false;
+            lastRunCachePath = m_spCacheDir;
         }
     }
     return true;
@@ -74,25 +75,20 @@ ZCacheMgr::cacheOption ZCacheMgr::getCacheOption() {
     return m_cacheOpt;
 }
 
-void ZCacheMgr::cleanCacheDir(QDir dirCacheRoot)
+void ZCacheMgr::cleanCacheDir()
 {
     QString selfPath = QCoreApplication::applicationDirPath();
 
-    dirCacheRoot.setFilter(QDir::AllDirs | QDir::NoDotAndDotDot);
-    for (auto info : dirCacheRoot.entryInfoList())
+    bool dataTimeCacheDirEmpty = true;
+    if (lastRunCachePath.exists() && hasCacheOnly(lastRunCachePath, dataTimeCacheDirEmpty) && !dataTimeCacheDirEmpty && lastRunCachePath.path() != selfPath && lastRunCachePath.path() != ".")
     {
-        QDir dataTimeCacheDir = info.filePath();
-        bool dataTimeCacheDirEmpty = true;
-        if (hasCacheOnly(dataTimeCacheDir, dataTimeCacheDirEmpty) && !dataTimeCacheDirEmpty && dataTimeCacheDir.path() != selfPath && dataTimeCacheDir.path() != ".")
-        {
-            dataTimeCacheDir.removeRecursively();
-            zeno::log_info("remove dir: {}", dataTimeCacheDir.absolutePath().toStdString());
-        }
-        if (dataTimeCacheDirEmpty && QDateTime::fromString(dataTimeCacheDir.dirName(), "yyyy-MM-dd hh-mm-ss").isValid())
-        {
-            dataTimeCacheDir.rmdir(dataTimeCacheDir.path());
-            zeno::log_info("remove dir: {}", dataTimeCacheDir.absolutePath().toStdString());
-        }
+        lastRunCachePath.removeRecursively();
+        zeno::log_info("remove dir: {}", lastRunCachePath.absolutePath().toStdString());
+    }
+    if (dataTimeCacheDirEmpty && QDateTime::fromString(lastRunCachePath.dirName(), "yyyy-MM-dd hh-mm-ss").isValid())
+    {
+        lastRunCachePath.rmdir(lastRunCachePath.path());
+        zeno::log_info("remove dir: {}", lastRunCachePath.absolutePath().toStdString());
     }
 }
 

@@ -1307,6 +1307,13 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
     killProgram();
     killOptix();
 
+    QSettings settings(zsCompanyName, zsEditor);
+    if (settings.value("zencache-autoclean").isValid() ? settings.value("zencache-autoclean").toBool() : true)
+    {
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+        mgr->cleanCacheDir();
+    }
+
     bool isClose = this->saveQuit();
     // todo: event->ignore() when saveQuit returns false?
     if (isClose) 
