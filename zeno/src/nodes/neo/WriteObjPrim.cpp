@@ -20,7 +20,7 @@ namespace {
 
 void dump_obj(PrimitiveObject *prim, std::ostream &fout) {
     fout << "# https://github.com/zenustech/zeno\n";
-    fout << std::setiosflags(std::ios::fixed) << std::setprecision(6);
+    fout << std::setprecision(8);
     for (auto const &[x, y, z]: prim->verts) {
         fout << "v " << x << ' ' << y << ' ' << z << '\n';
     }
