@@ -115,9 +115,9 @@ struct EmbedZsgGraph : zeno::INode {
         auto zslPath = (std::filesystem::temp_directory_path() / (".tmpEZG-" + std::to_string(std::random_device()()) + "-tmp.zsl")).string();
         auto zslp = std::filesystem::u8path(zslPath).string();
         auto cmd = zeno::getConfigVariable("EXECFILE") + " -invoke dumpzsg2zsl " + zsgp + " " + zslp;
-        log_warn("executing command: [{}]", cmd);
+        log_info("executing command: [{}]", cmd);
         std::system(cmd.c_str());
-        log_warn("done execution, zsl should be generated");
+        log_info("done execution, zsl should be generated");
         std::string content;
         if (std::ifstream ifs(zslPath); !ifs) {
             throw makeError("failed to generate temporary zsl file!\n");

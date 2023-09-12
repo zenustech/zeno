@@ -55,7 +55,7 @@ public:
     void resizeTransformHandler(int dir);
 
 private:
-    QPointF m_lastPos;
+    QPointF m_lastMidButtonPos;
     QPoint m_boundRectStartPos;
     QVector2D m_res;
     QSet<int> m_pressedKeys;

@@ -39,7 +39,6 @@ struct Scene : zeno::disable_copy {
     std::vector<char> record_frame_offline(int hdrSize = 1, int rgbComps = 3);
     bool cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, float &radius);
     static void loadGLAPI(void *procaddr);
-    std::vector<float> getCameraProp();
     void* getOptixImg(int &w, int &h);
 };
 

@@ -7,7 +7,11 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/utils/format.h>
 #include <stb_image_write.h>
+#ifdef ZENO_ENABLE_OPTIX
+#include "ChiefDesignerEXR.h"
+#else
 #include <tinyexr.h>
+#endif
 #include <functional>
 #include <map>
 #include <utility>
@@ -146,8 +150,11 @@ void Session::do_screenshot(std::string path, std::string type) {
                              pixels.begin() + hdrSize * 3 * nx * (ny - line - 1));
         }
         const char *err = nullptr;
+#ifdef ZENO_ENABLE_OPTIX
+        using namespace zeno::ChiefDesignerEXR;
+#endif
         int ret = SaveEXR((float *)pixels.data(), nx, ny, 3, 1, path.c_str(), &err);
-        if (ret != TINYEXR_SUCCESS) {
+        if (ret != 0) {
             if (err) {
                 zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
                 FreeEXRErrorMessage(err);
@@ -162,19 +169,14 @@ void Session::do_screenshot(std::string path, std::string type) {
     }.at(type)();
 }
 
-void Session::look_perspective(float cx, float cy, float cz, float theta,
-                               float phi, float radius, float fov,
-                               bool ortho_mode, float aperture, float focalPlaneDistance) {
-    impl->scene->camera->lookCamera(cx, cy, cz, theta, phi, radius, ortho_mode ? 0.f : fov, aperture, focalPlaneDistance);
+void Session::look_perspective() {
+    impl->scene->camera->updateMatrix();
 }
 
 void Session::look_to_dir(float cx, float cy, float cz,
                           float dx, float dy, float dz,
                           float ux, float uy, float uz) {
-    auto fov = impl->scene->camera->m_fov;
-    auto fnear = impl->scene->camera->m_near;
-    auto ffar = impl->scene->camera->m_far;
-    impl->scene->camera->placeCamera({cx, cy, cz}, {dx, dy, dz}, {ux, uy, uz}, fov, fnear, ffar);
+    impl->scene->camera->placeCamera({cx, cy, cz}, {dx, dy, dz}, {ux, uy, uz});
 }
 
 void Session::set_background_color(float r, float g, float b) {

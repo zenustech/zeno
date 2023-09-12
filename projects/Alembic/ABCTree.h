@@ -10,6 +10,8 @@ struct CameraInfo {
     double _far;
     double _near;
     double focal_length;
+    double horizontalAperture;
+    double verticalAperture;
 };
 
 struct ABCTree : IObjectClone<ABCTree> {

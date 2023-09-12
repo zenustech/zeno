@@ -7,6 +7,7 @@
 #include "TraceStuff.h"
 #include "DisneyBSDF.h"
 #include "zxxglslvec.h"
+#include "proceduralSky.h"
 
 #include <cuda_fp16.h>
 
@@ -63,10 +64,6 @@ vec3 ACESFitted(vec3 color, float gamma)
 
 extern "C" __global__ void __raygen__rg()
 {
-//  for(int J=0;J<4;J++){
-//    for(int I=0;I<4;I++)
-//    {
-
 
       const int    w   = params.windowSpace.x;
       const int    h   = params.windowSpace.y;
@@ -103,31 +100,19 @@ extern "C" __global__ void __raygen__rg()
       {
           // The center of each pixel is at fraction (0.5,0.5)
           float2 subpixel_jitter = sobolRnd(sobolseed);
-//          {
-//              rnd(seed),
-//              rnd(seed)
-//          };
 
           float2 d = 2.0f * make_float2(
                   ( static_cast<float>( idx.x + params.windowCrop_min.x ) + subpixel_jitter.x ) / static_cast<float>( w ),
                   ( static_cast<float>( idx.y + params.windowCrop_min.y ) + subpixel_jitter.y ) / static_cast<float>( h )
                   ) - 1.0f;
-          //float3 ray_direction = normalize(cam.right * d.x + cam.up * d.y + cam.front);
+
           float2 r01 = sobolRnd(sobolseed);
-//          {
-//              rnd(seed),
-//              rnd(seed)
-//          };
 
           float r0 = r01.x * 2.0f * M_PIf;
           float r1 = r01.y * aperture * aperture;
           r1 = sqrt(r1);
 
-          // float3 ray_origin    = cam.eye + r1 * ( cosf(r0)* cam.right + sinf(r0)* cam.up);
-          // float3 ray_direction = cam.eye + focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - ray_origin;
-
           float3 eye_shake     = r1 * ( cosf(r0)* normalize(cam.right) + sinf(r0)* normalize(cam.up)); // Camera local space
-
           float3 ray_origin    = cam.eye + eye_shake;
           float3 ray_direction = focalPlaneDistance *(cam.right * d.x + cam.up * d.y + cam.front) - eye_shake; // Camera local space
                  ray_direction = normalize(ray_direction);
@@ -314,10 +299,11 @@ extern "C" __global__ void __raygen__rg()
       float3 out_color_t = accum_color_t;
       float3 out_color_b = accum_color_b;
       params.frame_buffer[ image_index ] = make_color ( out_color );
-      params.frame_buffer_D[ image_index ] = make_color ( out_color_d );
-      params.frame_buffer_S[ image_index ] = make_color ( out_color_s );
-      params.frame_buffer_T[ image_index ] = make_color ( out_color_t );
-      params.frame_buffer_B[ image_index ] = make_color ( out_color_b );
+      params.frame_buffer_C[ image_index ] = accum_color;
+      params.frame_buffer_D[ image_index ] = accum_color_d;
+      params.frame_buffer_S[ image_index ] = accum_color_s;
+      params.frame_buffer_T[ image_index ] = accum_color_t;
+      params.frame_buffer_B[ image_index ] = accum_color_b;
 
       if (params.denoise) {
           params.albedo_buffer[ image_index ] = tmp_albedo;

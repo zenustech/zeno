@@ -43,9 +43,9 @@ ZENDEFNODE(ProceduralSky, {
 struct HDRSky : INode {
     virtual void apply() override {
         auto prim = std::make_shared<zeno::PrimitiveObject>();
-        auto path = get_input2<std::string>("path");
-        if (path.empty()) {
-            throw std::runtime_error("need hdr tex path");
+        std::string path = "";
+        if (has_input2<std::string>("path")) {
+             path = get_input2<std::string>("path");
         }
         prim->userData().set2("isRealTimeObject", std::move(1));
         prim->userData().set2("HDRSky", std::move(path));
