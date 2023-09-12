@@ -64,8 +64,36 @@ ZENDEFNODE(PrimitiveReduction,
     {"string", "attr", "pos"},
     {"enum avg max min absmax", "op", "avg"},
     }, /* category: */ {
-    "primitive",
+    "deprecated",
     }});
+
+struct PrimReduction : zeno::INode {
+    virtual void apply() override{
+        auto prim = get_input<PrimitiveObject>("prim");
+        auto attrToReduce = get_input2<std::string>(("attrName"));
+        auto op = get_input2<std::string>(("op"));
+        zeno::NumericValue result;
+        if (prim->attr_is<zeno::vec3f>(attrToReduce))
+            result = prim_reduce<zeno::vec3f>(prim.get(), attrToReduce, op);
+        else 
+            result = prim_reduce<float>(prim.get(), attrToReduce, op);
+        auto out = std::make_shared<zeno::NumericObject>();
+        out->set(result);
+        set_output("result", std::move(out));
+    }
+};
+ZENDEFNODE(PrimReduction,{
+    {
+        {"prim"},
+        {"string", "attrName", "pos"},
+        {"enum avg max min absmax", "op", "avg"},
+    },
+    {
+        {"result"},
+    },
+    {},
+    {"primitive"},
+});
 
 struct PrimitiveBoundingBox : zeno::INode {
     virtual void apply() override{
