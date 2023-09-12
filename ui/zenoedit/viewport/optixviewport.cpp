@@ -16,22 +16,9 @@ OptixWorker::OptixWorker(Zenovis *pzenoVis)
     , m_zenoVis(pzenoVis)
     , m_bRecording(false)
     , m_pTimer(nullptr)
-    , m_playTimer(nullptr)
 {
     m_pTimer = new QTimer(this);
-    connect(m_pTimer, &QTimer::timeout, this, [=]() {
-        ZASSERT_EXIT(m_zenoVis);
-        bool isPlaying = m_zenoVis->isPlaying();
-        m_zenoVis->startPlay(false);
-        zeno::scope_exit sp([=]() { m_zenoVis->startPlay(isPlaying); });
-        //only update current frame
-        updateFrame();
-    });
-
-    m_playTimer = new QTimer(this);
-    connect(m_playTimer, &QTimer::timeout, this, [=]() {
-        updateFrame();
-    });
+    connect(m_pTimer, SIGNAL(timeout()), this, SLOT(updateFrame()));
 }
 
 OptixWorker::~OptixWorker()
@@ -42,12 +29,10 @@ OptixWorker::OptixWorker(QObject* parent)
     : QObject(parent)
     , m_zenoVis(nullptr)
     , m_pTimer(nullptr)
-    , m_playTimer(nullptr)
     , m_bRecording(false)
 {
     //used by offline worker.
     m_pTimer = new QTimer(this);
-    m_playTimer = new QTimer(this);
     m_zenoVis = new Zenovis(this);
 
     //fake GL
@@ -77,10 +62,17 @@ void OptixWorker::updateFrame()
 void OptixWorker::onPlayToggled(bool bToggled)
 {
     m_zenoVis->startPlay(bToggled);
-    if (bToggled)
-        m_playTimer->start(m_slidFeq);
-    else
-        m_playTimer->stop();
+    if (bToggled) {
+        m_pTimer->start(m_slidFeq);
+    }
+    else {
+        m_pTimer->start(m_sampleFeq);
+    }
+}
+
+void OptixWorker::onSetSlidFeq(int feq)
+{
+    m_slidFeq = feq;
 }
 
 void OptixWorker::onFrameSwitched(int frame)
@@ -88,6 +80,7 @@ void OptixWorker::onFrameSwitched(int frame)
     //ui switch.
     m_zenoVis->setCurrentFrameId(frame);
     m_zenoVis->startPlay(false);
+    m_pTimer->start(m_sampleFeq);
 }
 
 void OptixWorker::cancelRecording()
@@ -116,7 +109,6 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
 
     m_bRecording = true;
     m_pTimer->stop();
-    m_playTimer->stop();
 
     for (int frame = recInfo.frameRange.first; frame <= recInfo.frameRange.second;)
     {
@@ -224,15 +216,9 @@ void OptixWorker::onSetLoopPlaying(bool enbale)
     m_zenoVis->setLoopPlaying(enbale);
 }
 
-void OptixWorker::onSetSlidFeq(int feq)
-{
-    m_slidFeq = feq;
-}
-
 void OptixWorker::stop()
 {
     m_pTimer->stop();
-    //todo: use a flag to mark, otherwise the timer will be resumed.
 }
 
 void OptixWorker::work()

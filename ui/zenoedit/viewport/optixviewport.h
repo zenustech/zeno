@@ -42,7 +42,6 @@ private:
     Zenovis *m_zenoVis;
     QImage m_renderImg;
     QTimer* m_pTimer;           //optix sample timer
-    QTimer* m_playTimer;        //control play.
     bool m_bRecording;
     VideoRecInfo m_recordInfo;
     int m_slidFeq = 1000 / 24;
