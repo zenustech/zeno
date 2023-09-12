@@ -13,12 +13,14 @@
 #include <cassert>
 #include <cstdio>
 #include <fstream>
+#include <iomanip>
 
 namespace zeno {
 namespace {
 
 void dump_obj(PrimitiveObject *prim, std::ostream &fout) {
     fout << "# https://github.com/zenustech/zeno\n";
+    fout << std::setiosflags(std::ios::fixed) << std::setprecision(6);
     for (auto const &[x, y, z]: prim->verts) {
         fout << "v " << x << ' ' << y << ' ' << z << '\n';
     }
