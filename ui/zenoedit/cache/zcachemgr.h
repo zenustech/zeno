@@ -21,7 +21,7 @@ public:
     void setCacheOpt(cacheOption opt);
     void setNewCacheDir(bool setNew);
     cacheOption getCacheOption();
-    void cleanCacheDir(QDir dirCacheRoot);
+    void cleanCacheDir();
     bool hasCacheOnly(QDir dir, bool& empty);
 
 private:
@@ -32,6 +32,8 @@ private:
 
     bool m_isNew;
     cacheOption m_cacheOpt;
+
+    QDir lastRunCachePath;
 };
 
 #endif
