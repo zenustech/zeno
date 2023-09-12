@@ -9,6 +9,7 @@ zany parseObjectFromUi(rapidjson::Value const &x);
 
 namespace iotags {
     constexpr const char *key_objectType = "objectType";
+    constexpr const char* sZencache_lockfile_prefix = "zencache_lockfile_";
 
     namespace curve {
         constexpr const char *key_timeline = "timeline"; // whether curve type is timeline

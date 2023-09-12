@@ -9,6 +9,7 @@
 #include "launch/corelaunch.h"
 #include <zeno/core/Session.h>
 #include <zenovis/Camera.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
 
 
 OptixWorker::OptixWorker(Zenovis *pzenoVis)
@@ -125,7 +126,7 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
             QThread::sleep(0);
             continue;
         }
-        QString sLockFile = QString("%1/zencache_lockfile_%2.lock").arg(cachePath).arg(frame);
+        QString sLockFile = QString("%1/%2%3.lock").arg(cachePath).arg(zeno::iotags::sZencache_lockfile_prefix).arg(frame);
         QLockFile lckFile(sLockFile);
         bool ret = lckFile.tryLock();
         if (!ret)

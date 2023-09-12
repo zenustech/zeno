@@ -1,5 +1,6 @@
 #include "zcachemgr.h"
 #include "zassert.h"
+#include <zeno/funcs/ParseObjectFromUi.h>
 
 ZCacheMgr::ZCacheMgr()
     : m_bTempDir(true)
@@ -101,7 +102,7 @@ bool ZCacheMgr::hasCacheOnly(QDir dir, bool& empty)
     {
         if (info.isFile()) {
             empty = false;
-            if (info.fileName().right(9) != ".zencache" && info.fileName().left(18) != "zencache_lockfile_")    //not zencache file or cachelock file
+            if (info.fileName().right(9) != ".zencache" && info.fileName().left(18) != zeno::iotags::sZencache_lockfile_prefix)    //not zencache file or cachelock file
                 return false;
         }
         else if (info.isDir())

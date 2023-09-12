@@ -24,6 +24,7 @@
 #include "corelaunch.h"
 #include "viewdecode.h"
 #include "settings/zsettings.h"
+#include <zeno/funcs/ParseObjectFromUi.h>
 
 namespace {
 
@@ -154,7 +155,7 @@ static int runner_start(std::string const &progJson, int sessionid, bool bZenCac
 
         if (bZenCache) {
             //construct cache lock.
-            std::string sLockFile = cachedir + "/zencache_lockfile_" + std::to_string(frame) + ".lock";
+            std::string sLockFile = cachedir + "/" + zeno::iotags::sZencache_lockfile_prefix + std::to_string(frame) + ".lock";
             QLockFile lckFile(QString::fromStdString(sLockFile));
             bool ret = lckFile.tryLock();
             //dump cache to disk.
