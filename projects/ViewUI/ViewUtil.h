@@ -3,13 +3,32 @@
 #define zero(x) (((x) > 0 ? (x) : -(x)) < eps)
 
 struct point3 {
-    point3() {}
+	point3() {}
     point3(zeno::vec3f p) {
         x = p[0];
         y = p[1];
         z = p[2];
     }
+	point3(float x, float y, float z) {
+		x = x;
+		y = y;
+		z = z;
+	}
     double x, y, z;
+
+	double abs() { return sqrt(norm()); }
+	double norm() { return x * x + y * y; }
+	zeno::vec3f toVec3f() {
+		return zeno::vec3f(x, y, z);
+	}
+
+	point3 operator + (point3 p) { return point3(x + p.x, y + p.y, z + p.z); }
+	point3 operator - (point3 p) { return point3(x - p.x, y - p.y, z - p.z); }
+	point3 operator * (double a) { return point3(a * x, a * y, a * z); }
+	point3 operator / (double a) { return point3(x / a, y / a, y / z); }
+	bool operator == (const point3& p) const {
+		return fabs(x - p.x) < eps && fabs(y - p.y) < eps && fabs(z - p.z) < eps;
+	}
 };
 struct line3 {
     point3 a, b;

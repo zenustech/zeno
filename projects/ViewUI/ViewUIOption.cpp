@@ -237,6 +237,73 @@ ZENDEFNODE(CreatePrimeListInPointIndex, {/*输入*/
                                           {"ViewUI"}});
 
 
+
+struct LineLineIntersection : zeno::INode
+{
+    virtual void apply() override {
+        auto inPrim = get_input<zeno::PrimitiveObject>("prim");
+        std::string inLine = get_param<std::string>("line");
+
+		auto outPrim = std::make_shared<zeno::PrimitiveObject>();
+
+        auto inLinePnt = split(inLine, ',');
+        if (inLinePnt.size() < 6 || inPrim == nullptr) {
+			set_output("prim", std::move(outPrim));
+			return;
+		}
+
+        line3 tmpL1;
+        tmpL1.a = zeno::vec3f(stof(inLinePnt[0]), stof(inLinePnt[1]), stof(inLinePnt[2]));
+        tmpL1.b = zeno::vec3f(stof(inLinePnt[3]), stof(inLinePnt[4]), stof(inLinePnt[5]));
+
+        if (inPrim->lines.size() > 0)
+        {
+            for (auto p : inPrim->lines)
+            {
+                line3 tmpL2;
+                tmpL2.a = inPrim->verts[p[0]];
+                tmpL2.b = inPrim->verts[p[1]];
+#if 0
+				point3 base = tmpL1.b - tmpL1.a;
+				double d1 = abs(calCross(base.toVec3f(), (tmpL1.a - tmpL2.a).toVec3f()));
+				double d2 = abs(calCross(base.toVec3f(), (tmpL1.b - tmpL2.a).toVec3f()));
+				double t = d1 / (d1 + d2);
+				auto v = tmpL1.a + (tmpL1.b - tmpL1.a) * t;
+                std::cout << v.x << "  " << v.y << "  " << v.z << std::endl;
+#endif
+#if 1
+				auto tmpV0 = parallel(tmpL1, tmpL2);
+                if (tmpV0 == false)
+                {
+					auto tmpV1 = intersect_ex(tmpL1, tmpL2);
+					auto tmpV3 = linetoline(tmpL1, tmpL2);
+					if (tmpV3 < 0.3)
+					{
+						auto tmpV2 = intersection(tmpL1, tmpL2);
+						outPrim->verts.push_back(tmpV2.toVec3f());
+						std::cout << "  " << tmpV1 << "  " << tmpV3 << "  " << tmpV2.x << "  " << tmpV2.y << "  " << tmpV2.z << std::endl;
+					}
+                }
+				
+#endif
+            }
+        }
+        set_output("prim", std::move(outPrim));
+    }
+};
+
+ZENDEFNODE(LineLineIntersection, {/*输入*/
+						   {"prim"},
+						   /*输出*/
+						   {"prim"},
+						   /*参数*/
+						   {
+							   {"string", "line", ""},
+						   },
+						   /*类别*/
+						   {"ViewUI"} });
+
+
 struct PrimitiveEdit : zeno::INode {
     virtual void apply() override {
         auto prim = get_input<zeno::PrimitiveObject>("prim");
@@ -881,9 +948,9 @@ ZENDEFNODE(PrimitiveEdit, {/*输入*/
                                {"int", "columnCount", "5"},
                                {"enum Line Face", "Operate", "Face"},
                                {"string", "index", ""},
-                               {"string", "area", ""},
-                               {"int", "outline", "0"},
-                               {"int", "inline", "0"},
+							   {"string", "area", ""},
+							   {"int", "outline", "0"},
+							   {"int", "inline", "0"},
                            },
                            /*类别*/
                            {"ViewUI"}});
