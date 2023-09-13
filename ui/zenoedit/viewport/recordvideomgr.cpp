@@ -100,6 +100,7 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
     }
 }
 
+
 void RecordVideoMgr::endRecToExportVideo()
 {
     if (m_recordInfo.bExportEXR) {
@@ -285,7 +286,13 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             emit frameFinished(currFrame);
 
             if (m_recordInfo.bAutoRemoveCache)
+            {
                 zeno::getSession().globalComm->removeCache(currFrame);
+                auto mainWin = zenoApp->getMainWindow();
+                ZASSERT_EXIT(mainWin);
+                if (ZTimeline* timeline = mainWin->timeline())
+                    timeline->updateCachedFrame(currFrame, false);
+            }
         }
 
         if (currFrame == m_recordInfo.frameRange.second)

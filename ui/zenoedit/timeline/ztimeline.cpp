@@ -57,10 +57,6 @@ void ZTimeline::initSignals()
 {
     connect(m_ui->btnPlay, &ZToolButton::toggled, this, [=](bool toggle) {
         emit playForward(toggle);
-        if (toggle)
-        {
-            m_ui->timeliner->setFinishedFrame(-1);
-        }
     });
     connect(m_ui->editFrom, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->editTo, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
@@ -353,9 +349,14 @@ void ZTimeline::updateKeyFrames(const QVector<int>& keys)
     m_ui->timeliner->updateKeyFrames(keys);
 }
 
-void ZTimeline::setFinishedFrame(int frame)
+void ZTimeline::resetCashedFrames()
 {
-    m_ui->timeliner->setFinishedFrame(frame);
+    m_ui->timeliner->resetCashedFrames();
+}
+
+void ZTimeline::updateCachedFrame(int frame, bool bCached)
+{
+    m_ui->timeliner->updateCachedFrame(frame, bCached);
 }
 
 void ZTimeline::paintEvent(QPaintEvent* event)

@@ -536,6 +536,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
         }
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
+        timeline->resetCashedFrames();
     }
     else
     {
@@ -636,6 +637,9 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
     scene->objectsMan->lightObjects.clear();
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    timeline->resetCashedFrames();
 }
 
 void DisplayWidget::onRun() {
@@ -653,6 +657,7 @@ void DisplayWidget::onRun() {
     QPair<int, int> fromTo = timeline->fromTo();
     int beginFrame = fromTo.first;
     int endFrame = fromTo.second;
+    timeline->resetCashedFrames();
     if (endFrame >= beginFrame && beginFrame >= 0) {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel *pModel = pGraphsMgr->currentModel();

@@ -447,6 +447,11 @@ bool _ZenoSubGraphView::eventFilter(QObject* watched, QEvent* event)
 
 void _ZenoSubGraphView::focusOutEvent(QFocusEvent* event)
 {
+    if (m_dragMove)
+    {
+        m_dragMove = false;
+        setDragMode(QGraphicsView::NoDrag);
+    }
     QGraphicsView::focusOutEvent(event);
 }
 
