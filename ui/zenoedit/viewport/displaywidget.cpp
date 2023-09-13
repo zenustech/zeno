@@ -876,6 +876,7 @@ void DisplayWidget::onRecord()
         connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
         connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
         connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
+        connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, &DisplayWidget::onFrameFinish, Qt::UniqueConnection);
         connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
@@ -956,6 +957,17 @@ void DisplayWidget::onRecord()
         }
     }
     m_sliderFeq = curSlidFeq;
+}
+
+void DisplayWidget::onFrameFinish(int frame)
+{
+    if (m_recordMgr.getRecordInfo().bAutoRemoveCache)
+    {
+        auto mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        if (ZTimeline* timeline = mainWin->timeline())
+            timeline->updateCachedFrame(frame, false);
+    }
 }
 
 bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
