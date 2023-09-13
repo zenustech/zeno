@@ -17,6 +17,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
 #include <zeno/extra/GlobalState.h>
+#include <zeno/funcs/ParseObjectFromUi.h>
 
 //#define DEBUG_DIRECTLY
 
@@ -154,7 +155,7 @@ int optixcmd(const QCoreApplication& app, int port)
         }
 
         //and then check the cache lock.
-        QString sLockFile = QString("%1/zcache_%2.lock").arg(cachePath).arg(frame);
+        QString sLockFile = QString("%1/%2%3.lock").arg(cachePath).arg(zeno::iotags::sZencache_lockfile_prefix).arg(frame);
         QLockFile lckFile(sLockFile);
         bool ret = lckFile.tryLock();
         if (!ret)

@@ -719,6 +719,11 @@ void ZenoSubGraphView::selectNodes(const QModelIndexList &indexs)
     }
 }
 
+void ZenoSubGraphView::cameraFocus()
+{
+    m_view->cameraFocus();
+}
+
 void ZenoSubGraphView::keyPressEvent(QKeyEvent *event) {
     int uKey = event->key();
     Qt::KeyboardModifiers modifiers = event->modifiers();

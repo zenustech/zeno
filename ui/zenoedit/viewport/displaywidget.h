@@ -58,6 +58,7 @@ public:
     bool isCurrent();
     void setLoopPlaying(bool enable);
     std::tuple<int, int, bool> getOriginWindowSizeInfo();
+    void cameraLookTo(int dir);
 protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
 public slots:
@@ -75,11 +76,24 @@ public slots:
     void onCommandDispatched(int actionType, bool bTriggered);
     void onNodeSelected(const QModelIndex& subgIdx, const QModelIndexList& nodes, bool select);
     void onMouseHoverMoved();
+    void onDockViewAction(bool triggered);
 
 signals:
     void frameUpdated(int new_frame);
     void frameRunFinished(int frame);
     void optixProcStartRecord();
+
+public:
+    enum DockViewActionType {
+        ACTION_FRONT_VIEW = 0,
+        ACTION_RIGHT_VIEW,
+        ACTION_TOP_VIEW,
+        ACTION_BACK_VIEW,
+        ACTION_LEFT_VIEW,
+        ACTION_BOTTOM_VIEW,
+        ACTION_ORIGIN_VIEW,
+        ACTION_FOCUS,
+    };
 
 private slots:
     void onFrameFinish(int frame);
