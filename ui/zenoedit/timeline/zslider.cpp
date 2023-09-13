@@ -15,7 +15,6 @@ ZSlider::ZSlider(QWidget* parent)
     , smallScaleH(ZenoStyle::dpiScaled(5))
     , fontHeight(ZenoStyle::dpiScaled(15))
     , fontScaleSpacing(ZenoStyle::dpiScaled(4))
-    , m_finishedFrame(-1)
 {
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Fixed);
 }
@@ -53,7 +52,6 @@ void ZSlider::setSliderValue(int value)
     if (newVal == m_value)
         return;
     m_value = newVal;
-    m_finishedFrame = -1;
     update();
     emit sliderValueChange(m_value);
 }
@@ -106,10 +104,27 @@ void ZSlider::updateKeyFrames(const QVector<int> &keys)
     update();
 }
 
-void ZSlider::setFinishedFrame(int frame)
+void ZSlider::resetCashedFrames()
 {
-    m_finishedFrame = frame;
-    update();
+    if (!m_cachedFrames.isEmpty())
+    {
+        m_cachedFrames.clear();
+        update();
+    }
+}
+
+void ZSlider::updateCachedFrame(int frame, bool bCached)
+{
+    if (bCached && !m_cachedFrames.contains(frame))
+    {
+        m_cachedFrames << frame;
+        update();
+    }
+    else if (!bCached && m_cachedFrames.contains(frame))
+    {
+        m_cachedFrames.removeOne(frame);
+        update();
+    }
 }
 
 int ZSlider::_getframes()
@@ -233,13 +248,21 @@ void ZSlider::paintEvent(QPaintEvent* event)
     }
 
     //draw finished frame
-    if (m_finishedFrame != -1)
+    for (int frame : m_cachedFrames)
     {
-        int x = left - painter.pen().width();
-        int h = ZenoStyle::dpiScaled(scaleH);
-        int y = height() - h;
-        int w = _frameToPos(m_finishedFrame - m_from) - x;
-        QRect rec(x, y, w, h);
+        int x = _frameToPos(m_from == frame ? 0 : frame - m_from - 1);
+        int y = height() - scaleH;
+        int w = 0;
+        if (frame == m_from && frame != m_to)
+        {
+            if (m_cachedFrames.contains(frame + 1))
+                w = 0;
+            else
+                w = ZenoStyle::dpiScaled(6);
+        }
+        else
+            w = _frameToPos(1) - m_sHMargin;
+        QRect rec(x, y, w, scaleH);
         painter.fillRect(rec, QColor(169, 169, 169, 100));
     }
 }

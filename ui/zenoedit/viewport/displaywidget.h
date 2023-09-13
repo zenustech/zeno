@@ -81,6 +81,9 @@ signals:
     void frameRunFinished(int frame);
     void optixProcStartRecord();
 
+private slots:
+    void onFrameFinish(int frame);
+
 private:
     bool isOptxRendering() const;
     void initRecordMgr();

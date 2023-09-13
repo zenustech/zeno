@@ -13,7 +13,8 @@ public:
     void setFromTo(int from, int to);
     int value() const;
     void updateKeyFrames(const QVector<int> &keys);
-    void setFinishedFrame(int frame);
+    void resetCashedFrames();
+    void updateCachedFrame(int frame, bool bCached);
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -45,7 +46,7 @@ private:
     int m_lengthUnit[3] = {1, 2, 5};
     int getCellLength(int total);
     QVector<int> m_keyframes;
-    int m_finishedFrame;
+    QVector<int> m_cachedFrames;
 };
 
 #endif

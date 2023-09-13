@@ -34,6 +34,7 @@ public:
     ~RecordVideoMgr();
     void setRecordInfo(const VideoRecInfo& recInfo);
     void initRecordInfo(const VideoRecInfo& recInfo);
+    VideoRecInfo getRecordInfo() const;
 
 public slots:
     void cancelRecord();

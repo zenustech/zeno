@@ -100,6 +100,11 @@ void RecordVideoMgr::setRecordInfo(const VideoRecInfo& recInfo)
     }
 }
 
+VideoRecInfo RecordVideoMgr::getRecordInfo() const
+{
+    return m_recordInfo;
+}
+
 void RecordVideoMgr::endRecToExportVideo()
 {
     if (m_recordInfo.bExportEXR) {

@@ -521,6 +521,7 @@ void DisplayWidget::onSliderValueChanged(int frame)
         launchParam.projectFps = mainWin->timelineInfo().timelinefps;
         AppHelper::initLaunchCacheParam(launchParam);
         launchProgram(pModel, launchParam);
+        timeline->resetCashedFrames();
     }
     else
     {
@@ -621,6 +622,9 @@ void DisplayWidget::onRun(LAUNCH_PARAM launchParam)
     ZASSERT_EXIT(pZenoVis);
     auto scene = pZenoVis->getSession()->get_scene();
     scene->objectsMan->lightObjects.clear();
+    ZTimeline* timeline = mainWin->timeline();
+    ZASSERT_EXIT(timeline);
+    timeline->resetCashedFrames();
 }
 
 void DisplayWidget::onRun() {
@@ -638,6 +642,7 @@ void DisplayWidget::onRun() {
     QPair<int, int> fromTo = timeline->fromTo();
     int beginFrame = fromTo.first;
     int endFrame = fromTo.second;
+    timeline->resetCashedFrames();
     if (endFrame >= beginFrame && beginFrame >= 0) {
         auto pGraphsMgr = zenoApp->graphsManagment();
         IGraphsModel *pModel = pGraphsMgr->currentModel();
@@ -820,6 +825,7 @@ void DisplayWidget::onRecord()
         connect(&m_recordMgr, SIGNAL(frameFinished(int)), &dlgProc, SLOT(onFrameFinished(int)));
         connect(&m_recordMgr, SIGNAL(recordFinished(QString)), &dlgProc, SLOT(onRecordFinished(QString)));
         connect(&m_recordMgr, SIGNAL(recordFailed(QString)), &dlgProc, SLOT(onRecordFailed(QString)));
+        connect(&m_recordMgr, &RecordVideoMgr::frameFinished, this, &DisplayWidget::onFrameFinish, Qt::UniqueConnection);
         connect(&dlgProc, SIGNAL(cancelTriggered()), &m_recordMgr, SLOT(cancelRecord()));
         connect(&dlgProc, &ZRecordProgressDlg::pauseTriggered, this, [=]() { mainWin->toggleTimelinePlay(false); });
         connect(&dlgProc, &ZRecordProgressDlg::continueTriggered, this, [=]() { mainWin->toggleTimelinePlay(true); });
@@ -900,6 +906,17 @@ void DisplayWidget::onRecord()
         }
     }
     m_sliderFeq = curSlidFeq;
+}
+
+void DisplayWidget::onFrameFinish(int frame)
+{
+    if (m_recordMgr.getRecordInfo().bAutoRemoveCache)
+    {
+        auto mainWin = zenoApp->getMainWindow();
+        ZASSERT_EXIT(mainWin);
+        if (ZTimeline* timeline = mainWin->timeline())
+            timeline->updateCachedFrame(frame, false);
+    }
 }
 
 bool DisplayWidget::onRecord_cmd(const VideoRecInfo& recInfo)
