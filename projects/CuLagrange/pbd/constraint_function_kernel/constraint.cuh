@@ -8,9 +8,9 @@ namespace zeno { namespace CONSTRAINT {
     constexpr bool solve_DistanceConstraint(
         const VECTOR3d &p0, SCALER invMass0, 
         const VECTOR3d &p1, SCALER invMass1,
-        const SCALER restLength,
-        const SCALER stiffness,
-        const SCALER dt,
+        const SCALER& restLength,
+        const SCALER& stiffness,
+        const SCALER& dt,
         SCALER& lambda,
         VECTOR3d &corr0, VECTOR3d &corr1)
     {				
@@ -58,6 +58,7 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d &p0, SCALER invMass0, 
         const VECTOR3d &p1, SCALER invMass1,
         const SCALER expectedDistance,
+        const SCALER stiffness,
         VECTOR3d &corr0, VECTOR3d &corr1){		
         VECTOR3d diff = p0 - p1;
         SCALER distance = diff.norm();
@@ -66,7 +67,8 @@ namespace zeno { namespace CONSTRAINT {
             VECTOR3d gradient = diff / (distance + static_cast<SCALER>(1e-6));
             SCALER denom = invMass0 + invMass1;
             SCALER lambda = (distance - expectedDistance) /denom;
-            auto common = lambda * gradient;
+            auto common = stiffness * lambda * gradient;
+            // auto common = lambda * gradient;
             corr0 = -invMass0 * common;
             corr1 = invMass1 * common;
             return false;
@@ -303,7 +305,7 @@ namespace zeno { namespace CONSTRAINT {
         // for(int i = 0;i != 4;++i)
         //     printf("gradC[%d] : %f %f %f\n",i,(float)gradC[i][0],(float)gradC[i][1],(float)gradC[i][2]);
 
-        if (zs::abs(sum_normGradC) > eps)
+        if (sum_normGradC > eps)
         {
             // compute impulse-based scaling factor
             SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
@@ -333,6 +335,7 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d& p2, SCALER invMass2,
         const VECTOR3d& p3, SCALER invMass3,
         const MATRIX4d& Q,
+        const SCALER& stiffness,
         VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3){
         constexpr SCALER eps = static_cast<SCALER>(1e-6);
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
@@ -363,15 +366,16 @@ namespace zeno { namespace CONSTRAINT {
         }
 
         // exit early if required
-        if (zs::abs(sum_normGradC) > eps)
+        if (sum_normGradC > eps)
         {
             // compute impulse-based scaling factor
-            const SCALER s = -(energy) / sum_normGradC;
+            const SCALER s = -(energy)/ sum_normGradC;
 
-            corr0 = (s * invMass[2]) * gradC[2];
-            corr1 = (s * invMass[3]) * gradC[3];
-            corr2 = (s * invMass[0]) * gradC[0];
-            corr3 = (s * invMass[1]) * gradC[1];
+            corr0 = stiffness  * (s * invMass[2]) * gradC[2];
+            corr1 = stiffness  * (s * invMass[3]) * gradC[3];
+            corr2 = stiffness  * (s * invMass[0]) * gradC[0];
+            corr3 = stiffness  * (s * invMass[1]) * gradC[1];
+
 
             return true;
         }else {

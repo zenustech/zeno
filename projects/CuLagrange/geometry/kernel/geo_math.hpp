@@ -629,6 +629,19 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
     }
 
 
+    constexpr void pointBaryCentric(const VECTOR3& v0, const VECTOR3& v1, 
+                const VECTOR3& v2, const VECTOR3& v,VECTOR3& bary) {
+        const VECTOR3 e1 = v1 - v0;
+        const VECTOR3 e2 = v2 - v0;
+        const VECTOR3 n = e1.cross(e2);
+        const VECTOR3 na = (v2 - v1).cross(v - v1);
+        const VECTOR3 nb = (v0 - v2).cross(v - v2);
+        const VECTOR3 nc = (v1 - v0).cross(v - v0);
+        const VECTOR3 barycentric(n.dot(na) / n.l2NormSqr(),
+                                    n.dot(nb) / n.l2NormSqr(),
+                                    n.dot(nc) / n.l2NormSqr());
+        bary = barycentric;
+    }
 
     constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1, 
                                         const VECTOR3& v2, const VECTOR3& v,REAL& barySum)
