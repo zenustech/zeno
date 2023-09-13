@@ -95,6 +95,9 @@ public:
         ACTION_FOCUS,
     };
 
+private slots:
+    void onFrameFinish(int frame);
+
 private:
     bool isOptxRendering() const;
     void initRecordMgr();
