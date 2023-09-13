@@ -1003,7 +1003,7 @@ struct DetangleCCDCollision : INode {
         using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
         constexpr auto exec_tag = wrapv<space>{};
         constexpr auto eps = (T)1e-7;
-        constexpr auto MAX_PT_COLLISION_PAIRS = 1000000;
+        // constexpr auto MAX_PT_COLLISION_PAIRS = 1000000;
         
         auto zsparticles = get_input<ZenoParticles>("zsparticles");
         auto current_x_tag = get_input2<std::string>("current_x_tag");
@@ -1020,7 +1020,8 @@ struct DetangleCCDCollision : INode {
 
         dtiles_t vtemp(verts.get_allocator(),{
             {"x",3},
-            {"v",3}
+            {"v",3},
+            {"minv",1}
         },(size_t)verts.size());
 
         auto nm_ccd_iters = get_input2<int>("nm_ccd_iters");
@@ -1032,6 +1033,7 @@ struct DetangleCCDCollision : INode {
             pre_x_tag = zs::SmallString(pre_x_tag)] ZS_LAMBDA(int vi) mutable {
                 vtemp.tuple(dim_c<3>,"x",vi) = verts.pack(dim_c<3>,pre_x_tag,vi);
                 vtemp.tuple(dim_c<3>,"v",vi) = verts.pack(dim_c<3>,current_x_tag,vi) - verts.pack(dim_c<3>,pre_x_tag,vi);
+                vtemp("minv",vi) = verts("minv",vi);
         });
 
 
@@ -1044,14 +1046,26 @@ struct DetangleCCDCollision : INode {
         auto do_pt_detection = get_input2<bool>("do_pt_detection");
     
         for(int iter = 0;iter != nm_ccd_iters;++iter) {
-            // std::cout << "do ccd iters : " << iter << std::endl;
 
             cudaPol(zs::range(impulse_buffer),[]ZS_LAMBDA(auto& imp) mutable {imp = vec3::uniform(0);});
             cudaPol(zs::range(impulse_count),[]ZS_LAMBDA(auto& c) mutable {c = 0;});
 
-
             if(do_pt_detection) {
-                std::cout << "do_ccd_pt_detection" << std::endl;
+#if 1
+                auto do_bvh_refit = iter > 0;
+                COLLISION_UTILS::calc_continous_self_PT_collision_impulse(cudaPol,
+                    verts,
+                    vtemp,"x","v",
+                    tris,
+                    thickness,
+                    triBvh,
+                    do_bvh_refit,
+                    impulse_buffer,
+                    impulse_count);
+#else
+                auto xnorm = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"x","x");
+                if(isnan(xnorm))
+                    printf("nan xnorm detected\n");
 
                 auto triBvs = retrieve_bounding_volumes(cudaPol,vtemp,tris,vtemp,zs::wrapv<3>{},1.f,thickness / (T)2,"x","v");
                 if(iter == 0)
@@ -1089,22 +1103,38 @@ struct DetangleCCDCollision : INode {
                                 tp[i] = vtemp.pack(dim_c<3>,"x",tri[i]);
                                 tv[i] = vtemp.pack(dim_c<3>,"v",tri[i]);
                             }
-                            
+                            for(int i = 0;i != 3;++i)
+                                if(isnan(tp[i].norm())){
+                                    printf("nan tp[%d] detected %d %d\n",ti,vi);
+                                    // return;
+                                }
+
                             auto alpha = (T)1.0;
                             pt_accd(p,tp[0],tp[1],tp[2],v,tv[0],tv[1],tv[2],(T)0.2,(T)0,alpha);
 
+
                             if(alpha > (T)1.0 || alpha < (T)0)
                                 return;
+                            if(isnan(alpha))  {
+                                printf("nan alpha %d %d\n",ti,vi);
+                                // return;
+                            }
 
                             auto np = p + alpha * v;
                             vec3 ntp[3] = {};
                             for(int i = 0;i != 3;++i)
                                 ntp[i] = tp[i] + alpha * tv[i];
-    
+
                             vec3 bary_centric{};
                             LSL_GEO::pointBaryCentric(ntp[0],ntp[1],ntp[2],np,bary_centric);
                             for(int i = 0;i != 3;++i)
                                 bary_centric[i] = bary_centric[i] < 0 ? 0 : bary_centric[i];
+
+                            for(int i = 0;i != 3;++i)
+                                if(isnan(bary_centric[i])) {
+                                    printf("nan bary_centric[%f %f %f] %d %d\n",bary_centric[0],bary_centric[1],bary_centric[2],ti,vi);
+                                    // return;
+                                }
                             auto barySum = bary_centric[0] + bary_centric[1] + bary_centric[2];
                             bary_centric = bary_centric / barySum;  
 
@@ -1117,6 +1147,10 @@ struct DetangleCCDCollision : INode {
                             }
                             
                             auto collision_nrm = LSL_GEO::facet_normal(ntp[0],ntp[1],ntp[2]);
+                            if(isnan(collision_nrm.norm())) {
+                                printf("nan pt normal[%d %d]\n",ti,vi);
+                                // return;
+                            }
                             auto relative_velocity = v - vt_project;
                             if(collision_nrm.dot(relative_velocity) > 0)
                                 collision_nrm *= -1;
@@ -1128,6 +1162,10 @@ struct DetangleCCDCollision : INode {
                                 cm += bary_centric[i] * bary_centric[i] * verts("minv",tri[i]);
                             if(cm < eps)
                                 return;
+                            if(isnan(cm)) {
+                                printf("nan cm detected[%d %d]\n",ti,vi);
+                                // return;
+                            }
                             cm = (T)1/cm;       
                             
                             auto delta_rv = collision_nrm * relative_normal_velocity * (1 - alpha) * cm; 
@@ -1145,7 +1183,7 @@ struct DetangleCCDCollision : INode {
                         };
                         bvh.iter_neighbors(bv,resolve_ccd_colliding_pairs);
                 });
-
+#endif
             }
 
             if(do_ee_detection) {
@@ -1279,8 +1317,8 @@ struct DetangleCCDCollision : INode {
                 if(impulse_buffer[vi].norm() < eps)
                     return;
                 auto impulse = relaxation_rate * impulse_buffer[vi] / impulse_count[vi];
-                auto dv = impulse * verts("minv",vi);
-                vtemp.tuple(dim_c<3>,"v",vi) = vtemp.pack(dim_c<3>,"v",vi) + dv;
+                // auto dv = impulse
+                vtemp.tuple(dim_c<3>,"v",vi) = vtemp.pack(dim_c<3>,"v",vi) + impulse;
                 // for(int i = 0;i != 3;++i)   
                 //     atomic_add(exec_tag,&vtemp("v",i,vi),dv[i]);
             });
@@ -1315,6 +1353,134 @@ ZENDEFNODE(DetangleCCDCollision, {{{"zsparticles"},
 							{},
 							{"PBD"}});
 
+
+struct VisualizeContinousCollision : INode {
+    using T = float;
+    using vec3 = zs::vec<T,3>;
+    using dtiles_t = zs::TileVector<T,32>;
+
+    virtual void apply() override {
+        using namespace zs;
+        using lbvh_t = typename ZenoLinearBvh::lbvh_t;
+        constexpr auto cuda_space = execspace_e::cuda;
+        auto cudaPol = cuda_exec();
+
+        constexpr auto omp_space = execspace_e::openmp;  
+        auto ompPol = omp_exec();  
+        
+        auto zsparticles = get_input<ZenoParticles>("zsparticles");
+        auto current_x_tag = get_input2<std::string>("current_x_tag");
+        auto pre_x_tag = get_input2<std::string>("previous_x_tag");
+
+        auto thickness = get_input2<float>("thickness");
+
+        auto& verts = zsparticles->getParticles();
+        const auto& tris = zsparticles->getQuadraturePoints();    
+        const auto &edges = (*zsparticles)[ZenoParticles::s_surfEdgeTag]; 
+
+        dtiles_t vtemp(verts.get_allocator(),{
+            {"x",3},
+            {"v",3},
+            {"minv",1}
+        },(size_t)verts.size());
+
+        lbvh_t triBvh{},eBvh{};
+        // auto nm_ccd_iters = get_input2<int>("nm_ccd_iters");
+
+        cudaPol(zs::range(verts.size()),[
+            verts = proxy<cuda_space>({},verts),
+            vtemp = proxy<cuda_space>({},vtemp),
+            current_x_tag = zs::SmallString(current_x_tag),
+            pre_x_tag = zs::SmallString(pre_x_tag)] ZS_LAMBDA(int vi) mutable {
+                vtemp.tuple(dim_c<3>,"x",vi) = verts.pack(dim_c<3>,pre_x_tag,vi);
+                vtemp.tuple(dim_c<3>,"v",vi) = verts.pack(dim_c<3>,current_x_tag,vi) - verts.pack(dim_c<3>,pre_x_tag,vi);
+                vtemp("minv",vi) = verts("minv",vi);
+        });
+ 
+        zs::Vector<vec3> impulse_buffer{verts.get_allocator(),verts.size()};
+        zs::Vector<int> impulse_count{verts.get_allocator(),verts.size()};
+
+        cudaPol(zs::range(impulse_buffer),[]ZS_LAMBDA(auto& imp) mutable {imp = vec3::uniform(0);});
+        cudaPol(zs::range(impulse_count),[]ZS_LAMBDA(auto& c) mutable {c = 0;});
+
+        COLLISION_UTILS::calc_continous_self_PT_collision_impulse(cudaPol,
+            verts,
+            vtemp,"x","v",
+            tris,
+            thickness,
+            triBvh,
+            false,
+            impulse_buffer,
+            impulse_count);
+        
+        cudaPol(zs::range(impulse_buffer.size()),[
+            impulse_buffer = proxy<cuda_space>(impulse_buffer),
+            impulse_count = proxy<cuda_space>(impulse_count)] ZS_LAMBDA(int vi) mutable {
+                if(impulse_count[vi] > 0) {
+                    impulse_buffer[vi] = impulse_buffer[vi] / (T)impulse_count[vi];
+                    // printf("impulse[%d] : %f %f %f\n",vi
+                    //     ,(float)impulse_buffer[vi][0]
+                    //     ,(float)impulse_buffer[vi][1]
+                    //     ,(float)impulse_buffer[vi][2]);
+                }
+        });
+
+        dtiles_t ccd_PT_collision_vis(verts.get_allocator(),{
+            {"impulse",3},
+            {"p0",3},
+            {"p1",3},
+            {"pp",3}
+        },verts.size());
+
+        cudaPol(zs::range(verts.size()),[
+            ccd_PT_collision_vis = proxy<cuda_space>({},ccd_PT_collision_vis),
+            impulse_buffer = proxy<cuda_space>(impulse_buffer),
+            vtemp = proxy<cuda_space>({},vtemp)] ZS_LAMBDA(int vi) mutable {
+                ccd_PT_collision_vis.tuple(dim_c<3>,"impulse",vi) = impulse_buffer[vi];
+                ccd_PT_collision_vis.tuple(dim_c<3>,"p0",vi) = vtemp.pack(dim_c<3>,"x",vi);
+                ccd_PT_collision_vis.tuple(dim_c<3>,"p1",vi) = vtemp.pack(dim_c<3>,"x",vi) + vtemp.pack(dim_c<3>,"v",vi);
+                ccd_PT_collision_vis.tuple(dim_c<3>,"pp",vi) = vtemp.pack(dim_c<3>,"x",vi) + vtemp.pack(dim_c<3>,"v",vi) + impulse_buffer[vi];
+        });
+
+        ccd_PT_collision_vis = ccd_PT_collision_vis.clone({zs::memsrc_e::host});
+        auto prim_PT = std::make_shared<PrimitiveObject>();
+        auto& vis_verts_PT = prim_PT->verts;
+        auto& vis_lines_PT = prim_PT->lines;
+        vis_verts_PT.resize(verts.size() * 2);
+        vis_lines_PT.resize(verts.size());
+
+        auto scale = get_input2<float>("scale");
+
+        ompPol(zs::range(verts.size()),[
+            &vis_verts_PT,&vis_lines_PT,
+            scale = scale,
+            ccd_PT_collision_vis = proxy<omp_space>({},ccd_PT_collision_vis)] (int vi) mutable {
+                auto p = ccd_PT_collision_vis.pack(dim_c<3>,"p0",vi);
+                auto impulse = ccd_PT_collision_vis.pack(dim_c<3>,"impulse",vi);
+                auto pc = p + impulse * scale;
+                vis_verts_PT[vi * 2 + 0] = p.to_array();
+                vis_verts_PT[vi * 2 + 1] = pc.to_array();
+                vis_lines_PT[vi] = zeno::vec2i{vi * 2 + 0,vi * 2 + 1};
+        });
+
+        set_output("impulse_PT",std::move(prim_PT));
+    }
+};
+
+ZENDEFNODE(VisualizeContinousCollision, {{{"zsparticles"},
+                                {"string","current_x_tag","x"},
+                                {"string","previous_x_tag","px"},
+                                // {"string","pscaleTag","pscale"},
+                                // {"float","repeling_strength","1.0"},
+                                {"float","thickness","0.01"},
+                                // {"int","nm_imminent_iters","1"},
+                                // {"float","imm_restitution","0.1"},
+                                {"float","scale","0.25"},
+                                // {"bool","add_repulsion_force","0"},
+                            },
+							{{"impulse_PT"}},
+							{},
+							{"PBD"}});
 
 struct SDFColliderProject : INode {
     using T = float;
