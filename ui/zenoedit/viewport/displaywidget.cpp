@@ -523,6 +523,12 @@ void DisplayWidget::onSliderValueChanged(int frame)
         IGraphsModel *pModel = pGraphsMgr->currentModel();
         if (!pModel)
             return;
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+        ZASSERT_EXIT(mgr);
+        ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
+        zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt); });     //restore old cache option
+        mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
+
         LAUNCH_PARAM launchParam;
         launchParam.beginFrame = frame;
         launchParam.endFrame = frame;
@@ -852,6 +858,12 @@ void DisplayWidget::onRecord()
             ZASSERT_EXIT(main);
             launchParam.projectFps = main->timelineInfo().timelinefps;
             launchParam.zsgPath = zenoApp->graphsManagment()->zsgDir();
+
+            std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
+            ZASSERT_EXIT(mgr);
+            ZCacheMgr::cacheOption oldCacheOpt = mgr->getCacheOption();
+            zeno::scope_exit sp([=] {mgr->setCacheOpt(oldCacheOpt);});  //restore old cache option
+            mgr->setCacheOpt(ZCacheMgr::Opt_RunAll);
 
 #ifdef ZENO_OPTIX_PROC
             if (!m_bGLView)

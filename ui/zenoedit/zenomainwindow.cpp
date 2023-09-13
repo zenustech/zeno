@@ -661,6 +661,8 @@ void ZenoMainWindow::initTimelineDock()
 
     auto graphs = zenoApp->graphsManagment();
     connect(graphs, &GraphsManagment::modelDataChanged, this, [=]() {
+        if (!m_bAlways && !m_bAlwaysLightCamera && !m_bAlwaysMaterial)
+            return;
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
