@@ -195,8 +195,10 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
         img.fill(Qt::black);
         QPainter painter(&img);
         painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", recInfo.res.x() > recInfo.res.y() ? recInfo.res.y() / 20 : recInfo.res.x() / 20));
-        painter.drawText(img.rect(), Qt::AlignCenter, QString(tr("current frame cache removed")) + ",\n" + QString(tr("recording skipped")));
+        QFont fnt = zenoApp->font();
+        fnt.setPointSize(16);
+        painter.setFont(fnt);
+        painter.drawText(img.rect(), Qt::AlignCenter, QString(tr("the zencache of this frame has been removed")));
         img.save(QString::fromStdString(record_file), "JPG");
         return true;
     }
