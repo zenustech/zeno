@@ -183,6 +183,11 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     if (numOfFrames == 0)
         return false;
 
+    if (globalComm->isFrameBroken(frame))
+    {
+        //todo
+    }
+
     std::pair<int, int> frameRg = globalComm->frameRange();
     int beginFrame = frameRg.first;
     int endFrame = frameRg.first + numOfFrames - 1;

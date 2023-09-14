@@ -37,20 +37,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     connect(m_ui->btnRecordNow, SIGNAL(clicked()), this, SLOT(onRecordNow()));
     connect(m_ui->btnCancelRecord, SIGNAL(clicked()), this, SLOT(onCancelRecord()));
 
-    if (hasBrokenFrameData())
-    {
-        m_ui->lblRunFrame->setText(tr("Frame range incomplete, please rerun."));
-        m_ui->btnRunFirst->setVisible(true);
-        m_ui->btnRecordNow->setVisible(false);
-
-        m_ui->editRecFrom->setValidator(new QIntValidator);
-        m_ui->editRecTo->setValidator(new QIntValidator);
-
-        m_ui->editRecFrom->setText(QString::number(pair.first));
-        m_ui->editRecTo->setText(QString::number(pair.second));
-        m_state = NO_RUN;
-    }
-    else if (!bWorking)
+    if (!bWorking)
     {
         m_ui->editRecFrom->setValidator(new QIntValidator);
         m_ui->editRecTo->setValidator(new QIntValidator);
@@ -76,6 +63,8 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
             m_ui->btnRecordNow->setVisible(true);
             m_ui->btnRunFirst->setVisible(true);
             m_ui->btnCancelRecord->setVisible(true);
+
+            bool bHasBrokenData = hasBrokenFrameData();
 
             if (nLastRunTo == pair.second)
             {
@@ -122,10 +111,12 @@ bool ZRecFrameSelectDlg::hasBrokenFrameData()
     auto pair = zeno::getSession().globalComm->frameRange();
 
     int nRunFrames = gblComm->numOfFinishedFrame();
-    if (nRunFrames > 0 && !gblComm->isFrameCompleted(pair.first))
-        return true;
-    else
-        return false;
+    for (int frame = pair.first; frame <= pair.second; frame++)
+    {
+        if (gblComm->isFrameBroken(frame))
+            return true;
+    }
+    return false;
 }
 
 void ZRecFrameSelectDlg::onRecFromEdited()

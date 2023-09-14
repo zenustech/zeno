@@ -306,4 +306,8 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             m_recordInfo = VideoRecInfo();
         }
     }
+    else if (pGlobalComm->isFrameBroken(currFrame))
+    {
+        //todo
+    }
 }
