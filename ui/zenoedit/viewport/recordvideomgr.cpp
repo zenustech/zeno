@@ -308,6 +308,27 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
     }
     else if (pGlobalComm->isFrameBroken(currFrame))
     {
-        //todo
+        QImage img(QSize((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y()), QImage::Format_RGBA8888);
+        img.fill(Qt::black);
+        QPainter painter(&img);
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", m_recordInfo.res.x() > m_recordInfo.res.y() ? m_recordInfo.res.y() / 20 : m_recordInfo.res.x() / 20));
+        painter.drawText(img.rect(), Qt::AlignCenter, QString(tr("current frame cache removed")) + ",\n" + QString(tr("recording skipped")));
+        img.save(QString::fromStdString(zeno::format("{}/P/{:07d}.jpg", m_recordInfo.record_path.toStdString(), currFrame)), "JPG");
+
+        m_recordInfo.m_bFrameFinished[currFrame] = true;
+
+        if (currFrame == m_recordInfo.frameRange.second)
+        {
+            //disconnect first, to stop receiving the signal from viewport.
+            disconnectSignal();
+
+            endRecToExportVideo();
+
+            zeno::log_critical("after executing endRecToExportVideo()");
+
+            //clear issues:
+            m_recordInfo = VideoRecInfo();
+        }
     }
 }
