@@ -1420,6 +1420,14 @@
         <source>ffmpeg command failed, please whether check ffmpeg exists.</source>
         <translation type="unfinished"></translation>
     </message>
+	<message>
+        <source>current frame cache removed</source>
+        <translation>当前帧缓存不存在</translation>
+    </message>
+	<message>
+        <source>recording skipped</source>
+        <translation>已跳过</translation>
+    </message>
 </context>
 <context>
     <name>Timeline</name>
@@ -3064,6 +3072,17 @@ All Files (*)</source>
     <message>
         <source>Settings</source>
         <translation>设置</translation>
+    </message>
+</context>
+<context>
+    <name>OptixWorker</name>
+	<message>
+        <source>current frame cache removed</source>
+        <translation>当前帧缓存不存在</translation>
+    </message>
+	<message>
+        <source>recording skipped</source>
+        <translation>已跳过</translation>
     </message>
 </context>
 </TS>

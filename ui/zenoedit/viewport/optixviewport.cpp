@@ -183,16 +183,23 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
     if (numOfFrames == 0)
         return false;
 
-    if (globalComm->isFrameBroken(frame))
-    {
-        //todo
-    }
-
     std::pair<int, int> frameRg = globalComm->frameRange();
     int beginFrame = frameRg.first;
     int endFrame = frameRg.first + numOfFrames - 1;
     if (frame < beginFrame || frame > endFrame)
         return false;
+
+    if (globalComm->isFrameBroken(frame))
+    {
+        QImage img(QSize((int)recInfo.res.x(), (int)recInfo.res.y()), QImage::Format_RGBA8888);
+        img.fill(Qt::black);
+        QPainter painter(&img);
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", recInfo.res.x() > recInfo.res.y() ? recInfo.res.y() / 20 : recInfo.res.x() / 20));
+        painter.drawText(img.rect(), Qt::AlignCenter, QString(tr("current frame cache removed")) + ",\n" + QString(tr("recording skipped")));
+        img.save(QString::fromStdString(record_file), "JPG");
+        return true;
+    }
 
     int actualFrame = m_zenoVis->setCurrentFrameId(frame);
     m_zenoVis->doFrameUpdate();
