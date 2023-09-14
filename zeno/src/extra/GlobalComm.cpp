@@ -203,14 +203,14 @@ static bool fromDisk(std::string cachedir, int frameid, GlobalComm::ViewObjects 
 ZENO_API void GlobalComm::newFrame() {
     std::lock_guard lck(m_mtx);
     log_debug("GlobalComm::newFrame {}", m_frames.size());
-    m_frames.emplace_back().b_frame_completed = false;
+    m_frames.emplace_back().frame_state = FRAME_UNFINISH;
 }
 
 ZENO_API void GlobalComm::finishFrame() {
     std::lock_guard lck(m_mtx);
     log_debug("GlobalComm::finishFrame {}", m_maxPlayFrame);
     if (m_maxPlayFrame >= 0 && m_maxPlayFrame < m_frames.size())
-        m_frames[m_maxPlayFrame].b_frame_completed = true;
+        m_frames[m_maxPlayFrame].frame_state = FRAME_COMPLETED;
     m_maxPlayFrame += 1;
 }
 
@@ -321,7 +321,16 @@ ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
     frameid -= beginFrameNumber;
     if (frameid < 0 || frameid >= m_frames.size())
         return false;
-    return m_frames[frameid].b_frame_completed;
+    return m_frames[frameid].frame_state == FRAME_COMPLETED;
+}
+
+ZENO_API bool GlobalComm::isFrameBroken(int frameid) const
+{
+    std::lock_guard lck(m_mtx);
+    frameid -= beginFrameNumber;
+    if (frameid < 0 || frameid >= m_frames.size())
+        return false;
+    return m_frames[frameid].frame_state == FRAME_BROKEN;
 }
 
 ZENO_API int GlobalComm::maxCachedFramesNum()
@@ -354,7 +363,7 @@ ZENO_API bool GlobalComm::removeCache(int frame)
         }
         if (hasZencacheOnly)
         {
-            m_frames[frame - beginFrameNumber].b_frame_completed = false;
+            m_frames[frame - beginFrameNumber].frame_state = FRAME_BROKEN;
             std::filesystem::remove_all(dirToRemove);
             zeno::log_info("remove dir: {}", dirToRemove);
         }

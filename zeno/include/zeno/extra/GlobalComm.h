@@ -14,9 +14,15 @@ namespace zeno {
 struct GlobalComm {
     using ViewObjects = PolymorphicMap<std::map<std::string, std::shared_ptr<IObject>>>;
 
+    enum FRAME_STATE {
+        FRAME_UNFINISH,
+        FRAME_COMPLETED,
+        FRAME_BROKEN
+    };
+
     struct FrameData {
         ViewObjects view_objects;
-        bool b_frame_completed = false;
+        FRAME_STATE frame_state = FRAME_UNFINISH;
     };
     std::vector<FrameData> m_frames;
     int m_maxPlayFrame = 0;
@@ -43,6 +49,7 @@ struct GlobalComm {
     ZENO_API ViewObjects const *getViewObjects(const int frameid);
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool isFrameCompleted(int frameid) const;
+    ZENO_API bool isFrameBroken(int frameid) const;
     ZENO_API int maxCachedFramesNum();
 
     ZENO_API std::string cachePath();

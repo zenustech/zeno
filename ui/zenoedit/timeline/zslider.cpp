@@ -276,7 +276,8 @@ void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
 
     painter->setPen(Qt::NoPen);
     int y = height() - scaleH;
-    painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, y + scaleH)), QColor(76, 159, 244, 64));
+    //no need to show the progress of play frames.
+    //painter->fillRect(QRectF(QPointF(xleftmost, y), QPointF(xarrow_pos, y + scaleH)), QColor(76, 159, 244, 64));
 
     //draw handle.
     static const int handleHeight = ZenoStyle::dpiScaled(12);
