@@ -1014,8 +1014,8 @@ void calc_imminent_self_PT_collision_impulse(Pol& pol,
                         return;
 
                     auto bary_sum = zs::abs(bary_centric[0]) + zs::abs(bary_centric[1]) + zs::abs(bary_centric[2]);
-                    if(bary_sum > (T)(1.0 + eps * 10)) {
-                        // return;
+                    if(bary_sum > (T)(1.0 + eps * 100)) {
+                        return;
                         vec3 bnrms[3] = {};
                         auto hi = zs::reinterpret_bits<int>(tris("he_inds",ti));
                         for(int i = 0;i != 3;++i){
@@ -1458,6 +1458,12 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
 
                 vec4i inds{ea[0],ea[1],-1,-1};
 
+                T minvs[4] = {};
+                minvs[0] = verts("minv",ea[0]);
+                minvs[1] = verts("minv",ea[1]);
+
+                vec3 imps[4] = {};
+
                 auto bv = edgeBvs[ei];
 
                 auto do_close_proximity_detection = [&](int nei) mutable {
@@ -1469,21 +1475,20 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                             return;
                     }
 
-                    bool has_dynamic_points = false;
-                    for(int i = 0;i != 2;++i) {
-                        if(verts("minv",ea[i]) > eps)
-                            has_dynamic_points = true;
-                        if(verts("minv",eb[i]) > eps)
-                            has_dynamic_points = true;
-                    }
-                    if(!has_dynamic_points)
-                        return;
-
                     for(int i = 0;i != 2;++i) {
                         ps[i + 2] = verts.pack(dim_c<3>,xtag,eb[i]);
                         vs[i + 2] = verts.pack(dim_c<3>,vtag,eb[i]);
                         inds[i + 2] = eb[i];
+                        minvs[i + 2] = verts("minv",eb[i]);
                     }
+// The orginal reference code
+#if 0
+                    auto has_dynamic_points = false;
+                    for(int i = 0;i != 4;++i)
+                        if(minvs[i] > eps)
+                            has_dynamic_points = true;
+                    if(!has_dynamic_points)
+                            return;
 
                     auto alpha = (T)1.0;
                     if(!ee_accd(ps[0],ps[1],ps[2],ps[3],vs[0],vs[1],vs[2],vs[3],(T)0.2,(T)0.0,alpha))
@@ -1492,16 +1497,13 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                     vec3 nps[4] = {};
                     for(int i = 0;i != 4;++i)
                         nps[i] = ps[i] + alpha * vs[i];
+
+
                     vec3 int_a{},int_b{};
                     COLLISION_UTILS::IntersectLineSegments(nps[0],nps[1],nps[2],nps[3],int_a,int_b);
 
-                    auto ra = (nps[0] - int_a).norm() / (nps[0] - nps[1]).norm();;
-                    auto rb = (nps[2] - int_b).norm() / (nps[2] - nps[3]).norm();;
-
-                    // if(ra < 10 * eps || ra > 1 - 10 * eps)
-                    //     return;
-                    // if(rb < 10 * eps || rb > 1 - 10 * eps)
-                    //     return;
+                    auto ra = (nps[0] - int_a).norm() / (nps[0] - nps[1]).norm();
+                    auto rb = (nps[2] - int_b).norm() / (nps[2] - nps[3]).norm();
 
                     vec4 bary{ra - 1,-ra,1 - rb,rb};
                     auto pr = vec3::zeros();
@@ -1527,13 +1529,23 @@ void calc_continous_self_EE_collision_impulse(Pol& pol,
                     if(cm < eps)
                         return;
 
-                    auto impulse = -collision_nrm * vr_nrm * ((T)1 - alpha);  
+                    auto impulse = -collision_nrm * vr_nrm * ((T)1 - alpha); 
+                    
                     for(int i = 0;i != 4;++i) {
                         auto beta = (bary[i] * invMass("minv",inds[i])) / cm;
                         atomic_add(exec_tag,&impulse_count[inds[i]],1);
                         for(int d = 0;d != 3;++d)
                             atomic_add(exec_tag,&impulse_buffer[inds[i]][d],impulse[d] * beta);
-                    }                  
+                    }  
+#else
+                    if(!compute_continous_EE_collision_impulse(ps,vs,minvs,imps))
+                        return;    
+                    for(int i = 0;i != 4;++i) {
+                        atomic_add(exec_tag,&impulse_count[inds[i]],1);
+                        for(int d = 0;d != 3;++d)
+                            atomic_add(exec_tag,&impulse_buffer[inds[i]][d],imps[i][d]);
+                    }     
+#endif
                 };
                 bvh.iter_neighbors(bv,do_close_proximity_detection);
         });

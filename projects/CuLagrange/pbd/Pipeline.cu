@@ -1139,10 +1139,7 @@ struct DetangleCCDCollision : INode {
             if(nm_ccd_collision.getVal() == 0)
                 break;
         }
-
-
         std::cout << "finish solving continous collision " << std::endl;
-
         cudaPol(zs::range(verts.size()),[
             vtemp = proxy<space>({},vtemp),
             verts = proxy<space>({},verts),
