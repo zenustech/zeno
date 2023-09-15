@@ -4,8 +4,6 @@
 
 #include "DisneyBRDF.h"
 
-
-
 //list of component:
 //Sheen
 //Clearcoat
@@ -80,9 +78,13 @@ namespace DisneyBSDF{
 
         return xmid;
     }
+
     static __inline__ __device__ void
     setup_subsurface_radius(float eta, vec3 albedo, vec3 &radius)
     {
+      #if _SSS_FIXED_RADIUS_
+        radius = radius * 0.25f / M_PIf;
+      #else
         float inv_eta = 1.0f/eta;
         float F_dr = inv_eta * (-1.440f * inv_eta + 0.710f) + 0.668f + 0.0636f * eta;
         float fourthirdA = (4.0f / 3.0f) * (1.0f + F_dr) /
@@ -92,7 +94,7 @@ namespace DisneyBSDF{
         alpha_prime.y = bssrdf_dipole_compute_alpha_prime(albedo.y, fourthirdA);
         alpha_prime.z = bssrdf_dipole_compute_alpha_prime(albedo.z, fourthirdA);
         radius = radius * sqrt(3.0f * abs(vec3(1.0) - alpha_prime));
-
+      #endif
     }
     static __inline__ __device__ void 
     subsurface_random_walk_remap(const float albedo,
@@ -143,14 +145,16 @@ namespace DisneyBSDF{
     }
 
     static __inline__ __device__
-    void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha)
+    void CalculateExtinction2(vec3 albedo, vec3 radius, vec3 &sigma_t, vec3 &alpha, float eta)
     {
         vec3 r = radius;
-        setup_subsurface_radius(3.0, albedo, r);
+        setup_subsurface_radius(eta, albedo, r);
         subsurface_random_walk_remap(albedo.x, r.x, 0, sigma_t.x, alpha.x);
         subsurface_random_walk_remap(albedo.y, r.y, 0, sigma_t.y, alpha.y);
         subsurface_random_walk_remap(albedo.z, r.z, 0, sigma_t.z, alpha.z);
         //sigma_s = sigma_t * alpha;
+
+        //printf("radius= %f %f %f, \nr= %f %f %f \n", radius.x, radius.y, radius.z, r.x, r.y, r.z);
     }
 
     static __inline__ __device__
@@ -700,8 +704,7 @@ namespace DisneyBSDF{
               prd->ss_alpha = color;
               if (isSS) {
                 medium = PhaseFunctions::isotropic;
-                CalculateExtinction2(color, sssRadius, prd->sigma_t,
-                                     prd->ss_alpha);
+                CalculateExtinction2(color, sssRadius, prd->sigma_t, prd->ss_alpha, 1.4f);
               }
             }
           }

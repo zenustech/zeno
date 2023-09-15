@@ -115,6 +115,13 @@ struct ShaderFinalize : INode {
         });
         auto commonCode = em.getCommonCode();
 
+        auto sssRadiusMethod = get_input2<std::string>("sssRadius");
+        if (sssRadiusMethod == "Fixed") {
+            commonCode += "#define _SSS_FIXED_RADIUS_ 1 \n";
+        } else {
+            commonCode += "#define _SSS_FIXED_RADIUS_ 0 \n";
+        }
+
         auto mtl = std::make_shared<MaterialObject>();
         mtl->frag = std::move(code);
 
@@ -229,8 +236,11 @@ ZENDEFNODE(ShaderFinalize, {
         {"float", "specular", "1.0"},
         {"float", "subsurface", "0.0"},
         {"float", "thickness", "0.0"},
-        {"vec3f", "sssParam", "1,1,1"},
+
+        {"enum Fixed Adaptive", "sssRadius", "Fixed"},
+        {"vec3f", "sssParam", "1.0,1.0,1.0"},
         {"vec3f", "sssColor", "1.0,1.0,1.0"},
+
         {"float", "specularTint", "0.0"},
         {"float", "anisotropic", "0.0"},
         {"float", "anisoRotation", "0.0"},

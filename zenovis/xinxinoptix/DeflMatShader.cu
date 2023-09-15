@@ -1,13 +1,12 @@
 #include <optix.h>
 #include <cuda/random.h>
-#include <sutil/vec_math.h>
 #include <cuda/helpers.h>
 
+#include <sutil/vec_math.h>
 #include "optixPathTracer.h"
+
 #include "TraceStuff.h"
 #include "zxxglslvec.h"
-#include "DisneyBRDF.h"
-#include "DisneyBSDF.h"
 
 #include "IOMat.h"
 #include "Light.h"
@@ -15,6 +14,9 @@
 #define _SPHERE_ 0
 #define TRI_PER_MESH 4096
 //COMMON_CODE
+
+#include "DisneyBRDF.h"
+#include "DisneyBSDF.h"
 
 template<bool isDisplacement>
 static __inline__ __device__ MatOutput evalMat(cudaTextureObject_t zenotex[], float4* uniforms, MatInput const &attrs) {
