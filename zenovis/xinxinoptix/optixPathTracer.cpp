@@ -11,6 +11,7 @@
 
 #include <sampleConfig.h>
 
+#include <stdint.h>
 #include <sutil/CUDAOutputBuffer.h>
 #include <sutil/Camera.h>
 #include <sutil/Exception.h>
@@ -2037,7 +2038,7 @@ void buildLightTree() {
     uint32_t firstRectLightIdx = UINT_MAX;
     uint32_t firstSphereLightIdx = UINT_MAX;
 
-    for(size_t idx=0u; idx<sortedLights.size(); ++idx) {
+    for(uint32_t idx=0u; idx<sortedLights.size(); ++idx) {
 
         auto& dat = sortedLights.at(idx);
         auto &light = lightsWrapper.g_lights.emplace_back();
