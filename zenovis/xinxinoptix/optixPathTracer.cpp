@@ -542,7 +542,14 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     (*output_buffer_specular  ).unmap();
     (*output_buffer_transmit  ).unmap();
     (*output_buffer_background).unmap();
-    CUDA_SYNC_CHECK();
+
+    try {
+        CUDA_SYNC_CHECK();
+    } 
+    catch(std::exception const& e)
+    {
+        std::cout << "Exception: " << e.what() << "\n";
+    } 
 }
 
 

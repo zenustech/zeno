@@ -8,19 +8,18 @@
 #include <iostream>
 #include <functional>
 
-#define CUDA_SAFE_CHECK( call )                                                \
-({                                                                             \
+#define RETURN_IF_CUDA_ERROR( call )                                           \
         cudaError_t error = call;                                              \
         if( error != cudaSuccess )                                             \
         {                                                                      \
-            std::cerr << "CUDA call (" << #call << " ) failed with error: '"   \
-               << cudaGetErrorString( error )                                  \
-               << "' (" __FILE__ << ":" << __LINE__ << ")\n";                  \
+            printf("CUDA call ( \" %s \" ) failed with error: %s (%s: %d) \n", \
+                    #call, cudaGetErrorString( error ), __FILE__, __LINE__);   \
+            cudaGetLastError();                                                \
+            return;                                                            \
         }                                                                      \
-        error;                                                                 \
-})                                                                             \
-
-
+        //(error);                                                             \
+                                                                               \
+                                                                               
 namespace xinxinoptix {
 
     inline void buildXAS(const OptixDeviceContext& context, OptixAccelBuildOptions& accel_options, OptixBuildInput& build_input,
@@ -44,24 +43,20 @@ namespace xinxinoptix {
             output_buffer_size = roundUp<size_t>( xas_buffer_sizes.outputSizeInBytes, 128u );
 
             if (verbose) {
-
-                float temp_mb   = (float)temp_buffer_size   / (1024 *  1024);
-                float output_mb = (float)output_buffer_size / (1024 *  1024);
-                
+                float temp_mb   = (float)temp_buffer_size   / (1024 * 1024);
+                float output_mb = (float)output_buffer_size / (1024 * 1024);
                 printf("Requires %f MB temp buffer and %f MB output buffer \n", temp_mb, output_mb);
             }
         }
 
         raii<CUdeviceptr> bufferTemp{};
-        cudaError_t error = CUDA_SAFE_CHECK( cudaMalloc(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size ) );
-        if (error != cudaSuccess) return;
+        RETURN_IF_CUDA_ERROR( cudaMalloc(reinterpret_cast<void**>( &bufferTemp.handle ), temp_buffer_size ) );
 
         const bool COMPACTION = accel_options.buildFlags & OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
 
         if (!COMPACTION) {
 
-            error = CUDA_SAFE_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_.reset() ), output_buffer_size ) );
-            if (error != cudaSuccess) return;
+            RETURN_IF_CUDA_ERROR( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_.reset() ), output_buffer_size ) );
 
             OPTIX_CHECK( optixAccelBuild(   context,
                                             nullptr,  // CUDA stream
@@ -76,11 +71,8 @@ namespace xinxinoptix {
                                             0 ) );
         } else {
 
-            _bufferXAS_.reset();
-
             raii<CUdeviceptr> output_buffer_xas {};
-            error = CUDA_SAFE_CHECK( cudaMalloc( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t)) );
-            if (error != cudaSuccess) return;
+            RETURN_IF_CUDA_ERROR( cudaMalloc( reinterpret_cast<void**>( &output_buffer_xas ), output_buffer_size + sizeof(size_t)) );
 
             OptixAccelEmitDesc emitProperty {};
             emitProperty.type   = OPTIX_PROPERTY_TYPE_COMPACTED_SIZE;
@@ -99,15 +91,13 @@ namespace xinxinoptix {
                                             1               // num emitted properties
                                             ) );
 
-            //bufferTemp.reset();
+            bufferTemp.reset();
             size_t compacted_size{};
             CUDA_CHECK( cudaMemcpy( &compacted_size, (void*)emitProperty.result, sizeof( size_t ), cudaMemcpyDeviceToHost ) );
 
             if( compacted_size < output_buffer_size )
             {
-                error = CUDA_SAFE_CHECK( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size ) );
-                if (error != cudaSuccess) return;
-
+                RETURN_IF_CUDA_ERROR( cudaMalloc( reinterpret_cast<void**>( &_bufferXAS_ ), compacted_size ) );
                 OPTIX_CHECK( optixAccelCompact( context, 0, _handleXAS_, _bufferXAS_, compacted_size, &_handleXAS_ ) );
             }
             else
