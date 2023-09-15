@@ -306,7 +306,7 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
             m_recordInfo = VideoRecInfo();
         }
     }
-    else if (pGlobalComm->isFrameBroken(currFrame))
+    else if (pGlobalComm->isFrameBroken(currFrame) && !bFrameRecorded)
     {
         QImage img(QSize((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y()), QImage::Format_RGBA8888);
         img.fill(Qt::black);
