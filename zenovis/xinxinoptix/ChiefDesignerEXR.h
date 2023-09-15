@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ImfMultiPartOutputFile.h>
-#include <ImfOutputPart.h>
+#include <ImfOutputFile.h>
 #include <ImfChannelList.h>
 #include <ImfHeader.h>
 #include <ImfRgbaFile.h>
@@ -11,6 +11,7 @@
 #include <cstring>
 #include <vector>
 #include <string>
+#include "zeno/utils/image_proc.h"
 
 namespace zeno::ChiefDesignerEXR {
 
@@ -106,50 +107,58 @@ inline int SaveEXR(float *pixels, int width, int height, int channels,
     }
 }
 inline void SaveMultiLayerEXR(
-    std::vector<float*> pixels, int width, int height, std::vector<std::string> names,
-    const char *filepath
- ) {
-    int layer_count = names.size();
-    using namespace Imf;
+    std::vector<float*> pixels
+    , int width
+    , int height
+    , std::vector<std::string> channels
+    , const char* exrFilePath
+) {
     using namespace Imath;
-    std::vector<Header> headers(layer_count);
-    for (auto l = 0; l < layer_count; l++) {
+    using namespace Imf;
 
-        // Create the header with the image size
-        headers[l] = Header(width, height);
-        headers[l].setName(names[l]);
+    Header header(width, height);
+    ChannelList channelList;
 
-        // Set the display window (region of the image that should be displayed)
-        Box2i displayWindow(V2i(0, 0), V2i(width - 1, height - 1));
-        headers[l].displayWindow() = displayWindow;
-    }
-    MultiPartOutputFile multiPartFile(filepath, headers.data(), layer_count);
-
-    // Create the frame buffer and add the R, G, B, A channels
-    for (auto l = 0; l < layer_count; l++) {
-        OutputPart outputPart(multiPartFile, l);
-
-        std::vector<Rgba> pixelsBuffer(width * height);
-        for (int i = 0; i < width * height; i++) {
-            pixelsBuffer[i].r = pixels[l][3 * i];
-            pixelsBuffer[i].g = pixels[l][3 * i + 1];
-            pixelsBuffer[i].b = pixels[l][3 * i + 2];
-            pixelsBuffer[i].a = 1;
+    const char *std_suffix = "RGB";
+    for (auto channel: channels) {
+        for (int i = 0; i < 3; i++) {
+            std::string name = zeno::format("{}{}", channel, std_suffix[i]);
+            channelList.insert(name, Channel(HALF));
         }
-
-        size_t xs = 1 * sizeof (Rgba);
-        size_t ys = width * sizeof (Rgba);
-
-        FrameBuffer fb;
-
-        fb.insert ("R", Slice (HALF, (char*) &pixelsBuffer[0].r, xs, ys));
-        fb.insert ("G", Slice (HALF, (char*) &pixelsBuffer[0].g, xs, ys));
-        fb.insert ("B", Slice (HALF, (char*) &pixelsBuffer[0].b, xs, ys));
-        fb.insert ("A", Slice (HALF, (char*) &pixelsBuffer[0].a, xs, ys));
-
-        outputPart.setFrameBuffer(fb);
-        outputPart.writePixels(height);
     }
+
+    header.channels() = channelList;
+
+    OutputFile file (exrFilePath, header);
+    FrameBuffer frameBuffer;
+
+    std::vector<std::vector<half>> data;
+    for (float *rgb: pixels) {
+        std::vector<half> r(width * height);
+        std::vector<half> g(width * height);
+        std::vector<half> b(width * height);
+        for (auto i = 0; i < width * height; i++) {
+            r[i] = rgb[3 * i + 0];
+            g[i] = rgb[3 * i + 1];
+            b[i] = rgb[3 * i + 2];
+        }
+        zeno::image_flip_vertical(r.data(), width, height);
+        zeno::image_flip_vertical(g.data(), width, height);
+        zeno::image_flip_vertical(b.data(), width, height);
+        data.push_back(std::move(r));
+        data.push_back(std::move(g));
+        data.push_back(std::move(b));
+    }
+
+    for (auto i = 0; i < channels.size(); i++) {
+        for (auto j = 0; j < 3; j++) {
+            std::string name = zeno::format("{}{}", channels[i], std_suffix[j]);
+            frameBuffer.insert (name, Slice ( HALF, (char*) data[i * 3 + j].data(), sizeof (half) * 1, sizeof (half) * width));
+        }
+    }
+
+    file.setFrameBuffer (frameBuffer);
+    file.writePixels (height);
 }
 
 }

@@ -3485,11 +3485,11 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
                         w,
                         h,
                         {
-                            "C",
-                            "diffuse",
-                            "specular",
-                            "transmit",
-                            "background",
+                            "",
+                            "diffuse.",
+                            "specular.",
+                            "transmit.",
+                            "background.",
                         },
                         exr_path.c_str()
                 );
