@@ -146,7 +146,7 @@ static __inline__ __device__ bool isBadVector(vec3& vector) {
             return true;
         }
     }
-    return length(vector) <= 0;
+    return dot(vector, vector) <= 0;
 }
 
 static __inline__ __device__ bool isBadVector(float3& vector) {
@@ -245,7 +245,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
 
     if (isBadVector(N_0)) 
     {  
-        //assert(false);
         N_0 = DisneyBSDF::SampleScatterDirection(prd->seed);
         N_0 = faceforward( N_0, -ray_dir, N_0 );
     }
@@ -634,6 +633,8 @@ extern "C" __global__ void __closesthit__radiance()
         prd->tmp_normal = N;
     }
 
+    bool next_ray_is_going_inside = false;
+
     /* MODME */
     auto basecolor = mats.basecolor;
     auto metallic = mats.metallic;
@@ -842,7 +843,7 @@ extern "C" __global__ void __closesthit__radiance()
                 prd->geometryNormal,
                 -normalize(ray_dir),
                 thin>0.5f,
-                prd->next_ray_is_going_inside,
+                next_ray_is_going_inside,
                 wi,
                 reflectance,
                 rPdf,
@@ -880,7 +881,7 @@ extern "C" __global__ void __closesthit__radiance()
     //istransmission = (istransmission && thin<0.5 && mats.doubleSide==false);
     if(istransmission || flag == DisneyBSDF::diracEvent) {
     //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
-        prd->next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
+        next_ray_is_going_inside = dot(vec3(prd->geometryNormal),vec3(wi))<=0;
     }
 
     if(thin>0.5f || mats.doubleSide>0.5f)
@@ -888,24 +889,25 @@ extern "C" __global__ void __closesthit__radiance()
         if (prd->curMatIdx > 0) {
             vec3 sigma_t, ss_alpha;
             prd->readMat(sigma_t, ss_alpha);
+
+            vec3 trans;
             if (ss_alpha.x<0.0f) { // is inside Glass
-                prd->attenuation *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
-                prd->attenuation2 *= DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
+                trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
             } else {
-                prd->attenuation *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-                prd->attenuation2 *= DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
+                trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
             }
-        }else {
-            prd->attenuation *= 1;
+            prd->attenuation *= trans;
+            prd->attenuation2 *= trans;
         }
-        prd->next_ray_is_going_inside = false;
+
+        next_ray_is_going_inside = false;
+
     }else{
     
         //if(flag == DisneyBSDF::transmissionEvent || flag == DisneyBSDF::diracEvent) {
         if(istransmission || flag == DisneyBSDF::diracEvent) {
-            if(prd->next_ray_is_going_inside){
-                if(thin < 0.5f && mats.doubleSide < 0.5f ) 
-                {
+            if(next_ray_is_going_inside){
+
                     outToIn = true;
                     inToOut = false;
 
@@ -926,24 +928,23 @@ extern "C" __global__ void __closesthit__radiance()
                         vec3 channelPDF = vec3(1.0f/3.0f);
                         prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, extinction, extinction, channelPDF) : 1e16f;
                         prd->pushMat(extinction);
+                        prd->isSS = false;
                     } else {
 
-                        vec3 channelPDF = vec3(1.0f/3.0f);
-                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, channelPDF);
+                        prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * prd->ss_alpha, prd->sigma_t, prd->channelPDF);
                         //here is the place caused inf ray:fixed
                         auto min_sg = fmax(fmin(fmin(prd->sigma_t.x, prd->sigma_t.y), prd->sigma_t.z), 1e-8f);
                         //what should be the right value???
                         //prd->maxDistance = max(prd->maxDistance, 10/min_sg);
                         //printf("maxdist:%f\n",prd->maxDistance);
-                        prd->channelPDF = channelPDF;
+                        
                         // already calculated in BxDF
                         prd->pushMat(prd->sigma_t, prd->ss_alpha);
+                        prd->isSS = true;
                     }
 
                     prd->scatterDistance = scatterDistance;
                     prd->scatterStep = scatterStep;
-                }
-                
             }
             else{
                 outToIn = false;
@@ -957,28 +958,27 @@ extern "C" __global__ void __closesthit__radiance()
                     trans = vec3(1.0f); 
                 }
                 else if (ss_alpha.x<0.0f) { // Glass
-                
                     trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                 } else {
                     trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
                 }
 
-                prd->attenuation2 *= trans;
                 prd->attenuation *= trans;
-
+                prd->attenuation2 *= trans;
+                
                 prd->popMat(sigma_t, ss_alpha);
 
                 prd->medium = (prd->curMatIdx==0)? DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
 
-                if(ss_alpha.x >= 0.0f) //next ray in 3s object
-                {
-                    prd->isSS = true;
-                    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
-                }
-                else
+                if(ss_alpha.x < 0.0f) 
                 {
                     prd->isSS = false;
                     prd->maxDistance = 1e16;
+                }
+                else //next ray in 3s object
+                {
+                    prd->isSS = true;
+                    prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                 }
             }
         }else{
@@ -991,13 +991,12 @@ extern "C" __global__ void __closesthit__radiance()
                     {
                         prd->maxDistance = 1e16f;
                     }
-                    else if (prd->ss_alpha.x<0.0f) { // Glass
+                    else if (ss_alpha.x<0.0f) { // Glass
                         trans = DisneyBSDF::Transmission(sigma_t, optixGetRayTmax());
                         vec3 channelPDF = vec3(1.0f/3.0f);
                         prd->maxDistance = scatterStep>0.5f? DisneyBSDF::SampleDistance2(prd->seed, sigma_t, sigma_t, channelPDF) : 1e16f;
                     } else { // SSS
                         trans = DisneyBSDF::Transmission2(sigma_t * ss_alpha, sigma_t, prd->channelPDF, optixGetRayTmax(), true);
-                        prd->channelPDF = vec3(1.0f/3.0f);
                         prd->maxDistance = DisneyBSDF::SampleDistance2(prd->seed, vec3(prd->attenuation) * ss_alpha, sigma_t, prd->channelPDF);
                         prd->isSS = true;
                     }
@@ -1015,7 +1014,7 @@ extern "C" __global__ void __closesthit__radiance()
         }
     }
 
-    prd->medium = prd->next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
+    prd->medium = next_ray_is_going_inside?DisneyBSDF::PhaseFunctions::isotropic : prd->curMatIdx==0?DisneyBSDF::PhaseFunctions::vacuum : DisneyBSDF::PhaseFunctions::isotropic;
  
     if(thin>0.5f){
         vec3 H = normalize(vec3(normalize(wi)) + vec3(-normalize(ray_dir)));
@@ -1050,7 +1049,7 @@ extern "C" __global__ void __closesthit__radiance()
         float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,
             basecolor, sssColor, metallic, subsurface, specular, max(prd->minSpecRough,roughness), specularTint, anisotropic, anisoRotation, sheen, sheenTint,
             clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, V, T, B, N,prd->geometryNormal,
-            thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : prd->next_ray_is_going_inside, thisPDF, rrPdf,
+            thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
         MatOutput mat2;
@@ -1082,14 +1081,10 @@ extern "C" __global__ void __closesthit__radiance()
 
     prd->direction = normalize(wi);
 
-    if (isBadVector(prd->direction)) {
-        prd->direction = vec3(1, 1, 1);
-    }
-
     DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux);
 
     if(thin<0.5f && mats.doubleSide<0.5f){
-        prd->origin = rtgems::offset_ray(P, (prd->next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
+        prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {
         prd->origin = rtgems::offset_ray(P, ( dot(prd->direction, prd->geometryNormal) < 0 )? -prd->geometryNormal : prd->geometryNormal);

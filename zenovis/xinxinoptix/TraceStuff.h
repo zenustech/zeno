@@ -57,7 +57,6 @@ struct RadiancePRD
     float3       direction;
     float        minSpecRough;
     bool         passed;
-    bool         next_ray_is_going_inside;
     float        opacity;
     float        prob;
     float        prob2;
