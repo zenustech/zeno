@@ -10,6 +10,7 @@
 #include "common.h"
 #include <zeno/core/Session.h>
 #include <zeno/extra/GlobalComm.h>
+#include "viewport/zoptixviewport.h"
 
 
 QModelIndexList AppHelper::getSubInOutNode(IGraphsModel* pModel, const QModelIndex& subgIdx, const QString& sockName, bool bInput)
@@ -122,15 +123,62 @@ void AppHelper::socketEditFinished(QVariant newValue, QPersistentModelIndex node
     int ret = pModel->ModelSetData(paramIdx, newValue, ROLE_PARAM_VALUE);
 }
 
-void AppHelper::socketEditFinishedWithSlider(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx)
+void AppHelper::modifyOptixObjDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx, bool editByPropPanel)
 {
     IGraphsModel* pModel = zenoApp->graphsManagment()->currentModel();
     ZenoMainWindow* main = zenoApp->getMainWindow();
     if (nodeIdx.data(ROLE_OBJNAME).toString() == "LightNode" &&
         nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW &&
-        (main->isAlways() || main->isAlwaysLightCamera()))
+        (main->isAlways() || main->isAlwaysLightCamera() || editByPropPanel))
     {
         modifyLightData(newValue, nodeIdx, paramIdx);
+    }
+    else if ((nodeIdx.data(ROLE_OBJNAME).toString() == "CameraNode" ||
+        nodeIdx.data(ROLE_OBJNAME).toString() == "MakeCamera" ||
+        nodeIdx.data(ROLE_OBJNAME).toString() == "TargetCamera") &&
+        ((nodeIdx.data(ROLE_OPTIONS).toInt() == OPT_VIEW && (main->isAlways() || main->isAlwaysLightCamera())) || editByPropPanel)
+        )
+    {
+        modifyOptixCameraPropDirectly(newValue, nodeIdx, paramIdx);
+    }
+}
+
+void AppHelper::modifyOptixCameraPropDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx)
+{
+    int apertureSocketIdx = 0, distancePlaneSocketIdx = 0;
+    if (nodeIdx.data(ROLE_OBJNAME).toString() == "CameraNode")
+    {
+        apertureSocketIdx = 4; distancePlaneSocketIdx = 5;
+    }else if (nodeIdx.data(ROLE_OBJNAME).toString() == "MakeCamera" || nodeIdx.data(ROLE_OBJNAME).toString() == "TargetCamera")
+    {
+        apertureSocketIdx = 6; distancePlaneSocketIdx = 7;
+    }
+    QStandardItemModel* viewParams = QVariantPtr<QStandardItemModel>::asPtr(nodeIdx.data(ROLE_NODE_PARAMS));
+    ZASSERT_EXIT(viewParams);
+    QStandardItem* inv_root = viewParams->invisibleRootItem();
+    ZASSERT_EXIT(inv_root);
+    QStandardItem* inputsItem = inv_root->child(0);
+    float cameraAperture = inputsItem->child(apertureSocketIdx)->index().data(ROLE_PARAM_VALUE).value<float>();
+    float cameraDistancePlane = inputsItem->child(distancePlaneSocketIdx)->index().data(ROLE_PARAM_VALUE).value<float>();
+    QString paramName = paramIdx.data(ROLE_PARAM_NAME).toString();
+    if (paramName == "aperture")
+        cameraAperture = newValue.value<float>();
+    else if (paramName == "focalPlaneDistance")
+        cameraDistancePlane = newValue.value<float>();
+
+    UI_VECTYPE skipParam(2, 0);
+    if (!inputsItem->child(apertureSocketIdx)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+        skipParam[0] = 1;
+    if (!inputsItem->child(distancePlaneSocketIdx)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+        skipParam[1] = 1;
+
+    QVector<DisplayWidget*> views = zenoApp->getMainWindow()->viewports();
+    for (auto pDisplay : views) {
+        if (pDisplay->isGLViewport())
+            continue;
+        ZASSERT_EXIT(pDisplay);
+        if (ZOptixViewport* optixViewport = pDisplay->optixViewport())
+            emit optixViewport->sig_updateCameraProp(cameraAperture, cameraDistancePlane, skipParam);
     }
 }
 
@@ -174,7 +222,7 @@ void AppHelper::modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx
     QStandardItem *inv_root = viewParams->invisibleRootItem();
     ZASSERT_EXIT(inv_root);
     QStandardItem *inputsItem = inv_root->child(0);
-    std::string name = nodeIdx.data(ROLE_OBJID).toString().toStdString();
+    QString name = nodeIdx.data(ROLE_OBJID).toString();
     UI_VECTYPE posVec = inputsItem->child(0)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
     UI_VECTYPE scaleVec = inputsItem->child(1)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
     UI_VECTYPE rotateVec = inputsItem->child(2)->index().data(ROLE_PARAM_VALUE).value<UI_VECTYPE>();
@@ -191,24 +239,20 @@ void AppHelper::modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx
         colorVec = newValue.value<UI_VECTYPE>();
     else if (paramName == "intensity")
         intensity = newValue.value<float>();
-    float posX = posVec[0];
-    float posY = posVec[1];
-    float posZ = posVec[2];
-    float scaleX = scaleVec[0];
-    float scaleY = scaleVec[1];
-    float scaleZ = scaleVec[2];
-    float rotateX = rotateVec[0];
-    float rotateY = rotateVec[1];
-    float rotateZ = rotateVec[2];
-    float r = colorVec[0];
-    float g = colorVec[1];
-    float b = colorVec[2];
+    if (posVec.size() == 0 || scaleVec.size() == 0 || rotateVec.size() == 0 || colorVec.size() == 0)
+        return;
 
-    zeno::vec3f pos = zeno::vec3f(posX, posY, posZ);
-    zeno::vec3f scale = zeno::vec3f(scaleX, scaleY, scaleZ);
-    zeno::vec3f rotate = zeno::vec3f(rotateX, rotateY, rotateZ);
-    zeno::vec3f color = zeno::vec3f(r, g, b);
-    auto verts = ZenoLights::computeLightPrim(pos, rotate, scale);
+    UI_VECTYPE skipParam(5, 0);
+    if (!inputsItem->child(0)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+        skipParam[0] = 1;
+    if (!inputsItem->child(1)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+        skipParam[1] = 1;
+    if (!inputsItem->child(2)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+        skipParam[2] = 1;
+    if (!inputsItem->child(4)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+        skipParam[3] = 1;
+    if (!inputsItem->child(5)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
+        skipParam[4] = 1;
 
     ZenoMainWindow *pWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pWin);
@@ -216,55 +260,10 @@ void AppHelper::modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx
     QVector<DisplayWidget *> views = pWin->viewports();
     for (auto pDisplay : views)
     {
-        Zenovis* pZenovis = pDisplay->getZenoVis();
-        ZASSERT_EXIT(pZenovis);
-
-        auto scene = pZenovis->getSession()->get_scene();
-        ZASSERT_EXIT(scene);
-
-        std::shared_ptr<zeno::IObject> obj;
-        for (auto const &[key, ptr] : scene->objectsMan->lightObjects) {
-            if (key.find(name) != std::string::npos) {
-                obj = ptr;
-                name = key;
-            }
-        }
-        auto prim_in = dynamic_cast<zeno::PrimitiveObject *>(obj.get());
-
-        if (prim_in) {
-            auto &prim_verts = prim_in->verts;
-            prim_verts[0] = verts[0];
-            prim_verts[1] = verts[1];
-            prim_verts[2] = verts[2];
-            prim_verts[3] = verts[3];
-
-            if (!inputsItem->child(0)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-                pos = prim_in->userData().get2<zeno::vec3f>("pos");
-            if (!inputsItem->child(1)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-                scale = prim_in->userData().get2<zeno::vec3f>("scale");
-            if (!inputsItem->child(2)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-                rotate = prim_in->userData().get2<zeno::vec3f>("rotate");
-            if (!inputsItem->child(4)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-                color = prim_in->userData().get2<zeno::vec3f>("color");
-            if (!inputsItem->child(5)->index().data(ROLE_PARAM_LINKS).value<PARAM_LINKS>().isEmpty())
-                intensity = prim_in->userData().get2<float>("intensity");
-
-            prim_in->verts.attr<zeno::vec3f>("clr")[0] = color * intensity;
-
-            prim_in->userData().setLiterial<zeno::vec3f>("pos", std::move(pos));
-            prim_in->userData().setLiterial<zeno::vec3f>("scale", std::move(scale));
-            prim_in->userData().setLiterial<zeno::vec3f>("rotate", std::move(rotate));
-            if (prim_in->userData().has("intensity")) {
-                prim_in->userData().setLiterial<zeno::vec3f>("color", std::move(color));
-                prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
-            }
-
-            scene->objectsMan->needUpdateLight = true;
-            pDisplay->setSimpleRenderOption();
-            zenoApp->getMainWindow()->updateViewport();
-        } else {
-            zeno::log_info("modifyLightData not found {}", name);
-        }
+        if (pDisplay->isGLViewport())
+            continue;
+        if (ZOptixViewport* optixViewport = pDisplay->optixViewport())
+            optixViewport->modifyLightData(posVec, scaleVec, rotateVec, colorVec, intensity, name, skipParam);
     }
 }
 

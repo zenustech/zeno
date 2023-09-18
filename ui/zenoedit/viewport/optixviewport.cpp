@@ -76,6 +76,73 @@ void OptixWorker::onSetSlidFeq(int feq)
     m_slidFeq = feq;
 }
 
+void OptixWorker::onModifyLightData(UI_VECTYPE posvec, UI_VECTYPE scalevec, UI_VECTYPE rotatevec, UI_VECTYPE colorvec, float intensity, QString nodename, UI_VECTYPE skipParam)
+{
+    std::string name = nodename.toStdString();
+    zeno::vec3f pos = zeno::vec3f(posvec[0], posvec[1], posvec[2]);
+    zeno::vec3f scale = zeno::vec3f(scalevec[0], scalevec[1], scalevec[2]);
+    zeno::vec3f rotate = zeno::vec3f(rotatevec[0], rotatevec[1], rotatevec[2]);
+    zeno::vec3f color = zeno::vec3f(colorvec[0], colorvec[1], colorvec[2]);
+    auto verts = ZenoLights::computeLightPrim(pos, rotate, scale);
+
+    auto scene = m_zenoVis->getSession()->get_scene();
+    ZASSERT_EXIT(scene);
+
+    std::shared_ptr<zeno::IObject> obj;
+    for (auto const& [key, ptr] : scene->objectsMan->lightObjects) {
+        if (key.find(name) != std::string::npos) {
+            obj = ptr;
+            name = key;
+        }
+    }
+    auto prim_in = dynamic_cast<zeno::PrimitiveObject*>(obj.get());
+
+    if (prim_in) {
+        auto& prim_verts = prim_in->verts;
+        prim_verts[0] = verts[0];
+        prim_verts[1] = verts[1];
+        prim_verts[2] = verts[2];
+        prim_verts[3] = verts[3];
+
+        if (skipParam[0])
+            pos = prim_in->userData().get2<zeno::vec3f>("pos");
+        if (skipParam[1])
+            scale = prim_in->userData().get2<zeno::vec3f>("scale");
+        if (skipParam[2])
+            rotate = prim_in->userData().get2<zeno::vec3f>("rotate");
+        if (skipParam[3])
+            color = prim_in->userData().get2<zeno::vec3f>("color");
+        if (skipParam[4])
+            intensity = prim_in->userData().get2<float>("intensity");
+
+        prim_in->verts.attr<zeno::vec3f>("clr")[0] = color * intensity;
+
+        prim_in->userData().setLiterial<zeno::vec3f>("pos", std::move(pos));
+        prim_in->userData().setLiterial<zeno::vec3f>("scale", std::move(scale));
+        prim_in->userData().setLiterial<zeno::vec3f>("rotate", std::move(rotate));
+        if (prim_in->userData().has("intensity")) {
+            prim_in->userData().setLiterial<zeno::vec3f>("color", std::move(color));
+            prim_in->userData().setLiterial<float>("intensity", std::move(intensity));
+        }
+
+        scene->objectsMan->needUpdateLight = true;
+        //pDisplay->setSimpleRenderOption();
+        zenoApp->getMainWindow()->updateViewport();
+    }
+    else {
+        zeno::log_info("modifyLightData not found {}", name);
+    }
+}
+
+void OptixWorker::onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam)
+{
+    if (skipParam.size() == 0 || !skipParam[0])
+        m_zenoVis->m_camera_control->setAperture(aperture);
+    if (skipParam.size() == 0 || !skipParam[1])
+        m_zenoVis->m_camera_control->setDisPlane(disPlane);
+    m_zenoVis->m_camera_control->updatePerspective();
+}
+
 void OptixWorker::onFrameSwitched(int frame)
 {
     //ui switch.
@@ -316,6 +383,8 @@ ZOptixViewport::ZOptixViewport(QWidget* parent)
     connect(this, &ZOptixViewport::sig_setRenderSeparately, m_worker, &OptixWorker::setRenderSeparately);
     connect(this, &ZOptixViewport::sig_setLoopPlaying, m_worker, &OptixWorker::onSetLoopPlaying);
     connect(this, &ZOptixViewport::sig_setSlidFeq, m_worker, &OptixWorker::onSetSlidFeq);
+    connect(this, &ZOptixViewport::sig_modifyLightData, m_worker, &OptixWorker::onModifyLightData);
+    connect(this, &ZOptixViewport::sig_updateCameraProp, m_worker, &OptixWorker::onUpdateCameraProp);
 
     setRenderSeparately(false, false);
     m_thdOptix.start();
@@ -369,6 +438,11 @@ void ZOptixViewport::setSlidFeq(int feq)
     emit sig_setSlidFeq(feq);
 }
 
+void ZOptixViewport::modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam)
+{
+    emit sig_modifyLightData(pos, scale, rotate, color, intensity, name, skipParam);
+}
+
 void ZOptixViewport::stopRender()
 {
     emit stopRenderOptix();
@@ -401,9 +475,7 @@ void ZOptixViewport::onFrameRunFinished(int frame)
 
 void ZOptixViewport::updateCameraProp(float aperture, float disPlane)
 {
-    m_camera->setAperture(aperture);
-    m_camera->setDisPlane(disPlane);
-    m_camera->updatePerspective();
+    emit sig_updateCameraProp(aperture, disPlane);
 }
 
 void ZOptixViewport::updatePerspective()

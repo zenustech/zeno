@@ -24,7 +24,8 @@ public:
     static void ensureSRCDSTlastKey(INPUT_SOCKETS& inputs, OUTPUT_SOCKETS& outputs);
     static QString nativeWindowTitle(const QString& currentFilePath);
     static void socketEditFinished(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
-    static void socketEditFinishedWithSlider(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
+    static void modifyOptixObjDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx, bool editByPropPanel = false);
+    static void modifyOptixCameraPropDirectly(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
     static void modifyLightData(QVariant newValue, QPersistentModelIndex nodeIdx, QPersistentModelIndex paramIdx);
     static VideoRecInfo getRecordInfo(const ZENO_RECORD_RUN_INITPARAM& param);
     static void initLaunchCacheParam(LAUNCH_PARAM& param);
