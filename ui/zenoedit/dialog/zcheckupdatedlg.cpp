@@ -60,8 +60,8 @@ void ZCheckUpdateDlg::updateView(bool bVisible)
     m_ui->m_remindBtn->setVisible(bVisible);
     m_ui->m_updateBtn->setVisible(bVisible);
 
-    QSize size = bVisible ? QSize(560, 600): QSize(500, 200);
-    this->setFixedSize(ZenoStyle::dpiScaledSize(size));
+    QSize size = bVisible ? QSize(560, 600): QSize(500, 180);
+    m_ui->m_mainWidget->setFixedSize(ZenoStyle::dpiScaledSize(size));
 }
 
 void ZCheckUpdateDlg::requestLatestVersion()
