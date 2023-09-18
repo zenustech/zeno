@@ -344,11 +344,11 @@ QPushButton[cssClass="select_subgraph"]
 QPushButton#closebtn
 {
 	background-color: transparent;
-    background-image: url(:/icons/closebtn.svg);
+    border-image: url(:/icons/closebtn.svg);
 	border:0;
 }
 
 QPushButton#closebtn:hover
 {
-	background-image: url(:/icons/closebtn_on.svg);
+	border-image: url(:/icons/closebtn_on.svg);
 }

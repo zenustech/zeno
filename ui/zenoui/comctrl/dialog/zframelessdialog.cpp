@@ -41,7 +41,7 @@ void ZFramelessDialog::initTitleWidget()
 
     QPushButton* pBtnClose = new QPushButton(this);
     pBtnClose->setObjectName("closebtn");
-    pBtnClose->setFixedSize(ZenoStyle::dpiScaledSize(QSize(24, 24)));
+    pBtnClose->setFixedSize(ZenoStyle::dpiScaledSize(QSize(20, 20)));
     connect(pBtnClose, &QPushButton::clicked, this, &ZFramelessDialog::close);
 
     QHBoxLayout* pTitleLayout = new QHBoxLayout;
@@ -50,7 +50,8 @@ void ZFramelessDialog::initTitleWidget()
     pTitleLayout->addWidget(m_pLbTitle, 0, Qt::AlignCenter);
     pTitleLayout->addStretch();
     pTitleLayout->addWidget(pBtnClose, 0, Qt::AlignCenter);
-    pTitleLayout->setContentsMargins(12, 12, 12, 12);
+    qreal margin = ZenoStyle::dpiScaled(8);
+    pTitleLayout->setContentsMargins(margin, margin, margin, margin);
 
     QWidget* pTitleWidget = new QWidget(this);
     pTitleWidget->setLayout(pTitleLayout);
@@ -58,6 +59,7 @@ void ZFramelessDialog::initTitleWidget()
     QPalette pal = palette();
     pal.setColor(QPalette::Window, QColor("#121417"));
     pTitleWidget->setPalette(pal);
+    pTitleWidget->setFixedHeight(ZenoStyle::dpiScaled(36));
 
     QVBoxLayout* pLayout = new QVBoxLayout(this);
     pLayout->addWidget(pTitleWidget);
