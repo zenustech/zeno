@@ -797,7 +797,6 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
     QPair<int, int> fromTo = m_pTimeline->fromTo();
     int beginFrame = fromTo.first;
     int endFrame = fromTo.second;
-    m_pTimeline->resetCashedFrames();
     if (endFrame >= beginFrame && beginFrame >= 0)
     {
         auto pGraphsMgr = zenoApp->graphsManagment();
@@ -1132,7 +1131,7 @@ void ZenoMainWindow::updateViewport(const QString& action)
         updateLightList();
         bool bPlayed = m_pTimeline->isPlayToggled();
         int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
-        m_pTimeline->updateCachedFrame(endFrame, zeno::getSession().globalComm->isFrameCompleted(endFrame));
+        m_pTimeline->updateCachedFrame();
         if (!bPlayed)
         {
             int ui_frame = m_pTimeline->value();
@@ -2003,7 +2002,6 @@ void ZenoMainWindow::resetTimeline(TIMELINE_INFO info)
     setAlways(info.bAlways);
     m_pTimeline->initFromTo(info.beginFrame, info.endFrame);
     m_pTimeline->initFps(info.timelinefps);
-    m_pTimeline->resetCashedFrames();
     for (auto view: viewports())
     {
         view->setSliderFeq(1000 / info.timelinefps);

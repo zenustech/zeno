@@ -349,14 +349,9 @@ void ZTimeline::updateKeyFrames(const QVector<int>& keys)
     m_ui->timeliner->updateKeyFrames(keys);
 }
 
-void ZTimeline::resetCashedFrames()
+void ZTimeline::updateCachedFrame()
 {
-    m_ui->timeliner->resetCashedFrames();
-}
-
-void ZTimeline::updateCachedFrame(int frame, bool bCached)
-{
-    m_ui->timeliner->updateCachedFrame(frame, bCached);
+    m_ui->timeliner->update();
 }
 
 void ZTimeline::paintEvent(QPaintEvent* event)
