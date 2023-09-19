@@ -11,12 +11,8 @@ namespace zenovis {
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
-std::mutex g_mtxLoad;
-
-bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
-
-    std::lock_guard lck(g_mtxLoad);
-
+bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs)
+{
     bool inserted = false;
     auto ins = objects.insertPass();
 
