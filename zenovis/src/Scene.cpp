@@ -18,6 +18,8 @@
 
 namespace zenovis {
 
+std::mutex g_mtxLoadObjs;
+
 void Scene::loadGLAPI(void *procaddr) {
     int res = gladLoadGLLoader((GLADloadproc)procaddr);
     if (res < 0)
@@ -76,14 +78,19 @@ bool Scene::loadFrameObjects(int frameid) {
     if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
         return inserted;
 
-    auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
-    if (viewObjs) {
-        zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        inserted = this->objectsMan->load_objects(viewObjs->m_curr);
-    } else {
-        zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        inserted = this->objectsMan->load_objects({});
+    {
+        std::lock_guard lck(g_mtxLoadObjs);
+        auto const* viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
+        if (viewObjs) {
+            zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
+            inserted = this->objectsMan->load_objects(viewObjs->m_curr);
+        }
+        else {
+            zeno::log_trace("load_objects: no objects at frame {}", frameid);
+            inserted = this->objectsMan->load_objects({});
+        }
     }
+
     renderMan->getEngine()->update();
     return inserted;
 }
