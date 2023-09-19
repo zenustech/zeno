@@ -324,6 +324,15 @@ ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
     return m_frames[frameid].frame_state == FRAME_COMPLETED;
 }
 
+ZENO_API GlobalComm::FRAME_STATE GlobalComm::getFrameState(int frameid) const
+{
+    std::lock_guard lck(m_mtx);
+    frameid -= beginFrameNumber;
+    if (frameid < 0 || frameid >= m_frames.size())
+        return FRAME_UNFINISH;
+    return m_frames[frameid].frame_state;
+}
+
 ZENO_API bool GlobalComm::isFrameBroken(int frameid) const
 {
     std::lock_guard lck(m_mtx);

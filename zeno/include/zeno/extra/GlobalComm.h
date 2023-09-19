@@ -49,9 +49,9 @@ struct GlobalComm {
     ZENO_API ViewObjects const *getViewObjects(const int frameid);
     ZENO_API ViewObjects const &getViewObjects();
     ZENO_API bool isFrameCompleted(int frameid) const;
+    ZENO_API FRAME_STATE getFrameState(int frameid) const;
     ZENO_API bool isFrameBroken(int frameid) const;
     ZENO_API int maxCachedFramesNum();
-
     ZENO_API std::string cachePath();
     ZENO_API bool removeCache(int frame);
 };

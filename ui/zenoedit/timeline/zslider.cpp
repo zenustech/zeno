@@ -1,6 +1,8 @@
 #include "zslider.h"
 #include <zenoui/style/zenostyle.h>
 #include <zenoedit/zenoapplication.h>
+#include <zeno/core/Session.h>
+#include <zeno/extra/GlobalComm.h>
 #include "zassert.h"
 
 
@@ -168,6 +170,7 @@ void ZSlider::paintEvent(QPaintEvent* event)
     QFontMetrics metrics(font);
     painter.setFont(font);
     painter.setPen(QPen(QColor("#5A646F"), 1));
+    painter.setRenderHint(QPainter::Antialiasing, false);
 
     int cellNum = ((m_to - m_from) / m_cellLength) + 1;
     int cellPixelLength = width() / cellNum;
@@ -248,6 +251,43 @@ void ZSlider::paintEvent(QPaintEvent* event)
     }
 
     //draw finished frame
+    //return;
+    auto& pGlobalComm = zeno::getSession().globalComm;
+    int lastStateFrame = -1;
+    zeno::GlobalComm::FRAME_STATE lastState = zeno::GlobalComm::FRAME_UNFINISH;
+    for (int frame = m_from; frame <= m_to; frame++)
+    {
+        if (frame == m_from) {
+            lastState = pGlobalComm->getFrameState(frame);
+            lastStateFrame = m_from;
+            continue;
+        }
+
+        zeno::GlobalComm::FRAME_STATE currState = pGlobalComm->getFrameState(frame);
+        if (currState != lastState || frame == m_to)
+        {
+            //draw lastState from lastStateFrame to frame.
+            int x1 = _frameToPos(lastStateFrame);
+            int x2 = _frameToPos(frame - 1);
+            int y = height() - scaleH;
+
+            QRect rec(x1, y, x2 - x1 + 1, scaleH);
+            painter.setPen(Qt::NoPen);
+
+            if (lastState == zeno::GlobalComm::FRAME_COMPLETED)
+            {
+                painter.fillRect(rec, QColor(169, 169, 169, 100));
+            }
+            else if (lastState == zeno::GlobalComm::FRAME_BROKEN)
+            {
+                painter.fillRect(rec, QColor(255, 0, 0, 100));
+            }
+            lastState = currState;
+            lastStateFrame = frame;
+        }
+    }
+
+    /*
     for (int frame : m_cachedFrames)
     {
         int x = _frameToPos(m_from == frame ? 0 : frame - m_from - 1);
@@ -260,11 +300,17 @@ void ZSlider::paintEvent(QPaintEvent* event)
             else
                 w = ZenoStyle::dpiScaled(6);
         }
-        else
+        else {
             w = _frameToPos(1) - m_sHMargin;
-        QRect rec(x, y, w, scaleH);
+        }
+
+        if (w == 0) continue;
+
+        QRect rec(x, y, w+1, scaleH);
+        painter.setPen(Qt::NoPen);
         painter.fillRect(rec, QColor(169, 169, 169, 100));
     }
+    */
 }
 
 void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
