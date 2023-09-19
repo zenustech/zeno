@@ -1733,20 +1733,20 @@ ZENDEFNODE(ImageErode, {
 struct ImageColor : INode {
     virtual void apply() override {
         auto image = std::make_shared<PrimitiveObject>();
-        auto color = get_input2<vec3f>("Color");
+        auto color = get_input2<vec4f>("Color");
         auto size = get_input2<vec2i>("Size");
-        image->verts.resize(size[0] * size[1]);
+        auto vertsize = size[0] * size[1];
+        image->verts.resize(vertsize);
         image->userData().set2("isImage", 1);
         image->userData().set2("w", size[0]);
         image->userData().set2("h", size[1]);
+        image->verts.add_attr<float>("alpha");
 
 #pragma omp parallel
-        for (int i = 0; i < size[1]; i++) {
-            for (int j = 0; j < size[0]; j++) {
-                image->verts[i * size[0] + j] = {color[0], color[1], color[2]};
-            }
+        for (int i = 0; i < vertsize ; i++) {
+                image->verts[i ] = {color[0], color[1], color[2]};
+                image->verts.attr<float>("alpha")[i] = color[3];
         }
-
         set_output("image", image);
         
     }
@@ -1754,7 +1754,7 @@ struct ImageColor : INode {
 
 ZENDEFNODE(ImageColor, {
     {
-        {"vec3f", "Color", "1,1,1"},
+        {"vec4f", "Color", "1,1,1,1"},
         {"vec2i", "Size", "1024,1024"},
     },
     {
@@ -2447,7 +2447,7 @@ ZENDEFNODE(ImageShape, {
     {"deprecated"},
 });
 
-struct ImageLevels: INode {
+struct ImageLevels: INode {//todo :latger than 1 ?
     void apply() override {
         std::shared_ptr<PrimitiveObject> image = get_input<PrimitiveObject>("image");
         auto inputLevels = get_input2<vec2f>("Input Levels");
