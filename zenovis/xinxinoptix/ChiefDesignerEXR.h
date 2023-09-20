@@ -1,5 +1,8 @@
 #pragma once
 
+#include <ImfMultiPartOutputFile.h>
+#include <ImfOutputFile.h>
+#include <ImfChannelList.h>
 #include <ImfHeader.h>
 #include <ImfRgbaFile.h>
 #include <ImfArray.h>
@@ -8,6 +11,7 @@
 #include <cstring>
 #include <vector>
 #include <string>
+#include "zeno/utils/image_proc.h"
 
 namespace zeno::ChiefDesignerEXR {
 
@@ -55,7 +59,6 @@ inline void FreeEXRErrorMessage(const char *err) {
 
 inline int SaveEXR(float *pixels, int width, int height, int channels,
                    int asfp16, const char *filepath, const char **err) {
-    if (channels != 4) throw std::runtime_error("SaveEXR only support RGBA for now");
     if (asfp16 != 1) throw std::runtime_error("SaveEXR only support FP16 for now");
     try {
         using namespace Imf;
@@ -69,28 +72,93 @@ inline int SaveEXR(float *pixels, int width, int height, int channels,
         header.displayWindow() = displayWindow;
 
         // Create the frame buffer and add the R, G, B, A channels
-        Rgba* pixelsBuffer = new Rgba[width * height];
-        for (int i = 0; i < width * height; i++) {
-            pixelsBuffer[i].r = pixels[4 * i];
-            pixelsBuffer[i].g = pixels[4 * i + 1];
-            pixelsBuffer[i].b = pixels[4 * i + 2];
-            pixelsBuffer[i].a = pixels[4 * i + 3];
+        std::vector<Rgba> pixelsBuffer(width * height);
+        if (channels == 4) {
+            for (int i = 0; i < width * height; i++) {
+                pixelsBuffer[i].r = pixels[4 * i];
+                pixelsBuffer[i].g = pixels[4 * i + 1];
+                pixelsBuffer[i].b = pixels[4 * i + 2];
+                pixelsBuffer[i].a = pixels[4 * i + 3];
+            }
+        }
+        else if (channels == 3) {
+            for (int i = 0; i < width * height; i++) {
+                pixelsBuffer[i].r = pixels[3 * i];
+                pixelsBuffer[i].g = pixels[3 * i + 1];
+                pixelsBuffer[i].b = pixels[3 * i + 2];
+                pixelsBuffer[i].a = 1;
+            }
+        }
+        else {
+            throw std::runtime_error("SaveEXR only support RGBA and RGB for now");
         }
 
         // Create the output file
         RgbaOutputFile file(filepath, header);
 
         // Write the pixels to the file
-        file.setFrameBuffer(pixelsBuffer, 1, width);
+        file.setFrameBuffer(pixelsBuffer.data(), 1, width);
         file.writePixels(height);
 
-        // Clean up
-        delete[] pixelsBuffer;
         return 0;
     } catch (const std::exception& e) {
         *err = strdup(e.what());
         return 1;
     }
+}
+inline void SaveMultiLayerEXR(
+    std::vector<float*> pixels
+    , int width
+    , int height
+    , std::vector<std::string> channels
+    , const char* exrFilePath
+) {
+    using namespace Imath;
+    using namespace Imf;
+
+    Header header(width, height);
+    ChannelList channelList;
+
+    const char *std_suffix = "RGB";
+    for (auto channel: channels) {
+        for (int i = 0; i < 3; i++) {
+            std::string name = zeno::format("{}{}", channel, std_suffix[i]);
+            channelList.insert(name, Channel(HALF));
+        }
+    }
+
+    header.channels() = channelList;
+
+    OutputFile file (exrFilePath, header);
+    FrameBuffer frameBuffer;
+
+    std::vector<std::vector<half>> data;
+    for (float *rgb: pixels) {
+        std::vector<half> r(width * height);
+        std::vector<half> g(width * height);
+        std::vector<half> b(width * height);
+        for (auto i = 0; i < width * height; i++) {
+            r[i] = rgb[3 * i + 0];
+            g[i] = rgb[3 * i + 1];
+            b[i] = rgb[3 * i + 2];
+        }
+        zeno::image_flip_vertical(r.data(), width, height);
+        zeno::image_flip_vertical(g.data(), width, height);
+        zeno::image_flip_vertical(b.data(), width, height);
+        data.push_back(std::move(r));
+        data.push_back(std::move(g));
+        data.push_back(std::move(b));
+    }
+
+    for (auto i = 0; i < channels.size(); i++) {
+        for (auto j = 0; j < 3; j++) {
+            std::string name = zeno::format("{}{}", channels[i], std_suffix[j]);
+            frameBuffer.insert (name, Slice ( HALF, (char*) data[i * 3 + j].data(), sizeof (half) * 1, sizeof (half) * width));
+        }
+    }
+
+    file.setFrameBuffer (frameBuffer);
+    file.writePixels (height);
 }
 
 }
