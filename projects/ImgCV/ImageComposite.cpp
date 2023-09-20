@@ -605,11 +605,11 @@ static T BlendMode(const float &alpha1, const float &alpha2, const T& rgb1, cons
                 return value;
         }
         else if(compmode == std::string("Add")) {
-                T value = zeno::min(rgb1 + rgb2, T(1.0f))*opacity[0] + rgb2 * (1 - opacity[0]);//clamp?
+                T value = (rgb1 + rgb2) * opacity[0] + rgb2 * (1 - opacity[0]);//clamp?
                 return value;
         }
         else if(compmode == std::string("Subtract")) {
-                T value = zeno::max(rgb2 - rgb1, T(0.0f))*opacity[0] + rgb2 * (1 - opacity[0]);
+                T value = (rgb2 - rgb1) * opacity[0] + rgb2 * (1 - opacity[0]);
                 return value;
         }
         else if(compmode == std::string("Multiply")) {
@@ -662,6 +662,13 @@ static zeno::vec3f BlendModeV(const float &alpha1, const float &alpha2, const ve
                             value[k] = 2 * rgb2[k] * (1 - rgb1[k]) + sqrt(rgb2[k]) * (2 * rgb1[k] - 1);
                         }
                     }
+                    /*for (int k = 0; k < 3; k++) {     Nuke method
+                        if (rgb1[k] * rgb2[k] < 1) {
+                            value[k] = rgb2[k] * (2 * rgb1[k] + (rgb2[k] * (1-rgb1[k] * rgb2[k])));
+                        } else {
+                            value[k] = 2 * rgb2[k] * rgb1[k];
+                        }
+                    }*/
                     value = value * opacity[0] + rgb2 * (1 - opacity[0]);
                     return value;
         }
@@ -726,7 +733,7 @@ struct Blend: INode {
                 vec3f rgb1 = zeno::clamp(blend->verts[i], 0, 1) * opacity1;
                 vec3f rgb2 = zeno::clamp(base->verts[i], 0, 1) * opacity2;
                 vec3f opacity = zeno::clamp(mask->verts[i], 0, 1) * maskopacity;
-                if(compmode == "Overlay"||compmode == "Softlight"||compmode == "Divide"){
+                if(compmode == "Overlay" || compmode == "SoftLight" || compmode == "Divide"){
                     vec3f c = BlendModeV(blendalpha[i], basealpha[i], rgb1, rgb2, opacity, compmode);
                     image2->verts[i] = zeno::clamp(c, 0, 1);
                 }
@@ -738,6 +745,7 @@ struct Blend: INode {
             if(alphaoutput) {//如果两个输入 其中一个没有alpha  对于rgb和alpha  alpha的默认值不一样 前者为1 后者为0？
                 auto &blendalpha = blend->has_attr("alpha")?blend->attr<float>("alpha"):blend->add_attr<float>("alpha");//只有blendbase都没有alpha 结果才没有
                 auto &basealpha = base->has_attr("alpha")?base->attr<float>("alpha"):base->add_attr<float>("alpha");
+                //std::string alphablendmode = alphamode == "SameWithBlend" ? compmode : alphamode;
 #pragma omp parallel for
                 for (int i = 0; i < imagesize; i++) {
                 vec3f opacity = zeno::clamp(mask->verts[i], 0, 1) * maskopacity;
@@ -757,6 +765,7 @@ ZENDEFNODE(Blend, {
         {"Mask"},
         {"enum Over Copy Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Overlay SoftLight Divide Xor", "Blending Mode", "Normal"},
         //{"enum IgnoreAlpha SourceAlpha", "Alpha Blending", "Ignore Alpha"}, SUBSTANCE DESIGNER ALPHA MODE
+        //{"enum SameWithBlend Over Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Xor", "Alpha Mode", "SameWithBlend"},
         {"enum Over Under Atop In Out Screen Add Subtract Multiply Max(Lighten) Min(Darken) Average Difference Xor", "Alpha Mode", "Over"},
         {"float", "Mask Opacity", "1"},
         {"float", "Foreground Opacity", "1"},
@@ -936,7 +945,7 @@ ZENDEFNODE(CompExtractChanel_gray, {
     { "deprecated" },
 });*/
 
-struct ImageExtractChannel : INode {//why so slow...
+struct ImageExtractChannel : INode {
     virtual void apply() override {
         auto image = get_input<PrimitiveObject>("image");
         auto channel = get_input2<std::string>("channel");
@@ -950,7 +959,7 @@ struct ImageExtractChannel : INode {//why so slow...
         image2->verts.resize(image->size());
         if(channel == "R") {
             for (auto i = 0; i < image->verts.size(); i++) {
-                image2->verts[i] = vec3f(image->verts[i][0]);//为了速度 verts也要提前吗？ 试一下
+                image2->verts[i] = vec3f(image->verts[i][0]);
             }
         }
         else if(channel == "G") {
