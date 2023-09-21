@@ -106,29 +106,6 @@ void ZSlider::updateKeyFrames(const QVector<int> &keys)
     update();
 }
 
-void ZSlider::resetCashedFrames()
-{
-    if (!m_cachedFrames.isEmpty())
-    {
-        m_cachedFrames.clear();
-        update();
-    }
-}
-
-void ZSlider::updateCachedFrame(int frame, bool bCached)
-{
-    if (bCached && !m_cachedFrames.contains(frame))
-    {
-        m_cachedFrames << frame;
-        update();
-    }
-    else if (!bCached && m_cachedFrames.contains(frame))
-    {
-        m_cachedFrames.removeOne(frame);
-        update();
-    }
-}
-
 int ZSlider::_getframes()
 {
     //todo
@@ -260,15 +237,22 @@ void ZSlider::paintEvent(QPaintEvent* event)
         if (frame == m_from) {
             lastState = pGlobalComm->getFrameState(frame);
             lastStateFrame = m_from;
-            continue;
         }
 
         zeno::GlobalComm::FRAME_STATE currState = pGlobalComm->getFrameState(frame);
         if (currState != lastState || frame == m_to)
         {
             //draw lastState from lastStateFrame to frame.
-            int x1 = _frameToPos(lastStateFrame);
-            int x2 = _frameToPos(frame - 1);
+            int startFrame = lastStateFrame - m_from;
+            if (startFrame != 0)
+                startFrame -= 1;
+            int endFrame = frame - m_from;
+            if (endFrame == startFrame)
+                endFrame +=1;
+            else if (frame != m_to)
+                endFrame -= 1;
+            int x1 = _frameToPos(startFrame);
+            int x2 = _frameToPos(endFrame);
             int y = height() - scaleH;
 
             QRect rec(x1, y, x2 - x1 + 1, scaleH);
@@ -286,31 +270,6 @@ void ZSlider::paintEvent(QPaintEvent* event)
             lastStateFrame = frame;
         }
     }
-
-    /*
-    for (int frame : m_cachedFrames)
-    {
-        int x = _frameToPos(m_from == frame ? 0 : frame - m_from - 1);
-        int y = height() - scaleH;
-        int w = 0;
-        if (frame == m_from && frame != m_to)
-        {
-            if (m_cachedFrames.contains(frame + 1))
-                w = 0;
-            else
-                w = ZenoStyle::dpiScaled(6);
-        }
-        else {
-            w = _frameToPos(1) - m_sHMargin;
-        }
-
-        if (w == 0) continue;
-
-        QRect rec(x, y, w+1, scaleH);
-        painter.setPen(Qt::NoPen);
-        painter.fillRect(rec, QColor(169, 169, 169, 100));
-    }
-    */
 }
 
 void ZSlider::drawSlideHandle(QPainter* painter, int scaleH)
