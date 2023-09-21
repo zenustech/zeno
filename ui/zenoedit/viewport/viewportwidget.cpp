@@ -235,7 +235,7 @@ void ViewportWidget::paintGL()
 
 void ViewportWidget::mousePressEvent(QMouseEvent* event)
 {
-    int button;
+    int button = Qt::NoButton;
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     settings.getViewShortCut(ShortCut_MovingView, button);
     settings.getViewShortCut(ShortCut_RotatingView, button);
@@ -250,7 +250,7 @@ void ViewportWidget::mousePressEvent(QMouseEvent* event)
 
 void ViewportWidget::mouseMoveEvent(QMouseEvent* event)
 {
-    int button;
+    int button = Qt::NoButton;
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     settings.getViewShortCut(ShortCut_MovingView, button);
     settings.getViewShortCut(ShortCut_RotatingView, button);
