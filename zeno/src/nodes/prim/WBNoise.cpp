@@ -898,47 +898,47 @@ struct NoiseImageGen : INode {
         auto perC = get_input2<bool>("noise per component");
         auto image_size = get_input2<vec2i>("image size");
         auto seed = get_input2<int>("seed");
-        auto turb = get_input2<int>("turbulence");
-//        auto gdist = get_input2<int>("griddist");
-        auto freq = get_input2<vec2f>("spatial frequency");
-
+        auto turbulence = get_input2<int>("turbulence");
+        auto roughness = get_input2<float>("roughness");
+        auto frequency = get_input2<vec2f>("spatial frequency") * 0.001f; // tofix: scale?
+        auto amplitude = get_input2<vec4f>("amplitude");
 
         auto image = std::make_shared<PrimitiveObject>();
         image->verts.resize(image_size[0] * image_size[1]);
         auto &alpha = image->verts.add_attr<float>("alpha");
 
-        engine.seed(seed);
+        engine.seed(seed); // tofix: how to lock with engine
 
 #pragma omp parallel for
         for (int i = 0; i < image_size[0] * image_size[1]; i++) {
-            glm::vec2 p = {i % image_size[0]
-                           //                               /image_size[0]
-                           * freq[0],
-                           i / image_size[0]
-                           //                               /image_size[1]
-                           * freq[1]};
-            glm::vec2 t = 15.f * p;
-            float r = scnoise(p.x, p.y, p.x, 3, 2); // test
-            for (int j = 1; j < turb; j++) {
-                t *= 2.0f;
-                r += scnoise(t.x, t.y, t.x, 3, 2);
+            vec2f p = vec2f(i % image_size[0], i / image_size[0]);
+
+            float r = 0;
+            float g = 0;
+            float b = 0;
+            vec2f freq = frequency;
+            vec4f amp = amplitude;
+            float rough = roughness;
+            for (int j = 0; j < turbulence; j++) {
+                r += scnoise(p[0] * freq[0],
+                             p[1] * freq[1],
+                             p[0] * freq[0],
+                             3, 2) * amp[0];
+                g += scnoise(p[0] * freq[0],
+                             p[0] * freq[0],
+                             p[1] * freq[1],
+                             3, 2) * amp[1];
+                b += scnoise(p[1] * freq[1],
+                             p[0] * freq[0],
+                             p[0] * freq[0],
+                             3, 2) * amp[2];
+                freq *= 2.0f;
+                amp *= rough;
             }
 
             if (perC) {
-                float g = scnoise(p.x, p.x, p.y, 3, 2); // test
-                t = p;
-                for (int j = 1; j < turb; j++) {
-                    t *= 2.0f;
-                    g += scnoise(t.x, t.x, t.y, 3, 2);
-                }
-                float b = scnoise(p.y, p.x, p.x, 3, 2); // test
-                t = p;
-                for (int j = 1; j < turb; j++) {
-                    t *= 2.0f;
-                    b += scnoise(t.y, t.x, t.x, 3, 2);
-                }
                 image->verts[i] = {r, g, b};
-                alpha[i] = r+g+b; // tofix
+                alpha[i] = r+g+b; // tofix: proper expression? as well as amplitude related
             } else {
                 image->verts[i] = {r, r, r};
                 alpha[i] = r;
@@ -957,9 +957,9 @@ ZENDEFNODE(NoiseImageGen, {
         {"int", "seed", "1"},
         {"bool", "noise per component", "1"},
         {"int", "turbulence", "1"},
-//        {"int", "griddist", "2"},
-//        {"float", "roughness", "0.5"},
+        {"float", "roughness", "0.5"},
         {"vec2f", "spatial frequency", "10,10"},
+        {"vec4f", "amplitude", "1.0,1.0,1.0,1.0"},
         // image planes?
     },
     {
