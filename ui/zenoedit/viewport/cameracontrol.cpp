@@ -123,7 +123,7 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
             this->m_picker->pick_depth(mid_x, mid_y);
         }
     }
-    int button;
+    int button = Qt::NoButton;
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     settings.getViewShortCut(ShortCut_MovingView, button);
     settings.getViewShortCut(ShortCut_RotatingView, button);
