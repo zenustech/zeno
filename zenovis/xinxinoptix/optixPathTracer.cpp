@@ -68,7 +68,12 @@
 #include "LightBounds.h"
 #include "LightTree.h"
 
-#include "tinyexr.h"
+#include "LightBounds.h"
+#include "LightTree.h"
+
+#include "ChiefDesignerEXR.h"
+using namespace zeno::ChiefDesignerEXR;
+
 #include "zeno/utils/image_proc.h"
 
 #ifndef M_PI
@@ -3291,7 +3296,7 @@ static void save_exr(float3* ptr, int w, int h, std::string path) {
     zeno::image_flip_vertical(data.data(), w, h);
     const char *err = nullptr;
     int ret = SaveEXR((float *) data.data(), w, h, 3, 1, path.c_str(), &err);
-    if (ret != TINYEXR_SUCCESS) {
+    if (ret != 0) {
         if (err) {
             zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
             FreeEXRErrorMessage(err);
@@ -3334,7 +3339,32 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         stbi_flip_vertically_on_write(true);
         if (zeno::getSession().userData().get2<bool>("output_exr", true)) {
             auto exr_path = path.substr(0, path.size() - 4) + ".exr";
-            save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+
+            // AOV
+            if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
+                SaveMultiLayerEXR(
+                        {
+                            (float*)optixgetimg_extra("color"),
+                            (float*)optixgetimg_extra("diffuse"),
+                            (float*)optixgetimg_extra("specular"),
+                            (float*)optixgetimg_extra("transmit"),
+                            (float*)optixgetimg_extra("background"),
+                        },
+                        w,
+                        h,
+                        {
+                            "",
+                            "diffuse.",
+                            "specular.",
+                            "transmit.",
+                            "background.",
+                        },
+                        exr_path.c_str()
+                );
+            }
+            else {
+                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+            }
         }
         else {
             stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
@@ -3353,14 +3383,6 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
         ud.erase("optix_image_path");
 
-        // AOV
-        if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
-            path = path.substr(0, path.size() - 4);
-            save_exr((float3 *)optixgetimg_extra("diffuse"), w, h, path + ".diffuse.exr");
-            save_exr((float3 *)optixgetimg_extra("specular"), w, h, path + ".specular.exr");
-            save_exr((float3 *)optixgetimg_extra("transmit"), w, h, path + ".transmit.exr");
-            save_exr((float3 *)optixgetimg_extra("background"), w, h, path + ".background.exr");
-        }
         imageRendered = true;
     }
 }

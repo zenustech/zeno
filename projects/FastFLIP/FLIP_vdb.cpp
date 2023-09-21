@@ -2902,6 +2902,10 @@ void FLIP_vdb::apply_pressure_gradient(
 					bool has_pressure_below = pressure_axr.isValueOn(lower_gcoord);
 
 					if (has_pressure || has_pressure_below) {
+            has_update = true;
+
+#if 0
+            // To do: fix the deactivated flip particles
             auto phi_this = phi_axr.getValue(gcoord);
 						auto phi_below = phi_axr.getValue(lower_gcoord);
             
@@ -2909,6 +2913,7 @@ void FLIP_vdb::apply_pressure_gradient(
 						  has_update = true;
             else
               has_update = false;
+#endif
 					}
 
 					if (has_update) {

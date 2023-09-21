@@ -111,6 +111,7 @@ void ZenoImagePanel::setPrim(std::string primid) {
         return;
 
     bool enableGamma = pGamma->checkState() == Qt::Checked;
+    bool enableAlpha = pAlpha->checkState() == Qt::Checked;
     bool found = false;
     for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
         if ((key.substr(0, key.find(":"))) != primid) {
@@ -127,7 +128,7 @@ void ZenoImagePanel::setPrim(std::string primid) {
             if (image_view) {
                 QImage img(width, height, QImage::Format_RGB32);
                 int gridSize = 50;
-                if (obj->verts.has_attr("alpha")) {
+                if (obj->verts.has_attr("alpha")&&enableAlpha) {
                     auto &alpha = obj->verts.attr<float>("alpha");
                     for (auto i = 0; i < obj->verts.size(); i++) {
                         int h = i / width;
@@ -207,6 +208,10 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
     pGamma->setCheckState(Qt::Checked);
     pTitleLayout->addWidget(pGamma);
 
+    pAlpha->setStyleSheet("color: white;");
+    pAlpha->setCheckState(Qt::Unchecked);
+    pTitleLayout->addWidget(pAlpha);
+
     pFit->setProperty("cssClass", "grayButton");
     pTitleLayout->addWidget(pFit);
 
@@ -247,6 +252,20 @@ ZenoImagePanel::ZenoImagePanel(QWidget *parent) : QWidget(parent) {
         }
     });
     connect(pGamma, &QCheckBox::stateChanged, this, [=](int state) {
+        std::string prim_name = pPrimName->text().toStdString();
+        Zenovis* zenovis = wids[0]->getZenoVis();
+        ZASSERT_EXIT(zenovis);
+        auto session = zenovis->getSession();
+        ZASSERT_EXIT(session);
+        auto scene = session->get_scene();
+        ZASSERT_EXIT(scene);
+        for (auto const &[key, ptr]: scene->objectsMan->pairs()) {
+            if (key.find(prim_name) == 0) {
+                setPrim(key);
+            }
+        }
+    });
+    connect(pAlpha, &QCheckBox::stateChanged, this, [=](int state) {
         std::string prim_name = pPrimName->text().toStdString();
         Zenovis* zenovis = wids[0]->getZenoVis();
         ZASSERT_EXIT(zenovis);
