@@ -1090,8 +1090,8 @@ namespace COLLISION_UTILS {
             VECTOR3 bary_centric{};
             LSL_GEO::pointBaryCentric(ps[0],ps[1],ps[2],ps[3],bary_centric);
 
-            if(distance > imminent_thickness)
-                return false;
+            // if(distance > imminent_thickness)
+            //     return false;
 
             auto bary_sum = zs::abs(bary_centric[0]) + zs::abs(bary_centric[1]) + zs::abs(bary_centric[2]);
             if(bary_sum > (REAL)(1.0 + eps * 1000)) {

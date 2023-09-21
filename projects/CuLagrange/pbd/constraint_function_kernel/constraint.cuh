@@ -216,11 +216,18 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         // Q = MATRIX4d::uniform(0);
 
+        // const auto e0 = x[1].cast<double>() - x[0].cast<double>();
+        // const auto e1 = x[2].cast<double>() - x[0].cast<double>();
+        // const auto e2 = x[3].cast<double>() - x[0].cast<double>();
+        // const auto e3 = x[2].cast<double>() - x[1].cast<double>();
+        // const auto e4 = x[3].cast<double>() - x[1].cast<double>();
+
         const auto e0 = x[1].cast<double>() - x[0].cast<double>();
         const auto e1 = x[2].cast<double>() - x[0].cast<double>();
         const auto e2 = x[3].cast<double>() - x[0].cast<double>();
         const auto e3 = x[2].cast<double>() - x[1].cast<double>();
         const auto e4 = x[3].cast<double>() - x[1].cast<double>();
+
 
         // auto e0 = e0_.cast<double>();
         // auto e1 = e1_.cast<double>();
@@ -302,8 +309,7 @@ namespace zeno { namespace CONSTRAINT {
         }
 
         // exit early if required
-        // for(int i = 0;i != 4;++i)
-        //     printf("gradC[%d] : %f %f %f\n",i,(float)gradC[i][0],(float)gradC[i][1],(float)gradC[i][2]);
+
 
         if (sum_normGradC > eps)
         {
@@ -316,6 +322,15 @@ namespace zeno { namespace CONSTRAINT {
             corr2 = (delta_lambda * invMass[0]) * gradC[0];
             corr3 = (delta_lambda * invMass[1]) * gradC[1];
             // printf("update corr for iso_bending energy\n");
+
+            auto gradCSum = (float)0;
+            for(int i = 0;i != 4;++i)
+                gradCSum += gradC[i].norm();
+            if(gradCSum > 1e-4) {
+                printf("gradC : %f %f %f %f corr : %f %f %f %f\n",
+                    (float)gradC[0].norm(),(float)gradC[1].norm(),(float)gradC[2].norm(),(float)gradC[3].norm(),
+                    (float)corr0.norm(),(float)corr1.norm(),(float)corr2.norm(),(float)corr3.norm());
+            }
 
             return true;
         }else {

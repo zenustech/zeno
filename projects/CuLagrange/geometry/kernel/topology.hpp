@@ -1411,7 +1411,7 @@ namespace zeno {
                     auto otri = tris.pack(dim_c<3>,"inds",oti,int_c);
 
                     // tb_topos[id] = zs::vec<int,4>(tri[(vid + 0) % 3],tri[(vid + 1) % 3],tri[(vid + 2) % 3],otri[(ovid + 2) % 3]);
-                    tb_topos[id] = zs::vec<int,4>(tri[(vid + 2) % 3],otri[(ovid + 2) % 3],tri[(vid + 1) % 3],tri[(vid + 0) % 3]);
+                    tb_topos[id] = zs::vec<int,4>(tri[(vid + 2) % 3],otri[(ovid + 2) % 3],tri[(vid + 0) % 3],tri[(vid + 1) % 3]);
             });
     }
 
