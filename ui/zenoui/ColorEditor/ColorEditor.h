@@ -304,6 +304,7 @@ signals:
 
 protected:
     void closeEvent(QCloseEvent* e) override;
+    void keyPressEvent(QKeyEvent* e) override;
 
 private:
     void initSlots();
