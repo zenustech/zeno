@@ -668,6 +668,9 @@ extern "C" __global__ void __closesthit__radiance()
     auto sssParam = mats.sssParam;
 
     auto scatterStep = mats.scatterStep;
+    
+    sssParam = subsurface>0? sssParam*subsurface : sssParam;
+    subsurface = subsurface>0? 1 : 0;
     //discard fully opacity pixels
     //opacity = clamp(opacity, 0.0f, 0.99f);
     prd->opacity = opacity;

@@ -336,9 +336,9 @@ namespace DisneyBSDF{
         float glassWt = (1.0 - metallic) * specTrans;
 
         float schlickWt = BRDFBasics::SchlickWeight(abs(dot(wo, wm)));
-        float psss = subsurface/(1.0f + subsurface);
+        float psss = subsurface;
         //event probability
-        float diffPr = dielectricWt * (1.0f - psss);
+        float diffPr = dielectricWt;
         float sssPr = dielectricWt  * psss;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
@@ -469,8 +469,9 @@ namespace DisneyBSDF{
           float FL = BRDFBasics::SchlickWeight(abs(wi.z));
           float FV = BRDFBasics::SchlickWeight(abs(wo.z));
           float term = wo.z>0?FV:FL;
-          float tmpPdf = trans?0.5/M_PIf:0.0f;
-          vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
+          float tmpPdf = trans? 1.0f : 0.0f;//0.5/M_PIf:0.0f;
+          // vec3 d = 1.0f/M_PIf * (1.0f - 0.5f * term) * (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
+          vec3 d = (trans?vec3(1.0f):vec3(0.0f))  * dielectricWt * subsurface;
           dterm = dterm + d;
           f = f + d;
           fPdf += tmpPdf * sssPr;
@@ -642,11 +643,11 @@ namespace DisneyBSDF{
 
         float hov = mix(hov1, hov2, c);
         float schlickWt = BRDFBasics::SchlickWeight(hov);
-        float psss = subsurface/(1.0f + subsurface);
+        float psss = subsurface;
         //dielectricWt *= 1.0f - psub;
 
         //event probability
-        float diffPr = dielectricWt * (1.0f - psss);
+        float diffPr = dielectricWt ;
         float sssPr = dielectricWt  * psss;
         float dielectricPr = dielectricWt * Luminance(mix(Cspec0, vec3(1.0), schlickWt));
         float metalPr = metalWt * Luminance(mix(baseColor, vec3(1.0), schlickWt));
@@ -697,7 +698,7 @@ namespace DisneyBSDF{
               wi = -BRDFBasics::UniformSampleHemisphere(r1, r2);
               isSS = true;
               flag = transmissionEvent;
-              vec3 color = mix(baseColor, sssColor, subsurface) * psss;
+              vec3 color = mix(baseColor, sssColor, subsurface);
               color = clamp(color, vec3(0.05), vec3(0.99));
               vec3 sssRadius = transmiianceColor * subsurface;
               RadiancePRD *prd = getPRD();
