@@ -13,7 +13,7 @@
 #include <zeno/core/Descriptor.h>
 #include <zeno/types/AttrVector.h>
 #include <zeno/types/UserData.h>
-#include <zeno/types/CUrveObject.h>
+#include <zeno/types/CurveObject.h>
 #include <zeno/utils/logger.h>
 #include <zeno/zeno.h>
 
