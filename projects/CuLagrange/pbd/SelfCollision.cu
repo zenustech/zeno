@@ -84,6 +84,9 @@ struct DetangleImminentCollision : INode {
         zs::Vector<int> nm_imminent_collision{verts.get_allocator(),(size_t)1};
 
         std::cout << "do imminent detangle" << std::endl;
+
+        auto vn_threshold = 5e-3;
+
         for(int it = 0;it != nm_iters;++it) {
 
             cudaPol(zs::range(verts.size()),[
@@ -141,6 +144,7 @@ struct DetangleImminentCollision : INode {
                     eps = eps,
                     exec_tag = wrapv<space>{},
                     k = repel_strength,
+                    vn_threshold = vn_threshold,
                     max_repel_distance = max_repel_distance,
                     thickness = imminent_collision_thickness,
                     nm_imminent_collision = proxy<space>(nm_imminent_collision),
@@ -167,7 +171,7 @@ struct DetangleImminentCollision : INode {
 
                         auto d = thickness - dist;
                         auto vn = vr.dot(collision_normal);
-                        if(vn < -thickness * 0.05) {
+                        if(vn < -vn_threshold) {
                             atomic_add(exec_tag,&nm_imminent_collision[0],1);
                             for(int i = 0;i != 4;++i)
                                 verts("imminent_fail",inds[i]) = (T)1.0;
@@ -534,6 +538,9 @@ struct DetangleCCDCollision : INode {
 
         std::cout << "resolve continous collision " << std::endl;
 
+        auto res_threshold = thickness * 0.01;
+        res_threshold = res_threshold < 1e-3 ? 1e-3 : res_threshold;
+
         for(int iter = 0;iter != nm_ccd_iters;++iter) {
 
             cudaPol(zs::range(impulse_buffer),[]ZS_LAMBDA(auto& imp) mutable {imp = vec3::uniform(0);});
@@ -542,6 +549,8 @@ struct DetangleCCDCollision : INode {
             nm_ccd_collision.setVal(0);
 
             if(do_pt_detection) {
+                // std::cout << "do continous self PT cololision impulse" << std::endl;
+
                 auto do_bvh_refit = iter > 0;
                 COLLISION_UTILS::calc_continous_self_PT_collision_impulse(cudaPol,
                     verts,
@@ -555,6 +564,7 @@ struct DetangleCCDCollision : INode {
             }
 
             if(do_ee_detection) {
+                // std::cout << "do continous self EE cololision impulse" << std::endl;
                 auto do_bvh_refit = iter > 0;
                 COLLISION_UTILS::calc_continous_self_EE_collision_impulse(cudaPol,
                     verts,
@@ -566,7 +576,7 @@ struct DetangleCCDCollision : INode {
                     impulse_count);
             }
 
-            // std::cout << "apply impulse" << std::endl;
+            // std::cout << "apply CCD impulse" << std::endl;
             cudaPol(zs::range(verts.size()),[
                 verts = proxy<space>({},verts),
                 vtemp = proxy<space>({},vtemp),
@@ -574,6 +584,7 @@ struct DetangleCCDCollision : INode {
                 impulse_count = proxy<space>(impulse_count),
                 relaxation_rate = relaxation_rate,
                 nm_ccd_collision = proxy<space>(nm_ccd_collision),
+                res_threshold = res_threshold,
                 eps = eps,
                 thickness = thickness,
                 exec_tag = exec_tag] ZS_LAMBDA(int vi) mutable {
@@ -583,7 +594,7 @@ struct DetangleCCDCollision : INode {
                     return;
 
                 auto impulse = relaxation_rate * impulse_buffer[vi] / impulse_count[vi];
-                if(impulse.norm() > thickness * 0.01)
+                if(impulse.norm() > res_threshold)
                     atomic_add(exec_tag,&nm_ccd_collision[0],1);
 
                 // auto dv = impulse
@@ -596,7 +607,7 @@ struct DetangleCCDCollision : INode {
             if(nm_ccd_collision.getVal() == 0)
                 break;
         }
-        std::cout << "finish solving continous collision " << std::endl;
+        // std::cout << "finish solving continous collision " << std::endl;
         cudaPol(zs::range(verts.size()),[
             vtemp = proxy<space>({},vtemp),
             verts = proxy<space>({},verts),

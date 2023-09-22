@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../../geometry/kernel/geo_math.hpp"
+#include "zensim/math/MathUtils.h"
 
 namespace zeno { namespace CONSTRAINT {
 // FOR CLOTH SIMULATION
@@ -24,7 +25,7 @@ namespace zeno { namespace CONSTRAINT {
         {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
-            return true;
+            return false;
         }
 
         SCALER alpha = 0.0;
@@ -41,7 +42,7 @@ namespace zeno { namespace CONSTRAINT {
         {
             corr0 = VECTOR3d::uniform(0);
             corr1 = VECTOR3d::uniform(0);
-            return true;
+            return false;
         }
 
         const SCALER delta_lambda = -Kinv * (C + alpha * lambda);
@@ -132,14 +133,42 @@ namespace zeno { namespace CONSTRAINT {
         return true;
     }
 
+    template<typename VECTOR3d,typename SCALER = VECTOR3d::value_type>
+    constexpr bool init_DihedralBendingConstraint(
+        const VECTOR3d& p0,
+        const VECTOR3d& p1,
+        const VECTOR3d& p2,
+        const VECTOR3d& p3,
+        SCALER& restAngle){
+            VECTOR3d e = p3 - p2;
+            SCALER elen = e.norm();
+            if (elen < 1e-4)
+                return false;
+
+            SCALER invElen = static_cast<SCALER>(1.0) / elen;
+
+            VECTOR3d n1 = LSL_GEO::facet_normal(p0,p2,p3);
+            VECTOR3d n2 = LSL_GEO::facet_normal(p1,p3,p2);
+
+            SCALER n12 = n1.dot(n2);
+            SCALER angle = 0;
+            if((1 - n12) > 1e-6)
+                angle = zs::sqrt((1 - n12) / 2);
+            if(n1.cross(n2).dot(e) < 0)
+                angle = -angle;
+            restAngle = angle;
+            return true;            
+    }
+
+
     template<typename VECTOR3d,typename SCALER>
     constexpr bool solve_DihedralConstraint(
-        const VECTOR3d &p0, SCALER invMass0,		
-        const VECTOR3d &p1, SCALER invMass1,
-        const VECTOR3d &p2, SCALER invMass2,
-        const VECTOR3d &p3, SCALER invMass3,
-        const SCALER restAngle,
-        const SCALER stiffness,		
+        const VECTOR3d &p0,const SCALER& invMass0,		
+        const VECTOR3d &p1,const SCALER& invMass1,
+        const VECTOR3d &p2,const SCALER& invMass2,
+        const VECTOR3d &p3,const SCALER& invMass3,
+        const SCALER& restAngle,
+        const SCALER& stiffness,		
         VECTOR3d &corr0, VECTOR3d &corr1, VECTOR3d &corr2, VECTOR3d &corr3)
     {
         constexpr SCALER eps = static_cast<SCALER>(1e-6);
@@ -155,7 +184,7 @@ namespace zeno { namespace CONSTRAINT {
     
         // auto n1 = LSL_GEO::facet_normal(p0,p2,p3);
         // auto n2 = LSL_GEO::facet_normal(p1,p3,p2);
-        VECTOR3d n1 = (p2-p0).cross(p3-p0).normal; n1 /= n1.l2NormSqr();
+        VECTOR3d n1 = (p2 - p0).cross(p3 - p0); n1 /= n1.l2NormSqr();
         VECTOR3d n2 = (p3 - p1).cross(p2 - p1); n2 /= n2.l2NormSqr();
     
         VECTOR3d d0 = elen*n1;
@@ -163,23 +192,21 @@ namespace zeno { namespace CONSTRAINT {
         VECTOR3d d2 = (p0-p3).dot(e) * invElen * n1 + (p1-p3).dot(e) * invElen * n2;
         VECTOR3d d3 = (p2-p0).dot(e) * invElen * n1 + (p2-p1).dot(e) * invElen * n2;
     
-        n1 = n1.normalize();
-        n2 = n2.normalize();
-        // n1.normalize();
-        // n2.normalize();
-        SCALER dot = n1.dot(n2);
-    
-        if (dot < -1.0) dot = -1.0;
-        if (dot >  1.0) dot =  1.0;
-        SCALER phi = acos(dot);	
-    
         // SCALER phi = (-0.6981317 * dot * dot - 0.8726646) * dot + 1.570796;	// fast approximation
+        n1 = n1.normalized();
+        n2 = n2.normalized();
+        SCALER n12 = n1.dot(n2);
+        SCALER angle = 0;
+        if((1 - n12) > 1e-6)
+            angle = zs::sqrt((1 - n12) / 2);
+        if(n1.cross(n2).dot(e) < 0)
+            angle = -angle;
     
         SCALER lambda = 
-            invMass0 * d0.squaredNorm() +
-            invMass1 * d1.squaredNorm() +
-            invMass2 * d2.squaredNorm() +
-            invMass3 * d3.squaredNorm();
+            invMass0 * d0.l2NormSqr() +
+            invMass1 * d1.l2NormSqr() +
+            invMass2 * d2.l2NormSqr() +
+            invMass3 * d3.l2NormSqr();
     
         if (lambda == 0.0)
             return false;	
@@ -189,16 +216,83 @@ namespace zeno { namespace CONSTRAINT {
         //if (stiffness > 0.5 && fabs(phi - b.restAngle) > 1.5)		
         //	stiffness = 0.5;
     
-        lambda = (phi - restAngle) / lambda * stiffness;
+        lambda = (angle - restAngle) / lambda * stiffness;
     
-        if (n1.cross(n2).dot(e) > 0.0)
-            lambda = -lambda;	
+        // if (n1.cross(n2).dot(e) > 0.0)
+        //     lambda = -lambda;	
     
-        corr0 = - invMass0 * lambda * d0;
-        corr1 = - invMass1 * lambda * d1;
-        corr2 = - invMass2 * lambda * d2;
-        corr3 = - invMass3 * lambda * d3;
+        corr0 = invMass0 * lambda * d0;
+        corr1 = invMass1 * lambda * d1;
+        corr2 = invMass2 * lambda * d2;
+        corr3 = invMass3 * lambda * d3;
     
+        return true;
+    }
+
+    template<typename VECTOR3d,typename SCALER = VECTOR3d::value_type>
+    constexpr bool solve_DihedralConstraint(
+        const VECTOR3d& p0, const SCALER& invMass0,
+        const VECTOR3d& p1, const SCALER& invMass1,
+        const VECTOR3d& p2, const SCALER& invMass2,
+        const VECTOR3d& p3, const SCALER& invMass3,
+        const SCALER& ra,
+        const SCALER& stiffness,
+        const SCALER& dt,
+        SCALER& lambda,
+        VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3){  
+        constexpr SCALER eps = static_cast<SCALER>(1e-4);
+
+        auto e = p3 - p2;
+        auto elen = e.norm();
+        if(elen < eps)
+            return false;
+        
+        SCALER invElen = static_cast<SCALER>(1.0) / elen;   
+
+        VECTOR3d n1 = (p2 - p0).cross(p3 - p0); n1 /= n1.l2NormSqr();
+	    VECTOR3d n2 = (p3 - p1).cross(p2 - p1); n2 /= n2.l2NormSqr();
+
+        VECTOR3d gradC[4] = {};
+        gradC[0] = elen*n1;
+        gradC[1] = elen*n2;
+        gradC[2] = (p0-p3).dot(e) * invElen * n1 + (p1-p3).dot(e) * invElen * n2;
+        gradC[3] = (p2-p0).dot(e) * invElen * n1 + (p2-p1).dot(e) * invElen * n2;
+
+        n1 = n1.normalized();
+        n2 = n2.normalized();
+        SCALER n12 = n1.dot(n2);
+        SCALER angle = 0;
+        if((1 - n12) > 1e-6)
+            angle = zs::sqrt((1 - n12) / 2);
+        if(n1.cross(n2).dot(e) < 0)
+            angle = -angle;
+
+        SCALER alpha = 0.0;
+        if (stiffness != 0.0)
+            alpha = static_cast<SCALER>(1.0) / (stiffness * dt * dt);
+
+
+        SCALER sum_normGradC = 
+            invMass0 * gradC[0].l2NormSqr() +
+            invMass1 * gradC[1].l2NormSqr() +
+            invMass2 * gradC[2].l2NormSqr() +
+            invMass3 * gradC[3].l2NormSqr() + alpha;
+
+        if(sum_normGradC < eps)
+            return false;
+
+        auto energy = angle - ra;
+
+        // compute impulse-based scaling factor
+        SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
+        lambda += delta_lambda;
+
+        // if(n1.cross(n2).dot(e) > 0.0)
+        //     delta_lambda = -delta_lambda;
+        corr0 = (delta_lambda * invMass0) * gradC[0];
+        corr1 = (delta_lambda * invMass1) * gradC[1];
+        corr2 = (delta_lambda * invMass2) * gradC[2];
+        corr3 = (delta_lambda * invMass3) * gradC[3];
         return true;
     }
 
@@ -234,6 +328,12 @@ namespace zeno { namespace CONSTRAINT {
         // auto e2 = e2_.cast<double>();
         // auto e3 = e3_.cast<double>();
         // auto e4 = e4_.cast<double>();
+
+        // printf("init isometric bending energy : %f %f %f %f\n",
+        //     (float)p0.norm(),
+        //     (float)p1.norm(),
+        //     (float)p2.norm(),
+        //     (float)p3.norm());
 
         const double c01 = LSL_GEO::cotTheta(e0, e1);
         const double c02 = LSL_GEO::cotTheta(e0, e2);
@@ -283,6 +383,12 @@ namespace zeno { namespace CONSTRAINT {
 
         // printf("isometric_bending_energy : %f\n",(float)energy);
 
+        // printf("solve isometric bending energy : %f %f %f %f\n",
+        //     (float)p0.norm(),
+        //     (float)p1.norm(),
+        //     (float)p2.norm(),
+        //     (float)p3.norm());
+
         VECTOR3d gradC[4] = {};
         gradC[0] = VECTOR3d::uniform(0);
         gradC[1] = VECTOR3d::uniform(0);
@@ -327,19 +433,15 @@ namespace zeno { namespace CONSTRAINT {
             for(int i = 0;i != 4;++i)
                 gradCSum += gradC[i].norm();
             if(gradCSum > 1e-4) {
-                printf("gradC : %f %f %f %f corr : %f %f %f %f\n",
-                    (float)gradC[0].norm(),(float)gradC[1].norm(),(float)gradC[2].norm(),(float)gradC[3].norm(),
-                    (float)corr0.norm(),(float)corr1.norm(),(float)corr2.norm(),(float)corr3.norm());
+                // printf("gradC : %f %f %f %f corr : %f %f %f %f\n",
+                //     (float)gradC[0].norm(),(float)gradC[1].norm(),(float)gradC[2].norm(),(float)gradC[3].norm(),
+                //     (float)corr0.norm(),(float)corr1.norm(),(float)corr2.norm(),(float)corr3.norm());
             }
 
             return true;
         }else {
-            corr0 = VECTOR3d::uniform(0);
-            corr1 = VECTOR3d::uniform(0);
-            corr2 = VECTOR3d::uniform(0);
-            corr3 = VECTOR3d::uniform(0);
+            return false;
         }
-        return false;
     }
 
 

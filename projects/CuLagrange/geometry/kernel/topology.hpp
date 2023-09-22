@@ -1369,6 +1369,7 @@ namespace zeno {
         return out_topo;
     }
 
+    // the topos:  triA: [idx0,idx2,idx3] triB: [idx1,idx3,idx2]
     template<typename Pol,typename TriTileVec,typename HalfEdgeTileVec>
     void retrieve_tri_bending_topology(Pol& pol,
         const TriTileVec& tris,

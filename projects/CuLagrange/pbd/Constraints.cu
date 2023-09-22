@@ -118,6 +118,7 @@ struct MakeSurfaceConstraintTopology : INode {
 
         }
 
+        // angle on (p2, p3) between triangles (p0, p2, p3) and (p1, p3, p2)
         if(type == "bending") {
             constraint->setMeta(CONSTRAINT_KEY,category_c::isometric_bending_constraint);
             // constraint->category = ZenoParticles::tri_bending_spring;
@@ -154,6 +155,40 @@ struct MakeSurfaceConstraintTopology : INode {
                     CONSTRAINT::init_IsometricBendingConstraint(x[0],x[1],x[2],x[3],Q);
                     eles.tuple(dim_c<16>,"Q",oei) = Q;
             });
+        }
+        // angle on (p2, p3) between triangles (p0, p2, p3) and (p1, p3, p2)
+        if(type == "dihedral") {
+            constraint->setMeta(CONSTRAINT_KEY,category_c::dihedral_bending_constraint);
+
+            const auto& halfedges = (*source)[ZenoParticles::s_surfHalfEdgeTag];
+
+            zs::Vector<zs::vec<int,4>> bd_topos{quads.get_allocator(),0};
+            retrieve_tri_bending_topology(cudaPol,quads,halfedges,bd_topos);
+
+            eles.resize(bd_topos.size());
+
+            topological_coloring(cudaPol,bd_topos,colors);
+			sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
+            // std::cout << "quads.size() = " << quads.size() << "\t" << "edge_topos.size() = " << edge_topos.size() << std::endl;
+
+            eles.append_channels(cudaPol,{{"inds",4},{"ra",1}});      
+
+            cudaPol(zs::range(eles.size()),[
+                eles = proxy<space>({},eles),
+                bd_topos = proxy<space>(bd_topos),
+                reordered_map = proxy<space>(reordered_map),
+                verts = proxy<space>({},verts)] ZS_LAMBDA(int oei) mutable {
+                    auto ei = reordered_map[oei];
+                    eles.tuple(dim_c<4>,"inds",oei) = bd_topos[ei].reinterpret_bits(float_c);
+
+                    vec3 x[4] = {};
+                    for(int i = 0;i != 4;++i)
+                        x[i] = verts.pack(dim_c<3>,"x",bd_topos[ei][i]);
+
+                    float alpha{};
+                    CONSTRAINT::init_DihedralBendingConstraint(x[0],x[1],x[2],x[3],alpha);
+                    eles("ra",oei) = alpha;
+            });      
         }
         if(type == "kcollision") {
             using bv_t = typename ZenoLinearBvh::lbvh_t::Box;
@@ -326,7 +361,7 @@ struct VisualizePBDConstraint : INode {
                     plines[ci] = zeno::vec2i{ci * 2 + 0,ci * 2 + 1};
                     ltclrs[ci] = cclrs[ci];
             });
-        }else if(constraint_type == category_c::isometric_bending_constraint) {
+        }else if(constraint_type == category_c::isometric_bending_constraint || constraint_type == category_c::dihedral_bending_constraint) {
             pverts.resize(constraints.size() * 2);
             auto& plines = prim->lines;
             plines.resize(constraints.size());
@@ -402,24 +437,12 @@ struct XPBDSolve : INode {
 
         for(int g = 0;g != nm_group;++g) {
 
-            // if(category == category_c::isometric_bending_constraint)
-            //     break;
-
             auto coffset = coffsets.getVal(g);
             int group_size = 0;
             if(g == nm_group - 1)
                 group_size = cquads.size() - coffsets.getVal(g);
             else
                 group_size = coffsets.getVal(g + 1) - coffsets.getVal(g);
-
-            // cudaPol(zs::range(verts.size()),[
-            //     ptag = zs::SmallString(ptag),
-            //     verts = proxy<space>({},verts),
-            //     pv_buffer = proxy<space>(pv_buffer)] ZS_LAMBDA(int vi) mutable {
-            //         pv_buffer[vi] = verts.pack(dim_c<3>,ptag,vi);
-            // });
-
-
 
             cudaPol(zs::range(group_size),[
                 coffset,
@@ -442,24 +465,19 @@ struct XPBDSolve : INode {
                         float r = cquads("r",coffset + gi);
 
                         vec3 dp0{},dp1{};
-                        CONSTRAINT::solve_DistanceConstraint(
+                        if(!CONSTRAINT::solve_DistanceConstraint(
                             p0,minv0,
                             p1,minv1,
                             r,
                             s,
                             dt,
                             lambda,
-                            dp0,dp1);
+                            dp0,dp1))
+                                return;
                         
                         
                         verts.tuple(dim_c<3>,ptag,edge[0]) = p0 + dp0;
                         verts.tuple(dim_c<3>,ptag,edge[1]) = p1 + dp1;
-
-                        // float m0 = verts("m",edge[0]);
-                        // float m1 = verts("m",edge[1]);
-                        // auto ghost_impulse = (dp0 * m0 + dp1 * m1).norm();
-                        // if(ghost_impulse > 1e-6)
-                        //     printf("dmomentum : %f\n",(float)ghost_impulse);
                     }
                     if(category == category_c::isometric_bending_constraint) {
                         auto quad = cquads.pack(dim_c<4>,"inds",coffset + gi,int_c);
@@ -473,7 +491,7 @@ struct XPBDSolve : INode {
                         auto Q = cquads.pack(dim_c<4,4>,"Q",coffset + gi);
 
                         vec3 dp[4] = {};
-                        CONSTRAINT::solve_IsometricBendingConstraint(
+                        if(!CONSTRAINT::solve_IsometricBendingConstraint(
                             p[0],minv[0],
                             p[1],minv[1],
                             p[2],minv[2],
@@ -482,14 +500,41 @@ struct XPBDSolve : INode {
                             s,
                             dt,
                             lambda,
-                            dp[0],dp[1],dp[2],dp[3]);
+                            dp[0],dp[1],dp[2],dp[3]))
+                                return;
 
                         for(int i = 0;i != 4;++i) {
                             // printf("dp[%d][%d] : %f %f %f %f\n",gi,i,s,(float)dp[i][0],(float)dp[i][1],(float)dp[i][2]);
                             verts.tuple(dim_c<3>,ptag,quad[i]) = p[i] + dp[i];
                         }
+                    }
 
-                        
+                    if(category == category_c::dihedral_bending_constraint) {
+                        auto quad = cquads.pack(dim_c<4>,"inds",coffset + gi,int_c);
+                        vec3 p[4] = {};
+                        float minv[4] = {};
+                        for(int i = 0;i != 4;++i) {
+                            p[i] = verts.pack(dim_c<3>,ptag,quad[i]);
+                            minv[i] = verts("minv",quad[i]);
+                        }
+
+                        auto ra = cquads("ra",coffset + gi);
+                        vec3 dp[4] = {};
+                        if(!CONSTRAINT::solve_DihedralConstraint(
+                            p[0],minv[0],
+                            p[1],minv[1],
+                            p[2],minv[2],
+                            p[3],minv[3],
+                            ra,
+                            s,
+                            dt,
+                            lambda,
+                            dp[0],dp[1],dp[2],dp[3]))
+                                return;
+                        for(int i = 0;i != 4;++i) {
+                            // printf("dp[%d][%d] : %f %f %f %f\n",gi,i,s,(float)dp[i][0],(float)dp[i][1],(float)dp[i][2]);
+                            verts.tuple(dim_c<3>,ptag,quad[i]) = p[i] + dp[i];
+                        }                        
                     }
 
                     if(category == category_c::p_kp_collision_constraint) {
@@ -576,6 +621,33 @@ struct XPBDSolveSmooth : INode {
                     float s = cquads("stiffness",ci);
                     float lambda = cquads("lambda",ci);
 
+                    if(category == category_c::dihedral_bending_constraint) {
+                        auto quad = cquads.pack(dim_c<4>,"inds",ci,int_c);
+                        vec3 p[4] = {};
+                        float minv[4] = {};
+                        for(int i = 0;i != 4;++i) {
+                            p[i] = verts.pack(dim_c<3>,ptag,quad[i]);
+                            minv[i] = verts("minv",quad[i]);
+                        }
+
+                        auto ra = cquads("ra",ci);
+                        vec3 dp[4] = {};
+                        if(!CONSTRAINT::solve_DihedralConstraint(
+                            p[0],minv[0],
+                            p[1],minv[1],
+                            p[2],minv[2],
+                            p[3],minv[3],
+                            ra,
+                            s,
+                            dp[0],dp[1],dp[2],dp[3]))
+                                return;
+                        for(int i = 0;i != 4;++i)
+                            for(int j = 0;j != 3;++j)
+                                atomic_add(exec_tag,&dp_buffer[quad[i] * 3 + j],dp[i][j]);
+                        for(int i = 0;i != 4;++i)
+                            atomic_add(exec_tag,&dp_count[quad[i]],(int)1);                      
+                    }
+
                     if(category == category_c::edge_length_constraint) {
                         auto edge = cquads.pack(dim_c<2>,"inds",ci,int_c);
                         vec3 p0{},p1{};
@@ -602,54 +674,54 @@ struct XPBDSolveSmooth : INode {
                             atomic_add(exec_tag,&dp_count[edge[1]],(int)1);
                         }
                     }
-                    if(category == category_c::isometric_bending_constraint) {
-                        return;
-                        auto quad = cquads.pack(dim_c<4>,"inds",ci,int_c);
-                        vec3 p[4] = {};
-                        float minv[4] = {};
-                        for(int i = 0;i != 4;++i) {
-                            p[i] = verts.pack(dim_c<3>,ptag,quad[i]);
-                            minv[i] = verts("minv",quad[i]);
-                        }
+                    // if(category == category_c::isometric_bending_constraint) {
+                    //     return;
+                    //     auto quad = cquads.pack(dim_c<4>,"inds",ci,int_c);
+                    //     vec3 p[4] = {};
+                    //     float minv[4] = {};
+                    //     for(int i = 0;i != 4;++i) {
+                    //         p[i] = verts.pack(dim_c<3>,ptag,quad[i]);
+                    //         minv[i] = verts("minv",quad[i]);
+                    //     }
 
-                        auto Q = cquads.pack(dim_c<4,4>,"Q",ci);
+                    //     auto Q = cquads.pack(dim_c<4,4>,"Q",ci);
 
-                        vec3 dp[4] = {};
-                        float lambda = 0;
-                        CONSTRAINT::solve_IsometricBendingConstraint(
-                            p[0],minv[0],
-                            p[1],minv[1],
-                            p[2],minv[2],
-                            p[3],minv[3],
-                            Q,
-                            (float)1,
-                            dp[0],
-                            dp[1],
-                            dp[2],
-                            dp[3]);
+                    //     vec3 dp[4] = {};
+                    //     float lambda = 0;
+                    //     CONSTRAINT::solve_IsometricBendingConstraint(
+                    //         p[0],minv[0],
+                    //         p[1],minv[1],
+                    //         p[2],minv[2],
+                    //         p[3],minv[3],
+                    //         Q,
+                    //         (float)1,
+                    //         dp[0],
+                    //         dp[1],
+                    //         dp[2],
+                    //         dp[3]);
 
-                        auto has_nan = false;
-                        for(int i = 0;i != 4;++i)
-                            if(zs::isnan(dp[i].norm()))
-                                has_nan = true;
-                        if(has_nan) {
-                            printf("nan dp detected : %f %f %f %f %f %f %f %f\n",
-                                (float)p[0].norm(),
-                                (float)p[1].norm(),
-                                (float)p[2].norm(),
-                                (float)p[3].norm(),
-                                (float)dp[0].norm(),
-                                (float)dp[1].norm(),
-                                (float)dp[2].norm(),
-                                (float)dp[3].norm());
-                            return;
-                        }
-                        for(int i = 0;i != 4;++i)
-                            for(int j = 0;j != 3;++j)
-                                atomic_add(exec_tag,&dp_buffer[quad[i] * 3 + j],dp[i][j]);
-                        for(int i = 0;i != 4;++i)
-                            atomic_add(exec_tag,&dp_count[quad[i]],(int)1);
-                    }
+                    //     auto has_nan = false;
+                    //     for(int i = 0;i != 4;++i)
+                    //         if(zs::isnan(dp[i].norm()))
+                    //             has_nan = true;
+                    //     if(has_nan) {
+                    //         printf("nan dp detected : %f %f %f %f %f %f %f %f\n",
+                    //             (float)p[0].norm(),
+                    //             (float)p[1].norm(),
+                    //             (float)p[2].norm(),
+                    //             (float)p[3].norm(),
+                    //             (float)dp[0].norm(),
+                    //             (float)dp[1].norm(),
+                    //             (float)dp[2].norm(),
+                    //             (float)dp[3].norm());
+                    //         return;
+                    //     }
+                    //     for(int i = 0;i != 4;++i)
+                    //         for(int j = 0;j != 3;++j)
+                    //             atomic_add(exec_tag,&dp_buffer[quad[i] * 3 + j],dp[i][j]);
+                    //     for(int i = 0;i != 4;++i)
+                    //         atomic_add(exec_tag,&dp_count[quad[i]],(int)1);
+                    // }
             });
         }      
 
