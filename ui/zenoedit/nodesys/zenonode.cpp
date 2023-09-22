@@ -329,7 +329,7 @@ QGraphicsItem* ZenoNode::initParamWidget(ZenoSubGraphScene* scene, const QModelI
         pModel->ModelSetData(perIdx, newValue, ROLE_PARAM_VALUE);
     };
     auto cbUpdateSocketDefldWithSlider = [=](QVariant newValue) {
-        AppHelper::socketEditFinishedWithSlider(newValue, m_index, perIdx);
+        AppHelper::modifyOptixObjDirectly(newValue, m_index, perIdx);
     };
 
     auto cbSwith = [=](bool bOn) {
@@ -1165,7 +1165,7 @@ QGraphicsItem* ZenoNode::initSocketWidget(ZenoSubGraphScene* scene, const QModel
         AppHelper::socketEditFinished(newValue, m_index, perIdx);
     };
     auto cbUpdateSocketDefldWithSlider = [=](QVariant newValue) {
-        AppHelper::socketEditFinishedWithSlider(newValue, m_index, perIdx);
+        AppHelper::modifyOptixObjDirectly(newValue, m_index, perIdx);
     };
 
     auto cbSwith = [=](bool bOn) {

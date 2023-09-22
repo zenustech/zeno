@@ -3,6 +3,7 @@
 
 #include <QtWidgets>
 #include "recordvideomgr.h"
+#include <zenomodel/include/modeldata.h>
 
 class Zenovis;
 class CameraControl;
@@ -37,6 +38,8 @@ public slots:
     bool recordFrame_impl(VideoRecInfo recInfo, int frame);
     void onSetLoopPlaying(bool enbale);
     void onSetSlidFeq(int feq);
+    void onModifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString nodename, UI_VECTYPE skipParam);
+    void onUpdateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
 
 private:
     Zenovis *m_zenoVis;
@@ -73,6 +76,7 @@ public:
     void cancelRecording(VideoRecInfo recInfo);
     void killThread();
     void setSlidFeq(int feq);
+    void modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
 
 signals:
     void cameraAboutToRefresh();
@@ -90,6 +94,8 @@ signals:
     void sig_setLoopPlaying(bool enable);
     void sig_setSlidFeq(int feq);
     void sigscreenshoot(QString, QString, int, int);
+    void sig_modifyLightData(UI_VECTYPE pos, UI_VECTYPE scale, UI_VECTYPE rotate, UI_VECTYPE color, float intensity, QString name, UI_VECTYPE skipParam);
+    void sig_updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
 
 public slots:
     void onFrameRunFinished(int frame);
