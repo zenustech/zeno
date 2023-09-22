@@ -344,8 +344,8 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
         (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
     float delta = dy > 0 ? 1 : -1;
     if (shift_pressed) {
-        float temp = getFOV() / scale;
-        setFOV(temp < 170 ? temp : 170);
+//        float temp = getFOV() / scale;
+//        setFOV(temp < 170 ? temp : 170);
 
     } else if (aperture_pressed) {
         float temp = getAperture() + delta * 0.01;
