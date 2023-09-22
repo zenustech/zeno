@@ -1251,6 +1251,7 @@ void NodeParamModel::onSubIOEdited(const QVariant& oldValue, const VParamItem* p
                     NodeParamModel *nodeParams = QVariantPtr<NodeParamModel>::asPtr(idx.data(ROLE_NODE_PARAMS));
                     QModelIndex paramIdx = nodeParams->getParam(bInput ? PARAM_INPUT : PARAM_OUTPUT, sockName);
                     QVariant ctrlProp = pItem->m_customData[ROLE_VPARAM_CTRL_PROPERTIES];
+                    nodeParams->setData(paramIdx, pItem->data(ROLE_PARAM_TYPE), ROLE_PARAM_TYPE);
                     nodeParams->setData(paramIdx, pItem->m_ctrl, ROLE_PARAM_CTRL);
                     nodeParams->setData(paramIdx, ctrlProp, ROLE_VPARAM_CTRL_PROPERTIES);
                     QVariantMap props = ctrlProp.toMap();
