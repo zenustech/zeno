@@ -237,9 +237,9 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     bv0 = meshMat * bv0;
     bv1 = meshMat * bv1;
     bv2 = meshMat * bv2;
-    float3 v0 = make_float3(bv0.x, bv0.y, bv0.z);
-    float3 v1 = make_float3(bv1.x, bv1.y, bv1.z);
-    float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
+    float3& v0 = *(float3*)&bv0; //make_float3(bv0.x, bv0.y, bv0.z);
+    float3& v1 = *(float3*)&bv1; //make_float3(bv1.x, bv1.y, bv1.z);
+    float3& v2 = *(float3*)&bv2; //make_float3(bv2.x, bv2.y, bv2.z);
 
     float3 N_0 = normalize( cross( normalize(v1-v0), normalize(v2-v0) ) );
 
@@ -509,9 +509,9 @@ extern "C" __global__ void __closesthit__radiance()
     bv0 = meshMat * bv0;
     bv1 = meshMat * bv1;
     bv2 = meshMat * bv2;
-    float3 v0 = make_float3(bv0.x, bv0.y, bv0.z);
-    float3 v1 = make_float3(bv1.x, bv1.y, bv1.z);
-    float3 v2 = make_float3(bv2.x, bv2.y, bv2.z);
+    float3& v0 = *(float3*)&bv0; //make_float3(bv0.x, bv0.y, bv0.z);
+    float3& v1 = *(float3*)&bv1; //make_float3(bv1.x, bv1.y, bv1.z);
+    float3& v2 = *(float3*)&bv2; //make_float3(bv2.x, bv2.y, bv2.z);
 
     float3 N_0 = normalize( cross( normalize(v1-v0), normalize(v2-v1) ) ); // this value has precision issue for big float 
     

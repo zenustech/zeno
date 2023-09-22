@@ -247,6 +247,8 @@ struct SphereShape {
 
         float3 f = ray_origin - center;
         float b2 = dot(f, ray_dir);
+        if (b2 >= 0) { return false; }
+
 		float r2 = radius * radius;
 
 		float3 fd = f - b2 * ray_dir;
@@ -264,7 +266,6 @@ struct SphereShape {
             lsr->dir = ray_dir;
             lsr->dist = fminf(c/q, q);
             lsr->p = ray_origin + ray_dir * lsr->dist;
-
             // lsr->n = normalize(lsr->p - center);
             // lsr->p = rtgems::offset_ray(lsr->p, lsr->n);
             // lsr->dist = length(lsr->p - ray_origin);

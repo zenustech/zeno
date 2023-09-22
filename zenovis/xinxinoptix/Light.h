@@ -256,7 +256,7 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
             
             light_attenuation = shadow_prd.shadowAttanuation;
 
-            if (length(light_attenuation) > 0.0f) {
+            if (lengthSquared(light_attenuation) > 0.0f) {
                 
                 auto bxdf_value = evalBxDF(lsr.dir, wo, scatterPDF);
                 auto misWeight = 1.0f;
