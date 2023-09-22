@@ -84,7 +84,7 @@ cmake -G Ninja -B build -DCMAKE_BUILD_TYPE="${b}" `
 
 Write-Output "Making full build..."
 
-cmake -B build -DCMAKE_BUILD_TYPE="${b}" `
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE="${b}" `
     -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" `
     -DZENO_WITH_CUDA:BOOL=ON `
     -DZENO_WITH_ZenoFX:BOOL=ON `
@@ -114,6 +114,10 @@ cmake -B build -DCMAKE_BUILD_TYPE="${b}" `
     -DZENO_WITH_PBD:BOOL=ON `
     -DZENO_WITH_GUI:BOOL=ON `
     -DZENO_WITH_ImgCV:BOOL=ON `
+    -DZENO_WITH_TOOL_FLIPtools:BOOL=ON `
+    -DZENO_WITH_TOOL_cgmeshTools:BOOL=ON `
+    -DZENO_WITH_TOOL_BulletTools:BOOL=ON `
+    -DZENO_WITH_TOOL_HerculesTools:BOOL=ON `
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 }
 
