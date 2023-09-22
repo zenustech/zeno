@@ -172,12 +172,15 @@ void DirectLighting(RadiancePRD *prd, RadiancePRD& shadow_prd, const float3& sha
     float scatterPDF = 1.f;
     float UF = prd->rndf();
 
-    if(UF > _SKY_PROB_) {
+    if(UF >= _SKY_PROB_) {
+
+        if (params.num_lights == 0u || params.lightTreeSampler == 0u) return;
+
+        auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
+        if (lightTree == nullptr) return;
 
         float lightPickProb = 1.0f - _SKY_PROB_;
         UF = (UF - _SKY_PROB_) / lightPickProb;
-
-        auto lightTree = reinterpret_cast<pbrt::LightTreeSampler*>(params.lightTreeSampler);
 
         const Vector3f& SP = reinterpret_cast<const Vector3f&>(shadingP);
         const Vector3f& SN = reinterpret_cast<const Vector3f&>(prd->geometryNormal);
