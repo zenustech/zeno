@@ -2,7 +2,7 @@
 //
 #include "resource.h"
 /////////////////////////////////////////////////////////////////////////////
-// resources
+// 中文(简体，中国) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
 LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
@@ -49,8 +49,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,0,915
- PRODUCTVERSION 1,2,0,915
+ FILEVERSION 1,2,0,920
+ PRODUCTVERSION 1,2,0,920
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -67,12 +67,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "ZENUSTECH"
             VALUE "FileDescription", "Zeno Editor"
-            VALUE "FileVersion", "1.2.0.915"
+            VALUE "FileVersion", "1.2.0.920"
             VALUE "InternalName", "zenoedit.rc"
             VALUE "LegalCopyright", "Copyright (C) 2023"
             VALUE "OriginalFilename", "zenoedit.rc"
             VALUE "ProductName", "Zeno"
-            VALUE "ProductVersion", "1.2.0.915"
+            VALUE "ProductVersion", "1.2.0.920"
         END
     END
     BLOCK "VarFileInfo"
@@ -81,7 +81,7 @@ BEGIN
     END
 END
 
-#endif    // resources
+#endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
