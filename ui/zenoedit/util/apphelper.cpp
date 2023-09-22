@@ -178,7 +178,7 @@ void AppHelper::modifyOptixCameraPropDirectly(QVariant newValue, QPersistentMode
             continue;
         ZASSERT_EXIT(pDisplay);
         if (ZOptixViewport* optixViewport = pDisplay->optixViewport())
-            emit optixViewport->sig_updateCameraProp(cameraAperture, cameraDistancePlane, skipParam);
+            optixViewport->updateCameraProp(cameraAperture, cameraDistancePlane, skipParam);
     }
 }
 

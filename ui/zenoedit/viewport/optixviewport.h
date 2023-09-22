@@ -61,7 +61,7 @@ public:
     void setSimpleRenderOption();
     void setRenderSeparately(bool updateLightCameraOnly, bool updateMatlOnly);
     void cameraLookTo(int dir);
-    void updateCameraProp(float aperture, float disPlane);
+    void updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam = UI_VECTYPE());
     void updatePerspective();
     void setCameraRes(const QVector2D& res);
     void setSafeFrames(bool bLock, int nx, int ny);

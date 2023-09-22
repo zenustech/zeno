@@ -127,7 +127,6 @@ void OptixWorker::onModifyLightData(UI_VECTYPE posvec, UI_VECTYPE scalevec, UI_V
 
         scene->objectsMan->needUpdateLight = true;
         //pDisplay->setSimpleRenderOption();
-        zenoApp->getMainWindow()->updateViewport();
     }
     else {
         zeno::log_info("modifyLightData not found {}", name);
@@ -473,9 +472,9 @@ void ZOptixViewport::onFrameRunFinished(int frame)
     emit sig_frameRunFinished(frame);
 }
 
-void ZOptixViewport::updateCameraProp(float aperture, float disPlane)
+void ZOptixViewport::updateCameraProp(float aperture, float disPlane, UI_VECTYPE skipParam)
 {
-    emit sig_updateCameraProp(aperture, disPlane);
+    emit sig_updateCameraProp(aperture, disPlane, skipParam);
 }
 
 void ZOptixViewport::updatePerspective()
