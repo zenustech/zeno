@@ -1,6 +1,8 @@
 #include "zcachemgr.h"
 #include "zassert.h"
 #include <zeno/funcs/ParseObjectFromUi.h>
+#include <zeno/extra/GlobalComm.h>
+
 
 ZCacheMgr::ZCacheMgr()
     : m_bTempDir(true)
@@ -92,7 +94,9 @@ void ZCacheMgr::cleanCacheDir()
         lastRunCachePath.path() != selfPath &&
         lastRunCachePath.path() != ".")
     {
-        lastRunCachePath.removeRecursively();
+        auto& pGlobalComm = zeno::getSession().globalComm;
+        ZASSERT_EXIT(pGlobalComm);
+        pGlobalComm->removeCachePath();
         zeno::log_info("remove dir: {}", lastRunCachePath.absolutePath().toStdString());
     }
     if (dataTimeCacheDirEmpty && QDateTime::fromString(lastRunCachePath.dirName(), "yyyy-MM-dd hh-mm-ss").isValid())

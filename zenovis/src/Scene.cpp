@@ -75,11 +75,12 @@ bool Scene::loadFrameObjects(int frameid) {
     auto &ud = zeno::getSession().userData();
     ud.set2<int>("frameid", std::move(frameid));
     bool inserted = false;
-    if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
-        return inserted;
 
     {
         std::lock_guard lck(g_mtxLoadObjs);
+        if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
+            return inserted;
+
         auto const* viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
         if (viewObjs) {
             zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
