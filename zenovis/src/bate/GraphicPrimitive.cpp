@@ -345,6 +345,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     size_t tris_count;
 
     bool invisible;
+    bool custom_color;
 
     ZhxxDrawObject pointObj;
     ZhxxDrawObject lineObj;
@@ -365,6 +366,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 pos[i] = zeno::vec3f(i * (1.0f / (pos.size() - 1)), 0, 0);
             }
         }
+        custom_color = prim->attr_is<zeno::vec3f>("clr");
         if (!prim->attr_is<zeno::vec3f>("clr")) {
             auto &clr = prim->add_attr<zeno::vec3f>("clr");
             zeno::vec3f clr0(1.0f);
@@ -374,9 +376,7 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 else
                     clr0 = {0.2f, 0.6f, 1.0f};
             }
-            for (size_t i = 0; i < clr.size(); i++) {
-                clr[i] = clr0;
-            }
+            std::fill(clr.begin(), clr.end(), clr0);
         }
 #if 1
         bool primNormalCorrect =
@@ -464,21 +464,15 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
         /* END TODO */
         if (!prim->attr_is<zeno::vec3f>("nrm")) {
             auto &nrm = prim->add_attr<zeno::vec3f>("nrm");
-            for (size_t i = 0; i < nrm.size(); i++) {
-                nrm[i] = zeno::vec3f(1.0f, 0.0f, 0.0f);
-            }
+            std::fill(nrm.begin(), nrm.end(), zeno::vec3f(1.0f, 0.0f, 0.0f));
         }
         if (!prim->attr_is<zeno::vec3f>("uv")) {
             auto &uv = prim->add_attr<zeno::vec3f>("uv");
-            for (size_t i = 0; i < uv.size(); i++) {
-                uv[i] = zeno::vec3f(0.0f);
-            }
+            std::fill(uv.begin(), uv.end(), zeno::vec3f(0.0f));
         }
         if (!prim->attr_is<zeno::vec3f>("tang")) {
             auto &tang = prim->add_attr<zeno::vec3f>("tang");
-            for (size_t i = 0; i < tang.size(); i++) {
-                tang[i] = zeno::vec3f(0.0f);
-            }
+            std::fill(tang.begin(), tang.end(), zeno::vec3f(0.0f));
         }
         bool enable_uv = false;
 
@@ -638,12 +632,14 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             triObj.prog->set_uniform("mNormalCheck", scene->drawOptions->normal_check);
 
             triObj.prog->set_uniformi("mRenderWireframe", false);
+            triObj.prog->set_uniformi("mCustomColor", custom_color);
 
             triObj.ebo->bind();
-
-            CHECK_GL(glDrawElements(GL_TRIANGLES,
-                                    /*count=*/triObj.count * 3,
-                                    GL_UNSIGNED_INT, /*first=*/0));
+            if (!scene->drawOptions->render_wireframe) {
+                CHECK_GL(glDrawElements(GL_TRIANGLES,
+                        /*count=*/triObj.count * 3,
+                                        GL_UNSIGNED_INT, /*first=*/0));
+            }
             bool selected = scene->selected.count(nameid) > 0;
 
             if (scene->drawOptions->render_wireframe || selected) {

@@ -827,6 +827,7 @@ void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUN
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
     recInfo.needDenoise = param.needDenoise;
+    recInfo.bExportEXR = param.export_exr;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
 
     if (!param.sPixel.isEmpty())
@@ -918,6 +919,7 @@ void ZenoMainWindow::solidRunRender(const ZENO_RECORD_RUN_INITPARAM& param)
     recInfo.videoname = param.videoName;
     recInfo.bExportVideo = param.isExportVideo;
     recInfo.needDenoise = param.needDenoise;
+    recInfo.bExportEXR = param.export_exr;
     recInfo.exitWhenRecordFinish = param.exitWhenRecordFinish;
     recInfo.bRecordByCommandLine = true;
 
@@ -1193,6 +1195,9 @@ void ZenoMainWindow::closeEvent(QCloseEvent *event)
             }
             //delete pDock;
         }
+
+        // trigger destroy event
+        zeno::getSession().eventCallbacks->triggerEvent("beginDestroy");
 
         QMainWindow::closeEvent(event);
     } 
@@ -1896,6 +1901,6 @@ static int subprogram_dumpzsg2zsl_main(int argc, char **argv) {
     return 0;
 }
 
-static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] {
+static int defDumpZsgToZslInit = zeno::getSession().eventCallbacks->hookEvent("init", [] (auto _) {
     zeno::getSession().userData().set("subprogram_dumpzsg2zsl", std::make_shared<zeno::GenericObject<int(*)(int, char **)>>(subprogram_dumpzsg2zsl_main));
 });

@@ -220,14 +220,24 @@ T lerp(T a, T b, float c) {
 }
 template <class T>
 void sample2D(std::vector<zeno::vec3f> &coord, std::vector<T> &field, std::vector<T> &primAttr, int nx, int ny, float h,
-              zeno::vec3f bmin) {
+              zeno::vec3f bmin, bool isPeriodic) {
     std::vector<T> temp(coord.size());
 #pragma omp parallel for
     for (size_t tidx = 0; tidx < coord.size(); tidx++) {
         auto uv = coord[tidx];
-        auto uv2 = (uv - bmin) / h;
-        uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.01, 0.0, 0.01)),
-                        zeno::vec3f((float)nx - 1.01, 0.0, (float)ny - 1.01));
+        zeno::vec3f uv2;
+        if (isPeriodic) {
+            auto Lx = (nx - 1) * h;
+            auto Ly = (ny - 1) * h;
+            int gid_x = std::floor( ( uv[0] - bmin[0] ) / Lx );
+            int gid_y = std::floor( ( uv[2] - bmin[2] ) / Ly );
+            uv2 = ( uv - (bmin + zeno::vec3f{gid_x * Lx, 0, gid_y * Ly}) ) / h;
+        } else {
+            uv2 = (uv - bmin) / h;
+            uv2 = zeno::min(zeno::max(uv2, zeno::vec3f(0.01, 0.0, 0.01)),
+                            zeno::vec3f((float)nx - 1.01, 0.0, (float)ny - 1.01));
+        }
+        
         int i = uv2[0];
         int j = uv2[2];
         float cx = uv2[0] - i, cy = uv2[2] - j;
@@ -248,6 +258,7 @@ struct Grid2DSample : zeno::INode {
         auto grid = get_input<zeno::PrimitiveObject>("sampleGrid");
         auto channelList = get_input2<std::string>("channel");
         auto sampleby = get_input2<std::string>("sampleBy");
+        auto isPeriodic = get_input2<std::string>("sampleType") == "Periodic";
         auto h = get_input<zeno::NumericObject>("h")->get<float>();
 
         bool sampleAll = false;
@@ -275,7 +286,7 @@ struct Grid2DSample : zeno::INode {
                             using T = std::remove_cv_t<std::remove_reference_t<decltype(ref[0])>>;
                             prim->add_attr<T>(ch);
                             sample2D<T>(prim->attr<zeno::vec3f>(sampleby), grid->attr<T>(ch), prim->attr<T>(ch), nx, ny,
-                                        h, bmin);
+                                        h, bmin, isPeriodic);
                         },
                         grid->attr(ch));
                 }
@@ -293,7 +304,8 @@ ZENDEFNODE(Grid2DSample, {
                               {"float", "h", "1"},
                               {"vec3f", "bmin", "0,0,0"},
                               {"string", "channel", "*"},
-                              {"string", "sampleBy", "pos"}},
+                              {"string", "sampleBy", "pos"},
+                              {"enum Clamp Periodic", "sampleType", "Clamp"}},
                              {{"PrimitiveObject", "prim"}},
                              {},
                              {"zenofx"},

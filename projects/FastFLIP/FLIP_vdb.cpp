@@ -133,7 +133,7 @@ struct normalize_p2g_velocity {
 
 	void operator()(openvdb::Vec3fGrid::TreeType::LeafNodeType& vel_leaf, openvdb::Index leafpos) const {
 		const auto* oweight_leaf = original_weights_accessor.probeConstLeaf(vel_leaf.origin());
-		float epsl = 0.f;
+		float epsl = 0.001f;
 		openvdb::FloatTree::LeafNodeType* component_leaf[3];
 
 		for (int i = 0; i < 3; i++) {
@@ -2883,8 +2883,6 @@ void FLIP_vdb::apply_pressure_gradient(
 			auto pressure_axr{ pressure->getConstUnsafeAccessor() };
       auto curv_axr{ curvature->getConstUnsafeAccessor() };
 
-			auto update_channel_leaf = velocity_update.v[channel]->tree().probeLeaf(leaf.origin());
-
 			for (auto iter = leaf.beginValueOn(); iter; ++iter) {
 				bool has_update = false;
 				const auto gcoord = iter.getCoord();
@@ -2904,7 +2902,18 @@ void FLIP_vdb::apply_pressure_gradient(
 					bool has_pressure_below = pressure_axr.isValueOn(lower_gcoord);
 
 					if (has_pressure || has_pressure_below) {
-						has_update = true;
+            has_update = true;
+
+#if 0
+            // To do: fix the deactivated flip particles
+            auto phi_this = phi_axr.getValue(gcoord);
+						auto phi_below = phi_axr.getValue(lower_gcoord);
+            
+            if((phi_this + phi_below)<0)
+						  has_update = true;
+            else
+              has_update = false;
+#endif
 					}
 
 					if (has_update) {
@@ -2945,13 +2954,9 @@ void FLIP_vdb::apply_pressure_gradient(
 
 				if (has_update) {
 					iter.setValue(updated_vel);
-
-					update_channel_leaf->setValueOnly(iter.offset(), vel_update);
 				}
 				else {
 					iter.setValueOff();
-
-					update_channel_leaf->setValueOff(iter.offset());
 				}
 			}//loop over all velocity faces
 		};//end channel_update_op
@@ -3045,8 +3050,8 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
 	auto lhs_matrix = simd_uaamg::LaplacianWithLevel::
 		createPressurePoissonLaplacian(liquid_sdf, face_weight, dt);
 	auto simd_solver = simd_uaamg::PoissonSolver(lhs_matrix);
-	simd_solver.mRelativeTolerance = 1e-5;
-	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::ScheduledRelaxedJacobi;
+	simd_solver.mRelativeTolerance = 5e-5;
+	simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::RedBlackGaussSeidel;
 
   if (enable_tension) {
     const float tension = 2*tension_coef/density;
@@ -3084,6 +3089,7 @@ void FLIP_vdb::solve_pressure_simd_uaamg(
   else{
     std::cout<<"MGPCG failed, begin pure MG solver\n";
     lhs_matrix->mDofLeafManager->foreach(set_warm_pressure);
+    // lhs_matrix->setGridToConstant(pressure, 0.f);
     simd_solver.mMaxIteration = 100;
     simd_solver.mSmoother = simd_uaamg::PoissonSolver::SmootherOption::RedBlackGaussSeidel;
     simd_solver.solvePureMultigrid(pressure, rhsgrid);

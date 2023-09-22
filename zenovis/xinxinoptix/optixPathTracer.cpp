@@ -63,7 +63,10 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "tinyexr.h"
+#include "ChiefDesignerEXR.h"
+using namespace zeno::ChiefDesignerEXR;
+
+#include "zeno/utils/image_proc.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -154,10 +157,11 @@ typedef Record<HitGroupData> HitGroupRecord;
 //};
 
 std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_o;
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_diffuse;
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_specular;
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_transmit;
-std::optional<sutil::CUDAOutputBuffer<uchar4>> output_buffer_background;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_color;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_diffuse;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_specular;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_transmit;
+std::optional<sutil::CUDAOutputBuffer<float3>> output_buffer_background;
 using Vertex = float4;
 std::vector<Vertex> g_lightMesh;
 std::vector<Vertex> g_lightColor;
@@ -427,6 +431,7 @@ static void handleResize( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Params
     resize_dirty = false;
 
     output_buffer.resize( params.width, params.height );
+    (*output_buffer_color).resize( params.width, params.height );
     (*output_buffer_diffuse).resize( params.width, params.height );
     (*output_buffer_specular).resize( params.width, params.height );
     (*output_buffer_transmit).resize( params.width, params.height );
@@ -492,6 +497,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
     // Launch
     uchar4* result_buffer_data = output_buffer.map();
     state.params.frame_buffer  = result_buffer_data;
+    state.params.frame_buffer_C = (*output_buffer_color     ).map();
     state.params.frame_buffer_D = (*output_buffer_diffuse   ).map();
     state.params.frame_buffer_S = (*output_buffer_specular  ).map();
     state.params.frame_buffer_T = (*output_buffer_transmit  ).map();
@@ -513,6 +519,8 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
 
         //CUDA_SYNC_CHECK();
 
+            /* printf("mama%d\n", std::this_thread::get_id()); */
+            /* fflush(stdout); */
         OPTIX_CHECK( optixLaunch(
                     state.pipeline,
                     0,
@@ -526,6 +534,7 @@ static void launchSubframe( sutil::CUDAOutputBuffer<uchar4>& output_buffer, Path
       }
     }
     output_buffer.unmap();
+    (*output_buffer_color   ).unmap();
     (*output_buffer_diffuse   ).unmap();
     (*output_buffer_specular  ).unmap();
     (*output_buffer_transmit  ).unmap();
@@ -1605,6 +1614,14 @@ void optixinit( int argc, char* argv[] )
           state.params.height
       );
       output_buffer_o->setStream( 0 );
+    }
+    if (!output_buffer_color) {
+      output_buffer_color.emplace(
+          output_buffer_type,
+          state.params.width,
+          state.params.height
+      );
+      output_buffer_color->setStream( 0 );
     }
     if (!output_buffer_diffuse) {
       output_buffer_diffuse.emplace(
@@ -3400,8 +3417,24 @@ void *optixgetimg_extra(std::string name) {
     else if (name == "background") {
         return output_buffer_background->getHostPointer();
     }
+    else if (name == "color") {
+        return output_buffer_color->getHostPointer();
+    }
+    throw std::runtime_error("invalid optixgetimg_extra name: " + name);
 }
-
+static void save_exr(float3* ptr, int w, int h, std::string path) {
+    std::vector<float3> data(w * h);
+    std::copy_n(ptr, w * h, data.data());
+    zeno::image_flip_vertical(data.data(), w, h);
+    const char *err = nullptr;
+    int ret = SaveEXR((float *) data.data(), w, h, 3, 1, path.c_str(), &err);
+    if (ret != 0) {
+        if (err) {
+            zeno::log_error("failed to perform SaveEXR to {}: {}", path, err);
+            FreeEXRErrorMessage(err);
+        }
+    }
+}
 void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
     bool imageRendered = false;
     samples = zeno::envconfig::getInt("SAMPLES", samples);
@@ -3436,30 +3469,52 @@ void optixrender(int fbo, int samples, bool denoise, bool simpleRender) {
         auto w = (*output_buffer_o).width();
         auto h = (*output_buffer_o).height();
         stbi_flip_vertically_on_write(true);
-        stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+        if (zeno::getSession().userData().get2<bool>("output_exr", true)) {
+            auto exr_path = path.substr(0, path.size() - 4) + ".exr";
+
+            // AOV
+            if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
+                SaveMultiLayerEXR(
+                        {
+                            (float*)optixgetimg_extra("color"),
+                            (float*)optixgetimg_extra("diffuse"),
+                            (float*)optixgetimg_extra("specular"),
+                            (float*)optixgetimg_extra("transmit"),
+                            (float*)optixgetimg_extra("background"),
+                        },
+                        w,
+                        h,
+                        {
+                            "",
+                            "diffuse.",
+                            "specular.",
+                            "transmit.",
+                            "background.",
+                        },
+                        exr_path.c_str()
+                );
+            }
+            else {
+                save_exr((float3 *)optixgetimg_extra("color"), w, h, exr_path);
+            }
+        }
+        else {
+            stbi_write_jpg(path.c_str(), w, h, 4, p, 100);
+            if (denoise) {
+                const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
+                //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
+                auto a_path = path + ".albedo.pfm";
+                write_pfm(a_path, w, h, _albedo_buffer);
+
+                const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
+                //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
+                auto n_path = path + ".normal.pfm";
+                write_pfm(n_path, w, h, _normal_buffer);
+            }
+        }
         zeno::log_info("optix: saving screenshot {}x{} to {}", w, h, path);
         ud.erase("optix_image_path");
 
-        if (denoise) {
-            const float* _albedo_buffer = reinterpret_cast<float*>(state.albedo_buffer_p.handle);
-            //SaveEXR(_albedo_buffer, w, h, 4, 0, (path+".albedo.exr").c_str(), nullptr);
-            auto a_path = path + ".albedo.pfm";
-            write_pfm(a_path, w, h, _albedo_buffer);
-
-            const float* _normal_buffer = reinterpret_cast<float*>(state.normal_buffer_p.handle);
-            //SaveEXR(_normal_buffer, w, h, 4, 0, (path+".normal.exr").c_str(), nullptr);
-            auto n_path = path + ".normal.pfm";
-            write_pfm(n_path, w, h, _normal_buffer); 
-        }
-
-        // AOV
-        if (zeno::getSession().userData().get2<bool>("output_aov", true)) {
-            path = path.substr(0, path.size() - 4);
-            stbi_write_png((path + ".diffuse.png").c_str(), w, h, 4 , optixgetimg_extra("diffuse"), 0);
-            stbi_write_png((path + ".specular.png").c_str(), w, h, 4 , optixgetimg_extra("specular"), 0);
-            stbi_write_png((path + ".transmit.png").c_str(), w, h, 4 , optixgetimg_extra("transmit"), 0);
-            stbi_write_png((path + ".background.png").c_str(), w, h, 4 , optixgetimg_extra("background"), 0);
-        }
         imageRendered = true;
     }
 }

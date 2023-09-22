@@ -157,7 +157,9 @@ namespace zeno {
             set_output("prim_2DGrid", std::move(terrain));
         }
     };
-    ZENDEFNODE(zs_erode_value2cond, {/* inputs: */ {
+    ZENDEFNODE(zs_erode_value2cond, {
+        /* inputs: */
+        {
             "prim_2DGrid",
             {"float", "value", "1.0"}, // 0.0 ~ 1.0
             {"float", "seed", "0.0"},
@@ -248,7 +250,9 @@ namespace zeno {
             set_output("prim_2DGrid", std::move(terrain));
         }
     };
-    ZENDEFNODE(zs_erode_smooth_flow, {/* inputs: */ {
+    ZENDEFNODE(zs_erode_smooth_flow, {
+        /* inputs: */
+        {
             "prim_2DGrid",
             {"float", "smoothRate", "1.0"},
             {"string", "flowName", "flow"},
@@ -261,6 +265,7 @@ namespace zeno {
         {
             "erode",
         }});
+
 
 // 热侵蚀
     struct zs_erode_tumble_material_v0 : INode {
@@ -515,7 +520,9 @@ namespace zeno {
             set_output("prim_2DGrid", std::move(terrain));
         }
     };
-    ZENDEFNODE(zs_erode_tumble_material_v0, {/* inputs: */ {
+    ZENDEFNODE(zs_erode_tumble_material_v0, {
+        /* inputs: */
+        {
             "prim_2DGrid",
 
             {"ListObject", "perm"},
@@ -815,7 +822,9 @@ namespace zeno {
             set_output("prim_2DGrid", std::move(terrain));
         }
     };
-    ZENDEFNODE(zs_erode_tumble_material_v2, {/* inputs: */ {
+    ZENDEFNODE(zs_erode_tumble_material_v2, {
+        /* inputs: */
+        {
             "prim_2DGrid",
 
             {"string", "stabilitymask", "_stability"},
@@ -1142,7 +1151,9 @@ namespace zeno {
             set_output("prim_2DGrid", std::move(terrain));
         }
     };
-    ZENDEFNODE(zs_erode_tumble_material_v3, {/* inputs: */ {
+    ZENDEFNODE(zs_erode_tumble_material_v3, {
+        /* inputs: */
+        {
             "prim_2DGrid",
 
             {"string", "stabilitymask", "_stability"},
@@ -1680,6 +1691,8 @@ namespace zeno {
                        "erode",
                    }});
 
+
+
     __forceinline__ __device__ float fit(const float data, const float ss, const float se, const float ds, const float de) {
         float b = zs::limits<float>::epsilon();
         b = zs::max(zs::abs(se - ss), b);
@@ -1701,182 +1714,182 @@ namespace zeno {
         return outputData;
     }
 
-    struct zs_HF_maskByFeature : INode {
-        void apply() override {
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ////////////////////////////////////////////////////////////////////////////////////////
-            // 初始化
-            ////////////////////////////////////////////////////////////////////////////////////////
-
-            // 初始化网格
-            auto terrain = get_input<PrimitiveObject>("HeightField");
-            int nx, nz;
-            auto &ud = terrain->userData();
-            if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
-                zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
-            nx = ud.get2<int>("nx");
-            nz = ud.get2<int>("nz");
-            auto &pos = terrain->verts;
-//            vec3f p0 = pos[0];
-//            vec3f p1 = pos[1];
-//            float cellSize = length(p1 - p0);
-            float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
-            float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
-            float cellSize = zeno::max(pos_delta_x, pos_delta_z);
-
-            // 获取面板参数
-            auto heightLayer = get_input2<std::string>("height_layer");
-            auto maskLayer = get_input2<std::string>("mask_layer");
-            auto smoothRadius = get_input2<int>("smooth_radius");
-
-            auto useSlope = get_input2<bool>("use_slope");
-            auto minSlope = get_input2<float>("min_slopeangle");
-            auto maxSlope = get_input2<float>("max_slopeangle");
-
-            auto useDir = get_input2<bool>("use_direction");
-            auto goalAngle = get_input2<float>("goal_angle");
-            auto angleSpread = get_input2<float>("angle_spread");
-
-            auto useHeight = get_input2<bool>("use_height");
-            auto minHeight = get_input2<float>("min_height");
-            auto maxHeight = get_input2<float>("max_height");
-
-            // 初始化网格属性
-            if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
-                zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}' or '{}'.", heightLayer, maskLayer);
-            }
-            auto &height = terrain->verts.attr<float>(heightLayer);
-            auto &mask = terrain->verts.attr<float>(maskLayer);
-
-            auto &_grad = terrain->verts.add_attr<vec3f>("_grad");
-            std::fill(_grad.begin(), _grad.end(), vec3f(0, 0, 0));
-
-            ////////////////////////////////////////////////////////////////////////////////////////
-            ////////////////////////////////////////////////////////////////////////////////////////
-            // 计算
-            ////////////////////////////////////////////////////////////////////////////////////////
-
-            /// @brief  accelerate cond computation using cuda
-            using namespace zs;
-            constexpr auto space = execspace_e::cuda;
-            auto pol = cuda_exec();
-            /// @brief  copy host-side attribute
-            auto zs_height = to_device_vector(height);
-            auto zs_mask = to_device_vector(mask, false);
-            auto zs_grad = to_device_vector(_grad);
-
-            pol(range((std::size_t)nz * (std::size_t)nx),
-                [=, height = view<space>(zs_height), mask = view<space>(zs_mask),
-                        _grad = view<space>(zs_grad)] __device__(std::size_t idx) mutable {
-                    using vec3f = zs::vec<float, 3>;
-
-                    auto id_z = idx / nx; // outer index
-                    auto id_x = idx % nx; // inner index
-
-                    // int idx = Pos2Idx(id_x, id_z, nx);
-                    int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
-
-                    if (id_x == 0) {
-                        idx_xl = idx;
-                        idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                        scale = 1;
-                    } else if (id_x == nx - 1) {
-                        idx_xl = Pos2Idx(id_x - 1, id_z, nx);
-                        idx_xr = idx;
-                        scale = 1;
-                    } else {
-                        idx_xl = Pos2Idx(id_x - 1, id_z, nx);
-                        idx_xr = Pos2Idx(id_x + 1, id_z, nx);
-                        scale = 2;
-                    }
-
-                    if (id_z == 0) {
-                        idx_zl = idx;
-                        idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                        scale = 1;
-                    } else if (id_x == nz - 1) {
-                        idx_zl = Pos2Idx(id_x, id_z - 1, nx);
-                        idx_zr = idx;
-                        scale = 1;
-                    } else {
-                        idx_zl = Pos2Idx(id_x, id_z - 1, nx);
-                        idx_zr = Pos2Idx(id_x, id_z + 1, nx);
-                        scale = 2;
-                    }
-
-                    _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
-                    _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
-
-                    vec3f dx = zs::normalizeSafe(vec3f(1, 0, _grad[idx][0]));
-                    vec3f dy = zs::normalizeSafe(vec3f(0, 1, _grad[idx][2]));
-                    vec3f n = zs::normalizeSafe(dx.cross(dy));
-
-                    mask[idx] = 1;
-                    if (!useSlope && !useDir && !useHeight) // &&
-                        //                    //!useCurvature &&
-                        //                    //!useOcclusion)
-                    {
-                        mask[idx] = 0;
-                    }
-
-                    if (useSlope) {
-                        float slope = 180 * zs::acos(n[2]) / M_PI;
-                        slope = fit(slope, minSlope, maxSlope, 0, 1);
-                        slope = chramp(slope);
-                        mask[idx] *= slope;
-                    }
-
-                    if (useDir) {
-                        float direction = 180 * zs::atan2(n[0], n[1]) / M_PI;
-                        direction -= goalAngle;
-                        direction -= 360 * zs::floor(direction / 360); // Get in range -180 to 180
-                        direction -= 180;
-                        direction = fit(direction, -angleSpread, angleSpread, 0, 1);
-                        direction = chramp(direction);
-                        mask[idx] *= direction;
-                    }
-
-                    if (useHeight) {
-                        float h = fit(height[idx], minHeight, maxHeight, 0, 1);
-                        mask[idx] *= chramp(h);
-                    }
-                });
-
-            /// @brief  write back to host-side attribute
-            retrieve_device_vector(mask, zs_mask);
-            retrieve_device_vector(_grad, zs_grad);
-
-            set_output("HeightField", std::move(terrain));
-        }
-    };
-    ZENDEFNODE(zs_HF_maskByFeature, {/* inputs: */ {
-            "HeightField",
-            {"string", "height_layer", "height"},
-            {"string", "mask_layer", "mask"},
-            {"int", "smooth_radius", "1"},
-            {"bool", "use_slope", "0"},
-            {"float", "min_slopeangle", "0"},
-            {"float", "max_slopeangle", "90"},
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            {"bool", "use_direction", "0"},
-            {"float", "goal_angle", "0"},
-            {"float", "angle_spread", "30"},
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            {"bool", "use_height", "0"},
-            {"float", "min_height", "0"},
-            {"float", "max_height", "1"},
-        },
-        /* outputs: */
-        {
-            "HeightField",
-        },
-        /* params: */
-        {},
-        /* category: */
-        {
-            "erode",
-        }});
+//    struct zs_HF_maskByFeature : INode {
+//        void apply() override {
+//
+//            ////////////////////////////////////////////////////////////////////////////////////////
+//            ////////////////////////////////////////////////////////////////////////////////////////
+//            // 初始化
+//            ////////////////////////////////////////////////////////////////////////////////////////
+//
+//            // 初始化网格
+//            auto terrain = get_input<PrimitiveObject>("HeightField");
+//            int nx, nz;
+//            auto &ud = terrain->userData();
+//            if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+//                zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+//            nx = ud.get2<int>("nx");
+//            nz = ud.get2<int>("nz");
+//            auto &pos = terrain->verts;
+////            vec3f p0 = pos[0];
+////            vec3f p1 = pos[1];
+////            float cellSize = length(p1 - p0);
+//            float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
+//            float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
+//            float cellSize = zeno::max(pos_delta_x, pos_delta_z);
+//
+//            // 获取面板参数
+//            auto heightLayer = get_input2<std::string>("height_layer");
+//            auto maskLayer = get_input2<std::string>("mask_layer");
+//            auto smoothRadius = get_input2<int>("smooth_radius");
+//
+//            auto useSlope = get_input2<bool>("use_slope");
+//            auto minSlope = get_input2<float>("min_slopeangle");
+//            auto maxSlope = get_input2<float>("max_slopeangle");
+//
+//            auto useDir = get_input2<bool>("use_direction");
+//            auto goalAngle = get_input2<float>("goal_angle");
+//            auto angleSpread = get_input2<float>("angle_spread");
+//
+//            auto useHeight = get_input2<bool>("use_height");
+//            auto minHeight = get_input2<float>("min_height");
+//            auto maxHeight = get_input2<float>("max_height");
+//
+//            // 初始化网格属性
+//            if (!terrain->verts.has_attr(heightLayer) || !terrain->verts.has_attr(maskLayer)) {
+//                zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}' or '{}'.", heightLayer, maskLayer);
+//            }
+//            auto &height = terrain->verts.attr<float>(heightLayer);
+//            auto &mask = terrain->verts.attr<float>(maskLayer);
+//
+//            auto &_grad = terrain->verts.add_attr<vec3f>("_grad");
+//            std::fill(_grad.begin(), _grad.end(), vec3f(0, 0, 0));
+//
+//            ////////////////////////////////////////////////////////////////////////////////////////
+//            ////////////////////////////////////////////////////////////////////////////////////////
+//            // 计算
+//            ////////////////////////////////////////////////////////////////////////////////////////
+//
+//            /// @brief  accelerate cond computation using cuda
+//            using namespace zs;
+//            constexpr auto space = execspace_e::cuda;
+//            auto pol = cuda_exec();
+//            /// @brief  copy host-side attribute
+//            auto zs_height = to_device_vector(height);
+//            auto zs_mask = to_device_vector(mask, false);
+//            auto zs_grad = to_device_vector(_grad);
+//
+//            pol(range((std::size_t)nz * (std::size_t)nx),
+//                [=, height = view<space>(zs_height), mask = view<space>(zs_mask),
+//                        _grad = view<space>(zs_grad)] __device__(std::size_t idx) mutable {
+//                    using vec3f = zs::vec<float, 3>;
+//
+//                    auto id_z = idx / nx; // outer index
+//                    auto id_x = idx % nx; // inner index
+//
+//                    // int idx = Pos2Idx(id_x, id_z, nx);
+//                    int idx_xl, idx_xr, idx_zl, idx_zr, scale = 0;
+//
+//                    if (id_x == 0) {
+//                        idx_xl = idx;
+//                        idx_xr = Pos2Idx(id_x + 1, id_z, nx);
+//                        scale = 1;
+//                    } else if (id_x == nx - 1) {
+//                        idx_xl = Pos2Idx(id_x - 1, id_z, nx);
+//                        idx_xr = idx;
+//                        scale = 1;
+//                    } else {
+//                        idx_xl = Pos2Idx(id_x - 1, id_z, nx);
+//                        idx_xr = Pos2Idx(id_x + 1, id_z, nx);
+//                        scale = 2;
+//                    }
+//
+//                    if (id_z == 0) {
+//                        idx_zl = idx;
+//                        idx_zr = Pos2Idx(id_x, id_z + 1, nx);
+//                        scale = 1;
+//                    } else if (id_x == nz - 1) {
+//                        idx_zl = Pos2Idx(id_x, id_z - 1, nx);
+//                        idx_zr = idx;
+//                        scale = 1;
+//                    } else {
+//                        idx_zl = Pos2Idx(id_x, id_z - 1, nx);
+//                        idx_zr = Pos2Idx(id_x, id_z + 1, nx);
+//                        scale = 2;
+//                    }
+//
+//                    _grad[idx][0] = (height[idx_xr] - height[idx_xl]) / (scale * cellSize);
+//                    _grad[idx][2] = (height[idx_zr] - height[idx_zl]) / (scale * cellSize);
+//
+//                    vec3f dx = zs::normalizeSafe(vec3f(1, 0, _grad[idx][0]));
+//                    vec3f dy = zs::normalizeSafe(vec3f(0, 1, _grad[idx][2]));
+//                    vec3f n = zs::normalizeSafe(dx.cross(dy));
+//
+//                    mask[idx] = 1;
+//                    if (!useSlope && !useDir && !useHeight) // &&
+//                        //                    //!useCurvature &&
+//                        //                    //!useOcclusion)
+//                    {
+//                        mask[idx] = 0;
+//                    }
+//
+//                    if (useSlope) {
+//                        float slope = 180 * zs::acos(n[2]) / M_PI;
+//                        slope = fit(slope, minSlope, maxSlope, 0, 1);
+//                        slope = chramp(slope);
+//                        mask[idx] *= slope;
+//                    }
+//
+//                    if (useDir) {
+//                        float direction = 180 * zs::atan2(n[0], n[1]) / M_PI;
+//                        direction -= goalAngle;
+//                        direction -= 360 * zs::floor(direction / 360); // Get in range -180 to 180
+//                        direction -= 180;
+//                        direction = fit(direction, -angleSpread, angleSpread, 0, 1);
+//                        direction = chramp(direction);
+//                        mask[idx] *= direction;
+//                    }
+//
+//                    if (useHeight) {
+//                        float h = fit(height[idx], minHeight, maxHeight, 0, 1);
+//                        mask[idx] *= chramp(h);
+//                    }
+//                });
+//
+//            /// @brief  write back to host-side attribute
+//            retrieve_device_vector(mask, zs_mask);
+//            retrieve_device_vector(_grad, zs_grad);
+//
+//            set_output("HeightField", std::move(terrain));
+//        }
+//    };
+//    ZENDEFNODE(zs_HF_maskByFeature, {/* inputs: */ {
+//            "HeightField",
+//            {"string", "height_layer", "height"},
+//            {"string", "mask_layer", "mask"},
+//            {"int", "smooth_radius", "1"},
+//            {"bool", "use_slope", "0"},
+//            {"float", "min_slopeangle", "0"},
+//            {"float", "max_slopeangle", "90"},
+//            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//            {"bool", "use_direction", "0"},
+//            {"float", "goal_angle", "0"},
+//            {"float", "angle_spread", "30"},
+//            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//            {"bool", "use_height", "0"},
+//            {"float", "min_height", "0"},
+//            {"float", "max_height", "1"},
+//        },
+//        /* outputs: */
+//        {
+//            "HeightField",
+//        },
+//        /* params: */
+//        {},
+//        /* category: */
+//        {
+//            "erode",
+//        }});
 
 
 
@@ -1892,6 +1905,7 @@ namespace zeno {
 
             // 初始化网格
             auto terrain = get_input<ZenoParticles>("zs_HeightField");
+            auto &pars = terrain->getParticles();
 
             size_t nx, nz;
             auto &ud = static_cast<IObject *>(terrain.get())->userData();
@@ -1900,9 +1914,6 @@ namespace zeno {
             nx = ud.get2<int>("nx");
             nz = ud.get2<int>("nz");
             auto &pos = terrain->prim->verts;
-//            vec3f p0 = pos[0];
-//            vec3f p1 = pos[1];
-//            float cellSize = length(p1 - p0);
             float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
             float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
             float cellSize = zeno::max(pos_delta_x, pos_delta_z);
@@ -1924,53 +1935,38 @@ namespace zeno {
             auto i = get_input<NumericObject>("i")->get<int>();                   // 内部迭代当前次数    0~7
             auto openborder = get_input<NumericObject>("openborder")->get<int>(); // 获取边界标记
 
-            auto perm = to_device_vector(get_input<ListObject>("perm")->get2<int>());
-            auto p_dirs = to_device_vector(get_input<ListObject>("p_dirs")->get2<int>());
-            auto x_dirs = to_device_vector(get_input<ListObject>("x_dirs")->get2<int>());
+            auto perm = get_input<ListObject>("perm")->get2<int>();
+            auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
+            auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
-            auto &pars = terrain->getParticles();
+            int iterseed = iter * 134775813;
+            int color = perm[i];
+            int p_dirs_0 = p_dirs[0];
+            int p_dirs_1 = p_dirs[1];
+            int x_dirs_0 = x_dirs[0];
+            int x_dirs_1 = x_dirs[1];
 
-            // 初始化网格属性
+            // 初始化地形遮罩
             auto erodabilitymask_name = get_input2<std::string>("erodability_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(erodabilitymask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(erodabilitymask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
+            auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
+            auto cutanglemask_name = get_input2<std::string>("cutangle_mask_layer");
+            auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
+            if (!terrain->prim->verts.has_attr(erodabilitymask_name) ||
+                !terrain->prim->verts.has_attr(removalratemask_name) ||
+                !terrain->prim->verts.has_attr(cutanglemask_name) ||
+                !terrain->prim->verts.has_attr(gridbiasmask_name)) {
+                zeno::log_error("Node [zs_tumble_material_erosion], no such data layer named '{}' or '{}' or '{}' or '{}'.",
+                                erodabilitymask_name, removalratemask_name, cutanglemask_name, gridbiasmask_name);
             }
             auto _erodabilitymask = pars.begin(erodabilitymask_name);
-
-            auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(removalratemask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(removalratemask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _removalratemask = pars.begin(removalratemask_name);
-
-            auto cutanglemask_name = get_input2<std::string>("cutangle_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(cutanglemask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(cutanglemask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _cutanglemask = pars.begin(cutanglemask_name);
-
-            auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(gridbiasmask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(gridbiasmask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _gridbiasmask = pars.begin(gridbiasmask_name);
 
-            // 存放地质特征的属性，这 4 个属性名称已经相应子图中明确指定，并与外部数据交互
+            // 初始化地形数据
             if (!terrain->prim->verts.has_attr("_height") || !terrain->prim->verts.has_attr("_debris") ||
                 !terrain->prim->verts.has_attr("_temp_height") || !terrain->prim->verts.has_attr("_temp_debris")) {
-                zeno::log_error("Node [erode_tumble_material_v0], no such data layer named '{}' or '{}' or '{}' or '{}'.",
+                zeno::log_error("Node [zs_tumble_material_erosion], no such data layer named '{}' or '{}' or '{}' or '{}'.",
                                 "_height", "_debris", "_temp_height", "_temp_debris");
             }
             auto _height = pars.begin("_height");
@@ -1992,11 +1988,8 @@ namespace zeno {
                 const auto id_x = id % nx; // inner index
 
                 const int idx = Pos2Idx(id_x, id_z, nx);
-//            _temp_height[idx] = _height[idx];
-//            _temp_debris[idx] = _debris[idx];
-
-                int iterseed = iter * 134775813;
-                int color = perm[i];
+//                _temp_height[idx] = _height[idx];
+//                _temp_debris[idx] = _debris[idx];
 
                 int is_red = ((id_z & 1) == 1) && (color == 1);
                 int is_green = ((id_x & 1) == 1) && (color == 2);
@@ -2004,9 +1997,8 @@ namespace zeno {
                 int is_yellow = ((id_x & 1) == 0) && (color == 4);
                 int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
                 int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
-                int dxs[] = { 0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1] };
-                int dzs[] = { p_dirs[1], 0, p_dirs[1], 0, x_dirs[0],-x_dirs[1], x_dirs[0],-x_dirs[1] };
-
+                int dxs[] = { 0, p_dirs_0, 0, p_dirs_0, x_dirs_0, x_dirs_1, x_dirs_0, x_dirs_1 };
+                int dzs[] = { p_dirs_1, 0, p_dirs_1, 0, x_dirs_0,-x_dirs_1, x_dirs_0,-x_dirs_1 };
                 if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
                     int dx = dxs[color - 1];
                     int dz = dzs[color - 1];
@@ -2166,12 +2158,6 @@ namespace zeno {
                 }
             });
 
-            // 本节点会以极高频率调用，因此在节点外部的相应子图中对这些临时属性进行删除操作效率更高
-//            terrain->prim->verts.erase_attr(_erodabilitymask);
-//            terrain->prim->verts.erase_attr(_removalratemask);
-//            terrain->prim->verts.erase_attr(_cutanglemask);
-//            terrain->prim->verts.erase_attr(_gridbiasmask);
-
             set_output("zs_HeightField", std::move(terrain));
         }
     };
@@ -2219,6 +2205,12 @@ namespace zeno {
 
     struct zs_tumble_material_v1 : public INode {
         void apply() override {
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // 初始化
+            ////////////////////////////////////////////////////////////////////////////////////////
+
+            // 初始化网格
             auto terrain = get_input<ZenoParticles>("zs_HeightField");
             auto &pars = terrain->getParticles();
 
@@ -2229,9 +2221,6 @@ namespace zeno {
             nx = ud.get2<int>("nx");
             nz = ud.get2<int>("nz");
             auto &pos = terrain->prim->verts;
-//            vec3f p0 = pos[0];
-//            vec3f p1 = pos[1];
-//            float cellSize = length(p1 - p0);
             float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
             float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
             float cellSize = zeno::max(pos_delta_x, pos_delta_z);
@@ -2243,27 +2232,30 @@ namespace zeno {
             auto height_factor = get_input<NumericObject>("height_factor")->get<float>();
             auto entrainmentrate = get_input<NumericObject>("entrainmentrate")->get<float>();
 
-            // 初始化网格属性
+            // 初始化地形遮罩
             auto write_back_material_layer = get_input2<std::string>("write_back_material_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(write_back_material_layer))
-            {
-                auto &_sta = terrain->prim->verts.add_attr<float>(write_back_material_layer);
-                std::fill(_sta.begin(), _sta.end(), 0.0);
+            if (!terrain->prim->verts.has_attr(write_back_material_layer)) {
+                zeno::log_error("Node [zs_tumble_material_v1], no such data layer named '{}'.",
+                                write_back_material_layer);
             }
             auto write_back_material = pars.begin(write_back_material_layer);
 
-            //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // 初始化地形数据
             if (!terrain->prim->verts.has_attr("_height") ||
                 !terrain->prim->verts.has_attr("_material") ||
                 !terrain->prim->verts.has_attr("flowdir")) {
-                zeno::log_error("no such data layer named '{}' or '{}' or '{}'.",
+                zeno::log_error("Node [zs_tumble_material_v1], no such data layer named '{}' or '{}' or '{}'.",
                                 "height", "_material", "flowdir");
             }
-            auto _height                = pars.begin("_height");
-            auto _material              = pars.begin("_material");
-//            auto flowdir               = pars3.begin("flowdir");
-            auto flowName = zs::SmallString("flowdir");
+            auto _height   = pars.begin("_height");
+            auto _material = pars.begin("_material");
+            auto flowName  = zs::SmallString("flowdir");
+//            auto flowdir   = pars3.begin("flowdir");
+
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // 计算
+            ////////////////////////////////////////////////////////////////////////////////////////
 
             using namespace zs;
             constexpr auto space = execspace_e::cuda;
@@ -2274,6 +2266,7 @@ namespace zeno {
                 auto id_x = id % nx; // inner index
 
                 int idx = Pos2Idx(id_x, id_z, nx);
+//                printf("idx = %d", idx);
                 int bound_x = nx;
                 int bound_z = nz;
                 int clamp_x = bound_x - 1;
@@ -2296,6 +2289,7 @@ namespace zeno {
 
                 // Get the current height level
                 float i_material = _material[idx];
+//                printf("%d: %f", (int)id, i_material);
                 float i_entrained = 0;
                 float i_height = height_factor * _height[idx] + i_material + i_entrained;
 
@@ -2384,7 +2378,7 @@ namespace zeno {
         /* inputs: */
         {
             "zs_HeightField",
-            {"string", "write_back_material_layer", "write_back_material"},
+            {"string", "write_back_material_layer", "_write_back_material"},
             {"int", "openborder", "0"},
             {"float", "repose_angle", "15.0"},
             {"float", "flow_rate", "1.0"},
@@ -2412,6 +2406,7 @@ namespace zeno {
 
             // 初始化网格
             auto terrain = get_input<ZenoParticles>("zs_HeightField");
+            auto &pars = terrain->getParticles();
 
             size_t nx, nz;
             auto &ud = static_cast<IObject *>(terrain.get())->userData();
@@ -2420,9 +2415,6 @@ namespace zeno {
             nx = ud.get2<int>("nx");
             nz = ud.get2<int>("nz");
             auto& pos = terrain->prim->verts;
-//            vec3f p0 = pos[0];
-//            vec3f p1 = pos[1];
-//            float cellSize = length(p1 - p0);
             float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
             float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
             float cellSize = zeno::max(pos_delta_x, pos_delta_z);
@@ -2441,41 +2433,42 @@ namespace zeno {
             auto i = get_input<NumericObject>("i")->get<int>();
             auto openborder = get_input<NumericObject>("openborder")->get<int>();
 
-            auto perm = to_device_vector(get_input<ListObject>("perm")->get2<int>());
-            auto p_dirs = to_device_vector(get_input<ListObject>("p_dirs")->get2<int>());
-            auto x_dirs = to_device_vector(get_input<ListObject>("x_dirs")->get2<int>());
+            auto perm = get_input<ListObject>("perm")->get2<int>();
+            auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
+            auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
-            auto &pars = terrain->getParticles();
+            int iterseed = iter * 134775813;
+            int color = perm[i];
+            int p_dirs_0 = p_dirs[0];
+            int p_dirs_1 = p_dirs[1];
+            int x_dirs_0 = x_dirs[0];
+            int x_dirs_1 = x_dirs[1];
+//            printf("==============\n");
+//            printf("i = %i, perm[i] = %i\n", i, perm[i]);
+//            printf("-------\n");
+//            printf("perm list start\n");
+//            for(int t = 0; t < 8; t++)
+//            {
+//                printf("%i ", perm[t]);
+//            }
+//            printf("\nperm list end\n");
+//            printf("==============\n");
 
-
-            // 初始化网格属性
+            // 初始化地形遮罩
             auto reposeanglemask_name = get_input2<std::string>("reposeangle_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(reposeanglemask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(reposeanglemask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
+            auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
+            auto stablilitymask_name = get_input2<std::string>("stability_mask_layer");
+            if (!terrain->prim->verts.has_attr(reposeanglemask_name) ||
+                !terrain->prim->verts.has_attr(gridbiasmask_name) ||
+                !terrain->prim->verts.has_attr(stablilitymask_name)) {
+                zeno::log_error("Node [erode_tumble_material_v2], no such data layer named '{}' or '{}' or '{}'.",
+                                reposeanglemask_name, gridbiasmask_name, stablilitymask_name);
             }
             auto _reposeanglemask = pars.begin(reposeanglemask_name);
-
-            auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(gridbiasmask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(gridbiasmask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _gridbiasmask = pars.begin(gridbiasmask_name);
+            auto _stabilitymask = pars.begin(stablilitymask_name);
 
-            auto stablilityMaskName = get_input2<std::string>("stability_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(stablilityMaskName)) {
-                auto &_sta = terrain->prim->verts.add_attr<float>(stablilityMaskName);
-                std::fill(_sta.begin(), _sta.end(), 0.0);
-            }
-            auto stabilitymask = pars.begin(stablilityMaskName);
-
-            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            //  初始化地形数据
             if (!terrain->prim->verts.has_attr("_height") ||
                 !terrain->prim->verts.has_attr("_material") ||
                 !terrain->prim->verts.has_attr("_temp_material")) {
@@ -2502,20 +2495,15 @@ namespace zeno {
                 int idx = Pos2Idx(id_x, id_z, nx);
                 //_temp_material[idx] = _material[idx];
 
-                int iterseed = iter * 134775813;
-                int color = perm[i];
-
                 int is_red = ((id_z & 1) == 1) && (color == 1);
                 int is_green = ((id_x & 1) == 1) && (color == 2);
                 int is_blue = ((id_z & 1) == 0) && (color == 3);
                 int is_yellow = ((id_x & 1) == 0) && (color == 4);
                 int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
                 int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
-                int dxs[] = { 0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1] };
-                int dzs[] = { p_dirs[1], 0, p_dirs[1], 0, x_dirs[0],-x_dirs[1], x_dirs[0],-x_dirs[1] };
-
-                if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y)
-                {
+                int dxs[] = { 0, p_dirs_0, 0, p_dirs_0, x_dirs_0, x_dirs_1, x_dirs_0, x_dirs_1 };
+                int dzs[] = { p_dirs_1, 0, p_dirs_1, 0, x_dirs_0,-x_dirs_1, x_dirs_0,-x_dirs_1 };
+                if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
                     int dx = dxs[color - 1];
                     int dz = dzs[color - 1];
                     int bound_x = nx;
@@ -2532,8 +2520,7 @@ namespace zeno {
                     int samplez = zs::clamp(id_z + dz, 0, clamp_z);
                     int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
 
-                    if (validsource)
-                    {
+                    if (validsource) {
                         int same_node = !validsource;
 
                         validsource = validsource || !openborder;
@@ -2563,8 +2550,7 @@ namespace zeno {
                         int dx_check = 0;
                         int dz_check = 0;
 
-                        if (m_diff > 0.0f)
-                        {
+                        if (m_diff > 0.0f) {
                             cidx = samplex;
                             cidz = samplez;
 
@@ -2577,9 +2563,7 @@ namespace zeno {
 
                             dx_check = -dx;
                             dz_check = -dz;
-                        }
-                        else
-                        {
+                        } else {
                             cidx = id_x;
                             cidz = id_z;
 
@@ -2649,7 +2633,7 @@ namespace zeno {
 
                         float movable_mat = (m_diff < 0.0f) ? -m_diff : m_diff;
                         float stability_val = 0.0f;
-                        stability_val = zs::clamp(stabilitymask[c_idx], 0.0f, 1.0f);
+                        stability_val = zs::clamp(_stabilitymask[c_idx], 0.0f, 1.0f);
 
                         if (stability_val > 0.01f)
                             movable_mat = zs::clamp(movable_mat * (1.0f - stability_val) * 0.5f, 0.0f, c_material);
@@ -2694,7 +2678,7 @@ namespace zeno {
         {
             "zs_HeightField",
 
-            {"string", "stability_mask_layer", "_stability"},           //~~~~~mask
+            {"string", "stability_mask_layer", "_stability_mask"},      //~~~~~mask
             {"ListObject", "perm"},
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
@@ -2730,6 +2714,12 @@ namespace zeno {
 
     struct zs_tumble_material_v3 : public INode {
         void apply() override {
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // 初始化
+            ////////////////////////////////////////////////////////////////////////////////////////
+
+            // 初始化网格
             auto terrain = get_input<ZenoParticles>("zs_HeightField");
             auto &pars = terrain->getParticles();
 
@@ -2740,9 +2730,6 @@ namespace zeno {
             nx = ud.get2<int>("nx");
             nz = ud.get2<int>("nz");
             auto &pos = terrain->prim->verts;
-//            vec3f p0 = pos[0];
-//            vec3f p1 = pos[1];
-//            float cellSize = length(p1 - p0);
             float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
             float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
             float cellSize = zeno::max(pos_delta_x, pos_delta_z);
@@ -2761,46 +2748,38 @@ namespace zeno {
             auto i = get_input<NumericObject>("i")->get<int>();
             auto openborder = get_input<NumericObject>("openborder")->get<int>();
 
-            auto perm = to_device_vector(get_input<ListObject>("perm")->get2<int>());
-            auto p_dirs = to_device_vector(get_input<ListObject>("p_dirs")->get2<int>());
-            auto x_dirs = to_device_vector(get_input<ListObject>("x_dirs")->get2<int>());
+            auto perm = get_input<ListObject>("perm")->get2<int>();
+            auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
+            auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
-            // 初始化网格属性
+            int iterseed = iter * 134775813;
+            int color = perm[i];
+            int p_dirs_0 = p_dirs[0];
+            int p_dirs_1 = p_dirs[1];
+            int x_dirs_0 = x_dirs[0];
+            int x_dirs_1 = x_dirs[1];
+
+            // 初始化地形遮罩
             auto reposeanglemask_name = get_input2<std::string>("reposeangle_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(reposeanglemask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(reposeanglemask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
+            auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
+            auto stablilitymask_name = get_input2<std::string>("stability_mask_layer");
+            if (!terrain->prim->verts.has_attr(reposeanglemask_name) ||
+                !terrain->prim->verts.has_attr(gridbiasmask_name) ||
+                !terrain->prim->verts.has_attr(stablilitymask_name)) {
+                zeno::log_error("Node [erode_tumble_material_v3], no such data layer named '{}' or '{}' or '{}'.",
+                                reposeanglemask_name, gridbiasmask_name, stablilitymask_name);
             }
             auto _reposeanglemask = pars.begin(reposeanglemask_name);
-
-            auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(gridbiasmask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(gridbiasmask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _gridbiasmask = pars.begin(gridbiasmask_name);
+            auto _stabilitymask = pars.begin(stablilitymask_name);
 
-            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            auto stablilityMaskName = get_input2<std::string>("stabilitymask");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 0.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(stablilityMaskName))
-            {
-                auto &_sta = terrain->prim->verts.add_attr<float>(stablilityMaskName);
-                std::fill(_sta.begin(), _sta.end(), 0.0);
-            }
-            auto stabilitymask = pars.begin(stablilityMaskName);
-
-            // 存放地质特征的属性
+            // 初始化地形数据
             if (!terrain->prim->verts.has_attr("_height") ||
                 !terrain->prim->verts.has_attr("_material") ||
                 !terrain->prim->verts.has_attr("_temp_material") ||
                 !terrain->prim->verts.has_attr("flowdir")) {
-                zeno::log_error("Node [erode_tumble_material_v3], no such data layer named '{}' or '{}' or '{}' or "
-                                "'{}'.", "_height", "_material", "_temp_material", "flowdir");
+                zeno::log_error("Node [erode_tumble_material_v3], no such data layer named '{}' or '{}' or '{}' or '{}'.",
+                                "_height", "_material", "_temp_material", "flowdir");
             }
             auto _height            = pars.begin("_height");
             auto _material          = pars.begin("_material");
@@ -2821,8 +2800,7 @@ namespace zeno {
                 auto id_z = id / nx; // outer index
                 auto id_x = id % nx; // inner index
 
-                int iterseed = iter * 134775813;
-                int color = perm[i];
+                int idx = Pos2Idx(id_x, id_z, nx);
 
                 int is_red = ((id_z & 1) == 1) && (color == 1);
                 int is_green = ((id_x & 1) == 1) && (color == 2);
@@ -2830,11 +2808,9 @@ namespace zeno {
                 int is_yellow = ((id_x & 1) == 0) && (color == 4);
                 int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
                 int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
-                int dxs[] = {0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1]};
-                int dzs[] = {p_dirs[1], 0, p_dirs[1], 0, x_dirs[0], -x_dirs[1], x_dirs[0], -x_dirs[1]};
-
+                int dxs[] = { 0, p_dirs_0, 0, p_dirs_0, x_dirs_0, x_dirs_1, x_dirs_0, x_dirs_1 };
+                int dzs[] = { p_dirs_1, 0, p_dirs_1, 0, x_dirs_0,-x_dirs_1, x_dirs_0,-x_dirs_1 };
                 if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
-                    int idx = Pos2Idx(id_x, id_z, nx);
                     int dx = dxs[color - 1];
                     int dz = dzs[color - 1];
                     int bound_x = nx;
@@ -2970,7 +2946,7 @@ namespace zeno {
 
                         float movable_mat = (m_diff < 0.0f) ? -m_diff : m_diff;
                         float stability_val = 0.0f;
-                        stability_val = zs::clamp(stabilitymask[c_idx], 0.0f, 1.0f);
+                        stability_val = zs::clamp(_stabilitymask[c_idx], 0.0f, 1.0f);
 
                         if (stability_val > 0.01f)
                             movable_mat = zs::clamp(movable_mat * (1.0f - stability_val) * 0.5f, 0.0f, c_material);
@@ -3030,7 +3006,7 @@ namespace zeno {
         {
             "zs_HeightField",
 
-            {"string", "stabilitymask", "_stability"},                  //~~~~~mask
+            {"string", "stability_mask_layer", "_stability_mask"},  //~~~~~mask
             {"ListObject", "perm"},
             {"ListObject", "p_dirs"},
             {"ListObject", "x_dirs"},
@@ -3058,7 +3034,6 @@ namespace zeno {
         },
         /* params: */
         {
-            //{"string", "stabilitymask", "_stability"},
         },
         /* category: */
         {
@@ -3068,7 +3043,14 @@ namespace zeno {
 
     struct zs_tumble_material_v4 : public INode {
         void apply() override {
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            // 初始化
+            ////////////////////////////////////////////////////////////////////////////////////////
+
+            // 初始化网格
             auto terrain = get_input<ZenoParticles>("zs_HeightField");
+            auto &pars = terrain->getParticles();
 
             size_t nx, nz;
             auto &ud = static_cast<IObject *>(terrain.get())->userData();
@@ -3077,9 +3059,6 @@ namespace zeno {
             nx = ud.get2<int>("nx");
             nz = ud.get2<int>("nz");
             auto &pos = terrain->prim->verts;
-//            vec3f p0 = pos[0];
-//            vec3f p1 = pos[1];
-//            float cellSize = length(p1 - p0);
             float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
             float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
             float cellSize = zeno::max(pos_delta_x, pos_delta_z);
@@ -3125,67 +3104,44 @@ namespace zeno {
             auto i = get_input<NumericObject>("i")->get<int>();
             auto openborder = get_input<NumericObject>("openborder")->get<int>();
 
-            auto &pars = terrain->getParticles();
+            auto perm = get_input<ListObject>("perm")->get2<int>();
+            auto p_dirs = get_input<ListObject>("p_dirs")->get2<int>();
+            auto x_dirs = get_input<ListObject>("x_dirs")->get2<int>();
 
-            auto perm = to_device_vector(get_input<ListObject>("perm")->get2<int>());
-            auto p_dirs = to_device_vector(get_input<ListObject>("p_dirs")->get2<int>());
-            auto x_dirs = to_device_vector(get_input<ListObject>("x_dirs")->get2<int>());
+            int iterseed = iter * 134775813;
+            int color = perm[i];
+            int p_dirs_0 = p_dirs[0];
+            int p_dirs_1 = p_dirs[1];
+            int x_dirs_0 = x_dirs[0];
+            int x_dirs_1 = x_dirs[1];
 
-            // 初始化网格属性
+            // 初始化地形遮罩
             auto gridbiasmask_name = get_input2<std::string>("gridbias_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(gridbiasmask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(gridbiasmask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
+            auto erodabilitymask_name = get_input2<std::string>("erodability_mask_layer");
+            auto bankanglemask_name = get_input2<std::string>("bankangle_mask_layer");
+            auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
+            auto depositionratemask_name = get_input2<std::string>("depositionrate_mask_layer");
+            if (!terrain->prim->verts.has_attr(gridbiasmask_name) ||
+                !terrain->prim->verts.has_attr(erodabilitymask_name) ||
+                !terrain->prim->verts.has_attr(bankanglemask_name) ||
+                !terrain->prim->verts.has_attr(removalratemask_name) ||
+                !terrain->prim->verts.has_attr(depositionratemask_name)) {
+                zeno::log_error("Node [erode_tumble_material_v4], no such data layer named '{}' or '{}' or '{}' or '{}' or '{}'.",
+                                gridbiasmask_name, erodabilitymask_name, bankanglemask_name, removalratemask_name, depositionratemask_name);
             }
             auto _gridbiasmask = pars.begin(gridbiasmask_name);
-
-            auto erodabilitymask_name = get_input2<std::string>("erodability_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(erodabilitymask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(erodabilitymask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _erodabilitymask = pars.begin(erodabilitymask_name);
-
-            auto bankanglemask_name = get_input2<std::string>("bankangle_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(bankanglemask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(bankanglemask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _bankanglemask = pars.begin(bankanglemask_name);
-
-            auto removalratemask_name = get_input2<std::string>("removalrate_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(removalratemask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(removalratemask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _removalratemask = pars.begin(removalratemask_name);
-
-            auto depositionratemask_name = get_input2<std::string>("depositionrate_mask_layer");
-            // 如果此 mask 属性不存在，则添加此属性，且初始化为 1.0，并在节点处理过程的末尾将其删除
-            if (!terrain->prim->verts.has_attr(depositionratemask_name))
-            {
-                auto &_temp = terrain->prim->verts.add_attr<float>(depositionratemask_name);
-                std::fill(_temp.begin(), _temp.end(), 1.0);
-            }
             auto _depositionratemask = pars.begin(depositionratemask_name);
 
-            // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            // 初始化地形数据
             if (!terrain->prim->verts.has_attr("_height") || !terrain->prim->verts.has_attr("_temp_height") ||
                 !terrain->prim->verts.has_attr("_material") || !terrain->prim->verts.has_attr("_temp_material") ||
                 !terrain->prim->verts.has_attr("_debris") || !terrain->prim->verts.has_attr("_temp_debris") ||
                 !terrain->prim->verts.has_attr("_sediment")) {
-                zeno::log_error("Node [erode_tumble_material_v4], no such data layer named '{}' or '{}' or '{}' or '{}' or "
-                                "'{}' or '{}' or '{}'.",
-                                "_height", "_temp_height", "_material", "_temp_material", "_debris", "_temp_debris",
-                                "_sediment");
+                zeno::log_error("Node [erode_tumble_material_v4], no such data layer named '{}' or '{}' or '{}' or '{}' or '{}' or '{}' or '{}'.",
+                                "_height", "_temp_height", "_material", "_temp_material", "_debris", "_temp_debris", "_sediment");
             }
             auto _height = pars.begin("_height");
             auto _temp_height = pars.begin("_temp_height");
@@ -3213,19 +3169,15 @@ namespace zeno {
 //            _temp_material[idx] = _material[idx];
 //            _temp_debris[idx] = _debris[idx];
 
-                int iterseed = iter * 134775813;
-                int color = perm[i];
                 int is_red = ((id_z & 1) == 1) && (color == 1);
                 int is_green = ((id_x & 1) == 1) && (color == 2);
                 int is_blue = ((id_z & 1) == 0) && (color == 3);
                 int is_yellow = ((id_x & 1) == 0) && (color == 4);
                 int is_x_turn_x = ((id_x & 1) == 1) && ((color == 5) || (color == 6));
                 int is_x_turn_y = ((id_x & 1) == 0) && ((color == 7) || (color == 8));
-                int dxs[] = { 0, p_dirs[0], 0, p_dirs[0], x_dirs[0], x_dirs[1], x_dirs[0], x_dirs[1] };
-                int dzs[] = { p_dirs[1], 0, p_dirs[1], 0, x_dirs[0],-x_dirs[1], x_dirs[0],-x_dirs[1] };
-
-                if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y)
-                {
+                int dxs[] = { 0, p_dirs_0, 0, p_dirs_0, x_dirs_0, x_dirs_1, x_dirs_0, x_dirs_1 };
+                int dzs[] = { p_dirs_1, 0, p_dirs_1, 0, x_dirs_0,-x_dirs_1, x_dirs_0,-x_dirs_1 };
+                if (is_red || is_green || is_blue || is_yellow || is_x_turn_x || is_x_turn_y) {
                     int dx = dxs[color - 1];
                     int dz = dzs[color - 1];
                     int bound_x = nx;
@@ -3242,8 +3194,7 @@ namespace zeno {
                     int samplez = zs::clamp(id_z + dz, 0, clamp_z);
                     int validsource = (samplex == id_x + dx) && (samplez == id_z + dz);
 
-                    if (validsource)
-                    {
+                    if (validsource) {
                         validsource = validsource || !openborder;
 
                         int j_idx = Pos2Idx(samplex, samplez, nx);
@@ -3278,8 +3229,7 @@ namespace zeno {
                         int dz_check = 0;
                         int is_mh_diff_same_sign = 0;
 
-                        if (m_diff > 0.0f)
-                        {
+                        if (m_diff > 0.0f) {
                             cidx = samplex;
                             cidz = samplez;
 
@@ -3299,9 +3249,7 @@ namespace zeno {
 
                             h_diff = j_height + j_debris - (i_height + i_debris);
                             is_mh_diff_same_sign = (h_diff * m_diff) > 0.0f;
-                        }
-                        else
-                        {
+                        } else {
                             cidx = id_x;
                             cidz = id_z;
 
@@ -3329,12 +3277,9 @@ namespace zeno {
                         float dir_prob = 0.0f;
                         float c_gridbiasmask = _gridbiasmask[c_idx];
 
-                        for (int diff_idx = 0; diff_idx < 2; diff_idx++)
-                        {
-                            for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++)
-                            {
-                                for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++)
-                                {
+                        for (int diff_idx = 0; diff_idx < 2; diff_idx++) {
+                            for (int tmp_dz = -1; tmp_dz <= 1; tmp_dz++) {
+                                for (int tmp_dx = -1; tmp_dx <= 1; tmp_dx++) {
                                     if (!tmp_dx && !tmp_dz)
                                         continue;
 
@@ -3397,8 +3342,7 @@ namespace zeno {
                         int cond = 0;
                         if (dir_prob >= 1.0f)
                             cond = 1;
-                        else
-                        {
+                        else {
                             dir_prob = dir_prob * dir_prob * dir_prob * dir_prob;
                             unsigned int cutoff = (unsigned int)(dir_prob * 4294967295.0);
                             unsigned int randval = erode_random(seed, (idx + nx * nz) * 8 + color + iterseed);
@@ -3429,18 +3373,15 @@ namespace zeno {
                         float sediment_limit = sedimentcap * abs_diff;
                         float ent_check_diff = sediment_limit - c_sediment;
 
-                        if (ent_check_diff > 0.0f)
-                        {
+                        if (ent_check_diff > 0.0f) {
                             float dissolve_amt = c_ks * bed_erosionrate_factor * abs_diff;
                             float dissolved_debris = zs::min(c_debris, dissolve_amt);
                             _debris[c_idx] -= dissolved_debris;
                             _height[c_idx] -= (dissolve_amt - dissolved_debris);
                             _sediment[c_idx] -= c_sediment / 2;
-                            if (bedrock_density > 0.0f)
-                            {
+                            if (bedrock_density > 0.0f) {
                                 float newsediment = c_sediment / 2 + (dissolve_amt * bedrock_density);
-                                if (n_sediment + newsediment > max_debris_depth)
-                                {
+                                if (n_sediment + newsediment > max_debris_depth) {
                                     float rollback = n_sediment + newsediment - max_debris_depth;
                                     rollback = zs::min(rollback, newsediment);
                                     _height[c_idx] += rollback / bedrock_density;
@@ -3448,9 +3389,7 @@ namespace zeno {
                                 }
                                 _sediment[n_idx] += newsediment;
                             }
-                        }
-                        else
-                        {
+                        } else {
                             float c_kd = depositionrate * kd_factor;
                             c_kd *= _depositionratemask[c_idx];
                             c_kd = zs::clamp(c_kd, 0.0f, 1.0f);
@@ -3471,8 +3410,7 @@ namespace zeno {
                             float r_debris = 0.0f;
                             float r_sediment = 0.0f;
 
-                            if (is_mh_diff_same_sign)
-                            {
+                            if (is_mh_diff_same_sign) {
                                 b_idx = c_idx;
                                 r_idx = n_idx;
 
@@ -3483,9 +3421,7 @@ namespace zeno {
                                 r_debris = n_debris;
 
                                 r_sediment = n_sediment;
-                            }
-                            else
-                            {
+                            } else {
                                 b_idx = n_idx;
                                 r_idx = c_idx;
 
@@ -3622,5 +3558,164 @@ namespace zeno {
             "erode",
         }});
 
+    struct zs_HF_maskbyOcclusion : INode {
+        void apply() override {
+            using namespace zs;
+            constexpr auto space = execspace_e::cuda;
+
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            auto terrain = get_input<PrimitiveObject>("prim");
+
+            auto invert_mask = get_input2<bool>("invert mask");
+            auto view_radius = get_input2<int>("view distance");
+            auto step_scale = get_input2<float>("step scale");
+            auto axis_count = get_input2<int>("num of searches");
+            auto dohemisphere = get_input2<bool>("dohemisphere");
+
+            int nx, nz;
+            auto &ud = terrain->userData();
+            if ((!ud.has<int>("nx")) || (!ud.has<int>("nz")))
+                zeno::log_error("no such UserData named '{}' and '{}'.", "nx", "nz");
+            nx = ud.get2<int>("nx");
+            nz = ud.get2<int>("nz");
+            auto &pos = terrain->verts;
+            float pos_delta_x = zeno::abs(pos[0][0]-pos[1][0]);
+            float pos_delta_z = zeno::abs(pos[0][2]-pos[1][2]);
+            float cellSize = zeno::max(pos_delta_x, pos_delta_z);
+
+//        auto heightLayer = get_input2<std::string>("height_layer");
+//        if (!terrain->verts.has_attr(heightLayer)) {
+//            zeno::log_error("Node [HF_maskByFeature], no such data layer named '{}'.",
+//                            heightLayer);
+//        }
+            auto &height = terrain->verts.attr<float>("height");
+
+            auto &ao = terrain->verts.add_attr<float>("ao");
+            std::fill(ao.begin(), ao.end(), 0.0f);
+//            auto &attr_ao = terrain->verts.attr<float>("ao");
+            ////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////
+            auto pol = cuda_exec();
+            auto zs_height = to_device_vector(height);
+            auto zs_ao = to_device_vector(ao, false);
+
+            pol(range((std::size_t)nz * (std::size_t)nx), [=, _height = view<space>(zs_height), _ao = view<space>(zs_ao)] __device__(std::size_t idx) mutable {
+                    auto id_x = idx % nx; // inner index
+                    auto id_z = idx / nx; // outer index
+                    float h_start = _height[idx];
+
+                    step_scale = zs::max(step_scale, 0.5f);
+                    if (view_radius) step_scale = zs::min(step_scale, 0.499f * view_radius);
+
+                    int step_limit = view_radius > 0.0f ?
+                                     zs::ceil(view_radius / (cellSize * step_scale) ) :
+                                     zs::ceil(zs::sqrt((float)(nx*nx+nz*nz)) / step_scale);
+
+                    float sweep_angle = 3.14159f / (float) zs::max((float)axis_count, 1.0f);
+                    float cur_angle = 0.0f;
+
+                    float total_fov = 0.0f;
+                    float successful_rays = 0;
+
+
+                    float z_step = zs::sin(cur_angle);
+                    float x_step = zs::cos(cur_angle);
+                    x_step *= step_scale;
+                    z_step *= step_scale;
+
+                    for (int i = 0; i < axis_count; i++) {
+                        float z_step = zs::sin(cur_angle);
+                        float x_step = zs::cos(cur_angle);
+                        x_step *= step_scale;
+                        z_step *= step_scale;
+
+                        float speed = zs::sqrt(x_step*x_step+z_step*z_step) * cellSize;
+
+                        for (int j = 0; j < 2; j++) {
+                            float x = id_x + x_step;
+                            float z = id_z + z_step;
+                            float distance = speed;
+                            int steps = 1;
+
+                            float start_slope;
+
+                            float finalslope = 0.0f;
+                            float maxslope = -1e10f;
+                            while (steps < step_limit &&
+                                   x > 0 && x < (nx-1) &&
+                                   z > 0 && z < (nz-1)) {
+
+                                x = zs::clamp(x, 0.0f, (float)(nx-1));
+                                z = zs::clamp(z, 0.0f, (float)(nz-1));
+
+                                const int int_x = (int)zs::floor(x);
+                                const int int_z = (int)zs::floor(z);
+
+                                const float fract_x = x - int_x;
+                                const float fract_z = z - int_z;
+
+                                int srcidx = Pos2Idx(int_x, int_z, nx);
+                                const float i00 = _height[srcidx];
+                                const float i10 = _height[srcidx + 1];
+                                const float i01 = _height[srcidx + nz];
+                                const float i11 = _height[srcidx + nz + 1];
+
+                                float h_current = (i00 * (1-fract_x) + i10 * (fract_x)) * (1-fract_z) +
+                                                  (i01 * (1-fract_x) + i11 * (fract_x)) * (  fract_z);
+
+                                // Calculate the slope
+                                float dh = h_current - h_start;
+                                float curslope = dh / distance;
+                                if (steps == 1) start_slope = curslope;
+                                maxslope = zs::max(maxslope, curslope);
+                                finalslope = maxslope;
+
+                                x += x_step;
+                                z += z_step;
+                                distance += speed;
+                                steps++;
+                            }
+
+                            if (steps > 1) {
+                                successful_rays += 1.0f;
+
+                                if (dohemisphere) start_slope = 0;
+                                float slope = zs::max(start_slope, finalslope);
+                                total_fov += 1 - slope / zs::sqrt(slope*slope+1.0f);
+                            }
+
+                            x_step = -x_step;
+                            z_step = -z_step;
+                        }
+
+                        cur_angle += sweep_angle;
+                    }
+
+                    if (successful_rays != 0) total_fov /= successful_rays;
+
+                    total_fov = zs::clamp(total_fov, 0.0f, 1.0f);
+                    _ao[idx] = invert_mask ? 1-total_fov : total_fov;
+            });
+
+            retrieve_device_vector(ao, zs_ao);
+
+            set_output("prim", get_input("prim"));
+        }
+    };
+    ZENDEFNODE(zs_HF_maskbyOcclusion,
+               { /* inputs: */ {
+                       "prim",
+                       {"bool", "invert mask", "0"},
+                       {"int", "view distance", "200"},
+                       {"float", "step scale", "1"},
+                       {"int", "num of searches", "16"},
+                       {"bool", "dohemisphere", "0"},
+                   }, /* outputs: */ {
+                       "prim",
+                   }, /* params: */ {
+                   }, /* category: */ {
+                       "erode",
+                   } });
 
 }   // namespace zeno

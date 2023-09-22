@@ -4,6 +4,8 @@
 #include "zenomainwindow.h"
 #include "startup/zstartup.h"
 #include "settings/zsettings.h"
+#include "zeno/zeno.h"
+#include "zeno/extra/EventCallbacks.h"
 
 /* debug cutsom layout: ZGraphicsLayout */
 //#define DEBUG_ZENOGV_LAYOUT
@@ -90,7 +92,8 @@ int main(int argc, char *argv[])
         }
     }
 
-	ZenoMainWindow mainWindow;
-	mainWindow.showMaximized();
-	return a.exec();
+    ZenoMainWindow mainWindow;
+    zeno::getSession().eventCallbacks->triggerEvent("editorConstructed");
+    mainWindow.showMaximized();
+    return a.exec();
 }
