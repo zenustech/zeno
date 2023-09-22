@@ -208,7 +208,7 @@ void loadVolumeVDB(VolumeWrapper& volume, const std::string& path) {
     std::cout << "-----------------------------------------------" << std::endl;
 }
 
-void processGrid(GridWrapper& grid, const std::string& path) 
+static void processGrid(GridWrapper& grid, const std::string& path) 
 {
     auto& gridHdl = grid.handle;
 
