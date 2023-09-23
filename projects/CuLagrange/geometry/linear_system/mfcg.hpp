@@ -738,8 +738,8 @@ if(do_cuda_profile)
             auto rn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"r","r");
             auto qn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"q","q");
             auto Pn = TILEVEC_OPS::dot<9>(cudaPol,vtemp,"P","P");
-            auto bn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"b","b");
-            auto xn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"x","x");
+            auto bn = TILEVEC_OPS::dot<3>(cudaPol,vert_buffer,btag,btag);
+            auto xn = TILEVEC_OPS::dot<3>(cudaPol,vert_buffer,xtag,xtag);
             auto tempn = TILEVEC_OPS::dot<3>(cudaPol,vtemp,"temp","temp");
             fmt::print(fg(fmt::color::dark_cyan),"nan zTrk detected = {} qn = {} rn = {} Pn = {} bn = {} tempn = {} xn = {}\n",zTrk,qn,rn,Pn,bn,tempn,xn);
             throw std::runtime_error("nan zTrk detected");
