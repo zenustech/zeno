@@ -257,6 +257,7 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
 
     if (globalComm->isFrameBroken(frame))
     {
+        /*
         QImage img(QSize((int)recInfo.res.x(), (int)recInfo.res.y()), QImage::Format_RGBA8888);
         img.fill(Qt::black);
         QPainter painter(&img);
@@ -266,6 +267,8 @@ bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
         painter.setFont(fnt);
         painter.drawText(img.rect(), Qt::AlignCenter, QString(tr("the zencache of this frame has been removed")));
         img.save(QString::fromStdString(record_file), "JPG");
+        */
+        zeno::log_warn("The zencache of frame {} has been removed.", frame);
         return true;
     }
 

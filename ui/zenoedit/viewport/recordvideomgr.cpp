@@ -308,29 +308,35 @@ void RecordVideoMgr::onFrameDrawn(int currFrame)
     }
     else if (pGlobalComm->isFrameBroken(currFrame) && !bFrameRecorded)
     {
-        QImage img(QSize((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y()), QImage::Format_RGBA8888);
-        img.fill(Qt::black);
-        QPainter painter(&img);
-        painter.setPen(Qt::white);
-        QFont fnt = zenoApp->font();
-        fnt.setPointSize(16);
-        painter.setFont(fnt);
-        painter.drawText(img.rect(), Qt::AlignCenter, QString(tr("the zencache of this frame has been removed")));
-        img.save(QString::fromStdString(zeno::format("{}/P/{:07d}.jpg", m_recordInfo.record_path.toStdString(), currFrame)), "JPG");
+        //recordErrorImg(currFrame);
+        zeno::log_warn("The zencache of frame {} has been removed.", currFrame);
+    }
+}
 
-        m_recordInfo.m_bFrameFinished[currFrame] = true;
+void RecordVideoMgr::recordErrorImg(int currFrame)
+{
+    QImage img(QSize((int)m_recordInfo.res.x(), (int)m_recordInfo.res.y()), QImage::Format_RGBA8888);
+    img.fill(Qt::black);
+    QPainter painter(&img);
+    painter.setPen(Qt::white);
+    QFont fnt = zenoApp->font();
+    fnt.setPointSize(16);
+    painter.setFont(fnt);
+    painter.drawText(img.rect(), Qt::AlignCenter, QString(tr("the zencache of this frame has been removed")));
+    img.save(QString::fromStdString(zeno::format("{}/P/{:07d}.jpg", m_recordInfo.record_path.toStdString(), currFrame)), "JPG");
 
-        if (currFrame == m_recordInfo.frameRange.second)
-        {
-            //disconnect first, to stop receiving the signal from viewport.
-            disconnectSignal();
+    m_recordInfo.m_bFrameFinished[currFrame] = true;
 
-            endRecToExportVideo();
+    if (currFrame == m_recordInfo.frameRange.second)
+    {
+        //disconnect first, to stop receiving the signal from viewport.
+        disconnectSignal();
 
-            zeno::log_critical("after executing endRecToExportVideo()");
+        endRecToExportVideo();
 
-            //clear issues:
-            m_recordInfo = VideoRecInfo();
-        }
+        zeno::log_critical("after executing endRecToExportVideo()");
+
+        //clear issues:
+        m_recordInfo = VideoRecInfo();
     }
 }

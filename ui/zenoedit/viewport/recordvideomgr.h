@@ -49,6 +49,7 @@ signals:
 private:
     Zenovis* getZenovis();
     void disconnectSignal();
+    void recordErrorImg(int currFrame);
 
     VideoRecInfo m_recordInfo;
     QStringList m_pics;
