@@ -175,15 +175,17 @@ ICombination::ICombination(QObject* parent)
     , m_min(0)
     , m_max(1)
     , m_value(0)
+    , m_decimals(0)
     , m_rangeEnabled(false)
 {
 }
 
-ICombination::ICombination(double min, double max, double value, bool rangeEnabled, QObject* parent)
+ICombination::ICombination(double min, double max, double value, int decimals, bool rangeEnabled, QObject* parent)
     : QObject(parent)
     , m_min(min)
     , m_max(max)
     , m_value(value)
+    , m_decimals(decimals)
     , m_rangeEnabled(rangeEnabled)
 {
 }
@@ -209,6 +211,11 @@ void ICombination::setValue(double value)
     m_value = value;
 }
 
+void ICombination::setDecimals(int decimals)
+{
+    m_decimals = decimals;
+}
+
 double ICombination::min() const
 {
     return m_min;
@@ -229,6 +236,11 @@ bool ICombination::rangeEnabled() const
     return m_rangeEnabled;
 }
 
+int ICombination::decimals() const
+{
+    return m_decimals;
+}
+
 Complementary::Complementary(QObject* parent)
     : ICombination(parent)
 {
@@ -245,7 +257,7 @@ QVector<QColor> Complementary::genColors(const QColor& color)
 }
 
 Monochromatic::Monochromatic(QObject* parent)
-    : ICombination(0, 100, 50, true, parent)
+    : ICombination(0, 1, 0.5, 4, true, parent)
 {
 }
 
@@ -261,7 +273,7 @@ QVector<QColor> Monochromatic::genColors(const QColor& color)
 }
 
 Analogous::Analogous(QObject* parent)
-    : ICombination(0, 180, 30, true, parent)
+    : ICombination(0, 180, 30, 0, true, parent)
 {
 }
 
@@ -278,7 +290,7 @@ QVector<QColor> Analogous::genColors(const QColor& color)
 }
 
 Triadic::Triadic(QObject* parent)
-    : ICombination(0, 180, 120, true, parent)
+    : ICombination(0, 180, 120, 0, true, parent)
 {
 }
 
@@ -295,7 +307,7 @@ QVector<QColor> Triadic::genColors(const QColor& color)
 }
 
 Tetradic::Tetradic(QObject* parent)
-    : ICombination(-90, 90, 90, true, parent)
+    : ICombination(-90, 90, 90, 0, true, parent)
 {
 }
 
@@ -340,6 +352,86 @@ QString MixedSpinBox::textFromValue(double value) const
     return shortestNum.size() <= decimalNum.size() ? shortestNum : decimalNum;
 }
 
+class JumpableSlider::Private
+{
+public:
+    double minValue = 0.0;
+    double maxValue = 1.0;
+    double singleStep = 0.0001;
+};
+
+JumpableSlider::JumpableSlider(QWidget* parent)
+    : JumpableSlider(Qt::Horizontal, parent)
+{
+}
+
+JumpableSlider::JumpableSlider(Qt::Orientation orientation, QWidget* parent)
+    : QSlider(orientation, parent)
+    , p(new Private)
+{
+    connect(this, &QSlider::valueChanged, this, [this](int value) {emit valueChanged(value * p->singleStep); });
+}
+
+void JumpableSlider::setValue(double value)
+{
+    // need round
+    // 0.179999 * 1000 need be 180
+    // int(0.179999 * 1000) = 179
+    QSlider::setValue(std::round(value / p->singleStep));
+}
+
+void JumpableSlider::setMinimum(double value)
+{
+    QSlider::setMinimum(value / p->singleStep);
+    p->minValue = value;
+}
+
+void JumpableSlider::setMaximum(double value)
+{
+    if (value < p->minValue) {
+        return;
+    }
+    QSlider::setMaximum(value / p->singleStep);
+    p->maxValue = value;
+}
+
+void JumpableSlider::setRange(double minValue, double maxValue)
+{
+    setMinimum(minValue);
+    setMaximum(maxValue);
+}
+
+void JumpableSlider::setSingleStep(double value)
+{
+    if (value == 0.0) {
+        return;
+    }
+    p->singleStep = value;
+    setMinimum(p->minValue);
+    setMaximum(p->maxValue);
+    setValue(this->value());
+}
+
+double JumpableSlider::value() const
+{
+    return QSlider::value() * p->singleStep;
+}
+
+double JumpableSlider::minimum() const
+{
+    return p->minValue;
+}
+
+double JumpableSlider::maximum() const
+{
+    return p->maxValue;
+}
+
+double JumpableSlider::singleStep() const
+{
+    return p->singleStep;
+}
+
 void JumpableSlider::mousePressEvent(QMouseEvent* e)
 {
     if (e->button() == Qt::LeftButton) {
@@ -370,14 +462,16 @@ void JumpableSlider::mouseReleaseEvent(QMouseEvent* e)
 
 void JumpableSlider::handleMouseEvent(QMouseEvent* e)
 {
-    int newVal;
+    double newVal;
+    double maxValue = maximum();
+    double minValue = minimum();
     if (orientation() == Qt::Horizontal) {
-        newVal = minimum() + ((maximum() - minimum() + 1) * e->x()) / width();
+        newVal = minValue + ((maxValue - minValue) * e->x()) / width();
     }
     else {
-        newVal = minimum() + ((maximum() - minimum() + 1) * (height() - e->y())) / height();
+        newVal = minValue + ((maxValue - minValue) * (height() - e->y())) / height();
     }
-    setValue(!invertedAppearance() ? newVal : maximum() - newVal);
+    setValue(!invertedAppearance() ? newVal : maxValue - newVal);
 }
 
 class GradientSlider::Private
@@ -448,14 +542,14 @@ QVector<QPair<float, QColor>> GradientSlider::gradientColor() const
 class ColorSpinHSlider::Private
 {
 public:
-    QSpinBox* spinbox;
+    MixedSpinBox* spinbox;
     GradientSlider* slider;
 
     Private(const QString& name, QWidget* parent)
     {
         QLabel* text = new QLabel(name, parent);
         text->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        spinbox = new QSpinBox(parent);
+        spinbox = new MixedSpinBox(parent);
         spinbox->setButtonSymbols(QAbstractSpinBox::NoButtons);
         slider = new GradientSlider(parent);
         slider->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -463,18 +557,17 @@ public:
         layout->setAlignment(Qt::AlignLeft);
         layout->setMargin(0);
         layout->addWidget(text, 1);
-        layout->addWidget(spinbox, 1);
-        layout->addWidget(slider, 8);
-
-        connect(slider, &QSlider::valueChanged, spinbox, &QSpinBox::setValue);
-        connect(spinbox, QOverload<int>::of(&QSpinBox::valueChanged), slider, &GradientSlider::setValue);
+        layout->addWidget(spinbox, 2);
+        layout->addWidget(slider, 7);
     }
 };
 ColorSpinHSlider::ColorSpinHSlider(const QString& name, QWidget* parent)
     : QWidget(parent)
     , p(new Private(name, this))
 {
-    connect(p->slider, &QSlider::valueChanged, this, &ColorSpinHSlider::valueChanged);
+    connect(p->slider, &GradientSlider::valueChanged, this, &ColorSpinHSlider::valueChanged);
+    connect(p->slider, &GradientSlider::valueChanged, p->spinbox, &MixedSpinBox::setValue);
+    connect(p->spinbox, &MixedSpinBox::editingFinished, this, [this]() { p->slider->setValue(p->spinbox->value()); });
 }
 
 void ColorSpinHSlider::setGradient(const QColor& startColor, const QColor& stopColor)
@@ -490,6 +583,7 @@ void ColorSpinHSlider::setGradient(const QVector<QPair<float, QColor>>& colors)
 void ColorSpinHSlider::setValue(double value)
 {
     p->spinbox->setValue(value);
+    p->slider->setValue(value);
 }
 
 void ColorSpinHSlider::setRange(double min, double max)
@@ -501,6 +595,11 @@ void ColorSpinHSlider::setRange(double min, double max)
 QVector<QPair<float, QColor>> ColorSpinHSlider::gradientColor() const
 {
     return p->slider->gradientColor();
+}
+
+double ColorSpinHSlider::value() const
+{
+    return p->slider->value();
 }
 
 //--------------------------------------------- color button -------------------------------------------------------
@@ -816,11 +915,11 @@ public:
     QHBoxLayout* hlayout = nullptr;
     QPushButton* switchBtn = nullptr;
     JumpableSlider* factorSlider = nullptr;
-    QSpinBox* factorSpinbox = nullptr;
+    MixedSpinBox* factorSpinbox = nullptr;
 
     Private(QWidget* parent)
     {
-        factorSpinbox = new QSpinBox(parent);
+        factorSpinbox = new MixedSpinBox(parent);
         factorSlider = new JumpableSlider(Qt::Horizontal, parent);
         switchBtn = new QPushButton(parent);
         switchBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
@@ -831,13 +930,10 @@ public:
         hlayout = new QHBoxLayout();
         hlayout->setMargin(0);
         hlayout->setSpacing(0);
-        layout->addLayout(hlayout, 0, 0, 1, 3);
-        layout->addWidget(switchBtn, 0, 3, 1, 1);
-        layout->addWidget(factorSpinbox, 1, 0, 1, 1);
-        layout->addWidget(factorSlider, 1, 1, 1, 3);
-
-        connect(factorSlider, &QSlider::valueChanged, factorSpinbox, &QSpinBox::setValue);
-        connect(factorSpinbox, QOverload<int>::of(&QSpinBox::valueChanged), factorSlider, &QSlider::setValue);
+        layout->addLayout(hlayout, 0, 0, 1, 9);
+        layout->addWidget(switchBtn, 0, 9, 1, 1);
+        layout->addWidget(factorSpinbox, 1, 0, 1, 4);
+        layout->addWidget(factorSlider, 1, 4, 1, 6);
     }
 };
 
@@ -850,7 +946,12 @@ ColorComboWidget::ColorComboWidget(QWidget* parent)
     switchCombination();
 
     connect(p->switchBtn, &QPushButton::clicked, this, &ColorComboWidget::switchCombination);
-    connect(p->factorSpinbox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
+    connect(p->factorSpinbox, &MixedSpinBox::editingFinished, this, [this]() {
+        double value = p->factorSpinbox->value();
+        p->factorSlider->setValue(value);
+    });
+    connect(p->factorSlider, &JumpableSlider::valueChanged, this, [this](double value) {
+        p->factorSpinbox->setValue(value);
         auto comb = p->combs.front();
         comb->setValue(value);
         emit combinationChanged(comb);
@@ -918,6 +1019,7 @@ void ColorComboWidget::switchCombination()
 
     p->factorSlider->blockSignals(true);
     p->factorSpinbox->blockSignals(true);
+    p->factorSpinbox->setDecimals(currentComb->decimals()); // need set decimals first
     p->factorSlider->setRange(currentComb->min(), currentComb->max());
     p->factorSpinbox->setRange(currentComb->min(), currentComb->max());
     p->factorSlider->setValue(currentComb->getValue());
@@ -1251,12 +1353,12 @@ public:
         colorSliderLayout->addWidget(sSlider);
         colorSliderLayout->addWidget(vSlider);
 
-        rSlider->setRange(0, 255);
-        gSlider->setRange(0, 255);
-        bSlider->setRange(0, 255);
-        hSlider->setRange(0, 359);
-        sSlider->setRange(0, 255);
-        vSlider->setRange(0, 255);
+        rSlider->setRange(0, 1);
+        gSlider->setRange(0, 1);
+        bSlider->setRange(0, 1);
+        hSlider->setRange(0, 1);
+        sSlider->setRange(0, 1);
+        vSlider->setRange(0, 1);
 
         setGradientR(color);
         setGradientG(color);
@@ -1387,8 +1489,8 @@ ColorEditor::ColorEditor(const QColor& initial, QWidget* parent)
     setMinimumSize(ZenoStyle::dpiScaled(500), ZenoStyle::dpiScaled(350));
     initSlots();
     // init combinations
-    p->combo->addCombination(new colorcombo::Analogous(this));
     p->combo->addCombination(new colorcombo::Complementary(this));
+    p->combo->addCombination(new colorcombo::Analogous(this));
     p->combo->addCombination(new colorcombo::Monochromatic(this));
     p->combo->addCombination(new colorcombo::Triadic(this));
     p->combo->addCombination(new colorcombo::Tetradic(this));
@@ -1411,12 +1513,12 @@ void ColorEditor::setCurrentColor(const QColor& color)
         p->colorText->setColor(color);
         p->preview->setCurrentColor(color);
         p->setGradient(color);
-        p->rSlider->setValue(color.red());
-        p->gSlider->setValue(color.green());
-        p->bSlider->setValue(color.blue());
-        p->hSlider->setValue(color.hsvHue());
-        p->sSlider->setValue(color.hsvSaturation());
-        p->vSlider->setValue(color.value());
+        p->rSlider->setValue(color.redF());
+        p->gSlider->setValue(color.greenF());
+        p->bSlider->setValue(color.blueF());
+        p->hSlider->setValue(color.hsvHueF());
+        p->sSlider->setValue(color.hsvSaturationF());
+        p->vSlider->setValue(color.valueF());
     }
     p->blockColorSignals(false);
 
@@ -1479,28 +1581,28 @@ void ColorEditor::initSlots()
         p->wheel->setEnabled(true);
     });
     // color slider
-    connect(p->rSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor(value, p->currentColor.green(), p->currentColor.blue());
+    connect(p->rSlider, &ColorSpinHSlider::valueChanged, this, [this](double value) {
+        auto color = QColor::fromRgbF(value, p->currentColor.greenF(), p->currentColor.blueF());
         setCurrentColor(color);
     });
-    connect(p->gSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor(p->currentColor.red(), value, p->currentColor.blue());
+    connect(p->gSlider, &ColorSpinHSlider::valueChanged, this, [this](double value) {
+        auto color = QColor::fromRgbF(p->currentColor.redF(), value, p->currentColor.blueF());
         setCurrentColor(color);
     });
-    connect(p->bSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor(p->currentColor.red(), p->currentColor.green(), value);
+    connect(p->bSlider, &ColorSpinHSlider::valueChanged, this, [this](double value) {
+        auto color = QColor::fromRgbF(p->currentColor.redF(), p->currentColor.greenF(), value);
         setCurrentColor(color);
     });
-    connect(p->hSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor::fromHsv(value, p->currentColor.hsvSaturation(), p->currentColor.value());
+    connect(p->hSlider, &ColorSpinHSlider::valueChanged, this, [this](double value) {
+        auto color = QColor::fromHsvF(value, p->currentColor.hsvSaturationF(), p->currentColor.valueF());
         setCurrentColor(color);
     });
-    connect(p->sSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor::fromHsv(p->currentColor.hsvHue(), value, p->currentColor.value());
+    connect(p->sSlider, &ColorSpinHSlider::valueChanged, this, [this](double value) {
+        auto color = QColor::fromHsvF(p->currentColor.hsvHueF(), value, p->currentColor.valueF());
         setCurrentColor(color);
     });
-    connect(p->vSlider, &ColorSpinHSlider::valueChanged, this, [this](int value) {
-        auto color = QColor::fromHsv(p->currentColor.hsvHue(), p->currentColor.hsvSaturation(), value);
+    connect(p->vSlider, &ColorSpinHSlider::valueChanged, this, [this](double value) {
+        auto color = QColor::fromHsvF(p->currentColor.hsvHueF(), p->currentColor.hsvSaturationF(), value);
         setCurrentColor(color);
     });
 }
@@ -1512,3 +1614,4 @@ QColor ColorEditor::getColor(const QColor& initial, QWidget* parent, const QStri
     dlg.exec();
     return dlg.selectedColor();
 }
+

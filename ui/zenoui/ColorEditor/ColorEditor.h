@@ -18,21 +18,24 @@ class ICombination : public QObject
     Q_OBJECT
 public:
     explicit ICombination(QObject* parent = nullptr);
-    explicit ICombination(double min, double max, double value, bool rangeEnabled, QObject* parent = nullptr);
+    explicit ICombination(double min, double max, double value, int decimals, bool rangeEnabled, QObject* parent = nullptr);
     virtual ~ICombination() = default;
     virtual QString name();
     virtual QVector<QColor> genColors(const QColor& color);
     void setRange(double min, double max);
     void setValue(double value);
+    void setDecimals(int decimals);
     double min() const;
     double max() const;
     double getValue() const;
     bool rangeEnabled() const;
+    int decimals() const;
 
 private:
     double m_min;
     double m_max;
     double m_value;
+    int m_decimals;
     bool m_rangeEnabled;
 };
 
@@ -119,7 +122,21 @@ class JumpableSlider : public QSlider
 {
     Q_OBJECT
 public:
-    using QSlider::QSlider;
+    explicit JumpableSlider(QWidget* parent);
+    explicit JumpableSlider(Qt::Orientation orientation, QWidget* parent = nullptr);
+    void setValue(double value);
+    void setMinimum(double value);
+    void setMaximum(double value);
+    void setRange(double minValue, double maxValue);
+    void setSingleStep(double value);
+
+    double value() const;
+    double minimum() const;
+    double maximum() const;
+    double singleStep() const;
+
+signals:
+    void valueChanged(double value);
 
 protected:
     void mousePressEvent(QMouseEvent* e) override;
@@ -128,6 +145,9 @@ protected:
 
 private:
     void handleMouseEvent(QMouseEvent* e);
+
+    class Private;
+    std::unique_ptr<Private> p;
 };
 
 class GradientSlider : public JumpableSlider
@@ -154,9 +174,10 @@ public:
     void setValue(double value);
     void setRange(double min, double max);
     QVector<QPair<float, QColor>> gradientColor() const;
+    double value() const;
 
 signals:
-    void valueChanged(int value);
+    void valueChanged(double value);
 
 private:
     class Private;
