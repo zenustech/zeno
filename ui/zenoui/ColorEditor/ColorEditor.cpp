@@ -324,6 +324,22 @@ QVector<QColor> Tetradic::genColors(const QColor& color)
 } // namespace colorcombo
 
 //--------------------------------------------------- color slider -------------------------------------------
+MixedSpinBox::MixedSpinBox(QWidget* parent)
+    : QDoubleSpinBox(parent)
+{
+    setObjectName("MixedSpinBox");
+    setDecimals(4);
+    setSingleStep(0.0001);
+    setFocusPolicy(Qt::ClickFocus);
+}
+
+QString MixedSpinBox::textFromValue(double value) const
+{
+    QString shortestNum = QLocale().toString(value, 'f', QLocale::FloatingPointShortest);
+    QString decimalNum = QLocale().toString(value, 'f', decimals());
+    return shortestNum.size() <= decimalNum.size() ? shortestNum : decimalNum;
+}
+
 void JumpableSlider::mousePressEvent(QMouseEvent* e)
 {
     if (e->button() == Qt::LeftButton) {

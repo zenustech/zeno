@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <QDialog>
+#include <QDoubleSpinBox>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QScrollArea>
@@ -107,6 +108,13 @@ private:
 };
 
 //---------------------------------------------- color slider -------------------------------------------------------
+class MixedSpinBox : public QDoubleSpinBox
+{
+public:
+    explicit MixedSpinBox(QWidget* parent = nullptr);
+    virtual QString textFromValue(double value) const override;
+};
+
 class JumpableSlider : public QSlider
 {
     Q_OBJECT
