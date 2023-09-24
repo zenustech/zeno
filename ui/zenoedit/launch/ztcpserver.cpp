@@ -98,6 +98,9 @@ void ZTcpServer::startProc(const std::string& progJson, LAUNCH_PARAM param)
         viewDecodeSetFrameCache("", 0);
     }
 
+    //clear last running state
+    zeno::getSession().globalComm->clearState();
+
     if (param.zsgPath.isEmpty())
     {
         auto pGraphsMgr = zenoApp->graphsManagment();

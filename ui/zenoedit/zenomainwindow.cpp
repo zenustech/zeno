@@ -822,6 +822,10 @@ void ZenoMainWindow::onRunTriggered(bool applyLightAndCameraOnly, bool applyMate
     {
         view->afterRun();
     }
+    if (m_pTimeline)
+    {
+        m_pTimeline->updateCachedFrame();
+    }
 }
 
 DisplayWidget* ZenoMainWindow::getOnlyViewport() const
@@ -1126,42 +1130,45 @@ void ZenoMainWindow::updateViewport(const QString& action)
     {
         view->updateFrame(action);
     }
-    if (action == "finishFrame")
+    if (m_pTimeline)
     {
-        updateLightList();
-        bool bPlayed = m_pTimeline->isPlayToggled();
-        int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
-        m_pTimeline->updateCachedFrame();
-        if (!bPlayed)
+        if (action == "finishFrame")
         {
-            int ui_frame = m_pTimeline->value();
-            if (ui_frame == endFrame)
+            updateLightList();
+            bool bPlayed = m_pTimeline->isPlayToggled();
+            int endFrame = zeno::getSession().globalComm->maxPlayFrames() - 1;
+            m_pTimeline->updateCachedFrame();
+            if (!bPlayed)
             {
-                for (DisplayWidget *view : views)
+                int ui_frame = m_pTimeline->value();
+                if (ui_frame == endFrame)
                 {
-                    if (view->isGLViewport())
+                    for (DisplayWidget* view : views)
                     {
-                        Zenovis* pZenovis = view->getZenoVis();
-                        ZASSERT_EXIT(pZenovis);
-                        pZenovis->setCurrentFrameId(ui_frame);
-                    }
-                    else
-                    {
-                    #ifndef ZENO_OPTIX_PROC
-                        ZOptixViewport* pOptix = view->optixViewport();
-                        ZASSERT_EXIT(pOptix);
-                        emit pOptix->sig_switchTimeFrame(ui_frame);
-                    #else
-                        ZOptixProcViewport* pOptix = view->optixViewport();
-                        ZASSERT_EXIT(pOptix);
-                        if (Zenovis* vis = pOptix->getZenoVis())
+                        if (view->isGLViewport())
                         {
-                            vis->setCurrentFrameId(ui_frame);
-                            vis->startPlay(false);
+                            Zenovis* pZenovis = view->getZenoVis();
+                            ZASSERT_EXIT(pZenovis);
+                            pZenovis->setCurrentFrameId(ui_frame);
                         }
-                    #endif
+                        else
+                        {
+#ifndef ZENO_OPTIX_PROC
+                            ZOptixViewport* pOptix = view->optixViewport();
+                            ZASSERT_EXIT(pOptix);
+                            emit pOptix->sig_switchTimeFrame(ui_frame);
+#else
+                            ZOptixProcViewport* pOptix = view->optixViewport();
+                            ZASSERT_EXIT(pOptix);
+                            if (Zenovis* vis = pOptix->getZenoVis())
+                            {
+                                vis->setCurrentFrameId(ui_frame);
+                                vis->startPlay(false);
+                            }
+#endif
+                        }
+                        view->updateFrame();
                     }
-                    view->updateFrame();
                 }
             }
         }

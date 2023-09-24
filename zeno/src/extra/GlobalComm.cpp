@@ -282,6 +282,10 @@ ZENO_API std::pair<int, int> GlobalComm::frameRange() {
 
 ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int frameid) {
     std::lock_guard lck(m_mtx);
+    return _getViewObjects(frameid);
+}
+
+GlobalComm::ViewObjects const* GlobalComm::_getViewObjects(const int frameid) {
     int frameIdx = frameid - beginFrameNumber;
     if (frameIdx < 0 || frameIdx >= m_frames.size())
         return nullptr;
@@ -314,6 +318,31 @@ ZENO_API GlobalComm::ViewObjects const *GlobalComm::getViewObjects(const int fra
 ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
     std::lock_guard lck(m_mtx);
     return m_frames.back().view_objects;
+}
+
+ZENO_API bool GlobalComm::load_objects(const int frameid, const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback)
+{
+    if (!callback)
+        return false;
+
+    std::lock_guard lck(m_mtx);
+
+    int frame = frameid;
+    frame -= beginFrameNumber;
+    if (frame < 0 || frame >= m_frames.size() || m_frames[frame].frame_state != FRAME_COMPLETED)
+        return false;
+
+    bool inserted = false;
+    auto const* viewObjs = _getViewObjects(frameid);
+    if (viewObjs) {
+        zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
+        inserted = callback(viewObjs->m_curr);
+    }
+    else {
+        zeno::log_trace("load_objects: no objects at frame {}", frameid);
+        inserted = callback({});
+    }
+    return inserted;
 }
 
 ZENO_API bool GlobalComm::isFrameCompleted(int frameid) const {
