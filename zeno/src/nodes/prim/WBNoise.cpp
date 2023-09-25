@@ -1136,7 +1136,8 @@ glm::vec3 noise_random3(glm::vec3 p) {
 
 float noise_mydistance(glm::vec3 a, glm::vec3 b, int t) {
     if (t == 0) {
-        return length(a - b);
+        float d = length(a - b);
+        return d*d;
     }
     else if (t == 1) {
         float xx = abs(a.x - b.x);
