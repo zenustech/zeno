@@ -209,6 +209,7 @@ private:
     void shortCutDlg();
     void killOptix();
     DisplayWidget* getOnlyViewport() const;
+    bool resetProc();
 
     ZTimeline* m_pTimeline;
     PtrLayoutNode m_layoutRoot;

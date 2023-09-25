@@ -839,6 +839,25 @@ DisplayWidget* ZenoMainWindow::getOnlyViewport() const
     return pView;
 }
 
+bool ZenoMainWindow::resetProc()
+{
+    //should kill the runner proc.
+    const bool bWorking = zeno::getSession().globalState->working;
+    if (bWorking)
+    {
+        int flag = QMessageBox::question(this, tr("Kill Process"), tr("Background process is running, you need kill the process."), QMessageBox::Yes | QMessageBox::No);
+        if (flag & QMessageBox::Yes)
+        {
+            killProgram();
+        }
+        else
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 void ZenoMainWindow::optixRunRender(const ZENO_RECORD_RUN_INITPARAM& param, LAUNCH_PARAM launchparam)
 {
     VideoRecInfo recInfo;
@@ -1264,7 +1283,8 @@ void ZenoMainWindow::openFileDialog()
     QString filePath = getOpenFileByDialog();
     if (filePath.isEmpty())
         return;
-
+    if (!resetProc())
+        return;
     //todo: path validation
     if (saveQuit()) 
     {
@@ -1276,6 +1296,8 @@ void ZenoMainWindow::onNewFile() {
     std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
     ZASSERT_EXIT(mgr);
     mgr->setNewCacheDir(true);
+    if (!resetProc())
+        return;
     if (saveQuit()) 
     {
         zenoApp->graphsManagment()->newFile();
@@ -1623,6 +1645,8 @@ void ZenoMainWindow::loadRecentFiles()
             QAction *action = new QAction(path);
             m_ui->menuRecent_Files->addAction(action);
             connect(action, &QAction::triggered, this, [=]() {
+                if (!resetProc())
+                    return;
                 if (saveQuit()) {
                     if (!QFileInfo::exists(path)) {
                         int flag = QMessageBox::question(nullptr, "", tr("the file does not exies, do you want to remove it?"), QMessageBox::Yes | QMessageBox::No, QMessageBox::No);

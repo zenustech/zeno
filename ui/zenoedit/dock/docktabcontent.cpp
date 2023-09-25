@@ -335,7 +335,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnRun->setText(tr("Run"));
     m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
     m_btnRun->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
-    m_btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"));
+    m_btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4D5561"));
     m_btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
     m_btnRun->setShortcut(settings.getShortCut(ShortCut_Run));
@@ -350,10 +350,11 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnKill->setText(tr("Kill"));
     m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
     m_btnKill->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
-    m_btnKill->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
+    m_btnKill->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4D5561"));
     m_btnKill->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     m_btnKill->setShortcut(settings.getShortCut(ShortCut_Kill));
     m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
+    m_btnKill->setEnabled(false);
 
     QStringList runList{tr("disable"), tr("alwaysAll"), tr("alwaysLightCamera"), tr("alwaysMaterial")};
     m_btnAlways = new ZComboBox(this);
@@ -552,6 +553,8 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnRun, &ZToolMenuButton::clicked, this, [=]() {
+        m_btnRun->setEnabled(false);
+        m_btnKill->setEnabled(true);
         std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
@@ -624,6 +627,12 @@ void DockContent_Editor::initConnections()
 ZenoGraphsEditor* DockContent_Editor::getEditor() const
 {
     return m_pEditor;
+}
+
+void DockContent_Editor::runFinished()
+{
+    m_btnRun->setEnabled(true);
+    m_btnKill->setEnabled(false);
 }
 
 void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)

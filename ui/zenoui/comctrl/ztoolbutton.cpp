@@ -215,27 +215,34 @@ void ZToolButton::initStyleOption(ZStyleOptionToolButton* option) const
 
 QBrush ZToolButton::backgrondColor(QStyle::State state) const
 {
-    if (state & QStyle::State_MouseOver)
+    if (state & QStyle::State_Enabled)
     {
-        if (state & QStyle::State_On)
+        if (state & QStyle::State_MouseOver)
         {
-            return m_clrBgOnHovered;
+            if (state & QStyle::State_On)
+            {
+                return m_clrBgOnHovered;
+            }
+            else
+            {
+                return m_clrBgNormalHover;
+            }
         }
         else
         {
-            return m_clrBgNormalHover;
+            if (state & QStyle::State_On)
+            {
+                return m_clrBgOn;
+            }
+            else
+            {
+                return m_clrBgNormal;
+            }
         }
     }
     else
     {
-        if (state & QStyle::State_On)
-        {
-            return m_clrBgOn;
-        }
-        else
-        {
-            return m_clrBgNormal;
-        }
+        return m_clrBgDisabled;
     }
 }
 
@@ -259,12 +266,13 @@ QBrush ZToolButton::textColor(QStyle::State state) const
     }
 }
 
-void ZToolButton::setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr)
+void ZToolButton::setBackgroundClr(const QColor& normalClr, const QColor& hoverClr, const QColor& downClr, const QColor& checkedClr, const QColor& disabledClr)
 {
     m_clrBgNormal = normalClr;
     m_clrBgNormalHover = hoverClr;
     m_clrBgOn = downClr;
     m_clrBgOnHovered = checkedClr;
+    m_clrBgDisabled = disabledClr;
 }
 
 void ZToolButton::setTextClr(const QColor& normal, const QColor& hover, const QColor& normalOn, const QColor& hoverOn)

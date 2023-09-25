@@ -92,6 +92,7 @@ public:
     explicit DockContent_Editor(QWidget* parent = nullptr);
     void onCommandDispatched(QAction* pAction, bool bTriggered);
     ZenoGraphsEditor* getEditor() const;
+    void runFinished();
 
 protected:
     void initToolbar(QHBoxLayout* pToolLayout) override;
