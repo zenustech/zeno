@@ -416,6 +416,10 @@ void ZTabDockWidget::onRunFinished()
             ZASSERT_EXIT(pWid);
             pWid->onRunFinished();
         }
+        else if (DockContent_Editor* pView = qobject_cast<DockContent_Editor*>(m_tabWidget->widget(i)))
+        {
+            pView->runFinished();
+        }
     }
 }
 
