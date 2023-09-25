@@ -2514,7 +2514,7 @@ struct HF_maskByFeature : INode {
 //                    //!useCurvature &&
 //                    //!useOcclusion)
                 {
-                    mask[idx] = 0;
+//                    mask[idx] = 0;
                 }
 
                 if (useSlope) {

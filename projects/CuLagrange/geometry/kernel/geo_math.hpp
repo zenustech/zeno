@@ -44,6 +44,22 @@ namespace zeno { namespace LSL_GEO {
     }
 
     template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
+    constexpr auto cotTheta(const zs::VecInterface<VecT>& e0,const zs::VecInterface<VecT>& e1){
+        auto costheta = e0.dot(e1);
+        auto sintheta = e0.cross(e1).norm();
+        return (costheta / sintheta);
+    }
+
+    template<typename DREAL,typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0,typename REAL = VecT::value_type>
+    constexpr auto cotTheta(const zs::VecInterface<VecT>& e0,const zs::VecInterface<VecT>& e1){
+        auto de0 = e0.cast<DREAL>();
+        auto de1 = e1.cast<DREAL>();
+        auto costheta = de0.dot(de1);
+        auto sintheta = de0.cross(de1).norm();
+        return (REAL)(costheta / sintheta);
+    }
+
+    template<typename VecT, zs::enable_if_all<VecT::dim == 1, (VecT::extent <= 3), (VecT::extent > 1)> = 0>
     constexpr int orient(const zs::VecInterface<VecT>& p0,
             const zs::VecInterface<VecT>& p1,
             const zs::VecInterface<VecT>& p2,
@@ -613,6 +629,19 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
     }
 
 
+    constexpr void pointBaryCentric(const VECTOR3& v0, const VECTOR3& v1, 
+                const VECTOR3& v2, const VECTOR3& v,VECTOR3& bary) {
+        const VECTOR3 e1 = v1 - v0;
+        const VECTOR3 e2 = v2 - v0;
+        const VECTOR3 n = e1.cross(e2);
+        const VECTOR3 na = (v2 - v1).cross(v - v1);
+        const VECTOR3 nb = (v0 - v2).cross(v - v2);
+        const VECTOR3 nc = (v1 - v0).cross(v - v0);
+        const VECTOR3 barycentric(n.dot(na) / n.l2NormSqr(),
+                                    n.dot(nb) / n.l2NormSqr(),
+                                    n.dot(nc) / n.l2NormSqr());
+        bary = barycentric;
+    }
 
     constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1, 
                                         const VECTOR3& v2, const VECTOR3& v,REAL& barySum)
@@ -830,6 +859,41 @@ constexpr REAL pointTriangleDistance(const VECTOR3& v0, const VECTOR3& v1,
             }
         }
         return std::numeric_limits<REAL>::infinity();
+    }
+
+    constexpr REAL ray_ray_intersect(VECTOR3 const& x0,VECTOR3 const& v0,VECTOR3 const &x1,VECTOR3 const& v1,REAL thickness) {
+        auto x =  x1 - x0;
+        auto v = v1 - v0;
+        
+        if(x.norm() < thickness && x.dot(v) > 0)
+            return std::numeric_limits<REAL>::infinity();
+        if(x.norm() < thickness && x.dot(v) < 0)
+            return (REAL)0;
+        // if(vv.norm() < 1e)
+
+        auto xx = x.dot(x);
+        auto vv = v.dot(v);
+        auto xv = x.dot(v);
+
+        // auto closest_dist = (x - xv / vv * v).norm();
+        // if(closest_dist > thickness)
+        //     return std::numeric_limits<REAL>::infinity();
+
+        auto delta = 4 * xv * xv - 4 * vv * (xx - thickness * thickness);
+        if(delta < 0)
+            return std::numeric_limits<REAL>::infinity();
+
+        auto sqrt_delta = zs::sqrt(delta);
+        auto alpha = xv / vv;
+        auto beta = sqrt_delta / 2 / vv;
+
+        auto t0 = alpha + beta;
+        auto t1 = alpha - beta;
+
+        t0 = t0 < (REAL)1.0 && t0 > (REAL)0.0 ? t0 : std::numeric_limits<REAL>::infinity();
+        t1 = t1 < (REAL)1.0 && t1 > (REAL)0.0 ? t1 : std::numeric_limits<REAL>::infinity(); 
+
+        return zs::min(t0,t1);
     }
 };
 };

@@ -24,133 +24,168 @@ struct BuildSurfaceHalfEdgeStructure : zeno::INode {
 		using namespace zs;
 		using vec2i = zs::vec<int, 2>;
 		using vec3i = zs::vec<int, 3>;
+		constexpr auto space = zs::execspace_e::cuda;
 
 		auto zsparticles = get_input<ZenoParticles>("zsparticles");
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag) && zsparticles->category == ZenoParticles::category_e::tet)
-                throw std::runtime_error("the input tet zsparticles has no surface tris");
-            // if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
-            //     throw std::runtime_error("the input zsparticles has no surface lines");
-            if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag) && zsparticles->category == ZenoParticles::category_e::tet)
-                throw std::runtime_error("the input tet zsparticles has no surface points");
+		if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag) && zsparticles->category == ZenoParticles::category_e::tet)
+			throw std::runtime_error("the input tet zsparticles has no surface tris");
+		// if(!zsparticles->hasAuxData(ZenoParticles::s_surfEdgeTag))
+		//     throw std::runtime_error("the input zsparticles has no surface lines");
+		if(!zsparticles->hasAuxData(ZenoParticles::s_surfVertTag) && zsparticles->category == ZenoParticles::category_e::tet)
+			throw std::runtime_error("the input tet zsparticles has no surface points");
 
-			auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfTriTag] : zsparticles->getQuadraturePoints();
-			// auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
-			auto& points = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfVertTag] : zsparticles->getParticles();
-			
-			auto& halfEdge = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
-			halfEdge = typename ZenoParticles::particles_t({{"local_vertex_id",1},{"to_face",1},{"opposite_he",1},{"next_he",1}},
-				tris.size() * 3,zs::memsrc_e::device,0);
+		auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfTriTag] : zsparticles->getQuadraturePoints();
+		// auto& lines = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+		auto& points = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfVertTag] : zsparticles->getParticles();
+		
+		auto& halfEdge = (*zsparticles)[ZenoParticles::s_surfHalfEdgeTag];
+		halfEdge = typename ZenoParticles::particles_t({{"local_vertex_id",1},{"to_face",1},{"opposite_he",1},{"next_he",1}},
+			tris.size() * 3,zs::memsrc_e::device,0);
 
-			auto cudaPol = zs::cuda_exec();
+		auto cudaPol = zs::cuda_exec();
 
-			points.append_channels(cudaPol,{{"he_inds",1}});
-			// lines.append_channels(cudaPol,{{"he_inds",1}});
-			tris.append_channels(cudaPol,{{"he_inds",1}});
+		points.append_channels(cudaPol,{{"he_inds",1}});
+		// lines.append_channels(cudaPol,{{"he_inds",1}});
+		tris.append_channels(cudaPol,{{"he_inds",1}});
 
 #if 0
 
-			constexpr auto space = zs::execspace_e::cuda;
+		// constexpr auto space = zs::execspace_e::cuda;
 
-			TILEVEC_OPS::fill(cudaPol,halfEdge,"to_vertex",reinterpret_bits<T>((int)-1));
-			TILEVEC_OPS::fill(cudaPol,halfEdge,"to_face",reinterpret_bits<T>((int)-1));
-			TILEVEC_OPS::fill(cudaPol,halfEdge,"to_edge",reinterpret_bits<T>((int)-1));
-			TILEVEC_OPS::fill(cudaPol,halfEdge,"opposite_he",reinterpret_bits<T>((int)-1));
-			TILEVEC_OPS::fill(cudaPol,halfEdge,"next_he",reinterpret_bits<T>((int)-1));
+		TILEVEC_OPS::fill(cudaPol,halfEdge,"to_vertex",reinterpret_bits<T>((int)-1));
+		TILEVEC_OPS::fill(cudaPol,halfEdge,"to_face",reinterpret_bits<T>((int)-1));
+		TILEVEC_OPS::fill(cudaPol,halfEdge,"to_edge",reinterpret_bits<T>((int)-1));
+		TILEVEC_OPS::fill(cudaPol,halfEdge,"opposite_he",reinterpret_bits<T>((int)-1));
+		TILEVEC_OPS::fill(cudaPol,halfEdge,"next_he",reinterpret_bits<T>((int)-1));
 
-			// we might also need a space hash structure here, map from [i1,i2]->[ej]
-			bcht<vec2i,int,true,universal_hash<vec2i>,32> de2fi{halfEdge.get_allocator(),halfEdge.size()};
+		// we might also need a space hash structure here, map from [i1,i2]->[ej]
+		bcht<vec2i,int,true,universal_hash<vec2i>,32> de2fi{halfEdge.get_allocator(),halfEdge.size()};
 
-			cudaPol(zs::range(tris.size()), [
-				tris = proxy<space>({},tris),de2fi = proxy<space>(de2fi),halfEdge = proxy<space>({},halfEdge)] ZS_LAMBDA(int ti) mutable {
-					auto fe_inds = tris.pack(dim_c<3>,"fe_inds",ti).reinterpret_bits(int_c);
-					auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+		cudaPol(zs::range(tris.size()), [
+			tris = proxy<space>({},tris),de2fi = proxy<space>(de2fi),halfEdge = proxy<space>({},halfEdge)] ZS_LAMBDA(int ti) mutable {
+				auto fe_inds = tris.pack(dim_c<3>,"fe_inds",ti).reinterpret_bits(int_c);
+				auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
 
-					vec3i nos{};
-					for(int i = 0;i != 3;++i) {
-						if(auto no = de2fi.insert(vec2i{tri[i],tri[(i+1) % 3]});no >= 0){
-							nos[i] = no;
-							halfEdge("to_vertex",no) = reinterpret_bits<T>(tri[i]);
-							halfEdge("to_face",no) = reinterpret_bits<T>(ti);
-							halfEdge("to_edge",no) = reinterpret_bits<T>(fe_inds[i]);
-							// halfEdge("next_he",no) = ti * 3 + (i+1) % 3;
-						} else {
-							// some error happen
+				vec3i nos{};
+				for(int i = 0;i != 3;++i) {
+					if(auto no = de2fi.insert(vec2i{tri[i],tri[(i+1) % 3]});no >= 0){
+						nos[i] = no;
+						halfEdge("to_vertex",no) = reinterpret_bits<T>(tri[i]);
+						halfEdge("to_face",no) = reinterpret_bits<T>(ti);
+						halfEdge("to_edge",no) = reinterpret_bits<T>(fe_inds[i]);
+						// halfEdge("next_he",no) = ti * 3 + (i+1) % 3;
+					} else {
+						// some error happen
 
-						}						
-					}
-					for(int i = 0;i != 3;++i)
-						halfEdge("next_he",nos[i]) = reinterpret_bits<T>(nos[(i+1) % 3]);
-			});
-			cudaPol(zs::range(halfEdge.size()),
-				[halfEdge = proxy<space>({},halfEdge),de2fi = proxy<space>(de2fi)] ZS_LAMBDA(int hei) mutable {
-					auto idx0 = reinterpret_bits<int>(halfEdge("to_vertex",hei));
-					auto nexthei = reinterpret_bits<int>(halfEdge("next_he",hei));
-					auto idx1 = reinterpret_bits<int>(halfEdge("to_vertex",nexthei));
-					if(auto no = de2fi.query(vec2i{idx1,idx0});no >= 0)
-						halfEdge("opposite_he",hei) = reinterpret_bits<T>(no);
-					else	
-						halfEdge("opposite_he",hei) = reinterpret_bits<T>((int)-1);
-			});
+					}						
+				}
+				for(int i = 0;i != 3;++i)
+					halfEdge("next_he",nos[i]) = reinterpret_bits<T>(nos[(i+1) % 3]);
+		});
+		cudaPol(zs::range(halfEdge.size()),
+			[halfEdge = proxy<space>({},halfEdge),de2fi = proxy<space>(de2fi)] ZS_LAMBDA(int hei) mutable {
+				auto idx0 = reinterpret_bits<int>(halfEdge("to_vertex",hei));
+				auto nexthei = reinterpret_bits<int>(halfEdge("next_he",hei));
+				auto idx1 = reinterpret_bits<int>(halfEdge("to_vertex",nexthei));
+				if(auto no = de2fi.query(vec2i{idx1,idx0});no >= 0)
+					halfEdge("opposite_he",hei) = reinterpret_bits<T>(no);
+				else	
+					halfEdge("opposite_he",hei) = reinterpret_bits<T>((int)-1);
+		});
 
-			points.append_channels(cudaPol,{{"he_inds",1}});
-			lines.append_channels(cudaPol,{{"he_inds",1}});
-			tris.append_channels(cudaPol,{{"he_inds",1}});
+		points.append_channels(cudaPol,{{"he_inds",1}});
+		lines.append_channels(cudaPol,{{"he_inds",1}});
+		tris.append_channels(cudaPol,{{"he_inds",1}});
 
-			cudaPol(zs::range(lines.size()),[
-				lines = proxy<space>({},lines),de2fi = proxy<space>(de2fi)] ZS_LAMBDA(int li) mutable {
-					auto linds = lines.pack(dim_c<2>,"inds",li).reinterpret_bits(int_c);
-					if(auto no = de2fi.query(vec2i{linds[0],linds[1]});no >= 0){
-						lines("he_inds",li) = reinterpret_bits<T>((int)no);
+		cudaPol(zs::range(lines.size()),[
+			lines = proxy<space>({},lines),de2fi = proxy<space>(de2fi)] ZS_LAMBDA(int li) mutable {
+				auto linds = lines.pack(dim_c<2>,"inds",li).reinterpret_bits(int_c);
+				if(auto no = de2fi.query(vec2i{linds[0],linds[1]});no >= 0){
+					lines("he_inds",li) = reinterpret_bits<T>((int)no);
+				}else {
+					// some algorithm bug
+				}
+		});
+
+		if(!tris.hasProperty("fp_inds") || tris.getPropertySize("fp_inds") != 3) {
+			throw std::runtime_error("the tris has no fp_inds channel");
+		}
+
+		cudaPol(zs::range(tris.size()),[
+			tris = proxy<space>({},tris),de2fi = proxy<space>(de2fi)] ZS_LAMBDA(int ti) mutable {
+
+				auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+				if(auto no = de2fi.query(vec2i{tri[0],tri[1]});no >= 0){
+					tris("he_inds",ti) = reinterpret_bits<T>((int)no);
+				}else {
+					// some algorithm bug
+					printf("could not find half edge : %d %d\n",tri[0],tri[1]);
+				}
+				// auto tinds = tris.pack(dim_c<3>,"fp_inds",ti).reinterpret_bits(int_c);
+				// for(int i = 0;i != 3;++i) {
+				// 	if(auto no = de2fi.query(vec2i{tri[i],tri[(i+1) % 3]});no >= 0){
+				// 		points("he_inds",tinds[i]) = reinterpret_bits<T>((int)no);
+				// 	}else {
+				// 		// some algorithm bug
+				// 		printf("could not find half edge : %d %d\n",tri[i],tri[(i+1) % 3]);
+				// 	}						
+				// }
+		});
+
+		cudaPol(zs::range(tris.size()),[
+			points = proxy<space>({},points),tris = proxy<space>({},tris),de2fi = proxy<space>(de2fi)] ZS_LAMBDA(int ti) mutable {
+				auto tinds = tris.pack(dim_c<3>,"fp_inds",ti).reinterpret_bits(int_c);
+				auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
+				for(int i = 0;i != 3;++i) {
+					if(auto no = de2fi.query(vec2i{tri[i],tri[(i+1) % 3]});no >= 0){
+						points("he_inds",tinds[i]) = reinterpret_bits<T>((int)no);
 					}else {
 						// some algorithm bug
-					}
-			});
-
-			if(!tris.hasProperty("fp_inds") || tris.getPropertySize("fp_inds") != 3) {
-				throw std::runtime_error("the tris has no fp_inds channel");
-			}
-
-			cudaPol(zs::range(tris.size()),[
-				tris = proxy<space>({},tris),de2fi = proxy<space>(de2fi)] ZS_LAMBDA(int ti) mutable {
-
-					auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
-					if(auto no = de2fi.query(vec2i{tri[0],tri[1]});no >= 0){
-						tris("he_inds",ti) = reinterpret_bits<T>((int)no);
-					}else {
-						// some algorithm bug
-						printf("could not find half edge : %d %d\n",tri[0],tri[1]);
-					}
-					// auto tinds = tris.pack(dim_c<3>,"fp_inds",ti).reinterpret_bits(int_c);
-					// for(int i = 0;i != 3;++i) {
-					// 	if(auto no = de2fi.query(vec2i{tri[i],tri[(i+1) % 3]});no >= 0){
-					// 		points("he_inds",tinds[i]) = reinterpret_bits<T>((int)no);
-					// 	}else {
-					// 		// some algorithm bug
-					// 		printf("could not find half edge : %d %d\n",tri[i],tri[(i+1) % 3]);
-					// 	}						
-					// }
-			});
-
-			cudaPol(zs::range(tris.size()),[
-				points = proxy<space>({},points),tris = proxy<space>({},tris),de2fi = proxy<space>(de2fi)] ZS_LAMBDA(int ti) mutable {
-					auto tinds = tris.pack(dim_c<3>,"fp_inds",ti).reinterpret_bits(int_c);
-					auto tri = tris.pack(dim_c<3>,"inds",ti).reinterpret_bits(int_c);
-					for(int i = 0;i != 3;++i) {
-						if(auto no = de2fi.query(vec2i{tri[i],tri[(i+1) % 3]});no >= 0){
-							points("he_inds",tinds[i]) = reinterpret_bits<T>((int)no);
-						}else {
-							// some algorithm bug
-							printf("could not find half edge : %d %d\n",tri[i],tri[(i+1) % 3]);
-						}						
-					}
-			});
+						printf("could not find half edge : %d %d\n",tri[i],tri[(i+1) % 3]);
+					}						
+				}
+		});
 #else
-			if(!build_surf_half_edge(cudaPol,tris,points,halfEdge))
-				throw std::runtime_error("fail building surf half edge");
+		if(!build_surf_half_edge(cudaPol,tris,points,halfEdge))
+			throw std::runtime_error("fail building surf half edge");
 #endif
 
-			set_output("zsparticles",zsparticles);
-			// zsparticles->setMeta("de2fi",std::move())
+		zs::bht<int,1,int> edgeSet{tris.get_allocator(),tris.size() * 3};	
+		edgeSet.reset(cudaPol,true);
+		cudaPol(zs::range(halfEdge.size()),[
+			halfedges = proxy<space>({},halfEdge),
+			edgeSet = proxy<space>(edgeSet),
+			tris = proxy<space>({},tris)] ZS_LAMBDA(int hi) mutable {
+				auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+				auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+				auto local_idx = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+				zs::vec<int,2> edge{tri[local_idx],tri[(local_idx + 1) % 3]};
+
+				auto ohi = zs::reinterpret_bits<int>(halfedges("opposite_he",hi));
+				if(ohi >= 0 && edge[0] > edge[1])
+					return;
+
+				edgeSet.insert(hi);
+		});
+
+		auto &surfEdges = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+		surfEdges = typename ZenoParticles::particles_t({{"inds", 2},{"he_inds",1}}, edgeSet.size(),zs::memsrc_e::device,0);
+		cudaPol(zip(zs::range(edgeSet.size()),edgeSet._activeKeys),[
+			halfedges = proxy<space>({},halfEdge),
+			surfEdges = proxy<space>({},surfEdges),
+			tris = proxy<space>({},tris)] ZS_LAMBDA(auto ei,const auto& hi_vec) mutable {
+				auto hi = hi_vec[0];
+				auto ti = zs::reinterpret_bits<int>(halfedges("to_face",hi));
+				auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+				auto local_idx = zs::reinterpret_bits<int>(halfedges("local_vertex_id",hi));
+				zs::vec<int,2> edge{tri[local_idx],tri[(local_idx + 1) % 3]};	
+				
+				surfEdges.tuple(dim_c<2>,"inds",ei) = edge.reinterpret_bits(float_c);
+				surfEdges("he_inds",ei) = reinterpret_bits<float>((int)hi);
+		});
+
+		set_output("zsparticles",zsparticles);
+		// zsparticles->setMeta("de2fi",std::move())
 	}
 
 };
@@ -166,6 +201,7 @@ struct BuildTetrahedraHalfFacet : zeno::INode {
 	virtual void apply() override {
 		using namespace zs;
 		auto cudaPol = zs::cuda_exec();
+
 
 		auto zsparticles = get_input<ZenoParticles>("zsparticles");
 
@@ -183,6 +219,51 @@ struct BuildTetrahedraHalfFacet : zeno::INode {
 };
 
 ZENDEFNODE(BuildTetrahedraHalfFacet, {{{"zsparticles"}},
+							{{"zsparticles"}},
+							{},
+							{"ZSGeometry"}});
+
+struct BuildSurfaceLinesStructure : zeno::INode {
+	using T = float;
+	virtual void apply() override {
+		using namespace zs;
+		using vec2i = zs::vec<int, 2>;
+		using vec3i = zs::vec<int, 3>;
+		auto cudaPol = zs::cuda_exec();
+		constexpr auto space = zs::execspace_e::cuda;
+
+		auto zsparticles = get_input<ZenoParticles>("zsparticles");
+		if(!zsparticles->hasAuxData(ZenoParticles::s_surfTriTag) && zsparticles->category == ZenoParticles::category_e::tet)
+			throw std::runtime_error("the input tet zsparticles has no surface tris");
+
+		auto& tris = zsparticles->category == ZenoParticles::category_e::tet ? (*zsparticles)[ZenoParticles::s_surfTriTag] : zsparticles->getQuadraturePoints();
+		zs::bht<int,2,int> edgeSet{tris.get_allocator(),tris.size() * 3};
+		edgeSet.reset(cudaPol,true);
+
+		cudaPol(zs::range(tris.size()),[
+			tris = proxy<space>({},tris),
+			edgeSet = proxy<space>(edgeSet)] ZS_LAMBDA(int ti) mutable {
+				auto tri = tris.pack(dim_c<3>,"inds",ti,int_c);
+				for(int i = 0;i != 3;++i) {
+					auto idx0 = tri[(i + 0) % 3];
+					auto idx1 = tri[(i + 1) % 3];
+					if(idx0 < idx1)
+						edgeSet.insert(vec2i{idx0,idx1});
+				}
+		});
+		
+		auto &surfEdges = (*zsparticles)[ZenoParticles::s_surfEdgeTag];
+		surfEdges = typename ZenoParticles::particles_t({{"inds", 2}}, edgeSet.size(),zs::memsrc_e::device,0);	
+		cudaPol(zip(zs::range(edgeSet.size()),edgeSet._activeKeys),[
+			surfEdges = proxy<space>({},surfEdges)] ZS_LAMBDA(auto ei,const auto& pair) mutable {
+				surfEdges.tuple(dim_c<2>,"inds",ei) = pair.reinterpret_bits(float_c);
+		});	
+
+		set_output("zsparticles",zsparticles);
+	}
+};
+
+ZENDEFNODE(BuildSurfaceLinesStructure, {{{"zsparticles"}},
 							{{"zsparticles"}},
 							{},
 							{"ZSGeometry"}});
@@ -698,12 +779,14 @@ struct DoTopogicalColoring : zeno::INode {
 			constexpr auto space = zs::execspace_e::cuda;
 
 			auto zsparticles = get_input<ZenoParticles>("zsparticles");
-			const auto& verts = zsparticles->getParticles();
+			// const auto& verts = zsparticles->getParticles();
 			auto& elms = zsparticles->getQuadraturePoints();
 			// auto& tris = (*zsparticles)[ZenoParticles::s_surfTriTag];
 			// const auto& tets = zsparticles->getQuadraturePoints();
 			auto cdim = elms.getPropertySize("inds");
 			auto color_tag = get_param<std::string>("colorTag");
+
+			auto do_sort_color = get_param<bool>("sort_color");
 
 			if(!elms.hasProperty(color_tag))
 				elms.append_channels(cudaPol,{{color_tag,1}});
@@ -720,17 +803,33 @@ struct DoTopogicalColoring : zeno::INode {
 			});
 
 			zs::Vector<float> colors{elms.get_allocator(),elms.size()};
-			std::cout << "do topological coloring" << std::endl;
+			// std::cout << "do topological coloring" << std::endl;
 			topological_coloring(cudaPol,topos,colors);
-			std::cout << "finish topological coloring" << std::endl;
+			zs::Vector<int> reordered_map{elms.get_allocator(),elms.size()};
+			cudaPol(zs::range(reordered_map.size()),[reordered_map = proxy<space>(reordered_map)] ZS_LAMBDA(int ti) mutable {reordered_map[ti] = ti;});
+			// if(do_sort_color)
+			zs::Vector<int> color_offset{elms.get_allocator(),0};
+			sort_topology_by_coloring_tag(cudaPol,colors,reordered_map,color_offset);
+
+			// std::cout << "finish topological coloring" << std::endl;
 
 			cudaPol(zs::range(elms.size()),[
 				elms = proxy<space>({},elms),
 				color_tag = zs::SmallString(color_tag),
+				topos = proxy<space>(topos),
+				reordered_map = proxy<space>(reordered_map),
+				cdim,
 				colors = proxy<space>(colors)] ZS_LAMBDA(int ei) mutable {
-					elms(color_tag,ei) = colors[ei];	
+					elms(color_tag,ei) = colors[reordered_map[ei]];
+					for(int i = 0;i != cdim;++i)
+						elms("inds",i,ei) = zs::reinterpret_bits<float>(topos[reordered_map[ei]][i]);
 			});
 
+			zsparticles->setMeta("color_offset",color_offset);
+			printf("offset : ");
+			for(int i = 0;i != color_offset.size();++i)
+				printf("%d\t",color_offset.getVal(i));
+			printf("\n");
 			set_output("zsparticles",zsparticles);
 	}
 };
@@ -740,7 +839,8 @@ ZENDEFNODE(DoTopogicalColoring, {{{"zsparticles"}},
 								{"zsparticles"}
 							},
 							{
-								{"string","colorTag","colorTag"}
+								{"string","colorTag","colorTag"},
+								// {"bool","sort_color","1"}
 							},
 							{"ZSGeometry"}});
 
