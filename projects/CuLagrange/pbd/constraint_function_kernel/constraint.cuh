@@ -151,12 +151,17 @@ namespace zeno { namespace CONSTRAINT {
             VECTOR3d n2 = LSL_GEO::facet_normal(p1,p3,p2);
 
             SCALER n12 = n1.dot(n2);
-            SCALER angle = 0;
-            if((1 - n12) > 1e-6)
-                angle = zs::sqrt((1 - n12) / 2);
-            if(n1.cross(n2).dot(e) < 0)
-                angle = -angle;
-            restAngle = angle;
+            n12 = n12 < -1.0 ? -1.0 : n12;
+            n12 = n12 > 1.0 ? 1.0 : n12;
+            // SCALER angle = 0;
+            // if((1 - n12) > 1e-6)
+            //     angle = zs::sqrt((1 - n12) / 2);
+            // if(n1.cross(n2).dot(e) < 0)
+            //     angle = -angle;        
+            // restAngle = angle;
+
+            restAngle = zs::acos(n12);
+
             return true;            
     }
 
@@ -196,11 +201,14 @@ namespace zeno { namespace CONSTRAINT {
         n1 = n1.normalized();
         n2 = n2.normalized();
         SCALER n12 = n1.dot(n2);
-        SCALER angle = 0;
-        if((1 - n12) > 1e-6)
-            angle = zs::sqrt((1 - n12) / 2);
-        if(n1.cross(n2).dot(e) < 0)
-            angle = -angle;
+        n12 = n12 > 1.0 ? 1.0 : n12;
+        n12 = n12 < -1.0 ? -1.0 : n12;
+
+        SCALER angle = zs::acos(n12);
+        // if((1 - n12) > 1e-6)
+        //     angle = zs::sqrt((1 - n12) / 2);
+        // if(n1.cross(n2).dot(e) < 0)
+        //     angle = -angle;
     
         SCALER lambda = 
             invMass0 * d0.l2NormSqr() +
@@ -208,7 +216,7 @@ namespace zeno { namespace CONSTRAINT {
             invMass2 * d2.l2NormSqr() +
             invMass3 * d3.l2NormSqr();
     
-        if (lambda == 0.0)
+        if (lambda < eps)
             return false;	
     
         // stability
@@ -218,13 +226,13 @@ namespace zeno { namespace CONSTRAINT {
     
         lambda = (angle - restAngle) / lambda * stiffness;
     
-        // if (n1.cross(n2).dot(e) > 0.0)
-        //     lambda = -lambda;	
+        if (n1.cross(n2).dot(e) > 0.0)
+            lambda = -lambda;	
     
-        corr0 = invMass0 * lambda * d0;
-        corr1 = invMass1 * lambda * d1;
-        corr2 = invMass2 * lambda * d2;
-        corr3 = invMass3 * lambda * d3;
+        corr0 = -invMass0 * lambda * d0;
+        corr1 = -invMass1 * lambda * d1;
+        corr2 = -invMass2 * lambda * d2;
+        corr3 = -invMass3 * lambda * d3;
     
         return true;
     }
@@ -235,12 +243,15 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d& p1, const SCALER& invMass1,
         const VECTOR3d& p2, const SCALER& invMass2,
         const VECTOR3d& p3, const SCALER& invMass3,
-        const SCALER& ra,
+        const SCALER& restAngle,
         const SCALER& stiffness,
         const SCALER& dt,
         SCALER& lambda,
-        VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3){  
-        constexpr SCALER eps = static_cast<SCALER>(1e-4);
+        VECTOR3d& corr0, VECTOR3d& corr1, VECTOR3d& corr2, VECTOR3d& corr3)
+    {  
+        constexpr SCALER eps = static_cast<SCALER>(1e-6);
+        if (invMass0 == 0.0 && invMass1 == 0.0)
+            return false;
 
         auto e = p3 - p2;
         auto elen = e.norm();
@@ -252,47 +263,43 @@ namespace zeno { namespace CONSTRAINT {
         VECTOR3d n1 = (p2 - p0).cross(p3 - p0); n1 /= n1.l2NormSqr();
 	    VECTOR3d n2 = (p3 - p1).cross(p2 - p1); n2 /= n2.l2NormSqr();
 
-        VECTOR3d gradC[4] = {};
-        gradC[0] = elen*n1;
-        gradC[1] = elen*n2;
-        gradC[2] = (p0-p3).dot(e) * invElen * n1 + (p1-p3).dot(e) * invElen * n2;
-        gradC[3] = (p2-p0).dot(e) * invElen * n1 + (p2-p1).dot(e) * invElen * n2;
+        VECTOR3d d0 = elen*n1;
+        VECTOR3d d1 = elen*n2;
+        VECTOR3d d2 = (p0-p3).dot(e) * invElen * n1 + (p1-p3).dot(e) * invElen * n2;
+        VECTOR3d d3 = (p2-p0).dot(e) * invElen * n1 + (p2-p1).dot(e) * invElen * n2;
 
         n1 = n1.normalized();
         n2 = n2.normalized();
         SCALER n12 = n1.dot(n2);
-        SCALER angle = 0;
-        if((1 - n12) > 1e-6)
-            angle = zs::sqrt((1 - n12) / 2);
-        if(n1.cross(n2).dot(e) < 0)
-            angle = -angle;
+        n12 = n12 > 1.0 ? 1.0 : n12;
+        n12 = n12 < -1.0 ? -1.0 : n12;
+
+        SCALER angle = zs::acos(n12);
 
         SCALER alpha = 0.0;
         if (stiffness != 0.0)
             alpha = static_cast<SCALER>(1.0) / (stiffness * dt * dt);
 
-
         SCALER sum_normGradC = 
-            invMass0 * gradC[0].l2NormSqr() +
-            invMass1 * gradC[1].l2NormSqr() +
-            invMass2 * gradC[2].l2NormSqr() +
-            invMass3 * gradC[3].l2NormSqr() + alpha;
+            invMass0 * d0.l2NormSqr() +
+            invMass1 * d1.l2NormSqr() +
+            invMass2 * d2.l2NormSqr() +
+            invMass3 * d3.l2NormSqr() + alpha;
 
         if(sum_normGradC < eps)
             return false;
 
-        auto energy = angle - ra;
-
         // compute impulse-based scaling factor
-        SCALER delta_lambda = -(energy + alpha * lambda) / sum_normGradC;
+        SCALER delta_lambda = (angle - restAngle + alpha * lambda) / sum_normGradC;
+        if(n1.cross(n2).dot(e) > 0.0)
+            delta_lambda = -delta_lambda;
+
         lambda += delta_lambda;
 
-        // if(n1.cross(n2).dot(e) > 0.0)
-        //     delta_lambda = -delta_lambda;
-        corr0 = (delta_lambda * invMass0) * gradC[0];
-        corr1 = (delta_lambda * invMass1) * gradC[1];
-        corr2 = (delta_lambda * invMass2) * gradC[2];
-        corr3 = (delta_lambda * invMass3) * gradC[3];
+        corr0 = -(delta_lambda * invMass0) * d0;
+        corr1 = -(delta_lambda * invMass1) * d1;
+        corr2 = -(delta_lambda * invMass2) * d2;
+        corr3 = -(delta_lambda * invMass3) * d3;
         return true;
     }
 

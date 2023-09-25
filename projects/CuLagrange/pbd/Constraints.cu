@@ -638,7 +638,7 @@ struct XPBDSolveSmooth : INode {
                             p[2],minv[2],
                             p[3],minv[3],
                             ra,
-                            s,
+                            (float)1,
                             dp[0],dp[1],dp[2],dp[3]))
                                 return;
                         for(int i = 0;i != 4;++i)
