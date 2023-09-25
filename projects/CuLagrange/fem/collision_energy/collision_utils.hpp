@@ -1068,7 +1068,7 @@ namespace COLLISION_UTILS {
                 nps[i] = ps[i] + alpha * vs[i];
 
 // there will surely be an imminent collision
-            return compute_imminent_EE_collision_impulse(nps,vs,(REAL)1 - alpha,std::numeric_limits<REAL>::max(),minv,imps);
+            return compute_imminent_EE_collision_impulse(nps,vs,(REAL)(1 - alpha) * (REAL)0.99,std::numeric_limits<REAL>::max(),minv,imps);
     }
 
 // ps = [t0,t1,t2,p]

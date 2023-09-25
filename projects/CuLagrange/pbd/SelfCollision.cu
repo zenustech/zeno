@@ -549,7 +549,7 @@ struct DetangleCCDCollision : INode {
             nm_ccd_collision.setVal(0);
 
             if(do_pt_detection) {
-                // std::cout << "do continous self PT cololision impulse" << std::endl;
+                std::cout << "do continous self PT cololision impulse" << std::endl;
 
                 auto do_bvh_refit = iter > 0;
                 COLLISION_UTILS::calc_continous_self_PT_collision_impulse(cudaPol,
@@ -564,7 +564,7 @@ struct DetangleCCDCollision : INode {
             }
 
             if(do_ee_detection) {
-                // std::cout << "do continous self EE cololision impulse" << std::endl;
+                std::cout << "do continous self EE cololision impulse" << std::endl;
                 auto do_bvh_refit = iter > 0;
                 COLLISION_UTILS::calc_continous_self_EE_collision_impulse(cudaPol,
                     verts,
@@ -576,7 +576,7 @@ struct DetangleCCDCollision : INode {
                     impulse_count);
             }
 
-            // std::cout << "apply CCD impulse" << std::endl;
+            std::cout << "apply CCD impulse" << std::endl;
             cudaPol(zs::range(verts.size()),[
                 verts = proxy<space>({},verts),
                 vtemp = proxy<space>({},vtemp),
@@ -607,7 +607,7 @@ struct DetangleCCDCollision : INode {
             if(nm_ccd_collision.getVal() == 0)
                 break;
         }
-        // std::cout << "finish solving continous collision " << std::endl;
+        std::cout << "finish solving continous collision " << std::endl;
         cudaPol(zs::range(verts.size()),[
             vtemp = proxy<space>({},vtemp),
             verts = proxy<space>({},verts),
