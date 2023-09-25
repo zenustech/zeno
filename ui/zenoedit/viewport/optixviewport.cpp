@@ -218,14 +218,19 @@ void OptixWorker::recordVideo(VideoRecInfo recInfo)
 void OptixWorker::screenShoot(QString path, QString type, int resx, int resy)
 {
     bool aov = zeno::getSession().userData().has("output_aov") ? zeno::getSession().userData().get2<bool>("output_aov") : false;
+    bool exr = zeno::getSession().userData().has("output_exr") ? zeno::getSession().userData().get2<bool>("output_exr") : false;
+    zeno::scope_exit sp([=]() {
+        zeno::getSession().userData().set2("output_aov", aov);
+        zeno::getSession().userData().set2("output_exr", exr);
+        });
     zeno::getSession().userData().set2("output_aov", false);
+    zeno::getSession().userData().set2("output_exr", false);
     auto [x, y] = m_zenoVis->getSession()->get_window_size();
     if (!m_zenoVis->getSession()->is_lock_window())
         resx = x, resy = y;
     m_zenoVis->getSession()->set_window_size(resx, resy);
     m_zenoVis->getSession()->do_screenshot(path.toStdString(), type.toStdString(), true);
     m_zenoVis->getSession()->set_window_size(x, y);
-    zeno::getSession().userData().set2("output_aov", aov);
 }
 
 bool OptixWorker::recordFrame_impl(VideoRecInfo recInfo, int frame)
