@@ -133,7 +133,7 @@ namespace zeno { namespace CONSTRAINT {
         return true;
     }
 
-    template<typename VECTOR3d,typename SCALER = VECTOR3d::value_type>
+    template<typename VECTOR3d,typename SCALER = typename VECTOR3d::value_type>
     constexpr bool init_DihedralBendingConstraint(
         const VECTOR3d& p0,
         const VECTOR3d& p1,
@@ -229,7 +229,7 @@ namespace zeno { namespace CONSTRAINT {
         return true;
     }
 
-    template<typename VECTOR3d,typename SCALER = VECTOR3d::value_type>
+    template<typename VECTOR3d,typename SCALER = typename VECTOR3d::value_type>
     constexpr bool solve_DihedralConstraint(
         const VECTOR3d& p0, const SCALER& invMass0,
         const VECTOR3d& p1, const SCALER& invMass1,
@@ -310,24 +310,24 @@ namespace zeno { namespace CONSTRAINT {
         const VECTOR3d x[4] = { p2, p3, p0, p1 };
         // Q = MATRIX4d::uniform(0);
 
-        // const auto e0 = x[1].cast<double>() - x[0].cast<double>();
-        // const auto e1 = x[2].cast<double>() - x[0].cast<double>();
-        // const auto e2 = x[3].cast<double>() - x[0].cast<double>();
-        // const auto e3 = x[2].cast<double>() - x[1].cast<double>();
-        // const auto e4 = x[3].cast<double>() - x[1].cast<double>();
+        // const auto e0 = x[1].template cast<double>() - x[0].template cast<double>();
+        // const auto e1 = x[2].template cast<double>() - x[0].template cast<double>();
+        // const auto e2 = x[3].template cast<double>() - x[0].template cast<double>();
+        // const auto e3 = x[2].template cast<double>() - x[1].template cast<double>();
+        // const auto e4 = x[3].template cast<double>() - x[1].template cast<double>();
 
-        const auto e0 = x[1].cast<double>() - x[0].cast<double>();
-        const auto e1 = x[2].cast<double>() - x[0].cast<double>();
-        const auto e2 = x[3].cast<double>() - x[0].cast<double>();
-        const auto e3 = x[2].cast<double>() - x[1].cast<double>();
-        const auto e4 = x[3].cast<double>() - x[1].cast<double>();
+        const auto e0 = x[1].template cast<double>() - x[0].template cast<double>();
+        const auto e1 = x[2].template cast<double>() - x[0].template cast<double>();
+        const auto e2 = x[3].template cast<double>() - x[0].template cast<double>();
+        const auto e3 = x[2].template cast<double>() - x[1].template cast<double>();
+        const auto e4 = x[3].template cast<double>() - x[1].template cast<double>();
 
 
-        // auto e0 = e0_.cast<double>();
-        // auto e1 = e1_.cast<double>();
-        // auto e2 = e2_.cast<double>();
-        // auto e3 = e3_.cast<double>();
-        // auto e4 = e4_.cast<double>();
+        // auto e0 = e0_.template cast<double>();
+        // auto e1 = e1_.template cast<double>();
+        // auto e2 = e2_.template cast<double>();
+        // auto e3 = e3_.template cast<double>();
+        // auto e4 = e4_.template cast<double>();
 
         // printf("init isometric bending energy : %f %f %f %f\n",
         //     (float)p0.norm(),

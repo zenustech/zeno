@@ -403,7 +403,7 @@ namespace zeno {
         constexpr auto CODIM = VecTi::extent;
         constexpr auto NM_EDGES = (CODIM - 1) * (CODIM) / 2;
 
-        zs::vec<Ti,2> out_edges[NM_EDGES] = {};
+        zs::vec<zs::vec<Ti,2>, NM_EDGES> out_edges{};
         int nm_out_edges = 0;
         for(int i = 0;i != CODIM;++i)
             for(int j = i + 1;j != CODIM;++j)
