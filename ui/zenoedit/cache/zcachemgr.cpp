@@ -16,9 +16,9 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
     if (!m_isNew && (m_cacheOpt == Opt_RunLightCameraMaterial || m_cacheOpt == Opt_AlwaysOn)) {
          return true;
     }
-    if (!bTempDir && bAutoCleanCache &&
-        m_cacheOpt != Opt_RunLightCameraMaterial &&
-        m_cacheOpt != Opt_AlwaysOn)
+    if ((bTempDir || bAutoCleanCache) &&
+            m_cacheOpt != Opt_RunLightCameraMaterial &&
+            m_cacheOpt != Opt_AlwaysOn)
     {
         cleanCacheDir();
     }
@@ -27,6 +27,7 @@ bool ZCacheMgr::initCacheDir(bool bTempDir, QDir dirCacheRoot, bool bAutoCleanCa
     if (m_bTempDir) {
         m_spTmpCacheDir.reset(new QTemporaryDir);
         m_spTmpCacheDir->setAutoRemove(true);
+        lastRunCachePath = QDir(m_spTmpCacheDir->path());
         m_isNew = false;
     } else {
         QString tempDirPath = QDateTime::currentDateTime().toString("yyyy-MM-dd hh-mm-ss");
