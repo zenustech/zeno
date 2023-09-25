@@ -1,6 +1,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
+#include <set>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/PrimitiveTools.h>
@@ -354,11 +356,62 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
     std::shared_ptr<zeno::PrimitiveObject> primUnique;
     zeno::PrimitiveObject *prim;
 
+    ZhxxDrawObject polyEdgeObj = {};
+
     explicit ZhxxGraphicPrimitive(Scene *scene_, zeno::PrimitiveObject *primArg)
         : scene(scene_), primUnique(std::make_shared<zeno::PrimitiveObject>(*primArg)) {
         prim = primUnique.get();
         invisible = prim->userData().get2<bool>("invisible", 0);
         zeno::log_trace("rendering primitive size {}", prim->size());
+
+        {
+            bool any_not_triangle = false;
+            for (const auto &[b, c]: prim->polys) {
+                if (c > 3) {
+                    any_not_triangle = true;
+                }
+            }
+            if (any_not_triangle) {
+                std::map<int, std::set<int>> edges;
+                auto add_edge = [&](int a, int b) {
+                    zeno::log_info("a:{}, b: {}", a, b);
+                    int p0 = prim->loops[a];
+                    int p1 = prim->loops[b];
+                    if (p0 > p1) {
+                        std::swap(p0, p1);
+                    }
+                    if (!edges.count(p0)) {
+                        edges[p0] = {};
+                    }
+                    edges[p0].insert(p1);
+                };
+                for (const auto &[b, c]: prim->polys) {
+                    for (auto i = 2; i < c; i++) {
+                        if (i == 2) {
+                            add_edge(b, b + 1);
+                        }
+                        add_edge(b + i - 1, b + i);
+                        if (i == c - 1) {
+                            add_edge(b, b + i);
+                        }
+                    }
+                }
+                std::vector<int> edge_list;
+                for (const auto& [a, s]: edges) {
+                    for (const auto b: s) {
+                        edge_list.push_back(a);
+                        edge_list.push_back(b);
+                    }
+                }
+                polyEdgeObj.count = edge_list.size();
+                polyEdgeObj.ebo = std::make_unique<Buffer>(GL_ELEMENT_ARRAY_BUFFER);
+                polyEdgeObj.ebo->bind_data(edge_list.data(), edge_list.size() * sizeof(edge_list[0]));
+                auto vbo = std::make_unique<Buffer>(GL_ARRAY_BUFFER);
+                vbo->bind_data(prim->verts.data(), prim->verts.size() * sizeof(prim->verts[0]));
+                polyEdgeObj.vbos.push_back(std::move(vbo));
+                polyEdgeObj.prog = get_edge_program();
+            }
+        }
 
         if (!prim->attr_is<zeno::vec3f>("pos")) {
             auto &pos = prim->add_attr<zeno::vec3f>("pos");
@@ -643,15 +696,34 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
             bool selected = scene->selected.count(nameid) > 0;
 
             if (scene->drawOptions->render_wireframe || selected) {
-                CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
-                CHECK_GL(glPolygonOffset(0, 0));
-                CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
-                triObj.prog->set_uniformi("mRenderWireframe", true);
-                CHECK_GL(glDrawElements(GL_TRIANGLES,
-                                        /*count=*/triObj.count * 3,
-                                        GL_UNSIGNED_INT, /*first=*/0));
-                CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
-                CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
+                if (polyEdgeObj.count) {
+                    polyEdgeObj.prog->use();
+                    scene->camera->set_program_uniforms(polyEdgeObj.prog);
+
+                    polyEdgeObj.vbos[0]->bind();
+                    polyEdgeObj.vbos[0]->attribute(/*index=*/0,
+                            /*offset=*/sizeof(float) * 0,
+                            /*stride=*/sizeof(float) * 3, GL_FLOAT,
+                            /*count=*/3);
+                    polyEdgeObj.ebo->bind();
+
+                    CHECK_GL(glDrawElements(GL_LINES, polyEdgeObj.count, GL_UNSIGNED_INT, 0));
+
+                    polyEdgeObj.ebo->unbind();
+                    polyEdgeObj.vbos[0]->disable_attribute(0);
+                    polyEdgeObj.vbos[0]->unbind();
+                }
+                else {
+                    CHECK_GL(glEnable(GL_POLYGON_OFFSET_LINE));
+                    CHECK_GL(glPolygonOffset(0, 0));
+                    CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
+                    triObj.prog->set_uniformi("mRenderWireframe", true);
+                    CHECK_GL(glDrawElements(GL_TRIANGLES,
+                                            /*count=*/triObj.count * 3,
+                                            GL_UNSIGNED_INT, /*first=*/0));
+                    CHECK_GL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
+                    CHECK_GL(glDisable(GL_POLYGON_OFFSET_LINE));
+                }
             }
             triObj.ebo->unbind();
             if (triObj.vbos.size()) {
@@ -693,6 +765,17 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
 #include "shader/tris.frag"
         ;
 
+        return scene->shaderMan->compile_program(vert, frag);
+    }
+
+    Program *get_edge_program() {
+        auto vert =
+#include "shader/edge.vert"
+        ;
+
+        auto frag =
+#include "shader/edge.frag"
+        ;
         return scene->shaderMan->compile_program(vert, frag);
     }
 };
