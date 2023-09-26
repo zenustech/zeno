@@ -76,7 +76,10 @@ bool Scene::loadFrameObjects(int frameid) {
     const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {
         return this->objectsMan->load_objects(objs);
     };
-    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs);
+    bool isFrameValid = false;
+    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid);
+    if (!isFrameValid)
+        return false;
 
     renderMan->getEngine()->update();
     return inserted;

@@ -320,7 +320,10 @@ ZENO_API GlobalComm::ViewObjects const &GlobalComm::getViewObjects() {
     return m_frames.back().view_objects;
 }
 
-ZENO_API bool GlobalComm::load_objects(const int frameid, const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback)
+ZENO_API bool GlobalComm::load_objects(
+        const int frameid,
+        const std::function<bool(std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs)>& callback,
+        bool& isFrameValid)
 {
     if (!callback)
         return false;
@@ -330,8 +333,12 @@ ZENO_API bool GlobalComm::load_objects(const int frameid, const std::function<bo
     int frame = frameid;
     frame -= beginFrameNumber;
     if (frame < 0 || frame >= m_frames.size() || m_frames[frame].frame_state != FRAME_COMPLETED)
+    {
+        isFrameValid = false;
         return false;
+    }
 
+    isFrameValid = true;
     bool inserted = false;
     auto const* viewObjs = _getViewObjects(frameid);
     if (viewObjs) {
