@@ -18,8 +18,6 @@
 
 namespace zenovis {
 
-std::mutex g_mtxLoadObjs;
-
 void Scene::loadGLAPI(void *procaddr) {
     int res = gladLoadGLLoader((GLADloadproc)procaddr);
     if (res < 0)
