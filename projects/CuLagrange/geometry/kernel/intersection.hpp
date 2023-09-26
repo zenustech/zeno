@@ -1969,7 +1969,8 @@ int do_global_self_intersection_analysis_on_surface_mesh_info(Pol& pol,
                                         r = LSL_GEO::tri_ray_intersect(v1[j],e1s[j],v0[0],v0[1],v0[2]);
                                         if(r < (T)(1.0)) {
                                             e1_indices[nm_e1_its] = j;
-                                            e1_its[nm_e1_its] = v1[i] + e1s[j] * r;
+                                            /// @note both these should be 'j'
+                                            e1_its[nm_e1_its] = v1[j] + e1s[j] * r;
                                             ++nm_e1_its;
                                         } 
                                     }
@@ -3462,7 +3463,7 @@ int do_global_intersection_analysis_with_connected_manifolds(Pol& pol,
                         auto hi = key[0];
                         auto no = halfedges_tab.query(hi);
                         if(no >= closestTriID.size()) {
-                            printf("closestTriID overflow : %d %d\n",no,closestTriID.size());
+                            printf("closestTriID overflow : %d %d\n",(int)no, (int)closestTriID.size());
                             return;
                         }
                         auto cti = closestTriID[no];

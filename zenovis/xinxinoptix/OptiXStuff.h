@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdio>
 #include <glad/glad.h>  // Needs to be included before gl_interop
 
 #include <cuda_gl_interop.h>
@@ -43,7 +44,9 @@
 #include <sstream>
 #include <string>
 #include <filesystem>
-#include "ies/ies_loader.h"
+
+#include "ies/ies.h"
+
 #include "zeno/utils/fileio.h"
 #include "zeno/extra/TempNode.h"
 #include "zeno/types/PrimitiveObject.h"
@@ -184,7 +187,7 @@ inline bool createModule(OptixModule &m, OptixDeviceContext &context, const char
     const std::vector<const char*> compilerOptions {
         "-std=c++17", "-default-device", //"-extra-device-vectorization"
   #if !defined( NDEBUG )      
-        //"-lineinfo", "-G"//"--dopt=on",
+        "-lineinfo", //"-G"//"--dopt=on",
   #endif
         //"--gpu-architecture=compute_60",
         //"--relocatable-device-code=true"
@@ -494,7 +497,7 @@ inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB,
     std::filesystem::path filePath = path;
 
     if ( !std::filesystem::exists(filePath) ) {
-        std::cout << filePath.string() << " doesn't exist";
+        std::cout << filePath.string() << " doesn't exist" << std::endl;
         return false;
     }
 
@@ -555,27 +558,28 @@ inline bool preloadVDB(const zeno::TextureObjectVDB& texVDB,
 
     return true;
 }
-inline std::vector<float> IES2HDR(const std::string& path)
+
+inline std::vector<float> loadIES(const std::string& path, float& coneAngle)
 {
-    IESFileInfo info;
-    auto IESBuffer = zeno::file_get_binary(path);
-    IESBuffer.push_back(0);
+    std::filesystem::path filePath = path;
 
-    IESLoadHelper IESLoader;
-    if (!IESLoader.load(IESBuffer.data(), IESBuffer.size() - 1, info)) {
-        std::string l = "IESLoader.load";
-        throw std::runtime_error(l);
+    if ( !std::filesystem::exists(filePath) ) {
+        std::cout << filePath.string() << " doesn't exist" << std::endl;
+        return {};
     }
 
-    std::vector<float> img;
-    img.resize(256 * 3);
+    auto iesBuffer = zeno::file_get_binary(path);
+    auto iesString = std::string(iesBuffer.data());
+    //std::cout << iesString << std::endl;
 
-    if (!IESLoader.saveAs1D(info, img.data(), 256, 3)) {
-        std::string l = "IESLoader.saveAs1D";
-        throw std::runtime_error(l);
-    }
+    blender::IESFile iesFile;
+    iesFile.load(iesString);
 
-    return img;
+    std::vector<float> iesData(iesFile.packed_size());
+    iesFile.pack(iesData.data());
+    coneAngle = iesFile.coneAngle();
+
+    return iesData;
 }
 inline std::map<std::string, std::shared_ptr<cuTexture>> g_tex;
 inline std::map<std::string, std::filesystem::file_time_type> g_tex_last_write_time;
@@ -584,6 +588,13 @@ inline std::map<std::string, int> sky_nx_map;
 inline std::map<std::string, int> sky_ny_map;
 inline std::map<std::string, float> sky_avg_map;
 
+
+struct WrapperIES {
+    raii<CUdeviceptr> ptr;
+    float coneAngle = 0.0f;
+};
+
+inline std::map<std::string, WrapperIES> g_ies;
 
 inline std::map<std::string, std::vector<float>> sky_cdf_map;
 inline std::map<std::string, std::vector<float>> sky_pdf_map;
@@ -618,7 +629,7 @@ inline void calc_sky_cdf_map(int nx, int ny, int nc, T *img) {
             auto color = zeno::vec3f(img[idx2+0], img[idx2+1], img[idx2+2]);
             illum = zeno::dot(color, zeno::vec3f(0.33333333f,0.33333333f, 0.33333333f));
             //illum = illum > 0.5? illum : 0.0f;
-            illum = abs(illum) * sin(3.1415926f*((float)jj + 0.5f)/(float)ny);
+            illum = abs(illum) * sinf(3.1415926f*((float)jj + 0.5f)/(float)ny);
 
             sky_cdf[idx] += illum + (idx>0? sky_cdf[idx-1]:0);
             skypdf[idx] = illum;
@@ -693,8 +704,21 @@ inline void addTexture(std::string path)
         free(rgba);
     }
     else if (zeno::ends_with(path, ".ies", false)) {
-        auto img = IES2HDR(path);
-        g_tex[path] = makeCudaTexture(img.data(), 256, 1, 3);
+        float coneAngle;
+        auto iesd = loadIES(path, coneAngle);
+
+        if (iesd.empty()) {
+            g_ies.erase(path);
+            return;
+        }
+
+        raii<CUdeviceptr> iesBuffer;
+        size_t data_length = iesd.size() * sizeof(float);
+
+        CUDA_CHECK( cudaMalloc( reinterpret_cast<void**>( &iesBuffer.reset() ), data_length) );
+        CUDA_CHECK( cudaMemcpy( reinterpret_cast<void*>( (CUdeviceptr)iesBuffer ), iesd.data(), data_length, cudaMemcpyHostToDevice ) );
+        
+        g_ies[path] = {std::move(iesBuffer), coneAngle };
     }
     else if (zeno::getSession().nodeClasses.count("ReadPNG16") > 0 && zeno::ends_with(path, ".png", false)) {
         auto outs = zeno::TempNodeSimpleCaller("ReadPNG16")

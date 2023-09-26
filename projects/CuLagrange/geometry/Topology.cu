@@ -313,7 +313,7 @@ struct VisualTetrahedraHalfFacet : zeno::INode {
 					auto opposite_hf_idx = zs::reinterpret_bits<int>(halfFacet("opposite_hf",hf_idx));
 					if(opposite_hf_idx >= 0) {
 						if(opposite_hf_idx >= halfFacet.size()) {
-							printf("opposite_hf_idx = %d exceeding size of halfFacet : %d\n",opposite_hf_idx,halfFacet.size());
+							printf("opposite_hf_idx = %d exceeding size of halfFacet : %d\n", (int)opposite_hf_idx, (int)halfFacet.size());
 							return;
 						}
 						auto nti = zs::reinterpret_bits<int>(halfFacet("to_tet",opposite_hf_idx));
