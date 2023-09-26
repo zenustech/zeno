@@ -72,18 +72,15 @@ bool Scene::cameraFocusOnNode(std::string const &nodeid, zeno::vec3f &center, fl
 bool Scene::loadFrameObjects(int frameid) {
     auto &ud = zeno::getSession().userData();
     ud.set2<int>("frameid", std::move(frameid));
-    bool inserted = false;
-    if (!zeno::getSession().globalComm->isFrameCompleted(frameid))
-        return inserted;
 
-    auto const *viewObjs = zeno::getSession().globalComm->getViewObjects(frameid);
-    if (viewObjs) {
-        zeno::log_trace("load_objects: {} objects at frame {}", viewObjs->size(), frameid);
-        inserted = this->objectsMan->load_objects(viewObjs->m_curr);
-    } else {
-        zeno::log_trace("load_objects: no objects at frame {}", frameid);
-        inserted = this->objectsMan->load_objects({});
-    }
+    const auto& cbLoadObjs = [this](std::map<std::string, std::shared_ptr<zeno::IObject>> const& objs) -> bool {
+        return this->objectsMan->load_objects(objs);
+    };
+    bool isFrameValid = false;
+    bool inserted = zeno::getSession().globalComm->load_objects(frameid, cbLoadObjs, isFrameValid);
+    if (!isFrameValid)
+        return false;
+
     renderMan->getEngine()->update();
     return inserted;
 }

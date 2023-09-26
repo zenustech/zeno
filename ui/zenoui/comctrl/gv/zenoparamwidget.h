@@ -59,6 +59,7 @@ public:
 
 protected:
     void paintEvent(QPaintEvent *e) override;
+    void focusInEvent(QFocusEvent* e) override;
 };
 
 
@@ -87,8 +88,6 @@ private:
     ZGraphicsNumSliderItem* m_pSlider;
 };
 
-
-class ZPathEdit;
 
 class ZenoParamPathEdit : public ZEditableTextItem
 {

@@ -227,6 +227,16 @@ QVariant VParamItem::data(int role) const
             return "";
         }
     }
+    case ROLE_PARAM_NETLABEL:
+    {
+        if (m_customData.find(role) != m_customData.end())
+        {
+            return m_customData[role];
+        }
+        else {
+            return QVariant();
+        }
+    }
     default:
         return QStandardItem::data(role);
     }
@@ -316,7 +326,7 @@ void VParamItem::setData(const QVariant& value, int role)
             }
             QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
             if (role == ROLE_ADDLINK) {
-                m_links.append(linkIdx);
+                m_links.append(linkIdx);    
             }
             else {
                 m_links.removeAll(linkIdx);
@@ -326,6 +336,11 @@ void VParamItem::setData(const QVariant& value, int role)
         case ROLE_VPARAM_CTRL_PROPERTIES:
         case ROLE_VAPRAM_EDITTABLE: 
         case ROLE_VPARAM_TOOLTIP: 
+        {
+            m_customData[role] = value;
+            break;
+        }
+        case ROLE_PARAM_NETLABEL:
         {
             m_customData[role] = value;
             break;
@@ -525,7 +540,7 @@ void VParamItem::importParamInfo(const VPARAM_INFO& paramInfo)
     }
 }
 
-PARAM_CLASS VParamItem::getParamClass()
+PARAM_CLASS VParamItem::getParamClass() const
 {
     if (vType != VPARAM_PARAM)
         return PARAM_UNKNOWN;

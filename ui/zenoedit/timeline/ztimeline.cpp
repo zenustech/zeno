@@ -40,16 +40,24 @@ ZTimeline::ZTimeline(QWidget* parent)
     m_ui->editFrom->setText(QString::number(deflFrom));
     m_ui->editTo->setText(QString::number(deflTo));
     m_ui->timeliner->setFromTo(deflFrom, deflTo);
+    m_ui->fpsEdit->setText("24");
     
     initStyleSheet();
     initSignals();
     initButtons();
     initSize();
+    m_ui->fpsEdit->setValidator(new QIntValidator);
+    m_ui->editFrom->setValidator(new QIntValidator);
+    m_ui->editTo->setValidator(new QIntValidator);
+    m_ui->editFrame->setValidator(new QIntValidator);
+    m_ui->comboBox->hide();
 }
 
 void ZTimeline::initSignals()
 {
-    connect(m_ui->btnPlay, SIGNAL(toggled(bool)), this, SIGNAL(playForward(bool)));
+    connect(m_ui->btnPlay, &ZToolButton::toggled, this, [=](bool toggle) {
+        emit playForward(toggle);
+    });
     connect(m_ui->editFrom, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->editTo, SIGNAL(editingFinished()), this, SLOT(onFrameEditted()));
     connect(m_ui->timeliner, SIGNAL(sliderValueChange(int)), this, SIGNAL(sliderValueChanged(int)));
@@ -115,6 +123,16 @@ void ZTimeline::initSignals()
         QString numText = QString::number(m_ui->timeliner->value());
         m_ui->editFrame->setText(numText);
     });
+    connect(m_ui->fpsEdit, &QLineEdit::editingFinished, this, [=]() {
+        if (m_ui->fpsEdit->text().toInt() < 1)
+            m_ui->fpsEdit->setText("1");
+        auto main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        for (auto view : main->viewports())
+        {
+            view->setSliderFeq(1000 / m_ui->fpsEdit->text().toInt());
+        }
+    });
 }
 
 void ZTimeline::onFrameEditted()
@@ -149,6 +167,7 @@ void ZTimeline::initStyleSheet()
     for (QLineEdit *pLineEdit : editors) {
         pLineEdit->setProperty("cssClass", "FCurve-lineedit");
     }
+    m_ui->fpslabel->setProperty("cssClass", "proppanel");
 }
 
 void ZTimeline::initButtons()
@@ -166,6 +185,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnBackToStart->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnBackToStart->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnBackToStart->setToolTip(tr("Back To Start"));
 
     m_ui->btnBackward->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnBackward->setIcon(
@@ -176,6 +196,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnBackward->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnBackward->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnBackward->setToolTip(tr("Backward"));
 
     m_ui->btnPlay->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
     m_ui->btnPlay->setIcon(
@@ -186,6 +207,7 @@ void ZTimeline::initButtons()
         ":/icons/timeline_play_hover.svg");
     m_ui->btnPlay->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnPlay->setBackgroundClr(QColor(), QColor(), QColor(), QColor());
+    m_ui->btnPlay->setToolTip(tr("Play"));
 
     m_ui->btnForward->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnForward->setIcon(
@@ -196,6 +218,7 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnForward->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnForward->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnForward->setToolTip(tr("Forward"));
 
     m_ui->btnForwardToEnd->setButtonOptions(ZToolButton::Opt_HasIcon);
     m_ui->btnForwardToEnd->setIcon(
@@ -206,18 +229,26 @@ void ZTimeline::initButtons()
         "");
     m_ui->btnForwardToEnd->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
     m_ui->btnForwardToEnd->setBackgroundClr(QColor(), hoverBg, QColor(), hoverBg);
+    m_ui->btnForwardToEnd->setToolTip(tr("Forward To End"));
 
-    m_ui->btnLoopPlay->setButtonOptions(ZToolButton::Opt_Checkable | ZToolButton::Opt_SwitchAnimation);
-    m_ui->btnLoopPlay->setIcon(ZenoStyle::dpiScaledSize(QSize(18, 18)), ":/icons/always-off.svg", "", "", "");
-    m_ui->btnLoopPlay->setMargins(ZenoStyle::dpiScaledMargins(QMargins(3, 2, 2, 3)));
-    m_ui->btnLoopPlay->setBackgroundClr(QColor("#FF191D21"), QColor("#FF191D21"), QColor("#4578AC"), QColor("#4578AC"));
-    m_ui->btnLoopPlay->initAnimation();
+    QColor bg(35, 40, 47);
+    m_ui->btnLoopPlay->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_Checkable);
+    m_ui->btnLoopPlay->setIcon(
+        ZenoStyle::dpiScaledSize(QSize(16, 16)),
+        ":/icons/loop_off.png",
+        "",
+        ":/icons/loop_on.png",
+        "");
+    m_ui->btnLoopPlay->setMargins(QMargins(3, 2, 2, 3));
+    m_ui->btnLoopPlay->setBackgroundClr(bg, hoverBg, bg, hoverBg);
+    m_ui->btnLoopPlay->setToolTip(tr("Loop Play"));
     connect(m_ui->btnLoopPlay, &ZToolButton::toggled, this, [=](bool bChecked) {
         ZenoMainWindow* pMainWin = zenoApp->getMainWindow();
     ZASSERT_EXIT(pMainWin);
-    DisplayWidget* dpws = pMainWin->getCurrentViewport();
-    ZASSERT_EXIT(dpws);
-    dpws->setLoopPlaying(bChecked);
+    for (auto view: pMainWin->viewports())
+    {
+        view->setLoopPlaying(bChecked);
+    }
         });
 
 
@@ -240,6 +271,7 @@ void ZTimeline::initSize()
     m_ui->comboBox->setFixedSize(ZenoStyle::dpiScaledSize(QSize(96, 20)));
     m_ui->editFrame->setFixedSize(ZenoStyle::dpiScaledSize(QSize(38, 20)));
     m_ui->btnPlay->setFixedSize(ZenoStyle::dpiScaledSize(QSize(26, 26)));
+    m_ui->fpsEdit->setFixedSize(ZenoStyle::dpiScaledSize(QSize(38, 20)));
 }
 
 void ZTimeline::onTimelineUpdate(int frameid)
@@ -286,6 +318,17 @@ void ZTimeline::initFromTo(int frameFrom, int frameTo)
         m_ui->timeliner->setFromTo(frameFrom, frameTo);
 }
 
+void ZTimeline::initFps(int fps)
+{
+    BlockSignalScope s1(m_ui->fpsEdit);
+    m_ui->fpsEdit->setText(QString::number(fps));
+}
+
+int ZTimeline::fps()
+{
+    return m_ui->fpsEdit->text().toInt();
+}
+
 void ZTimeline::resetSlider()
 {
     m_ui->timeliner->setSliderValue(0);
@@ -301,9 +344,14 @@ bool ZTimeline::isPlayToggled() const
     return m_ui->btnPlay->isChecked();
 }
 
-void ZTimeline::setLoopPlayingStatus(bool enable)
+void ZTimeline::updateKeyFrames(const QVector<int>& keys) 
 {
-    m_ui->btnLoopPlay->toggle(enable);
+    m_ui->timeliner->updateKeyFrames(keys);
+}
+
+void ZTimeline::updateCachedFrame()
+{
+    m_ui->timeliner->update();
 }
 
 void ZTimeline::paintEvent(QPaintEvent* event)
@@ -311,6 +359,6 @@ void ZTimeline::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     QPen pen(QColor("#000000"), 1);
     painter.setPen(pen);
-    painter.setBrush(QColor(45,50,57));
+    painter.setBrush(QColor("#2d3239"));
     painter.drawRect(rect().adjusted(0, 0, -1, -1));
 }

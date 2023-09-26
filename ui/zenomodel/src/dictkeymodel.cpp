@@ -106,6 +106,15 @@ bool DictKeyModel::setData(const QModelIndex& index, const QVariant& value, int 
             m_bCollasped = value.toBool();
             break;
         }
+        case ROLE_PARAM_NETLABEL:
+        {
+            QPersistentModelIndex linkIdx = value.toPersistentModelIndex();
+            _DictItem& item = m_items[index.row()];
+            item.netLabel = value.toString();
+            emit dataChanged(index, index, QVector<int>{role});
+            markNodeChanged();
+            return true;
+        }
     }
     return QAbstractItemModel::setData(index, value, role);
 }
@@ -198,6 +207,11 @@ QVariant DictKeyModel::data(const QModelIndex& index, int role) const
     case ROLE_COLLASPED:
     {
         return m_bCollasped;
+    }
+    case ROLE_PARAM_NETLABEL:
+    {
+        const _DictItem& item = m_items[index.row()];
+        return item.netLabel;
     }
     }
     return QVariant();

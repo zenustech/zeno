@@ -29,9 +29,9 @@ static int defWriteVDBGrid = zeno::defNodeClass<WriteVDBGrid>("WriteVDBGrid",
 
 struct ExportVDBGrid : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<zeno::StringObject>();
+    auto path = get_input("path")->as<zeno::StringObject>()->get();
     auto data = get_input("data")->as<VDBGrid>();
-    data->output(path->get());
+    data->output(path);
   }
 };
 

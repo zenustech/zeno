@@ -10,7 +10,7 @@
 #include "variantptr.h"
 #include "zassert.h"
 #include "zgraphicstextitem.h"
-#include <zenoedit/zenoapplication.h>
+#include <zenomodel/include/uihelper.h>
 
 /*tmp macro*/
 //#define ENABLE_WIDGET_LINEEDIT
@@ -113,20 +113,20 @@ namespace zenoui
                 pLineEdit->setSizePolicy(QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed));
                 pLineEdit->setNumSlider(scene, UiHelper::getSlideStep("", ctrl));
 
-                if (ctrl == CONTROL_INT)
-                {
-                    pLineEdit->setValidator(new QIntValidator(pLineEdit));
-                }
-                else if (ctrl == CONTROL_FLOAT)
-                {
-                    pLineEdit->setValidator(new QDoubleValidator(pLineEdit));
-                }
 
                 QObject::connect(pLineEdit, &ZEditableTextItem::editingFinished, [=]() {
                     // be careful about the dynamic type.
                     const QString textVal = pLineEdit->toPlainText();
                     const QVariant& newValue = UiHelper::parseStringByType(textVal, type);
-                    cbSet.cbEditFinished(newValue);
+                    if (newValue.type() == QVariant::String && ctrl != CONTROL_STRING)
+                    {
+                        if (!textVal.startsWith("="))
+                            zeno::log_error("The formula '{}' need start with '='", textVal.toStdString());
+                    }
+                    if (pLineEdit->showSlider())
+                        cbSet.cbEditFinishedWithSlider(newValue);
+                    else
+                        cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pLineEdit;
 #endif
@@ -250,15 +250,17 @@ namespace zenoui
                     vec.resize(dim);
                 }
 
-                ZVecEditorItem* pVecEditor = new ZVecEditorItem(vec, bFloat, m_nodeParams.lineEditParam, scene);
+                ZVecEditorItem* pVecEditor = new ZVecEditorItem(value, bFloat, m_nodeParams.lineEditParam, scene);
                 pVecEditor->setData(GVKEY_SIZEHINT, ZenoStyle::dpiScaledSize(QSizeF(0, zenoui::g_ctrlHeight)));
                 pVecEditor->setData(GVKEY_SIZEPOLICY, QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed));
                 pVecEditor->setData(GVKEY_TYPE, type);
 
                 QObject::connect(pVecEditor, &ZVecEditorItem::editingFinished, [=]() {
-                    UI_VECTYPE vec = pVecEditor->vec();
-                    const QVariant& newValue = QVariant::fromValue(vec);
-                    cbSet.cbEditFinished(newValue);
+                    const QVariant &newValue = pVecEditor->vec();
+                    if (pVecEditor->hasSliderShow())
+                        cbSet.cbEditFinishedWithSlider(newValue);
+                    else
+                        cbSet.cbEditFinished(newValue);
                 });
                 pItemWidget = pVecEditor;
                 break;

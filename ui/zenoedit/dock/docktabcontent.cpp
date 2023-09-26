@@ -9,6 +9,7 @@
 #include "../panel/zlogpanel.h"
 #include <zenoedit/panel/zenoimagepanel.h>
 #include "nodesview/zenographseditor.h"
+#include "nodesys/zenosubgraphview.h"
 #include "viewport/viewportwidget.h"
 #include "viewport/displaywidget.h"
 #include "zenoapplication.h"
@@ -55,7 +56,7 @@ ZToolRecordingButton::ZToolRecordingButton(const QString &icon, const QString &i
 {
     setButtonOptions(ZToolButton::Opt_TextLeftToIcon | ZToolButton::Opt_Checkable);
     setIcon(ZenoStyle::dpiScaledSize(QSize(24, 24)), icon, iconHover, iconOn, iconOnHover);
-    QFont fnt = zenoApp->font();
+    QFont fnt = QApplication::font();
     setText(tr("REC"));
     setMargins(ZenoStyle::dpiScaledMargins(QMargins(12, 5, 5, 5)));
     setBackgroundClr(QColor("#383F47"), QColor("#383F47"), QColor("#191D21"), QColor("#191D21"));
@@ -94,7 +95,7 @@ void ZToolRecordingButton::paintEvent(QPaintEvent *event)
     }
     option.iconSize = iconSize();
     option.buttonOpts = buttonOption();
-    option.font = zenoApp->font();
+    option.font = QApplication::font();
     option.bgRadius = ZenoStyle::dpiScaled(2);
     option.palette.setBrush(QPalette::All, QPalette::Window, QBrush(backgrondColor(option.state)));
     p.drawComplexControl(QStyle::CC_ToolButton, option);
@@ -204,7 +205,7 @@ void DockContent_Parameter::initToolbar(QHBoxLayout* pToolLayout)
     pIcon->setIcons(ZenoStyle::dpiScaledSize(QSize(20, 20)), ":/icons/nodeclr-yellow.svg", "");
 
     m_plblName = new QLabel("");
-    QFont fnt = zenoApp->font();
+    QFont fnt = QApplication::font();
     m_plblName->setFont(fnt);
     m_plblName->setTextInteractionFlags(Qt::TextSelectableByMouse);
     QPalette palette = m_plblName->palette();
@@ -258,15 +259,27 @@ void DockContent_Parameter::onNodesSelected(const QModelIndex& subgIdx, const QM
         if (!nodes.isEmpty())
         {
             const QModelIndex& idx = nodes[0];
+            const QAbstractItemModel* pSubgModel = idx.model();
+            if (pSubgModel)
+            {
+                connect(pSubgModel, &QAbstractItemModel::dataChanged, this, [=](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
+                    if (roles.isEmpty())
+                        return;
+                    int role = roles[0];
+                    if (role != ROLE_CUSTOM_OBJNAME)
+                        return;
+                    m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
+                });
+            }
+
             if (select) {
                 m_plblName->setText(idx.data(ROLE_OBJID).toString());
                 m_pNameLineEdit->setText(idx.data(ROLE_CUSTOM_OBJNAME).toString());
-            }
-            else {
-                m_plblName->setText("");
-                m_pNameLineEdit->setText("");
+                return;
             }
         }
+        m_plblName->setText("");
+        m_pNameLineEdit->setText("");
     }
 }
 
@@ -300,10 +313,20 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pSettings = new ZToolBarButton(false, ":/icons/toolbar_localSetting_idle.svg", ":/icons/toolbar_localSetting_light.svg");
     pLinkLineShape = new ZToolBarButton(true, ":/icons/timeline-curvemap.svg",":/icons/timeline-curvemap.svg");
 
+    pListView->setToolTip(tr("Subnet List"));
+    pTreeView->setToolTip(tr("Node List"));
+    pSubnetMgr->setToolTip(tr("Subnet Manager"));
+    pFold->setToolTip(tr("Fold"));
+    pUnfold->setToolTip(tr("Unfold"));
+    pCustomParam->setToolTip(tr("Customize Parameters"));
+    pGroup->setToolTip(tr("Create Group"));
+    pSearchBtn->setToolTip(tr("Search"));
+    pSettings->setToolTip(tr("Settings"));
+
     m_btnRun = new ZToolMenuButton;
     m_btnKill = new ZToolButton;
 
-    QFont fnt = zenoApp->font();
+    QFont fnt = QApplication::font();
 
     m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(14, 14)), ":/icons/timeline_run_thunder.svg",
                           ":/icons/timeline_run_thunder.svg", "", "");
@@ -312,7 +335,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnRun->setText(tr("Run"));
     m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
     m_btnRun->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
-    m_btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"));
+    m_btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4D5561"));
     m_btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
     m_btnRun->setShortcut(settings.getShortCut(ShortCut_Run));
@@ -327,10 +350,11 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     m_btnKill->setText(tr("Kill"));
     m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
     m_btnKill->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
-    m_btnKill->setBackgroundClr(QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"), QColor("#4D5561"));
+    m_btnKill->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4D5561"));
     m_btnKill->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     m_btnKill->setShortcut(settings.getShortCut(ShortCut_Kill));
     m_btnKill->setCursor(QCursor(Qt::PointingHandCursor));
+    m_btnKill->setEnabled(false);
 
     QStringList runList{tr("disable"), tr("alwaysAll"), tr("alwaysLightCamera"), tr("alwaysMaterial")};
     m_btnAlways = new ZComboBox(this);
@@ -342,7 +366,7 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     QFontMetrics fontMetrics(fnt);
     m_btnAlways->view()->setMinimumWidth(fontMetrics.horizontalAdvance(tr("alwaysLightCamera")) + ZenoStyle::dpiScaled(30));
     QObject::connect(m_btnAlways, &ZComboBox::_textActivated, [=](const QString &text) {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         mgr->setCacheOpt(ZCacheMgr::Opt_AlwaysOn);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
@@ -390,6 +414,9 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsShowGrid).toBool());
     pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(zsSnapGrid).toBool());
     pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(zsLinkLineShape).toBool());
+    pShowGrid->setToolTip(pShowGrid->isChecked() ? tr("Hide Grid") : tr("Show Grid"));
+    pSnapGrid->setToolTip(pSnapGrid->isChecked() ? tr("UnSnap Grid") : tr("Snap Grid"));
+    pLinkLineShape->setToolTip(pLinkLineShape->isChecked() ? tr("Straight Link") : tr("Curve Link"));
 
     QStringList items;
     QVector<qreal> factors = UiHelper::scaleFactors();
@@ -517,7 +544,8 @@ void DockContent_Editor::initConnections()
             }
             int per = factor * 100;
             QString sPer = QString("%1%").arg(per);
-            items.append(sPer);
+            if (!items.contains(sPer))
+                items.append(sPer);
         }
         cbZoom->clear();
         cbZoom->addItems(items);
@@ -525,7 +553,9 @@ void DockContent_Editor::initConnections()
     });
 
     connect(m_btnRun, &ZToolMenuButton::clicked, this, [=]() {
-        std::shared_ptr<ZCacheMgr> mgr = zenoApp->getMainWindow()->cacheMgr();
+        m_btnRun->setEnabled(false);
+        m_btnKill->setEnabled(true);
+        std::shared_ptr<ZCacheMgr> mgr = zenoApp->cacheMgr();
         ZASSERT_EXIT(mgr);
         ZenoMainWindow *pMainWin = zenoApp->getMainWindow();
         ZASSERT_EXIT(pMainWin);
@@ -571,10 +601,17 @@ void DockContent_Editor::initConnections()
         if (name == zsShowGrid) 
         {
             pShowGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
+            pShowGrid->setToolTip(pShowGrid->isChecked() ? tr("Hide Grid") : tr("Show Grid"));
         } 
         else if (name == zsSnapGrid) 
         {
             pSnapGrid->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
+            pSnapGrid->setToolTip(pSnapGrid->isChecked() ? tr("UnSnap Grid") : tr("Snap Grid"));
+        }
+        else if (name == zsLinkLineShape)
+        {
+            pLinkLineShape->setChecked(ZenoSettingsManager::GetInstance().getValue(name).toBool());
+            pLinkLineShape->setToolTip(pLinkLineShape->isChecked() ? tr("Straight Link") : tr("Curve Link"));
         }
     });
 
@@ -590,6 +627,12 @@ void DockContent_Editor::initConnections()
 ZenoGraphsEditor* DockContent_Editor::getEditor() const
 {
     return m_pEditor;
+}
+
+void DockContent_Editor::runFinished()
+{
+    m_btnRun->setEnabled(true);
+    m_btnKill->setEnabled(false);
 }
 
 void DockContent_Editor::onCommandDispatched(QAction* pAction, bool bTriggered)
@@ -617,6 +660,7 @@ DockContent_View::DockContent_View(bool bGLView, QWidget* parent)
     , m_screenshoot(nullptr)
     , m_resizeViewport(nullptr)
     , m_bGLView(bGLView)
+    , m_background(nullptr)
 {
 }
 
@@ -657,63 +701,64 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     m_resizeViewport = new ZToolBarButton(false, ":/icons/nodeEditor_fullScreen_unselected.svg", ":/icons/nodeEditor_fullScreen_selected.svg");
     m_resizeViewport->setToolTip(tr("resize viewport"));
 
-    QMenu *pView = new QMenu(tr("View"));
+    m_menuView = new QMenu(tr("View"));
     {
+        m_menuViewport = new QMenu(tr("Viewport"));
         m_pFocus = new QAction(tr("Focus"));
-        //pAction->setShortcut(QKeySequence("F5"));
-        QMenu *Viewport = new QMenu(tr("Viewport"));
         m_pOrigin = new QAction(tr("Origin"));
-        //pAction->setShortcut(QKeySequence("F5"));
         m_front = new QAction(tr("Front"));
-        //m_front->setShortcut(QKeySequence("F5"));
-        m_back = new QAction(tr("Back"));
-        //m_back->setShortcut(QKeySequence("F5"));
         m_right = new QAction(tr("Right"));
-        //m_right->setShortcut(QKeySequence("F5"));
-        m_left = new QAction(tr("Left"));
-        //m_left->setShortcut(QKeySequence("F5"));
         m_top = new QAction(tr("Top"));
-        //m_top->setShortcut(QKeySequence("F5"));
+        m_back = new QAction(tr("Back"));
+        m_left = new QAction(tr("Left"));
         m_bottom = new QAction(tr("Bottom"));
-        //m_bottom->setShortcut(QKeySequence("F5"));
+        ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+        m_pFocus->setShortcut(settings.getShortCut(ShortCut_Focus));
+        m_pFocus->setShortcutContext(Qt::WidgetShortcut);
+        m_pOrigin->setShortcut(settings.getShortCut(ShortCut_InitViewPos));
+        m_pOrigin->setShortcutContext(Qt::WidgetShortcut);
+        m_front->setShortcut(settings.getShortCut(ShortCut_FrontView));
+        m_front->setShortcutContext(Qt::WidgetShortcut);
+        m_right->setShortcut(settings.getShortCut(ShortCut_RightView));
+        m_right->setShortcutContext(Qt::WidgetShortcut);
+        m_top->setShortcut(settings.getShortCut(ShortCut_VerticalView));
+        m_top->setShortcutContext(Qt::WidgetShortcut);
+        m_back->setShortcut(settings.getShortCut(ShortCut_BackView));
+        m_back->setShortcutContext(Qt::WidgetShortcut);
+        m_left->setShortcut(settings.getShortCut(ShortCut_LeftView));
+        m_left->setShortcutContext(Qt::WidgetShortcut);
+        m_bottom->setShortcut(settings.getShortCut(ShortCut_UpwardView));
+        m_bottom->setShortcutContext(Qt::WidgetShortcut);
 
-        Viewport->addAction(m_pOrigin);
-        Viewport->addAction(m_front);
-        Viewport->addAction(m_back);
-        Viewport->addAction(m_right);
-        Viewport->addAction(m_left);
-        Viewport->addAction(m_top);
-        Viewport->addAction(m_bottom);
+        m_pOrigin->setProperty("DockViewActionType", DisplayWidget::ACTION_ORIGIN_VIEW);
+        m_front->setProperty("DockViewActionType", DisplayWidget::ACTION_FRONT_VIEW);
+        m_back->setProperty("DockViewActionType", DisplayWidget::ACTION_BACK_VIEW);
+        m_right->setProperty("DockViewActionType", DisplayWidget::ACTION_RIGHT_VIEW);
+        m_left->setProperty("DockViewActionType", DisplayWidget::ACTION_LEFT_VIEW);
+        m_top->setProperty("DockViewActionType", DisplayWidget::ACTION_TOP_VIEW);
+        m_bottom->setProperty("DockViewActionType", DisplayWidget::ACTION_BOTTOM_VIEW);
 
-        pView->addAction(m_pFocus);
-        pView->addMenu(Viewport);
-    }
-    QMenu *pObject = new QMenu(tr("Object"));
-    {
-        QMenu *pTransform = new QMenu(tr("Transform"));
-        m_move = new QAction(tr("Move"));
+        m_menuViewport->addAction(m_pOrigin);
+        m_menuViewport->addAction(m_front);
+        m_menuViewport->addAction(m_right);
+        m_menuViewport->addAction(m_top);
+        m_menuViewport->addAction(m_back);
+        m_menuViewport->addAction(m_left);
+        m_menuViewport->addAction(m_bottom);
 
-        m_rotate = new QAction(tr("Rotate"));
-
-        m_scale = new QAction(tr("Scale"));
-
-        pTransform->addAction(m_move);
-        pTransform->addAction(m_rotate);
-        pTransform->addAction(m_scale);
-
-        pObject->addMenu(pTransform);
+        m_menuView->addAction(m_pFocus);
+        m_menuView->addMenu(m_menuViewport);
     }
 
     QMenuBar *pMenuBar = new QMenuBar(this);
     pMenuBar->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
     pMenuBar->setProperty("cssClass", "docktoolbar");
     pMenuBar->setFixedHeight(ZenoStyle::dpiScaled(sToolbarHeight));
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setWeight(QFont::Medium);
     pMenuBar->setFont(font);
 
-    pMenuBar->addMenu(pView);
-    pMenuBar->addMenu(pObject);
+    pMenuBar->addMenu(m_menuView);
 
     QStringList items = {
         tr("Free"),
@@ -729,8 +774,8 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
 
     QFontMetrics fontMetrics(font);
     Callback_EditFinished funcRender = [=](QVariant newValue) {
-        ZASSERT_EXIT(m_pDisplay);
         int nx = -1, ny = -1;
+        ZASSERT_EXIT(m_pDisplay);
         bool bLock = false;
         if (newValue == tr("Free"))
         {
@@ -751,9 +796,9 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
             QLineEdit* pHeightEdit = new QLineEdit;
             pHeightEdit->setValidator(new QIntValidator);
 
-            pLayout->addWidget(new QLabel("width"), 0, 0);
+            pLayout->addWidget(new QLabel(tr("width")), 0, 0);
             pLayout->addWidget(pWidthEdit, 0, 1);
-            pLayout->addWidget(new QLabel("height"), 1, 0);
+            pLayout->addWidget(new QLabel(tr("height")), 1, 0);
             pLayout->addWidget(pHeightEdit, 1, 1);
             pLayout->addWidget(pButtonBox, 2, 1);
             dlg.setLayout(pLayout);
@@ -800,20 +845,24 @@ void DockContent_View::initToolbar(QHBoxLayout* pToolLayout)
     pToolLayout->setAlignment(pMenuBar, Qt::AlignVCenter);
     pToolLayout->addStretch(1);
 
-    pToolLayout->addWidget(m_moveBtn);
-    pToolLayout->addWidget(m_rotateBtn);
-    pToolLayout->addWidget(m_scaleBtn);
-
-    pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
-
-    pToolLayout->addWidget(m_show_grid);
-    pToolLayout->addWidget(m_background_clr);
-    pToolLayout->addWidget(m_wire_frame);
-    pToolLayout->addWidget(m_smooth_shading);
-    pToolLayout->addWidget(m_normal_check);
+    if (m_bGLView) {
+        pToolLayout->addWidget(m_moveBtn);
+        pToolLayout->addWidget(m_rotateBtn);
+        pToolLayout->addWidget(m_scaleBtn);
+        pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
+        pToolLayout->addWidget(m_show_grid);
+        pToolLayout->addWidget(m_background_clr);
+        pToolLayout->addWidget(m_wire_frame);
+        pToolLayout->addWidget(m_smooth_shading);
+        pToolLayout->addWidget(m_normal_check);
+    }
     {
+        m_background = new QCheckBox(tr("Background"));
         m_background->setStyleSheet("color: white;");
-        pToolLayout->addWidget(m_background);
+        auto& ud = zeno::getSession().userData();
+        m_background->setChecked(ud.get2<bool>("optix_show_background", false));
+        if (!m_bGLView)
+            pToolLayout->addWidget(m_background);
     }
 
     pToolLayout->addWidget(new ZLineWidget(false, QColor("#121416")));
@@ -880,7 +929,9 @@ void DockContent_View::initConnections()
         {
             Zenovis *pZenoVis = m_pDisplay->getZenoVis();
             ZASSERT_EXIT(pZenoVis);
-            auto scene = pZenoVis->getSession()->get_scene();
+            auto session = pZenoVis->getSession();
+            ZASSERT_EXIT(session);
+            auto scene = session->get_scene();
             ZASSERT_EXIT(scene);
             scene->objectsMan->needUpdateLight = true;
             m_pDisplay->setSimpleRenderOption();
@@ -891,6 +942,35 @@ void DockContent_View::initConnections()
     connect(m_resizeViewport, &ZToolBarButton::clicked, this, [=]() {
 
     });
+
+    QList<QAction*> actions;
+    actions = m_menuViewport->actions();
+    for (QAction* action : actions)
+    {
+        connect(action, &QAction::triggered, m_pDisplay, &DisplayWidget::onDockViewAction);
+    }
+
+    connect(m_pFocus, &QAction::triggered, this, [=]() {
+        auto main = zenoApp->getMainWindow();
+        ZASSERT_EXIT(main);
+        auto docks = main->findChildren<ZTabDockWidget*>(QString(), Qt::FindDirectChildrenOnly);
+        for (ZTabDockWidget* pDock : docks)
+            if (pDock->isVisible())
+                if (ZenoGraphsEditor* editor = pDock->getAnyEditor())
+                    if (ZenoSubGraphView* subgrahView = editor->getCurrentSubGraphView())
+                        subgrahView->cameraFocus();
+    });
+
+    connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString name) {
+        m_pFocus->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_Focus));
+        m_pOrigin->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_InitViewPos));
+        m_front->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_FrontView));
+        m_right->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_RightView));
+        m_top->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_VerticalView));
+        m_back->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_BackView));
+        m_left->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_LeftView));
+        m_bottom->setShortcut(ZenoSettingsManager::GetInstance().getShortCut(ShortCut_UpwardView));
+        });
 }
 
 void DockContent_View::onCommandDispatched(QAction *pAction, bool bTriggered)
@@ -927,6 +1007,30 @@ void DockContent_View::onTabAboutToClose()
 }
 
 
+int DockContent_View::curResComboBoxIndex()
+{
+    return m_cbRes->currentIndex();
+}
+
+void DockContent_View::setResComboBoxIndex(int index)
+{
+    QFont fnt = QApplication::font();
+    QFontMetrics fontMetrics(fnt);
+    m_cbRes->setCurrentIndex(index);
+    m_cbRes->setFixedWidth(fontMetrics.horizontalAdvance(m_cbRes->currentText()) + ZenoStyle::dpiScaled(28));
+}
+
+std::tuple<int, int, bool> DockContent_View::getOriginWindowSizeInfo()
+{
+    return m_pDisplay->getOriginWindowSizeInfo();
+}
+
+void DockContent_View::setOptixBackgroundState(bool checked)
+{
+    if (!m_bGLView)
+        m_background->setChecked(checked);
+}
+
 DockContent_Log::DockContent_Log(QWidget* parent /* = nullptr */)
     : DockToolbarWidget(parent)
     , m_stack(nullptr)
@@ -941,6 +1045,9 @@ void DockContent_Log::initToolbar(QHBoxLayout* pToolLayout)
     m_pDeleteLog = new ZToolBarButton(false, ":/icons/toolbar_delete_idle.svg", ":/icons/toolbar_delete_light.svg");
     m_pBtnPlainLog->setChecked(true);
     m_pBtnFilterLog->setChecked(false);
+    m_pBtnFilterLog->setToolTip(tr("Filter Log Panel"));
+    m_pBtnPlainLog->setToolTip(tr("Plain Log Panel"));
+    m_pDeleteLog->setToolTip(tr("Delete Log"));
 
     pToolLayout->addWidget(m_pBtnPlainLog);
     pToolLayout->addWidget(m_pBtnFilterLog);
@@ -976,6 +1083,21 @@ void DockContent_Log::initConnections()
         ZPlainLogPanel *pLogger = qobject_cast<ZPlainLogPanel *>(m_stack->widget(0));
         if (pLogger)
             pLogger->clear();
+        ZlogPanel* pLogPanel = qobject_cast<ZlogPanel*>(m_stack->widget(1));
+    });
+
+    connect(zenoApp->logModel(), &QStandardItemModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
+        if (m_pBtnFilterLog->isChecked())
+            return;
+        QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
+        if (pModel) {
+            QModelIndex idx = pModel->index(first, 0, parent);
+            int type = idx.data(ROLE_LOGTYPE).toInt();
+            if (type == QtFatalMsg)
+            {
+                m_pBtnFilterLog->toggle(true);
+            }
+        }
     });
 }
 

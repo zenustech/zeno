@@ -64,13 +64,60 @@ void resolveOutputSocket(
 }
 
 
+static void getOptStr(const QString& sockType, QVariant& defl, QString& opStr)
+{
+    if (sockType != "curve" && defl.canConvert<CURVES_DATA>())
+        opStr = "setKeyFrame";
+    else if (defl.toString().startsWith("=") || defl.canConvert<UI_VECSTRING>())
+    {
+        if (defl.canConvert<UI_VECSTRING>()) {
+            UI_VECSTRING vec = defl.value<UI_VECSTRING>();
+            if (vec.size() != 3) {
+                return;
+            }
+
+            QString code = "=vec3(";
+            bool bFormula = false;
+            for (int i = 0; i < vec.size(); i++)
+            {
+                QString text = vec.at(i);
+                if (text.startsWith("="))
+                {
+                    text.replace(0, 1, "");
+                    bFormula = true;
+                }
+                code += text;
+                if (i < vec.size() - 1)
+                    code += ",";
+                else
+                    code += ")";
+            }
+            if (bFormula)
+            {
+                opStr = "setFormula";
+            }
+            defl = code;
+        }
+        else if (sockType == "int" || sockType == "float")
+        {
+            QString str = defl.toString();
+            defl = str;
+            opStr = "setFormula";
+        }
+        else
+        {
+            opStr = "setFormula";
+        }
+    }
+}
+
 static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgIdx, QString const &graphIdPrefix, bool bView, RAPIDJSON_WRITER& writer, bool bNestedSubg = true, bool applyLightAndCameraOnly = false, bool applyMaterialOnly = false)
 {
     ZASSERT_EXIT(pGraphsModel && subgIdx.isValid());
 
     //scan all the nodes in the subgraph.
     for (int i = 0; i < pGraphsModel->itemCount(subgIdx); i++)
-	{
+    {
         const QModelIndex& idx = pGraphsModel->index(i, subgIdx);
         QString ident = idx.data(ROLE_OBJID).toString();
         ident = nameMangling(graphIdPrefix, ident);
@@ -79,6 +126,9 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         if (name == "Blackboard" || name == "Group") {
             continue;
         }
+
+        if (NO_VERSION_NODE == idx.data(ROLE_NODETYPE))
+            continue;
 
         int opts = idx.data(ROLE_OPTIONS).toInt();
         QString noOnceIdent;
@@ -136,8 +186,21 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
 
+            //check net label.
+            const QString& netlabel = inSockIdx.data(ROLE_PARAM_NETLABEL).toString();
             const PARAM_LINKS& links = inSockIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
-            if (links.isEmpty())
+            ZASSERT_EXIT(netlabel.isEmpty() || links.isEmpty());
+
+            if (!netlabel.isEmpty())
+            {
+                const QModelIndex& outSockIdx = pGraphsModel->getNetOutput(subgIdx, netlabel);
+                const QModelIndex& outIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+                QString newOutId, outSock;
+                // may the output socket is a key socket from a dict param.
+                resolveOutputSocket(outIdx, outSockIdx, graphIdPrefix, newOutId, outSock, writer);
+                AddStringList({ "bindNodeInput", ident, inputName, newOutId, outSock }, writer);
+            }
+            else if (links.isEmpty())
             {
                 // check whether 
                 const int inSockProp = inSockIdx.data(ROLE_PARAM_SOCKPROP).toInt();
@@ -154,41 +217,52 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                         const QModelIndex& keyIdx = pKeyObjModel->index(r, 0);
                         QString keyName = keyIdx.data(ROLE_PARAM_NAME).toString();
                         PARAM_LINKS links = keyIdx.data(ROLE_PARAM_LINKS).value<PARAM_LINKS>();
+                        const QString& netlabel = keyIdx.data(ROLE_PARAM_NETLABEL).toString();
                         ZASSERT_EXIT(links.size() <= 1);
-                        for (QModelIndex link : links)
+                        QModelIndex outSockIdx;
+                        QModelIndex outIdx;
+                        if (!netlabel.isEmpty())
                         {
-                            if (link.isValid())
+                            outSockIdx = pGraphsModel->getNetOutput(subgIdx, netlabel);
+                            outIdx = outSockIdx.data(ROLE_NODE_IDX).toModelIndex();
+                        }
+                        else {
+                            for (QModelIndex link : links)
                             {
-                                if (!bDict)
+                                if (link.isValid())
                                 {
-                                    //obj number sequence resolve for MakeList.
-                                    keyName = QString("obj%1").arg(idxWithLink);
+                                    outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
+                                    outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
                                 }
-                                const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
-                                const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
-                                const QString& outNodeId = outIdx.data(ROLE_OBJID).toString();
-
-                                QString newOutId, outSock;
-                                // may the output socket is a key socket from a dict param.
-                                resolveOutputSocket(outIdx, outSockIdx, graphIdPrefix, newOutId, outSock, writer);
-
-                                if (mockDictList.isEmpty())
-                                {
-                                    //create dict or list as a middle node to connect each other.
-                                    QString _tmpNode = bDict ? "MakeDict" : "MakeList";
-                                    mockDictList = UiHelper::generateUuid(_tmpNode);
-                                    mockDictList = nameMangling(graphIdPrefix, mockDictList);
-                                    AddStringList({"addNode", _tmpNode, mockDictList}, writer);
-                                }
-                                if (!bDict)
-                                {
-                                    //new added param `doConcat` at MakeList.
-                                    AddParams("setNodeParam", mockDictList, "doConcat", 1, "bool", writer);
-                                }
-                                // add link from outside node to the mock dict/list.
-                                AddStringList({"bindNodeInput", mockDictList, keyName, newOutId, outSock}, writer);
-                                idxWithLink++;
                             }
+                        }
+                        if (outSockIdx.isValid() && outIdx.isValid())
+                        {
+                            if (!bDict)
+                            {
+                                //obj number sequence resolve for MakeList.
+                                keyName = QString("obj%1").arg(idxWithLink);
+                            }
+                            QString newOutId, outSock;
+                            // may the output socket is a key socket from a dict param.
+                            resolveOutputSocket(outIdx, outSockIdx, graphIdPrefix, newOutId, outSock, writer);
+
+                            if (mockDictList.isEmpty())
+                            {
+                                //create dict or list as a middle node to connect each other.
+                                QString _tmpNode = bDict ? "MakeDict" : "MakeList";
+                                mockDictList = UiHelper::generateUuid(_tmpNode);
+                                mockDictList = nameMangling(graphIdPrefix, mockDictList);
+                                AddStringList({ "addNode", _tmpNode, mockDictList }, writer);
+                            }
+                            if (!bDict)
+                            {
+                                //new added param `doConcat` at MakeList.
+                                AddParams("setNodeParam", mockDictList, "doConcat", 1, "bool", writer);
+                            }
+                            // add link from outside node to the mock dict/list.
+                            AddStringList({ "bindNodeInput", mockDictList, keyName, newOutId, outSock }, writer);
+                            idxWithLink++;
                         }
                     }
                     if (!mockDictList.isEmpty())
@@ -200,16 +274,25 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
 
                 QVariant defl = inSockIdx.data(ROLE_PARAM_VALUE);
                 const QString& sockType = inSockIdx.data(ROLE_PARAM_TYPE).toString();
-                defl = UiHelper::parseVarByType(sockType, defl, nullptr);
+                QString opStr = "setNodeInput";
+                getOptStr(sockType, defl, opStr);
+                if (opStr == "setNodeInput") {
+                    defl = UiHelper::parseVarByType(sockType, defl, nullptr);
+                }
                 if (!defl.isNull())
-                    AddParams("setNodeInput", ident, inputName, defl, sockType, writer);
+                    AddParams(opStr, ident, inputName, defl, sockType, writer);
             }
             else
             {
                 const QModelIndex& link = links[0];
 
                 const QModelIndex& outIdx = link.data(ROLE_OUTNODE_IDX).toModelIndex();
+                if (NO_VERSION_NODE == outIdx.data(ROLE_NODETYPE))
+                    continue;
+
                 const QModelIndex& outSockIdx = link.data(ROLE_OUTSOCK_IDX).toModelIndex();
+                if (SOCKPROP_LEGACY == outSockIdx.data(ROLE_PARAM_SOCKPROP))
+                    continue;
 
                 QString newOutId, outSock;
                 // may the output socket is a key socket from a dict param.
@@ -219,16 +302,27 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
         }
 
         const PARAMS_INFO& params = idx.data(ROLE_PARAMETERS).value<PARAMS_INFO>();
-		for (PARAM_INFO param_info : params)
-		{
+        for (PARAM_INFO param_info : params)
+        {
             //todo: validation on param value.
             //bool bValid = UiHelper::validateVariant(param_info.value, param_info.typeDesc);
             //ZASSERT_EXIT(bValid);
-            QVariant paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+            QVariant paramValue;
+            QString paramName = param_info.name;
+            QString opStr = "setNodeParam";
+            getOptStr(param_info.typeDesc, param_info.value, opStr);
+            if (opStr == "setNodeParam") {
+                paramValue = UiHelper::parseVarByType(param_info.typeDesc, param_info.value, nullptr);
+            }
+            else {
+                //formula/keyframe
+                paramValue = param_info.value;
+                paramName += ":";
+            }
             if (paramValue.isNull())
                 continue;
-            AddParams("setNodeParam", ident, param_info.name, paramValue, param_info.typeDesc, writer);
-		}
+            AddParams(opStr, ident, paramName, paramValue, param_info.typeDesc, writer);
+        }
 
         if (opts & OPT_ONCE) {
             AddStringList({ "addNode", "HelperOnce", noOnceIdent }, writer);
@@ -286,7 +380,7 @@ static void serializeGraph(IGraphsModel* pGraphsModel, const QModelIndex& subgId
                 }
             }
         }
-	}
+    }
 }
 
 void serializeScene(IGraphsModel* pModel, RAPIDJSON_WRITER& writer, bool applyLightAndCameraOnly, bool applyMaterialOnly)

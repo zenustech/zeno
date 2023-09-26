@@ -51,7 +51,7 @@ void LogItemDelegate::initStyleOption(QStyleOptionViewItem* option,
 
 QFont LogItemDelegate::getFont() const
 {
-    QFont font = zenoApp->font();
+    QFont font = QApplication::font();
     font.setWeight(QFont::DemiBold);
     return font;
 }
@@ -275,12 +275,6 @@ LogListView::LogListView(QWidget* parent)
 void LogListView::rowsInserted(const QModelIndex& parent, int start, int end)
 {
     _base::rowsInserted(parent, start, end);
-
-    connect(&m_timer, &QTimer::timeout, this, [=]() {
-        scrollToBottom();
-        m_timer.stop();
-    });
-    m_timer.start(50);
 }
 
 void LogListView::onCustomContextMenu(const QPoint& point)
@@ -387,6 +381,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
         ":/icons/logger-sync-light.svg",
         "",
         "");
+    m_ui->btnSyncLog->setToolTip(tr("Sync Log"));
 
     m_ui->btnDelete->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
     m_ui->btnDelete->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
@@ -394,6 +389,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
         ":/icons/toolbar_delete_light.svg",
         "",
         "");
+    m_ui->btnDelete->setToolTip(tr("Delete Log"));
 
     m_ui->btnSetting->setButtonOptions(ZToolButton::Opt_HasIcon | ZToolButton::Opt_NoBackground);
     m_ui->btnSetting->setIcon(ZenoStyle::dpiScaledSize(QSize(20, 20)),
@@ -401,6 +397,7 @@ ZlogPanel::ZlogPanel(QWidget* parent)
         ":/icons/settings-on.svg",
         "",
         "");
+    m_ui->btnSetting->setToolTip(tr("Settings"));
 
     initSignals();
     initModel();
@@ -470,10 +467,23 @@ void ZlogPanel::initSignals()
     connect(m_ui->btnSetting, &ZToolButton::clicked, this, [=]() {
         onSettings();
     });
+
+    connect(zenoApp->logModel(), &QStandardItemModel::rowsInserted, this, [=](const QModelIndex& parent, int first, int last) {
+        QStandardItemModel* pModel = qobject_cast<QStandardItemModel*>(sender());
+        if (pModel) {
+            QModelIndex idx = pModel->index(first, 0, parent);
+            int type = idx.data(ROLE_LOGTYPE).toInt();
+            if (type == QtFatalMsg)
+            {
+                m_logModel->appendRow(pModel->item(first)->clone());
+            }
+        }
+    });
 }
 
 void ZlogPanel::onSyncLogs()
 {
+    m_logModel->clear();
     QStandardItemModel* pModel = zenoApp->logModel();
     for (int r = 0; r < pModel->rowCount(); r++)
     {
@@ -496,7 +506,6 @@ void ZlogPanel::onFilterChanged()
         filters.append(QtInfoMsg);
     m_pFilterModel->setFilters(filters, m_ui->editSearch->text());
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 CustomFilterProxyModel::CustomFilterProxyModel(QObject *parent)

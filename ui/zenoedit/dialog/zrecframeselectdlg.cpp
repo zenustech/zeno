@@ -21,7 +21,7 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     m_ui = new Ui::RecFrameSelectDlg;
     m_ui->setupUi(this);
 
-    const bool bWorking = zeno::getSession().globalState->working;
+    const bool bWorking = zeno::getSession().globalState->working;  //external running
     int nRunFrames = zeno::getSession().globalComm->numOfFinishedFrame();
     auto pair = zeno::getSession().globalComm->frameRange();
 
@@ -57,12 +57,14 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
         else
         {
             int nLastRunFrom = pair.first;
-            int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() -1;
+            int nLastRunTo = zeno::getSession().globalComm->maxPlayFrames() - 1;
             ZASSERT_EXIT(nLastRunTo >= nLastRunFrom);
 
             m_ui->btnRecordNow->setVisible(true);
             m_ui->btnRunFirst->setVisible(true);
             m_ui->btnCancelRecord->setVisible(true);
+
+            bool bHasBrokenData = hasBrokenFrameData();
 
             if (nLastRunTo == pair.second)
             {
@@ -102,6 +104,21 @@ ZRecFrameSelectDlg::ZRecFrameSelectDlg(QWidget* parent)
     onRecToEdited();
 }
 
+bool ZRecFrameSelectDlg::hasBrokenFrameData()
+{
+    auto& gblComm = zeno::getSession().globalComm;
+    ZASSERT_EXIT(gblComm, false);
+    auto pair = zeno::getSession().globalComm->frameRange();
+
+    int nRunFrames = gblComm->numOfFinishedFrame();
+    for (int frame = pair.first; frame <= pair.second; frame++)
+    {
+        if (gblComm->isFrameBroken(frame))
+            return true;
+    }
+    return false;
+}
+
 void ZRecFrameSelectDlg::onRecFromEdited()
 {
     bool bOk = false;
@@ -120,6 +137,12 @@ QPair<int, int> ZRecFrameSelectDlg::recordFrameRange(bool& runBeforeRun) const
 {
     runBeforeRun = m_bRunBeforeRecord;
     return {m_recStartF, m_recEndF};
+}
+
+bool ZRecFrameSelectDlg::isExternalRunning()
+{
+    //running trigger by button `run`, and not by record running.
+    return m_state == RUNNING;
 }
 
 void ZRecFrameSelectDlg::onRunNow()

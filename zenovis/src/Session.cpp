@@ -69,6 +69,11 @@ std::tuple<int, int> Session::get_window_size() {
     };
 }
 
+zeno::vec2i Session::get_viewportOffset()
+{
+    return impl->scene->camera->viewport_offset;
+}
+
 void Session::set_show_grid(bool show_grid) {
     impl->scene->drawOptions->show_grid = show_grid;
 }
@@ -110,7 +115,7 @@ void Session::new_frame() {
     ////});
 //}
 
-void Session::do_screenshot(std::string path, std::string type) {
+void Session::do_screenshot(std::string path, std::string type, bool bOptix) {
     auto hdrSize = std::map<std::string, int>{
         {"png", 1},
         {"jpg", 1},
@@ -122,10 +127,17 @@ void Session::do_screenshot(std::string path, std::string type) {
     auto ny = impl->scene->camera->m_ny;
 
     auto &ud = zeno::getSession().userData();
-    ud.set2("optix_image_path", path);
+    if (bOptix)
+    {
+        ud.set2("optix_image_path", path);
+        if (!ud.has("optix_image_path")) {
+            return;
+        }
+    }
+
     std::vector<char> pixels = impl->scene->record_frame_offline(hdrSize, 3);
 
-    if (!ud.has("optix_image_path") || pixels.empty()) {
+    if (pixels.empty()) {
         return;
     }
     zeno::log_info("saving screenshot {}x{} to {}", nx, ny, path);

@@ -6,6 +6,7 @@
 #include "zenomainwindow.h"
 #include "nodesview/zenographseditor.h"
 #include <zeno/types/UserData.h>
+#include "settings/zenosettingsmanager.h"
 
 
 using std::string;
@@ -122,21 +123,29 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
             this->m_picker->pick_depth(mid_x, mid_y);
         }
     }
-    if (event->buttons() & Qt::MiddleButton) {
+    int button = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    settings.getViewShortCut(ShortCut_MovingView, button);
+    settings.getViewShortCut(ShortCut_RotatingView, button);
+    bool bTransform = false;
+    auto front = scene->camera->m_lodfront;
+    auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
+    if (m_transformer)
+    {
+        if (!scene->selected.empty() && m_transformer->isTransformMode() &&
+            m_transformer->clickedAnyHandler(realPos(), dir, front))
+        {
+            bTransform = true;
+        }
+    }
+    if (!bTransform && (event->buttons() & button)) {
         m_lastMidButtonPos = event->pos();
     } else if (event->buttons() & Qt::LeftButton) {
         m_boundRectStartPos = event->pos();
         // check if clicked a selected object
-        auto front = scene->camera->m_lodfront;
-        auto dir = screenToWorldRay(event->x() / res().x(), event->y() / res().y());
-
-        if (m_transformer)
+        if (bTransform)
         {
-            if (!scene->selected.empty() && m_transformer->isTransformMode() &&
-                m_transformer->clickedAnyHandler(realPos(), dir, front))
-            {
-                m_transformer->startTransform();
-            }
+            m_transformer->startTransform();
         }
     }
 }
@@ -268,13 +277,22 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
     auto scene = session->get_scene();
     float xpos = event->x(), ypos = event->y();
 
-    if (event->buttons() & Qt::MiddleButton) {
+    int moveButton = Qt::NoButton;
+    int rotateButton = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    int moveKey = settings.getViewShortCut(ShortCut_MovingView, moveButton);
+    int rotateKey = settings.getViewShortCut(ShortCut_RotatingView, rotateButton);
+    bool bTransform = false;
+    if (m_transformer)
+        bTransform = m_transformer->isTransforming();
+    if (!bTransform && (event->buttons() & (rotateButton | moveButton))) {
         float ratio = QApplication::desktop()->devicePixelRatio();
         float dx = xpos - m_lastMidButtonPos.x(), dy = ypos - m_lastMidButtonPos.y();
         dx *= ratio / m_res[0];
         dy *= ratio / m_res[1];
-        bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
-        if (shift_pressed) {
+        //bool shift_pressed = event->modifiers() & Qt::ShiftModifier;
+        Qt::KeyboardModifiers modifiers = event->modifiers();
+        if ((moveKey == modifiers) && (event->buttons() & moveButton)) {
             float cos_t = cos(getTheta());
             float sin_t = sin(getTheta());
             float cos_p = cos(getPhi());
@@ -290,7 +308,7 @@ void CameraControl::fakeMouseMoveEvent(QMouseEvent *event)
             QVector3D center = {c[0], c[1], c[2]};
             center += delta * getRadius();
             setCenter({float(center.x()), float(center.y()), float(center.z())});
-        } else {
+        } else if ((rotateKey == modifiers) && (event->buttons() & rotateButton)) {
             setOrthoMode(false);
             setTheta(getTheta() - dy * M_PI);
             setPhi(getPhi() + dx * M_PI);
@@ -336,13 +354,20 @@ void CameraControl::updatePerspective() {
 }
 
 void CameraControl::fakeWheelEvent(QWheelEvent *event) {
-    int dy = event->angleDelta().y();
+    int dy = 0;
+    if (event->modifiers() & Qt::AltModifier)
+        dy = event->angleDelta().x();
+    else
+        dy = event->angleDelta().y();
     float scale = (dy >= 0) ? 0.89 : 1 / 0.89;
     bool shift_pressed = (event->modifiers() & Qt::ShiftModifier) && !(event->modifiers() & Qt::ControlModifier);
     bool aperture_pressed = (event->modifiers() & Qt::ControlModifier) && !(event->modifiers() & Qt::ShiftModifier);
     bool focalPlaneDistance_pressed =
         (event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier);
     float delta = dy > 0 ? 1 : -1;
+    int button = Qt::NoButton;
+    ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
+    int scaleKey = settings.getViewShortCut(ShortCut_ScalingView, button);
     if (shift_pressed) {
         float temp = getFOV() / scale;
         setFOV(temp < 170 ? temp : 170);
@@ -354,7 +379,7 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     } else if (focalPlaneDistance_pressed) {
         float temp = getDisPlane() + delta * 0.05;
         setDisPlane(temp >= 0.05 ? temp : 0.05);
-    } else {
+    } else if (scaleKey == 0 || event->modifiers() & scaleKey){
         setRadius(getRadius() * scale);
     }
     updatePerspective();

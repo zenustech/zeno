@@ -57,9 +57,9 @@ static int defWriteObjMesh = zeno::defNodeClass<WriteObjMesh>("WriteObjMesh",
 
 struct ExportObjMesh : zeno::INode {
   virtual void apply() override {
-    auto path = get_input("path")->as<StringObject>();
+    auto path = get_input("path")->as<StringObject>()->get();
     auto mesh = get_input("mesh")->as<MeshObject>();
-    writeobj(path->get().c_str(), mesh->vertices, mesh->uvs, mesh->normals);
+    writeobj(path.c_str(), mesh->vertices, mesh->uvs, mesh->normals);
   }
 };
 

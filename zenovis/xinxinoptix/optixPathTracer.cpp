@@ -22,6 +22,10 @@
 #include <sutil/vec_math.h>
 #include <optix_stack_size.h>
 #include <stb_image_write.h>
+#ifdef __linux__
+#include <unistd.h>
+#include <stdio.h>
+#endif
 
 //#include <GLFW/glfw3.h>
 #include "XAS.h"
@@ -1408,14 +1412,15 @@ void optixinit( int argc, char* argv[] )
     xinxinoptix::using_hdr_sky(true);
     xinxinoptix::show_background(false);
     std::string parent_path;
-    auto cur_path = std::filesystem::current_path().string();
-    if (zeno::ends_with(cur_path, "bin")) {
-        parent_path = std::filesystem::current_path().parent_path().parent_path().string();
-    }
-    else {
-        parent_path = cur_path;
-    }
-    OptixUtil::sky_tex = parent_path + "/hdr/studio_small_08_1k.hdr";
+#ifdef __linux__
+    char path[1024];
+    getcwd(path, sizeof(path));
+    auto cur_path = std::string(path);
+#else
+    auto cur_path = std::string(_pgmptr);
+    cur_path = cur_path.substr(0, cur_path.find_last_of("\\"));
+#endif
+    OptixUtil::sky_tex = cur_path + "/hdr/studio_small_08_1k.hdr";
     OptixUtil::addTexture(OptixUtil::sky_tex.value());
     xinxinoptix::update_hdr_sky(0, {0, 0, 0}, 0.8);
 }
