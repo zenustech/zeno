@@ -2315,7 +2315,7 @@ struct FleshDynamicStepping : INode {
                     auto inds = gh_buffer.pack(dim_c<4>,"inds",ei).reinterpret_bits(int_c);
                     for(int i = 0;i != 4;++i)
                         if(inds[i] < 0 || inds[i] >= vsize)
-                            printf("negative sttemp inds : %d %d %d\n",inds[0],inds[1],inds[2],inds[3]);
+                            printf("negative sttemp inds : %d %d %d, %d\n",inds[0],inds[1],inds[2],inds[3]);
                     auto H = gh_buffer.pack(dim_c<12,12>,"H",ei);
                     update_hessian(spmat,inds,H,true);
             });
