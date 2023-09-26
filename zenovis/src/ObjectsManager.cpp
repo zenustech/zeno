@@ -4,15 +4,13 @@
 #include <zenovis/bate/IGraphic.h>
 #include <zeno/core/IObject.h>
 #include <zeno/utils/log.h>
-#include <mutex>
 
 namespace zenovis {
 
 ObjectsManager::ObjectsManager() = default;
 ObjectsManager::~ObjectsManager() = default;
 
-bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs)
-{
+bool ObjectsManager::load_objects(std::map<std::string, std::shared_ptr<zeno::IObject>> const &objs) {
     bool inserted = false;
     auto ins = objects.insertPass();
 
