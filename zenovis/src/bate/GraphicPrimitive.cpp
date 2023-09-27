@@ -1,8 +1,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
-#include <set>
 #include <zeno/types/PrimitiveObject.h>
 #include <zeno/types/InstancingObject.h>
 #include <zeno/types/PrimitiveTools.h>
@@ -372,18 +370,12 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                 }
             }
             if (any_not_triangle) {
-                std::map<int, std::set<int>> edges;
+                std::vector<int> edge_list;
                 auto add_edge = [&](int a, int b) {
-                    zeno::log_info("a:{}, b: {}", a, b);
                     int p0 = prim->loops[a];
                     int p1 = prim->loops[b];
-                    if (p0 > p1) {
-                        std::swap(p0, p1);
-                    }
-                    if (!edges.count(p0)) {
-                        edges[p0] = {};
-                    }
-                    edges[p0].insert(p1);
+                    edge_list.push_back(p0);
+                    edge_list.push_back(p1);
                 };
                 for (const auto &[b, c]: prim->polys) {
                     for (auto i = 2; i < c; i++) {
@@ -394,13 +386,6 @@ struct ZhxxGraphicPrimitive final : IGraphicDraw {
                         if (i == c - 1) {
                             add_edge(b, b + i);
                         }
-                    }
-                }
-                std::vector<int> edge_list;
-                for (const auto& [a, s]: edges) {
-                    for (const auto b: s) {
-                        edge_list.push_back(a);
-                        edge_list.push_back(b);
                     }
                 }
                 polyEdgeObj.count = edge_list.size();
