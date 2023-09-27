@@ -24,6 +24,9 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
     m_errSteam.registerMsgHandler();
     verifyVersion();
 
+    //register optix log proxy
+    bool ret = connect(m_errSteam.optixLogProxy().get(), SIGNAL(optixlogReady(const QString&)), this, SLOT(onOptixlogReady(const QString&)), Qt::QueuedConnection);
+
     QStringList locations;
     locations = QStandardPaths::standardLocations(QStandardPaths::AppDataLocation);
 #ifdef Q_OS_WIN
@@ -37,6 +40,11 @@ ZenoApplication::ZenoApplication(int &argc, char **argv)
 
 ZenoApplication::~ZenoApplication()
 {
+}
+
+void ZenoApplication::onOptixlogReady(const QString& msg)
+{
+    qDebug() << msg;
 }
 
 QString ZenoApplication::readQss(const QString& qssPath)

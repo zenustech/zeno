@@ -10,12 +10,18 @@ ZWidgetErrStream::ZWidgetErrStream(std::ostream &stream)
     , m_stream(stream)
 {
     m_old_buf = m_stream.rdbuf();
+    m_spProxyOptixLog = std::make_shared<ProxySendOptixLog>();
     m_stream.rdbuf(this);
 }
 
 ZWidgetErrStream::~ZWidgetErrStream()
 {
     m_stream.rdbuf(m_old_buf);
+}
+
+std::shared_ptr<ProxySendOptixLog> ZWidgetErrStream::optixLogProxy() const
+{
+    return m_spProxyOptixLog;
 }
 
 bool ZWidgetErrStream::isGUIThread()
@@ -27,6 +33,7 @@ bool ZWidgetErrStream::isGUIThread()
 std::streamsize ZWidgetErrStream::xsputn(const char* p, std::streamsize n)
 {
     if (!isGUIThread()) {
+        emit m_spProxyOptixLog->optixlogReady(QString::fromUtf8(p, n));
         return _base::xsputn(p, n);
     }
 

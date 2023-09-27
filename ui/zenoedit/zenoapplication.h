@@ -31,6 +31,9 @@ public:
 #endif
     QStandardItemModel* logModel() const;
 
+private slots:
+    void onOptixlogReady(const QString& msg);
+
 private:
     QString readQss(const QString& qssPath);
     void initMetaTypes();
