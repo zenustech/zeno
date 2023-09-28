@@ -103,8 +103,8 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
 {
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
-    if (event->buttons() == Qt::RightButton) {
-        right_button_pressed = true;
+    if (event->button() == Qt::MiddleButton) {
+        middle_button_pressed = true;
     }
     if (scene->camera->m_need_sync) {
         scene->camera->m_need_sync = false;
@@ -483,8 +483,8 @@ QVariant CameraControl::hitOnFloor(float x, float y) const {
 }
 
 void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
-    if (event->buttons() == Qt::RightButton) {
-        right_button_pressed = false;
+    if (event->button() == Qt::MiddleButton) {
+        middle_button_pressed = false;
     }
     if (event->button() == Qt::LeftButton) {
 
@@ -637,7 +637,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 }
 
 bool CameraControl::fakeKeyPressEvent(int uKey) {
-    if (!right_button_pressed) {
+    if (!middle_button_pressed) {
         return false;
     }
     float cos_t = cos(getTheta());
