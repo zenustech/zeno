@@ -65,7 +65,7 @@ private:
     std::shared_ptr<zeno::FakeTransformer> m_transformer;
     Zenovis* m_zenovis;
 
-    bool right_button_pressed = false;
+    bool middle_button_pressed = false;
 };
 
 
