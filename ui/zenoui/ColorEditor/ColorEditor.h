@@ -10,6 +10,14 @@
 #include <QSlider>
 #include <QWidget>
 
+//------------------------------------------- color correction -----------------------------------------------
+struct ColorCorrection
+{
+    float gamma = 2.2f;
+    void correct(QColor& color);
+    void correct(QImage& image);
+};
+
 //------------------------------------------- color combination ----------------------------------------------
 namespace colorcombo
 {
@@ -89,6 +97,7 @@ public:
 
     void setColorCombination(colorcombo::ICombination* combination);
     void setSelectedColor(const QColor& color);
+    void setColorCorrection(ColorCorrection* colorCorrection);
     QColor getSelectedColor() const;
     QColor getColor(int x, int y) const;
 
@@ -116,6 +125,9 @@ class MixedSpinBox : public QDoubleSpinBox
 public:
     explicit MixedSpinBox(QWidget* parent = nullptr);
     virtual QString textFromValue(double value) const override;
+
+protected:
+    void keyPressEvent(QKeyEvent* e) override;
 };
 
 class JumpableSlider : public QSlider
@@ -156,8 +168,13 @@ class GradientSlider : public JumpableSlider
 public:
     explicit GradientSlider(QWidget* parent = nullptr);
     void setGradient(const QColor& startColor, const QColor& stopColor);
-    void setGradient(const QVector<QPair<float, QColor>>& colors);
-    QVector<QPair<float, QColor>> gradientColor() const;
+    void setGradient(const QGradientStops& colors);
+    void setColorCorrection(ColorCorrection* colorCorrection);
+    QGradientStops gradientColor() const;
+
+protected:
+    void paintEvent(QPaintEvent* e) override;
+    void resizeEvent(QResizeEvent* e) override;
 
 private:
     class Private;
@@ -170,10 +187,11 @@ class ColorSpinHSlider : public QWidget
 public:
     explicit ColorSpinHSlider(const QString& name, QWidget* parent = nullptr);
     void setGradient(const QColor& startColor, const QColor& stopColor);
-    void setGradient(const QVector<QPair<float, QColor>>& colors);
+    void setGradient(const QGradientStops& colors);
+    void setColorCorrection(ColorCorrection* colorCorrection);
     void setValue(double value);
     void setRange(double min, double max);
-    QVector<QPair<float, QColor>> gradientColor() const;
+    QGradientStops gradientColor() const;
     double value() const;
 
 signals:
@@ -191,6 +209,7 @@ class ColorButton : public QPushButton
 public:
     explicit ColorButton(QWidget* parent);
     void setColor(const QColor& color);
+    void setColorCorrection(ColorCorrection* colorCorrection);
     void setBolderWidth(int top, int bottom, int left, int right);
     QColor color() const;
 
@@ -219,6 +238,7 @@ public:
     void addColor(const QColor& color);
     void setColor(const QColor& color, int row, int column);
     void removeColor(int row, int column);
+    void setColorCorrection(ColorCorrection* colorCorrection);
     QColor colorAt(int row, int column) const;
     QVector<QColor> colors() const;
 
@@ -241,6 +261,7 @@ class ColorPreview : public QWidget
 public:
     explicit ColorPreview(const QColor& color, QWidget* parent = nullptr);
     void setCurrentColor(const QColor& color);
+    void setColorCorrection(ColorCorrection* colorCorrection);
     QColor currentColor() const;
     QColor previousColor() const;
 
@@ -263,6 +284,7 @@ public:
     void clearCombination();
     void switchCombination();
     void setColors(const QVector<QColor>& colors);
+    void setColorCorrection(ColorCorrection* colorCorrection);
     colorcombo::ICombination* currentCombination() const;
 
 signals:
@@ -284,6 +306,9 @@ public:
 
 signals:
     void currentColorChanged(const QColor& color);
+
+protected:
+    void keyPressEvent(QKeyEvent* e) override;
 };
 
 //------------------------------------------ color picker ----------------------------------

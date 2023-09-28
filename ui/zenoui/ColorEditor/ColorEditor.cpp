@@ -3,6 +3,7 @@
 #include <queue>
 
 #include <QApplication>
+#include <QCheckBox>
 #include <QCursor>
 #include <QDebug>
 #include <QDesktopWidget>
@@ -27,6 +28,28 @@
 
 #include "zenoui/style/zenostyle.h"
 
+//------------------------------------------- color correction -----------------------------------------------
+void ColorCorrection::correct(QColor& color)
+{
+    double r = color.redF();
+    double g = color.greenF();
+    double b = color.blueF();
+    color.setRedF(std::pow(r, 1 / gamma));
+    color.setGreenF(std::pow(g, 1 / gamma));
+    color.setBlueF(std::pow(b, 1 / gamma));
+}
+
+void ColorCorrection::correct(QImage& image)
+{
+    for (int x = 0; x < image.width(); ++x) {
+        for (int y = 0; y < image.height(); ++y) {
+            QColor color = image.pixelColor(x, y);
+            correct(color);
+            image.setPixelColor(x, y, color);
+        }
+    }
+}
+
 //--------------------------------------------------------- color wheel ------------------------------------------------
 class ColorWheel::Private
 {
@@ -37,6 +60,7 @@ public:
     QColor selectedColor = QColor(Qt::white);
     QImage colorBuffer;
     colorcombo::ICombination* colorCombination = nullptr;
+    ColorCorrection* colorCorrection = nullptr;
 
     void renderWheel(const QRect& rect)
     {
@@ -68,6 +92,11 @@ public:
         painter.drawEllipse(center, radius, radius);
         painter.setBrush(valueGradient);
         painter.drawEllipse(center, radius, radius);
+
+        // color correction
+        if (colorCorrection) {
+            colorCorrection->correct(colorBuffer);
+        }
     }
 };
 
@@ -95,6 +124,13 @@ void ColorWheel::setSelectedColor(const QColor& color)
     else {
         p->selectedColor = color;
     }
+    update();
+}
+
+void ColorWheel::setColorCorrection(ColorCorrection* colorCorrection)
+{
+    p->colorCorrection = colorCorrection;
+    p->renderWheel(this->rect());
     update();
 }
 
@@ -352,6 +388,16 @@ QString MixedSpinBox::textFromValue(double value) const
     return shortestNum.size() <= decimalNum.size() ? shortestNum : decimalNum;
 }
 
+void MixedSpinBox::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+        clearFocus();
+    }
+    else {
+        QDoubleSpinBox::keyPressEvent(e);
+    }
+}
+
 class JumpableSlider::Private
 {
 public:
@@ -369,7 +415,7 @@ JumpableSlider::JumpableSlider(Qt::Orientation orientation, QWidget* parent)
     : QSlider(orientation, parent)
     , p(new Private)
 {
-    connect(this, &QSlider::valueChanged, this, [this](int value) {emit valueChanged(value * p->singleStep); });
+    connect(this, &QSlider::valueChanged, this, [this](int value) { emit valueChanged(value * p->singleStep); });
 }
 
 void JumpableSlider::setValue(double value)
@@ -477,7 +523,34 @@ void JumpableSlider::handleMouseEvent(QMouseEvent* e)
 class GradientSlider::Private
 {
 public:
-    QVector<QPair<float, QColor>> colors;
+    ColorCorrection* colorCorrection = nullptr;
+    QLinearGradient gradient;
+    QImage colorBuffer;
+
+    Private() { gradient.setCoordinateMode(QGradient::StretchToDeviceMode); }
+
+    void render(const QRect& rect, Qt::Orientation orientation, bool invertedAppearance)
+    {
+        QSize size = rect.size();
+        colorBuffer = QImage(size, QImage::Format_ARGB32);
+        // update gradient final stop
+        double dir = invertedAppearance ? -1 : 1;
+        if (orientation == Qt::Horizontal) {
+            gradient.setFinalStop(dir, 0);
+        }
+        else {
+            gradient.setFinalStop(0, -dir);
+        }
+
+        QPainter painter(&colorBuffer);
+        // draw gradient
+        painter.setBrush(gradient);
+        painter.drawRect(0, 0, colorBuffer.width(), colorBuffer.height());
+        // color correction
+        if (colorCorrection) {
+            colorCorrection->correct(colorBuffer);
+        }
+    }
 };
 
 GradientSlider::GradientSlider(QWidget* parent)
@@ -491,52 +564,55 @@ void GradientSlider::setGradient(const QColor& startColor, const QColor& stopCol
     setGradient({{0, startColor}, {1, stopColor}});
 }
 
-void GradientSlider::setGradient(const QVector<QPair<float, QColor>>& colors)
+void GradientSlider::setGradient(const QGradientStops& colors)
 {
     if (colors.size() <= 1) {
         qWarning() << "ColorSlider::setGradient: colors size should >= 2";
         return;
     }
 
-    p->colors = colors;
-
-    QString ori;
-    float x1, y1, x2, y2;
-    if (orientation() == Qt::Horizontal) {
-        ori = "horizontal";
-        x1 = 0;
-        y1 = 0;
-        x2 = 1;
-        y2 = 0;
-    }
-    else {
-        ori = "vertical";
-        x1 = 0;
-        y1 = 0;
-        x2 = 0;
-        y2 = 1;
-    }
-
-    QString gradientStyle;
-    for (const auto& color : colors) {
-        gradientStyle += QString(",stop:%1 %2").arg(color.first).arg(color.second.name());
-    }
-
-    auto style = QString("QSlider::groove:%1{background:qlineargradient(x1:%2,y1:%3,x2:%4,y2:%5 %6);}"
-                         "QSlider::handle:%1{background:#5C5C5C;border:1px solid;width:6px}")
-                     .arg(ori)
-                     .arg(x1)
-                     .arg(y1)
-                     .arg(x2)
-                     .arg(y2)
-                     .arg(gradientStyle);
-
-    setStyleSheet(style);
+    p->gradient.setStops(colors);
+    p->render(this->rect(), orientation(), invertedAppearance());
+    update();
 }
 
-QVector<QPair<float, QColor>> GradientSlider::gradientColor() const
+void GradientSlider::setColorCorrection(ColorCorrection* colorCorrection)
 {
-    return p->colors;
+    p->colorCorrection = colorCorrection;
+    p->render(this->rect(), orientation(), invertedAppearance());
+    update();
+}
+
+QGradientStops GradientSlider::gradientColor() const
+{
+    return p->gradient.stops();
+}
+
+void GradientSlider::paintEvent(QPaintEvent* e)
+{
+    QPainter painter(this);
+    // draw groove
+    painter.drawImage(0, 0, p->colorBuffer);
+
+    QPointF p1, p2;
+    if (orientation() == Qt::Horizontal) {
+        double pos = (value() - minimum()) / (maximum() - minimum()) * width();
+        p1 = QPointF(pos, 0);
+        p2 = QPointF(pos, height());
+    }
+    else {
+        double pos = height() - (value() - minimum()) / (maximum() - minimum()) * height();
+        p1 = QPointF(0, pos);
+        p2 = QPointF(height(), pos);
+    }
+    // draw handle
+    painter.setPen(QPen(QColor("#5C5C5C"), 6));
+    painter.drawLine(p1, p2);
+}
+
+void GradientSlider::resizeEvent(QResizeEvent* e)
+{
+    p->render(this->rect(), orientation(), invertedAppearance());
 }
 
 class ColorSpinHSlider::Private
@@ -575,9 +651,14 @@ void ColorSpinHSlider::setGradient(const QColor& startColor, const QColor& stopC
     p->slider->setGradient(startColor, stopColor);
 }
 
-void ColorSpinHSlider::setGradient(const QVector<QPair<float, QColor>>& colors)
+void ColorSpinHSlider::setGradient(const QGradientStops& colors)
 {
     p->slider->setGradient(colors);
+}
+
+void ColorSpinHSlider::setColorCorrection(ColorCorrection* colorCorrection)
+{
+    p->slider->setColorCorrection(colorCorrection);
 }
 
 void ColorSpinHSlider::setValue(double value)
@@ -592,7 +673,7 @@ void ColorSpinHSlider::setRange(double min, double max)
     p->spinbox->setRange(min, max);
 }
 
-QVector<QPair<float, QColor>> ColorSpinHSlider::gradientColor() const
+QGradientStops ColorSpinHSlider::gradientColor() const
 {
     return p->slider->gradientColor();
 }
@@ -608,6 +689,7 @@ class ColorButton::Private
 public:
     QPoint pressPos;
     QColor color;
+    ColorCorrection* colorCorrection = nullptr;
     int bolderTopWidth = 0;
     int bolderBottomWidth = 0;
     int bolderLeftWidth = 0;
@@ -615,19 +697,24 @@ public:
 
     void updateStyle(QPushButton* btn)
     {
+        QColor showColor = color;
+        if (colorCorrection) {
+            colorCorrection->correct(showColor);
+        }
+
         int minWidth = ZenoStyle::dpiScaled(20);
         int minHeight = ZenoStyle::dpiScaled(20);
         auto style = QString("QPushButton{min-width:%1px;min-height:%2px;background-color:%3;"
                              "border-top:%4px solid;border-bottom:%5px solid;"
                              "border-left:%6px solid;border-right:%7px solid;}"
                              "QPushButton:pressed{border: 1px solid #ffd700;}")
-                             .arg(minWidth)
-                             .arg(minHeight)
-                             .arg(color.name())
-                             .arg(bolderTopWidth)
-                             .arg(bolderBottomWidth)
-                             .arg(bolderLeftWidth)
-                             .arg(bolderRightWidth);
+                         .arg(minWidth)
+                         .arg(minHeight)
+                         .arg(showColor.name())
+                         .arg(bolderTopWidth)
+                         .arg(bolderBottomWidth)
+                         .arg(bolderLeftWidth)
+                         .arg(bolderRightWidth);
         btn->setStyleSheet(style);
     }
 };
@@ -643,6 +730,12 @@ ColorButton::ColorButton(QWidget* parent)
 void ColorButton::setColor(const QColor& color)
 {
     p->color = color;
+    p->updateStyle(this);
+}
+
+void ColorButton::setColorCorrection(ColorCorrection* colorCorrection)
+{
+    p->colorCorrection = colorCorrection;
     p->updateStyle(this);
 }
 
@@ -717,6 +810,7 @@ class ColorPalette::Private
 public:
     int columnCount = 0;
     QGridLayout* layout = nullptr;
+    ColorCorrection* colorCorrection = nullptr;
     QVector<QColor> colors;
 
     Private(int column, QScrollArea* parent)
@@ -774,6 +868,7 @@ void ColorPalette::addColor(const QColor& color)
     auto btn = new ColorButton(this);
     btn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     btn->setToolTip(tr("Ctrl + click to remove color"));
+    btn->setColorCorrection(p->colorCorrection);
     connect(btn, &ColorButton::colorClicked, this, [this, index](const QColor& color) {
         if (QApplication::keyboardModifiers() == Qt::ControlModifier) {
             auto layoutIndex = p->getLayoutIndex(index);
@@ -815,6 +910,15 @@ void ColorPalette::removeColor(int row, int column)
     p->colors.remove(index);
     p->updateLayout(index, p->colors.size());
     p->updateBolder(index, p->colors.size());
+}
+
+void ColorPalette::setColorCorrection(ColorCorrection* colorCorrection)
+{
+    p->colorCorrection = colorCorrection;
+    for (int i = 0; i < p->layout->count(); ++i) {
+        auto btn = qobject_cast<ColorButton*>(p->layout->itemAt(i)->widget());
+        btn->setColorCorrection(colorCorrection);
+    }
 }
 
 QColor ColorPalette::colorAt(int row, int column) const
@@ -897,6 +1001,12 @@ void ColorPreview::setCurrentColor(const QColor& color)
     p->setCurrent(color);
 }
 
+void ColorPreview::setColorCorrection(ColorCorrection* colorCorrection)
+{
+    p->pbtnCurrent->setColorCorrection(colorCorrection);
+    p->pbtnPrevious->setColorCorrection(colorCorrection);
+}
+
 QColor ColorPreview::currentColor() const
 {
     return p->pbtnCurrent->color();
@@ -916,6 +1026,7 @@ public:
     QPushButton* switchBtn = nullptr;
     JumpableSlider* factorSlider = nullptr;
     MixedSpinBox* factorSpinbox = nullptr;
+    ColorCorrection* colorCorrection = nullptr;
 
     Private(QWidget* parent)
     {
@@ -986,6 +1097,15 @@ void ColorComboWidget::setColors(const QVector<QColor>& colors)
     }
 }
 
+void ColorComboWidget::setColorCorrection(ColorCorrection* colorCorrection)
+{
+    p->colorCorrection = colorCorrection;
+    for (int i = 0; i < p->hlayout->count(); ++i) {
+        auto btn = qobject_cast<ColorButton*>(p->hlayout->itemAt(i)->widget());
+        btn->setColorCorrection(colorCorrection);
+    }
+}
+
 void ColorComboWidget::switchCombination()
 {
     if (p->combs.empty()) return;
@@ -1013,6 +1133,7 @@ void ColorComboWidget::switchCombination()
         btn->setBolderWidth(1, 1, 1, bolderRightWidth);
         btn->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
         btn->setAcceptDrops(false); // color can't be changed by drop
+        btn->setColorCorrection(p->colorCorrection);
         connect(btn, &ColorButton::colorClicked, this, &ColorComboWidget::colorClicked);
         p->hlayout->addWidget(btn);
     }
@@ -1045,6 +1166,14 @@ ColorLineEdit::ColorLineEdit(QWidget* parent)
 void ColorLineEdit::setColor(const QColor& color)
 {
     setText(color.name().toUpper());
+}
+
+void ColorLineEdit::keyPressEvent(QKeyEvent* e)
+{
+    if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
+        clearFocus();
+    }
+    QLineEdit::keyPressEvent(e);
 }
 
 //------------------------------------------ color picker ----------------------------------
@@ -1275,6 +1404,7 @@ class ColorEditor::Private
 {
 public:
     ColorWheel* wheel;
+    QCheckBox* showInSRGB;
     ColorLineEdit* colorText;
     ColorPreview* preview;
     ColorPicker* picker;
@@ -1293,14 +1423,17 @@ public:
     QColor currentColor;
     QColor selectedColor;
     ColorEditorData colorData;
+    std::unique_ptr<ColorCorrection> colorCorrection;
 
     Private(const QColor& color, QDialog* parent)
     {
+        colorCorrection = std::unique_ptr<ColorCorrection>(new ColorCorrection);
         selectedColor = color;
         // left
         picker = new ColorPicker(parent);
         pickerBtn = new QPushButton(parent);
         wheel = new ColorWheel(parent);
+        showInSRGB = new QCheckBox(tr("show in srgb"), parent);
         colorText = new ColorLineEdit(parent);
         preview = new ColorPreview(color, parent);
         combo = new ColorComboWidget(parent);
@@ -1327,10 +1460,11 @@ public:
         auto leftLayout = new QGridLayout(leftWidget);
         leftLayout->setContentsMargins(0, 0, 5, 0);
         leftLayout->setSpacing(0);
-        leftLayout->addWidget(wheel, 0, 0);
-        leftLayout->addWidget(colorText, 1, 0, Qt::AlignRight);
-        leftLayout->addWidget(previewGroup, 2, 0);
-        leftLayout->addWidget(comboGroup, 3, 0);
+        leftLayout->addWidget(wheel, 0, 0, 1, 10);
+        leftLayout->addWidget(showInSRGB, 1, 0, 1, 5, Qt::AlignLeft);
+        leftLayout->addWidget(colorText, 1, 5, 1, 5, Qt::AlignRight);
+        leftLayout->addWidget(previewGroup, 2, 0, 1, 10);
+        leftLayout->addWidget(comboGroup, 3, 0, 1, 10);
 
         // right
         palette = new ColorPalette(colorData.colCount, parent);
@@ -1457,7 +1591,7 @@ public:
     void setGradientH(const QColor& color)
     {
         // hSlider is unique
-        static QVector<QPair<float, QColor>> hColors(7);
+        static QGradientStops hColors(7);
         for (int i = 0; i < hColors.size(); ++i) {
             float f = 1.0 * i / (hColors.size() - 1);
             hColors[i] = {f, QColor::fromHsvF(f, color.hsvSaturationF(), color.valueF())};
@@ -1503,6 +1637,8 @@ ColorEditor::ColorEditor(const QColor& initial, QWidget* parent)
     p->wheel->setColorCombination(p->combo->currentCombination());
     // current color
     setCurrentColor(initial);
+    // show in srgb
+    p->showInSRGB->setChecked(true);
 }
 
 void ColorEditor::setCurrentColor(const QColor& color)
@@ -1560,6 +1696,20 @@ void ColorEditor::keyPressEvent(QKeyEvent* e)
 
 void ColorEditor::initSlots()
 {
+    // color correction
+    connect(p->showInSRGB, &QCheckBox::toggled, this, [this](bool checked) {
+        auto colorCorrection = checked ? p->colorCorrection.get() : nullptr;
+        p->wheel->setColorCorrection(colorCorrection);
+        p->palette->setColorCorrection(colorCorrection);
+        p->preview->setColorCorrection(colorCorrection);
+        p->combo->setColorCorrection(colorCorrection);
+        p->rSlider->setColorCorrection(colorCorrection);
+        p->gSlider->setColorCorrection(colorCorrection);
+        p->bSlider->setColorCorrection(colorCorrection);
+        p->hSlider->setColorCorrection(colorCorrection);
+        p->sSlider->setColorCorrection(colorCorrection);
+        p->vSlider->setColorCorrection(colorCorrection);
+    });
     // picker
     connect(p->pickerBtn, &QPushButton::clicked, p->picker, &ColorPicker::startColorPicking);
     connect(p->picker, &ColorPicker::colorSelected, this, &ColorEditor::setCurrentColor);
@@ -1614,4 +1764,3 @@ QColor ColorEditor::getColor(const QColor& initial, QWidget* parent, const QStri
     dlg.exec();
     return dlg.selectedColor();
 }
-
