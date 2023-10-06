@@ -609,6 +609,8 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         return CONTROL_MULTILINE_STRING;
     } else if (type == "color") {   //color is more general than heatmap.
         return CONTROL_COLOR;
+    } else if (type == "purecolor") {   //purecolor is coloreditor, color is heatmap? ^^^^
+        return CONTROL_PURE_COLOR;
     } else if (type == "curve") {
         return CONTROL_CURVE;
     } else if (type.startsWith("enum ")) {
@@ -655,6 +657,7 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     case CONTROL_WRITEPATH: return "string";
     case CONTROL_READPATH: return "string";
     case CONTROL_COLOR: return "color";     //todo: is vec3?
+    case CONTROL_PURE_COLOR: return "purecolor";
     case CONTROL_CURVE: return "curve";
     case CONTROL_ENUM: return "string";
     case CONTROL_HSLIDER:

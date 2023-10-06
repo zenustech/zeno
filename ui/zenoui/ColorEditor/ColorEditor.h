@@ -207,7 +207,7 @@ class ColorButton : public QPushButton
 {
     Q_OBJECT
 public:
-    explicit ColorButton(QWidget* parent);
+    explicit ColorButton(QWidget* parent = nullptr);
     void setColor(const QColor& color);
     void setColorCorrection(ColorCorrection* colorCorrection);
     void setBolderWidth(int top, int bottom, int left, int right);
