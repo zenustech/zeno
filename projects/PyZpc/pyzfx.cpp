@@ -42,9 +42,10 @@ static std::wstring s2ws(std::string const &s) {
 using callback_t = std::function<void(std::optional<std::any>)>; 
 
 static callback_t zpc_init_callback = [] (auto _) {
+    auto exe_dir = zs::abs_exe_directory(); 
+    Py_SetPythonHome(s2ws(exe_dir).c_str()); 
     log_debug("Initializing Python...");
-    Py_Initialize();
-    auto exe_dir = zs::abs_exe_directory();  
+    Py_Initialize(); 
 #ifdef _WIN32
     exe_dir = replace_all(exe_dir, "\\", "/");
 #endif
@@ -175,6 +176,10 @@ struct PyZfx : INode {
                 perror(path.c_str());
                 throw makeError("cannot open file for read: " + path);
             } else {
+                if (PyRun_SimpleString(("__import__('sys').path.insert(0, __import__('os').path.dirname('" + path + "'));").c_str()) < 0) {
+                    log_warn("Failed to initialize Python import path");
+                    return;
+                }
                 mainMod = PyRun_FileExFlags(fp, path.c_str(), Py_file_input, globals, globals, 1, NULL);
             }
         }

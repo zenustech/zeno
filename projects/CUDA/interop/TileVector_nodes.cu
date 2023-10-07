@@ -99,12 +99,25 @@ namespace zeno
             auto result = std::make_shared<NumericObject>();
             std::visit([&](auto &tv)
                        { 
-                            auto val = extractScalarFromTileVector(tv, tagName, dim, index); 
-                            using val_t = RM_CVREF_T(val); 
-                            if constexpr (zs::is_same_v<val_t, int>)
-                                result->set(val); 
-                            else 
-                                result->set(static_cast<float>(val)); 
+                            if (tv.memspace() == zs::memsrc_e::device)
+                            {
+                                auto val = extractScalarFromTileVector(tv, tagName, dim, index); 
+                                using val_t = RM_CVREF_T(val); 
+                                if constexpr (zs::is_same_v<val_t, int>)
+                                    result->set(val); 
+                                else 
+                                    result->set(static_cast<float>(val)); 
+                            } else {
+                                using namespace zs; 
+                                constexpr auto space = zs::execspace_e::host; 
+                                auto view = proxy<space>({}, tv); 
+                                auto val = view(tagName, dim, index); 
+                                using val_t = RM_CVREF_T(val); 
+                                if constexpr (zs::is_same_v<val_t, int>)
+                                    result->set(val); 
+                                else 
+                                    result->set(static_cast<float>(val)); 
+                            }
                         }, tv);
             set_output2("result", std::move(result)); 
         }
