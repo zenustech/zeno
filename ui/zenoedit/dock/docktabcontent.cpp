@@ -28,6 +28,7 @@
 #include <zeno/core/Session.h>
 #include <zeno/types/UserData.h>
 #include <zenovis/ObjectsManager.h>
+#include <zenoui/comctrl/ztoolmenubutton.h>
 
 
 ZToolBarButton::ZToolBarButton(bool bCheckable, const QString& icon, const QString& iconOn)
@@ -101,54 +102,6 @@ void ZToolRecordingButton::paintEvent(QPaintEvent *event)
     p.drawComplexControl(QStyle::CC_ToolButton, option);
 }
 #endif
-
-
-ZToolMenuButton::ZToolMenuButton() {
-    setButtonOptions(ZToolButton::Opt_TextRightToIcon);
-    setArrowOption(ZStyleOptionToolButton::DOWNARROW);
-    menu = new QMenu(this);
-    run = new QAction(icon(), tr("Run"), this);
-    runLightCamera = new QAction(icon(), tr("RunLightCamera"), this);
-    runMaterial = new QAction(icon(), tr("RunMaterial"), this);
-    connect(run, &QAction::triggered, this, [=]() {
-        setText(tr("Run"));
-        this->setMinimumWidth(sizeHint().width());
-        emit runModeChanged();
-    });
-    connect(runLightCamera, &QAction::triggered, this, [=]() {
-        setText(tr("RunLightCamera"));
-        this->setMinimumWidth(sizeHint().width());
-        emit runModeChanged();
-    });
-    connect(runMaterial, &QAction::triggered, this, [=]() {
-        setText(tr("RunMaterial"));
-        this->setMinimumWidth(sizeHint().width());
-        emit runModeChanged();
-    });
-    menu->addAction(run);
-    menu->addAction(runLightCamera);
-    menu->addAction(runMaterial);
-}
-
-
-void ZToolMenuButton::mouseReleaseEvent(QMouseEvent *e) {
-    QSize size = ZToolButton::sizeHint();
-    if (e->x() >= (size.width() - ZenoStyle::dpiScaled(10)))
-    {
-        QPoint pos;
-        pos.setY(pos.y() + this->geometry().height());
-        menu->exec(this->mapToGlobal(pos));
-        return;
-    }
-    emit clicked();
-}
-
-
-QSize ZToolMenuButton::sizeHint() const {
-    QSize size = ZToolButton::sizeHint();
-    size.setWidth(size.width() + ZenoStyle::dpiScaled(12));
-    return size;
-}
 
 const int DockToolbarWidget::sToolbarHeight = 28;
 
@@ -327,19 +280,22 @@ void DockContent_Editor::initToolbar(QHBoxLayout* pToolLayout)
     pSettings->setToolTip(tr("Settings"));
     pAlways->setToolTip(tr("Always mode"));
 
-    m_btnRun = new ZToolMenuButton;
+    m_btnRun = new ZToolMenuButton(this);
+    m_btnRun->addAction(tr("Run"), ":/icons/run_all.svg");
+    m_btnRun->addAction(tr("RunLightCamera"), ":/icons/run_lightcamera.svg");
+    m_btnRun->addAction(tr("RunMaterial"), ":/icons/run_material.svg");
     m_btnKill = new ZToolButton;
 
     QFont fnt = QApplication::font();
 
-    m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(14, 14)), ":/icons/timeline_run_thunder.svg",
-                          ":/icons/timeline_run_thunder.svg", "", "");
+    m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all.svg",
+                          ":/icons/run_all.svg", "", "", ":/icons/run_all_disable.svg");
     m_btnRun->setRadius(ZenoStyle::dpiScaled(2));
     m_btnRun->setFont(fnt);
     m_btnRun->setText(tr("Run"));
     m_btnRun->setCursor(QCursor(Qt::PointingHandCursor));
     m_btnRun->setMargins(ZenoStyle::dpiScaledMargins(QMargins(11, 5, 14, 5)));
-    m_btnRun->setBackgroundClr(QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4578AC"), QColor("#4D5561"));
+    m_btnRun->setBackgroundClr(QColor("#4073B6"), QColor("#4073B6"), QColor("#4073B6"), QColor("#4073B6"), QColor("#4D5561"));
     m_btnRun->setTextClr(QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"), QColor("#FFFFFF"));
     ZenoSettingsManager &settings = ZenoSettingsManager::GetInstance();
     m_btnRun->setShortcut(settings.getShortCut(ShortCut_Run));
@@ -594,8 +550,33 @@ void DockContent_Editor::initConnections()
         }
     });
 
+    connect(m_btnRun, &ZToolMenuButton::textChanged, this, [=]() {
+        QString text = m_btnRun->text();
+        QColor clr;
+        if (text == tr("Run"))
+        {
+            clr = QColor("#4073B6");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_all.svg",
+                ":/icons/run_all.svg", "", "", ":/icons/run_all_disable.svg");
+        }
+        else if (text == tr("RunLightCamera"))
+        {
+            clr = QColor("#B66A40");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_lightcamera.svg",
+                ":/icons/run_lightcamera.svg", "", "", ":/icons/run_lightcamera_disable.svg");
+        }
+        else if (text == tr("RunMaterial"))
+        {
+            clr = QColor("#9740B6");
+            m_btnRun->setIcon(ZenoStyle::dpiScaledSize(QSize(16, 16)), ":/icons/run_material.svg",
+                ":/icons/run_material.svg", "", "", ":/icons/run_material_disable.svg");
+        }
+        m_btnRun->setBackgroundClr(clr, clr, clr, clr);
+    });
     connect(m_btnKill, &ZToolButton::clicked, this, [=]() {
         killProgram();
+        m_btnRun->setEnabled(true);
+        m_btnKill->setEnabled(false);
     });
 
     connect(&ZenoSettingsManager::GetInstance(), &ZenoSettingsManager::valueChanged, this, [=](QString name) {

@@ -351,5 +351,12 @@
     <file>icons/ZENO-logo64.png</file>
 	<file>icons/update_main.png</file>
 	<file>icons/update-reboot.png</file>
+	<file>icons/run_all.svg</file>
+    <file>icons/run_lightcamera.svg</file>
+    <file>icons/run_material.svg</file>
+    <file>icons/down_arrow.svg</file>
+	<file>icons/run_lightcamera_disable.svg</file>
+    <file>icons/run_material_disable.svg</file>
+    <file>icons/run_all_disable.svg</file>
 </qresource>
 </RCC>
