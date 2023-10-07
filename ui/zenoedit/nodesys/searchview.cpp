@@ -110,8 +110,8 @@ void SearchResultWidget::resizeCount(int count)
 
 void SearchResultWidget::moveToTop()
 {
-    setCurrentIndex(model()->index(0, 0));
     clearSelection();
+    setCurrentIndex(model()->index(0, 0));
 }
 
 void SearchResultWidget::keyPressEvent(QKeyEvent* event)
