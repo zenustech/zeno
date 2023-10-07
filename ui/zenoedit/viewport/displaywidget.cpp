@@ -11,7 +11,6 @@
 #include "zenomainwindow.h"
 #include "camerakeyframe.h"
 #include <zenoui/style/zenostyle.h>
-#include <zenoui/ColorEditor/ColorEditor.h>
 #include <zeno/core/Session.h>
 #include "timeline/ztimeline.h"
 #include "dialog/zrecorddlg.h"
@@ -361,7 +360,7 @@ void DisplayWidget::onCommandDispatched(int actionType, bool bChecked)
         {
             auto [r, g, b] = m_glView->getSession()->get_background_color();
             auto c = QColor::fromRgbF(r, g, b);
-            c = ColorEditor::getColor(c);
+            c = QColorDialog::getColor(c);
             if (c.isValid()) {
                 m_glView->getSession()->set_background_color(c.redF(), c.greenF(), c.blueF());
                 updateFrame();
