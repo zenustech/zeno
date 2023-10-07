@@ -103,6 +103,9 @@ void CameraControl::fakeMousePressEvent(QMouseEvent *event)
 {
     ZASSERT_EXIT(m_zenovis);
     auto scene = m_zenovis->getSession()->get_scene();
+    if (event->button() == Qt::MiddleButton) {
+        middle_button_pressed = true;
+    }
     if (scene->camera->m_need_sync) {
         scene->camera->m_need_sync = false;
         if (bool(m_picker) && scene->camera->m_auto_radius) {
@@ -369,8 +372,8 @@ void CameraControl::fakeWheelEvent(QWheelEvent *event) {
     ZenoSettingsManager& settings = ZenoSettingsManager::GetInstance();
     int scaleKey = settings.getViewShortCut(ShortCut_ScalingView, button);
     if (shift_pressed) {
-        float temp = getFOV() / scale;
-        setFOV(temp < 170 ? temp : 170);
+//        float temp = getFOV() / scale;
+//        setFOV(temp < 170 ? temp : 170);
 
     } else if (aperture_pressed) {
         float temp = getAperture() + delta * 0.01;
@@ -480,6 +483,9 @@ QVariant CameraControl::hitOnFloor(float x, float y) const {
 }
 
 void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
+    if (event->button() == Qt::MiddleButton) {
+        middle_button_pressed = false;
+    }
     if (event->button() == Qt::LeftButton) {
 
         //if (Zenovis::GetInstance().m_bAddPoint == true) {
@@ -627,6 +633,54 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
 
             }
         }
+    }
+}
+
+bool CameraControl::fakeKeyPressEvent(int uKey) {
+    if (!middle_button_pressed) {
+        return false;
+    }
+    float cos_t = cos(getTheta());
+    float sin_t = sin(getTheta());
+    float cos_p = cos(getPhi());
+    float sin_p = sin(getPhi());
+    zeno::vec3f back(cos_t * sin_p, sin_t, -cos_t * cos_p);
+    zeno::vec3f up(-sin_t * sin_p, cos_t, sin_t * cos_p);
+    zeno::vec3f left = zeno::cross(up, back);
+    auto center = getCenter();
+    float step = 1.0f;
+
+    bool processed = false;
+    if (uKey == Qt::Key_Q) {
+        setCenter(center + zeno::vec3f(0, -1, 0) * step);
+        processed = true;
+    }
+    else if (uKey == Qt::Key_E) {
+        setCenter(center + zeno::vec3f(0, 1, 0) * step);
+        processed = true;
+    }
+    else if (uKey == Qt::Key_W) {
+        setCenter(center + back * step);
+        processed = true;
+    }
+    else if (uKey == Qt::Key_S) {
+        setCenter(center - back * step);
+        processed = true;
+    }
+    else if (uKey == Qt::Key_A) {
+        setCenter(center + left * step);
+        processed = true;
+    }
+    else if (uKey == Qt::Key_D) {
+        setCenter(center - left * step);
+        processed = true;
+    }
+    if (processed) {
+        updatePerspective();
+        return true;
+    }
+    else {
+        return false;
     }
 }
 

@@ -1635,6 +1635,9 @@ bool ZenoMainWindow::openFile(QString filePath)
     recordRecentFile(filePath);
     initUserdata(pGraphs->userdataInfo());
     //resetDocks(pGraphs->layoutInfo().layerOutNode);
+
+    m_ui->statusbar->showMessage(tr("File Opened"));
+    zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });
     return true;
 }
 
@@ -1978,6 +1981,9 @@ bool ZenoMainWindow::saveFile(QString filePath)
     settings.userdataInfo.optix_show_background = ud.get2<bool>("optix_show_background", false);
     zenoApp->graphsManagment()->saveFile(filePath, settings);
     recordRecentFile(filePath);
+
+    m_ui->statusbar->showMessage(tr("File Saved"));
+    zeno::scope_exit sp([&]() {QTimer::singleShot(2000, this, [=]() {m_ui->statusbar->showMessage(tr("Status Bar")); }); });
     return true;
 }
 
