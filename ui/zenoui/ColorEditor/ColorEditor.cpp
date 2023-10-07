@@ -1032,7 +1032,7 @@ public:
     {
         factorSpinbox = new MixedSpinBox(parent);
         factorSlider = new JumpableSlider(Qt::Horizontal, parent);
-        switchBtn = new QPushButton(parent);
+        switchBtn = new QPushButton(tr("switch"), parent);
         switchBtn->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
         factorSpinbox->setButtonSymbols(QAbstractSpinBox::NoButtons);
 
@@ -1431,7 +1431,7 @@ public:
         selectedColor = color;
         // left
         picker = new ColorPicker(parent);
-        pickerBtn = new QPushButton(parent);
+        pickerBtn = new QPushButton(tr("pick"), parent);
         wheel = new ColorWheel(parent);
         showInSRGB = new QCheckBox(tr("show in srgb"), parent);
         colorText = new ColorLineEdit(parent);
