@@ -38,6 +38,9 @@ class ZToolMenuButton : public ZToolButton {
 public:
     ZToolMenuButton();
 
+signals:
+    void runModeChanged();
+
 protected:
     virtual void mouseReleaseEvent(QMouseEvent* e) override;
     virtual QSize sizeHint() const override;
@@ -111,12 +114,12 @@ private:
     ZToolBarButton *pCustomParam;
     ZToolBarButton *pGroup;
     ZToolBarButton *pLinkLineShape;
+    ZToolBarButton *pAlways;
     ZToolBarButton *pSearchBtn;
     ZToolBarButton *pSettings;
 
     ZToolMenuButton *m_btnRun;
     ZToolButton* m_btnKill;
-    ZComboBox *m_btnAlways;
 
     QComboBox* cbZoom;
 };
