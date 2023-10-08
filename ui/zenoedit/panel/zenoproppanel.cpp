@@ -636,8 +636,18 @@ void ZenoPropPanel::onViewParamDataChanged(const QModelIndex& topLeft, const QMo
             } 
             else if (QPushButton *pBtn = qobject_cast<QPushButton *>(ctrl.pControl)) 
             {
-                if (value.canConvert<QColor>())
+                // purecolor
+                if (value.canConvert<QColor>()) {
                     pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(value.value<QColor>().name()));
+                }
+                // colorvec3f
+                else if (value.canConvert<UI_VECTYPE>()) {
+                    UI_VECTYPE vec = value.value<UI_VECTYPE>();
+                    if (vec.size() == 3) {
+                        auto color = QColor::fromRgbF(vec[0], vec[1], vec[2]);
+                        pBtn->setStyleSheet(QString("background-color:%1; border:0;").arg(color.name()));
+                    }
+                }
             }
             //...
         }
