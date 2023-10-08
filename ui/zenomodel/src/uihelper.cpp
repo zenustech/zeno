@@ -159,6 +159,7 @@ bool UiHelper::validateVariant(const QVariant& var, const QString& type)
     {
         return (varType == QMetaType::User);
     }
+    case CONTROL_COLOR_VEC3F:
     case CONTROL_VEC2_FLOAT:
     case CONTROL_VEC2_INT:
     case CONTROL_VEC3_FLOAT:
@@ -252,6 +253,7 @@ QVariant UiHelper::parseStringByType(const QString &defaultValue, const QString 
     case CONTROL_COLOR:
     case CONTROL_ENUM:
         return defaultValue;
+    case CONTROL_COLOR_VEC3F:
     case CONTROL_VEC2_FLOAT:
     case CONTROL_VEC2_INT:
     case CONTROL_VEC3_FLOAT:
@@ -387,7 +389,8 @@ QString UiHelper::getControlDesc(PARAM_CONTROL ctrl)
     case CONTROL_VEC3_INT:          return "Integer Vector 3";
     case CONTROL_VEC2_INT:          return "Integer Vector 2";
     case CONTROL_COLOR:             return "Color";
-    case CONTROL_PURE_COLOR: return "Pure Color";
+    case CONTROL_PURE_COLOR:        return "Pure Color";
+    case CONTROL_COLOR_VEC3F:       return "Color Vec3f";
     case CONTROL_CURVE:             return "Curve";
     case CONTROL_HSPINBOX:          return "SpinBox";
     case CONTROL_HDOUBLESPINBOX: return "DoubleSpinBox";
@@ -465,6 +468,10 @@ PARAM_CONTROL UiHelper::getControlByDesc(const QString& descName)
     else if (descName == "Pure Color") 
     {
         return CONTROL_PURE_COLOR;
+    }
+    else if (descName == "Color Vec3f")
+    {
+        return CONTROL_COLOR_VEC3F;
     }
     else if (descName == "Curve")
     {
@@ -554,7 +561,7 @@ QStringList UiHelper::getControlLists(const QString& type, bool isNodeUI)
     else if (type == "readpath") { ctrls = { CONTROL_READPATH }; }
     else if (type == "multiline_string") { ctrls = { CONTROL_STRING, CONTROL_MULTILINE_STRING }; }
     else if (type == "color") {   //color is more general than heatmap.
-        ctrls = {CONTROL_COLOR, CONTROL_PURE_COLOR};
+        ctrls = {CONTROL_COLOR, CONTROL_PURE_COLOR, CONTROL_COLOR_VEC3F};
     }
     else if (type == "curve") { ctrls = { CONTROL_CURVE }; }
     else if (type.startsWith("enum ")) {
@@ -609,8 +616,10 @@ PARAM_CONTROL UiHelper::getControlByType(const QString &type)
         return CONTROL_MULTILINE_STRING;
     } else if (type == "color") {   //color is more general than heatmap.
         return CONTROL_COLOR;
-    } else if (type == "purecolor") {   //purecolor is coloreditor, color is heatmap? ^^^^
+    } else if (type == "purecolor") {   
         return CONTROL_PURE_COLOR;
+    } else if (type == "colorvec3f") {   //colorvec3f is for coloreditor, color is heatmap? ^^^^
+        return CONTROL_COLOR_VEC3F;
     } else if (type == "curve") {
         return CONTROL_CURVE;
     } else if (type.startsWith("enum ")) {
@@ -658,6 +667,7 @@ QString UiHelper::getTypeByControl(PARAM_CONTROL ctrl)
     case CONTROL_READPATH: return "string";
     case CONTROL_COLOR: return "color";     //todo: is vec3?
     case CONTROL_PURE_COLOR: return "purecolor";
+    case CONTROL_COLOR_VEC3F: return "colorvec3f"; // ^^^ color vec is here
     case CONTROL_CURVE: return "curve";
     case CONTROL_ENUM: return "string";
     case CONTROL_HSLIDER:

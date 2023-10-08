@@ -168,6 +168,11 @@ namespace JsonHelper
                     int dim = -1;
                     bool bFloat = false;
                     UiHelper::parseVecType(type, dim, bFloat);
+                    // ^^^ use regexp, but not include colorvec3f
+                    // vvv so specify here
+                    if (type == "colorvec3f") {
+                        bFloat = true;
+                    }
 
                     for (int i = 0; i < vec.size(); i++) {
                         if (!bFloat)
