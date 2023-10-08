@@ -92,8 +92,6 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
 
     if (!doc.IsObject())
     {
-        zeno::log_error("");
-    {
         zeno::log_error("zsg json file is corrupted");
         return false;
     }
@@ -161,7 +159,7 @@ bool ZsgReader::openFile(const QString& fn, ZSG_PARSE_RESULT& result)
     return true;
 }
 
-bool zenoio::ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& result)
+bool ZsgReader::openSubgraphFile(const QString& fn, ZSG_PARSE_RESULT& result)
 {
     QFile file(fn);
     bool ret = file.open(QIODevice::ReadOnly | QIODevice::Text);

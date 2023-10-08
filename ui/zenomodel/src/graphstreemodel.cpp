@@ -498,3 +498,13 @@ void GraphsTreeModel::onSubgrahSync(const QModelIndex& subgIdx) {
     ZASSERT_EXIT(m_impl);
     m_impl->onSubgrahSync(subgIdx);
 }
+
+void GraphsTreeModel::markNodeDataChanged(const QModelIndex&)
+{
+    //NO_IMPL
+}
+
+void GraphsTreeModel::clearNodeDataChanged()
+{
+    //NO_IMPL
+}

@@ -115,6 +115,8 @@ public:
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     QAbstractItemModel *implModel();
     void onSubgrahSync(const QModelIndex& subgIdx) override;
+    void markNodeDataChanged(const QModelIndex&) override;
+    void clearNodeDataChanged() override;
 
 public:
     QModelIndex mainIndex() const;

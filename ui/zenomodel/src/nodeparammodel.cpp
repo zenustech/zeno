@@ -781,7 +781,7 @@ void NodeParamModel::checkExtractDict(QString &name)
 
 void NodeParamModel::markNodeChanged()
 {
-    m_pGraphsModel->markNodeDataChanged(m_nodeIdx);
+    //m_pGraphsModel->markNodeDataChanged(m_nodeIdx);
 }
 
 void NodeParamModel::onRowsAboutToBeRemoved(const QModelIndex& parent, int first, int last)
