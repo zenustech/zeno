@@ -6,18 +6,7 @@ if(NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX OR NOT ZENO_WITH_CUDA)
 endif()
 
 # assume cuda
-project(ZENO_PyZpc CXX CUDA)
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-
-target_link_libraries(zeno PRIVATE zshelper ${Python3_LIBRARIES})
-target_include_directories(zeno PRIVATE ${Python3_INCLUDE_DIRS})
-
-message("Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
-message("Python3_INTERPRETER_ID: ${Python3_INTERPRETER_ID}")
-message("Python3_STDLIB: ${Python3_STDLIB}")
-message("Python3_COMPILER: ${Python3_COMPILER}")
-message("Python3_INCLUDE_DIR: ${Python3_INCLUDE_DIR}")
-message("Python3_LIBRARIES: ${Python3_LIBRARIES}")
+target_link_libraries(zeno PRIVATE zshelper zpc_jit_py)
 
 #
 target_sources(zeno PRIVATE
@@ -51,6 +40,7 @@ add_custom_command(
   COMMENT "creating resource Python module directory at ${PY_LIBS_DIR}/zpy"
 )
 file(GLOB ZPY_SRC ${CMAKE_CURRENT_SOURCE_DIR}/Lib/zpy/*.py)
+message("ZPY_SRC : ${ZPY_SRC}")
 foreach(ZPY_FILE IN LISTS ZPY_SRC)
     add_custom_command(
                 TARGET copy_zpy POST_BUILD
