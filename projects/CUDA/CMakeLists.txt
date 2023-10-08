@@ -20,7 +20,7 @@ set(CMAKE_CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 find_package(CUDAToolkit REQUIRED COMPONENTS cufft REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-set(ZS_ENABLE_ZENO_CU_WRANGLE ON)
+set(WHEREAMI_BUILD_SHARED_LIBS OFF)
 add_subdirectory(zpc)
 
 add_library(zshelper INTERFACE)
@@ -36,7 +36,10 @@ target_link_options(zeno
 target_link_libraries(zeno PRIVATE Eigen3::Eigen)
 target_link_libraries(zeno PRIVATE zshelper)
 
-# find_package(Vulkan REQUIRED)
+# target_sources(zeno PRIVATE
+#   iw_query/Query.cpp
+# )
+
 target_sources(zeno PRIVATE
   #test1.cu
   test.cu
