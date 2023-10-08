@@ -564,7 +564,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 } else {
                     m_picker->pick(releasePos.x(), releasePos.y());
                     m_picker->sync_to_scene();
-                    if (scene->select_mode == zenovis::PICK_OBJECT)
+                    if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT)
                         onPrimSelected();
                     m_transformer->clear();
                     m_transformer->addObject(m_picker->get_picked_prims());
@@ -588,7 +588,7 @@ void CameraControl::fakeMouseReleaseEvent(QMouseEvent *event) {
                 int y1 = releasePos.y();
                 m_picker->pick(x0, y0, x1, y1);
                 m_picker->sync_to_scene();
-                if (scene->select_mode == zenovis::PICK_OBJECT)
+                if (scene->select_mode == zenovis::PICK_MODE::PICK_OBJECT)
                     onPrimSelected();
                 m_transformer->clear();
                 m_transformer->addObject(m_picker->get_picked_prims());

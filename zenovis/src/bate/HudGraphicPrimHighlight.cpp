@@ -72,7 +72,7 @@ struct PrimitiveHighlight : IGraphicDraw {
     }
 
     virtual void draw() override {
-        if (scene->select_mode == zenovis::PICK_OBJECT) {
+        if (scene->select_mode == PICK_MODE::PICK_OBJECT) {
             for (const auto &prim_id : scene->selected) {
                 // ----- get primitive -----
                 PrimitiveObject *prim = nullptr;
@@ -148,7 +148,7 @@ struct PrimitiveHighlight : IGraphicDraw {
             vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
             // ----- draw selected vertices -----
-            if (scene->select_mode == zenovis::PICK_VERTEX) {
+            if (scene->select_mode == PICK_MODE::PICK_VERTEX) {
                 // prepare indices
                 CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
                 vector<int> ind(selected_count);
@@ -164,7 +164,7 @@ struct PrimitiveHighlight : IGraphicDraw {
             }
 
             // ----- draw selected edges -----
-            if (scene->select_mode == zenovis::PICK_LINE) {
+            if (scene->select_mode == PICK_MODE::PICK_LINE) {
                 if (prim->lines->empty()) return;
                 // prepare indices
                 vector<vec2i> ind(selected_count);
@@ -180,7 +180,7 @@ struct PrimitiveHighlight : IGraphicDraw {
             }
 
             // ----- draw selected meshes -----
-            if (scene->select_mode == zenovis::PICK_MESH) {
+            if (scene->select_mode == PICK_MODE::PICK_MESH) {
                 // prepare indices
                 vector<vec3i> ind(selected_count);
                 int i = 0;
