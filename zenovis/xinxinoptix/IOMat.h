@@ -3,33 +3,42 @@
 #include "zxxglslvec.h"
 
 struct MatOutput {
-    vec3  basecolor;
-    float metallic;
+    vec3 basecolor;
     float roughness;
-    float subsurface;
-    float specular;
-    float specularTint;
+    float opacity;
+    float thin;
+    float flatness;
+    float doubleSide;
     float anisotropic;
     float anisoRotation;
+    float ior;
+    vec3 reflectance;
+
+    float metallic;
+    vec3 matalColor;
+
+
+    float specular;
+    float specularTint;
     float sheen;
     float sheenTint;
+
     float clearcoat;
+    vec3 coatColor;
     float clearcoatGloss;
     float clearcoatRoughness;
     float clearcoatIOR;
-    float opacity;
-    float ior;
-    float flatness;
+
     float specTrans;
-    float scatterDistance;
-    float thin;
-    float doubleSide;
-    float scatterStep;
-    float smoothness;
+    vec3 transColor;
+
+    float subsurface;
     vec3  sssColor;
     vec3  sssParam;
+    float scatterDistance;
+    float scatterStep;
+    float smoothness;
     float displacement;
-    vec3 reflectance;
 
     vec3 nrm;
     vec3 emission;
