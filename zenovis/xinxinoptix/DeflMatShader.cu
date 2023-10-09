@@ -332,7 +332,6 @@ extern "C" __global__ void __anyhit__shadow_cutout()
     auto sheen = mats.sheen;
     auto sheenTint = mats.sheenTint;
     auto clearcoat = mats.clearcoat;
-    auto clearcoatGloss = mats.clearcoatGloss;
     auto opacity = mats.opacity;
     auto flatness = mats.flatness;
     auto specTrans = mats.specTrans;
@@ -645,8 +644,6 @@ extern "C" __global__ void __closesthit__radiance()
         mats.roughness = clamp(mats.roughness, 0.5,0.99);
 
     
-
-    prd->opacity = mats.opacity;
     if(prd->isSS == true) {
         mats.basecolor = vec3(1.0f);
         mats.roughness = 1.0;
@@ -669,7 +666,6 @@ extern "C" __global__ void __closesthit__radiance()
         prd->passed = true;
         prd->samplePdf = 1.0f;
         prd->radiance = make_float3(0.0f, 0.0f, 0.0f);
-        prd->opacity = 0;
         prd->readMat(prd->sigma_t, prd->ss_alpha);
         auto trans = DisneyBSDF::Transmission2(prd->sigma_s(), prd->sigma_t, prd->channelPDF, optixGetRayTmax(), true);
         prd->attenuation2 *= trans;
@@ -725,7 +721,7 @@ extern "C" __global__ void __closesthit__radiance()
     {
       //we have some simple transparent thing
       //roll a dice to see if just pass
-      if(rnd(prd->seed)<opacity)
+      if(rnd(prd->seed)<mats.opacity)
       {
         if (prd->curMatIdx > 0) {
           vec3 sigma_t, ss_alpha;
@@ -1004,14 +1000,12 @@ extern "C" __global__ void __closesthit__radiance()
         const auto& L = _wi_; // pre-normalized
         const vec3& V = _wo_; // pre-normalized
 
-        float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,
-            basecolor, sssColor, metallic, subsurface, specular, max(prd->minSpecRough,roughness), specularTint, anisotropic, anisoRotation, sheen, sheenTint,
-            clearcoat, clearcoatGloss, ccRough, ccIor, specTrans, scatterDistance, ior, flatness, L, V, T, B, N,prd->geometryNormal,
-            thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
+        float3 lbrdf = DisneyBSDF::EvaluateDisney2(illum,mats, L, V, T, B, N,prd->geometryNormal,
+            mats.thin > 0.5f, flag == DisneyBSDF::transmissionEvent ? inToOut : next_ray_is_going_inside, thisPDF, rrPdf,
             dot(N, L), rd, rs, rt);
 
         MatOutput mat2;
-        if(thin>0.5f){
+        if(mats.thin>0.5f){
             vec3 H = normalize(vec3(normalize(L)) + V);
             attrs.N = N;
             attrs.T = cross(B,N);
@@ -1019,11 +1013,11 @@ extern "C" __global__ void __closesthit__radiance()
             attrs.V = V;
             attrs.H = normalize(H);
             attrs.reflectance = lbrdf;
-            attrs.fresnel = DisneyBSDF::DisneyFresnel( basecolor, metallic, ior, specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
+            attrs.fresnel = DisneyBSDF::DisneyFresnel( mats.basecolor, mats.metallic, mats.ior, mats.specularTint, dot(attrs.H, attrs.V), dot(attrs.H, attrs.L), false);
             mat2 = evalReflectance(zenotex, rt_data->uniforms, attrs);
         }
 
-        return (thin>0.5f? float3(mat2.reflectance):lbrdf);
+        return (mats.thin>0.5f? float3(mat2.reflectance):lbrdf);
     };
 
     auto taskAux = [&](const vec3& weight) {
@@ -1035,13 +1029,13 @@ extern "C" __global__ void __closesthit__radiance()
     RadiancePRD shadow_prd {};
     shadow_prd.seed = prd->seed;
     shadow_prd.shadowAttanuation = make_float3(1.0f, 1.0f, 1.0f);
-    shadow_prd.nonThinTransHit = (thin == false && specTrans > 0) ? 1 : 0;
+    shadow_prd.nonThinTransHit = (mats.thin == false && mats.specTrans > 0) ? 1 : 0;
 
     prd->direction = normalize(wi);
 
     DirectLighting<true>(prd, shadow_prd, shadingP, ray_dir, evalBxDF, &taskAux);
 
-    if(thin<0.5f && mats.doubleSide<0.5f){
+    if(mats.thin<0.5f && mats.doubleSide<0.5f){
         prd->origin = rtgems::offset_ray(P, (next_ray_is_going_inside)? -prd->geometryNormal : prd->geometryNormal);
     }
     else {

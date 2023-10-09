@@ -17,20 +17,21 @@ struct MatOutput {
     float metallic;
     vec3 matalColor;
 
-
     float specular;
     float specularTint;
     float sheen;
     float sheenTint;
 
     float clearcoat;
-    vec3 coatColor;
-    float clearcoatGloss;
+    vec3 clearcoatColor;
     float clearcoatRoughness;
     float clearcoatIOR;
 
     float specTrans;
     vec3 transColor;
+    vec3 transParam;
+    float clarity;
+    float transDepth;
 
     float subsurface;
     vec3  sssColor;

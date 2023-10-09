@@ -128,7 +128,6 @@ extern "C" __global__ void __raygen__rg()
           prd.done         = false;
           prd.seed         = seed;
           prd.eventseed    = eventseed;
-          prd.opacity      = 0;
           prd.flags        = 0;
           prd.maxDistance  = 1e16f;
           prd.medium       = DisneyBSDF::PhaseFunctions::vacuum;

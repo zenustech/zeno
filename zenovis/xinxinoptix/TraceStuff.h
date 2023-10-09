@@ -42,30 +42,6 @@ enum medium{
     vacum,
     isotropicScatter
 };
-struct Material{
-    vec3 baseColor;
-    vec3 matallicColor;
-    vec3 transmitanceColor;
-    vec3 sssColor;
-    vec3 clearCoatColor;
-    float metallic;
-    float subsurface;
-    float specular;
-    float roughness;
-    float specularTint;
-    float anisotropic;
-    float anisoRotation;
-    float sheen;
-    float sheenTint;
-    float clearCoat;
-    float clearcoatGloss;
-    float clearcoatRouphness;
-    float clearcoatIOR;
-    float flatness;
-    float specTrans;
-    float scatterDistance;
-    float ior;
-};
 
 struct RadiancePRD
 {
@@ -81,7 +57,6 @@ struct RadiancePRD
     float3       direction;
     float        minSpecRough;
     bool         passed;
-    float        opacity;
     float        prob;
     float        prob2;
     unsigned int seed;
@@ -90,7 +65,6 @@ struct RadiancePRD
     bool         hitEnv;
     int          countEmitted;
     int          done;
-    int          pad;
     float3       shadowAttanuation;
     int          medium;
     float        scatterDistance;
