@@ -1201,11 +1201,11 @@ void DisplayWidget::onNodeSelected(const QModelIndex &subgIdx, const QModelIndex
             // read selected mode
             auto select_mode_str = zeno::NodeSyncMgr::GetInstance().getInputValString(nodes[0], "mode");
             if (select_mode_str == "triangle")
-                scene->select_mode = zenovis::PICK_MESH;
+                scene->select_mode = zenovis::PICK_MODE::PICK_MESH;
             else if (select_mode_str == "line")
-                scene->select_mode = zenovis::PICK_LINE;
+                scene->select_mode = zenovis::PICK_MODE::PICK_LINE;
             else
-                scene->select_mode = zenovis::PICK_VERTEX;
+                scene->select_mode = zenovis::PICK_MODE::PICK_VERTEX;
             // read selected elements
             string node_context;
             auto node_selected_str = zeno::NodeSyncMgr::GetInstance().getParamValString(nodes[0], "selected");
