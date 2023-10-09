@@ -6,7 +6,12 @@ if(NOT ZENO_WITH_zenvdb OR NOT ZENO_WITH_ZenoFX OR NOT ZENO_WITH_CUDA)
 endif()
 
 # assume cuda
-target_link_libraries(zeno PRIVATE zshelper zpc_jit_py)
+find_package(Python3 COMPONENTS Interpreter Development)
+if (Python3_FOUND)
+  target_link_libraries(zeno PRIVATE ${Python3_LIBRARIES})
+  target_include_directories(zeno PRIVATE ${Python3_INCLUDE_DIRS})
+endif(Python3_FOUND)
+target_link_libraries(zeno PRIVATE zshelper)
 
 #
 target_sources(zeno PRIVATE
