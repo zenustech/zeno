@@ -93,20 +93,16 @@ struct PrimitiveHighlight : IGraphicDraw {
                 if (prim->tris->empty()) {
                     // prepare data
                     auto const &verts = prim->verts;
-                    auto vertex_count = prim->size();
-                    vector<vec3f> mem(vertex_count);
-                    for (int i = 0; i < vertex_count; i++)
-                        mem[i] = verts[i];
 
                     // bind buffers
-                    vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+                    vbo->bind_data(verts.data(), verts.size() * sizeof(verts[0]));
                     vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
                     // draw particles
                     CHECK_GL(glEnable(GL_PROGRAM_POINT_SIZE));
                     shader->use();
                     scene->camera->set_program_uniforms(shader);
-                    CHECK_GL(glDrawArrays(GL_POINTS, 0, mem.size()));
+                    CHECK_GL(glDrawArrays(GL_POINTS, 0, verts.size()));
                     CHECK_GL(glDisable(GL_PROGRAM_POINT_SIZE));
 
                     // unbind buffers
@@ -138,13 +134,9 @@ struct PrimitiveHighlight : IGraphicDraw {
             auto selected_count = elements.size();
             // ----- prepare data -----
             auto const &pos = prim->attr<zeno::vec3f>("pos");
-            auto vertex_count = prim->size();
-            vector<vec3f> mem(vertex_count);
-            for (int i = 0; i < vertex_count; i++)
-                mem[i] = pos[i];
 
             // ----- bind buffers -----
-            vbo->bind_data(mem.data(), mem.size() * sizeof(mem[0]));
+            vbo->bind_data(pos.data(), pos.size() * sizeof(pos[0]));
             vbo->attribute(0, sizeof(float) * 0, sizeof(float) * 3, GL_FLOAT, 3);
 
             // ----- draw selected vertices -----
